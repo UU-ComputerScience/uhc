@@ -1,8 +1,3 @@
-data List = Nil | Cons Int List
+data T a = T a
 
-myList = 3 `Cons` (4 `Cons` Nil)
-
-head Nil         = 9999
-head (Cons x xs) = x
-
-main = head myList
+main = (\(T a) -> a) (T 23)

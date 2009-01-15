@@ -36,14 +36,14 @@ PRAGMA nocycle
 %%]
 
 %%[(8 codegen grin) hs export( silly2jvm )
-{-|
--} 
+
+--------------------------------------------------------------------------------
 
 silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = 
   jvmCode_Syn_SilModule
      $ wrap_SilModule
-        (sem_SilModule silmod)
+        (sem_SilModule testSilModule)
         (Inh_SilModule 42)
 
 nextUnique :: Int -> (Int, Int)
@@ -51,6 +51,8 @@ nextUnique u = (u + 1, u)
 
 mergeCode :: Code -> Code -> Code
 mergeCode (Code _ _ a) (Code _ _ b) = Code Nothing Nothing (a ++ b)
+
+(%) = mergeCode
 
 emptyCode :: Code
 emptyCode = Code Nothing Nothing []
@@ -63,38 +65,17 @@ code = Code Nothing Nothing
 
 type JVMVar = String
 
+cNode      = "Runtime$Node"
 cRuntime   = "Runtime"
-cContainer = "Runtime$Container"
-tContainer = TClass cContainer
-fTag       = "tag"
-fPayload   = "payload"
-fIntVal    = "intVal"
-fRP        = "RP"
+fCGlobals  = "CGlobals"
 fCRP       = "CRP"
 fGlobals   = "Globals"
-fCGlobals  = "CGlobals"
-
-{-
-testSilModule = SilModule_SilModule
-  [] [] [
-    Function_Function  (HNm "hsmain") False
-    []
-    []
-    [
-      Statement_IfThenElse
-        (Value_CompareGT
-          (Value_Con (Constant_LiteralInt 8))
-          (Constant_LiteralInt 4)
-        )
-        ([Statement_Call (HNm "putStrLn") False
-          [Value_Con (Constant_LiteralStr "aapjes!")]])
-        ([Statement_Call (HNm "putStrLn") False
-          [Value_Con (Constant_LiteralStr "kipjes!")]])
-    , Statement_Return 1
-    ]
-  ]
-  undefined
--}
+fIntVal    = "intVal"
+fPayload   = "payload"
+fRP        = "RP"
+fTag       = "tag"
+tNode      = TClass cNode
+tPayload   = TArray tNode
 
 primitiveFunctions :: [(HsName, Code -> Code)]
 primitiveFunctions = [
@@ -104,7 +85,7 @@ primitiveFunctions = [
       , fr_name = "out"
       , fr_type = TClass "java.io.PrintStream"}
       ))
-    `mergeCode` c `mergeCode`
+    % c %
     singleCode (
       Invoke IVirtual (MethodRef {
         mr_class = "java.io.PrintStream"
@@ -115,12 +96,53 @@ primitiveFunctions = [
     )
   ]
 
+testSilModule = SilModule_SilModule
+  [] [HNm "fst", HNm "snd", HNm "trd"] [
+    Function_Function  (HNm "initialize") False
+    []
+    []
+    [
+    -- allocate 4 word node, save to global.
+      Statement_Assignment
+        (Variable_Global $ HNm "trd")
+        (Value_Alloc 4 GCManaged)
+
+    -- assign const 33 to tag.
+    , Statement_Assignment
+        (Variable_Subs (Variable_Global $ HNm "trd") 0)
+        (Value_Con $ Constant_LiteralInt 33)
+
+    -- assign const 33 to intVal.
+    , Statement_Assignment
+        (Variable_Subs (Variable_Global $ HNm "trd") 1)
+        (Value_Con (Constant_LiteralInt 33))
+
+    -- assign node to itself in slot 2 of 4.
+    , Statement_Assignment
+        (Variable_Subs (Variable_Global $ HNm "trd") 2)
+        (Value_Var     (Variable_Global $ HNm "trd"))
+
+    -- assign global to RP 1.
+    , Statement_Assignment
+        (Variable_Subs Variable_RP 1)
+        (Value_Var (Variable_Global $ HNm "trd"))
+
+    -- assign global to RP 4.
+    , Statement_Assignment
+        (Variable_Subs Variable_RP 4)
+        (Value_Var (Variable_Global $ HNm "trd"))
+
+    , Statement_Return 1
+    ]
+  ]
+  undefined
+
 methodMain = 
   Method {
     m_flags = [Public,Static]
   , m_name = "main"
   , m_ret = Nothing
-  , m_args = [TArray {unArray = TClass {unClass = "java.lang.String"}}]
+  , m_args = [TArray (TClass "java.lang.String")]
   , m_code = Just (Code {
       c_max_stack  = Nothing
     , c_max_locals = Nothing
@@ -130,10 +152,12 @@ methodMain =
       , Get True (FieldRef {
           fr_class = "java.lang.System"
         , fr_name = "out"
-        , fr_type = TClass {unClass = "java.io.PrintStream"}
+        , fr_type = TClass "java.io.PrintStream"
         })
-      , Invoke IStatic (MethodRef {mr_class = "fib",     mr_name = "fun_x_1_main",  mr_args = [], mr_ret = Just TInt})
-      , Invoke IStatic (MethodRef {mr_class = "Runtime", mr_name = "finish",        mr_args = [], mr_ret = Nothing})
+      , Invoke IStatic (MethodRef "Runtime" "initialize" [] Nothing)
+      , Invoke IStatic (MethodRef "fib" "initialize" [] (Just TInt))
+--       , Invoke IStatic (MethodRef "fib" "fun_x_1_main" [] (Just TInt))
+      , Invoke IStatic (MethodRef "Runtime" "finish" [] Nothing)
       , Load TInt 1
       , Pop TInt
       , Return Nothing
@@ -146,6 +170,8 @@ methodMain =
 
 %%]
 
+--------------------------------------------------------------------------------
+
 {-
 Possible optimizations
 
@@ -153,7 +179,7 @@ Possible optimizations
      possible constructors for a data-type. This is safe but sometimes wastes
      some space. Maybe we can detect what the real value of this ALLOC should
      be for our payload array.
-  2) Inline the payload into the container by statically creating a bunch of
+  2) Inline the payload into the node by statically creating a bunch of
      Java classes for every length a value can be. These classes can be called
      something like `Value<n>'. When we perform this the optimization (1) will
      bot be possible anymore, but we skip one indirection.
@@ -165,51 +191,64 @@ Possible optimizations
      optimization is quite essential because you save an indirection on `every'
      return.
   n) ...
+
+
+  (double assignments)
 -}
 
 %%[(8 codegen grin)
 ATTR SilModule
-     [ | | jvmCode : {Class} ]
+  [ | | jvmCode : {Class} ]
 
 ATTR Functions
-     [ | | jvmCode : {[Method]} ]
+  [ | | jvmCode : {[Method]} ]
 
 ATTR Function
-     [ | | jvmCode : {Method} ] 
+  [ | | jvmCode : {Method} ] 
 
-ATTR Statements Statement 
-     Values Value Variable 
-     [ | | jvmCode : {Code} ]
+ATTR Statements Statement Values Value Variable 
+  [ | | jvmCode : {Code} ]
 
 ATTR Alternatives
-     [ | | jvmCode : {[(JInt, Label, Code)]} ]  
+  [ | | jvmCode : {[(JInt, Label, Code)]} ]  
 
 ATTR Alternative
-     [ | | jvmCode : {(JInt, Label, Code)} ]
+  [ | | jvmCode : {(JInt, Label, Code)} ]
 
 ATTR AllNT
-     [ | counter : Int | ]
+  [ | counter : Int | ]
 
 ATTR AllNT - SilModule
-     [ jvmCons : {[(String, Int)]} | | ]
+  [ jvmCons : {[(String, Int)]} | | ]
 
 ATTR AllNT - SilModule
-     [ jvmGlobs : {[HsName]} | | ]
+  [ jvmGlobs : {[HsName]} | | ]
 
-ATTR AllNT [ | | jvmIsTag USE {||} {False} : Bool ]
+ATTR AllNT - SilModule
+  [ jvmLhs : Bool | | ]
 
-ATTR AllNT [ | | jvmIsInt USE {||} {False} : Bool ]
-ATTR Variable [ jvmAssignInt : Bool | | ]
+ATTR AllNT
+  [ | | jvmIsTag USE {||} {False} : Bool ]
 
-ATTR Constant [ | | jvmVal : {J.Constant} ]  
+ATTR AllNT
+  [ | | jvmIsInt USE {||} {False} : Bool ]
+
+ATTR Variable
+  [ jvmAssignInt : Bool | | ]
+
+ATTR Constant
+  [ | | jvmVal : {J.Constant} ]  
+
+--------------------------------------------------------------------------------
 
 SEM SilModule
-  | SilModule   lhs.jvmCode  = defaultClass {
-                                 c_methods = methodMain : @functions.jvmCode
-                               , c_this    = "fib"
-                               }
-          functions.jvmCons  = @constants
-          functions.jvmGlobs = @variables
+  | SilModule  lhs.jvmCode  = defaultClass {
+                                c_methods = methodMain : @functions.jvmCode
+                              , c_this    = "fib"
+                              }
+         functions.jvmCons  = @constants
+         functions.jvmGlobs = @variables
+         functions.jvmLhs   = False
 
 SEM Functions
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
@@ -228,83 +267,110 @@ SEM Function
                               }
 
 SEM Statements
-  | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
+  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
   | Nil         lhs.jvmCode = emptyCode
 
 {
+
+jvmAssignment :: Code -> Code -> Bool -> Bool -> Code
 jvmAssignment dest source isTag isInt =
-  dest
-  `mergeCode` source
-  `mergeCode` singleCode
-  (if isTag
-  then Put False (FieldRef cContainer fTag TInt)
-  else if isInt
-       then Put False (FieldRef cContainer fIntVal TInt)
-       else AStore tObject)
+
+  dest % 
+
+-- todo: factor out `source % singleCode`
+
+  case (isTag, isInt) of
+
+    -- Assign to the node tag.
+    (True, _) ->
+      source %
+      singleCode (Put False (FieldRef cNode fTag TInt))
+
+    -- Assign an integer value in the case of CInt.
+    (False, True) -> 
+      source %
+      singleCode (Put False (FieldRef cNode fIntVal TInt))
+
+    -- Assign to the payload array.
+    (False, False) -> 
+      source %
+      singleCode (AStore tNode)
 
 -- Muchos pain! Because we might/probably compute source twice.
+jvmAssignment2 :: Code -> Code -> Code -> Bool -> Bool -> Code
 jvmAssignment2 dest1 dest2 source isTag isInt =
-
-  dest1
-  `mergeCode` source
-  `mergeCode` singleCode
-  (if isTag
-  then Put False (FieldRef cContainer fTag TInt)
-  else if isInt
-       then Put False (FieldRef cContainer fIntVal TInt)
-       else AStore tObject)
-
-  `mergeCode` dest2
-  `mergeCode` source
-  `mergeCode` singleCode
-  (if isTag
-  then Put False (FieldRef cContainer fTag TInt)
-  else if isInt
-       then Put False (FieldRef cContainer fIntVal TInt)
-       else AStore tObject)
+  jvmAssignment dest1 source isTag isInt %
+  jvmAssignment dest2 source isTag isInt
 
 }
 
 SEM Statement
-  -- Watch out that indices 1 upto N are in the array not in the box itself.
-  | Assignment  lhs.jvmCode = jvmAssignment @dest.jvmCode @source.jvmCode @dest.jvmIsTag @source.jvmIsInt
-                dest.jvmAssignInt = @source.jvmIsInt
-  | Assignment2 lhs.jvmCode = jvmAssignment2 @dest1.jvmCode @dest2.jvmCode @source.jvmCode @dest1.jvmIsTag @source.jvmIsInt
-                dest1.jvmAssignInt = @source.jvmIsInt
-                dest2.jvmAssignInt = @source.jvmIsInt
-  | Call        lhs.jvmCode = maybe (error "JVM: no real call yet") ($ @args.jvmCode)
-                              (lookup @name primitiveFunctions)
+
+  | Assignment  lhs.jvmCode = jvmAssignment
+                              @dest.jvmCode
+                              @source.jvmCode
+                              @dest.jvmIsTag
+                              @source.jvmIsInt
+            dest.jvmAssignInt = @source.jvmIsInt
+            dest.jvmLhs       = True
+          source.jvmLhs       = False
+
+  | Assignment2 lhs.jvmCode = jvmAssignment2
+                              @dest1.jvmCode
+                              @dest2.jvmCode
+                              @source.jvmCode
+                              @dest1.jvmIsTag
+                              @source.jvmIsInt
+           dest1.jvmAssignInt = @source.jvmIsInt
+           dest2.jvmAssignInt = @source.jvmIsInt
+           dest1.jvmLhs       = True
+           dest2.jvmLhs       = True
+          source.jvmLhs       = False
+
+  | Call        lhs.jvmCode = case lookup @name primitiveFunctions of
+
+                                -- Real call.
+                                Nothing ->
+                                  @args.jvmCode % singleCode
+                                  (Invoke IStatic $ MethodRef "fib" (show @name) [] $ Just TInt)
+
+                                -- Built-in call.
+                                Just prim -> prim @args.jvmCode
+
   | Comment     lhs.jvmCode = emptyCode
 
   {-
-  INVARIANT: This generic IfThenElse compiles to the specific
-  greater-than-equal comparison, because this is the only pattern it appears in
-  the original silly code.
+    INVARIANT: This generic IfThenElse compiles to the specific
+    greater-than-equal comparison, because this is the only pattern it appears
+    in the original silly code.
   -}
   | IfThenElse  loc.labelElse  : UNIQUEREF counter
                 loc.labelEndIf : UNIQUEREF counter
                 lhs.jvmCode = @condition.jvmCode
-                              `mergeCode` singleCode (If CmpGt @loc.labelElse)
-                              `mergeCode` @thenpart.jvmCode
-                              `mergeCode` singleCode (Goto @loc.labelEndIf)
-                              `mergeCode` singleCode (Note (Label @loc.labelElse))
-                              `mergeCode` @elsepart.jvmCode
-                              `mergeCode` singleCode (Note (Label @loc.labelEndIf))
+                              % singleCode (If CmpGt @loc.labelElse)
+                              % @thenpart.jvmCode
+                              % singleCode (Goto @loc.labelEndIf)
+                              % singleCode (Note (Label @loc.labelElse))
+                              % @elsepart.jvmCode
+                              % singleCode (Note (Label @loc.labelEndIf))
+
   | Switch      loc.labelSwitchEnd : UNIQUEREF counter
                 lhs.jvmCode = let 
                                 alts   = @body.jvmCode
                                 end    = @loc.labelSwitchEnd
-                                arms   = map (\(_, _, code)   -> code `mergeCode` singleCode (Goto end))
+                                arms   = map (\(_, _, code)   -> code % singleCode (Goto end))
                                 labels = map (\(when, lbl, _) -> (when, lbl))
                               in
                               @scrutinee.jvmCode
-                              `mergeCode` singleCode (Switch Lookup end (labels alts))
-                              `mergeCode` foldl mergeCode emptyCode (arms alts)
-                              `mergeCode` singleCode (Note (Label end))
+                              % singleCode (Switch Lookup end (labels alts))
+                              % foldl mergeCode emptyCode (arms alts)
+                              % singleCode (Note (Label end))
+
   | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
   | Label       lhs.jvmCode = error "JVM: no labels supported."
   | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
   | Smart       lhs.jvmCode = error "JVM: not implemented yet (smart)."
+
   | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
                 lhs.jvmCode = error "JVM: not supported."
 
@@ -315,53 +381,76 @@ SEM Alternatives
 SEM Alternative
   | Alternative lhs.jvmCode = let l = @loc.label in
                               case @when.jvmVal of
-                                CInt i -> (i, l, singleCode (Note $ Label l) `mergeCode` @body.jvmCode)
+                                CInt i -> (i, l, singleCode (Note $ Label l) % @body.jvmCode)
                                 _      -> error "JVM: non-integer case scrutinee"
                 loc.label   : UNIQUEREF counter
 
 SEM Values
-  | Cons        lhs.jvmCode = @hd.jvmCode `mergeCode` @tl.jvmCode
+  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
   | Nil         lhs.jvmCode = emptyCode
 
 SEM Value
+
   | Alloc       lhs.jvmCode = code [
-                                  New cContainer
+                                  New cNode
                                 , Dup TInt
                                 , Dup TInt
-                                , Invoke ISpecial (MethodRef cContainer "<init>" [] Nothing)
+                                , Invoke ISpecial $ MethodRef cNode "<init>" [] Nothing
                                 , Const (CInt (fromIntegral @size - 1))
-                                , NewArray tObject 1
-                                , Put False (FieldRef cContainer fPayload (TArray tObject))
+                                , NewArray tNode 1
+                                , Put False (FieldRef cNode fPayload $ TArray tNode)
                                 ]
-  | Call        lhs.jvmCode = maybe (error "JVM: no such foreign call") ($ @args.jvmCode)
-                              (lookup (HNm @name) primitiveFunctions)
+
+                            -- todo: this is probably ffi only!!
+  | Call        lhs.jvmCode = case lookup (HNm @name) primitiveFunctions of
+
+                                -- Real call.
+                                Nothing ->
+                                  @args.jvmCode % singleCode
+                                  (Invoke IStatic $ MethodRef "fib" @name [] $ Just TInt)
+
+                                -- Built-in call.
+                                Just prim -> prim @args.jvmCode
+
   | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
   | Var         lhs.jvmCode = @var.jvmCode
                 var.jvmAssignInt = False
-  | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) `mergeCode` @val.jvmCode
+
+  | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) % @val.jvmCode
+
   | Offset      lhs.jvmCode = @var.jvmCode
-                              `mergeCode` singleCode (Const (CInt (fromIntegral @off)))
-                              `mergeCode` singleCode (Arith Add TInt)
+                              % singleCode (Const (CInt (fromIntegral @off)))
+                              % singleCode (Arith Add TInt)
                 var.jvmAssignInt = False
+
   | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
 
 SEM Variable
-  | Global      lhs.jvmCode = code [  -- todo: do not use indirection (container) here.
-                                  Get True $ FieldRef cRuntime fCGlobals $ tContainer
-                                , Get False (FieldRef cContainer fPayload (TArray tObject))
-                                , Const (CInt $ fromIntegral $ maybe (error "JVM: global lookup failed") id $ @name `elemIndex` @lhs.jvmGlobs)
+
+  | Global      lhs.jvmCode = code [
+                                  Get True $ FieldRef cRuntime fGlobals $ tPayload
+                                , Const (CInt $ fromIntegral
+                                              $ maybe (error "JVM: global lookup failed") id
+                                              $ @name `elemIndex` @lhs.jvmGlobs)
                                 ]
+                              % if @lhs.jvmLhs
+                                then emptyCode  -- Do not load when left hand side.
+                                else singleCode (ALoad tNode)
+
   | Local       lhs.jvmCode = singleCode $ Load TInt $ fromIntegral (@pos + 1)
-  | Param       lhs.jvmCode = error "JVM: not implemented yet (param)."
-  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tContainer
-  | Subs        lhs.jvmCode = @array.jvmCode `mergeCode`
+  | Param       lhs.jvmCode = singleCode $ Load tNode (fromIntegral @pos)
+  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tNode
+
+  | Subs        lhs.jvmCode = @array.jvmCode %
                               (if @index == 0 || @lhs.jvmAssignInt
                               then emptyCode
                               else code [
-                                  Get False (FieldRef cContainer fPayload (TArray tObject))
+                                  Get False (FieldRef cNode fPayload (TArray tNode))
                                 , Const (CInt (fromIntegral @index - 1))
                                 ])
+
                lhs.jvmIsTag = @index == 0
+             array.jvmLhs   = False
 
   | * - Global Local Param RP Subs
                 lhs.jvmCode = error "JVM: this Variable kind not supported."
@@ -370,6 +459,7 @@ SEM Constant
   | LiteralInt  lhs.jvmVal   = CInt (fromIntegral @value)
                 lhs.jvmIsInt = True
   | LiteralStr  lhs.jvmVal   = CString @value
+
   | Alias       lhs.jvmVal   = case @name `lookup` @lhs.jvmCons of
                                  Nothing -> error ("JVM: no such constant alias: " ++ @name)
                                  Just  a -> CInt (fromIntegral a)
