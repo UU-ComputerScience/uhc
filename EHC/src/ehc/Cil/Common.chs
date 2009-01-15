@@ -9,11 +9,13 @@
 
 %%[1 module {%{EH}Cil.Common} import({%{EH}Base.Common},{%{EH}Cil.TyTag})
 %%]
-%%[8 hs export(hsn2TypeDottedName, toFieldName, toParamTypes, toTypeDef)
+%%[8 hs export(hsn2TypeDottedName, toFieldName, toFieldTypes, toTypeDefs)
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
 %%[(8 codegen grin) hs import(Data.Char (toLower))
+%%]
+%%[(8 codegen grin) hs import(Data.List (groupBy))
 %%]
 
 %%[8
@@ -33,34 +35,41 @@ toFieldName (TyCon _ cNm _ x mx) y =
                     ++ (show y) ++ " fields."
 
 -- Can also be used to get the type of the stored fields, since they exactly match the constructor argument types.
-toParamTypes :: TyTag -> [PrimitiveType]
-toParamTypes con@(TyCon hsn _ _ x _) =
+toFieldTypes :: TyTag -> [PrimitiveType]
+toFieldTypes con@(TyCon hsn _ _ x _) =
   case (hsnShowAlphanumeric hsn) of
     "Int"          -> [Int32]
     "Char"         -> [Char]
     "PackedString" -> [String]
     _                 -> replicate x Object
 
-toTypeDef :: (HsName, [(HsName, TyTag)]) -> TypeDef
-toTypeDef (anm, hcx) =
-  case (hsnShowAlphanumeric anm) of
-     "Char"         -> charTypeDef
-     "Int"          -> intTypeDef
-     "PackedString" -> packedStringTypeDef
-     "comma0"       -> unitTypeDef
-     "comma2"       -> tupleTypeDef 2
-     "comma3"       -> tupleTypeDef 3
-     "comma4"       -> tupleTypeDef 4
-     "comma5"       -> tupleTypeDef 5
-     "comma6"       -> tupleTypeDef 6
-     "comma7"       -> tupleTypeDef 7
-     "comma8"       -> tupleTypeDef 8
-     "comma9"       -> tupleTypeDef 9
-     "comma10"      -> tupleTypeDef 10
-     _              -> classDef Public tyNm noExtends [] []
-                         [ defaultCtor [] ] (map subTys hcx)
+toTypeDefs :: [TyTag] -> [TypeDef]
+toTypeDefs _ = []
+
+toTypeDef :: TyTag -> TypeDef
+toTypeDef = undefined
+{- map toTypeDef' . groupBy cmp
   where
-    tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
+    cmp x y = toTypeName x == toTypeName y
+    toTypeDef' xs =
+      let anm  = toTypeName (head xs)
+          tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
+      in case (hsnShowAlphanumeric anm) of
+           "Char"         -> charTypeDef
+           "Int"          -> intTypeDef
+           "PackedString" -> packedStringTypeDef
+           "comma0"       -> unitTypeDef
+           "comma2"       -> tupleTypeDef 2
+           "comma3"       -> tupleTypeDef 3
+           "comma4"       -> tupleTypeDef 4
+           "comma5"       -> tupleTypeDef 5
+           "comma6"       -> tupleTypeDef 6
+           "comma7"       -> tupleTypeDef 7
+           "comma8"       -> tupleTypeDef 8
+           "comma9"       -> tupleTypeDef 9
+           "comma10"      -> tupleTypeDef 10
+           _              -> classDef Public tyNm noExtends [] []
+                               [ defaultCtor [] ] (map subTys hcx)
     pNm ""     = ""
     pNm (c:cs) = toLower c : cs
     subTys (snm, (TyCon _ _ t a ma)) =
@@ -81,14 +90,15 @@ toTypeDef (anm, hcx) =
                       concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" tySubTyNm n]) (zip fields [1..])
                       ++
                       [ ret ]
+-}
 
 unitTypeDef :: TypeDef
-unitTypeDef = toTypeDef (hsn, [(hsn, TyCon hsn hsn 0 0 0)])
+unitTypeDef = toTypeDef $ TyCon hsn hsn 0 0 0
   where
     hsn = hsnFromString "Unit"
 
 tupleTypeDef :: Int -> TypeDef
-tupleTypeDef x = toTypeDef (hsn, [(hsn, TyCon hsn hsn 0 x x)])
+tupleTypeDef x = toTypeDef $ TyCon hsn hsn 0 x x
   where
     hsn = hsnFromString ("Tuple`" ++ show x)
 
