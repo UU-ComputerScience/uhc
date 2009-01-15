@@ -32,6 +32,7 @@ toFieldName (TyCon _ cNm _ x mx) y =
                     ++ (hsnShowAlphanumeric cNm) ++ " doesn't have "
                     ++ (show y) ++ " fields."
 
+-- Can also be used to get the type of the stored fields, since they exactly match the constructor argument types.
 toParamTypes :: TyTag -> [PrimitiveType]
 toParamTypes con@(TyCon hsn _ _ x _) =
   case (hsnShowAlphanumeric hsn) of

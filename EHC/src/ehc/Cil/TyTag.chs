@@ -70,6 +70,7 @@ toTypeDottedName :: TyTag -> DottedName
 toTypeDottedName (TyCon tyNm _ _ _ _) =
   namespace ++ "." ++ fancyName tyNm
 
+-- Should also be useable for Funs, PApps (and Apps?)
 toConDottedName :: TyTag -> DottedName
 toConDottedName (TyCon tyNm cnNm _ _ _) =
   namespace ++ "." ++ fancyName tyNm ++ "/" ++ fancyName cnNm

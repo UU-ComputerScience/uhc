@@ -12,5 +12,5 @@ first (Two i _) = i
 first (Three i _ _) = i
 first (Four i _ _ _) = i
 
-main = first (One 7)
+main = first (Two 7 3)
 

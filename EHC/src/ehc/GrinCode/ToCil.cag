@@ -28,6 +28,7 @@
 
 %%[(8 codegen grin)
 WRAPPER GrAGItf
+WRAPPER GrTag
 %%]
 
 %%[(8 codegen grin) hs
@@ -58,6 +59,7 @@ ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {
 
 ATTR GrTag [ | | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
                  matchCode USE {++} {[]} : {[MethodDecl]} -- code to match this tag
+                 tyTag                   : {TyTag}
            ]
 
 ATTR AllGrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
@@ -129,10 +131,19 @@ SEM GrExpr
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self
+                              -- ldfld is only for globals! could be a local variable
                               [ldfld Object "" @lhs.className @loc.varName] ++ @doField
                 loc.doField = case @offset of
-                              0 -> [] 
-                              o -> [no $ "fetch field #" ++ show o]
+                              0 ->  [] 
+                              o ->  [ isinst $ toConDottedName @loc.tyTag
+                                    , ldfld (toParamTypes @loc.tyTag !! (o - 1))
+                                            ""
+                                            (toConDottedName @loc.tyTag)
+                                            (toFieldName  @loc.tyTag (o - 1))
+                                    ]
+                loc.tyTag  = maybe (error "Cannot fetch field of unknown tag")
+                                   (grTag2tyTag @lhs.className @lhs.grintags @lhs.labels)
+                                   @mbTag
   | Store       lhs.cilCode = [no @self]
   | Call        lhs.cilCode = [no @self]
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
@@ -198,9 +209,10 @@ SEM GrPatLam
 
 SEM GrTag
   | Con         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toParamTypes @loc.tyTag)]
-                lhs.matchCode = debugComment @self [isinst @loc.tyName]
+                lhs.matchCode = debugComment @self [dup, isinst @loc.tyName]
                 loc.tyTag     = lookupTag @nm @lhs.grintags
                 loc.tyName    = toConDottedName @loc.tyTag
+                lhs.tyTag     = @loc.tyTag
   | Fun         lhs.constCode = [no @self]
                 lhs.matchCode = [no @self]
   | PApp        lhs.constCode = [no @self]
@@ -208,6 +220,7 @@ SEM GrTag
   | App         lhs.constCode = [no @self]
                 lhs.matchCode = [no @self]
   | *           lhs.thunks    = [ @self ]
+  | * - Con     lhs.tyTag     = error "Blegh"
   | Unboxed Hole Rec World Any
                 lhs.constCode = [no @self]
                 lhs.matchCode = [no @self]
@@ -240,5 +253,21 @@ lookupTag :: HsName -> AssocL HsName TyTag -> TyTag
 lookupTag n ts = case lookup n ts of
   Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
   Just t  -> t
+
+
+type GrTagAttr a = Syn_GrTag -> a
+
+grTag2tyTag = grTag2A tyTag_Syn_GrTag
+
+grTag2A :: GrTagAttr a -> String -> AssocL HsName TyTag -> [Label] -> GrTag -> a
+grTag2A f cls tags labels tg =
+  let t = wrap_GrTag (sem_GrTag tg)
+                     (Inh_GrTag { className_Inh_GrTag = cls
+                                , grintags_Inh_GrTag  = tags
+                                , labels_Inh_GrTag    = labels
+                                })
+  in f t
+
+
 
 %%]
