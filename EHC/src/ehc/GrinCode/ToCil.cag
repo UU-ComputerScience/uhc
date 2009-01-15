@@ -13,7 +13,7 @@
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Set(Set), Data.Bits)
 %%]
 %%[(8 codegen grin) hs import(Control.Arrow(first, second))
 %%]
@@ -62,7 +62,7 @@ ATTR GrTag [ | | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct t
                  tyTag                   : {TyTag}
            ]
 
-ATTR AllGrExpr GrPatLam [ | | locals USE {++} {[]} : {[Local]} ]
+ATTR AllGrExpr GrPatLam [ localSet : {Set HsName} | | locals USE {++} {[]} : {AssocL HsName PrimitiveType} ]
 
 ATTR GrAlt GrAltL [ caseLabel : {String} | | ]
 
@@ -114,7 +114,10 @@ SEM GrGlobal
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
-          loc.cilCode     = localsInit @expr.locals : @expr.cilCode ++ [ret]
+          loc.cilCode     = localsInit @loc.theLocals : @expr.cilCode ++ [ret]
+          expr.localSet   = Set.fromList $ map fst @expr.locals
+          loc.theLocals   = map (\(nm, pt) -> Local pt (hsnShowAlphanumeric nm))
+                                @expr.locals
 
 
 SEM GrExpr
@@ -191,15 +194,15 @@ SEM GrVal
 SEM GrPatLam
   | Empty       lhs.cilCode = debugComment @self []
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
-                lhs.locals  = [Local Object @varName]
+                lhs.locals  = [(@nm, Object)]
   | VarNode     lhs.cilCode = [no @self]
   | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-                lhs.locals  = [Local Int32 @varName]
+                lhs.locals  = [(@nm, Int32)]
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | BasicAnnot  lhs.cilCode = debugComment @self [stlocN @varName]
-                loc.locals  = [Local Int32 @varName]
+                loc.locals  = [(@nm, Int32)]
   | EnumAnnot   lhs.cilCode = [no @self]
   | PtrAnnot    lhs.cilCode = [no @self]
   | OpaqueAnnot lhs.cilCode = [no @self]
