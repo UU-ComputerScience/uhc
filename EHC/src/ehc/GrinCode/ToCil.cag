@@ -134,8 +134,11 @@ SEM GrExpr
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self
-                              -- ldfld is only for globals! could be a local variable
-                              [ldfld Object "" @lhs.className @loc.varName] ++ @doField
+                              @loc.load ++ @doField
+                              -- TODO support parameters
+                loc.load    = case Set.member @nm @lhs.localSet of
+                              True ->   [ldlocN @loc.varName]
+                              False ->  [ldfld Object "" @lhs.className @loc.varName]
                 loc.doField = case @offset of
                               0 ->  [] 
                               o ->  [ isinst $ toConDottedName @loc.tyTag
