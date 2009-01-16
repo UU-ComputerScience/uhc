@@ -11,7 +11,7 @@
 %%]
 %%[8 hs export(TyTag(..))
 %%]
-%%[8 hs export(toTypeName, fromCTag, intTyTag, charTyTag, packedStringTyTag, unitTyTag, toTypeDottedName, toConDottedName, fancyName)
+%%[8 hs export(toTypeName, fromCTag, intTyTag, charTyTag, packedStringTyTag, unitTyTag, toPrimitiveType, toTypeDottedName, toConDottedName, fancyName)
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
@@ -41,7 +41,7 @@ data TyTag
     { taTyName   :: !HsName
     , taFunName  :: !HsName
     }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 toTypeName :: TyTag -> HsName
 toTypeName (TyCon nm _ _ _ _) = nm
@@ -71,6 +71,12 @@ unitTyTag :: TyTag
 unitTyTag = TyCon nm nm 0 0 0
   where
     nm = HNm "Unit"
+
+toPrimitiveType :: TyTag -> PrimitiveType
+toPrimitiveType t | t == intTyTag          = Int32
+                  | t == charTyTag         = Char
+                  | t == packedStringTyTag = String
+                  | otherwise              = Object
 
 toTypeDottedName :: TyTag -> DottedName
 toTypeDottedName (TyCon tyNm _ _ _ _) =

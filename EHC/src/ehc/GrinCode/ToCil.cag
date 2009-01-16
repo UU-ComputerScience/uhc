@@ -13,7 +13,7 @@
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust), qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
 %%[(8 codegen grin) hs import(Control.Arrow(first, second))
 %%]
@@ -51,47 +51,49 @@ ATTR GrGlobal GrGlobalL
   |
   | cilFields USE {++} {[]} : {[FieldDef]}
     cilValues USE {++} {[]} : {[MethodDecl]}
+    grValues  USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal}
   ]
 
 ATTR GrBind GrBindL
- [
- |
- | cilMethods USE {++} {[]} : {[MethodDef]}
- ]
+  [
+  |
+  | cilMethods USE {++} {[]} : {[MethodDef]}
+  ]
 
 ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
 
 ATTR GrTag
- [
- |
- | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
-   matchCode USE {++} {[]} : {[MethodDecl]} -- code to match this tag
-   tyTag                   : {TyTag}
- ]
+  [
+  |
+  | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
+    matchCode USE {++} {[]} : {[MethodDecl]} -- code to match this tag
+    tyTag                   : {TyTag}
+  ]
 
 ATTR GrVar GrVarL
- [
- |
- | names USE {++} {[]} : {[HsName]}
- ]
+  [
+  |
+  | names USE {++} {[]} : {[HsName]}
+  ]
 
-ATTR AllGrExpr GrPatLam
- [ locals : {Set.Set HsName}
- |
- | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
-   untypedLocals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
- ]
+ATTR AllExpr --GrExpr GrPatLam
+  [ locals : {Set.Set HsName}
+  |
+  | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
+    untypedLocals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
+  ]
 
 ATTR GrAlt GrAltL [ caseLabel : {String} | | ]
 
 ATTR AllNT [ | labels : {[Label]} | self : SELF ]
 
 ATTR AllNTNoMod
- [ className : {DottedName}
-   tytags : {AssocL HsName TyTag}
- |
- | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
- ]
+  [ className : {DottedName}
+    globals : {Map.Map HsName TyTag} -- In the future this will contain all globals, now just the thunks
+    constrs : {Map.Map HsName TyTag}
+  |
+  | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
+  ]
 
 
 SEM GrAGItf
@@ -100,8 +102,10 @@ SEM GrAGItf
 
 SEM GrModule
   | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
-        loc.classDef      = classDef Public @loc.className noExtends [] @globalL.cilFields (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
-        loc.mainDef       = Method Static AssemblyVisible Void "AssemblyMain" [] $
+        loc.classDef      = classDef Public @loc.className noExtends noImplements @globalL.cilFields
+                              (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
+        loc.className     = hsn2TypeDottedName @moduleNm
+        loc.mainDef       = Method Static AssemblyVisible Void "AssemblyMain" []
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
@@ -110,25 +114,46 @@ SEM GrModule
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
-                            ++ map (comment . show) (Map.toList @bindL.grTags)
-        loc.initialize    = Method Static Private Void "initialize" [] (@globalL.cilValues ++ [ret])
-        loc.tytagsMp      = map (second (map (second fromCTag))) @ctagsMp
-        loc.typeDefs      = [] -- toTypeDefs @tytagsMp
-        loc.className     = hsn2TypeDottedName @moduleNm
-        globalL.className = @loc.className
-        bindL.className   = @loc.className
-        -- pass ctag mapping without type names
-        loc.tytags      = concatMap snd @tytagsMp
-        loc.grTags      = @globalL.grTags `Map.union` @bindL.grTags
-        globalL.tytags  = @loc.tytags
-        globalL.grTags  = @loc.grTags
+        loc.initialize    = Method Static Private Void "initialize" []
+                              (@globalL.cilValues ++ [ret])
+        loc.typeDefs      = toTypeDefs @loc.className @loc.tyTags
 
+        bindL.className   = @loc.className
+        bindL.globals     = @loc.globals
+        bindL.constrs     = @loc.constrs
+        globalL.className = @loc.className
+        globalL.globals   = @loc.globals
+        globalL.constrs   = @loc.constrs
+
+        loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
+        loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
+        loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
+        loc.tyTags        = nub (@loc.ctyTags ++ Map.elems @loc.globals)
+        loc.globals       = Map.foldWithKey (globals @loc.tyNames @loc.grTags) Map.empty @globalL.grValues
+        loc.grTags        = @globalL.grTags `Map.union` @bindL.grTags
+
+
+{
+globals :: Map.Map HsName HsName -> Map.Map HsName GrTag -> HsName -> GrVal
+             -> Map.Map HsName TyTag -> Map.Map HsName TyTag
+globals tyNames grTags nm grValue tyTags =
+  case grValue of
+    (GrVal_Node (GrTag_Fun fnm) _) ->
+      case Map.lookup nm grTags of
+        (Just (GrTag_Con _ _ cnm)) ->
+          case Map.lookup cnm tyNames of
+            (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
+            _    -> tyTags
+        _ -> tyTags
+    _ -> tyTags
+}
 
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
                            [ stfld Object "" @lhs.className @loc.name ]
            loc.name      = hsnShowAlphanumeric @nm
+           lhs.grValues  = Map.singleton @nm @val.self
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
@@ -172,7 +197,7 @@ SEM GrExpr
                                             (toFieldName @loc.tyTag (o - 1))
                                     ]
                 loc.tyTag  = maybe (error "Cannot fetch field of unknown tag")
-                                   (grTag2tyTag @lhs.className @lhs.tytags @lhs.labels)
+                                   (\(GrTag_Con _ _ nm) -> lookupTag nm @lhs.constrs)
                                    @mbTag
                 lhs.grTags  = maybe Map.empty (Map.singleton @nm) @mbTag
   | Store       lhs.cilCode = [no @self]
@@ -209,7 +234,7 @@ SEM GrVal
   | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) []]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
-  | Var         lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm]
+  | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals) then ldfld Object "" @lhs.className (hsnShowAlphanumeric @nm) else ldlocN (hsnShowAlphanumeric @nm)]
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.constCode
   | VarNode     lhs.cilCode = [no @self]
   | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.constCode
@@ -244,7 +269,7 @@ SEM GrPatLam
 SEM GrTag
   | Con         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag)]
                 lhs.matchCode = debugComment @self [dup, isinst @loc.tyName]
-                loc.tyTag     = lookupTag @nm @lhs.tytags
+                loc.tyTag     = lookupTag @nm @lhs.constrs
                 loc.tyName    = toConDottedName @loc.tyTag
                 lhs.tyTag     = @loc.tyTag
   | Fun         lhs.constCode = [no @self]
@@ -282,11 +307,13 @@ ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
 -- TODO this function should already exists somewhere else. Use that one.
-lookupTag :: HsName -> AssocL HsName TyTag -> TyTag
-lookupTag n ts = case lookup n ts of
+lookupTag :: HsName -> Map.Map HsName TyTag -> TyTag
+lookupTag n ts = case Map.lookup n ts of
   Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
   Just t  -> t
 
+funTyTag :: GrTag -> GrVal -> TyTag
+funTyTag (GrTag_Con _ _ nm) (GrVal_Node (GrTag_Fun fnm) _) = undefined
 
 grTag2primType :: GrTag -> PrimitiveType
 grTag2primType (GrTag_Con _ _ nm) =
@@ -301,11 +328,12 @@ type GrTagAttr a = Syn_GrTag -> a
 
 grTag2tyTag = grTag2A tyTag_Syn_GrTag
 
-grTag2A :: GrTagAttr a -> String -> AssocL HsName TyTag -> [Label] -> GrTag -> a
-grTag2A f cls tags labels tg =
+grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> GrTag -> a
+grTag2A f cls constrs globals labels tg =
   let t = wrap_GrTag (sem_GrTag tg)
                      (Inh_GrTag { className_Inh_GrTag = cls
-                                , tytags_Inh_GrTag  = tags
+                                , constrs_Inh_GrTag   = constrs
+                                , globals_Inh_GrTag   = globals
                                 , labels_Inh_GrTag    = labels
                                 })
   in f t

@@ -40,7 +40,7 @@ instance Cil TypeDef where
   cil (Class v n et its ds) =
       (".class " ++) . cil v . sp . cilName n
     . maybe id (\e -> sp . ("extends " ++) . cil e) et
-    . foldBool id (sp . ("implements " ++)
+    . bool id (sp . ("implements " ++)
                     . foldr (.) id (map cil its)) (null its)
     . ("\n{\n" ++)
     . foldr (\d s -> cil d . s) id ds
@@ -112,7 +112,7 @@ instance Cil Directive where
     let bigident = ident . ident . ident . ident
     in
       ident . ident . (".locals init (" ++)
-    . foldBool id nl (null ls)
+    . bool id nl (null ls)
     . foldr (.) id (intersperse (",\n" ++) (map (\l -> bigident . cil l) ls))
     . (")\n" ++)
   cil (MaxStack x)    = ident . ident . (".maxstack " ++) . shows x . nl
@@ -210,14 +210,14 @@ cilNewobj a c ps =
 cilCall :: DottedName -> DottedName -> DottedName -> [PrimitiveType] -> ShowS
 cilCall a c m ps = 
     cilAssembly a
-  . foldBool id (cilName c . ("::" ++)) (c == "")
+  . bool id (cilName c . ("::" ++)) (c == "")
   . cilName m
   . ("(" ++)
   . foldr (.) id (intersperse (", " ++) (map cil ps))
   . (")" ++)
 
 cilAssembly :: DottedName -> ShowS
-cilAssembly a = foldBool id (("[" ++) . cilName a . ("]" ++)) (a == "")
+cilAssembly a = bool id (("[" ++) . cilName a . ("]" ++)) (a == "")
 
 instance Cil Association where
   cil Static   = ("static" ++)
@@ -242,13 +242,13 @@ instance Cil PrimitiveType where
 -- Helper functions, to pretty print
 cilsp :: (Cil a) => a -> ShowS
 cilsp x = let s = cil x ""
-          in foldBool id (cil x . sp) (s == "")
+          in bool id (cil x . sp) (s == "")
 
 ident = ("    " ++)
 sp    = (" " ++)
 nl    = ('\n' :)
 
-foldBool :: a -> a -> Bool -> a
-foldBool x y True  = x
-foldBool x y False = y
+bool :: a -> a -> Bool -> a
+bool x y True  = x
+bool x y False = y
 

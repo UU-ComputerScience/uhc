@@ -41,44 +41,54 @@ toFieldTypes con@(TyCon hsn _ _ x _) =
     "Int"          -> [Int32]
     "Char"         -> [Char]
     "PackedString" -> [String]
-    _                 -> replicate x Object
+    _              -> replicate x Object
 
-toTypeDefs :: [TyTag] -> [TypeDef]
-toTypeDefs _ = []
+toTypeDefs :: DottedName -> [TyTag] -> [TypeDef]
+toTypeDefs csNm tags = map (toTypeDef csNm) $ groupBy (\x y -> toTypeName x == toTypeName y) tags
 
-toTypeDef :: TyTag -> TypeDef
-toTypeDef = undefined
-{- map toTypeDef' . groupBy cmp
+toTypeDef :: DottedName -> [TyTag] -> TypeDef
+toTypeDef csNm tags =
+  case (hsnShowAlphanumeric hsNm) of
+    "Char"         -> charTypeDef
+    "Int"          -> intTypeDef
+    "PackedString" -> packedStringTypeDef
+    "comma0"       -> unitTypeDef
+    "comma2"       -> tupleTypeDef 2
+    "comma3"       -> tupleTypeDef 3
+    "comma4"       -> tupleTypeDef 4
+    "comma5"       -> tupleTypeDef 5
+    "comma6"       -> tupleTypeDef 6
+    "comma7"       -> tupleTypeDef 7
+    "comma8"       -> tupleTypeDef 8
+    "comma9"       -> tupleTypeDef 9
+    "comma10"      -> tupleTypeDef 10
+    _              -> classDef Public tyNm noExtends [] []
+                        [ defaultCtor [] ]
+                        (map subTys tags)
   where
-    cmp x y = toTypeName x == toTypeName y
-    toTypeDef' xs =
-      let anm  = toTypeName (head xs)
-          tyNm = namespace ++ "." ++ hsnShowAlphanumeric anm
-      in case (hsnShowAlphanumeric anm) of
-           "Char"         -> charTypeDef
-           "Int"          -> intTypeDef
-           "PackedString" -> packedStringTypeDef
-           "comma0"       -> unitTypeDef
-           "comma2"       -> tupleTypeDef 2
-           "comma3"       -> tupleTypeDef 3
-           "comma4"       -> tupleTypeDef 4
-           "comma5"       -> tupleTypeDef 5
-           "comma6"       -> tupleTypeDef 6
-           "comma7"       -> tupleTypeDef 7
-           "comma8"       -> tupleTypeDef 8
-           "comma9"       -> tupleTypeDef 9
-           "comma10"      -> tupleTypeDef 10
-           _              -> classDef Public tyNm noExtends [] []
-                               [ defaultCtor [] ] (map subTys hcx)
+    hsNm = toTypeName (head tags)
+    tyNm = namespace ++ "." ++ hsnShowAlphanumeric hsNm
     pNm ""     = ""
     pNm (c:cs) = toLower c : cs
-    subTys (snm, (TyCon _ _ t a ma)) =
+    subTys (TyFun _ fnm) =
+      classDef Public subTyNm (extends tyNm) noImplements []
+        [ defaultCtor []
+        , Method Static Public Object "Invoke" []
+            [ call Static Object "" csNm subTyNm []
+            , ret
+            ]
+        ]
+        []
+      where
+        subTyNm   = hsnShowAlphanumeric fnm
+        tySubTyNm = tyNm ++ "/Thunk_" ++ subTyNm
+    subTys (TyCon _ cnm _ a ma) =
       classDef Public subTyNm (extends tyNm) []
         fields
         [ctor]
         []
       where
-        subTyNm   = hsnShowAlphanumeric snm
+        subTyNm   = hsnShowAlphanumeric cnm
         tySubTyNm = tyNm ++ "/" ++ subTyNm
         fields    = map (Field Instance2 Public Object) (take a $ fieldNames ma)
         ctor      = Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) fields)
@@ -90,15 +100,14 @@ toTypeDef = undefined
                       concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" tySubTyNm n]) (zip fields [1..])
                       ++
                       [ ret ]
--}
 
 unitTypeDef :: TypeDef
-unitTypeDef = toTypeDef $ TyCon hsn hsn 0 0 0
+unitTypeDef = toTypeDef "no callbacks" [ TyCon hsn hsn 0 0 0 ]
   where
     hsn = hsnFromString "Unit"
 
 tupleTypeDef :: Int -> TypeDef
-tupleTypeDef x = toTypeDef $ TyCon hsn hsn 0 x x
+tupleTypeDef x = toTypeDef "no callbacks" [ TyCon hsn hsn 0 x x ]
   where
     hsn = hsnFromString ("Tuple`" ++ show x)
 
