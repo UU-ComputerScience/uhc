@@ -119,6 +119,8 @@ brtrue = mdecl . Brtrue
 
 call :: Association -> PrimitiveType -> DottedName -> DottedName -> DottedName -> [PrimitiveType]
          -> MethodDecl
+call Static _ _ _ _ _ = error $ "Language.Cil.Build.call: "
+                      ++ "Invalid association type Static. Try StaticCallConv."
 call a p l t m ps = mdecl $ Call a p l t m ps
 
 ceq :: MethodDecl

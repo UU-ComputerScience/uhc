@@ -328,13 +328,14 @@ type GrTagAttr a = Syn_GrTag -> a
 
 grTag2tyTag = grTag2A tyTag_Syn_GrTag
 
-grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> GrTag -> a
-grTag2A f cls constrs globals labels tg =
+grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> Set.Set HsName -> GrTag -> a
+grTag2A f cls constrs globals labels locals tg =
   let t = wrap_GrTag (sem_GrTag tg)
                      (Inh_GrTag { className_Inh_GrTag = cls
                                 , constrs_Inh_GrTag   = constrs
                                 , globals_Inh_GrTag   = globals
                                 , labels_Inh_GrTag    = labels
+                                , locals_Inh_GrTag    = locals
                                 })
   in f t
 

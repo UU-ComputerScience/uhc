@@ -74,7 +74,7 @@ toTypeDef csNm tags =
       classDef Public subTyNm (extends tyNm) noImplements []
         [ defaultCtor []
         , Method Static Public Object "Invoke" []
-            [ call Static Object "" csNm subTyNm []
+            [ call StaticCallConv Object "" csNm subTyNm []
             , ret
             ]
         ]
