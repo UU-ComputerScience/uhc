@@ -25,6 +25,7 @@ module Language.Cil.Build (
   , dup
   , isinst
   , ldarg
+  , ldargN
   , ldc_i4
   , ldchar
   , ldfld
@@ -141,6 +142,9 @@ ldarg 1 = mdecl $ Ldarg_1
 ldarg 2 = mdecl $ Ldarg_2
 ldarg 3 = mdecl $ Ldarg_3
 ldarg x = mdecl $ Ldarg x
+
+ldargN :: DottedName -> MethodDecl
+ldargN = mdecl . LdlocN
 
 ldc_i4 :: Int -> MethodDecl
 ldc_i4 (-1) = mdecl $ Ldc_i4_m1

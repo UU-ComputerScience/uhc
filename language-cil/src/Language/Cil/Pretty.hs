@@ -146,6 +146,7 @@ instance Cil OpCode where
   cil (Ldarg_1)           = ("ldarg.1 " ++)
   cil (Ldarg_2)           = ("ldarg.2 " ++)
   cil (Ldarg_3)           = ("ldarg.3 " ++)
+  cil (LdargN nm)         = ("ldarg " ++) . cilName nm
   cil (Ldc_i4 x)          = ("ldc.i4 " ++) . shows x
   cil (Ldc_i4_0)          = ("ldc.i4.0 " ++) 
   cil (Ldc_i4_1)          = ("ldc.i4.1 " ++) 
@@ -166,9 +167,9 @@ instance Cil OpCode where
   cil (Ldloc_1)           = ("ldloc.1 " ++)
   cil (Ldloc_2)           = ("ldloc.2 " ++)
   cil (Ldloc_3)           = ("ldloc.3 " ++)
-  cil (LdlocN nm)         = ("ldloc " ++) . (nm ++)
+  cil (LdlocN nm)         = ("ldloc " ++) . cilName nm
   cil (Ldloca x)          = ("ldloca " ++) . shows x
-  cil (LdlocaN nm)        = ("ldloca " ++) . (nm ++)
+  cil (LdlocaN nm)        = ("ldloca " ++) . cilName nm
   cil (Ldsfld t a c f)    = ("ldsfld " ++) . cil t . sp . cilFld a c f
   cil (Ldsflda t a c f)   = ("ldsflda " ++) . cil t . sp . cilFld a c f
   cil (Ldstr s)           = ("ldstr " ++) . shows s
@@ -186,7 +187,7 @@ instance Cil OpCode where
   cil (Stloc_1)           = ("stloc.1 " ++)
   cil (Stloc_2)           = ("stloc.2 " ++)
   cil (Stloc_3)           = ("stloc.3 " ++)
-  cil (StlocN nm)         = ("stloc " ++) . (nm ++)
+  cil (StlocN nm)         = ("stloc " ++) . cilName nm
   cil (Stsfld t a c f)    = ("stsfld " ++) . cil t . sp . cilFld a c f
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)

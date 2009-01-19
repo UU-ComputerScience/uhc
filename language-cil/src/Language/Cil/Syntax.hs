@@ -175,6 +175,7 @@ data OpCode =
   | Ldarg_1            -- ^ Loads 1th argument to current method onto stack.
   | Ldarg_2            -- ^ Loads 2th argument to current method onto stack.
   | Ldarg_3            -- ^ Loads 3th argument to current method onto stack.
+  | LdargN DottedName  -- ^ Loads named argument to current method onto stack.
   | Ldc_i4 Int         -- ^ Loads the supplied 32-bit integer onto the stack.
   | Ldc_i4_0           -- ^ Loads the value 0 onto the stack.
   | Ldc_i4_1           -- ^ Loads the value 1 onto the stack.

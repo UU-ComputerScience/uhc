@@ -13,7 +13,7 @@
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust), qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
 %%[(8 codegen grin) hs import(Control.Arrow(first, second))
 %%]
@@ -36,6 +36,17 @@ grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
 grin2cil hptmap gr opts
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf)
    in cilAssembly_Syn_GrAGItf t
+
+%%]
+
+%%[(8 codegen grin) hs
+
+data Scope = GlobalVar | LocalVar | Parameter
+
+data VarInfo = VarInfo
+  { varScope :: Scope
+  , varType  :: TyTag
+  }
 
 %%]
 
@@ -77,7 +88,7 @@ ATTR GrVar GrVarL
   ]
 
 ATTR AllExpr --GrExpr GrPatLam
-  [ locals : {Set.Set HsName}
+  [ scopes : {Map.Map HsName Scope}  -- In the future, this will contain all useful information for all variables.
   |
   | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
     untypedLocals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
@@ -154,12 +165,13 @@ SEM GrGlobal
                            [ stsfld Object "" @lhs.className @loc.name ]
            loc.name      = hsnShowAlphanumeric @nm
            lhs.grValues  = Map.singleton @nm @val.self
+           val.scopes    = error "Should not use variables"
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          expr.locals     = Map.keysSet @loc.localsMap
+          expr.scopes     = buildScopes (Map.keys @lhs.globals) (Map.keys @loc.localsMap) @argNmL
           lhs.grTags      = Set.fold Map.delete @expr.grTags @expr.untypedLocals
           loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] @loc.localsMap
           loc.localsMap   = @expr.typedLocals
@@ -184,10 +196,10 @@ SEM GrExpr
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self
                               @loc.load ++ @doField
-                              -- TODO support parameters
-                loc.load    = case Set.member @nm @lhs.locals of
-                              True ->   [ldlocN @loc.varName]
-                              False ->  [ldsfld Object "" @lhs.className @loc.varName]
+                loc.load    = case fromJust $ Map.lookup @nm @lhs.scopes of
+                              LocalVar  ->  [ldlocN @loc.varName]
+                              GlobalVar ->  [ldsfld Object "" @lhs.className @loc.varName]
+                              Parameter ->  [ldargN @loc.varName]
                 loc.doField = case @offset of
                               0 ->  [] 
                               o ->  [ isinst $ toConDottedName @loc.tyTag
@@ -309,6 +321,10 @@ fakeComment = flip const
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
+buildScopes :: [HsName] -> [HsName] -> [HsName] -> Map.Map HsName Scope
+buildScopes gs ls ps = Map.unions [mup GlobalVar gs, mup LocalVar ls, mup Parameter ps]
+  where mup s = foldr (flip Map.insert s) Map.empty
+
 -- TODO this function should already exists somewhere else. Use that one.
 lookupTag :: HsName -> Map.Map HsName TyTag -> TyTag
 lookupTag n ts = case Map.lookup n ts of
@@ -331,14 +347,14 @@ type GrTagAttr a = Syn_GrTag -> a
 
 grTag2tyTag = grTag2A tyTag_Syn_GrTag
 
-grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> Set.Set HsName -> GrTag -> a
-grTag2A f cls constrs globals labels locals tg =
+grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> Map.Map HsName Scope -> GrTag -> a
+grTag2A f cls constrs globals labels scopes tg =
   let t = wrap_GrTag (sem_GrTag tg)
                      (Inh_GrTag { className_Inh_GrTag = cls
                                 , constrs_Inh_GrTag   = constrs
                                 , globals_Inh_GrTag   = globals
                                 , labels_Inh_GrTag    = labels
-                                , locals_Inh_GrTag    = locals
+                                , scopes_Inh_GrTag    = scopes
                                 })
   in f t
 
