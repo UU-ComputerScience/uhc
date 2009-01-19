@@ -196,7 +196,7 @@ data OpCode =
            , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
            , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
            , fieldName    :: DottedName     -- ^ Name of the field.
-           } -- ^ Pops object reference, find address of specified field on object, pushes address to the stack.
+           } -- ^ Pops object reference, find address of specified field on the object, pushes address to the stack.
   | Ldind_ref          -- ^ Pops an address, pushes the object reference specified at the address.
   | Ldloc Offset       -- ^ Pushes value of local variable, specified by index, to the stack.
   | Ldloc_0            -- ^ Pushes 0th local variable to the stack.
@@ -206,6 +206,16 @@ data OpCode =
   | LdlocN DottedName  -- ^ Pushes value of local variable, specified by name, to the stack.
   | Ldloca Offset      -- ^ Pushes address of local variable, specified by index, to the stack.
   | LdlocaN DottedName -- ^ Pushes address of local variable, specified by name, to the stack.
+  | Ldsfld { fieldType    :: PrimitiveType  -- ^ Type of the field.
+           , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
+           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
+           , fieldName    :: DottedName     -- ^ Name of the field.
+           } -- ^ Pops type reference, find value of specified field on the type, pushes value to the stack.
+  | Ldsflda { fieldType    :: PrimitiveType  -- ^ Type of the field.
+            , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
+            , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
+            , fieldName    :: DottedName     -- ^ Name of the field.
+            } -- ^ Pops type reference, find address of specified field on the type, pushes address to the stack.
   | Ldstr String       -- ^ Pushes an object reference to the specified string constant.
   | Neg                -- ^ Pops 1 value, negates the value, pushes the value.
   | Newobj { returnType   :: PrimitiveType    -- ^ Return type of the constructor (almost alway Void).
@@ -229,6 +239,11 @@ data OpCode =
   | Stloc_2            -- ^ Pops 1 value, stores it in the 2th local variable.
   | Stloc_3            -- ^ Pops 1 value, stores it in the 3th local variable.
   | StlocN DottedName  -- ^ Pops 1 value, stores it in the local variable specified by name.
+  | Stsfld { fieldType    :: PrimitiveType  -- ^ Type of the field.
+           , assemblyName :: DottedName     -- ^ Name of the assembly where the field resides.
+           , typeName     :: DottedName     -- ^ Name of the type of which the field is a member.
+           , fieldName    :: DottedName     -- ^ Name of the field.
+           } -- ^ Replaces the value stored in the static field of a type with a new value.
   | Sub                -- ^ Pops 2 values, substracts second value from the first value, pushes result.
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.

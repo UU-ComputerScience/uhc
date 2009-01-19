@@ -86,6 +86,8 @@ toTypeDottedName (TyCon tyNm _ _ _ _) =
 toConDottedName :: TyTag -> DottedName
 toConDottedName (TyCon tyNm cnNm _ _ _) =
   namespace ++ "." ++ fancyName tyNm ++ "/" ++ fancyName cnNm
+toConDottedName (TyFun tyNm fNm) =
+  namespace ++ "." ++ fancyName tyNm ++ "/<Thunk>" ++ fancyName fNm
 
 fancyName :: HsName -> DottedName
 fancyName hsn =

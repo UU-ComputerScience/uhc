@@ -33,6 +33,8 @@ module Language.Cil.Build (
   , ldloc
   , ldlocN
   , ldloca
+  , ldsfld
+  , ldsflda
   , ldstr
   , neg
   , newobj
@@ -44,6 +46,7 @@ module Language.Cil.Build (
   , stind_ref
   , stloc
   , stlocN
+  , stsfld
   , sub
   , tail
   , tailcall
@@ -182,6 +185,12 @@ ldloca = mdecl . Ldloca
 ldlocaN :: DottedName -> MethodDecl
 ldlocaN nm = mdecl $ LdlocaN nm
 
+ldsfld :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
+ldsfld p a t f = mdecl $ Ldsfld p a t f
+
+ldsflda :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
+ldsflda p a t f = mdecl $ Ldsflda p a t f
+
 ldstr :: String -> MethodDecl
 ldstr = mdecl . Ldstr
 
@@ -221,6 +230,9 @@ stloc x = mdecl $ Stloc x
 
 stlocN :: DottedName -> MethodDecl
 stlocN nm = mdecl $ StlocN nm
+
+stsfld :: PrimitiveType -> DottedName -> DottedName -> DottedName -> MethodDecl
+stsfld p a t f = mdecl $ Stsfld p a t f
 
 sub :: MethodDecl
 sub = mdecl $ Sub

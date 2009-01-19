@@ -81,7 +81,7 @@ toTypeDef csNm tags =
         []
       where
         subTyNm   = hsnShowAlphanumeric fnm
-        tySubTyNm = tyNm ++ "/Thunk_" ++ subTyNm
+        tySubTyNm = tyNm ++ "/<Thunk>" ++ subTyNm
     subTys (TyCon _ cnm _ a ma) =
       classDef Public subTyNm (extends tyNm) []
         fields

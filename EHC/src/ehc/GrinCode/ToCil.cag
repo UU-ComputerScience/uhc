@@ -151,7 +151,7 @@ globals tyNames grTags nm grValue tyTags =
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
-                           [ stfld Object "" @lhs.className @loc.name ]
+                           [ stsfld Object "" @lhs.className @loc.name ]
            loc.name      = hsnShowAlphanumeric @nm
            lhs.grValues  = Map.singleton @nm @val.self
 
@@ -187,7 +187,7 @@ SEM GrExpr
                               -- TODO support parameters
                 loc.load    = case Set.member @nm @lhs.locals of
                               True ->   [ldlocN @loc.varName]
-                              False ->  [ldfld Object "" @lhs.className @loc.varName]
+                              False ->  [ldsfld Object "" @lhs.className @loc.varName]
                 loc.doField = case @offset of
                               0 ->  [] 
                               o ->  [ isinst $ toConDottedName @loc.tyTag
@@ -234,7 +234,9 @@ SEM GrVal
   | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) []]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
-  | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals) then ldfld Object "" @lhs.className (hsnShowAlphanumeric @nm) else ldlocN (hsnShowAlphanumeric @nm)]
+  | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals)
+                                                     then ldsfld Object "" @lhs.className (hsnShowAlphanumeric @nm)
+                                                     else ldlocN (hsnShowAlphanumeric @nm)]
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.constCode
   | VarNode     lhs.cilCode = [no @self]
   | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.constCode
@@ -272,8 +274,9 @@ SEM GrTag
                 loc.tyTag     = lookupTag @nm @lhs.constrs
                 loc.tyName    = toConDottedName @loc.tyTag
                 lhs.tyTag     = @loc.tyTag
-  | Fun         lhs.constCode = [no @self]
+  | Fun         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
                 lhs.matchCode = [no @self]
+                loc.tyTag     = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
   | PApp        lhs.constCode = [no @self]
                 lhs.matchCode = [no @self]
   | App         lhs.constCode = [no @self]
@@ -309,7 +312,7 @@ ffcall "primAddInt" = [add]
 -- TODO this function should already exists somewhere else. Use that one.
 lookupTag :: HsName -> Map.Map HsName TyTag -> TyTag
 lookupTag n ts = case Map.lookup n ts of
-  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "."
+  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "." ++ show ts
   Just t  -> t
 
 funTyTag :: GrTag -> GrVal -> TyTag

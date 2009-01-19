@@ -19,11 +19,12 @@ class Cil a where
   -- | Serializes a Cil data structure to a String.
   cil :: a -> ShowS
 
--- | Serializes a DottedName, escaping some weird names (such as \'add\').
+-- | Serializes a DottedName, escaping some weird names (such as \'add\' or '<Thunk>').
 cilName :: DottedName -> ShowS
-cilName n = if (n `elem` kw)
-            then (("'" ++ n ++ "'") ++)
-            else (n ++)
+cilName "" = error "Language.Cil.Pretty.cilName: Name cannot be empty"
+cilName n  = if n `elem` kw || '<' `elem` n
+             then (("'" ++ n ++ "'") ++)
+             else (n ++)
   where
     kw = ["add", "pop", "value"]
 
@@ -168,6 +169,8 @@ instance Cil OpCode where
   cil (LdlocN nm)         = ("ldloc " ++) . (nm ++)
   cil (Ldloca x)          = ("ldloca " ++) . shows x
   cil (LdlocaN nm)        = ("ldloca " ++) . (nm ++)
+  cil (Ldsfld t a c f)    = ("ldsfld " ++) . cil t . sp . cilFld a c f
+  cil (Ldsflda t a c f)   = ("ldsflda " ++) . cil t . sp . cilFld a c f
   cil (Ldstr s)           = ("ldstr " ++) . shows s
   cil (Neg)               = ("neg" ++)
   cil (Newobj t a c ps)   = ("newobj instance " ++) . cil t . sp
@@ -184,6 +187,7 @@ instance Cil OpCode where
   cil (Stloc_2)           = ("stloc.2 " ++)
   cil (Stloc_3)           = ("stloc.3 " ++)
   cil (StlocN nm)         = ("stloc " ++) . (nm ++)
+  cil (Stsfld t a c f)    = ("stsfld " ++) . cil t . sp . cilFld a c f
   cil (Sub)               = ("sub" ++)
   cil (Tail)              = ("tail." ++)
   cil (Tailcall opcode)   = ("tail. " ++) . cil opcode
