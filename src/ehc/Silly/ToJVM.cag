@@ -21,7 +21,7 @@
 %%]
 %%[(8 codegen grin) hs import(Brianweb.Java hiding (Constant))
 %%]
-%%[(8 codegen grin) hs import(Brianweb.Java.Words (JInt))
+%%[(8 codegen grin) hs import(Data.Int (Int32))
 %%]
 %%[(8 codegen grin) hs import(Data.List (elemIndex))
 %%]
@@ -250,10 +250,10 @@ ATTR Statements Statement Values Value Variable
   [ | | jvmCode : {Code} ]
 
 ATTR Alternatives
-  [ | | jvmCode : {[(JInt, Label, Code)]} ]  
+  [ | | jvmCode : {[(Int32, Label, Code)]} ]  
 
 ATTR Alternative
-  [ | | jvmCode : {(JInt, Label, Code)} ]
+  [ | | jvmCode : {(Int32, Label, Code)} ]
 
 ATTR AllNT
   [ | counter : Int | ]
