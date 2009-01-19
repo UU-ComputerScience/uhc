@@ -154,7 +154,8 @@ doCompileGrin input opts
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
-                ; when (not $ ehcOptEmitJVM options) (transformSilly groupAllocs        "GroupAllocs"      >> caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages)
+                -- We don't want this in JVM
+                -- ; (transformSilly groupAllocs        "GroupAllocs"      >> caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages)
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM
