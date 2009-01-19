@@ -195,9 +195,9 @@ methodMain =
         , fr_type = TClass "java.io.PrintStream"
         })
       , Invoke IStatic (MethodRef "Runtime" "initialize" [] Nothing)
-      , Invoke IStatic (MethodRef "fib" "initialize" [] (Just TInt))
---       , Invoke IStatic (MethodRef "fib" "fun_x_1_main" [] (Just TInt))
-      , Invoke IStatic (MethodRef "Runtime" "finish" [] Nothing)
+      , Invoke IStatic (MethodRef "fib" "initialize"     [] (Just TInt))
+      , Invoke IStatic (MethodRef "fib" "fun_x_1_main"   [] (Just TInt))
+      , Invoke IStatic (MethodRef "Runtime" "finish"     [] Nothing)
       , Load TInt 1
       , Pop TInt
       , Return Nothing

@@ -32,9 +32,19 @@ class Runtime
 
   public static void finish ()
   {
-    for (int i = 0; i < 256; i++) {
+    System.out.println("--- CRP:");
+
+    System.out.println(Runtime.CRP.tag);
+    System.out.println(Runtime.CRP.intVal);
+
+    for (int i = 0; i < 256; i++)
       dumpNode(i, Runtime.RP[i], 0);
-    }
+
+    System.out.println("--- Globals:");
+
+    for (int i = 0; i < 256; i++)
+      dumpNode(i, Runtime.Globals[i], 0);
+
   }
 
   public static final int MAX_DUMP_LEVEL = 2;
@@ -46,7 +56,7 @@ class Runtime
 
     if (level == 0) {
       Runtime.indent(level);
-      System.out.println("RP[" + i + "]");
+      System.out.println("[" + i + "]");
     }
 
     Runtime.indent(level);

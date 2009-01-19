@@ -1,3 +1,3 @@
-data T a = T a
+data T a = T a a
 
-main = (\(T a) -> a) (T 23)
+main = (\(T a b) -> b) (T 23 13)
