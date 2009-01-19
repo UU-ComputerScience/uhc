@@ -44,12 +44,6 @@ class Runtime
     if (node == null)
       return;
 
-    if (level > Runtime.MAX_DUMP_LEVEL) {
-      Runtime.indent(level);
-      System.out.println("...");
-      return;
-    }
-
     if (level == 0) {
       Runtime.indent(level);
       System.out.println("RP[" + i + "]");
@@ -58,11 +52,16 @@ class Runtime
     Runtime.indent(level);
     System.out.println("tag = " + node.tag);
     if (node.tag == Runtime.CINT) {
-      Runtime.indent(level);
+      Runtime.indent(level + 1);
       System.out.println("int = " + node.intVal);
     } else {
-      for (int p = 0; p < node.payload.length; p++)
-        dumpNode(i, node.payload[p], level + 1);
+      if (level + 1 <= Runtime.MAX_DUMP_LEVEL)
+        for (int p = 0; p < node.payload.length; p++)
+          dumpNode(i, node.payload[p], level + 1);
+      else {
+        Runtime.indent(level + 1);
+        System.out.println("...");
+      }
     }
   }
 
