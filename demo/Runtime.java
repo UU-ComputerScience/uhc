@@ -20,7 +20,7 @@ class Runtime
     public int intVal;
   }
 
-  public static final int CINT = 9;
+  public static final int CINT = 10;
 
   // Todo: parametrize these from haskell.
   public static Node[]  RP      = new Node[256];
