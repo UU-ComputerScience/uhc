@@ -144,7 +144,7 @@ ldarg 3 = mdecl $ Ldarg_3
 ldarg x = mdecl $ Ldarg x
 
 ldargN :: DottedName -> MethodDecl
-ldargN = mdecl . LdlocN
+ldargN = mdecl . LdargN
 
 ldc_i4 :: Int -> MethodDecl
 ldc_i4 (-1) = mdecl $ Ldc_i4_m1

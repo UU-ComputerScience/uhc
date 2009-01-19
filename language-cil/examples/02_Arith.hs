@@ -31,8 +31,8 @@ myMain = Method Static Public Void "main" []
 myAdd :: MethodDef
 myAdd = Method Static Public Int32 "add" [Param Int32 "x", Param Int32 "y"]
   [ maxStack 2
-  , ldarg 0
-  , ldarg 1
+  , ldargN "x"
+  , ldargN "y"
   , add
   , ret
   ]
