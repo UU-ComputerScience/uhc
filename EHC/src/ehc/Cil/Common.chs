@@ -13,9 +13,11 @@
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
 %%[(8 codegen grin) hs import(Data.Char (toLower))
 %%]
-%%[(8 codegen grin) hs import(Data.List (groupBy))
+%%[(8 codegen grin) hs import(Data.List (groupBy, sortBy))
 %%]
 
 %%[8
@@ -44,87 +46,58 @@ toFieldTypes con@(TyCon hsn _ _ x _) =
     _              -> replicate x Object
 
 toTypeDefs :: DottedName -> [TyTag] -> [TypeDef]
-toTypeDefs csNm tags = map (toTypeDef csNm) $ groupBy (\x y -> toTypeName x == toTypeName y) tags
+toTypeDefs callbackNm tags =
+  let stags = sortBy (\x y -> compare (toTypeName x) (toTypeName y)) tags
+      gtags = groupBy (\x y -> toTypeName x == toTypeName y) stags
+  in map (toTypeDef callbackNm) gtags
 
 toTypeDef :: DottedName -> [TyTag] -> TypeDef
-toTypeDef csNm tags =
+toTypeDef callbackNm tags =
   case (hsnShowAlphanumeric hsNm) of
-    "Char"         -> charTypeDef
-    "Int"          -> intTypeDef
-    "PackedString" -> packedStringTypeDef
-    "comma0"       -> unitTypeDef
-    "comma2"       -> tupleTypeDef 2
-    "comma3"       -> tupleTypeDef 3
-    "comma4"       -> tupleTypeDef 4
-    "comma5"       -> tupleTypeDef 5
-    "comma6"       -> tupleTypeDef 6
-    "comma7"       -> tupleTypeDef 7
-    "comma8"       -> tupleTypeDef 8
-    "comma9"       -> tupleTypeDef 9
-    "comma10"      -> tupleTypeDef 10
+    "Char"         -> charTypeDef callbackNm tags
+    "Int"          -> intTypeDef  callbackNm tags
+    "PackedString" -> packedStringTypeDef callbackNm tags
+    "comma0"       -> unitTypeDef callbackNm tags
+    "comma2"       -> tupleTypeDef 2  callbackNm tags
+    "comma3"       -> tupleTypeDef 3  callbackNm tags
+    "comma4"       -> tupleTypeDef 4  callbackNm tags
+    "comma5"       -> tupleTypeDef 5  callbackNm tags
+    "comma6"       -> tupleTypeDef 6  callbackNm tags
+    "comma7"       -> tupleTypeDef 7  callbackNm tags
+    "comma8"       -> tupleTypeDef 8  callbackNm tags
+    "comma9"       -> tupleTypeDef 9  callbackNm tags
+    "comma10"      -> tupleTypeDef 10 callbackNm tags
     _              -> classDef Public tyNm noExtends [] []
                         [ defaultCtor [] ]
-                        (map subTys tags)
+                        (map (subTys callbackNm tyNm) tags)
   where
     hsNm = toTypeName (head tags)
     tyNm = namespace ++ "." ++ hsnShowAlphanumeric hsNm
-    pNm ""     = ""
-    pNm (c:cs) = toLower c : cs
-    subTys (TyFun _ fnm) =
-      classDef Public subTyNm (extends tyNm) noImplements []
-        [ defaultCtor []
-        , Method Static Public Object "Invoke" []
-            [ call StaticCallConv Object "" csNm subTyNm []
-            , ret
-            ]
-        ]
-        []
-      where
-        subTyNm   = hsnShowAlphanumeric fnm
-        tySubTyNm = tyNm ++ "/<Thunk>" ++ subTyNm
-    subTys (TyCon _ cnm _ a ma) =
-      classDef Public subTyNm (extends tyNm) []
-        fields
-        [ctor]
-        []
-      where
-        subTyNm   = hsnShowAlphanumeric cnm
-        tySubTyNm = tyNm ++ "/" ++ subTyNm
-        fields    = map (Field Instance2 Public Object) (take a $ fieldNames ma)
-        ctor      = Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) fields)
-                      $
-                      [ ldarg 0
-                      , call Instance Void "" tyNm ".ctor" []
-                      ]
-                      ++
-                      concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" tySubTyNm n]) (zip fields [1..])
-                      ++
-                      [ ret ]
 
-unitTypeDef :: TypeDef
-unitTypeDef = toTypeDef "no callbacks" [ TyCon hsn hsn 0 0 0 ]
+unitTypeDef :: DottedName -> [TyTag] -> TypeDef
+unitTypeDef callbackNm tags = toTypeDef callbackNm [ TyCon hsn hsn 0 0 0 ]
   where
     hsn = hsnFromString "Unit"
 
-tupleTypeDef :: Int -> TypeDef
-tupleTypeDef x = toTypeDef "no callbacks" [ TyCon hsn hsn 0 x x ]
+tupleTypeDef :: Int -> DottedName -> [TyTag] -> TypeDef
+tupleTypeDef x callbackNm tags = toTypeDef callbackNm [ TyCon hsn hsn 0 x x ]
   where
     hsn = hsnFromString ("Tuple`" ++ show x)
 
-charTypeDef :: TypeDef
-charTypeDef = simpleTypeDef Char "Char"
+charTypeDef :: DottedName -> [TyTag] -> TypeDef
+charTypeDef callbackNm tags = simpleTypeDef Char "Char" callbackNm tags
 
-intTypeDef :: TypeDef
-intTypeDef = simpleTypeDef Int32 "Int"
+intTypeDef :: DottedName -> [TyTag] -> TypeDef
+intTypeDef callbackNm tags = simpleTypeDef Int32 "Int" callbackNm tags
 
-packedStringTypeDef :: TypeDef
-packedStringTypeDef = simpleTypeDef String "PackedString"
+packedStringTypeDef :: DottedName -> [TyTag] -> TypeDef
+packedStringTypeDef callbackNm tags = simpleTypeDef String "PackedString" callbackNm tags
 
-simpleTypeDef :: PrimitiveType -> DottedName -> TypeDef
-simpleTypeDef ty tyNm =
+simpleTypeDef :: PrimitiveType -> DottedName -> DottedName -> [TyTag] -> TypeDef
+simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was the simple type
   classDef Public fullName noExtends noImplements []
     [ defaultCtor []]
-    [ classDef Private tyNm (extends fullName) []
+    ( classDef Private tyNm (extends fullName) []
        [ Field Instance2 Public ty "Value"]
        [ Constructor Public [ Param ty "value" ]
            [ ldarg 0
@@ -136,9 +109,43 @@ simpleTypeDef ty tyNm =
            ]
        ]
        []
-     ]
+     : (map (subTys callbackNm fullName) tags)
+     )
   where
     fullName = namespace ++ "." ++ tyNm
+
+subTys :: DottedName -> DottedName -> TyTag -> TypeDef
+subTys callbackNm tyNm (TyFun _ fnm) =
+  classDef Public subTyNm (extends tyNm) noImplements []
+    [ defaultCtor []
+    , Method Static Public Object "Invoke" []
+        [ call StaticCallConv Object "" callbackNm subTyNm []
+        , ret
+        ]
+    ]
+    []
+  where
+    subTyNm   = "<Thunk>" ++ hsnShowAlphanumeric fnm
+subTys csNm tyNm (TyCon _ cnm _ a ma) =
+  classDef Public subTyNm (extends tyNm) []
+    fields
+    [ctor]
+    []
+  where
+    subTyNm   = hsnShowAlphanumeric cnm
+    tySubTyNm = tyNm ++ "/" ++ subTyNm
+    fields    = map (Field Instance2 Public Object) (take a $ fieldNames ma)
+    pNm ""     = ""
+    pNm (c:cs) = toLower c : cs
+    ctor      = Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) fields)
+                  $
+                  [ ldarg 0
+                  , call Instance Void "" tyNm ".ctor" []
+                  ]
+                  ++
+                  concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" tySubTyNm n]) (zip fields [1..])
+                  ++
+                  [ ret ]
 
 fieldNames :: Int -> [DottedName]
 fieldNames 1 = [ "Value" ]
