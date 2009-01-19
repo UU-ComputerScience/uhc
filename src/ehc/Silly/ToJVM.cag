@@ -69,6 +69,7 @@ code = Code Nothing Nothing
 type JVMVar = String
 
 cNode      = "Runtime$Node"
+cIntNode   = "Runtime$IntNode"
 cRuntime   = "Runtime"
 fCGlobals  = "CGlobals"
 fCRP       = "CRP"
@@ -282,12 +283,13 @@ ATTR Variable
   [ jvmAssignType : JvmType | | ]
 
 {
+
 type AssignCode = (Code, Locals -> Locals)
+
 }
 
 ATTR Variable 
   [ | | jvmAssign USE {++} {(emptyCode, id)} : {AssignCode} ]
-
 
 ATTR Constant
   [ | | jvmVal : {J.Constant} ]  
@@ -340,7 +342,7 @@ jvmAssignment ::
 
 jvmAssignment dest assign source left right locals =
   (dest % source % acode, flocals locals)
-  where (acode, flocals) = assign {-right-}
+  where (acode, flocals) = assign
 
 jvmAssignment2 ::
      Code                        -- ^ First lhs of assignment.
@@ -550,26 +552,34 @@ SEM Variable
                               -- We assume we never inspect the intVal except
                               -- in primitive functions.
                               else 
-                                case (@lhs.jvmLhs, @lhs.jvmAssignType) of
-                                  (False, _) ->
+                                case @lhs.jvmLhs of
+                                  False ->
                                     code [
                                       Get False (FieldRef cNode fPayload tPayload)
                                     , Const (CInt (fromIntegral @index - 1))
                                     , ALoad tNode
                                     ]
-                                  (True, JvmInt) -> emptyCode
                                   _ -> 
                                     code [
                                       Get False (FieldRef cNode fPayload tPayload)
                                     , Const (CInt (fromIntegral @index - 1))
                                     ]
+                                    % if @lhs.jvmAssignType == JvmInt
+                                      then code [
+                                         New cIntNode
+                                       , Dup TInt
+                                       , Dup TInt
+                                       , Invoke ISpecial $ MethodRef cIntNode "<init>" [] Nothing
+                                       ]
+                                      else emptyCode
 
-              lhs.jvmAssign = (singleCode (
+              lhs.jvmAssign = ((
                                 if @index == 0
-                                then Put False (FieldRef cNode fTag TInt)
-                                else if @lhs.jvmAssignType == JvmInt
-                                     then Put False (FieldRef cNode fIntVal TInt)
-                                     else AStore tNode)
+                                then singleCode (Put False (FieldRef cNode fTag TInt))
+                                else ((if @lhs.jvmAssignType == JvmInt
+                                     then code [Put False (FieldRef cIntNode fIntVal TInt)]
+                                     else emptyCode)
+                                     % singleCode (AStore tNode)))
                                 , id)
  
                array.jvmLhs = False

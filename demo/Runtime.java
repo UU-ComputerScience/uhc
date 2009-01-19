@@ -4,8 +4,6 @@ class Runtime
   {
     public int tag;
     public Node[] payload;
-    public int intVal;
-    public String stringVal;
 
     // Empty constructor needed.
     public Node () {}
@@ -15,6 +13,11 @@ class Runtime
       this.tag     = tag;
       this.payload = payload;
     }
+  }
+
+  public static class IntNode extends Node
+  {
+    public int intVal;
   }
 
   public static final int CINT = 9;
@@ -34,16 +37,16 @@ class Runtime
   {
     System.out.println("--- CRP:");
 
-    System.out.println(Runtime.CRP.tag);
-    System.out.println(Runtime.CRP.intVal);
+    dumpNode(0, Runtime.CRP, 0);
+    // System.out.println(Runtime.CRP.intVal);
 
-    for (int i = 0; i < 256; i++)
-      dumpNode(i, Runtime.RP[i], 0);
+    // for (int i = 0; i < 256; i++)
+      // dumpNode(i, Runtime.RP[i], 0);
 
-    System.out.println("--- Globals:");
+    // System.out.println("--- Globals:");
 
-    for (int i = 0; i < 256; i++)
-      dumpNode(i, Runtime.Globals[i], 0);
+    // for (int i = 0; i < 256; i++)
+      // dumpNode(i, Runtime.Globals[i], 0);
 
   }
 
@@ -63,7 +66,7 @@ class Runtime
     System.out.println("tag = " + node.tag);
     if (node.tag == Runtime.CINT) {
       Runtime.indent(level + 1);
-      System.out.println("int = " + node.intVal);
+      System.out.println("int = " + ((Runtime.IntNode)node.payload[0]).intVal);
     } else {
       if (level + 1 <= Runtime.MAX_DUMP_LEVEL)
         for (int p = 0; p < node.payload.length; p++)
