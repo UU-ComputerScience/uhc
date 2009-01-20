@@ -244,7 +244,7 @@ SEM GrTag
   | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag)]
                 lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
   | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
-                lhs.cilMatch  = [no @self]
+                lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
                 loc.tyTag     = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
