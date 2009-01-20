@@ -229,7 +229,7 @@ Possible optimizations
      possible constructors for a data-type. This is safe but sometimes wastes
      some space. Maybe we can detect what the real value of this ALLOC should
      be for our payload array.
-  2) Inline the payload into the node by statically creating a bunch of
+  2) In-line the payload into the node by statically creating a bunch of
      Java classes for every length a value can be. These classes can be called
      something like `Value<n>'. When we perform this the optimization (1) will
      bot be possible anymore, but we skip one indirection.
@@ -240,6 +240,9 @@ Possible optimizations
      need to know that we are Subs'ing the RP which needs some aspect. This
      optimization is quite essential because you save an indirection on `every'
      return.
+  5) Every global lookup now has an additional step for getting the globals
+  array. Using `real Java' globals will probably significantly speedup using
+  the globals.
   n) ...
 
 
