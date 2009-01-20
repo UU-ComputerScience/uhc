@@ -89,15 +89,14 @@ codeUnless b c = (noCode `bool` code c) b
 cNode      = "Runtime$Node"
 cIntNode   = "Runtime$IntNode"
 cRuntime   = "Runtime"
-fCGlobals  = "CGlobals"
-fCRP       = "CRP"
-fGlobals   = "Globals"
-fIntVal    = "intVal"
-fPayload   = "payload"
-fRP        = "RP"
-fTag       = "tag"
 tNode      = TClass cNode
 tPayload   = TArray tNode
+
+fGlobals = FieldRef cRuntime "Globals" tPayload
+fPayload = FieldRef cNode    "payload" tPayload
+fTag     = FieldRef cNode    "tag"     TInt
+fIntVal  = FieldRef cIntNode "intVal"  TInt
+fCRP     = FieldRef cRuntime "CRP"     tNode
 
 -- Mapping of Haskell function names to built-in primitive functions.
 -- TODO: this list may grow in the future and may deserve its own module.
@@ -254,6 +253,9 @@ Possible optimizations
 jvmError :: String -> a
 jvmError s = error ("JVM: no support for " ++ s)
 
+cInt = CInt . fromIntegral
+constInt = Const . cInt
+
 jvmAssignment ::
      CodeS                     -- ^ Lhs of assignment.
   -> AssignCode                -- ^ How to assign to Lhs.
@@ -351,7 +353,8 @@ SEM Statement
                               
                               -- Real call or built-in call?
   | Call        lhs.jvmCode = case lookup @name primitiveFunctions of
-                                Nothing   -> @args.jvmCode % (Invoke IStatic $ MethodRef "fib" (show @name) [] $ Just TInt)
+                                Nothing   -> @args.jvmCode
+                                           % Invoke IStatic (MethodRef "fib" (show @name) [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
                               
   | Comment     lhs.jvmCode = noCode
@@ -385,7 +388,7 @@ SEM Statement
 
   | Jump        lhs.jvmCode = jvmError "jumps"
   | Label       lhs.jvmCode = jvmError "labels"
-  | Return      lhs.jvmCode = Const (CInt $ fromIntegral @retdiff)
+  | Return      lhs.jvmCode = constInt @retdiff
                               % Return (Just TInt)
   | Smart       lhs.jvmCode = jvmError "smart"
 
@@ -417,15 +420,16 @@ SEM Value
                               % Dup TInt
                               % Dup TInt
                               % Invoke ISpecial (MethodRef cNode "<init>" [] Nothing)
-                              % Const (CInt (fromIntegral @size - 1))
+                              % constInt (@size - 1)
                               % NewArray tNode 1
-                              % Put False (FieldRef cNode fPayload $ TArray tNode)
+                              % Put False fPayload
                 lhs.jvmType = JvmNode
 
                               -- todo: this is probably ffi only!!
                               -- Real call of built-in call?
   | Call        lhs.jvmCode = case lookup (HNm @name) primitiveFunctions of
-                                Nothing   -> @args.jvmCode % Invoke IStatic (MethodRef "fib" @name [] $ Just TInt)
+                                Nothing   -> @args.jvmCode
+                                           % Invoke IStatic (MethodRef "fib" @name [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
 
   | Con         lhs.jvmCode = code (Const @con.jvmVal)
@@ -441,7 +445,7 @@ SEM Value
                               -- references here. But Offsets are only used in
                               -- conjunction with Globals and Locals. 
   | Offset      lhs.jvmCode = @var.jvmCode
-                              % Const (CInt (fromIntegral @off - 1))
+                              % constInt (@off - 1)
                               % Arith Add TInt
                               % codeUnless @lhs.jvmLhs (ALoad tNode)
                  var.jvmLhs = True
@@ -454,8 +458,8 @@ SEM Variable
 
   | Global      lhs.jvmCode = let idx = (jvmError "unknown globals" `maybe` id)
                                         (@name `elemIndex` @lhs.jvmGlobs)
-                              in Get True (FieldRef cRuntime fGlobals $ tPayload)
-                               % Const (CInt $ fromIntegral idx)
+                              in Get True fGlobals
+                               % constInt idx
                                % codeUnless @lhs.jvmLhs (ALoad tNode)
 
                 lhs.jvmType = JvmNode
@@ -480,24 +484,25 @@ SEM Variable
   | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
 
                               -- RP is always used in conjunction with Subs.
-  | RP          lhs.jvmCode = code $ Get True (FieldRef cRuntime fCRP $ tNode)
+  | RP          lhs.jvmCode = code $ Get True fCRP
 
   | Subs        lhs.jvmCode = @array.jvmCode %
                               case (@index == 0, @lhs.jvmLhs) of
-                                (True,  _)     -> codeUnless @lhs.jvmLhs (Get False (FieldRef cNode fTag TInt))
-                                (False, False) -> Get False (FieldRef cNode fPayload tPayload)
-                                                % Const (CInt (fromIntegral @index - 1))
+                                (True,  False) -> code (Get False fTag)
+                                (True,  True)  -> noCode
+                                (False, False) -> Get False fPayload
+                                                % constInt (@index - 1)
                                                 % ALoad tNode
-                                (False, True)  -> Get False (FieldRef cNode fPayload tPayload)
-                                                % Const (CInt (fromIntegral @index - 1))
+                                (False, True)  -> Get False fPayload
+                                                % constInt (@index - 1)
                                                 % codeIf (@lhs.jvmAssignType == JvmInt) (
                                                     New cIntNode
                                                   % Dup TInt
                                                   % Dup TInt
                                                   % Invoke ISpecial (MethodRef cIntNode "<init>" [] Nothing))
 
-              lhs.jvmAssign = let tag   = Put False (FieldRef cNode fTag TInt)
-                                  int   = Put False (FieldRef cIntNode fIntVal TInt)
+              lhs.jvmAssign = let tag   = Put False fTag
+                                  int   = Put False fIntVal
                                   notag = codeIf (@lhs.jvmAssignType == JvmInt) int
                                           % AStore tNode
                               in ((code tag `bool` notag) (@index == 0), id)
@@ -511,13 +516,13 @@ SEM Variable
                 lhs.jvmCode = jvmError "unknown variable kind"
 
 SEM Constant
-  | LiteralInt   lhs.jvmVal = CInt (fromIntegral @value)
+  | LiteralInt   lhs.jvmVal = cInt @value
                 lhs.jvmType = JvmInt
   | LiteralStr   lhs.jvmVal = CString @value
 
   | Alias        lhs.jvmVal = case @name `lookup` @lhs.jvmCons of
                                 Nothing -> jvmError ("unknown constant alias: " ++ @name)
-                                Just  a -> CInt (fromIntegral a)
+                                Just  a -> cInt a
 
 %%]
 
