@@ -37,6 +37,33 @@ grin2cil hptmap gr opts
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf)
    in cilAssembly_Syn_GrAGItf t
 
+refObjNm :: DottedName
+refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
+
+refObj :: TypeDef
+refObj = 
+  classDef Public refObjNm noExtends noImplements
+    [ Field Instance2 Public Object "Value" ]
+    [ Constructor Public [ Param Object "value" ]
+        [ ldarg 0
+        , call Instance Void "" "object" ".ctor" []
+        , ldarg 0
+        , ldarg 1
+        , stfld Object "" refObjNm "Value"
+        , ret
+        ]
+    ]
+    []
+
+loadRefVal :: MethodDecl
+loadRefVal = ldfld Object "" refObjNm "Value"
+
+storeRefVal :: MethodDecl
+storeRefVal = stfld Object "" refObjNm "Value"
+
+newRefObj :: MethodDecl
+newRefObj = newobj "" refObjNm [Object]
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -104,7 +131,7 @@ SEM GrAGItf
 
 
 SEM GrModule
-  | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : @loc.typeDefs)
+  | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : refObj : @loc.typeDefs)
         loc.classDef      = classDef Public @loc.className noExtends noImplements @globalL.cilFields
                               (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
         loc.className     = hsn2TypeDottedName @moduleNm
@@ -112,6 +139,7 @@ SEM GrModule
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
+                            , loadRefVal
                             , isinst (toConDottedName intTyTag)
                             , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
@@ -159,7 +187,8 @@ SEM GrExpr
                               Nothing        ->  [no $ "Assuming '" ++ @loc.varName ++ "' is a local variable.", ldlocN @loc.varName]
                 loc.doField = case @offset of
                               0 ->  [] 
-                              o ->  [ isinst $ toConDottedName @loc.tyTag
+                              o ->  [ loadRefVal
+                                    , isinst $ toConDottedName @loc.tyTag
                                     , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                             ""
                                             (toConDottedName @loc.tyTag)
@@ -196,7 +225,7 @@ SEM GrPatAlt
 
 
 SEM GrVal
-  | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) []]
+  | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) [], newRefObj]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
   | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals)
@@ -217,7 +246,7 @@ SEM GrPatLam
   | Empty       lhs.cilCode = debugComment @self []
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
+  | BasicNode   lhs.cilCode = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
@@ -230,10 +259,10 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag)]
-                lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
-  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
-                lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
+  | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
+                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
+  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) [], newRefObj]
+                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
   | App         lhs.cilConst  = [no @self]
