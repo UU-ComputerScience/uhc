@@ -8,7 +8,7 @@
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin) ag import({GrinCode/TyTags})
 %%]
 
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -62,7 +62,6 @@ ATTR GrGlobal GrGlobalL
   |
   | cilFields USE {++} {[]} : {[FieldDef]}
     cilValues USE {++} {[]} : {[MethodDecl]}
-    grValues  USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal}
   ]
 
 ATTR GrBind GrBindL
@@ -71,14 +70,17 @@ ATTR GrBind GrBindL
   | cilMethods USE {++} {[]} : {[MethodDef]}
   ]
 
-ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt [ | | cilCode USE {++} {[]} : {[MethodDecl]} ]
+ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt
+  [
+  |
+  | cilCode USE {++} {[]} : {[MethodDecl]}
+  ]
 
 ATTR GrTag
   [
   |
-  | constCode USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
-    matchCode USE {++} {[]} : {[MethodDecl]} -- code to match this tag
-    tyTag                   : {TyTag}
+  | cilConst USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
+    cilMatch USE {++} {[]} : {[MethodDecl]} -- code to match this tag
   ]
 
 ATTR GrVar GrVarL
@@ -87,23 +89,24 @@ ATTR GrVar GrVarL
   | names USE {++} {[]} : {[HsName]}
   ]
 
-ATTR AllExpr --GrExpr GrPatLam
-  [ scopes : {Map.Map HsName Scope}  -- In the future, this will contain all useful information for all variables.
+ATTR AllExpr
+  [
   |
-  | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
-    untypedLocals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
+  |
   ]
 
 ATTR GrAlt GrAltL [ caseLabel : {String} | | ]
 
-ATTR AllNT [ | labels : {[Label]} | self : SELF ]
+ATTR AllNT
+  [
+  | labels : {[Label]}
+  |
+  ]
 
 ATTR AllNTNoMod
   [ className : {DottedName}
-    globals : {Map.Map HsName TyTag}
-    constrs : {Map.Map HsName TyTag}
   |
-  | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
+  |
   ]
 
 
@@ -130,64 +133,19 @@ SEM GrModule
         loc.typeDefs      = toTypeDefs @loc.className @loc.tyTags
 
         bindL.className   = @loc.className
-        bindL.globals     = @loc.globals
-        bindL.constrs     = @loc.constrs
         globalL.className = @loc.className
-        globalL.globals   = @loc.globals
-        globalL.constrs   = @loc.constrs
-
-        loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
-        loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
-        loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
-        loc.tyTags        = nub (@loc.ctyTags ++ Map.elems @loc.globals)
-        loc.globals       = Map.foldWithKey (globals @loc.tyNames @loc.grTags) Map.empty @globalL.grValues
-        loc.grTags        = @bindL.grTags `Map.union` @globalL.grTags
-                          -- Make sure to put bindL on the lhs of Map.union, otherwise globalL takes precedence
-
-
-{
-globals :: Map.Map HsName HsName -> Map.Map HsName GrTag -> HsName -> GrVal
-             -> Map.Map HsName TyTag -> Map.Map HsName TyTag
-globals tyNames grTags nm grValue tyTags =
-  case grValue of
-    (GrVal_Node (GrTag_Con _ _ ccnm) _) ->
-      case Map.lookup nm grTags of
-        (Just (GrTag_Con _ _ cnm)) ->
-          case Map.lookup cnm tyNames of
-            (Just tyNm) -> Map.insert nm (TyCon tyNm ccnm (-1) (-1) (-1)) tyTags
-            _    -> tyTags
-        _ -> tyTags
-    (GrVal_Node (GrTag_Fun fnm) _) ->
-      case Map.lookup nm grTags of
-        (Just (GrTag_Con _ _ cnm)) ->
-          case Map.lookup cnm tyNames of
-            (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
-            _    -> tyTags
-        _ -> tyTags
-    _ -> tyTags
-}
 
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
                            [ stsfld Object "" @lhs.className @loc.name ]
            loc.name      = hsnShowAlphanumeric @nm
-           lhs.grValues  = Map.singleton @nm @val.self
-           lhs.grTags    = Map.singleton @nm ((\(GrVal_Node tg _) -> tg) @val.self)
-           val.scopes    = error "Should not use variables"
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          expr.scopes     = buildScopes (Map.keys @lhs.globals) (Map.keys @loc.localsMap) @argNmL
-          lhs.grTags      = Set.fold Map.delete @expr.grTags @expr.untypedLocals
-          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] @loc.localsMap
-          loc.localsMap   = @expr.typedLocals
-                              `Map.union`
-                              Set.fold (\nm m -> maybe m (\pt -> Map.insert nm (grTag2primType pt) m)
-                                                       (Map.lookup nm @expr.grTags))
-                                       Map.empty @expr.untypedLocals
+          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] @expr.typedLocals
 
 
 SEM GrExpr
@@ -218,10 +176,6 @@ SEM GrExpr
                                             (toConDottedName @loc.tyTag)
                                             (toFieldName @loc.tyTag (o - 1))
                                     ]
-                loc.tyTag  = maybe (error "Cannot fetch field of unknown tag")
-                                   (\(GrTag_Con _ _ nm) -> lookupTag nm @lhs.constrs)
-                                   @mbTag
-                lhs.grTags  = maybe Map.empty (Map.singleton @nm) @mbTag
   | Store       lhs.cilCode = [no @self]
   | Call        lhs.cilCode = [no @self]
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
@@ -248,7 +202,7 @@ SEM GrAlt
 
 
 SEM GrPatAlt
-  | Tag         lhs.cilCode = debugComment @self @tag.matchCode
+  | Tag         lhs.cilCode = debugComment @self @tag.cilMatch
   | * - Tag     lhs.cilCode = [no @self]
 
 
@@ -259,9 +213,9 @@ SEM GrVal
   | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals)
                                                      then ldsfld Object "" @lhs.className (hsnShowAlphanumeric @nm)
                                                      else ldlocN (hsnShowAlphanumeric @nm)]
-  | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.constCode
+  | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilConst
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.constCode
+  | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.cilConst
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
@@ -273,16 +227,12 @@ SEM GrVar
 SEM GrPatLam
   | Empty       lhs.cilCode = debugComment @self []
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
-                lhs.typedLocals = Map.singleton @nm Object
   | VarNode     lhs.cilCode = [no @self]
-                -- lhs.untypedLocals = Set.fromList @fldL.names
   | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-                lhs.typedLocals = Map.singleton @nm Int32
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | BasicAnnot  lhs.cilCode = debugComment @self [stlocN @varName]
-                loc.typedLocals = Map.singleton @nm Int32
   | EnumAnnot   lhs.cilCode = [no @self]
   | PtrAnnot    lhs.cilCode = [no @self]
   | OpaqueAnnot lhs.cilCode = [no @self]
@@ -291,22 +241,18 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag)]
-                lhs.matchCode = debugComment @self [dup, isinst @loc.tyName]
-                loc.tyTag     = lookupTag @nm @lhs.constrs
-                loc.tyName    = toConDottedName @loc.tyTag
-                lhs.tyTag     = @loc.tyTag
-  | Fun         lhs.constCode = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
-                lhs.matchCode = [no @self]
+  | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag)]
+                lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
+  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
+                lhs.cilMatch  = [no @self]
                 loc.tyTag     = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
-  | PApp        lhs.constCode = [no @self]
-                lhs.matchCode = [no @self]
-  | App         lhs.constCode = [no @self]
-                lhs.matchCode = [no @self]
-  | * - Con     lhs.tyTag     = error "Blegh"
+  | PApp        lhs.cilConst  = [no @self]
+                lhs.cilMatch  = [no @self]
+  | App         lhs.cilConst  = [no @self]
+                lhs.cilMatch  = [no @self]
   | Unboxed Hole Rec World Any
-                lhs.constCode = [no @self]
-                lhs.matchCode = [no @self]
+                lhs.cilConst  = [no @self]
+                lhs.cilMatch  = [no @self]
 %%]
 
 

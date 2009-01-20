@@ -1,0 +1,128 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+WRAPPER GrTag
+%%]
+
+%%[(8 codegen grin) hs
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Infer Scopes and TyTags for GrVars and GrTags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+ATTR GrGlobal GrGlobalL
+  [
+  |
+  | grValues  USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal}
+  ]
+
+ATTR GrTag
+  [
+  |
+  | tyTag                   : {TyTag}
+  ]
+
+ATTR AllExpr --GrExpr GrPatLam
+  [ scopes : {Map.Map HsName Scope}  -- In the future, this will contain all useful information for all variables.
+  |
+  | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
+  ]
+
+ATTR AllNTNoMod
+  [ constrs : {Map.Map HsName TyTag}
+    globals : {Map.Map HsName TyTag}
+  |
+  | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
+  ]
+
+ATTR AllNT
+  [
+  |
+  | self : SELF
+  ]
+
+%%]
+
+%%[(8 codegen grin)
+
+SEM GrModule
+  | Mod
+      bindL.constrs     = @loc.constrs
+      bindL.globals     = @loc.globals
+      globalL.globals   = @loc.globals
+      globalL.constrs   = @loc.constrs
+
+      loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
+      loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
+      loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
+      loc.tyTags        = nub (@loc.ctyTags ++ Map.elems @loc.globals)
+      loc.globals       = Map.foldWithKey (globals @loc.tyNames @loc.grTags) Map.empty @globalL.grValues
+      loc.grTags        = @bindL.grTags `Map.union` @globalL.grTags
+                          -- Make sure to put bindL on the lhs of Map.union, otherwise globalL takes precedence
+
+{
+globals :: Map.Map HsName HsName -> Map.Map HsName GrTag -> HsName -> GrVal
+             -> Map.Map HsName TyTag -> Map.Map HsName TyTag
+globals tyNames grTags nm grValue tyTags =
+  case grValue of
+    (GrVal_Node (GrTag_Con _ _ ccnm) _) ->
+      case Map.lookup nm grTags of
+        (Just (GrTag_Con _ _ cnm)) ->
+          case Map.lookup cnm tyNames of
+            (Just tyNm) -> Map.insert nm (TyCon tyNm ccnm (-1) (-1) (-1)) tyTags
+            _    -> tyTags
+        _ -> tyTags
+    (GrVal_Node (GrTag_Fun fnm) _) ->
+      case Map.lookup nm grTags of
+        (Just (GrTag_Con _ _ cnm)) ->
+          case Map.lookup cnm tyNames of
+            (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
+            _    -> tyTags
+        _ -> tyTags
+    _ -> tyTags
+}
+
+SEM GrGlobal
+  | Global
+      lhs.grValues      = Map.singleton @nm @val.self
+      lhs.grTags        = Map.singleton @nm ((\(GrVal_Node tg _) -> tg) @val.self)
+      val.scopes        = error "Should not use variables"
+
+SEM GrBind
+  | Bind
+      expr.scopes       = buildScopes (Map.keys @lhs.globals) (Map.keys @expr.typedLocals) @argNmL
+
+SEM GrExpr
+  | FetchField
+      lhs.grTags        = maybe Map.empty (Map.singleton @nm) @mbTag
+      loc.tyTag         = maybe (error "Cannot fetch field of unknown tag")
+                                (\(GrTag_Con _ _ nm) -> lookupTag nm @lhs.constrs)
+                                @mbTag
+
+SEM GrPatLam
+  | Var
+      lhs.typedLocals   = Map.singleton @nm Object
+  | BasicNode
+      lhs.typedLocals   = Map.singleton @nm Int32
+  | BasicAnnot
+      loc.typedLocals   = Map.singleton @nm Int32
+
+SEM GrTag
+  | Con
+      loc.tyTag      = lookupTag @nm @lhs.constrs
+      loc.tyName     = toConDottedName @loc.tyTag
+      lhs.tyTag      = @loc.tyTag
+  | * - Con
+      lhs.tyTag      = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
+%%]
+
