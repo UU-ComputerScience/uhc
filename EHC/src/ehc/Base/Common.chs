@@ -995,15 +995,17 @@ instance HSNM Token where
 %%% Name supply, with/without uniqueness required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs export(hsnUniqSupply,hsnLclSupply,hsnLclSupplyWith)
-hsnUniqSupply :: UID -> [HsName]
-hsnUniqSupply = map uidHNm . iterate uidNext
-
+%%[1 hs export(hsnLclSupply,hsnLclSupplyWith)
 hsnLclSupplyWith :: HsName -> [HsName]
 hsnLclSupplyWith n = map (\i -> hsnSuffix n $ "_" ++ show i) [1..]
 
 hsnLclSupply :: [HsName]
 hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
+%%]
+
+%%[8 hs export(hsnUniqSupply)
+hsnUniqSupply :: UID -> [HsName]
+hsnUniqSupply = map uidHNm . iterate uidNext
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

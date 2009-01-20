@@ -285,6 +285,8 @@ SEM Expression
         loc         .   pp          =   pp @name
     | Constructor
         loc         .   pp          =   ppCon @name
+    | TupleConstructor
+        loc         .   pp          =   ppParens (replicate (@arity - 1) (','))
     | Parenthesized
         loc         .   pp          =   ppParens @expression.pp
     | NormalApplication

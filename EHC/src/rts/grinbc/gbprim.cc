@@ -773,7 +773,7 @@ PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-PRIM GB_Word gb_primCharIsUpper( GB_Int x )
+PRIM GB_Word gb_primCharIsUpper( GB_Word x )
 {
 	// char c = GB_GBInt2Int( x ) ;
 	char c = ( x ) ;
@@ -782,13 +782,25 @@ PRIM GB_Word gb_primCharIsUpper( GB_Int x )
   	return gb_False ;
 }
 
-PRIM GB_Word gb_primCharIsLower( GB_Int x )
+PRIM GB_Word gb_primCharIsLower( GB_Word x )
 {
 	// char c = GB_GBInt2Int( x ) ;
 	char c = ( x ) ;
 	if ( c >= 'a' && c <= 'z' )
 		return gb_True ;
   	return gb_False ;
+}
+%%]
+
+%%[99
+PRIM GB_Word gb_primCharToUpper( GB_Word x )
+{
+  	return x - 'a' + 'A' ;
+}
+
+PRIM GB_Word gb_primCharToLower( GB_Word x )
+{
+  	return x - 'A' + 'a' ;
 }
 %%]
 

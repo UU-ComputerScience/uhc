@@ -299,6 +299,18 @@ PRIM GrWord primCharIsLower( GrWord x )
 
 %%]
 
+%%[99
+PRIM GrWord primCharToUpper( GrWord x )
+{
+  	return x - 'a' + 'A' ;
+}
+
+PRIM GrWord primCharToLower( GrWord x )
+{
+  	return x - 'A' + 'a' ;
+}
+%%]
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

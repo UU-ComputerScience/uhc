@@ -32,7 +32,7 @@ EHCLIB_GHCSYNC_FROZEN					:= $(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN
 EHCLIB_BLD_VARIANT_PREFIX				:= $(EHC_BLD_VARIANT_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
 EHCLIB_BASE_BLD_VARIANT_PREFIX			:= $(EHC_BLD_VARIANT_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
 EHCLIB_BLD_SYNC_PREFIX					:= $(BLD_PREFIX)$(EHCLIB_GHCSYNC_PREFIX)
-EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)src/
+EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)frozen/
 
 ###########################################################################################
 # which library files to get from which GHC packages
@@ -42,7 +42,7 @@ EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)src/
 EHCLIB_SYNC_ALL_PKG						:= base
 #EHCLIB_SYNC_ALL_PKG						:= base containers
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Maybe)
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List)
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
 EHCLIB_SYNC_ALL_PKG_SRC_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 EHCLIB_SYNC_ALL_PKG_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
@@ -172,7 +172,6 @@ ehclib-ghc-sync-extract:
 
 # use this target to make the frozen extract from the ghc libraries, to be used as part of ehclib
 ehclib-ghc-sync-frozen: $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH)
-	cp $< $(EHCLIB_BASE_SRC_PREFIX)
 
 # use this target to do all the three above
 ehclib-ghc-sync:
