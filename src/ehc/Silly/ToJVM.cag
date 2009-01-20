@@ -1,6 +1,7 @@
 %%[0 hs
 {
-{-| JAVA!!!
+{-| Compile stage from Silly to Java Bytecode, stuitable to run as a .class
+    file in the Java Virtual Machine.
 -}
 }
 %%]
@@ -39,34 +40,51 @@ PRAGMA nocycle
 
 %%[(8 codegen grin) hs export( silly2jvm )
 
---------------------------------------------------------------------------------
+-------- main entry point for EHC's Silly --------------------------------------
 
 silly2jvm :: EHCOpts -> SilModule -> Class
 silly2jvm opts silmod = 
   jvmCode_Syn_SilModule
      $ wrap_SilModule
         (sem_SilModule silmod)
---         (sem_SilModule testSilModule)
         (Inh_SilModule 42)
 
-nextUnique :: Int -> (Int, Int)
-nextUnique u = (u + 1, u)
+-------- some useful tools for code combining ----------------------------------
 
-mergeCode :: Code -> Code -> Code
-mergeCode (Code _ _ a) (Code _ _ b) = Code Nothing Nothing (a ++ b)
-
-(%) = mergeCode
+bool a b True  = a
+bool a b False = b
 
 emptyCode :: Code
 emptyCode = Code Nothing Nothing []
 
-singleCode :: Instruction -> Code
-singleCode = Code Nothing Nothing . return
+type CodeS = Code -> Code
 
-code :: [Instruction] -> Code
-code = Code Nothing Nothing
+class Coding a where
+  code :: a -> CodeS
 
-type JVMVar = String
+noCode :: CodeS
+noCode = id
+
+(%) :: (Coding a, Coding b) => a -> b -> CodeS
+(%) a b i = code a i `merge` code b i
+  where merge (Code _ _ a) (Code _ _ b) = Code Nothing Nothing (a ++ b)
+
+instance Coding CodeS where
+  code = id
+
+instance Coding Instruction where
+  code i (Code _ _ c) = Code Nothing Nothing (i:c)
+
+instance Coding a => Coding [a] where
+  code = foldl1 (%) . map code
+
+codeIf, codeUnless :: Coding c => Bool -> c -> CodeS
+codeIf     b c = (code c `bool` noCode) b
+codeUnless b c = (noCode `bool` code c) b
+
+-------- runtime related material ---------------------------------------------
+
+-- Values that we do not want to hardcode in the code generator.
 
 cNode      = "Runtime$Node"
 cIntNode   = "Runtime$IntNode"
@@ -81,17 +99,19 @@ fTag       = "tag"
 tNode      = TClass cNode
 tPayload   = TArray tNode
 
-primitiveFunctions :: [(HsName, Code -> Code)]
+-- Mapping of Haskell function names to built-in primitive functions.
+-- TODO: this list may grow in the future and may deserve its own module.
+
+primitiveFunctions :: [(HsName, CodeS -> CodeS)]
 primitiveFunctions = [
   (HNm "putStrLn", \c ->
-    singleCode (Get True (FieldRef {
+    (Get True (FieldRef {
       fr_class = "java.lang.System"
       , fr_name = "out"
       , fr_type = TClass "java.io.PrintStream"}
       ))
     % c %
-    singleCode (
-      Invoke IVirtual (MethodRef {
+    (Invoke IVirtual (MethodRef {
         mr_class = "java.io.PrintStream"
       , mr_name = "println"
       , mr_args = [TClass "java.lang.String"]
@@ -100,85 +120,11 @@ primitiveFunctions = [
     )
   ]
 
-testSilModule = SilModule_SilModule
-  [] [HNm "fst", HNm "snd", HNm "trd"] [
-    Function_Function  (HNm "initialize") False
-    []
-    []
-    [
-    -- allocate 1 word for fst. enough for a CInt.
-      Statement_Assignment
-        (Variable_Global $ HNm "fst")
-        (Value_Alloc 1 GCManaged)
+-- Main method compiled into the generated .class file that bootstraps the
+-- runtime system and the haskell program.
 
-    -- make it a CInt, with tag 9.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "fst") 0)
-        (Value_Con $ Constant_LiteralInt 9)
-
-    -- set the integer value to 100.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "fst") 1)
-        (Value_Con $ Constant_LiteralInt 4)
-
-
-    -- allocate 4 word node, save to global.
-    , Statement_Assignment
-        (Variable_Global $ HNm "trd")
-        (Value_Alloc 4 GCManaged)
-
-    -- assign const 33 to tag.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "trd") 0)
-        (Value_Con $ Constant_LiteralInt 33)
-
-    -- assign node to itself in slot 2 of 4.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "trd") 1)
-        (Value_Offset  (Variable_Global $ HNm "fst") 3)
-
-    -- assign node to itself in slot 2 of 4.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "trd") 2)
-        (Value_Var     (Variable_Global $ HNm "trd"))
-
-    -- assign global fst to trd in slot 3 of 4.
-    , Statement_Assignment
-        (Variable_Subs (Variable_Global $ HNm "trd") 3)
-        (Value_Var     (Variable_Global $ HNm "fst"))
-
-
-
-    , Statement_Switch
-    
-       (Value_Var (Variable_Subs (Variable_Global $ HNm "fst") 1))
-    
-    [
-
-      Alternative_Alternative (Constant_LiteralInt 4)
-   
-       -- assign global fst to RP 1.
-       [Statement_Assignment
-         (Variable_Subs Variable_RP 1)
-         (Value_Var (Variable_Global $ HNm "fst"))]
-
-    , Alternative_Alternative (Constant_LiteralInt 33)
-
-       -- assign global fst to RP 4.
-       [Statement_Assignment
-         (Variable_Subs Variable_RP 4)
-         (Value_Var (Variable_Global $ HNm "trd"))]
-
-    ]
-
-
-
-    , Statement_Return 1
-    ]
-  ]
-  undefined
-
-methodMain = 
+javaMain :: String -> String -> Method
+javaMain hsModule hsMain = 
   Method {
     m_flags = [Public,Static]
   , m_name = "main"
@@ -196,8 +142,8 @@ methodMain =
         , fr_type = TClass "java.io.PrintStream"
         })
       , Invoke IStatic (MethodRef "Runtime" "initialize" [] Nothing)
-      , Invoke IStatic (MethodRef "fib" "initialize"     [] (Just TInt))
-      , Invoke IStatic (MethodRef "fib" "fun_x_1_main"   [] (Just TInt))
+      , Invoke IStatic (MethodRef hsModule  "initialize" [] (Just TInt))
+      , Invoke IStatic (MethodRef hsModule hsMain        [] (Just TInt))
       , Invoke IStatic (MethodRef "Runtime" "finish"     [] Nothing)
       , Load TInt 1
       , Pop TInt
@@ -211,7 +157,70 @@ methodMain =
 
 %%]
 
---------------------------------------------------------------------------------
+-------- attribute definitions ------------------------------------------------
+
+%%[(8 codegen grin)
+
+{
+
+nextUnique :: Int -> (Int, Int)
+nextUnique u = (u + 1, u)
+
+type Locals = M.IntMap JvmType
+type AssignCode = (CodeS, Locals -> Locals)
+
+data JvmType = JvmInt | JvmLocal | JvmNode
+  deriving (Show, Eq)
+
+}
+
+ATTR SilModule
+  [ | | jvmCode : {Class} ]
+
+ATTR Functions
+  [ | | jvmCode : {[Method]} ]
+
+ATTR Function
+  [ | | jvmCode : {Method} ] 
+
+ATTR Statements Statement Values Value Variable 
+  [ | | jvmCode : {CodeS} ]
+
+ATTR Alternatives
+  [ | | jvmCode : {[(Int32, Label, CodeS)]} ]  
+
+ATTR Alternative
+  [ | | jvmCode : {(Int32, Label, CodeS)} ]
+
+ATTR AllNT
+  [ | counter : Int | ]
+
+ATTR AllNT - SilModule
+  [ jvmCons : {[(String, Int)]} | | ]
+
+ATTR AllNT - SilModule
+  [ jvmGlobs : {[HsName]} | | ]
+
+ATTR AllNT - SilModule
+  [ jvmLhs : Bool | | ]
+
+-- Contains a mapping from local variable indices to types.
+ATTR AllNT - SilModule Function Functions
+  [ | jvmLType : {Locals} | ]
+
+ATTR AllNT
+  [ | | jvmType USE {`const`} {error "JVM: No LHS type."} : JvmType ]
+
+ATTR Variable
+  [ jvmAssignType : JvmType | | ]
+
+ATTR Variable 
+  [ | | jvmAssign USE {++} {(noCode, id)} : {AssignCode} ]
+
+ATTR Constant
+  [ | | jvmVal : {J.Constant} ]  
+
+-------- code generation ------------------------------------------------------
 
 {-
 Possible optimizations
@@ -237,123 +246,31 @@ Possible optimizations
   (double assignments)
 -}
 
-%%[(8 codegen grin)
-ATTR SilModule
-  [ | | jvmCode : {Class} ]
-
-ATTR Functions
-  [ | | jvmCode : {[Method]} ]
-
-ATTR Function
-  [ | | jvmCode : {Method} ] 
-
-ATTR Statements Statement Values Value Variable 
-  [ | | jvmCode : {Code} ]
-
-ATTR Alternatives
-  [ | | jvmCode : {[(Int32, Label, Code)]} ]  
-
-ATTR Alternative
-  [ | | jvmCode : {(Int32, Label, Code)} ]
-
-ATTR AllNT
-  [ | counter : Int | ]
-
-ATTR AllNT - SilModule
-  [ jvmCons : {[(String, Int)]} | | ]
-
-ATTR AllNT - SilModule
-  [ jvmGlobs : {[HsName]} | | ]
-
-ATTR AllNT - SilModule
-  [ jvmLhs : Bool | | ]
-
 {
-type Locals = M.IntMap JvmType
-}
-
--- Contains a mapping from local variable indices to types.
-ATTR AllNT - SilModule Function Functions
-  [ | jvmLType : {Locals} | ]
-
-ATTR AllNT
-  [ | | jvmType USE {`const`} {error "JVM: No LHS type."} : JvmType ]
-
-ATTR Variable
-  [ jvmAssignType : JvmType | | ]
-
-{
-
-type AssignCode = (Code, Locals -> Locals)
-
-}
-
-ATTR Variable 
-  [ | | jvmAssign USE {++} {(emptyCode, id)} : {AssignCode} ]
-
-ATTR Constant
-  [ | | jvmVal : {J.Constant} ]  
-
---------------------------------------------------------------------------------
-
-SEM SilModule
-  | SilModule  lhs.jvmCode  = defaultClass {
-                                c_methods = methodMain : @functions.jvmCode
-                              , c_this    = "fib"
-                              }
-         functions.jvmCons  = @constants
-         functions.jvmGlobs = @variables
-         functions.jvmLhs   = False
-
-SEM Functions
-  | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
-  | Nil         lhs.jvmCode = []
-
-SEM Function
-  | Function    lhs.jvmCode = Method {
-                                m_flags = [Public,Static]
-                              , m_name       = show @name
-                              , m_ret        = Just TInt
-                              , m_args       = replicate (length @parameters) (TClass cObject)
-                              , m_exceptions = []
-                              , m_signature  = Nothing
-                              , m_deprecated = False
-                              , m_code       = Just @body.jvmCode
-                              }
-              body.jvmLType = M.empty
-
-SEM Statements
-  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
-  | Nil         lhs.jvmCode = emptyCode
-
-{
-
-data JvmType = JvmTag | JvmInt | JvmLocal | JvmNode
-  deriving (Show, Eq)
 
 jvmAssignment ::
-     Code                        -- ^ Lhs of assignment.
-  -> AssignCode                  -- ^ How to assign to Lhs.
-  -> Code                        -- ^ Rhs of assignment.
-  -> JvmType                     -- ^ Type of lhs.
-  -> JvmType                     -- ^ Type of rhs.
-  -> M.IntMap JvmType            -- ^ Known types of local variable.
-  -> (Code, M.IntMap JvmType)    -- ^ Assignment code, possibly updates local variable types.
+     CodeS                     -- ^ Lhs of assignment.
+  -> AssignCode                -- ^ How to assign to Lhs.
+  -> CodeS                     -- ^ Rhs of assignment.
+  -> JvmType                   -- ^ Type of lhs.
+  -> JvmType                   -- ^ Type of rhs.
+  -> M.IntMap JvmType          -- ^ Known types of local variable.
+  -> (CodeS, M.IntMap JvmType) -- ^ Assignment code, possibly updates local variable types.
 
 jvmAssignment dest assign source left right locals =
   (dest % source % acode, flocals locals)
   where (acode, flocals) = assign
 
 jvmAssignment2 ::
-     Code                        -- ^ First lhs of assignment.
-  -> AssignCode                  -- ^ How to assign to first Lhs.
-  -> Code                        -- ^ Second lhs of assignment.
-  -> AssignCode                  -- ^ How to assign to second Lhs.
-  -> Code                        -- ^ Rhs of assignment.
-  -> JvmType                     -- ^ Type of lhs.
-  -> JvmType                     -- ^ Type of rhs.
-  -> M.IntMap JvmType            -- ^ Known types of local variable.
-  -> (Code, M.IntMap JvmType)    -- ^ Assignment code, possibly updates local variable types.
+     CodeS                     -- ^ First lhs of assignment.
+  -> AssignCode                -- ^ How to assign to first Lhs.
+  -> CodeS                     -- ^ Second lhs of assignment.
+  -> AssignCode                -- ^ How to assign to second Lhs.
+  -> CodeS                     -- ^ Rhs of assignment.
+  -> JvmType                   -- ^ Type of lhs.
+  -> JvmType                   -- ^ Type of rhs.
+  -> M.IntMap JvmType          -- ^ Known types of local variable.
+  -> (CodeS, M.IntMap JvmType) -- ^ Assignment code, possibly updates local variable types.
 
 jvmAssignment2 dest1 assign1 dest2 assign2 source left right locals =
   let (code1, locals1) = jvmAssignment dest1 assign1 source left right locals
@@ -362,10 +279,42 @@ jvmAssignment2 dest1 assign1 dest2 assign2 source left right locals =
 
 }
 
+-------- code generation using AGs --------------------------------------------
+
+SEM SilModule
+  | SilModule   lhs.jvmCode = defaultClass {
+                                c_methods = javaMain "fib" "fun_x_1_main" : @functions.jvmCode
+                              , c_this    = "fib"
+                              }
+          functions.jvmCons = @constants
+         functions.jvmGlobs = @variables
+           functions.jvmLhs = False
+                              
+SEM Functions                 
+  | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
+  | Nil         lhs.jvmCode = []
+                              
+SEM Function                  
+  | Function    lhs.jvmCode = Method {
+                                m_flags = [Public,Static]
+                              , m_name       = show @name
+                              , m_ret        = Just TInt
+                              , m_args       = replicate (length @parameters) (TClass cObject)
+                              , m_exceptions = []
+                              , m_signature  = Nothing
+                              , m_deprecated = False
+                              , m_code       = Just (@body.jvmCode emptyCode)
+                              }
+              body.jvmLType = M.empty
+                              
+SEM Statements                
+  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
+  | Nil         lhs.jvmCode = noCode
+
 SEM Statement
 
   | Assignment  lhs.jvmCode = fst @loc.code
-                loc.code    = jvmAssignment
+                   loc.code = jvmAssignment
                                 @dest.jvmCode
                                 @dest.jvmAssign
                                 @source.jvmCode
@@ -374,11 +323,11 @@ SEM Statement
                                 @lhs.jvmLType
                lhs.jvmLType = snd @loc.code
          dest.jvmAssignType = @source.jvmType
-          dest.jvmLhs       = True
-        source.jvmLhs       = False
-
+                dest.jvmLhs = True
+              source.jvmLhs = False
+                              
   | Assignment2 lhs.jvmCode = fst @loc.code
-                loc.code    = jvmAssignment2
+                   loc.code = jvmAssignment2
                                 @dest1.jvmCode
                                 @dest1.jvmAssign
                                 @dest2.jvmCode
@@ -390,55 +339,55 @@ SEM Statement
                lhs.jvmLType = snd @loc.code
         dest1.jvmAssignType = @source.jvmType
         dest2.jvmAssignType = @source.jvmType
-         dest1.jvmLhs       = True
-         dest2.jvmLhs       = True
-        source.jvmLhs       = False
-
+               dest1.jvmLhs = True
+               dest2.jvmLhs = True
+              source.jvmLhs = False
+                              
+                              -- Real call or built-in call?
   | Call        lhs.jvmCode = case lookup @name primitiveFunctions of
-
-                                -- Real call.
-                                Nothing ->
-                                  @args.jvmCode % singleCode
-                                  (Invoke IStatic $ MethodRef "fib" (show @name) [] $ Just TInt)
-
-                                -- Built-in call.
+                                Nothing   -> @args.jvmCode % (Invoke IStatic $ MethodRef "fib" (show @name) [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
-
-  | Comment     lhs.jvmCode = emptyCode
-
-  {-
-    INVARIANT: This generic IfThenElse compiles to the specific
-    greater-than-equal comparison, because this is the only pattern it appears
-    in the original silly code.
-  -}
-  | IfThenElse  loc.labelElse  : UNIQUEREF counter
-                loc.labelEndIf : UNIQUEREF counter
-                lhs.jvmCode = @condition.jvmCode
-                              % singleCode (If CmpGt @loc.labelElse)
+                              
+  | Comment     lhs.jvmCode = noCode
+                              
+                              -- INVARIANT: This generic IfThenElse compiles to
+                              -- the specific greater-than-equal comparison,
+                              -- because this is the only pattern it appears in
+                              -- the original silly code.
+  | IfThenElse  lhs.jvmCode = @condition.jvmCode
+                              % If CmpGt @loc.labelElse
                               % @thenpart.jvmCode
-                              % singleCode (Goto @loc.labelEndIf)
-                              % singleCode (Note (Label @loc.labelElse))
+                              % Goto @loc.labelEndIf
+                              % Note (Label @loc.labelElse)
                               % @elsepart.jvmCode
-                              % singleCode (Note (Label @loc.labelEndIf))
+                              % Note (Label @loc.labelEndIf)
+             loc.labelEndIf : UNIQUEREF counter
+              loc.labelElse : UNIQUEREF counter
 
-  | Switch      loc.labelSwitchEnd : UNIQUEREF counter
+  | Switch
+         loc.labelSwitchEnd : UNIQUEREF counter
                 lhs.jvmCode = let 
                                 alts   = @body.jvmCode
                                 end    = @loc.labelSwitchEnd
-                                arms   = map (\(_, _, code)   -> code % singleCode (Goto end))
+                                arms   = map (\(_, _, c)   -> c % Goto end)
                                 labels = map (\(when, lbl, _) -> (when, lbl)) alts
                               in
                               @scrutinee.jvmCode
-                              % singleCode (Switch Lookup (snd $ head labels) labels)
-                              % foldl mergeCode emptyCode (arms alts)
-                              % singleCode (Note (Label end))
+                              % Switch Lookup (snd $ head labels) labels
+                              % arms alts
+                              % Note (Label end)
 
   | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
   | Label       lhs.jvmCode = error "JVM: no labels supported."
-  | Return      lhs.jvmCode = code [Const $ CInt $ fromIntegral @retdiff, Return $ Just TInt]
+  | Return      lhs.jvmCode = Const (CInt $ fromIntegral @retdiff)
+                              % Return (Just TInt)
   | Smart       lhs.jvmCode = error "JVM: not implemented yet (smart)."
 
-  | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
+  | * - Assignment
+       Assignment2 Call
+       Comment Jump Label
+       Return Smart Switch
+       IfThenElse
                 lhs.jvmCode = error "JVM: not supported."
 
 SEM Alternatives
@@ -448,56 +397,47 @@ SEM Alternatives
 SEM Alternative
   | Alternative lhs.jvmCode = let l = @loc.label in
                               case @when.jvmVal of
-                                CInt i -> (i, l, singleCode (Note $ Label l) % @body.jvmCode)
+                                CInt i -> (i, l, Note (Label l) % @body.jvmCode)
                                 _      -> error "JVM: non-integer case scrutinee"
-                loc.label   : UNIQUEREF counter
+                  loc.label : UNIQUEREF counter
 
 SEM Values
   | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
-  | Nil         lhs.jvmCode = emptyCode
+  | Nil         lhs.jvmCode = noCode
 
 SEM Value
 
-  | Alloc       lhs.jvmCode = code [
-                                  New cNode
-                                , Dup TInt
-                                , Dup TInt
-                                , Invoke ISpecial $ MethodRef cNode "<init>" [] Nothing
-                                , Const (CInt (fromIntegral @size - 1))
-                                , NewArray tNode 1
-                                , Put False (FieldRef cNode fPayload $ TArray tNode)
-                                ]
+  | Alloc       lhs.jvmCode = New cNode
+                              % Dup TInt
+                              % Dup TInt
+                              % Invoke ISpecial (MethodRef cNode "<init>" [] Nothing)
+                              % Const (CInt (fromIntegral @size - 1))
+                              % NewArray tNode 1
+                              % Put False (FieldRef cNode fPayload $ TArray tNode)
                 lhs.jvmType = JvmNode
 
-                            -- todo: this is probably ffi only!!
+                              -- todo: this is probably ffi only!!
+                              -- Real call of built-in call?
   | Call        lhs.jvmCode = case lookup (HNm @name) primitiveFunctions of
-
-                                -- Real call.
-                                Nothing ->
-                                  @args.jvmCode % singleCode
-                                  (Invoke IStatic $ MethodRef "fib" @name [] $ Just TInt)
-
-                                -- Built-in call.
+                                Nothing   -> @args.jvmCode % Invoke IStatic (MethodRef "fib" @name [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
 
-  | Con         lhs.jvmCode = singleCode $ Const @con.jvmVal
+  | Con         lhs.jvmCode = code (Const @con.jvmVal)
+
   | Var         lhs.jvmCode = @var.jvmCode
           var.jvmAssignType = error "JVM: no assign type for variables."
 
-  | CompareGT   lhs.jvmCode = singleCode (Const @con.jvmVal) % @val.jvmCode
+  | CompareGT   lhs.jvmCode = Const @con.jvmVal
+                              % @val.jvmCode
                 lhs.jvmType = JvmInt
 
-  {-
-    Observation: We cannot perform `Arith Add's on references here.  But
-    Offsets are only used in conjunction with Globals and Locals. 
-  -}
-
+                              -- Observation: We cannot perform `Arith Add's on
+                              -- references here. But Offsets are only used in
+                              -- conjunction with Globals and Locals. 
   | Offset      lhs.jvmCode = @var.jvmCode
-                              % singleCode (Const (CInt (fromIntegral @off - 1)))
-                              % singleCode (Arith Add TInt)
-                              % if @lhs.jvmLhs
-                                then emptyCode  -- Do not load when left hand side.
-                                else singleCode (ALoad tNode)
+                              % Const (CInt (fromIntegral @off - 1))
+                              % Arith Add TInt
+                              % codeUnless @lhs.jvmLhs (ALoad tNode)
                  var.jvmLhs = True
                 lhs.jvmType = JvmNode
           var.jvmAssignType = error "JVM: no assign type for offsets."
@@ -506,100 +446,76 @@ SEM Value
 
 SEM Variable
 
-  | Global      lhs.jvmCode = code [
-                                  Get True $ FieldRef cRuntime fGlobals $ tPayload
-                                , Const (CInt $ fromIntegral
-                                              $ maybe (error "JVM: global lookup failed") id
-                                              $ @name `elemIndex` @lhs.jvmGlobs)
-                                ] %
-                              if @lhs.jvmLhs
-                              then emptyCode
-                              else singleCode (ALoad tNode)
+  | Global      lhs.jvmCode = let idx = (error "JVM: global lookup failed" `maybe` id)
+                                        (@name `elemIndex` @lhs.jvmGlobs)
+                              in Get True (FieldRef cRuntime fGlobals $ tPayload)
+                               % Const (CInt $ fromIntegral idx)
+                               % codeUnless @lhs.jvmLhs (ALoad tNode)
 
-             lhs.jvmType = JvmNode
+                lhs.jvmType = JvmNode
 
-             -- We get a type from our parent assignment, but we know we are here for tNode.
-             lhs.jvmAssign = (singleCode (AStore tNode), id)
+                              -- We get a type from our parent assignment, but
+                              -- we know we are here for tNode.
+              lhs.jvmAssign = (code (AStore tNode), id)
 
-  | Local       lhs.jvmCode = if @lhs.jvmLhs
-                              then emptyCode
-                              else let tp = maybe (error "JVM: local type not in map.")
-                                              id (M.lookup @pos @lhs.jvmLType)
-                                   in case tp of
-                                     JvmInt  -> singleCode (Load TInt  (fromIntegral @pos))
-                                     JvmNode -> singleCode (Load tNode (fromIntegral @pos))
-                                     e       -> error ("JVM: unknown type in Local: " ++ show e)
-                                    -- todo: add parameter count to @pos?
+                              -- todo: add parameter count to @pos?
+  | Local       lhs.jvmCode = codeUnless @lhs.jvmLhs $
+                                (let tp = (error "JVM: local type not in map." `maybe` id)
+                                         (M.lookup @pos @lhs.jvmLType)
+                                in case tp of
+                                  JvmInt  -> Load TInt  (fromIntegral @pos)
+                                  JvmNode -> Load tNode (fromIntegral @pos)
+                                  e       -> error ("JVM: unknown type in Local: " ++ show e))
 
-             lhs.jvmAssign = (case @lhs.jvmAssignType of
-                               JvmInt  -> singleCode (Store TInt  (fromIntegral @pos))
-                               JvmNode -> singleCode (Store tNode (fromIntegral @pos))
-                               e       -> error ("JVM: unknown type in Local: " ++ show e)
-                             , M.insert @pos @lhs.jvmAssignType)
+              lhs.jvmAssign = let c = case @lhs.jvmAssignType of
+                                        JvmInt  -> Store TInt  (fromIntegral @pos)
+                                        JvmNode -> Store tNode (fromIntegral @pos)
+                                        e       -> error ("JVM: unknown type in Local: " ++ show e)
+                              in (code c, M.insert @pos @lhs.jvmAssignType)
 
-               lhs.jvmType = JvmLocal
+                lhs.jvmType = JvmLocal
   
-  | Param      lhs.jvmCode = singleCode $ Load tNode (fromIntegral @pos)
+  | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
 
-             -- RP is always used in conjunction with Subs.
-  | RP          lhs.jvmCode = singleCode $ Get True $ FieldRef cRuntime fCRP $ tNode
+                              -- RP is always used in conjunction with Subs.
+  | RP          lhs.jvmCode = code $ Get True (FieldRef cRuntime fCRP $ tNode)
 
   | Subs        lhs.jvmCode = @array.jvmCode %
-                              if @index == 0
-                              then if @lhs.jvmLhs
-                                   then emptyCode
-                                   else singleCode (Get False (FieldRef cNode fTag TInt))
-                              -- We assume we never inspect the intVal except
-                              -- in primitive functions.
-                              else 
-                                case @lhs.jvmLhs of
-                                  False ->
-                                    code [
-                                      Get False (FieldRef cNode fPayload tPayload)
-                                    , Const (CInt (fromIntegral @index - 1))
-                                    , ALoad tNode
-                                    ]
-                                  _ -> 
-                                    code [
-                                      Get False (FieldRef cNode fPayload tPayload)
-                                    , Const (CInt (fromIntegral @index - 1))
-                                    ]
-                                    % if @lhs.jvmAssignType == JvmInt
-                                      then code [
-                                         New cIntNode
-                                       , Dup TInt
-                                       , Dup TInt
-                                       , Invoke ISpecial $ MethodRef cIntNode "<init>" [] Nothing
-                                       ]
-                                      else emptyCode
+                              case (@index == 0, @lhs.jvmLhs) of
+                                (True,  _)     -> codeUnless @lhs.jvmLhs (Get False (FieldRef cNode fTag TInt))
+                                (False, False) -> Get False (FieldRef cNode fPayload tPayload)
+                                                % Const (CInt (fromIntegral @index - 1))
+                                                % ALoad tNode
+                                (False, True)  -> Get False (FieldRef cNode fPayload tPayload)
+                                                % Const (CInt (fromIntegral @index - 1))
+                                                % codeIf (@lhs.jvmAssignType == JvmInt) (
+                                                    New cIntNode
+                                                  % Dup TInt
+                                                  % Dup TInt
+                                                  % Invoke ISpecial (MethodRef cIntNode "<init>" [] Nothing))
 
-              lhs.jvmAssign = ((
-                                if @index == 0
-                                then singleCode (Put False (FieldRef cNode fTag TInt))
-                                else ((if @lhs.jvmAssignType == JvmInt
-                                     then code [Put False (FieldRef cIntNode fIntVal TInt)]
-                                     else emptyCode)
-                                     % singleCode (AStore tNode)))
-                                , id)
+              lhs.jvmAssign = let tag   = Put False (FieldRef cNode fTag TInt)
+                                  int   = Put False (FieldRef cIntNode fIntVal TInt)
+                                  notag = codeIf (@lhs.jvmAssignType == JvmInt) int
+                                          % AStore tNode
+                              in ((code tag `bool` notag) (@index == 0), id)
  
                array.jvmLhs = False
 
-                lhs.jvmType = if @index == 0
-                              then JvmTag
-                              else JvmNode
+                lhs.jvmType = (JvmInt `bool` JvmNode) (@index == 0)
 
-  | * - Global Local Param RP Subs
+  | * - Global Local
+        Param RP Subs
                 lhs.jvmCode = error "JVM: this Variable kind not supported."
 
 SEM Constant
-  | LiteralInt  lhs.jvmVal   = CInt (fromIntegral @value)
-                lhs.jvmType  = JvmInt
-  | LiteralStr  lhs.jvmVal   = CString @value
+  | LiteralInt   lhs.jvmVal = CInt (fromIntegral @value)
+                lhs.jvmType = JvmInt
+  | LiteralStr   lhs.jvmVal = CString @value
 
-  | Alias       lhs.jvmVal   = case @name `lookup` @lhs.jvmCons of
-                                 Nothing -> error ("JVM: no such constant alias: " ++ @name)
-                                 Just  a -> CInt (fromIntegral a)
-
+  | Alias        lhs.jvmVal = case @name `lookup` @lhs.jvmCons of
+                                Nothing -> error ("JVM: no such constant alias: " ++ @name)
+                                Just  a -> CInt (fromIntegral a)
 
 %%]
 

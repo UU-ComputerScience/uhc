@@ -10,7 +10,6 @@ last (Cons x xs)  = last xs
 head (Cons x _) = x
 head Nil        = 13
 
-test = \(T a b) -> a
+test = \(T a b) -> b
 
-main = last mylist
-  -- test (T (head mylist) (head Nil))
+main = test (T (head mylist) (head Nil))
