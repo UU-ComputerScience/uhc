@@ -39,17 +39,6 @@ grin2cil hptmap gr opts
 
 %%]
 
-%%[(8 codegen grin) hs
-
-data Scope = GlobalVar | LocalVar | Parameter
-
-data VarInfo = VarInfo
-  { varScope :: Scope
-  , varType  :: TyTag
-  }
-
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -245,7 +234,6 @@ SEM GrTag
                 lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
   | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) []]
                 lhs.cilMatch  = debugComment @self [dup, isinst @loc.tyName]
-                loc.tyTag     = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
   | App         lhs.cilConst  = [no @self]

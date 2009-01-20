@@ -13,6 +13,13 @@ WRAPPER GrTag
 
 %%[(8 codegen grin) hs
 
+data Scope = GlobalVar | LocalVar | Parameter
+
+data VarInfo = VarInfo
+  { varScope :: Scope
+  , varType  :: TyTag
+  }
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,10 +126,12 @@ SEM GrPatLam
 
 SEM GrTag
   | Con
-      loc.tyTag      = lookupTag @nm @lhs.constrs
-      loc.tyName     = toConDottedName @loc.tyTag
-      lhs.tyTag      = @loc.tyTag
+      loc.tyTag         = lookupTag @nm @lhs.constrs
+      loc.tyName        = toConDottedName @loc.tyTag
+      lhs.tyTag         = @loc.tyTag
+  | Fun
+      loc.tyTag         = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
   | * - Con
-      lhs.tyTag      = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
+      lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
 %%]
 
