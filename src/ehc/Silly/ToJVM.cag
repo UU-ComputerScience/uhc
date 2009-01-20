@@ -169,7 +169,7 @@ nextUnique u = (u + 1, u)
 type Locals = M.IntMap JvmType
 type AssignCode = (CodeS, Locals -> Locals)
 
-data JvmType = JvmInt | JvmLocal | JvmNode
+data JvmType = JvmInt | JvmNode
   deriving (Show, Eq)
 
 }
@@ -209,7 +209,7 @@ ATTR AllNT - SilModule Function Functions
   [ | jvmLType : {Locals} | ]
 
 ATTR AllNT
-  [ | | jvmType USE {`const`} {error "JVM: No LHS type."} : JvmType ]
+  [ | | jvmType USE {`const`} {jvmError "uninitialized LHS type."} : JvmType ]
 
 ATTR Variable
   [ jvmAssignType : JvmType | | ]
@@ -247,6 +247,9 @@ Possible optimizations
 -}
 
 {
+
+jvmError :: String -> a
+jvmError s = error ("JVM: no support for " ++ s)
 
 jvmAssignment ::
      CodeS                     -- ^ Lhs of assignment.
@@ -377,18 +380,18 @@ SEM Statement
                               % arms alts
                               % Note (Label end)
 
-  | Jump        lhs.jvmCode = error "JVM: no jumps  supported."
-  | Label       lhs.jvmCode = error "JVM: no labels supported."
+  | Jump        lhs.jvmCode = jvmError "jumps"
+  | Label       lhs.jvmCode = jvmError "labels"
   | Return      lhs.jvmCode = Const (CInt $ fromIntegral @retdiff)
                               % Return (Just TInt)
-  | Smart       lhs.jvmCode = error "JVM: not implemented yet (smart)."
+  | Smart       lhs.jvmCode = jvmError "smart"
 
   | * - Assignment
        Assignment2 Call
        Comment Jump Label
        Return Smart Switch
        IfThenElse
-                lhs.jvmCode = error "JVM: not supported."
+                lhs.jvmCode = jvmError "this statement"
 
 SEM Alternatives
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
@@ -398,7 +401,7 @@ SEM Alternative
   | Alternative lhs.jvmCode = let l = @loc.label in
                               case @when.jvmVal of
                                 CInt i -> (i, l, Note (Label l) % @body.jvmCode)
-                                _      -> error "JVM: non-integer case scrutinee"
+                                _      -> jvmError "non-integer case scrutinee"
                   loc.label : UNIQUEREF counter
 
 SEM Values
@@ -425,7 +428,7 @@ SEM Value
   | Con         lhs.jvmCode = code (Const @con.jvmVal)
 
   | Var         lhs.jvmCode = @var.jvmCode
-          var.jvmAssignType = error "JVM: no assign type for variables."
+          var.jvmAssignType = jvmError "variable assign type"
 
   | CompareGT   lhs.jvmCode = Const @con.jvmVal
                               % @val.jvmCode
@@ -440,13 +443,13 @@ SEM Value
                               % codeUnless @lhs.jvmLhs (ALoad tNode)
                  var.jvmLhs = True
                 lhs.jvmType = JvmNode
-          var.jvmAssignType = error "JVM: no assign type for offsets."
+          var.jvmAssignType = jvmError "offset assign type"
 
-  | Label       lhs.jvmCode = error "JVM: no support for Var Labels."
+  | Label       lhs.jvmCode = jvmError "label variables"
 
 SEM Variable
 
-  | Global      lhs.jvmCode = let idx = (error "JVM: global lookup failed" `maybe` id)
+  | Global      lhs.jvmCode = let idx = (jvmError "unknown globals" `maybe` id)
                                         (@name `elemIndex` @lhs.jvmGlobs)
                               in Get True (FieldRef cRuntime fGlobals $ tPayload)
                                % Const (CInt $ fromIntegral idx)
@@ -460,21 +463,17 @@ SEM Variable
 
                               -- todo: add parameter count to @pos?
   | Local       lhs.jvmCode = codeUnless @lhs.jvmLhs $
-                                (let tp = (error "JVM: local type not in map." `maybe` id)
+                                let tp = (jvmError "unknown local" `maybe` id)
                                          (M.lookup @pos @lhs.jvmLType)
                                 in case tp of
                                   JvmInt  -> Load TInt  (fromIntegral @pos)
                                   JvmNode -> Load tNode (fromIntegral @pos)
-                                  e       -> error ("JVM: unknown type in Local: " ++ show e))
 
               lhs.jvmAssign = let c = case @lhs.jvmAssignType of
                                         JvmInt  -> Store TInt  (fromIntegral @pos)
                                         JvmNode -> Store tNode (fromIntegral @pos)
-                                        e       -> error ("JVM: unknown type in Local: " ++ show e)
                               in (code c, M.insert @pos @lhs.jvmAssignType)
 
-                lhs.jvmType = JvmLocal
-  
   | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
 
                               -- RP is always used in conjunction with Subs.
@@ -506,7 +505,7 @@ SEM Variable
 
   | * - Global Local
         Param RP Subs
-                lhs.jvmCode = error "JVM: this Variable kind not supported."
+                lhs.jvmCode = jvmError "unknown variable kind"
 
 SEM Constant
   | LiteralInt   lhs.jvmVal = CInt (fromIntegral @value)
@@ -514,7 +513,7 @@ SEM Constant
   | LiteralStr   lhs.jvmVal = CString @value
 
   | Alias        lhs.jvmVal = case @name `lookup` @lhs.jvmCons of
-                                Nothing -> error ("JVM: no such constant alias: " ++ @name)
+                                Nothing -> jvmError ("unknown constant alias: " ++ @name)
                                 Just  a -> CInt (fromIntegral a)
 
 %%]
