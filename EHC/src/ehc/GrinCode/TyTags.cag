@@ -131,6 +131,7 @@ SEM GrTag
       lhs.tyTag         = @loc.tyTag
   | Fun
       loc.tyTag         = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+      loc.tyName        = toConDottedName @loc.tyTag
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
 %%]
