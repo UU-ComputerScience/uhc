@@ -136,8 +136,7 @@ pBody
 pBody :: HSParser Body
 pBody
   =   (\ids -> let (i,d) = foldr cmbid ([],[]) ids in Body_Body emptyRange i d)
-      <$> pDeclarations1' ((\d -> ([],[d])) <$> pTopDeclaration <|> (\i -> ([i],[])) <$> pImportDeclaration)
-  <|> pSucceed (Body_Body emptyRange [] [])
+      <$> pDeclarations' ((\d -> ([],[d])) <$> pTopDeclaration <|> (\i -> ([i],[])) <$> pImportDeclaration)
   <?> "pBody"
   where cmbid ([i],_) (is,ds) = (i:is,ds)
         cmbid (_,[d]) (_ ,ds) = ([],d:ds)
@@ -181,7 +180,7 @@ pExport
 
 pMaybeExports :: HSParser MaybeExports
 pMaybeExports
-  =   Just <$> pParens (pListSep pCOMMA pExport)
+  =   Just <$> pParens (pListSep_ng pCOMMA pExport <* pMb pCOMMA)
   <|> pSucceed Nothing
   <?> "pMaybeExports"
 %%]
@@ -204,7 +203,7 @@ pImportDeclaration
         pImportSpecification
           = (True <$ pHIDING <|> pSucceed False)
             <**> pParens'
-                   ((\i r h -> ImportSpecification_Import r h i) <$> pListSep pCOMMA pImport)
+                   ((\i r h -> ImportSpecification_Import r h i) <$> pListSep_ng pCOMMA pImport <* pMb pCOMMA)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -854,7 +853,7 @@ pExpressionBase
                         <$>  pList1 (pComma *> pExpression)
 %%]]
               )     )
-          <|> (\t _ -> mkRngNm Expression_Constructor t) <$> commas     -- TODO: !!!! with variant 7, this does not work anymore, needs separate AST alternative to map to \x1 ... -> (x1,...)
+          <|> (\ts r -> Expression_TupleConstructor r (length ts + 1)) <$> commas'
           <|> (pOpm
                <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
                     -- <|> pSucceed (\(o,_) r -> Expression_SectionApplication r Nothing o Nothing)
@@ -1238,8 +1237,11 @@ pSelector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
+commas' :: HSParser [Token]
+commas' = pList1 pCOMMA
+
 commas :: HSParser Token
-commas =  genTokMap (\s -> strProd (length s + 1)) <$> pFoldr1 (tokConcat,tokEmpty) pCOMMA
+commas =  (genTokMap (\s -> strProd (length s + 1)) . foldr tokConcat tokEmpty) <$> commas'
 %%]
 
 The separator used for after conditional+then expressions in an if-then-else in a do.

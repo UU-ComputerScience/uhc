@@ -94,6 +94,9 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     sum, product, maximum, minimum, concatMap, 
     zip, zip3, zipWith, zipWith3, unzip, unzip3,
 
+--  standard functions for Char
+    ord, chr,
+
 -- IO functions
     ioError, userError,
     putChar, putStr, putStrLn, print, hPrint, getChar, getLine, getContents, interact,
@@ -738,6 +741,11 @@ isAlpha c    = isUpper c || isLower c
 isAlphaNum :: Char -> Bool
 isAlphaNum c = isAlpha c || isDigit c
 
+ord :: Char -> Int
+ord = fromEnum
+
+chr :: Int -> Char
+chr = toEnum
 
 --------------------------------------------------------------
 -- Maybe type
