@@ -169,7 +169,7 @@ data OpCode =
          } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
   | Ceq                -- ^ Pops 2 values, if they are equal, pushes 1 to stack; otherwise, pushes 0.
   | Dup                -- ^ Pops 1 value, copies it, pushes the same value twise.
-  | Isinst DottedName -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface. (TODO not sure about parameter(s))
+  | Isinst DottedName -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface.
   | Ldarg Offset       -- ^ Loads /n/-th argument to current method onto stack.
   | Ldarg_0            -- ^ Loads 0th argument to current method onto stack.
   | Ldarg_1            -- ^ Loads 1th argument to current method onto stack.

@@ -100,7 +100,7 @@ ATTR AllNT [ | labels : {[Label]} | self : SELF ]
 
 ATTR AllNTNoMod
   [ className : {DottedName}
-    globals : {Map.Map HsName TyTag} -- In the future this will contain all globals, now just the thunks
+    globals : {Map.Map HsName TyTag}
     constrs : {Map.Map HsName TyTag}
   |
   | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
@@ -141,7 +141,8 @@ SEM GrModule
         loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
         loc.tyTags        = nub (@loc.ctyTags ++ Map.elems @loc.globals)
         loc.globals       = Map.foldWithKey (globals @loc.tyNames @loc.grTags) Map.empty @globalL.grValues
-        loc.grTags        = @globalL.grTags `Map.union` @bindL.grTags
+        loc.grTags        = @bindL.grTags `Map.union` @globalL.grTags
+                          -- Make sure to put bindL on the lhs of Map.union, otherwise globalL takes precedence
 
 
 {
@@ -149,6 +150,13 @@ globals :: Map.Map HsName HsName -> Map.Map HsName GrTag -> HsName -> GrVal
              -> Map.Map HsName TyTag -> Map.Map HsName TyTag
 globals tyNames grTags nm grValue tyTags =
   case grValue of
+    (GrVal_Node (GrTag_Con _ _ ccnm) _) ->
+      case Map.lookup nm grTags of
+        (Just (GrTag_Con _ _ cnm)) ->
+          case Map.lookup cnm tyNames of
+            (Just tyNm) -> Map.insert nm (TyCon tyNm ccnm (-1) (-1) (-1)) tyTags
+            _    -> tyTags
+        _ -> tyTags
     (GrVal_Node (GrTag_Fun fnm) _) ->
       case Map.lookup nm grTags of
         (Just (GrTag_Con _ _ cnm)) ->
@@ -165,6 +173,7 @@ SEM GrGlobal
                            [ stsfld Object "" @lhs.className @loc.name ]
            loc.name      = hsnShowAlphanumeric @nm
            lhs.grValues  = Map.singleton @nm @val.self
+           lhs.grTags    = Map.singleton @nm ((\(GrVal_Node tg _) -> tg) @val.self)
            val.scopes    = error "Should not use variables"
 
 SEM GrBind
