@@ -203,12 +203,13 @@ SEM GrExpr
                 altL.labels = Prelude.tail @lhs.labels
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
-  | FetchField  lhs.cilCode = debugComment @self
+  | FetchField  lhs.cilCode = debugComment @self $
                               @loc.load ++ @doField
-                loc.load    = case fromJust $ Map.lookup @nm @lhs.scopes of
-                              LocalVar  ->  [ldlocN @loc.varName]
-                              GlobalVar ->  [ldsfld Object "" @lhs.className @loc.varName]
-                              Parameter ->  [ldargN @loc.varName]
+                loc.load    = case Map.lookup @nm @lhs.scopes of
+                              Just GlobalVar ->  [ldsfld Object "" @lhs.className @loc.varName]
+                              Just Parameter ->  [ldargN @loc.varName]
+                              Just LocalVar  ->  [ldlocN @loc.varName]
+                              Nothing        ->  [no $ "Assuming '" ++ @loc.varName ++ "' is a local variable.", ldlocN @loc.varName]
                 loc.doField = case @offset of
                               0 ->  [] 
                               o ->  [ isinst $ toConDottedName @loc.tyTag
@@ -274,7 +275,7 @@ SEM GrPatLam
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
                 lhs.typedLocals = Map.singleton @nm Object
   | VarNode     lhs.cilCode = [no @self]
-                lhs.untypedLocals = Set.fromList @fldL.names
+                -- lhs.untypedLocals = Set.fromList @fldL.names
   | BasicNode   lhs.cilCode = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
                 lhs.typedLocals = Map.singleton @nm Int32
   | EnumNode    lhs.cilCode = [no @self]
@@ -329,6 +330,9 @@ fakeComment = flip const
 
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
+
+fromJustE :: String -> Maybe a -> a
+fromJustE err = maybe (error err) id
 
 buildScopes :: [HsName] -> [HsName] -> [HsName] -> Map.Map HsName Scope
 buildScopes gs ls ps = Map.unions [mup GlobalVar gs, mup LocalVar ls, mup Parameter ps]
