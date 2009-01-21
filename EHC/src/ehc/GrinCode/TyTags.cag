@@ -13,7 +13,10 @@ WRAPPER GrTag
 
 %%[(8 codegen grin) hs
 
-data Scope = GlobalVar | LocalVar | Parameter
+data Scope
+  = ScGlobal
+  | ScLocal
+  | ScParam
 
 data VarInfo = VarInfo
   { varScope :: Scope
@@ -134,5 +137,54 @@ SEM GrTag
       loc.tyName        = toConDottedName @loc.tyTag
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Helper functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+fromJustE :: String -> Maybe a -> a
+fromJustE err = maybe (error err) id
+
+buildScopes :: [HsName] -> [HsName] -> [HsName] -> Map.Map HsName Scope
+buildScopes gs ls ps = Map.unions [mup ScGlobal gs, mup ScLocal ls, mup ScParam ps]
+  where mup s = foldr (flip Map.insert s) Map.empty
+
+-- TODO this function should already exists somewhere else. Use that one.
+lookupTag :: HsName -> Map.Map HsName TyTag -> TyTag
+lookupTag n ts = case Map.lookup n ts of
+  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "." ++ show ts
+  Just t  -> t
+
+funTyTag :: GrTag -> GrVal -> TyTag
+funTyTag (GrTag_Con _ _ nm) (GrVal_Node (GrTag_Fun fnm) _) = undefined
+
+grTag2primType :: GrTag -> PrimitiveType
+grTag2primType (GrTag_Con _ _ nm) =
+  case hsnShowAlphanumeric nm of
+    "Int"          -> Int32
+    "Char"         -> Char
+    "PackedString" -> String
+    _              -> Object
+
+
+type GrTagAttr a = Syn_GrTag -> a
+
+grTag2tyTag = grTag2A tyTag_Syn_GrTag
+
+grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> Map.Map HsName Scope -> GrTag -> a
+grTag2A f cls constrs globals labels scopes tg =
+  let t = wrap_GrTag (sem_GrTag tg)
+                     (Inh_GrTag { className_Inh_GrTag = cls
+                                , constrs_Inh_GrTag   = constrs
+                                , globals_Inh_GrTag   = globals
+                                , labels_Inh_GrTag    = labels
+                                , scopes_Inh_GrTag    = scopes
+                                })
+  in f t
+
+
 %%]
 
