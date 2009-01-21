@@ -210,6 +210,9 @@ ATTR AllNT - SilModule
 ATTR AllNT - SilModule
   [ jvmLhs : Bool | | ]
 
+ATTR Values
+  [ unbox : Bool | | ]
+
 -- Contains a mapping from local variable indices to types.
 ATTR AllNT - SilModule Function Functions
   [ | jvmLType : {Locals} | ]
@@ -368,6 +371,7 @@ SEM Statement
                                            % Invoke IStatic (MethodRef "fib" (show @name) [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
                                 -- TODO: this fails when we have a "computed" Int: we need to unbox the arguments.
+                 args.unbox = True
                               
   | Comment     lhs.jvmCode = noCode
                               
@@ -403,6 +407,7 @@ SEM Statement
   | Return      lhs.jvmCode = constInt @retdiff
                               % Return (Just TInt)
   | Smart       lhs.jvmCode = jvmError "smart"
+                 vals.unbox = jvmError "smart unbox"
 
   | * - Assignment
        Assignment2 Call
@@ -423,7 +428,13 @@ SEM Alternative
                   loc.label : UNIQUEREF counter
 
 SEM Values
-  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
+  | Cons        lhs.jvmCode = @hd.jvmCode 
+                              % (codeIf @lhs.unbox $
+                                case @hd.jvmType of
+                                     JvmInt  -> noCode
+                                     JvmNode -> (CheckCast tIntNode % Get False fIntVal)
+                              )
+                              % @tl.jvmCode
   | Nil         lhs.jvmCode = noCode
 
 SEM Value
@@ -443,6 +454,7 @@ SEM Value
                                 Nothing   -> @args.jvmCode
                                            % Invoke IStatic (MethodRef "fib" @name [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
+                 args.unbox = True
 
   | Con         lhs.jvmCode = code (Const @con.jvmVal)
 
