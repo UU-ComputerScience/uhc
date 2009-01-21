@@ -168,7 +168,7 @@ SEM GrBind
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
-  | UpdateUnit  lhs.cilCode = [no @self]
+  | UpdateUnit  lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm ++ @val.cilCode ++ [storeRefVal]
   | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $
                               @val.cilCode
                               ++ @altL.cilCode
@@ -180,11 +180,7 @@ SEM GrExpr
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self $
                                 @loc.load ++ @doField
-                loc.load    = case Map.lookup @nm @lhs.scopes of
-                                Just ScGlobal ->  [ldsfld Object "" @lhs.className @loc.varName]
-                                Just ScParam  ->  [ldargN @loc.varName]
-                                Just ScLocal  ->  [ldlocN @loc.varName]
-                                Nothing        ->  [no $ "Assuming '" ++ @loc.varName ++ "' is a local variable.", ldlocN @loc.varName]
+                loc.load    = loadVar @lhs.className @lhs.scopes @nm
                 loc.doField = case @offset of
                               0 -> [] 
                               o -> [ loadRefVal
@@ -228,12 +224,10 @@ SEM GrVal
   | Empty       lhs.cilCode = debugComment @self [newobj "" (toConDottedName unitTyTag) [], newRefObj]
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
-  | Var         lhs.cilCode = debugComment @self $ [ if isJust (Map.lookupIndex @nm @lhs.globals)
-                                                     then ldsfld Object "" @lhs.className (hsnShowAlphanumeric @nm)
-                                                     else ldlocN (hsnShowAlphanumeric @nm)]
+  | Var         lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilConst
   | VarNode     lhs.cilCode = [no @self]
-  | BasicNode   lhs.cilCode = debugComment @self $ [ldlocN $ hsnShowAlphanumeric @nm] ++ @tag.cilConst
+  | BasicNode   lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm ++ @tag.cilConst
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
@@ -293,5 +287,14 @@ fakeComment = flip const
 
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
+
+loadVar :: DottedName -> Map.Map HsName Scope -> HsName -> [MethodDecl]
+loadVar className scopes nm = case Map.lookup nm scopes of
+    Just ScGlobal -> [ldsfld Object "" className varName]
+    Just ScParam  -> [ldargN varName]
+    Just ScLocal  -> [ldlocN varName]
+    Nothing       -> [no $ "Assuming '" ++ varName ++ "' is a local variable.", ldlocN varName] -- should become an error
+  where varName = hsnShowAlphanumeric nm
+
 
 %%]
