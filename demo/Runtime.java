@@ -18,6 +18,13 @@ class Runtime
   public static class IntNode extends Node
   {
     public int intVal;
+    public IntNode() {}
+    public IntNode(int tag, Node[] payload) { new Node(tag, payload); }
+    public IntNode(int val)
+    {
+      tag = Runtime.CINT;
+      intVal = val;
+    }
   }
 
   public static int CINT;
@@ -99,6 +106,11 @@ class Runtime
     System.out.println(fst);
     System.out.println(snd);
     System.out.println(trd);
+  }
+
+  public static int primAddInt(int l, int r)
+  {
+    return l + r;
   }
 
 }

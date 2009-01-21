@@ -90,7 +90,9 @@ cNode      = "Runtime$Node"
 cIntNode   = "Runtime$IntNode"
 cRuntime   = "Runtime"
 tNode      = TClass cNode
+tIntNode   = TClass cIntNode
 tPayload   = TArray tNode
+tRuntime   = TClass cRuntime
 
 fGlobals = FieldRef cRuntime "Globals" tPayload
 fPayload = FieldRef cNode    "payload" tPayload
@@ -116,6 +118,10 @@ primitiveFunctions = [
       , mr_args = [TClass "java.lang.String"]
       , mr_ret = Nothing
       }))
+    )
+  ,(HNm "primAddInt", \c ->
+    c %
+    (Invoke IStatic (MethodRef cRuntime "primAddInt" [TInt, TInt] (Just TInt)))
     )
   ]
 
@@ -361,6 +367,7 @@ SEM Statement
                                 Nothing   -> @args.jvmCode
                                            % Invoke IStatic (MethodRef "fib" (show @name) [] $ Just TInt)
                                 Just prim -> prim @args.jvmCode
+                                -- TODO: this fails when we have a "computed" Int: we need to unbox the arguments.
                               
   | Comment     lhs.jvmCode = noCode
                               
@@ -485,11 +492,14 @@ SEM Variable
                                         JvmInt  -> Store TInt  (fromIntegral @pos)
                                         JvmNode -> Store tNode (fromIntegral @pos)
                               in (code c, M.insert @pos @lhs.jvmAssignType)
+                lhs.jvmType = maybe (jvmError $ "No type for variable: " ++ (show @pos)) id $ M.lookup @pos @lhs.jvmLType
 
   | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
+                lhs.jvmType = jvmError "undefined LHS type: Variable.Param"
 
                               -- RP is always used in conjunction with Subs.
   | RP          lhs.jvmCode = code $ Get True fCRP
+                lhs.jvmType = jvmError "undefined LHS type: Variable.RP"
 
   | Subs        lhs.jvmCode = @array.jvmCode %
                               case (@index == 0, @lhs.jvmLhs) of
