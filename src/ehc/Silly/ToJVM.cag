@@ -105,24 +105,21 @@ fCRP     = FieldRef cRuntime "CRP"     tNode
 
 primitiveFunctions :: [(HsName, CodeS -> CodeS)]
 primitiveFunctions = [
-  (HNm "putStrLn", \c ->
-    (Get True (FieldRef {
-      fr_class = "java.lang.System"
-      , fr_name = "out"
-      , fr_type = TClass "java.io.PrintStream"}
-      ))
-    % c %
-    (Invoke IVirtual (MethodRef {
-        mr_class = "java.io.PrintStream"
-      , mr_name = "println"
-      , mr_args = [TClass "java.lang.String"]
-      , mr_ret = Nothing
-      }))
-    )
-  ,(HNm "primAddInt", \c ->
-    c %
-    (Invoke IStatic (MethodRef cRuntime "primAddInt" [TInt, TInt] (Just TInt)))
-    )
+    (HNm "putStrLn", \c -> (Get True (FieldRef {
+                             fr_class = "java.lang.System"
+                             , fr_name = "out"
+                             , fr_type = TClass "java.io.PrintStream"}
+                             ))
+                           % c %
+                           (Invoke IVirtual (MethodRef {
+                               mr_class = "java.io.PrintStream"
+                             , mr_name = "println"
+                             , mr_args = [TClass "java.lang.String"]
+                             , mr_ret = Nothing
+                             }))
+                           )
+  , (HNm "primAddInt", \c -> c % (Invoke IStatic (MethodRef cRuntime "primAddInt" [TInt, TInt] (Just TInt))))
+  , (HNm "primTagVal", \c -> c % (Invoke IStatic (MethodRef cRuntime "primTagVal" [tNode]      (Just tNode))))
   ]
 
 -- Main method compiled into the generated .class file that bootstraps the
@@ -217,8 +214,8 @@ ATTR Values
 ATTR AllNT - SilModule Function Functions
   [ | jvmLType : {Locals} | ]
 
-ATTR AllNT
-  [ | | jvmType USE {`const`} {jvmError "uninitialized LHS type."} : JvmType ]
+ATTR Values Value Variable Constant
+  [ | | jvmType USE {`const`} {} : JvmType ]
 
 ATTR Variable
   [ jvmAssignType : JvmType | | ]
@@ -250,8 +247,8 @@ Possible optimizations
      optimization is quite essential because you save an indirection on `every'
      return.
   5) Every global lookup now has an additional step for getting the globals
-  array. Using `real Java' globals will probably significantly speedup using
-  the globals.
+     array. Using `real Java' globals will probably significantly speedup using
+     the globals.
   n) ...
 
 
@@ -301,12 +298,14 @@ jvmAssignment2 dest1 assign1 dest2 assign2 source left right locals =
 
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
-                                c_methods = javaMain
-                                              "fib"
-                                              "fun_x_1_main"
-                                              ((\(Just x) -> x) ("CInt" `lookup` @constants))
-                                          : @functions.jvmCode
-                              , c_this    = "fib"
+                                c_methods =
+                                  javaMain "fib" "fun_x_1_main"
+                                    -- this `maybe 0 id' is probably safe, no
+                                    -- CInt means that all use of it is
+                                    -- optimized away.
+                                    (maybe 0 id ("CInt" `lookup` @constants))
+                                  : @functions.jvmCode
+                              , c_this = "fib"
                               }
           functions.jvmCons = @constants
          functions.jvmGlobs = @variables
@@ -315,7 +314,7 @@ SEM SilModule
 SEM Functions                 
   | Cons        lhs.jvmCode = @hd.jvmCode : @tl.jvmCode
   | Nil         lhs.jvmCode = []
-                              
+
 SEM Function                  
   | Function    lhs.jvmCode = Method {
                                 m_flags = [Public,Static]
@@ -328,7 +327,7 @@ SEM Function
                               , m_code       = Just (@body.jvmCode emptyCode)
                               }
               body.jvmLType = M.empty
-                              
+
 SEM Statements                
   | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
   | Nil         lhs.jvmCode = noCode
@@ -435,7 +434,9 @@ SEM Values
                                      JvmNode -> (CheckCast tIntNode % Get False fIntVal)
                               )
                               % @tl.jvmCode
+                lhs.jvmType = @hd.jvmType
   | Nil         lhs.jvmCode = noCode
+                lhs.jvmType = jvmError "Nil value jvm type"
 
 SEM Value
 
@@ -476,7 +477,8 @@ SEM Value
                 lhs.jvmType = JvmNode
           var.jvmAssignType = jvmError "offset assign type"
 
-  | Label       lhs.jvmCode = jvmError "label variables"
+  | Label       lhs.jvmCode = jvmError "label value"
+                lhs.jvmType = jvmError "label value jvm type"
 
 SEM Variable
 
@@ -507,11 +509,11 @@ SEM Variable
                 lhs.jvmType = maybe (jvmError $ "No type for variable: " ++ (show @pos)) id $ M.lookup @pos @lhs.jvmLType
 
   | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
-                lhs.jvmType = jvmError "undefined LHS type: Variable.Param"
+                lhs.jvmType = jvmError "param jvm type"
 
                               -- RP is always used in conjunction with Subs.
   | RP          lhs.jvmCode = code $ Get True fCRP
-                lhs.jvmType = jvmError "undefined LHS type: Variable.RP"
+                lhs.jvmType = jvmError "RP jvm type"
 
   | Subs        lhs.jvmCode = @array.jvmCode %
                               case (@index == 0, @lhs.jvmLhs) of
@@ -541,15 +543,18 @@ SEM Variable
   | * - Global Local
         Param RP Subs
                 lhs.jvmCode = jvmError "unknown variable kind"
+                lhs.jvmType = jvmError "this variable jvm type"
 
 SEM Constant
   | LiteralInt   lhs.jvmVal = cInt @value
                 lhs.jvmType = JvmInt
   | LiteralStr   lhs.jvmVal = CString @value
+                lhs.jvmType = jvmError "literal string jvm type"
 
   | Alias        lhs.jvmVal = case @name `lookup` @lhs.jvmCons of
                                 Nothing -> jvmError ("unknown constant alias: " ++ @name)
                                 Just  a -> cInt a
+                lhs.jvmType = JvmInt
 
 %%]
 
