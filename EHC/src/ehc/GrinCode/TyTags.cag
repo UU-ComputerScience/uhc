@@ -48,10 +48,24 @@ ATTR GrTag
   | tyTag                   : {TyTag}
   ]
 
-ATTR AllExpr --GrExpr GrPatLam
+ATTR GrVar GrVarL
+  [ index     : {Int}
+    nodeTyTag : {TyTag}
+  |
+  |
+  ]
+
+ATTR AllExpr
   [ scopes : {Map.Map HsName Scope}  -- In the future, this will contain all useful information for all variables.
   |
   | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
+    maybeTyTag    USE {`const`} {Nothing} : {Maybe TyTag}
+  ]
+
+ATTR GrPatLam
+  [ maybeTyTag : {Maybe TyTag}
+  |
+  |
   ]
 
 ATTR AllNTNoMod
@@ -119,15 +133,22 @@ SEM GrBind
       expr.scopes       = buildScopes (Map.keys @lhs.globals) (Map.keys @expr.typedLocals) @argNmL
 
 SEM GrExpr
+  | Seq
+      pat.stupidTag     = @expr.maybeTyTag
   | FetchField
       lhs.grTags        = maybe Map.empty (Map.singleton @nm) @mbTag
-      loc.tyTag         = maybe (error "Cannot fetch field of unknown tag")
-                                (\(GrTag_Con _ _ nm) -> lookupTag nm @lhs.constrs)
+      lhs.maybeTyTag    = @loc.maybeTyTag
+      loc.tyTag         = maybe (error "Cannot fetch field of unknown tag") id @loc.maybeTyTag
+      loc.maybeTyTag    = maybe Nothing
+                                (\(GrTag_Con _ _ nm) -> Just $ lookupTag nm @lhs.constrs)
                                 @mbTag
 
 SEM GrPatLam
   | Var
-      lhs.typedLocals   = Map.singleton @nm Object
+      lhs.typedLocals   = Map.singleton @nm (maybe Object toPrimitiveType @lhs.maybeTyTag)
+  | VarNode
+      fldL.index        = -1
+      fldL.nodeTyTag    = @fldL.tyTag
   | BasicNode
       lhs.typedLocals   = Map.singleton @nm Int32
   | BasicAnnot
@@ -138,11 +159,14 @@ SEM GrVarL
       lhs.tyTag         = error "GrinCode/TyTags.GrValL.tyTag: Empty List has no TyTag."
   | Cons
       lhs.tyTag         = @hd.tyTag
+      hd.index          = @lhs.index
+      tl.index          = @lhs.index + 1
 
 SEM GrVar
   | Var
       lhs.tyTag         = @loc.tyTag
       loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: Not implemented yet for Var constructor."
+      lhs.typedLocals = Map.singleton @nm (toPrimitiveType @lhs.nodeTyTag)
   | KnownTag
       lhs.tyTag         = @loc.tyTag
       loc.tyTag         = @tag.tyTag

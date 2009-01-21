@@ -105,8 +105,7 @@ ATTR GrTag GrVal
   ]
 
 ATTR GrVar GrVarL
-  [ index     : {Int}
-    nodeTyTag : {TyTag}
+  [
   |
   | cilLoad USE {++} {[]} : {[MethodDecl]}
   ]
@@ -253,9 +252,7 @@ SEM GrVal
 SEM GrValL
   | Nil         lhs.cilConsts = []
                 lhs.cilCodes  = []
-  | Cons        hd.index = lhs.index
-                tl.index = lhs.index + 1
-                lhs.cilConsts = @hd.cilConst : @tl.cilConsts
+  | Cons        lhs.cilConsts = @hd.cilConst : @tl.cilConsts
                 lhs.cilCodes  = @hd.cilCode  : @tl.cilCodes
 
 SEM GrVar
@@ -265,14 +262,11 @@ SEM GrVar
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
                             , stlocN (hsnShowAlphanumeric @nm) ]
-      lhs.typedLocals = Map.singleton @nm (toPrimitiveType @lhs.nodeTyTag)
 
 SEM GrPatLam
   | Empty       lhs.cilCode = debugComment @self []
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
   | VarNode     lhs.cilCode = debugComment @self (loadRefVal : @fldL.cilLoad)
-                fldL.index     = 0
-                fldL.nodeTyTag = @fldL.tyTag
   | BasicNode   lhs.cilCode = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
