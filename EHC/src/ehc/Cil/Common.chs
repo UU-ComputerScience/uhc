@@ -119,13 +119,14 @@ subTys callbackNm tyNm (TyFun _ fnm) =
   classDef Public subTyNm (extends tyNm) noImplements []
     [ defaultCtor []
     , Method Static Public Object "Invoke" []
-        [ call StaticCallConv Object "" callbackNm subTyNm []
+        [ call StaticCallConv Object "" callbackNm fnNm []
         , ret
         ]
     ]
     []
   where
-    subTyNm   = "<Thunk>" ++ hsnShowAlphanumeric fnm
+    fnNm      = hsnShowAlphanumeric fnm
+    subTyNm   = "<Thunk>" ++ fnNm
 subTys csNm tyNm (TyCon _ cnm _ a ma) =
   classDef Public subTyNm (extends tyNm) []
     fields

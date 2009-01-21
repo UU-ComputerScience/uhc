@@ -36,6 +36,12 @@ ATTR GrGlobal GrGlobalL
   | grValues  USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal}
   ]
 
+ATTR GrVarL GrVar
+  [
+  |
+  | tyTag : {TyTag}
+  ]
+
 ATTR GrTag
   [
   |
@@ -126,6 +132,23 @@ SEM GrPatLam
       lhs.typedLocals   = Map.singleton @nm Int32
   | BasicAnnot
       loc.typedLocals   = Map.singleton @nm Int32
+
+SEM GrVarL
+  | Nil
+      lhs.tyTag         = error "GrinCode/TyTags.GrValL.tyTag: Empty List has no TyTag."
+  | Cons
+      lhs.tyTag         = @hd.tyTag
+
+SEM GrVar
+  | Var
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: Not implemented yet for Var constructor."
+  | KnownTag
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = @tag.tyTag
+  | Ignore
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: No tyTag for Ignore constructor."
 
 SEM GrTag
   | Con
