@@ -20,15 +20,18 @@ class Runtime
     public int intVal;
   }
 
-  public static final int CINT = 10;
+  public static int CINT;
 
   // Todo: parametrize these from haskell.
   public static Node[]  RP      = new Node[256];
   public static Node   CRP      = new Node(1, Runtime.RP);
   public static Node[] Globals  = new Node[256];
 
-  public static void initialize ()
+  public static void initialize (int CInt)
   {
+    Runtime.CINT = CInt;
+    System.out.println("CInt: " + CInt);
+
     for (int i = 0; i < 256; i++)
       Runtime.RP[i] = null;
   }

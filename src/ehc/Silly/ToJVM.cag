@@ -122,8 +122,8 @@ primitiveFunctions = [
 -- Main method compiled into the generated .class file that bootstraps the
 -- runtime system and the haskell program.
 
-javaMain :: String -> String -> Method
-javaMain hsModule hsMain = 
+javaMain :: String -> String -> Int -> Method
+javaMain hsModule hsMain _CINT = 
   Method {
     m_flags = [Public,Static]
   , m_name = "main"
@@ -140,10 +140,11 @@ javaMain hsModule hsMain =
         , fr_name = "out"
         , fr_type = TClass "java.io.PrintStream"
         })
-      , Invoke IStatic (MethodRef "Runtime" "initialize" [] Nothing)
-      , Invoke IStatic (MethodRef hsModule  "initialize" [] (Just TInt))
-      , Invoke IStatic (MethodRef hsModule hsMain        [] (Just TInt))
-      , Invoke IStatic (MethodRef "Runtime" "finish"     [] Nothing)
+      , constInt _CINT
+      , Invoke IStatic (MethodRef "Runtime" "initialize" [TInt] Nothing)
+      , Invoke IStatic (MethodRef hsModule  "initialize" []     (Just TInt))
+      , Invoke IStatic (MethodRef hsModule hsMain        []     (Just TInt))
+      , Invoke IStatic (MethodRef "Runtime" "finish"     []     Nothing)
       , Load TInt 1
       , Pop TInt
       , Return Nothing
@@ -291,7 +292,11 @@ jvmAssignment2 dest1 assign1 dest2 assign2 source left right locals =
 
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
-                                c_methods = javaMain "fib" "fun_x_1_main" : @functions.jvmCode
+                                c_methods = javaMain
+                                              "fib"
+                                              "fun_x_1_main"
+                                              ((\(Just x) -> x) ("CInt" `lookup` @constants))
+                                          : @functions.jvmCode
                               , c_this    = "fib"
                               }
           functions.jvmCons = @constants
