@@ -105,21 +105,24 @@ fCRP     = FieldRef cRuntime "CRP"     tNode
 
 primitiveFunctions :: [(HsName, CodeS -> CodeS)]
 primitiveFunctions = [
-    (HNm "putStrLn", \c -> (Get True (FieldRef {
-                             fr_class = "java.lang.System"
-                             , fr_name = "out"
-                             , fr_type = TClass "java.io.PrintStream"}
-                             ))
-                           % c %
-                           (Invoke IVirtual (MethodRef {
-                               mr_class = "java.io.PrintStream"
-                             , mr_name = "println"
-                             , mr_args = [TClass "java.lang.String"]
-                             , mr_ret = Nothing
-                             }))
-                           )
-  , (HNm "primAddInt", \c -> c % (Invoke IStatic (MethodRef cRuntime "primAddInt" [TInt, TInt] (Just TInt))))
-  , (HNm "primTagVal", \c -> c % (Invoke IStatic (MethodRef cRuntime "primTagVal" [tNode]      (Just tNode))))
+  (HNm "putStrLn", \c ->
+    (Get True (FieldRef {
+      fr_class = "java.lang.System"
+      , fr_name = "out"
+      , fr_type = TClass "java.io.PrintStream"}
+      ))
+    % c %
+    (Invoke IVirtual (MethodRef {
+        mr_class = "java.io.PrintStream"
+      , mr_name = "println"
+      , mr_args = [TClass "java.lang.String"]
+      , mr_ret = Nothing
+      }))
+    )
+  ,(HNm "primAddInt", \c ->
+    c %
+    (Invoke IStatic (MethodRef cRuntime "primAddInt" [tNode, tNode] (Just tNode)))
+    )
   ]
 
 -- Main method compiled into the generated .class file that bootstraps the
@@ -172,7 +175,7 @@ nextUnique u = (u + 1, u)
 type Locals = M.IntMap JvmType
 type AssignCode = (CodeS, Locals -> Locals)
 
-data JvmType = JvmInt | JvmNode
+data JvmType = JvmTag | JvmInt | JvmNode
   deriving (Show, Eq)
 
 }
@@ -186,7 +189,7 @@ ATTR Functions
 ATTR Function
   [ | | jvmCode : {Method} ] 
 
-ATTR Statements Statement Values Value Variable 
+ATTR Statements Statement Values Value Variable Constant
   [ | | jvmCode : {CodeS} ]
 
 ATTR Alternatives
@@ -207,12 +210,12 @@ ATTR AllNT - SilModule
 ATTR AllNT - SilModule
   [ jvmLhs : Bool | | ]
 
-ATTR Values
-  [ unbox : Bool | | ]
-
 -- Contains a mapping from local variable indices to types.
 ATTR AllNT - SilModule Function Functions
   [ | jvmLType : {Locals} | ]
+
+ATTR AllNT - SilModule Function Functions
+  [ paramLength : {Int} | | ]
 
 ATTR Values Value Variable Constant
   [ | | jvmType USE {`const`} {} : JvmType ]
@@ -221,10 +224,16 @@ ATTR Variable
   [ jvmAssignType : JvmType | | ]
 
 ATTR Variable 
-  [ | | jvmAssign USE {++} {(noCode, id)} : {AssignCode} ]
+  [ | | jvmAssignCode USE {++} {(noCode, id)} : {AssignCode} ]
+
+ATTR Value Constant
+  [ jvmAssignToTag : Bool | | ]
 
 ATTR Constant
-  [ | | jvmVal : {J.Constant} ]  
+  [ | | jvmVal : {J.Constant} ]
+
+ATTR Values
+  [ | | length USE {+} {1} : Int ]
 
 -------- code generation ------------------------------------------------------
 
@@ -320,14 +329,15 @@ SEM Function
                                 m_flags = [Public,Static]
                               , m_name       = show @name
                               , m_ret        = Just TInt
-                              , m_args       = replicate (length @parameters) (TClass cObject)
+                              , m_args       = replicate (length @parameters) tNode
                               , m_exceptions = []
                               , m_signature  = Nothing
                               , m_deprecated = False
                               , m_code       = Just (@body.jvmCode emptyCode)
                               }
               body.jvmLType = M.empty
-
+           body.paramLength = length @parameters
+                              
 SEM Statements                
   | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
   | Nil         lhs.jvmCode = noCode
@@ -337,7 +347,7 @@ SEM Statement
   | Assignment  lhs.jvmCode = fst @loc.code
                    loc.code = jvmAssignment
                                 @dest.jvmCode
-                                @dest.jvmAssign
+                                @dest.jvmAssignCode
                                 @source.jvmCode
                                 @dest.jvmType
                                 @source.jvmType
@@ -346,13 +356,14 @@ SEM Statement
          dest.jvmAssignType = @source.jvmType
                 dest.jvmLhs = True
               source.jvmLhs = False
+         source.jvmAssignToTag = @dest.jvmType == JvmTag
                               
   | Assignment2 lhs.jvmCode = fst @loc.code
                    loc.code = jvmAssignment2
                                 @dest1.jvmCode
-                                @dest1.jvmAssign
+                                @dest1.jvmAssignCode
                                 @dest2.jvmCode
-                                @dest2.jvmAssign
+                                @dest2.jvmAssignCode
                                 @source.jvmCode
                                 @dest1.jvmType
                                 @source.jvmType
@@ -363,14 +374,15 @@ SEM Statement
                dest1.jvmLhs = True
                dest2.jvmLhs = True
               source.jvmLhs = False
+         source.jvmAssignToTag = @dest1.jvmType == JvmTag
                               
                               -- Real call or built-in call?
   | Call        lhs.jvmCode = case lookup @name primitiveFunctions of
                                 Nothing   -> @args.jvmCode
-                                           % Invoke IStatic (MethodRef "fib" (show @name) [] $ Just TInt)
+                                           % Invoke IStatic (MethodRef "fib" (show @name) (replicate @args.length tNode) $ Just TInt)
+                                           % Pop TInt -- TODO ask Jeroen/Atze whether this is safe.
+
                                 Just prim -> prim @args.jvmCode
-                                -- TODO: this fails when we have a "computed" Int: we need to unbox the arguments.
-                 args.unbox = True
                               
   | Comment     lhs.jvmCode = noCode
                               
@@ -387,6 +399,7 @@ SEM Statement
                               % Note (Label @loc.labelEndIf)
              loc.labelEndIf : UNIQUEREF counter
               loc.labelElse : UNIQUEREF counter
+   condition.jvmAssignToTag = False
 
   | Switch
          loc.labelSwitchEnd : UNIQUEREF counter
@@ -400,13 +413,13 @@ SEM Statement
                               % Switch Lookup (snd $ head labels) labels
                               % arms alts
                               % Note (Label end)
+   scrutinee.jvmAssignToTag = False
 
   | Jump        lhs.jvmCode = jvmError "jumps"
   | Label       lhs.jvmCode = jvmError "labels"
   | Return      lhs.jvmCode = constInt @retdiff
                               % Return (Just TInt)
   | Smart       lhs.jvmCode = jvmError "smart"
-                 vals.unbox = jvmError "smart unbox"
 
   | * - Assignment
        Assignment2 Call
@@ -425,15 +438,11 @@ SEM Alternative
                                 CInt i -> (i, l, Note (Label l) % @body.jvmCode)
                                 _      -> jvmError "non-integer case scrutinee"
                   loc.label : UNIQUEREF counter
+        when.jvmAssignToTag = jvmError "no assign to tag for Alternative.when"
 
 SEM Values
-  | Cons        lhs.jvmCode = @hd.jvmCode 
-                              % (codeIf @lhs.unbox $
-                                case @hd.jvmType of
-                                     JvmInt  -> noCode
-                                     JvmNode -> (CheckCast tIntNode % Get False fIntVal)
-                              )
-                              % @tl.jvmCode
+  | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
+          hd.jvmAssignToTag = False
                 lhs.jvmType = @hd.jvmType
   | Nil         lhs.jvmCode = noCode
                 lhs.jvmType = jvmError "Nil value jvm type"
@@ -449,15 +458,10 @@ SEM Value
                               % Put False fPayload
                 lhs.jvmType = JvmNode
 
-                              -- todo: this is probably ffi only!!
-                              -- Real call of built-in call?
   | Call        lhs.jvmCode = case lookup (HNm @name) primitiveFunctions of
-                                Nothing   -> @args.jvmCode
-                                           % Invoke IStatic (MethodRef "fib" @name [] $ Just TInt)
+                                Nothing   -> jvmError $ "No primitive function: " ++ @name
                                 Just prim -> prim @args.jvmCode
-                 args.unbox = True
-
-  | Con         lhs.jvmCode = code (Const @con.jvmVal)
+                lhs.jvmType = JvmNode -- todo this probably isn't always the case
 
   | Var         lhs.jvmCode = @var.jvmCode
           var.jvmAssignType = jvmError "variable assign type"
@@ -492,23 +496,22 @@ SEM Variable
 
                               -- We get a type from our parent assignment, but
                               -- we know we are here for tNode.
-              lhs.jvmAssign = (code (AStore tNode), id)
+          lhs.jvmAssignCode = (code (AStore tNode), id)
 
                               -- todo: add parameter count to @pos?
-  | Local       lhs.jvmCode = codeUnless @lhs.jvmLhs $
-                                let tp = (jvmError "unknown local" `maybe` id)
-                                         (M.lookup @pos @lhs.jvmLType)
-                                in case tp of
-                                  JvmInt  -> Load TInt  (fromIntegral @pos)
-                                  JvmNode -> Load tNode (fromIntegral @pos)
+  | Local       lhs.jvmCode = let typ = case M.lookup @pos @lhs.jvmLType of
+                                          Just JvmTag -> TInt
+                                          _           -> tNode
+                              in codeUnless @lhs.jvmLhs $ Load typ @loc.jvmIndex
 
-              lhs.jvmAssign = let c = case @lhs.jvmAssignType of
-                                        JvmInt  -> Store TInt  (fromIntegral @pos)
-                                        JvmNode -> Store tNode (fromIntegral @pos)
-                              in (code c, M.insert @pos @lhs.jvmAssignType)
-                lhs.jvmType = maybe (jvmError $ "No type for variable: " ++ (show @pos)) id $ M.lookup @pos @lhs.jvmLType
+          lhs.jvmAssignCode = let typ = case @lhs.jvmAssignType of
+                                          JvmTag -> TInt
+                                          _      -> tNode
+                              in (code $ Store typ @loc.jvmIndex, M.insert @pos @lhs.jvmAssignType)
+                lhs.jvmType = JvmNode
+                loc.jvmIndex = fromIntegral $ @pos + @lhs.paramLength - 1
 
-  | Param       lhs.jvmCode = code $ Load tNode (fromIntegral @pos)
+  | Param       lhs.jvmCode = code $ Load tNode (fromIntegral $ @pos - 1)
                 lhs.jvmType = jvmError "param jvm type"
 
                               -- RP is always used in conjunction with Subs.
@@ -519,26 +522,19 @@ SEM Variable
                               case (@index == 0, @lhs.jvmLhs) of
                                 (True,  False) -> code (Get False fTag)
                                 (True,  True)  -> noCode
+                                (False, True)  -> Get False fPayload
+                                                % constInt (@index - 1)
                                 (False, False) -> Get False fPayload
                                                 % constInt (@index - 1)
                                                 % ALoad tNode
-                                (False, True)  -> Get False fPayload
-                                                % constInt (@index - 1)
-                                                % codeIf (@lhs.jvmAssignType == JvmInt) (
-                                                    New cIntNode
-                                                  % Dup TInt
-                                                  % Dup TInt
-                                                  % Invoke ISpecial (MethodRef cIntNode "<init>" [] Nothing))
 
-              lhs.jvmAssign = let tag   = Put False fTag
-                                  int   = Put False fIntVal
-                                  notag = codeIf (@lhs.jvmAssignType == JvmInt) int
-                                          % AStore tNode
-                              in ((code tag `bool` notag) (@index == 0), id)
+          lhs.jvmAssignCode = let tag   = Put False fTag
+                                  notag = AStore tNode
+                              in ((code tag `bool` code notag) (@index == 0), id)
  
                array.jvmLhs = False
 
-                lhs.jvmType = (JvmInt `bool` JvmNode) (@index == 0)
+                lhs.jvmType = (JvmTag `bool` JvmNode) (@index == 0)
 
   | * - Global Local
         Param RP Subs
@@ -546,15 +542,25 @@ SEM Variable
                 lhs.jvmType = jvmError "this variable jvm type"
 
 SEM Constant
-  | LiteralInt   lhs.jvmVal = cInt @value
-                lhs.jvmType = JvmInt
-  | LiteralStr   lhs.jvmVal = CString @value
+  | LiteralInt   lhs.jvmCode = if @lhs.jvmAssignToTag 
+                               then (code $ Const $ cInt @value )
+                               else ( New cIntNode
+                                    % Dup TInt
+                                    % Const (cInt @value)
+                                    % Invoke ISpecial (MethodRef cIntNode "<init>" [TInt] Nothing)
+                                    )
+                 lhs.jvmVal = cInt @value
+                lhs.jvmType = if @lhs.jvmAssignToTag then JvmInt else JvmNode
+  | LiteralStr   lhs.jvmCode = code $ Const (CString @value)
+                 lhs.jvmVal = CString @value
                 lhs.jvmType = jvmError "literal string jvm type"
 
-  | Alias        lhs.jvmVal = case @name `lookup` @lhs.jvmCons of
+  | Alias        lhs.jvmCode = code $ Const @loc.jvmVal
+                  lhs.jvmVal = @loc.jvmVal
+                  loc.jvmVal = case @name `lookup` @lhs.jvmCons of
                                 Nothing -> jvmError ("unknown constant alias: " ++ @name)
                                 Just  a -> cInt a
-                lhs.jvmType = JvmInt
+                lhs.jvmType = JvmTag
 
 %%]
 

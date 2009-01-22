@@ -108,9 +108,9 @@ class Runtime
     System.out.println(trd);
   }
 
-  public static int primAddInt(int l, int r)
+  public static Node primAddInt(Node l, Node r)
   {
-    return l + r;
+    return new IntNode(((IntNode) l).intVal + ((IntNode) r).intVal);
   }
 
 }
