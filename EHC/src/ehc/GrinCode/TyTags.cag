@@ -134,7 +134,7 @@ SEM GrBind
 
 SEM GrExpr
   | Seq
-      pat.stupidTag     = @expr.maybeTyTag
+      pat.maybeTyTag    = @expr.maybeTyTag
   | FetchField
       lhs.grTags        = maybe Map.empty (Map.singleton @nm) @mbTag
       lhs.maybeTyTag    = @loc.maybeTyTag
@@ -180,7 +180,10 @@ SEM GrTag
       loc.tyName        = toConDottedName @loc.tyTag
       lhs.tyTag         = @loc.tyTag
   | Fun
-      loc.tyTag         = head [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+      loc.tyTag         = headE
+                          ("GrinCode/TyTags.GrTag.tyTag: Cannot find type for Fun '"
+                          ++ hsnShowAlphanumeric @nm ++ "'")
+                          [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
       loc.tyName        = toConDottedName @loc.tyTag
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
@@ -191,6 +194,10 @@ SEM GrTag
 %%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
+
+headE :: String -> [a] -> a
+headE err []    = error err
+headE _   (x:_) = x
 
 fromJustE :: String -> Maybe a -> a
 fromJustE err = maybe (error err) id
