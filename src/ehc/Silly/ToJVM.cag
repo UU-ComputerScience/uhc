@@ -119,17 +119,16 @@ primitiveFunctions = [
       , mr_ret = Nothing
       }))
     )
-  ,(HNm "primAddInt", \c ->
-    c %
-    (Invoke IStatic (MethodRef cRuntime "primAddInt" [tNode, tNode] (Just tNode)))
-    )
+  ,(HNm "primAddInt", \c -> c % (Invoke IStatic (MethodRef cRuntime "primAddInt" [tNode, tNode] (Just tNode))))
+  ,(HNm "primSubInt", \c -> c % (Invoke IStatic (MethodRef cRuntime "primSubInt" [tNode, tNode] (Just tNode))))
+  ,(HNm "primEqInt", \c -> c % (Invoke IStatic (MethodRef cRuntime "primEqInt" [tNode, tNode] (Just tNode))))
   ]
 
 -- Main method compiled into the generated .class file that bootstraps the
 -- runtime system and the haskell program.
 
-javaMain :: String -> String -> Int -> Method
-javaMain hsModule hsMain _CINT = 
+javaMain :: String -> String -> Int -> Int -> Int -> Method
+javaMain hsModule hsMain _CINT _CTRUE _CFALSE = 
   Method {
     m_flags = [Public,Static]
   , m_name = "main"
@@ -147,7 +146,9 @@ javaMain hsModule hsMain _CINT =
         , fr_type = TClass "java.io.PrintStream"
         })
       , constInt _CINT
-      , Invoke IStatic (MethodRef "Runtime" "initialize" [TInt] Nothing)
+      , constInt _CTRUE
+      , constInt _CFALSE
+      , Invoke IStatic (MethodRef "Runtime" "initialize" [TInt, TInt, TInt] Nothing)
       , Invoke IStatic (MethodRef hsModule  "initialize" []     (Just TInt))
       , Invoke IStatic (MethodRef hsModule hsMain        []     (Just TInt))
       , Invoke IStatic (MethodRef "Runtime" "finish"     []     Nothing)
@@ -233,7 +234,7 @@ ATTR Constant
   [ | | jvmVal : {J.Constant} ]
 
 ATTR Values
-  [ | | length USE {+} {1} : Int ]
+  [ | | length : Int ]
 
 -------- code generation ------------------------------------------------------
 
@@ -308,11 +309,13 @@ jvmAssignment2 dest1 assign1 dest2 assign2 source left right locals =
 SEM SilModule
   | SilModule   lhs.jvmCode = defaultClass {
                                 c_methods =
-                                  javaMain "fib" "fun_x_1_main"
+                                  javaMain "fib" "fun_main"
                                     -- this `maybe 0 id' is probably safe, no
                                     -- CInt means that all use of it is
                                     -- optimized away.
                                     (maybe 0 id ("CInt" `lookup` @constants))
+                                    (maybe 0 id ("CTrue" `lookup` @constants))
+                                    (maybe 0 id ("CFalse" `lookup` @constants))
                                   : @functions.jvmCode
                               , c_this = "fib"
                               }
@@ -327,7 +330,7 @@ SEM Functions
 SEM Function                  
   | Function    lhs.jvmCode = Method {
                                 m_flags = [Public,Static]
-                              , m_name       = show @name
+                              , m_name       = hsnShowAlphanumeric @name 
                               , m_ret        = Just TInt
                               , m_args       = replicate (length @parameters) tNode
                               , m_exceptions = []
@@ -379,7 +382,7 @@ SEM Statement
                               -- Real call or built-in call?
   | Call        lhs.jvmCode = case lookup @name primitiveFunctions of
                                 Nothing   -> @args.jvmCode
-                                           % Invoke IStatic (MethodRef "fib" (show @name) (replicate @args.length tNode) $ Just TInt)
+                                           % Invoke IStatic (MethodRef "fib" (hsnShowAlphanumeric @name) (replicate @args.length tNode) $ Just TInt)
                                            % Pop TInt -- TODO ask Jeroen/Atze whether this is safe.
 
                                 Just prim -> prim @args.jvmCode
@@ -410,6 +413,7 @@ SEM Statement
                                 labels = map (\(when, lbl, _) -> (when, lbl)) alts
                               in
                               @scrutinee.jvmCode
+                              % (codeIf (@scrutinee.jvmType == JvmNode) (Get False fTag))
                               % Switch Lookup (snd $ head labels) labels
                               % arms alts
                               % Note (Label end)
@@ -444,8 +448,10 @@ SEM Values
   | Cons        lhs.jvmCode = @hd.jvmCode % @tl.jvmCode
           hd.jvmAssignToTag = False
                 lhs.jvmType = @hd.jvmType
+                lhs.length  = 1 + @tl.length
   | Nil         lhs.jvmCode = noCode
                 lhs.jvmType = jvmError "Nil value jvm type"
+                lhs.length  = 0
 
 SEM Value
 
@@ -508,7 +514,7 @@ SEM Variable
                                           JvmTag -> TInt
                                           _      -> tNode
                               in (code $ Store typ @loc.jvmIndex, M.insert @pos @lhs.jvmAssignType)
-                lhs.jvmType = JvmNode
+                lhs.jvmType  = maybe (jvmError "No type of local variable known") id $ M.lookup @pos @lhs.jvmLType
                 loc.jvmIndex = fromIntegral $ @pos + @lhs.paramLength - 1
 
   | Param       lhs.jvmCode = code $ Load tNode (fromIntegral $ @pos - 1)

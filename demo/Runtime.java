@@ -8,6 +8,11 @@ class Runtime
     // Empty constructor needed.
     public Node () {}
 
+    public Node (int tag)
+    {
+      this.tag     = tag;
+    }
+
     public Node (int tag, Node[] payload)
     {
       this.tag     = tag;
@@ -22,22 +27,26 @@ class Runtime
     public IntNode(int tag, Node[] payload) { new Node(tag, payload); }
     public IntNode(int val)
     {
-      tag = Runtime.CINT;
+      tag = Runtime.CInt;
       intVal = val;
     }
   }
 
-  public static int CINT;
+  public static int CInt;
+  public static int CTrue;
+  public static int CFalse;
 
   // Todo: parametrize these from haskell.
   public static Node[]  RP      = new Node[256];
   public static Node   CRP      = new Node(1, Runtime.RP);
   public static Node[] Globals  = new Node[256];
 
-  public static void initialize (int CInt)
+  public static void initialize (int CInt, int CTrue, int CFalse)
   {
-    Runtime.CINT = CInt;
-    System.out.println("CInt: " + CInt);
+    Runtime.CInt = CInt;
+    Runtime.CTrue = CTrue;
+    Runtime.CFalse = CFalse;
+    // System.out.println("CInt: " + CInt);
 
     for (int i = 0; i < 256; i++)
       Runtime.RP[i] = null;
@@ -74,7 +83,7 @@ class Runtime
 
     Runtime.indent(level);
     System.out.println("tag = " + node.tag);
-    if (node.tag == Runtime.CINT) {
+    if (node.tag == Runtime.CInt) {
       Runtime.indent(level + 1);
       System.out.println("int = " + ((Runtime.IntNode)node.payload[0]).intVal);
     } else {
@@ -111,6 +120,23 @@ class Runtime
   public static Node primAddInt(Node l, Node r)
   {
     return new IntNode(((IntNode) l).intVal + ((IntNode) r).intVal);
+  }
+  public static Node primSubInt(Node l, Node r)
+  {
+    return new IntNode(((IntNode) l).intVal - ((IntNode) r).intVal);
+  }
+  public static Node primMulInt(Node l, Node r)
+  {
+    return new IntNode(((IntNode) l).intVal * ((IntNode) r).intVal);
+  }
+
+  public static Node primDivInt(Node l, Node r)
+  {
+    return new IntNode(((IntNode) l).intVal / ((IntNode) r).intVal);
+  }
+  public static Node primEqInt(Node l, Node r)
+  {
+    return new Node(((IntNode) l).intVal == ((IntNode) r).intVal ? CTrue : CFalse);
   }
 
 }
