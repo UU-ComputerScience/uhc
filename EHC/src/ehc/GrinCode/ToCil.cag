@@ -224,7 +224,7 @@ SEM GrAlt
                                   GrAltAnnReenter -> [no "Reenter Alt"]
                                   _               -> @expr.cilCode
                 loc.label     = head @lhs.labels
-                lhs.labels    = tail @lhs.labels
+                pat.labels    = tail @lhs.labels
 
 
 SEM GrPatAlt
@@ -246,7 +246,7 @@ SEM GrVal
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
-  | * - Tag     lhs.cilConst = error "cilConst not defined"
+  | * - Tag     lhs.cilConst = [no $ "cilConst not defined on " ++ show @self]
   -- TODO NodeAdapt in variant 10
 
 SEM GrValL
@@ -257,7 +257,7 @@ SEM GrValL
 
 SEM GrVar
   | Var
-      lhs.cilLoad    = if @lhs.index == 0 && False
+      lhs.cilLoad    = if @lhs.index < 0
                        then []
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
