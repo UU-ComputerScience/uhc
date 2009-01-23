@@ -292,7 +292,7 @@ SEM GrPatLam
 SEM GrTag
   | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
                 lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
-  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) [], newRefObj]
+  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
                 lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]

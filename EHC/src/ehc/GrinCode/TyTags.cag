@@ -43,7 +43,7 @@ ATTR GrVarL GrVar
   ]
 
 ATTR GrTag
-  [
+  [ maybeTyTag : {Maybe TyTag}
   |
   | tyTag                   : {TyTag}
   ]
@@ -56,13 +56,13 @@ ATTR GrVar GrVarL
   ]
 
 ATTR AllExpr
-  [ scopes : {Map.Map HsName Scope}  -- In the future, this will contain all useful information for all variables.
+  [ scopes : {Map.Map HsName Scope}
   |
   | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
     maybeTyTag    USE {`const`} {Nothing} : {Maybe TyTag}
   ]
 
-ATTR GrPatLam
+ATTR GrPatLam GrPatAlt
   [ maybeTyTag : {Maybe TyTag}
   |
   |
@@ -71,8 +71,10 @@ ATTR GrPatLam
 ATTR AllNTNoMod
   [ constrs : {Map.Map HsName TyTag}
     globals : {Map.Map HsName TyTag}
+    funs    : {Map.Map HsName TyTag}
   |
   | grTags USE {`Map.union`} {Map.empty} : {Map.Map HsName GrTag}
+    tyTags USE {`Map.union`} {Map.empty} : {Map.Map HsName TyTag}
   ]
 
 ATTR AllNT
@@ -88,14 +90,17 @@ ATTR AllNT
 SEM GrModule
   | Mod
       bindL.constrs     = @loc.constrs
+      bindL.funs        = @loc.funs
       bindL.globals     = @loc.globals
       globalL.globals   = @loc.globals
+      globalL.funs      = @loc.funs
       globalL.constrs   = @loc.constrs
 
       loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
       loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
       loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
-      loc.tyTags        = nub (@loc.ctyTags ++ Map.elems @loc.globals)
+      loc.tyTags        = nub (@loc.ctyTags ++ [ x | x@(TyFun _ _) <- Map.elems @loc.globals])
+      loc.funs          = @bindL.tyTags
       loc.globals       = Map.foldWithKey (globals @loc.tyNames @loc.grTags) Map.empty @globalL.grValues
       loc.grTags        = @bindL.grTags `Map.union` @globalL.grTags
                           -- Make sure to put bindL on the lhs of Map.union, otherwise globalL takes precedence
@@ -135,6 +140,8 @@ SEM GrBind
 SEM GrExpr
   | Seq
       pat.maybeTyTag    = @expr.maybeTyTag
+  | UpdateUnit
+      lhs.maybeTyTag    = @val.maybeTyTag
   | FetchField
       lhs.grTags        = maybe Map.empty (Map.singleton @nm) @mbTag
       lhs.maybeTyTag    = @loc.maybeTyTag
@@ -142,6 +149,15 @@ SEM GrExpr
       loc.maybeTyTag    = maybe Nothing
                                 (\(GrTag_Con _ _ nm) -> Just $ lookupTag nm @lhs.constrs)
                                 @mbTag
+
+
+SEM GrPatAlt
+  | Tag
+     tag.maybeTyTag     = @lhs.maybeTyTag
+
+SEM GrAlt
+  | Alt
+      pat.maybeTyTag   = @expr.maybeTyTag
 
 SEM GrPatLam
   | Var
@@ -174,16 +190,20 @@ SEM GrVar
       lhs.tyTag         = @loc.tyTag
       loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: No tyTag for Ignore constructor."
 
+SEM GrVal
+  | Tag
+      lhs.maybeTyTag    = Just @tag.tyTag
+
 SEM GrTag
   | Con
       loc.tyTag         = lookupTag @nm @lhs.constrs
       loc.tyName        = toConDottedName @loc.tyTag
       lhs.tyTag         = @loc.tyTag
   | Fun
-      loc.tyTag         = headE
-                          ("GrinCode/TyTags.GrTag.tyTag: Cannot find type for Fun '"
-                          ++ hsnShowAlphanumeric @nm ++ "'")
-                          [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+      lhs.tyTags        = maybe Map.empty (Map.singleton @nm) @lhs.maybeTyTag
+      loc.tyTag         = head $ [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+                                   ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
+                                   ++ [error "Don't ever take the head of an empty list!"]
       loc.tyName        = toConDottedName @loc.tyTag
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"

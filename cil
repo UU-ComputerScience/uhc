@@ -2,7 +2,7 @@
 # Give me an hs, il, or exe file and I will execute it using EHC8, ilasm2 and/or mono.
 
 # Find the EHC compiler
-ehc=`readlink -e "$0"`  #readlink myself, so you may symlink me
+ehc=`readlink "$0"`  #readlink myself, so you may symlink me
 ehc=`dirname "$ehc"`/EHC/bin/8/ehc
 
 function process() {

@@ -38,6 +38,7 @@ toFieldName (TyCon _ cNm _ x mx) y =
 
 -- Can also be used to get the type of the stored fields, since they exactly match the constructor argument types.
 toFieldTypes :: TyTag -> [PrimitiveType]
+toFieldTypes (TyFun _ _)             = []
 toFieldTypes con@(TyCon hsn _ _ x _) =
   case (hsnShowAlphanumeric hsn) of
     "Int"          -> [Int32]
