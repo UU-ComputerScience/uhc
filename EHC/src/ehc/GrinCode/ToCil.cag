@@ -116,7 +116,12 @@ ATTR AllExpr
   |
   ]
 
-ATTR GrAlt GrAltL [ caseLabel : {String} | | ]
+ATTR GrAlt GrAltL
+  [ caseStartLabel : {String}
+    caseEndLabel   : {String}
+  |
+  |
+  ]
 
 ATTR GrValL
   [
@@ -180,14 +185,19 @@ SEM GrBind
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
-  | UpdateUnit  lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm ++ @val.cilCode ++ [loadRefVal, storeRefVal]
+  | UpdateUnit  lhs.cilCode = debugComment @self $ @loc.load ++ @val.cilCode ++ [loadRefVal, storeRefVal] ++ @loc.load
+                loc.load    = loadVar @lhs.className @lhs.scopes @nm
   | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $
                               @val.cilCode
+                              ++ [label @loc.caseStartLabel nop]
                               ++ @altL.cilCode
-                              ++ [label @loc.caseLabel nop]
-                loc.caseLabel   = head @lhs.labels
-                altL.caseLabel  = @loc.caseLabel
-                altL.labels = tail @lhs.labels
+                              ++ [label @loc.caseEndLabel nop]
+                loc.caseStartLabel  = head @lhs.labels
+                val.labels          = tail @lhs.labels
+                loc.caseEndLabel    = head @altL.labels
+                lhs.labels          = tail @altL.labels
+                altL.caseStartLabel = @loc.caseStartLabel
+                altL.caseEndLabel   = @loc.caseEndLabel
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self $
@@ -203,7 +213,8 @@ SEM GrExpr
                                            (toFieldName @loc.tyTag (o - 1))
                                    ]
   | Store       lhs.cilCode = [no @self]
-  | Call        lhs.cilCode = [no @self]
+  | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
+                loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
   | Eval        lhs.cilCode = [no @self]
   | App         lhs.cilCode = [no @self]
@@ -217,12 +228,11 @@ SEM GrAlt
                                   @pat.cilCode -- should return a boolean-like
                                   ++ [brfalse @loc.label]
                                   ++ @loc.exprCode
-                                  ++ [br @lhs.caseLabel]
                                   ++ [label @loc.label nop]
                 loc.exprCode  = case @ann of
-                                  GrAltAnnIdent   -> []
-                                  GrAltAnnReenter -> [no "Reenter Alt"]
-                                  _               -> @expr.cilCode
+                                  GrAltAnnIdent   -> [br @lhs.caseEndLabel]
+                                  GrAltAnnReenter -> [pop] ++ @expr.cilCode ++ [br @lhs.caseStartLabel]
+                                  _               -> [pop] ++ @expr.cilCode ++ [br @lhs.caseEndLabel]
                 loc.label     = head @lhs.labels
                 pat.labels    = tail @lhs.labels
 
@@ -318,10 +328,11 @@ ffcall "primAddInt" = [add]
 
 loadVar :: DottedName -> Map.Map HsName Scope -> HsName -> [MethodDecl]
 loadVar className scopes nm = case Map.lookup nm scopes of
-    Just ScGlobal -> [ldsfld Object "" className varName]
+    Just ScGlobal -> [lglobal]
     Just ScParam  -> [ldargN varName]
     Just ScLocal  -> [ldlocN varName]
-    Nothing       -> [no $ "Variable '" ++ varName ++ "' has unknown scope."] -- should become an error
+    Nothing       -> [no $ "Variable '" ++ varName ++ "' has unknown scope. Assuming global.", lglobal] -- should become an error
   where varName = hsnShowAlphanumeric nm
+        lglobal = ldsfld Object "" className varName
 
 %%]

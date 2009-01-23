@@ -1,0 +1,29 @@
+#!/bin/bash
+# Give me an hs, il, or exe file and I will execute it using EHC8, ilasm2 and/or mono.
+
+# Find the EHC compiler
+ehc=`readlink -e "$0"`  #readlink myself, so you may symlink me
+ehc=`dirname "$ehc"`/EHC/bin/8/ehc
+
+function process() {
+  case "$1" in
+    *.hs )
+      "$ehc" -ccil "$1" && \
+      process "${1%.hs}.il"
+      ;;
+    *.il )
+      ilasm2 "$1" && \
+      process "${1%.il}.exe"
+      ;;
+    *.exe )
+      mono "$1"
+      ;;
+    * )
+      echo "Don't know what to do with '$1'."
+      exit 1
+      ;;
+  esac
+}
+
+process "$1"
+
