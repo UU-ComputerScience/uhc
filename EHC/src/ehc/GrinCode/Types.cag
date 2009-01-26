@@ -1,0 +1,180 @@
+%%% Herschrijven GRIN-type-inferentie (probeer dit bestand niet te compileren :))
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+
+data Scope
+  = ScGlobal
+  | ScLocal
+  | ScParam
+
+data Type
+  = TTag TyTag
+  | TNode TyTag
+  | TInt
+  | TAnyTag
+  | TAnyNode
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Infer Scopes and TyTags for GrVars and GrTags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+
+ATTR GrPatLam
+  [ patternTypes : {Set Type}
+  |
+  |
+  ]
+
+ATTR AllExpr
+  [ variableTypes : {Map HsName (Set Type)}
+  |
+  | collectVars USE {`smartUnion`} {Map.empty}   : {Map HsName (Set Type)}
+    possibleTypes USE {`Set.union`} {Set.empty} : {Set Type}
+  ]
+
+%%]
+
+%%[(8 codegen grin)
+
+SEM GrExpr
+  | Seq
+      pat.patternTypes = @expr.possibleTypes
+      lhs.possibleTypes = @body.possibleTypes
+  | Case
+      lhs.possibleTypes = @altL.possibleTypes
+  | FetchNode
+      -- lhs.possibleTypes = fromJustE "FetchNode of unknown variable" $
+      --                     Map.lookup @nm @lhs.variableTypes
+  | FetchUpdate
+      -- lhs.possibleTypes = fromJustE "FetchUpdate of unknown variable" $
+      --                    Map.lookup @src @lhs.variableTypes
+  | Call FFI App
+      lhs.possibleTypes = Set.empty
+  | Catch
+      lhs.possibleTypes = error "Catch me if you can"
+
+SEM GrPatLam
+  | Var
+      lhs.collectVars = Map.singleton @nm @lhs.patternTypes
+  | VarNode
+      -- TAnyNode of TInt, afhankelijk van de KnownTag
+      lhs.collectVars = @fldL.collectVars
+  | BasicNode EnumNode
+      lhs.collectVars = Map.singleton @nm TInt
+  | BasicAnnot EnumAnnot
+      lhs.collectVars = Map.singleton @nm TInt
+  | Empty
+      lhs.collectVars = Map.empty
+  | PtrNode OpaqueNode PtrAnnot OpaqueAnnot
+      lhs.collectVars = error "Opaque or Pointer stuff"
+
+
+-- TODO Hieronder: oude code
+
+SEM GrVarL
+  | Nil
+      lhs.tyTag         = error "GrinCode/TyTags.GrValL.tyTag: Empty List has no TyTag."
+  | Cons
+      lhs.tyTag         = @hd.tyTag
+      hd.index          = @lhs.index
+      tl.index          = @lhs.index + 1
+
+SEM GrVar
+  | Var
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = intTyTag -- nonsense! -- error "GrinCode/TyTags.GrVal.tyTag: Not implemented yet for Var constructor."
+      lhs.typedLocals = Map.singleton @nm (toPrimitiveType @lhs.nodeTyTag)
+  | KnownTag
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = @tag.tyTag
+  | Ignore
+      lhs.tyTag         = @loc.tyTag
+      loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: No tyTag for Ignore constructor."
+
+SEM GrVal
+  | Tag
+      lhs.maybeTyTag    = Just @tag.tyTag
+
+SEM GrTag
+  | Con
+      loc.tyTag         = lookupTag @nm @lhs.constrs
+      loc.tyName        = toConDottedName @loc.tyTag
+      lhs.tyTag         = @loc.tyTag
+  | Fun
+      lhs.tyTags        = maybe Map.empty (Map.singleton @nm) @lhs.maybeTyTag
+      loc.tyTag         = head $ [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+                                   ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
+                                   ++ [error "Don't ever take the head of an empty list!"]
+      loc.tyName        = toConDottedName @loc.tyTag
+  | * - Con
+      lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Helper functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+headE :: String -> [a] -> a
+headE err []    = error err
+headE _   (x:_) = x
+
+fromJustE :: String -> Maybe a -> a
+fromJustE err = maybe (error err) id
+
+buildScopes :: [HsName] -> [HsName] -> [HsName] -> Map.Map HsName Scope
+buildScopes gs ls ps = Map.unions [mup ScGlobal gs, mup ScLocal ls, mup ScParam ps]
+  where mup s = foldr (flip Map.insert s) Map.empty
+
+-- TODO this function should already exists somewhere else. Use that one.
+lookupTag :: HsName -> Map.Map HsName TyTag -> TyTag
+lookupTag n ts = case Map.lookup n ts of
+  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "." ++ show ts
+  Just t  -> t
+
+funTyTag :: GrTag -> GrVal -> TyTag
+funTyTag (GrTag_Con _ _ nm) (GrVal_Node (GrTag_Fun fnm) _) = undefined
+
+grTag2primType :: GrTag -> PrimitiveType
+grTag2primType (GrTag_Con _ _ nm) =
+  case hsnShowAlphanumeric nm of
+    "Int"          -> Int32
+    "Char"         -> Char
+    "PackedString" -> String
+    _              -> Object
+
+
+type GrTagAttr a = Syn_GrTag -> a
+
+grTag2tyTag = grTag2A tyTag_Syn_GrTag
+
+grTag2A :: GrTagAttr a -> String -> Map.Map HsName TyTag -> Map.Map HsName TyTag -> [Label] -> Map.Map HsName Scope -> GrTag -> a
+grTag2A f cls constrs globals labels scopes tg =
+  let t = wrap_GrTag (sem_GrTag tg)
+                     (Inh_GrTag { className_Inh_GrTag = cls
+                                , constrs_Inh_GrTag   = constrs
+                                , globals_Inh_GrTag   = globals
+                                , labels_Inh_GrTag    = labels
+                                , scopes_Inh_GrTag    = scopes
+                                })
+  in f t
+
+
+%%]
+
