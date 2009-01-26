@@ -1,0 +1,11 @@
+Introduction
+* JVM: memory management, types, operand stack
+* hsjava
+Mapping Silly to JVM
+  * Compositionality
+  * Memory representation
+  * Transformation 5 (double allocs)
+  * FFI
+Demo
+Conclusion
+  * Future work

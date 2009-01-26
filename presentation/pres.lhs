@@ -101,8 +101,15 @@
 >  public int intVal;
 >}
 
+\end{frame}
 
-
+\begin{frame}
+\begin{center}
+  \Huge{|[1,2]|}
+  \end{center}
+  \end{frame}
+\begin{frame}
+  \includegraphics[scale=0.50]{listof12}
 \end{frame}
 
 % -----------------------------------------------------------------------------
