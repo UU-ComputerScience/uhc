@@ -112,6 +112,33 @@
   \includegraphics[scale=0.50]{listof12}
 \end{frame}
 
+\begin{frame}
+\frametitle{hsjava}
+\end{frame}
+
+\begin{frame}
+\frametitle{Silly to JVM}
+\end{frame}
+
+\begin{frame}
+\frametitle{Compositionality}
+\begin{itemize}
+\item Local variables
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{FFI}
+\end{frame}
+
+\begin{frame}
+\frametitle{Demo}
+\end{frame}
+
+\begin{frame}
+\frametitle{Future optimizations}
+\end{frame}
+
 % -----------------------------------------------------------------------------
 \end{document}
 
