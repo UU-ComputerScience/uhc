@@ -73,8 +73,7 @@
     \item \stress{Box integer values} in a reference type.
   \end{itemize}
 
-  \pause First approach is more \stress{efficient} but needs \stress{more information}.
-
+  \pause First approach is more \stress{efficient} but needs \stress{more information}. \\
   Second approach is \stress{simpler} to implement but is more \stress{expensive}.
   
 \end{frame}
@@ -83,20 +82,20 @@
 
 \begin{frame}
 
-  \frametitle{The simple approach}
-
 %format public  = "\stress{\textbf{public}}"
 %format static  = "\stress{\textbf{static}}"
 %format class   = "\stress{\textbf{class}}"
 %format extends = "\stress{\textbf{extends}}"
 
->public static class Node
+>public static class ANode {}
+
+>public static class Node extends ANode
 >{
 >  public int tag;
->  public Node[] payload;
+>  public ANode[] payload;
 >}
 
->public static class IntNode extends Node
+>public static class IntNode extends ANode
 >{
 >  public int intVal;
 >}
