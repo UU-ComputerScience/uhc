@@ -13,6 +13,9 @@ WRAPPER GrTag
 
 %%[(8 codegen grin) hs
 
+mapFold :: (Show k, Show a) => Map.Map k a -> String
+mapFold = Map.foldWithKey (\k x s -> show k ++ "=" ++ show x ++ "\n" ++ s) "^- folded map"
+
 data Scope
   = ScGlobal
   | ScLocal
@@ -42,6 +45,13 @@ ATTR GrVarL GrVar
   | tyTag : {TyTag}
   ]
 
+ATTR GrPatAlt GrTag
+  [
+  |
+  | maybeFunNm  USE {`const`} {Nothing} : {Maybe HsName}
+  ]
+
+
 ATTR GrTag
   [ maybeTyTag : {Maybe TyTag}
   |
@@ -60,6 +70,7 @@ ATTR AllExpr
   |
   | typedLocals   USE {`Map.union`} {Map.empty} : {Map.Map HsName PrimitiveType}
     maybeTyTag    USE {`const`} {Nothing} : {Maybe TyTag}
+    maybeGrTag    USE {`const`} {Nothing} : {Maybe GrTag}
   ]
 
 ATTR GrPatLam GrPatAlt
@@ -110,20 +121,18 @@ globals :: Map.Map HsName HsName -> Map.Map HsName GrTag -> HsName -> GrVal
              -> Map.Map HsName TyTag -> Map.Map HsName TyTag
 globals tyNames grTags nm grValue tyTags =
   case grValue of
-    (GrVal_Node (GrTag_Con _ _ ccnm) _) ->
-      case Map.lookup nm grTags of
-        (Just (GrTag_Con _ _ cnm)) ->
-          case Map.lookup cnm tyNames of
-            (Just tyNm) -> Map.insert nm (TyCon tyNm ccnm (-1) (-1) (-1)) tyTags
-            _    -> tyTags
-        _ -> tyTags
     (GrVal_Node (GrTag_Fun fnm) _) ->
       case Map.lookup nm grTags of
         (Just (GrTag_Con _ _ cnm)) ->
           case Map.lookup cnm tyNames of
             (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
-            _    -> tyTags
-        _ -> tyTags
+            _ -> tyTags
+        _ -> case Map.lookup fnm grTags of
+               (Just (GrTag_Con _ _ cnm)) ->
+                 case Map.lookup cnm tyNames of
+                   (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
+                   _ -> tyTags
+               _ -> trace ("lookup " ++ show fnm ++ " in:\n" ++ mapFold grTags) tyTags
     _ -> tyTags
 }
 
@@ -142,6 +151,7 @@ SEM GrExpr
       pat.maybeTyTag    = @expr.maybeTyTag
   | UpdateUnit
       lhs.maybeTyTag    = @val.maybeTyTag
+      lhs.grTags        = maybe Map.empty (Map.singleton @nm) @val.maybeGrTag
   | FetchField
       lhs.grTags        = maybe Map.empty (Map.singleton @nm) @mbTag
       lhs.maybeTyTag    = @loc.maybeTyTag
@@ -158,6 +168,7 @@ SEM GrPatAlt
 SEM GrAlt
   | Alt
       pat.maybeTyTag   = @expr.maybeTyTag
+      lhs.grTags       = maybe Map.empty (\nm -> maybe Map.empty (Map.singleton nm) @expr.maybeGrTag) @pat.maybeFunNm
 
 SEM GrPatLam
   | Var
@@ -193,6 +204,7 @@ SEM GrVar
 SEM GrVal
   | Tag
       lhs.maybeTyTag    = Just @tag.tyTag
+      lhs.maybeGrTag    = Just @tag.self
 
 SEM GrTag
   | Con
@@ -205,6 +217,7 @@ SEM GrTag
                                    ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
                                    ++ [error "Don't ever take the head of an empty list!"]
       loc.tyName        = toConDottedName @loc.tyTag
+      lhs.maybeFunNm    = Just @nm
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
 %%]
