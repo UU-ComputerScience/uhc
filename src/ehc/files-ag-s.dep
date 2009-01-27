@@ -75,6 +75,7 @@ GrinCode/Trf/InlineEA.cag
 GrinCode/Trf/LateInline.cag
 GrinCode/Trf/LowerGrin.cag
 GrinCode/Trf/MayLiveUnboxed.cag
+GrinCode/Trf/MemberSelect.cag
 GrinCode/Trf/MergeCase.cag
 GrinCode/Trf/MergeInstance.cag
 GrinCode/Trf/NormForHPT.cag
