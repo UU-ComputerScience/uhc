@@ -11,7 +11,7 @@
 %%]
 %%[8 hs export(TyTag(..))
 %%]
-%%[8 hs export(toTypeName, fromCTag, intTyTag, charTyTag, packedStringTyTag, unitTyTag, toPrimitiveType, toTypeDottedName, toConDottedName, fancyName)
+%%[8 hs export(toTypeName, toConName, fromCTag, intTyTag, charTyTag, packedStringTyTag, unitTyTag, toPrimitiveType, toTypeDottedName, toConDottedName, fancyName)
 %%]
 %%[(8 codegen grin) hs import(Language.Cil)
 %%]
@@ -48,6 +48,12 @@ toTypeName (TyCon nm _ _ _ _) = nm
 toTypeName (TyFun nm _)       = nm
 toTypeName (TyPApp nm _ _)    = nm
 toTypeName (TyApp nm _)       = nm
+
+toConName :: TyTag -> HsName
+toConName (TyCon _ nm _ _ _) = nm
+toConName (TyFun _ nm)       = nm
+toConName (TyPApp _ nm _)    = nm
+toConName (TyApp _ nm)       = nm
 
 fromCTag :: CTag -> TyTag
 fromCTag (CTag t nm n a m) = TyCon t nm n a m

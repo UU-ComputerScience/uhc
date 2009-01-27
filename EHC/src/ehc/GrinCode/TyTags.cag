@@ -132,7 +132,7 @@ globals tyNames grTags nm grValue tyTags =
                  case Map.lookup cnm tyNames of
                    (Just tyNm) -> Map.insert nm (TyFun tyNm fnm) tyTags
                    _ -> tyTags
-               _ -> trace ("lookup " ++ show fnm ++ " in:\n" ++ mapFold grTags) tyTags
+               _ -> tyTags
     _ -> tyTags
 }
 
@@ -157,7 +157,9 @@ SEM GrExpr
       lhs.maybeTyTag    = @loc.maybeTyTag
       loc.tyTag         = maybe (error "Cannot fetch field of unknown tag") id @loc.maybeTyTag
       loc.maybeTyTag    = maybe Nothing
-                                (\(GrTag_Con _ _ nm) -> Just $ lookupTag nm @lhs.constrs)
+                                (\xs -> case xs of
+                                          (GrTag_Con _ _ nm) -> Just (lookupTag nm @lhs.constrs);
+                                          _ -> Nothing;)
                                 @mbTag
 
 
@@ -217,6 +219,8 @@ SEM GrTag
                                    ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
                                    ++ [error "Don't ever take the head of an empty list!"]
       loc.tyName        = toConDottedName @loc.tyTag
+      lhs.maybeFunNm    = Just @nm
+  | PApp
       lhs.maybeFunNm    = Just @nm
   | * - Con
       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"

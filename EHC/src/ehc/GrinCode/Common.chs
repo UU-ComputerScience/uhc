@@ -17,7 +17,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -228,7 +228,7 @@ absFetch a (HNmNr i _) = case getEnvVar a i of
                              AbsBottom     -> AbsNodes Map.empty
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
-                             AbsNodes _     -> error $ "variable " ++ show i ++ "is a node variable"
+                             AbsNodes _     -> error $ "variable " ++ show i ++ " is a node variable"
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of

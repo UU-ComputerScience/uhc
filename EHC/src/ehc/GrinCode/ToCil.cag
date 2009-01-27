@@ -125,7 +125,7 @@ ATTR GrVar GrVarL
 ATTR AllExpr
   [ methodParams : {Set HsName}
   |
-  |
+  | locals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
   ]
 
 ATTR GrAlt GrAltL
@@ -143,17 +143,18 @@ ATTR GrValL
   ]
 
 ATTR AllNT
-  [ conMap    : {Map HsName TyTag}
-    funMap    : {Map HsName TyTag}
-    papMap    : {Map (Int, HsName) TyTag}
+  [
   | labels    : {[Label]}
   | self      : SELF
   ]
 
 ATTR AllNTNoMod
   [ className : {DottedName}
+    grTagsMap : {Map GrTag TyTag}
   |
-  |
+  | allCons  USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
+    allFuns  USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
+    allPApps USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
   ]
 
 
@@ -178,7 +179,25 @@ SEM GrModule
                             ]
         loc.initialize    = Method Static Private Void "initialize" []
                               (@globalL.cilValues ++ [ret])
-        loc.typeDefs      = toTypeDefs @loc.className undefined -- @loc.tyTags
+        loc.typeDefs      = toTypeDefs @loc.className (Map.elems @loc.grTagsMap)
+
+        globalL.grTagsMap = @loc.grTagsMap
+        bindL.grTagsMap   = @loc.grTagsMap
+
+        loc.usedCtyTags   = filter (\tytag -> toConName tytag `elem` @loc.usedConNms) @loc.ctyTags
+        loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
+
+        loc.grTagsMap     = @loc.cons `Map.union` @loc.funs `Map.union` @loc.papps
+
+        loc.cons          = Set.fold (\cntag@(GrTag_Con _ _ nm) mp -> maybe mp (\ty -> Map.insert cntag ty mp) (Map.lookup nm @loc.constrs)) Map.empty @bindL.allCons
+
+        loc.funs          = Set.fold (\fntag@(GrTag_Fun nm) mp -> maybe (maybe mp (\ty -> Map.insert fntag (TyFun (toTypeName ty) nm) mp) (Map.lookup (absGrTag nm @lhs.hptMap) @loc.papps)) (\tynm -> Map.insert fntag (TyFun tynm nm) mp) (Map.lookup (conName (absGrTag nm @lhs.hptMap)) @loc.tyNames)) Map.empty @bindL.allFuns
+
+        loc.papps         = Set.fold (\patag@(GrTag_PApp needs nm) mp -> maybe mp (\tynm -> Map.insert patag (TyPApp tynm nm needs) mp) (Map.lookup (conName (absGrTag nm @lhs.hptMap)) @loc.tyNames)) Map.empty @bindL.allPApps
+
+        loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
+        loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
+        loc.usedConNms    = map conName (Set.toList @bindL.allCons)
 
         bindL.className   = @loc.className
         globalL.className = @loc.className
@@ -195,7 +214,7 @@ SEM GrBind
           expr.methodParams = Set.fromList @argNmL
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] undefined -- @expr.typedLocals
+          loc.locals      = Set.fold (\nm xs -> Local (absPrimitiveType nm @lhs.hptMap) (hsnShowAlphanumeric nm) : xs) [] @expr.locals -- undefined -- @expr.typedLocals
 
 
 SEM GrExpr
@@ -230,7 +249,7 @@ SEM GrExpr
                                    ]
                 loc.tyTag   = case @mbTag of
                               Nothing  -> error "Cannot fetch field of unknown type"
-                              Just tag -> lookupSomeTag tag @lhs.conMap @lhs.funMap @lhs.papMap
+                              Just tag -> lookupTag tag @lhs.grTagsMap
   | Store       lhs.cilCode = [no @self]
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
@@ -299,40 +318,57 @@ SEM GrVar
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
                             , stlocN (hsnShowAlphanumeric @nm) ]
-      lhs.tyTag = lookupSomeTag (absGrTag @nm @lhs.hptMap) @lhs.conMap @lhs.funMap @lhs.papMap
+      lhs.tyTag = lookupTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
   | KnownTag
-      lhs.tyTag = lookupSomeTag @tag.self @lhs.conMap @lhs.funMap @lhs.papMap
+      lhs.tyTag = lookupTag @tag.self @lhs.grTagsMap
   | Ignore
       lhs.tyTag = error "Ignore has no TyTag"
 
 SEM GrPatLam
-  | Empty       lhs.cilCode = debugComment @self []
-  | Var         lhs.cilCode = debugComment @self [stlocN @varName]
-  | VarNode     lhs.cilCode = debugComment @self (loadRefVal : @fldL.cilLoad)
-                fldL.index  = -1
-                fldL.nodeTyTag = @fldL.tyTag
-  | BasicNode   lhs.cilCode = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-  | EnumNode    lhs.cilCode = [no @self]
-  | PtrNode     lhs.cilCode = [no @self]
-  | OpaqueNode  lhs.cilCode = [no @self]
-  | BasicAnnot  lhs.cilCode = debugComment @self [stlocN @varName]
-  | EnumAnnot   lhs.cilCode = [no @self]
-  | PtrAnnot    lhs.cilCode = [no @self]
-  | OpaqueAnnot lhs.cilCode = [no @self]
+  | Empty
+      lhs.cilCode     = debugComment @self []
+  | Var
+      lhs.cilCode     = debugComment @self [stlocN @varName]
+      lhs.locals      = Set.singleton @nm
+  | VarNode
+      lhs.cilCode     = debugComment @self (loadRefVal : @fldL.cilLoad)
+      fldL.index      = -1
+      fldL.nodeTyTag  = @fldL.tyTag
+  | BasicNode
+      lhs.cilCode     = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
+      lhs.locals      = Set.singleton @nm
+  | EnumNode
+      lhs.cilCode     = [no @self]
+  | PtrNode
+      lhs.cilCode     = [no @self]
+  | OpaqueNode
+      lhs.cilCode     = [no @self]
+  | BasicAnnot
+      lhs.cilCode     = debugComment @self [stlocN @varName]
+      lhs.locals      = Set.singleton @nm
+  | EnumAnnot
+      lhs.cilCode     = [no @self]
+  | PtrAnnot
+      lhs.cilCode     = [no @self]
+  | OpaqueAnnot
+      lhs.cilCode     = [no @self]
   | * - VarNode Empty
-                loc.varName = hsnShowAlphanumeric @nm
+      loc.varName     = hsnShowAlphanumeric @nm
 
 
 SEM GrTag
   | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
                 lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
-                loc.tyTag     = lookupTag @nm @lhs.conMap
+                lhs.allCons   = Set.singleton @self
+                loc.tyTag     = lookupTag @self @lhs.grTagsMap
   | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
                 lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
-                loc.tyTag     = lookupTag @nm funMap
+                lhs.allFuns   = Set.singleton @self
+                loc.tyTag     = lookupTag @self @lhs.grTagsMap
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
-                loc.tyTag     = lookupTag (@needs, @nm) papMap
+                lhs.allPApps  = Set.singleton @self
+                loc.tyTag     = lookupTag @self @lhs.grTagsMap
   | App         lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
   | Unboxed Hole Rec World Any
@@ -345,6 +381,28 @@ SEM GrTag
 %%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
+
+absValue :: HsName -> HptMap -> AbstractValue
+absValue hsName hptMap = getEnvVar hptMap (getNr hsName) -- Todo: write heap lookup code
+
+absGrTag :: HsName -> HptMap -> GrTag
+absGrTag hsName hptMap =
+  case absValue hsName hptMap of
+    (AbsNodes gav) ->
+      if Map.size gav == 1
+      then Map.keys gav !! 0
+      else error "GrinCode.ToCil.absGrTag: AbsNodes map is not a singleton."
+    _ -> error "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement."
+
+absPrimitiveType :: HsName -> HptMap -> PrimitiveType
+absPrimitiveType hsName hptMap =
+  case absValue hsName hptMap of
+    (AbsNodes gav) ->
+      if Map.size gav == 1
+      then Object
+      else error "GrinCode.ToCil.absPrimitiveType: AbsNodes map is not a singleton."
+    (AbsBasic) -> Int32
+    _ -> error "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement."
 
 no :: (Show a) => a -> MethodDecl
 no a = comment $ "TODO   " ++ show a
@@ -374,15 +432,7 @@ loadVar className params nm = case Set.member nm params of
   where varName = hsnShowAlphanumeric nm
         lglobal = ldsfld Object "" className varName
 
-lookupTag :: Show a => a -> Map a TyTag -> TyTag
-lookupTag n ts = case Map.lookup n ts of
-  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "." ++ show ts
-  Just t  -> t
-
-lookupSomeTag :: GrTag -> Map HsName TyTag -> Map HsName TyTag -> Map (Int, HsName) TyTag -> TyTag
-lookupSomeTag (GrTag_Con _ _ n) grs _   _   = lookupTag n grs
-lookupSomeTag (GrTag_Fun n)     _   fns _   = lookupTag n fns
-lookupSomeTag (GrTag_PApp i n)   _   _   pps = lookupTag (i,n) pps
-lookupSomeTag gr                            = error $ "Looking up a strange tag: " ++ gr
+lookupTag :: GrTag -> Map GrTag TyTag -> TyTag
+lookupTag k mp = Map.findWithDefault (error $ "Tag " ++ show k ++ " not in map: " ++ show mp) k mp
 
 %%]

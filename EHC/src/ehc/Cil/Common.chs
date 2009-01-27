@@ -128,6 +128,18 @@ subTys callbackNm tyNm (TyFun _ fnm) =
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<Thunk>" ++ fnNm
+subTys callbackNm tyNm (TyPApp _ fnm needs) =
+  classDef Public subTyNm (extends tyNm) noImplements []
+    [ defaultCtor []
+    , Method Static Public Object "Invoke" []
+        [ call StaticCallConv Object "" callbackNm fnNm []
+        , ret
+        ]
+    ]
+    []
+  where
+    fnNm      = hsnShowAlphanumeric fnm
+    subTyNm   = "<PApp>" ++ fnNm ++ "`" ++ show needs
 subTys csNm tyNm (TyCon _ cnm _ a ma) =
   classDef Public subTyNm (extends tyNm) []
     fields
