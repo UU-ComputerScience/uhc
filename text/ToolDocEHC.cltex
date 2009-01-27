@@ -339,6 +339,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \begin{verbatim}
 % ./configure
 % make 100/ehc                     # variant 100 will ultimately become UHC
+% make 100/ehclib                  # library is build in build/100/ehclib/ehcbase
 \end{verbatim}
       Currently there is no installation via 'make install'.
 \end{itemize}
@@ -351,7 +352,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 % cat > hw.hs
 module HelloWorld where
 main = putStrLn "Hello World"
-% bin/100/ehc -Pbuild/100/ehclib/ehcbase hw.hs
+% bin/100/ehc -Pbuild/100/ehclib/ehcbase hw.hs     # path to built library must be included
 Imports of Haskell             hw                     (hw.hs)
 Imports of Haskell             Prelude                (build/100/ehclib/ehcbase/Prelude.hs)
 Imports of Haskell             EHC.Prelude            (build/100/ehclib/ehcbase/EHC/Prelude.hs)

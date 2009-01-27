@@ -45,13 +45,14 @@ grinMod2ByteCodeMod opts gmod
 %%]
 
 %%[(20 codegen grin) -8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
-grinMod2ByteCodeMod opts allImpNmL impNmOffMpMp expNmOffMp gmod
+grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
+grinMod2ByteCodeMod opts allImpNmL impNmL impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
                                { expNmOffMp_Inh_GrAGItf = expNmOffMp
                                , impNmOffMpMp_Inh_GrAGItf = impNmOffMpMp
                                , allImpNmL_Inh_GrAGItf = allImpNmL
+                               , impNmL_Inh_GrAGItf = impNmL
                                , opts_Inh_GrAGItf = opts
                                })
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
@@ -108,7 +109,7 @@ ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 %%]
 
 %%[(20 codegen grin)
-ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]} | | ]
+ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]}  impNmL: {[HsName]} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -817,7 +818,8 @@ SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[20
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
-                                                      [ (n,hsnShowAlphanumeric n) | (n,_) <- sortOn (fst.snd) $ Map.toList @lhs.impNmOffMpMp ]
+                                                      [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ]
+                                                      -- [ (n,hsnShowAlphanumeric n) | (n,_) <- sortOn (fst.snd) $ Map.toList @lhs.impNmOffMpMp ]
                                                       [ m | Just m <- map (\(n,_) -> Map.lookup n @entryNmMp) $ sortOn snd $ Map.toList @lhs.expNmOffMp ]
 %%]]
                                                       @entryL

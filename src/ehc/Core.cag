@@ -628,7 +628,8 @@ arityMpFilterCaf = Map.filter (==0)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen) hs export(HsName2OffsetMp,HsName2OffsetMpMp)
-type HsName2OffsetMp = Map.Map HsName Int
+type HsNameOffset      = Int
+type HsName2OffsetMp   = Map.Map HsName HsNameOffset
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 

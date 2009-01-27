@@ -133,19 +133,33 @@ cpEhcFullProgModuleCompileN modNmL
 %%]
 
 %%[20 haddock
+Find out whether a compilation is needed, and if so, can be done.
+%%]
+
+%%[20
+cpEhcFullProgModuleDetermineNeedsCompile :: HsName -> EHCompilePhase ()
+cpEhcFullProgModuleDetermineNeedsCompile modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+             needsCompile = crModNeedsCompile modNm cr
+             canCompile   = crModCanCompile modNm cr
+       ; when (ehcOptVerbosity opts >= VerboseDebug)
+              (lift $ putStrLn (show modNm ++ " needs compile: " ++ show needsCompile ++ " can compile: " ++ show canCompile))
+       ; cpUpdCU modNm (ecuSetNeedsCompile (needsCompile && canCompile))
+       }
+%%]
+
+%%[20 haddock
 Compilation of 1 module, as part of a full program compilation
 %%]
 
 %%[20
 cpEhcFullProgModuleCompile1 :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleCompile1 modNm
-  = do { cr <- get
-       ; let targ = if crModNeedsCompile modNm cr
-%%[[101
-                       && crModCanCompile modNm cr
-%%]]
-                    then HSAllSem
-                    else HSAllSemHI
+  = do { cpEhcFullProgModuleDetermineNeedsCompile modNm
+       ; cr <- get
+       ; let (ecu,_,_,_) = crBaseInfo modNm cr
+             targ = if ecuNeedsCompile ecu then HSAllSem else HIAllSem
        ; cpSeq [cpEhcModuleCompile1 (Just targ) modNm]
        }
 %%]
@@ -159,9 +173,9 @@ cpEhcFullProgBetweenModuleFlow :: HsName -> EHCompilePhase ()
 cpEhcFullProgBetweenModuleFlow modNm
   = do { cr <- get
        ; case ecuState $ crCU modNm cr of
-           ECUSHaskell HSAllSem   -> return ()
-           ECUSHaskell HSAllSemHI -> cpFlowHISem modNm
-           _                      -> return ()
+           ECUSHaskell HSAllSem -> return ()
+           ECUSHaskell HIAllSem -> cpFlowHISem modNm
+           _                    -> return ()
 %%[[99
        ; cpCleanupFlow modNm
 %%]]
@@ -190,49 +204,49 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%]
 %%[20
-           (ECUSHaskell HSStart,Just HSOnlyImports)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Imports of Haskell"
+           (ECUSHaskell st,Just HSOnlyImports)
+             |    st == HSStart
+%%[[99
+               || st == LHSStart
+%%]]
+             -> cpSeq [ cpMsg modNm VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                       , cpEhcHaskellModulePrepare modNm
-                      , cpEhcHaskellImport HSOnlyImports modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSOnlyImports))
+                      , cpEhcHaskellImport stnext modNm
+                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell stnext))
                       ]
-%%[[99
-           (ECUSHaskell LHSStart,Just HSOnlyImports)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Imports of Literate Haskell"
+             where stnext = hsstateNext st
+           (ECUSHaskell HIStart,Just HSOnlyImports)
+             -> cpSeq [ cpMsg modNm VerboseNormal ("HI of Haskell")
                       , cpEhcHaskellModulePrepare modNm
-                      , cpEhcHaskellImport LHSOnlyImports modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell LHSOnlyImports))
+                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
                       ]
-%%]]
-           (ECUSHaskell HSOnlyImports,Just HSOnlyImports)
-             -> return ()
+           (ECUSHaskell st,Just HSOnlyImports)
+             |    st == HSOnlyImports
+               || st == HIOnlyImports
 %%[[99
-           (ECUSHaskell LHSOnlyImports,Just HSOnlyImports)
+               || st == LHSOnlyImports
+%%]]
              -> return ()
-%%]]
-           (ECUSHaskell HSOnlyImports,Just HSAllSem)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Compiling Haskell"
-                      , cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts HSOnlyImports modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                      ]
-%%[[99
-           (ECUSHaskell LHSOnlyImports,Just HSAllSem)
-             -> cpSeq [ cpMsg modNm VerboseNormal "Compiling Literate Haskell"
-                      , cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts LHSOnlyImports modNm
-                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                      ]
-%%]]
-           (ECUSHaskell st,Just HSAllSemHI)
+           (ECUSHaskell st,Just HSAllSem)
              |    st == HSOnlyImports
 %%[[99
                || st == LHSOnlyImports
 %%]]
-             -> do { cpMsg modNm VerboseNormal "Reading HI"
-%%[[(20 codegen grin)
-                   ; cpUpdateModOffMp [modNm]
+             -> cpSeq [ cpMsg modNm VerboseNormal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
+                      , cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st modNm
+                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
+                      ]
+           (ECUSHaskell st,Just HIAllSem)
+             |    st == HSOnlyImports
+%%[[99
+               || st == LHSOnlyImports
 %%]]
-                   ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSemHI))
-                   }
+             -> cpSeq [ cpMsg modNm VerboseNormal "Reading HI"
+%%[[(20 codegen grin)
+                      , cpUpdateModOffMp [modNm]
+%%]]
+                      , cpUpdCU modNm (ecuStoreState (ECUSHaskell HIAllSem))
+                      ]
 %%]]
 %%]
 %%[8

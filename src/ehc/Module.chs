@@ -436,16 +436,16 @@ instance PP ModMpInfo where
        >-< "Hidden Exps:" >#< (ppAssocL $ Rel.toList $ mmiHiddenExps   i)
 
 emptyModMpInfo :: ModMpInfo
-emptyModMpInfo = mkModMpInfo Rel.empty Rel.empty Rel.empty
+emptyModMpInfo = mkModMpInfo hsnUnknown Rel.empty Rel.empty Rel.empty
 
-mkModMpInfo :: ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
-mkModMpInfo i e he
+mkModMpInfo :: HsName -> ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
+mkModMpInfo modNm i e he
   = ModMpInfo
       { mmiInscps   		= i
       , mmiExps     		= e
       , mmiHiddenExps     	= he
 %%[[(20 codegen)
-      , mmiNmOffMp  		= expsNmOffMp $ e `Rel.union` he
+      , mmiNmOffMp  		= expsNmOffMp modNm $ e `Rel.union` he
 %%]]
       }
 
@@ -458,15 +458,19 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 The exported names of the module
 
 %%[(20 codegen)
-expsNmOffMp :: ModEntRel -> HsName2OffsetMp
-expsNmOffMp exps
+expsNmOffMp :: HsName -> ModEntRel -> HsName2OffsetMp
+expsNmOffMp modNm exps
   = Map.fromList
     $ flip zip [0..]
-    $ sortByOn rowLabCmp hsnQualified
+    $ sortBy rowLabCmp
     $ nub
-    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val ]
+    $ [ nm
+      | e <- Set.toList $ Rel.rng exps
+      , mentKind e == IdOcc_Val
+      , let nm = ioccNm (mentIdOcc e)
+      , panicJust "Module.expsNmOffMp" (hsnQualifier nm) == modNm
+      ]
 %%]
-    $ [ ioccNm $ mentIdOcc e | e <- Set.toList $ Rel.rng exps, mentKind e == IdOcc_Val || mentKind e == IdOcc_Inst ]
 
 %%[20 export(modMpCombine)
 modMpCombine ::  [Mod] -> ModMp -> (ModMp,[Err])
@@ -475,7 +479,7 @@ modMpCombine ms mp
   where expsOf mp n     = mmiExps $ Map.findWithDefault emptyModMpInfo n mp
         rels            = modInsOuts (expsOf mp) ms
         (inscps,exps)   = unzip rels
-        newMp           = (Map.fromList $ zipWith4 (\n i o ho -> (n,mkModMpInfo i o ho)) (map modName ms) inscps exps (map modHiddenExps ms))
+        newMp           = (Map.fromList $ zipWith4 (\n i o ho -> (n,mkModMpInfo n i o ho)) (map modName ms) inscps exps (map modHiddenExps ms))
                            `Map.union` mp
         errs            = zipWith (checkMod (fmap mmiExps . (`Map.lookup` newMp))) inscps ms
 %%]

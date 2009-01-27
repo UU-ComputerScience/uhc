@@ -50,6 +50,8 @@ SEM Binding
                                               ]
     | Fixity
         lhs         .   ppSq        =   hiNV "fixity" @nm [pp @prio,pp @fixity]
+    | ImportModules
+        lhs         .   ppSq        =   hiNV "importmodules" hsnUnknown [ppCurlysSemisBlock $ map (ppForHI) @asDeclared,ppCurlysSemisBlock $ map (ppForHI) @asUsed]
     | Export
         lhs         .   ppSq        =   hiNV "export" hsnUnknown [pp (show @visible),ppForHI @exports]
     | Ids

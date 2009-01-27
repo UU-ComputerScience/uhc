@@ -17,7 +17,7 @@ module EH.Util.FPath
   , SearchPath, FileSuffixes
   , mkInitSearchPath
   , searchPathFromString
-  , searchPathForReadableFile
+  , searchPathForReadableFiles, searchPathForReadableFile
   )
 where
 
@@ -184,26 +184,35 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
-searchPathForReadableFile paths suffs fp
-  = let select f fps
-          = foldM chk Nothing fps
+searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
+searchPathForReadableFiles stopAtFirst paths suffs fp
+  = let select stop f fps
+          = foldM chk [] fps
           where chk r fp
                   = case r of
-                      Nothing -> f fp
-                      Just _  -> return r
+                      (_:_) | stop -> return r
+                      _            -> do r' <- f fp
+                                         return (r ++ r')
         tryToOpen mbSuff fp
           = do { let fp' = maybe fp (\suff -> fpathSetNonEmptySuff suff fp) mbSuff
                ; fExists <- doesFileExist (fpathToStr fp')
                -- ; hPutStrLn stderr (show fp ++ " - " ++ show fp')
                ; if fExists
-                 then return (Just fp')
-                 else return Nothing
+                 then return [fp']
+                 else return []
                }
         tryToOpenWithSuffs suffs fp
           = case suffs of
               [] -> tryToOpen Nothing fp
-              _  -> select (\(ms,f) -> tryToOpen ms f) ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
+              _  -> select stopAtFirst
+                      (\(ms,f) -> tryToOpen ms f)
+                      ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir dir
-          = select (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp,fpathSetDir dir fp]
-     in select tryToOpenInDir paths
+          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp,fpathSetDir dir fp]
+     in select True tryToOpenInDir paths
+
+searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
+searchPathForReadableFile paths suffs fp
+  = do fs <- searchPathForReadableFiles True paths suffs fp
+       return (listToMaybe fs)
+

@@ -8,7 +8,7 @@ Translation to another AST
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -21,18 +21,23 @@ Translation to another AST
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
+
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
+
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+
 -- Grin semantics
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
 %%]
+
 -- Bytecode semantics
 %%[(8 codegen grin) import({%{EH}GrinByteCode.ToC}(gbmod2C))
 %%]
+
 -- Alternative backends
 %%[(8 codegen grin) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
 %%]
@@ -114,14 +119,9 @@ cpTranslateEH2Core modNm
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = EHSem.cmodule_Syn_AGItf ehSem
-%%[[8
-%%][102
-                 -- core   = Core.CModule_Mod modNm (Core.CExpr_Int 1) []
-%%]]
          ;  when (isJust mbEHSem)
-                 (do { cpUpdCU modNm (ecuStoreCore core)
-                     }
-                 )
+                 (cpUpdCU modNm ( ecuStoreCore core
+                                ))
          }
 %%]
 
@@ -145,7 +145,7 @@ cpTranslateGrin2Bytecode modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  modNmLL= crCompileOrder cr
                  mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpTranslateGrin2Bytecode" mbGrin
+                 grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
 %%[[20
                  expNmOffMp
                         = crsiExpNmOffMp modNm crsi
@@ -155,12 +155,16 @@ cpTranslateGrin2Bytecode modNm
                         = grinMod2ByteCodeMod opts
 %%[[20
                             (if ecuIsTopMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
-                            (crsiModOffMp crsi)
+                            (ecuImpNmL ecu)
+                            -- (crsiModOffMp crsi)
+                            (Map.fromList [ (n,(o,mp)) | (o,n) <- zip [0..] (ecuImpNmL ecu), let (_,mp) = panicJust "cpTranslateGrin2Bytecode2" (Map.lookup n (crsiModOffMp crsi))])
                             expNmOffMp
 %%]]
                             $ grin
 %%[[20
          -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
+         ;  when (ehcOptVerbosity opts >= VerboseDebug)
+                 (lift $ putStrLn (show expNmOffMp))
 %%]]
 
          ;  when (isJust mbGrin)

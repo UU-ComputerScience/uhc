@@ -301,11 +301,11 @@ SEM Module
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
                             .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
 %%[[20
-                            .   strNmImpNode            =   "impNode"
+                            .   strNmImpTbl             =   "impMods"
                             .   strNmExpNode            =   "expNode"
                             .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
-                            .   ppNmImpNode             =   @ppNm @strNmImpNode
-                            .   ppNmImpNodeNms          =   @ppNm (@strNmImpNode ++ "_nms")
+                            -- .   ppNmImpNode             =   @ppNm @strNmImpNode
+                            .   ppImpModTbl             =   @ppNm @strNmImpTbl
                             .   ppNmExpNode             =   @ppNm @strNmExpNode
                             .   ppNmExpNodeOffs         =   @ppNm (@strNmExpNode ++ "_offs")
                             .   ppNmExpNodeSz           =   @ppNm @strNmExpNodeSz
@@ -389,7 +389,7 @@ SEM Module
                                                                          , @ppNmConstTbl
 %%[[20
                                                                          -- , ppAddrOf @ppNmImpNode
-                                                                         -- , pp (length @impModNmL), @ppNmImpNodeNms
+                                                                         , @ppImpModTbl, pp (length @impModNmL)
                                                                          , ppAddrOf @ppNmExpNode
                                                                          , @ppNmExpNodeSz, @ppNmExpNodeOffs
                                                                          , pp "modTbl"
@@ -442,9 +442,14 @@ SEM Module
                                                                   ++ [ppCurlysCommasBlock (replicate 2 $ pp $ "NULL")]
                                                                 )
 %%][20
+                                                    impmods = ppTbl "GB_ImpModEntry" @ppImpModTbl
+                                                                ( [ ppCurlysCommasBlock [ ppStr (show n), pp "0" >#< ppCmtC @lhs.opts "filled during linking" ]
+                                                                  | (n,_) <- @impModNmL
+                                                                  ]
+                                                                )
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
-                                                                ( [ ppCurlysCommasBlock [ pp $ show m, ppAddrOf $ mkPre m >|< @strNmExpNode, ppAddrOf $ mkPre m >|< @strNmByteCodeModule ]
-                                                                  | (_,m) <- @allImpModNmL
+                                                                ( [ ppCurlysCommasBlock [ ppStr (show n), ppAddrOf $ mkPre m >|< @strNmExpNode, ppAddrOf $ mkPre m >|< @strNmByteCodeModule ]
+                                                                  | (n,m) <- @allImpModNmL
                                                                   ]
                                                                   ++ [ppCurlysCommasBlock (replicate 3 $ pp $ "NULL")]
                                                                 )
@@ -461,7 +466,9 @@ SEM Module
                                                       ++ cafGlEntryIndices
                                                       ++ glEntries
 %%[[20
-                                                      ++ [ expnd ]
+                                                      ++ [ expnd
+                                                         , impmods
+                                                         ]
 %%]]
                                                       ++ links
                                                       ++ [ initf

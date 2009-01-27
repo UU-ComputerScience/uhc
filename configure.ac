@@ -466,13 +466,15 @@ AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
 AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 
-### platform specific stuff
+### other platform specific stuff
 # defaults:
 # file suffixes
 suffix_shell=""
 suffix_exec=""
 suffix_lib=".a"
 prefix_lib=""
+# development platform
+development_platform="UNIX"
 # path separator
 paths_sep=":"
 slash="/"
@@ -487,6 +489,7 @@ case $HostPlatform in
         suffix_exec=".exe"
         #suffix_lib=".lib"
         #prefix_lib="lib"
+        development_platform="CYGWIN"
         # path separator
         paths_sep=";"
         slash="\\\\"
@@ -522,6 +525,9 @@ AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 AC_SUBST(SLASH,"$slash")
+
+# misc
+AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
 
 # libtool used, if any
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
