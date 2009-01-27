@@ -179,12 +179,14 @@ SEM GrModule
                             ]
         loc.initialize    = Method Static Private Void "initialize" []
                               (@globalL.cilValues ++ [ret])
-        loc.typeDefs      = toTypeDefs @loc.className (Map.elems @loc.grTagsMap)
+        loc.typeDefs      = toTypeDefs @loc.className (@loc.defaultTyTags ++ Map.elems @loc.grTagsMap)
 
         globalL.grTagsMap = @loc.grTagsMap
+        globalL.className = @loc.className
         bindL.grTagsMap   = @loc.grTagsMap
+        bindL.className   = @loc.className
 
-        loc.usedCtyTags   = filter (\tytag -> toConName tytag `elem` @loc.usedConNms) @loc.ctyTags
+        loc.defaultTyTags = [unitTyTag]
         loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
 
         loc.grTagsMap     = @loc.cons `Map.union` @loc.funs `Map.union` @loc.papps
@@ -197,10 +199,6 @@ SEM GrModule
 
         loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
         loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
-        loc.usedConNms    = map conName (Set.toList @bindL.allCons)
-
-        bindL.className   = @loc.className
-        globalL.className = @loc.className
 
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
@@ -318,42 +316,43 @@ SEM GrVar
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
                             , stlocN (hsnShowAlphanumeric @nm) ]
-      lhs.tyTag = lookupTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
+      lhs.tyTag      = lookupTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
+      lhs.locals     = Set.singleton @nm
   | KnownTag
-      lhs.tyTag = lookupTag @tag.self @lhs.grTagsMap
+      lhs.tyTag      = lookupTag @tag.self @lhs.grTagsMap
   | Ignore
-      lhs.tyTag = error "Ignore has no TyTag"
+      lhs.tyTag      = error "Ignore has no TyTag"
 
 SEM GrPatLam
   | Empty
-      lhs.cilCode     = debugComment @self []
+      lhs.cilCode    = debugComment @self []
   | Var
-      lhs.cilCode     = debugComment @self [stlocN @varName]
-      lhs.locals      = Set.singleton @nm
+      lhs.cilCode    = debugComment @self [stlocN @varName]
+      lhs.locals     = Set.singleton @nm
   | VarNode
-      lhs.cilCode     = debugComment @self (loadRefVal : @fldL.cilLoad)
-      fldL.index      = -1
-      fldL.nodeTyTag  = @fldL.tyTag
+      lhs.cilCode    = debugComment @self (loadRefVal : @fldL.cilLoad)
+      fldL.index     = -1
+      fldL.nodeTyTag = @fldL.tyTag
   | BasicNode
-      lhs.cilCode     = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-      lhs.locals      = Set.singleton @nm
+      lhs.cilCode    = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
+      lhs.locals     = Set.singleton @nm
   | EnumNode
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | PtrNode
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | OpaqueNode
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | BasicAnnot
-      lhs.cilCode     = debugComment @self [stlocN @varName]
-      lhs.locals      = Set.singleton @nm
+      lhs.cilCode    = debugComment @self [stlocN @varName]
+      lhs.locals     = Set.singleton @nm
   | EnumAnnot
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | PtrAnnot
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | OpaqueAnnot
-      lhs.cilCode     = [no @self]
+      lhs.cilCode    = [no @self]
   | * - VarNode Empty
-      loc.varName     = hsnShowAlphanumeric @nm
+      loc.varName    = hsnShowAlphanumeric @nm
 
 
 SEM GrTag
@@ -383,7 +382,16 @@ SEM GrTag
 %%[(8 codegen grin) hs
 
 absValue :: HsName -> HptMap -> AbstractValue
-absValue hsName hptMap = getEnvVar hptMap (getNr hsName) -- Todo: write heap lookup code
+absValue hsName hptMap = handleVal (getEnvVar hptMap (getNr hsName))
+  where
+    getHeapLoc' x = handleVal (getHeapLoc hptMap x)
+    handleVal val = 
+      case val of
+        (AbsLocs locs _) ->
+          if Set.size locs == 1
+          then getHeapLoc' (Set.elems locs !! 0)
+          else error "GrinCode.ToCil.absValue: Don't know how to handle more (or less) than one loc."
+        _ -> val
 
 absGrTag :: HsName -> HptMap -> GrTag
 absGrTag hsName hptMap =
@@ -402,6 +410,9 @@ absPrimitiveType hsName hptMap =
       then Object
       else error "GrinCode.ToCil.absPrimitiveType: AbsNodes map is not a singleton."
     (AbsBasic) -> Int32
+    (AbsTags _) -> Object
+    (AbsError _) -> Object -- don't know why these occure. TODO: fix this later
+    xs -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement." ++ show hsName ++ " " ++ show xs
     _ -> error "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement."
 
 no :: (Show a) => a -> MethodDecl
