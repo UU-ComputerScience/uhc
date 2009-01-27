@@ -51,6 +51,10 @@ ATTR AllExpr
 
 %%[(8 codegen grin)
 
+SEM GrBind
+  | Bind
+      expr.variableTypes = @expr.collectVars
+
 SEM GrExpr
   | Seq
       pat.patternTypes = @expr.possibleTypes
@@ -74,6 +78,7 @@ SEM GrPatLam
   | VarNode
       -- TAnyNode of TInt, afhankelijk van de KnownTag
       lhs.collectVars = @fldL.collectVars
+      fldL.fieldTypes = maybe (repeat Set.empty) (map primitive2typeSet . toFieldTypes) @fldL.knownTag
   | BasicNode EnumNode
       lhs.collectVars = Map.singleton @nm TInt
   | BasicAnnot EnumAnnot
@@ -83,46 +88,51 @@ SEM GrPatLam
   | PtrNode OpaqueNode PtrAnnot OpaqueAnnot
       lhs.collectVars = error "Opaque or Pointer stuff"
 
+-- SEM GrVarL
+--   | Nil
+--       lhs.tyTag         = error "GrinCode/TyTags.GrValL.tyTag: Empty List has no TyTag."
+--   | Cons
+--       lhs.tyTag         = @hd.tyTag
+--       hd.index          = @lhs.index
+--       tl.index          = @lhs.index + 1
 
--- TODO Hieronder: oude code
-
-SEM GrVarL
-  | Nil
-      lhs.tyTag         = error "GrinCode/TyTags.GrValL.tyTag: Empty List has no TyTag."
-  | Cons
-      lhs.tyTag         = @hd.tyTag
-      hd.index          = @lhs.index
-      tl.index          = @lhs.index + 1
+ATTR GrVar GrVarL
+  [
+  | fieldTypes : {[Type]}
+  | knownTag USE {`mplus`} {Nothing} : {Maybe TyTag}
+  ]
 
 SEM GrVar
   | Var
-      lhs.tyTag         = @loc.tyTag
-      loc.tyTag         = intTyTag -- nonsense! -- error "GrinCode/TyTags.GrVal.tyTag: Not implemented yet for Var constructor."
-      lhs.typedLocals = Map.singleton @nm (toPrimitiveType @lhs.nodeTyTag)
+      lhs.collectVars   = Map.singleton @nm (head @lhs.fieldTypes)
+      lhs.fieldTypes    = tail @lhs.fieldTypes
   | KnownTag
-      lhs.tyTag         = @loc.tyTag
-      loc.tyTag         = @tag.tyTag
-  | Ignore
-      lhs.tyTag         = @loc.tyTag
-      loc.tyTag         = error "GrinCode/TyTags.GrVal.tyTag: No tyTag for Ignore constructor."
+      lhs.knownTag      = Just @tag.tyTag
 
-SEM GrVal
-  | Tag
-      lhs.maybeTyTag    = Just @tag.tyTag
+-- SEM GrVal
+--   | Tag
+--       lhs.maybeTyTag    = Just @tag.tyTag
+-- 
 
-SEM GrTag
-  | Con
-      loc.tyTag         = lookupTag @nm @lhs.constrs
-      loc.tyName        = toConDottedName @loc.tyTag
-      lhs.tyTag         = @loc.tyTag
-  | Fun
-      lhs.tyTags        = maybe Map.empty (Map.singleton @nm) @lhs.maybeTyTag
-      loc.tyTag         = head $ [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
-                                   ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
-                                   ++ [error "Don't ever take the head of an empty list!"]
-      loc.tyName        = toConDottedName @loc.tyTag
-  | * - Con
-      lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
+ATTR GrTag
+  [
+  |
+  | tyTag USE {error "Implement"} {error "Implement"} : {TyTag}
+  ]
+
+-- SEM GrTag
+--   | Con
+--       loc.tyTag         = lookupTag @nm @lhs.constrs
+--       loc.tyName        = toConDottedName @loc.tyTag
+--       lhs.tyTag         = @loc.tyTag
+--   | Fun
+--       lhs.tyTags        = maybe Map.empty (Map.singleton @nm) @lhs.maybeTyTag
+--       loc.tyTag         = head $ [ty | ty@(TyFun _ fnm) <- Map.elems @lhs.globals, fnm == @nm]
+--                                    ++ (Map.foldWithKey (\k x xs -> if k == @nm then x : xs else xs) [] @lhs.funs)
+--                                    ++ [error "Don't ever take the head of an empty list!"]
+--       loc.tyName        = toConDottedName @loc.tyTag
+--   | * - Con
+--       lhs.tyTag         = error "GrinCode/TyTags: Cannot (yet) get tyTag for non-Con Tag"
 %%]
 
 
@@ -130,6 +140,14 @@ SEM GrTag
 %%% Helper functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
+
+smartUnion :: Map a (Set b) -> Map a (Set b) -> Map a (Set b)
+smartUnion = Map.unionWith Set.union
+
+primitive2typeSet :: PrimitiveType -> Set Type
+primitive2typeSet Int32   = Set.singleton TInt
+primitive2typeSet Object  = Set.singleton TAnyNode
+primitive2typeSet _       = Set.empty
 
 headE :: String -> [a] -> a
 headE err []    = error err
