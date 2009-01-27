@@ -8,12 +8,12 @@
 %%[(8 codegen grin) hs import(Language.Cil hiding(tail))
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/TyTags})
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, Data.Map (Map), qualified Data.Set as Set, Data.Set (Set), Data.Bits)
 %%]
 %%[(8 codegen grin) hs import(Control.Arrow(first, second))
 %%]
@@ -115,13 +115,15 @@ ATTR GrTag GrVal
   ]
 
 ATTR GrVar GrVarL
-  [
+  [ index     : {Int}
+    nodeTyTag : {TyTag}
   |
   | cilLoad USE {++} {[]} : {[MethodDecl]}
+    tyTag     : {TyTag}
   ]
 
 ATTR AllExpr
-  [
+  [ methodParams : {Set HsName}
   |
   |
   ]
@@ -141,9 +143,11 @@ ATTR GrValL
   ]
 
 ATTR AllNT
-  [
-  | labels : {[Label]}
-  |
+  [ conMap    : {Map HsName TyTag}
+    funMap    : {Map HsName TyTag}
+    papMap    : {Map (Int, HsName) TyTag}
+  | labels    : {[Label]}
+  | self      : SELF
   ]
 
 ATTR AllNTNoMod
@@ -174,7 +178,7 @@ SEM GrModule
                             ]
         loc.initialize    = Method Static Private Void "initialize" []
                               (@globalL.cilValues ++ [ret])
-        loc.typeDefs      = toTypeDefs @loc.className @loc.tyTags
+        loc.typeDefs      = toTypeDefs @loc.className undefined -- @loc.tyTags
 
         bindL.className   = @loc.className
         globalL.className = @loc.className
@@ -183,20 +187,22 @@ SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
                            [ stsfld Object "" @lhs.className @loc.name ]
+           val.methodParams = Set.empty
            loc.name      = hsnShowAlphanumeric @nm
 
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
+          expr.methodParams = Set.fromList @argNmL
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] @expr.typedLocals
+          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt (hsnShowAlphanumeric nm) : xs) [] undefined -- @expr.typedLocals
 
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
   | UpdateUnit  lhs.cilCode = debugComment @self $ @loc.load ++ @val.cilCode ++ [loadRefVal, storeRefVal] ++ @loc.load
-                loc.load    = loadVar @lhs.className @lhs.scopes @nm
+                loc.load    = loadVar @lhs.className @lhs.methodParams @nm
   | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $
                               @val.cilCode
                               ++ [label @loc.caseStartLabel nop]
@@ -212,16 +218,19 @@ SEM GrExpr
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self $
                                 @loc.load ++ @doField
-                loc.load    = loadVar @lhs.className @lhs.scopes @nm
+                loc.load    = loadVar @lhs.className @lhs.methodParams @nm
                 loc.doField = case @offset of
                               0 -> [] 
                               o -> [ loadRefVal
-                                   , isinst $ toConDottedName @loc.tyTag
+                                   -- , isinst $ toConDottedName @loc.tyTag
                                    , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
                                            (toFieldName @loc.tyTag (o - 1))
                                    ]
+                loc.tyTag   = case @mbTag of
+                              Nothing  -> error "Cannot fetch field of unknown type"
+                              Just tag -> lookupSomeTag tag @lhs.conMap @lhs.funMap @lhs.papMap
   | Store       lhs.cilCode = [no @self]
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
@@ -259,21 +268,29 @@ SEM GrVal
                 lhs.cilConst = @tag.cilConst
                 -- lhs.cilConst = undefined
                 -- loc.tyTag   = grTag2tyTag @tag
-  | Var         lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm
+  | Var         lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilConst
   | VarNode     lhs.cilCode = debugComment @self $ (concat (tail @fldL.cilCodes)) ++ head @fldL.cilConsts
-  | BasicNode   lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.scopes @nm ++ @tag.cilConst
+  | BasicNode   lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm ++ @tag.cilConst
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | * - Tag     lhs.cilConst = [no $ "cilConst not defined on " ++ show @self]
   -- TODO NodeAdapt in variant 10
 
-SEM GrValL
+SEM GrValL  -- shouldn't this be GrVarL?
   | Nil         lhs.cilConsts = []
                 lhs.cilCodes  = []
   | Cons        lhs.cilConsts = @hd.cilConst : @tl.cilConsts
                 lhs.cilCodes  = @hd.cilCode  : @tl.cilCodes
+
+SEM GrVarL
+  | Nil
+      lhs.tyTag = error "Empty VarNode list has no Tag"
+  | Cons
+      lhs.tyTag = @hd.tyTag
+      hd.index  = @lhs.index
+      tl.index  = @lhs.index + 1
 
 SEM GrVar
   | Var
@@ -282,11 +299,18 @@ SEM GrVar
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
                             , stlocN (hsnShowAlphanumeric @nm) ]
+      lhs.tyTag = lookupSomeTag (absGrTag @nm @lhs.hptMap) @lhs.conMap @lhs.funMap @lhs.papMap
+  | KnownTag
+      lhs.tyTag = lookupSomeTag @tag.self @lhs.conMap @lhs.funMap @lhs.papMap
+  | Ignore
+      lhs.tyTag = error "Ignore has no TyTag"
 
 SEM GrPatLam
   | Empty       lhs.cilCode = debugComment @self []
   | Var         lhs.cilCode = debugComment @self [stlocN @varName]
   | VarNode     lhs.cilCode = debugComment @self (loadRefVal : @fldL.cilLoad)
+                fldL.index  = -1
+                fldL.nodeTyTag = @fldL.tyTag
   | BasicNode   lhs.cilCode = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
   | EnumNode    lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
@@ -301,11 +325,14 @@ SEM GrPatLam
 
 SEM GrTag
   | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
-                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
+                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+                loc.tyTag     = lookupTag @nm @lhs.conMap
   | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
-                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst @loc.tyName]
+                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+                loc.tyTag     = lookupTag @nm funMap
   | PApp        lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
+                loc.tyTag     = lookupTag (@needs, @nm) papMap
   | App         lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
   | Unboxed Hole Rec World Any
@@ -336,13 +363,26 @@ fakeComment = flip const
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
 
-loadVar :: DottedName -> Map.Map HsName Scope -> HsName -> [MethodDecl]
-loadVar className scopes nm = case Map.lookup nm scopes of
-    Just ScGlobal -> [lglobal]
-    Just ScParam  -> [ldargN varName]
-    Just ScLocal  -> [ldlocN varName]
-    Nothing       -> [no $ "Variable '" ++ varName ++ "' has unknown scope. Assuming global.", lglobal] -- should become an error
+loadVar :: DottedName -> Set HsName -> HsName -> [MethodDecl]
+loadVar className params nm = case Set.member nm params of
+    True          -> [ldargN varName]
+    False         -> case nm of
+      HNmNr _ (OrigGlobal _) -> [lglobal]
+      HNmNr _ (OrigFunc   _) -> error "Cannot load function"
+      HNmNr _ _              -> [ldlocN varName]
+      _                      -> error "Loading non-HNmNr variable"
   where varName = hsnShowAlphanumeric nm
         lglobal = ldsfld Object "" className varName
+
+lookupTag :: Show a => a -> Map a TyTag -> TyTag
+lookupTag n ts = case Map.lookup n ts of
+  Nothing -> error $ "Use of an undefined tag " ++ show n ++ "." ++ show ts
+  Just t  -> t
+
+lookupSomeTag :: GrTag -> Map HsName TyTag -> Map HsName TyTag -> Map (Int, HsName) TyTag -> TyTag
+lookupSomeTag (GrTag_Con _ _ n) grs _   _   = lookupTag n grs
+lookupSomeTag (GrTag_Fun n)     _   fns _   = lookupTag n fns
+lookupSomeTag (GrTag_PApp i n)   _   _   pps = lookupTag (i,n) pps
+lookupSomeTag gr                            = error $ "Looking up a strange tag: " ++ gr
 
 %%]

@@ -53,7 +53,6 @@ GrinCode/PointsToAnalysis.cag
 GrinCode/ToGrinByteCode.cag
 GrinCode/ToSilly.cag
 GrinCode/ToCil.cag
-GrinCode/TyTags.cag
 GrinCode/Trf/ForceEval.cag
 GrinCode/Trf/AliasElim.cag
 GrinCode/Trf/AliasRename.cag
