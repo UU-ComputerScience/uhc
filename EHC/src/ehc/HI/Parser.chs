@@ -137,6 +137,11 @@ pBinding
                                              <* pSEMI   <*> pString
                                              <* pSEMI   <*> (read <$> pInteger)
                                              <* pCCURLY
+  <|> Binding_ImportModules
+                        <$  pNmIs "importmodules"
+                                             <* pOCURLY <*> pCurlySemiBlock pDollNm
+                                             <* pSEMI   <*> pCurlySemiBlock pDollNm
+                                             <* pCCURLY
   <|> Binding_Export    <$  pNmIs "export"   <* pOCURLY <*> (VisibleNo <$ pKeyTk "visibleno" <|> VisibleYes <$ pKeyTk "visibleyes") <* pSEMI <*> pModEntRel  <* pCCURLY
   <|> Binding_Ids       <$  pNmIs "iddef"    <* pOCURLY
                                              <*> pListSep pSEMI ((,) <$ pOCURLY <*> pIdOcc <* pSEMI <*> pIdOcc <* pCCURLY)

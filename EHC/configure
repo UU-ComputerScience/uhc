@@ -721,6 +721,7 @@ SUFFIX_LIB
 PREFIX_LIB
 PATHS_SEP
 SLASH
+DEVELOPMENT_PLATFORM
 LIBTOOL_STATIC_CMD
 LIBTOOL_DYNAMIC_CMD
 EHC_GCC_OPTS_STATIC
@@ -6354,13 +6355,15 @@ MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
 GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
 
 
-### platform specific stuff
+### other platform specific stuff
 # defaults:
 # file suffixes
 suffix_shell=""
 suffix_exec=""
 suffix_lib=".a"
 prefix_lib=""
+# development platform
+development_platform="UNIX"
 # path separator
 paths_sep=":"
 slash="/"
@@ -6375,6 +6378,7 @@ case $HostPlatform in
         suffix_exec=".exe"
         #suffix_lib=".lib"
         #prefix_lib="lib"
+        development_platform="CYGWIN"
         # path separator
         paths_sep=";"
         slash="\\\\"
@@ -6415,6 +6419,10 @@ PREFIX_LIB="$prefix_lib"
 PATHS_SEP="$paths_sep"
 
 SLASH="$slash"
+
+
+# misc
+DEVELOPMENT_PLATFORM="$development_platform"
 
 
 # libtool used, if any
@@ -7260,6 +7268,7 @@ SUFFIX_LIB!$SUFFIX_LIB$ac_delim
 PREFIX_LIB!$PREFIX_LIB$ac_delim
 PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
+DEVELOPMENT_PLATFORM!$DEVELOPMENT_PLATFORM$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
@@ -7280,7 +7289,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 27; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 28; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

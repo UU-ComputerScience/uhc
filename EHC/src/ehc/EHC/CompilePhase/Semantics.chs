@@ -10,6 +10,8 @@ Folding over AST to compute semantics
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
+%%[20 import(qualified Data.Set as Set)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -27,6 +29,7 @@ Folding over AST to compute semantics
 -- Core syntax and semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+
 -- HI syntax and semantics
 %%[20 import(qualified {%{EH}HI.MainAG} as HISem)
 %%]
@@ -47,16 +50,18 @@ Folding over AST to compute semantics
 cpFoldCore :: HsName -> EHCompilePhase ()
 cpFoldCore modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbCore   = ecuMbCore ecu
+                 core     = panicJust "cpFoldCore" mbCore
                  coreInh  = crsiCoreInh crsi
                  coreSem  = Core2GrSem.wrap_CodeAGItf
-                              (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf $ panicJust "cpFoldCore" mbCore))
+                              (Core2GrSem.sem_CodeAGItf (Core.CodeAGItf_AGItf core))
                               (coreInh { Core2GrSem.gUniq_Inh_CodeAGItf            = crsiHereUID crsi
                                        , Core2GrSem.opts_Inh_CodeAGItf             = crsiOpts crsi
                                        })
          ;  when (isJust mbCore)
-                 (cpUpdCU modNm $! ecuStoreCoreSem coreSem)
+                 (cpUpdCU modNm ( ecuStoreCoreSem coreSem
+                                ))
          }
 %%]
 
@@ -105,7 +110,11 @@ cpFoldHs modNm
                                                     $ Rel.mapRng mentIdOcc $ mmiExps $ mmi
 %%]]
          ;  when (isJust mbHS)
-                 (cpUpdCU modNm $! ecuStoreHSSem $! hsSem)
+                 (cpUpdCU modNm ( ecuStoreHSSem hsSem
+%%[[20
+                                . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
+%%]]
+                                ))
          }
 %%]
 
@@ -129,7 +138,7 @@ cpFoldHsMod modNm
 cpFoldHI :: HsName -> EHCompilePhase ()
 cpFoldHI modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHI   = ecuMbPrevHI ecu
                  inh    = crsiHIInh crsi
                  hiSem  = HISem.wrap_AGItf (HISem.sem_AGItf $ panicJust "cpFoldHI" mbHI)
@@ -138,9 +147,14 @@ cpFoldHI modNm
          ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
-                           mmi'   = mkModMpInfo (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
+                           mmi'   = mkModMpInfo modNm (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
                      ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm mmi' mm}})
-                     ; cpUpdCU modNm (ecuStorePrevHISem hiSem)
+                     ; cpUpdCU modNm ( ecuStorePrevHISem hiSem
+                                     . ecuStoreHIDeclImpL (HISem.asDeclImpModL_Syn_AGItf hiSem)
+                                     . ecuStoreHIUsedImpL (HISem.asUsedImpModL_Syn_AGItf hiSem)
+                                     )
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))
                      })
          }
 %%]

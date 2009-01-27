@@ -8,7 +8,7 @@ XXX
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -21,12 +21,17 @@ XXX
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
 %%]
+
 -- HS semantics
 %%[8 import(qualified {%{EH}HS.MainAG} as HSSem)
 %%]
+
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
+%%[(20 codegen) import({%{EH}Core.UsedModNms})
+%%]
+
 -- HI syntax and semantics
 %%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
 %%]
@@ -83,8 +88,9 @@ cpFlowHsSem1 modNm
                             { EHSem.idQualGam_Inh_AGItf  = idGam2QualGam ig `gamUnionFlow` EHSem.idQualGam_Inh_AGItf ehInh
                             }
                  hii'   = hii
-                            { HI.hiiFixityGam       = fg
-                            , HI.hiiIdDefOccGam = ig
+                            { HI.hiiFixityGam            = fg
+                            , HI.hiiIdDefOccGam          = ig
+                            , HI.hiiHIDeclImpModL        = ecuHIDeclImpNmL ecu
                             }
                  opts'  = opts
                             { ehcOptBuiltinNames = mkEHBuiltinNames mk
@@ -114,7 +120,6 @@ cpFlowEHSem1 modNm
                  ehSem    = panicJust "cpFlowEHSem1.ehSem" $ ecuMbEHSem ecu
                  ehInh    = crsiEHInh crsi
 %%[[(8 codegen)
-                 coreSem  = panicJust "cpFlowEHSem1.coreSem" $ ecuMbCoreSem ecu
                  coreInh  = crsiCoreInh crsi
 %%]]
 %%[[(20 hmtyinfer)
@@ -173,8 +178,8 @@ cpFlowEHSem1 modNm
 %%]]
                                })
 %%[[20
-                     ; cpUpdCU modNm $! ecuStoreHIInfo hii'
-                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowEHSem1")
+                     ; cpUpdCU modNm ( ecuStoreHIInfo hii'
+                                     )
 %%]]
 %%[[102
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -247,6 +252,8 @@ cpFlowCoreSem modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  coreSem  = panicJust "cpFlowCoreSem.coreSem" $ ecuMbCoreSem ecu
+                 core     = panicJust "cpFlowCoreSem.core"    $ ecuMbCore    ecu
+                 usedImpL = Set.toList $ cmodUsedModNms core
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
                  am       = prepFlow $! Core2GrSem.gathArityMp_Syn_CodeAGItf coreSem
@@ -254,14 +261,16 @@ cpFlowCoreSem modNm
                               { Core2GrSem.arityMp_Inh_CodeAGItf   = am `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
                               }
                  hii'     = hii
+                              { HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 codegen grin)
-                              { HI.hiiCArityMp  = if ehcOptFullProgAnalysis opts then Map.empty else am
-                              }
+                              , HI.hiiCArityMp      = if ehcOptFullProgAnalysis opts then Map.empty else am
 %%]]
+                              }
          ;  when (isJust (ecuMbCoreSem ecu))
                  (do { put (cr {crStateInfo = crsi {crsiCoreInh = coreInh'}})
-                     ; cpUpdCU modNm $! ecuStoreHIInfo $! prepFlow hii'
-                     -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowCoreSem")
+                     ; cpUpdCU modNm ( ecuStoreHIInfo hii'
+                                     . ecuStoreHIUsedImpL usedImpL
+                                     )
                      })
          }
 %%]

@@ -106,12 +106,8 @@ cpPreprocessWithCPP modNm
                          (do { cpMsg modNm VerboseALot "CPP"
                              ; lift $ putStrLn preCPP
                              })
-%%[[99
-                  ; cpSystem preCPP
-%%][101
                   ; when (crModCanCompile modNm cr)
                          (cpSystem preCPP)
-%%]]
                   ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
                   })
        }

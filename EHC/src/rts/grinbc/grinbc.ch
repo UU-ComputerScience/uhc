@@ -760,8 +760,17 @@ typedef struct GB_ModEntry {
   GB_ByteCodeModule*		bcModule ;
 } GB_ModEntry ;
 
-extern GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
+extern int gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
 
+%%]
+
+Imported module info: binding of module name to position in global module table (a GB_ModEntry[])
+
+%%[20
+typedef struct GB_ImpModEntry {
+  char*						name ;
+  Word						globModInx ;
+} GB_ImpModEntry ;
 %%]
 
 %%[8
@@ -1334,7 +1343,7 @@ extern void gb_InitTables
 	, GB_Word* consts
 %%[[20
 	// , GB_NodePtr *impNode
-	// , int impNodeSz, char** impNodeNms
+	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]

@@ -11,7 +11,7 @@ EHCLIB_EHCLIB_EHCBASE					:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE)
 EHCLIB_EHCLIB_EHCBASE_PREFIX			:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
 EHCLIB_SRC_PREFIX						:= $(TOP_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
 EHCLIB_BASE_SRC_PREFIX					:= $(TOP_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
-EHCLIBABS_BASE_SRC_PREFIX				:= $(TOPABS_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
+EHCLIBABS_BASE_SRC_PREFIX				:= $(TOPABS2_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
 
 # location of GHC sync'ed lib src
 EHCLIB_GHCSYNC							:= ehclib-ghc-sync
@@ -26,7 +26,8 @@ EHCLIB_GHCSYNC_DOWNLOAD					:= $(EHCLIB_GHCSYNC_DOWNLOAD_PREFIX)$(EHCLIB_GHCSYNC
 # extracted sync, frozen as .tgz into svn repo
 EHCLIB_GHCSYNC_FROZEN_NAME_BASE			:= ehclib-ghc-sync-frozen
 EHCLIB_GHCSYNC_FROZEN_NAME_ARCH			:= $(EHCLIB_GHCSYNC_FROZEN_NAME_BASE).tgz
-EHCLIB_GHCSYNC_FROZEN					:= $(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH)
+#EHCLIB_GHCSYNC_FROZEN					:= $(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH)
+EHCLIB_GHCSYNC_FROZEN					:= $(call WINXX_CYGWIN_NAME2,$(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH))
 
 # build locations
 EHCLIB_BLD_VARIANT_PREFIX				:= $(EHC_BLD_VARIANT_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
@@ -140,7 +141,7 @@ $(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)
 	touch $@
 
 ###########################################################################################
-# ehclib sync with GHC libraries
+# ehclib sync with GHC libraries; needs to be done only when set of library module changes
 ###########################################################################################
 
 # download ghc dist
@@ -157,7 +158,9 @@ $$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$$(EHCLIB_SYNC_ALL_PKG_$(1))): $(EHCL
 endef
 
 # expansion for each defined package
+ifneq ($(DEVELOPMENT_PLATFORM),CYGWIN)
 $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(eval $(call EHCLIB_PKG_TEMPLATE,$(pkg))))
+endif
 
 # construction of frozen archive
 $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH): $(EHCLIB_SYNC_ALL_PKG_DRV_HS)

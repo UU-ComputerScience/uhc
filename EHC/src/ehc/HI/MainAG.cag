@@ -65,6 +65,8 @@ ATTR
       exportHideRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- implicit exports (instances)
       fixityGam         USE {`gamUnion`}        {emptyGam}          : FixityGam					-- fixity info for identifiers
       idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
+      asDeclImpModL     USE {++}                {[]}                : {[HsName]}				-- declared imports
+      asUsedImpModL     USE {++}                {[]}                : {[HsName]}				-- (implicitly) used imports
 %%[[(20 hmtyinfer)
       valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
       tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
@@ -83,6 +85,11 @@ ATTR
    ]
 
 SEM Binding
+    | ImportModules
+        lhs             .   asDeclImpModL
+                                        =   @asDeclared
+                        .   asUsedImpModL
+                                        =   @asUsed
     | Export
         lhs             .   (exportRel,exportHideRel)
                                         =   case @visible of
