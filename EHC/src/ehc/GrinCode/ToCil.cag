@@ -33,8 +33,8 @@ WRAPPER GrTag
 
 %%[(8 codegen grin) hs
 grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
-grin2cil hptmap gr opts
-  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf)
+grin2cil hptMap gr opts
+  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf hptMap)
    in cilAssembly_Syn_GrAGItf t
 
 refObjNm :: DottedName
@@ -71,7 +71,17 @@ newRefObj = newobj "" refObjNm [Object]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin)
 
-ATTR GrAGItf GrModule [ | | cilAssembly : {Assembly} ]
+ATTR GrAGItf AllNT
+  [ hptMap : {HptMap}
+  |
+  |
+  ]
+
+ATTR GrAGItf GrModule
+  [
+  |
+  | cilAssembly : {Assembly}
+  ]
 
 ATTR GrGlobal GrGlobalL
   [
