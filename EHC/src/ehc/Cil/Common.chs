@@ -28,13 +28,17 @@ hsn2TypeDottedName :: HsName -> DottedName
 hsn2TypeDottedName hsn = namespace ++ "." ++ fancyName hsn
 
 toFieldName :: TyTag -> Int -> DottedName
-toFieldName (TyCon _ cNm _ x mx) y =
-  let flds = fieldNames mx
-  in if y <= x
-     then flds !! y
-     else error $ "[Cil.Common.toFieldName] "
-                    ++ (hsnShowAlphanumeric cNm) ++ " doesn't have "
-                    ++ (show y) ++ " fields."
+toFieldName (TyCon  _ cNm _ x mx) y = toFieldName' (fieldNames mx) cNm x y
+toFieldName (TyFun  _ fNm x) y      = toFieldName' (fieldNames x)  fNm x y
+toFieldName (TyPApp _ pNm x y) z    = toFieldName' (fieldNames (x + y)) pNm y z
+
+toFieldName' :: [DottedName] -> HsName -> Int -> Int -> DottedName
+toFieldName' flds nm x y =
+  if y <= x
+  then flds !! y
+  else error $ "[Cil.Common.toFieldName] "
+                 ++ (hsnShowAlphanumeric nm) ++ " doesn't have "
+                 ++ (show y) ++ " fields."
 
 -- Can also be used to get the type of the stored fields, since they exactly match the constructor argument types.
 toFieldTypes :: TyTag -> [PrimitiveType]

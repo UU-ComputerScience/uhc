@@ -94,7 +94,7 @@ ATTR GrBind GrBindL
   [
   |
   | cilMethods USE {++} {[]} : {[MethodDef]}
-    funArities USE {`Map.union`} {Map.empty} : {Map GrTag Int}
+    funArities USE {`Map.union`} {Map.empty} : {Map HsName Int}
   ]
 
 ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt
@@ -191,8 +191,8 @@ SEM GrModule
 
         loc.grTagsMap     = @loc.cons `Map.union` @loc.funs `Map.union` @loc.papps
         loc.cons          = cons @loc.constrs @bindL.allCons
-        loc.funs          = funs @lhs.hptMap @loc.papps @loc.tyNames @bindL.allFuns
-        loc.papps         = papps @lhs.hptMap @loc.tyNames @bindL.allPApps
+        loc.funs          = funs @lhs.hptMap @loc.papps @loc.tyNames @bindL.funArities @bindL.allFuns
+        loc.papps         = papps @lhs.hptMap @loc.tyNames @bindL.funArities @bindL.allPApps
 
         loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
         loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
@@ -207,21 +207,23 @@ cons constrs allCons = Set.fold f Map.empty allCons
       where
         g ty = Map.insert cntag ty mp
 
-funs :: HptMap -> Map GrTag TyTag -> Map HsName HsName -> Set GrTag -> Map GrTag TyTag
-funs hptMap papps tyNames allFuns = Set.fold f Map.empty allFuns
+funs :: HptMap -> Map GrTag TyTag -> Map HsName HsName -> Map HsName Int -> Set GrTag -> Map GrTag TyTag
+funs hptMap papps tyNames funArities allFuns = Set.fold f Map.empty allFuns
   where
-    f fntag@(GrTag_Fun nm) mp = maybe g (\tynm -> Map.insert fntag (TyFun tynm nm 0) mp)
+    arity nm = Map.findWithDefault (error $ "Can't find function " ++ show nm ++ " in arities Map.") nm funArities
+    f fntag@(GrTag_Fun nm) mp = maybe g (\tynm -> Map.insert fntag (TyFun tynm nm (arity nm)) mp)
                                         (Map.lookup (conName (absGrTag nm hptMap)) tyNames)
       where
-        g = maybe mp (\ty -> Map.insert fntag (TyFun (toTypeName ty) nm 0) mp)
+        g = maybe mp (\ty -> Map.insert fntag (TyFun (toTypeName ty) nm (arity nm)) mp)
                      (Map.lookup (absGrTag nm hptMap) papps)
 
-papps :: HptMap -> Map HsName HsName -> Set GrTag -> Map GrTag TyTag
-papps hptMap tyNames allPApps = Set.fold f Map.empty allPApps
+papps :: HptMap -> Map HsName HsName -> Map HsName Int -> Set GrTag -> Map GrTag TyTag
+papps hptMap tyNames funArities allPApps = Set.fold f Map.empty allPApps
   where
+    arity nm = Map.findWithDefault (error $ "Can't find function " ++ show nm ++ " in arities Map.") nm funArities
     f patag@(GrTag_PApp needs nm) mp = maybe mp g (Map.lookup (conName (absGrTag nm hptMap)) tyNames)
       where
-        g tynm = Map.insert patag (TyPApp tynm nm needs 0) mp
+        g tynm = Map.insert patag (TyPApp tynm nm needs (arity nm)) mp
 }
 
 SEM GrGlobal
