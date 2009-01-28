@@ -61,6 +61,7 @@ data AbstractValue
   | AbsTags  (Set.Set GrTag)
   | AbsLocs  (Set.Set Location) (Maybe (Set.Set GrTag))
   | AbsNodes (Map.Map GrTag [AbstractValue])
+  | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
 
@@ -79,6 +80,7 @@ instance Show AbstractValue where
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
                   AbsLocs  ls ml -> "LOCS" ++ show (Set.elems ls) ++ show ml
                   AbsNodes ns -> "NODS" ++ show (Map.assocs ns)
+                  AbsUnion xs -> "UNION" ++ show (Map.assocs xs)
                   AbsError s  -> "ERR: " ++ s
 
 
@@ -94,6 +96,7 @@ instance Monoid AbstractValue where
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
     mappend   (AbsLocs  al am)(AbsLocs  bl bm) =  AbsLocs (Set.union al bl) (limitIntersect am bm)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (Map.unionWith (zipWith mappend) an bn)
+    mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
     mappend a               b               =  AbsError $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
