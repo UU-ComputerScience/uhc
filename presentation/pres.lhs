@@ -61,11 +61,12 @@
 \begin{frame}
 \frametitle{hsjava}
 
-To build Java \texttt{.class} file we use the \stress{\texttt{hsjava}} pacakge.
+To build Java \texttt{.class} file we use the \stress{\texttt{hsjava}} package. \\
+A \stress{high-level abstraction} for generation byte-code.
 
 Developed by \stress{Brian Alliet} for integration into \stress{GHC}.
 
-We use \texttt{hsjava} for to build a JVM backend for \stress{EHC}.
+We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \end{frame}
 
@@ -143,6 +144,17 @@ We use \texttt{hsjava} for to build a JVM backend for \stress{EHC}.
 
 \begin{frame}
 \frametitle{Future optimizations}
+
+  \begin{itemize}
+  \item One class for one node layout: \stress{no more payload indirection}.
+  \item Enable integer values in layout: \stress{no more triple boxing}.
+  \item Save integers in node tag: \stress{no more double boxing boxing}.
+  \item Generate Java global variables: \stress{no more global indirection}.
+  \item Generate Java RP variables: \stress{no more RP indirection}.
+  \item When no double boxing: \stress{unboxed primitive functions}.
+  \item When no double boxing: \stress{flatten multiple allocs} (silly-205).
+  \end{itemize}
+
 \end{frame}
 
 % -----------------------------------------------------------------------------
