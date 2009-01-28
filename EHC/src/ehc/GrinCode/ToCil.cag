@@ -266,7 +266,7 @@ SEM GrExpr
                 loc.doField = case @offset of
                               0 -> [] 
                               o -> [ loadRefVal
-                                   , ldfld (trace (show (@loc.tyTag) ++ " !! " ++ show o) $ toFieldTypes @loc.tyTag !! (o - 1))
+                                   , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
                                            (toFieldName @loc.tyTag (o - 1))

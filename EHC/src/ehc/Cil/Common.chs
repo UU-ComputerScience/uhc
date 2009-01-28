@@ -30,7 +30,7 @@ hsn2TypeDottedName hsn = namespace ++ "." ++ fancyName hsn
 toFieldName :: TyTag -> Int -> DottedName
 toFieldName (TyCon  _ cNm _ x mx) y = toFieldName' (fieldNames mx) cNm x y
 toFieldName (TyFun  _ fNm x) y      = toFieldName' (fieldNames x)  fNm x y
-toFieldName (TyPApp _ pNm x y) z    = toFieldName' (fieldNames (x + y)) pNm y z
+toFieldName (TyPApp _ pNm x y) z    = toFieldName' (fieldNames x)  pNm y z
 
 toFieldName' :: [DottedName] -> HsName -> Int -> Int -> DottedName
 toFieldName' flds nm x y =
@@ -49,7 +49,7 @@ toFieldTypes con@(TyCon hsn _ _ x _) =
     "PackedString" -> [String]
     _              -> replicate x Object
 toFieldTypes (TyFun _ _ args)        = replicate args Object
-toFieldTypes (TyPApp _ _ _ args)     = replicate args Object
+toFieldTypes (TyPApp _ _ needs args) = replicate (args - needs) Object
 
 toTypeDefs :: DottedName -> [TyTag] -> [TypeDef]
 toTypeDefs callbackNm tags =
@@ -122,49 +122,67 @@ simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was 
 
 subTys :: DottedName -> DottedName -> TyTag -> TypeDef
 subTys callbackNm tyNm (TyFun _ fnm args) =
-  classDef Public subTyNm (extends tyNm) noImplements []
-    [ defaultCtor []
-    , Method Static Public Object "Invoke" []
-        [ call StaticCallConv Object "" callbackNm fnNm []
-        , ret
-        ]
+  classDef Public subTyNm (extends tyNm) noImplements
+    ( fields args args)
+    [ ctor args args tyNm tySubTyNm
+
+    -- The invoke function isn't used, but it should have arguments and call fnNm
+
+    -- , Method Static Public Object "Invoke" []
+    --     [ call StaticCallConv Object "" callbackNm fnNm []
+    --     , ret
+    --     ]
     ]
     []
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<Thunk>" ++ fnNm
+    tySubTyNm = tyNm ++ "/" ++ subTyNm
 subTys callbackNm tyNm (TyPApp _ fnm needs args) =
-  classDef Public subTyNm (extends tyNm) noImplements []
-    [ defaultCtor []
-    , Method Static Public Object "Invoke" []
-        [ call StaticCallConv Object "" callbackNm fnNm []
-        , ret
-        ]
+  classDef Public subTyNm (extends tyNm) noImplements
+    (fields arity arity)
+    [ ctor arity arity tyNm tySubTyNm
+
+    -- The invoke function isn't used, but it should have arguments and call fnNm
+
+    -- , Method Static Public Object "Invoke" []
+    --     [ call StaticCallConv Object "" callbackNm fnNm []
+    --     , ret
+    --     ]
     ]
     []
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<PApp>" ++ fnNm ++ "`" ++ show needs
+    tySubTyNm = tyNm ++ "/" ++ subTyNm
+    arity     = args - needs
 subTys csNm tyNm (TyCon _ cnm _ a ma) =
   classDef Public subTyNm (extends tyNm) []
-    fields
-    [ctor]
+    (fields ma a)
+    [ctor ma a tyNm tySubTyNm]
     []
   where
     subTyNm   = hsnShowAlphanumeric cnm
     tySubTyNm = tyNm ++ "/" ++ subTyNm
-    fields    = map (Field Instance2 Public Object) (take a $ fieldNames ma)
+
+ctor :: Int -> Int -> DottedName -> DottedName -> MethodDef
+ctor maxArity arity tyNm conNm =
+  Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) flds)
+    $
+    [ ldarg 0
+    , call Instance Void "" tyNm ".ctor" []
+    ]
+    ++
+    concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" conNm n]) (zip flds [1..])
+    ++
+    [ ret ]
+  where
     pNm ""     = ""
     pNm (c:cs) = toLower c : cs
-    ctor      = Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) fields)
-                  $
-                  [ ldarg 0
-                  , call Instance Void "" tyNm ".ctor" []
-                  ]
-                  ++
-                  concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" tySubTyNm n]) (zip fields [1..])
-                  ++
-                  [ ret ]
+    flds = fields maxArity arity
+
+fields :: Int -> Int -> [FieldDef]
+fields maxArity arity = map (Field Instance2 Public Object) (take arity $ fieldNames maxArity)
 
 fieldNames :: Int -> [DottedName]
 fieldNames 1 = [ "Value" ]
