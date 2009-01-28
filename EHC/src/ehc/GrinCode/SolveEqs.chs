@@ -30,7 +30,7 @@ type AbstractHeap s = STArray s Location AbstractValue
 heapChange :: HeapEquation -> AbstractEnv s -> ST s (Location,AbstractValue)
 heapChange (WillStore locat tag args) env 
  = do  { let mbres       =   tagFun tag
-       ; absArgs         <-  mapM getEnv args
+       ; absArgs         <-  mapM getEnv1 args
        ; absRes          <-  getEnv mbres
        ; absExc          <-  getEnv (mbres >>= return . (+1))
        ; let absNode     =   AbsNodes (Map.singleton tag absArgs)
@@ -41,6 +41,8 @@ heapChange (WillStore locat tag args) env
        ; return (locat, absNode `mappend` absRes `mappend` exceptNode)
        }
        where
+       getEnv1 Nothing  =  return AbsBasic
+       getEnv1 (Just v) =  readArray env v
        getEnv Nothing   =  return AbsBottom
        getEnv (Just v)  =  readArray env v
        tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
@@ -194,9 +196,9 @@ solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (In
 solveEquations lenEnv lenHeap eqs1 eqs2 lims =
     runST (
     do { 
-       --; trace (unlines ("EQUATIONS"     : map show eqs1)) $ return ()
-       --; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
-       --; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
+       -- ; trace (unlines ("EQUATIONS"     : map show eqs1)) $ return ()
+       -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
+       -- ; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
 
        -- create arrays
        ; env     <- newArray (0, lenEnv   - 1) AbsBottom
