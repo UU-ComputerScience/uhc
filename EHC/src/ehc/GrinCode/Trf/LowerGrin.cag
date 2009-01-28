@@ -84,6 +84,17 @@ fillgaps (t1@(n1,v1):t2rest@((n2,v2):rest)) = t1 : [(n,AbsBottom) | n<-[n1+1..n2
 %%[(8 codegen grin) hs
 type HptItems       = [ (Int,AbstractValue) ]
 
+containsNonbottom :: [AbstractValue] -> Bool
+containsNonbottom []     = False
+containsNonbottom (x:xs) = x/=AbsBottom || containsNonbottom xs
+
+secondNonbottom (_,AbsBottom) = False
+secondNonbottom (_,_)         = True
+
+smartAbsUnionFromList []      = error "LowerGrin: empty union"
+smartAbsUnionFromList [(_,x)] = x
+smartAbsUnionFromList xs      = AbsUnion (Map.fromList xs)
+
 maximum0 [] = 0
 maximum0 xs = maximum xs
 
@@ -92,9 +103,12 @@ newNames hptMap uniq (HNmNr v _)
   = if v==0
     then (uniq, [], [])
     else let (tags,fields) = unzip . getNodes $ getEnvVar hptMap v
-             avArgs  = map mconcat (transpose $ map (++ repeat AbsBottom) fields)
+             tr      = takeWhile containsNonbottom (transpose ( map (++ repeat AbsBottom) fields ))
+             avArgs  = map (smartAbsUnionFromList . filter secondNonbottom . zip tags) tr
+             -- avArgs  = map mconcat tr
              avTag   = AbsTags (Set.fromAscList tags)
-             avs     = avTag : takeWhile (/=AbsBottom) avArgs
+             --avs     = avTag : takeWhile (/=AbsBottom) avArgs
+             avs     = avTag : avArgs
              count   = -- length avs   
                        1 + maximum0 (map length fields) -- TODO: use arity information in the ctags map!
              uniq2   = uniq+count
