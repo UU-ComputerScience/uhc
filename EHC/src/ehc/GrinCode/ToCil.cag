@@ -172,7 +172,6 @@ SEM GrModule
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
                             , loadRefVal
-                            , isinst (toConDottedName intTyTag)
                             , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
@@ -239,7 +238,6 @@ SEM GrExpr
                 loc.doField = case @offset of
                               0 -> [] 
                               o -> [ loadRefVal
-                                   -- , isinst $ toConDottedName @loc.tyTag
                                    , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
@@ -283,19 +281,19 @@ SEM GrVal
   | LitInt      lhs.cilCode = debugComment @self [ldc_i4 @int]
   | Tag         lhs.cilCode = [no @self]
                 lhs.cilConst = @tag.cilConst
-                -- lhs.cilConst = undefined
-                -- loc.tyTag   = grTag2tyTag @tag
   | Var         lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm
+                lhs.cilConst = constructTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilConst
   | VarNode     lhs.cilCode = debugComment @self $ (concat (tail @fldL.cilCodes)) ++ head @fldL.cilConsts
   | BasicNode   lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm ++ @tag.cilConst
   | EnumNode    lhs.cilCode = [no @self]
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
-  | * - Tag     lhs.cilConst = [no $ "cilConst not defined on " ++ show @self]
+  | * - Tag Var
+                lhs.cilConst = [no $ "cilConst not defined on " ++ show @self]
   -- TODO NodeAdapt in variant 10
 
-SEM GrValL  -- shouldn't this be GrVarL?
+SEM GrValL
   | Nil         lhs.cilConsts = []
                 lhs.cilCodes  = []
   | Cons        lhs.cilConsts = @hd.cilConst : @tl.cilConsts
@@ -357,23 +355,19 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
-                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+  | Con         lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
                 lhs.allCons   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | Fun         lhs.cilConst  = debugComment @self [newobj "" (toConDottedName @loc.tyTag) (toFieldTypes @loc.tyTag), newRefObj]
-                lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+  | Fun         lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
                 lhs.allFuns   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | PApp        lhs.cilConst  = [no @self]
-                lhs.cilMatch  = [no @self]
+  | PApp        lhs.cilMatch  = [no @self]
                 lhs.allPApps  = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | App         lhs.cilConst  = [no @self]
-                lhs.cilMatch  = [no @self]
+  | App         lhs.cilMatch  = [no @self]
   | Unboxed Hole Rec World Any
-                lhs.cilConst  = [no @self]
                 lhs.cilMatch  = [no @self]
+  | *           lhs.cilConst  = constructTag @self @lhs.grTagsMap
 %%]
 
 
@@ -455,5 +449,13 @@ loadVar className params nm = case Set.member nm params of
 
 lookupTag :: GrTag -> Map GrTag TyTag -> TyTag
 lookupTag k mp = Map.findWithDefault (error $ "Tag " ++ show k ++ " not in map: " ++ show mp) k mp
+
+constructTag :: GrTag -> Map GrTag TyTag -> [MethodDecl]
+constructTag tag grTagsMap = case Map.lookup tag grTagsMap of
+    Nothing    -> [no $ "constructTag on " ++ show tag]
+    Just tyTag -> let
+        name  = toConDottedName tyTag
+        types = toFieldTypes tyTag
+      in debugComment tag [newobj "" name types, newRefObj]
 
 %%]
