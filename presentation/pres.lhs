@@ -27,9 +27,9 @@
 
 \begin{document}
 
-\title{Running Haskell on the JVM}
-\subtitle{The painful road to platform independence.}
-\author{Chris Eidhof, Sebastiaan Visser\\\small\texttt{ce@@tupil.nl, sfvisser@@cs.uu.nl}} 
+\title{Running Haskell on the Java Virtual Machine}
+\subtitle{Compiling EHC Silly to JVM Bytecode}
+\author{Chris Eidhof, Sebastiaan Visser\\\small\texttt{ce@@tupil.com, sfvisser@@cs.uu.nl}} 
 \date{\today} 
 
 \frame{\titlepage} 
@@ -55,6 +55,17 @@
     \item All (possibly static) \stress{methods}.
     \item Possibly several \stress{inner classes}.
   \end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{hsjava}
+
+To build Java \texttt{.class} file we use the \stress{\texttt{hsjava}} pacakge.
+
+Developed by \stress{Brian Alliet} for integration into \stress{GHC}.
+
+We use \texttt{hsjava} for to build a JVM backend for \stress{EHC}.
 
 \end{frame}
 
@@ -109,10 +120,6 @@
   \end{frame}
 \begin{frame}
   \includegraphics[scale=0.50]{listof12}
-\end{frame}
-
-\begin{frame}
-\frametitle{hsjava}
 \end{frame}
 
 \begin{frame}
