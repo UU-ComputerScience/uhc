@@ -435,7 +435,8 @@ absGrTag hsName hptMap =
     val            -> error $ "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement: "
                       ++ show hsName ++ " is " ++ show val
   where handleGav [g] = g
-        handleGav _   = error $ "GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for " ++ show hsName
+        handleGav gs  = trace ("GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for "
+                        ++ show hsName) $ head gs
 
 absPrimitiveType :: HsName -> HptMap -> PrimitiveType
 absPrimitiveType hsName hptMap = case absValueGuess hsName hptMap of
@@ -444,7 +445,8 @@ absPrimitiveType hsName hptMap = case absValueGuess hsName hptMap of
     AbsNodes _   -> Object
     AbsError err -> Object -- error $ "GrinCode.ToCil.absPrimitiveType: AbsError on " ++ show hsName ++ ": " ++ err
                     -- ^ (should become error again when HPT-bugs are fixed)
-    AbsBottom    -> error $ "GrinCode.ToCil.absPrimitiveType: AbsBottom in " ++ show hsName
+    AbsBottom    -> Int32 -- error $ "GrinCode.ToCil.absPrimitiveType: AbsBottom in " ++ show hsName
+                    -- ^ (should become error again when HPT-bugs are fixed)
     val          -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement: "
                   ++ show hsName ++ " is " ++ show val
 
@@ -464,6 +466,11 @@ fakeComment = flip const
 
 ffcall :: String -> [MethodDecl]
 ffcall "primAddInt" = [add]
+ffcall "primSubInt" = [sub]
+ffcall "primEqInt"  = [ceq]
+ffcall "primGtInt"  = [cgt]
+ffcall "primNegInt" = [neg]
+ffcall f            = error $ "Please teach me how to compile the foreign function " ++ f
 
 loadVar :: DottedName -> Set HsName -> HsName -> [MethodDecl]
 loadVar className params nm = case Set.member nm params of
