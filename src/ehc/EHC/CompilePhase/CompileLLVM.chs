@@ -17,6 +17,8 @@ LLVM compilation
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: LLVM compilation
@@ -42,7 +44,7 @@ cpCompileWithLLVM modNm
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]
-       ; when ( ehcOptEmitExecLLVM opts )
+       ; when ( targetIsLLVM (ehcOptTarget opts) )
          (  do { let compileLL 
                        = concat $ intersperse " "
                          $  [ Cfg.shellCmdLLVM ]

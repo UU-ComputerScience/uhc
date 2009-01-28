@@ -52,7 +52,7 @@ data HSState
   deriving (Show,Eq)
 %%]
 
-Is a state working on literal haskell input
+Is a state working on literal haskell input?
 
 %%[20 export(hsstateIsLiteral)
 hsstateIsLiteral :: HSState -> Bool
