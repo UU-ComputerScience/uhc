@@ -61,6 +61,8 @@
 %%]
 
 -- Misc
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
 %%[(102 codegen) import({%{EH}Core.Trf.Strip})
 %%]
 
@@ -82,32 +84,48 @@ main
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts           = foldl (flip ($)) ehcOpts o
-         ;  if ehcOptHelp opts
-%%[[1
-            then  putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                       ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:"
-                                      ) ehcCmdLineOpts)
-%%][8
-            then  do  {  putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                             ++ "\n\nUsage: " ++ progName
-                                             ++ " [options] [file[.eh|.hs]]\n\noptions:"
-                                             )
-                                             ehcCmdLineOpts)
-%%[[(8 codegen)
-                      ;  putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
-%%]]
-                      }
-%%]]
-            else  if ehcOptVersion opts
-            then  putStrLn (Cfg.verInfo Cfg.version)
-%%[[99
-            else  if ehcOptShowNumVersion opts
-            then  putStrLn (Cfg.verNumeric Cfg.version)
-%%]]
-            else  if null errs
-                  then  doCompileRun (if null n then "" else head n) opts
-                  else  putStr (head errs)
+         ;  case ehcOptImmQuit opts of
+              Just immq     -> handleImmQuitOption immq opts
+              _ | null errs -> doCompileRun (if null n then "" else head n) opts
+                | otherwise -> putStr (head errs)
          }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Handling of immediate quit options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+handleImmQuitOption :: ImmediateQuitOption -> EHCOpts -> IO ()
+handleImmQuitOption immq opts
+  = case immq of
+      ImmediateQuitOption_Help
+        -> do { progName  <- getProgName
+%%[[1
+              ; putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
+                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:"
+                                    ) ehcCmdLineOpts)
+%%][8
+              ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
+                                    ++ "\n\nUsage: " ++ progName
+                                    ++ " [options] [file[.eh|.hs]]\n\noptions:"
+                                    )
+                                    ehcCmdLineOpts)
+%%[[(8 codegen)
+              ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
+%%]]
+%%]]
+              }
+      ImmediateQuitOption_Version
+        -> putStrLn (Cfg.verInfo Cfg.version)
+%%[[(8 codegen)
+      ImmediateQuitOption_Targets
+        -> putStrLn showSupportedTargets
+%%]]
+%%[[99
+      ImmediateQuitOption_NumericVersion
+        -> putStrLn (Cfg.verNumeric Cfg.version)
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

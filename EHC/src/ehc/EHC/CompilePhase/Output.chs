@@ -87,7 +87,7 @@ cpOutputGrin suff modNm
                  grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
                  fpG    = fpathSetSuff "grin" (fpathSetBase (fpathBase fp ++ suff) fp)
-         ;  when (ehcOptEmitGrin opts)
+         ;  when (ehcOptDumpGrinStages opts)
                  (do { cpMsg modNm VerboseALot "Emit Grin"
                      ; lift $ putPPFile (fpathToStr fpG) grinPP 1000
                      })
