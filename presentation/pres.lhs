@@ -39,6 +39,18 @@
 
 \begin{frame}
 
+  \frametitle{Don't get your hopes up!}
+
+  \pause
+
+  show most complicated example (fib?)
+
+\end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
   \frametitle{Why target the CLR?}
 
   \only<2>
@@ -143,7 +155,7 @@
 
 \begin{frame}
 \begin{center}
-  \Huge{|[1,2]|}
+  \Huge{xs = |[1,2]|}
   \end{center}
   \end{frame}
 \begin{frame}
@@ -174,9 +186,66 @@
 \end{frame}
 
 \begin{frame}
-\frametitle{Future optimizations}
+\frametitle{Future work}
+\framesubtitle{Obvious enhancements}
+
+\begin{itemize}
+  \item stloc x, ldloc x
+  \item more stack focussed code
+    \begin{itemize}
+      \item Silly-like
+      \item tail calls!
+    \end{itemize}
+  \item remove RefObj indirection
+  \item use value types
+  \item more polymorphic code
+    \begin{itemize}
+      \item inline unboxed values
+    \end{itemize}
+\end{itemize}
+
 \end{frame}
 
 % -----------------------------------------------------------------------------
+
+\begin{frame}
+\frametitle{Future work}
+\framesubtitle{More `out there' stuff}
+
+Simon Peyton Jones on Haskell for CLR:
+\begin{itemize}
+  \item Generate IL
+    \begin{itemize}
+      \item Runtime representation for \stress{thunks}
+    \end{itemize}
+  \item \stress{Interop} with .NET libraries
+    \begin{itemize}
+      \item No \stress{foreign import ...} for everything
+    \end{itemize}
+  \item Other GHC primitives:
+    \begin{itemize}
+      \item the I/O monad
+      \item arbitrary precision arithmetic
+      \item concurrency
+      \item exceptions
+      \item finalisers
+      \item stable pointers
+      \item Software transactional memory 
+    \end{itemize}
+  \item Existing libraries
+\end{itemize}
+
+\end{frame}
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+\begin{center}
+\Huge{\textbackslash EOF}
+\end{center}
+\end{frame}
+
+% -----------------------------------------------------------------------------
+
 \end{document}
 
