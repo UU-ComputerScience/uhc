@@ -30,7 +30,7 @@ hsn2TypeDottedName hsn = namespace ++ "." ++ fancyName hsn
 toFieldName :: TyTag -> Int -> DottedName
 toFieldName (TyCon  _ cNm _ x mx) y = toFieldName' (fieldNames mx) cNm x y
 toFieldName (TyFun  _ fNm x) y      = toFieldName' (fieldNames x)  fNm x y
-toFieldName (TyPApp _ pNm x y) z    = toFieldName' (fieldNames x)  pNm y z
+toFieldName (TyPApp _ pNm x y) z    = toFieldName' (fieldNames (y - x))  pNm y z
 
 toFieldName' :: [DottedName] -> HsName -> Int -> Int -> DottedName
 toFieldName' flds nm x y =
