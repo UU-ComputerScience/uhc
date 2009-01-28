@@ -168,6 +168,10 @@ data OpCode =
          , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
          } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
   | Ceq                -- ^ Pops 2 values, if they are equal, pushes 1 to stack; otherwise, pushes 0.
+  | Cge                -- ^ Pops 2 values and compares them.
+  | Cgt                -- ^ Pops 2 values and compares them.
+  | Cle                -- ^ Pops 2 values and compares them.
+  | Clt                -- ^ Pops 2 values and compares them.
   | Dup                -- ^ Pops 1 value, copies it, pushes the same value twise.
   | Isinst DottedName -- ^ Tests if an object reference is an instance of class, returning either a null reference or an instance of that class or interface.
   | Ldarg Offset       -- ^ Loads /n/-th argument to current method onto stack.

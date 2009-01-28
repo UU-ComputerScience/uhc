@@ -139,6 +139,10 @@ instance Cil OpCode where
   cil (Call s t a c m ps) = ("call " ++) . cilsp s . cil t . sp
                              . cilCall a c m ps
   cil (Ceq)               = ("ceq" ++)
+  cil (Cge)               = ("cge" ++)
+  cil (Cgt)               = ("cgt" ++)
+  cil (Cle)               = ("cle" ++)
+  cil (Clt)               = ("clt" ++)
   cil (Dup)               = ("dup" ++)
   cil (Isinst nm)         = ("isinst " ++) . cilName nm
   cil (Ldarg x)           = ("ldarg " ++) . shows x

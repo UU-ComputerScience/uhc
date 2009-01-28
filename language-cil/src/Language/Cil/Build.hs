@@ -22,6 +22,10 @@ module Language.Cil.Build (
   , brtrue
   , call
   , ceq
+  , cge
+  , cgt
+  , cle
+  , clt 
   , dup
   , isinst
   , ldarg
@@ -127,8 +131,12 @@ call Static _ _ _ _ _ = error $ "Language.Cil.Build.call: "
                       ++ "Invalid association type Static. Try StaticCallConv."
 call a p l t m ps = mdecl $ Call a p l t m ps
 
-ceq :: MethodDecl
+ceq, cge, cgt, cle, clt :: MethodDecl
 ceq = mdecl $ Ceq
+cge = mdecl $ Cge
+cgt = mdecl $ Cgt
+cle = mdecl $ Cle
+clt = mdecl $ Clt
 
 dup :: MethodDecl
 dup = mdecl $ Dup
