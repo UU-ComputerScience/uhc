@@ -750,6 +750,14 @@ SEM CMeta
   | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @names
                  lhs          .   argDicts    =  []
 %%]]
+
+-- The synthesized attribute grBindAnn is only needed for CMeta's occuring in a CBind_Bind,
+-- not for CMeta's occuring in a CExpr_Lam.
+-- Therefore the inherited attribute lamArgDict is only needed in CBind_Bind, not in CExpr_Lam.
+
+SEM CExpr
+  | Lam   argMeta.lamArgDicts = undefined
+
 %%]
 
 
