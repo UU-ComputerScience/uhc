@@ -190,9 +190,9 @@ SEM GrModule
         loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
 
         loc.grTagsMap     = @loc.cons `Map.union` @loc.funs `Map.union` @loc.papps
-        loc.cons          = cons @loc.constrs @bindL.allCons
-        loc.funs          = funs @lhs.hptMap @loc.papps @loc.tyNames @bindL.funArities @bindL.allFuns
-        loc.papps         = papps @lhs.hptMap @loc.tyNames @bindL.funArities @bindL.allPApps
+        loc.cons          = cons @loc.constrs (@bindL.allCons `Set.union` @globalL.allCons)
+        loc.funs          = funs @lhs.hptMap @loc.papps @loc.tyNames @bindL.funArities (@bindL.allFuns `Set.union` @globalL.allFuns)
+        loc.papps         = papps @lhs.hptMap @loc.tyNames @bindL.funArities (@bindL.allPApps `Set.union` @globalL.allPApps)
 
         loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
         loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
