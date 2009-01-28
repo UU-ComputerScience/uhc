@@ -125,7 +125,7 @@ ATTR GrVar GrVarL
 ATTR AllExpr
   [ methodParams : {Set HsName}
   |
-  | locals USE {`Set.union`} {Set.empty} : {Set.Set HsName}
+  | locals USE {`Map.union`} {Map.empty} : {Map DottedName PrimitiveType}
   ]
 
 ATTR GrAlt GrAltL
@@ -212,7 +212,7 @@ SEM GrBind
           expr.methodParams = Set.fromList @argNmL
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
-          loc.locals      = Set.fold (\nm xs -> Local (absPrimitiveType nm @lhs.hptMap) (hsnShowAlphanumeric nm) : xs) [] @expr.locals -- undefined -- @expr.typedLocals
+          loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
 
 
 SEM GrExpr
@@ -315,9 +315,10 @@ SEM GrVar
                        then []
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
-                            , stlocN (hsnShowAlphanumeric @nm) ]
+                            , stlocN @varName ]
       lhs.tyTag      = lookupTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
-      lhs.locals     = Set.singleton @nm
+      lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
+      loc.varName    = hsnShowAlphanumeric @nm
   | KnownTag
       lhs.tyTag      = lookupTag @tag.self @lhs.grTagsMap
   | Ignore
@@ -328,14 +329,14 @@ SEM GrPatLam
       lhs.cilCode    = debugComment @self []
   | Var
       lhs.cilCode    = debugComment @self [stlocN @varName]
-      lhs.locals     = Set.singleton @nm
+      lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
   | VarNode
       lhs.cilCode    = debugComment @self (loadRefVal : @fldL.cilLoad)
       fldL.index     = -1
       fldL.nodeTyTag = @fldL.tyTag
   | BasicNode
       lhs.cilCode    = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-      lhs.locals     = Set.singleton @nm
+      lhs.locals     = Map.singleton @varName Int32
   | EnumNode
       lhs.cilCode    = [no @self]
   | PtrNode
@@ -344,7 +345,7 @@ SEM GrPatLam
       lhs.cilCode    = [no @self]
   | BasicAnnot
       lhs.cilCode    = debugComment @self [stlocN @varName]
-      lhs.locals     = Set.singleton @nm
+      lhs.locals     = Map.singleton @varName Int32
   | EnumAnnot
       lhs.cilCode    = [no @self]
   | PtrAnnot
@@ -382,38 +383,47 @@ SEM GrTag
 %%[(8 codegen grin) hs
 
 absValue :: HsName -> HptMap -> AbstractValue
-absValue hsName hptMap = handleVal (getEnvVar hptMap (getNr hsName))
+absValue hsName hptMap = case absValues hsName hptMap of
+  []  ->  error $ "GrinCode.ToCil.absValue: No known AbstractValue for " ++ show hsName
+  [v] ->  v
+  _   ->  error $ "GrinCode.ToCil.absValue: Multiple possible AbstractValues for " ++ show hsName
+
+absValueGuess :: HsName -> HptMap -> AbstractValue
+absValueGuess hsName hptMap = case absValues hsName hptMap of
+  []   -> error $ "GrinCode.ToCil.absValueGuess: No known AbstractValue for " ++ show hsName
+  [v]  -> v
+  vals -> trace ("GrinCode.ToCil.absValueGuess: Multiple AbstractValues for "
+                    ++ show hsName ++ ": " ++ show vals) $ head vals
+  
+
+absValues :: HsName -> HptMap -> [AbstractValue]
+absValues hsName hptMap = Set.toList $ handleVal (getEnvVar hptMap (getNr hsName))
   where
     getHeapLoc' x = handleVal (getHeapLoc hptMap x)
     handleVal val = 
       case val of
-        (AbsLocs locs _) ->
-          if Set.size locs == 1
-          then getHeapLoc' (Set.elems locs !! 0)
-          else error "GrinCode.ToCil.absValue: Don't know how to handle more (or less) than one loc."
-        _ -> val
+        (AbsLocs locs _) -> Set.fold (\l s -> getHeapLoc' l `Set.union` s) Set.empty locs
+        _                -> Set.singleton val
 
 absGrTag :: HsName -> HptMap -> GrTag
 absGrTag hsName hptMap =
-  case absValue hsName hptMap of
-    (AbsNodes gav) ->
-      if Map.size gav == 1
-      then Map.keys gav !! 0
-      else error "GrinCode.ToCil.absGrTag: AbsNodes map is not a singleton."
-    _ -> error "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement."
+  case absValueGuess hsName hptMap of
+    (AbsNodes gav) -> handleGav $ Map.keys gav
+    (AbsTags  gav) -> handleGav $ Set.toList gav
+    val            -> error $ "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement: "
+                      ++ show hsName ++ " is " ++ show val
+  where handleGav [g] = g
+        handleGav _   = error $ "GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for " ++ show hsName
 
 absPrimitiveType :: HsName -> HptMap -> PrimitiveType
-absPrimitiveType hsName hptMap =
-  case absValue hsName hptMap of
-    (AbsNodes gav) ->
-      if Map.size gav == 1
-      then Object
-      else error "GrinCode.ToCil.absPrimitiveType: AbsNodes map is not a singleton."
-    (AbsBasic) -> Int32
-    (AbsTags _) -> Object
-    (AbsError _) -> Object -- don't know why these occure. TODO: fix this later
-    xs -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement." ++ show hsName ++ " " ++ show xs
-    _ -> error "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement."
+absPrimitiveType hsName hptMap = case absValueGuess hsName hptMap of
+    AbsBasic     -> Int32
+    AbsTags _    -> Object
+    AbsNodes _   -> Object
+    AbsError err -> error $ "GrinCode.ToCil.absPrimitiveType: AbsError on " ++ show hsName ++ ": " ++ err
+    AbsBottom    -> error $ "GrinCode.ToCil.absPrimitiveType: AbsBottom in " ++ show hsName
+    val          -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement: "
+                  ++ show hsName ++ " is " ++ show val
 
 no :: (Show a) => a -> MethodDecl
 no a = comment $ "TODO   " ++ show a
