@@ -261,7 +261,7 @@ SEM GrExpr
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self $
-                                @loc.load ++ @doField
+                                @loc.load ++ @loc.doField
                 loc.load    = loadVar @lhs.className @lhs.methodParams @nm
                 loc.doField = case @offset of
                               0 -> [] 
@@ -272,9 +272,9 @@ SEM GrExpr
                                            (toFieldName @loc.tyTag (o - 1))
                                    ]
                 loc.tyTag   = case @mbTag of
-                              Nothing  -> error "Cannot fetch field of unknown type"
+                              Nothing  -> error $ "Cannot fetch field of unknown type: " ++ show @self
                               Just tag -> lookupTag tag @lhs.grTagsMap
-  | Store       lhs.cilCode = [no @self]
+  | Store       lhs.cilCode = debugComment @self $ @val.cilCode ++ [newRefObj]
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
@@ -389,12 +389,12 @@ SEM GrTag
   | Fun         lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
                 lhs.allFuns   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | PApp        lhs.cilMatch  = [no @self]
+  | PApp        lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
                 lhs.allPApps  = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | App         lhs.cilMatch  = [no @self]
+  | App         lhs.cilMatch  = [no $ "Match " ++ show @self]
   | Unboxed Hole Rec World Any
-                lhs.cilMatch  = [no @self]
+                lhs.cilMatch  = [no $ "Match " ++ show @self]
   | *           lhs.cilConst  = constructTag @self @lhs.grTagsMap
 %%]
 
@@ -443,6 +443,7 @@ absPrimitiveType hsName hptMap = case absValueGuess hsName hptMap of
     AbsTags _    -> Object
     AbsNodes _   -> Object
     AbsError err -> Object -- error $ "GrinCode.ToCil.absPrimitiveType: AbsError on " ++ show hsName ++ ": " ++ err
+                    -- ^ (should become error again when HPT-bugs are fixed)
     AbsBottom    -> error $ "GrinCode.ToCil.absPrimitiveType: AbsBottom in " ++ show hsName
     val          -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement: "
                   ++ show hsName ++ " is " ++ show val
