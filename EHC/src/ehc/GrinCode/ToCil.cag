@@ -274,7 +274,7 @@ SEM GrExpr
                 loc.tyTag   = case @mbTag of
                               Nothing  -> error $ "Cannot fetch field of unknown type: " ++ show @self
                               Just tag -> lookupTag tag @lhs.grTagsMap
-  | Store       lhs.cilCode = debugComment @self $ @val.cilCode ++ [newRefObj]
+  | Store       lhs.cilCode = debugComment @self @val.cilCode
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
