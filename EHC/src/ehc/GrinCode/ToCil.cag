@@ -152,9 +152,9 @@ ATTR AllNTNoMod
   [ className : {DottedName}
     grTagsMap : {Map GrTag TyTag}
   |
-  | allCons  USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
-    allFuns  USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
-    allPApps USE {`Set.union`} {Set.empty} : {Set.Set GrTag}
+  | allCons  USE {`Set.union`} {Set.empty} : {Set GrTag}
+    allFuns  USE {`Set.union`} {Set.empty} : {Set GrTag}
+    allPApps USE {`Set.union`} {Set.empty} : {Set GrTag}
   ]
 
 
@@ -189,15 +189,39 @@ SEM GrModule
         loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
 
         loc.grTagsMap     = @loc.cons `Map.union` @loc.funs `Map.union` @loc.papps
-
-        loc.cons          = Set.fold (\cntag@(GrTag_Con _ _ nm) mp -> maybe mp (\ty -> Map.insert cntag ty mp) (Map.lookup nm @loc.constrs)) Map.empty @bindL.allCons
-
-        loc.funs          = Set.fold (\fntag@(GrTag_Fun nm) mp -> maybe (maybe mp (\ty -> Map.insert fntag (TyFun (toTypeName ty) nm) mp) (Map.lookup (absGrTag nm @lhs.hptMap) @loc.papps)) (\tynm -> Map.insert fntag (TyFun tynm nm) mp) (Map.lookup (conName (absGrTag nm @lhs.hptMap)) @loc.tyNames)) Map.empty @bindL.allFuns
-
-        loc.papps         = Set.fold (\patag@(GrTag_PApp needs nm) mp -> maybe mp (\tynm -> Map.insert patag (TyPApp tynm nm needs) mp) (Map.lookup (conName (absGrTag nm @lhs.hptMap)) @loc.tyNames)) Map.empty @bindL.allPApps
+        loc.cons          = cons @loc.constrs @bindL.allCons
+        loc.funs          = funs @lhs.hptMap @loc.papps @loc.tyNames @bindL.allFuns
+        loc.papps         = papps @lhs.hptMap @loc.tyNames @bindL.allPApps
 
         loc.tyNames       = foldr (\(TyCon tnm cnm _ _ _) m -> Map.insert cnm tnm m) Map.empty @loc.ctyTags
         loc.constrs       = foldr (\t@(TyCon tnm cnm _ _ _) m -> Map.insert cnm t m) Map.empty @loc.ctyTags
+
+{
+-- These functions create maps from GrTags to TyTags for each con, fun and papp tag in the module.
+
+cons :: Map HsName TyTag -> Set GrTag -> Map GrTag TyTag
+cons constrs allCons = Set.fold f Map.empty allCons
+  where
+    f cntag@(GrTag_Con _ _ nm) mp = maybe mp g (Map.lookup nm constrs)
+      where
+        g ty = Map.insert cntag ty mp
+
+funs :: HptMap -> Map GrTag TyTag -> Map HsName HsName -> Set GrTag -> Map GrTag TyTag
+funs hptMap papps tyNames allFuns = Set.fold f Map.empty allFuns
+  where
+    f fntag@(GrTag_Fun nm) mp = maybe g (\tynm -> Map.insert fntag (TyFun tynm nm 0) mp)
+                                        (Map.lookup (conName (absGrTag nm hptMap)) tyNames)
+      where
+        g = maybe mp (\ty -> Map.insert fntag (TyFun (toTypeName ty) nm 0) mp)
+                     (Map.lookup (absGrTag nm hptMap) papps)
+
+papps :: HptMap -> Map HsName HsName -> Set GrTag -> Map GrTag TyTag
+papps hptMap tyNames allPApps = Set.fold f Map.empty allPApps
+  where
+    f patag@(GrTag_PApp needs nm) mp = maybe mp g (Map.lookup (conName (absGrTag nm hptMap)) tyNames)
+      where
+        g tynm = Map.insert patag (TyPApp tynm nm needs 0) mp
+}
 
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
@@ -238,7 +262,7 @@ SEM GrExpr
                 loc.doField = case @offset of
                               0 -> [] 
                               o -> [ loadRefVal
-                                   , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
+                                   , ldfld (trace (show (@loc.tyTag) ++ " !! " ++ show o) $ toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
                                            (toFieldName @loc.tyTag (o - 1))

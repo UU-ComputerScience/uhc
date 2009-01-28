@@ -38,13 +38,14 @@ toFieldName (TyCon _ cNm _ x mx) y =
 
 -- Can also be used to get the type of the stored fields, since they exactly match the constructor argument types.
 toFieldTypes :: TyTag -> [PrimitiveType]
-toFieldTypes (TyFun _ _)             = []
 toFieldTypes con@(TyCon hsn _ _ x _) =
   case (hsnShowAlphanumeric hsn) of
     "Int"          -> [Int32]
     "Char"         -> [Char]
     "PackedString" -> [String]
     _              -> replicate x Object
+toFieldTypes (TyFun _ _ args)        = replicate args Object
+toFieldTypes (TyPApp _ _ _ args)     = replicate args Object
 
 toTypeDefs :: DottedName -> [TyTag] -> [TypeDef]
 toTypeDefs callbackNm tags =
@@ -116,7 +117,7 @@ simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was 
     fullName = namespace ++ "." ++ tyNm
 
 subTys :: DottedName -> DottedName -> TyTag -> TypeDef
-subTys callbackNm tyNm (TyFun _ fnm) =
+subTys callbackNm tyNm (TyFun _ fnm args) =
   classDef Public subTyNm (extends tyNm) noImplements []
     [ defaultCtor []
     , Method Static Public Object "Invoke" []
@@ -128,7 +129,7 @@ subTys callbackNm tyNm (TyFun _ fnm) =
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<Thunk>" ++ fnNm
-subTys callbackNm tyNm (TyPApp _ fnm needs) =
+subTys callbackNm tyNm (TyPApp _ fnm needs args) =
   classDef Public subTyNm (extends tyNm) noImplements []
     [ defaultCtor []
     , Method Static Public Object "Invoke" []

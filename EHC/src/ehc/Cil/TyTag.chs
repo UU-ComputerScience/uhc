@@ -31,11 +31,13 @@ data TyTag
   | TyFun
     { tfTyName   :: !HsName
     , tfFunName  :: !HsName
+    , tfArgs     :: !Int
     }
   | TyPApp
     { tpTyName   :: !HsName
     , tpFunName  :: !HsName
     , tpNeeds    :: !Int
+    , tpArgs     :: !Int
     }
   | TyApp
     { taTyName   :: !HsName
@@ -45,14 +47,14 @@ data TyTag
 
 toTypeName :: TyTag -> HsName
 toTypeName (TyCon nm _ _ _ _) = nm
-toTypeName (TyFun nm _)       = nm
-toTypeName (TyPApp nm _ _)    = nm
+toTypeName (TyFun nm _ _)     = nm
+toTypeName (TyPApp nm _ _ _)  = nm
 toTypeName (TyApp nm _)       = nm
 
 toConName :: TyTag -> HsName
 toConName (TyCon _ nm _ _ _) = nm
-toConName (TyFun _ nm)       = nm
-toConName (TyPApp _ nm _)    = nm
+toConName (TyFun _ nm _)     = nm
+toConName (TyPApp _ nm _ _)  = nm
 toConName (TyApp _ nm)       = nm
 
 fromCTag :: CTag -> TyTag
@@ -88,12 +90,13 @@ toTypeDottedName :: TyTag -> DottedName
 toTypeDottedName (TyCon tyNm _ _ _ _) =
   namespace ++ "." ++ fancyName tyNm
 
--- Should also be useable for Funs, PApps (and Apps?)
 toConDottedName :: TyTag -> DottedName
 toConDottedName (TyCon tyNm cnNm _ _ _) =
   namespace ++ "." ++ fancyName tyNm ++ "/" ++ fancyName cnNm
-toConDottedName (TyFun tyNm fNm) =
+toConDottedName (TyFun tyNm fNm _) =
   namespace ++ "." ++ fancyName tyNm ++ "/<Thunk>" ++ fancyName fNm
+toConDottedName (TyPApp tyNm fNm needs _) =
+  namespace ++ "." ++ fancyName tyNm ++ "/<PApp>" ++ fancyName fNm ++ "`" ++ show needs
 
 fancyName :: HsName -> DottedName
 fancyName hsn =
