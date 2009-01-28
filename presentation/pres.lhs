@@ -1,10 +1,11 @@
 \documentclass[xcolor=dvipsnames,sans,mathserif]{beamer}
-\usepackage[english]{babel}
 
+\usepackage[english]{babel}
 \usepackage{mathpazo}
 
-%include polycode.fmt 
+%include polycode.fmt
 
+\setbeamertemplate{navigation symbols}{}
 \setlength\parindent{0.0in}
 \setlength\parskip{0.25in} 
 
@@ -38,48 +39,83 @@
 
 \begin{frame}
 
-  \frametitle{CLR/Mono}
+  \frametitle{Why target the CLR?}
 
-  Common Language Runtime / Mono Project
+  \only<2>
+  {
+    A lot of presence.
+    \begin{itemize}
+      \item \stress{Multiple versions} of Windows desktops.
+      \item \stress{OS X} and \stress{Linux} desktops, through Mono.
+      \item Web browsers, through \stress{Silverlight} and \stress{Moonlight}.
+      \item Mobile devices:
+        \begin{itemize}
+          \item Windows \stress{Mobile}.
+          \item Mono on the \stress{iPhone} and \stress{Android}.
+        \end{itemize}
+      \item In the cloud!
+        \begin{itemize}
+          \item Windows \stress{Azure}: Distributed computation environment.
+        \end{itemize}
+    \end{itemize}
+  }
 
-  \begin{itemize}
-    \item \stress{Stack-based} machine.
-    \item Basic operations for \stress{reference types} and \stress{value types}.
-    \item \stress{Type safe}: operations must match the exact type.
-    \item However, runtime checked casting is allowed.
-  \end{itemize}
+  \only<3>
+  {
+    Rich environment.
+    \begin{itemize}
+      \item \stress{Interop} with other languages.
+      \item Access a huge set of \stress{libraries}.
+      \item Provide libraries developed in \stress{Haskell}.
+    \end{itemize}
+  }
 
-  Cil \texttt{.il} file:
-
-  \begin{itemize}
-    \item Describes one \stress{module}.
-    \item Multiple \stress{classes}.
-    \item Classes have \stress{methods}.
-    \item Possibly several \stress{inner classes}.
-  \end{itemize}
-
-\end{frame}
+\end{frame} 
 
 % -----------------------------------------------------------------------------
 
 \begin{frame}
 
-  \frametitle{Type safety}
+  \frametitle{What is the CLR?}
 
-  We can not freely mix \stress{integers} and \stress{references} in one array.
-
-  We have to choose one of the alternatives:
+  Common Language Runtime / Mono Project
 
   \begin{itemize}
-    \item \stress{Separate Java classes} for different data types.
-    \item \stress{Box integer values} in a reference type.
+    \item \stress{Stack-based} virtual machine.
+    \item First-class support for \stress{classes} with \stress{methods}.
+    \item Basic operations for \stress{reference types} and \stress{value types}.
+    \item \stress{Type safe}: operations must match the exact type.
+    \item Dynamic \stress{casting} is allowed.
+    \item Executes \stress{Common Intermediate Language} (CIL).
+    \item CIL has a concrete syntax.
+      \begin{itemize}
+        \item ilasm
+        \item ildasm / monodis
+      \end{itemize}
   \end{itemize}
 
-  \pause First approach is more \stress{efficient} but needs \stress{more information}.
+\end{frame} 
 
-  Second approach is \stress{simpler} to implement but is more \stress{expensive}.
-  
-\end{frame}
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
+  \frametitle{Architecture of .NET backend}
+
+  \$ bin/8/ehc \stress{-ccil} Test.hs\\
+  \pause
+  \$ ls\\
+  Test.hs   \stress{Test.il}\\
+  \pause
+  \$ \stress{ilasm} Test.il\\
+  \pause
+  \$ ls\\
+  \stress{Test.exe}  Test.hs   Test.il\\
+  \pause
+  \$ \stress{mono} Test.exe\\
+  42
+
+\end{frame} 
 
 % -----------------------------------------------------------------------------
 

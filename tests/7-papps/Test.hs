@@ -11,5 +11,5 @@ f x y z = add z x
 
 g x = f 3 x
 
-main = g (inc 41)
+main = g (inc 41) 4
 

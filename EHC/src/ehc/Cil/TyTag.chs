@@ -31,13 +31,13 @@ data TyTag
   | TyFun
     { tfTyName   :: !HsName
     , tfFunName  :: !HsName
-    , tfArgs     :: !Int
+    , tfArity    :: !Int
     }
   | TyPApp
     { tpTyName   :: !HsName
     , tpFunName  :: !HsName
     , tpNeeds    :: !Int
-    , tpArgs     :: !Int
+    , tpFunArity :: !Int
     }
   | TyApp
     { taTyName   :: !HsName
