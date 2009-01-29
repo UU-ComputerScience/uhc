@@ -37,18 +37,22 @@ The state HS compilation can be in
 
 %%[8 export(HSState(..))
 data HSState
-  = HSStart
-%%[[99
-  | LHSStart
-  | LHSOnlyImports
-%%]]
-  | HSAllSem
+  = HSStart					-- starting from .hs
+  | HSAllSem				-- done all semantics for .hs
 %%[[20
-  | HSAllSemHI
-  | HSOnlyImports
+  | HSOnlyImports			-- done imports from .hs
+  | HIStart					-- starting from .hi
+  | HIAllSem				-- done all semantics for .hi
+  | HIOnlyImports			-- done imports from .hi
+%%]]
+%%[[99
+  | LHSStart				-- starting from .lhs
+  | LHSOnlyImports			-- done imports from .lhs
 %%]]
   deriving (Show,Eq)
 %%]
+
+Is a state working on literal haskell input
 
 %%[20 export(hsstateIsLiteral)
 hsstateIsLiteral :: HSState -> Bool
@@ -57,6 +61,27 @@ hsstateIsLiteral LHSStart       = True
 hsstateIsLiteral LHSOnlyImports = True
 %%]]
 hsstateIsLiteral _              = False
+%%]
+
+%%[20 export(hsstateShowLit)
+hsstateShowLit :: HSState -> String
+%%[[99
+hsstateShowLit LHSStart       = "Literal"
+hsstateShowLit LHSOnlyImports = "Literal"
+%%]]
+hsstateShowLit _              = ""
+%%]
+
+The next thing to do for HSState.
+
+%%[20 export(hsstateNext)
+hsstateNext :: HSState -> HSState
+hsstateNext HSStart       = HSOnlyImports
+hsstateNext HIStart       = HIOnlyImports
+%%[[99
+hsstateNext LHSStart      = LHSOnlyImports
+%%]]
+hsstateNext st            = st
 %%]
 
 The state EH compilation can be in

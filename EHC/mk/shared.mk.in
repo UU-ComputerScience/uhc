@@ -81,16 +81,27 @@ EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
 UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
 
 ###########################################################################################
+# Platform we develop on; some make commands do not work properly on cygwin
+###########################################################################################
+
+# platform: UNIX, CYGWIN
+DEVELOPMENT_PLATFORM	:= @DEVELOPMENT_PLATFORM@
+
+###########################################################################################
 # WinXX specific file name conversions
 ###########################################################################################
 
 # convert prefix '/cygdrive/c' to 'c:', if any
-# $1: name
+# $1: filepath
 WINXX_CYGWIN_NAME1		= $(if $(filter /cygdrive/c%,$(1)),$(subst /cygdrive/c,c:,$(1)),$(1))
 
-# convert prefix '/c/' to '/cygdrive/c/', if any
-# $1: name
-WINXX_CYGWIN_NAME2		= $(if $(filter /c/%,$(1)),$(patsubst /c/%,/cygdrive/c/%,$(1)),$(1))
+# convert prefix '/c/' to '/cygdrive/c/' (and similarly, some others), if any
+# $1: filepath
+WINXX_CYGWIN_NAME2		= $(if $(filter /c/% /d/% /e/% /f/% /g/% /h/%,$(1)),$(patsubst %,/cygdrive%,$(1)),$(1))
+
+# convert prefix 'd:/' to '/d/', if any
+# $1: filepath
+WINXX_CYGWIN_NAME3D		= $(if $(filter d:/%,$(1)),$(patsubst d:/%,/d/%,$(1)),$(1))
 
 ###########################################################################################
 # Locations in source, build and install
@@ -149,6 +160,8 @@ TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build/
 AGC					:= @UUAGC_CMD@
 GHC					:= @GHC_CMD@
 GHC_VERSION         := @GHC_VERSION@
+HADDOCK				:= @HADDOCK_CMD@
+HADDOCK_VERSION     := @HADDOCK_VERSION@
 GCC					:= @GCC_CMD@
 AR					:= @AR_CMD@
 RANLIB				:= @RANLIB_CMD@
@@ -176,6 +189,9 @@ GHC_EHC_PKG_UULIB						:= uulib
 GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
 GHC_OPTS_OPTIM							:= -O2
 GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
+
+# HADDOCK options
+HADDOCK_OPTS							:= 
 
 # SHUFFLE options
 SHUFFLE_OPTS_WHEN_EHC					:= @SHUFFLE_EHC_OPTIONS@

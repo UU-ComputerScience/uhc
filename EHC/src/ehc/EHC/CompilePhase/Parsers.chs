@@ -124,20 +124,22 @@ cpParseCore modNm
               fpC     = fpathSetSuff "core" fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
        ; errs <- cpParsePlain' CorePrs.pCModule coreScanOpts ecuStoreCore fpC modNm
-       ; when (ehcDebugStopAtCoreError opts) $ cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs
+       ; when (ehcDebugStopAtCoreError opts)
+              (cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs)
        ; return ()
        }
 %%]
 
-%%[20 export(cpParsePrevHI)
-cpParsePrevHI :: HsName -> EHCompilePhase ()
-cpParsePrevHI modNm
+%%[20 export(cpParseHI)
+cpParseHI :: HsName -> EHCompilePhase ()
+cpParseHI modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               fpH     = fpathSetSuff "hi" fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpH
        ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fpH modNm
-       ; when (ehcDebugStopAtHIError opts) $ cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs
+       ; when (ehcDebugStopAtHIError opts)
+              (cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs)
        ; return ()
        }
 %%]
@@ -152,7 +154,7 @@ cpGetPrevHI modNm
   = do { cr <- get
        ; let  ecu        = crCU modNm cr
        ; when (isJust (ecuMbHITime ecu))
-              (cpParsePrevHI modNm)
+              (cpParseHI modNm)
        }
 %%]
 

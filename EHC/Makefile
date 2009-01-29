@@ -88,6 +88,7 @@ explanation:
 	echo  "" ; \
 	echo  "make doc/<d>.pdf         : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
 	echo  "                           or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
+	echo  "                           or (doc): <d> in {$(TEXT_DOCLTX_VARIANTS)}" ; \
 	echo  "                           only if text src available, otherwise already generated" ; \
 	echo  "" ; \
 	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
@@ -149,7 +150,7 @@ A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
 A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
 
 tst:
-	@echo $(WWW_DOC_FILES)
+	@echo $(EHCLIB_SYNC_ALL_PKG_DRV_HS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

@@ -73,6 +73,8 @@ data HIInfo
       , hiiHiddenExps       :: !ModEntRel
       , hiiFixityGam        :: !FixityGam
       , hiiIdDefOccGam      :: !IdDefOccGam
+      , hiiHIDeclImpModL    :: ![HsName]
+      , hiiHIUsedImpModL    :: ![HsName]
 %%[[(20 hmtyinfer)
       , hiiValGam           :: !ValGam
       , hiiTyGam            :: !TyGam
@@ -93,6 +95,7 @@ data HIInfo
 emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo Rel.empty Rel.empty emptyGam emptyGam
+           [] []
 %%[[(20 hmtyinfer)
            emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
@@ -134,6 +137,8 @@ hiFromHIInfo i
       (hiiHiddenExps    i)
       (hiiFixityGam     i)
       (hiiIdDefOccGam   i)
+      (hiiHIDeclImpModL i)
+      (hiiHIUsedImpModL i)
 %%[[(20 hmtyinfer)
       (hiiValGam        i)
       (hiiTyGam         i)
@@ -160,6 +165,8 @@ hiFromAllGams
      -> ModEntRel
      -> FixityGam
      -> IdDefOccGam
+     -> [HsName]
+     -> [HsName]
 %%[[(20 hmtyinfer)
      -> ValGam
      -> TyGam
@@ -177,6 +184,7 @@ hiFromAllGams
 %%]]
      -> Seq.FastSeq Binding
 hiFromAllGams exps hiddenExps fg idg
+              impd impu
 %%[[(20 hmtyinfer)
               vg tg tkg pg dg ig chrStore
 %%]]
@@ -190,6 +198,7 @@ hiFromAllGams exps hiddenExps fg idg
     Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
     Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
+    Seq.:++: Seq.fromList [Binding_ImportModules impd impu]
 %%[[(20 hmtyinfer)
     Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
     Seq.:++: Seq.fromList [Binding_TyPolarities [ (n,pgiPol i) | (n,i) <- gamToAssocL pg ]]

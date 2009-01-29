@@ -529,6 +529,20 @@ SEM Expression
         loc         .   eh          =   rngLift @range EH.Expr_Var @refname
     | Constructor
         loc         .   eh          =   rngLift @range EH.Expr_Con @refname
+    | TupleConstructor
+        loc         .   eh          =   let ns     = take @arity hsnLclSupply
+%%[[1
+                                            mkt ns = ehExpConApp @range (hsnProd @arity) ns
+%%][7
+                                            mkt ns = rngLift @range
+                                                             EH.Expr_Rec
+                                                             (foldl (\r e -> rngLift @range EH.RecExpr_Ext r Nothing e)
+                                                                    (rngLift @range EH.RecExpr_Empty)
+                                                                    ns)
+%%]]
+                                        in  foldr (rngLift @range EH.Expr_Lam)
+                                                  (mkt (map (rngLift @range EH.Expr_Var) ns))
+                                                  (map (rngLift @range EH.PatExpr_Var) ns)
     | Parenthesized
         loc         .   eh          =   rngLift @range EH.Expr_Parens @expression.eh
     | NormalApplication

@@ -1771,6 +1771,7 @@ void gb_InitTables
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 %%[[20
+	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl
 %%]]
@@ -1789,6 +1790,13 @@ void gb_InitTables
 		GB_GC_RegisterModule( &gbMod ) ;
 #	endif
 
+%%[[20
+	for ( i = 0 ; i < impModulesSz ; i++ ) {
+		impModules[i].globModInx = gb_lookupModEntry( impModules[i].name, modTbl ) ;
+		IF_GB_TR_ON(3,{printf("imp mod %s globInx %d", impModules[i].name, impModules[i].globModInx) ; printf("\n");}) ;
+	}
+%%]]
+
 	for ( i = 0 ; i < cafGlEntryIndicesSz ; i++ ) {
 		GB_BytePtr* e = &globalEntries[ cafGlEntryIndices[i] ] ;
 		GB_NodePtr n ;
@@ -1802,21 +1810,25 @@ void gb_InitTables
 		switch ( linkEntries[i].tblKind )
 		{
 			case GB_LinkTbl_EntryKind_CodeEntry :
+				IF_GB_TR_ON(3,{printf("link CodeEntry") ; printf("\n");}) ;
 				*p = Cast(GB_Word,globalEntries[ linkEntries[i].linkVal ]) ;
 				IF_GB_TR_ON(3,{printf("link CodeEntry p %x v %x", p, globalEntries[ linkEntries[i].linkVal ]) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref0 :
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0") ; printf("\n");}) ;
 				*p = linkEntries[i].linkVal ;
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref1 :
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1") ; printf("\n");}) ;
 				*p = GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)) ;
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref2 :
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2") ; printf("\n");}) ;
 				*p = GB_Deref(Cast(GB_Ptr,GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)))) ;
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2 p %x v %x", p, GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal))) ; printf("\n");}) ;
 				break ;
@@ -1824,6 +1836,7 @@ void gb_InitTables
 			case GB_LinkTbl_EntryKind_PatchOffsets :
 				for ( j = 0 ; j < linkEntries[i].linkVal ; j++ )
 				{
+					IF_GB_TR_ON(3,{printf("link PatchOffsets") ; printf("\n");}) ;
 					p[j] = Cast(GB_Word,&p[j+1]) + p[j] ;
 					IF_GB_TR_ON(3,{printf("link PatchOffsets i %d p %x v %x", j, &p[j], Cast(GB_Word,&p[j+1]) + p[j]) ; printf("\n");}) ;
 				}
@@ -1831,8 +1844,10 @@ void gb_InitTables
 
 %%[[20
 			case GB_LinkTbl_EntryKind_ImpEntry :
-				*p = Cast(GB_Word,(modTbl[ linkEntries[i].linkVal ].expNode)) ;
-				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x v=%x *v=%x", p, (modTbl[ linkEntries[i].linkVal ].expNode), *(modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x linkVal=%x", p, (linkEntries[i].linkVal)) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x expNode=%x", p, (modTbl[ impModules[ linkEntries[i].linkVal ].globModInx ].expNode)) ; printf("\n");}) ;
+				*p = Cast(GB_Word,(modTbl[ impModules[ linkEntries[i].linkVal ].globModInx ].expNode)) ;
+				// IF_GB_TR_ON(3,{printf("link ImpEntry p=%x v=%x", p, (modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
 				break ;
 %%]]
 
@@ -1906,12 +1921,13 @@ void gb_checkInterpreterAssumptions()
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-GB_ModEntry* gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
+int gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl )
 {
-	for ( ; modTbl->name != NULL && strcmp( modTbl->name, modNm ) != 0 ; modTbl++ ) ;
-	if ( modTbl == NULL )
+	int i ;
+	for ( i = 0 ; modTbl[i].name != NULL && strcmp( modTbl[i].name, modNm ) != 0 ; i++ ) ;
+	if ( modTbl[i].name == NULL )
 		gb_panic2( "module lookup", modNm ) ;
-	return modTbl ;
+	return i ;
 }
 %%]
 

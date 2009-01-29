@@ -21,6 +21,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
@@ -115,17 +117,20 @@ doCompileGrin input opts
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
 %%[[9                                             
 		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
+		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin "-113-memberSelected"
+         ; transformCode         (dropUnreachableBindings False) 
+                                             "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
 %%]]
-         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-113-cleaned"
-         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-114-appsbound"
-         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-115-globconst"
+         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115-cleaned"
+         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-116-appsbound"
+         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-117-globconst"
          ; transformCodeInline                      "Inline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-116-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-117-invariant"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-118-inlined"
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-119-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-118-evalstored"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-119-unusedExprDropped"
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-120-numbered"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-120-evalstored"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-121-unusedExprDropped"
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-122-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 

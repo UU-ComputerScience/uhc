@@ -33,6 +33,7 @@ Core/Pretty.cag
 Core/Subst.cag
 Core/SubstCaseAltFail.cag
 Core/FvS.cag
+Core/UsedModNms.cag
 Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
 Core/Trf/FullLazy.cag
@@ -75,6 +76,7 @@ GrinCode/Trf/InlineEA.cag
 GrinCode/Trf/LateInline.cag
 GrinCode/Trf/LowerGrin.cag
 GrinCode/Trf/MayLiveUnboxed.cag
+GrinCode/Trf/MemberSelect.cag
 GrinCode/Trf/MergeCase.cag
 GrinCode/Trf/MergeInstance.cag
 GrinCode/Trf/NormForHPT.cag

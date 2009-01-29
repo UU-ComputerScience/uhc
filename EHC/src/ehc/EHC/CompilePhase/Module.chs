@@ -67,9 +67,7 @@ cpGetHsImports modNm
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
          ;  when (isJust mbHsSemMod)
-                 (cpUpdCU modNm
-                  $ ecuStoreImpL
-                  $ HSSemMod.modImpNmL_Syn_AGItf hsSemMod
+                 (cpUpdCU modNm $ ecuStoreHSDeclImpL (HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
                  )
          -- ; lift $ putWidthPPLn 120 (pp mod)
          }
@@ -95,7 +93,7 @@ cpGetMetaInfo modNm
 %%[[(20 codegen)
          ;  tm ecuStoreCoreTime      (fpathSetSuff "core" $ ecuFilePath ecu)
 %%]]
-%%[[101
+%%[[20
          ;  wr ecuStoreDirIsWritable (                      ecuFilePath ecu)
 %%]]
          }
@@ -107,7 +105,7 @@ cpGetMetaInfo modNm
                           ; cpUpdCU modNm $ store t
                           })
                }
-%%[[101
+%%[[20
         wr store fp
           = do { pm <- lift $ getPermissions (maybe "." id $ fpathMbDir fp)
                -- ; lift $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))

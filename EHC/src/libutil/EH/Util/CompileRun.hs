@@ -21,7 +21,7 @@ module EH.Util.CompileRun
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
   , cpSeq, (>->), cpEmpty 
-  , cpFindFileForFPath
+  , cpFindFilesForFPath, cpFindFileForFPath
   , cpImportGather
   , cpPP, cpPPMsg
   )
@@ -188,24 +188,24 @@ crCUFPath modNm cr = maybe emptyFPath cuFPath (crMbCU modNm cr)
 -- Find file for FPath
 -------------------------------------------------------------------------
 
-cpFindFileForFPath
+cpFindFilesForFPath
   :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
-       => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
-cpFindFileForFPath suffs sp mbModNm mbFp
+       => Bool -> [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
+cpFindFilesForFPath stopAtFirst suffs sp mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
        ; if cusIsUnk cus
           then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
-                  ; mbFpFound <- lift (searchPathForReadableFile sp (map fst suffs) fp)
-                  ; case mbFpFound of
-                      Nothing
+                  ; fpsFound <- lift (searchPathForReadableFiles stopAtFirst sp (map fst suffs) fp)
+                  ; case fpsFound of
+                      []
                         -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) sp)
-                              ; return Nothing
+                              ; return []
                               }
-                      Just ff
+                      ffs@(ff:_)
                         -> do { cpUpdCU modNm (cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
-                              ; return (Just ff)
+                              ; return ffs
                               }
                         where cus = case lookup (fpathSuff ff) suffs of
                                       Just c  -> c
@@ -213,7 +213,15 @@ cpFindFileForFPath suffs sp mbModNm mbFp
                                                    Just c  -> c
                                                    Nothing -> cusUnk
                   }
-          else return (maybe Nothing (\nm -> Just (crCUFPath nm cr)) mbModNm)
+          else return (maybe [] (\nm -> [crCUFPath nm cr]) mbModNm)
+       }
+
+cpFindFileForFPath
+  :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
+       => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
+cpFindFileForFPath suffs sp mbModNm mbFp
+  = do { fps <- cpFindFilesForFPath True suffs sp mbModNm mbFp
+       ; return (listToMaybe fps)
        }
 
 -------------------------------------------------------------------------

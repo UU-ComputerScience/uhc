@@ -587,6 +587,9 @@ DATA Expression                                   {- *** -}
     | Constructor                      {- *** -}
         range                    : Range
         name                     : Name
+    | TupleConstructor                      {- *** -}
+        range                    : Range
+        arity                    : Int
     | Parenthesized
         range                    : Range
         expression               : Expression

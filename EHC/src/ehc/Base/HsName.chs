@@ -311,11 +311,14 @@ instance HSNM String where
 %%[8.HSNM.String -1.HSNM.String
 instance HSNM String where
   mkHNm s
-    = mkHNm $ map hsnFromString $ ws'
+    = mkHNm $ map hsnFromString $ ws''
     where ws  = wordsBy (=='.') s
           ws' = case initlast2 ws of
-                  Just (ns,"","") -> ns ++ ["."]
-                  _               -> ws
+                  Just (ns,n,"") -> ns ++ [n ++ "."]
+                  _              -> ws
+          ws''= case break (=="") ws' of
+                  (nq,(_:ns)) -> nq ++ [concatMap ("."++) ns]
+                  _ -> ws'
 %%]
 
 %%[1

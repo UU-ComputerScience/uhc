@@ -189,5 +189,8 @@ SET AllMeta     =   CMeta
 SET AllExpr
   = CExpr AllBind AllAlt AllPat
     AllMeta
+
+SET AllNT
+  = AllCodeNT
 %%]
 

@@ -310,6 +310,7 @@ hiScanOpts
 %%]]
 %%[[20
                                         , "visibleno", "visibleyes"
+                                        , "importmodules"
 %%]]
                                         ]
 %%[[20

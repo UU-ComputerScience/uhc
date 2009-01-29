@@ -111,8 +111,10 @@ main
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Search path
+%%% Suffix search path
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Order is significant.
 
 %%[8
 type FileSuffMp = [(String,EHCompileUnitState)]
@@ -124,6 +126,9 @@ fileSuffMpHs
     , ( "lhs" , ECUSHaskell LHSStart )
 %%]]
     , ( "eh"  , ECUSEh EHStart )
+%%[[20
+    , ( "hi"  , ECUSHaskell HIStart )
+%%]]
 %%[[(8 grin)
     , ( "grin", ECUSGrin )
 %%]]
@@ -259,11 +264,12 @@ doCompileRun fn opts
                     }
 %%][20
              imp mbFp nm
-               = do { mbFoundFp <- cpFindFileForFPath fileSuffMpHs searchPath (Just nm) mbFp
-                    -- ; lift $ putStrLn $ show nm ++ ": " ++ show mbFp ++ ": " ++ show mbFoundFp
+               = do { fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just nm) mbFp
+                    ; when (ehcOptVerbosity opts >= VerboseDebug)
+                           (lift $ putStrLn $ show nm ++ ": " ++ show mbFp ++ ": " ++ show fpsFound)
                     ; when (isJust mbFp)
                            (cpUpdCU nm (ecuSetIsTopMod True))
-                    ; when (isJust mbFoundFp)
+                    ; when (not (null fpsFound))
                            (cpEhcModuleCompile1 (Just HSOnlyImports) nm)
                     }
 %%]]

@@ -26,6 +26,9 @@ DATA Binding
         srcVersionSvn           : String
         compileFlags            : String
         hash                    : Integer
+    | ImportModules
+        asDeclared              : {[HsName]}
+        asUsed                  : {[HsName]}
     | Export
         visible                 : {Visible}
         exports                 : ModEntRel
