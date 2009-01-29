@@ -212,59 +212,97 @@ And how about \stress{thunks} and \stress{partial applications}?
 
 % -----------------------------------------------------------------------------
 
-\begin{frame}
-
-  \frametitle{The simple approach}
-
-%format public  = "\stress{\textbf{public}}"
-%format static  = "\stress{\textbf{static}}"
-%format class   = "\stress{\textbf{class}}"
-%format extends = "\stress{\textbf{extends}}"
-
->public static class Node
->{
->  public int tag;
->  public Node[] payload;
->}
-
->public static class IntNode extends Node
->{
->  public int intVal;
->}
-
-\end{frame}
 
 \begin{frame}
-\begin{center}
-  \Huge{xs = |[1,2]|}
-  \end{center}
-  \end{frame}
-\begin{frame}
-  \includegraphics[scale=0.38]{listof12}
-\end{frame}
+\frametitle{Code generation}
 
-\begin{frame}
-\frametitle{hsjava}
-\end{frame}
-
-\begin{frame}
-\frametitle{Silly to JVM}
-\end{frame}
-
-\begin{frame}
-\frametitle{Compositionality}
 \begin{itemize}
-\item Local variables
+  \item Generate code from GRIN
+  \item Direct translation of GRIN constructs
+
+% >global_x_3_10_0_25 <- store (Ffun_x_15_10_0_25)
+% >global_x_5_15_23_0 <- store (CInt 1)
+% >
+% >fun_x_15_10_0_25 = unit ()
+% >
+% >main  
+% >  = fetchfield global_x_3_10_0_25 0 ; \x ->
+% >    case x of
+% >     CJust
+% >       -> fetchfield global_x_3_10_0_25 1 ; \y ->
+% >          unit (CJust y)
+% >     Ffun_x_15_10_0_25
+% >       -> updateunit (CJust global_x_5_15_23_0) global_x_3_10_0_25
+
 \end{itemize}
+
 \end{frame}
 
-\begin{frame}
-\frametitle{FFI}
-\end{frame}
 
 \begin{frame}
-\frametitle{Demo}
+\frametitle{Code generation}
+\framesubtitle{Sequence}
+
+%format stress (e) = "\stress{" e "}"
+
+\only<1>{
+>expr ; \x -> ... length x ...
+}
+\only<2>{
+>stress expr ; \x -> ... length x ...
+}
+\only<3>{
+>expr ; stress (\x ->) ... length x ...
+}
+\only<4>{
+>expr ; \x -> stress (... length x ...)
+}
+
+\pause
+expr\\
+\pause
+STLOC x\\
+\pause
+...\\
+LDLOC x\\
+CALL length\\
+...\\
+
 \end{frame}
+
+
+\begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Case}
+
+\only<1>{
+>case tag of
+>  CNil  -> ...
+>  CCons -> ...
+}
+\only<2>{
+>stress(case tag) of
+>  CNil  -> ...
+>  CCons -> ...
+}
+\only<3>{
+>case tag of
+>  stress(CNil)  -> stress(...)
+>  CCons -> ...
+}
+
+\pause
+tag\\
+\pause
+L1:\\
+~~DUP\\
+~~ISINST CNil\\
+~~BRFALSE L2\\
+~~POP\\
+~~...\\
+L2:\\
+\end{frame}
+
 
 \begin{frame}
 \frametitle{Future work}
