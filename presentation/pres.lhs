@@ -18,6 +18,8 @@
 
 \usefonttheme[stillsansseriftext]{serif} 
 \setbeamerfont{frametitle}{family=\rmfamily,shape=\itshape} 
+\setbeamersize{text margin left=0.3cm}
+\setbeamersize{text margin right=0.5cm}
 
 \newcommand{\stress}[1]{\textcolor{white}{\textbf{#1}}}
 
@@ -126,9 +128,11 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   \Huge{|[1,2]|}
   \end{center}
   \end{frame}
+
 \begin{frame}
-  \includegraphics[scale=0.50]{listof12}
+  \includegraphics[scale=0.50]{listof12-complicated}
 \end{frame}
+
 
 \begin{frame}
 \frametitle{Silly to JVM}
@@ -163,6 +167,11 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   \end{itemize}
 
 \end{frame}
+
+\begin{frame} \includegraphics[scale=0.50]{listof12} \end{frame}
+\begin{frame} \includegraphics[scale=0.50]{listof12-nopayload} \end{frame}
+\begin{frame} \includegraphics[scale=0.50]{listof12-nopayloadoptimized} \end{frame}
+\begin{frame} \includegraphics[scale=0.50]{listof12-intandtag} \end{frame}
 
 % -----------------------------------------------------------------------------
 \end{document}
