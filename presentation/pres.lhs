@@ -132,7 +132,6 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   \includegraphics[scale=0.50]{listof12-complicated}
 \end{frame}
 
-
 \begin{frame}
 \frametitle{Silly to JVM}
   We hook into EHC and use \stress{Silly} as input.
@@ -153,6 +152,11 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \begin{frame}
 \frametitle{Demo}
+
+\LARGE
+
+> fibs = 1 : 1 : zipWith (+) fibs (tail fibs)
+
 \end{frame}
 
 \begin{frame}
