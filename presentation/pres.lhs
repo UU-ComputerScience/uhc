@@ -424,6 +424,65 @@ However:
 
 
 \begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Types!}
+
+We need the possible \stress{tags} of every \stress{variable}, so we can figure out which \stress{class} to use.
+
+Basically type (tag) inferencing. A lot of work!
+
+\pause
+
+Fortunately, the \stress{heap points-to analysis} does this already.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Heap points-to analysis}
+
+The analysis gives us, for each \stress{variable}, what kind of \stress{values} it can contain.
+
+Example:
+
+>fetch T 1      ; x ->
+>inc x          ; \(y z) ->
+>update T (x y)
+
+|T| is a thunk here.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Heap points-to analysis}
+
+>fetch T 1      ; x ->
+>inc x          ; \(y z) ->
+>update T (x y)
+
+Variables:
+
+\begin{tabular}{lll}
+T   & Pointer & [13,14] \\
+inc & Node    & [(CInt, [Basic])] \\
+x   & Pointer & [13,14] \\
+y   & Tag     & CInt \\
+z   & Basic \\
+\end{tabular}
+
+Heap:
+
+\begin{tabular}{lll}
+13 & Node & [(CInt, [Basic])] \\
+14 & Node & [(CInt, [Basic]),(Finc, [Pointer [13,14]])] \\
+\end{tabular}
+
+\end{frame}
+
+
+
+\begin{frame}
 \frametitle{Future work}
 \framesubtitle{Obvious enhancements}
 
