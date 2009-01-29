@@ -172,7 +172,7 @@ SEM GrModule
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
-                            , loadRefVal
+                            -- , loadRefVal
                             , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
@@ -229,7 +229,8 @@ papps hptMap tyNames funArities allPApps = Set.fold f Map.empty allPApps
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
-                           [ stsfld Object "" @lhs.className @loc.name ]
+                           [ newRefObj
+                           , stsfld Object "" @lhs.className @loc.name ]
            val.methodParams = Set.empty
            loc.name      = hsnShowAlphanumeric @nm
 
@@ -245,7 +246,7 @@ SEM GrBind
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
-  | UpdateUnit  lhs.cilCode = debugComment @self $ @loc.load ++ @val.cilCode ++ [loadRefVal, storeRefVal] ++ @loc.load
+  | UpdateUnit  lhs.cilCode = debugComment @self $ @loc.load ++ @val.cilCode ++ [storeRefVal] ++ @loc.load ++ [loadRefVal]
                 loc.load    = loadVar @lhs.className @lhs.methodParams @nm
   | Case        lhs.cilCode = debugComment ("Case on " ++ show @val.self) $
                               @val.cilCode
@@ -261,12 +262,11 @@ SEM GrExpr
   | FetchNode   lhs.cilCode = [no @self]
   | FetchUpdate lhs.cilCode = [no @self]
   | FetchField  lhs.cilCode = debugComment @self $
-                                @loc.load ++ @loc.doField
+                                @loc.load ++ [loadRefVal] ++ @loc.doField
                 loc.load    = loadVar @lhs.className @lhs.methodParams @nm
                 loc.doField = case @offset of
-                              0 -> [] 
-                              o -> [ loadRefVal
-                                   , ldfld (toFieldTypes @loc.tyTag !! (o - 1))
+                              0 -> []
+                              o -> [ ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
                                            (toFieldName @loc.tyTag (o - 1))
@@ -274,7 +274,7 @@ SEM GrExpr
                 loc.tyTag   = case @mbTag of
                               Nothing  -> error $ "Cannot fetch field of unknown type: " ++ show @self
                               Just tag -> lookupTag tag @lhs.grTagsMap
-  | Store       lhs.cilCode = debugComment @self @val.cilCode
+  | Store       lhs.cilCode = debugComment @self $ @val.cilCode ++ [newRefObj]
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
@@ -357,11 +357,11 @@ SEM GrPatLam
       lhs.cilCode    = debugComment @self [stlocN @varName]
       lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
   | VarNode
-      lhs.cilCode    = debugComment @self (loadRefVal : @fldL.cilLoad)
+      lhs.cilCode    = debugComment @self @fldL.cilLoad
       fldL.index     = -1
       fldL.nodeTyTag = @fldL.tyTag
   | BasicNode
-      lhs.cilCode    = debugComment @self [loadRefVal, ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
+      lhs.cilCode    = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
       lhs.locals     = Map.singleton @varName Int32
   | EnumNode
       lhs.cilCode    = [no @self]
@@ -383,13 +383,13 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+  | Con         lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
                 lhs.allCons   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | Fun         lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+  | Fun         lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
                 lhs.allFuns   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | PApp        lhs.cilMatch  = debugComment @self [dup, loadRefVal, isinst (toConDottedName @loc.tyTag)]
+  | PApp        lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
                 lhs.allPApps  = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
   | App         lhs.cilMatch  = [no $ "Match " ++ show @self]
@@ -438,15 +438,16 @@ absGrTag hsName hptMap =
         handleGav gs  = trace ("GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for "
                         ++ show hsName) $ head gs
 
+-- TODO Don't follow AbsLocs anymore
 absPrimitiveType :: HsName -> HptMap -> PrimitiveType
-absPrimitiveType hsName hptMap = case absValueGuess hsName hptMap of
+absPrimitiveType hsName hptMap = case getEnvVar hptMap (getNr hsName) of
+    AbsLocs _ _  -> ReferenceType "" refObjNm
     AbsBasic     -> Int32
     AbsTags _    -> Object
     AbsNodes _   -> Object
     AbsError err -> error $ "GrinCode.ToCil.absPrimitiveType: AbsError on " ++ show hsName ++ ": " ++ err
     AbsBottom    -> error $ "GrinCode.ToCil.absPrimitiveType: AbsBottom in " ++ show hsName
-    val          -> error $ "GrinCode.ToCil.absPrimitiveType: Code not implemented yet, please implement: "
-                  ++ show hsName ++ " is " ++ show val
+    AbsUnion _   -> error $ "GrinCode.ToCil.absPrimitiveType: AbsUnion shouldn't be here anymore (" ++ show hsName ++ ")"
 
 no :: (Show a) => a -> MethodDecl
 no a = comment $ "TODO   " ++ show a
@@ -490,6 +491,6 @@ constructTag tag grTagsMap = case Map.lookup tag grTagsMap of
     Just tyTag -> let
         name  = toConDottedName tyTag
         types = toFieldTypes tyTag
-      in debugComment tag [newobj "" name types, newRefObj]
+      in debugComment tag [newobj "" name types]
 
 %%]
