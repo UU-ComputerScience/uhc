@@ -243,7 +243,7 @@ And how about \stress{thunks} and \stress{partial applications}?
 \frametitle{Code generation}
 \framesubtitle{Sequence}
 
-%format stress (e) = "\stress{" e "}"
+%format (stress (e)) = "\stress{" e "}"
 
 Evaluate \stress{|expr|} and bind the result to \stress{|x|}.
 
@@ -321,39 +321,9 @@ Store a \stress{value} on the heap and return a \stress{pointer} to it.
 val\\
 NEWOBJ RefObj::.ctor(object)\\
 
-%SAY All our values are already stored on the heap, so we only have to make a pointer.
-
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Code generation}
-\framesubtitle{Fetch}
-
-Fetch \stress{field 1} of a node, following \stress{pointer} |x|.
-
->fetch x [1]
-
 \pause
-LDLOC x\\   % or global, or parameter
-LDFLD RefObj::Value\\
-LDFLD Int/Int::Value\\
 
-\end{frame}
-\begin{frame}
-\frametitle{Code generation}
-\framesubtitle{Fetch -- Tag}
-
-Fetching field 0 means fetching the \stress{tag} of a node.
-
->fetch x [0]
-
-LDLOC x\\
-LDFLD RefObj::Value\\
-
-\medskip
-\pause
-We have no representation for \stress{stand-alone tags}. We use the \stress{complete node}.
+All our values are already stored on the heap, so we only have to create a pointer.
 
 \end{frame}
 
@@ -371,6 +341,86 @@ val\\
 STFLD RefObj::Value\\
 
 \end{frame}
+
+
+\begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Fetch 0}
+
+Fetch the \stress{tag} of a node, following \stress{pointer |x|}.
+
+>fetch x [0]
+
+\pause
+
+LDLOC x\\
+LDFLD RefObj::Value\\
+
+\medskip
+\pause
+We have no representation for \stress{stand-alone tags}. We use the \stress{complete node}.
+
+\end{frame}
+\begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Fetch n}
+
+Fetch the \stress{first field} of a node, following \stress{pointer |x|}.
+
+>fetch x [1]
+
+\pause
+LDLOC x\\   % or global, or parameter
+LDFLD RefObj::Value\\
+\only<2>{LDFLD Int/Int::Value\\}
+\only<3>{LDFLD \stress{Int/Int}::Value\\}
+
+\medskip
+\pause
+Uh oh! We have to know the \stress{class}.
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Fetch n -- Class information}
+
+Fortunately, GRIN stores this information for us:
+
+>GrExpr_FetchField x 1 (Just (GrTag_Con {1,1} 0 Int))
+
+Phew.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Code generation}
+\framesubtitle{Binding multiple variables}
+
+However:
+
+>... ; \x ->
+>inc x ; \((stress (y z))) ->
+>...
+
+\pause
+\begin{itemize}
+\item We have to extract the first field to bind to |z|.
+\pause
+\item We need the \stress{class} information for this.
+      
+      \only<3>{LDFLD ?/?::Value\\}
+      \only<4->{LDFLD ?/?::?\\}
+
+\pause\pause
+\item But we don't know what |y| is!
+\end{itemize}
+
+\end{frame}
+
 
 
 \begin{frame}
