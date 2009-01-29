@@ -8,12 +8,12 @@
 \setlength\parindent{0.0in}
 \setlength\parskip{0.25in} 
 
-\definecolor{stress}{rgb}{0.60,0.60,0.60} 
+\definecolor{stress}{rgb}{0.60,0.60,1.00} 
 \definecolor{c1}{rgb}{1.00,0.70,0.30} 
 
 \setbeamercolor{title}{fg=c1}
 \setbeamercolor{frametitle}{fg=c1}
-\setbeamercolor{normal text}{fg=stress}
+\setbeamercolor{normal text}{fg=white}
 \setbeamercolor{background canvas}{bg=black}
 
 \usefonttheme[stillsansseriftext]{serif} 
@@ -21,7 +21,7 @@
 \setbeamersize{text margin left=0.3cm}
 \setbeamersize{text margin right=0.5cm}
 
-\newcommand{\stress}[1]{\textcolor{white}{\textbf{#1}}}
+\newcommand{\stress}[1]{\textcolor{stress}{\textbf{#1}}}
 
 \begin{document}
 
@@ -58,7 +58,7 @@
 \frametitle{hsjava}
 
 To build Java \texttt{.class} file we use the \stress{\texttt{hsjava}} package. \\
-A \stress{high-level abstraction} for generation byte-code.
+A \stress{high-level abstraction} for bytecode generation.
 
 Developed by \stress{Brian Alliet} for integration into \stress{GHC}.
 
@@ -80,7 +80,7 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
     \item Cast between object types.
   \end{itemize}
 
-  Might some of these only happen at \stress{JIT} compile time?\\
+  What happens at \stress{JIT} compile time?\\
   We do not know and should start \stress{profiling}.
 
 \end{frame}
@@ -89,7 +89,7 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
   \frametitle{Type safety}
 
-  We have to choose one of the alternatives:
+  We have to choose between these alternatives:
 
   \begin{itemize}
     \item \stress{Separate Java classes} for different data types.
@@ -105,6 +105,8 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 %format static  = "\stress{\textbf{static}}"
 %format class   = "\stress{\textbf{class}}"
 %format extends = "\stress{\textbf{extends}}"
+%format return  = "\stress{\textbf{return}}"
+%format new     = "\stress{\textbf{new}}"
 
 \begin{frame}
 \frametitle{Runtime.java}
