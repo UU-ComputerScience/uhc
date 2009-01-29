@@ -170,6 +170,7 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \end{frame}
 
+\begin{frame} \includegraphics[scale=0.50]{listof12-complicated} \end{frame}
 \begin{frame} \includegraphics[scale=0.50]{listof12} \end{frame}
 \begin{frame} \includegraphics[scale=0.50]{listof12-nopayload} \end{frame}
 \begin{frame} \includegraphics[scale=0.50]{listof12-nopayloadoptimized} \end{frame}
