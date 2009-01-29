@@ -133,6 +133,87 @@
 
 \begin{frame}
 
+\frametitle{Architecture of .NET backend}
+
+Haskell package \stress{language-cil}.
+
+Abstract syntax for the Common Intermediate Language.
+
+With build functions and pretty printer for concrete syntax.
+
+\pause
+
+Future:
+\begin{itemize}
+  \item Support all CIL constructs
+  \item Parser for concrete syntax
+  \item Analysis functions
+  \item Release on Hackage
+\end{itemize}
+
+\end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
+\frametitle{Philosophy on the Runtime System}
+
+How to tread the RTS?
+\begin{itemize}
+  \item As an \stress{abstract machine}?
+    \uncover<2->
+    {
+    \begin{itemize}
+      \item simulate virtual memory
+      \item simulate registers
+      \item simulate functions and function calls
+    \end{itemize}
+    }
+  \item Use it for what it was \stress{designed}
+    \uncover<3->
+    {
+    \begin{itemize}
+      \item build strongly typed objects
+      \item use inheritance
+      \item use method calling conventions
+      \item interop with other languages
+    \end{itemize}
+    }
+\end{itemize}
+
+\uncover<4->
+{
+Look at the what other languages do (\stress{F\#}).
+}
+
+\end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
+\frametitle{Philosophy on the Runtime System}
+\framesubtitle{Some questions}
+
+%format data  = "\stress{\textbf{data}}"
+
+>data List = Nil | Cons Int List
+
+\pause
+
+What are the \stress{types} of Nil and Cons?
+
+What is the type of List?
+
+And how about \stress{thunks} and \stress{partial applications}?
+
+\end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
   \frametitle{The simple approach}
 
 %format public  = "\stress{\textbf{public}}"
