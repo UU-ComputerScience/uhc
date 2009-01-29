@@ -8,22 +8,18 @@
 \setlength\parindent{0.0in}
 \setlength\parskip{0.25in} 
 
-% -----------------------------------------------------------------------------
-
-\definecolor{stress}{rgb}{0.60,0.60,1.00} 
+\definecolor{stress}{rgb}{0.60,0.60,0.60} 
 \definecolor{c1}{rgb}{1.00,0.70,0.30} 
 
 \setbeamercolor{title}{fg=c1}
 \setbeamercolor{frametitle}{fg=c1}
-\setbeamercolor{normal text}{fg=white}
+\setbeamercolor{normal text}{fg=stress}
 \setbeamercolor{background canvas}{bg=black}
 
 \usefonttheme[stillsansseriftext]{serif} 
 \setbeamerfont{frametitle}{family=\rmfamily,shape=\itshape} 
 
-\newcommand{\stress}[1]{\textcolor{stress}{#1}}
-
-% -----------------------------------------------------------------------------
+\newcommand{\stress}[1]{\textcolor{white}{\textbf{#1}}}
 
 \begin{document}
 
@@ -33,8 +29,6 @@
 \date{\today} 
 
 \frame{\titlepage} 
-
-% -----------------------------------------------------------------------------
 
 \begin{frame}
 
@@ -70,13 +64,28 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \end{frame}
 
-% -----------------------------------------------------------------------------
+\begin{frame}
+
+  \frametitle{Problems}
+
+  Java is not C, lots of things happen at \stress{runtime}.
+
+  \begin{itemize}
+    \item Array boundary checks.
+    \item No mixing of integers and references in arrays.
+    \item Checks for method existence.
+    \item Checks for method type signature.
+    \item Cast between object types.
+  \end{itemize}
+
+  Might some of these only happen at \stress{JIT} compile time?\\
+  We do not know and should start \stress{profiling}.
+
+\end{frame}
 
 \begin{frame}
 
   \frametitle{Type safety}
-
-  We can not freely mix \stress{integers} and \stress{references} in one array.
 
   We have to choose one of the alternatives:
 
@@ -89,8 +98,6 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   Second approach is \stress{simpler} to implement but is more \stress{expensive}.
   
 \end{frame}
-
-% -----------------------------------------------------------------------------
 
 \begin{frame}
 
@@ -149,10 +156,10 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   \item One class for one node layout: \stress{no more payload indirection}.
   \item Enable integer values in layout: \stress{no more triple boxing}.
   \item Save integers in node tag: \stress{no more double boxing boxing}.
-  \item Generate Java global variables: \stress{no more global indirection}.
-  \item Generate Java RP variables: \stress{no more RP indirection}.
   \item When no double boxing: \stress{unboxed primitive functions}.
   \item When no double boxing: \stress{flatten multiple allocs} (silly-205).
+  \item Generate Java global variables: \stress{no more global indirection}.
+  \item Generate Java RP variables: \stress{no more RP indirection}.
   \end{itemize}
 
 \end{frame}
