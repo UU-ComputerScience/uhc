@@ -155,7 +155,7 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   \begin{itemize}
   \item One class for one node layout: \stress{no more payload indirection}.
   \item Enable integer values in layout: \stress{no more triple boxing}.
-  \item Save integers in node tag: \stress{no more double boxing boxing}.
+  \item Save integers in node tag: \stress{no more double boxing}.
   \item When no double boxing: \stress{unboxed primitive functions}.
   \item When no double boxing: \stress{flatten multiple allocs} (silly-205).
   \item Generate Java global variables: \stress{no more global indirection}.
