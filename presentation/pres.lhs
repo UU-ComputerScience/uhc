@@ -148,6 +148,21 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \begin{frame}
 \frametitle{FFI}
+Java
+
+> public static Node primAddInt(Node l, Node r)
+> {
+>   return new IntNode(((IntNode) l).intVal + ((IntNode) r).intVal);
+> }
+
+Haskell
+
+> (HNm "primAddInt", \c -> c % (
+>   Invoke IStatic (
+>     MethodRef cRuntime "primAddInt" [tNode, tNode] (Just tNode)
+> )))
+
+
 \end{frame}
 
 \begin{frame}
