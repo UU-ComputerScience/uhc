@@ -101,22 +101,21 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
   
 \end{frame}
 
-\begin{frame}
-
 %format public  = "\stress{\textbf{public}}"
 %format static  = "\stress{\textbf{static}}"
 %format class   = "\stress{\textbf{class}}"
 %format extends = "\stress{\textbf{extends}}"
 
->public static class ANode {}
+\begin{frame}
+\frametitle{Runtime.java}
 
->public static class Node extends ANode
+>public static class Node
 >{
 >  public int tag;
->  public ANode[] payload;
+>  public Node[] payload;
 >}
 
->public static class IntNode extends ANode
+>public static class IntNode extends Node
 >{
 >  public int intVal;
 >}
@@ -136,13 +135,16 @@ We use \texttt{hsjava} to build a JVM back-end for \stress{EHC}.
 
 \begin{frame}
 \frametitle{Silly to JVM}
-\end{frame}
+  We hook into EHC and use \stress{Silly} as input.
 
-\begin{frame}
-\frametitle{Compositionality}
-\begin{itemize}
-\item Local variables
-\end{itemize}
+  Code generation from Silly to Java bytecode can be hard:
+  \begin{itemize}
+  \item \stress{Compositionality} of Silly does not match bytecode structure.
+  \item We need \stress{both sides of an assignments} in both sides.
+  \item \stress{Type information} is erased.
+  \item \stress{Type inferencing} is hard because of \stress{node updates}.
+  \item Conversion is often \stress{all or nothing}.
+  \end{itemize}
 \end{frame}
 
 \begin{frame}
