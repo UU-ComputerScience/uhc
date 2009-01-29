@@ -330,15 +330,17 @@ SEM GrValL
 SEM GrVarL
   | Nil
       lhs.tyTag = error "Empty VarNode list has no Tag"
+      lhs.cilLoad = []
   | Cons
       lhs.tyTag = @hd.tyTag
       hd.index  = @lhs.index
       tl.index  = @lhs.index + 1
+      lhs.cilLoad = dup : @hd.cilLoad ++ @tl.cilLoad
 
 SEM GrVar
   | Var
       lhs.cilLoad    = if @lhs.index < 0
-                       then []
+                       then [ stlocN @varName ]
                        else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
                                     (toFieldName @lhs.nodeTyTag @lhs.index)
                             , stlocN @varName ]
@@ -346,8 +348,10 @@ SEM GrVar
       lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
       loc.varName    = hsnShowAlphanumeric @nm
   | KnownTag
+      lhs.cilLoad    = [pop]
       lhs.tyTag      = lookupTag @tag.self @lhs.grTagsMap
   | Ignore
+      lhs.cilLoad    = [pop]
       lhs.tyTag      = error "Ignore has no TyTag"
 
 SEM GrPatLam
@@ -357,7 +361,7 @@ SEM GrPatLam
       lhs.cilCode    = debugComment @self [stlocN @varName]
       lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
   | VarNode
-      lhs.cilCode    = debugComment @self @fldL.cilLoad
+      lhs.cilCode    = debugComment @self $ @fldL.cilLoad ++ [pop]
       fldL.index     = -1
       fldL.nodeTyTag = @fldL.tyTag
   | BasicNode
