@@ -427,6 +427,7 @@ absValues hsName hptMap = Set.toList $ handleVal (getEnvVar hptMap (getNr hsName
         (AbsLocs locs _) -> Set.fold (\l s -> getHeapLoc' l `Set.union` s) Set.empty locs
         _                -> Set.singleton val
 
+-- TODO Think about how to handle AbsLocs (pointers) here.
 absGrTag :: HsName -> HptMap -> GrTag
 absGrTag hsName hptMap =
   case absValueGuess hsName hptMap of
@@ -438,7 +439,6 @@ absGrTag hsName hptMap =
         handleGav gs  = trace ("GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for "
                         ++ show hsName) $ head gs
 
--- TODO Don't follow AbsLocs anymore
 absPrimitiveType :: HsName -> HptMap -> PrimitiveType
 absPrimitiveType hsName hptMap = case getEnvVar hptMap (getNr hsName) of
     AbsLocs _ _  -> ReferenceType "" refObjNm
