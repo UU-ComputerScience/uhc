@@ -1,4 +1,4 @@
-\documentclass[xcolor=dvipsnames,sans,mathserif]{beamer}
+\documentclass[handout,xcolor=dvipsnames,sans,mathserif]{beamer}
 
 \usepackage[english]{babel}
 \usepackage{mathpazo}
@@ -76,7 +76,7 @@
 
   \frametitle{Why target the CLR?}
 
-  \only<2>
+  \only<2|| handout:1>
   {
     A lot of presence.
     \begin{itemize}
@@ -95,7 +95,7 @@
     \end{itemize}
   }
 
-  \only<3>
+  \only<3|| handout:2>
   {
     Rich environment.
     \begin{itemize}
@@ -113,7 +113,7 @@
 
   \frametitle{What is the CLR?}
 
-  \only<1>
+  \only<1|| handout:1>
   {
   Common Language Runtime / Mono Project
 
@@ -131,7 +131,7 @@
       \end{itemize}
   \end{itemize}
   }
-  \only<2>
+  \only<2|| handout:2>
   {
 
 %format pclass  = "\stress{\textbf{.class}}"
@@ -265,7 +265,7 @@ Look at the what other languages do (\stress{F\#}).
 > data List = Nil | Cons Int List
 
 \begin{minipage}[c][5cm][c]{\textwidth}
-\only<2>
+\only<2|| handout:1>
 {
 What is the \stress{type} of List?
 \\\\
@@ -275,15 +275,15 @@ How do we handle do \stress{thunks} and \stress{partial applications}?
 \\\\
 And what about \stress{updates}?
 }
-\only<3>
+\only<3|| handout:2>
 {
 \includegraphics[scale=0.50]{list_diagram1.png}
 }
-\only<4>
+\only<4|| handout:3>
 {
 > Cons 1 (xs `append` ys)
 }
-\only<5>
+\only<5|| handout:4>
 {
 \includegraphics[scale=0.50]{list_diagram2.png}
 }
@@ -343,13 +343,13 @@ Evaluate \stress{|expr|} and bind the result to \stress{|x|}.
 \only<1>{
 >expr ; \x -> ... length x ...
 }
-\only<2>{
+\only<2|| handout:0>{
 >stress expr ; \x -> ... length x ...
 }
-\only<3>{
+\only<3|| handout:0>{
 >expr ; stress (\x ->) ... length x ...
 }
-\only<4>{
+\only<4|| handout:0>{
 >expr ; \x -> stress (... length x ...)
 }
 
@@ -377,12 +377,12 @@ Match a \stress{tag} variable against different alternatives.
 >  CNil  -> ...
 >  CCons -> ...
 }
-\only<2>{
+\only<2|| handout:0>{
 >stress(case tag) of
 >  CNil  -> ...
 >  CCons -> ...
 }
-\only<3>{
+\only<3|| handout:0>{
 >case tag of
 >  stress(CNil)  -> stress(...)
 >  CCons -> ...
@@ -506,7 +506,7 @@ However:
 \item We need the \stress{class} information for this.
       
       \only<3>{LDFLD ?/?::Value\\}
-      \only<4->{LDFLD ?/?::?\\}
+      \only<4-|| handout:0>{LDFLD ?/?::?\\}
 
 \pause\pause
 \item But we don't know what |y| is!
@@ -541,7 +541,7 @@ Example:
 
 >fetch T 1      ; x ->
 >inc x          ; \(y z) ->
->update T (x y)
+>update T (y z)
 
 |T| is a thunk here.
 
@@ -553,7 +553,7 @@ Example:
 
 >fetch T 1      ; x ->
 >inc x          ; \(y z) ->
->update T (x y)
+>update T (y z)
 
 Variables:
 
