@@ -29,7 +29,7 @@
 \begin{document}
 
 \title{Running Haskell on the CLR}
-\subtitle{The painful road to vendor lock-in.}
+\subtitle{``but does it run on Windows?''}
 \author{Jeroen Leeuwestein, Tom Lokhorst\\\small\texttt{jleeuwes@@cs.uu.nl, tom@@lokhorst.eu}} 
 \date{\today} 
 
@@ -39,11 +39,34 @@
 
 \begin{frame}
 
-  \frametitle{Don't get your hopes up!}
+\frametitle{Don't get your hopes up!}
 
-  \pause
+\pause
 
-  show most complicated example (fib?)
+%format module  = "\stress{\textbf{module}}"
+%format where   = "\stress{\textbf{where}}"
+%format foreign = "\stress{\textbf{foreign}}"
+%format import  = "\stress{\textbf{import}}"
+%format data    = "\stress{\textbf{data}}"
+\vspace*{1cm}
+
+> module Main where
+  
+> foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
+  
+> inc :: Int -> Int
+> inc x = x + 1
+  
+> data List = Nil | Cons Int List
+  
+> length :: List -> Int
+> length Nil         = 0
+> length (Cons x xs) = inc (length xs)
+  
+> five :: List
+> five = Cons 1 (Cons 2 (Cons 3 (Cons 4 (Cons 5 Nil))))
+  
+> main = length five
 
 \end{frame} 
 
@@ -90,6 +113,8 @@
 
   \frametitle{What is the CLR?}
 
+  \only<1>
+  {
   Common Language Runtime / Mono Project
 
   \begin{itemize}
@@ -105,6 +130,34 @@
         \item ildasm / monodis
       \end{itemize}
   \end{itemize}
+  }
+  \only<2>
+  {
+
+%format pclass  = "\stress{\textbf{.class}}"
+%format method  = "\stress{\textbf{.method}}"
+%format entrypoint  = "\stress{\textbf{.entrypoint}}"
+%format locals  = "\stress{\textbf{.locals}}"
+%format init  = "\stress{\textbf{init}}"
+\vspace*{1cm}
+> pclass private Test extends [mscorlib]System.Object
+>  {
+>    method private static void Main () cil managed 
+>    {
+>	entrypoint
+>	locals init (int32  x)
+>	ldc_i4 2 
+>	stloc 0 
+>	ldc_i4 3 
+>	ldloc 0 
+>	add 
+>	call void class [mscorlib]System.Console::WriteLine(int32)
+>	ret 
+>    }
+> }
+
+  }
+
 
 \end{frame} 
 
@@ -112,20 +165,31 @@
 
 \begin{frame}
 
-  \frametitle{Architecture of .NET backend}
+\frametitle{Architecture of .NET backend}
 
-  \$ bin/8/ehc \stress{-ccil} Test.hs\\
-  \pause
-  \$ ls\\
-  Test.hs   \stress{Test.il}\\
-  \pause
-  \$ \stress{ilasm} Test.il\\
-  \pause
-  \$ ls\\
-  \stress{Test.exe}  Test.hs   Test.il\\
-  \pause
-  \$ \stress{mono} Test.exe\\
-  42
+\$ bin/8/ehc \stress{-ccil} Test.hs\\
+\pause
+\$ ls\\
+Test.hs   \stress{Test.il}\\
+\pause
+\$ \stress{ilasm} Test.il\\
+\pause
+\$ ls\\
+\stress{Test.exe}  Test.hs   Test.il\\
+\pause
+\$ \stress{mono} Test.exe\\
+42
+
+\end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+
+\frametitle{Architecture of .NET backend}
+
+\includegraphics[scale=0.50]{ehc-dataflow2.png}
+
 
 \end{frame} 
 
@@ -159,7 +223,7 @@ Future:
 
 \frametitle{Philosophy on the Runtime System}
 
-How to tread the RTS?
+How to treat the RTS?
 \begin{itemize}
   \item As an \stress{abstract machine}?
     \uncover<2->
@@ -198,17 +262,46 @@ Look at the what other languages do (\stress{F\#}).
 
 %format data  = "\stress{\textbf{data}}"
 
->data List = Nil | Cons Int List
+> data List = Nil | Cons Int List
 
-\pause
-
+\begin{minipage}[c][5cm][c]{\textwidth}
+\only<2>
+{
+What is the \stress{type} of List?
+\\\\
 What are the \stress{types} of Nil and Cons?
-
-What is the type of List?
-
-And how about \stress{thunks} and \stress{partial applications}?
+\\\\
+How do we handle do \stress{thunks} and \stress{partial applications}?
+\\\\
+And what about \stress{updates}?
+}
+\only<3>
+{
+\includegraphics[scale=0.50]{list_diagram1.png}
+}
+\only<4>
+{
+> Cons 1 (xs `append` ys)
+}
+\only<5>
+{
+\includegraphics[scale=0.50]{list_diagram2.png}
+}
+\end{minipage}
 
 \end{frame} 
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
+\begin{center}
+\Huge{xs = |[1,2]|}
+\end{center}
+\end{frame}
+
+\begin{frame}
+\includegraphics[scale=0.40]{listof12.png}
+\end{frame}
 
 % -----------------------------------------------------------------------------
 
@@ -422,6 +515,7 @@ However:
 \end{frame}
 
 
+% -----------------------------------------------------------------------------
 
 \begin{frame}
 \frametitle{Code generation}
@@ -537,8 +631,21 @@ Simon Peyton Jones on Haskell for CLR:
 % -----------------------------------------------------------------------------
 
 \begin{frame}
+\frametitle{In conclusion}
+
+We think our \stress{runtime representation} is workable.
+
+We have an interesting \stress{prototype} that shows this.
+
+There's much work still to be done...
+
+\end{frame}
+
+% -----------------------------------------------------------------------------
+
+\begin{frame}
 \begin{center}
-\Huge{\textbackslash EOF}
+\Huge{EOF}
 \end{center}
 \end{frame}
 
