@@ -139,7 +139,7 @@ data EHCOpts
       -- ,  ehcOptEmitC          ::  Bool
       -- ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
       -- ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
-      ,  ehcOptEmitCil        ::  Bool              -- Emit a .il in Common Intermediate Language
+      -- ,  ehcOptEmitCil        ::  Bool              -- Emit a .il in Common Intermediate Language
       -- ,  ehcOptEmitBytecode   ::  Bool
       -- ,  ehcOptEmitExecC      ::  Bool
       -- ,  ehcOptEmitExecBytecode:: Bool
@@ -240,6 +240,12 @@ ehcOptEmitLLVM :: EHCOpts -> Bool
 ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
 %%]
 
+%%[(8 codegen grin) export(ehcOptEmitCLR)
+-- generate CLR
+ehcOptEmitCLR :: EHCOpts -> Bool
+ehcOptEmitCLR = targetIsCLR . ehcOptTarget
+%%]
+
 %%[(8 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
@@ -296,7 +302,7 @@ defaultEHCOpts
       -- ,  ehcOptEmitLLVM         =   False
       -- ,  ehcOptEmitExecLLVM     =   False
       -- ,  ehcOptEmitC            =   False
-      ,  ehcOptEmitCil          =   False
+      -- ,  ehcOptEmitCil          =   False
       -- ,  ehcOptEmitExecC        =   False
       -- ,  ehcOptFullProgAnalysis =   False
       ,  ehcOptDumpGrinStages   =   False
@@ -531,17 +537,8 @@ ehcCmdLineOpts
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptTarget           = Target_FullProgAnal_Grin_LLVM
                                                   }
-                                Just "cil"   -> o { ehcOptEmitCil = True }
-                                                  -- { ehcOptEmitGrin         = False
-                                                  -- , ehcOptEmitC            = False
-                                                  -- , ehcOptEmitLLVM         = False
-                                                  -- , ehcOptEmitExecLLVM     = False
-                                                  -- , ehcOptEmitCil          = True
-                                                  -- , ehcOptEmitBytecode     = False
-                                                  -- , ehcOptEmitExecC        = False
-                                                  -- , ehcOptEmitExecBytecode = False
-                                                  -- , ehcOptFullProgAnalysis = True
-                                                  -- }
+                                Just "cil"   -> o { ehcOptTarget           = Target_FullProgAnal_Grin_CLR
+                                                  }
 %%]]
 %%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }

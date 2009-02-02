@@ -165,13 +165,13 @@ doCompileGrin input opts
                       ; caWriteLLVM
                       }
                    )
+                ; when (ehcOptEmitCLR options) 
+                  (do { caGrin2Cil
+                      ; caWriteCil ""
+                      }
+                   )
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
 --              ; caWriteSilly "" "s" prettyS ehcOptEmitC
-                }
-           )
-         ; when (ehcOptEmitCil options)
-           ( do { caGrin2Cil
-                ; caWriteCil ""
                 }
            )
          }

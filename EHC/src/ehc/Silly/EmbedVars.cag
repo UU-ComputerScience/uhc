@@ -31,7 +31,6 @@ embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   
   = let t = wrap_SilModule (sem_SilModule input)
                            (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
-                                                                   || ehcOptEmitCil options
                                                                 then options{ ehcOptOwn = 0 }
                                                                 else options
                                           } 

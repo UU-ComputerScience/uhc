@@ -31,7 +31,7 @@ Target_<treatment>_<intermediate-lang>_<codegen-lang>
     - C
     - LLVM
     - JVM
-    - DOTNET
+    - CLR
 
 Combinations are all hardcoded to make explicit that only particular combinations are allowed.
 This may change later if/when combinations can be chosen independent/orthogonal.
@@ -43,7 +43,7 @@ data Target
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
   | Target_FullProgAnal_Grin_JVM			-- full program analysis on grin, generating for Java VM
-  | Target_FullProgAnal_Grin_DOTNET			-- full program analysis on grin, generating for .net
+  | Target_FullProgAnal_Grin_CLR			-- full program analysis on grin, generating for Common Language Runtime (.NET / Mono)
   | Target_Interpreter_Grin_C				-- no full program analysis, grin interpreter, generating C
 %%]]
   deriving (Eq,Ord)
@@ -58,7 +58,7 @@ instance Show Target where
   show Target_FullProgAnal_Grin_C			= "FullGrinC"
   show Target_FullProgAnal_Grin_LLVM		= "FullGrinLLVM"
   show Target_FullProgAnal_Grin_JVM			= "FullGrinJVM"
-  show Target_FullProgAnal_Grin_DOTNET		= "FullGrinDOTNET"
+  show Target_FullProgAnal_Grin_CLR		= "FullGrinCLR"
   show Target_Interpreter_Grin_C			= "ItrpGrinC"
 %%]]
   show Target_None							= "NONE"
@@ -86,6 +86,7 @@ supportedTargetMp
 %%[[(8 codegen grin)
                Target_Interpreter_Grin_C
              , Target_FullProgAnal_Grin_C
+             , Target_FullProgAnal_Grin_CLR
 %%]]
              ]
       ]
@@ -111,7 +112,7 @@ targetIsFullProgAnal t
       Target_FullProgAnal_Grin_C 		-> True
       Target_FullProgAnal_Grin_LLVM 	-> True
       Target_FullProgAnal_Grin_JVM 		-> True
-      Target_FullProgAnal_Grin_DOTNET 	-> True
+      Target_FullProgAnal_Grin_CLR 	-> True
 %%]]
       _ 								-> False
 %%]
@@ -157,3 +158,14 @@ targetIsLLVM t
 %%]]
       _ 								-> False
 %%]
+
+%%[(8 codegen) export(targetIsCLR)
+targetIsCLR :: Target -> Bool
+targetIsCLR t
+  = case t of
+%%[[(8 codegen grin)
+      Target_FullProgAnal_Grin_CLR 	-> True
+%%]]
+      _ 								-> False
+%%]
+
