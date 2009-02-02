@@ -21,6 +21,7 @@ module Language.Cil.Build (
   , brfalse
   , brtrue
   , call
+  , callvirt
   , ceq
   , cge
   , cgt
@@ -130,6 +131,9 @@ call :: Association -> PrimitiveType -> DottedName -> DottedName -> DottedName -
 call Static _ _ _ _ _ = error $ "Language.Cil.Build.call: "
                       ++ "Invalid association type Static. Try StaticCallConv."
 call a p l t m ps = mdecl $ Call a p l t m ps
+
+callvirt :: PrimitiveType -> DottedName -> DottedName -> DottedName -> [PrimitiveType] -> MethodDecl
+callvirt p l t m ps = mdecl $ CallVirt p l t m ps
 
 ceq, cge, cgt, cle, clt :: MethodDecl
 ceq = mdecl $ Ceq
@@ -281,9 +285,9 @@ noExtends = Nothing
 noImplements :: [TypeSpec]
 noImplements = []
 
-classDef :: Visibility -> DottedName -> Maybe TypeSpec -> [TypeSpec]
+classDef :: [ClassAttr] -> DottedName -> Maybe TypeSpec -> [TypeSpec]
               -> [FieldDef] -> [MethodDef]-> [TypeDef] -> TypeDef
-classDef v n et its fs ms ts = Class v n et its (map FieldDef fs ++ map MethodDef ms
+classDef cas n et its fs ms ts = Class cas n et its (map FieldDef fs ++ map MethodDef ms
                                      ++ map TypeDef ts)
 
 defaultCtor :: [Parameter] -> MethodDef
@@ -301,9 +305,9 @@ extendsCtor a c ps = Constructor Public ps
 -- | Create a simple Assembly with one method containing the provided MethodDecls.
 simpleAssembly :: [MethodDecl] -> Assembly
 simpleAssembly ocs = Assembly [mscorlibRef] "DefaultAssemblyName"
-  [ Class Public "DefaultClassName" Nothing []
+  [ Class [CaPublic] "DefaultClassName" Nothing []
     [ MethodDef
-      $ Method Static Public Void "DefaultMethodName" [] (entryPoint : ocs)
+      $ Method [MaStatic, MaPublic] Void "DefaultMethodName" [] (entryPoint : ocs)
     ]
   ]
 

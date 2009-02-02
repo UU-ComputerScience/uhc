@@ -73,7 +73,7 @@ toTypeDef callbackNm tags =
     "comma8"       -> tupleTypeDef 8  callbackNm tags
     "comma9"       -> tupleTypeDef 9  callbackNm tags
     "comma10"      -> tupleTypeDef 10 callbackNm tags
-    _              -> classDef Public tyNm noExtends [] []
+    _              -> classDef [CaPublic] tyNm noExtends [] []
                         [ defaultCtor [] ]
                         (map (subTys callbackNm tyNm) tags)
   where
@@ -101,9 +101,9 @@ packedStringTypeDef callbackNm tags = simpleTypeDef String "PackedString" callba
 
 simpleTypeDef :: PrimitiveType -> DottedName -> DottedName -> [TyTag] -> TypeDef
 simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was the simple type
-  classDef Public fullName noExtends noImplements []
+  classDef [CaPublic] fullName noExtends noImplements []
     [ defaultCtor []]
-    ( classDef Private tyNm (extends fullName) []
+    ( classDef [CaNestedPublic] tyNm (extends fullName) []
        [ Field Instance2 Public ty "Value"]
        [ Constructor Public [ Param ty "value" ]
            [ ldarg 0
@@ -113,22 +113,45 @@ simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was 
            , stfld ty "" (fullName ++ "/" ++ tyNm) "Value"
            , ret
            ]
+       , Method [MaVirtual, MaPublic] String "ToString" []
+           [ ldstr tyNm
+           , ldstr " "
+           , ldarg 0
+           , ldflda ty "" tySubTyNm "Value"
+           , call Instance String "" (cil ty "") "ToString" []
+           , call StaticCallConv String "" "string" "Concat" [String, String, String]
+           , ret
+           ]
        ]
        []
      : (map (subTys callbackNm fullName) tags)
      )
   where
-    fullName = namespace ++ "." ++ tyNm
+    fullName  = namespace ++ "." ++ tyNm
+    tySubTyNm = fullName ++ "/" ++ tyNm
 
 subTys :: DottedName -> DottedName -> TyTag -> TypeDef
 subTys callbackNm tyNm (TyFun _ fnm args) =
-  classDef Public subTyNm (extends tyNm) noImplements
+  classDef [CaNestedPublic] subTyNm (extends tyNm) noImplements
     ( fields args args)
-    [ ctor args args tyNm tySubTyNm
+    [ ctor args args tyNm subTyNm
+    , toString args args tyNm subTyNm
 
-    -- The invoke function isn't used, but it should have arguments and call fnNm
+    {-
+      Currently the Invoke method isn't used.
 
-    -- , Method Static Public Object "Invoke" []
+      The idea is to inline all the relevant code into here, but that would
+      require the Invoke method to have arguments and call fnNm correctly.
+
+      A second idea is to cache the result of the Invoke method, such that, the
+      second time it's called, it will already know the answer.
+      Also, this can be combined with updating the variable at the callsite of
+      the Invoke method, like so:
+        if (x is Fun)
+           x = x.Invoke()
+    -}
+
+    -- , Method [MaStatic, MaPublic] Object "Invoke" []
     --     [ call StaticCallConv Object "" callbackNm fnNm []
     --     , ret
     --     ]
@@ -137,15 +160,15 @@ subTys callbackNm tyNm (TyFun _ fnm args) =
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<Thunk>" ++ fnNm
-    tySubTyNm = tyNm ++ "/" ++ subTyNm
 subTys callbackNm tyNm (TyPApp _ fnm needs args) =
-  classDef Public subTyNm (extends tyNm) noImplements
+  classDef [CaNestedPublic] subTyNm (extends tyNm) noImplements
     (fields arity arity)
-    [ ctor arity arity tyNm tySubTyNm
+    [ ctor arity arity tyNm subTyNm
+    , toString arity arity tyNm subTyNm
 
-    -- The invoke function isn't used, but it should have arguments and call fnNm
+    -- See comment for TyFun Invoke method.
 
-    -- , Method Static Public Object "Invoke" []
+    -- , Method [MaStatic, MaPublic] Object "Invoke" []
     --     [ call StaticCallConv Object "" callbackNm fnNm []
     --     , ret
     --     ]
@@ -154,16 +177,39 @@ subTys callbackNm tyNm (TyPApp _ fnm needs args) =
   where
     fnNm      = hsnShowAlphanumeric fnm
     subTyNm   = "<PApp>" ++ fnNm ++ "`" ++ show needs
-    tySubTyNm = tyNm ++ "/" ++ subTyNm
     arity     = args - needs
 subTys csNm tyNm (TyCon _ cnm _ a ma) =
-  classDef Public subTyNm (extends tyNm) []
+  classDef [CaNestedPublic] subTyNm (extends tyNm) []
     (fields ma a)
-    [ctor ma a tyNm tySubTyNm]
+    [ ctor ma a tyNm subTyNm
+    , toString ma a tyNm subTyNm
+    ]
     []
   where
     subTyNm   = hsnShowAlphanumeric cnm
-    tySubTyNm = tyNm ++ "/" ++ subTyNm
+
+{-
+  Future idea: All calls to ToString are currently virtual calls.
+  With the correct type information, all these can probabily be changed to be non-virtual calls.
+-}
+toString :: Int -> Int -> DottedName -> DottedName -> MethodDef
+toString maxArity arity tyNm conNm =
+    Method [MaVirtual, MaPublic] String "ToString" [] $
+      [ ldstr (conNm) ]
+      ++ foldr
+           (\(Field _ _ t n) ms ->
+               [ ldstr " ("
+               , ldarg 0
+               , ldfld Object "" tyConNm n
+               , callvirt String "" "object" "ToString" []
+               , call StaticCallConv String "" "string" "Concat" [String, String, String]
+               , ldstr ")"
+               , call StaticCallConv String "" "string" "Concat" [String, String]
+               ] ++ ms) [] flds
+      ++ [ ret ]
+  where
+    flds    = fields maxArity arity
+    tyConNm = tyNm ++ "/" ++ conNm
 
 ctor :: Int -> Int -> DottedName -> DottedName -> MethodDef
 ctor maxArity arity tyNm conNm =
@@ -173,13 +219,18 @@ ctor maxArity arity tyNm conNm =
     , call Instance Void "" tyNm ".ctor" []
     ]
     ++
-    concatMap (\((Field _ _ t n), x) -> [ldarg 0, ldarg x, stfld Object "" conNm n]) (zip flds [1..])
+    concatMap (\((Field _ _ t n), x) ->
+                 [ ldarg 0
+                 , ldarg x
+                 , stfld Object "" tyConNm n
+                 ]) (zip flds [1..])
     ++
     [ ret ]
   where
     pNm ""     = ""
     pNm (c:cs) = toLower c : cs
-    flds = fields maxArity arity
+    flds       = fields maxArity arity
+    tyConNm    = tyNm ++ "/" ++ conNm
 
 fields :: Int -> Int -> [FieldDef]
 fields maxArity arity = map (Field Instance2 Public Object) (take arity $ fieldNames maxArity)

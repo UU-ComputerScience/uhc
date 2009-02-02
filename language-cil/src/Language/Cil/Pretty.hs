@@ -38,8 +38,9 @@ instance Cil AssemblyRef where
   cil (AssemblyRef n) = (".assembly extern " ++) . (n ++) . (" {}\n" ++)
 
 instance Cil TypeDef where
-  cil (Class v n et its ds) =
-      (".class " ++) . cil v . sp . cilName n
+  cil (Class cas n et its ds) =
+      (".class " ++)
+    . foldr (\a s -> cil a . sp . s) id cas . cilName n
     . maybe id (\e -> sp . ("extends " ++) . cil e) et
     . bool id (sp . ("implements " ++)
                     . foldr (.) id (map cil its)) (null its)
@@ -56,6 +57,10 @@ instance Cil TypeDef where
 
 instance Cil GenParam where
   cil (GenParam n) = cilName n
+
+instance Cil ClassAttr where
+  cil CaPublic       = ("public" ++)
+  cil CaNestedPublic = ("nested public" ++)
 
 instance Cil Visibility where
   cil AssemblyVisible   = ("assembly" ++)
@@ -85,14 +90,22 @@ instance Cil MethodDef where
     . ident . ("{\n" ++)
     . foldr (\m s -> cil m . s) id ms
     . ident . ("}\n" ++)
-  cil (Method a v t n ps ms) =
-      ident . (".method " ++) . cilsp a . cil v
-    . (" hidebysig " ++) . cil t . sp . cilName n . ("(" ++)
+  cil (Method mas t n ps ms) =
+      ident . (".method " ++)
+    . foldr (\a s -> cil a . sp . s) id mas . cil t . sp . cilName n . ("(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
     . foldr (\m s -> cil m . s) id ms
     . ident . ("}\n" ++)
+
+instance Cil MethAttr where
+  cil (MaStatic)    = ("static" ++)
+  cil (MaPublic)    = ("public" ++)
+  cil (MaPrivate)   = ("private" ++)
+  cil (MaAssembly)  = ("assembly" ++)
+  cil (MaVirtual)   = ("virtual" ++)
+  cil (MaHidebysig) = ("hidebysig" ++)
 
 instance Cil Parameter where
   cil (Param t n) = cil t . sp . cilName n
@@ -137,6 +150,8 @@ instance Cil OpCode where
   cil (Brfalse l)         = ("brfalse " ++) . (l ++)
   cil (Brtrue l)          = ("brtrue " ++) . (l ++)
   cil (Call s t a c m ps) = ("call " ++) . cilsp s . cil t . sp
+                             . cilCall a c m ps
+  cil (CallVirt t a c m ps) = ("callvirt instance " ++) . cilsp t . sp
                              . cilCall a c m ps
   cil (Ceq)               = ("ceq" ++)
   cil (Cge)               = ("cge" ++)

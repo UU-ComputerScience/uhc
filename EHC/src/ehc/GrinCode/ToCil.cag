@@ -52,7 +52,7 @@ refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
 -- The pointer class.
 refObj :: TypeDef
 refObj = 
-  classDef Public refObjNm noExtends noImplements
+  classDef [CaPublic] refObjNm noExtends noImplements
     [ Field Instance2 Public Object "Value" ]
     [ Constructor Public [ Param Object "value" ]
         [ ldarg 0
@@ -60,6 +60,12 @@ refObj =
         , ldarg 0
         , ldarg 1
         , stfld Object "" refObjNm "Value"
+        , ret
+        ]
+    , Method [MaVirtual, MaPublic] String "ToString" [] $
+        [ ldarg 0
+        , ldfld Object "" refObjNm "Value"
+        , callvirt String "" "object" "ToString" []
         , ret
         ]
     ]
@@ -218,18 +224,18 @@ SEM GrAGItf
 
 SEM GrModule
   | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : refObj : @loc.typeDefs)
-        loc.classDef      = classDef Public @loc.className noExtends noImplements @globalL.cilFields
+        loc.classDef      = classDef [CaPublic] @loc.className noExtends noImplements @globalL.cilFields
                               (@loc.mainDef : @loc.initDef : @bindL.cilMethods) []
         loc.className     = hsn2TypeDottedName @moduleNm
-        loc.mainDef       = Method Static AssemblyVisible Void "AssemblyMain" []
+        loc.mainDef       = Method [MaStatic, MaAssembly] Void "AssemblyMain" []
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
-                            , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
-                            , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
+                            , callvirt String "" "object" "ToString" []
+                            , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Object]
                             , ret
                             ]
-        loc.initDef       = Method Static Private Void "initialize" []
+        loc.initDef       = Method [MaStatic, MaPrivate] Void "initialize" []
                               (@globalL.cilValues ++ [ret])
         loc.typeDefs      = toTypeDefs @loc.className (@loc.defaultTyTags ++ Map.elems @loc.grTagsMap)
                           -- ^ CIL classes for each datatype used in the program
@@ -291,7 +297,7 @@ SEM GrGlobal
 
 -- Bindings are translated to methods (with hardcoded return type and parameter types).
 SEM GrBind
-  | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
+  | Bind  lhs.cilMethods  = [Method [MaStatic, MaAssembly] Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           expr.methodParams = Set.fromList @argNmL
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]

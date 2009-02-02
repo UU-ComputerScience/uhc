@@ -11,12 +11,14 @@ module Language.Cil.Syntax (
   , AssemblyRef   (..)
   , TypeDef       (..)
   , GenParam      (..)
+  , ClassAttr     (..)
   , Visibility    (..)
   , ClassDecl     (..)
   , TypeSpec      (..)
   , FieldDef      (..)
   , MethodDef     (..)
   , Parameter     (..)
+  , MethAttr      (..)
   , MethodDecl    (..)
   , Instr         (..)
   , Directive     (..)
@@ -50,7 +52,7 @@ data AssemblyRef =
 
 -- | A Type definition in CIL, either a class or a value type.
 data TypeDef =
-    Class Visibility DottedName (Maybe TypeSpec) [TypeSpec] [ClassDecl]
+    Class [ClassAttr] DottedName (Maybe TypeSpec) [TypeSpec] [ClassDecl]
   | GenericClass Visibility DottedName [GenParam] [ClassDecl]
   deriving Show
 
@@ -60,6 +62,11 @@ data GenParam =
     GenParam -- constraintFlags :: [ConstraintFlag]
              -- constraints     :: [DottedName]
              {- paramName       -} DottedName
+  deriving Show
+
+data ClassAttr
+  = CaPublic
+  | CaNestedPublic
   deriving Show
 
 data Visibility =
@@ -110,8 +117,17 @@ data PrimitiveType =
 -- | A Method definition in CIL.
 -- Currently, only static methods are implemented.
 data MethodDef =
-    Constructor  Visibility [Parameter] [MethodDecl]
-  | Method Association Visibility PrimitiveType DottedName [Parameter] [MethodDecl]
+    Constructor Visibility [Parameter] [MethodDecl]
+  | Method [MethAttr] PrimitiveType DottedName [Parameter] [MethodDecl]
+  deriving Show
+
+data MethAttr
+  = MaStatic
+  | MaPublic
+  | MaPrivate
+  | MaAssembly
+  | MaVirtual
+  | MaHidebysig
   deriving Show
 
 -- | A formal parameter to a method.
@@ -167,6 +183,12 @@ data OpCode =
          , methodName   :: DottedName      -- ^ Name of the method.
          , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
          } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
+  | CallVirt { returnType   :: PrimitiveType   -- ^ Return type of the method.
+             , assemblyName :: DottedName      -- ^ Name of the assembly where the method resides.
+             , typeName     :: DottedName      -- ^ Name of the type of which the method is a member.
+             , methodName   :: DottedName      -- ^ Name of the method.
+             , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
+             } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
   | Ceq                -- ^ Pops 2 values, if they are equal, pushes 1 to stack; otherwise, pushes 0.
   | Cge                -- ^ Pops 2 values and compares them.
   | Cgt                -- ^ Pops 2 values and compares them.

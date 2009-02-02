@@ -1,9 +1,9 @@
 module Main where
 
+data Bool = False | True
+
 foreign import ccall "primSubInt" (-)  :: Int -> Int -> Int
 foreign import ccall "primEqInt" (==) :: Int -> Int -> Bool
-
-data Bool = True | False
 
 even :: Int -> Bool
 even 0 = True

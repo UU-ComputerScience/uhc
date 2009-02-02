@@ -46,8 +46,8 @@ pAssRef = AssemblyRef
             <*  pOCurly <* pCCurly
 
 pTypeDef :: TParser TypeDef
-pTypeDef = (\v n ds -> Class v n Nothing [] ds)
-             <$  pPeriod <* pKey "class" <*> pVisibility <*> pDottedName
+pTypeDef = (\n ds -> Class [] n Nothing [] ds)
+             <$  pPeriod <* pKey "class" <*> pDottedName
              <*> pCurly (pList pClassDecl)
 
 pVisibility :: TParser Visibility
@@ -82,7 +82,7 @@ pPrimitiveType =  Void <$  pKey "void"
               <|> Object <$ pKey "object"
 
 pMethodDef :: TParser MethodDef
-pMethodDef = Method <$  pPeriod <* pKey "method" <*> pAssociation <*> pVisibility
+pMethodDef = Method <$  pPeriod <* pKey "method" <*> pSucceed []
                     <*  pKey "hidebysig" <*> pPrimitiveType <*> pDottedName
                     <*  pOParen <*> pSucceed [] <* pCParen <* pKey "cil" <* pKey "managed"
                     <*> pCurly (pList pMethodDecl)

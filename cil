@@ -8,7 +8,7 @@ ehc=`dirname "$ehc"`/EHC/bin/8/ehc
 function process() {
   case "$1" in
     *.hs )
-      "$ehc" -ccil --dump-grin-stages=1 "$1" && \
+      "$ehc" -tFullGrinCLR --dump-grin-stages=1 "$1" && \
       process "${1%.hs}.il"
       ;;
     *.il )
