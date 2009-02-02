@@ -28,18 +28,28 @@
 
 %%[(8 codegen grin)
 WRAPPER GrAGItf
-WRAPPER GrTag
 %%]
 
 %%[(8 codegen grin) hs
+{- TODO om netter te maken (o.a.):
+ - Remove duplicate code from GrTag.
+ - debugComment overzichtelijker maken.
+ - no een warning (met trace) laten geven.
+-}
+
+
 grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
 grin2cil hptMap gr opts
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf hptMap)
    in cilAssembly_Syn_GrAGItf t
 
+type Code = [MethodDecl]
+
+-- The name of the pointer class.
 refObjNm :: DottedName
 refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
 
+-- The pointer class.
 refObj :: TypeDef
 refObj = 
   classDef Public refObjNm noExtends noImplements
@@ -55,12 +65,15 @@ refObj =
     ]
     []
 
+-- Dereference a pointer.
 loadRefVal :: MethodDecl
 loadRefVal = ldfld Object "" refObjNm "Value"
 
+-- Pop a value. Pop a pointer. Update the pointer with the value.
 storeRefVal :: MethodDecl
 storeRefVal = stfld Object "" refObjNm "Value"
 
+-- Replace the top element of the stack by a pointer to it.
 newRefObj :: MethodDecl
 newRefObj = newobj "" refObjNm [Object]
 
@@ -72,7 +85,9 @@ newRefObj = newobj "" refObjNm [Object]
 %%[(8 codegen grin)
 
 ATTR GrAGItf AllNT
-  [ hptMap : {HptMap}
+  [
+    -- The result of the heap points-to analysis
+    hptMap : {HptMap}
   |
   |
   ]
@@ -80,57 +95,106 @@ ATTR GrAGItf AllNT
 ATTR GrAGItf GrModule
   [
   |
-  | cilAssembly : {Assembly}
+  |
+    -- The complete assembly for this module
+    cilAssembly : {Assembly}
   ]
 
-ATTR GrGlobal GrGlobalL
+ATTR AllNT
   [
   |
-  | cilFields USE {++} {[]} : {[FieldDef]}
-    cilValues USE {++} {[]} : {[MethodDecl]}
+    -- Supply of unique labels
+    labels    : {[Label]}
+  | self      : SELF
   ]
 
-ATTR GrBind GrBindL
+ATTR AllNTNoMod
+  [
+    -- The name of the surrounding class
+    className : {DottedName}
+    -- Map grin tags to their corresponding TyTag using the HptMap
+    grTagsMap : {Map GrTag TyTag}
+  |
+  |
+    -- All collected tags, sorted by sort
+    allCons    USE {`Set.union`} {Set.empty} : {Set GrTag}
+    allFuns    USE {`Set.union`} {Set.empty} : {Set GrTag}
+    allPApps   USE {`Set.union`} {Set.empty} : {Set GrTag}
+  ]
+
+ATTR AllGlobal
   [
   |
-  | cilMethods USE {++} {[]} : {[MethodDef]}
+  |
+    -- Static fields for every global
+    cilFields USE {++} {[]} : {[FieldDef]}
+    -- Code to create and store all global values
+    cilValues USE {++} {[]} : {Code}
+  ]
+
+ATTR AllBind
+  [
+  |
+  |
+    -- Static method for every binding
+    cilMethods USE {++} {[]} : {[MethodDef]}
+    -- Arity of every function binding
     funArities USE {`Map.union`} {Map.empty} : {Map HsName Int}
   ]
 
-ATTR GrExpr GrPatLam GrVal GrValL GrAlt GrAltL GrPatAlt
+ATTR AllExpr
   [
+    -- Parameters of the method in which this expression lives
+    methodParams : {Set HsName}
   |
-  | cilCode USE {++} {[]} : {[MethodDecl]}
+  |
+    -- Local variables introduced in this expression
+    locals USE {`Map.union`} {Map.empty} : {Map DottedName PrimitiveType}
   ]
 
-ATTR GrTag
+ATTR AllExpr - AllGrVar - GrPatAlt
   [
   |
-  | cilMatch USE {++} {[]} : {[MethodDecl]} -- code to match this tag
+  |
+    -- Code to evaluate this thingy
+    cilCode USE {++} {[]} : {Code}
+  ]
+
+ATTR GrTag GrPatAlt
+  [
+  |
+  |
+    -- Code to match this tag
+    cilMatch USE {++} {[]} : {Code}
   ]
 
 ATTR GrTag GrVal
   [
   |
-  | cilConst USE {++} {[]} : {[MethodDecl]} -- code to construct this tag
+  |
+    -- Code to construct a value
+    cilConst USE {++} {[]} : {Code}
   ]
 
 ATTR GrVar GrVarL
-  [ index     : {Int}
+  [
+    -- The field number of this variable
+    index     : {Int}
+    -- The tag of the node of which this variable is a field
     nodeTyTag : {TyTag}
   |
-  | cilLoad USE {++} {[]} : {[MethodDecl]}
+  |
+    -- Code to load this variable
+    cilLoad USE {++} {[]} : {Code}
+    -- The tag of this variable
     tyTag     : {TyTag}
   ]
 
-ATTR AllExpr
-  [ methodParams : {Set HsName}
-  |
-  | locals USE {`Map.union`} {Map.empty} : {Map DottedName PrimitiveType}
-  ]
-
 ATTR GrAlt GrAltL
-  [ caseStartLabel : {String}
+  [
+    -- The label at the start of the surrounding case
+    caseStartLabel : {String}
+    -- The label at the end of the surrounding case
     caseEndLabel   : {String}
   |
   |
@@ -139,24 +203,13 @@ ATTR GrAlt GrAltL
 ATTR GrValL
   [
   |
-  | cilConsts : {[[MethodDecl]]}
-    cilCodes  : {[[MethodDecl]]}
-  ]
-
-ATTR AllNT
-  [
-  | labels    : {[Label]}
-  | self      : SELF
-  ]
-
-ATTR AllNTNoMod
-  [ className : {DottedName}
-    grTagsMap : {Map GrTag TyTag}
   |
-  | allCons    USE {`Set.union`} {Set.empty} : {Set GrTag}
-    allFuns    USE {`Set.union`} {Set.empty} : {Set GrTag}
-    allPApps   USE {`Set.union`} {Set.empty} : {Set GrTag}
+    -- Construction code (cilConst) for each value
+    cilConsts : {[Code]}
+    -- Evaluation code (cilCode) for each value
+    cilCodes  : {[Code]}
   ]
+
 
 
 SEM GrAGItf
@@ -166,26 +219,27 @@ SEM GrAGItf
 SEM GrModule
   | Mod lhs.cilAssembly   = Assembly [] "EhcGenerated" (@loc.classDef : refObj : @loc.typeDefs)
         loc.classDef      = classDef Public @loc.className noExtends noImplements @globalL.cilFields
-                              (@loc.mainDef : @loc.initialize : @bindL.cilMethods) []
+                              (@loc.mainDef : @loc.initDef : @bindL.cilMethods) []
         loc.className     = hsn2TypeDottedName @moduleNm
         loc.mainDef       = Method Static AssemblyVisible Void "AssemblyMain" []
                             [ entryPoint
                             , call StaticCallConv Void "" @loc.className "initialize" []
                             , call StaticCallConv Object "" @loc.className "fun_main" []
-                            -- , loadRefVal
                             , ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0)
                             , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Int32]
                             , ret
                             ]
-        loc.initialize    = Method Static Private Void "initialize" []
+        loc.initDef       = Method Static Private Void "initialize" []
                               (@globalL.cilValues ++ [ret])
         loc.typeDefs      = toTypeDefs @loc.className (@loc.defaultTyTags ++ Map.elems @loc.grTagsMap)
+                          -- ^ CIL classes for each datatype used in the program
 
         globalL.grTagsMap = @loc.grTagsMap
         globalL.className = @loc.className
         bindL.grTagsMap   = @loc.grTagsMap
         bindL.className   = @loc.className
-
+        
+        -- Tom will explain this:
         loc.defaultTyTags = [unitTyTag]
         loc.ctyTags       = concatMap (map (fromCTag . snd) . snd) @ctagsMp
 
@@ -226,6 +280,7 @@ papps hptMap tyNames funArities allPApps = Set.fold f Map.empty allPApps
         g tynm = Map.insert patag (TyPApp tynm nm needs (arity nm)) mp
 }
 
+-- Globals are translated to static fields and pieces of code for the initialize method.
 SEM GrGlobal
   | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
@@ -234,6 +289,7 @@ SEM GrGlobal
            val.methodParams = Set.empty
            loc.name      = hsnShowAlphanumeric @nm
 
+-- Bindings are translated to methods (with hardcoded return type and parameter types).
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method Static AssemblyVisible Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           expr.methodParams = Set.fromList @argNmL
@@ -241,7 +297,6 @@ SEM GrBind
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
           loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
           loc.funArities  = Map.singleton @nm (length @argNmL)
-
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
@@ -259,13 +314,15 @@ SEM GrExpr
                 lhs.labels          = tail @altL.labels
                 altL.caseStartLabel = @loc.caseStartLabel
                 altL.caseEndLabel   = @loc.caseEndLabel
-  | FetchNode   lhs.cilCode = [no @self]
-  | FetchUpdate lhs.cilCode = [no @self]
+  | FetchNode   lhs.cilCode = error "FetchNode found while generating CIL"
+    -- ^ Not implemented in ToSilly
+  | FetchUpdate lhs.cilCode = error "Don't know how to handle FetchUpdate when generating CIL"
+    -- ^ Is implemented in ToSilly, so probably needs implementing here as well.
   | FetchField  lhs.cilCode = debugComment @self $
                                 @loc.load ++ [loadRefVal] ++ @loc.doField
                 loc.load    = loadVar @lhs.className @lhs.methodParams @nm
                 loc.doField = case @offset of
-                              0 -> []
+                              0 -> [] -- fetching the tag, i.e. the complete node
                               o -> [ ldfld (toFieldTypes @loc.tyTag !! (o - 1))
                                            ""
                                            (toConDottedName @loc.tyTag)
@@ -278,16 +335,17 @@ SEM GrExpr
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
-  | Eval        lhs.cilCode = [no @self]
-  | App         lhs.cilCode = [no @self]
+  | Eval        lhs.cilCode = error "Eval found while generating CIL"
+  | App         lhs.cilCode = error "App found while generating CIL"
   | Throw       lhs.cilCode = [no @self]
   | Catch       lhs.cilCode = [no @self]
   | UpdateUnit FetchNode FetchField Call Eval App Throw
                 loc.varName = hsnShowAlphanumeric @nm
 
 SEM GrAlt
-  | Alt         lhs.cilCode   = debugComment @self $ 
-                                  @pat.cilCode -- should return a boolean-like
+  | Alt         lhs.cilCode   = debugComment @self $
+                                  dup :
+                                  @pat.cilMatch -- should return a boolean-like
                                   ++ [brfalse @loc.label]
                                   ++ @loc.exprCode
                                   ++ [label @loc.label nop]
@@ -300,8 +358,8 @@ SEM GrAlt
 
 
 SEM GrPatAlt
-  | Tag         lhs.cilCode = debugComment @self @tag.cilMatch
-  | * - Tag     lhs.cilCode = [no @self]
+  | Tag         lhs.cilMatch = debugComment @self @tag.cilMatch
+  | * - Tag     lhs.cilMatch = [no @self]
 
 
 SEM GrVal
@@ -387,13 +445,13 @@ SEM GrPatLam
 
 
 SEM GrTag
-  | Con         lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
+  | Con         lhs.cilMatch  = debugComment @self [isinst (toConDottedName @loc.tyTag)]
                 lhs.allCons   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | Fun         lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
+  | Fun         lhs.cilMatch  = debugComment @self [isinst (toConDottedName @loc.tyTag)]
                 lhs.allFuns   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
-  | PApp        lhs.cilMatch  = debugComment @self [dup, isinst (toConDottedName @loc.tyTag)]
+  | PApp        lhs.cilMatch  = debugComment @self [isinst (toConDottedName @loc.tyTag)]
                 lhs.allPApps  = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
   | App         lhs.cilMatch  = [no $ "Match " ++ show @self]
@@ -458,7 +516,7 @@ no a = comment $ "TODO   " ++ show a
 
 -- Idea: replace debugComment in the AG by an attribute that gets initialized
 -- to debugComment or fakeComment, according to some compiler option.
-type DebugComment = Show a => a -> [MethodDecl] -> [MethodDecl]
+type DebugComment = Show a => a -> Code -> Code
 debugComment, fakeComment :: DebugComment
 debugComment a []  = [comment $ "NOP    " ++ show a]
 debugComment a [m] = [comment $ "SINGLE " ++ show a, m]
@@ -467,7 +525,7 @@ debugComment a ms  = [comment $ "BEGIN  " ++ show a]
                      [comment $ "END    " ++ show a]
 fakeComment = flip const
 
-ffcall :: String -> [MethodDecl]
+ffcall :: String -> Code
 ffcall "primAddInt" = [add]
 ffcall "primSubInt" = [sub]
 ffcall "primEqInt"  = [ceq]
@@ -475,7 +533,7 @@ ffcall "primGtInt"  = [cgt]
 ffcall "primNegInt" = [neg]
 ffcall f            = error $ "Please teach me how to compile the foreign function " ++ f
 
-loadVar :: DottedName -> Set HsName -> HsName -> [MethodDecl]
+loadVar :: DottedName -> Set HsName -> HsName -> Code
 loadVar className params nm = case Set.member nm params of
     True          -> [ldargN varName]
     False         -> case nm of
@@ -489,7 +547,7 @@ loadVar className params nm = case Set.member nm params of
 lookupTag :: GrTag -> Map GrTag TyTag -> TyTag
 lookupTag k mp = Map.findWithDefault (error $ "Tag " ++ show k ++ " not in map: " ++ show mp) k mp
 
-constructTag :: GrTag -> Map GrTag TyTag -> [MethodDecl]
+constructTag :: GrTag -> Map GrTag TyTag -> Code
 constructTag tag grTagsMap = case Map.lookup tag grTagsMap of
     Nothing    -> [no $ "constructTag on " ++ show tag]
     Just tyTag -> let
