@@ -16,13 +16,13 @@
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Ty})
 %%]
 
-%%[8 import(Debug.Trace)
-%%]
-
-%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
+%%[8 import(Data.List,Data.Char,qualified Data.Map as Map,{%{EH}Base.Builtin})
 %%]
 
 %%[8 import(EH.Util.FPath)
+%%]
+
+%%[(8 codegen) import({%{EH}Base.Target})
 %%]
 
 %%[9 import(qualified Data.Set as Set)
@@ -32,6 +32,22 @@
 %%]
 
 %%[50 import({%{EH}Ty.Trf.Instantiate})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Option after which its handling the compiler quits immediately
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(ImmediateQuitOption(..))
+data ImmediateQuitOption
+  = ImmediateQuitOption_Help				-- print help
+  | ImmediateQuitOption_Version				-- print version info
+%%[[(8 codegen)
+  | ImmediateQuitOption_Targets				-- print all codegeneration targets
+%%]]
+%%[[99
+  | ImmediateQuitOption_NumericVersion		-- print numerical version, for external version comparison
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,18 +111,20 @@ data EHCOpts
 %%[[(1 hmtyinfer)
       ,  ehcOptShowTopTyPP    ::  Bool              -- show EH type of expression
 %%]]
-      ,  ehcOptHelp           ::  Bool              -- print help
-      ,  ehcOptVersion        ::  Bool              -- print version info
+      ,  ehcOptImmQuit        ::  Maybe ImmediateQuitOption
+      -- ,  ehcOptHelp           ::  Bool              -- print help
+      -- ,  ehcOptVersion        ::  Bool              -- print version info
       ,  ehcOptDebug          ::  Bool              -- debug info
       ,  ehcStopAtPoint       ::  CompilePoint      -- stop at (after) compile phase
 %%[[7_2
       ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptEmitCore       ::  Bool
+      -- ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptOptimise       ::  Optimise			-- optimisation level
       ,  ehcOptDumpCoreStages ::  Bool				-- dump intermediate Core transformation stages
       ,  ehcOptTrf            ::  [TrfOpt]
+      ,  ehcOptTarget         ::  Target			-- code generation target
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -117,18 +135,18 @@ data EHCOpts
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
 
-      ,  ehcOptEmitGrin       ::  Bool
-      ,  ehcOptEmitC          ::  Bool
-      ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
-      ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
+      -- ,  ehcOptEmitGrin       ::  Bool
+      -- ,  ehcOptEmitC          ::  Bool
+      -- ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
+      -- ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
       ,  ehcOptEmitCil        ::  Bool              -- Emit a .il in Common Intermediate Language
-      ,  ehcOptEmitBytecode   ::  Bool
-      ,  ehcOptEmitExecC      ::  Bool
-      ,  ehcOptEmitExecBytecode:: Bool
+      -- ,  ehcOptEmitBytecode   ::  Bool
+      -- ,  ehcOptEmitExecC      ::  Bool
+      -- ,  ehcOptEmitExecBytecode:: Bool
       ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
-      ,  ehcOptFullProgAnalysis ::  Bool				-- do full GRIN program analysis
+      -- ,  ehcOptFullProgAnalysis ::  Bool				-- do full GRIN program analysis
       ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
-      ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
+      -- ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
 %%]]
 %%[[(8 codegen java)
       ,  ehcOptEmitJava       ::  Bool
@@ -170,37 +188,67 @@ data EHCOpts
 %%]]
 %%[[99
       ,  ehcProgName          ::  FPath  			-- name of this program
-      ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
+      -- ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
                               ::  Bool
 %%]]
       }
 
-instance Show EHCOpts where
-  show eo = f ""
-    where
-      f :: ShowS
-      f = ("EHCOpts" ++) . nl
-        . ("  { ehcOptAspects = " ++) . (shows $ ehcOptAspects eo) . nl
-%%[[(8 codegen)
-        . ("  , ehcOptEmitCore = " ++) . (shows $ ehcOptEmitCore eo) . nl
-        . ("  , ehcOptOptimise = " ++) . (shows $ ehcOptOptimise eo) . nl
-        . ("  , ehcOptDumpCoreStages = " ++) . (shows $ ehcOptDumpCoreStages eo) . nl
-        . ("  , ehcOptTrf = " ++) . (shows $ map (const "?") (ehcOptTrf eo)) . nl
-%%]]
-%%[[(8 codegen grin)
-        . ("  , ehcOptEmitGrin = " ++) . (shows $ ehcOptEmitGrin eo) . nl
-        . ("  , ehcOptEmitC = " ++) . (shows $ ehcOptEmitC eo) . nl
-        . ("  , ehcOptEmitLLVM = " ++) . (shows $ ehcOptEmitLLVM eo) . nl
-        . ("  , ehcOptEmitExecLLVM = " ++) . (shows $ ehcOptEmitExecLLVM eo) . nl
-        . ("  , ehcOptEmitCil = " ++) . (shows $ ehcOptEmitCil eo) . nl
-%%]]
-
-        . ("  }" ++)
-      nl :: ShowS
-      nl = ("\n" ++)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+These are there for (temporary) backwards compatibility.
+
+%%[(8 codegen grin) export(ehcOptFullProgAnalysis)
+-- do full GRIN program analysis
+ehcOptFullProgAnalysis :: EHCOpts -> Bool
+ehcOptFullProgAnalysis = targetIsFullProgAnal . ehcOptTarget
+%%]
+
+%%[(8 codegen grin) export(ehcOptErrAboutBytecode)
+-- report when Grin ByteCode errors occur
+ehcOptErrAboutBytecode :: EHCOpts -> Bool
+%%[[8
+ehcOptErrAboutBytecode _ = False
+%%][99
+ehcOptErrAboutBytecode   = targetIsGrinBytecode . ehcOptTarget
+%%]]
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitExecBytecode, ehcOptEmitBytecode)
+-- generate bytecode
+ehcOptEmitExecBytecode :: EHCOpts -> Bool
+ehcOptEmitExecBytecode = targetIsGrinBytecode . ehcOptTarget
+
+ehcOptEmitBytecode :: EHCOpts -> Bool
+ehcOptEmitBytecode = ehcOptEmitExecBytecode
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitC)
+-- generate C
+ehcOptEmitC :: EHCOpts -> Bool
+ehcOptEmitC = targetIsC . ehcOptTarget
+%%]
+
+%%[(8 codegen grin) export(ehcOptEmitLLVM)
+-- generate LLVM
+ehcOptEmitLLVM :: EHCOpts -> Bool
+ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
+%%]
+
+%%[(8 codegen) export(ehcOptEmitCore)
+-- generate Core
+ehcOptEmitCore :: EHCOpts -> Bool
+ehcOptEmitCore = ehcOptFullProgAnalysis
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Default compiler options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.defaultEHCOpts
 defaultEHCOpts
@@ -220,18 +268,20 @@ defaultEHCOpts
 %%[[(1 hmtyinfer)
       ,  ehcOptShowTopTyPP      =   False
 %%]]
-      ,  ehcOptHelp             =   False
-      ,  ehcOptVersion          =   False
+      ,  ehcOptImmQuit			=	Nothing
+      -- ,  ehcOptHelp             =   False
+      -- ,  ehcOptVersion          =   False
       ,  ehcOptDebug            =   False
       ,  ehcStopAtPoint         =   CompilePoint_All
 %%[[7_2
       ,  ehcOptUniqueness       =   True
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptEmitCore         =   True
+      -- ,  ehcOptEmitCore         =   True
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimise         =   OptimiseNormal
       ,  ehcOptTrf              =   []
+      ,  ehcOptTarget			=	defaultTarget
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
@@ -242,13 +292,13 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenRTSInfo       =   0
 
-      ,  ehcOptEmitGrin         =   False
-      ,  ehcOptEmitLLVM         =   False
-      ,  ehcOptEmitExecLLVM     =   False
+      -- ,  ehcOptEmitGrin         =   False
+      -- ,  ehcOptEmitLLVM         =   False
+      -- ,  ehcOptEmitExecLLVM     =   False
+      -- ,  ehcOptEmitC            =   False
       ,  ehcOptEmitCil          =   False
-      ,  ehcOptEmitC            =   False
-      ,  ehcOptEmitExecC        =   False
-      ,  ehcOptFullProgAnalysis =   False
+      -- ,  ehcOptEmitExecC        =   False
+      -- ,  ehcOptFullProgAnalysis =   False
       ,  ehcOptDumpGrinStages   =   False
 %%]]
 %%[[(8 codegen java)
@@ -265,14 +315,14 @@ defaultEHCOpts
       
 %%]]
 %%[[(8 codegen grin)
-      ,  ehcOptEmitBytecode     =   False
-      ,  ehcOptEmitExecBytecode =   False
-      ,  ehcOptErrAboutBytecode =   False
+      -- ,  ehcOptEmitBytecode     =   False
+      -- ,  ehcOptEmitExecBytecode =   False
+      -- ,  ehcOptErrAboutBytecode =   False
       ,  ehcOptGenCmt           =   True
 %%][(99 codegen grin)
-      ,  ehcOptEmitBytecode     =   True
-      ,  ehcOptEmitExecBytecode =   True
-      ,  ehcOptErrAboutBytecode =   True
+      -- ,  ehcOptEmitBytecode     =   True
+      -- ,  ehcOptEmitExecBytecode =   True
+      -- ,  ehcOptErrAboutBytecode =   True
       ,  ehcOptGenCmt           =   False
 %%]]
 %%[[9
@@ -300,12 +350,16 @@ defaultEHCOpts
 %%]]
 %%[[99
       ,  ehcProgName            =   emptyFPath
-      ,  ehcOptShowNumVersion   =   False
+      -- ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
 %%]]
       }
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options as passed on the command line
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 ehcCmdLineOpts
@@ -343,8 +397,12 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen java)
 %%]]
+%%[[(8 codegen)
+     ,  Option ""   ["targets"]          (NoArg oTargets)                     "print list of supported codegeneration targets"
+     ,  Option "t"  ["target"]           (OptArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
+%%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|core|java|grin|c|exe[c]|llvm|cil|lexe[c]|bc|bexe[c]|-")  "write code to file, default=core (downstream only)"
+     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|cil|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 %%]]
 %%[[(8 codegen grin)
@@ -401,8 +459,8 @@ ehcCmdLineOpts
                                 Just "yes"  -> o { ehcOptShowTopTyPP   = True      }
                                 _           -> o
 %%]]
-         oHelp           o =  o { ehcOptHelp          = True    }
-         oVersion        o =  o { ehcOptVersion       = True    }
+         oHelp           o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Help    }
+         oVersion        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Version }
          oDebug          o =  o { ehcOptDebug         = True
 %%[[1
                                 , ehcOptShowAst       = True
@@ -426,68 +484,64 @@ ehcCmdLineOpts
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
 %%]]
+%%[[(8 codegen)
+         oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Targets    }
+         oTarget     ms  o =  case ms of
+                                Just t -> o { ehcOptTarget = Map.findWithDefault defaultTarget t supportedTargetMp }
+                                _      -> o
+                                      
+%%]]
 %%[[8
          oCode       ms  o =  case ms of
                                 Just "hs"    -> o { ehcOptEmitHS           = True   }
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
-                                Just "-"     -> o { ehcOptEmitCore         = False  }
-                                Just "core"  -> o { ehcOptEmitCore         = True   }
+                                Just "-"     -> o -- { ehcOptEmitCore         = False  }
+                                Just "core"  -> o -- { ehcOptEmitCore         = True   }
 %%]]
 %%[[(8 codegen java)
                                 Just "java"  -> o { ehcOptEmitJava         = True   }
 %%]]
 %%[[(8 codegen grin)
-                                Just "grin"  -> o { ehcOptEmitGrin         = True   }
-                                Just "bc"    -> o { ehcOptEmitBytecode     = True 
-                                                  , ehcOptFullProgAnalysis = False
-                                                  }
+                                Just "grin"  -> o -- { ehcOptEmitGrin         = True   }
+                                Just "bc"    -> o -- { ehcOptEmitBytecode     = True 
+                                                  -- , ehcOptFullProgAnalysis = False
+                                                  -- }
                                 Just m | m `elem` ["bexe","bexec"]
-                                             -> o { ehcOptEmitBytecode     = True
-                                                  , ehcOptEmitExecBytecode = True
-                                                  , ehcOptFullProgAnalysis = False
+                                             -> o { ehcOptTarget           = Target_Interpreter_Grin_C
                                                   }
 
-                                Just "c"     -> o { ehcOptEmitC            = True
-                                                  , ehcOptFullProgAnalysis = True
-                                                  , ehcOptEmitExecBytecode = False
-                                                  , ehcOptEmitBytecode     = False
-                                                  , ehcOptErrAboutBytecode = False
-                                                  }
+                                Just "c"     -> o -- { ehcOptEmitC            = True
+                                                  -- , ehcOptFullProgAnalysis = True
+                                                  -- , ehcOptEmitExecBytecode = False
+                                                  -- , ehcOptEmitBytecode     = False
+                                                  -- , ehcOptErrAboutBytecode = False
+                                                  -- }
 
                                 Just m | m `elem` ["exe","exec"]
-                                             -> o { ehcOptEmitC            = True
-                                                  , ehcOptEmitExecC        = True
-                                                  , ehcOptFullProgAnalysis = True
-                                                  , ehcOptEmitExecBytecode = False
-                                                  , ehcOptEmitBytecode     = False
-                                                  , ehcOptErrAboutBytecode = False
+                                             -> o { ehcOptTarget           = Target_FullProgAnal_Grin_C
                                                   }
 
-                                Just "llvm"  -> o { ehcOptEmitLLVM         = True
-                                                  , ehcOptFullProgAnalysis = True
-                                                  , ehcOptEmitExecBytecode = False
-                                                  , ehcOptEmitBytecode     = False
-                                                  , ehcOptErrAboutBytecode = False
-                                                  }
+                                Just "llvm"  -> o -- { ehcOptEmitLLVM         = True
+                                                  -- , ehcOptFullProgAnalysis = True
+                                                  -- , ehcOptEmitExecBytecode = False
+                                                  -- , ehcOptEmitBytecode     = False
+                                                  -- , ehcOptErrAboutBytecode = False
+                                                  -- }
                                 Just m | m `elem` ["lexe", "lexec"]
-                                             -> o { ehcOptEmitLLVM         = True
-                                                  , ehcOptEmitExecLLVM     = True
-                                                  , ehcOptFullProgAnalysis = True
-                                                  , ehcOptEmitExecBytecode = False
-                                                  , ehcOptEmitBytecode     = False
-                                                  , ehcOptErrAboutBytecode = False
+                                             -> o { ehcOptTarget           = Target_FullProgAnal_Grin_LLVM
                                                   }
-                                Just "cil"   -> o { ehcOptEmitGrin         = False
-                                                  , ehcOptEmitC            = False
-                                                  , ehcOptEmitLLVM         = False
-                                                  , ehcOptEmitExecLLVM     = False
-                                                  , ehcOptEmitCil          = True
-                                                  , ehcOptEmitBytecode     = False
-                                                  , ehcOptEmitExecC        = False
-                                                  , ehcOptEmitExecBytecode = False
-                                                  , ehcOptFullProgAnalysis = True
-                                                  }
+                                Just "cil"   -> o { ehcOptEmitCil = True }
+                                                  -- { ehcOptEmitGrin         = False
+                                                  -- , ehcOptEmitC            = False
+                                                  -- , ehcOptEmitLLVM         = False
+                                                  -- , ehcOptEmitExecLLVM     = False
+                                                  -- , ehcOptEmitCil          = True
+                                                  -- , ehcOptEmitBytecode     = False
+                                                  -- , ehcOptEmitExecC        = False
+                                                  -- , ehcOptEmitExecBytecode = False
+                                                  -- , ehcOptFullProgAnalysis = True
+                                                  -- }
 %%]]
 %%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }
@@ -550,7 +604,7 @@ ehcCmdLineOpts
          oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }
 %%]]
 %%[[99
-         oNumVersion     o =  o { ehcOptShowNumVersion          = True    }
+         oNumVersion     o =  o { ehcOptImmQuit    = Just ImmediateQuitOption_NumericVersion }
          oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
          oNoPrelude      o =  o { ehcOptUseAssumePrelude        = False   }
          oCPP            o =  o { ehcOptCPP                     = True    }
@@ -618,7 +672,7 @@ optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
-optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b, ehcOptEmitGrin = b }
+optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 %%]
 
 %%[(20 codegen)
@@ -641,9 +695,9 @@ optsDiscrRecompileRepr opts
     $ [ show (ehcOptAspects opts)
 %%[[(20 codegen)
       , o "clsrec"          (ehcCfgClassViaRec      opts)
-      , o "fullproggrin"    (ehcOptFullProgAnalysis opts)
-      , o "exec"            (ehcOptEmitExecC        opts)
-      , o "bexec"           (ehcOptEmitExecBytecode opts)
+      -- , o "exec"            (ehcOptEmitExecC        opts)
+      -- , o "bexec"           (ehcOptEmitExecBytecode opts)
+      , show (ehcOptTarget opts)
       , show (ehcOptOptimise opts)
 %%]]
       ]

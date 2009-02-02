@@ -17,6 +17,8 @@ C + CPP compilation
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: C compilation
@@ -45,7 +47,7 @@ cpCompileWithGCC how othModNmL modNm
                                                , map (\l -> Cfg.selectFileprefixInstall opts ++ perVariantSuffix ++ l ++ ".a") Cfg.libnamesGccPerVariant
                                                  ++ map (\l -> Cfg.selectFileprefixInstall opts ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
-                                               , if   ehcOptEmitExecC opts
+                                               , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
                                                  else [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
@@ -56,7 +58,7 @@ cpCompileWithGCC how othModNmL modNm
 %%]]
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
                                             where o = fpO fp
-         ;  when (ehcOptEmitExecC opts || ehcOptEmitExecBytecode opts)
+         ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
@@ -70,9 +72,11 @@ cpCompileWithGCC how othModNmL modNm
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
+%%[[(8 codegen grin)
                                  ++ [ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include/mainSil.c"
-                                    | ehcOptEmitExecC opts
+                                    | ehcOptTarget opts == Target_FullProgAnal_Grin_C
                                     ]
+%%]]
                                  ++ linkLibOpt
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)

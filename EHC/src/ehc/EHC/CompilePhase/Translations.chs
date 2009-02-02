@@ -17,6 +17,8 @@ Translation to another AST
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
+%%[(8 codegen) import({%{EH}Base.Target})
+%%]
 
 -- EH semantics
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem)
@@ -133,7 +135,7 @@ cpTranslateCore2Grin modNm
                  mbCoreSem = ecuMbCoreSem ecu
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
-         ;  when (isJust mbCoreSem && (ehcOptEmitGrin opts || ehcOptEmitBytecode opts || ehcOptFullProgAnalysis opts))
+         ;  when (isJust mbCoreSem && targetIsGrin (ehcOptTarget opts))
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
 %%]

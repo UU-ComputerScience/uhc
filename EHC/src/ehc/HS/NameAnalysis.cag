@@ -1060,67 +1060,6 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Used module names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-It is necessary to gather used modules because of re-exporting there may be references to modules which are not imported explicitly.
-
-%%[20
-ATTR AllNT AGItf [ | | usedModNmS USE {`Set.union`} {Set.empty}: HsNameS ]
-%%]
-
-%%[20 hs
-idUseHereOccL2ModNmS :: AssocL IdOcc [IdUseOcc] -> HsNameS
-idUseHereOccL2ModNmS l = Set.unions [ Set.fromList $ catMaybes $ map (hsnQualifier . ioccNm . uoccOcc) os | (_,os) <- l ]
-%%]
-
-%%[20
-SEM FunctionBinding
-    | FunctionBinding
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@lefthandside.usedModNmS,@righthandside.usedModNmS]
-%%]
-
-%%[20
-SEM Declaration
-    | TypeSignature
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@type.usedModNmS]
-    | PatternBinding
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@righthandside.usedModNmS]
-    | Data Newtype
-        loc             .   usedModNmS  =   Set.unions [ idUseHereOccL2ModNmS @idUseHereOccL
-                                                       , @constructors.usedModNmS
-                                                       , @context.usedModNmS
-%%[[95
-                                                       , @derivings.usedModNmS
-%%]]
-                                                       ]
-    | KindSignature
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@kind.usedModNmS]
-    | ForeignImport
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@type.usedModNmS]
-    | Class
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@context.usedModNmS,@where.usedModNmS]
-    | Instance
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@context.usedModNmS,@types.usedModNmS,@where.usedModNmS]
-    | InstanceUseImplicitly
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@types.usedModNmS,@expression.usedModNmS]
-    | Default
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@types.usedModNmS]
-    | Type
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@type.usedModNmS]
-%%[[94
-    | ForeignExport
-        loc             .   usedModNmS  =   Set.unions [idUseHereOccL2ModNmS @idUseHereOccL,@type.usedModNmS]
-%%]]
-%%]
-
-%%[20
-SEM Body
-    | Body
-        loc             .   usedModNmS  =   idUseHereOccL2ModNmS @idUseHereOccL `Set.union` @declarations.usedModNmS
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Existence of main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
