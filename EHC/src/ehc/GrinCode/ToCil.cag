@@ -166,6 +166,12 @@ ATTR AllExpr - AllGrVar - GrPatAlt
     cilCode USE {++} {[]} : {Code}
   ]
 
+ATTR AllGrExpr
+  [ hasNext : {Bool}
+  |
+  |
+  ]
+
 ATTR GrTag GrPatAlt
   [
   |
@@ -299,6 +305,7 @@ SEM GrGlobal
 SEM GrBind
   | Bind  lhs.cilMethods  = [Method [MaStatic, MaAssembly] Object (hsnShowAlphanumeric @nm) @loc.params @loc.cilCode]
           expr.methodParams = Set.fromList @argNmL
+          expr.hasNext    = False
           loc.params      = map (Param Object . hsnShowAlphanumeric) @argNmL
           loc.cilCode     = localsInit @loc.locals : @expr.cilCode ++ [ret]
           loc.locals      = Map.foldWithKey (\nm pt xs -> Local pt nm : xs) [] @expr.locals
@@ -306,6 +313,8 @@ SEM GrBind
 
 SEM GrExpr
   | Seq         lhs.cilCode = @expr.cilCode ++ @pat.cilCode ++ @body.cilCode
+                expr.hasNext = True
+                body.hasNext = @lhs.hasNext
   | Unit        lhs.cilCode = debugComment @self @val.cilCode
   | UpdateUnit  lhs.cilCode = debugComment @self $ @loc.load ++ @val.cilCode ++ [storeRefVal] ++ @loc.load ++ [loadRefVal]
                 loc.load    = loadVar @lhs.className @lhs.methodParams @nm
@@ -338,7 +347,10 @@ SEM GrExpr
                               Nothing  -> error $ "Cannot fetch field of unknown type: " ++ show @self
                               Just tag -> lookupTag tag @lhs.grTagsMap
   | Store       lhs.cilCode = debugComment @self $ @val.cilCode ++ [newRefObj]
-  | Call        lhs.cilCode = debugComment @self $ @argL.cilCode ++ [call StaticCallConv Object "" @lhs.className @loc.varName @loc.params]
+  | Call        lhs.cilCode = debugComment @self $ @argL.cilCode
+                                ++ [ (if not @lhs.hasNext then tailcall else id)
+                                   $ call StaticCallConv Object "" @lhs.className @loc.varName @loc.params
+                                   ]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
   | Eval        lhs.cilCode = error "Eval found while generating CIL"
@@ -361,6 +373,9 @@ SEM GrAlt
                                   _               -> [pop] ++ @expr.cilCode ++ [br @lhs.caseEndLabel]
                 loc.label     = head @lhs.labels
                 pat.labels    = tail @lhs.labels
+                expr.hasNext  = case @ann of
+                                  GrAltAnnReenter -> True
+                                  _               -> @lhs.hasNext
 
 
 SEM GrPatAlt
