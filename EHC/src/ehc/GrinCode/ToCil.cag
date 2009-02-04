@@ -378,7 +378,7 @@ SEM GrVal
   | Node        lhs.cilCode = debugComment @self $ @fldL.cilCode ++ @tag.cilConst
   | VarNode     lhs.cilCode = debugComment @self $ (concat (tail @fldL.cilCodes)) ++ head @fldL.cilConsts
   | BasicNode   lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm ++ @tag.cilConst
-  | EnumNode    lhs.cilCode = [no @self]
+  | EnumNode    lhs.cilCode = debugComment @self $ loadVar @lhs.className @lhs.methodParams @nm
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | * - Tag Var
@@ -403,14 +403,20 @@ SEM GrVarL
 
 SEM GrVar
   | Var
-      lhs.cilLoad    = if @lhs.index < 0
-                       then [ stlocN @varName ]
-                       else [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) "" (toConDottedName @lhs.nodeTyTag)
-                                    (toFieldName @lhs.nodeTyTag @lhs.index)
-                            , stlocN @varName ]
+      lhs.cilLoad    = if @loc.isReal
+                       then if @lhs.index < 0
+                            then debugComment @self [ stlocN @loc.varName ]
+                            else debugComment @self [ ldfld (toFieldTypes @lhs.nodeTyTag !! @lhs.index) ""
+                                                            (toConDottedName @lhs.nodeTyTag)
+                                                            (toFieldName @lhs.nodeTyTag @lhs.index)
+                                                    , stlocN @loc.varName ]
+                       else debugComment @self [ comment "Variable is not real, so didn't load it." ]
       lhs.tyTag      = lookupTag (absGrTag @nm @lhs.hptMap) @lhs.grTagsMap
-      lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
+      lhs.locals     = if @loc.isReal
+                       then Map.singleton @loc.varName (absPrimitiveType @nm @lhs.hptMap)
+                       else Map.empty
       loc.varName    = hsnShowAlphanumeric @nm
+      loc.isReal     = case @nm of (HNmNr 0 _) -> False; _ -> True;
   | KnownTag
       lhs.cilLoad    = [pop]
       lhs.tyTag      = lookupTag @tag.self @lhs.grTagsMap
@@ -422,15 +428,19 @@ SEM GrPatLam
   | Empty
       lhs.cilCode    = debugComment @self []
   | Var
-      lhs.cilCode    = debugComment @self [stlocN @varName]
-      lhs.locals     = Map.singleton @varName (absPrimitiveType @nm @lhs.hptMap)
+      lhs.cilCode    = if @loc.isReal
+                       then debugComment @self [ stlocN @loc.varName ]
+                       else debugComment @self [ pop, comment "Variable is not real, so popped it." ]
+      lhs.locals     = if @loc.isReal
+                       then Map.singleton @loc.varName (absPrimitiveType @nm @lhs.hptMap)
+                       else Map.empty
   | VarNode
       lhs.cilCode    = debugComment @self $ @fldL.cilLoad ++ [pop]
       fldL.index     = -1
       fldL.nodeTyTag = @fldL.tyTag
   | BasicNode
-      lhs.cilCode    = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @varName]
-      lhs.locals     = Map.singleton @varName Int32
+      lhs.cilCode    = debugComment @self [ldfld Int32 "" (toConDottedName intTyTag) (toFieldName intTyTag 0), stlocN @loc.varName]
+      lhs.locals     = Map.singleton @loc.varName Int32
   | EnumNode
       lhs.cilCode    = [no @self]
   | PtrNode
@@ -438,16 +448,34 @@ SEM GrPatLam
   | OpaqueNode
       lhs.cilCode    = [no @self]
   | BasicAnnot
-      lhs.cilCode    = debugComment @self [stlocN @varName]
-      lhs.locals     = Map.singleton @varName Int32
+      lhs.cilCode    = debugComment @self [stlocN @loc.varName]
+      lhs.locals     = Map.singleton @loc.varName Int32
   | EnumAnnot
-      lhs.cilCode    = [no @self]
+      -- This code assumes its working with booleans. It will probabily crash otherwise.
+      lhs.cilCode    = if @loc.isReal
+                       then debugComment @self [ brfalse @loc.elseLabel
+                                               , newobj "" (toConDottedName @loc.trueTyTag) []
+                                               , br @loc.endLabel
+                                               , label @loc.elseLabel
+                                               $ newobj "" (toConDottedName @loc.falseTyTag) []
+                                               , label @loc.endLabel
+                                               $ stlocN @loc.varName]
+                       else debugComment @self [ pop, comment "Variable is not real, so popped it." ]
+      lhs.locals     = if @loc.isReal
+                       then Map.singleton @loc.varName (absPrimitiveType @nm @lhs.hptMap)
+                       else Map.empty
+      loc.falseTyTag = lookupTag (@tagL.self!!0) @lhs.grTagsMap
+      loc.trueTyTag  = lookupTag (@tagL.self!!1) @lhs.grTagsMap
+      loc.elseLabel  = @lhs.labels !! 0
+      loc.endLabel   = @lhs.labels !! 1
+      lhs.labels     = drop 2 @lhs.labels
   | PtrAnnot
       lhs.cilCode    = [no @self]
   | OpaqueAnnot
       lhs.cilCode    = [no @self]
   | * - VarNode Empty
       loc.varName    = hsnShowAlphanumeric @nm
+      loc.isReal     = case @nm of (HNmNr 0 _) -> False; _ -> True;
 
 
 SEM GrTag
@@ -528,7 +556,10 @@ debugComment a []  = [comment $ "NOP    " ++ show a]
 debugComment a [m] = [comment $ "SINGLE " ++ show a, m]
 debugComment a ms  = [comment $ "BEGIN  " ++ show a]
                      ++ ms ++
-                     [comment $ "END    " ++ show a]
+                     [comment $ "END    " ++ let s = show a
+                                             in if length s > 50
+                                                then take 50 s ++ "..."
+                                                else s]
 fakeComment = flip const
 
 ffcall :: String -> Code

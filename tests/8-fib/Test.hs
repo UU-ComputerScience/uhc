@@ -2,16 +2,34 @@ module Main where
 
 data Bool = False | True
 
-foreign import ccall "primAddInt" (+)  :: Int -> Int -> Int
--- foreign import ccall "primSubInt" (-)  :: Int -> Int -> Int
+data ''[]'' a = a : [a] | ''[]''
+
+foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
+foreign import ccall "primSubInt" (-) :: Int -> Int -> Int
 foreign import ccall "primEqInt" (==) :: Int -> Int -> Bool
 
-fib :: Int -> Int
-fib 0 = 0
-fib 1 = 1
-fib n = n -- fib (n-1) + fib (n-2)
+infixr 6 :
 
--- fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
+zipWith :: (Int -> Int -> Int) -> [Int] -> [Int] -> [Int]
+zipWith _ _      _      = []
+zipWith f (x:xs) (y:ys) = f x y : zipWith f xs ys
 
-main = fib 4
+sum :: [Int] -> Int
+sum []     = 0
+sum (x:xs) = x + sum xs
+
+tail :: [Int] -> [Int]
+tail []     = []
+tail (x:xs) = xs
+
+take :: Int -> [Int] -> [Int]
+take _ []     = []
+take n (x:xs) = if x == 0
+                then []
+                else x : take (n-1) xs
+
+
+fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
+
+main = fibs -- sum (take 7500 fibs)
 

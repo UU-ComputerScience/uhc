@@ -1,13 +1,13 @@
 module Main where
 
-foreign import ccall primAddInt :: Int -> Int -> Int
+foreign import ccall "primAddInt" (+) :: Int -> Int -> Int
 
 data Maybe =
     Nothing
   | Just Int
 
 double :: Int -> Int
-double x = primAddInt x x
+double x = x + x
 
 doubleJust :: Maybe -> Int
 doubleJust (Just x) = double x
