@@ -567,6 +567,9 @@ AC_SUBST(TARGET_TRIPLE, "$host")
 AC_SUBST(EHC_EXEC_NAME, "ehc")
 AC_SUBST(UHC_EXEC_NAME, "uhc")
 
+### name of subdirectory for shared ehc library artifacts
+AC_SUBST(EHCLIB_SHARED, "shared")
+
 ### install locations
 inplaceInstallDir="install"
 AC_SUBST(INPLACE_TOP, "$hardtop")

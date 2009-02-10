@@ -84,7 +84,7 @@ SEM Pattern
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @leftPattern.errSq, @rightPattern.errSq]
     | Literal
         loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUse, Seq.fromList @errIdUseEq
-%%[[9
+%%[[97
                                                    , Seq.fromList @errIdUseCls
 %%]]
                                                    , @literal.errSq

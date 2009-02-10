@@ -66,7 +66,7 @@ LIB_TOP_QUAL				:= Top
 LIB_TOP_QUAL_PREFIX			:= $(LIB_TOP_QUAL).
 LIB_TOP_PKG_NAME			:= $(subst .,-,$(LIB_TOP_QUAL))
 LIB_TOP_HS_PREFIX			:= $(SRC_TOP_PREFIX)$(subst .,$(PATH_SEP),$(LIB_TOP_QUAL_PREFIX))
-LIB_TOP_INS_FLAG			:= $(INSABS_FLAG_PREFIX)$(LIB_TOP_PKG_NAME)
+LIB_TOP_INS_FLAG			:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(LIB_TOP_PKG_NAME)
 
 # derived stuff
 LIB_TOP_CABAL_DRV			:= $(BLD_TOP_PREFIX)lib-Top.cabal
@@ -108,7 +108,7 @@ $(LIB_TOP_SETUP2): $(LIB_TOP_SETUP_HS_DRV)
 $(LIB_TOP_INS_FLAG): $(LIB_TOP_HS_DRV) $(LIB_TOP_CABAL_DRV) $(LIB_TOP_SETUP2) $(TOP_MKF)
 	mkdir -p $(@D)
 	cd $(BLD_TOP_PREFIX) && \
-	$(LIB_TOP_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSABS_PREFIX) --user && \
+	$(LIB_TOP_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSTALLFORBLDABS_PREFIX) --user && \
 	$(LIB_TOP_SETUP) build && \
 	$(LIB_TOP_SETUP) install --user && \
 	echo $@ > $@

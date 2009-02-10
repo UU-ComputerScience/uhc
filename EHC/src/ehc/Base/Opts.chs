@@ -28,7 +28,7 @@
 %%[9 import(qualified Data.Set as Set)
 %%]
 
-%%[99 import(EH.Util.Utils)
+%%[8 import(EH.Util.Utils)
 %%]
 
 %%[50 import({%{EH}Ty.Trf.Instantiate})
@@ -44,6 +44,7 @@ data ImmediateQuitOption
   | ImmediateQuitOption_Version				-- print version info
 %%[[(8 codegen)
   | ImmediateQuitOption_Targets				-- print all codegeneration targets
+  | ImmediateQuitOption_TargetDefault		-- print the default codegeneration target
 %%]]
 %%[[99
   | ImmediateQuitOption_NumericVersion		-- print numerical version, for external version comparison
@@ -89,6 +90,15 @@ trfOptOverrides opts trf
          ovr (TrfAllYes  :os)             = Just True
          ovr (TrfAllNo   :os)             = Just False
          ovr (_          :os)             = ovr os
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+mkSearchPath :: String -> [String]
+mkSearchPath = wordsBy (==';')
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,7 +163,7 @@ data EHCOpts
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
-      ,  ehcOptSearchPath     ::  [String]
+      ,  ehcOptUsrSearchPath  ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity			-- verbosity level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
@@ -186,6 +196,7 @@ data EHCOpts
       						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
+      ,  ehcOptLibSearchPath  ::  [String]
       ,  ehcProgName          ::  FPath  			-- name of this program
       -- ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
@@ -241,7 +252,8 @@ ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
 %%[(8 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
-ehcOptEmitCore = ehcOptFullProgAnalysis
+ehcOptEmitCore opts
+  = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,7 +317,7 @@ defaultEHCOpts
       ,  ehcOptEmitHS           =   False
       ,  ehcOptEmitEH           =   False
       
-      ,  ehcOptSearchPath       =   []
+      ,  ehcOptUsrSearchPath    =   []
       ,  ehcOptVerbosity        =   VerboseNormal
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
       ,  ehcOptUseInplace       =   True
@@ -346,6 +358,7 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
+      ,  ehcOptLibSearchPath    =   []
       ,  ehcProgName            =   emptyFPath
       -- ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
@@ -395,6 +408,7 @@ ehcCmdLineOpts
 %%[[(8 codegen java)
 %%]]
 %%[[(8 codegen)
+     ,  Option ""   ["target-default"]   (NoArg oTargetDflt)                  "print the default codegeneration target"
      ,  Option ""   ["targets"]          (NoArg oTargets)                     "print list of supported codegeneration targets"
      ,  Option "t"  ["target"]           (OptArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
 %%]]
@@ -421,7 +435,8 @@ ehcCmdLineOpts
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
-     ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
+     ,  Option "P"  ["search-path"]      (ReqArg oUsrSearchPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --search-path"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
@@ -482,7 +497,8 @@ ehcCmdLineOpts
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
 %%]]
 %%[[(8 codegen)
-         oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Targets    }
+         oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Targets    	}
+         oTargetDflt     o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_TargetDefault  }
          oTarget     ms  o =  case ms of
                                 Just t -> o { ehcOptTarget = Map.findWithDefault defaultTarget t supportedTargetMp }
                                 _      -> o
@@ -494,7 +510,8 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
-                                Just "core"  -> o -- { ehcOptEmitCore         = True   }
+                                Just "core"  -> o { ehcOptTarget           = Target_Core
+                                                  }
 %%]]
 %%[[(8 codegen java)
                                 Just "java"  -> o { ehcOptEmitJava         = True   }
@@ -591,7 +608,8 @@ ehcCmdLineOpts
 %%]]
 %%[[99
          oNumVersion     o =  o { ehcOptImmQuit    = Just ImmediateQuitOption_NumericVersion }
-         oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
+         oUsrSearchPath s o = o { ehcOptUsrSearchPath = ehcOptUsrSearchPath o ++ mkSearchPath s }
+         oLibSearchPath s o = o { ehcOptLibSearchPath = ehcOptLibSearchPath o ++ mkSearchPath s }
          oNoPrelude      o =  o { ehcOptUseAssumePrelude        = False   }
          oCPP            o =  o { ehcOptCPP                     = True    }
          oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }

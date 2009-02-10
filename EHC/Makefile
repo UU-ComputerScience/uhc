@@ -1,9 +1,23 @@
 #!/usr/bin/make -f
+
+.PHONY: ehcs dist www www-sync install lib src build ruler1
+
+###########################################################################################
+# Location from which make is invoked
+###########################################################################################
+
 TOP_PREFIX				:= 
+
+###########################################################################################
+# First (default) target just explains what can be done
+###########################################################################################
 
 default: explanation
 
-# files, dependencies, rules
+###########################################################################################
+# Definitions, dependencies, rules, etc: spread over subdirectories for subproducts
+###########################################################################################
+
 # do not change the order of these includes
 -include latex/files.mk
 -include lhs2TeX/files.mk
@@ -11,6 +25,7 @@ default: explanation
 include mk/config.mk
 
 ### BEGIN of Ruler1
+# This definitely should not remain here....!!!!
 # Ruler1, will be obsolete until all type rules are specified with Ruler2 (currently not in Explicit/implicit story)
 RULER1				:= bin/ruler1$(EXEC_SUFFIX)
 RULER1_DIR			:= ruler1
@@ -69,12 +84,19 @@ include test/files.mk
 
 -include mk/dist.mk
 
+###########################################################################################
 # all versions (as used by testing)
+###########################################################################################
+
 VERSIONS			:= $(EHC_PUB_VARIANTS)
 
 # distributed/published stuff for WWW
-WWW_SRC_TGZ					:= www/current-ehc-src.tgz
-WWW_DOC_PDF					:= www/current-ehc-doc.pdf
+#WWW_SRC_TGZ					:= www/current-ehc-src.tgz
+#WWW_DOC_PDF					:= www/current-ehc-doc.pdf
+
+###########################################################################################
+# Target: explain what can be done
+###########################################################################################
 
 explanation:
 	@echo "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
@@ -104,15 +126,13 @@ explanation:
 	echo  "" ; \
 	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
 	echo  "" ; \
+	echo  "make <n>/clean           : cleanup for variant <n>" ; \
+	echo  "" ; \
 	echo  "make install             : make 100/ehc and library, install globally" ; \
 
-all: afp-full ehcs doc grinis
-	$(MAKE) initial-test-expect
-
-.PHONY: ehcs dist www www-sync install lib src build ruler1
-
-rules2.tex: rules2.rul
-	$(RULER1) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+###########################################################################################
+# Target: make every variant of something
+###########################################################################################
 
 ehcs: $(EHC_ALL_PUB_EXECS)
 
@@ -122,48 +142,11 @@ grinllvms: $(GRINLLVM_ALL_PUB_EXECS)
 
 docs: $(TEXT_DIST_DOC_FILES)
 
-edit-s:
-	$(OPEN_FOR_EDIT) \
-	$(SHUFFLE_ALL_SRC) \
-	Makefile
+cleans: $(patsubst %,%/clean,$(EHC_VARIANTS))
 
-edit-r:
-	$(OPEN_FOR_EDIT) \
-	$(RULER2_ALL_SRC) \
-	$(EHC_RULES_3_SRC_RL2) \
-	Makefile
-
-edit-t:
-	$(OPEN_FOR_EDIT) \
-	$(TEXT_EDIT_SRC) \
-	$(EHC_RULES_3_SRC_RL2) $(RULER2_RULES_SRC_RL2) \
-	Makefile
-
-edit-e:
-	$(OPEN_FOR_EDIT) \
-	$(EHC_ALL_SRC) $(UHC_ALL_SRC) $(GRINI_ALL_SRC) \
-	Makefile
-
-edit: edit-r edit-e edit-t edit-s
-
-A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
-A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
-
-tst:
-	@echo $(EHCLIB_SYNC_ALL_PKG_DRV_HS)
-
-tstv:
-	$(MAKE) EHC_VARIANT=100 tst
-
-initial-test-expect: $(A_EH_TEST_EXP)
-
-$(A_EH_TEST_EXP): $(A_EH_TEST)
-	$(MAKE) test-expect
-
-WWW_EXAMPLES_TMPL			:=	www/ehc-examples-templ.html
-WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
-
-www-ex: $(WWW_EXAMPLES_HTML)
+###########################################################################################
+# Target: www stuff + sync to www
+###########################################################################################
 
 # www: $(WWW_SRC_TGZ) www-ex $(WWW_DOC_FILES)
 www: $(WWW_DOC_FILES)
@@ -176,15 +159,17 @@ www/DoneSyncStamp: www
 
 www-sync: www/DoneSyncStamp
 
-$(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
-	$(call PERL_SUBST_EHC,$(WWW_EXAMPLES_TMPL),$(WWW_EXAMPLES_HTML))
-
-$(WWW_SRC_TGZ): $(DIST_TGZ)
-	cp $^ $@
+###########################################################################################
+# Target: helium doc
+###########################################################################################
 
 heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 	mkdir -p hdoc/helium
 	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
+
+###########################################################################################
+# Target: installation (temporary until a proper install structure is in place)
+###########################################################################################
 
 install-test:
 	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
@@ -198,3 +183,49 @@ install:
 	mkdir -p $(dir $(UHC_INSTALL_EXEC))
 	install $(EHC_FOR_UHC_BLD_EXEC) $(UHC_INSTALL_EXEC)
 	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
+
+###########################################################################################
+# Target: clean build stuff
+###########################################################################################
+
+clean: cleans
+
+###########################################################################################
+# Target: try outs and debugging of make variable definitions
+###########################################################################################
+
+tst:
+	@echo $(EHCLIB_TARGETS)
+
+tstv:
+	$(MAKE) EHC_VARIANT=100 tst
+
+###########################################################################################
+# Target: obsolete or to become so
+###########################################################################################
+
+#: afp-full ehcs doc grinis
+#	$(MAKE) initial-test-expect
+
+rules2.tex: rules2.rul
+	$(RULER1) -l --base=rules $< | $(LHS2TEX) $(LHS2TEX_OPTS_POLY) > $@
+
+A_EH_TEST			:= $(word 1,$(wildcard test/*.eh))
+A_EH_TEST_EXP		:= $(addsuffix .exp$(VERSION_FIRST),$(A_EH_TEST))
+
+$(A_EH_TEST_EXP): $(A_EH_TEST)
+	$(MAKE) test-expect
+
+initial-test-expect: $(A_EH_TEST_EXP)
+
+WWW_EXAMPLES_TMPL			:=	www/ehc-examples-templ.html
+WWW_EXAMPLES_HTML			:=	www/ehc-examples.html
+
+www-ex: $(WWW_EXAMPLES_HTML)
+
+$(WWW_EXAMPLES_HTML): $(WWW_EXAMPLES_TMPL)
+	$(call PERL_SUBST_EHC,$(WWW_EXAMPLES_TMPL),$(WWW_EXAMPLES_HTML))
+
+$(WWW_SRC_TGZ): $(DIST_TGZ)
+	cp $^ $@
+

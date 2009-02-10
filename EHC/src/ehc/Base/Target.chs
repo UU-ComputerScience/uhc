@@ -39,6 +39,7 @@ This may change later if/when combinations can be chosen independent/orthogonal.
 %%[(8 codegen) export(Target(..))
 data Target
   = Target_None								-- no codegen
+  | Target_Core								-- only Core
 %%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
@@ -54,6 +55,7 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 
 %%[(8 codegen)
 instance Show Target where
+  show Target_Core							= "Core"
 %%[[(8 codegen grin)
   show Target_FullProgAnal_Grin_C			= "FullGrinC"
   show Target_FullProgAnal_Grin_LLVM		= "FullGrinLLVM"
@@ -83,8 +85,9 @@ supportedTargetMp
   = Map.fromList
       [ (show t, t)
       | t <- [ 
+               Target_Core
 %%[[(8 codegen grin)
-               Target_Interpreter_Grin_C
+             , Target_Interpreter_Grin_C
              , Target_FullProgAnal_Grin_C
 %%]]
              ]
@@ -145,6 +148,14 @@ targetIsC t
       Target_FullProgAnal_Grin_C 		-> True
       Target_Interpreter_Grin_C		 	-> True
 %%]]
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsCore)
+targetIsCore :: Target -> Bool
+targetIsCore t
+  = case t of
+      Target_Core				 		-> True
       _ 								-> False
 %%]
 

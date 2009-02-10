@@ -583,27 +583,30 @@ cpProcessEH modNm
 %%[(8 codegen)
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
-  = cpSeq [ cpTransformCore
-              modNm
-                (
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq [ cpTransformCore
+                   modNm
+                     (
 %%[[102
-                  -- [ "CS" ] ++
+                       -- [ "CS" ] ++
 %%]]
-                  [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                  , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
-%%[[9                  
-                  ,  "CLDF"
+                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
+%%[[9               
+                       ,  "CLDF"
 %%]
-%%[[8_2           
-                  , "CPRNM"
+%%[[8_2        
+                       , "CPRNM"
 %%]]
-                  ]
-                )
-          , cpOutputCore "core" modNm
-%%[[(8 java)
-          , cpOutputJava "java" modNm
+                       ]
+                     )
+               , when (ehcOptEmitCore opts) (cpOutputCore "core" modNm)
+%%[[(8 codegen java)
+               , when (ehcOptEmitJava opts) (cpOutputJava "java" modNm)
 %%]]
-          ]
+               ]
+        }
 %%]
 
 %%[(8 codegen)
@@ -639,15 +642,18 @@ cpProcessGrin modNm
 %%[(8 codegen grin)
 cpProcessBytecode :: HsName -> EHCompilePhase ()
 cpProcessBytecode modNm 
-  = cpSeq [ cpTranslateByteCode modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq [ cpTranslateByteCode modNm
 %%[[99
-          , cpCleanupFoldBytecode modNm
+               , cpCleanupFoldBytecode modNm
 %%]]
-          , cpOutputByteCodeC "c" modNm
+               , when (ehcOptEmitBytecode opts) (cpOutputByteCodeC "c" modNm)
 %%[[99
-          , cpCleanupBytecode modNm
+               , cpCleanupBytecode modNm
 %%]]
-          ]
+               ]
+       }
 
 %%]
 
