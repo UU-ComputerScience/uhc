@@ -731,6 +731,7 @@ SHELLRUN
 TARGET_TRIPLE
 EHC_EXEC_NAME
 UHC_EXEC_NAME
+EHCLIB_SHARED
 INPLACE_TOP
 INPLACE_PREFIX
 INPLACE_INSTALL_DIR
@@ -6472,6 +6473,10 @@ EHC_EXEC_NAME="ehc"
 UHC_EXEC_NAME="uhc"
 
 
+### name of subdirectory for shared ehc library artifacts
+EHCLIB_SHARED="shared"
+
+
 ### install locations
 inplaceInstallDir="install"
 INPLACE_TOP="$hardtop"
@@ -7278,6 +7283,7 @@ SHELLRUN!$SHELLRUN$ac_delim
 TARGET_TRIPLE!$TARGET_TRIPLE$ac_delim
 EHC_EXEC_NAME!$EHC_EXEC_NAME$ac_delim
 UHC_EXEC_NAME!$UHC_EXEC_NAME$ac_delim
+EHCLIB_SHARED!$EHCLIB_SHARED$ac_delim
 INPLACE_TOP!$INPLACE_TOP$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
 INPLACE_INSTALL_DIR!$INPLACE_INSTALL_DIR$ac_delim
@@ -7289,7 +7295,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 28; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 29; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

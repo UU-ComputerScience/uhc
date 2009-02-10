@@ -2,7 +2,7 @@
 %%% Configuration
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Config} export( Version(..), version, verNumeric, verDist, verInfo )
+%%[1 module {%{EH}Config}
 %%]
 
 %%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
@@ -11,14 +11,23 @@
 %%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
 %%]
 
-%%[8 export(libnamesGcc, libnamesGccPerVariant, mbSuffixExec)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Make a prefix out of a directory name
+
+%%[8 export(mkPrefix)
+mkPrefix :: String -> String
+mkPrefix d@(_:_) | last d /= '/' = d ++ "/"
+mkPrefix d                       = d
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Version
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(Version(..))
 data Version
   = Version
       { verSvnRevision      :: !String
@@ -35,7 +44,7 @@ data Version
       }
 %%]
 
-%%[1
+%%[1 export(version)
 version :: Version
 version
   = Version
@@ -53,7 +62,7 @@ version
       }
 %%]
 
-%%[1
+%%[1 export(verNumeric, verDist, verInfo)
 verNumeric :: Version -> String
 verNumeric v = verMajor v ++ "." ++ verMinor v ++ "." ++ verMinorMinor v
 
@@ -70,10 +79,10 @@ verInfo v = verProg v ++ verDist v ++ ", " ++ verSvnRevision v
 
 %%[8 export(fileprefixInplaceInstall, fileprefixInstall)
 fileprefixInplaceInstall :: String
-fileprefixInplaceInstall = "@INPLACE_PREFIX@/"
+fileprefixInplaceInstall = mkPrefix "@INPLACE_PREFIX@"
 
 fileprefixInstall :: String
-fileprefixInstall = "@prefix@/@INSTALL_LIB_SUFFIX@/"
+fileprefixInstall = mkPrefix "@prefix@/@INSTALL_LIB_SUFFIX@"
 %%]
 
 %%[8 export(selectFileprefixInstall)
@@ -111,7 +120,17 @@ prefixLib :: String
 prefixLib = "@PREFIX_LIB@"
 %%]
 
-%%[8
+The prefix for shared library artifacts, independent of target
+
+%%[99 export(libShared,prefixLibShared)
+libShared :: String
+libShared = "@EHCLIB_SHARED@"
+
+prefixLibShared :: String
+prefixLibShared = mkPrefix libShared
+%%]
+
+%%[8 export(libnamesGcc)
 libnamesGcc :: [String]
 libnamesGcc
   = [ ]
@@ -127,7 +146,7 @@ libnamesGcc
 %%]]
 %%]
 
-%%[8
+%%[8 export(libnamesGccPerVariant)
 libnamesGccPerVariant :: [String]
 libnamesGccPerVariant
   = [ prefixLib ++ "@RTS_PKG_NAME@"]
@@ -166,7 +185,7 @@ libnamesGccEhcExtraExternalLibs
 %%% File suffixes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8 export(mbSuffixExec)
 suffixExec :: String
 suffixExec = "@SUFFIX_EXEC@"
 

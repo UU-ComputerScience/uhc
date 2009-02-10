@@ -55,10 +55,8 @@ cpOutputCore suff modNm
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
                  fpC = fpathSetSuff suff fp                
-         ;  when (ehcOptEmitCore opts) 
-                 (do { cpMsg modNm VerboseALot "Emit Core"
-                     ; lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule opts cMod) 100
-                     })
+         ;  cpMsg modNm VerboseALot "Emit Core"
+         ;  lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule opts cMod) 100
          }
 %%]
 
@@ -71,10 +69,8 @@ cpOutputJava suff modNm
                  cMod   = panicJust "cpOutputJava" mbCore
                  (jBase,jPP) = cmodJavaSrc cMod
                  fpJ = fpathSetBase jBase fp                 
-         ;  when (ehcOptEmitJava opts)
-                 (do { cpMsg modNm VerboseALot "Emit Java"
-                     ; lift (putPPFile (fpathToStr (fpathSetSuff suff fpJ)) jPP 100)
-                     })
+         ;  cpMsg modNm VerboseALot "Emit Java"
+         ;  lift (putPPFile (fpathToStr (fpathSetSuff suff fpJ)) jPP 100)
          }
 %%]
 
@@ -99,12 +95,10 @@ cpOutputByteCodeC :: String -> HsName -> EHCompilePhase ()
 cpOutputByteCodeC suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-                 mbPP     = ecuMbBytecodeSem ecu
+                 bc       = panicJust "cpOutputByteCodeC" $ ecuMbBytecodeSem ecu
                  fpC      = fpathSetSuff suff fp
-         ;  when (ehcOptEmitBytecode opts && isJust mbPP)
-                 (do { cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
-                     ; lift $ putPPFile (fpathToStr fpC) (fromJust mbPP) 150
-                     })
+         ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
+         ;  lift $ putPPFile (fpathToStr fpC) bc 150
          }
 %%]
 

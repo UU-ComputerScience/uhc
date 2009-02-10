@@ -118,12 +118,12 @@ HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
 # location for libraries
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
-# location for cabal installed stuff (mainly libraries), and other inplace installs
-INS_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@/
-INSABS_PREFIX		:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@/
-INSABS_FLAG_PREFIX	:= $(INSABS_PREFIX)ins-flg-
-INSABS_LIB_PREFIX	:= $(INSABS_PREFIX)lib/
-INSABS_INC_PREFIX	:= $(INSABS_PREFIX)include/
+# location for cabal installed stuff (mainly libraries), and other build time installs
+INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@/
+INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS_PREFIX)ins-flg-
+INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
+INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
 
 # location for uhc installs, as specified by configure
 INSTALL_UHC_PREFIX		:= @prefix@/@INSTALL_LIB_SUFFIX@/
@@ -151,6 +151,9 @@ TEST_REGRESS_SRC_PREFIX				:= $(TEST_SRC_PREFIX)regress/
 TEST_TOP_PREFIX						:= ../../
 TEST_BIN_PREFIX						:= $(TEST_TOP_PREFIX)bin/
 TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build/
+
+# name of subdirectory for shared ehc library artifacts
+EHCLIB_SHARED						:= @EHCLIB_SHARED@
 
 ###########################################################################################
 # Commands
@@ -217,8 +220,8 @@ CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(call WINXX_CYGWIN_NAME1,$(GHC))
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
 
 # C compiler options, some are also extended by sub makefiles
-EHC_GCC_CC_OPTS							:= -I$(INSABS_INC_PREFIX) -I$(INSABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
-EHC_GCC_LD_OPTS							:= -L$(INSABS_LIB_PREFIX)
+EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
+EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
 RTS_GCC_CC_OPTS							:= @CC_STD_FLAG@
 RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 

@@ -121,6 +121,8 @@ handleImmQuitOption immq opts
 %%[[(8 codegen)
       ImmediateQuitOption_Targets
         -> putStrLn showSupportedTargets
+      ImmediateQuitOption_TargetDefault
+        -> putStrLn (show defaultTarget)
 %%]]
 %%[[99
       ImmediateQuitOption_NumericVersion
@@ -255,11 +257,16 @@ doCompileRun fn opts
   = do { let fp             = mkTopLevelFPath "hs" fn
              topModNm       = mkHNm (fpathBase fp)
              searchPath     = mkInitSearchPath fp
-                              ++ ehcOptSearchPath opts
+                              ++ ehcOptUsrSearchPath opts
+%%[[99
+                              ++ concat [ [d' ++ show (ehcOptTarget opts), d' ++ Cfg.libShared]
+                                        | d <- ehcOptLibSearchPath opts, let d' = Cfg.mkPrefix d
+                                        ]
+%%]]
 %%[[101
                               ++ (if ehcOptUseInplace opts then [] else [Cfg.fileprefixInstall ++ "ehclib/ehcbase"])
 %%]]
-             opts2          = opts { ehcOptSearchPath = searchPath }
+             opts2          = opts { ehcOptUsrSearchPath = searchPath }
              initialState   = mkEmptyCompileRun
                                 topModNm
                                 (EHCompileRunStateInfo opts2 (initialHSSem opts2) (initialEHSem opts2 fp)
@@ -291,7 +298,8 @@ doCompileRun fn opts
                            (cpEhcModuleCompile1 (Just HSOnlyImports) nm)
                     }
 %%]]
-       -- ; putStrLn $ show searchPath
+       ; when (ehcOptVerbosity opts >= VerboseDebug)
+              (putStrLn $ "search path: " ++ show searchPath)
 %%[[8
        ; _ <- runStateT (cpSeq [ comp (Just fp) topModNm
                                ]) initialState

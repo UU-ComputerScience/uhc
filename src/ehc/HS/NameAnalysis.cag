@@ -678,7 +678,7 @@ SEM Pattern
 %%]]
         lhs             .   idUseOccGam =   gamUnions
                                                 [ @idUseOccGam, @idUseOccGamEq
-%%[[9
+%%[[97
                                                 , @idUseOccGamCls
 %%]]
                                                 , @literal.idUseOccGam

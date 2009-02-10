@@ -1,5 +1,5 @@
 ###########################################################################################
-# ehc/uhc variant dispatch rules
+# ehc/uhc variant build dispatch rules
 ###########################################################################################
 
 # for (e.g.) 99/ehc, shorthand notation for ehc binaries
@@ -24,6 +24,15 @@ $(patsubst %,%/bare,$(EHC_VARIANTS)):
 	$(MAKE) EHC_VARIANT=$$v ehc-barebones-variant
 
 ###########################################################################################
+# ehc/uhc variant clean dispatch rules
+###########################################################################################
+
+# for (e.g.) 99/clean
+$(patsubst %,%/clean,$(EHC_VARIANTS)):
+	@v=`echo $@ | sed -e 's+\([0-9_]*\)/.*+\1+'` ; \
+	$(MAKE) EHC_VARIANT=$$v ehc-clean-variant
+
+###########################################################################################
 # rules for library
 ###########################################################################################
 
@@ -35,7 +44,7 @@ lib-eh-variant:
 # rules for ehc compiler
 ###########################################################################################
 
-ehc-variant: 
+ehc-variant:
 	$(MAKE) EHC_VARIANT_RULER_SEL="(($(EHC_VARIANT)=$(EHC_ON_RULES_VIEW_$(EHC_VARIANT)))).($(EHC_BY_RULER_GROUPS_BASE)).($(EHC_BY_RULER_RULES_$(EHC_VARIANT)))" \
 	  ehc-variant-dflt
 
@@ -57,6 +66,31 @@ ehc-haddock-variant:
 ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV)
 	mkdir -p hdoc/$(EHC_VARIANT)
 	haddock --html --ignore-all-exports --odir=hdoc/$(EHC_VARIANT) $(EHC_ALL_DPDS_NOPREPROC) $(LIB_EH_UTIL_HS_DRV)
+
+###########################################################################################
+# rules for ehc clean: executable, build library, runtime library, ...
+###########################################################################################
+
+ehc-clean-variant:
+	@if test -d $(EHC_BLD_LIBEHC_VARIANT_PREFIX) ; \
+	then \
+	  cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) ; \
+	  if test -x $(LIB_EHC_SETUP) ; \
+	  then \
+	    $(LIB_EHC_SETUP) unregister $(CABAL_OPT_INSTALL_LOC) ; \
+	    $(LIB_EHC_SETUP) clean ; \
+	  fi ; \
+	  rm -rf dist Setup.* *.cabal $(LIB_EHC_SETUP) ; \
+	fi
+	@rm -rf $(EHC_BLD_EXEC) \
+	        $(filter-out $(EHC_MK_AG_S_DEP_MK) $(EHC_MK_AG_D_DEP_MK),$(wildcard $(EHC_BLD_LIB_HS_VARIANT_PREFIX)*)) \
+	        $(wildcard $(addprefix $(EHC_BLD_VARIANT_PREFIX),*.hs *.o *.hi *.ag *.cag)) \
+	        $(EHC_BLD_BIN_VARIANT_PREFIX) \
+	        $(EHC_BLD_GEN_VARIANT_PREFIX) \
+	        $(RTS_BLD_RTS_PREFIX) \
+	        $(EHCLIB_BLD_VARIANT_PREFIX) \
+	        $(INSTALLFORBLD_EHC_LIB_PREFIX) $(LIB_EHC_INS_FLAG) \
+	        $(INSTALLFORBLD_VARIANT_PREFIX)
 
 ###########################################################################################
 # rules for barebones distribution

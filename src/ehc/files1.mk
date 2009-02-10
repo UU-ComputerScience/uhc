@@ -94,8 +94,11 @@ EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_ALL_DRV_HS_NO_MAIN)
 
 
 # main + sources + dpds, for .cag
-include $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
-include $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
+EHC_MK_AG_S_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
+EHC_MK_AG_D_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
+
+-include $(EHC_MK_AG_S_DEP_MK)
+-include $(EHC_MK_AG_D_DEP_MK)
 
 EHC_AG_DS_MAIN_SRC_CAG					:= 
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
@@ -106,7 +109,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_
 
 
 # Regenerate derived makefiles
-$(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_ODPDS_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
+$(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_ODPDS_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
 	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-s.dep --dep \
 	  --depnameprefix=EHC_ \
@@ -118,9 +121,9 @@ $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk : $(SRC_EHC_PREFIX)/files-ag-s
 	  --depbase=$(SRC_EHC_PREFIX) \
 	  --depterm="EHRulerRules>" \
 	  --depign="EHRulerRules EHRulerRules.cag" \
-	    > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
+	    > $@
 
-$(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk : $(SRC_EHC_PREFIX)/files-ag-d.dep $(SHUFFLE) $(EHC_AG_D_ODPDS_SRC_CAG) $(EHC_AG_D_MAIN_SRC_CAG)
+$(EHC_MK_AG_D_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-d.dep $(SHUFFLE) $(EHC_AG_D_ODPDS_SRC_CAG) $(EHC_AG_D_MAIN_SRC_CAG)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
 	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-d.dep --dep \
 	  --depnameprefix=EHC_ \
@@ -132,7 +135,7 @@ $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk : $(SRC_EHC_PREFIX)/files-ag-d
 	  --depbase=$(SRC_EHC_PREFIX) \
 	  --depterm="EHRulerRules>" \
 	  --depign="EHRulerRules EHRulerRules.cag" \
-	    > $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
+	    > $@
 
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
@@ -301,7 +304,7 @@ $(LIB_EHC_SETUP2): $(LIB_EHC_SETUP_HS_DRV)
 $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL_AG) $(EHC_MKF)
 	mkdir -p $(@D)
 	cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) && \
-	$(LIB_EHC_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSABS_PREFIX) $(CABAL_OPT_INSTALL_LOC) && \
+	$(LIB_EHC_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSTALLFORBLDABS_PREFIX) $(CABAL_OPT_INSTALL_LOC) && \
 	$(LIB_EHC_SETUP) build && \
 	$(LIB_EHC_SETUP) install $(CABAL_OPT_INSTALL_LOC) && \
 	echo $@ > $@
