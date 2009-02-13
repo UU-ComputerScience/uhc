@@ -390,6 +390,9 @@ COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(
 # Misc
 ###########################################################################################
 
+# strip a '/' at the end, turning a prefix into a directory
+FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
+
 # target suffix for core
 CORE_TARG_SUFFIX	:= grin2
 

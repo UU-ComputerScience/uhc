@@ -231,9 +231,11 @@ clean: cleans
 # Target: try outs and debugging of make variable definitions
 ###########################################################################################
 
+FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
+
 tst:
-	@echo $(EHC_FOR_UHC_BLD_EXEC)
-	@echo $(UHC_BLD_EXEC)
+	@echo $(INSTALLABS_EXTLIBS_BGC_LIB_PREFIX)
+	@echo $(call FUN_PREFIX2DIR,$(INSTALLABS_EXTLIBS_BGC_LIB_PREFIX))
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
