@@ -70,7 +70,7 @@ text-variant-my-doc:
 
 Additional parameters can be passed to the recursive call to make, for example:
 \begin{itemize}
-\item \verb|TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC| (default: \verb|no|), for specifying that all sources of EHC must be used by shuffle for extracting chunks. For example, the technical documentation has
+\item \verb|TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC| (default: empty), for specifying that all sources of EHC must be used by shuffle for extracting chunks. For example, the technical documentation has
 the following makefile definition:
 \begin{verbatim}
 text-variant-ehc-technical-doc:

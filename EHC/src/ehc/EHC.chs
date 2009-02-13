@@ -18,6 +18,8 @@
 %%]
 %%[1 import({%{EH}EHC.Common})
 %%]
+%%[8 import({%{EH}EHC.Environment})
+%%]
 
 %%[8 -1.fastseq
 %%]
@@ -75,20 +77,43 @@ main :: IO ()
 main
   =  do  {  args      <- getArgs
          ;  progName  <- getProgName
-         ;  let  ehcOpts        = defaultEHCOpts
+         ;  let  opts1          = defaultEHCOpts
+%%[[8
+                                    { ehcOptEnvironment   = defaultEHCEnvironment
 %%[[99
-                                    { ehcProgName      = p
+                                    , ehcProgName      = p
                                     , ehcOptUseInplace = fpathBase p == Cfg.verProg Cfg.version
+%%]]
                                     }
+%%]]
+%%[[99
                                 where p = mkFPath progName
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
-                 opts           = foldl (flip ($)) ehcOpts o
-         ;  case ehcOptImmQuit opts of
-              Just immq     -> handleImmQuitOption immq opts
-              _ | null errs -> doCompileRun (if null n then "" else head n) opts
+                 opts2          = foldl (flip ($)) opts1 o
+         ;  case ehcOptImmQuit opts2 of
+              Just immq     -> handleImmQuitOption immq opts2
+              _ | null errs ->
+%%[[1
+                               doCompileRun (if null n then "" else head n) opts2
+%%][99
+                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
+                                  ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
+                                  ; doCompileRun (if null n then "" else head n) opts3
+                                  }
+%%]]
                 | otherwise -> putStr (head errs)
          }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Default EHC Environment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+defaultEHCEnvironment :: EHCEnvironment
+defaultEHCEnvironment
+  = EHCEnvironment Cfg.ehcDefaultVariant Cfg.ehcDefaultInplaceInstallDir
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,15 +143,36 @@ handleImmQuitOption immq opts
               }
       ImmediateQuitOption_Version
         -> putStrLn (Cfg.verInfo Cfg.version)
-%%[[(8 codegen)
-      ImmediateQuitOption_Targets
+      ImmediateQuitOption_Meta_Variant
+        -> putStrLn Cfg.ehcDefaultVariant
+%%[[1
+      ImmediateQuitOption_Meta_Targets
+        -> putStrLn ""
+      ImmediateQuitOption_Meta_TargetDefault
+        -> putStrLn "no-target"
+%%][(8 codegen)
+      ImmediateQuitOption_Meta_Targets
         -> putStrLn showSupportedTargets
-      ImmediateQuitOption_TargetDefault
+      ImmediateQuitOption_Meta_TargetDefault
         -> putStrLn (show defaultTarget)
 %%]]
 %%[[99
       ImmediateQuitOption_NumericVersion
         -> putStrLn (Cfg.verNumeric Cfg.version)
+      ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
+        -> exportEHCEnvironment
+             (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+             (env {ehcenvInstallRoot = installRootDir, ehcenvVariant = variant})
+        where env = ehcOptEnvironment opts
+              (installRootDir,variant)
+                = case fmap (wordsBy (`elem` ",;:")) mvEnvOpt of
+                    Just (d:v:_) -> (d,v)
+                    Just (d:_)   -> (d,ehcenvVariant env)
+                    _            -> (ehcenvInstallRoot env,ehcenvVariant env)
+      ImmediateQuitOption_Meta_DirEnv
+        -> do { d <- ehcenvDir (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+              ; putStrLn d
+              }
 %%]]
 %%]
 
@@ -259,12 +305,16 @@ doCompileRun fn opts
              searchPath     = mkInitSearchPath fp
                               ++ ehcOptUsrSearchPath opts
 %%[[99
-                              ++ concat [ [d' ++ show (ehcOptTarget opts), d' ++ Cfg.libShared]
-                                        | d <- ehcOptLibSearchPath opts, let d' = Cfg.mkPrefix d
-                                        ]
+                              ++ [ Cfg.unPrefix $ Cfg.mkDirbasedLibVariantTargetPkgPrefix d "" (show (ehcOptTarget opts)) p
+                                 | d <- ehcOptLibSearchPath opts
+                                 , p <- ehcOptLibPackages opts
+                                 ]
+                              ++ [ Cfg.unPrefix $ Cfg.mkDirbasedTargetVariantPkgPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) (ehcenvVariant (ehcOptEnvironment opts)) (show (ehcOptTarget opts)) p
+                                 | p <- (ehcOptLibPackages opts ++ Cfg.ehcAssumedPackages)
+                                 ]
 %%]]
 %%[[101
-                              ++ (if ehcOptUseInplace opts then [] else [Cfg.fileprefixInstall ++ "ehclib/ehcbase"])
+                              -- ++ (if ehcOptUseInplace opts then [] else [Cfg.fileprefixInstall ++ "ehclib/base"])
 %%]]
              opts2          = opts { ehcOptUsrSearchPath = searchPath }
              initialState   = mkEmptyCompileRun

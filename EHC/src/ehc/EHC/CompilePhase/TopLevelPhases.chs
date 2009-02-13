@@ -197,6 +197,10 @@ cpEhcModuleCompile1 targHSState modNm
 %%[8
   = do { cr <- get
        ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[20
+       ; when (ehcOptVerbosity opts >= VerboseDebug)
+              (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
+%%]]
 %%[[8
        ; case (ecuState ecu,undefined) of
 %%][20
@@ -216,7 +220,7 @@ cpEhcModuleCompile1 targHSState modNm
                       ]
              where stnext = hsstateNext st
            (ECUSHaskell HIStart,Just HSOnlyImports)
-             -> cpSeq [ cpMsg modNm VerboseNormal ("HI of Haskell")
+             -> cpSeq [ cpMsg modNm VerboseNormal ("Imports of HI")
                       , cpEhcHaskellModulePrepare modNm
                       , cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
                       ]
@@ -238,6 +242,7 @@ cpEhcModuleCompile1 targHSState modNm
                       ]
            (ECUSHaskell st,Just HIAllSem)
              |    st == HSOnlyImports
+               || st == HIOnlyImports
 %%[[99
                || st == LHSOnlyImports
 %%]]
