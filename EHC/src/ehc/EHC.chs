@@ -165,7 +165,7 @@ handleImmQuitOption immq opts
              (env {ehcenvInstallRoot = installRootDir, ehcenvVariant = variant})
         where env = ehcOptEnvironment opts
               (installRootDir,variant)
-                = case fmap (wordsBy (`elem` ",;:")) mvEnvOpt of
+                = case fmap (wordsBy (`elem` ",;")) mvEnvOpt of
                     Just (d:v:_) -> (d,v)
                     Just (d:_)   -> (d,ehcenvVariant env)
                     _            -> (ehcenvInstallRoot env,ehcenvVariant env)
