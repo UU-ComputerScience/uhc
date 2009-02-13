@@ -107,7 +107,8 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
-			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS) $(EHCLIB_HS_MAIN_DRV_HS),)
+			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS) $(EHCLIB_HS_MAIN_DRV_HS),) \
+			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --cpp --target=$(EHC_VARIANT_TARGET) $(EHCLIB_HS_MAIN_DRV_HS) \
 	     ,)
@@ -139,7 +140,7 @@ $(patsubst %,%/ehclib,$(EHC_VARIANTS)): %/ehclib: $(call FUN_EHCLIB_ALL_LIB,%,$(
 $(patsubst %,%/ehclibs,$(EHC_VARIANTS)): %/ehclibs:
 	$(MAKE) EHC_VARIANT=$(@D) ehclibs-variant-dflt
 
-$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 	mkdir -p $(@D)
 	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
 	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \
