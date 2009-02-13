@@ -1,24 +1,27 @@
+###########################################################################################
 # variant, to be configured on top level
+###########################################################################################
+
 # see variant.mk
 
+###########################################################################################
 # location of ehc src:
+###########################################################################################
+
 # see shared.mk
 
 # this file + other mk files
-EHC_MKF									:= $(patsubst %,$(SRC_EHC_PREFIX)%.mk,files1 files2 shared)
+EHC_MKF									:= $(patsubst %,$(SRC_EHC_PREFIX)%.mk,files1 files2 shared variant)
 
 # end products, binary, executable, etc
 #EHC_EXEC_NAME							:= ehc
 EHC_HADDOCK_NAME						:= hdoc
-EHC_BLD_EXEC							:= $(EHC_BIN_VARIANT_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
-EHC_ALL_PUB_EXECS						:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_PUB_VARIANTS))
-EHC_ALL_EXECS							:= $(patsubst %,$(EHC_BIN_PREFIX)%/$(EHC_EXEC_NAME)$(EXEC_SUFFIX),$(EHC_VARIANTS))
 EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(EHC_VARIANTS))
 
 #UHC_EXEC_NAME							:= uhc
-UHC_BLD_EXEC							:= $(EHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
+#UHC_BLD_EXEC							:= $(EHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
 UHC_INSTALL_EXEC						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
-EHC_FOR_UHC_BLD_EXEC					:= $(EHC_BIN_PREFIX)$(EHC_UHC_INSTALL_VARIANT)/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
+EHC_FOR_UHC_BLD_EXEC					:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
 
 # sources + dpds, for .rul
 EHC_RULES_1_SRC_RUL						:= $(SRC_EHC_PREFIX)rules.rul
@@ -26,7 +29,7 @@ EHC_RULES_2_SRC_RUL						:= $(SRC_EHC_PREFIX)rules2.rul
 EHC_RULES_3_SRC_RL2						:= $(SRC_EHC_RULES_PREFIX)EhcRulesOrig.rul
 
 EHC_RULER_RULES							:= EHRulerRules
-EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_PREFIX)$(EHC_RULER_RULES).cag
+EHC_RULES_3_DRV_CAG						:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_RULER_RULES).cag
 EHC_RULES_3_DRV_AG						:= $(EHC_RULES_3_DRV_CAG:.cag=.ag)
 
 EHC_RULES_4_MAIN_SRC_RUL				:= $(patsubst %,$(SRC_EHC_RULES_PREFIX)%.rul,EhcRulesExpr2 EhcRulesTyMatch EhcRulesTyElimAlt)
@@ -39,20 +42,15 @@ EHC_RULES_ALL_SRC						:= $(EHC_RULES_1_SRC_RUL) $(EHC_RULES_2_SRC_RUL) $(EHC_RU
 
 # library
 # derived stuff
-LIB_EHC_CABAL_DRV						:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)lib-$(GHC_PKG_NAME_PREFIX)$(LIB_EHC_BASE)$(EHC_VARIANT)$(EHC_ASPECTS_SUFFIX).cabal
+LIB_EHC_CABAL_DRV						:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)lib-$(GHC_PKG_NAME_PREFIX)$(LIB_EHC_BASE)$(EHC_VARIANT_ASPECTS).cabal
 LIB_EHC_SETUP_HS_DRV					:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)Setup.hs
 LIB_EHC_SETUP2							:= $(EHC_BLD_LIBEHC_VARIANT_PREFIX)setup$(EXEC_SUFFIX)
 LIB_EHC_SETUP							:= ./setup$(EXEC_SUFFIX)
 
-# special files
-# file with signature of code
-EHC_HS_SIG_MAIN							:= SourceCodeSig
-EHC_HS_SIG_DRV_HS						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_SIG_MAIN).hs
-
 # main + sources + dpds, for .chs
 EHC_MAIN								:= EHC
 EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
-EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
+EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp Deriving Module Config BuiltinPrims \
@@ -66,7 +64,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Ty/FitsInCommon Ty/FitsInCommon2 Ty/FitsIn Ty/Utils \
 													Ty/Trf/BetaReduce \
 													Core/Coercion Core/Utils \
-													EHC/Common EHC/CompileUnit EHC/CompileGroup EHC/CompileRun EHC/GrinCompilerDriver EHC/InitialSetup \
+													EHC/Common EHC/Environment EHC/CompileUnit EHC/CompileGroup EHC/CompileRun EHC/GrinCompilerDriver EHC/InitialSetup \
 													EHC/CompilePhase/Parsers EHC/CompilePhase/Output EHC/CompilePhase/Translations EHC/CompilePhase/TransformCore \
 													EHC/CompilePhase/FlowBetweenPhase EHC/CompilePhase/CompileC EHC/CompilePhase/TransformGrin EHC/CompilePhase/Semantics \
 													EHC/CompilePhase/CompileLLVM EHC/CompilePhase/Cleanup EHC/CompilePhase/Module EHC/CompilePhase/TopLevelPhases \
@@ -97,8 +95,11 @@ EHC_HS_ALL_DRV_HS						:= $(EHC_HS_MAIN_DRV_HS) $(EHC_HS_ALL_DRV_HS_NO_MAIN)
 EHC_MK_AG_S_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
 EHC_MK_AG_D_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
 
+# conditional turned off, because text building depends on default rules:
+#ifneq ($(EHC_VARIANT),X)
 -include $(EHC_MK_AG_S_DEP_MK)
 -include $(EHC_MK_AG_D_DEP_MK)
+#endif
 
 EHC_AG_DS_MAIN_SRC_CAG					:= 
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)
@@ -108,7 +109,29 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_
 										: $(EHC_RULES_3_DRV_AG)
 
 
-# Regenerate derived makefiles
+# all src
+EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
+EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+
+# distribution
+EHC_DIST_FILES							:= $(EHC_ALL_SRC)
+
+###########################################################################################
+# generated files
+###########################################################################################
+
+# file with signature of code
+EHC_HS_SIG_MAIN							:= SourceCodeSig
+EHC_HS_SIG_DRV_HS						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_SIG_MAIN).hs
+
+# file with info about installation configuration
+EHC_HS_CFGINSTALL_MAIN					:= ConfigInstall
+EHC_HS_CFGINSTALL_DRV_HS				:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_CFGINSTALL_MAIN).hs
+
+###########################################################################################
+# (re)generate derived makefiles
+###########################################################################################
+
 $(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_ODPDS_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
 	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-s.dep --dep \
@@ -137,14 +160,10 @@ $(EHC_MK_AG_D_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-d.dep $(SHUFFLE) $(EHC_AG_D_O
 	  --depign="EHRulerRules EHRulerRules.cag" \
 	    > $@
 
-# all src
-EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
-EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
-
-# distribution
-EHC_DIST_FILES							:= $(EHC_ALL_SRC)
-
+###########################################################################################
 # configuration of tools dependend on variant
+###########################################################################################
+
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_99		:= $(UUAGC_OPTS_WHEN_UHC_AST_DATA)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_99)
 EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_101	:= $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_100)
@@ -235,7 +254,10 @@ EHC_BY_RULER_RULES_101					:= $(EHC_BY_RULER_RULES_100)
 EHC_BY_RULER_RULES_102					:= $(EHC_BY_RULER_RULES_100)
 EHC_BY_RULER_RULES_103					:= $(EHC_BY_RULER_RULES_99)
 
+###########################################################################################
 # derived
+###########################################################################################
+
 EHC_AG_D_MAIN_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_D_MAIN_SRC_CAG))
 EHC_AG_S_MAIN_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_S_MAIN_SRC_CAG))
 EHC_AG_DS_MAIN_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_DS_MAIN_SRC_CAG))
@@ -249,26 +271,33 @@ EHC_AG_ALL_MAIN_DRV_HS					:= $(EHC_AG_D_MAIN_DRV_HS) $(EHC_AG_S_MAIN_DRV_HS) $(
 EHC_AG_ALL_DPDS_DRV_AG					:= $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag,$(EHC_AG_ALL_DPDS_SRC_CAG))
 
 # all files participating in .hs library construction, not generated from AG
-EHC_ALL_LIB_FROMHS_HS					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_SIG_DRV_HS)
+EHC_ALL_LIB_FROMHS_HS					:= $(EHC_HS_ALL_DRV_HS_NO_MAIN) $(EHC_HS_SIG_DRV_HS) $(EHC_HS_CFGINSTALL_DRV_HS)
 # all files participating in .hs library construction, generated from AG
 EHC_ALL_LIB_FROMAG_HS					:= $(EHC_AG_ALL_MAIN_DRV_HS)
 
 # lib installed ag
 INS_EHC_LIB_ALL_AG_NAMES				:= HS/AbsSyn EH/AbsSyn Ty/AbsSyn GrinCode/AbsSyn GrinByteCode/AbsSyn LLVM/AbsSyn Silly/AbsSyn
-INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
-INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
+INS_EHC_LIB_ALL_AG						:= $(patsubst %,$(INSTALLFORBLD_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
+INSABS_EHC_LIB_ALL_AG					:= $(patsubst %,$(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%.ag,$(INS_EHC_LIB_ALL_AG_NAMES))
 
 # all dependents for a variant to kick of building
 EHC_ALL_DPDS_NO_MAIN					:= $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_UTIL_DRV_C)
-EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_SIG_DRV_HS)
+EHC_ALL_DPDS							:= $(EHC_HS_ALL_DRV_HS) $(EHC_ALL_LIB_FROMAG_HS) $(EHC_HS_SIG_DRV_HS) $(EHC_HS_CFGINSTALL_DRV_HS)
 
 EHC_ALL_DPDS_NOPREPROC					:= $(subst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)ConfigDefines.hs, ,$(EHC_ALL_DPDS))
 
 
+###########################################################################################
 # variant dispatch rules
+###########################################################################################
+
 $(patsubst %,echo-gen-by-ruler-%,$(EHC_VARIANTS)):
 	@v=`echo $@ | sed -e 's/.*ruler-\([0-9_]*\)/\1/'` ; \
 	$(MAKE) EHC_VARIANT=$$v echo-gen-by-ruler
+
+###########################################################################################
+# rules for top level stuff: library, etc
+###########################################################################################
 
 # rules for meta info: which rules are gen by ruler
 echo-gen-by-ruler:
@@ -287,7 +316,7 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 		, $(EH_VERSION) \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
-		, Part of EH$(EHC_VARIANT)$(EHC_ASPECTS_SUFFIX) compiler packaged as library \
+		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\
 			$(shell echo $(EHC_ALL_LIB_FROMHS_HS) $(EHC_ALL_LIB_FROMAG_HS) \
 				 | sed -e 's/\([^ ]*\)\.hs\s*/ls \1\*\.hs ;/g' | sh | sed -e 's/\s+/ /g' | sort | uniq | xargs $(SHELL_FILTER_NONEMP_FILES) ))) \
@@ -309,9 +338,13 @@ $(LIB_EHC_INS_FLAG): $(LIB_EHC_CABAL_DRV) $(LIB_EHC_SETUP2) $(INSABS_EHC_LIB_ALL
 	$(LIB_EHC_SETUP) install $(CABAL_OPT_INSTALL_LOC) && \
 	echo $@ > $@
 
-$(INSABS_EHC_LIB_ALL_AG): $(INSABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
+$(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
+
+###########################################################################################
+# rules for internal stuff: building derived sources, etc
+###########################################################################################
 
 # rules for ehc library sources+derived
 $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
@@ -319,26 +352,21 @@ $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PR
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
-$(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_PREFIX)%.ag: $(EHC_BLD_VARIANT_PREFIX)%.cag $(SHUFFLE)
+$(EHC_RULES_3_DRV_AG): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.ag: $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.cag $(SHUFFLE)
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
 
 $(EHC_AG_D_MAIN_DRV_HS) $(LIB_EHC_AG_D_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -dr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_ASPECTS_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
 
 $(EHC_AG_S_MAIN_DRV_HS) $(LIB_EHC_AG_S_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_SEM) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_SEM) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_ASPECTS_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	touch $@
 
 $(EHC_AG_DS_MAIN_DRV_HS) $(LIB_EHC_AG_DS_MAIN_DRV_HS): %.hs: %.ag
-	$(AGC) -dcfspr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_SEM) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_$(EHC_VARIANT)) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
+	$(AGC) -dcfspr $(UUAGC_OPTS_WHEN_EHC) $(UUAGC_OPTS_WHEN_EHC_AST_SEM) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_SEM_$(EHC_VARIANT)) $(UUAGC_OPTS_WHEN_EHC_AST_DATA) $(EHC_UUAGC_OPTS_WHEN_UHC_AST_DATA_$(EHC_VARIANT)) -P$(EHC_BLD_VARIANT_ASPECTS_PREFIX) -P$(EHC_BLD_LIB_HS_VARIANT_PREFIX) $<
 
-$(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
-	@(echo "module $(LIB_EHC_PKG_NAMEBASE).$(EHC_HS_SIG_MAIN) where" ; \
-	  echo "sig = \"`cat $^ | md5`\"" ; \
-	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \
-	) > $@
-
-$(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) $(LIB_EHC_INS_FLAG)
+$(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) $(LIB_EHC_INS_FLAG)
 	mkdir -p $(@D)
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
@@ -361,4 +389,35 @@ $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX
 	mkdir -p $(@D)
 	$(SHUFFLE_HS_PRE) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
+
+# signature of source code
+$(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+	@(echo "module $(LIB_EHC_PKG_NAMEBASE).$(EHC_HS_SIG_MAIN) where" ; \
+	  echo "sig = \"`cat $^ | md5`\"" ; \
+	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \
+	) > $@
+
+# installation configuration
+$(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
+	@(echo "module $(LIB_EHC_QUAL_PREFIX)$(EHC_HS_CFGINSTALL_MAIN) where" ; \
+	  echo "import Data.List" ; \
+	  echo "" ; \
+	  echo "ehcDefaultVariant = \"$(EHC_VARIANT_ASPECTS)\"" ; \
+	  echo "" ; \
+	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
+	  echo "" ; \
+	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
+	  echo "" ; \
+	  echo "data WhatInstallFile = LIB | LIB_SHARED | INCLUDE | INCLUDE_SHARED" ; \
+	  echo "" ; \
+	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "" ; \
+	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "" ; \
+	  echo "mkDirbasedInstallPrefix dir what variant target = case what of" ; \
+	  echo "  LIB            -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  INCLUDE        -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  LIB_SHARED     -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INCLUDE_SHARED -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	) > $@
 

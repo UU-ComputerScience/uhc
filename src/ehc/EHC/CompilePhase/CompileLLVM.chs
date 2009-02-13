@@ -17,6 +17,8 @@ LLVM compilation
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[8 import({%{EH}EHC.Environment})
+%%]
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
 
@@ -32,15 +34,12 @@ cpCompileWithLLVM modNm
               fpLL          = fpathSetSuff "ll" fp
               fpExec        = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) 
                                     Cfg.mbSuffixExec
+              variant       = ehcenvVariant (ehcOptEnvironment opts)
               libs          = map (\lib -> "-l " ++ lib) $
-                              [ Cfg.selectFileprefixInstall opts 
-                                ++ "%%@{%{VARIANT}%%}/lib/prim.o"
-                              , Cfg.selectFileprefixInstall opts 
-                                ++ "%%@{%{VARIANT}%%}/lib/llvm-gc.o"
-                              , Cfg.selectFileprefixInstall opts 
-                                ++ "%%@{%{VARIANT}%%}/lib/timing.o"
-                              , Cfg.selectFileprefixInstall opts
-                                ++ "lib/libgc.a"
+                              [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "prim.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "llvm-gc.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "timing.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]

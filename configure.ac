@@ -572,9 +572,11 @@ AC_SUBST(EHCLIB_SHARED, "shared")
 
 ### install locations
 inplaceInstallDir="install"
+inplaceInstallForBldDir="install-for-build"
 AC_SUBST(INPLACE_TOP, "$hardtop")
 AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
 AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
+AC_SUBST(INPLACE_INSTALLFORBLD_DIR, "$inplaceInstallForBldDir")
 AC_SUBST(INSTALL_LIB_SUFFIX, "lib/uhc")
 
 ### package names assumed by compiler driver

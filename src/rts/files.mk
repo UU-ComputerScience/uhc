@@ -1,22 +1,46 @@
-# location of library src
+###########################################################################################
+# location of these srcs
+###########################################################################################
+
 SRC_RTS_PREFIX				:= $(SRC_PREFIX)rts/
 
-# build location
-RTS_BLD_RTS_PREFIX			:= $(EHC_BLD_VARIANT_PREFIX)rts/
+###########################################################################################
+# this file
+###########################################################################################
 
-# this file + other mk files
 RTS_MKF						:= $(patsubst %,$(SRC_RTS_PREFIX)%.mk,files)
 
+###########################################################################################
+# build location
+###########################################################################################
+
+RTS_BLD_RTS_PREFIX			:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)rts/
+
+###########################################################################################
+# install location, config
+###########################################################################################
+
 # lib/cabal config
-#RTS_PKG_NAME				:= EH-RTS # via mk/config.mk.in
-RTS_INS_FLAG				:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(RTS_PKG_NAME)
+#RTS_PKG_NAME						:= EH-RTS # via mk/config.mk.in
+RTS_INSTALLFORBLD_FLAG				:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(RTS_PKG_NAME)
+
+# install location, global only, to be obsolete
+INSTALLFORBLDABS_RTS_LIB_PREFIX		:= $(INSTALLFORBLDABS_VARIANT_ASPECTS_PREFIX)lib/
+INSTALLFORBLDABS_RTS_INC_PREFIX		:= $(INSTALLFORBLDABS_VARIANT_ASPECTS_PREFIX)include/
 
 # install location
-INSABS_RTS_LIB_PREFIX		:= $(INSTALLFORBLDABS_VARIANT_PREFIX)lib/
-INSABS_RTS_INC_PREFIX		:= $(INSTALLFORBLDABS_VARIANT_PREFIX)include/
+INSTALLABS_RTS_LIB_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$(EHC_VARIANT_ASPECTS),$(EHC_VARIANT_TARGET))
+INSTALLABS_RTS_INC_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$(EHC_VARIANT_ASPECTS),$(EHC_VARIANT_TARGET))
 
-# inplace install
-INSABS_LIB_RTS				:= $(INSABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
+# inplace install, global only, to be obsolete
+INSTALLFORBLDABS_LIB_RTS			:= $(INSTALLFORBLDABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
+
+# install
+INSTALL_LIB_RTS						:= $(INSTALLABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
+
+###########################################################################################
+# names of sources + deriveds
+###########################################################################################
 
 # main + sources + dpds, for .c/.h
 RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
@@ -68,16 +92,44 @@ RTS_C_RTS_DRV_O				:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(RTS_BLD_RTS_PREFIX)%
 RTS_C_RTS_DRV_O_OPTIM_O2	:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(RTS_BLD_RTS_PREFIX)%.o,$(RTS_C_RTS_DRV_C_OPTIM_O2))
 RTS_C_RTS_DRV_O_OTHER		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(RTS_BLD_RTS_PREFIX)%.o,$(RTS_C_RTS_DRV_C_OTHER))
 RTS_O_RTS_ALL_DRV_O			:= $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER)
-RTS_O_RTS_INS_O				:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.o,$(INSABS_RTS_LIB_PREFIX)%.o,$(RTS_O_RTS_ALL_DRV_O))
-RTS_H_RTS_INS_H				:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.h,$(INSABS_RTS_INC_PREFIX)%.h,$(RTS_H_RTS_ALL_DRV_H))
-MAIN_C_MAIN_INS_C			:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(INSABS_RTS_INC_PREFIX)%.c,$(MAIN_C_MAIN_ALL_DRV_C))
 
 RTS_ALL_SRC					:= $(RTS_H_RTS_SRC_CH) $(RTS_C_RTS_SRC_CC) $(RTS_C_RTS_SRC_CC_OPTIM_O2) $(MAIN_C_MAIN_SRC_CC)
 
-# target
-rts: $(INSABS_LIB_RTS)
+# for installation
+RTS_O_RTS_INSFORBLD_O		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.o,$(INSTALLFORBLDABS_RTS_LIB_PREFIX)%.o,$(RTS_O_RTS_ALL_DRV_O))
+RTS_H_RTS_INSFORBLD_H		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.h,$(INSTALLFORBLDABS_RTS_INC_PREFIX)%.h,$(RTS_H_RTS_ALL_DRV_H))
+MAIN_C_MAIN_INSFORBLD_C		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(INSTALLFORBLDABS_RTS_INC_PREFIX)%.c,$(MAIN_C_MAIN_ALL_DRV_C))
 
-# build rules
+RTS_O_RTS_INSTALL_O			:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.o,$(INSTALLABS_RTS_LIB_PREFIX)%.o,$(RTS_O_RTS_ALL_DRV_O))
+RTS_H_RTS_INSTALL_H			:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.h,$(INSTALLABS_RTS_INC_PREFIX)%.h,$(RTS_H_RTS_ALL_DRV_H))
+MAIN_C_MAIN_INSTALL_C		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(INSTALLABS_RTS_INC_PREFIX)%.c,$(MAIN_C_MAIN_ALL_DRV_C))
+
+###########################################################################################
+# build targets, only used for independent building, to become obsolete
+###########################################################################################
+
+rts: $(INSTALLFORBLDABS_LIB_RTS)
+
+###########################################################################################
+# top level build
+###########################################################################################
+
+# library, global for build, to be obsolete
+$(INSTALLFORBLDABS_LIB_RTS): $(EHC_RTS_INSTALLFORBLD_DPDS_EXTLIBS) $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER) $(RTS_H_RTS_INSFORBLD_H) $(RTS_O_RTS_INSFORBLD_O) $(MAIN_C_MAIN_INSFORBLD_C) $(RTS_MKF)
+	mkdir -p $(@D)
+	$(call LIB_MK_STATIC,$@,$(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER))
+	touch $@
+
+# library install
+$(INSTALL_LIB_RTS): $(EHC_RTS_INSTALL_DPDS_EXTLIBS) $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER) $(RTS_H_RTS_INSTALL_H) $(RTS_O_RTS_INSTALL_O) $(MAIN_C_MAIN_INSTALL_C) $(RTS_MKF)
+	mkdir -p $(@D)
+	$(call LIB_MK_STATIC,$@,$(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER))
+	touch $@
+
+###########################################################################################
+# build rules for subparts
+###########################################################################################
+
 $(RTS_C_RTS_GBCCALL_DRV_C): $(GEN_RTSGBCCALL_BLD_EXEC) $(RTS_MKF)
 	mkdir -p $(@D)
 	$(GEN_RTSGBCCALL_BLD_EXEC) c 3 > $@
@@ -102,31 +154,39 @@ $(RTS_C_RTS_DRV_C) $(RTS_C_RTS_DRV_C_OPTIM_O2): $(RTS_BLD_RTS_PREFIX)%.c: $(SRC_
 	touch $@
 
 $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OTHER): $(RTS_BLD_RTS_PREFIX)%.o: $(RTS_BLD_RTS_PREFIX)%.c $(RTS_H_RTS_ALL_DRV_H)
-	$(GCC) $(RTS_GCC_CC_OPTS_OPTIM) $(EHC_GCC_CC_OPTS) -o $@ -c $<
+	$(GCC) $(RTS_GCC_CC_OPTS_OPTIM) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) -o $@ -c $<
 
 $(RTS_C_RTS_DRV_O_OPTIM_O2): $(RTS_BLD_RTS_PREFIX)%.o: $(RTS_BLD_RTS_PREFIX)%.c $(RTS_H_RTS_ALL_DRV_H)
-	$(GCC) $(EHC_GCC_CC_OPTS) $(RTS_GCC_CC_OPTS) -O2 -o $@ -c $<
-
-$(INSABS_LIB_RTS): $(EHC_RTS_DPDS_EXTLIBS) $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER) $(RTS_H_RTS_INS_H) $(RTS_O_RTS_INS_O) $(MAIN_C_MAIN_INS_C) $(RTS_MKF)
-	mkdir -p $(@D)
-	$(call LIB_MK_STATIC,$@,$(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER))
-	touch $@
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS) -O2 -o $@ -c $<
 
 $(RTS_H_RTS_PRIM_DRV_H): %.h: %.c $(RTS_MKF)
 	( echo "/* Generated from $< */" ; \
 	  sed -n -e 's/^PRIM \(.*\)$$/extern \1 ;/p' < $< ; \
 	) > $@
 
-# inplace install rules
-$(RTS_H_RTS_INS_H): $(INSABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+# inplace install rules, global for build, to be obsolete
+$(RTS_H_RTS_INSFORBLD_H): $(INSTALLFORBLDABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
 	mkdir -p $(@D)
 	install $< $@
 
-$(RTS_O_RTS_INS_O): $(INSABS_RTS_LIB_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+$(RTS_O_RTS_INSFORBLD_O): $(INSTALLFORBLDABS_RTS_LIB_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
 	mkdir -p $(@D)
 	install $< $@
 
-$(MAIN_C_MAIN_INS_C): $(INSABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+$(MAIN_C_MAIN_INSFORBLD_C): $(INSTALLFORBLDABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+	mkdir -p $(@D)
+	install $< $@
+
+# install rules
+$(RTS_H_RTS_INSTALL_H): $(INSTALLABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+	mkdir -p $(@D)
+	install $< $@
+
+$(RTS_O_RTS_INSTALL_O): $(INSTALLABS_RTS_LIB_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
+	mkdir -p $(@D)
+	install $< $@
+
+$(MAIN_C_MAIN_INSTALL_C): $(INSTALLABS_RTS_INC_PREFIX)%: $(RTS_BLD_RTS_PREFIX)%
 	mkdir -p $(@D)
 	install $< $@
 

@@ -5,7 +5,7 @@
 # location of lib src
 EHCLIB_EHCLIB							:= ehclib
 EHCLIB_EHCLIB_PREFIX					:= $(EHCLIB_EHCLIB)/
-EHCLIB_EHCBASE							:= ehcbase
+EHCLIB_EHCBASE							:= base
 EHCLIB_EHCBASE_PREFIX					:= $(EHCLIB_EHCBASE)/
 EHCLIB_EHCLIB_EHCBASE					:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE)
 EHCLIB_EHCLIB_EHCBASE_PREFIX			:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
@@ -29,23 +29,22 @@ EHCLIB_GHCSYNC_FROZEN_NAME_ARCH			:= $(EHCLIB_GHCSYNC_FROZEN_NAME_BASE).tgz
 #EHCLIB_GHCSYNC_FROZEN					:= $(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH)
 EHCLIB_GHCSYNC_FROZEN					:= $(call WINXX_CYGWIN_NAME2,$(EHCLIBABS_BASE_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH))
 
-# code generation targets, leading to target dependend locations
-#EHCLIB_SHARED							:= shared
-EHCLIB_TARGET							:= $(shell if test -x $(EHC_BLD_EXEC); then $(EHC_BLD_EXEC) --target-default; else echo ItrpGrinC; fi)
-EHCLIB_TARGETS							:= $(shell if test -x $(EHC_BLD_EXEC); then $(EHC_BLD_EXEC) --targets; else echo ; fi)
-
 # build locations
-EHCLIB_BLD_VARIANT_PREFIX				:= $(EHC_BLD_VARIANT_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
-EHCLIB_BASE_BLD_VARIANT_PREFIX			:= $(EHC_BLD_VARIANT_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
+EHCLIB_BLD_VARIANT_ASPECTS_PREFIX		:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
+EHCLIB_BASE_BLD_VARIANT_ASPECTS_PREFIX	:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
 EHCLIB_BLD_SYNC_PREFIX					:= $(BLD_PREFIX)$(EHCLIB_GHCSYNC_PREFIX)
 EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)frozen/
+
+# install locations
+EHCLIB_INSTALL_VARIANT_TARGET_PREFIX		:= $(INSTALL_VARIANT_LIB_TARGET_PREFIX)
+EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
 
 ###########################################################################################
 # which library files to get from which GHC packages
 ###########################################################################################
 
 # all packages which are used
-EHCLIB_SYNC_ALL_PKG						:= base
+EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 #EHCLIB_SYNC_ALL_PKG						:= base containers
 # for each package a list of modules
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List)
@@ -63,22 +62,27 @@ EHCLIB_MKF								:= $(EHCLIB_SRC_PREFIX)files.mk
 # end products
 # NOTE: library is just a bunch of compiled .hs files, triggered by compile of a Main
 EHCLIB_MAIN								:= CompileAll
-EHCLIB_ALL_LIBS							:= $(patsubst %,$(BLD_PREFIX)%/$(EHCLIB_EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX),$(EHC_PREL_VARIANTS))
+#EHCLIB_ALL_LIBS							:= $(patsubst %,$(INSTALL_VARIANT_LIB_TARGET_PREFIX)%/$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX),$(EHC_PREL_VARIANTS))
+FUN_EHCLIB_ALL_LIB						= $(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,$(1),$(2))$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
+FUN_EHCLIB_ALL_LIB2						= $(patsubst %,$(call FUN_EHCLIB_ALL_LIB,$(1),%),$(EHC_VARIANT_TARGETS))
+#FUN_EHCLIB_ALL_LIB2					= $(foreach target,$(EHC_VARIANT_TARGETS),$(call FUN_EHCLIB_ALL_LIB,$(1),$(target)))
+EHCLIB_ALL_LIBS							= $(patsubst %,$(call FUN_EHCLIB_ALL_LIB,%,$(EHC_VARIANT_TARGET)),$(EHC_VARIANTS))
+EHCLIB_ALL_LIBS2						= $(foreach variant,$(EHC_VARIANTS),$(call FUN_EHCLIB_ALL_LIB2,$(variant)))
 
 # top level
-EHCLIB_HS_MAIN_DRV_HS					:= $(EHCLIB_BASE_BLD_VARIANT_PREFIX)$(EHCLIB_MAIN).hs
-EHCLIB_TRIGGER_EXEC						:= $(EHCLIB_BASE_BLD_VARIANT_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
+EHCLIB_HS_MAIN_DRV_HS					:= $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX)$(EHCLIB_MAIN).hs
+EHCLIB_TRIGGER_EXEC						:= $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
 
 # shuffled
 EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.chs)
-EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
+EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
 # as haskell, as is in svn repo
 EHCLIB_HS_ALL_SRC_HS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.hs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.hs)
-EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_BLD_VARIANT_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
+EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
 
 # as haskell, from frozen sync
-EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BASE_BLD_VARIANT_PREFIX),$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
+EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX),$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS)
@@ -101,17 +105,49 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 # ehclib targets
 ###########################################################################################
 
-ehclib-variant-dflt: $(EHCLIB_ALL_DRV_HS) $(EHCLIB_HS_MAIN_DRV_HS)
-	$(EHC_BLD_EXEC) --cpp $(EHCLIB_HS_MAIN_DRV_HS)
+ehclib-variant-dflt: \
+			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
+			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS) $(EHCLIB_HS_MAIN_DRV_HS),)
+	$(if $(EHC_CFG_USE_PRELUDE) \
+	     ,$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --cpp --target=$(EHC_VARIANT_TARGET) $(EHCLIB_HS_MAIN_DRV_HS) \
+	     ,)
+
+###########################################################################################
+# make all ehclibs target
+###########################################################################################
+
+ehclibs-variant-dflt: $(patsubst %,$(call FUN_EHCLIB_ALL_LIB,$(EHC_VARIANT),%),$(EHC_VARIANT_TARGETS))
+
+###########################################################################################
+# code generation target specific make targets, for each $(EHC_TARGETS)
+###########################################################################################
+
+ehclib-codegentargetspecific-bc: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
+
+ehclib-codegentargetspecific-C: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
+
+ehclib-codegentargetspecific-core:
 
 ###########################################################################################
 # ehclib dispatch
 ###########################################################################################
 
-$(patsubst $(BLD_PREFIX)%/$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX),%,$(EHCLIB_ALL_LIBS)): %: $(BLD_PREFIX)%/$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
+# for (e.g.) 99/ehclib
+$(patsubst %,%/ehclib,$(EHC_VARIANTS)): %/ehclib: $(call FUN_EHCLIB_ALL_LIB,%,$(EHC_VARIANT_TARGET))
 
-$(EHCLIB_ALL_LIBS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
-	$(MAKE) EHC_VARIANT=`echo $(*D) | sed -n -e 's+$(BLD_PREFIX)\([0-9]*\)/$(EHCLIB_EHCLIB_EHCBASE)+\1+p'` ehclib-variant-dflt
+# for (e.g.) 99/ehclibs
+$(patsubst %,%/ehclibs,$(EHC_VARIANTS)): %/ehclibs:
+	$(MAKE) EHC_VARIANT=$(@D) ehclibs-variant-dflt
+
+$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+	mkdir -p $(@D)
+	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
+	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \
+	        ehclib-variant-dflt
+	touch $@
+
+#$(EHCLIB_ALL_LIBS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
+#	$(MAKE) EHC_VARIANT=`echo $(*D) | sed -n -e 's+$(BLD_PREFIX)\([0-9]*\)/$(EHCLIB_EHCLIB_EHCBASE)+\1+p'` ehclib-variant-dflt
 
 ###########################################################################################
 # rules for intermediate files
@@ -120,7 +156,7 @@ $(EHCLIB_ALL_LIBS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 # top level 'compile all' module imports all other modules
 $(EHCLIB_HS_MAIN_DRV_HS): $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 	@(echo "module $(EHCLIB_MAIN) where" ; \
-	  for imp in $(patsubst $(EHCLIB_BASE_BLD_VARIANT_PREFIX)%.hs,%,$(EHCLIB_ALL_DRV_HS)) ; \
+	  for imp in $(patsubst $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX)%.hs,%,$(EHCLIB_ALL_DRV_HS)) ; \
 	  do \
 	    echo "import $${imp}" | sed -e "s+/+.+g" ; \
 	  done ; \
@@ -128,19 +164,19 @@ $(EHCLIB_HS_MAIN_DRV_HS): $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
 	) > $@
 
 # plainly copy .hs files
-$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hs
+$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hs
 	mkdir -p $(@D)
 	cp $< $@
 	touch $@
 
 # extract .hs files from frozen archive
 $(EHCLIB_FROZEN_ALL_DRV_HS): $(EHCLIB_GHCSYNC_FROZEN)
-	mkdir -p $(EHCLIB_BASE_BLD_VARIANT_PREFIX)
-	cd $(EHCLIB_BASE_BLD_VARIANT_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BASE_BLD_VARIANT_PREFIX)++'`
+	mkdir -p $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX)
+	cd $(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX)++'`
 	touch $@
 
 # generate .hs from .chs via shuffle
-$(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.chs
+$(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.chs
 	mkdir -p $(@D)
 	$(SHUFFLE_PLAIN) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
@@ -186,3 +222,7 @@ ehclib-ghc-sync:
 	$(MAKE) ehclib-ghc-sync-download
 	$(MAKE) ehclib-ghc-sync-extract
 	$(MAKE) ehclib-ghc-sync-frozen
+
+
+
+

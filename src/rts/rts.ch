@@ -116,7 +116,7 @@ typedef GrWord* Pointer;
 
 %%[8
 #if USE_BOEHM_GC
-#include "gc.h"
+#include "gc/gc.h"
 #elif USE_EHC_MM
 #else
 

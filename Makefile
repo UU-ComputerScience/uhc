@@ -47,7 +47,7 @@ $(RULER1): $(RULER1_DIR)/$(RULER1_AG) $(LIB_EH_UTIL_INS_FLAG)
 
 include src/files.mk
 include $(SRC_PREFIX)ehc/shared.mk
-include mk/shared.mk
+include $(MK_PREFIX)shared.mk
 
 include $(SRC_PREFIX)libutil/files.mk
 include $(SRC_PREFIX)top/files.mk
@@ -82,7 +82,7 @@ include $(SRC_PREFIX)agprimer/files.mk
 include ehclib/files.mk
 include test/files.mk
 
--include mk/dist.mk
+-include $(MK_PREFIX)dist.mk
 
 ###########################################################################################
 # all versions (as used by testing)
@@ -168,21 +168,58 @@ heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 
 ###########################################################################################
-# Target: installation (temporary until a proper install structure is in place)
+# Target: installation
 ###########################################################################################
 
 install-test:
-	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
+	#$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
 
-install:
-	rm -f $(EHC_FOR_UHC_BLD_EXEC)
-	$(MAKE) INSABS_RTS_LIB_PREFIX=$(INSTALL_UHC_LIB_PREFIX) INSABS_RTS_INC_PREFIX=$(INSTALL_UHC_INC_PREFIX) INSABS_PREFIX=$(INSTALL_UHC_PREFIX) INS_PREFIX=$(INSTALL_UHC_PREFIX) \
-		CABAL_OPT_INSTALL_LOC="--global" \
-		GHC_PKG_NAME_PREFIX= \
-		$(EHC_FOR_UHC_BLD_EXEC)
-	mkdir -p $(dir $(UHC_INSTALL_EXEC))
-	install $(EHC_FOR_UHC_BLD_EXEC) $(UHC_INSTALL_EXEC)
-	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
+install: uhc-install
+#	rm -f $(EHC_FOR_UHC_BLD_EXEC)
+#	$(MAKE) INSABS_RTS_LIB_PREFIX=$(INSTALL_UHC_LIB_PREFIX) INSABS_RTS_INC_PREFIX=$(INSTALL_UHC_INC_PREFIX) INSABS_PREFIX=$(INSTALL_UHC_PREFIX) INS_PREFIX=$(INSTALL_UHC_PREFIX) \
+#		CABAL_OPT_INSTALL_LOC="--global" \
+#		GHC_PKG_NAME_PREFIX= \
+#		$(EHC_FOR_UHC_BLD_EXEC)
+#	mkdir -p $(dir $(UHC_INSTALL_EXEC))
+#	install $(EHC_FOR_UHC_BLD_EXEC) $(UHC_INSTALL_EXEC)
+#	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
+
+###########################################################################################
+# Target: uhc + libs
+###########################################################################################
+
+uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
+
+UHC_INSTALL_VARIANT_PREFIX 	:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_UHC_INSTALL_VARIANT))
+UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME))
+
+uhc-install: uhc
+	$(call COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
+	for target in `$(EHC_FOR_UHC_BLD_EXEC) --meta-targets` ; \
+	do \
+	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
+	done ; \
+	rm -f $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME) ; \
+	ln -s $(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME) $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)
+	$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME) --meta-export-env=$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME)
+
+uhc-install-postprocess-bc:
+	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME),$(EHC_VARIANT_TARGET)) ; \
+	for pkg in $(EHCLIB_SYNC_ALL_PKG) ; \
+	do \
+	  rm -f $${pkg}/*.{hs,hs-cpp,c} $${pkg}/*/*.{hs,hs-cpp,c} $${pkg}/$(EHCLIB_MAIN)* ; \
+	done
+
+uhc-install-postprocess-C:
+	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME),$(EHC_VARIANT_TARGET)) ; \
+	for pkg in $(EHCLIB_SYNC_ALL_PKG) ; \
+	do \
+	  rm -f $${pkg}/*.{hs,hs-cpp} $${pkg}/*/*.{hs,hs-cpp} $${pkg}/$(EHCLIB_MAIN)* ; \
+	done
+
+uhc-install-postprocess-core:
+	
+# still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################
 # Target: clean build stuff
@@ -195,7 +232,8 @@ clean: cleans
 ###########################################################################################
 
 tst:
-	@echo $(EHCLIB_TARGETS)
+	@echo $(EHC_FOR_UHC_BLD_EXEC)
+	@echo $(UHC_BLD_EXEC)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

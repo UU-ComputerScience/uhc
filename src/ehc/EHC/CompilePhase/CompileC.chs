@@ -17,6 +17,8 @@ C + CPP compilation
 
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
+%%[8 import({%{EH}EHC.Environment})
+%%]
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
 
@@ -38,42 +40,33 @@ cpCompileWithGCC how othModNmL modNm
                  fpC    = fpathSetSuff "c" fp
                  fpO fp = fpathSetSuff "o" fp
                  fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) Cfg.mbSuffixExec
+                 variant= ehcenvVariant (ehcOptEnvironment opts)
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt)
                         = case how of
                             GCC_CompileExec -> ( fpExec
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
-                                               -- , map ("-l" ++) (Cfg.libnamesGccPerVariant ++ Cfg.libnamesGcc)
-                                               , map (\l -> Cfg.selectFileprefixInstall opts ++ perVariantSuffix ++ l ++ ".a") Cfg.libnamesGccPerVariant
-                                                 ++ map (\l -> Cfg.selectFileprefixInstall opts ++ "lib/lib" ++ l ++ ".a") Cfg.libnamesGcc
+                                               , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
+                                                 ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
                                                  else [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
-%%[[8
-                                            where perVariantSuffix = "%%@{%{VARIANT}%%}/lib/lib"
-%%][101
-                                            where perVariantSuffix = "lib/lib"
-%%]]
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
                                             where o = fpO fp
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = concat $ intersperse " "
                                $ (  [ Cfg.shellCmdGcc ]
-%%[[8
-                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include" ]
-%%][101
-%%]]
-                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "include" ]
-                                 ++ [ "-I" ++ Cfg.selectFileprefixInstall opts ++ "include/gc" ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
 %%[[(8 codegen grin)
-                                 ++ [ Cfg.selectFileprefixInstall opts ++ "%%@{%{VARIANT}%%}/include/mainSil.c"
+                                 ++ [ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ++ "mainSil.c"
                                     | ehcOptTarget opts == Target_FullProgAnal_Grin_C
                                     ]
 %%]]

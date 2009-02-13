@@ -79,7 +79,7 @@
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
 %%]
 
-%%[8 export(putCompileMsg, openFPath,writeToFile, writePP)
+%%[8 export(putCompileMsg,writeToFile, writePP)
 %%]
 
 %%[8 export(ppHsnNonAlpha)
@@ -500,17 +500,6 @@ putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
 %%]
 
 %%[8
-openFPath :: FPath -> IOMode -> IO (String, Handle)
-openFPath fp mode | fpathIsEmpty fp = case mode of
-                                        ReadMode      -> return ("<stdin>" ,stdin )
-                                        WriteMode     -> return ("<stdout>",stdout)
-                                        AppendMode    -> return ("<stdout>",stdout)
-                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
-                  | otherwise       = do
-                                        let fNm = fpathToStr fp
-                                        h <- openFile fNm mode
-                                        return (fNm,h)
-
 writePP ::  (a -> PP_Doc) -> a -> FPath -> IO ()
 writePP f text fp = writeToFile (show.f $ text) fp
 

@@ -2,11 +2,14 @@
 \section{Introduction}
 %%@ToolDocEHC.introduction
 \subsection{System overview}
-\subsection{Download, build, compile and run}
+\subsection{Download, build, install, compile and run}
 \glabel{DownloadBuildCompileRun}
+\label{DownloadBuildCompileRun}
 %%@ToolDocEHC.downloadBuildCompileRun
 
 \subsection{Installation}
+See \lref{DownloadBuildCompileRun}{downloading etc}.
+
 \subsection{Using EHC}
 
 \section{Commandline}
@@ -327,7 +330,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
       or downloaded as a \href{https://svn.cs.uu.nl:12443/dist/EHC/EHC-trunk-EHC.tar.bz2}{tarball}.
 \end{itemize}
 
-\subsubsection{Build}
+\subsubsection{Build and install UHC}
 
 \begin{itemize}
 \item Prerequisites: GHC and HUT must be installed.
@@ -335,35 +338,71 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
  \item Look \eref{InstallEhcUnderWindows}{here} for setting up a cygwin environment and additional info on installing EHC under cygwin.
  \item See \tref{TS.EhcParticularities}{encountered problems} during this year's (2007) run of the seminar on \tref{TS.WebHome}{Type Systems}.
 \end{itemize}
-\item Building the last element of the EHC sequence, run the following commands from trunk/EHC:
+\item For building UHC, run the following commands from trunk/EHC:
 \begin{verbatim}
 % ./configure
-% make 100/ehc                     # variant 100 will ultimately become UHC
-% make 100/ehclib                  # library is build in build/100/ehclib/ehcbase
+% make uhc                         # under the hood, this is EHC variant 101
+% make install                     # sudo may be required, depending on your permissions
 \end{verbatim}
-      Currently there is no installation via 'make install'.
+A configuration file (+ directory) will be created in your home directory,
+therefore a systemwide install does not work yet.
+
 \end{itemize}
 
-\subsubsection{Run}
+\subsubsection{Run UHC}
 
 \begin{itemize}
-\item Run the last variant. A sample session:
+\item Run UHC. A sample session:
 \begin{verbatim}
 % cat > hw.hs
 module HelloWorld where
 main = putStrLn "Hello World"
-% bin/100/ehc -Pbuild/100/ehclib/ehcbase hw.hs     # path to built library must be included
+% uhc hw.hs
 Imports of Haskell             hw                     (hw.hs)
-Imports of Haskell             Prelude                (build/100/ehclib/ehcbase/Prelude.hs)
-Imports of Haskell             EHC.Prelude            (build/100/ehclib/ehcbase/EHC/Prelude.hs)
-Reading HI                     EHC.Prelude            (build/100/ehclib/ehcbase/EHC/Prelude.hs)
-Reading HI                     Prelude                (build/100/ehclib/ehcbase/Prelude.hs)
+Imports of HI                  Prelude                (/usr/local/lib/uhc/lib/bc/base/Prelude.hi)
+Imports of HI                  EHC.Prelude            (/usr/local/lib/uhc/lib/bc/base/EHC/Prelude.hi)
+Reading HI                     EHC.Prelude            (/usr/local/lib/uhc/lib/bc/base/EHC/Prelude.hi)
+Reading HI                     Prelude                (/usr/local/lib/uhc/lib/bc/base/Prelude.hi)
 Compiling Haskell              hw                     (hw.hs)
 % ./hw
 Hello World
 % 
 \end{verbatim}
-      Note that the compiler is ran from the @bin/100@ directory and the path to the library must be passed explicitly.
+\end{itemize}
+
+\subsubsection{Build a EHC variant}
+
+\begin{itemize}
+\item Prerequisites: same as for UHC
+\item For building the last element of the EHC sequence, run the following commands from trunk/EHC:
+\begin{verbatim}
+% ./configure
+% make 100/ehc                     # variant 100 equals UHC, variant number is only used to distinguish configuration.
+% make 100/ehclibs                 # libraries are build for all code generation targets
+\end{verbatim}
+
+The binary of this ehc variant is available as @install/100/bin/ehc@.
+\end{itemize}
+
+\subsubsection{Run a EHC variant}
+
+\begin{itemize}
+\item Run variant 100. A sample session:
+\begin{verbatim}
+% cat > hw.hs
+module HelloWorld where
+main = putStrLn "Hello World"
+% install/100/bin/ehc hw
+Imports of Haskell             hw                     (hw.hs)
+Imports of Haskell             Prelude                (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/Prelude.hs)
+Imports of Haskell             EHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/EHC/Prelude.hs)
+Reading HI                     EHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/EHC/Prelude.hs-cpp)
+Reading HI                     Prelude                (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/Prelude.hs)
+Compiling Haskell              hw                     (hw.hs)
+% ./hw
+Hello World
+% 
+\end{verbatim}
 \end{itemize}
 
 %%]
@@ -435,10 +474,10 @@ Extensible records & YN \\
 
 %%[commandlineInvocation doclatex
 \label{CommandLine}
-As printed by \verb=bin/100/ehc --help=:
+As printed by \verb=install/100/bin/ehc --help=:
 
 \begin{pre}
-%%@[exec:bin/100/ehc --help%%]
+%%@[exec:install/100/bin/ehc --help%%]
 \end{pre}
 
 %%]

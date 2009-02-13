@@ -55,15 +55,15 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 
 %%[(8 codegen)
 instance Show Target where
-  show Target_Core							= "Core"
-%%[[(8 codegen grin)
-  show Target_FullProgAnal_Grin_C			= "FullGrinC"
-  show Target_FullProgAnal_Grin_LLVM		= "FullGrinLLVM"
-  show Target_FullProgAnal_Grin_JVM			= "FullGrinJVM"
-  show Target_FullProgAnal_Grin_DOTNET		= "FullGrinDOTNET"
-  show Target_Interpreter_Grin_C			= "ItrpGrinC"
-%%]]
   show Target_None							= "NONE"
+  show Target_Core							= "core"
+%%[[(8 codegen grin)
+  show Target_FullProgAnal_Grin_C			= "C"
+  show Target_FullProgAnal_Grin_LLVM		= "llvm"
+  show Target_FullProgAnal_Grin_JVM			= "jvm"
+  show Target_FullProgAnal_Grin_DOTNET		= "dotnet"
+  show Target_Interpreter_Grin_C			= "bc"
+%%]]
 %%]
 
 Default target

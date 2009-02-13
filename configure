@@ -735,6 +735,7 @@ EHCLIB_SHARED
 INPLACE_TOP
 INPLACE_PREFIX
 INPLACE_INSTALL_DIR
+INPLACE_INSTALLFORBLD_DIR
 INSTALL_LIB_SUFFIX
 RTS_PKG_NAME
 EXTLIBS_BGC_PKG_NAME
@@ -6479,11 +6480,14 @@ EHCLIB_SHARED="shared"
 
 ### install locations
 inplaceInstallDir="install"
+inplaceInstallForBldDir="install-for-build"
 INPLACE_TOP="$hardtop"
 
 INPLACE_PREFIX="$hardtop_plat/$inplaceInstallDir"
 
 INPLACE_INSTALL_DIR="$inplaceInstallDir"
+
+INPLACE_INSTALLFORBLD_DIR="$inplaceInstallForBldDir"
 
 INSTALL_LIB_SUFFIX="lib/uhc"
 
@@ -7287,6 +7291,7 @@ EHCLIB_SHARED!$EHCLIB_SHARED$ac_delim
 INPLACE_TOP!$INPLACE_TOP$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
 INPLACE_INSTALL_DIR!$INPLACE_INSTALL_DIR$ac_delim
+INPLACE_INSTALLFORBLD_DIR!$INPLACE_INSTALLFORBLD_DIR$ac_delim
 INSTALL_LIB_SUFFIX!$INSTALL_LIB_SUFFIX$ac_delim
 RTS_PKG_NAME!$RTS_PKG_NAME$ac_delim
 EXTLIBS_BGC_PKG_NAME!$EXTLIBS_BGC_PKG_NAME$ac_delim
@@ -7295,7 +7300,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 29; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

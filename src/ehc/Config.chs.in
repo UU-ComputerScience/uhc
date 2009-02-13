@@ -5,7 +5,16 @@
 %%[1 module {%{EH}Config}
 %%]
 
+%%[1 import({%{EH}ConfigInstall}) export(module {%{EH}ConfigInstall})
+%%]
+
+%%[8 import(Data.Maybe,EH.Util.Utils)
+%%]
+
 %%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
+%%]
+
+%%[8 import({%{EH}EHC.Environment})
 %%]
 
 %%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
@@ -21,6 +30,16 @@ Make a prefix out of a directory name
 mkPrefix :: String -> String
 mkPrefix d@(_:_) | last d /= '/' = d ++ "/"
 mkPrefix d                       = d
+%%]
+
+And the inverse
+
+%%[8 export(unPrefix)
+unPrefix :: String -> String
+unPrefix d | isJust il && l == '/' = i
+  where il = initlast d
+        (i,l) = fromJust il
+unPrefix d                         = d
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,19 +96,10 @@ verInfo v = verProg v ++ verDist v ++ ", " ++ verSvnRevision v
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(fileprefixInplaceInstall, fileprefixInstall)
-fileprefixInplaceInstall :: String
-fileprefixInplaceInstall = mkPrefix "@INPLACE_PREFIX@"
-
-fileprefixInstall :: String
-fileprefixInstall = mkPrefix "@prefix@/@INSTALL_LIB_SUFFIX@"
-%%]
-
-%%[8 export(selectFileprefixInstall)
-selectFileprefixInstall :: EHCOpts -> String
-selectFileprefixInstall opts
-  | ehcOptUseInplace opts = fileprefixInplaceInstall
-  | otherwise             = fileprefixInstall
+%%[(8 codegen) export(mkInstallFilePrefix)
+mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String
+mkInstallFilePrefix opts whatfile variant
+  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,16 +128,6 @@ shellCmdCpp = "@EHC_UNIXTOOL_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
 %%[8
 prefixLib :: String
 prefixLib = "@PREFIX_LIB@"
-%%]
-
-The prefix for shared library artifacts, independent of target
-
-%%[99 export(libShared,prefixLibShared)
-libShared :: String
-libShared = "@EHCLIB_SHARED@"
-
-prefixLibShared :: String
-prefixLibShared = mkPrefix libShared
 %%]
 
 %%[8 export(libnamesGcc)
