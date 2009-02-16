@@ -325,7 +325,10 @@ mkRV m = hsnSetQual m . hsnFromString
       ]
 %%]
 
-%%[8 export(hsnUndefined,hsnPackedStringToString,hsnPackedString,hsnPrelId,hsnPrimAddInt)
+%%[97 export(hsnPackedStringToInteger, hsnPrimIntegerToInt)
+%%]
+
+%%[8 export(hsnUndefined,hsnPackedString,hsnPackedStringToString,hsnPrelId,hsnPrimAddInt)
 [ hsnUndefined
  , hsnPackedString
  , hsnPackedStringToString
@@ -337,6 +340,7 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
 %%[[97
  , hsnPackedStringToInteger
+ , hsnPrimIntegerToInt
 %%]]
 %%[[99
  , hsnPrimEqChar
@@ -359,6 +363,7 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
 %%[[97
       , "packedStringToInteger"
+      , "primIntegerToInt"
 %%]]
 %%[[97
       , "primEqChar"
