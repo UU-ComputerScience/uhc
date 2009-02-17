@@ -108,17 +108,17 @@ mkInstallFilePrefix opts whatfile variant
 
 %%[8 export(shellCmdGcc)
 shellCmdGcc :: String
-shellCmdGcc = "@EHC_UNIXTOOL_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
+shellCmdGcc = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%[8 export(shellCmdLLVM)
 shellCmdLLVM :: String
-shellCmdLLVM = "@EHC_UNIXTOOL_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
+shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
 %%]
 
 %%[99 export(shellCmdCpp)
 shellCmdCpp :: String
-shellCmdCpp = "@EHC_UNIXTOOL_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
+shellCmdCpp = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
