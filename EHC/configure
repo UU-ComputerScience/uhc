@@ -677,7 +677,7 @@ UUAGC_OPTIONS
 UUAGC_EHC_AST_OPTIONS
 UUAGC_EHC_SEM_OPTIONS
 CABAL_CONFIGURE_OPTIONS
-EHC_UNIXTOOL_PREFIX
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
@@ -1347,7 +1347,7 @@ Optional Packages:
   --with-cabal-config-options=<cabal configure options for compiling ehc>
                           Additional options to pass to cabal's ./setup
                           configure when compiling EHC.
-  --with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>
+  --with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>
                           Additional prefix for unixtools used by ehc.
   --with-ghc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
@@ -2180,23 +2180,23 @@ CABAL_CONFIGURE_OPTIONS="$cabalConfigureOptions"
 
 # Check whether --with-ehc-unixtool-prefix was given.
 if test "${with_ehc_unixtool_prefix+set}" = set; then
-  withval=$with_ehc_unixtool_prefix;  additionalEhcUnixtoolPrefix="$withval"
+  withval=$with_ehc_unixtool_prefix;  toplevelSystemAbsolutePathPrefix="$withval"
 fi
 
 
 # when no unixtool prefix is specified && running cygwin, take cygwin's equivalent of /
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test "$additionalEhcUnixtoolPrefix" = ""
+        if test "$toplevelSystemAbsolutePathPrefix" = ""
         then
-          additionalEhcUnixtoolPrefix="`cygpath --mixed /`"
+          toplevelSystemAbsolutePathPrefix="`cygpath --mixed /`"
         fi
         ;;
   *)
         ;;
 esac
 
-EHC_UNIXTOOL_PREFIX="$additionalEhcUnixtoolPrefix"
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX="$toplevelSystemAbsolutePathPrefix"
 
 
 ### 'with' option for ghc
@@ -2499,7 +2499,7 @@ fi
 # See remarks about cpp
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$gccCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
         fi
@@ -3590,7 +3590,7 @@ fi
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$cppCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
         fi
@@ -7192,7 +7192,7 @@ UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
 UUAGC_EHC_AST_OPTIONS!$UUAGC_EHC_AST_OPTIONS$ac_delim
 UUAGC_EHC_SEM_OPTIONS!$UUAGC_EHC_SEM_OPTIONS$ac_delim
 CABAL_CONFIGURE_OPTIONS!$CABAL_CONFIGURE_OPTIONS$ac_delim
-EHC_UNIXTOOL_PREFIX!$EHC_UNIXTOOL_PREFIX$ac_delim
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim

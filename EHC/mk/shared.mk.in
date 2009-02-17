@@ -87,11 +87,14 @@ EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
 UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
 
 ###########################################################################################
-# Platform we develop on; some make commands do not work properly on cygwin
+# Platform we develop on; stuff depending on it, in particular to cater for cygwin
 ###########################################################################################
 
 # platform: UNIX, CYGWIN
-DEVELOPMENT_PLATFORM	:= @DEVELOPMENT_PLATFORM@
+DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
+
+# A prefix to be added for direct access to otherwise hidden (by cygwin) locations
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 
 ###########################################################################################
 # WinXX specific file name conversions
