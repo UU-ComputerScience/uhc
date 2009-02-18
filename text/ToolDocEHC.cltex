@@ -204,9 +204,9 @@ Show only the version number of full version information (see also option \DocOp
 
 
 
-\DocOpt{@-P, --search-path=<p>@  |where  <p> = path |}{Search path for all files}
+\DocOpt{@-i, --import-path=<p>@  |where  <p> = path |}{Search path for all files}
 \IxDef{-P}%
-\IxDef{--search-path}%
+\IxDef{--import-path}%
 Specify a search path, extending the already used one.
 The path consists of a semicolon separated list of directories.
 
@@ -518,7 +518,7 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
  \item \verb|ast|: dump EH abstract syntax tree, \verb|--verbose| adds additional computed information.
  \item \verb|-|: no pretty printing.
  \end{itemize}
-\item \verb|-Ppath|, \verb|--search-path=path|. Add @path@ to the search path for modules.
+\item \verb|-ipath|, \verb|--import-path=path|. Add @path@ to the search path for importing modules.
 \item \verb|-v[<level>]|, \verb|--verbose[=<level>]|. Verbosity level. Verbosity \verb|<level>|s are accumulative in their reported messages:
  \begin{itemize}
  \item \verb|0|: quiet.

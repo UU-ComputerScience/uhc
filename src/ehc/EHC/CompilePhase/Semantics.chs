@@ -77,7 +77,7 @@ cpFoldEH modNm
                                                   , EHSem.gUniq_Inh_AGItf            = crsiHereUID crsi
                                                   , EHSem.opts_Inh_AGItf             = opts
 %%[[20
-                                                  , EHSem.isTopMod_Inh_AGItf         = ecuIsTopMod ecu
+                                                  , EHSem.isMainMod_Inh_AGItf        = ecuIsMainMod ecu
 %%]]
                                                   })
          ;  when (isJust mbEH)
@@ -89,7 +89,7 @@ cpFoldEH modNm
 cpFoldHs :: HsName -> EHCompilePhase ()
 cpFoldHs modNm
   =  do  {  cr <- get
-         ;  let  (ecu,crsi,_,_) = crBaseInfo modNm cr
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  mbHS   = ecuMbHS ecu
                  inh    = crsiHSInh crsi
                  hsSem  = HSSem.wrap_AGItf (HSSem.sem_AGItf $ panicJust "cpFoldHs" mbHS)
@@ -109,12 +109,30 @@ cpFoldHs modNm
                               exps   = Rel.toRngMap $ Rel.restrictRng (\o -> let mq = hsnQualifier (ioccNm o) in isJust mq && fromJust mq /= modNm)
                                                     $ Rel.mapRng mentIdOcc $ mmiExps $ mmi
 %%]]
-         ;  when (isJust mbHS)
-                 (cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[20
-                                . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
+                 hasMain= HSSem.mainValExists_Syn_AGItf hsSem
 %%]]
-                                ))
+         ;  when (isJust mbHS)
+                 (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
+%%[[20
+                                     . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
+                                     . ecuSetHasMain hasMain
+%%]]
+                                     )
+%%[[20
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
+                     ; when hasMain
+                            (do { cr <- get
+                                ; let (crsi,opts) = crBaseInfo' cr
+                                      mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
+                                ; case crsiMbMainNm crsi of
+                                    Just n                   -> mkerr 1 [n]
+                                    _ | ehcOptDoLinking opts -> put (cr {crStateInfo = crsi {crsiMbMainNm = Just modNm}})
+                                      | otherwise            -> mkerr 0 []
+                                })
+%%]]
+                     })
          }
 %%]
 

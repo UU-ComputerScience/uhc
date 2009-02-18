@@ -15,7 +15,7 @@ module EH.Util.FPath
   , fpathOpenOrStdin, openFPath
   
   , SearchPath, FileSuffixes
-  , mkInitSearchPath
+  , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchPathForReadableFiles, searchPathForReadableFile
   )
@@ -186,8 +186,14 @@ openFPath fp mode | fpathIsEmpty fp = case mode of
 type SearchPath = [String]
 type FileSuffixes = [String]
 
+searchPathFromFPaths :: [FPath] -> SearchPath
+searchPathFromFPaths fpL = nub [ d | (Just d) <- map fpathMbDir fpL ] ++ [""]
+
+searchPathFromFPath :: FPath -> SearchPath
+searchPathFromFPath fp = searchPathFromFPaths [fp]
+
 mkInitSearchPath :: FPath -> SearchPath
-mkInitSearchPath fp = maybe [] (:[]) (fpathMbDir fp) ++ [""]
+mkInitSearchPath = searchPathFromFPath
 
 searchPathFromString :: String -> [String]
 searchPathFromString
@@ -219,7 +225,7 @@ searchPathForReadableFiles stopAtFirst paths suffs fp
                       (\(ms,f) -> tryToOpen ms f)
                       ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir dir
-          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp,fpathSetDir dir fp]
+          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp {-,fpathSetDir dir fp -}]
      in select True tryToOpenInDir paths
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)

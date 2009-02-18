@@ -117,8 +117,11 @@ DATA Import
 %%]
 
 %%[1
-SET AllModule
+SET AllTopLevel
   = Module Body
+
+SET AllModule
+  = AllTopLevel
 %%]
 %%[20
     AllImportDeclaration Import Imports

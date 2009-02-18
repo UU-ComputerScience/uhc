@@ -94,7 +94,7 @@ test-expect test-regress: test-lists
 	          tc=$${tb2}.core ; tg=$${tb2}.grin2 ; texe=$${tb2}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
 	          rm -f $${tc} $${tg} ; \
-	          $${ehc} $${TEST_OPTIONS} -v -ccore $${t2} > $${th} 2>&1 ; \
+	          $${ehc} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
 	          if test -r $${tc} ; \
 	          then \
 	            echo "== core ==" >> $${th} ; \

@@ -102,7 +102,7 @@ trfOptOverrides opts trf
 
 %%[8
 mkSearchPath :: String -> [String]
-mkSearchPath = wordsBy (==';')
+mkSearchPath = wordsBy (`elem` ";,")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -190,6 +190,7 @@ data EHCOpts
       						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
+      ,  ehcOptDoLinking      ::  Bool				-- do link, if False compile only
       ,  ehcOptLibSearchPath  ::  [String]
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath  			-- name of this program
@@ -338,6 +339,7 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
+      ,  ehcOptDoLinking        =   True
       ,  ehcOptLibSearchPath    =   []
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
@@ -398,7 +400,7 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-targets"]     (NoArg oTargets)                     "meta: print list of supported codegeneration targets"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
+     ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 %%]]
 %%[[(8 codegen grin)
@@ -420,10 +422,11 @@ ehcCmdLineOpts
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
-     ,  Option "P"  ["search-path"]      (ReqArg oUsrSearchPath "path")       "search path for user files, path separators=';', appended to previous"
-     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --search-path"
+     ,  Option "i"  ["import-path"]      (ReqArg oUsrSearchPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --import-path"
      ,  Option ""   ["package"]          (ReqArg oPackage "package")          "use package"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
+     ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
@@ -605,6 +608,7 @@ ehcCmdLineOpts
          oLibSearchPath  s o   = o { ehcOptLibSearchPath 		= ehcOptLibSearchPath o ++ mkSearchPath s }
          oPackage        s o   = o { ehcOptLibPackages   		= ehcOptLibPackages   o ++ [s] }
          oNoPrelude        o   = o { ehcOptUseAssumePrelude		= False   }
+         oCompileOnly      o   = o { ehcOptDoLinking 		    = False    }
          oCPP              o   = o { ehcOptCPP        			= True    }
          oLimitTyBetaRed   o l = o { ehcOptTyBetaRedCutOffAt 	= l }
          oLimitCtxtRed     o l = o { ehcOptPrfCutOffAt       	= l }

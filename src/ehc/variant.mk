@@ -42,11 +42,13 @@ EHC_VARIANT_RULER_SEL					:= ().().()
 ###########################################################################################
 
 FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC		= $(call FUN_INSTALL_VARIANT_BIN_PREFIX,$(1))$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
+FUN_EHC_INSTALLABS_VARIANT_ASPECTS_EXEC		= $(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$(1))$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 
 #EHC_INSTALL_VARIANT_ASPECTS_EXEC			:= $(EHC_BIN_VARIANT_ASPECTS_PREFIX)$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 EHC_ALL_PUB_EXECS						:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_PUB_VARIANTS))
 EHC_ALL_EXECS							:= $(patsubst %,$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,%),$(EHC_VARIANTS))
 EHC_INSTALL_VARIANT_ASPECTS_EXEC			:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_VARIANT_ASPECTS))
+EHC_INSTALLABS_VARIANT_ASPECTS_EXEC			:= $(call FUN_EHC_INSTALLABS_VARIANT_ASPECTS_EXEC,$(EHC_VARIANT_ASPECTS))
 
 ###########################################################################################
 # code generation targets, leading to target dependend locations
@@ -77,6 +79,7 @@ EHC_INS_FLAG							:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(EHC_BASE)$(EHC_VARIANT_AS
 
 # assumed packages, useful only for prelude variants
 EHC_PACKAGES_ASSUMED					:= base
+#EHC_PACKAGES_ASSUMED					:= base containers
 
 ###########################################################################################
 # installation locations for ehc building time

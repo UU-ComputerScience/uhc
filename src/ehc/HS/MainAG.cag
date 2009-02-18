@@ -286,11 +286,18 @@ SEM Constructor
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is toplevel mod?
+%%% Is toplevel mod? Is main mod?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-ATTR AllModule AGItf [ isTopMod: Bool | | ]
+ATTR AllModule AGItf [ isTopMod : Bool | | ]
+ATTR AllModule       [ isMainMod: Bool | | ]
+%%]
+
+%%[20
+SEM AGItf
+	| AGItf
+		loc			.	isMainMod	=	@module.mainValExists
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
