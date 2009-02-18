@@ -101,7 +101,8 @@ data EHCompileUnit
       , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
       , ecuHIDeclImpNmL      :: ![HsName]							-- imported modules as declared, either in .hs of .hi
       , ecuHIUsedImpNmL      :: ![HsName]							-- imported modules as actually used
-      , ecuIsTopMod          :: !Bool
+      , ecuIsTopMod          :: !Bool								-- been specified on commandline
+      , ecuHasMain           :: !Bool								-- has a def for 'main'?
       , ecuNeedsCompile      :: !Bool								-- (re)compilation from .hs needed?
       , ecuMbHSTime          :: !(Maybe ClockTime)
       , ecuMbHITime          :: !(Maybe ClockTime)
@@ -121,6 +122,11 @@ data EHCompileUnit
       }
 %%]
       , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
+
+%%[20 export(ecuIsMainMod)
+ecuIsMainMod :: EHCompileUnit -> Bool
+ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
+%%]
 
 %%[8 export(emptyECU)
 emptyECU :: EHCompileUnit
@@ -150,6 +156,7 @@ emptyECU
       , ecuHIDeclImpNmL      = []
       , ecuHIUsedImpNmL      = []
       , ecuIsTopMod          = False
+      , ecuHasMain           = False
       , ecuNeedsCompile      = True
       , ecuMbHSTime          = Nothing
       , ecuMbHITime          = Nothing
@@ -291,7 +298,7 @@ ecuStoreBytecodeSem :: EcuUpdater PP_Doc
 ecuStoreBytecodeSem x ecu = ecu { ecuMbBytecodeSem = Just x }
 %%]
 
-%%[20 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHSTime,ecuStoreHITime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuStorePrevHI,ecuStorePrevHISem,ecuStoreOptim,ecuStoreHIInfo)
+%%[20 export(ecuStoreHSDeclImpL,ecuSetNeedsCompile,ecuStoreHIUsedImpL,ecuStoreHSTime,ecuStoreHITime,ecuStoreHSSemMod,ecuStoreHIDeclImpL,ecuStoreMod,ecuSetIsTopMod,ecuSetHasMain,ecuStorePrevHI,ecuStorePrevHISem,ecuStoreOptim,ecuStoreHIInfo)
 ecuStoreHSTime :: EcuUpdater ClockTime
 ecuStoreHSTime x ecu = ecu { ecuMbHSTime = Just x }
 
@@ -315,6 +322,9 @@ ecuStoreMod x ecu = ecu { ecuMod = x }
 
 ecuSetIsTopMod :: EcuUpdater Bool
 ecuSetIsTopMod x ecu = ecu { ecuIsTopMod = x }
+
+ecuSetHasMain :: EcuUpdater Bool
+ecuSetHasMain x ecu = ecu { ecuHasMain = x }
 
 ecuSetNeedsCompile :: EcuUpdater Bool
 ecuSetNeedsCompile x ecu = ecu { ecuNeedsCompile = x }

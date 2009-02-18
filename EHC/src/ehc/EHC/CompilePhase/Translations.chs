@@ -156,7 +156,7 @@ cpTranslateGrin2Bytecode modNm
                  (bc,errs)
                         = grinMod2ByteCodeMod opts
 %%[[20
-                            (if ecuIsTopMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
+                            (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
                             (ecuImpNmL ecu)
                             -- (crsiModOffMp crsi)
                             (Map.fromList [ (n,(o,mp)) | (o,n) <- zip [0..] (ecuImpNmL ecu), let (_,mp) = panicJust "cpTranslateGrin2Bytecode2" (Map.lookup n (crsiModOffMp crsi))])
@@ -197,7 +197,7 @@ cpTranslateByteCode modNm
 %%[[8
                  grinbcPP = gbmod2C opts $ panicJust "cpTranslateByteCode" mbBytecode
 %%][20
-                 grinbcPP = vlist ([ppMod] ++ (if ecuIsTopMod ecu then [ppMain] else []))
+                 grinbcPP = vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
                           where (ppMod,ppMain)
                                   = gbmod2C opts $ panicJust "cpTranslateByteCode" mbBytecode
 %%]]

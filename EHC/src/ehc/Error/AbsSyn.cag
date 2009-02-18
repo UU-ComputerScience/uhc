@@ -170,6 +170,11 @@ DATA Err
 
 %%[20
 DATA Err
+  | MayOnlyHaveNrMain   nrAllowed  : Int		-- 0 or 1, depending on option ehcOptDoLinking
+                        prevModNmL : {[HsName]}	-- possible previous modules in which main was defined
+                        modNm      : HsName
+  | MayNotHaveMain      modNm      : HsName
+  | MustHaveMain
   | ModNameMismatch     nmOfFile   : HsName
                         nmFromSrc  : HsName
   | AmbiguousNameRef    nm         : HsName

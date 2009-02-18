@@ -39,8 +39,8 @@ SEM Body
 %%[20 -8.Body.hsnMain
 SEM Body
     | Body
-        lhs         .   eh          =   @mkSccLet (if @lhs.isTopMod then rngLift @range EH.Expr_Var hsnMain
-                                                                    else rngLift @range EH.Expr_IConst 0
+        lhs         .   eh          =   @mkSccLet (if @lhs.isMainMod then rngLift @range EH.Expr_Var hsnMain
+                                                                     else rngLift @range EH.Expr_IConst 0
                                                   )
 %%]
 

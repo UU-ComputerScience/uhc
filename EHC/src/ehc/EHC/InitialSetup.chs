@@ -75,7 +75,7 @@ initialEHSem opts fp
       , EHSem.gUniq_Inh_AGItf           = uidStart
       , EHSem.opts_Inh_AGItf            = opts
 %%[[20
-      , EHSem.isTopMod_Inh_AGItf        = False
+      , EHSem.isMainMod_Inh_AGItf       = False
       , EHSem.idQualGam_Inh_AGItf       = emptyGam
 %%]]
 %%[[(20 hmtyinfer)

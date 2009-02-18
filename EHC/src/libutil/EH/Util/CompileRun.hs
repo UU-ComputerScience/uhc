@@ -17,13 +17,15 @@ module EH.Util.CompileRun
   , crCU, crMbCU
   , ppCR
   
-  , cpUpdCU
+  , cpUpdCU, cpUpdCUWithKey
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
   , cpSeq, (>->), cpEmpty 
   , cpFindFilesForFPath, cpFindFileForFPath
-  , cpImportGather
+  , cpImportGather, cpImportGatherFromMods
   , cpPP, cpPPMsg
+  
+  , forgetM
   )
   where
 
@@ -38,6 +40,17 @@ import UU.DData.Scc as Scc
 import EH.Util.Utils( panicJust )
 import EH.Util.FPath
 
+
+-------------------------------------------------------------------------
+-- Utility
+-------------------------------------------------------------------------
+
+-- forget result
+forgetM :: Monad m => m a -> m ()
+forgetM m
+  = do { _ <- m
+       ; return ()
+       }
 
 -------------------------------------------------------------------------
 -- Interfacing with actual state info
@@ -228,17 +241,25 @@ cpFindFileForFPath suffs sp mbModNm mbFp
 -- Gather all imports
 -------------------------------------------------------------------------
 
+cpImportGatherFromMods
+  :: (Show n,Ord n,CompileUnit u n s,CompileRunError e p,CompileUnitState s)
+       => (n -> CompilePhase n u i e x) -> [n] -> CompilePhase n u i e ()
+cpImportGatherFromMods imp1Mod modNmL
+  = do { cr <- get
+       ; cpSeq (   concat [ [forgetM (imp1Mod modNm), imps modNm] | modNm <- modNmL ]
+                ++ [cpImportScc]
+               )
+       }
+  where imps m = do { cr <- get
+                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+                    ; cpSeq (map (\n -> cpSeq [forgetM (imp1Mod n), imps n]) (impL m))
+                    }
+
 cpImportGather
   :: (Show n,Ord n,CompileUnit u n s,CompileRunError e p,CompileUnitState s)
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()
 cpImportGather imp1Mod modNm
-  = do { cr <- get
-       ; cpSeq [imp1Mod modNm, imps modNm, cpImportScc]
-       }
-  where imps m = do { cr <- get
-                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
-                    ; cpSeq (map (\n -> cpSeq [imp1Mod n, imps n]) (impL m))
-                    }
+  = cpImportGatherFromMods imp1Mod [modNm]
 
 crImportDepL :: (CompileUnit u n s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache
@@ -300,12 +321,25 @@ cpUpdCUM modNm upd
        }
 
 
+cpUpdCUWithKey :: (Ord n,CompileUnit u n s) => n -> (n -> u -> (n,u)) -> CompilePhase n u i e n
+cpUpdCUWithKey modNm upd
+  = do { cr <- get
+       ; let (modNm',cu) = (maybe (upd modNm cuDefault) (upd modNm) (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm' cu $ Map.delete modNm $ crCUCache cr})
+       ; return modNm'
+       }
+
 cpUpdCU :: (Ord n,CompileUnit u n s) => n -> (u -> u) -> CompilePhase n u i e ()
 cpUpdCU modNm upd
+  = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
+       ; return ()
+       }
+{-
   = do { cr <- get
        ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
        ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
        }
+-}
 {-
 cpUpdCU modNm upd
  = cpUpdCUM modNm (return . upd)
