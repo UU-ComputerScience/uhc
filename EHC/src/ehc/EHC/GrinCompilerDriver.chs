@@ -25,6 +25,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
+%%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
@@ -122,15 +124,18 @@ doCompileGrin input opts
                                              "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
 %%]]
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115-cleaned"
-         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-116-appsbound"
-         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-117-globconst"
+%%[[97
+         ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
+%%]]
+         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
+         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
          ; transformCodeInline                      "Inline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-118-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-119-invariant"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-120-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-120-evalstored"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-121-unusedExprDropped"
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-122-numbered"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-121-evalstored"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-122-unusedExprDropped"
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-123-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 

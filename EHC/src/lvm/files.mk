@@ -57,7 +57,7 @@ LIB_LVM_QUAL				:= Lvm
 LIB_LVM_QUAL_PREFIX			:= $(LIB_LVM_QUAL).
 LIB_LVM_PKG_NAME			:= $(subst .,-,$(LIB_LVM_QUAL))
 LIB_LVM_HS_PREFIX			:= $(SRC_LVM_PREFIX)$(subst .,$(PATH_SEP),$(LIB_LVM_QUAL_PREFIX))
-LIB_LVM_INS_FLAG			:= $(INSABS_FLAG_PREFIX)$(LIB_LVM_PKG_NAME)
+LIB_LVM_INS_FLAG			:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(LIB_LVM_PKG_NAME)
 
 # derived stuff
 LIB_LVM_CABAL_DRV			:= $(BLD_LVM_PREFIX)lib-Lvm.cabal
@@ -99,7 +99,7 @@ $(LIB_LVM_SETUP2): $(LIB_LVM_SETUP_HS_DRV)
 $(LIB_LVM_INS_FLAG): $(LIB_LVM_HS_DRV) $(LIB_LVM_CABAL_DRV) $(LIB_LVM_SETUP2) $(LVM_MKF)
 	mkdir -p $(@D)
 	cd $(BLD_LVM_PREFIX) && \
-	$(LIB_LVM_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSABS_PREFIX) --user && \
+	$(LIB_LVM_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSTALLFORBLDABS_PREFIX) --user && \
 	$(LIB_LVM_SETUP) build && \
 	$(LIB_LVM_SETUP) install --user && \
 	echo $@ > $@

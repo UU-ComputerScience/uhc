@@ -11,8 +11,8 @@ foreign import ccall "primEqInt" (==) :: Int -> Int -> Bool
 infixr 6 :
 
 zipWith :: (Int -> Int -> Int) -> [Int] -> [Int] -> [Int]
-zipWith _ _      _      = []
 zipWith f (x:xs) (y:ys) = f x y : zipWith f xs ys
+zipWith _ _      _      = []
 
 sum :: [Int] -> Int
 sum []     = 0
@@ -24,12 +24,14 @@ tail (x:xs) = xs
 
 take :: Int -> [Int] -> [Int]
 take _ []     = []
-take n (x:xs) = if x == 0
+take n (x:xs) = if n == 0
                 then []
                 else x : take (n-1) xs
 
+length [] = 0
+length (_:xs) = 1 + length xs
 
 fibs = 0 : 1 : zipWith (+) fibs (tail fibs)
 
-main = fibs -- sum (take 7500 fibs)
+main = sum (take 5 fibs)
 

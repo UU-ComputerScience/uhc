@@ -677,7 +677,7 @@ UUAGC_OPTIONS
 UUAGC_EHC_AST_OPTIONS
 UUAGC_EHC_SEM_OPTIONS
 CABAL_CONFIGURE_OPTIONS
-EHC_UNIXTOOL_PREFIX
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
@@ -731,9 +731,11 @@ SHELLRUN
 TARGET_TRIPLE
 EHC_EXEC_NAME
 UHC_EXEC_NAME
+EHCLIB_SHARED
 INPLACE_TOP
 INPLACE_PREFIX
 INPLACE_INSTALL_DIR
+INPLACE_INSTALLFORBLD_DIR
 INSTALL_LIB_SUFFIX
 RTS_PKG_NAME
 EXTLIBS_BGC_PKG_NAME
@@ -1345,7 +1347,7 @@ Optional Packages:
   --with-cabal-config-options=<cabal configure options for compiling ehc>
                           Additional options to pass to cabal's ./setup
                           configure when compiling EHC.
-  --with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>
+  --with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>
                           Additional prefix for unixtools used by ehc.
   --with-ghc=<haskell compiler>
                           Use a command different from 'ghc' to compile with
@@ -2178,23 +2180,23 @@ CABAL_CONFIGURE_OPTIONS="$cabalConfigureOptions"
 
 # Check whether --with-ehc-unixtool-prefix was given.
 if test "${with_ehc_unixtool_prefix+set}" = set; then
-  withval=$with_ehc_unixtool_prefix;  additionalEhcUnixtoolPrefix="$withval"
+  withval=$with_ehc_unixtool_prefix;  toplevelSystemAbsolutePathPrefix="$withval"
 fi
 
 
 # when no unixtool prefix is specified && running cygwin, take cygwin's equivalent of /
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test "$additionalEhcUnixtoolPrefix" = ""
+        if test "$toplevelSystemAbsolutePathPrefix" = ""
         then
-          additionalEhcUnixtoolPrefix="`cygpath --mixed /`"
+          toplevelSystemAbsolutePathPrefix="`cygpath --mixed /`"
         fi
         ;;
   *)
         ;;
 esac
 
-EHC_UNIXTOOL_PREFIX="$additionalEhcUnixtoolPrefix"
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX="$toplevelSystemAbsolutePathPrefix"
 
 
 ### 'with' option for ghc
@@ -2497,7 +2499,7 @@ fi
 # See remarks about cpp
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$gccCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
         fi
@@ -3588,7 +3590,7 @@ fi
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$cppCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
         fi
@@ -6472,13 +6474,20 @@ EHC_EXEC_NAME="ehc"
 UHC_EXEC_NAME="uhc"
 
 
+### name of subdirectory for shared ehc library artifacts
+EHCLIB_SHARED="shared"
+
+
 ### install locations
 inplaceInstallDir="install"
+inplaceInstallForBldDir="install-for-build"
 INPLACE_TOP="$hardtop"
 
 INPLACE_PREFIX="$hardtop_plat/$inplaceInstallDir"
 
 INPLACE_INSTALL_DIR="$inplaceInstallDir"
+
+INPLACE_INSTALLFORBLD_DIR="$inplaceInstallForBldDir"
 
 INSTALL_LIB_SUFFIX="lib/uhc"
 
@@ -7183,7 +7192,7 @@ UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
 UUAGC_EHC_AST_OPTIONS!$UUAGC_EHC_AST_OPTIONS$ac_delim
 UUAGC_EHC_SEM_OPTIONS!$UUAGC_EHC_SEM_OPTIONS$ac_delim
 CABAL_CONFIGURE_OPTIONS!$CABAL_CONFIGURE_OPTIONS$ac_delim
-EHC_UNIXTOOL_PREFIX!$EHC_UNIXTOOL_PREFIX$ac_delim
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
@@ -7278,9 +7287,11 @@ SHELLRUN!$SHELLRUN$ac_delim
 TARGET_TRIPLE!$TARGET_TRIPLE$ac_delim
 EHC_EXEC_NAME!$EHC_EXEC_NAME$ac_delim
 UHC_EXEC_NAME!$UHC_EXEC_NAME$ac_delim
+EHCLIB_SHARED!$EHCLIB_SHARED$ac_delim
 INPLACE_TOP!$INPLACE_TOP$ac_delim
 INPLACE_PREFIX!$INPLACE_PREFIX$ac_delim
 INPLACE_INSTALL_DIR!$INPLACE_INSTALL_DIR$ac_delim
+INPLACE_INSTALLFORBLD_DIR!$INPLACE_INSTALLFORBLD_DIR$ac_delim
 INSTALL_LIB_SUFFIX!$INSTALL_LIB_SUFFIX$ac_delim
 RTS_PKG_NAME!$RTS_PKG_NAME$ac_delim
 EXTLIBS_BGC_PKG_NAME!$EXTLIBS_BGC_PKG_NAME$ac_delim
@@ -7289,7 +7300,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 28; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

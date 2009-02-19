@@ -1,4 +1,10 @@
 ###########################################################################################
+# this file
+###########################################################################################
+
+MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
+
+###########################################################################################
 # Shared makefile stuff
 ###########################################################################################
 
@@ -81,11 +87,14 @@ EHC_EXEC_NAME		:= @EHC_EXEC_NAME@
 UHC_EXEC_NAME		:= @UHC_EXEC_NAME@
 
 ###########################################################################################
-# Platform we develop on; some make commands do not work properly on cygwin
+# Platform we develop on; stuff depending on it, in particular to cater for cygwin
 ###########################################################################################
 
 # platform: UNIX, CYGWIN
-DEVELOPMENT_PLATFORM	:= @DEVELOPMENT_PLATFORM@
+DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
+
+# A prefix to be added for direct access to otherwise hidden (by cygwin) locations
+TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 
 ###########################################################################################
 # WinXX specific file name conversions
@@ -118,15 +127,27 @@ HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
 # location for libraries
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
-# location for cabal installed stuff (mainly libraries), and other inplace installs
-INS_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@/
-INSABS_PREFIX		:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@/
-INSABS_FLAG_PREFIX	:= $(INSABS_PREFIX)ins-flg-
-INSABS_LIB_PREFIX	:= $(INSABS_PREFIX)lib/
-INSABS_INC_PREFIX	:= $(INSABS_PREFIX)include/
+# location for cabal installed stuff (mainly libraries), and other build time installs, used when building ehc
+INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
+INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS_PREFIX)ins-flg-
+INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
+INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
+
+# location installed stuff, used when running ehc
+INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@
+INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@
+
+INSTALL_PREFIX					:= $(INSTALL_DIR)/
+INSTALLABS_PREFIX				:= $(INSTALLABS_DIR)/
+INSTALLABS_FLAG_PREFIX			:= $(INSTALLABS_PREFIX)ins-flg-
+INSTALLABS_LIB_PREFIX			:= $(INSTALLABS_PREFIX)lib/
+INSTALLABS_INC_PREFIX			:= $(INSTALLABS_PREFIX)include/
 
 # location for uhc installs, as specified by configure
-INSTALL_UHC_PREFIX		:= @prefix@/@INSTALL_LIB_SUFFIX@/
+INSTALL_UHC_ROOT		:= @prefix@/lib
+INSTALL_UHC_DIR			:= @prefix@/@INSTALL_LIB_SUFFIX@
+INSTALL_UHC_PREFIX		:= $(INSTALL_UHC_DIR)/
 INSTALL_UHC_BIN_PREFIX	:= @prefix@/bin/
 INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
 INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
@@ -149,8 +170,11 @@ TEST_REGRESS_SRC_PREFIX				:= $(TEST_SRC_PREFIX)regress/
 
 # location for testing, is done after cd to test src dir, hence these relative paths, must correspond to above dirs w.r.t. nr of dir levels
 TEST_TOP_PREFIX						:= ../../
-TEST_BIN_PREFIX						:= $(TEST_TOP_PREFIX)bin/
+#TEST_BIN_PREFIX						:= $(TEST_TOP_PREFIX)bin/
 TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build/
+
+# name of subdirectory for shared ehc library artifacts
+EHCLIB_SHARED						:= @EHCLIB_SHARED@
 
 ###########################################################################################
 # Commands
@@ -179,6 +203,54 @@ LATEX_ENV			:= $(TEXINPUTS)
 PDFLATEX			:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
 BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
 MAKEINDEX			:= makeindex
+
+###########################################################################################
+# installation locations for ehc running time, as functions still depending on variant + target
+###########################################################################################
+
+FUN_DIR_VARIANT_PREFIX						= $(1)/$(2)/
+FUN_DIR_VARIANT_XXX_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_SHARED_PREFIX				= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),shared)
+FUN_DIR_VARIANT_LIB_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),lib)
+FUN_DIR_VARIANT_LIB_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_LIB_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_LIB_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))lib/
+FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(1),$(2),$(3))$(4)/
+FUN_DIR_VARIANT_INC_PREFIX					= $(call FUN_DIR_VARIANT_XXX_PREFIX,$(1),$(2),include)
+FUN_DIR_VARIANT_INC_TARGET_PREFIX			= $(call FUN_DIR_VARIANT_INC_PREFIX,$(1),$(2))$(3)/
+FUN_DIR_VARIANT_INC_SHARED_PREFIX			= $(call FUN_DIR_VARIANT_SHARED_PREFIX,$(1),$(2))include/
+
+FUN_INSTALL_VARIANT_PREFIX					= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_PREFIX				= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALLABS_DIR),$(1))
+FUN_INSTALL_VARIANT_XXX_PREFIX				= $(call    FUN_INSTALL_VARIANT_PREFIX,$(1))$(2)/
+FUN_INSTALLABS_VARIANT_XXX_PREFIX			= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(1))$(2)/
+
+FUN_INSTALL_VARIANT_LIB_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),lib)
+FUN_INSTALLABS_VARIANT_LIB_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),lib)
+FUN_INSTALL_VARIANT_BIN_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),bin)
+FUN_INSTALLABS_VARIANT_BIN_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),bin)
+FUN_INSTALL_VARIANT_INC_PREFIX				= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),include)
+FUN_INSTALLABS_VARIANT_INC_PREFIX			= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),include)
+
+FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
+FUN_INSTALL_VARIANT_LIB_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
+
+FUN_INSTALL_VARIANT_INC_TARGET_PREFIX		= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALL_DIR),$(1),$(2))
+FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX	= $(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,$(INSTALLABS_DIR),$(1),$(2))
+FUN_INSTALL_VARIANT_INC_SHARED_PREFIX		= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALL_DIR),$(1))
+FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX	= $(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,$(INSTALLABS_DIR),$(1))
+
+FUN_INSTALL_FLAG_PREFIX						= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),ins-flg)
+FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),ins-flg)
+
+###########################################################################################
+# Regular options to commands, as functions still depending on variant + target
+###########################################################################################
+
+# C compiler options, some are also extended by sub makefiles
+FUN_EHC_GCC_CC_OPTS							= -I$(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(1)) $(GCC_OPTS_WHEN_EHC)
+FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(1))
 
 ###########################################################################################
 # Regular options to commands
@@ -217,8 +289,8 @@ CABAL_SETUP_OPTS						:= --ghc --with-compiler=$(call WINXX_CYGWIN_NAME1,$(GHC))
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES 	:= @CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES@
 
 # C compiler options, some are also extended by sub makefiles
-EHC_GCC_CC_OPTS							:= -I$(INSABS_INC_PREFIX) -I$(INSABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
-EHC_GCC_LD_OPTS							:= -L$(INSABS_LIB_PREFIX)
+EHC_GCC_CC_OPTS							:= -I$(INSTALLFORBLDABS_INC_PREFIX) -I$(INSTALLFORBLDABS_INC_PREFIX)/gc $(GCC_OPTS_WHEN_EHC)
+EHC_GCC_LD_OPTS							:= -L$(INSTALLFORBLDABS_LIB_PREFIX)
 RTS_GCC_CC_OPTS							:= @CC_STD_FLAG@
 RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 
@@ -321,6 +393,9 @@ COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(
 # Misc
 ###########################################################################################
 
+# strip a '/' at the end, turning a prefix into a directory
+FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
+
 # target suffix for core
 CORE_TARG_SUFFIX	:= grin2
 
@@ -353,3 +428,4 @@ LIB_MK_STATIC		= $(AR) r $(1) $(2) ; $(RANLIB) $(1)
 else
 LIB_MK_STATIC		= $(LIBTOOL_STATIC) $(1) $(2)
 endif
+

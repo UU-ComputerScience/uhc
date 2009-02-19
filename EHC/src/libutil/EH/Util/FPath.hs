@@ -11,10 +11,10 @@ module EH.Util.FPath
   
   , fpathDirSep, fpathDirSepChar
   
-  , fpathOpenOrStdin
+  , fpathOpenOrStdin, openFPath
   
   , SearchPath, FileSuffixes
-  , mkInitSearchPath
+  , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchPathForReadableFiles, searchPathForReadableFile
   )
@@ -159,6 +159,17 @@ fpathOpenOrStdin fp
             ; return (fp,h)
             }
 
+openFPath :: FPath -> IOMode -> IO (String, Handle)
+openFPath fp mode | fpathIsEmpty fp = case mode of
+                                        ReadMode      -> return ("<stdin>" ,stdin )
+                                        WriteMode     -> return ("<stdout>",stdout)
+                                        AppendMode    -> return ("<stdout>",stdout)
+                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
+                  | otherwise       = do
+                                        let fNm = fpathToStr fp
+                                        h <- openFile fNm mode
+                                        return (fNm,h)
+
 -------------------------------------------------------------------------------------------
 -- Search path utils
 -------------------------------------------------------------------------------------------
@@ -166,8 +177,14 @@ fpathOpenOrStdin fp
 type SearchPath = [String]
 type FileSuffixes = [String]
 
+searchPathFromFPaths :: [FPath] -> SearchPath
+searchPathFromFPaths fpL = nub [ d | (Just d) <- map fpathMbDir fpL ] ++ [""]
+
+searchPathFromFPath :: FPath -> SearchPath
+searchPathFromFPath fp = searchPathFromFPaths [fp]
+
 mkInitSearchPath :: FPath -> SearchPath
-mkInitSearchPath fp = maybe [] (:[]) (fpathMbDir fp) ++ [""]
+mkInitSearchPath = searchPathFromFPath
 
 searchPathFromString :: String -> [String]
 searchPathFromString
@@ -199,7 +216,7 @@ searchPathForReadableFiles stopAtFirst paths suffs fp
                       (\(ms,f) -> tryToOpen ms f)
                       ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir dir
-          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp,fpathSetDir dir fp]
+          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp {-,fpathSetDir dir fp -}]
      in select True tryToOpenInDir paths
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)

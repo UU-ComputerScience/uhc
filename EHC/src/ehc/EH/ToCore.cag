@@ -15,7 +15,7 @@ SEM AGItf
 %%[(20 codegen)
 SEM AGItf
   | AGItf       loc         .   insertMainUse
-                                            :=  not @mainUseExists && @lhs.isTopMod
+                                            :=  not @mainUseExists && @lhs.isMainMod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,7 +34,7 @@ SEM AGItf
 %%[(20 codegen)
 SEM AGItf
   | AGItf       loc         .   insertMainDef
-                                            :=  not @mainDefExists && @lhs.isTopMod
+                                            :=  not @mainDefExists && @lhs.isMainMod
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

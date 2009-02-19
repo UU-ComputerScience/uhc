@@ -5,7 +5,7 @@
 //#include <unistd.h>
 
 #include "config.h"
-#include "gc.h"
+#include "gc/gc.h"
 #include "timing.h"
 
 void llvmgc_init()

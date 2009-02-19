@@ -21,6 +21,8 @@
 
 %%[8 import(EH.Util.FPath)
 %%]
+%%[8 import({%{EH}EHC.Environment})
+%%]
 
 %%[(8 codegen) import({%{EH}Base.Target})
 %%]
@@ -28,11 +30,12 @@
 %%[9 import(qualified Data.Set as Set)
 %%]
 
-%%[99 import(EH.Util.Utils)
+%%[8 import(EH.Util.Utils)
 %%]
 
 %%[50 import({%{EH}Ty.Trf.Instantiate})
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Option after which its handling the compiler quits immediately
@@ -40,13 +43,15 @@
 
 %%[1 export(ImmediateQuitOption(..))
 data ImmediateQuitOption
-  = ImmediateQuitOption_Help				-- print help
-  | ImmediateQuitOption_Version				-- print version info
-%%[[(8 codegen)
-  | ImmediateQuitOption_Targets				-- print all codegeneration targets
-%%]]
+  = ImmediateQuitOption_Help								-- print help
+  | ImmediateQuitOption_Version								-- print version info
+  | ImmediateQuitOption_Meta_Variant						-- print variant number
+  | ImmediateQuitOption_Meta_Targets						-- print all codegeneration targets (empty if no codegen)
+  | ImmediateQuitOption_Meta_TargetDefault					-- print the default codegeneration target (dummy if no codegen)
 %%[[99
-  | ImmediateQuitOption_NumericVersion		-- print numerical version, for external version comparison
+  | ImmediateQuitOption_NumericVersion						-- print numerical version, for external version comparison
+  | ImmediateQuitOption_Meta_ExportEnv (Maybe String)		-- export (write) environmental info of installation
+  | ImmediateQuitOption_Meta_DirEnv 						-- print dir of environmental info of installation
 %%]]
 %%]
 
@@ -92,6 +97,15 @@ trfOptOverrides opts trf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+mkSearchPath :: String -> [String]
+mkSearchPath = wordsBy (`elem` ";,")
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -112,8 +126,6 @@ data EHCOpts
       ,  ehcOptShowTopTyPP    ::  Bool              -- show EH type of expression
 %%]]
       ,  ehcOptImmQuit        ::  Maybe ImmediateQuitOption
-      -- ,  ehcOptHelp           ::  Bool              -- print help
-      -- ,  ehcOptVersion        ::  Bool              -- print version info
       ,  ehcOptDebug          ::  Bool              -- debug info
       ,  ehcStopAtPoint       ::  CompilePoint      -- stop at (after) compile phase
 %%[[7_2
@@ -135,18 +147,8 @@ data EHCOpts
       ,  ehcOptGenDebug       ::  Bool				-- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
 
-      -- ,  ehcOptEmitGrin       ::  Bool
-      -- ,  ehcOptEmitC          ::  Bool
-      -- ,  ehcOptEmitLLVM       ::  Bool              -- Emit a .ll file for LLVM processing
-      -- ,  ehcOptEmitExecLLVM   ::  Bool              -- Emit an executable created via LLVM
-      -- ,  ehcOptEmitCil        ::  Bool              -- Emit a .il in Common Intermediate Language
-      -- ,  ehcOptEmitBytecode   ::  Bool
-      -- ,  ehcOptEmitExecC      ::  Bool
-      -- ,  ehcOptEmitExecBytecode:: Bool
       ,  ehcOptGenRTSInfo     ::  Int				-- flags to tell rts to dump internal info, currently: 1=on
-      -- ,  ehcOptFullProgAnalysis ::  Bool				-- do full GRIN program analysis
       ,  ehcOptDumpGrinStages ::  Bool				-- dump intermediate Grin transformation stages
-      -- ,  ehcOptErrAboutBytecode ::  Bool				-- report when Grin ByteCode errors occur
 %%]]
 %%[[(8 codegen java)
       ,  ehcOptEmitJava       ::  Bool
@@ -154,11 +156,12 @@ data EHCOpts
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
-      ,  ehcOptSearchPath     ::  [String]
+      ,  ehcOptUsrSearchPath  ::  [String]
       ,  ehcOptVerbosity      ::  Verbosity			-- verbosity level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
       ,  ehcOptUseInplace     ::  Bool              -- use inplace runtime libraries
+      ,  ehcOptEnvironment    ::  EHCEnvironment	-- runtime environment
       
 %%]]
 %%[[9
@@ -178,6 +181,7 @@ data EHCOpts
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
+      ,  ehcOptDoLinking      ::  Bool				-- do link, if False compile only
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
@@ -187,8 +191,9 @@ data EHCOpts
       						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
+      ,  ehcOptLibSearchPath  ::  [String]
+      ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath  			-- name of this program
-      -- ,  ehcOptShowNumVersion ::  Bool				-- numerical version, for external version comparison
       ,  ehcOptCPP            ::  Bool				-- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude						-- use & assume presence of prelude
                               ::  Bool
@@ -249,7 +254,8 @@ ehcOptEmitCLR = targetIsCLR . ehcOptTarget
 %%[(8 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
-ehcOptEmitCore = ehcOptFullProgAnalysis
+ehcOptEmitCore opts
+  = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,15 +281,12 @@ defaultEHCOpts
       ,  ehcOptShowTopTyPP      =   False
 %%]]
       ,  ehcOptImmQuit			=	Nothing
-      -- ,  ehcOptHelp             =   False
-      -- ,  ehcOptVersion          =   False
       ,  ehcOptDebug            =   False
       ,  ehcStopAtPoint         =   CompilePoint_All
 %%[[7_2
       ,  ehcOptUniqueness       =   True
 %%]]
 %%[[(8 codegen)
-      -- ,  ehcOptEmitCore         =   True
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimise         =   OptimiseNormal
       ,  ehcOptTrf              =   []
@@ -298,13 +301,6 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenRTSInfo       =   0
 
-      -- ,  ehcOptEmitGrin         =   False
-      -- ,  ehcOptEmitLLVM         =   False
-      -- ,  ehcOptEmitExecLLVM     =   False
-      -- ,  ehcOptEmitC            =   False
-      -- ,  ehcOptEmitCil          =   False
-      -- ,  ehcOptEmitExecC        =   False
-      -- ,  ehcOptFullProgAnalysis =   False
       ,  ehcOptDumpGrinStages   =   False
 %%]]
 %%[[(8 codegen java)
@@ -314,21 +310,16 @@ defaultEHCOpts
       ,  ehcOptEmitHS           =   False
       ,  ehcOptEmitEH           =   False
       
-      ,  ehcOptSearchPath       =   []
+      ,  ehcOptUsrSearchPath    =   []
       ,  ehcOptVerbosity        =   VerboseNormal
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
       ,  ehcOptUseInplace       =   True
+      ,  ehcOptEnvironment      =	undefined	-- filled in at toplevel
       
 %%]]
 %%[[(8 codegen grin)
-      -- ,  ehcOptEmitBytecode     =   False
-      -- ,  ehcOptEmitExecBytecode =   False
-      -- ,  ehcOptErrAboutBytecode =   False
       ,  ehcOptGenCmt           =   True
 %%][(99 codegen grin)
-      -- ,  ehcOptEmitBytecode     =   True
-      -- ,  ehcOptEmitExecBytecode =   True
-      -- ,  ehcOptErrAboutBytecode =   True
       ,  ehcOptGenCmt           =   False
 %%]]
 %%[[9
@@ -347,6 +338,7 @@ defaultEHCOpts
 %%[[20
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
+      ,  ehcOptDoLinking        =   True
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
@@ -355,8 +347,9 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
+      ,  ehcOptLibSearchPath    =   []
+      ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
-      -- ,  ehcOptShowNumVersion   =   False
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
 %%]]
@@ -372,11 +365,17 @@ ehcCmdLineOpts
   =  [  Option "d"  ["debug"]            (NoArg oDebug)                       "show debug information"
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
      ,  Option ""   ["priv"]             (boolArg oPriv)                      "private flag, used during development of 2 impls of 1 feature"
+%%[[1
+     ,  Option "t"  ["target"]           (OptArg oTarget "")                  "code generation not available"
+%%][(8 codegen)
+     ,  Option "t"  ["target"]           (OptArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
+%%]]
 %%[[(1 hmtyinfer)
      ,  Option ""   ["show-top-ty"]      (OptArg oShowTopTy "yes|no")         "show top ty, default=no"
 %%]]
      ,  Option "h"  ["help"]             (NoArg oHelp)                        "only show this help"
      ,  Option ""   ["version"]          (NoArg oVersion)                     "only show version info"
+     ,  Option ""   ["meta-variant"]     (NoArg oVariant)                     "meta: print variant"
      ,  Option ""   ["stopat"]
 %%[[1
                                          (ReqArg oStopAt "0|1|2|3")           "stop at compile phase 0=imports, 1=parse, 2=hs, 3=eh"
@@ -403,12 +402,12 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen java)
 %%]]
-%%[[(8 codegen)
-     ,  Option ""   ["targets"]          (NoArg oTargets)                     "print list of supported codegeneration targets"
-     ,  Option "t"  ["target"]           (OptArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
+%%[[1
+     ,  Option ""   ["meta-target-default"]   (NoArg oTargetDflt)             "meta: print the default codegeneration target"
+     ,  Option ""   ["meta-targets"]     (NoArg oTargets)                     "meta: print list of supported codegeneration targets"
 %%]]
 %%[[8
-     ,  Option "c"  ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|cil|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
+     ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
      ,  Option "v"  ["verbose"]          (OptArg oVerbose "0|1|2|3")          "be verbose, 0=quiet 1=normal 2=noisy 3=debug-noisy, default=1"
 %%]]
 %%[[(8 codegen grin)
@@ -427,10 +426,13 @@ ehcCmdLineOpts
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
      ,  Option ""   ["debug-stopat-hi-error"]
                                          (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
+     ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
-     ,  Option "P"  ["search-path"]      (ReqArg oSearchPath "path")          "search path for all files, path separators=';', appended to previous"
+     ,  Option "i"  ["import-path"]      (ReqArg oUsrSearchPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --import-path"
+     ,  Option ""   ["package"]          (ReqArg oPackage "package")          "use package"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
@@ -438,6 +440,8 @@ ehcCmdLineOpts
      -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
      
+     ,  Option ""   ["meta-export-env"]  (OptArg oExportEnv "install rootdir[,variant]") "meta: export environmental info of installation"
+     ,  Option ""   ["meta-dir-env"]     (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation"
      ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 %%]]
 %%[[(99 hmtyinfer)
@@ -467,6 +471,7 @@ ehcCmdLineOpts
 %%]]
          oHelp           o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Help    }
          oVersion        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Version }
+         oVariant        o =  o { ehcOptImmQuit   	  = Just ImmediateQuitOption_Meta_Variant }
          oDebug          o =  o { ehcOptDebug         = True
 %%[[1
                                 , ehcOptShowAst       = True
@@ -490,11 +495,16 @@ ehcCmdLineOpts
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
 %%]]
-%%[[(8 codegen)
-         oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Targets    }
+%%[[1
+         oTarget     _   o =  o
+%%][(8 codegen)
          oTarget     ms  o =  case ms of
                                 Just t -> o { ehcOptTarget = Map.findWithDefault defaultTarget t supportedTargetMp }
                                 _      -> o
+%%]]
+%%[[1
+         oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Targets    	}
+         oTargetDflt     o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_TargetDefault  }
                                       
 %%]]
 %%[[8
@@ -503,7 +513,8 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
-                                Just "core"  -> o -- { ehcOptEmitCore         = True   }
+                                Just "core"  -> o { ehcOptTarget           = Target_Core
+                                                  }
 %%]]
 %%[[(8 codegen java)
                                 Just "java"  -> o { ehcOptEmitJava         = True   }
@@ -598,16 +609,21 @@ ehcCmdLineOpts
 -}
 %%]]
 %%[[20
-         oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }
+         oNoRecomp         o   = o { ehcOptCheckRecompile       = False    }
+         oCompileOnly      o   = o { ehcOptDoLinking 		    = False    }
 %%]]
 %%[[99
-         oNumVersion     o =  o { ehcOptImmQuit    = Just ImmediateQuitOption_NumericVersion }
-         oSearchPath  s  o =  o { ehcOptSearchPath = ehcOptSearchPath o ++ wordsBy (==';') s }
-         oNoPrelude      o =  o { ehcOptUseAssumePrelude        = False   }
-         oCPP            o =  o { ehcOptCPP                     = True    }
-         oLimitTyBetaRed o l = o { ehcOptTyBetaRedCutOffAt = l }
-         oLimitCtxtRed   o l = o { ehcOptPrfCutOffAt       = l }
-         oUseInplace     o b = o { ehcOptUseInplace = b }
+         oNumVersion       o   = o { ehcOptImmQuit    			= Just ImmediateQuitOption_NumericVersion }
+         oUsrSearchPath  s o   = o { ehcOptUsrSearchPath 		= ehcOptUsrSearchPath o ++ mkSearchPath s }
+         oLibSearchPath  s o   = o { ehcOptLibSearchPath 		= ehcOptLibSearchPath o ++ mkSearchPath s }
+         oPackage        s o   = o { ehcOptLibPackages   		= ehcOptLibPackages   o ++ [s] }
+         oNoPrelude        o   = o { ehcOptUseAssumePrelude		= False   }
+         oCPP              o   = o { ehcOptCPP        			= True    }
+         oLimitTyBetaRed   o l = o { ehcOptTyBetaRedCutOffAt 	= l }
+         oLimitCtxtRed     o l = o { ehcOptPrfCutOffAt       	= l }
+         oUseInplace       o b = o { ehcOptUseInplace 			= b }
+         oExportEnv     ms o   = o { ehcOptImmQuit   			= Just (ImmediateQuitOption_Meta_ExportEnv ms) }
+         oDirEnv           o   = o { ehcOptImmQuit   			= Just ImmediateQuitOption_Meta_DirEnv }
 %%]]
 %%[[(99 hmtyinfer)
          oDerivTree  ms  o =  case ms of

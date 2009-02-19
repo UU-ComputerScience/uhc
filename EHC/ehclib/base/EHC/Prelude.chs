@@ -2396,5 +2396,5 @@ ehcRunMain m =
 
 #endif
 
-main = return () -- dummy
+-- main = return () -- dummy
 %%]

@@ -56,6 +56,7 @@ data EHCompileRunStateInfo
       , crsiNextUID     :: !UID                                 -- unique id, the next one
       , crsiHereUID     :: !UID                                 -- unique id, the current one
 %%[[20
+      , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
       , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
       , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
       , crsiModMp       :: !ModMp                               -- import/export info for modules

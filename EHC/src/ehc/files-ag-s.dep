@@ -60,6 +60,7 @@ GrinCode/Trf/AliasRename.cag
 GrinCode/Trf/BuildAppBindings.cag
 GrinCode/Trf/CheckGrinInvariant.cag
 GrinCode/Trf/CleanupPass.cag
+GrinCode/Trf/ConstInt.cag
 GrinCode/Trf/ConstPropagation.cag
 GrinCode/Trf/CopyPropagation.cag
 GrinCode/Trf/DropDeadBindings.cag

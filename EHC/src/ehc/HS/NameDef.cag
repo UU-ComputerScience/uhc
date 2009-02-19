@@ -17,6 +17,18 @@ ATTR
 %%% The actual name (refname) used for referring to defining occurrences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[8.Body.refname
+SEM Body
+    | Body
+        loc             .   refmainname	=   hsnMain
+%%]
+
+%%[20 -8.Body.refname
+SEM Body
+    | Body
+        loc             .   refmainname	=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm hsnMain
+%%]
+
 %%[1.Declaration.refname
 SEM Declaration
     | Fixity

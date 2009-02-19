@@ -678,7 +678,7 @@ SEM Pattern
 %%]]
         lhs             .   idUseOccGam =   gamUnions
                                                 [ @idUseOccGam, @idUseOccGamEq
-%%[[9
+%%[[97
                                                 , @idUseOccGamCls
 %%]]
                                                 , @literal.idUseOccGam
@@ -1046,7 +1046,7 @@ SEM Body
                                             idFrOccGam2DpdMp @idDefOccGamMain [@idOccDefMain]
                                             `idDpdMpUnion`
                                             @declarations.idDpdMp
-        lhs             .   undefOccGam =   let g = if @lhs.isTopMod then @undefOccGamMain else emptyGam
+        lhs             .   undefOccGam =   let g = if @lhs.isMainMod then @undefOccGamMain else emptyGam
                                             in  gamUnions [g,@declarations.undefOccGam]
 %%]
 
@@ -1063,12 +1063,16 @@ SEM Deriving
 %%% Existence of main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20
+ATTR AllTopLevel AGItf [ | | mainValExists: Bool ]
+%%]
+
 %%[8
 SEM Body
     | Body
 %%[[8
         loc             .   mainValExists
-                                        =   case gamLookupDup (IdOcc hsnMain IdOcc_Val) @idGam of
+                                        =   case gamLookupDup (IdOcc @refmainname IdOcc_Val) @declarations.idDefOccGam of
                                               Nothing   -> False
                                               Just occs -> chk iaspIsValVar
 %%][9898
@@ -1316,7 +1320,7 @@ SEM Body
 SEM Body
     | Body
         loc             .   (mkSccLet,_,errReorder)
-                                        =   let g = if @lhs.isTopMod then @idDefOccGamMain else emptyGam
+                                        =   let g = if @lhs.isMainMod then @idDefOccGamMain else emptyGam
                                             in  mkIdOccSccEH @range False (g `gamUnion` @declarations.idDefOccGam) (Just @sccOrder)
 %%]
 

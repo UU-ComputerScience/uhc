@@ -1,11 +1,24 @@
-### the overall version of EH
+###########################################################################################
+# this file
+###########################################################################################
+
+MK_PREFIX									:= $(TOP_PREFIX)mk/
+MK_CONFIG_MKF								:= $(MK_PREFIX)config.mk
+
+###########################################################################################
+# the overall version of EH
+###########################################################################################
+
 EH_VERSION_MAJOR		:= @EH_VERSION_MAJOR@
 EH_VERSION_MINOR		:= @EH_VERSION_MINOR@
 EH_VERSION_MINORMINOR	:= @EH_VERSION_MINORMINOR@
 EH_VERSION_STABLE		:= @EH_VERSION_STABILITY@
 EH_VERSION				:= @EH_VERSION@
 
-### platform config, currently changed to config by autoconf
+###########################################################################################
+# platform config, currently changed to config by autoconf
+###########################################################################################
+
 # EXEC_SUFFIX	: suffix for executables
 # PATH_SEP		: separator in file paths
 # PATHS_SEP		: separator in sequences of file paths, as in environments

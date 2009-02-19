@@ -52,9 +52,9 @@ test-expect test-regress: test-lists
 	    optPreludePath="" ; \
 	    v=$(EHC_UHC_INSTALL_VARIANT) ; \
 	  else \
-	    ehc=$(TEST_BIN_PREFIX)$${v}/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
-	    gri=$(TEST_BIN_PREFIX)$${v}/$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
-	    optPreludePath="--search-path=$(BLDABS_PREFIX)$${v}/$(EHCLIB_EHCLIB_EHCBASE_PREFIX)" ; \
+	    ehc=$(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$${v})$(EHC_EXEC_NAME)$(EXEC_SUFFIX) ; \
+	    gri=$(call FUN_INSTALLABS_VARIANT_BIN_PREFIX,$${v})$(GRINI_EXEC_NAME)$(EXEC_SUFFIX) ; \
+	    optPreludePath="" ; \
 	  fi ; \
 	  echo "== version $${v} ==" ; \
 	  if test -x $${ehc} ; \
@@ -94,7 +94,7 @@ test-expect test-regress: test-lists
 	          tc=$${tb2}.core ; tg=$${tb2}.grin2 ; texe=$${tb2}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
 	          rm -f $${tc} $${tg} ; \
-	          $${ehc} $${TEST_OPTIONS} -v $${t2} > $${th} 2>&1 ; \
+	          $${ehc} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
 	          if test -r $${tc} ; \
 	          then \
 	            echo "== core ==" >> $${th} ; \
@@ -157,3 +157,6 @@ test-expect test-regress: test-lists
 	done; \
 	echo "== completed with $$nerrors errors and $$nwarnings warnings =="; \
 	exit $$nerrors;
+
+
+# 	    optPreludePath="--search-path=$(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$${v},$(EHC_VARIANT_TARGET))$(EHCLIB_EHCBASE_PREFIX)" ; \

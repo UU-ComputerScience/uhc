@@ -394,6 +394,25 @@ SEM Err
 
 %%[20
 SEM Err
+  | MayOnlyHaveNrMain   lhs     .  pp   =   ppMsgErr    "Number of definitions for 'main' exceeds limit"
+                                                        (                                         "limit                :" >#< @nrAllowed
+                                                         >-<                                      "module               :" >#< @modNm
+                                                         >-< (if null @prevModNmL then empty else "previously defined in:" >#< ppCommas @prevModNmL)
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+  | MayNotHaveMain      lhs     .  pp   =   ppMsgErr    "May not have a 'main'"
+                                                        ("module:" >#< @modNm
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+  | MustHaveMain        lhs     .  pp   =   ppMsgErr    "No 'main' defined"
+                                                        empty
+%%[[99
+                                                        @range
+%%]]
   | ModNameMismatch     lhs     .  pp   =   ppMsgErr    "Module names do not match"
                                                         (    "filename        :" >#< @nmOfFile
                                                          >-< "name from source:" >#< @nmFromSrc

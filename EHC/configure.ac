@@ -124,23 +124,23 @@ AC_SUBST(CABAL_CONFIGURE_OPTIONS, "$cabalConfigureOptions")
 ### 'with' option for additional ehc unixtool (gcc, cpp) prefix.
 ### Usually empty, but set for (e.g.) cygwin
 AC_ARG_WITH(ehc-unixtool-prefix,
-[AC_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools used by ehc>],
+[AC_HELP_STRING([--with-ehc-unixtool-prefix=<additional prefix for unixtools (already with absolute pathnames) used by ehc>],
                 [Additional prefix for unixtools used by ehc.])],
-[ additionalEhcUnixtoolPrefix="$withval" ],)
+[ toplevelSystemAbsolutePathPrefix="$withval" ],)
 
 # when no unixtool prefix is specified && running cygwin, take cygwin's equivalent of /
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test "$additionalEhcUnixtoolPrefix" = ""
+        if test "$toplevelSystemAbsolutePathPrefix" = ""
         then
-          additionalEhcUnixtoolPrefix="`cygpath --mixed /`"
+          toplevelSystemAbsolutePathPrefix="`cygpath --mixed /`"
         fi
         ;;
   *)
         ;;
 esac             
 
-AC_SUBST(EHC_UNIXTOOL_PREFIX, "$additionalEhcUnixtoolPrefix")
+AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
 ### 'with' option for ghc
 AC_ARG_WITH(ghc,
@@ -265,7 +265,7 @@ fi
 # See remarks about cpp
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$gccCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
         fi
@@ -335,7 +335,7 @@ fi
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        if test ! -x "$additionalEhcUnixtoolPrefix/$cppCmd"
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
         fi
@@ -567,11 +567,16 @@ AC_SUBST(TARGET_TRIPLE, "$host")
 AC_SUBST(EHC_EXEC_NAME, "ehc")
 AC_SUBST(UHC_EXEC_NAME, "uhc")
 
+### name of subdirectory for shared ehc library artifacts
+AC_SUBST(EHCLIB_SHARED, "shared")
+
 ### install locations
 inplaceInstallDir="install"
+inplaceInstallForBldDir="install-for-build"
 AC_SUBST(INPLACE_TOP, "$hardtop")
 AC_SUBST(INPLACE_PREFIX, "$hardtop_plat/$inplaceInstallDir")
 AC_SUBST(INPLACE_INSTALL_DIR, "$inplaceInstallDir")
+AC_SUBST(INPLACE_INSTALLFORBLD_DIR, "$inplaceInstallForBldDir")
 AC_SUBST(INSTALL_LIB_SUFFIX, "lib/uhc")
 
 ### package names assumed by compiler driver

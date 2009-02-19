@@ -60,16 +60,19 @@ cpCheckMods modNmL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 export(cpGetHsImports,cpGetHsMod,cpGetMetaInfo)
-cpGetHsImports :: HsName -> EHCompilePhase ()
+cpGetHsImports :: HsName -> EHCompilePhase HsName
 cpGetHsImports modNm
   =  do  {  cr <- get
          ;  let  ecu        = crCU modNm cr
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
-         ;  when (isJust mbHsSemMod)
-                 (cpUpdCU modNm $ ecuStoreHSDeclImpL (HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
-                 )
          -- ; lift $ putWidthPPLn 120 (pp mod)
+         ;  case mbHsSemMod of
+              Just _ -> cpUpdCUWithKey modNm (\_ ecu -> (modNm',upd ecu))
+                     where upd = ecuStoreHSDeclImpL (HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
+                                 . cuUpdKey modNm'
+                           modNm' = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
+              _      -> return modNm
          }
 
 cpGetHsMod :: HsName -> EHCompilePhase ()
