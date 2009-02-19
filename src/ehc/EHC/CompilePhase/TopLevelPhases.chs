@@ -216,6 +216,11 @@ cpEhcModuleCompile1 targHSState modNm
 %%[8
   = do { cr <- get
        ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[8
+             defaultResult = ()
+%%][20
+             defaultResult = modNm
+%%]]
 %%[[20
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
@@ -248,7 +253,7 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal ("Imports of HI")
                    ; cpEhcHaskellModulePrepare modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
-                   ; return modNm
+                   ; return defaultResult
                    }
            (ECUSHaskell st,Just HSOnlyImports)
              |    st == HSOnlyImports
@@ -256,7 +261,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[99
                || st == LHSOnlyImports
 %%]]
-             -> return modNm
+             -> return defaultResult
            (ECUSHaskell st,Just HSAllSem)
              |    st == HSOnlyImports
 %%[[99
@@ -265,7 +270,7 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
                    ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                   ; return modNm
+                   ; return defaultResult
                    }
            (ECUSHaskell st,Just HIAllSem)
              |    st == HSOnlyImports
@@ -278,7 +283,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdateModOffMp [modNm]
 %%]]
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HIAllSem))
-                   ; return modNm
+                   ; return defaultResult
                    }
 %%]]
 %%]
@@ -291,11 +296,11 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptFullProgAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
-                   ; return modNm
+                   ; return defaultResult
                    }
 %%[[20
            (_,Just HSOnlyImports)
-             -> return modNm
+             -> return defaultResult
 %%]]
            (ECUSEh EHStart,_)
              -> do { cpMsg modNm VerboseNormal "Compiling EH"
@@ -308,7 +313,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptFullProgAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm)
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
-                   ; return modNm
+                   ; return defaultResult
                    }
 %%[[(8 codegen grin)
            (ECUSGrin,_)
@@ -316,11 +321,11 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpParseGrin modNm
                    ; cpProcessGrin modNm
                    ; cpProcessBytecode modNm 
-                   ; return modNm
+                   ; return defaultResult
                    }
                    
 %%]]
-           _ -> return modNm
+           _ -> return defaultResult
        }
 %%]
 
@@ -359,7 +364,13 @@ cpEhcHaskellModuleCommonPhases isTopMod doMkExec opts modNm
   = cpSeq [ cpEhcHaskellAnalyseModuleDefs modNm
           , do { cr <- get
                ; let (ecu,_,_,_) = crBaseInfo modNm cr
-               ; cpEhcEhModuleCommonPhases (ecuIsMainMod ecu) isTopMod doMkExec opts modNm
+               ; cpEhcEhModuleCommonPhases
+%%[[8
+                   isTopMod
+%%][20
+                   (ecuIsMainMod ecu)
+%%]]
+                   isTopMod doMkExec opts modNm
                }
           ]       
 %%]
@@ -555,7 +566,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
               else []
              )
           ++ [cpMsg modNm VerboseALot "Core+Grin done"]
-          ++ [cpMsg modNm VerboseALot ("isMainMod: " ++ show isMainMod)]
+          -- ++ [cpMsg modNm VerboseALot ("isMainMod: " ++ show isMainMod)]
           )
 %%]
 
