@@ -25,7 +25,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
+%%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
 %%]
@@ -120,7 +120,9 @@ doCompileGrin input opts
                                              "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
 %%]]
          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115-cleaned"
+%%[[97
          ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
+%%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
          ; transformCodeInline                      "Inline"

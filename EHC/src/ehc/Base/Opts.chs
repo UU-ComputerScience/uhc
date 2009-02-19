@@ -181,6 +181,7 @@ data EHCOpts
 %%[[20
       ,  ehcOptCheckRecompile ::  Bool
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
+      ,  ehcOptDoLinking      ::  Bool				-- do link, if False compile only
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
@@ -190,7 +191,6 @@ data EHCOpts
       						  ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
-      ,  ehcOptDoLinking      ::  Bool				-- do link, if False compile only
       ,  ehcOptLibSearchPath  ::  [String]
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath  			-- name of this program
@@ -331,6 +331,7 @@ defaultEHCOpts
 %%[[20
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
+      ,  ehcOptDoLinking        =   True
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree	=	DerivTreeWay_None
@@ -339,7 +340,6 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
-      ,  ehcOptDoLinking        =   True
       ,  ehcOptLibSearchPath    =   []
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
@@ -419,6 +419,7 @@ ehcCmdLineOpts
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
      ,  Option ""   ["debug-stopat-hi-error"]
                                          (boolArg oStopAtHIError)             "debug: stop at .hi parse error (default=off)"
+     ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "only show numeric version"
@@ -426,7 +427,6 @@ ehcCmdLineOpts
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --import-path"
      ,  Option ""   ["package"]          (ReqArg oPackage "package")          "use package"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
-     ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
@@ -600,7 +600,8 @@ ehcCmdLineOpts
 -}
 %%]]
 %%[[20
-         oNoRecomp       o =  o { ehcOptCheckRecompile             = False   }
+         oNoRecomp         o   = o { ehcOptCheckRecompile       = False    }
+         oCompileOnly      o   = o { ehcOptDoLinking 		    = False    }
 %%]]
 %%[[99
          oNumVersion       o   = o { ehcOptImmQuit    			= Just ImmediateQuitOption_NumericVersion }
@@ -608,7 +609,6 @@ ehcCmdLineOpts
          oLibSearchPath  s o   = o { ehcOptLibSearchPath 		= ehcOptLibSearchPath o ++ mkSearchPath s }
          oPackage        s o   = o { ehcOptLibPackages   		= ehcOptLibPackages   o ++ [s] }
          oNoPrelude        o   = o { ehcOptUseAssumePrelude		= False   }
-         oCompileOnly      o   = o { ehcOptDoLinking 		    = False    }
          oCPP              o   = o { ehcOptCPP        			= True    }
          oLimitTyBetaRed   o l = o { ehcOptTyBetaRedCutOffAt 	= l }
          oLimitCtxtRed     o l = o { ehcOptPrfCutOffAt       	= l }
