@@ -31,9 +31,8 @@ cpCompileWithLLVM :: HsName -> EHCompilePhase()
 cpCompileWithLLVM modNm
   = do { cr <- get
        ; let  (_,_,opts,fp) = crBaseInfo modNm cr
-              fpLL          = fpathSetSuff "ll" fp
-              fpExec        = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) 
-                                    Cfg.mbSuffixExec
+              fpLL          = mkOutputFPath opts modNm fp "ll"
+              fpExec        = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
               variant       = ehcenvVariant (ehcOptEnvironment opts)
               libs          = map (\lib -> "-l " ++ lib) $
                               [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "prim.o"

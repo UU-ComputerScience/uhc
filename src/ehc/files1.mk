@@ -313,7 +313,7 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	mkdir -p $(@D)
 	$(call GEN_CABAL \
 		, $(LIB_EHC_PKG_NAME) \
-		, $(EH_VERSION) \
+		, $(EH_VERSION_SHORT) \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) \
 		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
@@ -404,6 +404,8 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "ehcDefaultVariant = \"$(EHC_VARIANT_ASPECTS)\"" ; \
 	  echo "" ; \
+	  echo "ehcSvnRevision = \"`svn info | grep Revision`\"" ; \
+	  echo "" ; \
 	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
 	  echo "" ; \
 	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
@@ -413,6 +415,8 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
 	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "" ; \
+	  echo "mkLibFilename dirprefix pkg = \"$(call FUN_MK_LIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
 	  echo "mkDirbasedInstallPrefix dir what variant target = case what of" ; \
 	  echo "  LIB            -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \

@@ -17,6 +17,8 @@ module EH.Util.CompileRun
   , crCU, crMbCU
   , ppCR
   
+  , cpUpdStateInfo, cpUpdSI
+  
   , cpUpdCU, cpUpdCUWithKey
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
@@ -154,7 +156,7 @@ cpPPMsg m
 
 
 -------------------------------------------------------------------------
--- State manipulation, sequencing
+-- State manipulation, sequencing: compile unit
 -------------------------------------------------------------------------
 
 crMbCU :: Ord n => n -> CompileRun n u i e -> Maybe u
@@ -162,6 +164,10 @@ crMbCU modNm cr = Map.lookup modNm (crCUCache cr)
 
 crCU :: (Show n,Ord n) => n -> CompileRun n u i e -> u
 crCU modNm = panicJust ("crCU: " ++ show modNm) . crMbCU modNm
+
+-------------------------------------------------------------------------
+-- State manipulation, sequencing: non monadic
+-------------------------------------------------------------------------
 
 crSetFail :: CompileRun n u i e -> CompileRun n u i e
 crSetFail cr = cr {crState = CRSFail}
@@ -269,6 +275,54 @@ cpImportScc = modify (\cr -> (cr {crCompileOrder = Scc.scc (crImportDepL cr)}))
 
 
 -------------------------------------------------------------------------
+-- State manipulation, state update (Monadic)
+-------------------------------------------------------------------------
+
+cpUpdStateInfo, cpUpdSI :: (i -> i) -> CompilePhase n u i e ()
+cpUpdStateInfo upd
+  = do { cr <- get
+       ; put (cr {crStateInfo = upd (crStateInfo cr)})
+       }
+
+cpUpdSI = cpUpdStateInfo
+
+-------------------------------------------------------------------------
+-- State manipulation, compile unit update (Monadic)
+-------------------------------------------------------------------------
+
+cpUpdCUM :: (Ord n,CompileUnit u n s) => n -> (u -> IO u) -> CompilePhase n u i e ()
+cpUpdCUM modNm upd
+  = do { cr <- get
+       ; cu <- lift (maybe (upd cuDefault) upd (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
+       }
+
+
+cpUpdCUWithKey :: (Ord n,CompileUnit u n s) => n -> (n -> u -> (n,u)) -> CompilePhase n u i e n
+cpUpdCUWithKey modNm upd
+  = do { cr <- get
+       ; let (modNm',cu) = (maybe (upd modNm cuDefault) (upd modNm) (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm' cu $ Map.delete modNm $ crCUCache cr})
+       ; return modNm'
+       }
+
+cpUpdCU :: (Ord n,CompileUnit u n s) => n -> (u -> u) -> CompilePhase n u i e ()
+cpUpdCU modNm upd
+  = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
+       ; return ()
+       }
+{-
+  = do { cr <- get
+       ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
+       }
+-}
+{-
+cpUpdCU modNm upd
+ = cpUpdCUM modNm (return . upd)
+-}
+
+-------------------------------------------------------------------------
 -- State manipulation, sequencing (Monadic)
 -------------------------------------------------------------------------
 
@@ -312,38 +366,6 @@ cpSetLimitErrsWhen l a e
  = do { when (not (null e))
              (cpSetLimitErrs l a e)
       }
-
-cpUpdCUM :: (Ord n,CompileUnit u n s) => n -> (u -> IO u) -> CompilePhase n u i e ()
-cpUpdCUM modNm upd
-  = do { cr <- get
-       ; cu <- lift (maybe (upd cuDefault) upd (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
-       }
-
-
-cpUpdCUWithKey :: (Ord n,CompileUnit u n s) => n -> (n -> u -> (n,u)) -> CompilePhase n u i e n
-cpUpdCUWithKey modNm upd
-  = do { cr <- get
-       ; let (modNm',cu) = (maybe (upd modNm cuDefault) (upd modNm) (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm' cu $ Map.delete modNm $ crCUCache cr})
-       ; return modNm'
-       }
-
-cpUpdCU :: (Ord n,CompileUnit u n s) => n -> (u -> u) -> CompilePhase n u i e ()
-cpUpdCU modNm upd
-  = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
-       ; return ()
-       }
-{-
-  = do { cr <- get
-       ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
-       }
--}
-{-
-cpUpdCU modNm upd
- = cpUpdCUM modNm (return . upd)
--}
 
 cpEmpty :: CompilePhase n u i e ()
 cpEmpty = return ()

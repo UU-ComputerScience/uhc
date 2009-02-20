@@ -73,14 +73,14 @@ EHCLIB_HS_MAIN_DRV_HS					= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_EHC
 
 # shuffled
 EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.chs)
-EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
+EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
 # as haskell, as is in svn repo
 EHCLIB_HS_ALL_SRC_HS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.hs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.hs)
-EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
+EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
 
 # as haskell, from frozen sync
-EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
+EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS)
@@ -111,16 +111,21 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
-			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_HS),) \
+			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS),) \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,pkgs="" ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
-	        pushd $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} ; \
-	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) --cpp $${pkgs} --compile-only --target=$(EHC_VARIANT_TARGET) `ls -d * */* */*/* | grep '\.hs$$'` ; \
+	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
+	          --cpp \
+	          --compile-only \
+	          --hide-all-packages \
+	          --target=$(EHC_VARIANT_TARGET) \
+	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
+	          $${pkgs} \
+	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
-	        popd ; \
 	      done \
 	     ,)
 
@@ -171,36 +176,36 @@ $(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_AS
 ###########################################################################################
 
 # top level 'compile all' module imports all other modules
-$(EHCLIB_HS_MAIN_DRV_HS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
-	@pkg=`echo $@ | sed -n -e 's+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)\([a-zA-Z0-9_]*\).*+\1+p'` ; \
-	pkgFileNames="" ; \
-	for f in $(EHCLIB_ALL_DRV_HS) ; \
-	do \
-	  fn=`echo $${f} | sed -n -e "s+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/\([a-zA-Z0-9_/]*\).hs+\1+p"` ; \
-	  pkgFileNames="$${fn} $${pkgFileNames}" ; \
-	done ; \
-	(echo "module $(EHCLIB_MAIN) where" ; \
-	  for imp in $${pkgFileNames} ; \
-	  do \
-	    echo "import $${imp}" | sed -e "s+/+.+g" ; \
-	  done ; \
-	  echo "main = return ()" ; \
-	) > $@
+#$(EHCLIB_HS_MAIN_DRV_HS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
+#	@pkg=`echo $@ | sed -n -e 's+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)\([a-zA-Z0-9_]*\).*+\1+p'` ; \
+#	pkgFileNames="" ; \
+#	for f in $(EHCLIB_ALL_DRV_HS) ; \
+#	do \
+#	  fn=`echo $${f} | sed -n -e "s+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/\([a-zA-Z0-9_/]*\).hs+\1+p"` ; \
+#	  pkgFileNames="$${fn} $${pkgFileNames}" ; \
+#	done ; \
+#	(echo "module $(EHCLIB_MAIN) where" ; \
+#	  for imp in $${pkgFileNames} ; \
+#	  do \
+#	    echo "import $${imp}" | sed -e "s+/+.+g" ; \
+#	  done ; \
+#	  echo "main = return ()" ; \
+#	) > $@
 
 # plainly copy .hs files
-$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hs
+$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hs
 	mkdir -p $(@D)
 	cp $< $@
 	touch $@
 
 # extract .hs files from frozen archive
 $(EHCLIB_FROZEN_ALL_DRV_HS): $(EHCLIB_GHCSYNC_FROZEN)
-	mkdir -p $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)
-	cd $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)++'`
+	mkdir -p $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
+	cd $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)++'`
 	touch $@
 
 # generate .hs from .chs via shuffle
-$(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.chs
+$(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.chs
 	mkdir -p $(@D)
 	$(SHUFFLE_PLAIN) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@

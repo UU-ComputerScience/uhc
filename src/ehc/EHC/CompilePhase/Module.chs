@@ -40,7 +40,7 @@ cpCheckMods' modL
               (lift $ putWidthPPLn 120 (pp (head modL) >-< ppModMp mm)) -- debug
 %%][99
 %%]]
-       ; put (cr {crStateInfo = crsi {crsiModMp = mm}})
+       ; cpUpdSI (\crsi -> crsi {crsiModMp = mm})
        ; cpSetLimitErrsWhen 5 "Module analysis" e
        }
 %%]
@@ -129,7 +129,7 @@ cpGetDummyCheckEhMod modNm
              mm     = crsiModMp crsi
              mod    = Mod modNm Nothing Nothing [] Rel.empty Rel.empty []
        ; cpUpdCU modNm (ecuStoreMod mod)
-       ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm emptyModMpInfo mm}})
+       ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm emptyModMpInfo mm})
        }
 %%]
 
@@ -144,7 +144,7 @@ cpUpdateModOffMp modNmL
        ; let crsi   = crStateInfo cr
              offMp  = crsiModOffMp crsi
              offMp' = Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip modNmL [Map.size offMp ..] ] `Map.union` offMp
-       ; put (cr {crStateInfo = crsi {crsiModOffMp = offMp'}})
+       ; cpUpdSI (\crsi -> crsi {crsiModOffMp = offMp'})
        }
 %%]
 

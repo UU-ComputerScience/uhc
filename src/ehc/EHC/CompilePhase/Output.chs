@@ -54,9 +54,9 @@ cpOutputCore suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
-                 fpC = fpathSetSuff suff fp                
+                 fpC = mkOutputFPath opts modNm fp suff                
          ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (ppCModule opts cMod) 100
+         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
          }
 %%]
 
@@ -68,9 +68,10 @@ cpOutputJava suff modNm
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputJava" mbCore
                  (jBase,jPP) = cmodJavaSrc cMod
-                 fpJ = fpathSetBase jBase fp                 
+                 -- fpJ = fpathSetBase jBase fp    
+                 fpJ    = mkOutputFPath opts (mkHNm jBase) fp suff
          ;  cpMsg modNm VerboseALot "Emit Java"
-         ;  lift (putPPFile (fpathToStr (fpathSetSuff suff fpJ)) jPP 100)
+         ;  lift (putPPFPath fpJ jPP 100)
          }
 %%]
 
@@ -82,10 +83,11 @@ cpOutputGrin suff modNm
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOutputGrin" mbGrin
                  grinPP = ppGrModule grin
-                 fpG    = fpathSetSuff "grin" (fpathSetBase (fpathBase fp ++ suff) fp)
+                 mkb x  = x ++ suff
+                 fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
          ;  when (ehcOptDumpGrinStages opts)
                  (do { cpMsg modNm VerboseALot "Emit Grin"
-                     ; lift $ putPPFile (fpathToStr fpG) grinPP 1000
+                     ; lift $ putPPFPath fpG grinPP 1000
                      })
          }
 %%]
@@ -96,9 +98,12 @@ cpOutputByteCodeC suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,fp) = crBaseInfo modNm cr
                  bc       = panicJust "cpOutputByteCodeC" $ ecuMbBytecodeSem ecu
-                 fpC      = fpathSetSuff suff fp
+                 fpC      = mkOutputFPath opts modNm fp suff
          ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
-         ;  lift $ putPPFile (fpathToStr fpC) bc 150
+%%[[99
+         ;  cpRegisterFileToRm fpC
+%%]]
+         ;  lift $ putPPFPath fpC bc 150
          }
 %%]
 
@@ -116,11 +121,11 @@ cpOutputHI suff modNm
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvn Cfg.version) (optsDiscrRecompileRepr opts) 0
+                                $ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvnRevision Cfg.version) (optsDiscrRecompileRepr opts) 0
                                   : binds))
                             (crsiHIInh crsi)
          ;  cpMsg modNm VerboseALot "Emit HI"
-         ;  lift $ putPPFile (fpathToStr (fpathSetSuff suff fp)) (HISem.pp_Syn_AGItf hi) 120
+         ;  lift $ putPPFPath (mkOutputFPath opts modNm fp suff) (HISem.pp_Syn_AGItf hi) 120
          ;  now <- lift $ getClockTime
          ;  cpUpdCU modNm $ ecuStoreHITime now
          }

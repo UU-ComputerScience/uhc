@@ -743,8 +743,8 @@ thd (a,b,c) = c
 
 %%[8 export(Verbosity(..))
 data Verbosity
-  = VerboseQuiet | VerboseNormal | VerboseALot | VerboseDebug
-  deriving (Eq,Ord)
+  = VerboseQuiet | VerboseMinimal | VerboseNormal | VerboseALot | VerboseDebug
+  deriving (Eq,Ord,Enum)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

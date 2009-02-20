@@ -245,6 +245,14 @@ FUN_INSTALL_FLAG_PREFIX						= $(call    FUN_INSTALL_VARIANT_XXX_PREFIX,$(1),ins
 FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),ins-flg)
 
 ###########################################################################################
+# Construction of the name of a library
+###########################################################################################
+
+# $1: directory/location prefix
+# $2: package name
+FUN_MK_LIB_FILENAME						= $(1)lib$(2)$(LIB_SUFFIX)
+
+###########################################################################################
 # Regular options to commands, as functions still depending on variant + target
 ###########################################################################################
 
@@ -295,8 +303,8 @@ RTS_GCC_CC_OPTS							:= @CC_STD_FLAG@
 RTS_GCC_CC_OPTS_OPTIM					:= $(RTS_GCC_CC_OPTS) -O3
 
 # library building, using libtool
-LIBTOOL_STATIC							:= @LIBTOOL_STATIC_CMD@
-LIBTOOL_DYNAMIC							:= @LIBTOOL_DYNAMIC_CMD@
+LIBTOOL_STATIC							:= @LIBTOOL_STATIC_CMD@ @LIBTOOL_STATIC_OPTS@
+LIBTOOL_DYNAMIC							:= @LIBTOOL_DYNAMIC_CMD@ @LIBTOOL_DYNAMIC_OPTS@
 
 # lhs2tex options
 LHS2TEX_OPTS_DFLT						:= 
@@ -387,7 +395,7 @@ FILTER_OUT_EMPTY_FILES		= $(if $(strip $(1)),$(shell echo $(1) | sed -e 's/\([^ 
 # $1: src dir
 # $2: dest dir
 # $3: src files relative to src dir
-COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(2) && tar xf -))
+FUN_COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(2) && tar xf -))
 
 ###########################################################################################
 # Misc
@@ -420,12 +428,12 @@ space				:= $(empty) $(empty)
 # $1: text
 SUBS_US_X			= $(subst _,x,$(1))
 
-# make a static library
+# make a static library, see also src/ehc/Config.chs.in
 # $1: library
 # $2: files
-ifeq ($(LIBTOOL_STATIC),no)
-LIB_MK_STATIC		= $(AR) r $(1) $(2) ; $(RANLIB) $(1)
+ifeq ($(LIBTOOL_STATIC_CMD),no)
+FUN_LIB_MK_STATIC		= $(AR) r $(1) $(2) ; $(RANLIB) $(1)
 else
-LIB_MK_STATIC		= $(LIBTOOL_STATIC) $(1) $(2)
+FUN_LIB_MK_STATIC		= $(LIBTOOL_STATIC) $(1) $(2)
 endif
 
