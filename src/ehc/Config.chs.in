@@ -147,7 +147,7 @@ shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
 mkShellCmdLibtool :: String -> [String] -> [[String]]
 mkShellCmdLibtool archive files
   = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
-    then [ [shellCmdAr,"r","-c",archive] ++ files
+    then [ [shellCmdAr,"r",{- "-c", -} archive] ++ files
          , [shellCmdRanlib,archive]
          ]
     else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
