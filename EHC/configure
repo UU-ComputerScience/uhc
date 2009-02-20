@@ -2052,6 +2052,17 @@ echo "$as_me: error:
 
   fi
 
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$ranlibCmd"
+        then
+          ranlibCmd="`echo $ranlibCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
 RANLIB_CMD=$ranlibCmd
 
 
@@ -2108,6 +2119,17 @@ echo "$as_me: error:
 
   fi
 
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$arCmd"
+        then
+          arCmd="`echo $arCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
 AR_CMD=$arCmd
 
 

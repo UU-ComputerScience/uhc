@@ -68,9 +68,31 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
 
 ### ar, ranlib, libtool
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$ranlibCmd"
+        then
+          ranlibCmd="`echo $ranlibCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
 REQUIRED_PROG_FOR_EH(arCmd,ar)
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$arCmd"
+        then
+          arCmd="`echo $arCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
 AC_SUBST(AR_CMD,$arCmd)
 
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
