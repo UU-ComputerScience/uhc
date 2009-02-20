@@ -106,11 +106,20 @@ data EHCompileUnitState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Shell command construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mkShellCmd)
+mkShellCmd :: [String] -> String
+mkShellCmd = concat . intersperse " "
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name of output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(mkOutputFPath)
-mkOutputFPath :: EHCOpts -> HsName -> FPath -> String -> FPath
+mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
 mkOutputFPath opts modNm fp suffix
   = fpathSetSuff suffix fp'
 %%[[8

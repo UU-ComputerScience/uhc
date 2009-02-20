@@ -185,10 +185,11 @@ cpRmFilesToRm :: EHCompilePhase ()
 cpRmFilesToRm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
-       ; lift $ mapM (removeFile . fpathToStr) (crsiFilesToRm crsi)
-       -- ; lift $ mapM ((\f -> putStrLn ("rm " ++ f)). fpathToStr) (crsiFilesToRm crsi)
+       ; lift $ mapM (rm . fpathToStr) (crsiFilesToRm crsi)
        ; cpUpdSI (\crsi -> crsi {crsiFilesToRm = []})
        }
+  where rm f = catch (removeFile f)
+                     (\e -> hPutStrLn stderr (show f ++ ": " ++ show e))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

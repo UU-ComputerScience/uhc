@@ -51,6 +51,8 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen grin) import({%{EH}EHC.CompilePhase.CompileLLVM})
 %%]
+%%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
+%%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
 %%]
 %%[99 import({%{EH}EHC.CompilePhase.Cleanup})
@@ -93,7 +95,10 @@ cpEhcFullProgLinkAllModules modNmL
           _ | ehcOptDoLinking opts
               -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
             | otherwise
-              -> return ()
+              -> case ehcOptPkg opts of
+                   Just (PkgOption_Build pkg) | targetAllowsOLinking (ehcOptTarget opts)
+                     -> cpLinkO impModNmL pkg
+                   _ -> return ()
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]
@@ -128,7 +133,7 @@ cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHC
 cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
           , mergeIntoOneBigCore
-          , cpOutputCore "fullcore" mainModNm
+          -- , cpOutputCore "fullcore" mainModNm
           , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
           ]
   where mergeIntoOneBigCore

@@ -53,24 +53,22 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam VarMp Deriving Module Config BuiltinPrims \
-													CHR CHR/Key CHR/Constraint CHR/Solve \
-													Pred Pred/ToCHR Pred/CHR Pred/Evidence Pred/EvidenceToCore Pred/Heuristics Pred/CommonCHR Pred/RedGraph \
-													Base/Opts Base/Target Base/BasicAnnot Base/Common Base/Builtin Base/Builtin2 Base/HsName Base/Debug Base/Trie Base/CfgPP Base/ForceEval Base/LaTeX \
-													NameAspect \
-													DerivationTree \
-													Scanner/Common Scanner/Machine Scanner/Scanner Scanner/Token Scanner/TokenParser \
-													Base/Parser Ty/Parser EH/Parser HS/Parser Foreign/Parser HI/Parser Core/Parser GrinCode/Parser \
-													Ty/FitsInCommon Ty/FitsInCommon2 Ty/FitsIn Ty/Utils \
-													Ty/Trf/BetaReduce \
+													Substitutable Gam VarMp Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
+													$(addprefix CHR/,Key Constraint Solve) \
+													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore Heuristics CommonCHR RedGraph) \
+													$(addprefix Base/,Opts Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon) \
+													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
+													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
+													$(addprefix Ty/,FitsInCommon FitsInCommon2 FitsIn Utils Trf/BetaReduce) \
 													Core/Coercion Core/Utils \
-													EHC/Common EHC/Environment EHC/CompileUnit EHC/CompileGroup EHC/CompileRun EHC/GrinCompilerDriver EHC/InitialSetup \
-													EHC/CompilePhase/Parsers EHC/CompilePhase/Output EHC/CompilePhase/Translations EHC/CompilePhase/TransformCore \
-													EHC/CompilePhase/FlowBetweenPhase EHC/CompilePhase/CompileC EHC/CompilePhase/TransformGrin EHC/CompilePhase/Semantics \
-													EHC/CompilePhase/CompileLLVM EHC/CompilePhase/Cleanup EHC/CompilePhase/Module EHC/CompilePhase/TopLevelPhases \
+													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
+														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
+															FlowBetweenPhase TransformGrin Semantics \
+															CompileLLVM CompileC Link \
+															Cleanup Module TopLevelPhases \
+													)	) \
 													Gam/Utils \
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
-													Base/HtmlCommon \
 													Debug/HighWaterMark \
 													GrinCode/Common GrinCode/SolveEqs \
 											)

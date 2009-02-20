@@ -44,11 +44,12 @@ cpCompileWithLLVM modNm
               outputOpts    = ["-o " ++ fpathToStr fpExec]
        ; when ( targetIsLLVM (ehcOptTarget opts) )
          (  do { let compileLL 
-                       = concat $ intersperse " "
-                         $  [ Cfg.shellCmdLLVM ]
-                         ++ libs
-                         ++ outputOpts
-                         ++ inputOpts
+                       = mkShellCmd
+                           (  [ Cfg.shellCmdLLVM ]
+                           ++ libs
+                           ++ outputOpts
+                           ++ inputOpts
+                           )
                ; when (ehcOptVerbosity opts >= VerboseALot)
                  (  do { cpMsg' modNm VerboseALot "LLVM" Nothing fpExec
                        ; lift $ putStrLn compileLL
