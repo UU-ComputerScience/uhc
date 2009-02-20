@@ -73,7 +73,7 @@ AC_SUBST(RANLIB_CMD,$ranlibCmd)
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 AC_SUBST(AR_CMD,$arCmd)
 
-REQUIRED_PROG_FOR_EH(libtoolStaticCmd,libtool)
+REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
 AC_ARG_WITH(gcc-ehc-options,

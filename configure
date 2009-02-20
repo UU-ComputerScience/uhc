@@ -2154,13 +2154,14 @@ fi
 
   if test -z "$libtoolStaticCmd"; then
 
-  { { echo "$as_me:$LINENO: error:
-     You must install libtool before you can continue
-     Perhaps it is already installed, but not in your PATH?" >&5
-echo "$as_me: error:
-     You must install libtool before you can continue
-     Perhaps it is already installed, but not in your PATH?" >&2;}
-   { (exit 1); exit 1; }; }
+  { echo "$as_me:$LINENO: WARNING:
+     You should have installed libtool, but I will proceed without it.
+     However, this may lead to a partial install only.
+     Perhaps libtool is already installed, but not in your PATH?" >&5
+echo "$as_me: WARNING:
+     You should have installed libtool, but I will proceed without it.
+     However, this may lead to a partial install only.
+     Perhaps libtool is already installed, but not in your PATH?" >&2;}
 
   fi
 
