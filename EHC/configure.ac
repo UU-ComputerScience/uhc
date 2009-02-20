@@ -28,7 +28,8 @@ AC_SUBST(EH_VERSION_MAJOR)
 AC_SUBST(EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
-AC_SUBST(EH_VERSION,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
+AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
+AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_STABILITY)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -479,8 +480,10 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool -static -o"
+libtoolStatic="libtool"
+libtoolStaticOpts="-static -o"
 libtoolDynamic="echo Dynamic linking not available: "
+libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
@@ -531,7 +534,9 @@ AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
 
 # libtool used, if any
 AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
+AC_SUBST(LIBTOOL_STATIC_OPTS, "$libtoolStaticOpts")
 AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
+AC_SUBST(LIBTOOL_DYNAMIC_OPTS, "$libtoolDynamicOpts")
 
 # flags passed to gcc by ehc related to static/dynamic libraries
 AC_SUBST(EHC_GCC_OPTS_STATIC, "$ehcGccOptsStatic")

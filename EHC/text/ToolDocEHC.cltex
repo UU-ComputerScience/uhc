@@ -483,24 +483,19 @@ As printed by \verb=install/100/bin/ehc --help=:
 %%]
 
 %%[commandlineOptions doclatex
-Only options for which the implementation is actively maintained are discussed.
+Only options offered by UHC are discussed, lower variants of EHC have more options for debugging available.
 Other options can be used but are either for internal use of can be disabled sometime.
 Defaults for options are valid only for variant 100 of EHC.
 Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.
 
 \begin{itemize}
-\item \verb|-c[<format>]|, \verb|--code[=<format>]|. Generate code or other forms of output. Output \verb|<format>|s:
+\item \verb|-t[<target>]|, \verb|--target[=<target>]|. Generate code for a target. Code generation \verb|<target>|s (Default: %%@[exec:install/100/bin/ehc --meta-target-default%%]):
  \begin{itemize}
- \item \verb|bexe| (default): bytecode interpreter based executable.
- \item \verb|exe|: full program analysis C code based executable.
- \item \verb|lexe|: full program analysis LLVM code based executable. Not yet fully supported.
+ \item \verb|bc|: bytecode interpreter based executable.
+ \item \verb|C|: full program analysis C code based executable.
+ \item \verb|core|: only intermediate Core file. Cannot be run.
  \end{itemize}
- The remaining formats generate intermediate results and are intended for debugging purposes.
-\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.
-\item \verb|-d|, \verb|--debug|. Syntactic option sugar for \verb|--pretty=ast --verbose=2|.
-\item \verb|--dump-core-stages[=Bool]|. Dump all stages of internal Core transformations.
-\item \verb|--dump-grin-stages[=Bool]|. Dump all stages of internal Grin transformations.
-\item \verb|-h|, \verb|--help|. Print commandline help and quit.
+\item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.\item \verb|-h|, \verb|--help|. Print commandline help and quit.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
 \item \verb|--numeric-version|. Print version and quit.
@@ -510,21 +505,30 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
  \item \verb|1| (default): basic.
  \item \verb|2|: much
  \end{itemize}
-\item \verb|-p[<format>]|, \verb|--pretty[=<format>]|. Generate pretty printed version of program. Pretty printed output is not parseable by ehc; it is an approximation of the original programtext.
- Output \verb|<format>|s:
- \begin{itemize}
- \item \verb|hs|: Haskell.
- \item \verb|eh|: EH
- \item \verb|ast|: dump EH abstract syntax tree, \verb|--verbose| adds additional computed information.
- \item \verb|-|: no pretty printing.
- \end{itemize}
-\item \verb|-ipath|, \verb|--import-path=path|. Add @path@ to the search path for importing modules.
+\item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules.
 \item \verb|-v[<level>]|, \verb|--verbose[=<level>]|. Verbosity level. Verbosity \verb|<level>|s are accumulative in their reported messages:
  \begin{itemize}
  \item \verb|0|: quiet.
- \item \verb|1| (default): progress of main compile phases and modules.
- \item \verb|2|: progress of internal processing.
- \item \verb|3|: additional debugging info.
+ \item \verb|1| (default): minimal report of compile phases
+ \item \verb|2|: report of compile phases, including import handling (and similar info).
+ \item \verb|3|: progress of internal processing.
+ \item \verb|4|: additional debugging info.
+ \end{itemize}
+\item \verb|--odir=dir|. Generated files are put in @dir@. More precisely, for each generated artefact for a module,
+  the module name with dots @'.'@ replaced by slashes @'/'@ is appended to @dir@ and used as the actual base name.
+\item \verb|--keep-intermediate-files|. Keep intermediate files (such as @.c@ files and output of @cpp@).
+\item \verb|--meta| options. These are mostly used to let makefiles know what can be done.
+ \begin{itemize}
+ \item \verb|--meta-targets|: all possible code generation targets.
+ \item \verb|--meta-target-default|: default code generation target.
+ \item \verb|--meta-variant|: EHC variant.
+ \item \verb|--meta-export-env[=installdir[,variant]]|: configure the environment of the compiler, currently for the install location of libraries. E.g. \verb|--meta-export-env=/usr/local/lib,uhc-0.1.1.alpha| for a UHC installation.
+  This is usually done at installation time.
+ \item \verb|--meta-dir-env|: directory which holds the configuration file.
+ \end{itemize}
+\item \verb|--pkg| options. These are currently used as a simplistic equivalent of ghc-pkg, to be used only internally by library construction. Expect changes here.
+ \begin{itemize}
+ \item \verb|--pkg-build=<pkg>|: build <pkg> from generated files. Put in current directory of the one specified with @--odir@.
  \end{itemize}
 \end{itemize}
 %%]

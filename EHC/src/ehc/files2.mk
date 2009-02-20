@@ -120,8 +120,8 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 	ehc_mainag_s_files="$(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_AG_S_MAIN_DRV_AG)))" ; \
 	ehc_mainhs_files="$(subst $(EHC_BLD_VARIANT_ASPECTS_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_HS_MAIN_DRV_HS)))" ; \
 	ehc_other_files="$(subst $(EHC_BLD_LIBEHC_VARIANT_PREFIX),,$(call FILTER_OUT_EMPTY_FILES,$(EHC_AG_ALL_DPDS_DRV_AG) $(EHC_ALL_LIB_FROMHS_HS)))" ; \
-	$(call COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(EHC_BARE_VARIANT_ASPECTS_PREFIX),$$ehc_mainhs_files) ; \
-	$(call COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(EHC_BARE_VARIANT_ASPECTS_PREFIX),$$ehc_mainag_d_files $$ehc_mainag_s_files $$ehc_other_files) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_VARIANT_ASPECTS_PREFIX),$(EHC_BARE_VARIANT_ASPECTS_PREFIX),$$ehc_mainhs_files) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(EHC_BLD_LIBEHC_VARIANT_PREFIX),$(EHC_BARE_VARIANT_ASPECTS_PREFIX),$$ehc_mainag_d_files $$ehc_mainag_s_files $$ehc_other_files) ; \
 	(cd $(EHC_BARE_VARIANT_ASPECTS_PREFIX) && \
 	  (echo $(EHC_EXEC_NAME)$(EXEC_SUFFIX): $$ehc_mainag_d_files $$ehc_mainag_s_files | sed -e 's+\.ag+.hs+g' ; \
 	   echo "	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -fallow-undecidable-instances -package $(LIB_EH_UTIL_PKG_NAME) -o $(EHC_EXEC_NAME)$(EXEC_SUFFIX) $(EHC_MAIN).hs" ; \

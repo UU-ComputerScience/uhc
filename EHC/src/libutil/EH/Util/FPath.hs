@@ -7,6 +7,7 @@ module EH.Util.FPath
   , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir
+  , fpathUpdBase
   , fpathRemoveSuff, fpathRemoveDir
   , fpathPrependDir, mkTopLevelFPath
   
@@ -18,14 +19,16 @@ module EH.Util.FPath
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchPathForReadableFiles, searchPathForReadableFile
+  
+  , fpathEnsureExists
   )
 where
 
 import IO
-import Maybe
+import Data.Maybe
 import Data.List
 import Control.Monad
-import Directory
+import System.Directory
 
 -------------------------------------------------------------------------------------------
 -- File path utils
@@ -64,6 +67,10 @@ fpathSuff = maybe "" id . fpathMbSuff
 fpathSetBase :: String -> FPath -> FPath
 fpathSetBase s fp
   = fp {fpathBase = s}
+
+fpathUpdBase :: (String -> String) -> FPath -> FPath
+fpathUpdBase u fp
+  = fp {fpathBase = u (fpathBase fp)}
 
 fpathSetSuff :: String -> FPath -> FPath
 fpathSetSuff "" fp
@@ -178,6 +185,16 @@ openFPath fp mode | fpathIsEmpty fp = case mode of
                                         let fNm = fpathToStr fp
                                         h <- openFile fNm mode
                                         return (fNm,h)
+
+-------------------------------------------------------------------------------------------
+-- Directory
+-------------------------------------------------------------------------------------------
+
+fpathEnsureExists :: FPath -> IO ()
+fpathEnsureExists fp
+  = do { let d = fpathMbDir fp
+       ; when (isJust d) (createDirectoryIfMissing True (fromJust d))
+       }
 
 -------------------------------------------------------------------------------------------
 -- Search path utils

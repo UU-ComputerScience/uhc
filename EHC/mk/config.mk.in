@@ -12,8 +12,9 @@ MK_CONFIG_MKF								:= $(MK_PREFIX)config.mk
 EH_VERSION_MAJOR		:= @EH_VERSION_MAJOR@
 EH_VERSION_MINOR		:= @EH_VERSION_MINOR@
 EH_VERSION_MINORMINOR	:= @EH_VERSION_MINORMINOR@
-EH_VERSION_STABLE		:= @EH_VERSION_STABILITY@
-EH_VERSION				:= @EH_VERSION@
+EH_VERSION_STABILITY	:= @EH_VERSION_STABILITY@
+EH_VERSION_SHORT		:= @EH_VERSION_SHORT@
+EH_VERSION_FULL			:= @EH_VERSION_FULL@
 
 ###########################################################################################
 # platform config, currently changed to config by autoconf

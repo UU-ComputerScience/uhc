@@ -34,12 +34,14 @@ module EH.Util.Pretty
   , hPutWidthPPLn, putWidthPPLn
   , hPutPPLn, putPPLn
   , hPutPPFile, putPPFile
+  , putPPFPath
   )
   where
 
 -- import UU.Pretty
 -- import EH.Util.Chitil.Pretty
 import EH.Util.PrettySimple
+import EH.Util.FPath
 import IO
 import Data.List
 
@@ -243,6 +245,12 @@ hPutPPFile :: Handle -> PP_Doc -> Int -> IO ()
 hPutPPFile h pp wid
   = hPutLn h wid pp
     
+
+putPPFPath :: FPath -> PP_Doc -> Int -> IO ()
+putPPFPath fp pp wid
+  = do { fpathEnsureExists fp
+       ; putPPFile (fpathToStr fp) pp wid
+       }
 
 putPPFile :: String -> PP_Doc -> Int -> IO ()
 putPPFile fn pp wid

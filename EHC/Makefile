@@ -191,32 +191,39 @@ install: uhc-install
 uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
 
 UHC_INSTALL_VARIANT_PREFIX 	:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_UHC_INSTALL_VARIANT))
-UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME))
+UHC_INSTALL_VARIANTNAME		:= $(UHC_EXEC_NAME)-$(EH_VERSION_FULL)
+UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME))
 
 uhc-install: uhc
 	mkdir -p $(UHC_INSTALL_PREFIX)
-	$(call COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
+	$(call FUN_COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
 	for target in `$(EHC_FOR_UHC_BLD_EXEC) --meta-targets` ; \
 	do \
 	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
 	done ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
-	ln -s $(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX) $(UHC_INSTALL_EXEC)
-	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME)
+	ehc="$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" ; \
+	strip $${ehc} ; \
+	ln -s $${ehc} $(UHC_INSTALL_EXEC)
+	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
 
 uhc-install-postprocess-bc:
-	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME),$(EHC_VARIANT_TARGET)) ; \
+	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
 	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	do \
-	  rm -f $${pkg}/*.{hs,hs-cpp,c} $${pkg}/*/*.{hs,hs-cpp,c} $${pkg}/$(EHCLIB_MAIN)* ; \
+	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
 	done
 
+#	  rm -f $${pkg}/*.{hs,hs-cpp,c} $${pkg}/*/*.{hs,hs-cpp,c} $${pkg}/$(EHCLIB_MAIN)* ; \
+
 uhc-install-postprocess-C:
-	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_EXEC_NAME),$(EHC_VARIANT_TARGET)) ; \
+	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
 	for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	do \
-	  rm -f $${pkg}/*.{hs,hs-cpp} $${pkg}/*/*.{hs,hs-cpp} $${pkg}/$(EHCLIB_MAIN)* ; \
+	  rm -f $${pkg}/$(EHCLIB_MAIN)* ; \
 	done
+
+#	  rm -f $${pkg}/*.{hs,hs-cpp} $${pkg}/*/*.{hs,hs-cpp} $${pkg}/$(EHCLIB_MAIN)* ; \
 
 uhc-install-postprocess-core:
 	
@@ -235,8 +242,8 @@ clean: cleans
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_ALL_NAMES_base)
-	@echo $(EHCLIB_ALL_NAMES_containers)
+	@echo $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)
+	@echo $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

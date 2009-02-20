@@ -50,11 +50,12 @@ unPrefix d                         = d
 data Version
   = Version
       { verSvnRevision      :: !String
-      , verSvn              :: !String
       , verMajor            :: !String
       , verMinor            :: !String
       , verMinorMinor       :: !String
       , verQuality          :: !String
+      , verShort            :: !String
+      , verFull             :: !String
       , verProg             :: !String
 %%[[20
       , verTimestamp        :: !String
@@ -67,12 +68,13 @@ data Version
 version :: Version
 version
   = Version
-      { verSvnRevision      = "$Revision$"
-      , verSvn              = "$Id: Config.chs.in 1059 2008-03-31 14:29:49Z Jeroen_Fokker $"
+      { verSvnRevision      = ehcSvnRevision
       , verMajor            = "@EH_VERSION_MAJOR@"
       , verMinor            = "@EH_VERSION_MINOR@"
       , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
       , verQuality          = "@EH_VERSION_STABILITY@"
+      , verShort            = "@EH_VERSION_SHORT@"
+      , verFull             = "@EH_VERSION_FULL@"
       , verProg             = "@EHC_EXEC_NAME@"
 %%[[20
       , verTimestamp        = Sig.timestamp
@@ -83,13 +85,13 @@ version
 
 %%[1 export(verNumeric, verDist, verInfo)
 verNumeric :: Version -> String
-verNumeric v = verMajor v ++ "." ++ verMinor v ++ "." ++ verMinorMinor v
+verNumeric v = verShort v ++ "." ++ verMinorMinor v
 
 verDist :: Version -> String
-verDist v = verNumeric v ++ verQuality v
+verDist v = verFull v
 
 verInfo :: Version -> String
-verInfo v = verProg v ++ verDist v ++ ", " ++ verSvnRevision v
+verInfo v = verProg v ++ "-" ++ verDist v ++ ", " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -119,6 +121,37 @@ shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/ll
 %%[99 export(shellCmdCpp)
 shellCmdCpp :: String
 shellCmdCpp = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdAr)
+shellCmdAr :: String
+shellCmdAr = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@AR_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdRanlib)
+shellCmdRanlib :: String
+shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdLibtoolStatic)
+shellCmdLibtoolStatic :: String
+shellCmdLibtoolStatic = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@LIBTOOL_STATIC_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdLibtoolStaticOpts)
+shellCmdLibtoolStaticOpts :: String
+shellCmdLibtoolStaticOpts = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@LIBTOOL_STATIC_OPTS@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(mkShellCmdLibtool)
+mkShellCmdLibtool :: String -> [String] -> [[String]]
+mkShellCmdLibtool archive files
+  = if "@LIBTOOL_STATIC_CMD@" == "no"
+    then [ [shellCmdAr,archive] ++ files
+         , [shellCmdRanlib,archive]
+         ]
+    else [ [shellCmdLibtoolStatic,archive] ++ files
+         ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

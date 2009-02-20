@@ -36,10 +36,11 @@ data GCC_CompileHow
 cpCompileWithGCC :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
+         ;  cpMsg modNm VerboseDebug ("GCC: " ++ show modNm)
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 fpC    = fpathSetSuff "c" fp
-                 fpO fp = fpathSetSuff "o" fp
-                 fpExec = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) Cfg.mbSuffixExec
+                 fpC    = mkOutputFPath opts modNm fp "c"
+                 fpO m f= mkOutputFPath opts m f "o"
+                 fpExec = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
                  variant= ehcenvVariant (ehcOptEnvironment opts)
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt)
                         = case how of
@@ -51,10 +52,10 @@ cpCompileWithGCC how othModNmL modNm
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
-                                                 else [ fpathToStr $ fpO fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
+                                                 else [ fpathToStr $ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
                                                )
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
-                                            where o = fpO fp
+                                            where o = fpO modNm fp
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = concat $ intersperse " "
@@ -86,7 +87,7 @@ cpPreprocessWithCPP :: HsName -> EHCompilePhase ()
 cpPreprocessWithCPP modNm
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              fpCPP = fpathSetSuff (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
+              fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
        ; when (  ehcOptCPP opts
               || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
@@ -104,7 +105,12 @@ cpPreprocessWithCPP modNm
                              ; lift $ putStrLn preCPP
                              })
                   ; when (crModCanCompile modNm cr)
-                         (cpSystem preCPP)
+                         (do { lift $ fpathEnsureExists fpCPP
+                             ; cpSystem preCPP
+%%[[99
+                             ; cpRegisterFileToRm fpCPP
+%%]]
+                             })
                   ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
                   })
        }

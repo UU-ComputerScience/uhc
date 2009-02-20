@@ -665,7 +665,8 @@ EH_VERSION_MAJOR
 EH_VERSION_MINOR
 EH_VERSION_MINORMINOR
 EH_VERSION_STABILITY
-EH_VERSION
+EH_VERSION_SHORT
+EH_VERSION_FULL
 ranlibCmd
 RANLIB_CMD
 arCmd
@@ -723,7 +724,9 @@ PATHS_SEP
 SLASH
 DEVELOPMENT_PLATFORM
 LIBTOOL_STATIC_CMD
+LIBTOOL_STATIC_OPTS
 LIBTOOL_DYNAMIC_CMD
+LIBTOOL_DYNAMIC_OPTS
 EHC_GCC_OPTS_STATIC
 TOP_ABS
 TOP_ABS2
@@ -1981,7 +1984,9 @@ EH_VERSION_STABILITY=alpha
 
 
 
-EH_VERSION=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
+EH_VERSION_SHORT=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
+
+EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_STABILITY
 
 
 
@@ -6370,8 +6375,10 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool -static -o"
+libtoolStatic="libtool"
+libtoolStaticOpts="-static -o"
 libtoolDynamic="echo Dynamic linking not available: "
+libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
@@ -6430,7 +6437,11 @@ DEVELOPMENT_PLATFORM="$development_platform"
 # libtool used, if any
 LIBTOOL_STATIC_CMD="$libtoolStatic"
 
+LIBTOOL_STATIC_OPTS="$libtoolStaticOpts"
+
 LIBTOOL_DYNAMIC_CMD="$libtoolDynamic"
+
+LIBTOOL_DYNAMIC_OPTS="$libtoolDynamicOpts"
 
 
 # flags passed to gcc by ehc related to static/dynamic libraries
@@ -7180,7 +7191,8 @@ EH_VERSION_MAJOR!$EH_VERSION_MAJOR$ac_delim
 EH_VERSION_MINOR!$EH_VERSION_MINOR$ac_delim
 EH_VERSION_MINORMINOR!$EH_VERSION_MINORMINOR$ac_delim
 EH_VERSION_STABILITY!$EH_VERSION_STABILITY$ac_delim
-EH_VERSION!$EH_VERSION$ac_delim
+EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
+EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
@@ -7226,7 +7238,6 @@ LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
-MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7268,6 +7279,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
@@ -7279,7 +7291,9 @@ PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
 DEVELOPMENT_PLATFORM!$DEVELOPMENT_PLATFORM$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
+LIBTOOL_STATIC_OPTS!$LIBTOOL_STATIC_OPTS$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
+LIBTOOL_DYNAMIC_OPTS!$LIBTOOL_DYNAMIC_OPTS$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
@@ -7300,7 +7314,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

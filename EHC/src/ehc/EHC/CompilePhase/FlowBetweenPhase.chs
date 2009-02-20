@@ -103,7 +103,7 @@ cpFlowHsSem1 modNm
                                    else \k n -> idQualGamReplacement (EHSem.idQualGam_Inh_AGItf ehInh') k (hsnQualified n)
 %%]]
          ;  when (isJust (ecuMbHSSem ecu))
-                 (do { put (cr {crStateInfo = crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'}})
+                 (do { cpUpdSI (\crsi -> crsi {crsiHSInh = hsInh', crsiEHInh = ehInh', crsiOpts = opts'})
                      ; cpUpdCU modNm $! ecuStoreHIInfo hii'
                      -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowHsSem1")
                      })
@@ -168,7 +168,8 @@ cpFlowEHSem1 modNm
                               }
 %%]]
          ;  when (isJust (ecuMbEHSem ecu))
-                 (do { put (cr {crStateInfo = crsi
+                 (do { cpUpdSI
+                               (\crsi -> crsi
 %%[[(8 codegen)
                                    { crsiCoreInh = coreInh' }
 %%][(20 codegen)
@@ -176,7 +177,7 @@ cpFlowEHSem1 modNm
 %%][20
                                    { crsiEHInh = ehInh' }
 %%]]
-                               })
+                               )
 %%[[20
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      )
@@ -236,12 +237,13 @@ cpFlowHISem modNm
                               }
 %%]]
          ;  when (isJust (ecuMbPrevHISem ecu))
-                 (do { put (cr {crStateInfo = crsi { crsiEHInh = ehInh'
-                                                   , crsiHSInh = hsInh'
+                 (do { cpUpdSI (\crsi -> crsi { crsiEHInh = ehInh'
+                                              , crsiHSInh = hsInh'
 %%[[(20 codegen)
-                                                   , crsiCoreInh = coreInh'
+                                              , crsiCoreInh = coreInh'
 %%]]
-                                                   , crsiOptim = optim'}})
+                                              , crsiOptim = optim'
+                                              })
                      })
          }
 %%]
@@ -267,7 +269,7 @@ cpFlowCoreSem modNm
 %%]]
                               }
          ;  when (isJust (ecuMbCoreSem ecu))
-                 (do { put (cr {crStateInfo = crsi {crsiCoreInh = coreInh'}})
+                 (do { cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh'})
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
                                      . ecuStoreHIUsedImpL usedImpL
                                      )
@@ -297,7 +299,7 @@ cpFlowOptim modNm
                             }
 %%]]
          ;  when (isJust (ecuMbOptim ecu))
-                 (do { put (cr {crStateInfo = crsi {crsiOptim = optim'}})
+                 (do { cpUpdSI (\crsi -> crsi {crsiOptim = optim'})
                      ; cpUpdCU modNm $! ecuStoreHIInfo $! prepFlow hii'
                      -- ; lift $ putStrLn (forceEval hii' `seq` "cpFlowOptim")
                      })

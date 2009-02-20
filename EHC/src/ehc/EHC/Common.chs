@@ -105,3 +105,20 @@ data EHCompileUnitState
   deriving (Show,Eq)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of output
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mkOutputFPath)
+mkOutputFPath :: EHCOpts -> HsName -> FPath -> String -> FPath
+mkOutputFPath opts modNm fp suffix
+  = fpathSetSuff suffix fp'
+%%[[8
+  where fp' = fp
+%%][99
+  where fp' = case ehcOptOutputDir opts of
+                Just d -> fpathPrependDir d $ mkFPath modNm
+                _      -> fp
+%%]]
+%%]
+
