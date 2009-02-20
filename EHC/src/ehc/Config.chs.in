@@ -140,17 +140,17 @@ shellCmdLibtoolStatic = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@LIBTOOL_STATIC_CMD@@SU
 
 %%[99 export(shellCmdLibtoolStaticOpts)
 shellCmdLibtoolStaticOpts :: String
-shellCmdLibtoolStaticOpts = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@LIBTOOL_STATIC_OPTS@@SUFFIX_EXEC@"
+shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
 %%]
 
 %%[99 export(mkShellCmdLibtool)
 mkShellCmdLibtool :: String -> [String] -> [[String]]
 mkShellCmdLibtool archive files
-  = if "@LIBTOOL_STATIC_CMD@" == "no"
-    then [ [shellCmdAr,archive] ++ files
+  = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
+    then [ [shellCmdAr,"r",archive] ++ files
          , [shellCmdRanlib,archive]
          ]
-    else [ [shellCmdLibtoolStatic,archive] ++ files
+    else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
          ]
 %%]
 

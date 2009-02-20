@@ -2,37 +2,46 @@
 %%% EHC Compile XXX
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-C + CPP compilation
+Linking
 
-%%[8 module {%{EH}EHC.CompilePhase.CompileC}
+%%[(99 codegen) module {%{EH}EHC.CompilePhase.Link}
 %%]
 
 -- general imports
-%%[8 import({%{EH}EHC.Common})
+%%[(99 codegen) import({%{EH}EHC.Common})
 %%]
-%%[8 import({%{EH}EHC.CompileUnit})
+%%[(99 codegen) import({%{EH}EHC.CompileUnit})
 %%]
-%%[8 import({%{EH}EHC.CompileRun})
+%%[(99 codegen) import({%{EH}EHC.CompileRun})
 %%]
 
-%%[8 import(qualified {%{EH}Config} as Cfg)
+%%[(99 codegen) import(qualified {%{EH}Config} as Cfg)
 %%]
-%%[8 import({%{EH}EHC.Environment})
+%%[(99 codegen) import({%{EH}EHC.Environment})
 %%]
-%%[(8 codegen) import({%{EH}Base.Target})
+%%[(99 codegen) import({%{EH}Base.Target})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: C compilation
+%%% Compile actions: Linking into library for package
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(GCC_CompileHow(..))
-data GCC_CompileHow
-  = GCC_CompileOnly
-  | GCC_CompileExec
+%%[(99 codegen) export(cpLinkO)
+cpLinkO :: [HsName] -> String -> EHCompilePhase ()
+cpLinkO modNmL pkgNm
+  = do { cr <- get
+       ; let (crsi,opts) = crBaseInfo' cr
+             oFiles = [ fpathToStr o | m <- modNmL, o <- ecuGenCodeFiles $ crCU m cr ]
+             libFile= mkOutputFPath opts l l (fpathSuff l)
+                    where l = mkFPath $ Cfg.mkLibFilename "" pkgNm
+             linkO  = map mkShellCmd $ Cfg.mkShellCmdLibtool (fpathToStr libFile) oFiles
+       ; when (ehcOptVerbosity opts >= VerboseALot)
+              (do { lift $ mapM_ putStrLn linkO
+                  })
+       ; cpSeq [ cpSystem c | c <- linkO ]
+       }
 %%]
 
-%%[(8 codegen) export(cpCompileWithGCC)
 cpCompileWithGCC :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
@@ -41,7 +50,7 @@ cpCompileWithGCC how othModNmL modNm
                  fpO m f= mkOutputFPath opts m f "o"
                  fpExec = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
                  variant= ehcenvVariant (ehcOptEnvironment opts)
-                 (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles)
+                 (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt)
                         = case how of
                             GCC_CompileExec -> ( fpExec
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
@@ -52,25 +61,22 @@ cpCompileWithGCC how othModNmL modNm
                                                , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
                                                  else [ fpathToStr $ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
-                                               , []
                                                )
-                            GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
+                            GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [])
                                             where o = fpO modNm fp
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = mkShellCmd
-                                 (  [ Cfg.shellCmdGcc ]
+                               $ (  [ Cfg.shellCmdGcc ]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
-%%[[(8 codegen grin)
                                  ++ [ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ++ "mainSil.c"
                                     | ehcOptTarget opts == Target_FullProgAnal_Grin_C
                                     ]
-%%]]
                                  ++ linkLibOpt
                                  )
                      ; when (ehcOptVerbosity opts >= VerboseALot)
@@ -78,46 +84,5 @@ cpCompileWithGCC how othModNmL modNm
                                 ; lift $ putStrLn compileC
                                 })
                      ; cpSystem compileC
-%%[[99
-                     ; cpUpdCU modNm (ecuStoreGenCodeFiles genOFiles)
-%%]]
                      })
          }
-%%]
-
-%%[99 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: HsName -> EHCompilePhase ()
-cpPreprocessWithCPP modNm
-  = do { cr <- get
-       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-              fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
-       ; when (  ehcOptCPP opts
-              || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
-              )
-              (do { let preCPP
-                          = mkShellCmd
-                              (  [ Cfg.shellCmdCpp ]
-                              ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__" ]
-%%[[(99 codegen grin)
-                              ++ (if ehcOptFullProgAnalysis opts then ["-D__FULL_PROGRAM_ANALYSIS__"] else [])
-%%]]
-                              ++ [ fpathToStr fp, fpathToStr fpCPP ]
-                              )
-                  ; when (ehcOptVerbosity opts >= VerboseALot)
-                         (do { cpMsg modNm VerboseALot "CPP"
-                             ; lift $ putStrLn preCPP
-                             })
-                  ; when (crModCanCompile modNm cr)
-                         (do { lift $ fpathEnsureExists fpCPP
-                             ; cpSystem preCPP
-%%[[99
-                             ; cpRegisterFileToRm fpCPP
-%%]]
-                             })
-                  ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
-                  })
-       }
-%%]
-
-
-

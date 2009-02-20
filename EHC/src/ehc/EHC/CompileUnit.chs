@@ -117,7 +117,8 @@ data EHCompileUnit
       , ecuHIInfo            :: !HI.HIInfo
       , ecuDirIsWritable     :: !Bool
 %%]]
-%%[[101
+%%[[(99 codegen)
+      , ecuGenCodeFiles      :: ![FPath]
 %%]]
       }
 %%]
@@ -171,7 +172,8 @@ emptyECU
       , ecuHIInfo            = HI.emptyHIInfo
       , ecuDirIsWritable     = False
 %%]]
-%%[[101
+%%[[(99 codegen)
+      , ecuGenCodeFiles      = []
 %%]]
       }
 %%]
@@ -354,6 +356,11 @@ ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
 %%[20 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
+%%[(99 codegen) export(ecuStoreGenCodeFiles)
+ecuStoreGenCodeFiles :: EcuUpdater [FPath]
+ecuStoreGenCodeFiles x ecu = ecu { ecuGenCodeFiles = x }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

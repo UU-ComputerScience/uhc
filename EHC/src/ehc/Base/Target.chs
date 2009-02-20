@@ -151,6 +151,16 @@ targetIsC t
       _ 								-> False
 %%]
 
+%%[(8 codegen) export(targetAllowsOLinking)
+targetAllowsOLinking :: Target -> Bool
+targetAllowsOLinking t
+  = case t of
+%%[[(8 codegen grin)
+      Target_Interpreter_Grin_C		 	-> True
+%%]]
+      _ 								-> False
+%%]
+
 %%[(8 codegen) export(targetIsCore)
 targetIsCore :: Target -> Bool
 targetIsCore t

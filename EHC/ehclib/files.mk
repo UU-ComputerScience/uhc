@@ -123,6 +123,7 @@ ehclib-variant-dflt: \
 	          --hide-all-packages \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
+	          --pkg-build=$${pkg} \
 	          $${pkgs} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \

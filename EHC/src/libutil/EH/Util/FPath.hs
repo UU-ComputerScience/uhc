@@ -58,8 +58,8 @@ fpathToStr fpath
 fpathFromStr :: String -> FPath
 fpathFromStr fn
   = FPath d b' s
-  where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
-        (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
+  where (d ,b) = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
+        (b',s) = maybe (b,Nothing)  (\(b,s) -> (b,Just s)) (splitOnLast '.'             b )
 
 fpathSuff :: FPath -> String
 fpathSuff = maybe "" id . fpathMbSuff
@@ -157,10 +157,10 @@ class FPATH f where
   mkFPath :: f -> FPath
 
 instance FPATH String where
-  mkFPath fn
-    = FPath d b' s
-    where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
-          (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
+  mkFPath = fpathFromStr
+
+instance FPATH FPath where
+  mkFPath = id
 
 -------------------------------------------------------------------------------------------
 -- Open path for read or return stdin

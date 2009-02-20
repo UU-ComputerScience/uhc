@@ -671,6 +671,7 @@ ranlibCmd
 RANLIB_CMD
 arCmd
 AR_CMD
+libtoolStaticCmd
 GCC_EHC_OPTIONS
 GHC_EHC_OPTIONS
 SHUFFLE_EHC_OPTIONS
@@ -1997,7 +1998,7 @@ EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_V
 
 
 
-### ar, ranlib
+### ar, ranlib, libtool
 
   # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
@@ -2108,6 +2109,60 @@ echo "$as_me: error:
   fi
 
 AR_CMD=$arCmd
+
+
+
+  # Extract the first word of "libtool", so it can be a program name with args.
+set dummy libtool; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_libtoolStaticCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $libtoolStaticCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_libtoolStaticCmd="$libtoolStaticCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_libtoolStaticCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+libtoolStaticCmd=$ac_cv_path_libtoolStaticCmd
+if test -n "$libtoolStaticCmd"; then
+  { echo "$as_me:$LINENO: result: $libtoolStaticCmd" >&5
+echo "${ECHO_T}$libtoolStaticCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$libtoolStaticCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install libtool before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install libtool before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
 
 
 ### 'with' option for gcc options
@@ -6375,9 +6430,9 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool"
+#libtoolStaticCmd="libtool"
 libtoolStaticOpts="-static -o"
-libtoolDynamic="echo Dynamic linking not available: "
+libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
@@ -6392,23 +6447,23 @@ case $HostPlatform in
         paths_sep=";"
         slash="\\\\"
         # libtool usage
-        libtoolStatic="no"
+        libtoolStaticCmd="no"
         ;;
   i*86-pc-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        #libtoolStatic="no"
+        #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	# libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+	# libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+        # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   *)
         # file suffixes
@@ -6435,7 +6490,7 @@ DEVELOPMENT_PLATFORM="$development_platform"
 
 
 # libtool used, if any
-LIBTOOL_STATIC_CMD="$libtoolStatic"
+LIBTOOL_STATIC_CMD="$libtoolStaticCmd"
 
 LIBTOOL_STATIC_OPTS="$libtoolStaticOpts"
 
@@ -7197,6 +7252,7 @@ ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
+libtoolStaticCmd!$libtoolStaticCmd$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
 GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 SHUFFLE_EHC_OPTIONS!$SHUFFLE_EHC_OPTIONS$ac_delim
@@ -7237,7 +7293,6 @@ llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
-EGREP!$EGREP$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7279,6 +7334,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+EGREP!$EGREP$ac_delim
 MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
@@ -7314,7 +7370,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 33; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 34; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -66,12 +66,14 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
-### ar, ranlib
+### ar, ranlib, libtool
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 AC_SUBST(AR_CMD,$arCmd)
+
+REQUIRED_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
 AC_ARG_WITH(gcc-ehc-options,
@@ -480,9 +482,9 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool"
+#libtoolStaticCmd="libtool"
 libtoolStaticOpts="-static -o"
-libtoolDynamic="echo Dynamic linking not available: "
+libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
@@ -497,23 +499,23 @@ case $HostPlatform in
         paths_sep=";"
         slash="\\\\"
         # libtool usage
-        libtoolStatic="no"
+        libtoolStaticCmd="no"
         ;;
   i*86-pc-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        #libtoolStatic="no"
+        #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	# libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+	# libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+        # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   *)
         # file suffixes
@@ -533,7 +535,7 @@ AC_SUBST(SLASH,"$slash")
 AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
 
 # libtool used, if any
-AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
+AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStaticCmd")
 AC_SUBST(LIBTOOL_STATIC_OPTS, "$libtoolStaticOpts")
 AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
 AC_SUBST(LIBTOOL_DYNAMIC_OPTS, "$libtoolDynamicOpts")
