@@ -206,8 +206,8 @@ hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
 hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
-%%]
 hsnShowAlphanumeric (HNmQ ns) = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
+%%]
 
 
 
