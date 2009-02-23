@@ -118,6 +118,11 @@ shellCmdLLVM :: String
 shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
 %%]
 
+%%[(8 java || jazy) export(shellCmdJar)
+shellCmdJar :: String
+shellCmdJar = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@JAR_CMD@@SUFFIX_EXEC@"
+%%]
+
 %%[99 export(shellCmdCpp)
 shellCmdCpp :: String
 shellCmdCpp = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"

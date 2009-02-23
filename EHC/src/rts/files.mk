@@ -36,7 +36,7 @@ INSTALLABS_RTS_INC_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$
 #INSTALLFORBLDABS_LIB_RTS			:= $(INSTALLFORBLDABS_RTS_LIB_PREFIX)lib$(RTS_PKG_NAME)$(LIB_SUFFIX)
 
 # install
-INSTALL_LIB_RTS						:= $(call FUN_MK_LIB_FILENAME,$(INSTALLABS_RTS_LIB_PREFIX),$(RTS_PKG_NAME))
+INSTALL_LIB_RTS						:= $(call FUN_MK_CLIB_FILENAME,$(INSTALLABS_RTS_LIB_PREFIX),$(RTS_PKG_NAME))
 
 ###########################################################################################
 # names of sources + deriveds

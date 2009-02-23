@@ -55,3 +55,13 @@ RULER2_OPTS_VERSION	:=
 RTS_PKG_NAME				:= @RTS_PKG_NAME@
 EXTLIBS_BGC_PKG_NAME		:= @EXTLIBS_BGC_PKG_NAME@
 EXTLIBS_GMP_PKG_NAME		:= @EXTLIBS_GMP_PKG_NAME@
+
+###########################################################################################
+# inclusion of features
+###########################################################################################
+
+# include java code generation
+ifeq (@ENABLE_JAVA@,yes)
+ENABLE_JAVA					:= yes
+endif
+

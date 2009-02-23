@@ -67,6 +67,9 @@ include $(SRC_PREFIX)grini/files.mk
 include extlibs/bgc/files.mk
 include extlibs/gmp/files.mk
 include $(SRC_PREFIX)rts/files.mk
+ifeq ($(ENABLE_JAVA),yes)
+-include $(SRC_PREFIX)jazy/files.mk
+endif
 include $(SRC_PREFIX)ehc/files2.mk
 include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
@@ -203,7 +206,7 @@ uhc-install: uhc
 	done ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
 	ehc="$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" ; \
-	strip $${ehc} ; \
+	$(STRIP) $${ehc} ; \
 	ln -s $${ehc} $(UHC_INSTALL_EXEC)
 	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
 
@@ -242,8 +245,8 @@ clean: cleans
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)
-	@echo $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
+	@echo $(INSTALL_LIB_JAZY)
+	@echo $(JAZY_JAVA_JAZY_SRC_JAVA)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

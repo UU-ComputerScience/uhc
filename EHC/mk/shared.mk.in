@@ -181,28 +181,30 @@ EHCLIB_SHARED						:= @EHCLIB_SHARED@
 ###########################################################################################
 
 # compilers and tools used
-AGC					:= @UUAGC_CMD@
-GHC					:= @GHC_CMD@
-GHC_VERSION         := @GHC_VERSION@
-HADDOCK				:= @HADDOCK_CMD@
-HADDOCK_VERSION     := @HADDOCK_VERSION@
-GCC					:= @GCC_CMD@
-AR					:= @AR_CMD@
-RANLIB				:= @RANLIB_CMD@
-OPEN_FOR_EDIT		:= bbedit
-STRIP				:= $(STRIP_CMD)
+AGC							:= @UUAGC_CMD@
+GHC							:= @GHC_CMD@
+GHC_VERSION         		:= @GHC_VERSION@
+HADDOCK						:= @HADDOCK_CMD@
+HADDOCK_VERSION     		:= @HADDOCK_VERSION@
+GCC							:= @GCC_CMD@
+AR							:= @AR_CMD@
+RANLIB						:= @RANLIB_CMD@
+OPEN_FOR_EDIT				:= bbedit
+STRIP						:= $(STRIP_CMD)
+JAVAC						:= @JAVAC_CMD@
+JAR							:= @JAR_CMD@
 SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
 
 # lhs2TeX
-LHS2TEX_ENV			:= $(LHS2TEX)
-LHS2TEX_CMD			:= LHS2TEX=".$(PATHS_SEP)../../$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX
+LHS2TEX_ENV					:= $(LHS2TEX)
+LHS2TEX_CMD					:= LHS2TEX=".$(PATHS_SEP)../../$(FMT_SRC_PREFIX)$(PATHS_SEP)$(LHS2TEX_ENV)" lhs2TeX
 
 # latex
-LATEX_ENV			:= $(TEXINPUTS)
-PDFLATEX			:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
-BIBTEX				:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
-MAKEINDEX			:= makeindex
+LATEX_ENV					:= $(TEXINPUTS)
+PDFLATEX					:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_EHC_SUBDIRS)$(LATEX_ENV)" pdflatex
+BIBTEX						:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
+MAKEINDEX					:= makeindex
 
 ###########################################################################################
 # installation locations for ehc running time, as functions still depending on variant + target
@@ -248,9 +250,15 @@ FUN_INSTALLABS_FLAG_PREFIX					= $(call FUN_INSTALLABS_VARIANT_XXX_PREFIX,$(1),i
 # Construction of the name of a library
 ###########################################################################################
 
+# for a C library
 # $1: directory/location prefix
 # $2: package name
-FUN_MK_LIB_FILENAME						= $(1)lib$(2)$(LIB_SUFFIX)
+FUN_MK_CLIB_FILENAME					= $(1)lib$(2)$(LIB_SUFFIX)
+
+# for a java library
+# $1: directory/location prefix
+# $2: package name
+FUN_MK_JAVALIB_FILENAME					= $(1)lib$(2).jar
 
 ###########################################################################################
 # Regular options to commands, as functions still depending on variant + target

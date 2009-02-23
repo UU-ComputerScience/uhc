@@ -1,0 +1,166 @@
+%%[8
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * Runtime environment for ehc, using EHC target jazy
+ */
+public class RTS
+{
+%%]
+    /**
+     * Evaluate an Object and cast the result to char.
+     */
+    public static char evalToC( Object v )
+    {
+        try
+        {
+            v = Eval.eval( v ) ;
+            return ((Character)( v )).charValue() ;
+        }
+        catch ( ClassCastException ex )
+        {
+            Eval.reportCastError( "Character", v ) ;
+        }
+        return ' ' ;
+    }
+    
+    /**
+     * Print a list as a string, i.e. list of Character.
+     * @param   v   must evaluate to a List with Characters.
+     */    
+    public static void putStr( PrintWriter output, Object v, boolean flushAfterAllChar )
+    {
+        List l ;
+        while( ! (l = List.evalToL(v)).isEmpty() )
+        {
+            char c = Char.evalToC( l.getHead() ) ;
+            output.print( c ) ;
+            if ( flushAfterAllChar )
+                output.flush() ;
+            v = l.getTail() ;
+        }
+    }
+
+    /**
+     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )
+     */    
+    public static void putStr( PrintStream output, Object v, boolean flushAfterAllChar )
+    {
+        PrintWriter pw = new PrintWriter( System.out ) ;
+        putStr( pw, v, flushAfterAllChar ) ;
+    }
+
+    /**
+     * Print the object as a string, after applying show to the Object.
+     * @param   v   The printable Object.
+     */    
+    public static void putShowStr( PrintWriter output, Object v, boolean flushAfterAllChar )
+    {
+        putStr( output, Prelude.show.apply1( v ), flushAfterAllChar ) ;
+    }
+
+    /**
+     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )
+     */    
+    public static void putShowStr( PrintStream output, Object v, boolean flushAfterAllChar )
+    {
+        PrintWriter pw = new PrintWriter( System.out ) ;
+        putShowStr( pw, v, flushAfterAllChar ) ;
+    }
+
+    /**
+     * Print to System.out.
+     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )
+     */    
+    public static void putStr( Object v )
+    {
+        putStr( System.out, v, true ) ;
+    }
+
+    /**
+     * Print to System.out.
+     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )
+     */    
+    public static void putShowStr( Object v )
+    {
+        putShowStr( System.out, v, true ) ;
+    }
+
+    public static void show( PrintWriter output, Object v )
+    {
+        putShowStr( output, v, true ) ;
+    }
+
+    public static void show( PrintStream output, Object v )
+    {
+        PrintWriter pw = new PrintWriter( output ) ;
+        show( pw, v ) ;
+        pw.flush() ;
+    }
+
+    public static String toString( Object v )
+    {
+        StringWriter outs = new StringWriter() ;
+        PrintWriter outp = new PrintWriter( outs ) ;
+        show( outp, v ) ;
+        outp.close() ;
+        return outs.toString() ;
+    }
+    
+    public static void showln( PrintStream output, Object v )
+    {
+        PrintWriter pw = new PrintWriter( output ) ;
+        showln( pw, v ) ;
+        pw.flush() ;
+    }
+
+    public static void showln( PrintWriter output, Object v )
+    {
+        show( output, v ) ;
+        output.println( ) ;
+    }
+
+    public static void showln( Object v )
+    {
+        showln( System.out, v ) ;
+    }
+
+%%[8
+    /**
+     * Entry point into RTS
+     */    
+    public static void timeEval( Object v )
+    {
+        Eval.resetNrEvaluations() ;
+        long tm1 = System.currentTimeMillis() ;
+        // showln( v ) ;
+        System.out.println( Eval.eval( v ) ) ;
+        long tm2 = System.currentTimeMillis() ;
+        System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;
+    }
+%%]
+
+    public static void show( Object v )
+    {
+        show( System.out, v ) ;
+    }
+
+%%[8
+}
+
+%%]

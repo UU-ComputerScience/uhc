@@ -1,0 +1,190 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation for jazy
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core})
+%%]
+
+%%[(8 jazy) hs import(Data.Maybe, Data.Char)
+%%]
+%%[(8 jazy) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy).WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(8 jazy) hs export(cmod2JazyJVMModule)
+cmod2JazyJVMModule :: CModule -> J.Class
+cmod2JazyJVMModule cmod
+  =  jazy_Syn_CodeAGItf t
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instructions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+class JINSTR x where
+  j :: x -> J.JInstr
+
+instance JINSTR J.Instr where
+  j x = Seq.singleton x
+
+instance JINSTR J.JInstr where
+  j x = x
+
+instance JINSTR x => JINSTR [x] where
+  j xs = J.jinstrUnions (map j xs)
+
+infixr 3 ##
+
+(##) :: (JINSTR x, JINSTR y) => x -> y -> J.JInstr
+x ## y = J.jinstrUnions [j x,j y]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+ATTR AllNT [ moduleNm: HsName | | ]
+
+SEM CModule
+  | Mod         expr        .   moduleNm  		=   @moduleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of an expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+nmInt  = mkHNm "java.lang.Integer"
+nmChar = mkHNm "java.lang.Character"
+nmObj  = mkHNm "java.lang.Object"
+nmRTS  = mkHNm "uu.jazy.ehc.RTS"
+
+jtyInt  = J.Type_Class nmInt
+jtyChar = J.Type_Class nmChar
+jtyStr  = J.Type_Class $ mkHNm "java.lang.String"
+jtyObj  = J.Type_Class nmObj
+jtyFun  = J.Type_Class $ mkHNm "uu.jazy.core.Function"
+jtyApp  = J.Type_Class $ mkHNm "uu.jazy.core.Apply"
+jtyInd  = J.Type_Class $ mkHNm "uu.jazy.core.Indirection"
+%%]
+
+%%[(8 jazy)
+ATTR CExpr [ | | jty: {J.Type} ]
+%%]
+
+%%[(8 jazy)
+SEM CExpr
+  | Int         lhs         .   jty             =   jtyInt
+  | Char        lhs         .   jty             =   jtyChar
+  | String      lhs         .   jty             =   jtyStr
+  | Lam         lhs         .   jty             =   jtyFun
+  | App         lhs         .   jty             =   jtyApp
+  | * - Int Char String Lam App
+                loc         .   jty             =   jtyObj
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+jiNew :: HsName -> J.Const -> J.Type -> J.JInstr
+jiNew nmCl const constTy
+  =    J.Instr_New nmCl
+    ## J.Instr_Dup (J.Type_Class nmCl)
+    ## J.Instr_Const const
+    ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmCl "<init>" [constTy] Nothing)
+
+jiCd :: J.JInstr -> J.Code
+jiCd i = J.Code_Code (Just 5) (Just 1) (Seq.toList i)
+%%]
+
+%%[(8 jazy)
+ATTR CExpr [ | | jinstr USE {`Seq.union`} {Seq.empty}: {J.JInstr} ]
+%%]
+
+%%[(8 jazy)
+SEM CExpr
+  | Int			lhs			.	jinstr			=	jiNew nmInt  (J.Const_Int $ fromInteger $ toInteger       @int ) J.Type_Int
+  | Char		lhs			.	jinstr			=	jiNew nmChar (J.Const_Int $ fromInteger $ toInteger $ ord @char) J.Type_Char
+  | Var 		lhs			.	jinstr			=	Seq.fromList [J.Instr_Get True (J.Const_Field @lhs.moduleNm (show @nm) jtyObj)]
+  | Let 		lhs			.	jinstr			=	@body.jinstr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+ATTR AllBind CExpr [ | | jbind USE {`Seq.union`} {Seq.empty}: {Seq.Seq (HsName,J.Type,J.JInstr,J.Field)}]
+%%]
+
+%%[(8 jazy)
+SEM CBind
+  | Bind		lhs			.	jbind			=	Seq.singleton
+  													  $ ( @nm
+  													    , jtyObj
+  													    , @expr.jinstr
+  													    , J.Field_Field [J.Flag_Public,J.Flag_Static] (show @nm) jtyObj Nothing
+  													    )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: toplevel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+ATTR CodeAGItf CModule [ | | jazy: {J.Class} ]
+%%]
+
+%%[(8 jazy)
+SEM CModule
+  | Mod         lhs         .   jazy            =   J.Class_Class 0 49 [J.Flag_Public] @moduleNm nmObj
+                                                      []
+                                                      [ f | (_,_,_,f) <- Seq.toList @expr.jbind ]
+                                                      [ J.Method_Method [J.Flag_Static] "<clinit>" [] Nothing
+                                                          (jiCd $
+                                                               [ e ## J.Instr_Put True (J.Const_Field @moduleNm (show n) t)
+                                                               | (n,t,e,_) <- Seq.toList @expr.jbind
+                                                               ]
+                                                            ## J.Instr_Return Nothing
+                                                          )
+                                                      , J.Method_Method [] "<init>" [] Nothing
+                                                          (jiCd $
+                                                               J.Instr_Load jtyObj 0
+                                                            ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmObj "<init>" [] Nothing)
+                                                            ## J.Instr_Return Nothing
+                                                             
+                                                          )
+                                                      , J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
+                                                          (jiCd $
+                                                               @expr.jinstr
+                                                            ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "timeEval" [jtyObj] Nothing)
+                                                            ## J.Instr_Return Nothing
+                                                          )
+                                                      ]
+                                                      []
+%%]
+
+
+
+
+

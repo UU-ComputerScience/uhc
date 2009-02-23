@@ -194,7 +194,7 @@ putErrs (CompileError e) = putStrLn e >> return ()
 %%[(8 codegen grin)
 parseGrin :: FPath -> IO GrModule
 parseGrin path
-  = do{ (fn,fh) <- openFPath path ReadMode
+  = do{ (fn,fh) <- openFPath path ReadMode False
       ; tokens  <- scanHandle grinScanOpts fn fh
       ; code    <- parseIO (pModule) tokens
       ; return code

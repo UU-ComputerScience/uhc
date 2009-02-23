@@ -89,15 +89,13 @@ data HsName
 %%]
 %%[8
   |   HNmNr !Int !OrigName
-%%]
-%%[20
   |   HNmQ  ![HsName]
 %%]
 %%[7
   deriving (Eq,Ord)
 %%]
 
-%%[7
+%%[7 export(hsnShow)
 hsnShow :: String -> HsName -> String
 hsnShow _   (HNm s    )  = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
@@ -106,8 +104,6 @@ hsnShow _   (HNmNr n OrigNone        )  = "x_"        ++ show n
 hsnShow _   (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." hsn
-%%]]
-%%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
 %%]]
 %%]
@@ -119,9 +115,7 @@ instance Show HsName where
 
 %%[1
 hsnToList :: HsName -> [HsName]
-%%[[20
 hsnToList (HNmQ ns) = ns
-%%]
 hsnToList n         = [n]
 %%]
 
@@ -213,9 +207,7 @@ hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
 %%]
-%%[20
 hsnShowAlphanumeric (HNmQ ns) = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
-%%]
 
 
 
@@ -328,9 +320,7 @@ instance HSNM ([HsName],HsName) where
 instance HSNM [HsName] where
   mkHNm [n] = n
   mkHNm []  = hsnFromString "" -- ????, or empty alternative of HsName
-%%[[20
   mkHNm ns  = HNmQ ns
-%%]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

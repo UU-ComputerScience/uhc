@@ -66,6 +66,24 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+### enable options
+AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
+AC_SUBST(ENABLE_JAVA,$enableJava)
+if test x$enableJava == xyes
+then
+  REQUIRED_PROG_FOR_EH(javacCmd,javac)
+  REQUIRED_PROG_FOR_EH(jarCmd,jar)
+  if test "$javacCmd" = "no"; then
+    javacCmd=""
+    jarCmd=""
+    javacExists="no"
+  else
+    javacExists="yes"
+  fi
+  AC_SUBST(JAVAC_CMD,$javacCmd)
+  AC_SUBST(JAR_CMD,$jarCmd)
+fi
+
 ### ar, ranlib, libtool
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
@@ -636,6 +654,14 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+fi
+
+if test x$enableJava == xyes
+then
+  echo "  javac is available?           : $javacExists"
+  if test "x$javacExists" = "xyes" ;then 
+  echo "    command for javac           : $javacCmd"
+  fi
 fi
 
 echo "Optional:"
