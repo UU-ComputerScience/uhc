@@ -32,6 +32,7 @@ Target_<treatment>_<intermediate-lang>_<codegen-lang>
     - LLVM
     - JVM
     - DOTNET
+    - Jazy, Java lazy interpreter
 
 Combinations are all hardcoded to make explicit that only particular combinations are allowed.
 This may change later if/when combinations can be chosen independent/orthogonal.
@@ -39,7 +40,10 @@ This may change later if/when combinations can be chosen independent/orthogonal.
 %%[(8 codegen) export(Target(..))
 data Target
   = Target_None								-- no codegen
-  | Target_Core								-- only Core
+  | Target_None_Core_None					-- only Core
+%%[[(8 codegen jazy)
+  | Target_Interpreter_Core_Jazy			-- java base on Core, using jazy library
+%%]]
 %%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
@@ -56,7 +60,10 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 %%[(8 codegen)
 instance Show Target where
   show Target_None							= "NONE"
-  show Target_Core							= "core"
+  show Target_None_Core_None				= "core"
+%%[[(8 codegen jazy)
+  show Target_Interpreter_Core_Jazy			= "jazy"
+%%]]
 %%[[(8 codegen grin)
   show Target_FullProgAnal_Grin_C			= "C"
   show Target_FullProgAnal_Grin_LLVM		= "llvm"
@@ -85,7 +92,10 @@ supportedTargetMp
   = Map.fromList
       [ (show t, t)
       | t <- [ 
-               Target_Core
+               Target_None_Core_None
+%%[[(8 codegen jazy)
+             , Target_Interpreter_Core_Jazy
+%%]]
 %%[[(8 codegen grin)
              , Target_Interpreter_Grin_C
              , Target_FullProgAnal_Grin_C
@@ -165,7 +175,17 @@ targetAllowsOLinking t
 targetIsCore :: Target -> Bool
 targetIsCore t
   = case t of
-      Target_Core				 		-> True
+      Target_None_Core_None				-> True
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsJVM)
+targetIsJVM :: Target -> Bool
+targetIsJVM t
+  = case t of
+%%[[(8 codegen jazy)
+      Target_Interpreter_Core_Jazy		-> True
+%%]]
       _ 								-> False
 %%]
 

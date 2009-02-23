@@ -56,7 +56,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Opts Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon) \
+													$(addprefix Base/,Opts Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
 													$(addprefix Ty/,FitsInCommon FitsInCommon2 FitsIn Utils Trf/BetaReduce) \
@@ -64,7 +64,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
 														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
 															FlowBetweenPhase TransformGrin Semantics \
-															CompileLLVM CompileC Link \
+															CompileLLVM CompileC CompileJVM Link \
 															Cleanup Module TopLevelPhases \
 													)	) \
 													Gam/Utils \
@@ -414,8 +414,13 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
-	  echo "mkLibFilename dirprefix pkg = \"$(call FUN_MK_LIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "mkCLibFilename dirprefix pkg = \"$(call FUN_MK_CLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
+	  if test x$(ENABLE_JAVA) == xyes ; \
+	  then \
+	    echo "mkJavaLibFilename dirprefix pkg = \"$(call FUN_MK_JAVALIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
+	    echo "" ; \
+	  fi ; \
 	  echo "mkDirbasedInstallPrefix dir what variant target = case what of" ; \
 	  echo "  LIB            -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
 	  echo "  INCLUDE        -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \

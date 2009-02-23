@@ -44,7 +44,7 @@ CompilePhase building blocks: parsers
 cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
 cpParseOffside parser scanOpts store description modNm
  = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
+      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode False
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
       ; let (res,msgs) = parseOffsideToResMsgs parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
@@ -55,7 +55,7 @@ cpParseOffside parser scanOpts store description modNm
 cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
 cpParsePlain' parser scanOpts store fp modNm
  = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath fp ReadMode
+      ; (fn,fh) <- lift $ openFPath fp ReadMode False
       ; tokens  <- lift $ scanHandle scanOpts fn fh
       ; let (res,msgs) = parseToResMsgs parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
@@ -99,7 +99,7 @@ cpParseHs litmode
 cpParseOffsideStopAtErr :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> HsName -> EHCompilePhase ()
 cpParseOffsideStopAtErr parser scanOpts store modNm
  = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode
+      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode False
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
       ; let (res,_) = parseOffsideToResMsgsStopAtErr parser tokens
       ; cpUpdCU modNm (store res)

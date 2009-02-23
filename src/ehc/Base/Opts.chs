@@ -554,7 +554,7 @@ ehcCmdLineOpts
                                 Just "eh"    -> o { ehcOptEmitEH           = True   }
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
-                                Just "core"  -> o { ehcOptTarget           = Target_Core
+                                Just "core"  -> o { ehcOptTarget           = Target_None_Core_None
                                                   }
 %%]]
 %%[[(8 codegen java)

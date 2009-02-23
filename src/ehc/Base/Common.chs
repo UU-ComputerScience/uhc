@@ -79,7 +79,7 @@
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
 %%]
 
-%%[8 export(putCompileMsg,writeToFile, writePP)
+%%[8 export(putCompileMsg)
 %%]
 
 %%[8 export(ppHsnNonAlpha)
@@ -499,16 +499,25 @@ putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
     else return ()
 %%]
 
-%%[8
+%%[8 export(writePP, writeToFile)
 writePP ::  (a -> PP_Doc) -> a -> FPath -> IO ()
 writePP f text fp = writeToFile (show.f $ text) fp
 
-writeToFile str fp
-  = do { (fn, fh) <- openFPath fp WriteMode
-       ; hPutStrLn fh str
+writeToFile' :: Bool -> String -> FPath -> IO ()
+writeToFile' binary str fp
+  = do { (fn, fh) <- openFPath fp WriteMode binary
+       ; (if binary then hPutStr else hPutStrLn) fh str
        ; hClose fh
        }
 
+writeToFile :: String -> FPath -> IO ()
+writeToFile = writeToFile' False
+
+%%]
+
+%%[(8 java) export(writeBinaryToFile)
+writeBinaryToFile :: String -> FPath -> IO ()
+writeBinaryToFile = writeToFile' True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

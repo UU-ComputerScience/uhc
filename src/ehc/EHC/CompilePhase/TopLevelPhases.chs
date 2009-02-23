@@ -51,6 +51,8 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen grin) import({%{EH}EHC.CompilePhase.CompileLLVM})
 %%]
+%%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
+%%]
 %%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
 %%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
@@ -576,7 +578,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
               else []
              )
           ++ [ cpMsg modNm VerboseALot "Core+Grin done"
-             , cpMsg modNm VerboseALot ("isMainMod: " ++ show isMainMod)
+             , cpMsg modNm VerboseDebug ("isMainMod: " ++ show isMainMod)
              ]
           )
 %%]
@@ -604,6 +606,9 @@ cpEhcExecutablePerModule :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePha
 cpEhcExecutablePerModule how impModNmL modNm
   = cpSeq [ cpCompileWithGCC how impModNmL modNm
           , cpCompileWithLLVM modNm
+%%[[(8 jazy)
+          , cpCompileJazyJVM modNm
+%%]]
           ]
 %%]
 

@@ -26,9 +26,11 @@ Ty/Trf/ElimEqual.cag
 Ty/Trf/InfuseAnn.cag
 Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
+JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag
 Core/ToJava.cag
+Core/ToJazy.cag
 Core/Pretty.cag
 Core/Subst.cag
 Core/SubstCaseAltFail.cag

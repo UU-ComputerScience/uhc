@@ -28,6 +28,7 @@ import IO
 import Data.Maybe
 import Data.List
 import Control.Monad
+import System.IO
 import System.Directory
 
 -------------------------------------------------------------------------------------------
@@ -175,16 +176,19 @@ fpathOpenOrStdin fp
             ; return (fp,h)
             }
 
-openFPath :: FPath -> IOMode -> IO (String, Handle)
-openFPath fp mode | fpathIsEmpty fp = case mode of
-                                        ReadMode      -> return ("<stdin>" ,stdin )
-                                        WriteMode     -> return ("<stdout>",stdout)
-                                        AppendMode    -> return ("<stdout>",stdout)
-                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
-                  | otherwise       = do
-                                        let fNm = fpathToStr fp
-                                        h <- openFile fNm mode
-                                        return (fNm,h)
+openFPath :: FPath -> IOMode -> Bool -> IO (String, Handle)
+openFPath fp mode binary
+  | fpathIsEmpty fp = case mode of
+                        ReadMode      -> return ("<stdin>" ,stdin )
+                        WriteMode     -> return ("<stdout>",stdout)
+                        AppendMode    -> return ("<stdout>",stdout)
+                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
+  | otherwise       = do { let fNm = fpathToStr fp
+                         ; h <- if binary
+                                then openBinaryFile fNm mode
+                                else openFile fNm mode
+                         ; return (fNm,h)
+                         }
 
 -------------------------------------------------------------------------------------------
 -- Directory

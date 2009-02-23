@@ -3,6 +3,7 @@
 %%@InternalDocEhcTechnical.Core
 %%@InternalDocEhcTechnical.GrinCode
 %%@InternalDocEhcTechnical.Silly
+%%@InternalDocEhcTechnical.JVMClass
 %%]
 
 
@@ -213,6 +214,15 @@ The following transformations seem to be obsolete:
 \end{enumerate}
 
 
+
+%%]
+
+
+
+%%[JVMClass
+
+\section{JVMClass}
+%%@EHJVMClassAbsSyn.doesWhat
 
 %%]
 
