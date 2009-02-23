@@ -584,7 +584,7 @@ SEM Decl
 
 %%[(9 codegen)
 SEM Decl
-  | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL
+  | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindRec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL   -- '
 %%]
 
 %%[(94 codegen)
@@ -785,10 +785,22 @@ SEM Decl
                                                                                         (repeat (CMeta_Dict Nothing))
                                                                                         superNewVars
 
+                                                             superNameMapping2   = zip @supClsFldL
+                                                                                       @chrSuperProveNmL
+                                                             superPairs          = map getBindLeftAndRightVar @chrScopeSuperBindL
+                                                             
+                                                             doubleLookup :: HsName -> Maybe HsName
+                                                             doubleLookup nm   =  do { nm2 <- lookup nm superNameMapping2
+                                                             	                     ; nm3 <- lookup nm2 superPairs
+                                                             	                     ; return nm3
+                                                             	                     }
+                                                             
+                                                             superMbNewNames   =  map doubleLookup memberNames
+
                                                              instanceAndSuperMbNewNames = let f (Just x) _ = Just x
                                                                                               f _ (Just y) = Just y
                                                                                               f _ _        = Nothing
-                                                                                          in zipWith f instanceMbNewNames (map getBindRightVar @chrScopeSuperBindL ++ repeat Nothing)
+                                                                                          in zipWith f instanceMbNewNames superMbNewNames
 
                                                              instanceCHRBindings = cSubstOptApp @lhs.opts @cSubst
                                                                                                 (  @chrAssumeSuperBindL 
@@ -808,7 +820,7 @@ SEM Decl
                                                              bind3     = mkCBind1Meta rsltNm       (CMeta_Dict Nothing) dict3
                                                              contextArguments = cmetaLiftDict @chrCtxtArgNmL
                                                          in  ( mkCExprLamMeta contextArguments dict4   
-                                                             , CMeta_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames) 
+                                                             , CMeta_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames)
                                                              )
 
                                                      mkDefaultD defaultBindings
@@ -854,6 +866,14 @@ getBindRightVar :: CBind -> Maybe HsName
 
 getBindRightVar (CBind_Bind _ _ (CExpr_Var nm)) = Just nm
 getBindRightVar _ = Nothing
+
+
+getBindLeftAndRightVar :: CBind -> (HsName,HsName)
+
+getBindLeftAndRightVar (CBind_Bind nm1 _ (CExpr_Var nm2)) = (nm1,nm2)
+getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
+
+
 
 %%]
 
