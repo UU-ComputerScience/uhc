@@ -1,0 +1,40 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * Primitives
+ */
+public class Prim
+{
+%%]
+
+%%[(8 jazy)
+    /**
+     * Arithmetic
+     */
+    public static int primAddInt( int v1, int v2 ) { return v1 + v2 ; }
+    public static int primSubInt( int v1, int v2 ) { return v1 - v2 ; }
+    public static int primMulInt( int v1, int v2 ) { return v1 * v2 ; }
+    public static int primDivInt( int v1, int v2 ) { return v1 / v2 ; }
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

@@ -40,7 +40,10 @@ DATA Class
                 fields			: Fields
                 methods			: Methods
                 -- attributes		: Attributes
-                userdata		: UserDataAssocs
+                -- userdata		: UserDataAssocs
+                innerclasses	: Classes
+
+TYPE Classes	= [Class]
 %%]
 
 data Class = Class {
@@ -187,19 +190,26 @@ data Code = Code {
 
 %%[(8 java)
 DATA Instr
+%%]
   | Note 			note				: Note
   | Nop
   | Pop 			type				: Type
+%%[(8 java)
   | Dup 			type				: Type
+%%]
   | DupX 			typedup				: Type{-what to dup-}
   					typeskip			: Type{-what to skip-}
   | Swap 			type1				: Type
   					type2				: Type
+%%[(8 java)
   | Load 			type				: Type
   					local				: {Local}
+%%]
   | Store 			type				: Type
   					local				: {Local}
+%%[(8 java)
   | Const 			const				: Const
+%%]
   | Inc 			local				: {Local}
   					value				: {JShort}
   | Arith 			op					: ArithOp
@@ -211,12 +221,14 @@ DATA Instr
   | ALoad 			type				: Type
   | AStore 			type				: Type
   | ALength 		type				: Type
+%%[(8 java)
   | Get 			static				: {Bool}
   					fldConst			: Const
   | Put				static				: {Bool}
   					fldConst			: Const
   | Invoke 			mode				: InvokeMode
   					methConst			: Const
+%%]
   | If 				test				: Test
   					label				: {Label}
   | Goto 			label				: {Label}
@@ -225,16 +237,21 @@ DATA Instr
   | Switch 			switch				: SwitchType
   					label				: {Label}
   					offsets				: {[(JInt,Label)]}
-  | Return 			mbType				: {Maybe Type}
+%%[(8 java)
+  | Return 			mbType				: MbType
   | New 			classRef			: {ClassRef}
+%%]
   | NewArray 		type				: Type
   					u1					: {U1}
-  | CheckCast 		type				: Type
+%%[(8 java)
+  | CheckCast 		classRef			: {ClassRef}
+%%]
   | InstanceOf 		type				: Type
   | Throw 			classRef			: {ClassRef}
   | MonitorEnter 	type				: Type
   | MonitorExit 	type				: Type
 
+%%[(8 java)
 TYPE Instrs		= [Instr]
 %%]
 
@@ -388,6 +405,12 @@ TYPE UserDataAssocs	= [UserDataAssoc]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 java)
+SET AllFlag
+  = Flag Flags
+
+SET AllCode
+  = Code MbCode
+
 SET AllInstr
   = Instr Instrs
 
@@ -397,6 +420,9 @@ SET AllMethod
 SET AllField
   = Field Fields
 
+SET AllClass
+  = Class Classes
+
 SET AllType
   = Type MbType Types
 
@@ -404,8 +430,8 @@ SET AllConst
   = Const MbConst Consts
 
 SET AllBin
-  = Class
-    Code MbCode
+  = AllClass
+    AllCode
     AllConst
 
 SET AllNT
@@ -414,7 +440,7 @@ SET AllNT
     AllMethod
     AllField
     AllType
-    Flag Flags
+    AllFlag
     Note
     ArithOp
     CmpMode

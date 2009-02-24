@@ -16,7 +16,9 @@
 
 %%[(8 java) hs export(AGItf(..), ConstAGItf(..)) 
 %%]
-%%[(8 java) hs export(Class(..), Field(..), Fields, Flag(..), Flags, Method(..), Methods, Type(..), Types, MbType, Const(..), MbConst, Consts, UserData(..), UserDatas, UserDataAssoc, UserDataAssocs) 
+%%[(8 java) hs export(Class(..), Classes)
+%%]
+%%[(8 java) hs export(Field(..), Fields, Flag(..), Flags, Method(..), Methods, Type(..), Types, MbType, Const(..), MbConst, Consts, UserData(..), UserDatas, UserDataAssoc, UserDataAssocs) 
 %%]
 %%[(8 java) hs export(Code(..), MbCode, Instr(..), Instrs, Note(..), ArithOp(..), CmpMode(..), MbCmpMode, InvokeMode(..), SwitchType(..), Test(..)) 
 %%]

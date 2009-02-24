@@ -159,9 +159,6 @@ data EHCOpts
       ,  ehcOptGenRTSInfo     ::  Int               -- flags to tell rts to dump internal info, currently: 1=on
       ,  ehcOptDumpGrinStages ::  Bool              -- dump intermediate Grin transformation stages
 %%]]
-%%[[(8 codegen java)
-      ,  ehcOptEmitJava       ::  Bool
-%%]]
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
@@ -253,6 +250,12 @@ ehcOptEmitC :: EHCOpts -> Bool
 ehcOptEmitC = targetIsC . ehcOptTarget
 %%]
 
+%%[(8 codegen java) export(ehcOptEmitJava)
+-- generate Java, as src text
+ehcOptEmitJava :: EHCOpts -> Bool
+ehcOptEmitJava o = ehcOptTarget o == Target_Interpreter_Core_Java
+%%]
+
 %%[(8 codegen grin) export(ehcOptEmitLLVM)
 -- generate LLVM
 ehcOptEmitLLVM :: EHCOpts -> Bool
@@ -310,9 +313,6 @@ defaultEHCOpts
       ,  ehcOptGenRTSInfo       =   0
 
       ,  ehcOptDumpGrinStages   =   False
-%%]]
-%%[[(8 codegen java)
-      ,  ehcOptEmitJava         =   False
 %%]]
 %%[[8
       ,  ehcOptVerbosity        =   VerboseNormal
@@ -558,7 +558,7 @@ ehcCmdLineOpts
                                                   }
 %%]]
 %%[[(8 codegen java)
-                                Just "java"  -> o { ehcOptEmitJava         = True   }
+                                Just "java"  -> o { ehcOptTarget           = Target_Interpreter_Core_Java   }
 %%]]
 %%[[(8 codegen grin)
                                 Just "grin"  -> o -- { ehcOptEmitGrin         = True   }

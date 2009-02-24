@@ -1,4 +1,4 @@
-%%[8
+%%[(8 jazy)
 package uu.jazy.ehc ;
 
 /**
@@ -140,7 +140,7 @@ public class RTS
         showln( System.out, v ) ;
     }
 
-%%[8
+%%[(8 jazy)
     /**
      * Entry point into RTS
      */    
@@ -160,7 +160,7 @@ public class RTS
         show( System.out, v ) ;
     }
 
-%%[8
+%%[(8 jazy)
 }
 
 %%]

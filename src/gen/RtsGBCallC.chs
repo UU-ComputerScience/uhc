@@ -66,12 +66,12 @@ mkC maxCCallArgs
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")
            ]
-        ++ [ localvar (basicTyGBTy t) (r' t) Nothing | t <- allBasicTy ]
+        ++ [ localvar (basicTyGBTy t) (r' t) Nothing | t <- allGrinBasicTy ]
         ++ [ stat (call "GB_SetTOS" [pp nargs])
            , stat (call "GB_Push" [pp pc])
            , stat "GB_BP_Link"
            , switch callenc
-               [ switchcase (show $ basicTyLEncoding ra)
+               [ switchcase (show $ basicGrinTyLEncoding ra)
                    (let (cl,sz) = funCCall ra f a
                         resty = basicTyGBTy res
                     in  [ assign (r' res) cl
@@ -112,9 +112,9 @@ allFunTyL :: Int -> [(Int,[(BasicTy,[[BasicTy]])])]
 allFunTyL maxCCallArgs
   = [ ( nrArg
       , [ ( res
-          , combine $ replicate nrArg allBasicTy
+          , combine $ replicate nrArg allGrinBasicTy
           )
-        | res <- allBasicTy
+        | res <- allGrinBasicTy
         ]
       )
     | nrArg <- [0..maxCCallArgs]
@@ -205,7 +205,7 @@ funCCall ty@(res:args) fun argbase
 %%[8
 funTyNm :: [BasicTy] -> String
 funTyNm (res:args)
-  = "GB_CFun_" ++ [basicTyChar res] ++ show (length args) ++ map basicTyChar args
+  = "GB_CFun_" ++ [basicGrinTyCharEncoding res] ++ show (length args) ++ map basicGrinTyCharEncoding args
 %%]
 
 E.g.:

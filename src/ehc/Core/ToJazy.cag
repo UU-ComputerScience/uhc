@@ -7,12 +7,15 @@
 %%% Code generation for jazy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core})
+%%[(8 jazy) hs module {%{EH}Core.ToJazy} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core})
 %%]
 
-%%[(8 jazy) hs import(Data.Maybe, Data.Char)
+%%[(8 jazy) hs import(Data.Maybe, qualified Data.Map as Map, Data.Char)
 %%]
 %%[(8 jazy) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 jazy) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Base.BasicAnnot})
 %%]
 
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
@@ -22,15 +25,15 @@
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 jazy).WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
+%%[(8 jazy).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX})
 WRAPPER CodeAGItf
 %%]
 
 %%[(8 jazy) hs export(cmod2JazyJVMModule)
-cmod2JazyJVMModule :: CModule -> J.Class
-cmod2JazyJVMModule cmod
+cmod2JazyJVMModule :: EHCOpts -> CModule -> J.Class
+cmod2JazyJVMModule opts cmod
   =  jazy_Syn_CodeAGItf t
-  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+  where t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) (Inh_CodeAGItf {opts_Inh_CodeAGItf = opts})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,6 +57,9 @@ infixr 3 ##
 
 (##) :: (JINSTR x, JINSTR y) => x -> y -> J.JInstr
 x ## y = J.jinstrUnions [j x,j y]
+
+emptyJI :: J.JInstr
+emptyJI = Seq.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,30 +67,197 @@ x ## y = J.jinstrUnions [j x,j y]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy)
-ATTR AllNT [ moduleNm: HsName | | ]
+ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+%%[(8 jazy)
+ATTR AllNT [ classNm: HsName  topClassNm: HsName | | ]
 
 SEM CModule
-  | Mod         expr        .   moduleNm  		=   @moduleNm
+  | Mod         expr        .   classNm  		=   @moduleNm
+  							.	topClassNm		=	@moduleNm
+
+SEM CodeAGItf
+  | AGItf       loc         .   classNm  		=   hsnUnknown
+  							.	topClassNm		=	hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Variable bindings for other than global
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+data CVarInfo
+  = CVarInfo_Local
+      { cvarType			:: J.Type
+      , cvarOffset			:: J.Local
+      }
+  | CVarInfo_Global
+      { cvarType			:: J.Type
+      , cvarClassLocNm		:: HsName
+      , cvarFldNm			:: String
+      }
+
+type CVarMp = Map.Map HsName CVarInfo
+%%]
+
+%%[(8 jazy) hs
+jvRef :: CVarInfo -> J.JInstr
+jvRef vi
+  = case vi of
+      CVarInfo_Local  t o    -> j $ J.Instr_Load t o
+      CVarInfo_Global t cl f -> j $ J.Instr_Get  True (J.Const_Field cl f t)
+%%]
+
+%%[(8 jazy)
+ATTR AllNT [ cvarMp: CVarMp | | ]
+
+SEM CodeAGItf
+  | AGItf		loc			.	cvarMp			=	Map.empty
+
+SEM CExpr
+  | Lam			loc			.	cvarMp			=	Map.insert @arg (CVarInfo_Local jtyObj @localOffset) @lhs.cvarMp
+  | Var			loc			.	cvi				=	Map.findWithDefault (CVarInfo_Global jtyObj @lhs.topClassNm (show @nm)) @nm @lhs.cvarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offset of locals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: assume presence of self, assume size == 1
+TBD: outside current lexical level, cannot be accessed locally, is closure (which is only half baked available in JVM)
+
+%%[(8 jazy)
+ATTR AllNT [ localOffset: {J.Local} | | ]
+
+SEM CodeAGItf
+  | AGItf		loc			.	localOffset		=	0	-- dummy value
+
+SEM CExpr
+  | Lam			loc			.	localOffset		=	if @hasFunHere then 1 else @lhs.localOffset
+  				body		.	localOffset		=	@localOffset + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Various contextual info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+data WhatExpr
+  = ExprIsLam | ExprIsApp | ExprIsOther
+  deriving Eq
+%%]
+
+%%[(8 jazy)
+ATTR CExpr [ | | whatBelow: WhatExpr ]
+
+SEM CExpr
+  | Lam			loc			.	whatBelow		=	ExprIsLam
+  | * - Lam		loc			.	whatBelow		=	ExprIsOther
+%%]
+
+%%[(8 jazy)
+ATTR CExpr [ whatAbove: WhatExpr | | ]
+
+SEM CExpr
+  | Lam			loc			.	whatAbove		=	ExprIsLam
+  | App			loc			.	whatAbove		=	ExprIsApp
+  | * - Lam App
+  				loc			.	whatAbove		=	ExprIsOther
+
+SEM CBind
+  | Bind		loc			.	whatAbove		=	ExprIsOther
+
+SEM CPatBind
+  | Bind		loc			.	whatAbove		=	ExprIsOther
+
+SEM CAlt
+  | Alt			loc			.	whatAbove		=	ExprIsOther
+
+SEM CModule
+  | Mod			loc			.	whatAbove		=	ExprIsOther
+%%]
+
+%%[(8 jazy)
+ATTR CExpr [ mbLamNm: {Maybe HsName} | | ]
+
+SEM CExpr
+  | App Lam     loc         .   mbLamNm     	=   Nothing
+
+SEM CAlt
+  | Alt         loc         .   mbLamNm     	=   Nothing
+
+SEM CBind
+  | Bind        expr        .   mbLamNm     	=   Just @nm
+
+SEM CPatBind
+  | Bind        offset      .   mbLamNm     	=   Nothing
+
+SEM CModule
+  | Mod         expr        .   mbLamNm     	=   Nothing
+%%]
+
+%%[(8 jazy)
+SEM CExpr
+  | Lam         loc         .   (hasFunHere,lamNm)
+                                                =   if @lhs.whatAbove /= ExprIsLam
+                                                    then (True,fromJust @lhs.mbLamNm)
+                                                    else (False,hsnUnknown)
+  | App         loc         .   hasAppHere      =   @lhs.whatAbove /= ExprIsApp
+
+SEM CBind
+  | Bind		loc			.	isCAF			=	@expr.whatBelow /= ExprIsLam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+nmFunSuff n | n >  5    = "N"
+            | n >= 0    = show n
+            | otherwise = ""
+nmInt       = mkHNm "java.lang.Integer"
+nmChar      = mkHNm "java.lang.Character"
+nmObj       = mkHNm "java.lang.Object"
+nmFun       = nmFunN (-1)
+nmFunN   n  = mkHNm ("uu.jazy.core.Function" ++ nmFunSuff n)
+nmApp       = nmAppN (-1)
+nmAppN   n  = mkHNm ("uu.jazy.core.Apply" ++ nmFunSuff n)
+nmEvl       = mkHNm "uu.jazy.core.Eval"
+nmEval      = nmEvalN (-1)
+nmEvalN  n  = "eval"  ++ nmFunSuff n
+nmApplyN n  = "apply" ++ nmFunSuff n
+nmRTS       = mkHNm "uu.jazy.ehc.RTS"
+nmPrim      = mkHNm "uu.jazy.ehc.Prim"
+%%]
+
+%%[(8 jazy) hs
+nmCafOrFunN 0 = nmAppN 0
+nmCafOrFunN n = nmFunN n
+
+nmSetOrEvlN 0 = "evalSet"
+nmSetOrEvlN n = nmEvalN n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+jtyInt  = J.Type_Class nmInt
+jtyChar = J.Type_Class nmChar
+jtyStr  = J.Type_Class $ mkHNm "java.lang.String"
+jtyObj  = J.Type_Class nmObj
+jtyFun  = J.Type_Class nmFun
+jtyApp  = J.Type_Class nmApp
+jtyEvl  = J.Type_Class nmEvl
+jtyInd  = J.Type_Class $ mkHNm "uu.jazy.core.Indirection"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of an expression
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 jazy) hs
-nmInt  = mkHNm "java.lang.Integer"
-nmChar = mkHNm "java.lang.Character"
-nmObj  = mkHNm "java.lang.Object"
-nmRTS  = mkHNm "uu.jazy.ehc.RTS"
-
-jtyInt  = J.Type_Class nmInt
-jtyChar = J.Type_Class nmChar
-jtyStr  = J.Type_Class $ mkHNm "java.lang.String"
-jtyObj  = J.Type_Class nmObj
-jtyFun  = J.Type_Class $ mkHNm "uu.jazy.core.Function"
-jtyApp  = J.Type_Class $ mkHNm "uu.jazy.core.Apply"
-jtyInd  = J.Type_Class $ mkHNm "uu.jazy.core.Indirection"
-%%]
 
 %%[(8 jazy)
 ATTR CExpr [ | | jty: {J.Type} ]
@@ -102,49 +275,253 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: App as args ++ func
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+ATTR CExpr [ | | jiArgFunL: {[J.JInstr]} ]
+
+SEM CExpr
+  | App         loc         .   jiArgFunL   =   @arg.ji : @func.jiArgFunL
+  | * - App     lhs         .   jiArgFunL   =   [@ji]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: Lam as body + args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+ATTR CExpr [ | | jiArgL: {[HsName]}  jiBody: {J.JInstr} ]
+
+SEM CExpr
+  | Lam         loc         .   jiArgL      =   @arg : @body.jiArgL
+                            .   jiBody      =   @body.jiBody
+  | * - Lam     lhs         .   jiArgL      =   []
+                            .   jiBody      =   @ji
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy) hs
-jiNew :: HsName -> J.Const -> J.Type -> J.JInstr
-jiNew nmCl const constTy
+jiNew :: HsName -> [(J.JInstr,J.Type)] -> J.JInstr
+jiNew nmCl argL
   =    J.Instr_New nmCl
     ## J.Instr_Dup (J.Type_Class nmCl)
-    ## J.Instr_Const const
-    ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmCl "<init>" [constTy] Nothing)
+    ## map fst argL
+    ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmCl "<init>" (map snd argL) Nothing)
 
-jiCd :: J.JInstr -> J.Code
-jiCd i = J.Code_Code (Just 5) (Just 1) (Seq.toList i)
+jiEvl :: J.JInstr
+jiEvl = j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmEvl nmEval [jtyObj] (Just jtyObj))
+
+jiToCd :: J.JInstr -> J.Code
+jiToCd i = J.Code_Code Nothing Nothing (Seq.toList i)
 %%]
 
 %%[(8 jazy)
-ATTR CExpr [ | | jinstr USE {`Seq.union`} {Seq.empty}: {J.JInstr} ]
+ATTR CExpr [ | | ji USE {`Seq.union`} {Seq.empty}: {J.JInstr} ]
 %%]
 
 %%[(8 jazy)
 SEM CExpr
-  | Int			lhs			.	jinstr			=	jiNew nmInt  (J.Const_Int $ fromInteger $ toInteger       @int ) J.Type_Int
-  | Char		lhs			.	jinstr			=	jiNew nmChar (J.Const_Int $ fromInteger $ toInteger $ ord @char) J.Type_Char
-  | Var 		lhs			.	jinstr			=	Seq.fromList [J.Instr_Get True (J.Const_Field @lhs.moduleNm (show @nm) jtyObj)]
-  | Let 		lhs			.	jinstr			=	@body.jinstr
+  | Int         loc         .   ji              =   jiNew nmInt  [(j $ J.Instr_Const $ J.Const_Int $ fromInteger $ toInteger       @int , J.Type_Int )]
+  | Char        loc         .   ji              =   jiNew nmChar [(j $ J.Instr_Const $ J.Const_Int $ fromInteger $ toInteger $ ord @char, J.Type_Char)]
+  | Var         loc         .   ji              =   jvRef @cvi
+  | Let         loc         .   ji              =   @body.ji
+  | App			loc			.	ji				=	if @hasAppHere
+  													then let (f:as) = reverse @jiArgFunL
+  													         nArgs = length as
+  													     in  (  f
+  													         ## J.Instr_CheckCast nmEvl
+  													         ## as
+  													         ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmEvl (nmApplyN nArgs) (replicate nArgs jtyObj) (Just jtyApp))
+  													         )
+  													else emptyJI
+  | * - Int Char Var Let Lam App
+                loc         .   ji              =   emptyJI
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Generation: binding
+%%% Generation: single binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 jazy) hs
+type JBind  = (HsName,J.Type,J.JInstr,J.Field)
+type JBinds = Seq.Seq JBind
+%%]
+
 %%[(8 jazy)
-ATTR AllBind CExpr [ | | jbind USE {`Seq.union`} {Seq.empty}: {Seq.Seq (HsName,J.Type,J.JInstr,J.Field)}]
+ATTR AllBind CExpr [ | | jbinds USE {`Seq.union`} {Seq.empty}: JBinds]
 %%]
 
 %%[(8 jazy)
 SEM CBind
-  | Bind		lhs			.	jbind			=	Seq.singleton
+  | Bind FFI	lhs			.	jbinds			=	Seq.singleton
   													  $ ( @nm
-  													    , jtyObj
-  													    , @expr.jinstr
-  													    , J.Field_Field [J.Flag_Public,J.Flag_Static] (show @nm) jtyObj Nothing
+  													    , jtyObj {- @expr.jty -}
+  													    , @ji
+  													    , J.Field_Field [J.Flag_Public,J.Flag_Static] (show @nm) jtyObj {- @expr.jty -} Nothing
   													    )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: FFI binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+basicTyJBox :: BasicTy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJBox t
+  = case t of
+      BasicTy_Int -> (bx nmInt J.Type_Int,J.Type_Int)
+  where bx nm ty jiVal = jiNew nm [(jiVal,ty)]
+
+basicTyJUnbox :: Bool -> BasicTy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJUnbox doEval t
+  = case t of
+      BasicTy_Int -> (un nmInt "intValue" J.Type_Int,J.Type_Int)
+  where un nmTy nmGet tyRes jiVal
+          =    jiVal
+            ## (if doEval then jiEvl else emptyJI)
+            ## J.Instr_CheckCast nmTy
+            ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmTy nmGet [] (Just tyRes))
+%%]
+  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: methods
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+jmInit0Inst :: J.ClassRef -> J.Method
+jmInit0Inst superNm
+  = J.Method_Method [] "<init>" [] retTy
+        (jiToCd
+          $  J.Instr_Load jtyObj 0
+          ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method superNm "<init>" [] Nothing)
+          ## J.Instr_Return retTy
+        )
+  where retTy = Nothing
+
+jmEvalN :: Int -> J.JInstr -> J.Method
+jmEvalN n ji
+  = J.Method_Method [J.Flag_Public] (nmEvalN n) (replicate n jtyObj) retTy
+        (jiToCd
+          $  ji
+          ## J.Instr_Return retTy
+        )
+  where retTy = Just jtyObj
+
+jmEvalSet :: J.JInstr -> J.Method
+jmEvalSet ji
+  = J.Method_Method [J.Flag_Public] "evalSet" [] retTy
+        (jiToCd
+          $  J.Instr_Load jtyObj 0
+          ## ji
+          ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method (nmAppN 0) "setValue" [jtyObj] retTy)
+          ## J.Instr_Return retTy
+        )
+  where retTy = Nothing
+%%]
+
+%%[(8 jazy)
+SEM CModule
+  | Mod         loc         .   methClinit      =   J.Method_Method [J.Flag_Static] "<clinit>" [] Nothing
+                                                        (jiToCd
+                                                          $  [ e ## J.Instr_Put True (J.Const_Field @moduleNm (show n) t)
+                                                             | (n,t,e,_) <- Seq.toList @expr.jbinds
+                                                             ]
+                                                          ## J.Instr_Return Nothing
+                                                        )
+                            .   methInit        =   jmInit0Inst nmObj
+                            .   methMain        =   J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
+                                                        (jiToCd
+                                                          $  @expr.ji
+                                                          ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "timeEval" [jtyObj] Nothing)
+                                                          ## J.Instr_Return Nothing
+                                                        )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation: classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy) hs
+type JClasses = Seq.Seq J.Class
+%%]
+
+%%[(8 jazy) hs
+jClsNm :: HsName -> String -> HsName
+jClsNm classNm funNm = hsnSuffix classNm ("-" ++ funNm)
+
+jCls :: J.Flags -> J.ClassRef -> J.ClassRef -> J.Fields -> J.Methods -> J.Classes -> J.Class
+jCls flags nmThis nmSuper flds meths subs
+  = J.Class_Class 0 49 flags nmThis nmSuper [] flds meths subs
+
+jFunCls :: HsName -> Int -> J.JInstr -> JBinds -> JClasses -> (JClasses,J.JInstr)
+jFunCls thisNm nArgs jbody jbinds subclasses
+  = ( Seq.fromList
+      [ jCls [J.Flag_Public,J.Flag_Static] thisNm superNm
+          [ f | (_,_,_,f) <- Seq.toList jbinds ]
+          [ jmInit0Inst superNm
+          , if nArgs == 0 then jmEvalSet jbody else jmEvalN nArgs jbody
+          ]
+          (Seq.toList subclasses)
+      ]  
+    , jiNew thisNm []
+    )
+  where superNm = nmCafOrFunN nArgs
+%%]
+
+%%[(8 jazy)
+ATTR AllNT [ | | subClasses USE {`Seq.union`} {Seq.empty} : JClasses ]
+%%]
+
+%%[(8 jazy)
+SEM CExpr
+  | Lam         loc         .   classNm         =   if @hasFunHere then jClsNm @lhs.classNm (show @lamNm) else @lhs.classNm
+                            .   (subClasses,ji) =   if @hasFunHere
+                                                    then jFunCls @classNm (length @jiArgL) @body.jiBody @body.jbinds @body.subClasses
+                                                    else (@body.subClasses, emptyJI)
+%%]
+
+%%[(8 jazy)
+SEM CModule
+  | Mod         loc         .   topLevelCls     =   jCls [J.Flag_Public] @moduleNm nmObj
+                                                      [ f | (_,_,_,f) <- Seq.toList @expr.jbinds ]
+                                                      [ @methClinit, @methInit, @methMain ]
+                                                      (Seq.toList @expr.subClasses)
+%%]
+
+%%[(8 jazy)
+SEM CBind
+  | Bind		loc			.	classNm         =   if @isCAF then jClsNm @lhs.classNm (show @nm) else @lhs.classNm
+                            .   (subClasses,ji) =   if @isCAF
+                                                    then jFunCls @classNm 0 @expr.ji @expr.jbinds @expr.subClasses
+                                                    else (@expr.subClasses, @expr.ji)
+  | FFI         loc         .   classNm         =   jClsNm @lhs.classNm @impEnt
+                            .   lkupBuiltin     =   let m = builtinKnownBoxedTyMp @lhs.opts
+                                                    in  \n -> Map.lookup n m
+                            .   (subClasses,ji) =   let mkxxbox how mbCon
+                                                          = case mbCon of
+                                                              Just c -> case @lkupBuiltin c of
+                                                                          Just bi -> how (biJazyBasicTy bi)
+                                                                          _       -> dflt
+                                                              _      -> dflt
+                                                          where dflt = (id,jtyObj)
+                                                        mkunbox = mkxxbox (basicTyJUnbox True)
+                                                        mkbox   = mkxxbox basicTyJBox
+                                                        nArgs   = length @argMbConL
+                                                        (argsJI,argsTy)
+                                                                = unzip
+                                                                    [ (mkji $ j $ J.Instr_Load jtyObj o, ty)
+                                                                    | (o,mbc) <- zip [1..] @argMbConL
+                                                                    , let (mkji,ty) = mkunbox mbc
+                                                                    ]
+                                                        (mkResJI,resTy)
+                                                                = mkbox @resMbCon
+                                                        primJI  = j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim @impEnt argsTy (Just resTy))
+                                                    in  jFunCls @classNm nArgs (mkResJI $ argsJI ## primJI) Seq.empty Seq.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -157,31 +534,7 @@ ATTR CodeAGItf CModule [ | | jazy: {J.Class} ]
 
 %%[(8 jazy)
 SEM CModule
-  | Mod         lhs         .   jazy            =   J.Class_Class 0 49 [J.Flag_Public] @moduleNm nmObj
-                                                      []
-                                                      [ f | (_,_,_,f) <- Seq.toList @expr.jbind ]
-                                                      [ J.Method_Method [J.Flag_Static] "<clinit>" [] Nothing
-                                                          (jiCd $
-                                                               [ e ## J.Instr_Put True (J.Const_Field @moduleNm (show n) t)
-                                                               | (n,t,e,_) <- Seq.toList @expr.jbind
-                                                               ]
-                                                            ## J.Instr_Return Nothing
-                                                          )
-                                                      , J.Method_Method [] "<init>" [] Nothing
-                                                          (jiCd $
-                                                               J.Instr_Load jtyObj 0
-                                                            ## J.Instr_Invoke J.InvokeMode_Special (J.Const_Method nmObj "<init>" [] Nothing)
-                                                            ## J.Instr_Return Nothing
-                                                             
-                                                          )
-                                                      , J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
-                                                          (jiCd $
-                                                               @expr.jinstr
-                                                            ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "timeEval" [jtyObj] Nothing)
-                                                            ## J.Instr_Return Nothing
-                                                          )
-                                                      ]
-                                                      []
+  | Mod         lhs         .   jazy            =   @topLevelCls
 %%]
 
 
