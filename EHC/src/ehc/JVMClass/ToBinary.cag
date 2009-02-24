@@ -10,12 +10,12 @@
 %%[(8 java) hs module {%{EH}JVMClass.ToBinary} import({%{EH}Base.Common})
 %%]
 
-%%[(8 java) hs import(qualified Data.Map as Map, Data.Bits)
+%%[(8 java) hs import(qualified Data.Map as Map, Data.Maybe, Data.Bits)
 %%]
 %%[(8 java) hs import(qualified EH.Util.FastSeq as Seq, EH.Util.Utils)
 %%]
 
-%%[(8 java) hs import({%{EH}Base.HsName})
+%%[(8 java) hs import({%{EH}Base.HsName},{%{EH}Base.Builtin})
 %%]
 %%[(8 java) hs import({%{EH}Base.Binary})
 %%]
@@ -31,9 +31,9 @@ WRAPPER AGItf ConstAGItf
 %%]
 
 %%[(8 java) hs export(jvmclass2binary)
-jvmclass2binary :: Class -> Bytes
+jvmclass2binary :: Class -> AssocL HsName Bytes
 jvmclass2binary cl
-  =  bin_Syn_AGItf t
+  =  Seq.toList $ allClasses_Syn_AGItf t
   where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cl)) Inh_AGItf
 %%]
 
@@ -42,6 +42,49 @@ jvmconst2binary :: Const -> CP -> (Bytes,CP)
 jvmconst2binary c cp
   =  (bin_Syn_ConstAGItf t, cp_Syn_ConstAGItf t)
   where t = wrap_ConstAGItf (sem_ConstAGItf (ConstAGItf_AGItf c)) (Inh_ConstAGItf {cp_Inh_ConstAGItf = cp})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AGItf AllClass [ | | allClasses USE {`Seq.union`} {Seq.empty} : {Seq.Seq (HsName,Bytes)} ]
+
+SEM Class
+  | Class       loc			.	allClasses	=	Seq.singleton (@this,@bin) `Seq.union` @innerclasses.allClasses
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class nesting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AllClass [ mbInClass: {Maybe (ClassRef,Maybe MethodRef)} | | ]
+
+SEM AGItf
+  | AGItf       module      .   mbInClass       =   Nothing
+
+SEM Class
+  | Class       innerclasses.   mbInClass       =   Just (@this,Nothing)
+                (loc.isInnerClass,loc.outerNm)  =   maybe (False,hsnUnknown) (\(n,_) -> (True,n)) @lhs.mbInClass
+%%]
+
+%%[(8 java)
+ATTR AllClass [ | | innerClsRefs USE {`Seq.union`} {Seq.empty}: {Seq.Seq (ClassRef,ClassRef)} ]
+
+SEM Class
+  | Class       loc         .   innerClsRefs    =   (if @isInnerClass
+                                                     then Seq.singleton (@this,@outerNm)
+                                                     else Seq.empty
+                                                    ) `Seq.union` @innerclasses.innerClsRefs
+%%]
+
+%%[(8 java)
+ATTR AllClass [ innerClsRefL: {[(ClassRef,ClassRef)]} | | ]
+
+SEM AGItf
+  | AGItf       module      .   innerClsRefL    =   Seq.toList @module.innerClsRefs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,20 +111,49 @@ cadd c cp@(CP _ m)
         where (binc,(CP inext m)) = jvmconst2binary c cp
 
 caddl :: [Const] -> CP -> ([U2],CP)
-caddl cl cp = foldl (\(is,cp) c -> let (i,cp') = cadd c cp in (i:is,cp')) ([],cp) cl
+caddl cl cp = foldr (\c (is,cp) -> let (i,cp') = cadd c cp in (i:is,cp')) ([],cp) cl
+
+caddl' :: (x -> [Const]) -> ([U2] -> y) -> [x] -> CP -> ([y],CP)
+caddl' expand implode xl cp
+  = foldl (\(is,cp) x -> let (i,cp') = caddl (expand x) cp in (implode i:is,cp')) ([],cp) xl
+
+caddl2 :: [(Const,Const)] -> CP -> ([(U2,U2)],CP)
+caddl2 = caddl' (\(x,y) ->[x,y]) (\[x,y] ->(x,y))
 %%]
 
 %%[(8 java)
 ATTR ConstAGItf AllBin AllInstr AllMethod AllField [ | cp: CP | ]
+ATTR AllClass [ cpf: CP | | ]
+%%]
 
+%%[(8 java)
 SEM AGItf
   | AGItf       module      .   cp          =   emptyCP
+                            .   cpf         =   @module.cp
 
+SEM Classes
+  | Cons        hd          .   cp          =   emptyCP
+                            .   cpf         =   @hd.cp
+                lhs         .   cp          =   @lhs.cp
+%%]
+
+%%[(8 java)
 SEM Class
-  | Class       (loc.thisInx,loc.superInx,fields.cp)
-                                            =   let (t,cp1) = cadd (Const_Class @this) @lhs.cp
-                                                    (s,cp2) = cadd (Const_Class @super) cp1
-                                                in  (t,s,cp2)
+  | Class       (loc.thisInx,loc.superInx,loc.enclNmInx,loc.enclClNmInx,loc.innerNmInx,loc.innerClNmInxL,fields.cp)
+                                            =   let (t,cp1)      = cadd (Const_Class @this) @lhs.cp
+                                                    (s,cp2)      = cadd (Const_Class @super) cp1
+                                                    (e,ecl,cp3)  = case @lhs.mbInClass of
+                                                                    Just (enm,_)
+                                                                      -> (e,ecl,cp4)
+                                                                      where (e  ,cp3) = cadd (Const_Utf8 "EnclosingMethod") cp2
+                                                                            (ecl,cp4) = cadd (Const_Class enm) cp3
+                                                                    _ -> (0,0,cp2)
+                                                    (ic,icl,cp4) = if null @lhs.innerClsRefL
+                                                                   then (0,[],cp3)
+                                                                   else let (icl,cp4) = caddl' id (\[x,y] -> (x,y)) [[Const_Class i,Const_Class o] | (i,o) <- @lhs.innerClsRefL] cp3
+                                                                            (ic ,cp5) = cadd (Const_Utf8 "InnerClasses") cp4
+                                                                        in  (ic,icl,cp5)
+                                                in  (t,s,e,ecl,ic,icl,cp4)
 
 SEM Const
   | Class       (loc.nmInx,lhs.cp)          =   cadd (Const_Utf8 (showClassRef @classRef)) @lhs.cp
@@ -102,6 +174,7 @@ SEM Const
 SEM Code
   | Code        (loc.codeNmInx,instructions.cp)
                                             =   cadd (Const_Utf8 "Code") @lhs.cp
+
 SEM Method
   | Method      (loc.nmInx,loc.descrInx,code.cp)
                                             =   let (n,cp1) = cadd (Const_Utf8 @name) @lhs.cp
@@ -115,21 +188,10 @@ SEM Field
                                                 in  (n,d,cp2)
 
 SEM Instr
-  | New         (loc.clInx,lhs.cp)          =   cadd (Const_Class @classRef) @lhs.cp
+  | New CheckCast
+  				(loc.clInx,lhs.cp)          =   cadd (Const_Class @classRef) @lhs.cp
   | Invoke      (loc.methInx,lhs.cp)        =   cadd @methConst.self @lhs.cp
   | Put Get     (loc.fldInx,lhs.cp)         =   cadd @fldConst.self @lhs.cp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Constant pool: final
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 java)
-ATTR Class [ cpf: CP | | ]
-
-SEM AGItf
-  | AGItf       module      .   cpf         =   @module.cp
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -163,12 +225,32 @@ ATTR Code AllConst [ | | attrL USE {++} {[]}: {[AttributeInfo]} ]
 SEM Code
   | Code        lhs         .   attrL       =   let (l,c) = codeLen @instructions.code
                                                 in  [AttributeInfo @codeNmInx (2 + 2 + 4 + l + 2 + 0 + 2 + 0)
-                                                      (   u2 (100 :: U2) -- maxstack
-                                                       ## u2 (100 :: U2) -- maxlocal
+                                                      (   u2 @instructions.maxStk
+                                                       ## u2 @instructions.maxLocal
                                                        ## u4 l
                                                        ## c
                                                        ## u2 (0 :: U2) -- exceptions
                                                        ## u2 (0 :: U2) -- attributes
+                                                      )]
+
+SEM Class
+  | Class       loc         .   attrL       =   (if @isInnerClass
+                                                 then [AttributeInfo @enclNmInx (2 + 2)
+                                                       (   u2 @enclClNmInx
+                                                        ## u2 (0 :: U2)
+                                                       )]
+                                                 else []
+                                                ) ++
+                                                [let l = length @innerClNmInxL
+                                                 in  AttributeInfo @innerNmInx (2 + (fromInteger $ toInteger $ l) * 8)
+                                                      (   u2 l
+                                                       ## bytesUnions
+                                                           [    u2 ic
+                                                             ## u2 oc
+                                                             ## u2 (0 :: U2)    -- inner name
+                                                             ## u2 (0 :: U2)    -- inner class flags
+                                                           | (ic,oc) <- @innerClNmInxL
+                                                           ]
                                                       )]
 %%]
 
@@ -238,10 +320,13 @@ SEM Field
 %%]
 
 %%[(8 java)
-ATTR Type [ | | isRef: Bool ]
+ATTR MbType Type [ | | isRef: Bool ]
 %%]
 
 %%[(8 java)
+SEM MbType
+  | Nothing		lhs			.	isRef		=	False
+
 SEM Type
   | Class Array
   				lhs			.	isRef		=	True
@@ -287,6 +372,29 @@ SEM MbType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type: size
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AllType Const InvokeMode [ | | size USE {+} {0}: Int ]
+%%]
+
+%%[(8 java)
+SEM Type
+  | Bool Byte Char Float Int Short Class Array
+  				loc			.	size		=	1
+  | Double Long loc			.	size		=	2
+
+SEM Const
+  | Method		loc			.	size		=	@mbRet.size - @args.size
+
+SEM InvokeMode
+  | * - Static	loc			.	size		=	1
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -296,7 +404,7 @@ ATTR AGItf ConstAGItf AllBin [ | | bin USE {##} {empty}: Bytes ]
 
 %%[(8 java)
 SEM Class
-  | Class       lhs         .   bin         =   (   u4 (0xCAFEBABE :: U4)
+  | Class       loc         .   bin         =   (   u4 (0xCAFEBABE :: U4)
                                                  ## u2 @minor
                                                  ## u2 @major
                                                  ## u2 (cpInx @lhs.cpf)    -- constant pool ...
@@ -309,7 +417,8 @@ SEM Class
                                                  ## bytesUnions (map fldToBytes @fields.fldL)
                                                  ## u2 (length @methods.methL)
                                                  ## bytesUnions (map methToBytes @methods.methL)
-                                                 ## u2 (0 :: U2)    -- attribute ...
+                                                 ## u2 (length @attrL)
+                                                 ## bytesUnions (map attrToBytes @attrL)
                                                 )
 %%]
 
@@ -324,6 +433,72 @@ SEM Const
                 loc         .   bin         =   u1 @tag ## u2 @clInx ## u2 @ntInx
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instructions: local info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instructions: stack depth
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs
+stkInc :: Int -> Int -> Int -> (Int,Int)
+stkInc inc m b
+  = (m + incm, b + incm - inc)
+  where incm = (inc - b) `max` 0
+%%]
+
+%%[(8 java)
+ATTR AllInstr [ | belowMaxStk: Int  maxStk: Int | ]
+%%]
+
+%%[(8 java)
+SEM Code
+  | Code        instructions    .   belowMaxStk =   0
+                                .   maxStk      =   0
+%%]
+
+%%[(8 java)
+SEM Instr
+  | Const Dup New Load
+  				loc				.	stkInc		=   1
+  | Get
+  				loc				.	stkInc		=   @fldConst.size - (if @static then 0 else 1)
+  | Put
+  				loc				.	stkInc		=   - @fldConst.size - (if @static then 0 else 1)
+  | Invoke
+  				loc				.	stkInc		=   @methConst.size - @mode.size
+  | Return CheckCast
+  				loc				.	stkInc		=   0
+
+SEM Instr
+  | * 			(lhs.maxStk,lhs.belowMaxStk)	=   stkInc @stkInc @lhs.maxStk @lhs.belowMaxStk
+%%]   
+   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instructions: nr locals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs
+%%]
+
+%%[(8 java)
+ATTR AllInstr AllCode [ | maxLocal: Int | ]
+%%]
+
+%%[(8 java)
+SEM Method
+  | Method      code    		.   maxLocal 	=   @args.size + (if @flags.isStatic then 0 else 1)
+%%]
+
+%%[(8 java)
+SEM Instr
+  | Load		lhs				.	maxLocal	=   @lhs.maxLocal `max` (@local + @type.size)
+%%]   
+   
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instructions: const
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -346,9 +521,7 @@ SEM Const
                                                              o _ = let (n,cp1) = cadd @self @lhs.cp
                                                                    in  (if posFits8 n then b_LDC (fromIntegral n) else b_LDC_W (fromIntegral n),cp1)
 
-%%]   
-   
-
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instructions
@@ -368,11 +541,13 @@ SEM Instr
   | Const           loc         .   code        =   @const.ldcode
   | Dup             loc         .   code        =   b_DUP       -- TBD: different sized not taken into account
   | New             loc         .   code        =   b_NEW @clInx
+  | CheckCast       loc         .   code        =   b_CHECKCAST @clInx
   | Invoke          loc         .   code        =   case @mode.self of
-                                                      InvokeMode_Special -> b_INVOKESPECIAL @methInx
-                                                      InvokeMode_Static  -> b_INVOKESTATIC  @methInx
+                                                      InvokeMode_Special -> b_INVOKESPECIAL  @methInx
+                                                      InvokeMode_Static  -> b_INVOKESTATIC   @methInx
+                                                      InvokeMode_Virtual -> b_INVOKEVIRTUAL  @methInx
                                                       -- other variants TBD
-  | Return          loc         .   code        =   b_RETURN
+  | Return          loc         .   code        =   if @mbType.isRef then b_ARETURN else b_RETURN
   | Put             loc         .   code        =   (if @static then b_PUTSTATIC else b_PUTFIELD) @fldInx
   | Get             loc         .   code        =   (if @static then b_GETSTATIC else b_GETFIELD) @fldInx
   | Load            loc         .   code        =   if @type.isRef
@@ -393,6 +568,17 @@ SEM Instr
 
 %%[(8 java)
 ATTR Const AllType InvokeMode [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Flag: properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AllFlag [ | | isStatic USE {||} {False} : Bool ]
+
+SEM Flag
+  | Static			lhs			.	isStatic	=	True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -448,9 +634,9 @@ SEM Const
 %%% Bytecodes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 java) hs
 b_NOP				= u1 (0x00 :: U1)
 b_ACONST_NULL		= u1 (0x01 :: U1)
+%%[(8 java) hs
 b_ICONST_M1			= u1 (0x02 :: U1)
 b_ICONST_0			= u1 (0x03 :: U1)
 b_ICONST_1			= u1 (0x04 :: U1)
@@ -458,6 +644,7 @@ b_ICONST_2			= u1 (0x05 :: U1)
 b_ICONST_3			= u1 (0x06 :: U1)
 b_ICONST_4			= u1 (0x07 :: U1)
 b_ICONST_5			= u1 (0x08 :: U1)
+%%]
 b_LCONST_0			= u1 (0x09 :: U1)
 b_LCONST_1			= u1 (0x0A :: U1)
 b_FCONST_0			= u1 (0x0B :: U1)
@@ -465,17 +652,21 @@ b_FCONST_1			= u1 (0x0C :: U1)
 b_FCONST_2			= u1 (0x0D :: U1)
 b_DCONST_0			= u1 (0x0E :: U1)
 b_DCONST_1			= u1 (0x0F :: U1)
+%%[(8 java) hs
 b_BIPUSH		x	= u1 (0x10 :: U1) ## u1 (x :: U1)
 b_SIPUSH 		x	= u1 (0x11 :: U1) ## u2 (x :: U2)
 b_LDC			x	= u1 (0x12 :: U1) ## u1 (x :: U1)
 b_LDC_W 		x	= u1 (0x13 :: U1) ## u2 (x :: U2)
+%%]
 b_LDC2_W			= u1 (0x14 :: U1)
 b_ILOAD				= u1 (0x15 :: U1)
 b_LLOAD				= u1 (0x16 :: U1)
 b_FLOAD				= u1 (0x17 :: U1)
 b_DLOAD				= u1 (0x18 :: U1)
+%%[(8 java) hs
 b_ALOAD'			= u1 (0x19 :: U1)
 b_ALOAD			x	= b_ALOAD' ## u1 (x :: U1)
+%%]
 b_ILOAD_0			= u1 (0x1A :: U1)
 b_ILOAD_1			= u1 (0x1B :: U1)
 b_ILOAD_2			= u1 (0x1C :: U1)
@@ -492,11 +683,13 @@ b_DLOAD_0			= u1 (0x26 :: U1)
 b_DLOAD_1			= u1 (0x27 :: U1)
 b_DLOAD_2			= u1 (0x28 :: U1)
 b_DLOAD_3			= u1 (0x29 :: U1)
+%%[(8 java) hs
 b_ALOAD_0			= u1 (0x2A :: U1)
 b_ALOAD_1			= u1 (0x2B :: U1)
 b_ALOAD_2			= u1 (0x2C :: U1)
 b_ALOAD_3			= u1 (0x2D :: U1)
 b_IALOAD			= u1 (0x2E :: U1)
+%%]
 b_LALOAD			= u1 (0x2F :: U1)
 b_FALOAD			= u1 (0x30 :: U1)
 b_DALOAD			= u1 (0x31 :: U1)
@@ -539,7 +732,9 @@ b_CASTORE			= u1 (0x55 :: U1)
 b_SASTORE			= u1 (0x56 :: U1)
 b_POP				= u1 (0x57 :: U1)
 b_POP2				= u1 (0x58 :: U1)
+%%[(8 java) hs
 b_DUP				= u1 (0x59 :: U1)
+%%]
 b_DUP_X1			= u1 (0x5A :: U1)
 b_DUP_X2			= u1 (0x5B :: U1)
 b_DUP2				= u1 (0x5C :: U1)
@@ -626,27 +821,37 @@ b_IRETURN			= u1 (0xAC :: U1)
 b_LRETURN			= u1 (0xAD :: U1)
 b_FRETURN			= u1 (0xAE :: U1)
 b_DRETURN			= u1 (0xAF :: U1)
+%%[(8 java) hs
 b_ARETURN			= u1 (0xB0 :: U1)
 b_RETURN			= u1 (0xB1 :: U1)
 b_GETSTATIC		x	= u1 (0xB2 :: U1) ## u2 x
 b_PUTSTATIC		x	= u1 (0xB3 :: U1) ## u2 x
 b_GETFIELD		x	= u1 (0xB4 :: U1) ## u2 x
 b_PUTFIELD		x	= u1 (0xB5 :: U1) ## u2 x
-b_INVOKEVIRTUAL		= u1 (0xB6 :: U1)
+%%]
+%%[(8 java) hs
+b_INVOKEVIRTUAL	x	= u1 (0xB6 :: U1) ## u2 x
 b_INVOKESPECIAL	x	= u1 (0xB7 :: U1) ## u2 x
 b_INVOKESTATIC	x	= u1 (0xB8 :: U1) ## u2 x
+%%]
 b_INVOKEINTERFACE	= u1 (0xB9 :: U1)
 b_XXXUNUSEDXXX1		= u1 (0xBA :: U1)
+%%[(8 java) hs
 b_NEW			x	= u1 (0xBB :: U1) ## u2 x
+%%]
 b_NEWARRAY			= u1 (0xBC :: U1)
 b_ANEWARRAY			= u1 (0xBD :: U1)
 b_ARRAYLENGTH		= u1 (0xBE :: U1)
 b_ATHROW			= u1 (0xBF :: U1)
-b_CHECKCAST			= u1 (0xC0 :: U1)
+%%[(8 java) hs
+b_CHECKCAST		x	= u1 (0xC0 :: U1) ## u2 x
+%%]
 b_INSTANCEOF		= u1 (0xC1 :: U1)
 b_MONITORENTER		= u1 (0xC2 :: U1)
 b_MONITOREXIT		= u1 (0xC3 :: U1)
+%%[(8 java) hs
 b_WIDE			x y	= u1 (0xC4 :: U1) ## x ## u2 y
+%%]
 b_MULTIANEWARRAY	= u1 (0xC5 :: U1)
 b_IFNULL			= u1 (0xC6 :: U1)
 b_IFNONNULL			= u1 (0xC7 :: U1)
@@ -655,4 +860,3 @@ b_JSR_W				= u1 (0xC9 :: U1)
 b_BREAKPOINT		= u1 (0xCA :: U1)
 b_IMPDEP1			= u1 (0xFE :: U1)
 b_IMPDEP2			= u1 (0xFF :: U1)
-%%]

@@ -457,7 +457,7 @@ patNmL2DepL2 :: [HsName] -> AssocL HsName Int
 patNmL2DepL2 nmL = zip nmL [0, (- GB.nrValWords) ..]
 
 patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGam
-patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) defaultBasicAnnot) | (n,d) <- nmDepL ]
+patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) defaultGrinBasicAnnot) | (n,d) <- nmDepL ]
 
 patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
@@ -473,7 +473,7 @@ SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) defaultBasicAnnot) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) defaultGrinBasicAnnot) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
@@ -671,8 +671,8 @@ SEM GrExpr
                                                            GB.GrValIntroAlt_OnTOS ins inc _ bann
                                                              -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@nm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
-                                                                   bannStr = map basicTyChar banns
-                                                                   banns = map basicAnnotTy (@lhs.patBasicAnnot : bann)
+                                                                   bannStr = map basicGrinTyCharEncoding banns
+                                                                   banns = map grinBasicAnnotTy (@lhs.patBasicAnnot : bann)
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       GB.GrValIntroAlt_OnTOS ins inc _ _
@@ -728,7 +728,7 @@ SEM GrExpr
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
                                                             | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz == Cfg.sizeofGrWord
                                                               -> (Seq.empty,0,Map.singleton nmp (GB.Val_Int i))
-                                                              where bsz = basicAnnotSizeInBytes annot
+                                                              where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
                                                               -> nm ins inc nmi
                                                               where (GB.GrValIntroAlt_OnTOS ins inc _ _) = GB.gviLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @expr.stkDepth gvi

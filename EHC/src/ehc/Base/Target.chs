@@ -44,6 +44,9 @@ data Target
 %%[[(8 codegen jazy)
   | Target_Interpreter_Core_Jazy			-- java base on Core, using jazy library
 %%]]
+%%[[(8 codegen java)
+  | Target_Interpreter_Core_Java			-- java base on Core, as src. Will be obsolete.
+%%]]
 %%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
@@ -63,6 +66,9 @@ instance Show Target where
   show Target_None_Core_None				= "core"
 %%[[(8 codegen jazy)
   show Target_Interpreter_Core_Jazy			= "jazy"
+%%]]
+%%[[(8 codegen java)
+  show Target_Interpreter_Core_Java			= "java"
 %%]]
 %%[[(8 codegen grin)
   show Target_FullProgAnal_Grin_C			= "C"
@@ -95,6 +101,9 @@ supportedTargetMp
                Target_None_Core_None
 %%[[(8 codegen jazy)
              , Target_Interpreter_Core_Jazy
+%%]]
+%%[[(8 codegen java)
+             -- , Target_Interpreter_Core_Java
 %%]]
 %%[[(8 codegen grin)
              , Target_Interpreter_Grin_C
