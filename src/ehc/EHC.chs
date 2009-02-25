@@ -306,20 +306,22 @@ doCompileRun fnL@(fn:_) opts
   = do { let fpL@(fp:_)     = map (mkTopLevelFPath "hs") fnL
              topModNmL@(topModNm:_)
                             = map (mkHNm . fpathBase) fpL
-             searchPath     = [""] -- searchPathFromFPath  fp
-                              ++ ehcOptImportSearchPath opts
+             searchPath     = [emptyFileLoc]
+                              ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ Cfg.unPrefix $ Cfg.mkDirbasedLibVariantTargetPkgPrefix d "" (show (ehcOptTarget opts)) p
-                                 | d <- ehcOptLibSearchPath opts
+                              ++ [ mkPkgFileLoc p $ Cfg.unPrefix
+                                   $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
+                                 | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
                                  ]
-                              ++ [ Cfg.unPrefix $ Cfg.mkDirbasedTargetVariantPkgPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) (ehcenvVariant (ehcOptEnvironment opts)) (show (ehcOptTarget opts)) p
+                              ++ [ mkPkgFileLoc p $ Cfg.unPrefix
+                                   $ Cfg.mkDirbasedTargetVariantPkgPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) (ehcenvVariant (ehcOptEnvironment opts)) (show (ehcOptTarget opts)) p
                                  | p <- (   ehcOptLibPackages opts
                                          ++ (if ehcOptHideAllPackages opts then [] else Cfg.ehcAssumedPackages)
                                         )
                                  ]
 %%]]
-             opts2          = opts { ehcOptImportSearchPath = searchPath }
+             opts2          = opts { ehcOptImportFileLocPath = searchPath }
 {- this does not work in ghc 6.8.2
              crsi           = emptyEHCompileRunStateInfo
                                 { crsiOpts		 =	 opts2
@@ -363,7 +365,11 @@ doCompileRun fnL@(fn:_) opts
                     }
 %%][20
              imp mbFp nm
+%%[[20
                = do { fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just nm) mbFp
+%%][99
+               = do { fpsFound <- cpFindFilesForFPathInLocations filelocDir const False fileSuffMpHs searchPath (Just nm) mbFp
+%%]]
                     ; when (ehcOptVerbosity opts >= VerboseDebug)
                            (lift $ putStrLn $ show nm ++ ": " ++ show mbFp ++ ": " ++ show fpsFound)
                     ; when (isJust mbFp)
