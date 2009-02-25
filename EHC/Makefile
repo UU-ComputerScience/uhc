@@ -230,6 +230,8 @@ uhc-install-postprocess-C:
 
 uhc-install-postprocess-core:
 	
+uhc-install-postprocess-jazy:
+	
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################

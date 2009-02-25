@@ -56,6 +56,61 @@ data ImmediateQuitOption
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind of search path location
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(FileLocKind(..))
+data FileLocKind
+  = FileLocKind_Dir									-- directory
+  | FileLocKind_Pkg	String							-- package
+
+instance Show FileLocKind where
+  show  FileLocKind_Dir		= "directory"
+  show (FileLocKind_Pkg p)	= "package: " ++ p
+%%]
+
+%%[8.FileLoc export(FileLoc,filelocDir,emptyFileLoc)
+type FileLoc = String
+
+emptyFileLoc :: FileLoc
+emptyFileLoc = ""
+
+filelocDir :: FileLoc -> String
+filelocDir = id
+%%]
+
+%%[99 -8.FileLoc export(FileLoc(..),emptyFileLoc)
+data FileLoc
+  = FileLoc
+      {	filelocKind		:: FileLocKind
+      , filelocDir		:: String
+      }
+
+instance Show FileLoc where
+  show (FileLoc k d) = d ++ " (" ++ show k ++ ")"
+
+emptyFileLoc :: FileLoc
+emptyFileLoc = FileLoc FileLocKind_Dir ""
+%%]
+
+%%[8 export(mkDirFileLoc)
+mkDirFileLoc
+%%[[8
+  = id
+%%][99
+  = FileLoc FileLocKind_Dir
+%%]]
+%%]
+
+%%[99 export(mkPkgFileLoc)
+mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
+%%]
+
+%%[8 export(FileLocPath)
+type FileLocPath = [FileLoc]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Package option, other than just using it. Similar to ghc-pkg.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -110,8 +165,8 @@ trfOptOverrides opts trf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-mkSearchPath :: String -> [String]
-mkSearchPath = wordsBy (`elem` ";,")
+mkFileLocPath :: String -> FileLocPath
+mkFileLocPath = map mkDirFileLoc . wordsBy (`elem` ";,")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -162,8 +217,8 @@ data EHCOpts
 %%[[8
       ,  ehcOptEmitHS         ::  Bool
       ,  ehcOptEmitEH         ::  Bool
-      ,  ehcOptImportSearchPath
-                              ::  [String]
+      ,  ehcOptImportFileLocPath
+                              ::  FileLocPath
       ,  ehcOptVerbosity      ::  Verbosity         -- verbosity level
 
       ,  ehcOptBuiltinNames   ::  EHBuiltinNames
@@ -198,7 +253,7 @@ data EHCOpts
                               ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
-      ,  ehcOptLibSearchPath  ::  [String]
+      ,  ehcOptLibFileLocPath  ::  FileLocPath
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
@@ -323,7 +378,7 @@ defaultEHCOpts
       ,  ehcOptEmitHS           =   False
       ,  ehcOptEmitEH           =   False
       
-      ,  ehcOptImportSearchPath =   []
+      ,  ehcOptImportFileLocPath =   []
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
       -- ,  ehcOptUseInplace       =   True
       ,  ehcOptEnvironment      =   undefined   -- filled in at toplevel
@@ -359,7 +414,7 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
-      ,  ehcOptLibSearchPath    =   []
+      ,  ehcOptLibFileLocPath    =   []
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptCPP              =   False
@@ -461,8 +516,8 @@ ehcCmdLineOpts
 %%]]
 %%[[99
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "print show numeric version (then stop)"
-     ,  Option "i"  ["import-path"]      (ReqArg oUsrSearchPath "path")       "search path for user files, path separators=';', appended to previous"
-     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibSearchPath "path")       "search path for library files, see also --import-path"
+     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
@@ -654,8 +709,8 @@ ehcCmdLineOpts
 %%]]
 %%[[99
          oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_NumericVersion }
-         oUsrSearchPath       s o   = o { ehcOptImportSearchPath            = ehcOptImportSearchPath o ++ mkSearchPath s }
-         oLibSearchPath       s o   = o { ehcOptLibSearchPath               = ehcOptLibSearchPath o ++ mkSearchPath s }
+         oUsrFileLocPath       s o   = o { ehcOptImportFileLocPath            = ehcOptImportFileLocPath o ++ mkFileLocPath s }
+         oLibFileLocPath       s o   = o { ehcOptLibFileLocPath               = ehcOptLibFileLocPath o ++ mkFileLocPath s }
          oNoPrelude             o   = o { ehcOptUseAssumePrelude            = False   }
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }
