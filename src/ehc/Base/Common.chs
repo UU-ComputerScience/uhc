@@ -908,20 +908,28 @@ rangePlus r1                  _                   = r1
 %%% Lifting of Range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.rngLift export(rngLift,RngLift)
-type RngLift x = x
+%%[1.rngLift export(RngLiftArg,rngLift,rngAntilift)
+type RngLiftArg  x = x
+type RngLift     x = Range -> RngLiftArg x -> x
 
-rngLift :: Range -> v -> v
+rngLift :: RngLift v
 rngLift r v = v
+
+rngAntilift :: v -> RngLiftArg v
+rngAntilift = id
 %%]
 
-%%[99 -1.rngLift export(rngLift,RngLift)
-type RngLift x = Range -> x
+%%[99 -1.rngLift export(RngLiftArg,rngLift,rngAntilift)
+type RngLiftArg  x = Range -> x
+type RngLift     x = Range -> RngLiftArg x -> x
 
-rngLift :: Range -> (Range -> v) -> v
+rngLift :: RngLift v
 rngLift r mkv
   = x `seq` x
   where x = mkv r
+
+rngAntilift :: v -> RngLiftArg v
+rngAntilift = const
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1307,6 +1315,14 @@ rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
 %%[9
 instance Show a => Show (RLList a) where
   show = show . rllToList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(PkgName)
+type PkgName = String
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

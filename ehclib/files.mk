@@ -47,10 +47,15 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List)
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List ) \
+											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
 EHCLIB_SYNC_ALL_PKG_SRC_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 EHCLIB_SYNC_ALL_PKG_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
+
+# Issues with:
+# Data.Monoid: fitsin error
+# Exception/Base (and others): #include Typeable.h
 
 ###########################################################################################
 # files, intermediate files, for ehclib
@@ -123,6 +128,7 @@ ehclib-variant-dflt: \
 	          --hide-all-packages \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
+	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 	          --pkg-build=$${pkg} \
 	          $${pkgs} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` ; \
@@ -164,7 +170,7 @@ $(patsubst %,%/ehclib,$(EHC_VARIANTS)): %/ehclib:
 $(patsubst %,%/ehclibs,$(EHC_VARIANTS)): %/ehclibs:
 	$(MAKE) EHC_VARIANT=$(@D) ehclibs-variant-dflt
 
-$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) $(RTS_ALL_SRC)
 	mkdir -p $(@D)
 	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
 	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \

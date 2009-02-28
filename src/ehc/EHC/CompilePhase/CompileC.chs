@@ -8,6 +8,8 @@ C + CPP compilation
 %%]
 
 -- general imports
+%%[8 import(Data.Char)
+%%]
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
@@ -32,6 +34,27 @@ data GCC_CompileHow
   | GCC_CompileExec
 %%]
 
+%%[(8 codegen)
+gccDefs :: EHCOpts -> [String]
+gccDefs opts 
+  = map (\d -> "-D__" ++ d ++ "__")
+    $  [ "EHC", "EHC_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+%%[[(99 codegen grin)
+    ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
+%%]]
+%%]
+
+%%[(99 codegen)
+crPartitionIntoPkgAndO :: EHCompileRun -> [HsName] -> ([PkgName],[HsName])
+crPartitionIntoPkgAndO cr modNmL
+  = (nub $ concat ps,concat ms)
+  where (ps,ms) = unzip $ map loc modNmL
+        loc m = case filelocKind $ ecuFileLocation ecu of
+                  FileLocKind_Dir	-> ([],[m])	
+                  FileLocKind_Pkg p -> ([p],[])
+              where (ecu,_,_,_) = crBaseInfo m cr
+%%]
+
 %%[(8 codegen) export(cpCompileWithGCC)
 cpCompileWithGCC :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpCompileWithGCC how othModNmL modNm
@@ -46,20 +69,27 @@ cpCompileWithGCC how othModNmL modNm
                             GCC_CompileExec -> ( fpExec
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
-                                               , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "lib" ++ l ++ ".a") Cfg.libnamesGccPerVariant
+                                               , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "lib" ++ l ++ ".a") (pkgNmL ++ Cfg.libnamesGccPerVariant)
                                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
-                                                 else [ fpathToStr $ fpO m fp | m <- othModNmL, let (_,_,_,fp) = crBaseInfo m cr ]
+                                                 else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                                , []
                                                )
+%%[[8
+                                            where pkgNmL     = []
+                                                  othModNmL2 = othModNmL
+%%][99
+                                            where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndO cr othModNmL
+%%]]
                             GCC_CompileOnly -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                                             where o = fpO modNm fp
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = mkShellCmd
                                  (  [ Cfg.shellCmdGcc ]
+                                 ++ gccDefs opts
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant ]
                                  ++ linkOpts
@@ -92,17 +122,19 @@ cpPreprocessWithCPP modNm
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
        ; when (  ehcOptCPP opts
-              || modNm == hsnModIntlPrelude		-- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
+              || modNm == hsnModIntlPrelude      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
-              (do { let preCPP
-                          = mkShellCmd
-                              (  [ Cfg.shellCmdCpp ]
-                              ++ [ "-traditional-cpp", "-fno-show-column", "-P", "-D__EHC__" ]
+              (do { let defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
 %%[[(99 codegen grin)
-                              ++ (if ehcOptFullProgAnalysis opts then ["-D__FULL_PROGRAM_ANALYSIS__"] else [])
+                                  ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
-                              ++ [ fpathToStr fp, fpathToStr fpCPP ]
-                              )
+                        preCPP
+                                = mkShellCmd
+                                    (  [ Cfg.shellCmdCpp ]
+                                    ++ gccDefs opts
+                                    ++ [ "-traditional-cpp", "-fno-show-column", "-P" ]
+                                    ++ [ fpathToStr fp, fpathToStr fpCPP ]
+                                    )
                   ; when (ehcOptVerbosity opts >= VerboseALot)
                          (do { cpMsg modNm VerboseALot "CPP"
                              ; lift $ putStrLn preCPP

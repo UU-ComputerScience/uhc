@@ -187,7 +187,7 @@ SEM Type
 %%]
 
 %%[9
-ATTR Types Type AllRowTypeUpdate [ isAsPred: Bool | | ]
+ATTR Types Type MaybeType AllRowTypeUpdate [ isAsPred: Bool | | ]
 
 SEM Type
     | InfixApplication
@@ -226,7 +226,7 @@ SEM LeftHandSide
 
 %%[4
 ATTR
-  Type
+  Type MaybeType
 %%[[7
   AllRowTypeUpdate
 %%]]

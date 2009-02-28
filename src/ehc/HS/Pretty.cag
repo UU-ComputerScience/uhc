@@ -564,9 +564,15 @@ ATTR AllGuardedExpression [ sepPP: PP_Doc | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-ATTR MaybeExpression [ | | ppMb: {Maybe PP_Doc} ]
+ATTR MaybeExpression MaybeType [ | | ppMb: {Maybe PP_Doc} ]
 
 SEM MaybeExpression
+    | Just
+        lhs         .   ppMb        =   Just @just.pp
+    | Nothing
+        lhs         .   ppMb        =   Nothing
+
+SEM MaybeType
     | Just
         lhs         .   ppMb        =   Just @just.pp
     | Nothing

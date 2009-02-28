@@ -187,6 +187,7 @@ SEM *
 		loc.ty_g_  						: Ty
 		loc.ty_q_  						: Ty
 		loc.ty_kn_  					: Ty
+		loc.polResVar					: Ty
 		loc.ty_sig_ 					: Ty
 		loc.tyGam_l_  					: TyGam
 		loc.typeTgi  					: TyGamInfo

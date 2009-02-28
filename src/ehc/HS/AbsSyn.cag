@@ -334,6 +334,8 @@ SET AllKind
 %%[1
 TYPE Types                       = [ Type ]
 
+TYPE MaybeType                   = MAYBE Type
+
 DATA Type                                         {- *** -}
     | NormalApplication                            {- *** -}
         range                    : Range
@@ -350,6 +352,11 @@ DATA Type                                         {- *** -}
     | Parenthesized
         range                    : Range
         type                     : Type
+    | SectionApplication
+        range                    : Range
+        leftType                 : MaybeType
+        operator                 : Type
+        rightType                : MaybeType
 %%]
 %%[2
     | Wildcard
@@ -398,6 +405,11 @@ DATA Type                                         {- *** -}
         range                    : Range
         context                  : ContextItems
         type                     : Type
+%%]
+%%[11
+    | TupleConstructor                      {- *** -}
+        range                    : Range
+        arity                    : Int
 %%]
     | Implicits
         range                    : Range
@@ -553,7 +565,7 @@ SET AllAnnotatedType
 
 %%[1
 SET AllType
-  = Type Types
+  = Type Types MaybeType
 %%]
 %%[5
     SimpleType
