@@ -97,10 +97,14 @@ cpEhcFullProgLinkAllModules modNmL
           _ | ehcOptDoLinking opts
               -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
             | otherwise
+%%[[20
+              -> return ()
+%%][99
               -> case ehcOptPkg opts of
                    Just (PkgOption_Build pkg) | targetAllowsOLinking (ehcOptTarget opts)
                      -> cpLinkO impModNmL pkg
                    _ -> return ()
+%%]]
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]

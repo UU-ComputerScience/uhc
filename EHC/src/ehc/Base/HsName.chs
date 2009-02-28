@@ -23,9 +23,6 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[20 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -236,17 +233,21 @@ hsnConcat       h1    h2            =   hsnFromString (show h1 ++ show h2)
 %%% HsName & module related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[20 export(hsnSplitQualify,hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+-- qualifier (i.e. module name) and qualified part of name
+hsnSplitQualify :: HsName -> (Maybe HsName,HsName)
+hsnSplitQualify n
+  = case hsnInitLast n of
+      ([],n') -> (Nothing,n')
+      (ns,n') -> (Just (mkHNm ns),n')
+
 -- qualified part of a name
 hsnQualified :: HsName -> HsName
-hsnQualified = snd . hsnInitLast
+hsnQualified = snd . hsnSplitQualify
 
 -- qualifier (i.e. module name) of name
 hsnQualifier :: HsName -> Maybe HsName
-hsnQualifier n
-  = case hsnInitLast n of
-      ([],_) -> Nothing
-      (ns,_) -> Just (mkHNm ns)
+hsnQualifier = fst . hsnSplitQualify
 
 -- prefix/qualify with module name, on top of possible previous qualifier
 hsnPrefixQual :: HsName -> HsName -> HsName
@@ -258,9 +259,9 @@ hsnSetQual m = hsnPrefixQual m . hsnQualified
 
 hsnMapQual :: (HsName -> HsName) -> HsName -> HsName
 hsnMapQual f qn
-  = case hsnInitLast qn of
-      ([],n) -> n
-      (ns,n) -> hsnSetQual (f (mkHNm ns)) n
+  = case hsnSplitQualify qn of
+      (Nothing,n) -> qn
+      (Just q ,n) -> hsnSetQual (f q) n
 
 -- is qualified?
 hsnIsQual :: HsName -> Bool
@@ -307,14 +308,7 @@ instance HSNM String where
 %%[8.HSNM.String -1.HSNM.String
 instance HSNM String where
   mkHNm s
-    = mkHNm $ map hsnFromString $ ws''
-    where ws  = wordsBy (=='.') s
-          ws' = case initlast2 ws of
-                  Just (ns,n,"") -> ns ++ [n ++ "."]
-                  _              -> ws
-          ws''= case break (=="") ws' of
-                  (nq,(_:ns)) -> nq ++ [concatMap ("."++) ns]
-                  _ -> ws'
+    = mkHNm $ map hsnFromString $ splitForQualified s
 %%]
 
 %%[1

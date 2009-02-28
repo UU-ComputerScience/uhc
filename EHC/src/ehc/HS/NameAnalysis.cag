@@ -395,20 +395,33 @@ ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
 SEM Body
     | Body
-        loc             .   idGam       =   let lk n = fmap (\es -> (n,es)) $ Map.lookup n @lhs.modInScope
+        loc             .   idGam       =   let -- lookup a name whether it is in scope and check for equality of its qualifier
+                                                lkn :: (IdOcc -> Bool) -> HsName -> Maybe (HsName,[ModEnt])
+                                                lkn isq n = case Map.lookup n @lhs.modInScope of
+                                                              Just es | not (null es')
+                                                                -> Just (n,es')
+                                                                where es' = [ e | e <- es, isq (mentIdOcc e) ]
+                                                              _ -> Nothing
+                                                -- for an id, get all inscope occurrences, with + without qualifier
+                                                lks :: IdOcc -> [(HsName,[ModEnt])]
+                                                lks o     = catMaybes $ ns1 ++ ns2
+                                                          where (mq,n)    = hsnSplitQualify (ioccNm o)
+                                                                (ns1,isq) = case mq of
+                                                                              Just q  -> ([lkn (const True) (hsnPrefixQual (as q) n)],(\o -> maybe False (==q) (hsnQualifier (ioccNm o))))
+                                                                              Nothing -> ([],const True)
+                                                                ns2       = [lkn isq n]
+                                                -- map qualifier to a possible 'qualified as' alias
+                                                as :: HsName -> HsName
                                                 as n = Map.findWithDefault n n @importdeclarations.modAsMp
+                                                -- compute new gamma holding proper mapping for unqualified an qualified idents
                                                 mkg sel g
                                                    = gamFromAssocL
                                                        [ (o {ioccNm = n},d {doccNmAlts = Just ns})
                                                        | (o,d) <- gamToAssocL g
-                                                       , (n,es) <- catMaybes (sel o)
+                                                       , (n,es) <- sel o
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
-                                                mkg' = mkg (\o -> [lk (hsnMapQual as $ ioccNm o),lk (hsnQualified $ ioccNm o)])
-                                                g1 = mkg' @declarations.idDefOccGam
-                                                g2 = mkg' @lhs.idGam
-                                                -- g2 = mkg (\o -> [lk (ioccNm o)                             ]) @lhs.idGam
-                                            in  g1 `gamUnion` g2
+                                            in  mkg lks @declarations.idDefOccGam `gamUnion` mkg lks @lhs.idGam
 %%]
 
 %%[1

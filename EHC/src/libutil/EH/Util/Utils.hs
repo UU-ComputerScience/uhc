@@ -116,6 +116,21 @@ strToInt :: String -> Int
 strToInt = foldl (\i c -> i * 10 + ord c - ord '0') 0
 
 -------------------------------------------------------------------------
+-- Split for qualified name
+-------------------------------------------------------------------------
+
+splitForQualified :: String -> [String]
+splitForQualified s
+    = ws''
+    where ws  = wordsBy (=='.') s
+          ws' = case initlast2 ws of
+                  Just (ns,n,"") -> ns ++ [n ++ "."]
+                  _              -> ws
+          ws''= case break (=="") ws' of
+                  (nq,(_:ns)) -> nq ++ [concatMap ("."++) ns]
+                  _ -> ws'
+
+-------------------------------------------------------------------------
 -- Misc
 -------------------------------------------------------------------------
 

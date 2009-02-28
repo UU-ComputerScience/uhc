@@ -105,7 +105,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     ioFromPrim,
 
 -- Exception related
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 #else
     catchException, throw, catch,
 #endif
@@ -160,7 +160,7 @@ stringSum [] = 0
 stringSum (x:xs) = primCharToInt x + stringSum xs
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 foreign import ccall primError :: String -> a
 
@@ -200,7 +200,7 @@ foreign import ccall primByteArrayLength   :: ByteArray -> Int
 foreign import ccall primByteArrayToString :: ByteArray -> String
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 foreign import ccall packedStringToInteger :: PackedString -> Integer
 
@@ -866,7 +866,7 @@ instance Bounded Int where
 instance Real Int where
     toRational x = toInteger x % 1
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 foreign import ccall primDivInt       :: Int -> Int -> Int
 foreign import ccall primModInt       :: Int -> Int -> Int
@@ -953,7 +953,7 @@ instance Eq  Integer where
 instance Ord Integer where
     compare = primCmpInteger
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 instance Num Integer where
     (+)           = undefined
@@ -992,7 +992,7 @@ instance Real Integer where
     toRational x = x % 1
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 instance Integral Integer where
     divMod      = undefined
@@ -2084,7 +2084,7 @@ instance Monad IO where
 
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 ioError :: IOError -> IO a
 ioError = error "ioError"
@@ -2143,7 +2143,7 @@ foreign import ccall primHFlush        :: Handle -> ()
 foreign import ccall primHGetChar      :: Handle -> Char
 foreign import ccall primHPutChar      :: Handle -> Char -> ()
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 foreign import ccall primOpenFile      :: String -> IOMode -> Handle
 foreign import ccall primStdin         :: Handle
 foreign import ccall primStdout        :: Handle
@@ -2167,7 +2167,7 @@ hPutChar     :: Handle -> Char -> IO ()
 hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 openFile     :: FilePath -> IOMode -> IO Handle
 openFile f m =  ioFromPrim (\_ -> primOpenFile (forceString f) m)
@@ -2206,7 +2206,7 @@ exitWith e   =  ioFromPrim (\_ -> primExitWith e)
 -- additional I/O primitives and their wrapping in the I/O monad
 ----------------------------------------------------------------
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 #else
 foreign import ccall primHPutByteArray   :: Handle -> ByteArray -> ()
@@ -2224,7 +2224,7 @@ hGetContents     :: Handle -> IO String
 hPutStr          :: Handle -> String -> IO ()
 
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 hGetContents h = do b <- hIsEOF h
                     if b
@@ -2302,7 +2302,7 @@ hGetLine h = do { c <- hGetChar h
    hGetLine2 c    = do { cs <- hGetLine h
                        ; return (c:cs)
                        }
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
    getRest        = hGetLine h
 #else
    getRest        = do c <- catch (hGetChar h) 
@@ -2345,7 +2345,7 @@ appendFile       = writeFile2 AppendMode
 writeFile2      :: IOMode -> FilePath -> String -> IO ()
 writeFile2 mode name s 
     = do h <- openFile name mode
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
          hPutStr h s
 #else
          catchException (hPutStr h s) (\e -> hClose h >> throw e)
@@ -2357,7 +2357,7 @@ writeFile2 mode name s
 -- main program
 ----------------------------------------------------------------
 
-#ifdef __FULL_PROGRAM_ANALYSIS__
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a

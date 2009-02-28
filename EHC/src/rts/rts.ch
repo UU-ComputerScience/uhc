@@ -110,6 +110,12 @@ typedef GrWord* Pointer;
 #include "prim.h"
 %%]
 
+Aliasing of primitives, as a preparation of removal of duplicates and not having two sets
+
+%%[8
+// include "primalias.h"
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack, heap
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -10,7 +10,7 @@
 %%[1 hs module {%{EH}HS} import({%{EH}Base.Common}, UU.Scanner.Position, EH.Util.ScanUtils) export(module UU.Scanner.Position)
 %%]
 
-%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
+%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, MaybeType, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
 %%]
 
 %%[1 hs export(mkRngNm,mkRngNm',mkRngStr)

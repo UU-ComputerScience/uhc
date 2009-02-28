@@ -118,16 +118,24 @@ mkShellCmd = concat . intersperse " "
 %%% Name of output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkOutputFPath)
-mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
-mkOutputFPath opts modNm fp suffix
+%%[8 export(mkOutputFPathFor)
+mkOutputFPathFor :: FPATH nm => OutputFor -> EHCOpts -> nm -> FPath -> String -> FPath
+mkOutputFPathFor outputfor opts modNm fp suffix
   = fpathSetSuff suffix fp'
 %%[[8
   where fp' = fp
 %%][99
-  where fp' = case ehcOptOutputDir opts of
+  where fp' = case outputfor of
+                OutputFor_Module -> f ehcOptOutputDir
+                OutputFor_Pkg    -> f ehcOptOutputPkgLibDir
+        f g = case g opts of
                 Just d -> fpathPrependDir d $ mkFPath modNm
                 _      -> fp
 %%]]
+%%]
+
+%%[8 export(mkOutputFPath)
+mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
+mkOutputFPath = mkOutputFPathFor OutputFor_Module
 %%]
 

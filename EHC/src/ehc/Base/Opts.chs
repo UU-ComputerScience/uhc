@@ -56,13 +56,25 @@ data ImmediateQuitOption
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Category of output, used for specifying which location something should be put
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(OutputFor(..))
+data OutputFor
+  = OutputFor_Module
+%%[[99
+  | OutputFor_Pkg
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of search path location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(FileLocKind(..))
 data FileLocKind
   = FileLocKind_Dir									-- directory
-  | FileLocKind_Pkg	String							-- package
+  | FileLocKind_Pkg	PkgName							-- package
 
 instance Show FileLocKind where
   show  FileLocKind_Dir		= "directory"
@@ -116,7 +128,7 @@ type FileLocPath = [FileLoc]
 
 %%[99 export(PkgOption(..))
 data PkgOption
-  = PkgOption_Build	String							-- build a package
+  = PkgOption_Build	PkgName							-- build a package
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,6 +273,7 @@ data EHCOpts
                               ::  Bool
       ,  ehcOptHideAllPackages::  Bool              -- hide all implicitly used packages
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
+      ,  ehcOptOutputPkgLibDir::  Maybe String      -- where to put output the lib part of a package, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
       ,  ehcOptPkg            ::  Maybe PkgOption	-- package building (etc) option
@@ -421,6 +434,7 @@ defaultEHCOpts
       ,  ehcOptUseAssumePrelude =   True
       ,  ehcOptHideAllPackages  =   False
       ,  ehcOptOutputDir        =   Nothing
+      ,  ehcOptOutputPkgLibDir  =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
       ,  ehcOptPkg              =   Nothing
@@ -544,6 +558,7 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-export-env"]  (OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop)"
      ,  Option ""   ["meta-dir-env"]     (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop)"
      ,  Option ""   ["pkg-build"]        (ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
+     ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")            "pkg: where to put the lib part of a package"
 %%]]
      ]
 %%]
@@ -722,6 +737,7 @@ ehcCmdLineOpts
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                         , ehcOptDoLinking                   = False
                                         }
+         oOutputPkgLibDir     s o   = o { ehcOptOutputPkgLibDir             = Just s }
          oKeepIntermediateFiles o   = o { ehcOptKeepIntermediateFiles       = True }
          oPkgBuild            s o   = o { ehcOptPkg                         = Just (PkgOption_Build s)
                                         , ehcOptDoLinking                   = False

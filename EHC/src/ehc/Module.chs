@@ -202,7 +202,11 @@ modBuiltin
 %%[20
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "HID" >#< pp (modHiddenExps m) >-< "DEF" >#< pp (modDefs m))
+         >-< indent 2 (   "IMP" >#< ppParensCommas (modImpL m)
+                      >-< "EXP" >#< maybe empty ppParensCommas (modExpL m)
+                      >-< "HID" >#< pp (modHiddenExps m)
+                      >-< "DEF" >#< pp (modDefs m)
+                      )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

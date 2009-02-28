@@ -3,7 +3,7 @@
 %include afp.fmt
 %%]
 
-%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.ScanUtils,{%{EH}Scanner.Token})
+%%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
 %%[5 import(qualified Data.Set as Set)
@@ -72,6 +72,25 @@ scan opts pos input
                                   in  (c:str,w+1,s')
 %%]
 
+%%[20
+   scanQualified :: String -> (String,String)
+   scanQualified s
+     = qual "" s
+     where split isX s  = span (\c -> isX c && c /= '.') s
+           validQuald c = isId c || isOpsym c
+           isId       c = isIdStart c || isUpper c
+           qual q s
+             = case s of
+                 (c:s') | isUpper c                         				-- possibly a module qualifier
+                   -> case split isIdChar s' of
+                        (s'',('.':srest@(c':_))) | validQuald c'  			-- something validly qualifiable follows
+                          -> qual (q ++ [c] ++ s'' ++ ".") srest
+                        _ -> dflt
+                 (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
+                   -> dflt
+             where dflt = (q,s)
+%%]
+
 %%[99
    scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
      | posIs1stColumn p
@@ -134,44 +153,26 @@ scan opts pos input
      | isSymbol c = reserved [c] p
                   : doScan (advc 1 p) s
 %%]
-%%[5.id
+%%[5
      | isIdStart c || isUpper c
-         = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
-               name               = c:name'
-               tok                = if iskw name
-                                    then reserved name p
-                                    else if null name' && isSymbol c
-                                    then reserved [c] p
-                                    else valueToken (varKind cs) name p
-           in tok :  doScan p' s'
-%%]
-%%[20 -5.id
-     | isIdStart c || isUpper c
-         = let (name', p', s')    = scanIdent isIdChar (advc 1 p) s
-               name               = c:name'
-               toksDflt           = doScan p' s'
-               (tok,toks'')       = if iskw name || null name' && isSymbol c
-                                    then (reserved name p,toksDflt)
-                                    else case s' of
-                                           ('.':s''@(c':_))
-                                             | isUpper c && not (isSpace c')
-                                                 -> case extract toksDflt of
-                                                      Just (tp,val,toksQual)
-                                                        -> (valueToken (tokTpQual tp) (name ++ val) p,toksQual)
-                                                      _ -> (valueToken (if isIdStart c then TkVarid else TkConid) name p,toksDflt)
-                                               where
-                                                 extract (ValToken _ "." _:ValToken tp val _:toks)
-                                                   | tokTpIsId tp                             = Just (tp,'.':val,toks)
-                                                 extract (ValToken TkOp val@('.':_) _:toks)   = further
-                                                 extract (Reserved val@('.':_) _:toks)        = further
-                                                 extract _                                    = Nothing
-                                                 further = do (tp,v,tk) <- extract' (doScan (advc 1 p') s'')
-                                                              return (tp,'.':v,tk)
-                                                 extract' (ValToken tp val _:toks)
-                                                   | tokTpIsId tp                             = Just (tp,val,toks)
-                                                 extract' _                                   = Nothing
-                                           _ -> (valueToken (varKind cs) name p,toksDflt)
-           in tok : toks''
+         =
+%%[[20
+           let (qualPrefix,qualTail) = scanQualified cs
+           in  if null qualPrefix
+               then
+%%]]
+                    let (name', p', s') = scanIdent isIdChar (advc 1 p) s
+                        name            = c:name'
+                        tok             = if iskw name
+                                          then reserved name p
+                                          else valueToken (varKind name) name p
+                    in  tok : doScan p' s'
+%%[[20
+               else case doScan (advc (length qualPrefix) p) qualTail of
+                      (tok@(ValToken tp val _):toks)
+                         -> ValToken (tokTpQual tp) (qualPrefix ++ val) p : toks
+                      ts -> ts
+%%]]
 %%]
 %%[5
      | isOpsym c = let (name, s') = span isOpsym cs
@@ -205,7 +206,9 @@ scan opts pos input
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
                  : doScan (adv p c) s
+%%]
 
+%%[5
 varKind :: String -> EnumValToken
 varKind ('_':s)             = varKind s
 varKind (c  :s) | isUpper c = TkConid
