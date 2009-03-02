@@ -47,7 +47,8 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List ) \
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String) \
+											$(patsubst %,System/%.hs,) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
 EHCLIB_SYNC_ALL_PKG_SRC_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
@@ -56,6 +57,7 @@ EHCLIB_SYNC_ALL_PKG_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefi
 # Issues with:
 # Data.Monoid: fitsin error
 # Exception/Base (and others): #include Typeable.h
+# Data.Fixed: deriving errors, ...
 
 ###########################################################################################
 # files, intermediate files, for ehclib

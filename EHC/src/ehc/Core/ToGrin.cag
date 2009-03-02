@@ -80,26 +80,24 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context: strict yes/no, rhs of lam yes/no
+%%% Context: evaluation context (to replace isStrict)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
-ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 
-SEM CModule
-  | Mod         expr        .   isStrict    =   True
-                            .   isLamBody   =   False
+%%[(8 codegen)
+%%]
+SEM CExpr
+  | Let         binds       .   evalCtx     =   if @isGlobal
+                                                then EvalCtx_Eval
+                                                else if @categ == CBindStrict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
 
 SEM CBind
-  | Bind        expr        .   isStrict    =   @lhs.isStrict || not (null @expr.grLamArgL)
-
-SEM CPatBind
-  | Bind        offset      .   isStrict    =   True
-                            .   isLamBody   =   False
-
-SEM CExpr
-  | Let			binds		.	isStrict	=	@lhs.lev == cLevModule || @categ == CBindStrict
-%%]
+  | Bind        expr        .   evalCtx     =   if not (null @expr.grLamArgL)
+                                                then EvalCtx_Eval
+                                                else @lhs.evalCtx
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known function arity
@@ -317,7 +315,7 @@ ATTR CExpr   [ | | grExpr: GrExpr ]
 ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CExpr
-  | Let         (loc.grExpr,lhs.grBindL)    =   if @lhs.lev == cLevModule
+  | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
                                                 then  (emptyGrExpr
                                                       ,case @categ of
                                                          CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL

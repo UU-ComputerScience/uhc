@@ -3,6 +3,7 @@ module EH.Util.FastSeq
   , Seq
   , isEmpty, null
   , empty
+  , size
   , singleton
   , toList, fromList
   , map
@@ -49,6 +50,14 @@ isEmpty (x1 ::+: x2) = False
 -- isEmpty sq           = L.null $ toList sq
 
 null = isEmpty
+
+size :: FastSeq a -> Int
+size FSeqNil      = 0
+size (FSeqL x   ) = length x
+size (FSeq  _   ) = 1
+size (x1 :++: x2) = size x1 + size x2
+size (x1 :+:: x2) = 1 + size x2
+size (x1 ::+: x2) = size x1 + 1
 
 -------------------------------------------------------------------------
 -- Construction

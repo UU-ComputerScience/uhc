@@ -178,6 +178,9 @@ ATTR
   AllDataConstr AllCase
 %%]]
     [ valGam: ValGam | | ]
+%%]
+
+%%[(1 hmtyinfer).PatExpr.valGam
 ATTR AllPatExpr [ | valGam: ValGam | ]
 %%]
 

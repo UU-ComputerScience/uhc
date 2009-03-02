@@ -204,9 +204,9 @@ DATA Instr
 %%[(8 java)
   | Load 			type				: Type
   					local				: {Local}
-%%]
   | Store 			type				: Type
   					local				: {Local}
+%%]
 %%[(8 java)
   | Const 			const				: Const
 %%]
@@ -218,8 +218,10 @@ DATA Instr
   					type				: Type
   | Convert 		type1				: Type
   					type2				: Type
+%%[(8 java)
   | ALoad 			type				: Type
   | AStore 			type				: Type
+%%]
   | ALength 		type				: Type
 %%[(8 java)
   | Get 			static				: {Bool}
@@ -231,20 +233,22 @@ DATA Instr
 %%]
   | If 				test				: Test
   					label				: {Label}
+%%[(8 java)
+  | Label 			label				: {Label}
   | Goto 			label				: {Label}
+%%]
   | Jsr 			label				: {Label}
   | Ret 			u2					: {U2}
+%%[(8 java)
   | Switch 			switch				: SwitchType
-  					label				: {Label}
-  					offsets				: {[(JInt,Label)]}
+  					cases				: Cases
+  					default				: Case
+%%]
 %%[(8 java)
   | Return 			mbType				: MbType
   | New 			classRef			: {ClassRef}
-%%]
   | NewArray 		type				: Type
-  					u1					: {U1}
-%%[(8 java)
-  | CheckCast 		classRef			: {ClassRef}
+  | CheckCast 		type				: Type
 %%]
   | InstanceOf 		type				: Type
   | Throw 			classRef			: {ClassRef}
@@ -252,7 +256,18 @@ DATA Instr
   | MonitorExit 	type				: Type
 
 %%[(8 java)
-TYPE Instrs		= [Instr]
+TYPE Instrs			= [Instr]
+%%]
+
+%%[(8 java)
+DATA Case
+  | Case			selector			: {Int}
+  					label				: {Label}
+  					instrs				: Instrs
+%%]
+
+%%[(8 java)
+TYPE Cases			= [Case]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,6 +320,7 @@ DATA Const
   | Double 		double				: {JDouble}
   | String 		str					: {String}
   | Class 		classRef			: {ClassRef}
+  | Class2		classRef			: {String}
   | Field 		classRef			: {ClassRef}
   				fieldRef			: {FieldRef}
   				type				: Type
@@ -411,8 +427,11 @@ SET AllFlag
 SET AllCode
   = Code MbCode
 
+SET AllCase
+  = Case Cases
+
 SET AllInstr
-  = Instr Instrs
+  = Instr Instrs AllCase
 
 SET AllMethod
   = Method Methods
