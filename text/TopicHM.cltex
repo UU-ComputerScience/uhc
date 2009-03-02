@@ -41,13 +41,13 @@ The following variant of the previous example is therefore not
 correct:
 
 %%[[wrap=code
-%%@[file:test/3/mono-arg.eh%%]
+%%@[file:test/regress/3/mono-arg.eh%%]
 %%]
 
 It will give the following output:
 
 \begin{TT}
-%%3ppfile(test/3/mono-arg.eh%%)
+%%3ppfile(test/regress/3/mono-arg.eh%%)
 \end{TT}
 
 The problem here is that the polymorphism of |f| in |a| means that the caller
@@ -65,22 +65,22 @@ The use of type constants will be explained later.
 Another example of the limitations of polymorphism in this version of EH is the following
 variation:
 %%[[wrap=code
-%%@[file:test/3/mono-arg2.eh%%]
+%%@[file:test/regress/3/mono-arg2.eh%%]
 %%]
 for which the compiler will infer the following types:
 \begin{TT}
-%%3ppfile(test/3/mono-arg2.eh%%)
+%%3ppfile(test/regress/3/mono-arg2.eh%%)
 \end{TT}
 
 EH version 3 allows parametric polymorphism but not yet polymorphic parameters.
 The parameter |i| has a monomorphic type, which is made even more clear when
 we make an attempt to use this |i| polymorphically in:
 %%[[wrap=code
-%%@[file:test/3/mono-arg3.eh%%]
+%%@[file:test/regress/3/mono-arg3.eh%%]
 %%]
 The following error is produced:
 \begin{TT}
-%%3ppfile(test/3/mono-arg3.eh%%)
+%%3ppfile(test/regress/3/mono-arg3.eh%%)
 \end{TT}
 
 Because |i| is not allowed to be polymorphic it can either be used on |Int| or |Char|, but
@@ -239,7 +239,7 @@ Rule:
 Implementation:
 %%[[wrap=code
 %%@EHRulerRules.3.expr.e.var
-%%@EHTyInstantiate.3.tyInst
+%%@EHTyTrfInstantiate.3.tyInst
 %%]
 %%]
 \RuleRef{e.var} shows how the type bound to an identifier is instantiated by
@@ -284,7 +284,7 @@ Rule:
 Implementation:
 %%[[wrap=code
 %%@EHRulerRules.3.decl.d.tysig
-%%@EHTyQuantify.3.tyQuantify
+%%@EHTyTrfQuantify.3.tyQuantify
 %%]
 
 The implementation is slightly more involved as we also deal with partial type signatures.
@@ -332,7 +332,7 @@ Rule:
 Implementation:
 %%[[wrap=code
 %%@EHRulerRules.3.decl.d.val
-%%@EHTyInstantiate.3.tyInstKnown
+%%@EHTyTrfInstantiate.3.tyInstKnown
 %%]
 %%]
 
@@ -391,7 +391,7 @@ We use |valGamQuantify| to accomplish this:
 %%[[wrap=code
 %%@EHGam.3.valGamQuantify
 %%@EHGam.3.valGamMapTy
-%%@EHGam.3.gamMap
+%%@EHGam.1.gamMap
 %%@EHGam.3.gamMapElts
 %%]
 %%]
@@ -400,7 +400,7 @@ The condition that quantification only may be done for type variables not occurr
 the global |Gamma| is a necessary one.
 For example:
 %%[[wrap=code
-%%@[file:test/3/mono-glob.eh%%]
+%%@[file:test/regress/3/mono-glob.eh%%]
 %%]
 
 If the type |g :: a -> (a,a)| would be concluded, |g| can be used with |y| an |Int| parameter, as
@@ -409,7 +409,7 @@ This would go wrong because |h| assumes the types of its parameters |x| and |y| 
 So, this justifies the error given by the compiler for this version of EH:
 
 \begin{TT}
-%%3ppfile(test/3/mono-glob.eh%%)
+%%3ppfile(test/regress/3/mono-glob.eh%%)
 \end{TT}
 
 All declarations in a |let|-expression together form what in Haskell is called a binding group.
@@ -418,7 +418,7 @@ are quantified together. The consequence is that a declaration that on its own w
 may not be so in conjunction with an additional declaration which uses the previous declaration:
 
 %%[[wrap=code
-%%@[file:test/3/mono-bind.eh%%]
+%%@[file:test/regress/3/mono-bind.eh%%]
 %%]
 
 The types of the function |id1| and value |v1| are inferred in the same binding group.
@@ -428,7 +428,7 @@ The application |id1 3| therefore infers an additional constraint |tvarv1 :-> In
 in type |Int -> Int| for |id1|
 
 \begin{TT}
-%%3ppfile(test/3/mono-bind.eh%%)
+%%3ppfile(test/regress/3/mono-bind.eh%%)
 \end{TT}
 
 On the other hand, |id2| is used after quantification, outside the binding group, with
@@ -446,13 +446,13 @@ Being together in a binding group can create a problem for inferencing mutually 
 for example:
 
 %%[[wrap=code
-%%@[file:test/3/mut-rec.eh%%]
+%%@[file:test/regress/3/mut-rec.eh%%]
 %%]
 
 This results in
 
 \begin{TT}
-%%3ppfile(test/3/mut-rec.eh%%)
+%%3ppfile(test/regress/3/mut-rec.eh%%)
 \end{TT}
 
 For |f1| it is only known that its type is |tvarv1 -> tvarv2|.

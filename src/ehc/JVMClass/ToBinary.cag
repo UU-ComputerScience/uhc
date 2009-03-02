@@ -157,6 +157,7 @@ SEM Class
 
 SEM Const
   | Class       (loc.nmInx,lhs.cp)          =   cadd (Const_Utf8 (showClassRef @classRef)) @lhs.cp
+  | Class2      (loc.nmInx,lhs.cp)          =   cadd (Const_Utf8 (@classRef)) @lhs.cp
   | String      (loc.strInx,lhs.cp)         =   cadd (Const_Utf8 @str) @lhs.cp
   | NameType    (loc.nmInx,loc.descrInx,lhs.cp)
                                             =   let (n,cp1) = cadd (Const_Utf8 @name) @lhs.cp
@@ -188,8 +189,11 @@ SEM Field
                                                 in  (n,d,cp2)
 
 SEM Instr
-  | New CheckCast
-  				(loc.clInx,lhs.cp)          =   cadd (Const_Class @classRef) @lhs.cp
+  | New 		(loc.clInx,lhs.cp)          =   cadd (Const_Class @classRef) @lhs.cp
+  | CheckCast	(loc.tpInx,lhs.cp)          =   cadd (Const_Class2 @type.descrCast) @lhs.cp
+  | NewArray	(loc.clInx,lhs.cp)          =   case @type.mbClass of
+                                                  Just cl -> cadd (Const_Class cl) @lhs.cp
+                                                  _       -> (0,@lhs.cp)
   | Invoke      (loc.methInx,lhs.cp)        =   cadd @methConst.self @lhs.cp
   | Put Get     (loc.fldInx,lhs.cp)         =   cadd @fldConst.self @lhs.cp
 %%]
@@ -211,9 +215,9 @@ attrToBytes a = u2 (attrNmInx a) ## u4 (attrLen a) ## attrBytes a
 %%]
 
 %%[(8 java) hs
-codeLen :: Bytes -> (U4,Bytes)
+codeLen :: Bytes -> (U4,[Byte])
 codeLen b
-  = (fromInteger $ toInteger $ length l, Seq.fromList l)
+  = (fromInteger $ toInteger $ length l, l)
   where l = Seq.toList b
 %%]
 
@@ -228,7 +232,7 @@ SEM Code
                                                       (   u2 @instructions.maxStk
                                                        ## u2 @instructions.maxLocal
                                                        ## u4 l
-                                                       ## c
+                                                       ## patchBytesWithLblUseDef @instructions.lblDefMp @instructions.lblUseMp c
                                                        ## u2 (0 :: U2) -- exceptions
                                                        ## u2 (0 :: U2) -- attributes
                                                       )]
@@ -313,6 +317,18 @@ SEM Field
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type: a class?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR Type [ | | mbClass: {Maybe ClassRef} ]
+
+SEM Type
+  | Class		lhs			.	mbClass		=	Just @classRef
+  | * - Class	lhs			.	mbClass		=	Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type: properties
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -359,7 +375,7 @@ SEM Type
   | Int			loc			.	descr		=	"I"
   | Long		loc			.	descr		=	"J"
   | Short		loc			.	descr		=	"S"
-  | Class 		loc			.	descr		=	"L" ++ showClassRef @classRef ++ ";"
+  | Class 		loc			.	descr		=	"L" ++ @descrCast ++ ";"
   | Array 		loc			.	descr		=	"[" ++ @type.descr
 %%]
 
@@ -369,6 +385,33 @@ SEM Type
 
 SEM MbType
   | Nothing		loc			.	descrL		=	["V"]
+%%]
+
+%%[(8 java)
+ATTR Type [ | | descrCast USE {++} {""}: String ]
+
+SEM Type
+  | Class		loc			.	descrCast	=	showClassRef @classRef
+  | * - Class	loc			.	descrCast	=	@descr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type: array type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR Type [ | | atype: Int ]
+
+SEM Type
+  | Bool		loc			.	atype		=	4
+  | Char		loc			.	atype		=	5
+  | Float		loc			.	atype		=	6
+  | Double		loc			.	atype		=	7
+  | Byte		loc			.	atype		=	8
+  | Short		loc			.	atype		=	9
+  | Int			loc			.	atype		=	10
+  | Long		loc			.	atype		=	11
+  | Class Array loc			.	atype		=	0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -424,7 +467,8 @@ SEM Class
 
 %%[(8 java)
 SEM Const
-  | Class       loc         .   bin         =   u1 @tag ## u2 @nmInx
+  | Class Class2
+                loc         .   bin         =   u1 @tag ## u2 @nmInx
   | String      loc         .   bin         =   u1 @tag ## u2 @strInx
   | Int         loc         .   bin         =   u1 @tag ## u4 @int
   | Utf8        loc         .   bin         =   u1 @tag ## u2 (length @str) ## stringToBytes @str
@@ -465,19 +509,36 @@ SEM Code
 SEM Instr
   | Const Dup New Load
   				loc				.	stkInc		=   1
+  | Store ALoad
+  				loc				.	stkInc		=   -1
   | Get
   				loc				.	stkInc		=   @fldConst.size - (if @static then 0 else 1)
   | Put
   				loc				.	stkInc		=   - @fldConst.size - (if @static then 0 else 1)
   | Invoke
   				loc				.	stkInc		=   @methConst.size - @mode.size
-  | Return CheckCast
+  | Return CheckCast NewArray Label Goto
   				loc				.	stkInc		=   0
+  | AStore
+  				loc				.	stkInc		=   -3
+  | Switch      loc             .   stkInc      =   case @cases.stkL of
+                                                      ((d,_):_) -> d - 1
 
 SEM Instr
-  | * 			(lhs.maxStk,lhs.belowMaxStk)	=   stkInc @stkInc @lhs.maxStk @lhs.belowMaxStk
-%%]   
-   
+  | Switch      (lhs.maxStk,lhs.belowMaxStk)    =   stkInc @stkInc @cases.maxStk @lhs.belowMaxStk
+  | * - Switch  (lhs.maxStk,lhs.belowMaxStk)    =   stkInc @stkInc @lhs.maxStk @lhs.belowMaxStk
+
+%%]
+
+%%[(8 java)
+ATTR AllCase [ | | stkL USE {++} {[]}: {[(Int,Int)]} ]  -- below diff & max
+
+SEM Case
+  | Case        loc             .   stkInc      =   @instrs.maxStk - @lhs.maxStk
+                lhs             .   stkL        =   [(@instrs.belowMaxStk - @lhs.belowMaxStk - @stkInc,@instrs.maxStk)]
+                                .   belowMaxStk =   @lhs.belowMaxStk + @stkInc
+%%]
+  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instructions: nr locals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -496,7 +557,7 @@ SEM Method
 
 %%[(8 java)
 SEM Instr
-  | Load		lhs				.	maxLocal	=   @lhs.maxLocal `max` (@local + @type.size)
+  | Load Store	lhs				.	maxLocal	=   @lhs.maxLocal `max` (@local + @type.size)
 %%]   
    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -528,12 +589,7 @@ SEM Const
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 java)
-ATTR AllInstr [ | codePos: U4 | code USE {##} {empty}: Bytes ]
-%%]
-
-%%[(8 java)
-SEM Code
-  | Code        instructions	.   codePos     =   0
+ATTR AllInstr [ | | code USE {##} {empty}: Bytes ]
 %%]
 
 %%[(8 java)
@@ -541,7 +597,28 @@ SEM Instr
   | Const           loc         .   code        =   @const.ldcode
   | Dup             loc         .   code        =   b_DUP       -- TBD: different sized not taken into account
   | New             loc         .   code        =   b_NEW @clInx
-  | CheckCast       loc         .   code        =   b_CHECKCAST @clInx
+  | NewArray        loc         .   code        =   if @type.isRef then b_ANEWARRAY @clInx else b_NEWARRAY @type.atype
+  | ALoad           loc         .   code        =   case @type.self of
+                                                      Type_Bool   -> b_BALOAD  -- ????
+                                                      Type_Byte   -> b_BALOAD
+                                                      Type_Char   -> b_CALOAD
+                                                      Type_Double -> b_DALOAD
+                                                      Type_Float  -> b_FALOAD
+                                                      Type_Int    -> b_IALOAD
+                                                      Type_Long   -> b_LALOAD
+                                                      Type_Short  -> b_SALOAD
+                                                      _           -> b_AALOAD
+  | AStore          loc         .   code        =   case @type.self of
+                                                      Type_Bool   -> b_BASTORE  -- ????
+                                                      Type_Byte   -> b_BASTORE
+                                                      Type_Char   -> b_CASTORE
+                                                      Type_Double -> b_DASTORE
+                                                      Type_Float  -> b_FASTORE
+                                                      Type_Int    -> b_IASTORE
+                                                      Type_Long   -> b_LASTORE
+                                                      Type_Short  -> b_SASTORE
+                                                      _           -> b_AASTORE
+  | CheckCast       loc         .   code        =   b_CHECKCAST @tpInx
   | Invoke          loc         .   code        =   case @mode.self of
                                                       InvokeMode_Special -> b_INVOKESPECIAL  @methInx
                                                       InvokeMode_Static  -> b_INVOKESTATIC   @methInx
@@ -559,7 +636,162 @@ SEM Instr
                                                            n | posFits8 n -> b_ALOAD (fromIntegral n)
                                                              | otherwise  -> b_WIDE b_ALOAD' n
                                                     else empty      -- TBD
+  | Store           loc         .   code        =   if @type.isRef
+                                                    then case @local of
+                                                           0 -> b_ASTORE_0
+                                                           1 -> b_ASTORE_1
+                                                           2 -> b_ASTORE_2
+                                                           3 -> b_ASTORE_3
+                                                           n | posFits8 n -> b_ASTORE (fromIntegral n)
+                                                             | otherwise  -> b_WIDE b_ASTORE' n
+                                                    else empty      -- TBD
+  | Label           loc         .   code        =   empty
+  | Goto            loc         .   code        =   b_GOTO (0::U2)
+  | Switch          loc         .   code        =   let pad = bytesUnions $ replicate (@codePosTbl1Pad - @codePosTbl1) (u1 (0 :: U1))
+                                                        -- TBD: assume all cases are consecutively numbered, no gaps, so we can use tableswitch
+                                                    in  b_TABLESWITCH
+                                                        ## pad
+                                                        ## u4 (0::U4)   -- default, patched later
+                                                        ## u4 @lowCaseSel
+                                                        ## u4 @highCaseSel
+                                                        ## (bytesUnions $ replicate @nrCases (u4 (0::U4)))  -- cases, patched later
+                                                        ## @cases.code
+                                                        ## @default.code
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instructions: switch/cases
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AllCase [ | | cases USE {++} {[]} : {[(Int,Label)]} ]
+
+SEM Case
+  | Case			loc			.	cases		=	[(@selector,@label)]
+%%]
+
+%%[(8 java)
+SEM Instr
+  | Switch          loc         .   sortedCases =   sortOn fst @cases.cases
+                                .   nrCases     =   length @sortedCases
+                                .   (selsOfCases,lblsOfCases)
+                                                =   unzip @sortedCases
+                                .   lowCaseSel  =   minimum @selsOfCases 
+                                .   highCaseSel =   maximum @selsOfCases 
+%%]
+
+%%[(8 java)
+ATTR Case [ | | label: {Label} ]
+
+SEM Case
+  | Case			lhs			.	label		=	@label
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code position
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR AllInstr [ | codePos: Int | ]
+%%]
+
+%%[(8 java)
+SEM Code
+  | Code        instructions	.   codePos     =   0
+
+SEM Instr
+  | Switch      loc             .   codePosTbl1 =   @lhs.codePos + 1
+                                .   codePosTbl1Pad
+                                                =   entierLogUpBy 2 @codePosTbl1
+                                .   codePosTbl2 =   @codePosTbl1Pad + 3 * 4
+                                .   codePosCases=   @codePosTbl2 + @nrCases * 4
+                cases           .   codePos     =   @codePosCases
+  | * - Switch  lhs             .   codePos     =   @lhs.codePos + bytesSize @code
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Label definitions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs
+type LblDefMp = Map.Map Label Int
+
+addLblDef :: Label -> Int -> LblDefMp -> LblDefMp
+addLblDef = Map.insert
+%%]
+
+%%[(8 java)
+ATTR AllInstr [ | lblDefMp: LblDefMp | ]
+
+SEM Code
+  | Code        instructions	.   lblDefMp	    =   Map.empty
+
+SEM Instr
+  | Label		lhs				.	lblDefMp		=	addLblDef @label @lhs.codePos @lhs.lblDefMp
+
+SEM Case
+  | Case		instrs			.	lblDefMp		=	addLblDef @label @lhs.codePos @lhs.lblDefMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Label uses
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs
+data LblUseHow
+  = LblUse_2			-- 2 byte offset relative to a position
+  | LblUse_4			-- 4 byte offset relative to a position
+  deriving Show
+
+data LblUse
+  = LblUse
+      { luseHow 	:: LblUseHow
+      , lusePatchAt	:: Int
+      , luseRelTo	:: Int
+      }
+  deriving Show
+
+type LblUseMp = Map.Map Label [LblUse]
+
+addLblUse :: Label -> LblUse -> LblUseMp -> LblUseMp
+addLblUse l u = Map.insertWith (++) l [u]
+%%]
+
+%%[(8 java) hs
+patchBytesWithLblUseDef :: LblDefMp -> LblUseMp -> [Byte] -> Bytes
+patchBytesWithLblUseDef lblDefMp lblUseMp bs
+  = merge 0 sortedUses bs
+  where merge pos [] bs = bytes bs
+        merge pos ((at,(sz,instr)):us) bs = bs1 ## instr ## bs3
+          where (bs1,bs2) = splitAt (at-pos) bs
+                bs3       = merge (at+sz) us (drop sz bs2)
+        sortedUses
+          = sortOn fst
+              [ (at,diff how l relto)
+              | (l,uses) <- Map.toList lblUseMp
+              , (LblUse how at relto) <- uses
+              ]
+        diff how l relto
+          = case how of
+              LblUse_2 -> (2,u2 atDiff)
+              LblUse_4 -> (4,u4 atDiff)
+          where defAt  = panicJust "JVMClass.ToBinary.patchBytesWithLblUseDef" $ Map.lookup l lblDefMp
+                atDiff = defAt - relto
+%%]
+
+%%[(8 java)
+ATTR AllInstr [ | lblUseMp: LblUseMp | ]
+
+SEM Code
+  | Code        instructions    .   lblUseMp        =   Map.empty
+
+SEM Instr
+  | Goto        lhs             .   lblUseMp        =   addLblUse @label (LblUse LblUse_2 (@lhs.codePos+1) @lhs.codePos) @lhs.lblUseMp
+  | Switch      lhs             .   lblUseMp        =   foldr
+                                                            (\(o,l) m -> addLblUse l (LblUse LblUse_4 o @lhs.codePos) m)
+                                                            @default.lblUseMp
+                                                            ((@codePosTbl1Pad,@default.label) : zip [@codePosTbl2, @codePosTbl2 + 4 ..] @lblsOfCases)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -622,7 +854,7 @@ SEM Const
   | Float           loc         .   tag         =   4
   | Long            loc         .   tag         =   5
   | Double          loc         .   tag         =   6
-  | Class           loc         .   tag         =   7
+  | Class Class2    loc         .   tag         =   7
   | String          loc         .   tag         =   8
   | Field           loc         .   tag         =   9
   | Method          loc         .   tag         =   10
@@ -689,7 +921,6 @@ b_ALOAD_1			= u1 (0x2B :: U1)
 b_ALOAD_2			= u1 (0x2C :: U1)
 b_ALOAD_3			= u1 (0x2D :: U1)
 b_IALOAD			= u1 (0x2E :: U1)
-%%]
 b_LALOAD			= u1 (0x2F :: U1)
 b_FALOAD			= u1 (0x30 :: U1)
 b_DALOAD			= u1 (0x31 :: U1)
@@ -697,11 +928,15 @@ b_AALOAD			= u1 (0x32 :: U1)
 b_BALOAD			= u1 (0x33 :: U1)
 b_CALOAD			= u1 (0x34 :: U1)
 b_SALOAD			= u1 (0x35 :: U1)
+%%]
 b_ISTORE			= u1 (0x36 :: U1)
 b_LSTORE			= u1 (0x37 :: U1)
 b_FSTORE			= u1 (0x38 :: U1)
 b_DSTORE			= u1 (0x39 :: U1)
-b_ASTORE			= u1 (0x3A :: U1)
+%%[(8 java) hs
+b_ASTORE'			= u1 (0x3A :: U1)
+b_ASTORE		x	= b_ASTORE' ## u1 (x :: U1)
+%%]
 b_ISTORE_0			= u1 (0x3B :: U1)
 b_ISTORE_1			= u1 (0x3C :: U1)
 b_ISTORE_2			= u1 (0x3D :: U1)
@@ -718,6 +953,7 @@ b_DSTORE_0			= u1 (0x47 :: U1)
 b_DSTORE_1			= u1 (0x48 :: U1)
 b_DSTORE_2			= u1 (0x49 :: U1)
 b_DSTORE_3			= u1 (0x4A :: U1)
+%%[(8 java) hs
 b_ASTORE_0			= u1 (0x4B :: U1)
 b_ASTORE_1			= u1 (0x4C :: U1)
 b_ASTORE_2			= u1 (0x4D :: U1)
@@ -730,6 +966,7 @@ b_AASTORE			= u1 (0x53 :: U1)
 b_BASTORE			= u1 (0x54 :: U1)
 b_CASTORE			= u1 (0x55 :: U1)
 b_SASTORE			= u1 (0x56 :: U1)
+%%]
 b_POP				= u1 (0x57 :: U1)
 b_POP2				= u1 (0x58 :: U1)
 %%[(8 java) hs
@@ -812,10 +1049,14 @@ b_IF_ICMPGT			= u1 (0xA3 :: U1)
 b_IF_ICMPLE			= u1 (0xA4 :: U1)
 b_IF_ACMPEQ			= u1 (0xA5 :: U1)
 b_IF_ACMPNE			= u1 (0xA6 :: U1)
-b_GOTO				= u1 (0xA7 :: U1)
+%%[(8 java) hs
+b_GOTO			x	= u1 (0xA7 :: U1) ## u2 x
+%%]
 b_JSR				= u1 (0xA8 :: U1)
 b_RET				= u1 (0xA9 :: U1)
+%%[(8 java) hs
 b_TABLESWITCH		= u1 (0xAA :: U1)
+%%]
 b_LOOKUPSWITCH		= u1 (0xAB :: U1)
 b_IRETURN			= u1 (0xAC :: U1)
 b_LRETURN			= u1 (0xAD :: U1)
@@ -838,9 +1079,9 @@ b_INVOKEINTERFACE	= u1 (0xB9 :: U1)
 b_XXXUNUSEDXXX1		= u1 (0xBA :: U1)
 %%[(8 java) hs
 b_NEW			x	= u1 (0xBB :: U1) ## u2 x
+b_NEWARRAY		x	= u1 (0xBC :: U1) ## u1 x
+b_ANEWARRAY		x	= u1 (0xBD :: U1) ## u2 x
 %%]
-b_NEWARRAY			= u1 (0xBC :: U1)
-b_ANEWARRAY			= u1 (0xBD :: U1)
 b_ARRAYLENGTH		= u1 (0xBE :: U1)
 b_ATHROW			= u1 (0xBF :: U1)
 %%[(8 java) hs
@@ -855,7 +1096,9 @@ b_WIDE			x y	= u1 (0xC4 :: U1) ## x ## u2 y
 b_MULTIANEWARRAY	= u1 (0xC5 :: U1)
 b_IFNULL			= u1 (0xC6 :: U1)
 b_IFNONNULL			= u1 (0xC7 :: U1)
-b_GOTO_W			= u1 (0xC8 :: U1)
+%%[(8 java) hs
+b_GOTO_W		x	= u1 (0xC8 :: U1) ## u2 x
+%%]
 b_JSR_W				= u1 (0xC9 :: U1)
 b_BREAKPOINT		= u1 (0xCA :: U1)
 b_IMPDEP1			= u1 (0xFE :: U1)

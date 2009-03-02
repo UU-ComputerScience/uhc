@@ -318,6 +318,7 @@ filterSeq p = mkSeq . filter p . seqToList
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.SemApp export(SemApp(..))
+%%[[SemAppCore1
 class SemApp a where
   -- basic semantics
   semApp            ::  a -> a -> a
@@ -325,19 +326,23 @@ class SemApp a where
   semVar            ::  (Position n,HSNM n) => n -> a
   semCon            ::  (Position n,HSNM n) => n -> a
   semParens         ::  a -> a
+%%]]
+  -- basic semantics with Range
   semRngApp         ::  Range -> a -> a -> a
   semRngAppTop      ::  Range -> a -> a
   semRngVar         ::  (Position n,HSNM n) => Range -> n -> a
   semRngCon         ::  (Position n,HSNM n) => Range -> n -> a
   semRngParens      ::  Range -> a -> a
   -- constructing
-  mk1App            ::  a -> a -> a
+%%[[SemAppCore2
   mkApp             ::  [a] -> a
-  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
   mkConApp          ::  (Position n,HSNM n) => n -> [a] -> a
   mkProdApp         ::  [a] -> a
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
+%%]]
+  mk1App            ::  a -> a -> a
+  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
   -- constructin with Range
   mk1RngApp         ::  Range -> a -> a -> a
   mkRngApp          ::  Range -> [a] -> a

@@ -26,6 +26,14 @@ SEM Expr
                                                         in   [] -- if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
 %%]
 
+%%[Orig.dupErrs
+SEM Expr
+  | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
+                                                        in   if null nms
+                                                             then []
+                                                             else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Obligatory type signature
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

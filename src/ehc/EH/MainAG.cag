@@ -510,7 +510,7 @@ ATTR AGItf [ | gUniq: UID | ]
 
 For patterns we need a unique value anyway, so declare it here globally
 
-%%[2
+%%[2.PatExpr.g
 SEM PatExpr
   | *           loc         .   lUniq               :   UNIQUEREF gUniq
 %%]

@@ -7,20 +7,20 @@ value definitions.
 For example
 
 %%[[wrap=code
-%%@[file:test/1/demo2.eh%%]
+%%@[file:test/regress/1/demo2.eh%%]
 %%]
 
 is accepted, whereas
 
 %%[[wrap=code
-%%@[file:test/1/all-fail2.eh%%]
+%%@[file:test/regress/1/all-fail2.eh%%]
 %%]
 produces a pretty printed version of the erroneous program,
 annotated with errors.
 Type errors are reported in terms of a failed 'fit' (@<=@) which is our mechanism
 for matching, or fitting (because of the asymmetry in later EH versions), two types:
 \begin{TT}
-%%1ppfile(test/1/all-fail2.eh%%)
+%%1ppfile(test/regress/1/all-fail2.eh%%)
 \end{TT}
 
 Type signatures have to be specified for identifiers bound in a |let| expression.
@@ -32,7 +32,7 @@ In that case a type signature for the |lambda|-expression is required in the exp
 This program will not typecheck because a |Char->Char| function is applied to an |Int|.
 
 %%[[wrap=code
-%%@[file:test/1/polylam1.eh%%]
+%%@[file:test/regress/1/polylam1.eh%%]
 %%]
 
 
@@ -198,12 +198,12 @@ The naming convention for tuples and other naming conventions are available thro
 of Haskell names |HsName| (we remind the reader that a reference in the margin refers to additional, but not inlined, code).
 
 %%[[hide wrap=code impl.hsnImpl="Implementation for HsName functions"
-%%@EHBaseCommon.1.HsName.Base.impl
+ %%@EHBaseCommon.1.HsName.Base.impl
 %%]
 %%[[wrap=code
-%%@EHBaseCommon.1.HsName.type
+%%@EHBaseHsName.1.HsName.type
 
-%%@EHBaseCommon.1.HsName.Base.itf
+ %%@EHBaseCommon.1.HsName.Base.itf
 %%]
 
 \item
@@ -885,14 +885,18 @@ requires some additional type construction functions, for example |mkArrow| used
 The function is part of the class |SemApp| defining (semantic) functions related to building application |App| like structures:
 
 %%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
-%%@EHBaseCommon.1.SemApp
+%%@EHBaseCommon.SemAppCore1
+%%@EHBaseCommon.SemAppCore2
 
-%%@EHBaseCommon.1.SemApp.default
+ %%@EHBaseCommon.1.SemApp.default
 
 %%@EHTy.1.mkTyCon
 %%@EHTy.2.mkTyVar
 %%]
-%%@EHBaseCommon.1.SemApp wrap=code
+%%[[wrap=code
+%%@EHBaseCommon.SemAppCore1
+%%@EHBaseCommon.SemAppCore2
+%%]]
 
 The instance for |SemApp Ty| is defined by:
 
@@ -967,7 +971,7 @@ The code for this and other similar functions have been omitted for brevity.
 
 %%@EHTy.1.unMkTy.tyLHdAndTl
 
-%%@EHBaseCommon.1.Misc.hdAndTl
+ %%@EHBaseCommon.1.Misc.hdAndTl
 
 %%@EHTy.4.unMkTy.tyConNm
 
@@ -1120,7 +1124,7 @@ all introduced bindings:
 %%@EHRulerRules.1.patexpr.p.varas
 %%]
 %%[[wrap=code
-%%@EHInferPatExpr.1.valGam
+%%@EHInfer.1.PatExpr.valGam
 
 %%@EHRulerRules.1.patexpr.p.var
 %%]
@@ -1220,7 +1224,7 @@ The type signature for the topmost variable of the pattern is used as the expect
 |tySigGam| has to be queried for the type signature:
 
 %%[[hide wrap=code impl.mbTopNm="AG for mbTopNm"
-%%@EHInfer.1.mbTopNm
+%%@EHMainAG.1.mbTopNm
 %%]
 %%@EHRulerRules.1.decl.d.val wrap=code
 
@@ -1236,9 +1240,9 @@ bindings in |lValGam|.
 An additional error message is produced
 if any duplicate bindings are present.
 %%[[hide wrap=code impl.dupErrs="Check on duplicate introductions"
-%%@EHExtraChecks.1.dupErrs
+%%@EHExtraChecks.Orig.dupErrs
 
-%%@EHGam.1.gamToDups
+%%@EHGam.1.gamToOnlyDups
 %%]
 
 \subsubsection{Checking type expressions}
@@ -1449,13 +1453,15 @@ and the function |mkApp| is never used on an empty list.
 %%[[wrap=code
 %%@EHBaseCommon.1.MkConApp
 
-%%@EHBaseCommon.1.SemApp
-%%]
+%%@EHBaseCommon.SemAppCore1
+%%@EHBaseCommon.SemAppCore2
+%%]]
 %%[[hide wrap=code impl.SemAppFull="Class SemApp and defaults"
-%%@EHBaseCommon.1.SemApp
+%%@EHBaseCommon.SemAppCore1
+%%@EHBaseCommon.SemAppCore2
 
-%%@EHBaseCommon.1.SemApp.default
-%%]
+ %%@EHBaseCommon.1.SemApp.default
+%%]]
 
 It is precisely the group of functions specifying what should be done
 for |Con|, |App| and |AppTop| which is called an algebra.

@@ -20,7 +20,7 @@
 %%]
 %%[(8 java) hs export(Field(..), Fields, Flag(..), Flags, Method(..), Methods, Type(..), Types, MbType, Const(..), MbConst, Consts, UserData(..), UserDatas, UserDataAssoc, UserDataAssocs) 
 %%]
-%%[(8 java) hs export(Code(..), MbCode, Instr(..), Instrs, Note(..), ArithOp(..), CmpMode(..), MbCmpMode, InvokeMode(..), SwitchType(..), Test(..)) 
+%%[(8 java) hs export(Code(..), MbCode, Instr(..), Instrs, Note(..), ArithOp(..), CmpMode(..), MbCmpMode, InvokeMode(..), Case(..), Cases, SwitchType(..), Test(..)) 
 %%]
 
 %%[(8 java) ag import({JVMClass/AbsSyn})

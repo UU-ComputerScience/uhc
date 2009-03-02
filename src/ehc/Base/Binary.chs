@@ -11,6 +11,22 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bit fiddling
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(entierLogUpShrBy,entierLogUpBy)
+entierLogUpShrBy :: Bits x => Int -> x -> x
+entierLogUpShrBy by x = ((x - 1) `shiftR` by) + 1
+
+entierLogUpBy :: Bits x => Int -> x -> x
+entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
+%%]
+
+#define EntierLogUpShrBy(x,m)			((((x)-1)>>(m))+1)
+#define EntierLogUpBy(x,m)				(EntierLogUpShrBy(x,m)<<(m))
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -107,14 +123,41 @@ type Bytes = Seq.Seq Byte
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Observation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(bytesSize)
+bytesSize :: Bytes -> Int
+bytesSize = Seq.size
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class for constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(Byteable(..))
+class Byteable x where
+  bytes :: x -> Bytes
+
+instance Byteable Byte where
+  bytes = Seq.singleton
+
+instance Byteable Bytes where
+  bytes = id
+
+instance Byteable x => Byteable [x] where
+  bytes = bytesUnions . map bytes
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Combination
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export((##),bytesUnions)
 infixr 3 ##
 
-(##) :: Bytes -> Bytes -> Bytes
-x ## y = x `Seq.union` y
+(##) :: (Byteable x, Byteable y) => x -> y -> Bytes
+x ## y = bytes x `Seq.union` bytes y
 
 bytesUnions :: [Bytes] -> Bytes
 bytesUnions = Seq.unions

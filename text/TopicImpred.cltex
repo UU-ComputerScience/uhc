@@ -407,7 +407,7 @@ The following is an example for demonstrating the usefulness of a universal quan
 a higher-ranked position.
 
 %%[[wrap=code
-%%@[file:test/3/demo-rank.eh%%]
+%%@[file:test/regress/3/demo-rank.eh%%]
 %%]
 
 The \IxAsDef{rank position}
@@ -554,7 +554,7 @@ We repeat our initial example:
 
 \begin{Example}{eh4-ex-rank-arg}
 %%[[wrap=code
-%%@[file:test/3/demo-rank.eh%%]
+%%@[file:test/regress/3/demo-rank.eh%%]
 %%]
 \end{Example}
 
@@ -614,7 +614,7 @@ The real tricky point arises when the type of |f|'s argument is not known, for e
 is specified for |f|:
 
 %%[[wrap=code
-%%@[file:test/4/demo-rank.eh%%]
+%%@[file:test/regress/4/demo-rank.eh%%]
 %%]
 
 The argument type of |f| then still is a type variable |tvarv|:
@@ -748,10 +748,8 @@ A |FIOpts =@= fiopt| uses the flags from
 \figRef{eh-impredA-fit-options}
 for obtaining the previously discussed desired behavior.
 %%[[hide wrap=code impl.FIOpts="FIOpts"
-%%@EHBaseOpts.4.FIOpts.hd
-%%@EHBaseOpts.4.FIOpts.tl
-%%@EHBaseOpts.4.strongFIOpts.hd
-%%@EHBaseOpts.4.strongFIOpts.tl
+%%@EHBaseOpts.4.FIOpts.hd@4
+%%@EHBaseOpts.4.strongFIOpts.hd@4
 %%@EHBaseOpts.4.FIOpts.instLFIOpts
 %%]
 These options are used in specific combinations throughout the type rules
@@ -875,7 +873,7 @@ passing different flags to the argument:
 The effect of this modification can best be observed from the following example:
 
 %%[[wrap=code
-%%@[file:test/4/impred-demo5.eh%%]
+%%@[file:test/regress/4/impred-demo5.eh%%]
 %%]
 
 First assume that we are still using |fioBindRFirstN|.
@@ -913,7 +911,7 @@ and subsequently to do normal type inference.
 The effect of this modification can best be observed from the following example:
 
 %%[[wrap=code
-%%@[file:test/4/choose.eh%%]
+%%@[file:test/regress/4/choose.eh%%]
 %%]
 
 Again, first assume that we are still using |fioBindLFirstN|.
@@ -953,7 +951,7 @@ the difference with \ruleRef{e.app} lies in the passing of |strongFIOpts|:
 
 For example, the following program uses both variants:
 %%[[wrap=code
-%%@[file:test/4/impred-choose.eh%%]
+%%@[file:test/regress/4/impred-choose.eh%%]
 %%]
 
 This leads to the following bindings:
@@ -1079,7 +1077,7 @@ The following example illustrates this:
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4/impred-demo1.eh%%]
+%%@[file:test/regress/4/impred-demo1.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1131,7 +1129,7 @@ because it is passed to both |g1| and |g2|.
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4/impred-demo3.eh%%]
+%%@[file:test/regress/4/impred-demo3.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1148,7 +1146,7 @@ but is the greatest common instance \cite{pfenning91anti-unif}
 (or least general anti-unification, defined later in \thischapt\ as the meet of two types).
 
 %%[[wrap=code
-%%@[file:test/4/impred-demo2.eh%%]
+%%@[file:test/regress/4/impred-demo2.eh%%]
 %%]
 
 Here |h| is expected to be used as ``|forall ^ a . (Int,a) -> (Int,a)|''
@@ -1176,7 +1174,7 @@ The following example demonstrates this:
 %%]
 %else
 %%[[wrap=code
-%%@[file:test/4/impred-demo4.eh%%]
+%%@[file:test/regress/4/impred-demo4.eh%%]
 %%]
 %endif
 \end{Example}
@@ -1741,7 +1739,7 @@ We walk through \exRef{eh4B-ex-basic-intro}%
 %else
 , which we repeat here:
 %%[[wrap=code
-%%@[file:test/4/impred-demo1.eh%%]
+%%@[file:test/regress/4/impred-demo1.eh%%]
 %%]
 %endif
 Our implementation finds the following information for |h|
@@ -1993,8 +1991,8 @@ The tricky part is the combination with the next stage. We need to match with th
 as we may have found new polymorphic types for arguments.
 %%[[hide wrap=code impl.impredBLam="Impredicativity + type inference for \ruleRef{e.lam}"
 %%@EHRulerRules.42.expr.e.lam
-%%@EHCnstr.4.cnstrDel
-%%@EHSubstitutable.4.2.partialSubstApp
+%%@EHVarMp.4.varmpDel
+ %%@EHSubstitutable.4.2.partialSubstApp
 %%]
 However, this match may result in fresh instantiated type variables or fixed type variables.
 Constraint |Dot(Cnstr)(3)()| requires some careful constraint manipulation.
@@ -2045,14 +2043,14 @@ We show this because the use of meet and join is general enough to also infer
 |f :: (Int,Int -> Int) -> Int| in:
 
 %%[[wrap=code
-%%@[file:test/4/impred24.eh%%]
+%%@[file:test/regress/4/impred24.eh%%]
 %%]
 
 %if False
 Whereas a contravariant example:
 
 %%[[wrap=code
-%%@[file:test/4/impred26.eh%%]
+%%@[file:test/regress/4/impred26.eh%%]
 %%]
 
 finds:
@@ -2064,7 +2062,7 @@ f :: ((exists ^ a . (a,a -> Int)) -> Int) -> Int
 We also can deduce a type from:
 
 %%[[wrap=code
-%%@[file:test/4/impred-demo2.eh%%]
+%%@[file:test/regress/4/impred-demo2.eh%%]
 %%]
 
 the types:
@@ -2314,7 +2312,7 @@ Note that for all practical purposes this type is isomorphic to |Int|.
 
 \begin{Example}{eh4C-ex-basic}
 %%[[wrap=code
-%%@[file:test/4/demo1.eh%%]
+%%@[file:test/regress/4/demo1.eh%%]
 %%]
 \end{Example}
 
@@ -2350,7 +2348,7 @@ Opening an existential type by binding
 also means that the following example does not type check\footnote{Case expressions are introduced together with data types, \chapterEHVRef.}:
 
 %%[[wrap=code
-%%@[file:test/5/demo1.eh%%]
+%%@[file:test/regress/5/demo1.eh%%]
 %%]
 
 Function |f| returns |(2,id)| when passed |2| and |('a',ord)|
@@ -2368,7 +2366,7 @@ The opening of an existential for a value binding is only done for a top-level e
 If an existential quantifier is nested inside a composite type, then the opening is not done:
 
 %%[[wrap=code
-%%@[file:test/4/ex-extr4.eh%%]
+%%@[file:test/regress/4/ex-extr4.eh%%]
 %%]
 
 The opening is delayed until the binding of |v1|'s components:
@@ -2389,7 +2387,7 @@ EH is also pessimistic when an value with an existential type is passed through 
 For example, the following extends our simplistic abstract data type with an additional observer function:
 
 %%[[wrap=code
-%%@[file:test/4/demo6.eh%%]
+%%@[file:test/regress/4/demo6.eh%%]
 %%]
 
 We do not preserve type equality through |f|;
@@ -2462,7 +2460,7 @@ The effect of this duality can be seen in the example type lattice (\figPageRef{
 and in the following example:
 
 %%[[wrap=code
-%%@[file:test/4/impred24.eh%%]
+%%@[file:test/regress/4/impred24.eh%%]
 %%]
 
 |h| is expected to be used as ``|exists ^ a . (a,a->Int)|'' and as ``|(Int,Int->Int)|''.
@@ -2485,7 +2483,7 @@ From this, we compute ``|v_13_0:->(Int,Int -> Int)|''.
 Again, a contravariant position requires us to compute the least general type (instead of the most general):
 
 %%[[wrap=code
-%%@[file:test/4/impred26.eh%%]
+%%@[file:test/regress/4/impred26.eh%%]
 %%]
 
 Functions |g1| and |g2| provide the context in which |h| will be used,
@@ -2899,7 +2897,7 @@ for which it is then impossible to find back forgotten polymorphism.
 This idea works well for the examples encountered so far, for example:
 
 %%[[wrap=code
-%%@[file:test/3/demo-rank.eh%%]
+%%@[file:test/regress/3/demo-rank.eh%%]
 %%]
 
 Polymorphism for |i| has been declared explicitly before any use of this information in de type checking of the body of |f| is done or any parameter is
@@ -2907,14 +2905,14 @@ passed to |f|.
 Because we allow type variables to be bound to quantified types the following example also infers |f :: (forall a . a -> a) -> Int| correctly:
 
 %%[[wrap=code
-%%@[file:test/4/impred2.eh%%]
+%%@[file:test/regress/4/impred2.eh%%]
 %%]
 
 This works because initially we assign a type variable to the type of |h| which is later bound to |forall a . a -> a| when it is used as an argument of |g|.
 However, the following example breaks because we first bind the type of |h| to a monomorphic type:
 
 %%[[wrap=code
-%%@[file:test/4/impred-demo1.eh%%]
+%%@[file:test/regress/4/impred-demo1.eh%%]
 %%]
 
 This example breaks at three different places:
@@ -2993,7 +2991,7 @@ Some additional options need to be passed as well:
 The following example really is responsible for delaying subsumption checks:
 
 %%[[wrap=code
-%%@[file:test/4/impred4.eh%%]
+%%@[file:test/regress/4/impred4.eh%%]
 %%]
 
 There is no single usage of |h| which enforces |h :: forall a . forall b . (a,b) -> (a,b)|,
