@@ -1529,6 +1529,7 @@ callconv :: HSParser Token
 callconv
   =   pCCALL 
   <|> pJAZY
+  <|> pPRIM
 %%[[94
   <|> pSTDCALL
   <|> pDOTNET

@@ -38,10 +38,10 @@
 %%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
-%%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
+%%[(4 hmtyinfer) import(EH.Util.Utils)
 %%]
 
-%%[(9 hmtyinfer) import(EH.Util.Utils)
+%%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
 %%]
 
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Pred})
@@ -140,6 +140,12 @@ fiSwapCoCo fi = fi {fiExpLTvS = fiExpRTvS fi, fiExpRTvS = fiExpLTvS fi}
 %%% Lookup of AppSpine + Polarity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Get the type level spine info, in particular how co/contra variance should propagate from type application to its arguments.
+The polarity for a type constructor is used for that purpose.
+The implementation matches the polarity against a -> b -> Covariant, and observes values for a and b.
+In case of failure, the worst is assumed and all is invariant.
+TBD: failure should not happen, the encoding of polarity is too strict by not matching Invariant <= Covariant, thus failing.
+
 %%[(4 hmtyinfer)
 fiAppSpineLookup :: FIIn -> HsName -> AppSpineGam -> Maybe AppSpineInfo
 %%[[4
@@ -154,7 +160,8 @@ fiAppSpineLookup fi n gappSpineGam
       (mbasi,_)
         -> mbasi
   where upd pgi asi
-          = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
+          | foHasErrs fo = asi
+          | otherwise    = asi {asgiVertebraeL = zipWith asUpdateByPolarity (tyArrowArgs $ tyCanonic emptyFI $ foVarMp fo |=> foTy fo) (asgiVertebraeL asi)}
           where pol = pgiPol pgi
                 (polargs,polres) = tyArrowArgsRes pol
                 (_,u1,u2) = mkNewLevUID2 uidStart
@@ -346,7 +353,7 @@ fitsInFI fi ty1 ty2
 %%]]
 
             -- results
-            res' fi tv t            =  trfo "res" (ppTyWithFI fi tv)
+            res' fi tv t            =  (\fo -> trfo "res" (ppTyWithFI fi tv >|< ", spine" >#< (tyConNm t) >|< ":" >#< pp (foAppSpineInfo fo) {- >-< "polgam:" >#< ppGam (fePolGam $ fiEnv fi) -}) fo)
                                        $ (fifo fi emptyFO) {foTy = tv, foMbAppSpineInfo = fiAppSpineLookup fi (tyConNm t) appSpineGam}
             res  fi    t            =  res' fi t t
 
@@ -1149,10 +1156,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                          ]
                 where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo    = fVar f fi2 tf1 tf2
-                       (as:_) = asgiSpine $ foAppSpineInfo ffo
+                       spine  = asgiSpine $ foAppSpineInfo ffo
+                       -- (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
+                       (as,_) = hdAndTl' (Debug.tr "Ty.FitsIn: trace" (vlist $ reverse $ foTrace ffo) $ panic ("Ty.FitsIn: no spine info")) spine
                        pol    = asPolarity as
-                       fi3    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi2) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
-                       afo    = fVar ff fi3 ta1 ta2
+                       fi3    = trfi "spine" ("f tf1 tf2:" >#< ppTyWithFI fi2 (foTy ffo) >-< "spine:" >#< ppCommas spine) fi2
+                       fi4    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
+                       afo    = fVar ff fi4 ta1 ta2
 %%[[4
                        rfo    = foCmbApp ffo afo
 %%][(9 codegen)
@@ -1162,7 +1172,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                   (Just _,Nothing) | hasSubCoerce
                                     -> errCoerce
                                   _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
-                              where errCoerce = err fi3 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
+                              where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
                                     hasSubCoerce = not $ lrcoeIsId $ foLRCoe afo
 %%]]
 %%]

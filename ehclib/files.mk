@@ -47,15 +47,26 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String) \
+EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable)
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid) \
 											$(patsubst %,System/%.hs,) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
+EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
+
+# to compile as HS
 EHCLIB_SYNC_ALL_PKG_SRC_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 EHCLIB_SYNC_ALL_PKG_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 
+# copy as is
+EHCLIB_SYNC_ALL_PKG_SRC_ASIS			:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
+EHCLIB_SYNC_ALL_PKG_DRV_ASIS			:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
+
+# all src & drv
+EHCLIB_SYNC_ALL_PKG_SRC					:= $(EHCLIB_SYNC_ALL_PKG_SRC_HS) $(EHCLIB_SYNC_ALL_PKG_SRC_ASIS)
+EHCLIB_SYNC_ALL_PKG_DRV					:= $(EHCLIB_SYNC_ALL_PKG_DRV_HS) $(EHCLIB_SYNC_ALL_PKG_DRV_ASIS)
+
 # Issues with:
-# Data.Monoid: fitsin error
 # Exception/Base (and others): #include Typeable.h
 # Data.Fixed: deriving errors, ...
 
@@ -86,12 +97,19 @@ EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_V
 EHCLIB_HS_ALL_SRC_HS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.hs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.hs)
 EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
 
+# as C .h include file, as is in svn repo
+EHCLIB_ASIS_ALL_SRC_ASIS				:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)include/*.h)
+EHCLIB_ASIS_ALL_DRV_ASIS				:= $(patsubst $(EHCLIB_SRC_PREFIX)%.h,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.h,$(EHCLIB_ASIS_ALL_SRC_ASIS))
+
 # as haskell, from frozen sync
 EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
+EHCLIB_FROZEN_ALL_DRV_ASIS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
 
 # all
-EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS)
+EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCLIB_ASIS_ALL_SRC_ASIS)
 EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS)
+EHCLIB_ALL_DRV_ASIS						:= $(EHCLIB_FROZEN_ALL_DRV_ASIS) $(EHCLIB_ASIS_ALL_DRV_ASIS)
+EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS)
 
 # all names, with / as separator
 #EHCLIB_ALL_NAMES_base					:= $(patsubst $(EHCLIB_BASE_SRC_PREFIX)%.chs,%,$(EHCLIB_CHS_ALL_SRC_CHS)) \
@@ -118,7 +136,7 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
-			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV_HS),) \
+			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV),) \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,pkgs="" ; \
@@ -132,6 +150,7 @@ ehclib-variant-dflt: \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
 	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 	          --pkg-build=$${pkg} \
+	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
@@ -209,10 +228,22 @@ $(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_
 	cp $< $@
 	touch $@
 
+# plainly copy .h files to install directly
+$(EHCLIB_ASIS_ALL_DRV_ASIS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.h: $(EHCLIB_SRC_PREFIX)%.h
+	mkdir -p $(@D)
+	cp $< $@
+	touch $@
+
 # extract .hs files from frozen archive
 $(EHCLIB_FROZEN_ALL_DRV_HS): $(EHCLIB_GHCSYNC_FROZEN)
 	mkdir -p $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
 	cd $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)++'`
+	touch $@
+
+# extract 'as is' files from frozen archive
+$(EHCLIB_FROZEN_ALL_DRV_ASIS): $(EHCLIB_GHCSYNC_FROZEN)
+	mkdir -p $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)
+	cd $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)++'`
 	touch $@
 
 # generate .hs from .chs via shuffle
@@ -232,7 +263,7 @@ $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH): $(EHCLIB_MKF)
 
 # template for extraction for a package
 define EHCLIB_PKG_TEMPLATE
-$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1))): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
+$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1)) $$(EHCLIB_SYNC_ALL_PKG_$(1)_ASIS)): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
 	mkdir -p $$(@D)
 	cp $$< $$@
 	touch $$@
@@ -244,7 +275,7 @@ $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(eval $(call EHCLIB_PKG_TEMPLATE,$(pkg))))
 endif
 
 # construction of frozen archive
-$(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH): $(EHCLIB_SYNC_ALL_PKG_DRV_HS)
+$(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH): $(EHCLIB_SYNC_ALL_PKG_DRV)
 	cd $(EHCLIB_BLD_SYNC_SRC_PREFIX) && tar cfz $(EHCLIB_GHCSYNC_FROZEN) *
 
 # use this target to download the ghc dist from which the frozen extract will be made
@@ -252,16 +283,20 @@ ehclib-ghc-sync-download: $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH)
 
 # use this target to extract what will be frozen
 ehclib-ghc-sync-extract:
-	cd $(EHCLIB_BLD_SYNC_PREFIX) && tar xfoj $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH) $(addprefix $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/,$(EHCLIB_SYNC_ALL_PKG_SRC_HS))
+	cd $(EHCLIB_BLD_SYNC_PREFIX) && tar xfoj $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH) $(addprefix $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/,$(EHCLIB_SYNC_ALL_PKG_SRC))
 
 # use this target to make the frozen extract from the ghc libraries, to be used as part of ehclib
 ehclib-ghc-sync-frozen: $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH)
 
+# use this target to do last 2 of the three above
+ehclib-ghc-sync2:
+	$(MAKE) ehclib-ghc-sync-extract
+	$(MAKE) ehclib-ghc-sync-frozen
+
 # use this target to do all the three above
 ehclib-ghc-sync:
 	$(MAKE) ehclib-ghc-sync-download
-	$(MAKE) ehclib-ghc-sync-extract
-	$(MAKE) ehclib-ghc-sync-frozen
+	$(MAKE) ehclib-ghc-sync2
 
 
 

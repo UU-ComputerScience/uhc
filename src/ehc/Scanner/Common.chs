@@ -689,6 +689,7 @@ pLABEL          ,
     pCCALL      ,
     pFOREIGN    ,
     pJAZY       ,
+    pPRIM       ,
     pIMPORT     ,
     pEXPORT
   :: IsParser p Token => p Token
@@ -701,10 +702,11 @@ pSAFE            = pKeyTk "safe"
 pCCALL           = pKeyTk "ccall"
 pFOREIGN         = pKeyTk "foreign"
 pJAZY            = pKeyTk "jazy"
+pPRIM            = pKeyTk "prim"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
-tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy" ]
+tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy", "prim" ]
 tokKeywStrsHS8 = [ "export", "label", "safe", "ccall" ]
 %%]
 

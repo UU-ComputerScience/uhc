@@ -247,8 +247,8 @@ clean: cleans
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(INSTALL_LIB_JAZY)
-	@echo $(JAZY_JAVA_JAZY_SRC_JAVA)
+	@echo $(EHCLIB_H_ALL_DRV_H)
+	@echo $(EHCLIB_FROZEN_ALL_DRV_ASIS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

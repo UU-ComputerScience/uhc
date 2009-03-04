@@ -115,8 +115,11 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMeta -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
   | dgiIsNewtype dgi
-  = mkCExprLet CBindPlain [mkCBind1Meta pnm meta e] ae
-  where dgi = panicJust "mkCExprStrictSatCase" $ dataGamLookup tyNm (rceDataGam env)
+  = mkCExprLet CBindPlain
+      (  [ mkCBind1Meta {- (panicJust "mkCExprStrictSatCaseMeta.mbNm" mbNm) -} {- -} pnm meta e ]
+      ++ maybe [] (\n -> [ mkCBind1Meta n meta e ]) mbNm
+      ) ae
+  where dgi = panicJust "mkCExprStrictSatCaseMeta.dgi" $ dataGamLookup tyNm (rceDataGam env)
 mkCExprStrictSatCaseMeta env mbNm meta e alts
   = case mbNm of
       Just n  -> mkCExprStrictInMeta n meta e $ mk alts

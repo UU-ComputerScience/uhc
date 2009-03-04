@@ -21,8 +21,8 @@ DATA AGItf
 %%]
 
 %%[(8 java)
-DATA ConstAGItf
-  | AGItf       const           : Const
+DATA PoolConstAGItf
+  | AGItf       const           : PoolConst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,11 +313,7 @@ DATA Note
 
 %%[(8 java)
 DATA Const
-  | Utf8 		str					: {String}
   | Int 		int					: {JInt}
-  | Long 		long				: {JLong}
-  | Float 		float				: {JFloat}
-  | Double 		double				: {JDouble}
   | String 		str					: {String}
   | Class 		classRef			: {ClassRef}
   | Class2		classRef			: {String}
@@ -328,12 +324,49 @@ DATA Const
   				methodRef			: {MethodRef}
   				args				: Types
   				mbRet				: MbType
-  | IMethod 	methodRef			: {MethodRef}
   | NameType 	name				: {String}
   				type				: {String}
+%%]
+  | Long 		long				: {JLong}
+  | Float 		float				: {JFloat}
+  | Double 		double				: {JDouble}
+  | IMethod 	methodRef			: {MethodRef}
+  | Utf8 		str					: {String}
 
+%%[(8 java)
 TYPE MbConst	= MAYBE Const
 TYPE Consts		= [Const]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pool Constant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA PoolConst
+  | Utf8 		str					: {String}
+  | Int 		int					: {JInt}
+  | String 		str					: {String}
+  | Class 		classRef			: {ClassRef}
+  | Class2		classRef			: {String}
+  | Field 		classRef			: {ClassRef}
+  				fieldRef			: {FieldRef}
+  				type				: Type
+  | Method 		classRef			: {ClassRef}
+  				methodRef			: {MethodRef}
+  				args				: Types
+  				mbRet				: MbType
+  | NameType 	name				: {String}
+  				type				: {String}
+%%]
+  | Long 		long				: {JLong}
+  | Float 		float				: {JFloat}
+  | Double 		double				: {JDouble}
+  | IMethod 	methodRef			: {MethodRef}
+
+%%[(8 java)
+TYPE MbPoolConst	= MAYBE PoolConst
+TYPE PoolConsts		= [PoolConst]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -448,10 +481,14 @@ SET AllType
 SET AllConst
   = Const MbConst Consts
 
+SET AllPoolConst
+  = PoolConst MbPoolConst PoolConsts
+
 SET AllBin
   = AllClass
     AllCode
     AllConst
+    AllPoolConst
 
 SET AllNT
   = AllBin
