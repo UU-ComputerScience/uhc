@@ -505,7 +505,7 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
  \item \verb|1| (default): basic.
  \item \verb|2|: much
  \end{itemize}
-\item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules.
+\item \verb|-i<path>|, \verb|--import-path=<path>|. Add @<path>@ to the search path for importing modules and |cpp|.
 \item \verb|-v[<level>]|, \verb|--verbose[=<level>]|. Verbosity level. Verbosity \verb|<level>|s are accumulative in their reported messages:
  \begin{itemize}
  \item \verb|0|: quiet.

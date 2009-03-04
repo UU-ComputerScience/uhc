@@ -17,7 +17,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     Floating   (pi, exp, log, sqrt, (**), logBase, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
     RealFrac   (properFraction, truncate, round, ceiling, floor),
     RealFloat  (floatRadix, floatDigits, floatRange, decodeFloat, encodeFloat, exponent, significand, scaleFloat, isNaN, isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
-    -- Ix      (range, index, unsafeIndex, inRange, rangeSize),
+    Ix         (range, index, unsafeIndex, inRange, rangeSize),
     Enum       (succ, pred, toEnum, fromEnum, enumFrom, enumFromThen, enumFromTo, enumFromThenTo),
     Functor    (fmap),
     Monad      ((>>=), (>>), return, fail),
@@ -490,7 +490,6 @@ signumReal x | x == 0    =  0
 -- class Ix, Enum
 --------------------------------------------------------------
 
-{-----------------------------
 class (Ord a) => Ix a where
     range                :: (a,a) -> [a]
         -- The unchecked variant unsafeIndex is non-standard, but useful
@@ -510,7 +509,6 @@ class (Ord a) => Ix a where
         --      (1,2) <= (2,1)
         -- but the range is nevertheless empty
         --      range ((1,2),(2,1)) = []
------------------------------}
 
 class Enum a where
     succ, pred           :: a -> a
@@ -615,42 +613,13 @@ f =<< x           = x >>= f
 
 -- data () = () deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
 
-{-----------------------------
-instance Eq () where
-    () == ()  =  True
-
-instance Ord () where
-    compare () () = EQ
-
-instance Ix () where
-    range ((),())      = [()]
-    index ((),()) ()   = 0
-    inRange ((),()) () = True
-
-instance Enum () where
-    toEnum 0           = ()
-    fromEnum ()        = 0
-    enumFrom ()        = [()]
-
-instance Read () where
-    readsPrec p = readParen False (\r -> [((),t) | ("(",s) <- lex r,
-                                                   (")",t) <- lex s ])
-
-instance Show () where
-    showsPrec p () = showString "()"
-
-instance Bounded () where
-    minBound = ()
-    maxBound = ()
------------------------------}
-
 --------------------------------------------------------------
 -- Boolean type
 --------------------------------------------------------------
 
 data Bool    = False | True
                -- deriving (Eq, Ord, Ix, Enum, Read, Show, Bounded)
-               deriving (Eq, Ord, Enum, Show)
+               deriving (Eq, Ord, Enum, Show, Read)
 
 (&&), (||)  :: Bool -> Bool -> Bool
 False && x   = False
@@ -665,6 +634,10 @@ not False    = True
 otherwise   :: Bool
 otherwise    = True
 
+instance Bounded Bool where
+    minBound = False
+    maxBound = True
+
 --------------------------------------------------------------
 -- Char type
 --------------------------------------------------------------
@@ -672,7 +645,7 @@ otherwise    = True
 -- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
-foreign import ccall "primEqInt"   primEqChar    :: Char -> Char -> Bool
+foreign import prim "primEqInt"   primEqChar    :: Char -> Char -> Bool
 foreign import ccall "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
 foreign import ccall "primUnsafeId"  primCharToInt   :: Char -> Int
 foreign import ccall "primUnsafeId"  primIntToChar   :: Int -> Char
@@ -690,13 +663,6 @@ instance Enum Char where
     fromEnum         = primCharToInt
     --enumFrom c       = map toEnum [fromEnum c .. fromEnum (maxBound::Char)]
     --enumFromThen     = boundedEnumFromThen
-
-{-
-instance Ix Char where
-    range (c,c')      = [c..c']
-    unsafeIndex (c,_) i = fromEnum i - fromEnum c
-    inRange (c,c') i  = c <= i && i <= c'
--}
 
 instance Read Char where
     readsPrec p      = readParen False
@@ -752,7 +718,7 @@ chr = toEnum
 --------------------------------------------------------------
 
 data Maybe a = Nothing | Just a
-               deriving (Eq, Ord, Show)  -- TODO: Read
+               deriving (Eq, Ord, Show, Read)  -- TODO: Read
 
 instance Functor Maybe where
     fmap f Nothing  = Nothing
@@ -906,13 +872,6 @@ instance Integral Int where
 
 #endif
 
-{-
-instance Ix Int where
-    range (m,n)          = [m..n]
-    unsafeIndex (m,_) i  = i - m
-    inRange (m,n) i      = m <= i && i <= n
--}
-
 instance Enum Int where
     succ           = boundedSucc
     pred           = boundedPred
@@ -1024,13 +983,6 @@ instance Integral Integer where
     toInt       = primIntegerToInt
 
 #endif
-
-{-
-instance Ix Integer where
-    range (m,n)          = [m..n]
-    unsafeIndex (m,_) i  = toInt (i - m)
-    inRange (m,n) i      = m <= i && i <= n
--}
 
 instance Enum Integer where
     succ x         = x + 1

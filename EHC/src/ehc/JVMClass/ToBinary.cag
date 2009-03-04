@@ -27,7 +27,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 java).WRAPPER ag import({JVMClass/AbsSyn})
-WRAPPER AGItf ConstAGItf
+WRAPPER AGItf PoolConstAGItf
 %%]
 
 %%[(8 java) hs export(jvmclass2binary)
@@ -38,10 +38,10 @@ jvmclass2binary cl
 %%]
 
 %%[(8 java) hs
-jvmconst2binary :: Const -> CP -> (Bytes,CP)
+jvmconst2binary :: PoolConst -> CP -> (Bytes,CP)
 jvmconst2binary c cp
-  =  (bin_Syn_ConstAGItf t, cp_Syn_ConstAGItf t)
-  where t = wrap_ConstAGItf (sem_ConstAGItf (ConstAGItf_AGItf c)) (Inh_ConstAGItf {cp_Inh_ConstAGItf = cp})
+  =  (bin_Syn_PoolConstAGItf t, cp_Syn_PoolConstAGItf t)
+  where t = wrap_PoolConstAGItf (sem_PoolConstAGItf (PoolConstAGItf_AGItf c)) (Inh_PoolConstAGItf {cp_Inh_PoolConstAGItf = cp})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -68,6 +68,7 @@ SEM AGItf
 SEM Class
   | Class       innerclasses.   mbInClass       =   Just (@this,Nothing)
                 (loc.isInnerClass,loc.outerNm)  =   maybe (False,hsnUnknown) (\(n,_) -> (True,n)) @lhs.mbInClass
+                loc			.	isInnerClass	:	Bool
 %%]
 
 %%[(8 java)
@@ -95,14 +96,14 @@ SEM AGItf
 data CP
   = CP
       { cpInx   :: U2
-      , cpMp    :: Map.Map Const (U2,Bytes)
+      , cpMp    :: Map.Map PoolConst (U2,Bytes)
       }
 
 emptyCP = CP 1 Map.empty
 %%]
 
 %%[(8 java) hs
-cadd :: Const -> CP -> (U2,CP)
+cadd :: PoolConst -> CP -> (U2,CP)
 cadd c cp@(CP _ m)
   = case Map.lookup c m of
       Just (i,_)
@@ -110,19 +111,19 @@ cadd c cp@(CP _ m)
       _ -> (inext,CP (inext+1) (Map.insert c (inext,binc) m))
         where (binc,(CP inext m)) = jvmconst2binary c cp
 
-caddl :: [Const] -> CP -> ([U2],CP)
+caddl :: [PoolConst] -> CP -> ([U2],CP)
 caddl cl cp = foldr (\c (is,cp) -> let (i,cp') = cadd c cp in (i:is,cp')) ([],cp) cl
 
-caddl' :: (x -> [Const]) -> ([U2] -> y) -> [x] -> CP -> ([y],CP)
+caddl' :: (x -> [PoolConst]) -> ([U2] -> y) -> [x] -> CP -> ([y],CP)
 caddl' expand implode xl cp
   = foldl (\(is,cp) x -> let (i,cp') = caddl (expand x) cp in (implode i:is,cp')) ([],cp) xl
 
-caddl2 :: [(Const,Const)] -> CP -> ([(U2,U2)],CP)
+caddl2 :: [(PoolConst,PoolConst)] -> CP -> ([(U2,U2)],CP)
 caddl2 = caddl' (\(x,y) ->[x,y]) (\[x,y] ->(x,y))
 %%]
 
 %%[(8 java)
-ATTR ConstAGItf AllBin AllInstr AllMethod AllField [ | cp: CP | ]
+ATTR PoolConstAGItf AllBin AllInstr AllMethod AllField [ | cp: CP | ]
 ATTR AllClass [ cpf: CP | | ]
 %%]
 
@@ -138,64 +139,93 @@ SEM Classes
 %%]
 
 %%[(8 java)
+-- ATTR PoolConst [ | | pinx: U2 ]
+
+SEM PoolConst
+  | Class       (loc.nmInx,lhs.cp)          =   cadd (PoolConst_Utf8 (showClassRef @classRef)) @lhs.cp
+  | Class2      (loc.nmInx,lhs.cp)          =   cadd (PoolConst_Utf8 (@classRef)) @lhs.cp
+  | String      (loc.strInx,lhs.cp)         =   cadd (PoolConst_Utf8 @str) @lhs.cp
+  | NameType    (loc.nmInx,loc.descrInx,lhs.cp)
+                                            =   let (n,cp1) = cadd (PoolConst_Utf8 @name) @lhs.cp
+                                                    (d,cp2) = cadd (PoolConst_Utf8 @type) cp1
+                                                in  (n,d,cp2)
+  | Method      (loc.clInx,loc.ntInx,lhs.cp)
+                                            =   let (c,cp1) = cadd (PoolConst_Class @classRef) @lhs.cp
+                                                    (n,cp2) = cadd (PoolConst_NameType @methodRef (mkMethDescr @args.descrL @mbRet.descrL)) cp1
+                                                in  (c,n,cp2)
+  | Field       (loc.clInx,loc.ntInx,lhs.cp)
+                                            =   let (c,cp1) = cadd (PoolConst_Class @classRef) @lhs.cp
+                                                    (n,cp2) = cadd (PoolConst_NameType @fieldRef @type.descr) cp1
+                                                in  (c,n,cp2)
+
+%%]
+
+%%[(8 java)
 SEM Class
   | Class       (loc.thisInx,loc.superInx,loc.enclNmInx,loc.enclClNmInx,loc.innerNmInx,loc.innerClNmInxL,fields.cp)
-                                            =   let (t,cp1)      = cadd (Const_Class @this) @lhs.cp
-                                                    (s,cp2)      = cadd (Const_Class @super) cp1
+                                            =   let (t,cp1)      = cadd (PoolConst_Class @this) @lhs.cp
+                                                    (s,cp2)      = cadd (PoolConst_Class @super) cp1
                                                     (e,ecl,cp3)  = case @lhs.mbInClass of
                                                                     Just (enm,_)
                                                                       -> (e,ecl,cp4)
-                                                                      where (e  ,cp3) = cadd (Const_Utf8 "EnclosingMethod") cp2
-                                                                            (ecl,cp4) = cadd (Const_Class enm) cp3
+                                                                      where (e  ,cp3) = cadd (PoolConst_Utf8 "EnclosingMethod") cp2
+                                                                            (ecl,cp4) = cadd (PoolConst_Class enm) cp3
                                                                     _ -> (0,0,cp2)
                                                     (ic,icl,cp4) = if null @lhs.innerClsRefL
                                                                    then (0,[],cp3)
-                                                                   else let (icl,cp4) = caddl' id (\[x,y] -> (x,y)) [[Const_Class i,Const_Class o] | (i,o) <- @lhs.innerClsRefL] cp3
-                                                                            (ic ,cp5) = cadd (Const_Utf8 "InnerClasses") cp4
+                                                                   else let (icl,cp4) = caddl' id (\[x,y] -> (x,y)) [[PoolConst_Class i,PoolConst_Class o] | (i,o) <- @lhs.innerClsRefL] cp3
+                                                                            (ic ,cp5) = cadd (PoolConst_Utf8 "InnerClasses") cp4
                                                                         in  (ic,icl,cp5)
                                                 in  (t,s,e,ecl,ic,icl,cp4)
-
-SEM Const
-  | Class       (loc.nmInx,lhs.cp)          =   cadd (Const_Utf8 (showClassRef @classRef)) @lhs.cp
-  | Class2      (loc.nmInx,lhs.cp)          =   cadd (Const_Utf8 (@classRef)) @lhs.cp
-  | String      (loc.strInx,lhs.cp)         =   cadd (Const_Utf8 @str) @lhs.cp
-  | NameType    (loc.nmInx,loc.descrInx,lhs.cp)
-                                            =   let (n,cp1) = cadd (Const_Utf8 @name) @lhs.cp
-                                                    (d,cp2) = cadd (Const_Utf8 @type) cp1
-                                                in  (n,d,cp2)
-  | Method      (loc.clInx,loc.ntInx,lhs.cp)
-                                            =   let (c,cp1) = cadd (Const_Class @classRef) @lhs.cp
-                                                    (n,cp2) = cadd (Const_NameType @methodRef (mkMethDescr @args.descrL @mbRet.descrL)) cp1
-                                                in  (c,n,cp2)
-  | Field       (loc.clInx,loc.ntInx,lhs.cp)
-                                            =   let (c,cp1) = cadd (Const_Class @classRef) @lhs.cp
-                                                    (n,cp2) = cadd (Const_NameType @fieldRef @type.descr) cp1
-                                                in  (c,n,cp2)
+				loc			.	thisInx			: 	U2
+				loc			.	superInx		: 	U2
+				loc			.	enclNmInx		: 	U2
+				loc			.	enclClNmInx		: 	U2
+				loc			.	innerNmInx		: 	U2
+				loc			.	innerClNmInxL	: 	{[(U2,U2)]}
 
 SEM Code
   | Code        (loc.codeNmInx,instructions.cp)
-                                            =   cadd (Const_Utf8 "Code") @lhs.cp
+                                            =   cadd (PoolConst_Utf8 "Code") @lhs.cp
 
 SEM Method
   | Method      (loc.nmInx,loc.descrInx,code.cp)
-                                            =   let (n,cp1) = cadd (Const_Utf8 @name) @lhs.cp
-                                                    (d,cp2) = cadd (Const_Utf8 (mkMethDescr @args.descrL @mbRet.descrL)) cp1
+                                            =   let (n,cp1) = cadd (PoolConst_Utf8 @name) @lhs.cp
+                                                    (d,cp2) = cadd (PoolConst_Utf8 (mkMethDescr @args.descrL @mbRet.descrL)) cp1
                                                 in  (n,d,cp2)
 
 SEM Field
   | Field       (loc.nmInx,loc.descrInx,lhs.cp)
-                                            =   let (n,cp1) = cadd (Const_Utf8 @name) @lhs.cp
-                                                    (d,cp2) = cadd (Const_Utf8 @type.descr) cp1
+                                            =   let (n,cp1) = cadd (PoolConst_Utf8 @name) @lhs.cp
+                                                    (d,cp2) = cadd (PoolConst_Utf8 @type.descr) cp1
                                                 in  (n,d,cp2)
 
 SEM Instr
-  | New 		(loc.clInx,lhs.cp)          =   cadd (Const_Class @classRef) @lhs.cp
-  | CheckCast	(loc.tpInx,lhs.cp)          =   cadd (Const_Class2 @type.descrCast) @lhs.cp
+  | New 		(loc.clInx,lhs.cp)          =   cadd (PoolConst_Class @classRef) @lhs.cp
+  | CheckCast	(loc.tpInx,lhs.cp)          =   cadd (PoolConst_Class2 @type.descrCast) @lhs.cp
   | NewArray	(loc.clInx,lhs.cp)          =   case @type.mbClass of
-                                                  Just cl -> cadd (Const_Class cl) @lhs.cp
+                                                  Just cl -> cadd (PoolConst_Class cl) @lhs.cp
                                                   _       -> (0,@lhs.cp)
-  | Invoke      (loc.methInx,lhs.cp)        =   cadd @methConst.self @lhs.cp
-  | Put Get     (loc.fldInx,lhs.cp)         =   cadd @fldConst.self @lhs.cp
+  | Invoke      (loc.methInx,lhs.cp)        =   cadd @methConst.poolconst @lhs.cp
+  | Put Get     (loc.fldInx,lhs.cp)         =   cadd @fldConst.poolconst @lhs.cp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Const to PoolConst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+ATTR Const [ | | poolconst: PoolConst ]
+
+SEM Const
+  | Int	        loc			.	poolconst	=	PoolConst_Int @int
+  | Class       loc			.	poolconst	=	PoolConst_Class @classRef
+  | Class2      loc			.	poolconst	=	PoolConst_Class2 @classRef
+  | String      loc			.	poolconst	=	PoolConst_String @str
+  | NameType    loc			.	poolconst	=	PoolConst_NameType @name @type
+  | Method	    loc			.	poolconst	=	PoolConst_Method @classRef @methodRef @args.self @mbRet.self
+  | Field	    loc			.	poolconst	=	PoolConst_Field @classRef @fieldRef @type.self
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -442,7 +472,7 @@ SEM InvokeMode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 java)
-ATTR AGItf ConstAGItf AllBin [ | | bin USE {##} {empty}: Bytes ]
+ATTR AGItf PoolConstAGItf AllBin [ | | bin USE {##} {empty}: Bytes ]
 %%]
 
 %%[(8 java)
@@ -466,7 +496,7 @@ SEM Class
 %%]
 
 %%[(8 java)
-SEM Const
+SEM PoolConst
   | Class Class2
                 loc         .   bin         =   u1 @tag ## u2 @nmInx
   | String      loc         .   bin         =   u1 @tag ## u2 @strInx
@@ -569,7 +599,7 @@ ATTR Const [ | | ldcode USE {##} {empty}: Bytes ]
 
 SEM Const
   | Int         (loc.ldcode,lhs.cp)         =   case @int of
-                                                  (-1) -> (b_ICONST_M1,@lhs.cp)
+                                                  (-1) ->    (b_ICONST_M1,@lhs.cp)
                                                   0    ->    (b_ICONST_0 ,@lhs.cp)
                                                   1    ->    (b_ICONST_1 ,@lhs.cp)
                                                   2    ->    (b_ICONST_2 ,@lhs.cp)
@@ -579,8 +609,10 @@ SEM Const
                                                   n    ->    chooseOnBitsize (b,s,o,o,b,s,o,o) n
                                                        where b c = (b_BIPUSH $ fromInteger c,@lhs.cp)
                                                              s c = (b_SIPUSH $ fromInteger c,@lhs.cp)
-                                                             o _ = let (n,cp1) = cadd @self @lhs.cp
-                                                                   in  (if posFits8 n then b_LDC (fromIntegral n) else b_LDC_W (fromIntegral n),cp1)
+                                                             o _ = let (n,cp1) = cadd @poolconst @lhs.cp
+                                                                   in  (b_ldc n,cp1)
+  | String      (loc.ldcode,lhs.cp)         =   let (n,cp1) = cadd @poolconst @lhs.cp
+                                                in  (b_ldc n,cp1)
 
 %%]
 
@@ -799,7 +831,7 @@ SEM Instr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 java)
-ATTR Const AllType InvokeMode [ | | self: SELF ]
+ATTR AllType InvokeMode [ | | self: SELF ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -844,26 +876,35 @@ SEM Flag
 %%]
 
 %%[(8 java)
-ATTR Const [ | | tag: U1 ]
+ATTR PoolConst [ | | tag: U1 ]
 %%]
 
 %%[(8 java)
-SEM Const
+SEM PoolConst
   | Utf8            loc         .   tag         =   1
   | Int             loc         .   tag         =   3
-  | Float           loc         .   tag         =   4
-  | Long            loc         .   tag         =   5
-  | Double          loc         .   tag         =   6
   | Class Class2    loc         .   tag         =   7
   | String          loc         .   tag         =   8
   | Field           loc         .   tag         =   9
   | Method          loc         .   tag         =   10
-  | IMethod         loc         .   tag         =   11
   | NameType        loc         .   tag         =   12
+%%]
+  | Float           loc         .   tag         =   4
+  | Long            loc         .   tag         =   5
+  | Double          loc         .   tag         =   6
+  | IMethod         loc         .   tag         =   11
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bytecodes: abstractions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs
+b_ldc :: Integral x => x -> Bytes
+b_ldc n = if posFits8 n then b_LDC (fromIntegral n) else b_LDC_W (fromIntegral n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bytecodes
+%%% Bytecodes: basic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 b_NOP				= u1 (0x00 :: U1)

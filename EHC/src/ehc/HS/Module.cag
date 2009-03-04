@@ -67,8 +67,8 @@ SEM Module
 SEM Module
     | Module
         loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL
-                                               || @lhs.moduleNm == hsnModPrelude
-                                               || hsnIsInPrelude @lhs.moduleNm
+                                               || @realModuleNm == hsnModPrelude
+                                               || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
                                             then @body.modImpL
                                             else modImpPrelude : @body.modImpL
@@ -95,7 +95,7 @@ ATTR AGItf Module [ | | realModuleNm: HsName ]
 
 SEM Module
     | Module
-        lhs             .   realModuleNm=   maybe @lhs.moduleNm id @name
+        loc             .   realModuleNm=   maybe @lhs.moduleNm id @name
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

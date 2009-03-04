@@ -233,7 +233,7 @@ hsnConcat       h1    h2            =   hsnFromString (show h1 ++ show h2)
 %%% HsName & module related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(hsnSplitQualify,hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+%%[8 export(hsnSplitQualify,hsnQualified,hsnPrefixQual,hsnMapQualified)
 -- qualifier (i.e. module name) and qualified part of name
 hsnSplitQualify :: HsName -> (Maybe HsName,HsName)
 hsnSplitQualify n
@@ -245,13 +245,22 @@ hsnSplitQualify n
 hsnQualified :: HsName -> HsName
 hsnQualified = snd . hsnSplitQualify
 
--- qualifier (i.e. module name) of name
-hsnQualifier :: HsName -> Maybe HsName
-hsnQualifier = fst . hsnSplitQualify
-
 -- prefix/qualify with module name, on top of possible previous qualifier
 hsnPrefixQual :: HsName -> HsName -> HsName
 hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
+
+-- map qualified part
+hsnMapQualified :: (HsName -> HsName) -> HsName -> HsName
+hsnMapQualified f qn
+  = case hsnSplitQualify qn of
+      (Nothing,n) -> f n
+      (Just q ,n) -> hsnPrefixQual q (f n)
+%%]
+
+%%[20 export(hsnQualifier,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+-- qualifier (i.e. module name) of name
+hsnQualifier :: HsName -> Maybe HsName
+hsnQualifier = fst . hsnSplitQualify
 
 -- replace/set qualifier
 hsnSetQual :: HsName -> HsName -> HsName

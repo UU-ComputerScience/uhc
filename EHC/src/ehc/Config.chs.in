@@ -99,9 +99,9 @@ verInfo v = verProg v ++ "-" ++ verDist v ++ ", " ++ verSvnRevision v
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(mkInstallFilePrefix)
-mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String
-mkInstallFilePrefix opts whatfile variant
-  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts)
+mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
+mkInstallFilePrefix opts whatfile variant pkg
+  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts) pkg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

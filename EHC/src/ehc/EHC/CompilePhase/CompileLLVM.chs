@@ -35,10 +35,10 @@ cpCompileWithLLVM modNm
               fpExec        = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
               variant       = ehcenvVariant (ehcOptEnvironment opts)
               libs          = map (\lib -> "-l " ++ lib) $
-                              [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "prim.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "llvm-gc.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "timing.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "libgc.a"
+                              [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "prim.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "llvm-gc.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "timing.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant "" ++ "libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]

@@ -25,12 +25,36 @@ public class Prim
 
 %%[(8 jazy)
     /**
-     * Arithmetic
+     * Int: rithmetic
      */
     public static int primAddInt( int v1, int v2 ) { return v1 + v2 ; }
     public static int primSubInt( int v1, int v2 ) { return v1 - v2 ; }
     public static int primMulInt( int v1, int v2 ) { return v1 * v2 ; }
     public static int primDivInt( int v1, int v2 ) { return v1 / v2 ; }
+%%]
+    
+%%[(8 jazy)
+    /**
+     * Int: comparison
+     */
+    public static Object primCmpInt( int v1, int v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(8 jazy)
+    /**
+     * String unpacking
+     */
+    public static boolean primPackedStringNull( String s ) { return s.length() == 0 ; }
+    public static char primPackedStringHead( String s ) { return s.charAt(0) ; }
+    public static String primPackedStringTail( String s ) { return s.substring(1) ; }
 %%]
     
 

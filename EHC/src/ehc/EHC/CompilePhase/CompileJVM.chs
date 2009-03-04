@@ -40,8 +40,7 @@ cpCompileJazyJVM modNm
               fpCl c          = mkOutputFPath opts c (fpathSetBase (show c) fp) "class"		-- TBD: correct names
        ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
               (do { let core  = fromJust mbCore
-                        cls   = cmod2JazyJVMModule opts core
-                        clss  = jvmclass2binary cls
+                        clss  = concatMap jvmclass2binary $ cmod2JazyJVMModule opts core
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (lift $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss)))
                   ; lift $

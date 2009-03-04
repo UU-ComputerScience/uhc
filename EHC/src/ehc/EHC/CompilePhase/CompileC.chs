@@ -69,9 +69,9 @@ cpCompileWithGCC how othModNmL modNm
                             GCC_CompileExec -> ( fpExec
                                                , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                                , Cfg.ehcGccOptsStatic
-                                               , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "lib" ++ l ++ ".a")
+                                               , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "lib" ++ l ++ ".a")
                                                      ((if ehcOptFullProgAnalysis opts then [] else pkgNmL) ++ Cfg.libnamesGccPerVariant)
-                                                 ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "lib" ++ l ++ ".a") Cfg.libnamesGcc
+                                                 ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant "" ++ "lib" ++ l ++ ".a") Cfg.libnamesGcc
                                                  ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                                , if   ehcOptFullProgAnalysis opts
                                                  then [ ]
@@ -91,14 +91,14 @@ cpCompileWithGCC how othModNmL modNm
                              = mkShellCmd
                                  (  [ Cfg.shellCmdGcc ]
                                  ++ gccDefs opts
-                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ]
-                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant "" ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant "" ]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
                                  ++ [ fpathToStr fpC ]
 %%[[(8 codegen grin)
-                                 ++ [ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant ++ "mainSil.c"
+                                 ++ [ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant "" ++ "mainSil.c"
                                     | ehcOptTarget opts == Target_FullProgAnal_Grin_C
                                     ]
 %%]]
@@ -125,15 +125,20 @@ cpPreprocessWithCPP modNm
        ; when (  ehcOptCPP opts
               || modNm == hsnModIntlPrelude      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
-              (do { let defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+              (do { let inclDirs= [ mk kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
+                                where mk (FileLocKind_Dir  ) d = d
+                                      mk (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ Cfg.mkPrefix d
+                        defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
 %%[[(99 codegen grin)
                                   ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
-                        preCPP
-                                = mkShellCmd
+                        preCPP  = mkShellCmd
                                     (  [ Cfg.shellCmdCpp ]
                                     ++ gccDefs opts
                                     ++ [ "-traditional-cpp", "-fno-show-column", "-P" ]
+%%[[(99 codegen)
+                                    ++ [ "-I" ++ d | d <- inclDirs ]
+%%]]
                                     ++ [ fpathToStr fp, fpathToStr fpCPP ]
                                     )
                   ; when (ehcOptVerbosity opts >= VerboseALot)
