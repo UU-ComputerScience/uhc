@@ -155,7 +155,8 @@ ehclib-variant-dflt: \
 	          --pkg-build=$${pkg} \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
-	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` ; \
+	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` \
+	          +RTS -K30m ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
 	      done \
 	     ,)

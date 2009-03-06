@@ -277,23 +277,34 @@ cpFindFileForFPath suffs sp mbModNm mbFp
 
 cpImportGatherFromMods
   :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
-       => (n -> CompilePhase n u i e x) -> [n] -> CompilePhase n u i e ()
+       => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev)) -> [n] -> CompilePhase n u i e ()
 cpImportGatherFromMods imp1Mod modNmL
   = do { cr <- get
-       ; cpSeq (   concat [ [forgetM (imp1Mod modNm), imps modNm] | modNm <- modNmL ]
-                ++ [cpImportScc]
+       ; cpSeq (   [ one Nothing modNm | modNm <- modNmL ]
+                ++ [ cpImportScc ]
                )
        }
-  where imps m = do { cr <- get
-                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
-                    ; cpSeq (map (\n -> cpSeq [forgetM (imp1Mod n), imps n]) (impL m))
-                    }
+  where one prev modNm
+          = do { (_,new) <- imp1Mod prev modNm
+               ; cpHandleErr
+               ; imps new modNm
+               }
+        imps prev m
+          = do { cr <- get
+               ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+               ; cpSeq (map (\n -> one prev n) (impL m))
+               }
 
 cpImportGather
   :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()
 cpImportGather imp1Mod modNm
-  = cpImportGatherFromMods imp1Mod [modNm]
+  = cpImportGatherFromMods
+      (\_ n -> do { r <- imp1Mod n
+                  ; return (r,Nothing)
+                  }
+      )
+      [modNm]
 
 crImportDepL :: (CompileUnit u n l s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache
