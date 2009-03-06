@@ -188,10 +188,10 @@ DATA Declaration                                  {- *** -}
         names                    : Names
         kind                     : Kind
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
         range                    : Range
-        callconvention           : String
+        callconvention           : FFIWay
         safety                   : {Maybe String}
         importname               : {Maybe String}
         name                     : Name
@@ -199,7 +199,7 @@ DATA Declaration                                  {- *** -}
 %%[[94
     | ForeignExport
         range                    : Range
-        callconvention           : String
+        callconvention           : FFIWay
         exportname               : {Maybe String}
         name                     : Name
         type                     : Type

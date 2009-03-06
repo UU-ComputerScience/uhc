@@ -13,11 +13,14 @@
 %%[1 export(pAGItf, HSParser)
 %%]
 
--- debugging
-%%[1 import(EH.Util.Utils, EH.Util.Pretty)
+%%[(8 codegen) import ({%{EH}Base.Target})
 %%]
 
 %%[20 export(pFixity, pAGItfImport, HSParser')
+%%]
+
+-- debugging
+%%[1 import(EH.Util.Utils, EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -435,15 +438,15 @@ pFieldDeclaration
 %%% Foreign
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 pDeclarationForeign :: HSParser Declaration
 pDeclarationForeign
   = pFOREIGN
-    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (tokMkStr c) s i (tokMkQName n) t)
-             <$ pIMPORT <*> callconv <*> pSafety <*> pFSpec
+    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (fst c) s i (tokMkQName n) t)
+             <$ pIMPORT <*> pFFIWay <*> pSafety <*> pFSpec
 %%[[94
-         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (tokMkStr c) i (tokMkQName n) t)
-             <$ pEXPORT <*> callconv <*> pFSpec
+         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (fst c) i (tokMkQName n) t)
+             <$ pEXPORT <*> pFFIWay <*> pFSpec
 %%]]
          )
   where pSafety =  (Just . tokMkStr) <$> safety <|> pSucceed Nothing
@@ -1246,6 +1249,17 @@ pSelector
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+pFFIWay :: HSParser (FFIWay,Token)
+pFFIWay
+  =   pAnyKey (\way -> (,) way <$> pKeyTk (show way)) allFFIWays
+  <?> "pFFIWay"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Names/Symbols of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1527,14 +1541,7 @@ safety
 
 callconv :: HSParser Token
 callconv
-  =   pCCALL 
-  <|> pJAZY
-  <|> pPRIM
-%%[[94
-  <|> pSTDCALL
-  <|> pDOTNET
-  <|> pJVM
-%%]]
+  =   snd <$> pFFIWay
   <?> "callconv"
 %%]
 

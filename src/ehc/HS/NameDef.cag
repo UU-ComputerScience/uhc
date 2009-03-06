@@ -43,7 +43,7 @@ SEM Declaration
     | KindSignature
         loc             .   refnames    =   @names
 %%]]
-%%[[8
+%%[[(8 codegen)
     | ForeignImport
         loc             .   refname     =   @name
 %%]]
@@ -72,8 +72,10 @@ SEM Declaration
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | Data Newtype
         loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+%%[[(20 codegen)
     | ForeignImport
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+%%]]
     | Class Instance InstanceUseImplicitly
         loc             .   instancerefname
                                         =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm
@@ -86,7 +88,7 @@ SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 
-%%[94
+%%[(94 codegen)
 SEM Declaration
     | ForeignExport
         loc             .   exportrefname
@@ -276,12 +278,12 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
                         .   idOccDefs   =   [@idOccDef]
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
         loc             .   idOccDef    =   IdOcc @refname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]
 %%]
-%%[94
+%%[(94 codegen)
     | ForeignExport
         loc             .   idOccDef    =   IdOcc @exportrefname IdOcc_Val
                         .   idOccDefs   =   [@idOccDef]

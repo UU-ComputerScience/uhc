@@ -44,6 +44,21 @@ SEM Module
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI to not allowed FFIWay
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Declaration
+    | ForeignImport
+%%[[94
+      ForeignExport
+%%]]
+        loc             .   errFFIWay   =   if maybe False (@callconvention `elem`) $ fmap targiAllowedFFI $ Map.lookup (ehcOptTarget @lhs.opts) allTargetInfoMp
+                                            then []
+                                            else [rngLift @range Err_IllegalFFIWay @callconvention]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Newtype may only have 1 con, 1 fld
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

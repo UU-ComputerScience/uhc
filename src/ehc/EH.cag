@@ -43,6 +43,9 @@
 %%[8 hs import(qualified Data.Set as Set)
 %%]
 
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
 %%[8 hs export(mkLet',mkIf'')
 %%]
 

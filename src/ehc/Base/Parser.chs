@@ -87,9 +87,10 @@ pAssocL pA pB = pOCURLY *> pListSep pCOMMA ((,) <$> pA <* pEQUAL <*> pB) <* pCCU
 %%[20 export(pModEntRel)
 pModEnt :: P ModEnt
 pModEnt
-  = ModEnt <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
-           <*> pMaybe Set.empty id (Set.fromList <$ pCOMMA <* pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
-           <*  pCCURLY
+  = (\kind occ owns -> ModEnt kind occ owns emptyRange)
+    <$  pOCURLY <*> pIdOccKind <* pCOMMA <*> pIdOcc
+    <*> pMaybe Set.empty id (Set.fromList <$ pCOMMA <* pOCURLY <*> pListSep pCOMMA pModEnt <* pCCURLY)
+    <*  pCCURLY
 
 pModEntRel :: P ModEntRel
 pModEntRel

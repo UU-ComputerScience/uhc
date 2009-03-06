@@ -249,7 +249,7 @@ instance Show AppSpineInfo where
   show _ = "AppSpineInfo"
 
 instance PP AppSpineInfo where
-  pp i = ppBracketsCommas (asgiVertebraeL i) >|< "@" >|< asgiSpinePos i
+  pp i = ppBracketsCommas (take 5 $ asgiVertebraeL i) >|< "@" >|< asgiSpinePos i
 
 emptyAppSpineInfo :: AppSpineInfo
 emptyAppSpineInfo = AppSpineInfo 0 unknownAppSpineVertebraeInfoL

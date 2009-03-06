@@ -30,6 +30,7 @@ data BasicTy
   | BasicTy_Int			-- Java: Integer/int
   | BasicTy_Char		-- Java: Character/char
   | BasicTy_Object		-- Java: Object
+  | BasicTy_String		-- Java: String
 %%]]
   deriving (Eq,Ord,Enum)
 %%]

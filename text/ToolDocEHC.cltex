@@ -53,8 +53,18 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 %%@ToolDocEHC.inEhcNotIn98Prime
 
 \subsection{Library modules}
+
+The following librariy modules incorporated in the library, either fully or partially:
+
+\begin{itemize}
+\item Package @base@: 
+\end{itemize}
+
+Some modules do not provide full functionality.
+We give an overview such modules.
+
 \subsubsection{@Prelude@}
-\subsubsection{Others}
+\subsubsection{@Data.Typeable@}
 
 \subsection{Library + runtime}
 \subsubsection{Threads}
@@ -498,6 +508,7 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
 \item \verb|--cpp|. Preprocess with \href{http://gcc.gnu.org/onlinedocs/cpp/}{cpp}.\item \verb|-h|, \verb|--help|. Print commandline help and quit.
 \item \verb|--no-prelude|. Don't assume the presence of @Prelude@.
 \item \verb|--no-recomp|. Don't check for the necessity to recompile, recompile allways instead.
+\item \verb|--no-version-check|. Don't use out of date of compiler version as a reason to recompile. This is useful for debugging the compiler together with libraries (and their generated .hi and other files) remaining the same.
 \item \verb|--numeric-version|. Print version and quit.
 \item \verb|-O[<level>]|, \verb|--optimise[=<level>]|. Optimisation level. Currently this makes little difference. Levels:
  \begin{itemize}

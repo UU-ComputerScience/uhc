@@ -52,7 +52,7 @@ public class Prim
     /**
      * String unpacking
      */
-    public static boolean primPackedStringNull( String s ) { return s.length() == 0 ; }
+    public static Object primPackedStringNull( String s ) { return RTS.mkBool( s.length() == 0 ) ; }
     public static char primPackedStringHead( String s ) { return s.charAt(0) ; }
     public static String primPackedStringTail( String s ) { return s.substring(1) ; }
 %%]

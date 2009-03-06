@@ -233,7 +233,7 @@ SEM Declaration
         loc             .   idDefOccGamInside
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
 %%[[94
       ForeignExport
@@ -461,10 +461,10 @@ SEM LeftHandSide
 %%[3
 SEM Declaration
     | TypeSignature
-%%[[8
+%%[[(8 codegen)
       ForeignImport
 %%]]
-%%[[94
+%%[[(94 codegen)
       ForeignExport
 %%]]
         type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
@@ -986,7 +986,7 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp (gamKeys @idDefOccGam) @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@kind.undefOccGam]
 %%]]
-%%[[8
+%%[[(8 codegen)
     | ForeignImport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev @type.idUseOccGam
@@ -1034,7 +1034,7 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
 %%]]
-%%[[94
+%%[[(94 codegen)
     | ForeignExport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev

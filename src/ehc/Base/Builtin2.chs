@@ -76,6 +76,10 @@ builtinKnownBoxedTyMp opts
     Map.fromList
       [ ( n ehbnPackedString
         , emptyBuiltinInfo
+%%[[(8 jazy)
+            { biJazyBasicTy    	= BasicTy_String
+            }
+%%]]
         )
 %%[[97
       , ( n ehbnFloat

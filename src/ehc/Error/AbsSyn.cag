@@ -41,7 +41,7 @@ DATA Err
 %%[1.NamesNotIntrod
 DATA Err
   | NamesNotIntrod      kind       : String
-                        nmL        : {[(PP_Doc,Maybe [(Range,Maybe PP_Doc)])]}
+                        nmL        : {[ThingAndRange PP_Doc]}
 %%]
 
 %%[(1 hmtyinfer || hmtyast)
@@ -53,7 +53,7 @@ DATA Err
 %%[1.Rest
 DATA Err
   | NamesDupIntrod      kind       : String
-                        nmL        : {[(HsName,Maybe [(Range,Maybe PP_Doc)])]}
+                        nmL        : {[ThingAndRange HsName]}
   | NestedIn            wher       : {PP_Doc}
                         errL       : ErrL
 %%]
@@ -130,8 +130,17 @@ DATA Err
   | FileNotFound        fileName   : {String}
                         locations  : {[String]}
   | AmbiguousExport     name       : {HsName}
+%%[[8
                         entities   : {[PP_Doc]}
+%%][99
+                        entities   : {[ThingAndRange HsName]}
+%%]]
   | PP                  pp         : {PP_Doc}
+%%]
+
+%%[(8 codegen)
+DATA Err
+  | IllegalFFIWay       ffiWay     : {FFIWay}
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -143,7 +152,13 @@ DATA Err
 %%][99
   | NotProvenPreds      preds      : {[(Pred,[Range])]}
 %%]]
+%%[[9
   | AmbigPreds          preds      : {[Pred]}
+%%][99
+  | AmbigPreds          preds      : {[(Pred,[Range])]}
+%%]]
+                        inQBinds   : {AssocL HsName PP_Doc}	-- quantified
+                        inBinds    : {AssocL HsName PP_Doc} -- unquantified
   | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
   | TyHasFreeTVars      ty         : {Ty}
   | DeclsNotAllowed     inside     : String

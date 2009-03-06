@@ -124,8 +124,8 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  mkEH Decl_KiSig      <$>  pCon          <*   pDCOLON    <*> pKiExpr
 %%]
 %%[8.pDecl
-                <|>  (\conv saf imp nm sig -> mkEH Decl_FFI conv saf (if null imp then show nm else imp) nm sig)
-                     <$   pFOREIGN <* pIMPORT <*> pV pJAZY
+                <|>  (\conv saf imp nm sig -> mkEH Decl_FFI (fst conv) saf (if null imp then show nm else imp) nm sig)
+                     <$   pFOREIGN <* pIMPORT <*> pFFIWay
                      <*>  (pV (   pSAFE
 %%[[94
                               <|> pUNSAFE

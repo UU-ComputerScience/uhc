@@ -19,6 +19,9 @@
 %%[1 ag import({Error/AbsSyn})
 %%]
 
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
 %%[(9 codegen) hs import({%{EH}Core})
 %%]
 
@@ -27,6 +30,14 @@
 
 %%[9
 DERIVING *     : Show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abbreviations for AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs export(ThingAndRange)
+type ThingAndRange x = (x,Maybe [(Range,Maybe PP_Doc)])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,18 +89,27 @@ mkNestErr r wher errL | null (forceEval errL) = []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ThingAndRange construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs export(mkThingAnd1Range)
+mkThingAnd1Range :: Range -> x -> ThingAndRange x
+mkThingAnd1Range r x = (x,Just [(r,Nothing)])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Err construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
-mkErr_NamesNotIntrod' :: PP n => String -> [(n,Maybe [(Range,Maybe PP_Doc)])] -> Err
+mkErr_NamesNotIntrod' :: PP n => String -> [ThingAndRange n] -> Err
 mkErr_NamesNotIntrod' m ns = Err_NamesNotIntrod m (assocLMapKey pp ns)
 
 mkErr_NamesNotIntrod :: String -> [HsName] -> Err
 mkErr_NamesNotIntrod m ns = mkErr_NamesNotIntrod' m (zip (map pp ns) (repeat Nothing))
 %%]
 %%[99 -1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
-mkErr_NamesNotIntrod' :: PP n => Range -> String -> [(n,Maybe [(Range,Maybe PP_Doc)])] -> Err
+mkErr_NamesNotIntrod' :: PP n => Range -> String -> [ThingAndRange n] -> Err
 mkErr_NamesNotIntrod' r m ns = Err_NamesNotIntrod r m (assocLMapKey pp ns)
 
 mkErr_NamesNotIntrod :: Range -> String -> [HsName] -> Err

@@ -15,6 +15,7 @@ import java.util.* ;
 import java.io.* ;
 
 import uu.jazy.core.* ;
+import uu.jazy.gui.* ;
 
 /**
  * Runtime environment for ehc, using EHC target jazy
@@ -34,6 +35,14 @@ public class RTS
         True = t ;
         False = f ;
     }
+	
+    /**
+     * Set True & False
+     */    
+    public static Object mkBool( boolean b ) {
+        return ( b ? True : False ) ;
+    }
+	
 %%]
 
 %%[(8 jazy)
@@ -53,9 +62,23 @@ public class RTS
 
 %%[(8 jazy)
     /**
-     * Entry point into RTS
+     * Entry point into RTS: visual eval
      */    
-    public static void timeEval( Object v ) {
+    public static void runVisuallyTraced( Object v ) {
+%%[[8
+        Eval.resetNrEvaluations() ;
+        EvalFollower.setupVisualTrace() ;
+%%][100
+%%]]
+        Eval.eval( v ) ;
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: plain eval with timing
+     */    
+    public static void runTimed( Object v ) {
 %%[[8
         Eval.resetNrEvaluations() ;
         long tm1 = System.currentTimeMillis() ;

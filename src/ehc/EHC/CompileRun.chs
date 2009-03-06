@@ -277,12 +277,17 @@ crPartitionNewerOlderImports modNm cr
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
   = ecuIsTopMod ecu
-    || (not $ ehcOptCheckRecompile $ crsiOpts $ crStateInfo cr)
+    || (not $ ehcOptCheckRecompile opts)
     || not (ecuCanUseHIInsteadOfHS ecu)
     || not (null newer)
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
+        opts = crsiOpts $ crStateInfo cr
 %%]
+    || (ehcOptCheckVersion opts
+        && (  not (ecuCanUseHIInsteadOfHS ecu)
+           || not (null newer)
+       )   )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation can actually be done?

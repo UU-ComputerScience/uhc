@@ -29,6 +29,9 @@
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
 %%]
 
+%%[(8 codegen) hs import ({%{EH}Base.Target})
+%%]
+
 %%[9 hs export(clGam2IdDefOccGam)
 %%]
 
