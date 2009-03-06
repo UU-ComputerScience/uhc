@@ -265,7 +265,8 @@ data EHCOpts
                               ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
-      ,  ehcOptLibFileLocPath  ::  FileLocPath
+      ,  ehcOptCheckVersion   ::  Bool				-- use out of date of compiler version when determining need for recompilation
+      ,  ehcOptLibFileLocPath ::  FileLocPath
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
@@ -391,7 +392,7 @@ defaultEHCOpts
       ,  ehcOptEmitHS           =   False
       ,  ehcOptEmitEH           =   False
       
-      ,  ehcOptImportFileLocPath =   []
+      ,  ehcOptImportFileLocPath=   []
       ,  ehcOptBuiltinNames     =   mkEHBuiltinNames (const id)
       -- ,  ehcOptUseInplace       =   True
       ,  ehcOptEnvironment      =   undefined   -- filled in at toplevel
@@ -427,7 +428,8 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
-      ,  ehcOptLibFileLocPath    =   []
+      ,  ehcOptCheckVersion     =   True
+      ,  ehcOptLibFileLocPath   =   []
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptCPP              =   False
@@ -529,6 +531,7 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[99
+     ,  Option ""   ["no-version-check"] (NoArg oNoVersionCheck)              "no check for compiler version when recompiling"
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "print show numeric version (then stop)"
      ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
@@ -723,9 +726,10 @@ ehcCmdLineOpts
          oCompileOnly           o   = o { ehcOptDoLinking                   = False    }
 %%]]
 %%[[99
+         oNoVersionCheck        o   = o { ehcOptCheckVersion                = False    }
          oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_NumericVersion }
-         oUsrFileLocPath       s o   = o { ehcOptImportFileLocPath            = ehcOptImportFileLocPath o ++ mkFileLocPath s }
-         oLibFileLocPath       s o   = o { ehcOptLibFileLocPath               = ehcOptLibFileLocPath o ++ mkFileLocPath s }
+         oUsrFileLocPath      s o   = o { ehcOptImportFileLocPath           = ehcOptImportFileLocPath o ++ mkFileLocPath s }
+         oLibFileLocPath      s o   = o { ehcOptLibFileLocPath              = ehcOptLibFileLocPath o ++ mkFileLocPath s }
          oNoPrelude             o   = o { ehcOptUseAssumePrelude            = False   }
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }

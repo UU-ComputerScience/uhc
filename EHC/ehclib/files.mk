@@ -48,7 +48,9 @@ EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
 EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable)
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid) \
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,) \
+											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
+											$(patsubst %,Unsafe/%.hs,Coerce) \
 											$(patsubst %,System/%.hs,) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
@@ -69,6 +71,7 @@ EHCLIB_SYNC_ALL_PKG_DRV					:= $(EHCLIB_SYNC_ALL_PKG_DRV_HS) $(EHCLIB_SYNC_ALL_P
 # Issues with:
 # Exception/Base (and others): #include Typeable.h
 # Data.Fixed: deriving errors, ...
+# Numeric: needs (e.g.) showSigned
 
 ###########################################################################################
 # files, intermediate files, for ehclib

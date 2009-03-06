@@ -60,7 +60,10 @@ ppMsgErr msg err = msg  >|< ":" >-< indent 2 err
 %%]
 %%[99 -1.ppMsgErr hs
 ppMsgErr :: PP msg => msg -> PP_Doc -> Range -> PP_Doc
-ppMsgErr msg err r = r  >|< ":" >-< indent 2 (msg >|< ":" >-< indent 2 err)
+ppMsgErr msg err r
+  = mke (msg >|< ":" >-< indent 2 err)
+  where mke x | isEmptyRange r = x
+              | otherwise      = r  >|< ":" >-< indent 2 x
 %%]
 
 %%[(1 hmtyinfer || hmtyast).ppUnifyErr hs
@@ -120,7 +123,13 @@ ppNmAndRange :: PP x => [(x,Maybe [(Range,Maybe PP_Doc)])] -> PP_Doc
 ppNmAndRange nmL
   = case catMaybes $ map snd $ nmL of
       [] -> ppListSep "" "" ", " $ map fst $ nmL
-      _  -> vlist [ n >|< ":" >#< maybe empty (vlist . map (\(r,mbinfo) -> maybe (pp r) (\i -> r >#< ppParens i) mbinfo)) rs | (n,rs) <- nmL ]
+      _  -> vlist [ n >|< (if null rs then empty else ":" >#< vlist rs)
+                  | (n,mbrs) <- nmL
+                  , let rs = maybe [] (\rs -> [ maybe (pp r) (\i -> r >#< ppParens i) mbinfo
+                                              | (r,mbinfo) <- rs, not (isEmptyRange r)
+                                              ]
+                                      ) mbrs
+                  ]
 
 strCapHeading :: String -> String -> String
 strCapHeading kind title@(ht:tt)
@@ -292,12 +301,26 @@ SEM Err
 %%]]
   | AmbiguousExport     lhs     .  pp   =   ppMsgErr    "Ambiguous export"
                                                         (    "name   :" >#< @name
+%%[[8
                                                          >-< "exports:" >#< ppCommas @entities
+%%][99
+                                                         >-< "exports:" >#< ppNmAndRange @entities
+%%]]
                                                         )
 %%[[99
                                                         @range
 %%]]
   | PP                  lhs     .  pp   =   @pp
+%%]
+
+%%[(8 codegen)
+SEM Err
+  | IllegalFFIWay       lhs     .  pp   =   ppMsgErr    "Cannot foreign interface"
+                                                        (    "to:" >#< @ffiWay
+                                                        )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -320,7 +343,13 @@ SEM Err
                                                         @range
 %%]]
   | AmbigPreds          lhs     .  pp   =   ppMsgErr    "Predicates leading to ambiguous type"
-                                                        (    "preds:" >#< vlist @preds
+%%[[9
+                                                        (    "preds                :" >#< vlist @preds
+%%][99
+                                                        (    "preds                :" >#< (ppAssocLV $ assocLMapElt vlist @preds)
+%%]]
+                                                        >-<  "bindings             :" >#< ppAssocLV @inBinds
+                                                        >-<  "bindings (quantified):" >#< ppAssocLV @inQBinds
                                                         )
 %%[[99
                                                         @range

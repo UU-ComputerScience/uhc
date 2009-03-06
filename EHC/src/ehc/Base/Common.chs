@@ -865,14 +865,30 @@ mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
 %%]
 
 %%[1
+show2Pos :: Pos -> Pos -> String
+show2Pos p1 p2
+  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2 
+                               then mk (show (line p1))                          (Just $ show (column p1) ++ "-" ++ show (column p2))
+                               else mk (show (line p1) ++ "-" ++ show (line p2)) Nothing
+  | otherwise                =      mk (show (line p1))                          (Just $ show (column p1))
+  where mk l c = file p1 ++ ":" ++ l ++ maybe "" (":" ++) c
+%%]
+
+%%[1
 instance Show Range where
-  show (Range_Range p _) = show p
+  show (Range_Range p q) = show2Pos p q
   show Range_Unknown     = "??"
   show Range_Builtin     = "builtin"
 
 instance PP Range where
-  pp (Range_Range p _) = pp p
-  pp r                 = pp $ show r
+  pp = pp . show
+%%]
+
+%%[1 export(isEmptyRange)
+isEmptyRange :: Range -> Bool
+isEmptyRange  Range_Unknown    = True
+isEmptyRange (Range_Range p _) = p == noPos
+isEmptyRange  _                = False
 %%]
 
 %%[99
@@ -896,17 +912,20 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
-%%[99 export(rangePlus)
+%%[99 export(rangeUnion,rangeUnions)
 posMax, posMin :: Pos -> Pos -> Pos
 posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
 posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
 
-rangePlus :: Range -> Range -> Range
-rangePlus (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
+rangeUnion :: Range -> Range -> Range
+rangeUnion (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
                                                   where e1' = if e1 == noPos then b1 else e1
                                                         e2' = if e2 == noPos then b2 else e2
-rangePlus Range_Unknown       r2                  = r2
-rangePlus r1                  _                   = r1
+rangeUnion Range_Unknown       r2                  = r2
+rangeUnion r1                  _                   = r1
+
+rangeUnions :: [Range] -> Range
+rangeUnions = foldr1 rangeUnion
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

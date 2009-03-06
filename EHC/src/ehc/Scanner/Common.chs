@@ -27,6 +27,11 @@ Note: everything is exported.
 %%[5.Scanner -1.Scanner import({%{EH}Scanner.Scanner}) export(module {%{EH}Scanner.Scanner})
 %%]
 
+%%[(8 codegen) import (EH.Util.ParseUtils)
+%%]
+%%[(8 codegen) import ({%{EH}Base.Target})
+%%]
+
 %%[97 import (Data.Ratio)
 %%]
 
@@ -686,10 +691,7 @@ tokOpStrsHS7   = [  ]
 pLABEL          ,
     pLETSTRICT  ,
     pSAFE       ,
-    pCCALL      ,
     pFOREIGN    ,
-    pJAZY       ,
-    pPRIM       ,
     pIMPORT     ,
     pEXPORT
   :: IsParser p Token => p Token
@@ -699,15 +701,23 @@ pLABEL          ,
 pLABEL           = pKeyTk "label"
 pLETSTRICT       = pKeyTk "letstrict"
 pSAFE            = pKeyTk "safe"
-pCCALL           = pKeyTk "ccall"
 pFOREIGN         = pKeyTk "foreign"
-pJAZY            = pKeyTk "jazy"
-pPRIM            = pKeyTk "prim"
 pIMPORT          = pKeyTk "import"
 pEXPORT          = pKeyTk "export"
 
-tokKeywStrsEH8 = [ "letstrict", "foreign", "import", "jazy", "prim" ]
-tokKeywStrsHS8 = [ "export", "label", "safe", "ccall" ]
+tokKeywStrsEH8
+  =  [ "letstrict", "foreign", "import" ]
+%%[[(8 codegen)
+  ++ map show allFFIWays
+%%]]
+tokKeywStrsHS8 = [ "export", "label", "safe" ]
+%%]
+
+%%[(8 codegen)
+pFFIWay :: IsParser p Token => p (FFIWay,Token)
+pFFIWay
+  =   pAnyKey (\way -> (,) way <$> pKeyTk (show way)) allFFIWays
+  <?> "pFFIWay"
 %%]
 
 %%[9
@@ -792,25 +802,17 @@ tokKeywStrsEH95 = [ "deriving" ]
 %%]
 
 %%[94
-pDOTNET         ,
-    pUNSAFE     ,
+pUNSAFE     ,
     pTHREADSAFE ,
-    pSTDCALL    ,
-    pJVM        ,
     pDYNAMIC    ,
     pWRAPPER    ,
     pSTATIC     ,
     pH          ,
-    pAMPERSAND  ,
-    pCPLUSPLUS
+    pAMPERSAND
   :: IsParser p Token => p Token
 
 pUNSAFE          = pKeyTk "unsafe"
 pTHREADSAFE      = pKeyTk "threadsafe"
-pDOTNET          = pKeyTk "dotnet"
-pJVM             = pKeyTk "jvm"
-pSTDCALL         = pKeyTk "stdcall"
-pCPLUSPLUS       = pKeyTk "cplusplus"
 pDYNAMIC         = pKeyTk "dynamic"
 pWRAPPER         = pKeyTk "wrapper" -- not a HS keyword, but only for foreign function entity
 pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign function entity
@@ -818,7 +820,7 @@ pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 
 tokKeywStrsEH94 = [  ]
-tokKeywStrsHS94 = [ "unsafe", "threadsafe", "stdcall", "cplusplus", "dynamic", "jvm" ]
+tokKeywStrsHS94 = [ "unsafe", "threadsafe", "dynamic" ]
 %%]
 
 %%[90

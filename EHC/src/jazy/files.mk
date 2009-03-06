@@ -24,8 +24,10 @@ JAZY_BLD_JAZY_PREFIX			:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)jazy/
 JAZY_PKG_NAME						:= jazy
 JAZY_PKG_CORE_NAME					:= uu.jazy.core
 JAZY_PKG_EHC_NAME					:= uu.jazy.ehc
+JAZY_PKG_GUI_NAME					:= uu.jazy.gui
 JAZY_PKG_CORE_DIRNAME				:= $(subst .,/,$(JAZY_PKG_CORE_NAME))
 JAZY_PKG_EHC_DIRNAME				:= $(subst .,/,$(JAZY_PKG_EHC_NAME))
+JAZY_PKG_GUI_DIRNAME				:= $(subst .,/,$(JAZY_PKG_GUI_NAME))
 
 # install location
 INSTALLABS_JAZY_LIB_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$(EHC_VARIANT_ASPECTS),$(EHC_VARIANT_TARGET))
@@ -38,8 +40,10 @@ INSTALL_LIB_JAZY					:= $(call FUN_MK_JAVALIB_FILENAME,$(INSTALLABS_JAZY_LIB_PRE
 ###########################################################################################
 
 # sources
-JAZY_JAVA_JAZY_SRC_JAVA			:= $(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_CORE_DIRNAME)/*.java)
+JAZY_JAVA_JAZY_SRC_JAVA			:= $(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_CORE_DIRNAME)/*.java) \
+									$(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_GUI_DIRNAME)/*.java)
 JAZY_JAVA_JAZY_SRC_CJAVA		:= $(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_CORE_DIRNAME)/*.cjava) \
+									$(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_GUI_DIRNAME)/*.cjava) \
 									$(wildcard $(SRC_JAZY_PREFIX)$(JAZY_PKG_EHC_DIRNAME)/*.cjava)
 
 # derived

@@ -166,6 +166,7 @@ SEM *
 		loc.prUid  						: PredOccId
 		loc.quantPrOccL 				: {[PredOcc]}
 		loc.quValGam_ex_ 				: ValGam
+		loc.range	  					: Range
 		loc.recKnTlTy  					: Ty
 		loc.recTy  						: Ty
 		loc.recTyExts 					: {AssocL HsName Ty}

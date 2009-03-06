@@ -37,14 +37,22 @@ cpCompileJazyJVM modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               mbCore          = ecuMbCore ecu
+%%[[8
               fpCl c          = mkOutputFPath opts c (fpathSetBase (show c) fp) "class"		-- TBD: correct names
+%%][20
+              fpCl c          = mkOutputFPath opts c (maybe mFp (\d -> fpathPrependDir d mFp) (fpathMbDir fp)) "class"
+                              where mFp = mkFPath c
+%%]]
        ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
               (do { let core  = fromJust mbCore
                         clss  = concatMap jvmclass2binary $ cmod2JazyJVMModule opts core
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (lift $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss)))
                   ; lift $
-                    mapM_ (\(m,b) -> writeBinaryToFile (bytesToString b) (fpCl m))
+                    mapM_ (\(m,b) -> do { let fpModCl = fpCl m
+                                        ; fpathEnsureExists fpModCl
+                                        ; writeBinaryToFile (bytesToString b) fpModCl
+                                        })
                           clss
                   }
               )

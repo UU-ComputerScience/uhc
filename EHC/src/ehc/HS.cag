@@ -43,6 +43,9 @@
 %%[7 hs export(RowRecordExpressionUpdate(..), RowRecordExpressionUpdates, RowRecordPatternBinding(..), RowRecordPatternBindings, RowTypeUpdate(..), RowTypeUpdates)
 %%]
 
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
 %%[9 hs export(ContextItem(..), ContextItems)
 %%]
 

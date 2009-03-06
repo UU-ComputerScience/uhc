@@ -168,7 +168,7 @@ SEM Declaration
         loc         .   mkEHSig     =   \n -> rngLift @range EH.Decl_KiSig n @kind.eh
         lhs         .   eh          =   map @mkEHSig @refnames
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @refname @type.eh
         lhs         .   eh          =   [@eh]
@@ -207,7 +207,7 @@ SEM Declaration
         loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @simpletype.typevariables)
         lhs         .   eh          =   [@eh]
 %%]
-%%[94
+%%[(94 codegen)
     | ForeignExport
         loc         .   (ent,entErrs)
                                     =   parseForeignEnt $ maybe (show @name) id @exportname
