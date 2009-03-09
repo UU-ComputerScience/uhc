@@ -203,7 +203,6 @@ SEM GrExpr
 SEM GrVar
   | Var        lhs  .  grTrf  = maybe (GrVar_Var @nm) (\t -> GrVar_KnownTag t) (mbSubstTag @nm @lhs.subst)
 
-
 SEM GrBind
   | Bind  expr . subst     = Map.empty
 SEM GrGlobal

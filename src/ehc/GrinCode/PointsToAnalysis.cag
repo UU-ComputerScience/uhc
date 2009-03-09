@@ -220,7 +220,8 @@ SEM GrVar
   | KnownTag     lhs.tag   =  @tag.self
   | * - KnownTag lhs.tag   =  error "GrVar tag"
   | Var          lhs.var   =  getNr @nm
-  | * - Var      lhs.var   =  error "GrVar name"
+  | Ignore       lhs.var   =  0
+  | KnownTag     lhs.var   =  error "var taken from KnownTag"
 
 %%]
 

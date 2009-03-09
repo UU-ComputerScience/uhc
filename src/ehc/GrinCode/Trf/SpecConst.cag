@@ -1,0 +1,180 @@
+%%[doesWhat doclatex
+
+Specialize functions that are called with constant arguments
+
+%%]
+
+
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}GrinCode.Trf.SubstExpr(substExpr)})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SpecConst} export(specConst)
+specConst :: GrModule -> GrModule
+specConst grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                       (Inh_GrAGItf)
+                  in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+%%[(8 codegen grin)
+
+-- collect global constants
+
+ATTR AllGrVal AllGrTag [ | | copy: SELF ]
+
+
+ATTR AllGlobal [ | | constMap USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+
+SEM GrGlobal 
+  | Global  lhs.constMap = Map.singleton @nm @val.copy
+
+-- distribute global constants
+
+ATTR AllBind AllExpr AllGlobal [ constMap : {Map.Map HsName GrVal} | | ]
+
+SEM GrModule
+  | Mod   globalL.constMap = @globalL.constMap
+          bindL.constMap = @globalL.constMap
+
+
+-- find the variables in a value list
+
+ATTR GrVal  [ | | mbVar  : {Maybe HsName} ]
+ATTR GrValL [ | | mbVars : {[Maybe HsName]} ]
+
+SEM GrVal
+  | Var   lhs.mbVar = Just @nm
+  | *-Var lhs.mbVar = Nothing
+  
+SEM GrValL
+  | Nil   lhs.mbVars = []
+  | Cons  lhs.mbVars = @hd.mbVar : @tl.mbVars 
+  
+
+-- collect specializable calls
+
+
+{
+mapUnionWithSetUnion = Map.unionWith Set.union	
+
+hasJust :: [Maybe a] -> Bool
+hasJust []             = False
+hasJust (Just _  : _ ) = True
+hasJust (Nothing : xs) = hasJust xs
+}
+
+
+ATTR AllBind AllExpr AllGlobal [ | | specializableCalls USE {`mapUnionWithSetUnion`} {Map.empty} : {Map.Map HsName (Set.Set [Maybe HsName])} ]
+
+SEM GrExpr
+  | Call  loc.args2 :                {[Maybe HsName]}
+          loc.args2 =                let args = @argL.mbVars
+                                         args2 = [ maybe Nothing (\arg -> if Map.member arg @lhs.constMap then  mbarg else Nothing ) mbarg  
+                                                 | mbarg <- args
+                                                 ]
+                                     in  args2
+                                     
+          lhs.specializableCalls =   if hasJust @loc.args2
+                                     then Map.singleton @nm (Set.singleton @loc.args2)
+                                     else Map.empty
+                                          
+          lhs.grTrf              =   if hasJust @loc.args2
+                                     then let m = fromJust (Map.lookup @nm   @lhs.specializedCalls)
+                                              i = fromJust (Map.lookup @loc.args2 m)
+                                              nm2 = hsnSuffix @nm ("~spec" ++ show i)
+                                              args3 = [ a | (a,Nothing) <- zip @argL.grTrf @loc.args2 ]
+                                          in  GrExpr_Call nm2 args3
+                                     else  @loc.grTrf
+                                          
+
+SEM GrVal
+  | Node  loc.args2 :                {[Maybe HsName]}
+          loc.args2 =                let args = @fldL.mbVars
+                                         args2 = [ maybe Nothing (\arg -> if Map.member arg @lhs.constMap then  mbarg else Nothing ) mbarg
+                                                 | mbarg <- args
+                                                 ]
+                                     in  args2
+  
+          lhs.specializableCalls  =  maybe Map.empty
+                                           (\nm -> if  hasJust @loc.args2
+                                                   then Map.singleton nm (Set.singleton @loc.args2)
+                                                   else Map.empty
+                                           )
+                                           @tag.mbFName
+          lhs.grTrf               =  maybe @loc.grTrf
+                                           (\nm -> if  hasJust @loc.args2
+                                                   then let m = fromJust (Map.lookup  nm        @lhs.specializedCalls)
+                                                            i = fromJust (Map.lookup @loc.args2 m)
+                                                            nm2 = hsnSuffix nm ("~spec" ++ show i)
+                                                            args3 = [ a | (a,Nothing) <- zip @fldL.grTrf @loc.args2 ]
+                                                        in  GrVal_Node (GrTag_Fun nm2) args3
+                                                   else @loc.grTrf
+                                           )
+                                           @tag.mbFName
+
+ATTR GrTag [ | | mbFName : {Maybe HsName} ]
+
+SEM GrTag
+  |     Fun   lhs . mbFName = Just @nm
+  | * - Fun   lhs . mbFName = Nothing
+
+
+
+ATTR AllBind AllExpr AllGlobal [ specializedCalls : {Map.Map HsName (Map.Map [Maybe HsName] Int)} | | ]
+
+SEM GrModule
+  | Mod   loc.spc  = let m =  mapUnionWithSetUnion  @globalL.specializableCalls  @bindL.specializableCalls  
+                     in  Map.map numberset m
+          globalL.specializedCalls = @loc.spc
+          bindL  .specializedCalls = @loc.spc
+--        lhs.grTrf = trace ("specializable: " ++ show @loc.spc) @loc.grTrf
+
+{
+numberset :: Ord a => Set.Set a -> Map.Map a Int	
+numberset s =  Map.fromList (zip (Set.toList s) [1..])
+}
+
+
+-- At each binding, make duplicates
+
+SEM GrBindL
+  | Cons   lhs.grTrf = makeDuplics @lhs.specializedCalls @hd.grTrf ++ @tl.grTrf
+
+{
+makeDuplics :: Map.Map HsName (Map.Map [Maybe HsName] Int) -> GrBind -> [GrBind]
+makeDuplics infomap b@(GrBind_Bind nm ann args body)
+  =  let  mbmap = Map.lookup nm infomap
+          pairs  = maybe [] Map.toAscList mbmap
+     in   b : [  let nm2   = hsnSuffix nm ("~spec" ++ show i)
+                     argPairs = zip args mbargs
+                     args2  =              [ a     | (a,Nothing) <- argPairs ]
+                     substi = Map.fromList [ (a,b) | (a,Just b ) <- argPairs ] 
+                     body2  = substExpr substi body
+                 in  GrBind_Bind nm2 ann args2 body2
+              |  (mbargs, i) <- pairs
+              ]
+makeDuplics infomap b@(GrBind_Rec bs) = [b]
+	
+}
+
+
+
+%%]
+
