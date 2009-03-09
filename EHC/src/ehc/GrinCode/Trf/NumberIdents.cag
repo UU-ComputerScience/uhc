@@ -156,8 +156,9 @@ SEM GrPatAlt
   			   loc  .  newNames                   :  {[HsName]}
 
 SEM GrPatLam
-  | VarNode    (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
+  | VarNode    (loc.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
   			   loc  .  newNames                   :  {[HsName]}
+  			   loc  .  genVarMap                  :  {NameMapping}
 
   | Var
     BasicNode
@@ -219,6 +220,8 @@ SEM GrPatAlt
   
 SEM GrPatLam
   | Var         lhs  .  grTrf  =  GrPatLam_Var  @newName
+  | VarNode     fldL .  varMap = @loc.genVarMap
+  -- | VarNode     lhs  .  grTrf  =  GrPatLam_VarNode @fldL.grTrf
   | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode @annot @newName
   | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode @newName
   | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode @newName

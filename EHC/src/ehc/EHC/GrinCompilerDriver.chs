@@ -43,6 +43,10 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
@@ -73,7 +77,9 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly(SilModule)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.Shortcut(shortcut)})
+%%[(8 codegen grin) import({%{EH}Silly.InlineExpr(inlineExpr)})
+%%]
+%%[(8 codegen grin) import({%{EH}Silly.ElimUnused(elimUnused)})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.GroupAllocs(groupAllocs)})
 %%]
@@ -109,13 +115,13 @@ doCompileGrin input opts
   = drive (initialState opts input) putErrs $
         do 
          { options <- gets gcsOpts
-
          ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
 %%[[9                                             
 		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
 		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin "-113-memberSelected"
+		 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
 %%]]
@@ -125,13 +131,23 @@ doCompileGrin input opts
 %%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline"
+         ; transformCodeInline                      "Inline" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-120-invariant"
+
+         -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-120-specConst"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
+
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-121-evalstored"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-122-unusedExprDropped"
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-123-numbered"
+
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-123-evalstored"
+         ; transformCode         applyUnited        "ApplyUnited"      ; caWriteGrin "-124-applyUnited"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-125-unusedExprDropped"
+         
+         -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-126-specConst"
+         
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 
@@ -155,11 +171,12 @@ doCompileGrin input opts
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
+
          ; when (ehcOptFullProgAnalysis options)
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly shortcut           "Shortcut"         ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly elimUnused         "ElimUnused"       ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
+                ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM

@@ -1,6 +1,6 @@
 %%[doesWhat doclatex
 
-Don't do \textit{EVAL} on pointers that bind the result of a previous \textit{STORE}.
+do not do \textit{EVAL} on pointers that bind the result of a previous \textit{STORE}.
 Instead, do a \textit{CALL} if the stored node has an F-tag or an A-tag,
 or do a \textit{UNIT} of the stored node for other tags.
 
@@ -107,7 +107,7 @@ SEM GrExpr
   | * - UpdateUnit
         FetchUpdate lhs.mbUpdatedVar  =  Nothing
 
-  | Eval            lhs.grTrf         =  if Map.findWithDefault 0 @nm @lhs.localFreq >= 2
+  | Eval            lhs.grTrf         =  if Map.findWithDefault 0 @nm @lhs.localFreq >= 2    -- defined, and used since then
                                          then @loc.grTrf
                                          else maybe @loc.grTrf
                                                     evaluateNode
