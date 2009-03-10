@@ -11,6 +11,59 @@ SEM AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils: factored out code         
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+ehSection :: SemApp eh
+  => UID -> Range
+  -> RngLiftArg (HsName -> eh)
+  -> RngLiftArg (HsName -> ehp)
+  -> RngLiftArg (ehp -> eh -> eh)
+  -> Maybe eh -> eh -> Maybe eh
+  -> eh
+ehSection uniq range semvar sempatvar semlam left op right
+  = case (left,right) of
+      -- (Just l ,Just r ) -> mkRngParApp range [op,l,r]
+      (Nothing,Just r ) -> rngLift range semlam np (mkRngParApp range [op,ne,r])
+      (Just l ,Nothing) -> mkRngParApp range [op,l]
+      (Nothing,Nothing) -> op
+  where n  = mkHNmHidden $ mkHNm ("x_" ++ show uniq)
+        ne = rngLift range semvar n
+        np = rngLift range sempatvar n
+%%]
+
+%%[1 hs
+ehTupleConstructor :: SemApp eh
+  => Range -> Int -> RngLiftArg (HsName -> eh) -> RngLiftArg (HsName -> ehp) -> RngLiftArg (ehp -> eh -> eh)
+%%[[1
+  -> RngLiftArg (HsName -> eh)
+%%][7
+  -> ([ehp] -> eh -> eh) -> RngLiftArg (r -> eh) -> RngLiftArg (r -> Maybe HsName -> eh -> r) -> RngLiftArg r
+%%]]
+  -> eh
+ehTupleConstructor range arity semvar sempatvar semlam
+%%[[1
+        semcon
+%%][7
+        semtop semrec semrecext semrecempty
+%%]]
+  = foldr (rngLift range semlam) rec ps
+  where ns     = take arity hsnLclSupply
+        ps     = map (rngLift range sempatvar) ns
+        rec    = mkt (map (rngLift range semvar) ns)
+%%[[1
+        mkt ns = mkRngParApp range (rngLift range semcon (hsnProd arity) : ns)
+%%][7
+        mkt ns = semtop ps
+                 $ rngLift range semrec
+                 $ foldl (\r e -> rngLift range semrecext r Nothing e)
+                         (rngLift range semrecempty)
+                         ns
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Modules         
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -115,7 +168,7 @@ SEM Declaration
         loc         .   mkEHSig     =   \n -> rngLift @range EH.Decl_KiSig n @kind.eh
         lhs         .   eh          =   map @mkEHSig @refnames
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @refname @type.eh
         lhs         .   eh          =   [@eh]
@@ -154,7 +207,7 @@ SEM Declaration
         loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @simpletype.typevariables)
         lhs         .   eh          =   [@eh]
 %%]
-%%[94
+%%[(94 codegen)
     | ForeignExport
         loc         .   (ent,entErrs)
                                     =   parseForeignEnt $ maybe (show @name) id @exportname
@@ -232,6 +285,14 @@ ATTR Types [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
 
 ATTR Type [ | | eh: {EH.TyExpr} ]
 
+ATTR MaybeType [ | | eh USE {`const`} {Nothing}: {Maybe EH.TyExpr} ]
+
+SEM MaybeType
+    | Just
+        lhs         .   eh          =   Just @just.eh
+%%]
+
+%%[1
 SEM Type
     | NormalApplication
         lhs         .   eh          =   mkApp (@function.eh : @arguments.eh)
@@ -248,6 +309,22 @@ SEM Type
                                                  else (t, [rngLift @range Err_MalformedPred @leftType.pp])
                                         else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
 %%]
+    | SectionApplication
+        loc         .   eh          =   ehSection
+                                            @lUniq_1_nm @range
+%%[[1
+                                            (panic "HS.ToEH.Type.SectionApplication.TyExpr_Var")		-- guaranteed by parsing not to happend
+%%][3
+                                            EH.TyExpr_Var
+%%]]
+                                            (rngAntilift id)
+%%[[1
+                                            (panic "HS.ToEH.Type.SectionApplication.TyExpr_Lam")		-- guaranteed by parsing not to happend
+%%][11
+                                            EH.TyExpr_Lam
+%%]]
+                                            @leftType.eh @operator.eh @rightType.eh
+        loc         .   lUniq_1_nm  :   UNIQUEREF gUniq
     | Constructor
         lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
     | Parenthesized
@@ -290,6 +367,14 @@ SEM Type
 %%[9
     | Qualified
         lhs         .   eh          =   foldr mk1Arrow @type.eh @context.ehTy
+%%]
+%%[11
+    | TupleConstructor
+        loc         .   eh          =   ehTupleConstructor @range @arity EH.TyExpr_Var (rngAntilift id)
+                                            EH.TyExpr_Lam
+                                            (\ps r -> {- mkArrow (map (rngLift @range EH.TyExpr_Var) ps) -} r)
+                                            (rngAntilift $ \row -> mk1ConApp hsnRec (rngLift @range EH.TyExpr_Row row))
+                                            EH.RowTyExpr_Ext EH.RowTyExpr_Empty
 %%]
     | Implicits
         lhs         .   eh          =   rngLift @range EH.TyExpr_Impls
@@ -530,19 +615,12 @@ SEM Expression
     | Constructor
         loc         .   eh          =   rngLift @range EH.Expr_Con @refname
     | TupleConstructor
-        loc         .   eh          =   let ns     = take @arity hsnLclSupply
+        loc         .   eh          =   ehTupleConstructor @range @arity EH.Expr_Var EH.PatExpr_Var EH.Expr_Lam
 %%[[1
-                                            mkt ns = ehExpConApp @range (hsnProd @arity) ns
+                                            EH.Expr_Con
 %%][7
-                                            mkt ns = rngLift @range
-                                                             EH.Expr_Rec
-                                                             (foldl (\r e -> rngLift @range EH.RecExpr_Ext r Nothing e)
-                                                                    (rngLift @range EH.RecExpr_Empty)
-                                                                    ns)
+                                            (\_ x -> x) EH.Expr_Rec EH.RecExpr_Ext EH.RecExpr_Empty
 %%]]
-                                        in  foldr (rngLift @range EH.Expr_Lam)
-                                                  (mkt (map (rngLift @range EH.Expr_Var) ns))
-                                                  (map (rngLift @range EH.PatExpr_Var) ns)
     | Parenthesized
         loc         .   eh          =   rngLift @range EH.Expr_Parens @expression.eh
     | NormalApplication
@@ -552,15 +630,11 @@ SEM Expression
     | InfixApplicationChainTop
         loc         .   eh          =   @ehFromOpChain
     | SectionApplication
-        loc         .   eh          =   let n  = mkHNmHidden $ mkHNm ("x_" ++ show @lUniq_1_nm)
-                                            ne = rngLift @range EH.Expr_Var n
-                                            np = rngLift @range EH.PatExpr_Var n
-                                        in  case (@leftExpression.eh,@rightExpression.eh) of
-                                              -- (Just l ,Just r ) -> mkRngParApp @range [@operator.eh,l,r]
-                                              (Nothing,Just r ) -> rngLift @range EH.Expr_Lam np (mkRngParApp @range [@operator.eh,ne,r])
-                                              (Just l ,Nothing) -> mkRngParApp @range [@operator.eh,l]
-                                              (Nothing,Nothing) -> @operator.eh
-		loc			.	lUniq_1_nm	:	UNIQUEREF gUniq
+        loc         .   eh          =   ehSection
+                                            @lUniq_1_nm @range
+                                            EH.Expr_Var EH.PatExpr_Var EH.Expr_Lam
+                                            @leftExpression.eh @operator.eh @rightExpression.eh
+        loc         .   lUniq_1_nm  :   UNIQUEREF gUniq
     | Lambda
         loc         .   eh          =   foldr (rngLift @range EH.Expr_Lam) @expression.eh @patterns.eh
     | Let

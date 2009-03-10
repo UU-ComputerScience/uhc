@@ -4,14 +4,14 @@ need to be accompanied by an explicit type signature.
 For example, the example from the introduction:
 
 %%[[wrap=code
-%%@[file:test/1/sig-fail.eh%%]
+%%@[file:test/regress/1/sig-fail.eh%%]
 %%]
 is accepted by this version of EH.
 From now on, and when relevant,
 we will also give the output as produced by the corresponding EH compiler,
 because additional type information is inferred:
 \begin{TT}
-%%2ppfile(test/1/sig-fail.eh%%)
+%%2ppfile(test/regress/1/sig-fail.eh%%)
 \end{TT}
 
 The idea is that the type system implementation has an internal representation
@@ -30,11 +30,11 @@ The next version of EH deals with polymorphism.
 
 So
 %%[[wrap=code
-%%@[file:test/2/demo1.eh%%]
+%%@[file:test/regress/2/demo1.eh%%]
 %%]
 will give
 \begin{TT}
-%%2ppfile(test/2/demo1.eh%%)
+%%2ppfile(test/regress/2/demo1.eh%%)
 \end{TT}
 
 If the use of |id| to define |v| would be omitted,
@@ -48,7 +48,7 @@ the representation for ``not knowing which type'', that is, a type variable, is 
 
 On the other hand, if contradictory information in case of a monomorphic |id| applied to values of different type, we will obtain the following error:
 \begin{TT}
-%%2ppfile(test/2/id-intchar.eh%%)
+%%2ppfile(test/regress/2/id-intchar.eh%%)
 \end{TT}
 
 The next version of EH dealing with Haskell style polymorphism
@@ -64,13 +64,13 @@ known about a type signature and the type inferencer filling in the unspecified 
 For example:
 
 %%[[wrap=code
-%%@[file:test/2/ty-wild.eh%%]
+%%@[file:test/regress/2/ty-wild.eh%%]
 %%]
 
 The type inferencer pretty prints the inferred type instead of the explicit type signature:
 
 \begin{TT}
-%%2ppfile(test/2/ty-wild.eh%%)
+%%2ppfile(test/regress/2/ty-wild.eh%%)
 \end{TT}
 
 The discussion of this feature is postponed until
@@ -105,14 +105,14 @@ for example the pretty printing of the type
 A type variable is identified by a unique identifier, a |UID|:
 
 %%[[hide wrap=code impl.UID="UID basics"
-%%@EHBaseCommon.2.UID.UIDL
+%%@EHBaseCommon.1.UID.UIDL
 
-%%@EHBaseCommon.2.UID.Show
+%%@EHBaseCommon.1.UID.Show
 
 %%@EHTy.2.TyVarId.Rest
 %%]
 %%[[wrap=code
-%%@EHBaseCommon.2.UID.Base
+%%@EHBaseCommon.1.UID.Base
 
 %%@EHTy.2.TyVarId.Base
 %%]
@@ -149,31 +149,31 @@ Alternatively, we say that |tvarv| binds to |sigma|.
 
 As soon as we have determined that a type variable |tvarv| equals a type |sigma|,
 we must remember this and propagate it to wherever |tvarv| is used.
-We use constraints, denoted by |Cnstr|, to remember such a binding of a type variable to a type:
+We use constraints, denoted by |VarMp|, to remember such a binding of a type variable to a type:
 
 %%[[wrap=code
-Cnstr                       =  [tvarv :-> sigma]
+VarMp                       =  [tvarv :-> sigma]
 %%]
 
-A set of \IxAsDef{constraint}s |Cnstr| (appearing in its non pretty printed form as @Cnstr@ in the source text)
+A set of \IxAsDef{constraint}s |VarMp| (appearing in its non pretty printed form as @VarMp@ in the source text)
 is a set of bindings for type variables,
 represented as an association list:
 
 %%[[wrap=code
-%%@EHCnstr.2.Cnstr.Base
+%%@EHVarMp.2.VarMpQ.Base
 
-%%@EHCnstr.2.Cnstr.emptyCnstr
+%%@EHVarMp.2.VarMp.emptyVarMp
 
-%%@EHCnstr.2.Cnstr.cnstrTyUnit
+%%@EHVarMp.2.VarMp.varmpTyUnit
 %%]
 
-If |cnstrTyUnit| is used as an infix operator it is printed as |`cnstrTyUnit`| in
+If |varmpTyUnit| is used as an infix operator it is printed as |`varmpTyUnit`| in
 the same way as used in type rules.
 
 Different strategies can be used to cope with constraints
 \cite{pottier05ml-essence,heeren05phd-errormsg,sulzmann97constrained-type}.
 Here
-constraints |Cnstr| are used to replace all other
+constraints |VarMp| are used to replace all other
 references to |tvarv| by |sigma|,
 for this reason often named a \IxAsDef{substitution}.
 In this version of EH the replacement of type variables
@@ -190,45 +190,45 @@ variables inside and can replace, or substitute those type variables:
 \chunkHideRef{impl.UID}
 %%@EHSubstitutable.2.Substitutable wrap=code
 
-The operator | ||=>| applies constraints |Cnstr| to a
+The operator | ||=>| applies constraints |VarMp| to a
 |Substitutable|.
 Function |ftv| extracts the free type variable references as a set (implemented as a list) of
 |TVarId|'s.
 
-A |Cnstr| can be applied to a type:
+A |VarMp| can be applied to a type:
 
 %%@EHSubstitutable.2.SubstitutableTy wrap=code
 
 This is another place where we use the AG notation and the automatic propagation of values
 as attributes throughout the type representation to make the description of the application of
-a |Cnstr| to a |Ty| easier.
-The functions |tyAppCnstr| and |tyFtv| are defined in terms of the following AG:
+a |VarMp| to a |Ty| easier.
+The functions |tyAppVarMp| and |tyFtv| are defined in terms of the following AG:
 
-%%[[hide wrap=code impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppCnstr; cnstrTyLookup"
-%%@EHTySubst.2.tyAppCnstr
+%%[[hide wrap=code impl.tyFtvSubst="Haskell wrapping for tyFtv, tyAppVarMp; varmpTyLookup"
+%%@EHTyTrfSubst.2.tyAppVarMp
 
 %%@EHTyFtv.2.tyFtv
 
-%%@EHCnstr.2.cnstrTyLookup
+%%@EHVarMp.2.varmpTyLookup
 %%]
 %%[[wrap=code
-%%@EHTySubst.2.TySubst
+%%@EHTyTrfSubst.2.TySubst
 
 %%@EHTyFtv.2.TyFtv
 %%]
 
 \label{ag-self-attr}
 
-The application of a |Cnstr| is straightforwardly lifted to lists:
+The application of a |VarMp| is straightforwardly lifted to lists:
 
 %%[[hide wrap=code impl.unions="unions"
 %%@EHBaseCommon.2.unions
 %%]
 %%@EHSubstitutable.2.SubstitutableList wrap=code
 
-A |Cnstr| can also be applied to another |Cnstr|:
+A |VarMp| can also be applied to another |VarMp|:
 
-%%@EHSubstitutable.2.SubstitutableCnstr wrap=code
+%%@EHSubstitutable.2.SubstitutableVarMp wrap=code
 
 Substituting a substitution is non-commutative as constraints |s1| in |s1 ||=> s2| take precedence
 over |s2|.
@@ -300,7 +300,7 @@ it differs in the following aspects:
 
 \begin{Itemize}
 \item
-The datatype |FIOut| returned by |fitsIn| has an additional field |foCnstr| holding found constraints.
+The datatype |FIOut| returned by |fitsIn| has an additional field |foVarMp| holding found constraints.
 This requires constraints to be combined for composite types
 like the |App| variant of |Ty|.
 The constraints returned by |fitsIn| further participate in type inferencing.
@@ -352,12 +352,12 @@ checking and inferring types has to be done.
 Constraints are threaded through the type rules.
 The flow of these constraints defines the computation order.
 In AG the threading of constraints is expressed by the following declaration of
-|tyCnstr|:
+|tyVarMp|:
 
-%%@EHInferExpr.2.tyCnstr wrap=code
+%%@EHInferExpr.2.tyVarMp wrap=code
 
-For a type rule the (already) known constraints |Cnstrk| correspond to the use of |lhs.tyCnstr| and the result constraints
-(like |Cnstra| for \ruleRef{e.app}) are assigned to |lhs.tyCnstr|.
+For a type rule the (already) known constraints |VarMpk| correspond to the use of |lhs.tyVarMp| and the result constraints
+(like |VarMpa| for \ruleRef{e.app}) are assigned to |lhs.tyVarMp|.
 For \ruleRef{e.app} this translates to the following implementation:
 
 %%@EHRulerRules.2.expr.e.app wrap=code
@@ -367,15 +367,15 @@ for unique values (|UID|'s)
 through the AST:
 
 %%[[hide wrap=code impl.UID="UID"
-%%@EHBaseCommon.2.UID.Base
+%%@EHBaseCommon.1.UID.Base
 
-%%@EHBaseCommon.2.UID.UIDL
+%%@EHBaseCommon.1.UID.UIDL
 
-%%@EHBaseCommon.2.UID.Show
+%%@EHBaseCommon.1.UID.Show
 
-%%@EHBaseCommon.2.UID.mkNewLevUID
+%%@EHBaseCommon.1.UID.mkNewLevUID
 %%]
-%%@EHUniq.2.gUniq wrap=code
+%%@EHMainAG.2.gUniq wrap=code
 
 When a unique value is needed we use |gUniq|'s current value as the `fresh' UID,
 and pass the adapted seed
@@ -417,12 +417,12 @@ We apply known constraints to the type extracted from |Gamma =@= valGam|.
 \Paragraph{Variable occurrences |Var|}
 The abovementioned invariant and non-invariant are
 illustrated by the AG code for \ruleRef{e.var},
-in which |lhs.tyCnstr| is applied to both the expected type |knTy|
+in which |lhs.tyVarMp| is applied to both the expected type |knTy|
 and the type |ty_g_| extracted from |valGam|:
 
 %%@EHRulerRules.2.expr.e.var wrap=code
 
-Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyCnstr|).
+Newly found constraints (from |<= =@= fitsIn|) are combined with the already known constraints (|lhs.tyVarMp|).
 
 \Paragraph{Tuples}
 The construction of tuples is handled by the combination of \ruleRef{e.con} and \ruleRef{e.app}.
@@ -590,20 +590,20 @@ The basic strategy for declarations (see \secPageRef{eh1-let-strategy}) must be 
 \begin{Itemize}
 \item
 Parallel to |patValGam| and |valGam| we need to gather information about introduced type variables.
-|Cnstrp =@= patTyCnstr| gathers information about the types of type variables for identifiers introduced as part of pattern expressions;
-|Cnstr =@= tyCnstr| gathers information from the use of those identifiers in expressions.
+|VarMpp =@= patTyVarMp| gathers information about the types of type variables for identifiers introduced as part of pattern expressions;
+|VarMp =@= tyVarMp| gathers information from the use of those identifiers in expressions.
 \item
 If a type signature is defined for the toplevel identifier of a pattern in a value declaration
 (\ruleRef{d.val}) we use that type as the known type for both pattern and expression.
 Otherwise, a fresh type variable is used for the pattern and the pattern type for the value expression.
 \item
-The pattern constraints |patTyCnstr| is threaded independently through all declarations, only
-to be used as the starting point for |tyCnstr| in \ruleRef{e.let}.
+The pattern constraints |patTyVarMp| is threaded independently through all declarations, only
+to be used as the starting point for |tyVarMp| in \ruleRef{e.let}.
 \end{Itemize}
 
 Here we omit the corresponding AG code: it follows the type rules faithfully.
 %%[[hide wrap=code impl.declEH2
-%%@EHInfer.2.tyCnstr
+%%@EHInfer.2.tyVarMp
 
 %%@EHRulerRules.2.decl.d.val
 

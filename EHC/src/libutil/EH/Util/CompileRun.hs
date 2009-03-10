@@ -12,16 +12,20 @@ module EH.Util.CompileRun
   , CompileModName(..)
   , CompileRunStateInfo(..)
   
+  , FileLocatable(..)
+  
   , mkEmptyCompileRun
 
   , crCU, crMbCU
   , ppCR
   
+  , cpUpdStateInfo, cpUpdSI
+  
   , cpUpdCU, cpUpdCUWithKey
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
   , cpSeq, (>->), cpEmpty 
-  , cpFindFilesForFPath, cpFindFileForFPath
+  , cpFindFilesForFPathInLocations, cpFindFilesForFPath, cpFindFileForFPath
   , cpImportGather, cpImportGatherFromMods
   , cpPP, cpPPMsg
   
@@ -65,10 +69,12 @@ class CompileUnitState s where
   cusIsUnk      :: s -> Bool
   cusIsImpKnown	:: s -> Bool
 
-class CompileUnit u n s | u -> n s where
+class CompileUnit u n l s | u -> n l s where
   cuDefault 	:: u
   cuFPath   	:: u -> FPath
   cuUpdFPath    :: FPath -> u -> u
+  cuLocation	:: u -> l
+  cuUpdLocation :: l -> u -> u
   cuKey     	:: u -> n
   cuUpdKey      :: n -> u -> u
   cuState   	:: u -> s
@@ -82,6 +88,14 @@ class CompileRunError e p | e -> p where
 
 class CompileRunStateInfo i n p where
   crsiImportPosOfCUKey :: n -> i -> p
+
+-------------------------------------------------------------------------
+-- Locatable
+-------------------------------------------------------------------------
+
+class FileLocatable x loc | loc -> x where		-- funcdep has unlogical direction, but well...
+  fileLocation   :: x -> loc
+  noFileLocation :: loc
 
 -------------------------------------------------------------------------
 -- State
@@ -154,7 +168,7 @@ cpPPMsg m
 
 
 -------------------------------------------------------------------------
--- State manipulation, sequencing
+-- State manipulation, sequencing: compile unit
 -------------------------------------------------------------------------
 
 crMbCU :: Ord n => n -> CompileRun n u i e -> Maybe u
@@ -162,6 +176,10 @@ crMbCU modNm cr = Map.lookup modNm (crCUCache cr)
 
 crCU :: (Show n,Ord n) => n -> CompileRun n u i e -> u
 crCU modNm = panicJust ("crCU: " ++ show modNm) . crMbCU modNm
+
+-------------------------------------------------------------------------
+-- State manipulation, sequencing: non monadic
+-------------------------------------------------------------------------
 
 crSetFail :: CompileRun n u i e -> CompileRun n u i e
 crSetFail cr = cr {crState = CRSFail}
@@ -191,34 +209,40 @@ crSetInfos' msg dp is cr
 -- Compile unit observations
 -------------------------------------------------------------------------
 
-crCUState :: (Ord n,CompileUnit u n s,CompileUnitState s) => n -> CompileRun n u i e -> s
+crCUState :: (Ord n,CompileUnit u n l s,CompileUnitState s) => n -> CompileRun n u i e -> s
 crCUState modNm cr = maybe cusUnk cuState (crMbCU modNm cr)
 
-crCUFPath :: (Ord n,CompileUnit u n s) => n -> CompileRun n u i e -> FPath
+crCUFPath :: (Ord n,CompileUnit u n l s) => n -> CompileRun n u i e -> FPath
 crCUFPath modNm cr = maybe emptyFPath cuFPath (crMbCU modNm cr)
+
+crCULocation :: (Ord n,FileLocatable u loc) => n -> CompileRun n u i e -> loc
+crCULocation modNm cr = maybe noFileLocation fileLocation (crMbCU modNm cr)
 
 -------------------------------------------------------------------------
 -- Find file for FPath
 -------------------------------------------------------------------------
 
-cpFindFilesForFPath
-  :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
-       => Bool -> [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
-cpFindFilesForFPath stopAtFirst suffs sp mbModNm mbFp
+cpFindFilesForFPathInLocations
+  :: ( Ord n
+     , FPATH n, FileLocatable u loc, Show loc
+     , CompileUnitState s,CompileRunError e p,CompileUnit u n loc s,CompileModName n,CompileRunStateInfo i n p
+     ) => (loc -> String) -> (FPath -> loc -> res)
+          -> Bool -> [(String,s)] -> [loc] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [res]
+cpFindFilesForFPathInLocations getdir putres stopAtFirst suffs locs mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
        ; if cusIsUnk cus
           then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
-                  ; fpsFound <- lift (searchPathForReadableFiles stopAtFirst sp (map fst suffs) fp)
+                  ; fpsFound <- lift (searchLocationsForReadableFiles getdir stopAtFirst locs (map fst suffs) fp)
                   ; case fpsFound of
                       []
-                        -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) sp)
+                        -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) (map show locs))
                               ; return []
                               }
-                      ffs@(ff:_)
-                        -> do { cpUpdCU modNm (cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
-                              ; return ffs
+                      ffs@((ff,loc):_)
+                        -> do { cpUpdCU modNm (cuUpdLocation loc . cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
+                              ; return (map (uncurry putres) ffs)
                               }
                         where cus = case lookup (fpathSuff ff) suffs of
                                       Just c  -> c
@@ -226,12 +250,22 @@ cpFindFilesForFPath stopAtFirst suffs sp mbModNm mbFp
                                                    Just c  -> c
                                                    Nothing -> cusUnk
                   }
-          else return (maybe [] (\nm -> [crCUFPath nm cr]) mbModNm)
+          else return (maybe [] (\nm -> [putres (crCUFPath nm cr) (crCULocation nm cr)]) mbModNm)
        }
 
+cpFindFilesForFPath
+  :: ( Ord n
+     , FPATH n, FileLocatable u String
+     , CompileUnitState s,CompileRunError e p,CompileUnit u n String s,CompileModName n,CompileRunStateInfo i n p
+     ) => Bool -> [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
+cpFindFilesForFPath
+  = cpFindFilesForFPathInLocations id (\fp _ -> fp)
+
 cpFindFileForFPath
-  :: (Ord n,FPATH n,CompileUnitState s,CompileRunError e p,CompileUnit u n s,CompileModName n,CompileRunStateInfo i n p)
-       => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
+  :: ( Ord n
+     , FPATH n, FileLocatable u String
+     , CompileUnitState s,CompileRunError e p,CompileUnit u n String s,CompileModName n,CompileRunStateInfo i n p
+     ) => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
 cpFindFileForFPath suffs sp mbModNm mbFp
   = do { fps <- cpFindFilesForFPath True suffs sp mbModNm mbFp
        ; return (listToMaybe fps)
@@ -242,31 +276,90 @@ cpFindFileForFPath suffs sp mbModNm mbFp
 -------------------------------------------------------------------------
 
 cpImportGatherFromMods
-  :: (Show n,Ord n,CompileUnit u n s,CompileRunError e p,CompileUnitState s)
-       => (n -> CompilePhase n u i e x) -> [n] -> CompilePhase n u i e ()
+  :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
+       => (Maybe prev -> n -> CompilePhase n u i e (x,Maybe prev)) -> [n] -> CompilePhase n u i e ()
 cpImportGatherFromMods imp1Mod modNmL
   = do { cr <- get
-       ; cpSeq (   concat [ [forgetM (imp1Mod modNm), imps modNm] | modNm <- modNmL ]
-                ++ [cpImportScc]
+       ; cpSeq (   [ one Nothing modNm | modNm <- modNmL ]
+                ++ [ cpImportScc ]
                )
        }
-  where imps m = do { cr <- get
-                    ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
-                    ; cpSeq (map (\n -> cpSeq [forgetM (imp1Mod n), imps n]) (impL m))
-                    }
+  where one prev modNm
+          = do { (_,new) <- imp1Mod prev modNm
+               ; cpHandleErr
+               ; imps new modNm
+               }
+        imps prev m
+          = do { cr <- get
+               ; let impL m = [ i | i <- cuImports (crCU m cr), not (cusIsImpKnown (crCUState i cr)) ]
+               ; cpSeq (map (\n -> one prev n) (impL m))
+               }
 
 cpImportGather
-  :: (Show n,Ord n,CompileUnit u n s,CompileRunError e p,CompileUnitState s)
+  :: (Show n,Ord n,CompileUnit u n l s,CompileRunError e p,CompileUnitState s)
        => (n -> CompilePhase n u i e ()) -> n -> CompilePhase n u i e ()
 cpImportGather imp1Mod modNm
-  = cpImportGatherFromMods imp1Mod [modNm]
+  = cpImportGatherFromMods
+      (\_ n -> do { r <- imp1Mod n
+                  ; return (r,Nothing)
+                  }
+      )
+      [modNm]
 
-crImportDepL :: (CompileUnit u n s) => CompileRun n u i e -> [(n,[n])]
+crImportDepL :: (CompileUnit u n l s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache
 
-cpImportScc :: (Ord n,CompileUnit u n s) => CompilePhase n u i e ()
+cpImportScc :: (Ord n,CompileUnit u n l s) => CompilePhase n u i e ()
 cpImportScc = modify (\cr -> (cr {crCompileOrder = Scc.scc (crImportDepL cr)}))
 
+
+-------------------------------------------------------------------------
+-- State manipulation, state update (Monadic)
+-------------------------------------------------------------------------
+
+cpUpdStateInfo, cpUpdSI :: (i -> i) -> CompilePhase n u i e ()
+cpUpdStateInfo upd
+  = do { cr <- get
+       ; put (cr {crStateInfo = upd (crStateInfo cr)})
+       }
+
+cpUpdSI = cpUpdStateInfo
+
+-------------------------------------------------------------------------
+-- State manipulation, compile unit update (Monadic)
+-------------------------------------------------------------------------
+
+cpUpdCUM :: (Ord n,CompileUnit u n l s) => n -> (u -> IO u) -> CompilePhase n u i e ()
+cpUpdCUM modNm upd
+  = do { cr <- get
+       ; cu <- lift (maybe (upd cuDefault) upd (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
+       }
+
+
+cpUpdCUWithKey :: (Ord n,CompileUnit u n l s) => n -> (n -> u -> (n,u)) -> CompilePhase n u i e n
+cpUpdCUWithKey modNm upd
+  = do { cr <- get
+       ; let (modNm',cu) = (maybe (upd modNm cuDefault) (upd modNm) (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm' cu $ Map.delete modNm $ crCUCache cr})
+       ; return modNm'
+       }
+
+cpUpdCU :: (Ord n,CompileUnit u n l s) => n -> (u -> u) -> CompilePhase n u i e ()
+cpUpdCU modNm upd
+  = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
+       ; return ()
+       }
+{-
+  = do { cr <- get
+       ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
+       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
+       }
+-}
+{-
+cpUpdCU modNm upd
+ = cpUpdCUM modNm (return . upd)
+-}
 
 -------------------------------------------------------------------------
 -- State manipulation, sequencing (Monadic)
@@ -312,38 +405,6 @@ cpSetLimitErrsWhen l a e
  = do { when (not (null e))
              (cpSetLimitErrs l a e)
       }
-
-cpUpdCUM :: (Ord n,CompileUnit u n s) => n -> (u -> IO u) -> CompilePhase n u i e ()
-cpUpdCUM modNm upd
-  = do { cr <- get
-       ; cu <- lift (maybe (upd cuDefault) upd (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
-       }
-
-
-cpUpdCUWithKey :: (Ord n,CompileUnit u n s) => n -> (n -> u -> (n,u)) -> CompilePhase n u i e n
-cpUpdCUWithKey modNm upd
-  = do { cr <- get
-       ; let (modNm',cu) = (maybe (upd modNm cuDefault) (upd modNm) (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm' cu $ Map.delete modNm $ crCUCache cr})
-       ; return modNm'
-       }
-
-cpUpdCU :: (Ord n,CompileUnit u n s) => n -> (u -> u) -> CompilePhase n u i e ()
-cpUpdCU modNm upd
-  = do { cpUpdCUWithKey modNm (\k u -> (k, upd u))
-       ; return ()
-       }
-{-
-  = do { cr <- get
-       ; let cu = (maybe (upd cuDefault) upd (crMbCU modNm cr))
-       ; put (cr {crCUCache = Map.insert modNm cu (crCUCache cr)})
-       }
--}
-{-
-cpUpdCU modNm upd
- = cpUpdCUM modNm (return . upd)
--}
 
 cpEmpty :: CompilePhase n u i e ()
 cpEmpty = return ()

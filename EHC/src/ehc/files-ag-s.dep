@@ -26,9 +26,11 @@ Ty/Trf/ElimEqual.cag
 Ty/Trf/InfuseAnn.cag
 Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
+JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag
 Core/ToJava.cag
+Core/ToJazy.cag
 Core/Pretty.cag
 Core/Subst.cag
 Core/SubstCaseAltFail.cag
@@ -57,6 +59,7 @@ GrinCode/ToCil.cag
 GrinCode/Trf/ForceEval.cag
 GrinCode/Trf/AliasElim.cag
 GrinCode/Trf/AliasRename.cag
+GrinCode/Trf/ApplyUnited.cag
 GrinCode/Trf/BuildAppBindings.cag
 GrinCode/Trf/CheckGrinInvariant.cag
 GrinCode/Trf/CleanupPass.cag
@@ -85,6 +88,7 @@ GrinCode/Trf/NumberIdents.cag
 GrinCode/Trf/PrettyVarNames.cag
 GrinCode/Trf/SetGrinInvariant.cag
 GrinCode/Trf/SingleCase.cag
+GrinCode/Trf/SpecConst.cag
 GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
@@ -92,10 +96,11 @@ GrinCode/Trf/UnusedNameElim.cag
 GrinByteCode/ToC.cag
 GrinByteCode/Trf/ForceEval.cag
 LLVM/Pretty.cag
+Silly/ElimUnused.cag
 Silly/EmbedVars.cag
 Silly/GroupAllocs.cag
+Silly/InlineExpr.cag
 Silly/Pretty.cag
 Silly/PrettyC.cag
 Silly/PrettyS.cag
-Silly/Shortcut.cag
 Silly/ToLLVM.cag

@@ -352,9 +352,15 @@ SEM TyExpr
 %%[(17 hmtyinfer) ag
 SEM TyExpr
   | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
-                tyExpr      .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
+                            .   polResVar           =   mkPolVar @lUniq_17_polRes
+                            .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
+                tyExpr      .   knPolCtx            =   @polResVar
+                            .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
+                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
                 lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
                 loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_polRes     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]
   
   An analysis of the actual type expression of a wild card is needed to properly deal with

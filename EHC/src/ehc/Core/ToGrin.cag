@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX})
 WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
@@ -80,26 +80,24 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Context: strict yes/no, rhs of lam yes/no
+%%% Context: evaluation context (to replace isStrict)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
-ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 
-SEM CModule
-  | Mod         expr        .   isStrict    =   True
-                            .   isLamBody   =   False
+%%[(8 codegen)
+%%]
+SEM CExpr
+  | Let         binds       .   evalCtx     =   if @isGlobal
+                                                then EvalCtx_Eval
+                                                else if @categ == CBindStrict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
 
 SEM CBind
-  | Bind        expr        .   isStrict    =   @lhs.isStrict || not (null @expr.grLamArgL)
-
-SEM CPatBind
-  | Bind        offset      .   isStrict    =   True
-                            .   isLamBody   =   False
-
-SEM CExpr
-  | Let			binds		.	isStrict	=	@lhs.lev == cLevModule || @categ == CBindStrict
-%%]
+  | Bind        expr        .   evalCtx     =   if not (null @expr.grLamArgL)
+                                                then EvalCtx_Eval
+                                                else @lhs.evalCtx
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known function arity
@@ -146,13 +144,7 @@ ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
   | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
-  | FFI         
-                loc         .   argTyLresTy :   {( TyL, Ty )}
-                loc         .   argTyLresTy =   tyArrowArgsRes @ty
-                loc         .   argTyL      :   TyL
-                loc         .   argTyL      =   fst @loc.argTyLresTy
-                loc         .   resTy       =   snd @loc.argTyLresTy
-                lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
+  | FFI         lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,7 +315,7 @@ ATTR CExpr   [ | | grExpr: GrExpr ]
 ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
 
 SEM CExpr
-  | Let         (loc.grExpr,lhs.grBindL)    =   if @lhs.lev == cLevModule
+  | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
                                                 then  (emptyGrExpr
                                                       ,case @categ of
                                                          CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
@@ -476,7 +468,7 @@ SEM CBind
 %%[(8 codegen grin) hs
 tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Maybe BasicAnnot
 tyNmIsUnboxedForFFIRes opts
-  = \n -> Map.lookup n m
+  = \n -> fmap biGrinBoxAnnot $ Map.lookup n m
   where m = builtinKnownBoxedTyMp opts
 
 tyNmMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Bool
@@ -495,9 +487,7 @@ SEM CBind
                                             =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   let  ffiMbTyConNm ty     = tyMbCon $ fst $ tyAppFunArgs ty
-                                                     ffiTyConNm          = maybe hsnUnknown id . ffiMbTyConNm
-                                                     mbTagL ty           = case dataGamTagsOfTy ty @lhs.dataGam of
+                lhs         .   grBindL     =   let  mbTagL ty           = case dataGamTagsOfTy ty @lhs.dataGam of
                                                                              Just ts        -> Just [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
                                                                              _ | tyIsVar ty -> Just [ GrTag_Any ]
                                                                                | otherwise  -> Nothing
@@ -507,7 +497,7 @@ SEM CBind
                                                          then if box then BasicAnnot_ToTaggedPtr else BasicAnnot_FromTaggedPtr
                                                          else annot
                                                      mkPat ty n
-                                                       =  case ffiMbTyConNm ty of
+                                                       =  case @ffiMbTyConNm ty of
                                                             Just t
                                                               | isJust mbAnn  -> GrPatLam_BasicNode (annotOfUnboxed False (fromJust mbAnn) t) n
                                                               | @isEnumable t -> GrPatLam_EnumNode n
@@ -536,7 +526,7 @@ SEM CBind
                                                                            (GrExpr_Unit (GrVal_OpaqueNode v))
                                                          else GrExpr_Seq e (GrPatLam_PtrAnnot resTagL @nmRes)
                                                                            (GrExpr_Unit (GrVal_PtrNode v))
-                                                       where resTyNm  = ffiTyConNm resTy
+                                                       where resTyNm  = @ffiTyConNm resTy
                                                              mbResAnn = @mbAnnot resTyNm
                                                              mbResTagL= mbTagL resTy
                                                              resTagL  = panicJust "ToGrin.FFI.resTagL" mbResTagL

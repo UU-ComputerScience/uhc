@@ -8,27 +8,28 @@ sub ehc {
    my $opt = shift;
    my $src = shift;
    my $repl;
-   my $pre = "bin/" ;
+   my $prev = "install/" ;
+   my $postv = "/bin" ;
    if ( $ehcVersion eq "" && $opt eq "" ) {
      $repl = `$src` ;
    } elsif ( $opt eq "srcfile" ) {
      $repl = `cat '$src'` ;
    } elsif ( $opt eq "ppinline" ) {
-     $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=eh` ;
+     $repl = `echo '$src' | $prev$ehcVersion$postv/ehc --pretty=eh` ;
    } elsif ( $opt eq "astinline" ) {
-     $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=ast` ;
+     $repl = `echo '$src' | $prev$ehcVersion$postv/ehc --pretty=ast` ;
    } elsif ( $opt eq "ppfile" ) {
-     $repl = `$pre$ehcVersion/ehc '$src' --pretty=eh` ;
+     $repl = `$prev$ehcVersion$postv/ehc '$src' --pretty=eh` ;
    } elsif ( $opt eq "astfile" ) {
-     $repl = `$pre$ehcVersion/ehc '$src' --pretty=ast` ;
+     $repl = `$prev$ehcVersion$postv/ehc '$src' --pretty=ast` ;
    } elsif ( $opt eq "grinfile" ) {
-     $repl = `$pre$ehcVersion/ehc '$src' --pretty=grin` ;
+     $repl = `$prev$ehcVersion$postv/ehc '$src' --pretty=grin` ;
    } elsif ( $opt eq "file" ) {
-     $repl = `$pre$ehcVersion/ehc '$src' --pretty=no --show-top-ty=yes` ;
+     $repl = `$prev$ehcVersion$postv/ehc '$src' --pretty=no --show-top-ty=yes` ;
    } elsif ( $opt eq "exec" ) {
      $repl = `$src` ;
    } else {
-     $repl = `echo '$src' | $pre$ehcVersion/ehc --pretty=no --show-top-ty=yes` ;
+     $repl = `echo '$src' | $prev$ehcVersion$postv/ehc --pretty=no --show-top-ty=yes` ;
    }
    return "" . $repl . "" ;
 }

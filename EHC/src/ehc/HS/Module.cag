@@ -11,13 +11,13 @@ ATTR Import [ | | modEntSpec: ModEntSpec ]
 
 SEM Import
     | Variable
-        lhs             .   modEntSpec  =   ModEntSpec @name Nothing
+        lhs             .   modEntSpec  =   ModEntSpec @name @range Nothing
     | TypeOrClass
         lhs             .   modEntSpec  =   case @names of
-                                              Just ns -> ModEntSpec @name (Just (ModEntSubs ns))
-                                              Nothing -> ModEntSpec @name Nothing
+                                              Just ns -> ModEntSpec @name @range (Just (ModEntSubs ns))
+                                              Nothing -> ModEntSpec @name @range Nothing
     | TypeOrClassComplete
-        lhs             .   modEntSpec  =   ModEntSpec @name (Just ModEntSubAll)
+        lhs             .   modEntSpec  =   ModEntSpec @name @range (Just ModEntSubAll)
 %%]
 
 %%[20
@@ -52,7 +52,7 @@ ATTR AllImportDeclaration Body [ | | modImpL USE {++} {[]}: {[ModImp]} ]
 SEM ImportDeclaration
     | Import
         lhs             .   modImpL     =   let as = maybe @name id @asname
-                                            in  [ModImp @qualified @name as @importspecification.isHiding @importspecification.modEntSpecL]
+                                            in  [ModImp @qualified @name as @importspecification.isHiding @importspecification.modEntSpecL @range]
     | * - Import
         lhs             .   modImpL     =   []
 %%]
@@ -67,8 +67,8 @@ SEM Module
 SEM Module
     | Module
         loc             .   modImpL     =   if hsnModPrelude `elem` map mimpSource @body.modImpL
-                                               || @lhs.moduleNm == hsnModPrelude
-                                               || hsnIsInPrelude @lhs.moduleNm
+                                               || @realModuleNm == hsnModPrelude
+                                               || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
                                             then @body.modImpL
                                             else modImpPrelude : @body.modImpL
@@ -95,7 +95,7 @@ ATTR AGItf Module [ | | realModuleNm: HsName ]
 
 SEM Module
     | Module
-        lhs             .   realModuleNm=   maybe @lhs.moduleNm id @name
+        loc             .   realModuleNm=   maybe @lhs.moduleNm id @name
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,13 +107,13 @@ ATTR Export [ | | modExp: ModExp ]
 
 SEM Export
     | Variable
-        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name Nothing)
+        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name @range Nothing)
     | TypeOrClass
         lhs             .   modExp      =   case @names of
-                                              Just ns -> ModExpEnt (ModEntSpec @name (Just (ModEntSubs ns)))
-                                              Nothing -> ModExpEnt (ModEntSpec @name Nothing)
+                                              Just ns -> ModExpEnt (ModEntSpec @name @range (Just (ModEntSubs ns)))
+                                              Nothing -> ModExpEnt (ModEntSpec @name @range Nothing)
     | TypeOrClassComplete
-        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name (Just ModEntSubAll))
+        lhs             .   modExp      =   ModExpEnt (ModEntSpec @name @range (Just ModEntSubAll))
     | Module
         lhs             .   modExp      =   ModExpMod @name
 %%]
@@ -155,8 +155,8 @@ mkInstDefsRel useimplicitly instancename maybeinstancename idOccDef idOccDefVal
       maybe (Rel.empty) (const v) maybeinstancename
     , v
     )
-  where v = Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty)
-        i = Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty)
+  where v = Rel.singleton instancename (ModEnt IdOcc_Val idOccDefVal Set.empty emptyRange)
+        i = Rel.singleton instancename (ModEnt IdOcc_Inst idOccDef Set.empty emptyRange)
 %%]
 
 %%[20
@@ -171,25 +171,25 @@ ATTR
 
 SEM Declaration
     | TypeSignature FunctionBindings PatternBinding ForeignImport
-        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty) | o <- @idOccDefs ]
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Val o Set.empty @range) | o <- @idOccDefs ]
     | Type
-        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty) | o <- @idOccDefs ]
+        lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty @range) | o <- @idOccDefs ]
     | Data Newtype
         loc             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
-                                              (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub))
+                                              (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub) @range)
 %%[[95
                                             `Rel.union`
                                             @derivings.modDefsRel
 %%]]
-                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsCon ++ @idOccDefsFld ]
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty @range | o <- @idOccDefsCon ++ @idOccDefsFld ]
     | Class
         loc             .   modDefsRel  =   Rel.singleton
                                               @simpletype.name
-                                              (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub))
+                                              (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub) @range)
                         .   (_,modHideDefsRel)
                                         =   mkInstDefsRel False @instancename Nothing @idOccDef @idOccDefVal
-                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty | o <- @idOccDefsSig ]
+                        .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty @range | o <- @idOccDefsSig ]
     | Data Newtype Class
         lhs             .   modDefsRel  =   @modDefsRel
                                             `Rel.union`
@@ -198,13 +198,13 @@ SEM Declaration
         lhs             .   (modDefsRel,modHideDefsRel)
                                         =   mkInstDefsRel @useimplicitly @instancename @maybeinstancename @idOccDef @idOccDefVal
     | InstanceUseImplicitly
-        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty)
+        lhs             .   modDefsRel  =   Rel.singleton @instancename (ModEnt IdOcc_Inst @idOccDef Set.empty @range)
 %%]
 SEM Body
     | Body
         lhs             .   modDefsRel  =   @declarations.modDefsRel
                                             `Rel.union` 
-                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idDefOccGam ])
+                                            (Rel.fromList [ (hsnQualified n,ModEnt IdOcc_Val (doccOcc d) Set.empty @range) | (n,d) <- idDefOccGamByKind IdOcc_Val @declarations.idDefOccGam ])
 
 %%[95
 SEM Deriving

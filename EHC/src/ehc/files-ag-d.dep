@@ -3,6 +3,7 @@ HS
 HI
 Ty
 Core
+JVMClass
 Foreign
 GrinCode
 GrinByteCode

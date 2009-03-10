@@ -1,0 +1,64 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * Primitives
+ */
+public class Prim
+{
+%%]
+
+%%[(8 jazy)
+    /**
+     * Int: rithmetic
+     */
+    public static int primAddInt( int v1, int v2 ) { return v1 + v2 ; }
+    public static int primSubInt( int v1, int v2 ) { return v1 - v2 ; }
+    public static int primMulInt( int v1, int v2 ) { return v1 * v2 ; }
+    public static int primDivInt( int v1, int v2 ) { return v1 / v2 ; }
+%%]
+    
+%%[(8 jazy)
+    /**
+     * Int: comparison
+     */
+    public static Object primCmpInt( int v1, int v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(8 jazy)
+    /**
+     * String unpacking
+     */
+    public static Object primPackedStringNull( String s ) { return RTS.mkBool( s.length() == 0 ) ; }
+    public static char primPackedStringHead( String s ) { return s.charAt(0) ; }
+    public static String primPackedStringTail( String s ) { return s.substring(1) ; }
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

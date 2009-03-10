@@ -7,6 +7,8 @@
 
 %%[(8 codegen) import(qualified Data.Map as Map,Data.List)
 %%]
+%%[(8 codegen) import(EH.Util.Pretty)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Targets for code generation
@@ -32,6 +34,7 @@ Target_<treatment>_<intermediate-lang>_<codegen-lang>
     - LLVM
     - JVM
     - CLR
+    - Jazy, Java lazy interpreter
 
 Combinations are all hardcoded to make explicit that only particular combinations are allowed.
 This may change later if/when combinations can be chosen independent/orthogonal.
@@ -39,7 +42,13 @@ This may change later if/when combinations can be chosen independent/orthogonal.
 %%[(8 codegen) export(Target(..))
 data Target
   = Target_None								-- no codegen
-  | Target_Core								-- only Core
+  | Target_None_Core_None					-- only Core
+%%[[(8 codegen jazy)
+  | Target_Interpreter_Core_Jazy			-- java base on Core, using jazy library
+%%]]
+%%[[(8 codegen java)
+  | Target_Interpreter_Core_Java			-- java base on Core, as src. Will be obsolete.
+%%]]
 %%[[(8 codegen grin)
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
@@ -56,7 +65,13 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 %%[(8 codegen)
 instance Show Target where
   show Target_None							= "NONE"
-  show Target_Core							= "core"
+  show Target_None_Core_None				= "core"
+%%[[(8 codegen jazy)
+  show Target_Interpreter_Core_Jazy			= "jazy"
+%%]]
+%%[[(8 codegen java)
+  show Target_Interpreter_Core_Java			= "java"
+%%]]
 %%[[(8 codegen grin)
   show Target_FullProgAnal_Grin_C			= "C"
   show Target_FullProgAnal_Grin_LLVM		= "llvm"
@@ -81,18 +96,33 @@ Supported targets.
 
 %%[(8 codegen) export(supportedTargetMp, showSupportedTargets', showSupportedTargets)
 supportedTargetMp :: Map.Map String Target
-supportedTargetMp
-  = Map.fromList
-      [ (show t, t)
-      | t <- [ 
-               Target_Core
-%%[[(8 codegen grin)
-             , Target_Interpreter_Grin_C
-             , Target_FullProgAnal_Grin_C
-             , Target_FullProgAnal_Grin_CLR
+(supportedTargetMp,allTargetInfoMp)
+  = (Map.fromList ts, Map.fromList is)
+  where (ts,is) = unzip
+          [ ((show t, t),(t,i))
+          | (t,i)
+              <- [
+                   mk Target_None_Core_None
+                      []
+%%[[(8 codegen jazy)
+                 , mk Target_Interpreter_Core_Jazy
+                      [FFIWay_Jazy]
 %%]]
-             ]
-      ]
+%%[[(8 codegen java)
+                 -- , mk Target_Interpreter_Core_Java
+                 --      []
+%%]]
+%%[[(8 codegen grin)
+                 , mk Target_Interpreter_Grin_C
+                      [FFIWay_CCall]
+                 , mk Target_FullProgAnal_Grin_C
+                      [FFIWay_CCall]
+                 , mk Target_FullProgAnal_Grin_CLR
+                      [FFIWay_CCall]
+%%]]
+                 ]
+          ]
+        mk t ffis = (t,TargetInfo (FFIWay_Prim : ffis)) 
 
 showSupportedTargets' :: String -> String
 showSupportedTargets' sep
@@ -115,7 +145,7 @@ targetIsFullProgAnal t
       Target_FullProgAnal_Grin_C 		-> True
       Target_FullProgAnal_Grin_LLVM 	-> True
       Target_FullProgAnal_Grin_JVM 		-> True
-      Target_FullProgAnal_Grin_CLR 	-> True
+      Target_FullProgAnal_Grin_CLR 	    -> True
 %%]]
       _ 								-> False
 %%]
@@ -152,11 +182,31 @@ targetIsC t
       _ 								-> False
 %%]
 
+%%[(8 codegen) export(targetAllowsOLinking)
+targetAllowsOLinking :: Target -> Bool
+targetAllowsOLinking t
+  = case t of
+%%[[(8 codegen grin)
+      Target_Interpreter_Grin_C		 	-> True
+%%]]
+      _ 								-> False
+%%]
+
 %%[(8 codegen) export(targetIsCore)
 targetIsCore :: Target -> Bool
 targetIsCore t
   = case t of
-      Target_Core				 		-> True
+      Target_None_Core_None				-> True
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsJVM)
+targetIsJVM :: Target -> Bool
+targetIsJVM t
+  = case t of
+%%[[(8 codegen jazy)
+      Target_Interpreter_Core_Jazy		-> True
+%%]]
       _ 								-> False
 %%]
 
@@ -177,6 +227,46 @@ targetIsCLR t
 %%[[(8 codegen grin)
       Target_FullProgAnal_Grin_CLR 	-> True
 %%]]
-      _ 								-> False
+      _ 							-> False
 %%]
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Possible FFI interface routes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(FFIWay(..))
+data FFIWay
+  = FFIWay_Prim				-- as primitive
+  | FFIWay_CCall			-- as C call
+  | FFIWay_Jazy				-- as Java/Jazy
+  deriving (Eq,Ord)
+
+instance Show FFIWay where
+  show FFIWay_Prim	= "prim"
+  show FFIWay_CCall	= "ccall"
+  show FFIWay_Jazy	= "jazy"
+
+instance PP FFIWay where
+  pp = pp . show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional info about targets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(TargetInfo(..),TargInfoMp)
+data TargetInfo
+  = TargetInfo
+      { targiAllowedFFI		:: [FFIWay]
+      }
+
+type TargInfoMp = Map.Map Target TargetInfo
+%%]
+
+%%[(8 codegen) export(allTargetInfoMp,allFFIWays)
+allTargetInfoMp :: TargInfoMp
+
+allFFIWays :: [FFIWay]
+allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
+%%]

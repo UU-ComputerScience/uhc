@@ -61,9 +61,14 @@ SEM TyExpr
 
 SEM AGItf
   | AGItf       expr        .   gathPolGam          <   expr.valGam
-  | AGItf       expr        .   gUniq               <   loc.polGam
+                expr        .   gUniq               <   loc.polGam
                 expr        .   polVarMp            <   expr.tyVarMp
                 expr        .   polVarMp            <   loc.clGam
+%%]
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   range               <   expr.kiGam
 %%]
 
 

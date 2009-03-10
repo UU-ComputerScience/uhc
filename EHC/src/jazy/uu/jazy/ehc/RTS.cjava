@@ -1,0 +1,98 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+import uu.jazy.gui.* ;
+
+/**
+ * Runtime environment for ehc, using EHC target jazy
+ */
+public class RTS
+{
+%%]
+
+%%[(8 jazy)
+	public static Object True ;
+	public static Object False ;
+	
+    /**
+     * Set True & False
+     */    
+    public static void setBoolConstructors( Object t, Object f ) {
+        True = t ;
+        False = f ;
+    }
+	
+    /**
+     * Set True & False
+     */    
+    public static Object mkBool( boolean b ) {
+        return ( b ? True : False ) ;
+    }
+	
+%%]
+
+%%[(8 jazy)
+	public static Object EQ ;
+	public static Object LT ;
+	public static Object GT ;
+	
+    /**
+     * Set EQ, LT, and GT
+     */    
+    public static void setOrderingConstructors( Object e, Object l, Object g ) {
+        EQ = e ;
+        LT = l ;
+        GT = g ;
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: visual eval
+     */    
+    public static void runVisuallyTraced( Object v ) {
+%%[[8
+        Eval.resetNrEvaluations() ;
+        EvalFollower.setupVisualTrace() ;
+%%][100
+%%]]
+        Eval.eval( v ) ;
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: plain eval with timing
+     */    
+    public static void runTimed( Object v ) {
+%%[[8
+        Eval.resetNrEvaluations() ;
+        long tm1 = System.currentTimeMillis() ;
+        // showln( v ) ;
+        System.out.println( Eval.eval( v ) ) ;
+        long tm2 = System.currentTimeMillis() ;
+        System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;
+%%][100
+        Eval.eval( v ) ;
+%%]]
+    }
+%%]
+
+%%[(8 jazy)
+}
+
+%%]

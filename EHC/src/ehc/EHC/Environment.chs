@@ -65,7 +65,7 @@ importEHCEnvironment progKey
        ; let fpEnv = mkEnvFPath d
        ; envExists <- doesFileExist (fpathToStr fpEnv)
        ; if envExists
-         then do { (fn,fh) <- openFPath fpEnv ReadMode
+         then do { (fn,fh) <- openFPath fpEnv ReadMode False
                  ; txt <- hGetContents fh
                  ; let env = read txt
                  ; return (Just env)
@@ -80,7 +80,7 @@ exportEHCEnvironment progKey env
   = do { d <- ehcenvDir progKey
        ; let fpEnv = mkEnvFPath d
        ; createDirectoryIfMissing False d
-       ; (fn,fh) <- openFPath fpEnv WriteMode
+       ; (fn,fh) <- openFPath fpEnv WriteMode False
        ; hPutStrLn fh (show env)
        ; hFlush fh
        ; hClose fh

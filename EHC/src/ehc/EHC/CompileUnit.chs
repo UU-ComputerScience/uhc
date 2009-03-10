@@ -81,6 +81,7 @@ defaultOptim
 data EHCompileUnit
   = EHCompileUnit
       { ecuFilePath          :: !FPath
+      , ecuFileLocation      :: !FileLoc
       , ecuGrpNm             :: !HsName
       , ecuModNm             :: !HsName
       , ecuMbHS              :: !(Maybe HS.AGItf)
@@ -117,7 +118,8 @@ data EHCompileUnit
       , ecuHIInfo            :: !HI.HIInfo
       , ecuDirIsWritable     :: !Bool
 %%]]
-%%[[101
+%%[[(99 codegen)
+      , ecuGenCodeFiles      :: ![FPath]
 %%]]
       }
 %%]
@@ -133,6 +135,7 @@ emptyECU :: EHCompileUnit
 emptyECU
   = EHCompileUnit
       { ecuFilePath          = emptyFPath
+      , ecuFileLocation      = emptyFileLoc
       , ecuGrpNm             = hsnUnknown
       , ecuModNm             = hsnUnknown
       , ecuMbHS              = Nothing
@@ -171,7 +174,8 @@ emptyECU
       , ecuHIInfo            = HI.emptyHIInfo
       , ecuDirIsWritable     = False
 %%]]
-%%[[101
+%%[[(99 codegen)
+      , ecuGenCodeFiles      = []
 %%]]
       }
 %%]
@@ -207,12 +211,20 @@ instance CompileUnitState EHCompileUnitState where
 %%]
 
 %%[8
-instance CompileUnit EHCompileUnit HsName EHCompileUnitState where
+instance FileLocatable EHCompileUnit FileLoc where
+  fileLocation   = ecuFileLocation
+  noFileLocation = emptyFileLoc
+%%]
+
+%%[8
+instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuDefault         = emptyECU
   cuFPath           = ecuFilePath
+  cuLocation        = fileLocation
   cuKey             = ecuModNm
   cuState           = ecuState
   cuUpdFPath        = ecuStoreFilePath
+  cuUpdLocation     = ecuStoreFileLocation
   cuUpdState        = ecuStoreState
   cuUpdKey   nm u   = u {ecuModNm = nm}
 %%[[8
@@ -250,6 +262,9 @@ type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
 
 ecuStoreFilePath :: EcuUpdater FPath
 ecuStoreFilePath x ecu = ecu { ecuFilePath = x }
+
+ecuStoreFileLocation :: EcuUpdater FileLoc
+ecuStoreFileLocation x ecu = ecu { ecuFileLocation = x }
 
 ecuStoreState :: EcuUpdater EHCompileUnitState
 ecuStoreState x ecu = ecu { ecuState = x }
@@ -354,6 +369,11 @@ ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
 %%[20 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
+%%[(99 codegen) export(ecuStoreGenCodeFiles)
+ecuStoreGenCodeFiles :: EcuUpdater [FPath]
+ecuStoreGenCodeFiles x ecu = ecu { ecuGenCodeFiles = x }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

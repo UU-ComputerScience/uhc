@@ -11,7 +11,7 @@ hence must be in a separate module.
 %%[8 import({%{EH}ConfigDefines})
 %%]
 
-%%[(8 codegen grin) import({%{EH}Base.BasicAnnot})
+%%[(8 codegen) import({%{EH}Base.BasicAnnot})
 %%]
 
 %%[8 import(qualified Data.Map as Map)
@@ -23,12 +23,44 @@ hence must be in a separate module.
 
 This should be in Builtin, but because of cyclic dependency with Opts it cannot.
 
-%%[(8 codegen grin) hs export(builtinMayLiveUnboxedTyMp,builtinMayLiveUnboxedTyNmL)
-builtinMayLiveUnboxedTyMp :: Map.Map HsName BasicAnnot
+%%[(8 codegen) hs export(BuiltinInfo(..))
+data BuiltinInfo
+  = BuiltinInfo
+      { biGrinBoxAnnot			:: BasicAnnot
+%%[[(8 jazy)
+      , biJazyBasicTy			:: BasicTy			-- the basic ty used by jazy target, further (un)boxing done by code generation
+      												-- TBD: factor it out to here
+%%]]
+      }
+
+emptyBuiltinInfo :: BuiltinInfo
+emptyBuiltinInfo
+  = BuiltinInfo
+  	  { biGrinBoxAnnot			= BasicAnnot_Size sizeofWord BasicTy_Word
+%%[[(8 jazy)
+      , biJazyBasicTy			= BasicTy_Object	-- if unspecified, it is boxed, leave as is
+%%]]
+  	  }
+%%]
+
+%%[(8 codegen) hs export(builtinMayLiveUnboxedTyMp,builtinMayLiveUnboxedTyNmL)
+builtinMayLiveUnboxedTyMp :: Map.Map HsName BuiltinInfo
 builtinMayLiveUnboxedTyMp
   = Map.fromList
-      [ ( hsnInt , BasicAnnot_Size sizeofWord BasicTy_Word)
-      , ( hsnChar, BasicAnnot_Size sizeofWord BasicTy_Word)
+      [ ( hsnInt
+        , emptyBuiltinInfo
+%%[[(8 jazy)
+            { biJazyBasicTy    	= BasicTy_Int
+            }
+%%]]
+        )
+      , ( hsnChar
+        , emptyBuiltinInfo
+%%[[(8 jazy)
+            { biJazyBasicTy    	= BasicTy_Char
+            }
+%%]]
+        )
       ]
 
 builtinMayLiveUnboxedTyNmL :: [HsName]
@@ -36,18 +68,38 @@ builtinMayLiveUnboxedTyNmL
   = Map.keys builtinMayLiveUnboxedTyMp
 %%]
 
-%%[(8 codegen grin) hs export(builtinKnownBoxedTyMp,builtinKnownBoxedTyNmL)
-builtinKnownBoxedTyMp :: EHCOpts -> Map.Map HsName BasicAnnot
+%%[(8 codegen) hs export(builtinKnownBoxedTyMp,builtinKnownBoxedTyNmL)
+builtinKnownBoxedTyMp :: EHCOpts -> Map.Map HsName BuiltinInfo
 builtinKnownBoxedTyMp opts
   = builtinMayLiveUnboxedTyMp
     `Map.union`
     Map.fromList
-       [ ( n ehbnPackedString, BasicAnnot_Size sizeofWord   BasicTy_Word  )
-%%[[97
-       , ( n ehbnFloat       , BasicAnnot_Size sizeofFloat  BasicTy_Float )
-       , ( n ehbnDouble      , BasicAnnot_Size sizeofDouble BasicTy_Double)
+      [ ( n ehbnPackedString
+        , emptyBuiltinInfo
+%%[[(8 jazy)
+            { biJazyBasicTy    	= BasicTy_String
+            }
 %%]]
-       ]
+        )
+%%[[97
+      , ( n ehbnFloat
+        , emptyBuiltinInfo
+            { biGrinBoxAnnot 	= BasicAnnot_Size sizeofFloat  BasicTy_Float
+%%[[(97 jazy)
+            , biJazyBasicTy    	= BasicTy_Float
+%%]]
+            }
+        )
+      , ( n ehbnDouble
+        , emptyBuiltinInfo
+            { biGrinBoxAnnot 	= BasicAnnot_Size sizeofDouble BasicTy_Double
+%%[[(97 jazy)
+            , biJazyBasicTy    	= BasicTy_Double
+%%]]
+            }
+        )
+%%]]
+      ]
   where n f = f $ ehcOptBuiltinNames opts
 
 builtinKnownBoxedTyNmL :: EHCOpts -> [HsName]

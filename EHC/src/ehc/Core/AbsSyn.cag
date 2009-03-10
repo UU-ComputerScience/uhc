@@ -104,14 +104,14 @@ DATA CBind
   | Bind        nm              : {HsName}
                 bindMeta        : CMeta
                 expr            : CExpr
-  | FFI         callconv        : {String}
+  | FFI         callconv        : {FFIWay}
                 safety          : {String}
                 impEnt          : {String}
                 nm              : {HsName}
                 ty              : {Ty}
 %%[[94
   | FFE         nm              : {HsName}
-                callconv        : {String}
+                callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
                 expNm           : {HsName}
                 ty              : {Ty}

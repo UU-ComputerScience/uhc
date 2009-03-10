@@ -31,25 +31,25 @@ cpCompileWithLLVM :: HsName -> EHCompilePhase()
 cpCompileWithLLVM modNm
   = do { cr <- get
        ; let  (_,_,opts,fp) = crBaseInfo modNm cr
-              fpLL          = fpathSetSuff "ll" fp
-              fpExec        = maybe (fpathRemoveSuff fp) (\s -> fpathSetSuff s fp) 
-                                    Cfg.mbSuffixExec
+              fpLL          = mkOutputFPath opts modNm fp "ll"
+              fpExec        = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
               variant       = ehcenvVariant (ehcOptEnvironment opts)
               libs          = map (\lib -> "-l " ++ lib) $
-                              [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "prim.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "llvm-gc.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant ++ "timing.o"
-                              , Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant ++ "libgc.a"
+                              [ Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "prim.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "llvm-gc.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "timing.o"
+                              , Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant "" ++ "libgc.a"
                               ]
               inputOpts     = [ fpathToStr fpLL ]
               outputOpts    = ["-o " ++ fpathToStr fpExec]
        ; when ( targetIsLLVM (ehcOptTarget opts) )
          (  do { let compileLL 
-                       = concat $ intersperse " "
-                         $  [ Cfg.shellCmdLLVM ]
-                         ++ libs
-                         ++ outputOpts
-                         ++ inputOpts
+                       = mkShellCmd
+                           (  [ Cfg.shellCmdLLVM ]
+                           ++ libs
+                           ++ outputOpts
+                           ++ inputOpts
+                           )
                ; when (ehcOptVerbosity opts >= VerboseALot)
                  (  do { cpMsg' modNm VerboseALot "LLVM" Nothing fpExec
                        ; lift $ putStrLn compileLL

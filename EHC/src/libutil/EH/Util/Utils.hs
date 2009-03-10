@@ -28,6 +28,13 @@ unionMapSet :: Ord b => (a -> Set.Set b) -> (Set.Set a -> Set.Set b)
 unionMapSet f = Set.unions . map f . Set.toList
 
 -------------------------------------------------------------------------
+-- Map
+-------------------------------------------------------------------------
+
+inverseMap :: (Ord k, Ord v') => (k -> v -> (v',k')) -> Map.Map k v -> Map.Map v' k'
+inverseMap mk = Map.fromList . map (uncurry mk) . Map.toList
+
+-------------------------------------------------------------------------
 -- List
 -------------------------------------------------------------------------
 
@@ -116,13 +123,28 @@ strToInt :: String -> Int
 strToInt = foldl (\i c -> i * 10 + ord c - ord '0') 0
 
 -------------------------------------------------------------------------
+-- Split for qualified name
+-------------------------------------------------------------------------
+
+splitForQualified :: String -> [String]
+splitForQualified s
+    = ws''
+    where ws  = wordsBy (=='.') s
+          ws' = case initlast2 ws of
+                  Just (ns,n,"") -> ns ++ [n ++ "."]
+                  _              -> ws
+          ws''= case break (=="") ws' of
+                  (nq,(_:ns)) -> nq ++ [concatMap ("."++) ns]
+                  _ -> ws'
+
+-------------------------------------------------------------------------
 -- Misc
 -------------------------------------------------------------------------
 
 panic m = error ("panic: " ++ m)
 
 -------------------------------------------------------------------------
--- group/sort combi's
+-- group/sort/nub combi's
 -------------------------------------------------------------------------
 
 isSortedByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> Bool
@@ -148,6 +170,9 @@ groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
 
 groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
 groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
+
+nubOn :: Eq b => (a->b) -> [a] -> [a]
+nubOn sel = nubBy (\a1 a2 -> sel a1 == sel a2)
 
 -------------------------------------------------------------------------
 -- Ordering

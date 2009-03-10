@@ -10,6 +10,10 @@ An EHC compile run maintains info for one compilation invocation
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
+%%[99 import(System.Directory)
+%%]
+%%[99 import(EH.Util.FPath)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -48,13 +52,13 @@ An EHC compile run maintains info for one compilation invocation
 data EHCompileRunStateInfo
   = EHCompileRunStateInfo
       { crsiOpts        :: !EHCOpts                             -- options
+      , crsiNextUID     :: !UID                                 -- unique id, the next one
+      , crsiHereUID     :: !UID                                 -- unique id, the current one
       , crsiHSInh       :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
       , crsiEHInh       :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
 %%[[(8 codegen)
       , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
-      , crsiNextUID     :: !UID                                 -- unique id, the next one
-      , crsiHereUID     :: !UID                                 -- unique id, the current one
 %%[[20
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
       , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
@@ -65,6 +69,38 @@ data EHCompileRunStateInfo
 %%]]
 %%[[(20 codegen)
       , crsiModOffMp    :: !Core.HsName2OffsetMpMp              -- mapping of all modules + exp entries to offsets in module + exp tables
+%%]]
+%%[[99
+      , crsiFilesToRm   :: ![FPath]                             -- files to clean up (remove)
+%%]]
+      }
+%%]
+
+%%[8 export(emptyEHCompileRunStateInfo)
+emptyEHCompileRunStateInfo :: EHCompileRunStateInfo
+emptyEHCompileRunStateInfo
+  = EHCompileRunStateInfo
+      { crsiOpts        =   defaultEHCOpts
+      , crsiNextUID     =   uidStart
+      , crsiHereUID     =   uidStart
+      , crsiHSInh       =   panic "emptyEHCompileRunStateInfo.crsiHSInh"
+      , crsiEHInh       =   panic "emptyEHCompileRunStateInfo.crsiEHInh"
+%%[[(8 codegen)
+      , crsiCoreInh     =   panic "emptyEHCompileRunStateInfo.crsiCoreInh"
+%%]]
+%%[[20
+      , crsiMbMainNm    =   Nothing
+      , crsiHIInh       =   panic "emptyEHCompileRunStateInfo.crsiHIInh"
+      , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
+      , crsiModMp       =   Map.empty
+      , crsiGrpMp       =   Map.empty
+      , crsiOptim       =   defaultOptim                    
+%%]]
+%%[[(20 codegen)
+      , crsiModOffMp    =   Map.empty       
+%%]]
+%%[[99
+      , crsiFilesToRm   =   []                  
 %%]]
       }
 %%]
@@ -131,6 +167,32 @@ cpMemUsage
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Update state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: clean up (remove) files to be removed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(cpRegisterFileToRm)
+cpRegisterFileToRm :: FPath -> EHCompilePhase ()
+cpRegisterFileToRm fp
+  = cpUpdSI (\crsi -> crsi {crsiFilesToRm = fp : crsiFilesToRm crsi})
+%%]
+
+%%[99 export(cpRmFilesToRm)
+cpRmFilesToRm :: EHCompilePhase ()
+cpRmFilesToRm
+  = do { cr <- get
+       ; let (crsi,opts) = crBaseInfo' cr
+       ; lift $ mapM (rm . fpathToStr) (crsiFilesToRm crsi)
+       ; cpUpdSI (\crsi -> crsi {crsiFilesToRm = []})
+       }
+  where rm f = catch (removeFile f)
+                     (\e -> hPutStrLn stderr (show f ++ ": " ++ show e))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: message
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -159,11 +221,9 @@ cpMsg' modNm v m mbInfo fp
 %%[8 export(cpStepUID)
 cpStepUID :: EHCompilePhase ()
 cpStepUID
-  = do{ cr <- get
-      ; let (n,h) = mkNewLevUID (crsiNextUID crsi)
-            crsi = crStateInfo cr
-      ; put (cr {crStateInfo = crsi {crsiNextUID = n, crsiHereUID = h}})
-      }
+  = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsiNextUID crsi)
+                      in  crsi {crsiNextUID = n, crsiHereUID = h}
+            )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -217,12 +277,17 @@ crPartitionNewerOlderImports modNm cr
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
   = ecuIsTopMod ecu
-    || (not $ ehcOptCheckRecompile $ crsiOpts $ crStateInfo cr)
+    || (not $ ehcOptCheckRecompile opts)
     || not (ecuCanUseHIInsteadOfHS ecu)
     || not (null newer)
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
+        opts = crsiOpts $ crStateInfo cr
 %%]
+    || (ehcOptCheckVersion opts
+        && (  not (ecuCanUseHIInsteadOfHS ecu)
+           || not (null newer)
+       )   )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation can actually be done?

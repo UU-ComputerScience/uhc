@@ -13,7 +13,7 @@
 
 %%[99
 DATA AllNT
-  | *               range           : Range
+  | *               hsrange         : Range
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,9 +62,9 @@ Nonterminals for controlling restrictions on annotations.
   | AnnSigDtMono    tycons          : AnnDtMonoRestrictions
 %%]
 
-%%[8
+%%[(8 codegen)
 DATA Decl
-  | FFI             callconv        : {String}
+  | FFI             callconv        : {FFIWay}
                     safety          : {String}
                     impEnt          : {String}
                     nm              : {HsName}
@@ -77,10 +77,10 @@ DATA Decl
                     tyExpr          : TyExpr
 %%]
 
-%%[94
+%%[(94 codegen)
 DATA Decl
   | FFE             nm              : {HsName}
-                    callconv        : {String}
+                    callconv        : {FFIWay}
                     expEnt          : {ForeignEnt}
                     expr            : Expr
                     tyExpr          : TyExpr

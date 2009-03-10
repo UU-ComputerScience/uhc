@@ -164,6 +164,24 @@ data AppSpineVertebraeInfo
        }
 %%]
 
+%%[(4 hmtyinfer)
+instance Show AppSpineVertebraeInfo where
+  show _ = "AppSpineVertebraeInfo"
+
+instance PP AppSpineVertebraeInfo where
+  pp = pp . asPolarity
+%%]
+
+%%[(4 hmtyinfer) export(unknownAppSpineVertebraeInfo)
+unknownAppSpineVertebraeInfo :: AppSpineVertebraeInfo
+unknownAppSpineVertebraeInfo
+  = AppSpineVertebraeInfo
+      polInvariant fioMkUnify
+%%[[(9 codegen)
+      Nothing
+%%]]
+%%]
+
 %%[(9 codegen hmtyinfer) export(asFOUpdCoe)
 dfltFOUpdCoe :: AppSpineFOUpdCoe
 dfltFOUpdCoe _ x = last x
@@ -172,10 +190,12 @@ asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
 asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe
 %%]
 
-%%[(4 hmtyinfer).vertebraeInfoL
+%%[(4 hmtyinfer)
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-unknownAppSpineVertebraeInfoL = repeat (AppSpineVertebraeInfo polInvariant fioMkUnify)
+unknownAppSpineVertebraeInfoL = repeat unknownAppSpineVertebraeInfo
+%%]
 
+%%[(4 hmtyinfer).vertebraeInfoL
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL = [AppSpineVertebraeInfo polContravariant fioMkStrong, AppSpineVertebraeInfo polCovariant id]
 
@@ -184,14 +204,6 @@ prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id
 %%]
 
 %%[(9 hmtyinfer).vertebraeInfoL -4.vertebraeInfoL
-unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-unknownAppSpineVertebraeInfoL
-  = repeat
-    $ AppSpineVertebraeInfo polInvariant fioMkUnify
-%%[[(9 codegen)
-          Nothing
-%%]]
-
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL
   = [ AppSpineVertebraeInfo polContravariant fioMkStrong
@@ -232,6 +244,12 @@ data AppSpineInfo
       { asgiSpinePos   :: Int
       , asgiVertebraeL :: [AppSpineVertebraeInfo]
       }
+
+instance Show AppSpineInfo where
+  show _ = "AppSpineInfo"
+
+instance PP AppSpineInfo where
+  pp i = ppBracketsCommas (take 5 $ asgiVertebraeL i) >|< "@" >|< asgiSpinePos i
 
 emptyAppSpineInfo :: AppSpineInfo
 emptyAppSpineInfo = AppSpineInfo 0 unknownAppSpineVertebraeInfoL

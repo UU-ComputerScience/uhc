@@ -51,6 +51,10 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen grin) import({%{EH}EHC.CompilePhase.CompileLLVM})
 %%]
+%%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
+%%]
+%%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
+%%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
 %%]
 %%[99 import({%{EH}EHC.CompilePhase.Cleanup})
@@ -74,14 +78,18 @@ cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
       ; let (mainModNmL,impModNmL) = splitMain cr modNmL
             (_,opts) = crBaseInfo' cr
+      ; cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL)
       ; case mainModNmL of
           [mainModNm]
             | ehcOptDoLinking opts
-              -> cpSeq (   if ehcOptFullProgAnalysis opts
-                           then [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-                                , cpEhcCorePerModulePart2 mainModNm
-                                ]
-                           else []
+              -> cpSeq (   (if ehcOptFullProgAnalysis opts
+                            then [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
+                                 -- , cpMsg mainModNm VerboseDebug "XX"
+                                 , cpEhcCorePerModulePart2 mainModNm
+                                 -- , cpMsg mainModNm VerboseDebug "YY"
+                                 ]
+                            else []
+                           )
                         ++ [cpEhcExecutablePerModule GCC_CompileExec impModNmL mainModNm]
                        )
             | otherwise
@@ -89,7 +97,14 @@ cpEhcFullProgLinkAllModules modNmL
           _ | ehcOptDoLinking opts
               -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MustHaveMain]
             | otherwise
+%%[[20
               -> return ()
+%%][99
+              -> case ehcOptPkg opts of
+                   Just (PkgOption_Build pkg) | targetAllowsOLinking (ehcOptTarget opts)
+                     -> cpLinkO impModNmL pkg
+                   _ -> return ()
+%%]]
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]
@@ -124,7 +139,8 @@ cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHC
 cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
           , mergeIntoOneBigCore
-          , cpOutputCore "fullcore" mainModNm
+          -- , cpOutputCore "fullcore" mainModNm
+          , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
           ]
   where mergeIntoOneBigCore
           = do { cr <- get
@@ -267,7 +283,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[99
                || st == LHSOnlyImports
 %%]]
-             -> do { cpMsg modNm VerboseNormal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
+             -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
                    ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    ; return defaultResult
@@ -289,7 +305,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]
 %%[8
            (ECUSHaskell HSStart,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling Haskell"
+             -> do { cpMsg modNm VerboseMinimal "Compiling Haskell"
                    ; cpEhcHaskellModulePrepare modNm
                    ; cpEhcHaskellParse True False modNm
                    ; cpEhcHaskellModuleCommonPhases True True opts modNm
@@ -303,7 +319,7 @@ cpEhcModuleCompile1 targHSState modNm
              -> return defaultResult
 %%]]
            (ECUSEh EHStart,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling EH"
+             -> do { cpMsg modNm VerboseMinimal "Compiling EH"
                    ; cpEhcEhParse modNm
 %%[[20   
                    ; cpGetDummyCheckEhMod modNm
@@ -317,7 +333,7 @@ cpEhcModuleCompile1 targHSState modNm
                    }
 %%[[(8 codegen grin)
            (ECUSGrin,_)
-             -> do { cpMsg modNm VerboseNormal "Compiling Grin"
+             -> do { cpMsg modNm VerboseMinimal "Compiling Grin"
                    ; cpParseGrin modNm
                    ; cpProcessGrin modNm
                    ; cpProcessBytecode modNm 
@@ -565,8 +581,9 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
                    in  [cpEhcExecutablePerModule how [] modNm]
               else []
              )
-          ++ [cpMsg modNm VerboseALot "Core+Grin done"]
-          -- ++ [cpMsg modNm VerboseALot ("isMainMod: " ++ show isMainMod)]
+          ++ [ cpMsg modNm VerboseALot "Core+Grin done"
+             , cpMsg modNm VerboseDebug ("isMainMod: " ++ show isMainMod)
+             ]
           )
 %%]
 
@@ -593,6 +610,9 @@ cpEhcExecutablePerModule :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePha
 cpEhcExecutablePerModule how impModNmL modNm
   = cpSeq [ cpCompileWithGCC how impModNmL modNm
           , cpCompileWithLLVM modNm
+%%[[(8 jazy)
+          , cpCompileJazyJVM modNm
+%%]]
           ]
 %%]
 

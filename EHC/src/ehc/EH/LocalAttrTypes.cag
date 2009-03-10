@@ -166,6 +166,7 @@ SEM *
 		loc.prUid  						: PredOccId
 		loc.quantPrOccL 				: {[PredOcc]}
 		loc.quValGam_ex_ 				: ValGam
+		loc.range	  					: Range
 		loc.recKnTlTy  					: Ty
 		loc.recTy  						: Ty
 		loc.recTyExts 					: {AssocL HsName Ty}
@@ -187,6 +188,7 @@ SEM *
 		loc.ty_g_  						: Ty
 		loc.ty_q_  						: Ty
 		loc.ty_kn_  					: Ty
+		loc.polResVar					: Ty
 		loc.ty_sig_ 					: Ty
 		loc.tyGam_l_  					: TyGam
 		loc.typeTgi  					: TyGamInfo

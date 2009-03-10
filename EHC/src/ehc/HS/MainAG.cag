@@ -29,6 +29,9 @@
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
 %%]
 
+%%[(8 codegen) hs import ({%{EH}Base.Target})
+%%]
+
 %%[9 hs export(clGam2IdDefOccGam)
 %%]
 
@@ -187,7 +190,7 @@ SEM Type
 %%]
 
 %%[9
-ATTR Types Type AllRowTypeUpdate [ isAsPred: Bool | | ]
+ATTR Types Type MaybeType AllRowTypeUpdate [ isAsPred: Bool | | ]
 
 SEM Type
     | InfixApplication
@@ -226,7 +229,7 @@ SEM LeftHandSide
 
 %%[4
 ATTR
-  Type
+  Type MaybeType
 %%[[7
   AllRowTypeUpdate
 %%]]

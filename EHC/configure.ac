@@ -28,7 +28,8 @@ AC_SUBST(EH_VERSION_MAJOR)
 AC_SUBST(EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
-AC_SUBST(EH_VERSION,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
+AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
+AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_STABILITY)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -65,12 +66,54 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
-### ar, ranlib
+### enable options
+AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
+AC_SUBST(ENABLE_JAVA,$enableJava)
+if test x$enableJava == xyes
+then
+  REQUIRED_PROG_FOR_EH(javacCmd,javac)
+  REQUIRED_PROG_FOR_EH(jarCmd,jar)
+  if test "$javacCmd" = "no"; then
+    javacCmd=""
+    jarCmd=""
+    javacExists="no"
+  else
+    javacExists="yes"
+  fi
+  AC_SUBST(JAVAC_CMD,$javacCmd)
+  AC_SUBST(JAR_CMD,$jarCmd)
+fi
+
+### ar, ranlib, libtool
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$ranlibCmd"
+        then
+          ranlibCmd="`echo $ranlibCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
 REQUIRED_PROG_FOR_EH(arCmd,ar)
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$arCmd"
+        then
+          arCmd="`echo $arCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac  
 AC_SUBST(AR_CMD,$arCmd)
+
+REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
 AC_ARG_WITH(gcc-ehc-options,
@@ -479,8 +522,10 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool -static -o"
-libtoolDynamic="echo Dynamic linking not available: "
+#libtoolStaticCmd="libtool"
+libtoolStaticOpts="-static -o"
+libtoolDynamicCmd="echo Dynamic linking not available: "
+libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
@@ -494,23 +539,23 @@ case $HostPlatform in
         paths_sep=";"
         slash="\\\\"
         # libtool usage
-        libtoolStatic="no"
+        libtoolStaticCmd="no"
         ;;
   i*86-pc-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        #libtoolStatic="no"
+        #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	# libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+	# libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+        # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   *)
         # file suffixes
@@ -530,8 +575,10 @@ AC_SUBST(SLASH,"$slash")
 AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
 
 # libtool used, if any
-AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStatic")
+AC_SUBST(LIBTOOL_STATIC_CMD, "$libtoolStaticCmd")
+AC_SUBST(LIBTOOL_STATIC_OPTS, "$libtoolStaticOpts")
 AC_SUBST(LIBTOOL_DYNAMIC_CMD, "$libtoolDynamic")
+AC_SUBST(LIBTOOL_DYNAMIC_OPTS, "$libtoolDynamicOpts")
 
 # flags passed to gcc by ehc related to static/dynamic libraries
 AC_SUBST(EHC_GCC_OPTS_STATIC, "$ehcGccOptsStatic")
@@ -607,6 +654,14 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+fi
+
+if test x$enableJava == xyes
+then
+  echo "  javac is available?           : $javacExists"
+  if test "x$javacExists" = "xyes" ;then 
+  echo "    command for javac           : $javacCmd"
+  fi
 fi
 
 echo "Optional:"

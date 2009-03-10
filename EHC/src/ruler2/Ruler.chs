@@ -71,18 +71,24 @@ data RCompileRunStateInfo
       , crsiImpPosMp    :: ImpModMp
       }
 
+instance FileLocatable RCompileUnit String where
+  fileLocation _ = "unknown"
+  noFileLocation = "unknown"
+
 instance CompileUnitState RCompileUnitState where
   cusDefault        = RCUSRuler
   cusUnk            = RCUSUnknown
   cusIsUnk          = (==RCUSUnknown)
   cusIsImpKnown s   = s /= RCUSUnknown
 
-instance CompileUnit RCompileUnit Nm RCompileUnitState where
+instance CompileUnit RCompileUnit Nm String RCompileUnitState where
   cuDefault         = emptyRCU
   cuFPath           = rcuFilePath
+  cuLocation        = fileLocation
   cuKey             = rcuModNm
   cuState           = rcuState
   cuUpdFPath fp u   = u {rcuFilePath = fp}
+  cuUpdLocation _ u = u
   cuUpdState st u   = u {rcuState = st}
   cuUpdKey   nm u   = u {rcuModNm = nm}
   cuImports         = rcuImpNmL

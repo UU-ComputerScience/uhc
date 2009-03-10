@@ -174,7 +174,7 @@ fixpoint eqs1 eqs2 proc1 proc2
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
         -- ; _ <- trace ("fix " ++ show count) (return ())
-        ; if    (changes1 || changes2) && count<100
+        ; if    (changes1 || changes2) && count<38
           then  countFixpoint (count+1)
           else  return count
         }

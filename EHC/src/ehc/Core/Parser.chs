@@ -114,9 +114,9 @@ pCBind :: CParser CBind
 pCBind
   = (  (pDollNm P.<+> pCMetaOpt) <* pEQUAL)
     <**> (   (\e (n,m)        -> mkCBind1Meta n m e) <$> pCExpr
-         <|> (\c s i t (n,m)  -> CBind_FFI c s i n t) <$ pFOREIGN <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\c s i t (n,m)  -> CBind_FFI (fst c) s i n t) <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94
-         <|> (\c e en t (n,m) -> CBind_FFE n c (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\c e en t (n,m) -> CBind_FFE n (fst c) (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
   where pS = tokMkStr <$> pStringTk

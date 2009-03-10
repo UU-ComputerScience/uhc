@@ -665,11 +665,18 @@ EH_VERSION_MAJOR
 EH_VERSION_MINOR
 EH_VERSION_MINORMINOR
 EH_VERSION_STABILITY
-EH_VERSION
+EH_VERSION_SHORT
+EH_VERSION_FULL
+ENABLE_JAVA
+javacCmd
+jarCmd
+JAVAC_CMD
+JAR_CMD
 ranlibCmd
 RANLIB_CMD
 arCmd
 AR_CMD
+libtoolStaticCmd
 GCC_EHC_OPTIONS
 GHC_EHC_OPTIONS
 SHUFFLE_EHC_OPTIONS
@@ -723,7 +730,9 @@ PATHS_SEP
 SLASH
 DEVELOPMENT_PLATFORM
 LIBTOOL_STATIC_CMD
+LIBTOOL_STATIC_OPTS
 LIBTOOL_DYNAMIC_CMD
+LIBTOOL_DYNAMIC_OPTS
 EHC_GCC_OPTS_STATIC
 TOP_ABS
 TOP_ABS2
@@ -1322,6 +1331,11 @@ if test -n "$ac_init_help"; then
      short | recursive ) echo "Configuration of EH 0.1:";;
    esac
   cat <<\_ACEOF
+
+Optional Features:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-java           include java code generation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1981,7 +1995,9 @@ EH_VERSION_STABILITY=alpha
 
 
 
-EH_VERSION=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
+EH_VERSION_SHORT=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
+
+EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_STABILITY
 
 
 
@@ -1992,7 +2008,138 @@ EH_VERSION=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 
 
 
-### ar, ranlib
+### enable options
+# Check whether --enable-java was given.
+if test "${enable_java+set}" = set; then
+  enableval=$enable_java; enableJava=yes
+else
+  enableJava=no
+fi
+
+ENABLE_JAVA=$enableJava
+
+if test x$enableJava == xyes
+then
+
+  # Extract the first word of "javac", so it can be a program name with args.
+set dummy javac; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_javacCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $javacCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_javacCmd="$javacCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_javacCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+javacCmd=$ac_cv_path_javacCmd
+if test -n "$javacCmd"; then
+  { echo "$as_me:$LINENO: result: $javacCmd" >&5
+echo "${ECHO_T}$javacCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$javacCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install javac before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install javac before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+
+  # Extract the first word of "jar", so it can be a program name with args.
+set dummy jar; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_jarCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $jarCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_jarCmd="$jarCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_jarCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+jarCmd=$ac_cv_path_jarCmd
+if test -n "$jarCmd"; then
+  { echo "$as_me:$LINENO: result: $jarCmd" >&5
+echo "${ECHO_T}$jarCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$jarCmd"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install jar before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install jar before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+  if test "$javacCmd" = "no"; then
+    javacCmd=""
+    jarCmd=""
+    javacExists="no"
+  else
+    javacExists="yes"
+  fi
+  JAVAC_CMD=$javacCmd
+
+  JAR_CMD=$jarCmd
+
+fi
+
+### ar, ranlib, libtool
 
   # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
@@ -2046,6 +2193,17 @@ echo "$as_me: error:
 
   fi
 
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$ranlibCmd"
+        then
+          ranlibCmd="`echo $ranlibCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
 RANLIB_CMD=$ranlibCmd
 
 
@@ -2102,7 +2260,73 @@ echo "$as_me: error:
 
   fi
 
+# See remarks about cpp
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+        if test ! -x "$toplevelSystemAbsolutePathPrefix/$arCmd"
+        then
+          arCmd="`echo $arCmd | sed -e 's+/usr++'`"
+        fi
+        ;;
+  *)
+        ;;
+esac
 AR_CMD=$arCmd
+
+
+
+  # Extract the first word of "libtool", so it can be a program name with args.
+set dummy libtool; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_libtoolStaticCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $libtoolStaticCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_libtoolStaticCmd="$libtoolStaticCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_libtoolStaticCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+libtoolStaticCmd=$ac_cv_path_libtoolStaticCmd
+if test -n "$libtoolStaticCmd"; then
+  { echo "$as_me:$LINENO: result: $libtoolStaticCmd" >&5
+echo "${ECHO_T}$libtoolStaticCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  if test -z "$libtoolStaticCmd"; then
+
+  { echo "$as_me:$LINENO: WARNING:
+     You should have installed libtool, but I will proceed without it.
+     However, this may lead to a partial install only.
+     Perhaps libtool is already installed, but not in your PATH?" >&5
+echo "$as_me: WARNING:
+     You should have installed libtool, but I will proceed without it.
+     However, this may lead to a partial install only.
+     Perhaps libtool is already installed, but not in your PATH?" >&2;}
+
+  fi
 
 
 ### 'with' option for gcc options
@@ -6370,8 +6594,10 @@ development_platform="UNIX"
 paths_sep=":"
 slash="/"
 # libtool usage
-libtoolStatic="libtool -static -o"
-libtoolDynamic="echo Dynamic linking not available: "
+#libtoolStaticCmd="libtool"
+libtoolStaticOpts="-static -o"
+libtoolDynamicCmd="echo Dynamic linking not available: "
+libtoolDynamicOpts=""
 ehcGccOptsStatic=""
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
@@ -6385,23 +6611,23 @@ case $HostPlatform in
         paths_sep=";"
         slash="\\\\"
         # libtool usage
-        libtoolStatic="no"
+        libtoolStaticCmd="no"
         ;;
   i*86-pc-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        #libtoolStatic="no"
+        #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	# libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+	# libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   x86*-*-linux-gnu )
         # file suffixes
         # path separator
         # libtool usage
-        # libtoolStatic="libtool --mode=link gcc -static -o"
-        libtoolStatic="no"
+        # libtoolStaticCmd="libtool --mode=link gcc -static -o"
+        libtoolStaticCmd="no"
         ;;
   *)
         # file suffixes
@@ -6428,9 +6654,13 @@ DEVELOPMENT_PLATFORM="$development_platform"
 
 
 # libtool used, if any
-LIBTOOL_STATIC_CMD="$libtoolStatic"
+LIBTOOL_STATIC_CMD="$libtoolStaticCmd"
+
+LIBTOOL_STATIC_OPTS="$libtoolStaticOpts"
 
 LIBTOOL_DYNAMIC_CMD="$libtoolDynamic"
+
+LIBTOOL_DYNAMIC_OPTS="$libtoolDynamicOpts"
 
 
 # flags passed to gcc by ehc related to static/dynamic libraries
@@ -7180,11 +7410,18 @@ EH_VERSION_MAJOR!$EH_VERSION_MAJOR$ac_delim
 EH_VERSION_MINOR!$EH_VERSION_MINOR$ac_delim
 EH_VERSION_MINORMINOR!$EH_VERSION_MINORMINOR$ac_delim
 EH_VERSION_STABILITY!$EH_VERSION_STABILITY$ac_delim
-EH_VERSION!$EH_VERSION$ac_delim
+EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
+EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
+ENABLE_JAVA!$ENABLE_JAVA$ac_delim
+javacCmd!$javacCmd$ac_delim
+jarCmd!$jarCmd$ac_delim
+JAVAC_CMD!$JAVAC_CMD$ac_delim
+JAR_CMD!$JAR_CMD$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
+libtoolStaticCmd!$libtoolStaticCmd$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
 GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 SHUFFLE_EHC_OPTIONS!$SHUFFLE_EHC_OPTIONS$ac_delim
@@ -7220,13 +7457,6 @@ CPP_CMD!$CPP_CMD$ac_delim
 llvmAs!$llvmAs$ac_delim
 LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
 llvmOpt!$llvmOpt$ac_delim
-LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
-llvmLlc!$llvmLlc$ac_delim
-LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
-CPP!$CPP$ac_delim
-GREP!$GREP$ac_delim
-EGREP!$EGREP$ac_delim
-MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7268,6 +7498,13 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
+llvmLlc!$llvmLlc$ac_delim
+LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
+CPP!$CPP$ac_delim
+GREP!$GREP$ac_delim
+EGREP!$EGREP$ac_delim
+MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
@@ -7279,7 +7516,9 @@ PATHS_SEP!$PATHS_SEP$ac_delim
 SLASH!$SLASH$ac_delim
 DEVELOPMENT_PLATFORM!$DEVELOPMENT_PLATFORM$ac_delim
 LIBTOOL_STATIC_CMD!$LIBTOOL_STATIC_CMD$ac_delim
+LIBTOOL_STATIC_OPTS!$LIBTOOL_STATIC_OPTS$ac_delim
 LIBTOOL_DYNAMIC_CMD!$LIBTOOL_DYNAMIC_CMD$ac_delim
+LIBTOOL_DYNAMIC_OPTS!$LIBTOOL_DYNAMIC_OPTS$ac_delim
 EHC_GCC_OPTS_STATIC!$EHC_GCC_OPTS_STATIC$ac_delim
 TOP_ABS!$TOP_ABS$ac_delim
 TOP_ABS2!$TOP_ABS2$ac_delim
@@ -7300,7 +7539,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 39; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -7746,6 +7985,14 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+fi
+
+if test x$enableJava == xyes
+then
+  echo "  javac is available?           : $javacExists"
+  if test "x$javacExists" = "xyes" ;then
+  echo "    command for javac           : $javacCmd"
+  fi
 fi
 
 echo "Optional:"

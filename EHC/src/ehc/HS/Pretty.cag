@@ -83,7 +83,7 @@ SEM Declaration
     | KindSignature
         loc         .   pp          =   ppCommas' @names >#< "::" >#< @kind.pp
 %%]
-%%[8
+%%[(8 codegen)
     | ForeignImport
         loc         .   pp          =   "foreign import" >#< @callconvention >#< @safety >#< maybe empty (pp.show) @importname >#< @name >#< "::" >#< @type.pp
 %%]
@@ -114,7 +114,7 @@ SEM FunctionalDependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
 %%]
 
-%%[94
+%%[(94 codegen)
 SEM Declaration
     | ForeignExport
         loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
@@ -564,9 +564,15 @@ ATTR AllGuardedExpression [ sepPP: PP_Doc | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-ATTR MaybeExpression [ | | ppMb: {Maybe PP_Doc} ]
+ATTR MaybeExpression MaybeType [ | | ppMb: {Maybe PP_Doc} ]
 
 SEM MaybeExpression
+    | Just
+        lhs         .   ppMb        =   Just @just.pp
+    | Nothing
+        lhs         .   ppMb        =   Nothing
+
+SEM MaybeType
     | Just
         lhs         .   ppMb        =   Just @just.pp
     | Nothing

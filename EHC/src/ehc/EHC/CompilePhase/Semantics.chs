@@ -128,7 +128,7 @@ cpFoldHs modNm
                                       mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
                                 ; case crsiMbMainNm crsi of
                                     Just n                   -> mkerr 1 [n]
-                                    _ | ehcOptDoLinking opts -> put (cr {crStateInfo = crsi {crsiMbMainNm = Just modNm}})
+                                    _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
                                       | otherwise            -> mkerr 0 []
                                 })
 %%]]
@@ -166,7 +166,7 @@ cpFoldHI modNm
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
                            mmi'   = mkModMpInfo modNm (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
-                     ; put (cr {crStateInfo = crsi {crsiModMp = Map.insert modNm mmi' mm}})
+                     ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
                      ; cpUpdCU modNm ( ecuStorePrevHISem hiSem
                                      . ecuStoreHIDeclImpL (HISem.asDeclImpModL_Syn_AGItf hiSem)
                                      . ecuStoreHIUsedImpL (HISem.asUsedImpModL_Syn_AGItf hiSem)

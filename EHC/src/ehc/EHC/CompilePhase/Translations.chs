@@ -61,7 +61,7 @@ cpTranslateHs2EH modNm
                  (do { cpUpdCU modNm (ecuStoreEH eh)
                      ; cpSetLimitErrsWhen 5 "Dependency/name analysis" errs
                      ; when (ehcOptEmitHS opts)
-                            (lift $ putPPFile (fpathToStr (fpathSetSuff "hs2" fp)) (HSSem.pp_Syn_AGItf hsSem) 1000)
+                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "hs2") (HSSem.pp_Syn_AGItf hsSem) 1000)
                      ; when (ehcOptShowHS opts)
                             (lift $ putWidthPPLn 120 (HSSem.pp_Syn_AGItf hsSem))
                      })
@@ -90,7 +90,7 @@ cpTranslateEH2Output modNm
                  (do { cpSetLimitErrsWhen 5 about errs
 %%[[8
                      ; when (ehcOptEmitEH opts)
-                            (lift $ putPPFile (fpathToStr (fpathSetSuff "eh2" fp)) (EHSem.pp_Syn_AGItf ehSem) 1000)
+                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "eh2") (EHSem.pp_Syn_AGItf ehSem) 1000)
                      ; when (ehcOptShowEH opts)
                             (lift $ putWidthPPLn 120 (EHSem.pp_Syn_AGItf ehSem))
 %%][102
@@ -105,7 +105,7 @@ cpTranslateEH2Output modNm
 %%]]
 %%[[(99 hmtyinfer)
                      ; when (ecuIsTopMod ecu && ehcOptEmitDerivTree opts /= DerivTreeWay_None)
-                            (lift $ putPPFile (fpathToStr (fpathSetSuff "lhs" fp)) (EHSem.dt_Syn_AGItf ehSem) 1000)
+                            (lift $ putPPFPath (mkOutputFPath opts modNm fp "lhs") (EHSem.dt_Syn_AGItf ehSem) 1000)
 %%][100
 %%]]
                      }

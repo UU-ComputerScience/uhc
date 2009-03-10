@@ -7,7 +7,7 @@ module Language.Cil.Pretty (
     Cil (cil)
   ) where
 
-import Data.List (intersperse)
+import Data.List (intersperse, intercalate)
 import Language.Cil.Syntax
 
 {- Added `deriving Show' to Syntax
@@ -23,10 +23,19 @@ class Cil a where
 cilName :: DottedName -> ShowS
 cilName "" = error "Language.Cil.Pretty.cilName: Name cannot be empty"
 cilName n  = if n `elem` kw || '<' `elem` n
-             then (("'" ++ n ++ "'") ++)
+             then (escape n ++)
              else (n ++)
   where
     kw = ["add", "pop", "value"]
+    escape s = intercalate "/" (map (\s -> "'" ++ s ++ "'") (filter (/=[]) (split '/' s)))
+
+split :: Eq a => a -> [a] -> [[a]]
+split x xs = f xs []
+  where
+    f []     zs = [zs]
+    f (y:ys) zs = if x == y
+                      then zs:f ys []
+                      else f ys (zs++[y])
 
 instance Cil Assembly where
   cil (Assembly as n ts) =
@@ -259,7 +268,7 @@ instance Cil PrimitiveType where
   cil String              = ("string" ++)
   cil Object              = ("object" ++)
   cil (ValueType a c)     = ("valuetype " ++) . cilAssembly a . cilName c
-  cil (ReferenceType a c) = cilAssembly a . cilName c
+  cil (ReferenceType a c) = ("class " ++ ) . cilAssembly a . cilName c
   cil (GenericType x)     = ("!" ++) . shows x
   cil (ByRef pt)          = cil pt . ("&" ++)
 

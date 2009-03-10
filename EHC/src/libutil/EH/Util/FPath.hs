@@ -6,6 +6,7 @@ module EH.Util.FPath
   , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir
+  , fpathUpdBase
   , fpathRemoveSuff, fpathRemoveDir
   , fpathPrependDir, mkTopLevelFPath
   
@@ -16,15 +17,18 @@ module EH.Util.FPath
   , SearchPath, FileSuffixes
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
-  , searchPathForReadableFiles, searchPathForReadableFile
+  , searchLocationsForReadableFiles, searchPathForReadableFiles, searchPathForReadableFile
+  
+  , fpathEnsureExists
   )
 where
 
 import IO
-import Maybe
+import Data.Maybe
 import Data.List
 import Control.Monad
-import Directory
+import System.IO
+import System.Directory
 
 -------------------------------------------------------------------------------------------
 -- File path utils
@@ -51,12 +55,22 @@ fpathToStr fpath
         addd f = maybe f (\d -> d ++ fpathDirSep ++ f) (fpathMbDir fpath)
      in addd . adds . fpathBase $ fpath
 
+fpathFromStr :: String -> FPath
+fpathFromStr fn
+  = FPath d b' s
+  where (d ,b) = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
+        (b',s) = maybe (b,Nothing)  (\(b,s) -> (b,Just s)) (splitOnLast '.'             b )
+
 fpathSuff :: FPath -> String
 fpathSuff = maybe "" id . fpathMbSuff
 
 fpathSetBase :: String -> FPath -> FPath
 fpathSetBase s fp
   = fp {fpathBase = s}
+
+fpathUpdBase :: (String -> String) -> FPath -> FPath
+fpathUpdBase u fp
+  = fp {fpathBase = u (fpathBase fp)}
 
 fpathSetSuff :: String -> FPath -> FPath
 fpathSetSuff "" fp
@@ -141,10 +155,10 @@ class FPATH f where
   mkFPath :: f -> FPath
 
 instance FPATH String where
-  mkFPath fn
-    = FPath d b' s
-    where (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
-          (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
+  mkFPath = fpathFromStr
+
+instance FPATH FPath where
+  mkFPath = id
 
 -------------------------------------------------------------------------------------------
 -- Open path for read or return stdin
@@ -159,16 +173,29 @@ fpathOpenOrStdin fp
             ; return (fp,h)
             }
 
-openFPath :: FPath -> IOMode -> IO (String, Handle)
-openFPath fp mode | fpathIsEmpty fp = case mode of
-                                        ReadMode      -> return ("<stdin>" ,stdin )
-                                        WriteMode     -> return ("<stdout>",stdout)
-                                        AppendMode    -> return ("<stdout>",stdout)
-                                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
-                  | otherwise       = do
-                                        let fNm = fpathToStr fp
-                                        h <- openFile fNm mode
-                                        return (fNm,h)
+openFPath :: FPath -> IOMode -> Bool -> IO (String, Handle)
+openFPath fp mode binary
+  | fpathIsEmpty fp = case mode of
+                        ReadMode      -> return ("<stdin>" ,stdin )
+                        WriteMode     -> return ("<stdout>",stdout)
+                        AppendMode    -> return ("<stdout>",stdout)
+                        ReadWriteMode -> error "cannot use stdin/stdout with random access"
+  | otherwise       = do { let fNm = fpathToStr fp
+                         ; h <- if binary
+                                then openBinaryFile fNm mode
+                                else openFile fNm mode
+                         ; return (fNm,h)
+                         }
+
+-------------------------------------------------------------------------------------------
+-- Directory
+-------------------------------------------------------------------------------------------
+
+fpathEnsureExists :: FPath -> IO ()
+fpathEnsureExists fp
+  = do { let d = fpathMbDir fp
+       ; when (isJust d) (createDirectoryIfMissing True (fromJust d))
+       }
 
 -------------------------------------------------------------------------------------------
 -- Search path utils
@@ -192,8 +219,8 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
-searchPathForReadableFiles stopAtFirst paths suffs fp
+searchLocationsForReadableFiles :: (loc -> String) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
+searchLocationsForReadableFiles getdir stopAtFirst locs suffs fp
   = let select stop f fps
           = foldM chk [] fps
           where chk r fp
@@ -201,23 +228,27 @@ searchPathForReadableFiles stopAtFirst paths suffs fp
                       (_:_) | stop -> return r
                       _            -> do r' <- f fp
                                          return (r ++ r')
-        tryToOpen mbSuff fp
+        tryToOpen loc mbSuff fp
           = do { let fp' = maybe fp (\suff -> fpathSetNonEmptySuff suff fp) mbSuff
                ; fExists <- doesFileExist (fpathToStr fp')
                -- ; hPutStrLn stderr (show fp ++ " - " ++ show fp')
                ; if fExists
-                 then return [fp']
+                 then return [(fp',loc)]
                  else return []
                }
-        tryToOpenWithSuffs suffs fp
+        tryToOpenWithSuffs loc suffs fp
           = case suffs of
-              [] -> tryToOpen Nothing fp
+              [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
-                      (\(ms,f) -> tryToOpen ms f)
+                      (\(ms,f) -> tryToOpen loc ms f)
                       ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
-        tryToOpenInDir dir
-          = select True (tryToOpenWithSuffs suffs) [fpathPrependDir dir fp {-,fpathSetDir dir fp -}]
-     in select True tryToOpenInDir paths
+        tryToOpenInDir loc
+          = select True (tryToOpenWithSuffs loc suffs) [fpathPrependDir (getdir loc) fp {-,fpathSetDir dir fp -}]
+     in select True tryToOpenInDir locs
+
+searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
+searchPathForReadableFiles stopAtFirst locs suffs fp
+  = fmap (map fst) $ searchLocationsForReadableFiles id stopAtFirst locs suffs fp
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp

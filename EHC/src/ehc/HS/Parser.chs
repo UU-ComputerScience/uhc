@@ -13,11 +13,14 @@
 %%[1 export(pAGItf, HSParser)
 %%]
 
--- debugging
-%%[1 import(EH.Util.Utils, EH.Util.Pretty)
+%%[(8 codegen) import ({%{EH}Base.Target})
 %%]
 
 %%[20 export(pFixity, pAGItfImport, HSParser')
+%%]
+
+-- debugging
+%%[1 import(EH.Util.Utils, EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -435,15 +438,15 @@ pFieldDeclaration
 %%% Foreign
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[(8 codegen)
 pDeclarationForeign :: HSParser Declaration
 pDeclarationForeign
   = pFOREIGN
-    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (tokMkStr c) s i (tokMkQName n) t)
-             <$ pIMPORT <*> callconv <*> pSafety <*> pFSpec
+    <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (fst c) s i (tokMkQName n) t)
+             <$ pIMPORT <*> pFFIWay <*> pSafety <*> pFSpec
 %%[[94
-         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (tokMkStr c) i (tokMkQName n) t)
-             <$ pEXPORT <*> callconv <*> pFSpec
+         <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (fst c) i (tokMkQName n) t)
+             <$ pEXPORT <*> pFFIWay <*> pFSpec
 %%]]
          )
   where pSafety =  (Just . tokMkStr) <$> safety <|> pSucceed Nothing
@@ -555,7 +558,7 @@ pKindPrefix
 %%[1
 pTypeBase :: HSParser Type
 pTypeBase
-  =   mkRngNm Type_Constructor <$> qtycon -- gtycon_no_delims
+  =   mkRngNm Type_Constructor <$> gtycon_no_delims_commas -- gtycon_no_delims -- qtycon -- 
 %%[[2
   <|> (Type_Wildcard . mkRange1) <$> pTDOT
 %%]]
@@ -593,7 +596,18 @@ pTypeBase
                                       (map (RowTypeUpdate_Extends r Nothing) (e:es)))
                         <$>  pList1 (pComma *> pType)
 %%]]
+%%[[11
+                    <|> (\(o,_) e r -> Type_SectionApplication r (Just e) o Nothing)
+                        <$> pTypeOpBase
+%%]]
               )     )
+%%[[11
+          <|> (pTypeOpBase
+               <**> (   (\e (o,_) r -> Type_SectionApplication r Nothing o (Just e)) <$> pType
+                    -- <|> pSucceed (\(o,_) r -> Type_SectionApplication r Nothing o Nothing)
+              )     )
+          <|> (\ts r -> Type_TupleConstructor r (length ts + 1)) <$> commas'
+%%]]
 %%[[1
           <|> pSucceed (\r -> Type_Constructor r (hsnProd 0))
 %%][7
@@ -631,13 +645,6 @@ pType
   <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW <*> pType
 %%]]
   <|> pTypePrefix <*> pType
-  where pTypeOp
-          = mkRngNm' Type_Constructor
-            <$> (   pRARROW
-%%[[9
-                <|> pDARROW
-%%]]
-                )
 %%]
 
 %%[4.pTypePrefix
@@ -654,13 +661,21 @@ pTypeOpPrefix
 %%[[9
   <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW
 %%]]
-  where pTypeOp
-          = mkRngNm' Type_Constructor
-            <$> (   pRARROW
+%%]
+
+%%[1
+pTypeOp :: HSParser (Type,Range)
+pTypeOp
+  =   pTypeOpBase
 %%[[9
-                <|> pDARROW
+  <|> mkRngNm' Type_Constructor <$> pDARROW
 %%]]
-                )
+%%]
+
+%%[1
+pTypeOpBase :: HSParser (Type,Range)
+pTypeOpBase
+  = mkRngNm' Type_Constructor <$> pRARROW
 %%]
 
 %%[1.pTypeApp
@@ -842,15 +857,16 @@ pExpressionBase
   where pInParens :: HSParser (Range -> Expression)
         pInParens
           =   (pExpression
-               <**> (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing) <$> pOp
+               <**> (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing)
+                        <$> pOp
                     <|> pSucceed (flip Expression_Parenthesized)
 %%[[1
                     <|> (\es e r -> Expression_Tuple r (e:es))
-                        <$>  pList1 (pComma *> pExpression)
+                        <$> pList1 (pComma *> pExpression)
 %%][7
                     <|> (\es e r -> Expression_RowRecordUpdate r (Expression_RowRecordEmpty r)
                                       (map (RowRecordExpressionUpdate_Extends r Nothing) (e:es)))
-                        <$>  pList1 (pComma *> pExpression)
+                        <$> pList1 (pComma *> pExpression)
 %%]]
               )     )
           <|> (\ts r -> Expression_TupleConstructor r (length ts + 1)) <$> commas'
@@ -1233,6 +1249,17 @@ pSelector
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+pFFIWay :: HSParser (FFIWay,Token)
+pFFIWay
+  =   pAnyKey (\way -> (,) way <$> pKeyTk (show way)) allFFIWays
+  <?> "pFFIWay"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Names/Symbols of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1514,13 +1541,7 @@ safety
 
 callconv :: HSParser Token
 callconv
-  =   pCCALL 
-  <|> pJAZY
-%%[[94
-  <|> pSTDCALL
-  <|> pDOTNET
-  <|> pJVM
-%%]]
+  =   snd <$> pFFIWay
   <?> "callconv"
 %%]
 
@@ -1594,14 +1615,24 @@ special_id
 %%]
 
 %%[1
+gtycon_no_delims' :: HSParser Token -> HSParser Token   -- A "general" qualified tycon
+gtycon_no_delims' pInParens
+  =   oqtycon
+  <|> pParens pInParens
+  <?> "gtycon_no_delims"
+
 gtycon_no_delims :: HSParser Token   -- A "general" qualified tycon
 gtycon_no_delims
-  =   oqtycon
-  <|> pParens
+  =   gtycon_no_delims'
         (   commas
         <|> pRARROW
         )
   <?> "gtycon_no_delims"
+
+gtycon_no_delims_commas :: HSParser Token   -- A "general" qualified tycon
+gtycon_no_delims_commas
+  =   gtycon_no_delims' pRARROW
+  <?> "gtycon_no_delims_commas"
 
 gtycon :: HSParser Token   -- A "general" qualified tycon
 gtycon

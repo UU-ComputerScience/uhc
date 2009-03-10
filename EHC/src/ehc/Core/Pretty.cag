@@ -177,7 +177,7 @@ SEM CBind
 %%[[8
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 %%][8_2
-                                                      ("foreign" >#< pp @callconv >#< pp @safety >#< pp @impEnt) >#< "::" >#< ppTyWithCfg' CfgPP_HI @ty
+                                                      ("foreign" >#< pp (show @callconv) >#< pp @safety >#< pp @impEnt) >#< "::" >#< ppTyWithCfg' CfgPP_HI @ty
 %%]]
 %%[[94
   | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")

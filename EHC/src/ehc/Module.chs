@@ -49,6 +49,7 @@ data ModEnt
       { mentKind    :: !IdOccKind
       , mentIdOcc   :: !IdOcc
       , mentOwns    :: !(Set.Set ModEnt)
+      , mentRange	:: !Range
       }
   deriving (Show)
 
@@ -116,7 +117,7 @@ data ModExp
   deriving (Show)
 
 data ModEntSpec
-  = ModEntSpec !HsName !(Maybe ModEntSubSpec)
+  = ModEntSpec !HsName !Range !(Maybe ModEntSubSpec)
   deriving (Show)
 
 data ModEntSubSpec
@@ -131,11 +132,12 @@ data ModImp
       , mimpAs          :: !HsName
       , mimpHiding      :: !Bool
       , mimpImpL        :: ![ModEntSpec]
+      , mimpRange		:: !Range
       }
   deriving (Show)
 
 emptyModImp :: ModImp
-emptyModImp = ModImp False hsnUnknown hsnUnknown True []
+emptyModImp = ModImp False hsnUnknown hsnUnknown True [] emptyRange
 
 modImpBuiltin :: ModImp
 modImpBuiltin
@@ -160,7 +162,7 @@ instance PP ModExp where
   pp (ModExpMod m) = "module" >#< m
 
 instance PP ModEntSpec where
-  pp (ModEntSpec n s) = n >|< maybe empty pp s
+  pp (ModEntSpec n _ s) = n >|< maybe empty pp s
 
 instance PP ModEntSubSpec where
   pp ModEntSubAll = pp "(..)"
@@ -195,39 +197,27 @@ modBuiltin
       , modDefs         = defs
       }
   where defs
-          = Rel.fromList [ (n,ModEnt IdOcc_Type (IdOcc n IdOcc_Type) Set.empty) | (n,_) <- gamToAssocL initTyGam ]
-            `Rel.union` Rel.fromList [ (n,ModEnt IdOcc_Kind (IdOcc n IdOcc_Kind) Set.empty) | (n,_) <- gamToAssocL initKiGam ]
+          = Rel.fromList [ (n,ModEnt IdOcc_Type (IdOcc n IdOcc_Type) Set.empty emptyRange) | (n,_) <- gamToAssocL initTyGam ]
+            `Rel.union` Rel.fromList [ (n,ModEnt IdOcc_Kind (IdOcc n IdOcc_Kind) Set.empty emptyRange) | (n,_) <- gamToAssocL initKiGam ]
 %%]
 
 %%[20
 instance PP Mod where
   pp m = modName m >|< "/" >|< modNameInSrc m
-         >-< indent 2 ("IMP" >#< ppParensCommas (modImpL m) >-< "EXP" >#< maybe empty ppParensCommas (modExpL m) >-< "HID" >#< pp (modHiddenExps m) >-< "DEF" >#< pp (modDefs m))
+         >-< indent 2 (   "IMP" >#< ppParensCommas (modImpL m)
+                      >-< "EXP" >#< maybe empty ppParensCommas (modExpL m)
+                      >-< "HID" >#< pp (modHiddenExps m)
+                      >-< "DEF" >#< pp (modDefs m)
+                      )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% 5.1 Importing or exporting an entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[2012
-modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
-modEntSpec isHiding rel (ModEntSpec x subspec)
-  = Rel.unions [mSpec,mSub]
-  where mSpec       = Rel.restrictRng consider (Rel.restrictDom (==x) rel)
-        allSubs     = mentOwns `unionMapSet` Rel.rng mSpec
-        subs        = Rel.restrictRng (`Set.member` allSubs) rel
-        mSub        = case subspec of
-                        Nothing              -> Rel.empty
-                        Just ModEntSubAll    -> subs
-                        Just (ModEntSubs xs) -> Rel.restrictDom ((`elem` xs) . hsnQualified) subs
-        consider
-          | isHiding && isNothing subspec = const True
-          | otherwise                     = not . mentIsCon
-%%]
-
 %%[20
 modEntSpec :: Bool -> ModEntRel -> ModEntSpec -> ModEntRel
-modEntSpec isHiding rel (ModEntSpec x subspec)
+modEntSpec isHiding rel (ModEntSpec x _ subspec)
   | isHiding && isNothing subspec
               = mSpec
   | otherwise = Rel.unions [mSpec,mSub mSpec]
@@ -328,10 +318,10 @@ checkMod expsOf inscp mod
     ++ if null missingModules
        then checkExpSpec inscp mod
             ++ [ err | (imp,Just exps) <- impSources, err <- checkImp exps imp ]
-       else [rngLift emptyRange mkErr_NamesNotIntrod "module" missingModules]
+       else [rngLift emptyRange mkErr_NamesNotIntrod' "module" missingModules]
   where Just modExports = expsOf (modName mod)
         impSources      = [ (imp,expsOf (mimpSource imp)) | imp <- modImpL mod ]
-        missingModules  = nub [ mimpSource imp | (imp,Nothing) <- impSources ]
+        missingModules  = nubOn fst [ mkThingAnd1Range (mimpRange imp) (mimpSource imp) | (imp,Nothing) <- impSources ]
 %%]
 
 %%[20
@@ -341,40 +331,25 @@ checkAmbigExps exps
   where isAmbig n = ambig n cons ++ ambig n other
                   where (cons,other) = partition mentIsCon (Rel.apply exps n)
         ambig n ents@(_:_:_) | not (null a)
-                             = [rngLift emptyRange Err_AmbiguousExport n (map (pp . ioccNm . mentIdOcc) $ concat $ a)]
-                             where a = [ l | l@(_:_:_) <- groupSortOn (ioccKind . mentIdOcc) ents ]
+                             = [rngLift emptyRange Err_AmbiguousExport n (map mkn $ concat $ a)]
+                             where a   = [ l | l@(_:_:_) <- groupSortOn (ioccKind . mentIdOcc) ents ]
+%%[[20
+                                   mkn   = pp . ioccNm . mentIdOcc
+%%][99
+                                   mkn o = (ioccNm $ mentIdOcc o, Just [(mentRange o,Nothing)])
+%%]]
         ambig n _            = []
 %%]
 
-%%[2012
-checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
-checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
-  = case xents of
-      []   -> [errUndef x]
-      ents -> concatMap chk ents
-  where xents   = filter consider (Rel.apply rel x)
-        chk ent = case subspec of
-                    Just (ModEntSubs subs)
-                      -> map (errUndefSub x) (filter (not . (`Set.member` subsInScope)) subs)
-                      where subsInScope
-                              = Set.map hsnQualified
-                                $ Rel.dom
-                                $ Rel.restrictRng (`Set.member` mentOwns ent) rel
-                    _ -> []
-        consider
-          | isHiding && isNothing subspec = const True
-          | otherwise                     = not . mentIsCon
-%%]
-
 %%[20
-checkEntSpec :: Bool -> (HsName -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
-checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x subspec) rel
+checkEntSpec :: Bool -> (HsName -> Range -> Err) -> (HsName -> HsName -> Err) -> ModEntSpec -> ModEntRel -> [Err]
+checkEntSpec isHiding errUndef errUndefSub (ModEntSpec x xrange subspec) rel
   | isHiding && isNothing subspec
               = case xents of
-                  []   -> [errUndef x]
+                  []   -> [errUndef x xrange]
                   _    -> []
   | otherwise = case xents of
-                  []   -> [errUndef x]
+                  []   -> [errUndef x xrange]
                   ents -> concatMap chk $ filter mentIsCon $ ents
   where xents   = Rel.apply rel x
         chk ent = case subspec of
@@ -398,8 +373,8 @@ checkExpSpec inscp mod
           | x `elem` aliases = []
           | otherwise        = [rngLift emptyRange mkErr_NamesNotIntrod "module alias" [x]]
         chk (ModExpEnt spec) = checkEntSpec False err1 err2 spec inscp
-        err1   x = rngLift emptyRange mkErr_NamesNotIntrod ("export") [x]
-        err2 e x = rngLift emptyRange mkErr_NamesNotIntrod ("subexport of export " ++ show e) [x]
+        err1   x r = rngLift emptyRange mkErr_NamesNotIntrod' ("export") [mkThingAnd1Range r x]
+        err2 e x   = rngLift emptyRange mkErr_NamesNotIntrod  ("subexport of export " ++ show e) [x]
 %%]
 
 %%[20
@@ -408,8 +383,8 @@ checkImp exps imp
   = concatMap chk (mimpImpL imp)
   where src = mimpSource imp
         chk spec = checkEntSpec (mimpHiding imp) err1 err2 spec exps
-        err1   x = rngLift emptyRange mkErr_NamesNotIntrod ("module " ++ show src ++ " import") [x]
-        err2 i x = rngLift emptyRange mkErr_NamesNotIntrod ("module " ++ show src ++ " subimport of import " ++ show i) [x]
+        err1   x r = rngLift emptyRange mkErr_NamesNotIntrod' ("module " ++ show src ++ " import") [mkThingAnd1Range r x]
+        err2 i x   = rngLift emptyRange mkErr_NamesNotIntrod  ("module " ++ show src ++ " subimport of import " ++ show i) [x]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

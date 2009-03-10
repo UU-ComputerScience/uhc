@@ -5,10 +5,13 @@
 %%[(8 codegen grin) hs module {%{EH}GrinByteCode} import({%{EH}Base.Common},{%{EH}GrinCode},qualified {%{EH}Config} as Cfg,{%{EH}GrinCode.Pretty})
 %%]
 
-%%[(8 codegen grin) hs import(EH.Util.Utils,EH.Util.Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
+%%[(8 codegen grin) hs import(EH.Util.Utils,EH.Util.Pretty as Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Binary} as Binary)
 %%]
 
 %%[(8 codegen grin) hs export(AGItf(..),Module(..),Instr(..), Instrs, Meta(..))
@@ -156,7 +159,7 @@ data CallInfoExtra
 
 %%[(8 codegen grin) hs
 instance PP CallInfoExtra where
-  pp (CallInfoExtra_CCall t) = pp $ show $ map basicTyChar t
+  pp (CallInfoExtra_CCall t) = pp $ show $ map basicGrinTyCharEncoding t
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
@@ -524,35 +527,6 @@ gvCall i nmEnv modNmConstInx ins inc stkDepth nm
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs
-pow2 :: Int -> Integer
-pow2 x = 1 `shiftL` x
-
-pow2' :: Int -> (Integer,Integer,Integer)
-pow2' x
-  = (p,-p,p-1)
-  where p = pow2 x
-
-(pow2_7 ,pow2_7neg ,pow2_7sub1 ) = pow2' 7
-(pow2_8 ,pow2_8neg ,pow2_8sub1 ) = pow2' 8
-
-(pow2_15,pow2_15neg,pow2_15sub1) = pow2' 15
-(pow2_16,pow2_16neg,pow2_16sub1) = pow2' 16
-
-(pow2_31,pow2_31neg,pow2_31sub1) = pow2' 31
-(pow2_32,pow2_32neg,pow2_32sub1) = pow2' 32
-
-(pow2_63,pow2_63neg,pow2_63sub1) = pow2' 63
-(pow2_64,pow2_64neg,pow2_64sub1) = pow2' 64
-%%]
-
-%%[(8 codegen grin) hs
-mask2 :: Int -> Integer
-mask2 x = pow2 x - 1
-
-[mask2_8,mask2_16,mask2_32,mask2_64] = map mask2 [8,16,32,64]
-%%]
-
 %%[(8 codegen grin) hs export(nrWord2Byte)
 nrWord2Byte :: Integral c => c -> c
 nrWord2Byte sz
@@ -756,7 +730,7 @@ callc :: Integral c => MbStrInx -> [BasicTy] -> c -> Instr
 callc i ty nArg
   = Instr_CallC s1 i1 ce (mkCICCall ty i)
   where (s1,i1) = imm nArg
-        (_ ,ce) = imm $ basicTyLEncoding ty
+        (_ ,ce) = imm $ basicGrinTyLEncoding ty
 
 retcase :: Integral c => c -> c -> Instr
 retcase nRes retOffSurr
@@ -805,7 +779,7 @@ data AnnKind
   deriving (Eq,Show)
 
 instance PP AnnKind where
-  pp AnnComment      = empty
+  pp AnnComment      = Pretty.empty
   pp AnnFunStart     = pp "funstart"
   pp AnnStackDepth   = pp "stackoff"
   pp AnnIdUse        = pp "iduse"

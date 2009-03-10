@@ -109,9 +109,10 @@ SEM Expr
 SEM PatExpr
   | IConst      lhs     .  ppAST    =   ppNest ["PatExpr","IConst"] [@pp] []
   | CConst      lhs     .  ppAST    =   ppNest ["PatExpr","CConst"] [@pp] []
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_9)
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Var"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_5 ++ @info_9)
                 loc     .  info_1   =   []
                         .  info_2   =   []
+                        .  info_5   =   []
                         .  info_9   =   []
   | VarAs       lhs     .  ppAST    =   ppNest ["PatExpr","VarAs"] [ppNm @nm] [@patExpr.ppAST]
   | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["PatExpr","Con"] [ppNm @nm] [] (@info_1 ++ @info_2 ++ @info_4)
@@ -126,11 +127,13 @@ SEM PatExpr
                         .  info_2   =   []
   
 SEM TyExpr
-  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Con"] [ppNm @nm] [] (@info_1)
+  | Con         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Con"] [ppNm @nm] [] (@info_1 ++ @info_17)
                 loc     .  info_1   =   []
-  | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","App"] [] [@func.ppAST,@arg.ppAST] (@info_2 ++ @info_6)
+                        .  info_17  =   []
+  | App         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","App"] [] [@func.ppAST,@arg.ppAST] (@info_2 ++ @info_6 ++ @info_17)
                 loc     .  info_2   =   []
                         .  info_6   =   []
+                        .  info_17  =   []
   | Parens      lhs     .  ppAST    =   ppNest ["TyExpr","Parens"] [] [@tyExpr.ppAST]
   | AppTop      lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","AppTop"] [] [@tyExpr.ppAST] @info_1
                 loc     .  info_1   =   []
@@ -180,7 +183,11 @@ SEM Expr
 
 SEM PatExpr
   | Var Con AppTop App
+%%[[1
                 loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTy @lhs.knTy)
+%%][4
+                loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+%%]]
                                         ]
   
 SEM TyExpr
@@ -250,8 +257,9 @@ SEM PatExpr
 
 %%[3
 SEM TyExpr
-  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Var"] [ppNm @nm] [] @info_6
+  | Var         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Var"] [ppNm @nm] [] (@info_6 ++ @info_17)
                 loc     .  info_6   =   []
+                        .  info_17  =   []
   | VarWild     lhs     .  ppAST    =   ppNest ["TyExpr","VarWild"] [ppNm @nm] []
 %%]
 
@@ -412,6 +420,8 @@ SEM Expr
                                         ]
 
 SEM PatExpr
+  | Var         loc     .  info_5   :=  [ mkInfo1 "ty_g_" (ppTyS @lhs.tyVarMp @ty_g_)
+                                        ]
   | Con         loc     .  info_5   :=  [ mkInfo1 "patFunTy" (ppTyS @lhs.tyVarMp @patFunTy)
                                         ]
 
@@ -706,10 +716,10 @@ SEM Expr
 %%]
 
 %%[(9 hmtyinfer)
+%%]
 SEM PatExpr
   | Var         loc     .  info_9   :=  [ mkInfo1 "@fe" (pp @fe)
                                         ]
-%%]
 
 %%[10
 SEM Expr
@@ -730,6 +740,12 @@ SEM Expr
 SEM RecExpr
   | Ext         loc     .  info_10  :=  [ mkInfo1 "hereCnstrMp+subs" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList $ @expr.tyVarMp `chrAppSubst` @hereCnstrMp)
                                         ]
+%%]
+
+%%[(11 hmtyinfer)
+SEM TyExpr
+  | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Lam"] [ppNm @tyVar] [@tyExpr.ppAST] (@info_17)
+                loc     .  info_17  =   []
 %%]
 
 %%[12
@@ -803,6 +819,13 @@ SEM Expr
                                         , mkInfo1 "polVarMpCyc" (pp @polVarMpCyc)
                                         , mkInfo1 "polOkCyc" (pp @polOkCyc)
                                         , mkInfo1 "polErrCyc" (pp @polErrCyc)
+                                        ]
+
+SEM TyExpr
+  | Var Con     loc     .  info_17  :=  [ mkInfo1 "lhs.knPolCtx" (ppTyS @lhs.polVarMp @lhs.knPolCtx)
+                                        , mkInfo1 "foTrace foPol" (vlist $ foTrace @foPol)
+                                        ]
+  | App Lam     loc     .  info_17  :=  [ mkInfo1 "lhs.knPolCtx" (ppTyS @lhs.polVarMp @lhs.knPolCtx)
                                         ]
 %%]
 

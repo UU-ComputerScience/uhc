@@ -79,7 +79,7 @@
 %%[8 import (EH.Util.FPath,IO,Char,Data.Maybe,Numeric)
 %%]
 
-%%[8 export(putCompileMsg,writeToFile, writePP)
+%%[8 export(putCompileMsg)
 %%]
 
 %%[8 export(ppHsnNonAlpha)
@@ -318,6 +318,7 @@ filterSeq p = mkSeq . filter p . seqToList
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.SemApp export(SemApp(..))
+%%[[SemAppCore1
 class SemApp a where
   -- basic semantics
   semApp            ::  a -> a -> a
@@ -325,19 +326,23 @@ class SemApp a where
   semVar            ::  (Position n,HSNM n) => n -> a
   semCon            ::  (Position n,HSNM n) => n -> a
   semParens         ::  a -> a
+%%]]
+  -- basic semantics with Range
   semRngApp         ::  Range -> a -> a -> a
   semRngAppTop      ::  Range -> a -> a
   semRngVar         ::  (Position n,HSNM n) => Range -> n -> a
   semRngCon         ::  (Position n,HSNM n) => Range -> n -> a
   semRngParens      ::  Range -> a -> a
   -- constructing
-  mk1App            ::  a -> a -> a
+%%[[SemAppCore2
   mkApp             ::  [a] -> a
-  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
   mkConApp          ::  (Position n,HSNM n) => n -> [a] -> a
   mkProdApp         ::  [a] -> a
   mk1Arrow          ::  a -> a -> a
   mkArrow           ::  [a] -> a -> a
+%%]]
+  mk1App            ::  a -> a -> a
+  mk1ConApp         ::  (Position n,HSNM n) => n -> a -> a
   -- constructin with Range
   mk1RngApp         ::  Range -> a -> a -> a
   mkRngApp          ::  Range -> [a] -> a
@@ -499,16 +504,25 @@ putCompileMsg v optsVerbosity msg mbMsg2 modNm fNm
     else return ()
 %%]
 
-%%[8
+%%[8 export(writePP, writeToFile)
 writePP ::  (a -> PP_Doc) -> a -> FPath -> IO ()
 writePP f text fp = writeToFile (show.f $ text) fp
 
-writeToFile str fp
-  = do { (fn, fh) <- openFPath fp WriteMode
-       ; hPutStrLn fh str
+writeToFile' :: Bool -> String -> FPath -> IO ()
+writeToFile' binary str fp
+  = do { (fn, fh) <- openFPath fp WriteMode binary
+       ; (if binary then hPutStr else hPutStrLn) fh str
        ; hClose fh
        }
 
+writeToFile :: String -> FPath -> IO ()
+writeToFile = writeToFile' False
+
+%%]
+
+%%[(8 java) export(writeBinaryToFile)
+writeBinaryToFile :: String -> FPath -> IO ()
+writeBinaryToFile = writeToFile' True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -743,8 +757,8 @@ thd (a,b,c) = c
 
 %%[8 export(Verbosity(..))
 data Verbosity
-  = VerboseQuiet | VerboseNormal | VerboseALot | VerboseDebug
-  deriving (Eq,Ord)
+  = VerboseQuiet | VerboseMinimal | VerboseNormal | VerboseALot | VerboseDebug
+  deriving (Eq,Ord,Enum)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -851,14 +865,30 @@ mkRange2 p1 p2 = Range_Range (mkPos p1) (mkPos p2)
 %%]
 
 %%[1
+show2Pos :: Pos -> Pos -> String
+show2Pos p1 p2
+  | p1 /= p2 && p2 /= noPos  = if line p1 == line p2 
+                               then mk (show (line p1))                          (Just $ show (column p1) ++ "-" ++ show (column p2))
+                               else mk (show (line p1) ++ "-" ++ show (line p2)) Nothing
+  | otherwise                =      mk (show (line p1))                          (Just $ show (column p1))
+  where mk l c = file p1 ++ ":" ++ l ++ maybe "" (":" ++) c
+%%]
+
+%%[1
 instance Show Range where
-  show (Range_Range p _) = show p
+  show (Range_Range p q) = show2Pos p q
   show Range_Unknown     = "??"
   show Range_Builtin     = "builtin"
 
 instance PP Range where
-  pp (Range_Range p _) = pp p
-  pp r                 = pp $ show r
+  pp = pp . show
+%%]
+
+%%[1 export(isEmptyRange)
+isEmptyRange :: Range -> Bool
+isEmptyRange  Range_Unknown    = True
+isEmptyRange (Range_Range p _) = p == noPos
+isEmptyRange  _                = False
 %%]
 
 %%[99
@@ -882,37 +912,48 @@ rngAdd r1 r2
       _ -> Range_Unknown
 %%]
 
-%%[99 export(rangePlus)
+%%[99 export(rangeUnion,rangeUnions)
 posMax, posMin :: Pos -> Pos -> Pos
 posMax (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `max` l2) (c1 `max` c2) f1
 posMin (Pos l1 c1 f1) (Pos l2 c2 _) = Pos (l1 `min` l2) (c1 `min` c2) f1
 
-rangePlus :: Range -> Range -> Range
-rangePlus (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
+rangeUnion :: Range -> Range -> Range
+rangeUnion (Range_Range b1 e1) (Range_Range b2 e2) = Range_Range (b1 `posMin` b2) (e1' `posMax` e2')
                                                   where e1' = if e1 == noPos then b1 else e1
                                                         e2' = if e2 == noPos then b2 else e2
-rangePlus Range_Unknown       r2                  = r2
-rangePlus r1                  _                   = r1
+rangeUnion Range_Unknown       r2                  = r2
+rangeUnion r1                  _                   = r1
+
+rangeUnions :: [Range] -> Range
+rangeUnions = foldr1 rangeUnion
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lifting of Range
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.rngLift export(rngLift,RngLift)
-type RngLift x = x
+%%[1.rngLift export(RngLiftArg,rngLift,rngAntilift)
+type RngLiftArg  x = x
+type RngLift     x = Range -> RngLiftArg x -> x
 
-rngLift :: Range -> v -> v
+rngLift :: RngLift v
 rngLift r v = v
+
+rngAntilift :: v -> RngLiftArg v
+rngAntilift = id
 %%]
 
-%%[99 -1.rngLift export(rngLift,RngLift)
-type RngLift x = Range -> x
+%%[99 -1.rngLift export(RngLiftArg,rngLift,rngAntilift)
+type RngLiftArg  x = Range -> x
+type RngLift     x = Range -> RngLiftArg x -> x
 
-rngLift :: Range -> (Range -> v) -> v
+rngLift :: RngLift v
 rngLift r mkv
   = x `seq` x
   where x = mkv r
+
+rngAntilift :: v -> RngLiftArg v
+rngAntilift = const
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1298,6 +1339,14 @@ rllHeadTail (RLList ((x,c):t)) = Just (x,RLList ((x,c-1):t))
 %%[9
 instance Show a => Show (RLList a) where
   show = show . rllToList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Package name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(PkgName)
+type PkgName = String
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

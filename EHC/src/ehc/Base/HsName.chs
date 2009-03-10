@@ -23,9 +23,6 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[20 export(hsnQualified,hsnQualifier,hsnPrefixQual,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -89,15 +86,13 @@ data HsName
 %%]
 %%[8
   |   HNmNr !Int !OrigName
-%%]
-%%[20
   |   HNmQ  ![HsName]
 %%]
 %%[7
   deriving (Eq,Ord)
 %%]
 
-%%[7
+%%[7 export(hsnShow)
 hsnShow :: String -> HsName -> String
 hsnShow _   (HNm s    )  = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
@@ -106,8 +101,6 @@ hsnShow _   (HNmNr n OrigNone        )  = "x_"        ++ show n
 hsnShow _   (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." hsn
-%%]]
-%%[[20
 hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
 %%]]
 %%]
@@ -119,9 +112,9 @@ instance Show HsName where
 
 %%[1
 hsnToList :: HsName -> [HsName]
-%%[[20
+%%[[8
 hsnToList (HNmQ ns) = ns
-%%]
+%%]]
 hsnToList n         = [n]
 %%]
 
@@ -212,9 +205,9 @@ hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
 hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
-%%]
-%%[20
+%%[[8
 hsnShowAlphanumeric (HNmQ ns) = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
+%%]]
 %%]
 
 
@@ -240,21 +233,34 @@ hsnConcat       h1    h2            =   hsnFromString (show h1 ++ show h2)
 %%% HsName & module related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[8 export(hsnSplitQualify,hsnQualified,hsnPrefixQual,hsnMapQualified)
+-- qualifier (i.e. module name) and qualified part of name
+hsnSplitQualify :: HsName -> (Maybe HsName,HsName)
+hsnSplitQualify n
+  = case hsnInitLast n of
+      ([],n') -> (Nothing,n')
+      (ns,n') -> (Just (mkHNm ns),n')
+
 -- qualified part of a name
 hsnQualified :: HsName -> HsName
-hsnQualified = snd . hsnInitLast
-
--- qualifier (i.e. module name) of name
-hsnQualifier :: HsName -> Maybe HsName
-hsnQualifier n
-  = case hsnInitLast n of
-      ([],_) -> Nothing
-      (ns,_) -> Just (mkHNm ns)
+hsnQualified = snd . hsnSplitQualify
 
 -- prefix/qualify with module name, on top of possible previous qualifier
 hsnPrefixQual :: HsName -> HsName -> HsName
 hsnPrefixQual m n = mkHNm (hsnToList m ++ hsnToList n)
+
+-- map qualified part
+hsnMapQualified :: (HsName -> HsName) -> HsName -> HsName
+hsnMapQualified f qn
+  = case hsnSplitQualify qn of
+      (Nothing,n) -> f n
+      (Just q ,n) -> hsnPrefixQual q (f n)
+%%]
+
+%%[20 export(hsnQualifier,hsnSetQual,hsnIsQual,hsnMapQual,hsnSetLevQual)
+-- qualifier (i.e. module name) of name
+hsnQualifier :: HsName -> Maybe HsName
+hsnQualifier = fst . hsnSplitQualify
 
 -- replace/set qualifier
 hsnSetQual :: HsName -> HsName -> HsName
@@ -262,9 +268,9 @@ hsnSetQual m = hsnPrefixQual m . hsnQualified
 
 hsnMapQual :: (HsName -> HsName) -> HsName -> HsName
 hsnMapQual f qn
-  = case hsnInitLast qn of
-      ([],n) -> n
-      (ns,n) -> hsnSetQual (f (mkHNm ns)) n
+  = case hsnSplitQualify qn of
+      (Nothing,n) -> qn
+      (Just q ,n) -> hsnSetQual (f q) n
 
 -- is qualified?
 hsnIsQual :: HsName -> Bool
@@ -311,14 +317,7 @@ instance HSNM String where
 %%[8.HSNM.String -1.HSNM.String
 instance HSNM String where
   mkHNm s
-    = mkHNm $ map hsnFromString $ ws''
-    where ws  = wordsBy (=='.') s
-          ws' = case initlast2 ws of
-                  Just (ns,n,"") -> ns ++ [n ++ "."]
-                  _              -> ws
-          ws''= case break (=="") ws' of
-                  (nq,(_:ns)) -> nq ++ [concatMap ("."++) ns]
-                  _ -> ws'
+    = mkHNm $ map hsnFromString $ splitForQualified s
 %%]
 
 %%[1
@@ -328,9 +327,9 @@ instance HSNM ([HsName],HsName) where
 instance HSNM [HsName] where
   mkHNm [n] = n
   mkHNm []  = hsnFromString "" -- ????, or empty alternative of HsName
-%%[[20
+%%[[8
   mkHNm ns  = HNmQ ns
-%%]
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
