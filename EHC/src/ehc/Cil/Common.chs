@@ -104,10 +104,10 @@ simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was 
   classDef [CaPublic] fullName noExtends noImplements []
     [ defaultCtor []]
     ( classDef [CaNestedPublic] tyNm (extends fullName) []
-       [ Field Instance2 Public ty "Value"]
-       [ Constructor Public [ Param ty "value" ]
+       [ Field [FaPublic] ty "Value"]
+       [ Constructor [MaPublic] Void [ Param ty "value" ]
            [ ldarg 0
-           , call Instance Void "" fullName ".ctor" []
+           , call [CcInstance] Void "" fullName ".ctor" []
            , ldarg 0
            , ldarg 1
            , stfld ty "" (fullName ++ "/" ++ tyNm) "Value"
@@ -118,8 +118,8 @@ simpleTypeDef ty tyNm callbackNm (_:tags) = -- drop first constructor, that was 
            , ldstr " "
            , ldarg 0
            , ldflda ty "" tySubTyNm "Value"
-           , call Instance String "" (cil ty "") "ToString" []
-           , call StaticCallConv String "" "string" "Concat" [String, String, String]
+           , call [CcInstance] String "" (cil ty "") "ToString" []
+           , call [] String "" "string" "Concat" [String, String, String]
            , ret
            ]
        ]
@@ -152,7 +152,7 @@ subTys callbackNm tyNm (TyFun _ fnm args) =
     -}
 
     -- , Method [MaStatic, MaPublic] Object "Invoke" []
-    --     [ call StaticCallConv Object "" callbackNm fnNm []
+    --     [ call [] Object "" callbackNm fnNm []
     --     , ret
     --     ]
     ]
@@ -169,7 +169,7 @@ subTys callbackNm tyNm (TyPApp _ fnm needs args) =
     -- See comment for TyFun Invoke method.
 
     -- , Method [MaStatic, MaPublic] Object "Invoke" []
-    --     [ call StaticCallConv Object "" callbackNm fnNm []
+    --     [ call [] Object "" callbackNm fnNm []
     --     , ret
     --     ]
     ]
@@ -197,14 +197,14 @@ toString maxArity arity tyNm conNm =
     Method [MaVirtual, MaPublic] String "ToString" [] $
       [ ldstr (conNm) ]
       ++ foldr
-           (\(Field _ _ t n) ms ->
+           (\(Field _ t n) ms ->
                [ ldstr " ("
                , ldarg 0
                , ldfld Object "" tyConNm n
                , callvirt String "" "object" "ToString" []
-               , call StaticCallConv String "" "string" "Concat" [String, String, String]
+               , call [] String "" "string" "Concat" [String, String, String]
                , ldstr ")"
-               , call StaticCallConv String "" "string" "Concat" [String, String]
+               , call [] String "" "string" "Concat" [String, String]
                ] ++ ms) [] flds
       ++ [ ret ]
   where
@@ -213,13 +213,13 @@ toString maxArity arity tyNm conNm =
 
 ctor :: Int -> Int -> DottedName -> DottedName -> MethodDef
 ctor maxArity arity tyNm conNm =
-  Constructor Public (map (\(Field _ _ t n) -> Param t (pNm n)) flds)
+  Constructor [MaPublic] Void (map (\(Field _ t n) -> Param t (pNm n)) flds)
     $
     [ ldarg 0
-    , call Instance Void "" tyNm ".ctor" []
+    , call [CcInstance] Void "" tyNm ".ctor" []
     ]
     ++
-    concatMap (\((Field _ _ t n), x) ->
+    concatMap (\((Field _ t n), x) ->
                  [ ldarg 0
                  , ldarg x
                  , stfld Object "" tyConNm n
@@ -233,7 +233,7 @@ ctor maxArity arity tyNm conNm =
     tyConNm    = tyNm ++ "/" ++ conNm
 
 fields :: Int -> Int -> [FieldDef]
-fields maxArity arity = map (Field Instance2 Public Object) (take arity $ fieldNames maxArity)
+fields maxArity arity = map (Field [FaPublic] Object) (take arity $ fieldNames maxArity)
 
 fieldNames :: Int -> [DottedName]
 fieldNames 1 = [ "Value" ]

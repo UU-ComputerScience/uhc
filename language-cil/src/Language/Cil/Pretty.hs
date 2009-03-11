@@ -10,7 +10,8 @@ module Language.Cil.Pretty (
 import Data.List (intersperse, intercalate)
 import Language.Cil.Syntax
 
-{- Added `deriving Show' to Syntax
+{- Alternative to deriving Show
+
 instance Show Assembly where
   show a = cil a ""
 -}
@@ -19,7 +20,8 @@ class Cil a where
   -- | Serializes a Cil data structure to a String.
   cil :: a -> ShowS
 
--- | Serializes a DottedName, escaping some weird names (such as \'add\' or '<Thunk>').
+-- | Serializes a DottedName, escaping some weird names (such as \'add\' 
+-- or '<Thunk>').
 cilName :: DottedName -> ShowS
 cilName "" = error "Language.Cil.Pretty.cilName: Name cannot be empty"
 cilName n  = if n `elem` kw || '<' `elem` n
@@ -41,7 +43,7 @@ instance Cil Assembly where
   cil (Assembly as n ts) =
       foldr (\a s -> cil a . s) id as
     . (".assembly " ++) . cilName n . (" {}\n" ++)
-    . foldr (\t s -> cil t . s) id ts
+    . foldr (\t s -> cil t . nl . s) id ts
 
 instance Cil AssemblyRef where
   cil (AssemblyRef n) = (".assembly extern " ++) . (n ++) . (" {}\n" ++)
@@ -49,15 +51,15 @@ instance Cil AssemblyRef where
 instance Cil TypeDef where
   cil (Class cas n et its ds) =
       (".class " ++)
-    . foldr (\a s -> cil a . sp . s) id cas . cilName n
+    . cilList cas . cilName n
     . maybe id (\e -> sp . ("extends " ++) . cil e) et
     . bool id (sp . ("implements " ++)
                     . foldr (.) id (map cil its)) (null its)
     . ("\n{\n" ++)
     . foldr (\d s -> cil d . s) id ds
     . ("}\n" ++)
-  cil (GenericClass v n ps ds) =
-      (".class " ++) . cil v . sp . cilName n
+  cil (GenericClass cas n ps ds) =
+      (".class " ++) . cilList cas . cilName n
     . ("`" ++) . shows (length ps) . ("<" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (">\n{\n" ++)
@@ -71,13 +73,6 @@ instance Cil ClassAttr where
   cil CaPublic       = ("public" ++)
   cil CaNestedPublic = ("nested public" ++)
 
-instance Cil Visibility where
-  cil AssemblyVisible   = ("assembly" ++)
-  cil FamilyAndAssembly = ("famandassem" ++)
-  cil FamilyOrAssembly  = ("famorassem" ++)
-  cil Private           = ("private" ++)
-  cil Public            = ("public" ++)
-
 instance Cil ClassDecl where
   cil (FieldDef fd)  = cil fd
   cil (MethodDef md) = cil md
@@ -87,13 +82,21 @@ instance Cil TypeSpec where
   cil (TypeSpec nm) = cilName nm
 
 instance Cil FieldDef where
-  cil (Field a v t n) = 
-      ident . (".field " ++) . cilsp a . cil v . sp . cil t . sp . cilName n . nl
+  cil (Field fas t n) = 
+      ident . (".field " ++)
+      . cilList fas
+      . cil t . sp . cilName n . nl
+
+instance Cil FieldAttr where
+  cil (FaStatic)    = ("static" ++)
+  cil (FaPublic)    = ("public" ++)
+  cil (FaPrivate)   = ("private" ++)
+  cil (FaAssembly)  = ("assembly" ++)
 
 instance Cil MethodDef where
-  cil (Constructor v ps ms) =
-      ident . (".method " ++) . cil v
-    . (" hidebysig instance void .ctor(" ++)
+  cil (Constructor mas t ps ms) =
+      ident . (".method " ++)
+    . cilList mas . cil t . sp . (".ctor(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
@@ -101,7 +104,8 @@ instance Cil MethodDef where
     . ident . ("}\n" ++)
   cil (Method mas t n ps ms) =
       ident . (".method " ++)
-    . foldr (\a s -> cil a . sp . s) id mas . cil t . sp . cilName n . ("(" ++)
+    . cilList mas
+    . cil t . sp . cilName n . ("(" ++)
     . foldr (.) id (intersperse (", " ++) (map cil ps))
     . (") cil managed\n" ++)
     . ident . ("{\n" ++)
@@ -143,84 +147,87 @@ instance Cil Directive where
 instance Cil Local where
   cil (Local t n) = cil t . sp . cilName n
 
--- Note: this could be a lot more efficient. For example, there are specialized
--- instructions for loading the constant integers 1 through 8, but for clearity
--- these aren't used.
 instance Cil OpCode where
-  cil (Add)               = ("add" ++)
-  cil (And)               = ("and" ++)
-  cil (Beq l)             = ("beq " ++) . (l ++)
-  cil (Bge l)             = ("bge " ++) . (l ++)
-  cil (Bgt l)             = ("bgt " ++) . (l ++)
-  cil (Ble l)             = ("ble " ++) . (l ++)
-  cil (Blt l)             = ("blt " ++) . (l ++)
-  cil (Box t)             = ("box " ++) . cil t
-  cil (Br l)              = ("br " ++) . (l ++)
-  cil (Brfalse l)         = ("brfalse " ++) . (l ++)
-  cil (Brtrue l)          = ("brtrue " ++) . (l ++)
-  cil (Call s t a c m ps) = ("call " ++) . cilsp s . cil t . sp
-                             . cilCall a c m ps
+  cil (Add)                 = ("add" ++)
+  cil (And)                 = ("and" ++)
+  cil (Beq l)               = ("beq " ++) . (l ++)
+  cil (Bge l)               = ("bge " ++) . (l ++)
+  cil (Bgt l)               = ("bgt " ++) . (l ++)
+  cil (Ble l)               = ("ble " ++) . (l ++)
+  cil (Blt l)               = ("blt " ++) . (l ++)
+  cil (Box t)               = ("box " ++) . cil t
+  cil (Br l)                = ("br " ++) . (l ++)
+  cil (Brfalse l)           = ("brfalse " ++) . (l ++)
+  cil (Brtrue l)            = ("brtrue " ++) . (l ++)
+  cil (Call ccs t a c m ps) = ("call " ++) . cilList ccs . cil t . sp
+                                . cilCall a c m ps
   cil (CallVirt t a c m ps) = ("callvirt instance " ++) . cilsp t . sp
-                             . cilCall a c m ps
-  cil (Ceq)               = ("ceq" ++)
-  cil (Cge)               = ("cge" ++)
-  cil (Cgt)               = ("cgt" ++)
-  cil (Cle)               = ("cle" ++)
-  cil (Clt)               = ("clt" ++)
-  cil (Dup)               = ("dup" ++)
-  cil (Isinst nm)         = ("isinst " ++) . cilName nm
-  cil (Ldarg x)           = ("ldarg " ++) . shows x
-  cil (Ldarg_0)           = ("ldarg.0 " ++)
-  cil (Ldarg_1)           = ("ldarg.1 " ++)
-  cil (Ldarg_2)           = ("ldarg.2 " ++)
-  cil (Ldarg_3)           = ("ldarg.3 " ++)
-  cil (LdargN nm)         = ("ldarg " ++) . cilName nm
-  cil (Ldc_i4 x)          = ("ldc.i4 " ++) . shows x
-  cil (Ldc_i4_0)          = ("ldc.i4.0 " ++) 
-  cil (Ldc_i4_1)          = ("ldc.i4.1 " ++) 
-  cil (Ldc_i4_2)          = ("ldc.i4.2 " ++) 
-  cil (Ldc_i4_3)          = ("ldc.i4.3 " ++) 
-  cil (Ldc_i4_4)          = ("ldc.i4.4 " ++) 
-  cil (Ldc_i4_5)          = ("ldc.i4.5 " ++) 
-  cil (Ldc_i4_6)          = ("ldc.i4.6 " ++) 
-  cil (Ldc_i4_7)          = ("ldc.i4.7 " ++) 
-  cil (Ldc_i4_8)          = ("ldc.i4.8 " ++) 
-  cil (Ldc_i4_m1)         = ("ldc.i4.m1 " ++) 
-  cil (Ldc_i4_s x)        = ("ldc.i4.s " ++)  . shows x
-  cil (Ldfld t a c f)     = ("ldfld " ++) . cil t . sp . cilFld a c f
-  cil (Ldflda t a c f)    = ("ldflda " ++) . cil t . sp . cilFld a c f
-  cil (Ldind_ref)         = ("ldind.ref " ++)
-  cil (Ldloc x)           = ("ldloc " ++) . shows x
-  cil (Ldloc_0)           = ("ldloc.0 " ++)
-  cil (Ldloc_1)           = ("ldloc.1 " ++)
-  cil (Ldloc_2)           = ("ldloc.2 " ++)
-  cil (Ldloc_3)           = ("ldloc.3 " ++)
-  cil (LdlocN nm)         = ("ldloc " ++) . cilName nm
-  cil (Ldloca x)          = ("ldloca " ++) . shows x
-  cil (LdlocaN nm)        = ("ldloca " ++) . cilName nm
-  cil (Ldsfld t a c f)    = ("ldsfld " ++) . cil t . sp . cilFld a c f
-  cil (Ldsflda t a c f)   = ("ldsflda " ++) . cil t . sp . cilFld a c f
-  cil (Ldstr s)           = ("ldstr " ++) . shows s
-  cil (Neg)               = ("neg" ++)
-  cil (Newobj t a c ps)   = ("newobj instance " ++) . cil t . sp
-                             . cilNewobj a c ps
-  cil (Nop)               = ("nop" ++)
-  cil (Pop)               = ("pop" ++)
-  cil (Rem)               = ("rem" ++)
-  cil (Ret)               = ("ret" ++)
-  cil (Stfld t a c f)     = ("stfld " ++) . cil t . sp . cilFld a c f
-  cil (Stind_ref)         = ("stind.ref " ++)
-  cil (Stloc x)           = ("stloc " ++) . shows x
-  cil (Stloc_0)           = ("stloc.0 " ++)
-  cil (Stloc_1)           = ("stloc.1 " ++)
-  cil (Stloc_2)           = ("stloc.2 " ++)
-  cil (Stloc_3)           = ("stloc.3 " ++)
-  cil (StlocN nm)         = ("stloc " ++) . cilName nm
-  cil (Stsfld t a c f)    = ("stsfld " ++) . cil t . sp . cilFld a c f
-  cil (Sub)               = ("sub" ++)
-  cil (Tail)              = ("tail." ++)
-  cil (Tailcall opcode)   = ("tail. " ++) . cil opcode
-  cil (Unbox t)           = ("unbox " ++) . cil t
+                                . cilCall a c m ps
+  cil (Ceq)                 = ("ceq" ++)
+  cil (Cge)                 = ("cge" ++)
+  cil (Cgt)                 = ("cgt" ++)
+  cil (Cle)                 = ("cle" ++)
+  cil (Clt)                 = ("clt" ++)
+  cil (Dup)                 = ("dup" ++)
+  cil (Isinst nm)           = ("isinst " ++) . cilName nm
+  cil (Ldarg x)             = ("ldarg " ++) . shows x
+  cil (Ldarg_0)             = ("ldarg.0 " ++)
+  cil (Ldarg_1)             = ("ldarg.1 " ++)
+  cil (Ldarg_2)             = ("ldarg.2 " ++)
+  cil (Ldarg_3)             = ("ldarg.3 " ++)
+  cil (LdargN nm)           = ("ldarg " ++) . cilName nm
+  cil (Ldc_i4 x)            = ("ldc.i4 " ++) . shows x
+  cil (Ldc_i4_0)            = ("ldc.i4.0 " ++) 
+  cil (Ldc_i4_1)            = ("ldc.i4.1 " ++) 
+  cil (Ldc_i4_2)            = ("ldc.i4.2 " ++) 
+  cil (Ldc_i4_3)            = ("ldc.i4.3 " ++) 
+  cil (Ldc_i4_4)            = ("ldc.i4.4 " ++) 
+  cil (Ldc_i4_5)            = ("ldc.i4.5 " ++) 
+  cil (Ldc_i4_6)            = ("ldc.i4.6 " ++) 
+  cil (Ldc_i4_7)            = ("ldc.i4.7 " ++) 
+  cil (Ldc_i4_8)            = ("ldc.i4.8 " ++) 
+  cil (Ldc_i4_m1)           = ("ldc.i4.m1 " ++) 
+  cil (Ldc_i4_s x)          = ("ldc.i4.s " ++)  . shows x
+  cil (Ldfld t a c f)       = ("ldfld " ++) . cil t . sp . cilFld a c f
+  cil (Ldflda t a c f)      = ("ldflda " ++) . cil t . sp . cilFld a c f
+  cil (Ldind_ref)           = ("ldind.ref " ++)
+  cil (Ldloc x)             = ("ldloc " ++) . shows x
+  cil (Ldloc_0)             = ("ldloc.0 " ++)
+  cil (Ldloc_1)             = ("ldloc.1 " ++)
+  cil (Ldloc_2)             = ("ldloc.2 " ++)
+  cil (Ldloc_3)             = ("ldloc.3 " ++)
+  cil (LdlocN nm)           = ("ldloc " ++) . cilName nm
+  cil (Ldloca x)            = ("ldloca " ++) . shows x
+  cil (LdlocaN nm)          = ("ldloca " ++) . cilName nm
+  cil (Ldsfld t a c f)      = ("ldsfld " ++) . cil t . sp . cilFld a c f
+  cil (Ldsflda t a c f)     = ("ldsflda " ++) . cil t . sp . cilFld a c f
+  cil (Ldstr s)             = ("ldstr " ++) . shows s
+  cil (Neg)                 = ("neg" ++)
+  cil (Newobj t a c ps)     = ("newobj instance " ++) . cil t . sp
+                               . cilNewobj a c ps
+  cil (Nop)                 = ("nop" ++)
+  cil (Pop)                 = ("pop" ++)
+  cil (Rem)                 = ("rem" ++)
+  cil (Ret)                 = ("ret" ++)
+  cil (Stfld t a c f)       = ("stfld " ++) . cil t . sp . cilFld a c f
+  cil (Stind_ref)           = ("stind.ref " ++)
+  cil (Stloc x)             = ("stloc " ++) . shows x
+  cil (Stloc_0)             = ("stloc.0 " ++)
+  cil (Stloc_1)             = ("stloc.1 " ++)
+  cil (Stloc_2)             = ("stloc.2 " ++)
+  cil (Stloc_3)             = ("stloc.3 " ++)
+  cil (StlocN nm)           = ("stloc " ++) . cilName nm
+  cil (Stsfld t a c f)      = ("stsfld " ++) . cil t . sp . cilFld a c f
+  cil (Sub)                 = ("sub" ++)
+  cil (Tail)                = ("tail." ++)
+  cil (Tailcall opcode)     = ("tail. " ++) . cil opcode
+  cil (Unbox t)             = ("unbox " ++) . cil t
+
+instance Cil CallConv where
+  cil (CcInstance) = ("instance" ++)
+
+cilList :: (Cil a) => [a] -> ShowS
+cilList = foldr (\x s -> cil x . sp . s) id
 
 cilFld :: DottedName -> DottedName -> DottedName -> ShowS
 cilFld a c f = 
@@ -251,12 +258,6 @@ cilCall a c m ps =
 
 cilAssembly :: DottedName -> ShowS
 cilAssembly a = bool id (("[" ++) . cilName a . ("]" ++)) (a == "")
-
-instance Cil Association where
-  cil Static   = ("static" ++)
-  cil Instance = ("instance" ++)
-  cil StaticCallConv = id
-  cil Instance2 = id
 
 instance Cil PrimitiveType where
   cil Void                = ("void" ++) 

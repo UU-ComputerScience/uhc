@@ -2,6 +2,9 @@
 -- Language.Cil Parser to CIL abstract syntax.
 -- Uses the Parser combinators from the Haskell Utrecht Tools.
 --
+-- !! Note: This parser is in now way done. It doesn't even parse the simplest
+-- programs. Don't use it, or fix it.
+--
 
 module Language.Cil.Parser (
     parse, pAss
@@ -50,25 +53,13 @@ pTypeDef = (\n ds -> Class [] n Nothing [] ds)
              <$  pPeriod <* pKey "class" <*> pDottedName
              <*> pCurly (pList pClassDecl)
 
-pVisibility :: TParser Visibility
-pVisibility =  AssemblyVisible <$ pKey "assembly"
-           <|> Family <$ pKey "family"
-           <|> FamilyAndAssembly <$ pKey "famandassem"
-           <|> FamilyOrAssembly <$ pKey "famorassem"
-           <|> Public <$ pKey "public"
-           <|> Private <$ pKey "private"
-
 pClassDecl :: TParser ClassDecl
 pClassDecl =  FieldDef <$> pFieldDef
           <|> MethodDef <$> pMethodDef
 
 pFieldDef :: TParser FieldDef
-pFieldDef = Field <$  pPeriod <* pKey "field" <*> pAssociation <*> pVisibility <*> pPrimitiveType
+pFieldDef = Field <$  pPeriod <* pKey "field" <*> pSucceed [] <*> pPrimitiveType
                   <*> pDottedName
-
-pAssociation :: TParser Association
-pAssociation =  Static <$  pKey "static"
-            <|> pSucceed Instance
 
 pPrimitiveType :: TParser PrimitiveType
 pPrimitiveType =  Void <$  pKey "void"

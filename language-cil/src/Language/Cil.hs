@@ -1,19 +1,19 @@
 -- |
 -- A simple abstraction over the Common Intermediate Language (also known as
 -- MSIL - Microsoft Intermediate Language).
--- Note that this library specific to the EHC .NET backend and isn't very
--- reusable (yet).
 -- Currently, it only exposes a small subset of CIL.
 --
+
+-- !! Note: The parser stuff is commented out, since it is horribly broken.
 
 module Language.Cil (
     module Language.Cil.Analysis
   , module Language.Cil.Build
-  , module Language.Cil.Parser
+--  , module Language.Cil.Parser
   , module Language.Cil.Pretty
   , module Language.Cil.Syntax
-  , scanAssembly
-  , parseAssembly
+--  , scanAssembly
+--  , parseAssembly
   ) where
 
 import Control.Monad (liftM)

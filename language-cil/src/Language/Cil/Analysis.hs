@@ -23,6 +23,6 @@ instance Ast ClassDecl where
   instructions (MethodDef md) = instructions md
 
 instance Ast MethodDef where
-  instructions (Constructor _ _ md) = [ i | Instr i <- md ]
-  instructions (Method _ _ _ _ md)  = [ i | Instr i <- md ]
+  instructions (Constructor _ _ _ md) = [ i | Instr i <- md ]
+  instructions (Method _ _ _ _ md)    = [ i | Instr i <- md ]
 

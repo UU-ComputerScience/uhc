@@ -31,13 +31,13 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs
-{- TODO om netter te maken (o.a.):
+{- TODO (clean up:
  - Remove duplicate code from GrTag.
- - debugComment overzichtelijker maken.
- - no een warning (met trace) laten geven.
+ - clear up debugComment.
+ - don't generate warnings (with trace).
 -}
 
-
+-- Main function, called by EHC/GrinCompilerDriver
 grin2cil :: HptMap -> GrModule -> EHCOpts -> Assembly
 grin2cil hptMap gr opts
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr)) (Inh_GrAGItf hptMap)
@@ -53,10 +53,10 @@ refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
 refObj :: TypeDef
 refObj = 
   classDef [CaPublic] refObjNm noExtends noImplements
-    [ Field Instance2 Public Object "Value" ]
-    [ Constructor Public [ Param Object "value" ]
+    [ Field [FaPublic] Object "Value" ]
+    [ Constructor [MaPublic] Void [ Param Object "value" ]
         [ ldarg 0
-        , call Instance Void "" "object" ".ctor" []
+        , call [CcInstance] Void "" "object" ".ctor" []
         , ldarg 0
         , ldarg 1
         , stfld Object "" refObjNm "Value"
@@ -75,7 +75,7 @@ refObj =
 loadRefVal :: MethodDecl
 loadRefVal = ldfld Object "" refObjNm "Value"
 
--- Pop a value. Pop a pointer. Update the pointer with the value.
+-- Pop a pointer. Pop a value. Update the pointer with the value.
 storeRefVal :: MethodDecl
 storeRefVal = stfld Object "" refObjNm "Value"
 
@@ -235,10 +235,10 @@ SEM GrModule
         loc.className     = hsn2TypeDottedName @moduleNm
         loc.mainDef       = Method [MaStatic, MaAssembly] Void "AssemblyMain" []
                             [ entryPoint
-                            , call StaticCallConv Void "" @loc.className "initialize" []
-                            , call StaticCallConv Object "" @loc.className "fun_main" []
+                            , call [] Void "" @loc.className "initialize" []
+                            , call [] Object "" @loc.className "fun_main" []
                             , callvirt String "" "object" "ToString" []
-                            , call StaticCallConv Void "mscorlib" "System.Console" "WriteLine" [Object]
+                            , call [] Void "mscorlib" "System.Console" "WriteLine" [Object]
                             , ret
                             ]
         loc.initDef       = Method [MaStatic, MaPrivate] Void "initialize" []
@@ -294,7 +294,7 @@ papps hptMap tyNames funArities allPApps = Set.fold f Map.empty allPApps
 
 -- Globals are translated to static fields and pieces of code for the initialize method.
 SEM GrGlobal
-  | Global lhs.cilFields = [ Field Static AssemblyVisible Object @loc.name ]
+  | Global lhs.cilFields = [ Field [FaStatic, FaAssembly] Object @loc.name ]
            lhs.cilValues = @val.cilCode ++
                            [ newRefObj
                            , stsfld Object "" @lhs.className @loc.name ]
@@ -349,7 +349,7 @@ SEM GrExpr
   | Store       lhs.cilCode = debugComment @self $ @val.cilCode ++ [newRefObj]
   | Call        lhs.cilCode = debugComment @self $ @argL.cilCode
                                 ++ [ (if not @lhs.hasNext then tailcall else id)
-                                   $ call StaticCallConv Object "" @lhs.className @loc.varName @loc.params
+                                   $ call [] Object "" @lhs.className @loc.varName @loc.params
                                    ]
                 loc.params  = replicate (length @argL.self) Object
   | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm

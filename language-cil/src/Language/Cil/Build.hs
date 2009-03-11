@@ -126,11 +126,9 @@ brfalse = mdecl . Brfalse
 brtrue :: Label -> MethodDecl
 brtrue = mdecl . Brtrue
 
-call :: Association -> PrimitiveType -> DottedName -> DottedName -> DottedName -> [PrimitiveType]
+call :: [CallConv] -> PrimitiveType -> DottedName -> DottedName -> DottedName -> [PrimitiveType]
          -> MethodDecl
-call Static _ _ _ _ _ = error $ "Language.Cil.Build.call: "
-                      ++ "Invalid association type Static. Try StaticCallConv."
-call a p l t m ps = mdecl $ Call a p l t m ps
+call ccs p l t m ps = mdecl $ Call ccs p l t m ps
 
 callvirt :: PrimitiveType -> DottedName -> DottedName -> DottedName -> [PrimitiveType] -> MethodDecl
 callvirt p l t m ps = mdecl $ CallVirt p l t m ps
@@ -294,11 +292,11 @@ defaultCtor :: [Parameter] -> MethodDef
 defaultCtor = extendsCtor "" "object"
 
 extendsCtor :: DottedName -> DottedName -> [Parameter] -> MethodDef
-extendsCtor a c ps = Constructor Public ps
+extendsCtor a c ps = Constructor [MaPublic] Void ps
   $ ldarg 0
   : map ldarg [1 .. length ps]
   ++
-  [ call Instance Void a c ".ctor" (map (\(Param t _) -> t) ps)
+  [ call [CcInstance] Void a c ".ctor" (map (\(Param t _) -> t) ps)
   , ret
   ]
 

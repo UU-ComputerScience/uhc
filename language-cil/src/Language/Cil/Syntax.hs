@@ -12,10 +12,10 @@ module Language.Cil.Syntax (
   , TypeDef       (..)
   , GenParam      (..)
   , ClassAttr     (..)
-  , Visibility    (..)
   , ClassDecl     (..)
   , TypeSpec      (..)
   , FieldDef      (..)
+  , FieldAttr     (..)
   , MethodDef     (..)
   , Parameter     (..)
   , MethAttr      (..)
@@ -25,8 +25,8 @@ module Language.Cil.Syntax (
   , Local         (..)
   , Label
   , OpCode        (..)
-  , Association   (..)
   , PrimitiveType (..)
+  , CallConv      (..)
   ) where
 
 type Id = String
@@ -39,68 +39,68 @@ type DottedName = String
 -- | An offset, e.g. for local variables or arguments
 type Offset = Int
 
+-- | A Label in CIL.
+type Label = String
+
 -- | The top level Assembly.
 -- This is the root of a CIL program.
-data Assembly =
-    Assembly [AssemblyRef] DottedName [TypeDef]
+data Assembly
+  = Assembly [AssemblyRef] DottedName [TypeDef]
   deriving Show
 
--- | Assembly reference
-data AssemblyRef = 
-    AssemblyRef DottedName
+-- | Assembly reference.
+data AssemblyRef
+  = AssemblyRef DottedName
   deriving Show
 
 -- | A Type definition in CIL, either a class or a value type.
-data TypeDef =
-    Class [ClassAttr] DottedName (Maybe TypeSpec) [TypeSpec] [ClassDecl]
-  | GenericClass Visibility DottedName [GenParam] [ClassDecl]
+data TypeDef
+  = Class [ClassAttr] DottedName (Maybe TypeSpec) [TypeSpec] [ClassDecl]
+  | GenericClass [ClassAttr] DottedName [GenParam] [ClassDecl]
   deriving Show
 
 -- | A parameter to a generic class.
 -- Not fully implemented yet, constraints aren't supported.
-data GenParam =
-    GenParam -- constraintFlags :: [ConstraintFlag]
+data GenParam
+  = GenParam -- constraintFlags :: [ConstraintFlag]
              -- constraints     :: [DottedName]
              {- paramName       -} DottedName
   deriving Show
 
+-- | Attribures to class definitions.
 data ClassAttr
   = CaPublic
   | CaNestedPublic
   deriving Show
 
-data Visibility =
-    AssemblyVisible
-  | Family
-  | FamilyAndAssembly
-  | FamilyOrAssembly
-  | Private
-  | Public
-  deriving Show
-
-data ClassDecl =
-    FieldDef  FieldDef
+-- | Class declarations, i.e. the body of a class.
+data ClassDecl
+  = FieldDef  FieldDef
   | MethodDef MethodDef
   | TypeDef   TypeDef
   deriving Show
 
-data TypeSpec =
-    TypeSpec DottedName
+-- | Type specification.
+data TypeSpec
+  = TypeSpec DottedName
   deriving Show
 
-data FieldDef =
-    Field Association Visibility PrimitiveType DottedName
+-- | Field definition.
+data FieldDef
+  = Field [FieldAttr] PrimitiveType DottedName
   deriving Show
 
-data Association =
-    Static
-  | Instance
-  | StaticCallConv
-  | Instance2
+-- | Attributes to field definitions.
+data FieldAttr
+  = FaStatic
+  | FaPublic
+  | FaPrivate
+  | FaAssembly
   deriving Show
 
-data PrimitiveType =
-    Void
+-- | Primitive types in CIL.
+data PrimitiveType
+  = Void
   | Bool
   | Char
   | Byte
@@ -115,12 +115,12 @@ data PrimitiveType =
   deriving Show
 
 -- | A Method definition in CIL.
--- Currently, only static methods are implemented.
-data MethodDef =
-    Constructor Visibility [Parameter] [MethodDecl]
+data MethodDef
+  = Constructor [MethAttr] PrimitiveType [Parameter] [MethodDecl]
   | Method [MethAttr] PrimitiveType DottedName [Parameter] [MethodDecl]
   deriving Show
 
+-- | Attributes to method definitions.
 data MethAttr
   = MaStatic
   | MaPublic
@@ -131,41 +131,41 @@ data MethAttr
   deriving Show
 
 -- | A formal parameter to a method.
-data Parameter =
-    Param PrimitiveType DottedName
+data Parameter
+  = Param PrimitiveType DottedName
   deriving Show
 
-data MethodDecl =
-    Directive Directive
+-- | Method declarations, i.e. the body of a method.
+data MethodDecl
+  = Directive Directive
   | Instr Instr
   | Comment String
   deriving Show
 
 -- | Directive meta data for method definitions.
-data Directive =
-    EntryPoint
+data Directive
+  = EntryPoint
   | LocalsInit [Local]
   | MaxStack Int
   deriving Show
 
 -- | Local variables used inside a method definition.
-data Local =
-    Local PrimitiveType DottedName
+data Local
+  = Local PrimitiveType DottedName
   deriving Show
 
-data Instr =
-    LabOpCode Label OpCode
+-- | Single instruction in method definition.
+-- Either an OpCode or a labelled OpCode.
+data Instr
+  = LabOpCode Label OpCode
   | OpCode    OpCode
   deriving Show
-
--- | A Label in CIL.
-type Label = String
 
 -- | CIL OpCodes inside a method definition.
 -- See <http://msdn.microsoft.com/en-us/library/system.reflection.emit.opcodes_members.aspx>
 -- for a more complete list with documentation.
-data OpCode =
-    Add                -- ^ Pops 2 values, adds the values, pushes result.
+data OpCode
+  = Add                -- ^ Pops 2 values, adds the values, pushes result.
   | And                -- ^ Pops 2 values, do bitwise AND between the values, pushes result.
   | Beq Label          -- ^ Pops 2 values, if first value is equal to second value, jump to specified label.
   | Bge Label          -- ^ Pops 2 values, if first value is greater or equal to second value, jump to specified label.
@@ -176,19 +176,19 @@ data OpCode =
   | Br Label           -- ^ Unconditionally jump to specified label.
   | Brfalse Label      -- ^ Pops 1 value, if value is false, null reference or zero, jump to specified label.
   | Brtrue Label       -- ^ Pops 1 value, if value is true, not null or non-zero, jump to specified label.
-  | Call { association  :: Association     -- ^ Method is associated with class or instance.
+  | Call { callConv     :: [CallConv]      -- ^ Method is associated with class or instance.
          , returnType   :: PrimitiveType   -- ^ Return type of the method.
          , assemblyName :: DottedName      -- ^ Name of the assembly where the method resides.
          , typeName     :: DottedName      -- ^ Name of the type of which the method is a member.
          , methodName   :: DottedName      -- ^ Name of the method.
          , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
-         } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
+         } -- ^ Pops /n/ values, calls specified method, pushes return value. (where /n/ is the number of formal parameters of the method).
   | CallVirt { returnType   :: PrimitiveType   -- ^ Return type of the method.
              , assemblyName :: DottedName      -- ^ Name of the assembly where the method resides.
              , typeName     :: DottedName      -- ^ Name of the type of which the method is a member.
              , methodName   :: DottedName      -- ^ Name of the method.
              , paramTypes   :: [PrimitiveType] -- ^ Types of the formal parameters of the method.
-             } -- ^ Pops /n/ values, calls specified method, pushes return value (where /n/ is the number of formal parameters of the method).
+             } -- ^ Pops /n/ values, calls specified virtual method, pushes return value. (where /n/ is the number of formal parameters of the method).
   | Ceq                -- ^ Pops 2 values, if they are equal, pushes 1 to stack; otherwise, pushes 0.
   | Cge                -- ^ Pops 2 values and compares them.
   | Cgt                -- ^ Pops 2 values and compares them.
@@ -275,5 +275,10 @@ data OpCode =
   | Tail               -- ^ Performs subsequent call as a tail call, by replacing current stack frame with callee stack frame.
   | Tailcall OpCode    -- ^ Performs provided call as a tail call, by replacing current stack frame with callee stack frame.
   | Unbox PrimitiveType  -- ^ Pops 1 value, unboxes object reference, pushes value type.
+  deriving Show
+
+-- | Calling convention for method calls.
+data CallConv
+  = CcInstance
   deriving Show
 

@@ -11,19 +11,20 @@ description:
   This library is still very much under development, it only supports a small subset of the full CIL.
 license:             BSD3
 license-file:        LICENSE
-author:              Tom Lokhorst
+author:              Jeroen Leeuwestein,
+                     Tom Lokhorst
 maintainer:          Tom Lokhorst <tom@lokhorst.eu>
 stability:           Experimental
-category:            Language
+category:            Language, .NET
 build-type:          Simple
 cabal-version:       >= 1.2
 hs-source-dirs:      src
 exposed-modules:     Language.Cil
                      Language.Cil.Analysis
                      Language.Cil.Build
-                     Language.Cil.Parser
                      Language.Cil.Pretty
                      Language.Cil.Syntax
 other-modules:       Language.Cil.Scanner
+                     Language.Cil.Parser
 build-depends:       base, uulib
 
