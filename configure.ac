@@ -635,7 +635,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch])
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachineDependencies.h])
 AC_OUTPUT
 
 echo

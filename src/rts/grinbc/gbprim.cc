@@ -204,7 +204,7 @@ PRIM GB_NodePtr gb_primCStringToInteger( char* s )
 PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetInt_In( n, x ) ;
+	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
 	return n ;
 }
 
@@ -229,86 +229,10 @@ PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-PRIM GB_Word gb_primAddInt( GB_Word x, GB_Word y )
-{
-	// IF_GB_TR_ON(3,printf("gb_primAddInt %d(%d)+%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Add(x,y)), GB_Int_Add(x,y) );) ;
-  	// return GB_Int_Add(x,y);
-  	return x+y;
-}
-
-PRIM GB_Word gb_primSubInt( GB_Word x, GB_Word y )
-{
-	// IF_GB_TR_ON(3,printf("gb_primSubInt %d(%d)-%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Sub(x,y)), GB_Int_Sub(x,y) );) ;
-  	// return GB_Int_Sub(x,y);
-  	return x-y;
-}
-
-PRIM GB_Word gb_primMulInt( GB_Word x, GB_Word y )
-{
-	// IF_GB_TR_ON(3,printf("gb_primMulInt %d(%d)*%d(%d)=%d(%d)\n", GB_GBInt2Int(x), x, GB_GBInt2Int(y), y, GB_GBInt2Int(GB_Int_Mul(x,y)), GB_Int_Mul(x,y) );) ;
-  	// return GB_Int_Mul(x,y);
-  	return x*y;
-}
-
-/* DivInt and ModInt use euclidean division, ie.
-   the modulus is always positive.
-   
-   These routines are taken from lvm.
-*/
-
-PRIM GB_Word gb_primDivInt( GB_Int numerator, GB_Int divisor )
-{
-	GB_Int div = numerator / divisor ;
-	
-	// todo: if ( divisor == 0 ) ...
-	
-	/* adjust to euclidean division */
-	if ( div < 0 ) {
-		div -= 1 ;
-	}
-	
-  	return (div) ;
-}
+IntLikeArithPrimsCode(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[8
-PRIM GB_Word gb_primModInt( GB_Int numerator, GB_Int divisor )
-{
-	GB_Int mod = numerator % divisor ;
-	
-	// todo: if ( divisor == 0 ) ...
-	
-	/* adjust to euclidean modulus */
-	if ( mod > 0 && divisor < 0 || mod < 0 && divisor > 0 ) {
-		mod += divisor ;
-	}
-	
-  	return (mod) ;
-}
-
-/* QuotInt and RemInt use truncated division, ie.
-   QuotInt D d = trunc(D/d)
-   RemInt D d  = D - d*(QuotInt D d)
-*/
-
-PRIM GB_Int gb_primQuotInt( GB_Int x, GB_Int y )
-{
-	// todo: if ( divisor == 0 ) ...
-	
-  	// return GB_Int_Quot(x,y);
-  	GB_Int res = x / y ;
-  	return res ;
-}
-
-PRIM GB_Int gb_primRemInt( GB_Int x, GB_Int y )
-{
-	// todo: if ( divisor == 0 ) ...
-	
-  	// return GB_Int_Rem(x,y);
-  	GB_Int res = x % y ;
-  	return res ;
-}
-
 PRIM GB_NodePtr gb_primQuotRemInt( GB_Int x, GB_Int y )
 {
 	GB_NodePtr n ;
@@ -324,47 +248,6 @@ PRIM GB_NodePtr gb_primDivModInt( GB_Int x, GB_Int y )
 	GB_NodePtr n ;
 	GB_MkTupNode2_In(n, GB_Int2GBInt( gb_primDivInt(x,y) ), GB_Int2GBInt( gb_primModInt(x,y) )) ;
 	return n ;
-}
-
-%%]
-
-%%[8
-PRIM GB_Int gb_primNegInt( GB_Int x )
-{
-	// return GB_Int_Neg(x) ;
-	return -(x) ;
-}
-%%]
-
-%%[8
-PRIM GB_Word gb_primEqInt( GB_Int x, GB_Int y )
-{
-	if ( x == y )
-		return gb_True ;
-  	return gb_False ;
-}
-
-PRIM GB_Word gb_primGtInt( GB_Int x, GB_Int y )
-{
-	if ( x > y )
-		return gb_True ;
-  	return gb_False ;
-}
-
-PRIM GB_Word gb_primLtInt( GB_Int x, GB_Int y )
-{
-	if ( x < y )
-		return gb_True ;
-  	return gb_False ;
-}
-
-PRIM GB_Word gb_primCmpInt( GB_Int x, GB_Int y )
-{
-	if ( x < y )
-		return gb_LT ;
-	else if ( x == y )
-		return gb_EQ ;
-  	return gb_GT ;
 }
 
 %%]
@@ -766,6 +649,191 @@ PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
 	return n ;
 }
 #endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Int8, Int16, Int32, Int64
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Int8,Int8)
+IntLikeIntConversionPrimsCode(gb_,Int8,Int8,GB_Word)
+%%]
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Int16,Int16)
+IntLikeIntConversionPrimsCode(gb_,Int16,Int16,GB_Word)
+%%]
+
+If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Int32,Int32)
+IntLikeIntConversionPrimsCode(gb_,Int32,Int32,GB_Word)
+
+#ifdef USE_32_BITS
+IntLikeArithPrimsCode(gb_,Int32,Int32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+
+PRIM GB_NodePtr gb_primInt32ToInteger( Int32 x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
+	return n ;
+}
+
+PRIM Int32 gb_primIntegerToInt32( GB_NodePtr n )
+{
+	Int32 x = mpz_get_si( n->content.mpz ) ;
+	return ( x ) ;
+}
+#endif
+%%]
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Int64,Int64)
+IntLikeIntConversionPrimsCode(gb_,Int64,Int64,GB_Word)
+IntLikeArithPrimsCode(gb_,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+
+PRIM GB_NodePtr gb_primInt64ToInteger( Int64 x )
+{
+	GB_NodePtr n ;
+	Int64 xpos = ( x < 0 ? -x : x ) ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_import( n->content.mpz, 1, -1, 8, 0, 0, &xpos ) ;
+	if ( x < 0 ) {
+		mpz_neg( n->content.mpz, n->content.mpz ) ;
+	}
+	return n ;
+}
+
+PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
+{
+	Int64 x ;
+	if ( sizeof(Int64) <= sizeof(unsigned long int) ) {
+		x = mpz_get_si( n->content.mpz ) ;
+	} else { // sizeof(Int32) == sizeof(unsigned long int)
+		mpz_t mpz ;
+		mpz_init_set( mpz, n->content.mpz ) ;
+		int sign = mpz_sgn( mpz ) ;
+		if ( sign < 0 ) {
+			mpz_neg( mpz, mpz ) ;
+		}
+		Word64 i32a = mpz_get_ui( mpz ) ;
+		mpz_fdiv_q_2exp( mpz, mpz, Word32_SizeInBits ) ;
+		Word64 i32b = mpz_get_ui( mpz ) ;
+		x = i32b << Word32_SizeInBits | i32a ;
+		if ( sign < 0 ) {
+			x = -x ;
+		}
+	}
+	return ( x ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Word
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+IntLikeArithPrimsCode(gb_,Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+IntLikeIntConversionPrimsCode(gb_,Word,Word,GB_Word)
+%%]
+
+%%[97
+PRIM Word gb_primIntegerToWord( GB_NodePtr n )
+{
+	return ( mpz_get_ui( n->content.mpz ) ) ;
+}
+
+PRIM GB_NodePtr gb_primWordToInteger( Word x )
+{
+	// printf( "gb_primWordToInteger %x\n", x ) ;
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
+	return n ;
+}
+
+%%]
+
+%%[97
+PRIM Word gb_primMaxWord()
+{
+	// printf( "gb_primMaxWord %x\n", Word32_MaxValue >> GB_Word_SizeOfWordTag ) ;
+  	return Word32_MaxValue >> GB_Word_SizeOfWordTag ;
+}
+
+PRIM Word gb_primMinWord()
+{
+  	return Word32_MinValue ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Word8, Word16, Word32, Word64
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Word8,Word8)
+IntLikeIntConversionPrimsCode(gb_,Word8,Word8,GB_Word)
+%%]
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Word16,Word16)
+IntLikeIntConversionPrimsCode(gb_,Word16,Word16,GB_Word)
+%%]
+
+If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Word32,Word32)
+IntLikeIntConversionPrimsCode(gb_,Word32,Word32,GB_Word)
+
+#ifdef USE_32_BITS
+IntLikeArithPrimsCode(gb_,Word32,Word32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+
+PRIM GB_NodePtr gb_primWord32ToInteger( Word32 x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
+	return n ;
+}
+
+PRIM Word32 gb_primIntegerToWord32( GB_NodePtr n )
+{
+	Word32 x = mpz_get_ui( n->content.mpz ) ;
+	return ( x ) ;
+}
+#endif
+%%]
+
+%%[97
+IntLikeBoundedPrimsCode(gb_,Word64,Word64)
+IntLikeIntConversionPrimsCode(gb_,Word64,Word64,GB_Word)
+IntLikeArithPrimsCode(gb_,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+
+PRIM GB_NodePtr gb_primWord64ToInteger( Word64 x )
+{
+	GB_NodePtr n ;
+	GB_NodeAlloc_Mpz_In(n) ;
+	mpz_import( n->content.mpz, 1, -1, 8, 0, 0, &x ) ;
+	return n ;
+}
+
+PRIM Word64 gb_primIntegerToWord64( GB_NodePtr n )
+{
+	Word64 x ;
+	if ( sizeof(Word64) <= sizeof(unsigned long int) ) {
+		x = mpz_get_ui( n->content.mpz ) ;
+	} else { // sizeof(Word32) == sizeof(unsigned long int)
+		mpz_t mpz ;
+		mpz_init_set( mpz, n->content.mpz ) ;
+		Word64 i32a = mpz_get_ui( mpz ) ;
+		mpz_fdiv_q_2exp( mpz, mpz, Word32_SizeInBits ) ;
+		Word64 i32b = mpz_get_ui( mpz ) ;
+		x = i32b << Word32_SizeInBits | i32a ;
+	}
+	return ( x ) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

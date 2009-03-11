@@ -171,11 +171,9 @@ SEM Class
                                                                       where (e  ,cp3) = cadd (PoolConst_Utf8 "EnclosingMethod") cp2
                                                                             (ecl,cp4) = cadd (PoolConst_Class enm) cp3
                                                                     _ -> (0,0,cp2)
-                                                    (ic,icl,cp4) = if null @lhs.innerClsRefL
-                                                                   then (0,[],cp3)
-                                                                   else let (icl,cp4) = caddl' id (\[x,y] -> (x,y)) [[PoolConst_Class i,PoolConst_Class o] | (i,o) <- @lhs.innerClsRefL] cp3
-                                                                            (ic ,cp5) = cadd (PoolConst_Utf8 "InnerClasses") cp4
-                                                                        in  (ic,icl,cp5)
+                                                    (ic,icl,cp4) = let (icl,cp4) = caddl' id (\[x,y] -> (x,y)) [[PoolConst_Class i,PoolConst_Class o] | (i,o) <- @lhs.innerClsRefL] cp3
+                                                                       (ic ,cp5) = cadd (PoolConst_Utf8 "InnerClasses") cp4
+                                                                   in  (ic,icl,cp5)
                                                 in  (t,s,e,ecl,ic,icl,cp4)
 				loc			.	thisInx			: 	U2
 				loc			.	superInx		: 	U2

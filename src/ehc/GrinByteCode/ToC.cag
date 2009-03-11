@@ -113,7 +113,7 @@ SEM Instr
                 lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofGrWord
   | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
   | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
-  | Halt CvtInt2Word CvtWord2Int
+  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   cLoc        =   @lhs.cLoc + 2
   | AllocStore Fetch
                 lhs         .   cLoc        =   @lhs.cLoc + 1
@@ -556,7 +556,7 @@ SEM Instr
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp -- >#< ppCmtC @lhs.opts @ann
-  | Halt CvtInt2Word CvtWord2Int
+  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
   | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (Cfg.sizeofGrWord) $ linkVal @link]
   | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
@@ -698,8 +698,13 @@ SEM Instr
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
   | Halt        lhs         .   mn          =   pp "halt"
-  | CvtInt2Word lhs         .   mn          =   pp "ci2w"
-  | CvtWord2Int lhs         .   mn          =   pp "cw2i"
+  | TagInt2Word lhs         .   mn          =   pp "tagi2w"
+  | UntagWord2Int
+                lhs         .   mn          =   pp "untagw2i"
+  | TagWord2Word
+                lhs         .   mn          =   pp "tagw2w"
+  | UntagWord2Word
+                lhs         .   mn          =   pp "untagw2w"
   | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
@@ -788,7 +793,7 @@ SEM Instr
   -- others
   | FetchUpdate loc         .   enc         =   0xF9
   | LdNodeTag   loc         .   enc         =   0xFC
-  | Halt CvtInt2Word CvtWord2Int
+  | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
             	loc         .   enc         =   0xFE
 %%]
 
@@ -801,8 +806,13 @@ SEM Instr
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   | Halt        loc         .   enc2        =   0xFF
-  | CvtInt2Word loc         .   enc2        =   0xFC
-  | CvtWord2Int loc         .   enc2        =   0xFD
+  | TagInt2Word loc         .   enc2        =   0xFC
+  | UntagWord2Int
+                loc         .   enc2        =   0xFD
+  | TagWord2Word
+                loc         .   enc2        =   0xFA
+  | UntagWord2Word
+                loc         .   enc2        =   0xFB
 
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF
