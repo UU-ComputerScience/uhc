@@ -95,8 +95,10 @@ DATA Instr
   | Meta		meta			: Meta
   | Label		locRef			: LocRef
   | LabelRef	locRef			: LocRef
-  | CvtInt2Word
-  | CvtWord2Int
+  | TagInt2Word
+  | UntagWord2Int
+  | TagWord2Word
+  | UntagWord2Word
 
 DATA Meta
   | CmtHeader	kind            : AnnKind

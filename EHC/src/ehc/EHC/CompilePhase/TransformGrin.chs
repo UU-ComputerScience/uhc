@@ -78,8 +78,8 @@ cpTransformGrin modNm
                          eve  = ( grEvalElim                     , "eval elim"        )
                          mte  = ( grUnusedMetaInfoElim           , "meta info elim"   )
                          cpr  = ( grConstPropagation             , "const prop"       )
-                         unb  = ( grMayLiveUnboxed 
-                                   Bytecode.tagAllowsUnboxedLife , "unbox"            )
+                         unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
+                                                                 , "unbox"            )
 %%[[8_2
                          frm  = ( grPrettyNames                  , "rename uniform"   ) 
 %%]]

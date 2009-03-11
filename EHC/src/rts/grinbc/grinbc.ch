@@ -1041,8 +1041,9 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 
 %%[97
 #if USE_GMP
-#define GB_NodeAlloc_Mpz_SetInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_si( n->content.mpz, (x) ) ; }
-#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( n->content.mpz, (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetSignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_si( n->content.mpz, (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetUnsignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_ui( n->content.mpz, (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)				{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( n->content.mpz, (x) ) ; }
 #endif
 %%]
 
@@ -1078,6 +1079,8 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 %%[8
 #define GB_GBInt2CastedInt(ty,x)	(Cast(ty,(x)&GB_Word_IntMask) / GB_Int_ShiftPow2)
 #define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
+#define GB_TagWord2Word(x)			(((x)<<GB_Word_SizeOfWordTag) | GB_Word_TagInt)
+#define GB_UntagWord2Word(x)		((x)>>GB_Word_SizeOfWordTag)
 #define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_SizeOfWordTag | GB_Word_TagInt)
 
 #define GB_Int0						GB_Int2GBInt(0)
@@ -1270,8 +1273,10 @@ typedef __mpz_struct*  GB_mpz ;
 
 %%[8
 #define GB_InsExt_Halt							0xFF
-#define GB_InsExt_ConvertInt2Word				0xFC
-#define GB_InsExt_ConvertWord2Int				0xFD
+#define GB_InsExt_TagInt2Word					0xFC
+#define GB_InsExt_UntagWord2Int					0xFD
+#define GB_InsExt_TagWord2Word					0xFA
+#define GB_InsExt_UntagWord2Word				0xFB
 %%]
 
 %%[96

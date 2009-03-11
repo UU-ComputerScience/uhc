@@ -1,0 +1,11 @@
+/* size of Pointer/GrWord/... */
+#undef SIZEOF_INTPTR_T
+
+#if SIZEOF_INTPTR_T == 8
+#define USE_64_BITS 1
+#define USE_32_BITS 0
+#else
+#define USE_64_BITS 0
+#define USE_32_BITS 1
+#endif
+

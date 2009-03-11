@@ -52,7 +52,7 @@ On request \eref{Shuffle}{Shuffle} annotates its output with text types specifie
 \eref{Shuffle}{Shuffle} just passes this information on.
 In this way documentation can be written in different formats independent of the particular output it will be presented.
 
-A simple Text2Text looks like:
+A simple Text2Text input looks like:
 \begin{verbatim}
 @@@[doclatex
 
@@ -67,8 +67,8 @@ A simple Text2Text looks like:
 @@@]
 \end{verbatim}
 
-Text fragments are delimited by \verb|@@[texttype| and \verb|@@]|.
-As mentioned already, currently the only \verb|texttype| is \verb|doclatex|,
+Text fragments are delimited by \verb|@@[<texttype>| and \verb|@@]|.
+As mentioned already, currently the only \verb|<texttype>| is \verb|doclatex|,
 restricted \href{http://www.latex-project.org/}{LaTeX} for documentation purposes.
 
 Text fragments may be nested, but the delimiters always start at the beginning of the line.

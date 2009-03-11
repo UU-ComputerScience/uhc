@@ -1955,9 +1955,9 @@ The variable is used to indicate exception handling throughout C primitive calls
 \end{GrinEncoding}
 
 
-\subsubsection{Convert from tagged int to untagged int representation (plain word)}
+\subsubsection{Convert from untagged signed int to tagged word representation (plain word)}
 
-\begin{GrinEncoding}{|ci2w|}
+\begin{GrinEncoding}{|tagi2w|}
  &
 |1111 ^^ 1110| &
 |1111 ^^ 1100| &
@@ -1968,7 +1968,41 @@ The variable is used to indicate exception handling throughout C primitive calls
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |ci2w : gcode|
+  |tagi2w : gcode|
+ }{%
+  |w : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Convert from tagged word representation (plain word) to untagged signed int}
+
+\begin{GrinEncoding}{|untagw2i|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1101| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |untagw2i : gcode|
  }{%
   |Enc(w) : gstack|
  }{%
@@ -1988,13 +2022,12 @@ The variable is used to indicate exception handling throughout C primitive calls
 }
 
 
+\subsubsection{Convert from untagged word to tagged word representation (plain word)}
 
-\subsubsection{Convert from untagged int representation (plain word) to tagged int}
-
-\begin{GrinEncoding}{|cw2i|}
+\begin{GrinEncoding}{|tagw2w|}
  &
 |1111 ^^ 1110| &
-|1111 ^^ 1101| &
+|1111 ^^ 1010| &
  &
 \\
 \end{GrinEncoding}
@@ -2002,7 +2035,7 @@ The variable is used to indicate exception handling throughout C primitive calls
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |cw2i : gcode|
+  |tagw2w : gcode|
  }{%
   |w : gstack|
  }{%
@@ -2015,6 +2048,40 @@ The variable is used to indicate exception handling throughout C primitive calls
   |gcode|
  }{%
   |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }{}
+}
+
+
+
+\subsubsection{Convert from tagged word representation (plain word) to untagged word}
+
+\begin{GrinEncoding}{|untagw2w|}
+ &
+|1111 ^^ 1110| &
+|1111 ^^ 1011| &
+ &
+\\
+\end{GrinEncoding}
+
+\GriniStep{%
+ \GriniStateBefore{%
+ }{%
+  |untagw2w : gcode|
+ }{%
+  |Enc(w) : gstack|
+ }{%
+  |gheap|
+ }{
+ }
+}{%
+ \GriniStateAfter{%
+ }{%
+  |gcode|
+ }{%
+  |w : gstack|
  }{%
   |gheap|
  }{

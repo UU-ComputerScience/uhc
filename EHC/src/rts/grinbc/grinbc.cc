@@ -37,15 +37,16 @@ typedef GB_Word GB_CFun();
 Equivalent of Base.BasicTy
 
 %%[8
-#define GB_CFun_BasicTy_Word	0
 %%]
+#define GB_CFun_BasicTy_Word	0
 
 %%[97
+%%]
 #define GB_CFun_BasicTy_Float	1
 #define GB_CFun_BasicTy_Double	2
-%%]
 
 %%[8
+%%]
 #define GB_CFun_0(r)						(r)
 #define GB_CFun_1(r,a1)						GB_CFun_0(r) | (a1) << 2
 #define GB_CFun_2(r,a1,a2)					GB_CFun_1(r,a1) | (a2) << 4
@@ -53,21 +54,20 @@ Equivalent of Base.BasicTy
 #define GB_CFun_4(r,a1,a2,a3,a4)			GB_CFun_3(r,a1,a2,a3) | (a4) << 8
 #define GB_CFun_5(r,a1,a2,a3,a4,a5)			GB_CFun_4(r,a1,a2,a3,a4) | (a5) << 10
 #define GB_CFun_6(r,a1,a2,a3,a4,a5,a6)		GB_CFun_5(r,a1,a2,a3,a4,a5) | (a6) << 12
-%%]
 
 %%[8
+%%]
 #define GB_CFun_W0				GB_CFun_0(GB_CFun_BasicTy_Word)
 #define GB_CFun_W1W				GB_CFun_1(GB_CFun_BasicTy_Word,GB_CFun_BasicTy_Word)
-%%]
 
 %%[97
+%%]
 #define GB_CFun_F0				GB_CFun_0(GB_CFun_BasicTy_Float)
 #define GB_CFun_F1F				GB_CFun_1(GB_CFun_BasicTy_Float,GB_CFun_BasicTy_Float)
 
 #define GB_CFun_D0				GB_CFun_0(GB_CFun_BasicTy_Double)
 #define GB_CFun_D1D				GB_CFun_1(GB_CFun_BasicTy_Double,GB_CFun_BasicTy_Double)
 
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack
@@ -1500,12 +1500,20 @@ gb_interpreter_InsApplyEntry:
 						goto interpretIsDone ;
 						break ;
 
-					case GB_InsExt_ConvertInt2Word:
+					case GB_InsExt_TagInt2Word:
+						GB_SetTOS( GB_Int2GBInt( GB_TOS ) ) ;
+						break ;
+
+					case GB_InsExt_UntagWord2Int:
 						GB_SetTOS( GB_GBInt2Int( GB_TOS ) ) ;
 						break ;
 
-					case GB_InsExt_ConvertWord2Int:
-						GB_SetTOS( GB_Int2GBInt( GB_TOS ) ) ;
+					case GB_InsExt_TagWord2Word:
+						GB_SetTOS( GB_TagWord2Word( GB_TOS ) ) ;
+						break ;
+
+					case GB_InsExt_UntagWord2Word:
+						GB_SetTOS( GB_UntagWord2Word( GB_TOS ) ) ;
 						break ;
 
 %%[[96

@@ -49,7 +49,7 @@ pCTag
            )
 %%]
 
-%%[20 export(pBool)
+%%[8 export(pBool)
 pBool :: P Bool
 pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
 %%]

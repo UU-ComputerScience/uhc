@@ -45,7 +45,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Builtin Haskell names
+%%% Builtin Haskell names: basics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -248,7 +248,7 @@ hsnInteger                          =   hsnFromString "Integer"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known/available runtime values
+%%% Known/available runtime values: constructor utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.mkRV
@@ -260,6 +260,10 @@ mkRV = hsnFromString
 mkRV :: HsName -> String -> HsName
 mkRV m = hsnSetQual m . hsnFromString
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: basics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 export(hsnNegate)
 [hsnNegate]
@@ -283,6 +287,12 @@ mkRV m = hsnSetQual m . hsnFromString
       [ "error" ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: datatypes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: Needs cleaning up, correct partitioning in variants
+
 %%[5 export(hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom)
 [hsnEnumFromThenTo,hsnEnumFromThen,hsnEnumFromTo,hsnEnumFrom]
   = map
@@ -297,11 +307,11 @@ mkRV m = hsnSetQual m . hsnFromString
 %%[5 export(hsnBool,hsnTrue,hsnFalse,hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnClassEqFldEq,hsnPrelConcatMap)
 [hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnPrelConcatMap
  , hsnBool,hsnTrue,hsnFalse
+ , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
  , hsnPrelString
  , hsnClassEqFldEq
 %%[[95
  , hsnMap
- , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
  , hsnClassBounded, hsnClassBoundedFldMinBound, hsnClassBoundedFldMaxBound
  , hsnClassEnum, hsnClassEnumFldFromEnum, hsnClassEnumFldToEnum, hsnClassEnumFldSucc, hsnClassEnumFldPred
 %%]]
@@ -314,11 +324,11 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
       [ "[]", ":", "[]", "concatMap"
       , "Bool", "True", "False"
+      , "Ordering", "EQ", "LT", "GT"
       , "String"
       , "=="
 %%[[95
       , "map"
-      , "Ordering", "EQ", "LT", "GT"
       , "Bounded", "minBound", "maxBound"
       , "Enum", "fromEnum", "toEnum", "succ", "pred"
 %%]]
@@ -327,6 +337,12 @@ mkRV m = hsnSetQual m . hsnFromString
 
 %%[97 export(hsnPackedStringToInteger, hsnPrimIntegerToInt)
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: Needs cleaning up, correct partitioning in variants
 
 %%[8 export(hsnUndefined,hsnPackedString,hsnPackedStringToString,hsnPrelId,hsnPrimAddInt)
 [ hsnUndefined
@@ -342,7 +358,7 @@ mkRV m = hsnSetQual m . hsnFromString
  , hsnPackedStringToInteger
  , hsnPrimIntegerToInt
 %%]]
-%%[[99
+%%[[97
  , hsnPrimEqChar
 %%]]
  ]
@@ -370,6 +386,12 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
       ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: classes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+TBD: Needs cleaning up, correct partitioning in variants
 
 %%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail,hsnClassEq)
 [hsnMonadSeq,hsnMonadBind,hsnMonadFail
@@ -399,6 +421,10 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
       ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: deriving
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[95
 [hsnClassShow
@@ -434,6 +460,10 @@ mkRV m = hsnSetQual m . hsnFromString
       ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: numbers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[97 export(hsnFromInteger)
 [hsnFromInteger]
   = map
@@ -446,14 +476,42 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]
 
 %%[97
-[hsnFloat,hsnDouble]
+[hsnFloat,hsnDouble
+ ]
   = map
 %%[[97
       mkRV
 %%][99
       (mkRV hsnModIntlPrelude)
 %%]]
-      [ "Float", "Double" ]
+      [ "Float", "Double"
+      ]
+%%]
+
+%%[97
+[hsnWord,hsnWord8,hsnWord16,hsnWord32,hsnWord64
+ ]
+  = map
+%%[[97
+      mkRV
+%%][99
+      (mkRV hsnModIntlWord)
+%%]]
+      [ "Word", "Word8", "Word16", "Word32", "Word64"
+      ]
+%%]
+
+%%[97
+[hsnInt8, hsnInt16, hsnInt32, hsnInt64
+ ]
+  = map
+%%[[97
+      mkRV
+%%][99
+      (mkRV hsnModIntlInt)
+%%]]
+      [ "Int8" , "Int16" , "Int32" , "Int64"
+      ]
 %%]
 
 %%[97 export(hsnFromRational)
@@ -478,6 +536,10 @@ mkRV m = hsnSetQual m . hsnFromString
       [ ":%" ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[98 export(hsnIO)
 [hsnIO]
   = map
@@ -488,6 +550,10 @@ mkRV m = hsnSetQual m . hsnFromString
 %%]]
       [ "IO" ]
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Known/available runtime values: main entry point
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(hsnEhcRunMain)
 [hsnEhcRunMain]
@@ -531,6 +597,11 @@ hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (hsnFromString 
 hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
 
+%%[99 export(hsnModIntlInt,hsnModIntlWord)
+hsnModIntlInt                           =   hsnPrefixQual hsnEHC (hsnFromString "Int")
+hsnModIntlWord                          =   hsnPrefixQual hsnEHC (hsnFromString "Word")
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Naming conventions for class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -565,14 +636,19 @@ data EHBuiltinNames
       , ehbnPackedStringToString        :: HsName
       , ehbnPrimAddInt                  :: HsName
       , ehbnPrimGtInt                   :: HsName
+      , ehbnBoolTrue                    :: HsName
+      , ehbnBoolFalse                   :: HsName
+      , ehbnDataOrderingAltLT           :: HsName
+      , ehbnDataOrderingAltEQ           :: HsName
+      , ehbnDataOrderingAltGT           :: HsName
 %%[[11
       , ehbnPrelString                  :: HsName
+%%]]
+%%[[20
 %%]]
 %%[[95
       , ehbnMap                         :: HsName
       , ehbnDataBool                    :: HsName
-      , ehbnBoolTrue                    :: HsName
-      , ehbnBoolFalse                   :: HsName
       , ehbnBoolAnd                     :: HsName
       , ehbnBoolOr                      :: HsName
       , ehbnClassEq                     :: HsName
@@ -580,9 +656,6 @@ data EHBuiltinNames
       , ehbnClassOrd                    :: HsName
       , ehbnClassOrdFldCompare          :: HsName
       , ehbnDataOrdering                :: HsName
-      , ehbnDataOrderingAltLT           :: HsName
-      , ehbnDataOrderingAltEQ           :: HsName
-      , ehbnDataOrderingAltGT           :: HsName
       , ehbnClassShow                   :: HsName
       , ehbnClassShowFldShow            :: HsName
       , ehbnClassShowFldShowsPrec       :: HsName
@@ -607,18 +680,27 @@ data EHBuiltinNames
       , ehbnPrimLtInt                   :: HsName
 %%]]
 %%[[97
+      , ehbnInt8                        :: HsName
+      , ehbnInt16                       :: HsName
+      , ehbnInt32                       :: HsName
+      , ehbnInt64                       :: HsName
+      , ehbnWord                        :: HsName
+      , ehbnWord8                       :: HsName
+      , ehbnWord16                      :: HsName
+      , ehbnWord32                      :: HsName
+      , ehbnWord64                      :: HsName
       , ehbnFloat                       :: HsName
       , ehbnDouble                      :: HsName
       , ehbnPackedStringToInteger       :: HsName
+      , ehbnDataList                    :: HsName
+      , ehbnDataListAltCons             :: HsName
+      , ehbnDataListAltNil              :: HsName
 %%]]
 %%[[98
       , ehbnIO                          :: HsName
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  :: HsName
-      , ehbnDataList                    :: HsName
-      , ehbnDataListAltCons             :: HsName
-      , ehbnDataListAltNil              :: HsName
       , ehbnClassRead                   :: HsName
       , ehbnClassReadFldRead            :: HsName
       , ehbnClassReadFldReadsPrec       :: HsName
@@ -638,14 +720,19 @@ mkEHBuiltinNames f
       , ehbnPackedStringToString        = f IdOcc_Val       hsnPackedStringToString
       , ehbnPrimAddInt                  = f IdOcc_Val       hsnPrimAddInt
       , ehbnPrimGtInt                   = f IdOcc_Val       hsnPrimGtInt
+      , ehbnBoolTrue                    = f IdOcc_Val       hsnTrue
+      , ehbnBoolFalse                   = f IdOcc_Val       hsnFalse
+      , ehbnDataOrderingAltLT           = f IdOcc_Val       hsnDataOrderingAltLT
+      , ehbnDataOrderingAltEQ           = f IdOcc_Val       hsnDataOrderingAltEQ
+      , ehbnDataOrderingAltGT           = f IdOcc_Val       hsnDataOrderingAltGT
 %%[[11
       , ehbnPrelString                  = f IdOcc_Type      hsnPrelString
+%%]]
+%%[[20
 %%]]
 %%[[95
       , ehbnMap                         = f IdOcc_Type      hsnMap
       , ehbnDataBool                    = f IdOcc_Type      hsnBool
-      , ehbnBoolTrue                    = f IdOcc_Val       hsnTrue
-      , ehbnBoolFalse                   = f IdOcc_Val       hsnFalse
       , ehbnBoolAnd                     = f IdOcc_Val       hsnBoolAnd
       , ehbnBoolOr                      = f IdOcc_Val       hsnBoolOr
       , ehbnClassEq                     = f IdOcc_Class     hsnClassEq
@@ -653,9 +740,6 @@ mkEHBuiltinNames f
       , ehbnClassOrd                    = f IdOcc_Class     hsnClassOrd
       , ehbnClassOrdFldCompare          = f IdOcc_Val       hsnClassOrdFldCompare
       , ehbnDataOrdering                = f IdOcc_Type      hsnDataOrdering
-      , ehbnDataOrderingAltLT           = f IdOcc_Val       hsnDataOrderingAltLT
-      , ehbnDataOrderingAltEQ           = f IdOcc_Val       hsnDataOrderingAltEQ
-      , ehbnDataOrderingAltGT           = f IdOcc_Val       hsnDataOrderingAltGT
       , ehbnClassShow                   = f IdOcc_Class     hsnClassShow
       , ehbnClassShowFldShow            = f IdOcc_Val       hsnClassShowFldShow
       , ehbnClassShowFldShowsPrec       = f IdOcc_Val       hsnClassShowFldShowsPrec
@@ -680,18 +764,27 @@ mkEHBuiltinNames f
       , ehbnPrimLtInt                   = f IdOcc_Val       hsnPrimLtInt
 %%]]
 %%[[97
+      , ehbnInt8                        = f IdOcc_Type      hsnInt8
+      , ehbnInt16                       = f IdOcc_Type      hsnInt16
+      , ehbnInt32                       = f IdOcc_Type      hsnInt32
+      , ehbnInt64                       = f IdOcc_Type      hsnInt64
+      , ehbnWord                        = f IdOcc_Type      hsnWord
+      , ehbnWord8                       = f IdOcc_Type      hsnWord8
+      , ehbnWord16                      = f IdOcc_Type      hsnWord16
+      , ehbnWord32                      = f IdOcc_Type      hsnWord32
+      , ehbnWord64                      = f IdOcc_Type      hsnWord64
       , ehbnFloat                       = f IdOcc_Type      hsnFloat
       , ehbnDouble                      = f IdOcc_Type      hsnDouble
       , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
+      , ehbnDataList                    = f IdOcc_Type      hsnDataList
+      , ehbnDataListAltCons             = f IdOcc_Type      hsnDataListAltCons
+      , ehbnDataListAltNil              = f IdOcc_Type      hsnDataListAltNil
 %%]]
 %%[[98
       , ehbnIO                          = f IdOcc_Type      hsnIO
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  = f IdOcc_Val       hsnEhcRunMain
-      , ehbnDataList                    = f IdOcc_Type      hsnDataList
-      , ehbnDataListAltCons             = f IdOcc_Type      hsnDataListAltCons
-      , ehbnDataListAltNil              = f IdOcc_Type      hsnDataListAltNil
       , ehbnClassRead                   = f IdOcc_Class     hsnClassRead
       , ehbnClassReadFldRead            = f IdOcc_Val       hsnClassReadFldRead
       , ehbnClassReadFldReadsPrec       = f IdOcc_Val       hsnClassReadFldReadsPrec

@@ -66,14 +66,14 @@ mkC maxCCallArgs
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")
            ]
-        ++ [ localvar (basicTyGBTy t) (r' t) Nothing | t <- allGrinBasicTy ]
+        ++ [ localvar (basicSizeGBTy t) (r' t) Nothing | t <- allGrinBasicSize ]
         ++ [ stat (call "GB_SetTOS" [pp nargs])
            , stat (call "GB_Push" [pp pc])
            , stat "GB_BP_Link"
            , switch callenc
-               [ switchcase (show $ basicGrinTyLEncoding ra)
+               [ switchcase (show $ basicGrinSizeLEncoding ra)
                    (let (cl,sz) = funCCall ra f a
-                        resty = basicTyGBTy res
+                        resty = basicSizeGBTy res
                     in  [ assign (r' res) cl
 %%[[96
                         , stat (call "GB_PassExcWith" [empty,empty,op ">" "gb_ThrownException_NrOfEvalWrappers" "0",pp "return"])
@@ -94,7 +94,7 @@ mkC maxCCallArgs
            ]
         )
   where r = "res"
-        r' t = r ++ basicTyGBTy t
+        r' t = r ++ basicSizeGBTy t
         f = "func"
         a = "args"
         pc = "pc"
@@ -108,13 +108,13 @@ mkC maxCCallArgs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-allFunTyL :: Int -> [(Int,[(BasicTy,[[BasicTy]])])]
+allFunTyL :: Int -> [(Int,[(BasicSize,[[BasicSize]])])]
 allFunTyL maxCCallArgs
   = [ ( nrArg
       , [ ( res
-          , combine $ replicate nrArg allGrinBasicTy
+          , combine $ replicate nrArg allGrinBasicSize
           )
-        | res <- allGrinBasicTy
+        | res <- allGrinBasicSize
         ]
       )
     | nrArg <- [0..maxCCallArgs]
@@ -186,13 +186,13 @@ include f = "#include \"" >|< f >|< "\""
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-funCCall :: (PP fun,PP argbase) => [BasicTy] -> fun -> argbase -> (PP_Doc,PP_Doc)
+funCCall :: (PP fun,PP argbase) => [BasicSize] -> fun -> argbase -> (PP_Doc,PP_Doc)
 funCCall ty@(res:args) fun argbase
   = (call (cast ({- ppTyDrf $ -} funTyNm ty) fun) (reverse argsStack),sz)
   where (argsStack,sz)
           = foldl
               (\(stk,off) bt
-                 -> let t = basicTyGBTy bt
+                 -> let t = basicSizeGBTy bt
                     in  (call "GB_RegByteRelCastx" [pp t,pp argbase,pp off] : stk, op "+" off (sizeof t))
               )
               ([],pp (0::Int)) args
@@ -203,20 +203,20 @@ funCCall ty@(res:args) fun argbase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-funTyNm :: [BasicTy] -> String
+funTyNm :: [BasicSize] -> String
 funTyNm (res:args)
-  = "GB_CFun_" ++ [basicGrinTyCharEncoding res] ++ show (length args) ++ map basicGrinTyCharEncoding args
+  = "GB_CFun_" ++ [basicGrinSizeCharEncoding res] ++ show (length args) ++ map basicGrinSizeCharEncoding args
 %%]
 
 E.g.:
 typedef GB_Word (*GB_CFun_w4wwww)(GB_Word,GB_Word,GB_Word,GB_Word);
 
 %%[8
-funTyDef :: [BasicTy] -> PP_Doc
+funTyDef :: [BasicSize] -> PP_Doc
 funTyDef ty@(res:args)
-  = typedef (basicTyGBTy res) (ppParens (ppDrf (funTyNm ty)) >|< ppParensCommas (ppargs args))
+  = typedef (basicSizeGBTy res) (ppParens (ppDrf (funTyNm ty)) >|< ppParensCommas (ppargs args))
   where ppargs []         = ["void"]
-        ppargs args@(_:_) = map basicTyGBTy args
+        ppargs args@(_:_) = map basicSizeGBTy args
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

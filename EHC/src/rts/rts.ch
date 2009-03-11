@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <limits.h>
 #include "config.h"
 #include "sizes.h"
 %%]
@@ -73,6 +74,15 @@ typedef int Bool ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// identity macro
+#define ID(x)		x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% More includes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -85,6 +95,8 @@ typedef int Bool ;
 #include "grinbc/grinbc.h"
 #include "mm/mm.h"
 #include "utils.h"
+#include "priminline.h"
+#include "grinbc/gbprimdecl.h"
 #include "grinbc/gbprim.h"
 %%]
 
