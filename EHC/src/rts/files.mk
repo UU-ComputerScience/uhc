@@ -58,8 +58,8 @@ RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 								)
 RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim)
 RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
-									rts config sizes bits utils timing \
-									grinbc/grinbc \
+									rts config sizes bits utils timing priminline \
+									grinbc/gbprimdecl grinbc/grinbc \
 									mm/mmitf mm/mm mm/config mm/common \
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan mm/module \
@@ -105,20 +105,32 @@ RTS_H_RTS_INSTALL_H			:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.h,$(INSTALLABS_RTS_IN
 MAIN_C_MAIN_INSTALL_C		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(INSTALLABS_RTS_INC_PREFIX)%.c,$(MAIN_C_MAIN_ALL_DRV_C))
 
 ###########################################################################################
-# build targets, only used for independent building, to become obsolete
+# rts dispatch
 ###########################################################################################
 
-#rts: $(INSTALLFORBLDABS_LIB_RTS)
+# for (e.g.) 99/rts
+$(patsubst %,%/rts,$(EHC_CODE_VARIANTS)): %/rts: $(RTS_ALL_SRC) $(RTS_MKF)
+	$(MAKE) EHC_VARIANT=$(@D) rts-variant-dflt
+
+# for (e.g.) 99/ehclibs
+#$(patsubst %,%/ehclibs,$(EHC_VARIANTS)): %/ehclibs:
+#	$(MAKE) EHC_VARIANT=$(@D) ehclibs-variant-dflt
+
+#$(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) $(RTS_ALL_SRC)
+#	mkdir -p $(@D)
+#	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
+#	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \
+#	        ehclib-variant-dflt
+#	touch $@
+
+#$(EHCLIB_ALL_LIBS): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
+#	$(MAKE) EHC_VARIANT=`echo $(*D) | sed -n -e 's+$(BLD_PREFIX)\([0-9]*\)/$(EHCLIB_EHCLIB_EHCBASE)+\1+p'` ehclib-variant-dflt
 
 ###########################################################################################
 # top level build
 ###########################################################################################
 
-# library, global for build, to be obsolete
-#$(INSTALLFORBLDABS_LIB_RTS): $(EHC_RTS_INSTALLFORBLD_DPDS_EXTLIBS) $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER) $(RTS_H_RTS_INSFORBLD_H) $(RTS_O_RTS_INSFORBLD_O) $(MAIN_C_MAIN_INSFORBLD_C) $(RTS_MKF)
-#	mkdir -p $(@D)
-#	$(call FUN_LIB_MK_STATIC,$@,$(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER))
-#	touch $@
+rts-variant-dflt: $(INSTALL_LIB_RTS)
 
 # library install
 $(INSTALL_LIB_RTS): $(EHC_RTS_INSTALL_DPDS_EXTLIBS) $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER) $(RTS_H_RTS_INSTALL_H) $(RTS_O_RTS_INSTALL_O) $(MAIN_C_MAIN_INSTALL_C) $(RTS_MKF)

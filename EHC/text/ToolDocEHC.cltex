@@ -52,6 +52,8 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \subsection{Available in EHC but not in Haskell98 or Haskell prime}
 %%@ToolDocEHC.inEhcNotIn98Prime
 
+\subsection{Foreign function interface (FFI)}
+
 \subsection{Library modules}
 
 The following librariy modules incorporated in the library, either fully or partially:
@@ -67,15 +69,43 @@ We give an overview such modules.
 \subsubsection{@Data.Typeable@}
 
 \subsection{Library + runtime}
-\subsubsection{Threads}
-\subsubsection{Garbage collection}
+The C based backends (C, bc) use the following public domain libraries:
+
+\subsubsection{Third party libraries}
+\begin{itemize}
+\item \href{http://gmplib.org/}{GMP} GNU Multiple Precision library.
+\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} library.
+ We are working on a replacement for this library.
+\end{itemize}
+
+\subsubsection{Known issues}
+\begin{itemize}
+\item Stacksize for the C based backends is fixed and not checked for overflow.
+\end{itemize}
+
+\subsection{Packages}
+Packages can not be used, although a minimal framework for packages is already in use internally. If so desired one can build and use packages in separate locations as follows:
+
+\begin{itemize}
+\item \emph{Build} a pkg @<pkg>@:
+\begin{pre}
+uhc --target=<target> --odir=<install>/<target>/<pkg> --pkg-build-libdir=<install>/<target>/ --pkg-build=<pkg> --import-path=<install>/<target>/<pkg>/include <pkg-files>
+\end{pre}
+Optionally provide specify commandline options @--cpp@, if @cpp@ preprocessing is necessary.
+If @cpp@ includes are part of the package, these should be in @<install>/<target>/<pkg>/include@; then also pass option @--import-path=<install>/<target>/<pkg>/include@.
+Generated library files like @.hi@ interface files and a linked library are put in the location specified by @--odir@.
+\item \emph{Use} a pkg @<pkg>@:
+\begin{pre}
+uhc --lib-search-path=<install> ...
+\end{pre}
+If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
+\end{itemize|
 
 \subsection{Backends}
-\subsubsection{GRIN based interpreter}
+\subsubsection{GRIN based interpreter, no full program analysis}
 \subsubsection{GRIN based C, with full program analysis}
 \subsubsection{GRIN based LLVM, with full program analysis}
 
-\subsection{XX}
 \subsection{XX}
 
 \section{Further reading}

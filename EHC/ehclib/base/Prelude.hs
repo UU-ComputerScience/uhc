@@ -28,7 +28,10 @@ module Prelude
   )
   where
 
-import EHC.Prelude
+import EHC.Prelude hiding
+  ( absReal, signumReal
+  -- , primEqInt
+  )
 import EHC.Eq
 import EHC.Ord
 import EHC.Enum

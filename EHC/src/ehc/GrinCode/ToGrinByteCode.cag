@@ -412,11 +412,11 @@ SEM GrPatLam
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
   | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
-                                                                BasicAnnot_ToTaggedPtr
+                                                                BasicAnnot_ToTaggedPtr _
                                                                   | @lhs.primResForIntl -> BasicAnnot_Dflt
                                                                 _                       -> @annot
                                                     in  NmIntro_Single @nm ann
-  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr
+  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False
                                                     in  NmIntro_Single @nm ann
   | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
@@ -671,8 +671,8 @@ SEM GrExpr
                                                            GB.GrValIntroAlt_OnTOS ins inc _ bann
                                                              -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@nm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
-                                                                   bannStr = map basicGrinTyCharEncoding banns
-                                                                   banns = map grinBasicAnnotTy (@lhs.patBasicAnnot : bann)
+                                                                   bannStr = map basicGrinSizeCharEncoding banns
+                                                                   banns = map grinBasicAnnotSize (@lhs.patBasicAnnot : bann)
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       GB.GrValIntroAlt_OnTOS ins inc _ _
@@ -715,8 +715,8 @@ SEM GrExpr
                                                                 -> (ins Seq.:++: @pat.i,patinc,Map.fromList [(nm,val)])
                                                                 where val
                                                                         = case annot of
-                                                                            BasicAnnot_FromTaggedPtr -> GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt
-                                                                            _                        -> GB.Val_NodeFldLocal (@expr.stkDepth + patinc) annot
+                                                                            BasicAnnot_FromTaggedPtr _ -> GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt
+                                                                            _                          -> GB.Val_NodeFldLocal (@expr.stkDepth + patinc) annot
                                                                       patinc = @pat.patStkInc + inc
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins Seq.:++: fins, inc' + length nmL * GB.nrValWords,g)
@@ -858,14 +858,14 @@ SEM GrAlt
 
 SEM GrPatLam
   | BasicNode   (lhs.i,loc.patStkInc)           =   case @annot of
-                                                      BasicAnnot_FromTaggedPtr
+                                                      BasicAnnot_FromTaggedPtr sgn
                                                         | @lhs.primArgForIntl  -> (Seq.empty,0)
-                                                        | otherwise            -> (Seq.fromList [GB.ci2w],0)
-                                                      BasicAnnot_Size bsz _    -> (Seq.empty,0) -- (Seq.fromList [GB.fetch GB.InsOp_LocB_TOS],GB.nrByte2Word bsz - GB.nrValWords)
+                                                        | otherwise            -> (Seq.fromList [GB.untag2 sgn],0)
+                                                      BasicAnnot_Size bsz _    -> (Seq.empty,0)
                                                       _                        -> panic "GrPatLam.BasicNode.i"
   | EnumNode    (lhs.i,loc.patStkInc)           =   if @lhs.primArgForIntl
                                                     then (Seq.empty,0)
-                                                    else (Seq.fromList [GB.ci2w],0)
+                                                    else (Seq.fromList [GB.untag2 False],0)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

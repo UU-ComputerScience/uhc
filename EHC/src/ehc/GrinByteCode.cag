@@ -8,7 +8,7 @@
 %%[(8 codegen grin) hs import(EH.Util.Utils,EH.Util.Pretty as Pretty,Data.Bits,qualified EH.Util.FastSeq as Seq,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2},{%{EH}Base.Opts})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Binary} as Binary)
@@ -152,14 +152,14 @@ Call Info
 
 %%[(8 codegen grin) hs
 data CallInfoExtra
-  = CallInfoExtra_CCall [BasicTy]		-- type: (res : args)
+  = CallInfoExtra_CCall [BasicSize]		-- type: (res : args)
   | CallInfoExtra_None
   deriving(Eq,Ord,Show)
 %%]
 
 %%[(8 codegen grin) hs
 instance PP CallInfoExtra where
-  pp (CallInfoExtra_CCall t) = pp $ show $ map basicGrinTyCharEncoding t
+  pp (CallInfoExtra_CCall t) = pp $ show $ map basicGrinSizeCharEncoding t
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
@@ -377,20 +377,20 @@ nmLd' optim env modNmConstInx stkDepth nm
                -> (mva,loadWithPrePostFrom [meta' AnnIdUse (nm >#< annot >#< src)] 0 src post,annot)
                where (src,post)
                          = case annot of
-                             BasicAnnot_FromTaggedPtr    -> (srcDflt Cfg.sizeofGrWord ,[ci2w])
-                             BasicAnnot_ToTaggedPtr      -> (srcDflt Cfg.sizeofGrWord ,[])
-                             BasicAnnot_Size bsz _       -> (srcDflt bsz,[])
-                             BasicAnnot_Dflt             -> (srcDflt Cfg.sizeofGrWord ,[])
+                             BasicAnnot_FromTaggedPtr sgn  -> (srcDflt Cfg.sizeofGrWord ,[untag2 sgn])
+                             BasicAnnot_ToTaggedPtr   sgn  -> (srcDflt Cfg.sizeofGrWord ,[])
+                             BasicAnnot_Size bsz _         -> (srcDflt (basicSizeInBytes bsz),[])
+                             BasicAnnot_Dflt               -> (srcDflt Cfg.sizeofGrWord ,[])
                          where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
              Val_NodeTagLocal o
                -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords),BasicAnnot_Dflt)
              Val_NodeFldLocal o annot
                -> (mva,l,annot)
                where l   = case annot of
-                             BasicAnnot_FromTaggedPtr    -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [ci2w]
-                             BasicAnnot_ToTaggedPtr      -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [cw2i]
-                             BasicAnnot_Size bsz _       -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word bsz)
-                             _                           -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
+                             BasicAnnot_FromTaggedPtr sgn  -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [untag2 sgn]
+                             BasicAnnot_ToTaggedPtr   sgn  -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [tag2   sgn]
+                             BasicAnnot_Size bsz _         -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word $ basicSizeInBytes bsz)
+                             _                             -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
                -> (mva,loadFrom (LoadSrc_Imm_Int i),BasicAnnot_Dflt)
              Val_GlobEntry o
@@ -470,22 +470,23 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
-                            BasicAnnot_Dflt        -> basicAnnotDflt nm
-                            BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
-                            _                      -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
+                            BasicAnnot_Dflt            -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr sgn -> basicAnnotTaggedPtr sgn nm ml
+                            _                          -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Nothing"
                 where ml@(mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Basic gtag nm
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
-                            BasicAnnot_Dflt        -> basicAnnotDflt nm
-                            BasicAnnot_ToTaggedPtr -> basicAnnotTaggedPtr nm ml
+                            BasicAnnot_Dflt            -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr sgn -> basicAnnotTaggedPtr sgn nm ml
                             BasicAnnot_Size bsz _
                               -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [bann]
                               where (ins,inc) = vaAndLd2Ins optim nm ml
-                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz)
-                                    (sins,sinc) = ndStore (allocInc + (nrByte2Word bsz) + tinc)
+                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz')
+                                    (sins,sinc) = ndStore (allocInc + (nrByte2Word bsz') + tinc)
+                                    bsz' = basicSizeInBytes bsz
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
                 where ml@(mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
@@ -503,8 +504,8 @@ gviLd' optim env modNmConstInx stkDepth intro
                 basicAnnotDflt nm
                   = GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l bann
                   where (mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
-                basicAnnotTaggedPtr nm ml
-                  = GrValIntroAlt_OnTOS (ins Seq.::+: cw2i) inc defaultOptimEffect [BasicAnnot_Dflt]
+                basicAnnotTaggedPtr sgn nm ml
+                  = GrValIntroAlt_OnTOS (ins Seq.::+: tag2 sgn) inc defaultOptimEffect [BasicAnnot_Dflt]
                   where (ins,inc) = vaAndLd2Ins optim nm ml
 
 gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
@@ -546,20 +547,21 @@ nrByte2Word sz
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs export(tagIsUnboxed)
-tagIsUnboxed :: GrTag -> Bool
-tagIsUnboxed gt
-  = case gt of
-      GrTag_Con _ _ nm | nm `elem` builtinMayLiveUnboxedTyNmL
-        -> True
-      GrTag_Unboxed
-        -> True
-      _ -> False
+tagIsUnboxed :: EHCOpts -> GrTag -> Bool
+tagIsUnboxed opts
+  = \gt -> case gt of
+              GrTag_Con _ _ nm | check nm
+                -> True
+              GrTag_Unboxed
+                -> True
+              _ -> False
+  where check = maybe False biGbcMayLiveUnboxed . builtinMayLiveUnboxed opts
 %%]
 
 %%[(8 codegen grin) hs export(tagAllowsUnboxedLife)
-tagAllowsUnboxedLife :: GrTag -> Unbox
-tagAllowsUnboxedLife gt
-  = if tagIsUnboxed gt
+tagAllowsUnboxedLife :: EHCOpts -> GrTag -> Unbox
+tagAllowsUnboxedLife opts gt
+  = if tagIsUnboxed opts gt
     then Unbox_FirstField
     else case gt of
            GrTag_Con ann t nm | gtannMaxArity ann == 0
@@ -726,11 +728,11 @@ casecall :: Instr
 casecall
   = Instr_CaseCall
 
-callc :: Integral c => MbStrInx -> [BasicTy] -> c -> Instr
+callc :: Integral c => MbStrInx -> [BasicSize] -> c -> Instr
 callc i ty nArg
   = Instr_CallC s1 i1 ce (mkCICCall ty i)
   where (s1,i1) = imm nArg
-        (_ ,ce) = imm $ basicGrinTyLEncoding ty
+        (_ ,ce) = imm $ basicGrinSizeLEncoding ty
 
 retcase :: Integral c => c -> c -> Instr
 retcase nRes retOffSurr
@@ -754,12 +756,26 @@ op opTy opndTy locDst ind locSrc c
 %%% Constructing: conversion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(ci2w)
-ci2w :: Instr
-ci2w = Instr_CvtInt2Word
+%%[(8 codegen grin) hs
+tagi2w :: Instr
+tagi2w = Instr_TagInt2Word
 
-cw2i :: Instr
-cw2i = Instr_CvtWord2Int
+untagw2i :: Instr
+untagw2i = Instr_UntagWord2Int
+
+tagw2w :: Instr
+tagw2w = Instr_TagWord2Word
+
+untagw2w :: Instr
+untagw2w = Instr_UntagWord2Word
+%%]
+
+%%[(8 codegen grin) hs export(untag2)
+tag2 :: Bool -> Instr
+tag2 sgn = if sgn then tagi2w else tagw2w
+
+untag2 :: Bool -> Instr
+untag2 sgn = if sgn then untagw2i else untagw2w
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

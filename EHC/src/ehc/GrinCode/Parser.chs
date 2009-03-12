@@ -147,10 +147,17 @@ pBasicTy        =    BasicTy_Word   <$ pKey "word"
                 <|>  BasicTy_Double <$ pKey "double"
 %%]]
 
+pBasicSize      ::   GRIParser BasicSize
+pBasicSize      =    basicSizeOf      <$> pInt
+%%[[97
+                <|>  BasicSize_Float  <$  pKey "float"
+                <|>  BasicSize_Double <$  pKey "double"
+%%]]
+
 pBasicAnnot     ::   GRIParser BasicAnnot
-pBasicAnnot     =    BasicAnnot_Size          <$> pInt <*> pBasicTy
-                <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr"
-                <|>  BasicAnnot_ToTaggedPtr   <$  pKey "annottotaggedptr"
+pBasicAnnot     =    BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
+                <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr" <*> pBool
+                <|>  BasicAnnot_ToTaggedPtr   <$  pKey "annottotaggedptr"   <*> pBool
                 <|>  BasicAnnot_Dflt          <$  pKey "annotdflt"
 
 pTag            ::   GRIParser GrTag

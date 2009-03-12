@@ -3,6 +3,7 @@ module EH.Util.FPath
   , FPATH(..)
   , emptyFPath
   -- , mkFPath
+  , fpathFromStr
   , mkFPathFromDirsFile
   , fpathToStr, fpathIsEmpty
   , fpathSetBase, fpathSetSuff, fpathSetDir

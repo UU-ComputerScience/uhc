@@ -6737,7 +6737,7 @@ ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific
 
 ac_config_files="$ac_config_files bin/llvm-compilerdriver"
 
-ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch"
+ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachineDependencies.h"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -7299,6 +7299,7 @@ do
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
+    "ehclib/base/include/MachineDependencies.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/MachineDependencies.h" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}

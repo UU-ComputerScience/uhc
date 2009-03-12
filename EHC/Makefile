@@ -104,7 +104,9 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 explanation:
 	@echo "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
-	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)})" ; \
+	echo  "make <n>/ehclibs         : make ehc libraries for all codegen targets" ; \
+	echo  "make <n>/rts             : make only the rts part of a library" ; \
+	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
 	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
 	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
 	echo  "                           then 'cd' to there and 'make'" ; \

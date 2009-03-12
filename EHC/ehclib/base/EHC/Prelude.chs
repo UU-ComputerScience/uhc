@@ -75,10 +75,10 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
  
 -- overloaded functions
     mapM, mapM_, sequence, sequence_, (=<<),
-    subtract, even, odd, gcd, lcm, (^), (^^),
+    subtract, even, odd, gcd, lcm, (^), (^^), absReal, signumReal,
     fromIntegral, realToFrac,
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
-    shows, showChar, showString, showParen,
+    shows, showChar, showString, showIntegral, showParen,
     --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
 
@@ -113,14 +113,19 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 -- Unsafe
     unsafeCoerce,
 
---  EHC specific functions
+-- EHC specific functions
     ehcRunMain,
     PackedString,
     packedStringToString, packedStringToInteger,
-    primGtInt, primEqChar
+    primGtInt, primEqChar -- ,
+
+-- EHC primitives, only exported to EHC. modules, hidden outside Prelude
+    -- primEqInt
     
 ) where
 
+
+#include "IntLikeInstance.h"
 
 --------------------------------------------------------------
 -- Operator precedences
@@ -796,44 +801,25 @@ primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 --------------------------------------------------------------
 -- type Int builtin
 
-foreign import prim primGtInt      :: Int -> Int -> Bool
-foreign import prim primLtInt      :: Int -> Int -> Bool
-foreign import prim primEqInt      :: Int -> Int -> Bool
-foreign import prim primCmpInt     :: Int -> Int -> Ordering
+PRIMS_BOUNDED(Int,primMinInt,primMaxInt)
 
-foreign import prim primAddInt       :: Int -> Int -> Int
-foreign import prim primSubInt       :: Int -> Int -> Int
-foreign import prim primMulInt       :: Int -> Int -> Int
-foreign import prim primNegInt       :: Int -> Int
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+primIntToInteger     :: Int -> Integer
+primIntToInteger n = undefined
+foreign import prim primIntegerToInt :: Integer -> Int
+#else
+PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
+#endif
 
-foreign import prim primMaxInt :: Int
-foreign import prim primMinInt :: Int
+PRIMS_EQ(Int,primEqInt)
+PRIMS_ORD2(Int,primCmpInt,primLtInt,primGtInt)
+PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 
-
-instance Eq Int where 
-    (==)    = primEqInt
-
-instance Ord Int where
-    compare = primCmpInt
-    (<)     = primLtInt
-    (>)     = primGtInt
-
-instance Num Int where
-    (+)           = primAddInt
-    (-)           = primSubInt
-    negate        = primNegInt
-    (*)           = primMulInt
-    abs           = absReal
-    signum        = signumReal
-    fromInteger   = primIntegerToInt
-    fromInt x     = x
-
-instance Bounded Int where
-    minBound = primMinInt
-    maxBound = primMaxInt
-
-instance Real Int where
-    toRational x = toInteger x % 1
+INSTANCE_EQ(Int,primEqInt)
+INSTANCE_ORD2(Int,primCmpInt,primLtInt,primGtInt)
+INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
+INSTANCE_REAL(Int)
+INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
@@ -907,7 +893,6 @@ instance Show Int where
 
 foreign import prim primEqInteger  :: Integer -> Integer -> Bool
 foreign import prim primCmpInteger :: Integer -> Integer -> Ordering
-foreign import prim primIntegerToInt :: Integer -> Int
 
 instance Eq  Integer where 
     (==)    = primEqInteger
@@ -927,16 +912,12 @@ instance Num Integer where
     fromInteger x = undefined
     fromInt       = undefined
     
-primIntToInteger     :: Int -> Integer
-primIntToInteger n = undefined
-    
 #else
 
 foreign import prim primAddInteger       :: Integer -> Integer -> Integer
 foreign import prim primSubInteger       :: Integer -> Integer -> Integer
 foreign import prim primMulInteger       :: Integer -> Integer -> Integer
 foreign import prim primNegInteger       :: Integer -> Integer
-foreign import prim primIntToInteger     :: Int -> Integer
 
 instance Num Integer where
     (+)           = primAddInteger
@@ -1635,6 +1616,9 @@ read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
                       [x] -> x
                       []  -> error "Prelude.read: no parse"
                       _   -> error "Prelude.read: ambiguous parse"
+
+showIntegral :: Integral x => x -> String
+showIntegral = show . toInteger
 
 showChar     :: Char -> ShowS
 showChar      = (:)

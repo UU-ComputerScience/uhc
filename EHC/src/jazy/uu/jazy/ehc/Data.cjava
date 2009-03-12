@@ -1,0 +1,41 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * Base class for data types
+ */
+public class Data
+{
+%%]
+
+%%[(8 jazy)
+    /**
+     * tag
+     */
+    public int tag ;
+    
+    public Data( )
+    {
+    }
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

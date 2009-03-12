@@ -37,7 +37,7 @@ public class RTS
     }
 	
     /**
-     * Set True & False
+     * Conversion
      */    
     public static Object mkBool( boolean b ) {
         return ( b ? True : False ) ;
@@ -58,6 +58,20 @@ public class RTS
         LT = l ;
         GT = g ;
     }
+    
+    /**
+     * Conversion
+     */    
+    public static Object mkOrdering( int c ) {
+    	if (c < 0) {
+    		return RTS.LT ;
+    	} else if (c > 0) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+	
 %%]
 
 %%[(8 jazy)

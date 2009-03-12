@@ -71,7 +71,7 @@ ATTR CodeAGItf AllNT [ opts: EHCOpts | | ]
 %%]
 
 %%[(8 jazy)
-ATTR AllNT [ topClassNm: HsName  pkgNm: HsName | | ]
+ATTR AllNT [ topClassNm: HsName  pkgNm: HsName  moduleClassNm: HsName | | ]
 
 SEM CModule
   | Mod         loc         .   topClassNm      =   @moduleNm
@@ -85,6 +85,7 @@ SEM CModule
 SEM CodeAGItf
   | AGItf       loc         .   topClassNm      =   hsnUnknown
                             .   pkgNm           =   hsnUnknown
+                            .	moduleClassNm	=	hsnUnknown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -115,6 +116,14 @@ nmPrim      = mkHNm "uu.jazy.ehc.Prim"
 nmData      = mkHNm "uu.jazy.ehc.Data"
 %%]
 
+%%[(97 jazy) hs
+nmByte      = mkHNm "java.lang.Byte"
+nmShort     = mkHNm "java.lang.Short"
+nmLong      = mkHNm "java.lang.Long"
+nmFloat     = mkHNm "java.lang.Float"
+nmDouble    = mkHNm "java.lang.Double"
+%%]
+
 %%[(8 jazy) hs
 -- name of a variable
 nmVar :: HsName -> HsName -> HsName -> HsName
@@ -132,6 +141,15 @@ nmVarCls pkg mod v
   = hsnSuffix mod ("-" ++ show v)
 %%][20
   = hsnSetQual pkg v
+%%]]
+
+-- field name of var name
+nmVarToFld :: HsName -> HsName
+nmVarToFld v
+%%[[8
+  = v
+%%][20
+  = hsnQualified v
 %%]]
 
 -- name of class of data type
@@ -186,6 +204,14 @@ jtyFun  = J.Type_Class nmFun
 jtyApp  = J.Type_Class nmApp
 jtyEvl  = J.Type_Class nmEvl
 jtyInd  = J.Type_Class nmInd
+%%]
+
+%%[(97 jazy) hs
+jtyByte   = J.Type_Class nmByte
+jtyShort  = J.Type_Class nmShort
+jtyLong   = J.Type_Class nmLong
+jtyFloat  = J.Type_Class nmFloat
+jtyDouble = J.Type_Class nmDouble
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -313,7 +339,7 @@ jvRef cvarMp vi
 ATTR AllBind [ | | bindNmL USE {++} {[]} : {[HsName]} ]
 
 SEM CBind
-  | Bind        loc         .   bindNmL         =   [@varnm]
+  | Bind        loc         .   bindNmL         =   [@nm]
 %%]
 
 %%[(8 jazy)
@@ -361,7 +387,7 @@ SEM CAlt
 
 %%[(8 jazy)
 SEM CExpr
-  | Var         loc         .   cvi             =   Map.findWithDefault (CVarInfo_Global jtyObj @lhs.topClassNm (show @varnm)) @varnm @lhs.cvarMp
+  | Var         loc         .   cvi             =   Map.findWithDefault (CVarInfo_Global jtyObj @lhs.moduleClassNm (show @varnm)) @nm @lhs.cvarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -483,7 +509,7 @@ SEM CPatBind
                                                              _           -> (mkf $ Right n,o+1,[(n,CVarInfo_Local t o,mkji @offset.ji)])
                                                                          where n = @varnm
                                                                                o = @lhs.offsetOffset
-                                                                               (mkji,t) = basicTyJUnbox True BasicTy_Int
+                                                                               (mkji,t) = basicTyJUnbox True BasicJazy_Int
                                                         where mkf o = CVarInfo_TupFld jtyObj @lhs.scrutineeCVarInfo o
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
@@ -499,7 +525,7 @@ SEM CPatBind
                                                       _           -> (Right n,o+1,[(n,CVarInfo_Local t o,mkji @offset.ji)])
                                                                   where n = @nm
                                                                         o = @lhs.offsetOffset
-                                                                        (mkji,t) = basicTyJUnbox True BasicTy_Int
+                                                                        (mkji,t) = basicTyJUnbox True BasicJazy_Int
 
 %%[(8 jazy)
 SEM CAlt
@@ -683,7 +709,7 @@ SEM CExpr
                                                     else emptyJI
   | Let         loc         .   (jbindsLet,ji)  =   if @isGlobal
                                                     then ( @binds.jbinds, @body.ji )
-                                                    else let binds = [ ((offof n),t,e) | JBind n t e _ <- Seq.toList @binds.jbinds ]
+                                                    else let binds = [ ((offof n),t,e) | JBind n _ t e _ <- Seq.toList @binds.jbinds ]
                                                              offof n = cvarOffset $ panicJust "ToJazy.CExpr.Let.ji offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
                                                                    = case @categ of
@@ -748,7 +774,8 @@ jiArgsUnpack args
 %%[(8 jazy) hs
 data JBind
   = JBind
-      { jbindNm     :: HsName
+      { jbindOrigNm :: HsName
+      , jbindNm     :: HsName
       , jbindTy     :: J.Type
       , jbindJI     :: J.JInstr
       , jbindFld    :: J.Field
@@ -757,13 +784,15 @@ type JBinds = Seq.Seq JBind
 %%]
 
 %%[(8 jazy) hs
-jBind :: HsName -> J.JInstr -> JBinds
-jBind nm ji
+jBind :: HsName -> HsName -> J.JInstr -> JBinds
+jBind nmOrig nm ji
   = Seq.singleton
-      $ JBind nm
+      $ JBind nmOrig
+              nm'
               jtyObj {- @expr.jty -}
               ji
-              (J.Field_Field [J.Flag_Public,J.Flag_Static] (show nm) jtyObj {- @expr.jty -} Nothing)
+              (J.Field_Field [J.Flag_Public,J.Flag_Static] (show nm') jtyObj {- @expr.jty -} Nothing)
+  where nm' = nmVarToFld nm
 %%]
 
 %%[(8 jazy)
@@ -777,8 +806,8 @@ SEM CBind
 
 %%[(8 jazy)
 SEM CBind
-  | FFI         lhs         .   jbinds          =   jBind @varnm @ji
-  | Bind        lhs         .   jbinds          =   if @isThrowOutMain then Seq.empty else jBind @varnm @ji
+  | FFI         lhs         .   jbinds          =   jBind @nm @varnm @ji
+  | Bind        lhs         .   jbinds          =   if @isThrowOutMain then Seq.empty else jBind @nm @varnm @ji
 
 SEM CExpr
   | Let         lhs         .   jbinds          =   @jbindsLet `Seq.union` @body.jbinds
@@ -789,22 +818,36 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 jazy) hs
-basicTyJBox :: BasicTy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJBox :: BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
 basicTyJBox t
   = case t of
-      BasicTy_Int    -> (bx nmInt  J.Type_Int ,J.Type_Int )
-      BasicTy_Char   -> (bx nmChar J.Type_Char,J.Type_Char)
-      BasicTy_Object -> (id                   ,jtyObj     )
-      BasicTy_String -> (id                   ,jtyStr     )
+      BasicJazy_Int    -> (bx nmInt    J.Type_Int   ,J.Type_Int   )
+      BasicJazy_Char   -> (bx nmChar   J.Type_Char  ,J.Type_Char  )
+      BasicJazy_Object -> (id                       ,jtyObj       )
+      BasicJazy_String -> (id                       ,jtyStr       )
+%%[[97
+      BasicJazy_Byte   -> (bx nmByte   J.Type_Byte  ,J.Type_Byte  )
+      BasicJazy_Short  -> (bx nmShort  J.Type_Short ,J.Type_Short )
+      BasicJazy_Long   -> (bx nmLong   J.Type_Long  ,J.Type_Long  )
+      BasicJazy_Float  -> (bx nmFloat  J.Type_Float ,J.Type_Float )
+      BasicJazy_Double -> (bx nmDouble J.Type_Double,J.Type_Double)
+%%]]
   where bx nm ty jiVal = jiNew nm [(jiVal,ty)]
 
-basicTyJUnbox :: Bool -> BasicTy -> (J.JInstr -> J.JInstr,J.Type)
+basicTyJUnbox :: Bool -> BasicJazy -> (J.JInstr -> J.JInstr,J.Type)
 basicTyJUnbox doEval t
   = case t of
-      BasicTy_Int    -> (un nmInt jtyInt  "intValue"  J.Type_Int ,J.Type_Int )
-      BasicTy_Char   -> (un nmInt jtyChar "charValue" J.Type_Char,J.Type_Char)
-      BasicTy_Object -> (id                                      ,jtyObj     )
-      BasicTy_String -> (jiCast jtyStr                           ,jtyStr     )
+      BasicJazy_Int    -> (un nmInt jtyInt    "intValue"    J.Type_Int   ,J.Type_Int   )
+      BasicJazy_Char   -> (un nmInt jtyChar   "charValue"   J.Type_Char  ,J.Type_Char  )
+      BasicJazy_Object -> (id                                            ,jtyObj       )
+      BasicJazy_String -> (jiCast jtyStr                                 ,jtyStr       )
+%%[[97
+      BasicJazy_Byte   -> (un nmInt jtyByte   "byteValue"   J.Type_Byte  ,J.Type_Byte  )
+      BasicJazy_Short  -> (un nmInt jtyShort  "shortValue"  J.Type_Short ,J.Type_Short )
+      BasicJazy_Long   -> (un nmInt jtyLong   "longValue"   J.Type_Long  ,J.Type_Long  )
+      BasicJazy_Float  -> (un nmInt jtyFloat  "floatValue"  J.Type_Float ,J.Type_Float )
+      BasicJazy_Double -> (un nmInt jtyDouble "doubleValue" J.Type_Double,J.Type_Double)
+%%]]
   where un nmTy ty nmGet tyRes jiVal
           =    jiCast ty (if doEval then jiEvl jiVal else jiVal)
             ## J.Instr_Invoke J.InvokeMode_Virtual (J.Const_Method nmTy nmGet [] (Just tyRes))
@@ -861,26 +904,27 @@ jmEvalSet ji
 SEM CModule
   | Mod         loc         .   methClinit      =   J.Method_Method [J.Flag_Static] "<clinit>" [] Nothing
                                                         (jiToCd
-                                                          $  [ e ## J.Instr_Put True (J.Const_Field @moduleNm (show n) t)
-                                                             | JBind n t e _ <- Seq.toList @expr.jbinds
+                                                          $  [ e ## J.Instr_Put True (J.Const_Field @moduleClassNm (show $ nmVarToFld n) t)
+                                                             | JBind _ n t e _ <- Seq.toList @expr.jbinds
                                                              ]
                                                           ## J.Instr_Return Nothing
                                                         )
                             .   methInit        =   jmInit0Inst @moduleNm nmObj
                             .   methMainNm      =   if ehcOptGenTrace @lhs.opts then "runVisuallyTraced" else "runTimed"
-                            .   methMain        =   J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
-                                                        (jiToCd
-                                                          $  jiNew (nmDataCon @pkgNm @topClassNm (mkHNm "True")) []
-                                                          ## jiNew (nmDataCon @pkgNm @topClassNm (mkHNm "False")) []
-                                                          ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setBoolConstructors" [jtyObj,jtyObj] Nothing)
-                                                          ## jiNew (nmDataCon @pkgNm @topClassNm (mkHNm "EQ")) []
-                                                          ## jiNew (nmDataCon @pkgNm @topClassNm (mkHNm "LT")) []
-                                                          ## jiNew (nmDataCon @pkgNm @topClassNm (mkHNm "GT")) []
-                                                          ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setOrderingConstructors" [jtyObj,jtyObj,jtyObj] Nothing)
-                                                          ## @expr.ji
-                                                          ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS @methMainNm [jtyObj] Nothing)
-                                                          ## J.Instr_Return Nothing
-                                                        )
+                            .   methMain        =   let d f = jiNew (nmDataCon @pkgNm @topClassNm $ f $ ehcOptBuiltinNames @lhs.opts) []
+                                                    in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
+                                                            (jiToCd
+                                                              $  d ehbnBoolTrue
+                                                              ## d ehbnBoolFalse
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setBoolConstructors" [jtyObj,jtyObj] Nothing)
+                                                              ## d ehbnDataOrderingAltEQ
+                                                              ## d ehbnDataOrderingAltLT
+                                                              ## d ehbnDataOrderingAltGT
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS "setOrderingConstructors" [jtyObj,jtyObj,jtyObj] Nothing)
+                                                              ## @expr.ji
+                                                              ## J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmRTS @methMainNm [jtyObj] Nothing)
+                                                              ## J.Instr_Return Nothing
+                                                            )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -890,9 +934,6 @@ SEM CModule
 %%[(8 jazy) hs
 type JClasses = Seq.Seq J.Class
 %%]
-
-jClsNm :: HsName -> String -> HsName
-jClsNm classNm funNm = hsnSuffix classNm ("-" ++ funNm)
 
 %%[(8 jazy) hs
 jCls :: J.Flags -> J.ClassRef -> J.ClassRef -> J.Fields -> J.Methods -> J.Classes -> J.Class
@@ -958,9 +999,19 @@ SEM CModule
                             .   topLevelCls     =   jCls [J.Flag_Public] @moduleClassNm nmObj
                                                       (map jbindFld $ Seq.toList @expr.jbinds)
                                                       [ @methClinit, @methInit, @methMain ]
-                                                      (Seq.toList $ Seq.unions [@expr.subClasses, @otherClasses])
+                                                      (Seq.toList $ Seq.unions
+                                                         [ 
+%%[[8
+                                                           @expr.subClasses
+                                                         , @otherClasses
+%%][20
+%%]]
+                                                         ])
                             .   globClasses     =   Seq.unions [ Seq.singleton @topLevelCls
-                                                               -- , @otherClasses
+%%[[20
+                                                               , @expr.subClasses
+                                                               , @otherClasses
+%%]]
                                                                ]
 %%]
 
