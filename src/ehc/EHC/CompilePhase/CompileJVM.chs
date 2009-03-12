@@ -36,21 +36,23 @@ cpCompileJazyJVM :: HsName -> EHCompilePhase ()
 cpCompileJazyJVM modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              mbCore          = ecuMbCore ecu
+              mbClsL          = ecuMbJVMClassL ecu
 %%[[8
               fpCl c          = mkOutputFPath opts c (fpathSetBase (show c) fp) "class"		-- TBD: correct names
 %%][20
               fpCl c          = mkOutputFPath opts c (maybe mFp (\d -> fpathPrependDir d mFp) (fpathMbDir fp)) "class"
                               where mFp = mkFPath c
 %%]]
-       ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
-              (do { let core  = fromJust mbCore
-                        clss  = concatMap jvmclass2binary $ cmod2JazyJVMModule opts core
+       ; cpMsg modNm VerboseALot "Emit Jazy"
+       ; when (isJust mbClsL && targetIsJVM (ehcOptTarget opts))
+              (do { let clss  = concatMap jvmclass2binary $ fromJust mbClsL
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (lift $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss)))
                   ; lift $
                     mapM_ (\(m,b) -> do { let fpModCl = fpCl m
                                         ; fpathEnsureExists fpModCl
+                                        ; when (ehcOptVerbosity opts >= VerboseDebug)
+                                               (putStrLn (show m ++ " class file: " ++ fpathToStr fpModCl))
                                         ; writeBinaryToFile (bytesToString b) fpModCl
                                         })
                           clss

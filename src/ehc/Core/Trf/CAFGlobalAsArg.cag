@@ -83,10 +83,11 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   fvSCafMp    =   (let  start varS = fvsClosure @binds.bindVarS Set.empty varS @lhs.fvSCafMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindRec  ->  fvsTransClosure lm m
-                                                                  where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
-                                                        _         ->  m
-                                                                  where (m,_)   = start @lhs.varS
+                                                        CBindings_Rec
+                                                          ->  fvsTransClosure lm m
+                                                          where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _ ->  m
+                                                          where (m,_)   = start @lhs.varS
                                                 )
                                                 `Map.union` @lhs.fvSCafMp
 %%]
@@ -127,7 +128,7 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM CBind
   | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-                            .   cTrfVar     =   mkCBind1Meta @nm @bindMeta.cTrf
+                            .   cTrfVar     =   mkCBind1Metas @nm @bindMeta.cTrf
                                                 $ mkCExprAppMeta (CExpr_Var @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
                             .   cTrfLam     =   mkCBind1 @nmLam
@@ -144,7 +145,7 @@ SEM CBind
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
-  | Let         lhs         .   cTrf        =   mkCExprLet CBindPlain (Seq.toList @binds.lamBindSq)
+  | Let         lhs         .   cTrf        =   mkCExprLet CBindings_Plain (Seq.toList @binds.lamBindSq)
                                                 $ mkCExprLet @categ (Seq.toList @binds.varBindSq)
                                                 $ @body.cTrf
 %%]

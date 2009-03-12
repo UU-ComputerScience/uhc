@@ -193,13 +193,13 @@ SEM CExpr
   												       Just CTagRec           -> jvTupApp (as)
   												       Nothing                -> jvApp f as
   | Let         loc         .   jvBinds     =   case @categ of
-                                                    CBindFFI     -> @binds.jvSrc
+                                                    CBindings_FFI     -> @binds.jvSrc
 %%[[94
-                                                    CBindFFE     -> @binds.jvSrc
+                                                    CBindings_FFE     -> @binds.jvSrc
 %%]]
-                                                    CBindPlain   -> @binds.jvSrc
-                                                    CBindStrict  -> @binds.jvSrcStrict
-                                                    CBindRec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
+                                                    CBindings_Plain   -> @binds.jvSrc
+                                                    CBindings_Strict  -> @binds.jvSrcStrict
+                                                    CBindings_Rec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
                             .   jvSrc       =   jvCAF (@lhs.jvBuiltin >-< @jvBinds) @body.jvSrc
   | Lam         loc         .   jvSrc       =   jvLam (maybe hsnUnknown id @lhs.mbLamNm) @jvArgL (jvRet @jvBody)
   | Case        loc         .   jvSrc       =   jvCAF

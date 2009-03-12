@@ -689,6 +689,9 @@ cpProcessCoreRest modNm
           , cpFlowCoreSem modNm
 %%]]
           , cpTranslateCore2Grin modNm
+%%[[(8 jazy)
+          , cpTranslateCore2Jazy modNm
+%%]]
 %%[[99
           , cpCleanupCore modNm
 %%]]

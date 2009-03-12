@@ -27,8 +27,9 @@ SEM CExpr
                                                           }
 
 SEM CBind
-  | Bind        loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @bindMeta.self }
-                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @bindMeta.self }
+  | Bind        loc         .   cmetaVal            =   cmetasVal @bindMeta.self
+                            .   cvi                 =   emptyCVarIntro { cviLev  = @lhs.lev   , cviMeta = @cmetaVal }
+                            .   cviExpr             =   emptyCVarIntro { cviLev  = @expr.levOf, cviMeta = @cmetaVal }
 
 SEM CAlt
   | Alt         loc         .   cvi                 =   emptyCVarIntro { cviLev  = @lev }
@@ -49,12 +50,12 @@ SEM CExpr
   | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
                 (loc.strLev,binds.cvarIntroMp)
                                             =   case @categ of
-                                                    CBindStrict -> (const @lhs.lev,@lhs.cvarIntroMp)
-                                                    CBindRec    -> ( const @maxBindLev
-                                                                   , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
-                                                                       `Map.union` @lhs.cvarIntroMp
-                                                                   )
-                                                    _           -> (id,@lhs.cvarIntroMp)
+                                                    CBindings_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    CBindings_Rec   -> ( const @maxBindLev
+                                                                       , Map.map (\cvi -> cvi {cviLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                           `Map.union` @lhs.cvarIntroMp
+                                                                       )
+                                                    _               -> (id,@lhs.cvarIntroMp)
                 body        .   cvarIntroMp =   Map.map (\cvi -> cvi {cviLev = @strLev $ cviLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
 
 SEM CAlt
