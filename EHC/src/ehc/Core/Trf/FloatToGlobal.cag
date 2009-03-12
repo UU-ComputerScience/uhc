@@ -92,7 +92,7 @@ What is passed upwards, and what is consumed, depends on the situation:
 ATTR AllBind   [ | | cLamBinds, 
                      cCAFBinds, 
                      cOtherBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
-ATTR AllCodeNT [ | | cFloatedBinds USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindCateg,Seq.FastSeq CBind)} ]
+ATTR AllCodeNT [ | | cFloatedBinds USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CBindingsCateg,Seq.FastSeq CBind)} ]
 
 SEM CBind
   | Bind        lhs . ( cLamBinds
@@ -131,7 +131,7 @@ SEM CExpr
                                                                                               ])
                                              , Seq.empty                                                                                     -- passed upwards: nothing
                                              )
-                                        else if @categ == CBindStrict 
+                                        else if @categ == CBindings_Strict 
                                         then ( mkCExprLet @categ (Seq.toList (@binds.cCAFBinds `Seq.union` @binds.cOtherBinds)) @body.cTrf   -- consumed: CAFs and others
                                              , Seq.unions [ Seq.singleton (@categ,@binds.cLamBinds)                                          -- passed upwards: lambdas
                                                           , @binds.cFloatedBinds

@@ -40,6 +40,12 @@ Translation to another AST
 %%[(8 codegen grin) import({%{EH}GrinByteCode.ToC}(gbmod2C))
 %%]
 
+-- Jazy/JVM semantics
+%%[(8 codegen jazy) import({%{EH}Core.ToJazy})
+%%]
+%%[(8 codegen java) import({%{EH}Base.Binary},{%{EH}JVMClass.ToBinary})
+%%]
+
 -- Alternative backends
 %%[(8 codegen grin) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
 %%]
@@ -138,6 +144,17 @@ cpTranslateCore2Grin modNm
          ;  when (isJust mbCoreSem && targetIsGrin (ehcOptTarget opts))
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
+%%]
+
+%%[(8 codegen jazy) export(cpTranslateCore2Jazy)
+cpTranslateCore2Jazy :: HsName -> EHCompilePhase ()
+cpTranslateCore2Jazy modNm
+  = do { cr <- get
+       ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+              mbCore    = ecuMbCore ecu
+       ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
+              (cpUpdCU modNm $ ecuJVMClassL $ cmod2JazyJVMModule opts $ fromJust mbCore)
+       }
 %%]
 
 %%[(8 codegen grin) export(cpTranslateGrin2Bytecode)

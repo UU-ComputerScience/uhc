@@ -33,10 +33,10 @@ instance ForceEval CExpr where
     where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
 %%]]
 
-instance ForceEval CBindCateg
+instance ForceEval CBindingsCateg
 %%[[102
   where
-    fevCount x | x `seq` True = cm1 "CBindCateg"
+    fevCount x | x `seq` True = cm1 "CBindingsCateg"
 %%]]
 %%]
 

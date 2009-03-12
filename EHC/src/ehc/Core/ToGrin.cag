@@ -51,7 +51,7 @@ ATTR AllCodeNT CodeAGItf [ dataGam: DataGam | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllCodeNT - CMeta [ | gUniq: UID | ]
+ATTR AllCodeNT - AllMeta [ | gUniq: UID | ]
 ATTR CodeAGItf [ gUniq: UID | | ]
 
 SEM CExpr
@@ -90,7 +90,7 @@ not used yet as it seems not to be equivalent to isStrict. Can't find out why...
 SEM CExpr
   | Let         binds       .   evalCtx     =   if @isGlobal
                                                 then EvalCtx_Eval
-                                                else if @categ == CBindStrict
+                                                else if @categ == CBindings_Strict
                                                     then EvalCtx_Eval
                                                     else EvalCtx_None
 
@@ -318,14 +318,14 @@ SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
                                                 then  (emptyGrExpr
                                                       ,case @categ of
-                                                         CBindRec     ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
-                                                         _            ->              @binds.grBindL  ++ @body.grBindL
+                                                         CBindings_Rec ->  [GrBind_Rec @binds.grBindL] ++ @body.grBindL
+                                                         _             ->              @binds.grBindL  ++ @body.grBindL
                                                       )
                                                 else  (case @categ of
-                                                         CBindRec     ->  mkHoles @binds.grBindL
-                                                                          $ mkVarBindWithUpdates @binds.grBindL
-                                                                          $ @body.grExpr
-                                                         _            ->  mkVarBinds @binds.grBindL @body.grExpr 
+                                                         CBindings_Rec ->  mkHoles @binds.grBindL
+                                                                           $ mkVarBindWithUpdates @binds.grBindL
+                                                                           $ @body.grExpr
+                                                         _             ->  mkVarBinds @binds.grBindL @body.grExpr 
                                                       ,[]
                                                       )
   | Case        loc         .   grExpr      =   let  w1 = @alts.grWrapCase
@@ -726,10 +726,10 @@ SEM CExpr
 
 
 %%[(8 codegen grin)
-ATTR CMeta [ lamArgDicts: {[Int]} | | ]
-ATTR CMeta [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
+ATTR AllDictMeta [ lamArgDicts: {[Int]} | | ]
+ATTR AllDictMeta [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
 
-SEM CMeta
+SEM CMetaVal
   | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
                                                  then GrBindAnnNormal
                                                  else GrBindAnnOverloaded @lhs.lamArgDicts
@@ -743,8 +743,8 @@ SEM CMeta
                  lhs          .   argDicts    =  []
 %%]]
 
--- The synthesized attribute grBindAnn is only needed for CMeta's occuring in a CBind_Bind,
--- not for CMeta's occuring in a CExpr_Lam.
+-- The synthesized attribute grBindAnn is only needed for CMetaVal's occuring in a CBind_Bind,
+-- not for CMetaVal's occuring in a CExpr_Lam.
 -- Therefore the inherited attribute lamArgDict is only needed in CBind_Bind, not in CExpr_Lam.
 
 SEM CExpr

@@ -51,11 +51,11 @@ pCExprBase
   <|> pCNumber
   <|> pOPAREN *> pCExpr <* pCPAREN
 
-pCExprBaseMeta :: CParser (CExpr,CMeta)
+pCExprBaseMeta :: CParser (CExpr,CMetaVal)
 pCExprBaseMeta
-  =   (\v m -> (CExpr_Var v, m))<$> pDollNm <*> pCMetaOpt
-  <|> (\n   -> (n, CMeta_Val)  ) <$> pCNumber
-  <|> pOPAREN *> pCExpr P.<+> pCMetaOpt <* pCPAREN
+  =   (\v m -> (CExpr_Var v, m))<$> pDollNm <*> pCMetaValOpt
+  <|> (\n   -> (n, CMetaVal_Val)  ) <$> pCNumber
+  <|> pOPAREN *> pCExpr P.<+> pCMetaValOpt <* pCPAREN
 
 pCExprSelSuffix :: CParser (CExpr -> CExpr)
 pCExprSelSuffix
@@ -64,11 +64,11 @@ pCExprSelSuffix
   <|> (\(t,o,l) e' e -> CExpr_TupUpd e t l o e') <$ pKeyTk ":=" <*> pS <*> pCExprBase
   where pS = (,,) <$ pOCURLY <*> pCTagOnly <* pCOMMA <*> pCExpr <* pCOMMA <*> pDollNm <* pCCURLY
 
-pCExprSelSuffixMeta :: CParser ((CExpr,CMeta) -> (CExpr,CMeta))
+pCExprSelSuffixMeta :: CParser ((CExpr,CMetaVal) -> (CExpr,CMetaVal))
 pCExprSelSuffixMeta
   = (\f (e,m) -> (f e,m)) <$> pCExprSelSuffix
 
-pCExprSelMeta :: CParser (CExpr,CMeta)
+pCExprSelMeta :: CParser (CExpr,CMetaVal)
 pCExprSelMeta = pCExprBaseMeta <??> pCExprSelSuffixMeta
 
 pCExprSel :: CParser CExpr
@@ -77,18 +77,18 @@ pCExprSel = pCExprBase <??> pCExprSelSuffix
 pCExpr :: CParser CExpr
 pCExpr
   =   mkCExprAppMeta <$> pCExprSel <*> pList pCExprSelMeta
-  <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaOpt) <* pRARROW <*> pCExpr
-  <|> CExpr_Let      <$  pLET <*> pMaybe CBindPlain id pCBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
+  <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
+  <|> CExpr_Let      <$  pLET <*> pMaybe CBindings_Plain id pCBindingsCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
       <* pOCURLY <*  pDEFAULT <*> pCExpr <* pCCURLY
-  where pCBindCateg
-          =   CBindRec    <$ pKeyTk "rec"
-          <|> CBindFFI    <$ pFOREIGN
+  where pCBindingsCateg
+          =   CBindings_Rec    <$ pKeyTk "rec"
+          <|> CBindings_FFI    <$ pFOREIGN
 %%[[94
-          <|> CBindFFE    <$ pKeyTk "foreignexport"
+          <|> CBindings_FFE    <$ pKeyTk "foreignexport"
 %%]]
-          <|> CBindStrict <$ pBANG
+          <|> CBindings_Strict <$ pBANG
 
 
 pMbDollNm :: CParser (Maybe HsName)
@@ -97,23 +97,37 @@ pMbDollNm
     where f (HNm "_") = Nothing
           f x         = Just x
 
-pCMeta :: CParser CMeta
-pCMeta
-  =   CMeta_Val          <$ pKeyTk "VAL"
-  <|> CMeta_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
-                                               <|> pSucceed Nothing
-                                               )
-  <|> CMeta_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
-  <|> CMeta_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+pCMetas :: CParser CMetas
+pCMetas
+  =   (,) <$ pOCURLY <*> pCMetaBind <* pCOMMA <*> pCMetaVal <* pCCURLY
 
-pCMetaOpt :: CParser CMeta
-pCMetaOpt
-  =   pMaybe CMeta_Val id (pCOLON *> pCMeta)
+pCMetasOpt :: CParser CMetas
+pCMetasOpt
+  =   pMaybe cmetasDefault id pCMetas
+
+pCMetaBind :: CParser CMetaBind
+pCMetaBind
+  =   CMetaBind_Plain       <$ pKeyTk "BINDPLAIN"
+  <|> CMetaBind_Lam         <$ pKeyTk "BINDLAM"
+  <|> CMetaBind_CAF         <$ pKeyTk "BINDCAF"
+
+pCMetaVal :: CParser CMetaVal
+pCMetaVal
+  =   CMetaVal_Val          <$ pKeyTk "VAL"
+  <|> CMetaVal_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
+                                                  <|> pSucceed Nothing
+                                                  )
+  <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+
+pCMetaValOpt :: CParser CMetaVal
+pCMetaValOpt
+  =   pMaybe CMetaVal_Val id (pCOLON *> pCMetaVal)
 
 pCBind :: CParser CBind
 pCBind
-  = (  (pDollNm P.<+> pCMetaOpt) <* pEQUAL)
-    <**> (   (\e (n,m)        -> mkCBind1Meta n m e) <$> pCExpr
+  = (  (pDollNm P.<+> pCMetasOpt) <* pEQUAL)
+    <**> (   (\e (n,m)        -> CBind_Bind n m e) <$> pCExpr
          <|> (\c s i t (n,m)  -> CBind_FFI (fst c) s i n t) <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94
          <|> (\c e en t (n,m) -> CBind_FFE n (fst c) (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY

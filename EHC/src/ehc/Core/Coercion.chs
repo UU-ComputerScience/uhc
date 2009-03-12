@@ -21,8 +21,8 @@ The semantics of a coercion is its application to a CExpr. See coeEvalOn.
 %%[(9 codegen) hs export(Coe(..))
 data Coe
   = Coe         !(CExpr -> CExpr)			-- normal, expression as function
-  | CoeApp      !CExpr !CMeta				-- apply
-  | CoeLam      !HsName !CMeta				-- lambda
+  | CoeApp      !CExpr !CMetaVal			-- apply
+  | CoeLam      !HsName !CMetaVal			-- lambda
   | CoeLamLet   !HsName !UID				-- lambda with a let binding in the body
   | CoeLetRec   !CBindL						-- let rec
   | CoeCompose  !Coe !Coe					-- composition
@@ -50,20 +50,20 @@ mkLamLetCoe = CoeLamLet -- n i = mkCoe (\e -> n `mkCExprLam1` mkCExprLetHole i e
 
 mkLetRecCoe :: CBindL -> Coe
 mkLetRecCoe [] = coeId
-mkLetRecCoe b  = CoeLetRec b --  = mkCoe (\e -> mkCExprLet CBindRec b e)
+mkLetRecCoe b  = CoeLetRec b --  = mkCoe (\e -> mkCExprLet CBindings_Rec b e)
 
 instance Show Coe where
   show _ = "COE"
 %%]
 
 %%[(9 codegen) hs export(mkAppCoe1With,mkAppCoe1,mkAppCoeWith,mkAppCoe)
-mkAppCoe1With :: CExpr -> CMeta -> Coe
+mkAppCoe1With :: CExpr -> CMetaVal -> Coe
 mkAppCoe1With = CoeApp -- a m = mkCoe (\e -> mkCExprApp1Meta e a m)
 
 mkAppCoe1 :: CExpr -> Coe
-mkAppCoe1 a = mkAppCoe1With a CMeta_Val
+mkAppCoe1 a = mkAppCoe1With a CMetaVal_Val
 
-mkAppCoeWith :: [(CExpr,CMeta)] -> Coe
+mkAppCoeWith :: [(CExpr,CMetaVal)] -> Coe
 mkAppCoeWith as = mkCoe (\e -> mkCExprAppMeta e as)
 
 mkAppCoe :: [CExpr] -> Coe
@@ -71,11 +71,11 @@ mkAppCoe as = mkAppCoeWith (cmetaLift as)
 %%]
 
 %%[(9 codegen) hs export(mkLamCoe1With,mkLamCoe1)
-mkLamCoe1With :: HsName -> CMeta -> Coe
+mkLamCoe1With :: HsName -> CMetaVal -> Coe
 mkLamCoe1With = CoeLam -- n m = mkCoe (\e -> mkCExprLam1Meta n m e)
 
 mkLamCoe1 :: HsName -> Coe
-mkLamCoe1 n = mkLamCoe1With n CMeta_Val
+mkLamCoe1 n = mkLamCoe1With n CMetaVal_Val
 %%]
 
 %%[(9 codegen) hs export(coeCompose)
@@ -129,7 +129,7 @@ mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
 %%]
 
 %%[(9 codegen) hs export(mkIdLRCoeWith)
-mkIdLRCoeWith :: HsName -> CMeta -> LRCoe
+mkIdLRCoeWith :: HsName -> CMetaVal -> LRCoe
 mkIdLRCoeWith n m = mkIdLRCoe' (mkAppCoeWith [(CExpr_Var n,m)]) (mkLamCoe1With n m)
 %%]
 

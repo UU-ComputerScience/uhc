@@ -182,11 +182,13 @@ nmSetOrEvlN n = nmEvalN n
 safeNm :: HsName -> HsName
 safeNm
   = hsnMapQualified (HNm . concatMap safe . show)
-  where safe ':' = "_colon"
-        safe '/' = "_fslash"
-        safe '[' = "_lbrack"
-        safe ']' = "_rbrack"
-        safe  c  = [c]
+  where safe '.'  = "_dot"
+        safe ':'  = "_colon"
+        safe '/'  = "_fslash"
+        safe '\\' = "_bslash"
+        safe '['  = "_lbrack"
+        safe ']'  = "_rbrack"
+        safe  c   = [c]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,6 +316,7 @@ data CVarInfo
       , cvarClassLocNm      :: J.ClassRef
       , cvarFldNm           :: String
       }
+  | CVarInfo_None
 
 type CVarMp = Map.Map HsName CVarInfo
 %%]
@@ -333,6 +336,8 @@ jvRef cvarMp vi
                     Right n -> jvRef cvarMp $ panicJust "ToJazy.jvRef" $ Map.lookup n cvarMp
       CVarInfo_Global  t cl   f
         -> j $ J.Instr_Get True (J.Const_Field cl f t)
+      CVarInfo_None
+        -> panic "Core.ToJazy.jvRef.CVarInfo_None"
 %%]
 
 %%[(8 jazy)
@@ -397,15 +402,21 @@ SEM CExpr
 %%[(8 jazy) hs
 data Scrutinee
   = Scrutinee_Tag	CTag
-  | Scrutinee_Other
+  | Scrutinee_Int   Int
+  | Scrutinee_Var   HsName
+  | Scrutinee_Other String
 %%]
 
 %%[(8 jazy)
 ATTR AllAlt CPat [ | | scrutinees USE {++} {[]} : {[Scrutinee]} ]
 
 SEM CPat
-  | Con			lhs			.	scrutinees		=	[Scrutinee_Tag @tag]
-  | * - Con		lhs			.	scrutinees		=	[Scrutinee_Other]
+  | Con         lhs         .   scrutinees      =   [Scrutinee_Tag @tag]
+  | Var         lhs         .   scrutinees      =   [Scrutinee_Var @pnm]
+  | Int         lhs         .   scrutinees      =   [Scrutinee_Int @int]
+  | Char        lhs         .   scrutinees      =   [Scrutinee_Other "char"]
+  | * - Con Var Int Char
+                lhs         .   scrutinees      =   [Scrutinee_Other "other"]
 %%]
 
 %%[(8 jazy)
@@ -428,6 +439,14 @@ SEM CExpr
   | Case        loc         .   altsLocalOffset =   @lhs.localOffset + 1
                             .   (scrutineeJI,scrutineeTagJI,scrutineeCVarInfo)
                                                 =   case @alts.scrutinees of
+                                                      (Scrutinee_Var nm : _)
+                                                        -> panic ("Core.ToJazy.CExpr.Case.Scrutinee_Var: " ++ show nm ++ " : not yet implemented")
+                                                      (Scrutinee_Int _ : _)
+                                                        -> ( emptyJI
+                                                           , unbox @expr.ji
+                                                           , CVarInfo_None
+                                                           )
+                                                        where (unbox,ty) = basicTyJUnbox False BasicJazy_Int
                                                       (Scrutinee_Tag tag : _)
                                                         -> ( jiCast ty @expr.ji ## J.Instr_Store ty @lhs.localOffset
                                                            , gettag
@@ -444,7 +463,10 @@ SEM CExpr
                                                                                      where cvi = mkcvi (J.Type_Class tn')
                                                                                            tn' = nmDataTy @lhs.pkgNm @lhs.topClassNm tn
                                                               mkcvi ty = CVarInfo_Local ty @lhs.localOffset
-                                                      _ -> panic "Core.ToJazy.CExpr.Case.Scrutinee_Other: not yet implemented"
+                                                      (Scrutinee_Other x : _)
+                                                        -> panic ("Core.ToJazy.CExpr.Case.Scrutinee_Other: " ++ x ++ " : not yet implemented")
+                                                      []
+                                                        -> panic ("Core.ToJazy.CExpr.Case.-")
 %%]
 
 %%[(8 jazy)
@@ -460,6 +482,11 @@ SEM CAlt
                                                         where cn' = nmDataCon @lhs.pkgNm @lhs.topClassNm cn
                                                               ty  = J.Type_Class cn'
                                                               cvi = @lhs.scrutineeCVarInfo
+                                                      (Scrutinee_Int i : _)
+                                                        -> ( emptyJI
+                                                           , @lhs.scrutineeCVarInfo
+                                                           , i
+                                                           )
                                                       _ -> (emptyJI,@lhs.scrutineeCVarInfo,0)
 %%]
 
@@ -713,7 +740,7 @@ SEM CExpr
                                                              offof n = cvarOffset $ panicJust "ToJazy.CExpr.Let.ji offset" $ Map.lookup n @cvarMpNew
                                                              initbinds
                                                                    = case @categ of
-                                                                       CBindRec
+                                                                       CBindings_Rec
                                                                          ->    [ jiNew nmInd [] ## J.Instr_Store jtyInd o | (o,_,_) <- binds ]
                                                                             ## [ jiSetInd (j $ J.Instr_Load jtyInd o) e | (o,_,e) <- binds ]
                                                                        _ -> j  [ e ## J.Instr_Store t o | (o,t,e) <- binds ]
