@@ -51,7 +51,7 @@ DERIVING GrTag        : Show
 
 %%[(8 codegen grin) hs export(grBuiltinTyNmL)
 grBuiltinTyNmL :: EHCOpts -> [HsName]
-grBuiltinTyNmL opts = builtinKnownBoxedTyNmL opts ++ builtinKnownRecTyNmL
+grBuiltinTyNmL opts = builtinKnownGrinBoxedTyNmL opts ++ builtinKnownRecTyNmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

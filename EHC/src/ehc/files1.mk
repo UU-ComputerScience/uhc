@@ -416,6 +416,8 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "mkCLibFilename dirprefix pkg = \"$(call FUN_MK_CLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
+	  echo "mkJarFilename dirprefix pkg = \"$(call FUN_MK_JAVALIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "" ; \
 	  echo "mkPkgIncludeDir libdirprefix = \"$(call FUN_MK_PKG_INC_DIR,\" ++ libdirprefix ++ \")\"" ; \
 	  echo "" ; \
 	  if test x$(ENABLE_JAVA) == xyes ; \

@@ -42,6 +42,21 @@ test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
 	nerrors=0; \
 	nwarnings=0; \
+	ehcOpts="--target=$(EHC_VARIANT_TARGET)" ; \
+    case $(EHC_VARIANT_TARGET) in \
+      C) \
+        texeInvoke="" ; \
+        texeSuffix="$(EXEC_SUFFIX)" ; \
+        ;; \
+      bc) \
+        texeInvoke="" ; \
+        texeSuffix="$(EXEC_SUFFIX)" ; \
+        ;; \
+      jazy) \
+        texeInvoke="java -jar" ; \
+        texeSuffix=".jar" ; \
+        ;; \
+    esac ; \
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
@@ -94,7 +109,7 @@ test-expect test-regress: test-lists
 	          tc=$${tb2}.core ; tg=$${tb2}.grin2 ; texe=$${tb2}$(EXEC_SUFFIX) ; \
 	          cleanup="$${cleanup} $${texe}" ; \
 	          rm -f $${tc} $${tg} ; \
-	          $${ehc} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
+	          $${ehc} $${ehcOpts} $${TEST_OPTIONS} -v --code=core $${t2} > $${th} 2>&1 ; \
 	          if test -r $${tc} ; \
 	          then \
 	            echo "== core ==" >> $${th} ; \
@@ -102,13 +117,13 @@ test-expect test-regress: test-lists
 	            rm -f $${tg} ; \
 	            if test -x $${gri} ; \
 	            then \
-	              $${ehc} $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
+	              $${ehc} $${ehcOpts} $${TEST_OPTIONS} --code=grin $${t2} > /dev/null ; \
 	              echo "== grin interpreter execution ==" >> $${th} ; \
 	              $${gri} $${tg} >> $${th} 2>&1 ; \
 	            fi ; \
 	            rm -f $${texe} ; \
 	            echo "== grin bytecode (GBM) compilation ==" >> $${th} ; \
-	            $${ehc} $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
+	            $${ehc} $${ehcOpts} $${TEST_OPTIONS} --pretty=- --code=bexe $${t2} >> $${th} 2>&1 ; \
 	            if test $$? = 0 -a -x $${texe} ; \
 	            then \
 	              echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
@@ -116,7 +131,7 @@ test-expect test-regress: test-lists
 	            fi ; \
 	            rm -f $${texe} ; \
 	            echo "== grin full program analysis compilation ==" >> $${th} ; \
-	            $${ehc} $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
+	            $${ehc} $${ehcOpts} $${TEST_OPTIONS} --pretty=- --code=exe $${t2} >> $${th} 2>&1 ; \
 	            if test $$? = 0 -a -x $${texe} ; \
 	            then \
 	              echo "== grin full program analysis execution ==" >> $${th} ; \
@@ -124,13 +139,13 @@ test-expect test-regress: test-lists
 	            fi \
 	          fi \
 	        else \
-	          texe=$${tb}$(EXEC_SUFFIX) ; \
+	          texe=$${tb}$${texeSuffix} ; \
 	          cleanup="$${cleanup} $${texe}" ; \
-	          $${ehc} $${optPreludePath} $${t} > $${th} 2>&1 ; \
-	          if test $$? = 0 -a -x $${texe} ; \
+	          $${ehc} $${ehcOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
+	          if test $$? = 0 -a -r $${texe} ; \
 	          then \
-	            echo "== grin bytecode (GBM) execution ==" >> $${th} ; \
-	            $${texe} >> $${th} 2>&1 ; \
+	            echo "== target '$(EHC_VARIANT_TARGET)' execution ==" >> $${th} ; \
+	            $${texeInvoke} $${texe} >> $${th} 2>&1 ; \
 	          fi \
 	        fi ; \
 	        if test $${tr} = $${th} -a -r $${te} ; \

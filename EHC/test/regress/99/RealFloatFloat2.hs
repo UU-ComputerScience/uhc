@@ -3,7 +3,7 @@
    expected: all ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module RealFloatFloat2 where
 
 main
   = do putStrLn (show (exponent (100.0::Float)))

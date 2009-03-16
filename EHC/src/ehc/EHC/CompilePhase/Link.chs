@@ -21,6 +21,8 @@ Linking
 %%]
 %%[(99 codegen) import({%{EH}Base.Target})
 %%]
+%%[(99 codegen jazy) import({%{EH}EHC.CompilePhase.CompileJVM}) export(cpLinkJar)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: Linking into library for package
@@ -31,14 +33,14 @@ cpLinkO :: [HsName] -> String -> EHCompilePhase ()
 cpLinkO modNmL pkgNm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
-             oFiles = [ fpathToStr o | m <- modNmL, o <- ecuGenCodeFiles $ crCU m cr ]
-             libFile= mkOutputFPathFor OutputFor_Pkg opts l l (fpathSuff l)
-                    where l = mkFPath $ Cfg.mkCLibFilename "" pkgNm
-             linkO  = map mkShellCmd $ Cfg.mkShellCmdLibtool (fpathToStr libFile) oFiles
+             codeFiles   = [ fpathToStr o | m <- modNmL, o <- ecuGenCodeFiles $ crCU m cr ]
+             (libFile,_) = mkOutputFPathFor OutputFor_Pkg opts l l (fpathSuff l)
+                         where l = mkFPath $ Cfg.mkCLibFilename "" pkgNm
+             linkCode    = map mkShellCmd $ Cfg.mkShellCmdLibtool (fpathToStr libFile) codeFiles
        ; when (ehcOptVerbosity opts >= VerboseALot)
-              (do { lift $ mapM_ putStrLn linkO
+              (do { lift $ mapM_ putStrLn linkCode
                   })
-       ; cpSeq [ cpSystem c | c <- linkO ]
+       ; cpSeq [ cpSystem c | c <- linkCode ]
        }
 %%]
 

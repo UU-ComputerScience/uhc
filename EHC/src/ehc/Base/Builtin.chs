@@ -541,14 +541,14 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[98 export(hsnIO)
-[hsnIO]
+[hsnIO,hsnHandle,hsnByteArray]
   = map
 %%[[98
       mkRV
 %%][99
       (mkRV hsnModIntlPrelude)
 %%]]
-      [ "IO" ]
+      [ "IO", "Handle", "ByteArray" ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -698,6 +698,8 @@ data EHBuiltinNames
 %%]]
 %%[[98
       , ehbnIO                          :: HsName
+      , ehbnHandle                      :: HsName
+      , ehbnByteArray                   :: HsName
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  :: HsName
@@ -782,6 +784,8 @@ mkEHBuiltinNames f
 %%]]
 %%[[98
       , ehbnIO                          = f IdOcc_Type      hsnIO
+      , ehbnHandle                      = f IdOcc_Type      hsnHandle
+      , ehbnByteArray                   = f IdOcc_Type      hsnByteArray
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  = f IdOcc_Val       hsnEhcRunMain

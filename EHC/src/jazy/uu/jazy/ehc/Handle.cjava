@@ -17,28 +17,23 @@ import java.io.* ;
 import uu.jazy.core.* ;
 
 /**
- * Base class for data types
+ * Base class for Handle, an Either around InputStream and OutputStream
  */
-public abstract class Data
+public class Handle
 {
 %%]
 
-%%[(8 jazy)
-    /**
-     * tag
-     */
-    public int tag ;
-    
-    public Data( )
-    {
-    }
-%%]
-    
 %%[(98 jazy)
-    /**
-     * unpack (for RTS scrutinization)
-     */
-    public abstract Object[] toTuple( ) ;
+    public InputStream in = null ;
+    public OutputStream out = null ;
+    
+    public Handle( InputStream i ) {
+    	in = i ;
+    }
+    
+    public Handle( OutputStream o ) {
+    	out = o ;
+    }
 %%]
     
 

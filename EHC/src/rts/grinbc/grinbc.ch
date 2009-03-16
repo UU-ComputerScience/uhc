@@ -461,6 +461,7 @@ typedef struct GB_Node {
 #define GB_MkConNode4(n,tg,x1,x2,x3,x4)			{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
 #define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)		{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
 
+#define GB_MkTupNode1_In(n,x1)				GB_MkConNode1(n,0,x1)
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}

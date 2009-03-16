@@ -1,15 +1,12 @@
 {- ----------------------------------------------------------------------------------------
-   what    : hPrint, print
+   what    : unsafePerformIO
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Print1 where
+module LibrarySystemIOUnsafe1 where
 
-main :: IO ()
-main
-  = do print (5::Int)
-       print "aap"
-       print True
-       print 'a'
+import System.IO.Unsafe
 
-       
+y = unsafePerformIO (do { putStrLn "y" ; return "z" }) ++ "Y"
+
+main = putStrLn ("x" ++ y ++ "x")

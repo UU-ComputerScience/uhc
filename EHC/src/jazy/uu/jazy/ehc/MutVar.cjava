@@ -17,28 +17,20 @@ import java.io.* ;
 import uu.jazy.core.* ;
 
 /**
- * Base class for data types
+ * MutVar: mutable variables.
+ * A MutVar is just an object holding a modifiable value.
  */
-public abstract class Data
+public class MutVar
 {
 %%]
 
-%%[(8 jazy)
-    /**
-     * tag
-     */
-    public int tag ;
+%%[(99 jazy)
+    public Object value ;
     
-    public Data( )
-    {
+    public MutVar( Object v ) {
+    	value = v ;
     }
-%%]
     
-%%[(98 jazy)
-    /**
-     * unpack (for RTS scrutinization)
-     */
-    public abstract Object[] toTuple( ) ;
 %%]
     
 

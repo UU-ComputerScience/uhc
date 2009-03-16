@@ -468,13 +468,13 @@ SEM CBind
 %%[(8 codegen grin) hs
 tyNmIsUnboxedForFFIRes :: EHCOpts -> HsName -> Maybe BasicAnnot
 tyNmIsUnboxedForFFIRes opts
-  = \n -> fmap biGrinBoxAnnot $ Map.lookup n m
-  where m = builtinKnownBoxedTyMp opts
+  = \n -> fmap biGrinBoxAnnot $ m n
+  where m = builtinGrinInfo opts
 
 tyNmMayLiveAsTaggedPtr :: EHCOpts -> HsName -> Maybe BuiltinInfo
 tyNmMayLiveAsTaggedPtr opts
   | ehcOptFullProgAnalysis opts = const Nothing
-  | otherwise                   = builtinMayLiveUnboxed opts
+  | otherwise                   = builtinGrinInfo opts
 %%]
 
 %%[(8 codegen grin)

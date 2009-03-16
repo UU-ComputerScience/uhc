@@ -3,7 +3,7 @@
    expected: ok, 16
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module CaseFall1 where
 
 fib :: Int -> Int
 fib n | n == 0 = n

@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module DerivingRead1 where
 
 data T a = S | L Int | T a a | a :^: a
   deriving (Show,Read)

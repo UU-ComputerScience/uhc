@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module ShowBasic1 where
 
 main
   = do putStrLn (show 'a')

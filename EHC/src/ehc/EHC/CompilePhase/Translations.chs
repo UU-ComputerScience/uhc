@@ -153,7 +153,7 @@ cpTranslateCore2Jazy modNm
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               mbCore    = ecuMbCore ecu
        ; when (isJust mbCore && targetIsJVM (ehcOptTarget opts))
-              (cpUpdCU modNm $ ecuJVMClassL $ cmod2JazyJVMModule opts $ fromJust mbCore)
+              (cpUpdCU modNm $ ecuStoreJVMClassL $ cmod2JazyJVMModule opts $ fromJust mbCore)
        }
 %%]
 

@@ -80,6 +80,20 @@ then
   else
     javacExists="yes"
   fi
+  case $HostPlatform in
+    i*86-*-mingw* | i*86-*-cygwin* )
+          if test ! -x "$toplevelSystemAbsolutePathPrefix/$jarCmd"
+          then
+            jarCmd="`echo $jarCmd | sed -e 's+/usr++'`"
+          fi
+          if test ! -x "$toplevelSystemAbsolutePathPrefix/$javacCmd"
+          then
+            javacCmd="`echo $javacCmd | sed -e 's+/usr++'`"
+          fi
+          ;;
+    *)
+          ;;
+  esac  
   AC_SUBST(JAVAC_CMD,$javacCmd)
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
@@ -247,13 +261,13 @@ case $ghcVersion in
     optStandardGHCPackages="-package util -package lang -package data"
     ;;
   6.8*)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
     ;;
   6.10*)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
     ;;
   *)
-    cabal_base_lib_depends="$cabal_base_lib_depends containers array"
+    cabal_base_lib_depends="$cabal_base_lib_depends containers array process"
     ;;
 esac
 

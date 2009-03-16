@@ -100,7 +100,7 @@ data EHCompileUnit
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
 %%[[(8 jazy)
-      , ecuMbJVMClassL       :: !(Maybe [Jvm.Class])
+      , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
 %%]]
       , ecuState             :: !EHCompileUnitState
 %%[[20
@@ -302,10 +302,13 @@ ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
 
-%%[(8 jazy) export(ecuJVMClassL)
-ecuJVMClassL :: EcuUpdater [Jvm.Class]
-ecuJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
+%%[(8 jazy) export(ecuStoreJVMClassL)
+ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
+ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 %%]
+
+ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
+ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
 %%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule

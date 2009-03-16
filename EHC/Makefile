@@ -249,8 +249,8 @@ clean: cleans
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_H_ALL_DRV_H)
-	@echo $(EHCLIB_FROZEN_ALL_DRV_ASIS)
+	@echo $(EHCLIB_HS_ALL_SRC_HS)
+	#@echo $(EHCLIB_FROZEN_ALL_DRV_ASIS)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

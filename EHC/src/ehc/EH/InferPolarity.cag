@@ -229,7 +229,8 @@ ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
 
 %%[(17 hmtyinfer) ag
 SEM Decl
-  | Data Class  loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+  | Data Class TySig
+                loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
                 loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
   | Type        loc         .   (polCtxVar,polTypeVar)
                                                     =   let [v1,v2] = mkNewUIDL 2 @lUniq_17_seed_pol
@@ -247,7 +248,7 @@ SEM Decl
   | Type        tyExpr      .   knPolCtx            =   @polCtxVar
 
 SEM Decl
-  | TySig       tyExpr      .   knPolCtx            =   maybe polCovariant id @lhs.mbKnPolCtx
+  | TySig       tyExpr      .   knPolCtx            =   maybe @polCtxVar id @lhs.mbKnPolCtx
   | FFI
 %%[[94
     FFE
