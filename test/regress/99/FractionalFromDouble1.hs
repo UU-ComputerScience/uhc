@@ -3,7 +3,7 @@
    expected: all ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module FractionalFromDouble1 where
 
 main
   = do let r1 = fromDouble (10.5::Double) :: Float

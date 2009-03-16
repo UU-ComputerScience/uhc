@@ -172,8 +172,8 @@ SEM CExpr
                             .   appArgPPL   =   []
 
 SEM CBind
- | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.pp >#< "=") (@expr.pp)
- | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
+ | Bind         lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.pp >#< "=") (@expr.pp)
+ | FFI          lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
 %%[[8
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 %%][8_2

@@ -147,6 +147,11 @@ data BasicJazy
   | BasicJazy_Long
   | BasicJazy_Float
   | BasicJazy_Double
+  | BasicJazy_Integer
+%%]]
+%%[[98
+  | BasicJazy_Handle
+  | BasicJazy_ByteArray
 %%]]
   deriving (Eq,Ord,Enum)
 %%]
@@ -193,6 +198,7 @@ data BasicAnnot
   | BasicAnnot_FromTaggedPtr	{ baIsSigned :: Bool }
   | BasicAnnot_ToTaggedPtr		{ baIsSigned :: Bool }
   | BasicAnnot_Dflt
+  | BasicAnnot_None
   deriving (Show,Eq)
 
 defaultGrinBasicAnnot :: BasicAnnot

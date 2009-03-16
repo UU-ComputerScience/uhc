@@ -1201,8 +1201,12 @@ GADT: type clash between fixed type variable and some other type results in a eq
             -- N.B. hsnInvariant is a unique name which cannot be written by a programmer. In other words,
             -- this pattern match cannot trigger during other type inferences.
             -- Weaken Co/Contravariant polarity to Invariant polarity
-            f fi (Ty_Con _) t@(Ty_Con s)
-                | s == hsnInvariant                 = res fi t
+            f fi t1@(Ty_Con _) t2@(Ty_Con s2)
+                | s2 == hsnInvariant                = res fi t2
+            -- Invariance propagates through Negate. A bit tricky because this bit of evaluation means unclarity what the return value is
+            f fi t1@(Ty_Con s1) t2@(Ty_App (Ty_Con sf2) ta2)
+                | s1 == hsnInvariant && sf2 == hsnPolNegation
+                                                    = fVar f fi t1 ta2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.DefaultCase

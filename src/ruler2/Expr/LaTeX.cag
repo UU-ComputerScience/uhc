@@ -8,7 +8,7 @@
 %%[1 hs export (exprFmtTeX)
 %%]
 
-%%[1 hs import (qualified Data.Map as Map, EH.Util.Utils, EH.Util.Pretty, Common, Opts)
+%%[1 hs import (qualified Data.Map as Map, EH.Util.Utils, EH.Util.Pretty, EH.Util.PrettyUtils, Common, Opts)
 %%]
 
 %%[1 hs import (LaTeXFmtUtils, Expr.Expr, ARule.RwSubst( fmNmFmtCmd ), FmGam, WrKindGam)

@@ -3,7 +3,7 @@
    expected: all ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module RealFloatFloat1 where
 
 main
   = do putStrLn (show (isNaN (1.0::Float)))

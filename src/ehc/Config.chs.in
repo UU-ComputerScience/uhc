@@ -8,7 +8,7 @@
 %%[1 import({%{EH}ConfigInstall}) export(module {%{EH}ConfigInstall})
 %%]
 
-%%[8 import(Data.Maybe,EH.Util.Utils)
+%%[8 import(Data.Maybe,EH.Util.Utils,EH.Util.FPath)
 %%]
 
 %%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
@@ -18,28 +18,6 @@
 %%]
 
 %%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utilities
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Make a prefix out of a directory name
-
-%%[8 export(mkPrefix)
-mkPrefix :: String -> String
-mkPrefix d@(_:_) | last d /= '/' = d ++ "/"
-mkPrefix d                       = d
-%%]
-
-And the inverse
-
-%%[8 export(unPrefix)
-unPrefix :: String -> String
-unPrefix d | isJust il && l == '/' = i
-  where il = initlast d
-        (i,l) = fromJust il
-unPrefix d                         = d
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -3,7 +3,7 @@
    expected: all ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module RealFracRational1 where
 
 main
   = do let pf1 :: (Int,Rational)

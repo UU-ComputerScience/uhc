@@ -163,7 +163,29 @@ builtinKnownBoxedTyMp opts
                }
 %%]]
            )
+%%[[(98 jazy)
+         , ( builtinNm opts ehbnHandle
+           , emptyBuiltinInfo
+               { biGrinBoxAnnot 	= BasicAnnot_None
+               , biJazyBasicTy    	= BasicJazy_Handle
+               }
+           )
+         , ( builtinNm opts ehbnByteArray
+           , emptyBuiltinInfo
+               { biGrinBoxAnnot 	= BasicAnnot_None
+               , biJazyBasicTy    	= BasicJazy_ByteArray
+               }
+           )
+%%]]
 %%[[97
+         , ( hsnInteger
+           , emptyBuiltinInfo
+               { biGrinBoxAnnot 	= BasicAnnot_None
+%%[[(97 jazy)
+               , biJazyBasicTy    	= BasicJazy_Integer
+%%]]
+               }
+           )
          , ( builtinNm opts ehbnFloat
            , emptyBuiltinInfo
                { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeFloat  BasicTy_Float
@@ -205,17 +227,30 @@ builtinKnownBoxedTyMp opts
 %%]]
 %%]
 
-%%[(8 codegen) hs export(builtinKnownBoxedTyNmL)
-builtinKnownBoxedTyNmL :: EHCOpts -> [HsName]
-builtinKnownBoxedTyNmL opts
-  = Map.keys $ builtinKnownBoxedTyMp opts
+%%[(8 codegen) hs export(builtinIsForGrin)
+builtinIsForGrin :: BuiltinInfo -> Bool
+builtinIsForGrin bi
+  = biGrinBoxAnnot bi /= BasicAnnot_None
 %%]
 
-%%[(8 codegen) hs export(builtinMayLiveUnboxed)
-builtinMayLiveUnboxed :: EHCOpts -> HsName -> Maybe BuiltinInfo
-builtinMayLiveUnboxed opts
-  = \n -> Map.lookup n m
+%%[(8 codegen) hs export(builtinKnownGrinBoxedTyNmL)
+builtinKnownGrinBoxedTyNmL :: EHCOpts -> [HsName]
+builtinKnownGrinBoxedTyNmL opts
+  = [ k | (k,bi) <- Map.toList $ builtinKnownBoxedTyMp opts, builtinIsForGrin bi ]
+%%]
+
+%%[(8 codegen) hs export(builtinGrinInfo)
+builtinGrinInfo :: EHCOpts -> HsName -> Maybe BuiltinInfo
+builtinGrinInfo opts
+  = \n -> case Map.lookup n m of
+            mbi@(Just bi) | builtinIsForGrin bi -> mbi
+            _                                   -> Nothing
   where m = builtinKnownBoxedTyMp opts
+%%]
+
+%%[(8 codegen) hs export(builtinGrinMayLiveUnboxed)
+builtinGrinMayLiveUnboxed :: EHCOpts -> HsName -> Maybe BuiltinInfo
+builtinGrinMayLiveUnboxed = builtinGrinInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

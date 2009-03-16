@@ -1,24 +1,10 @@
 module EH.Util.Utils where
 
-import EH.Util.Pretty
+-- import EH.Util.Pretty
 import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
-import Debug.Trace
-
--------------------------------------------------------------------------
--- Utils for tools
--------------------------------------------------------------------------
-
-mkTexCmdDef :: (PP cmd, PP a, PP b) => cmd -> a -> b -> PP_Doc
-mkTexCmdDef cmd nm def = "\\" >|< pp cmd >|< "{" >|< pp nm >|< "}{%" >-< pp def >-< "}"
-
-mkTexCmdUse :: (PP cmd, PP a) => cmd -> a -> PP_Doc
-mkTexCmdUse cmd nm = "\\" >|< pp cmd >|< "{" >|< pp nm >|< "}"
-
-mkTexCmdUse' :: (PP cmd, PP a) => cmd -> a -> PP_Doc
-mkTexCmdUse' cmd nm = mkTexCmdUse cmd nm >|< "%"
 
 -------------------------------------------------------------------------
 -- Set
@@ -188,10 +174,4 @@ orderingLexic = foldr1 (\o1 o2 -> if o1 == EQ then o2 else o1)
 panicJust :: String -> Maybe a -> a
 panicJust m = maybe (panic m) id
 
--------------------------------------------------------------------------
--- Tracing
--------------------------------------------------------------------------
-
-tr m s v = trace (m ++ show s) v
-trp m s v = trace (m ++ "\n" ++ disp (m >|< ":" >#< s) 1000 "") v
 

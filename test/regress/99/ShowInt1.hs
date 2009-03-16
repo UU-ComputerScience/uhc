@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module ShowInt1 where
 
 main
   = do putStrLn (show (0::Int))

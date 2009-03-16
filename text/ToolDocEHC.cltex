@@ -52,7 +52,11 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \subsection{Available in EHC but not in Haskell98 or Haskell prime}
 %%@ToolDocEHC.inEhcNotIn98Prime
 
+\subsection{Other differences (to be categorized)}
+%%@ToolDocEHC.otherDifferences
+
 \subsection{Foreign function interface (FFI)}
+%%@ToolDocEHC.ffi
 
 \subsection{Library modules}
 
@@ -107,6 +111,12 @@ If the package is put in the default location (usually something like @lib@ insi
 \subsubsection{GRIN based LLVM, with full program analysis}
 
 \subsection{XX}
+
+\section{Troubleshooting FAQ}
+\glabel{TroubleshootingFAQ}
+\label{TroubleshootingFAQ}
+%%@ToolDocEHC.troubleShootFAQ
+
 
 \section{Further reading}
 %%@ToolDocEHC.andFurther
@@ -512,6 +522,33 @@ Extensible records & YN \\
 
 %%]
 
+%%[inEhcNotIn98Prime doclatex
+\begin{tabular}{ll}
+\textbf{Feature} & \textbf{Available?} \\ \hline
+Existential + context + datatype def like: @data Handler a = forall e . Exception e => Handler (e -> IO a)@ & N \\
+\end{tabular}
+
+%%]
+
+%%[ffi doclatex
+A limited form of FFI is allowed, only to define primitives. A special calling convention @prim@ is used to indicate such primitives.
+The calling convention follows the necessary calling convention for the backend for which code is generated. For example, the @Prelude@ contains:
+
+\begin{pre}
+foreign import prim primAddInt       :: Int -> Int -> Int
+\end{pre}
+
+The @bc@ or @C@ based target uses the @ccall@ calling convention; the @jazy@ target uses @jazy@.
+To ensure the use of C calling convention use @ccall@, but support depends on the target. For example, for target @bc@ the @Prelude@ defines:
+
+\begin{pre}
+foreign import ccall "sinf"  primSinFloat   :: Float -> Float
+\end{pre}
+
+Other uses of FFI are not yet supported.
+
+%%]
+
 %%[commandlineInvocation doclatex
 \label{CommandLine}
 As printed by \verb=install/100/bin/ehc --help=:
@@ -572,6 +609,23 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
  \item \verb|--pkg-build=<pkg>|: build <pkg> from generated files. Put in current directory of the one specified with @--odir@.
  \end{itemize}
 \end{itemize}
+%%]
+
+%%[troubleShootFAQ doclatex
+\subsection{I have checked out a new EHC version over a previously working one, and now it does not compile anymore}
+
+Many things currently change, in particular also in the build process,
+so when checking out a new version over an old one old stuff may linger around.
+If you get build errors for a @<variant>@ try to fix it with one the following, in order of severity:
+
+\begin{itemize}
+\item Rerun @./configure@.
+\item Clean with @make <variant>/clean@.
+\item Manually remove the \sref{build}{build directory} and the \sref{install-for-build}{installation directory for building}.
+\end{itemize}
+
+If this does not fix the building, send us the full build output.
+
 %%]
 
 %%[andFurther doclatex

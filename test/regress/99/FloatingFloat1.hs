@@ -3,7 +3,7 @@
    expected: all ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module FloatingFloat1 where
 
 main
   = do p sin (pi / 2)
