@@ -118,7 +118,7 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 ATTR CExpr 
      AllAlt 
      AllBind   [ protectedBindingNames : {[HsName]} | | ]
-ATTR CMeta     [ | | protectableBindingNames : {[HsName]} ]
+ATTR AllDictMeta   [ | | protectableBindingNames : {[HsName]} ]
 %%]
 
 %%[(8 codegen)
@@ -199,7 +199,7 @@ SEM CPatRest
 SEM CBind
   | Bind        expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
 
-SEM CMeta
+SEM CMetaVal
   | DictClass   lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
   | DictInstance lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
   | Dict         lhs.protectableBindingNames  =   []

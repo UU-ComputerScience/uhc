@@ -29,14 +29,14 @@ DATA CModule
 
 %%[(8 codegen)
 DATA CExpr
-  | Let         categ           : {CBindCateg}
+  | Let         categ           : {CBindingsCateg}
                 binds           : CBindL
                 body            : CExpr
   | App         func            : CExpr
                 arg             : CExpr
-                argMeta         : CMeta
+                argMeta         : CMetaVal
   | Lam         arg             : {HsName}
-                argMeta         : CMeta
+                argMeta         : CMetaVal
                 body            : CExpr
   | Var         nm              : {HsName}
   | Case        expr            : CExpr
@@ -86,13 +86,23 @@ DATA CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-DATA CMeta
+TYPE CMetas 	= (CMetaBind,CMetaVal)
+
+DATA CMetaBind
+  | Plain		-- by default a binding is Plain
+  | Lam			-- special case of Plain, indicating it is a function
+  | CAF			-- special case of Plain, indicating it is a CAF of nullary Lam
+
+DATA CMetaVal
   | Val
 %%[[9
   | Dict          mbPos:  {Maybe Int}
   | DictClass     names:  {[Maybe HsName]}
   | DictInstance  names:  {[Maybe HsName]}
 %%]]
+
+SET AllDictMeta	= CMetaVal CMetas
+SET AllMeta		= AllDictMeta CMetaBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,7 +112,7 @@ DATA CMeta
 %%[(8 codegen)
 DATA CBind
   | Bind        nm              : {HsName}
-                bindMeta        : CMeta
+                bindMeta        : CMetas
                 expr            : CExpr
   | FFI         callconv        : {FFIWay}
                 safety          : {String}
@@ -184,7 +194,6 @@ SET AllBind     =   CBind CBindL
 SET AllPatBind  =   CPatBind CPatBindL
 SET AllPat      =   CPatRest CPat CPatL AllPatBind
 SET AllCodeNT   =   CModule AllExpr
-SET AllMeta     =   CMeta
 
 SET AllExpr
   = CExpr AllBind AllAlt AllPat

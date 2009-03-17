@@ -101,26 +101,20 @@ supportedTargetMp :: Map.Map String Target
   where (ts,is) = unzip
           [ ((show t, t),(t,i))
           | (t,i)
-              <- [
-                   mk Target_None_Core_None
-                      []
+              <- []
+                 -- ++ [ mk Target_None_Core_None [] ]
 %%[[(8 codegen jazy)
-                 , mk Target_Interpreter_Core_Jazy
-                      [FFIWay_Jazy]
+                 ++ [ mk Target_Interpreter_Core_Jazy [FFIWay_Jazy] ]
 %%]]
 %%[[(8 codegen java)
-                 -- , mk Target_Interpreter_Core_Java
-                 --      []
+                 -- ++ [ mk Target_Interpreter_Core_Java [] ]
 %%]]
 %%[[(8 codegen grin)
-                 , mk Target_Interpreter_Grin_C
-                      [FFIWay_CCall]
-                 , mk Target_FullProgAnal_Grin_C
-                      [FFIWay_CCall]
-                 , mk Target_FullProgAnal_Grin_CLR
-                      [FFIWay_CCall]
+                 ++ [ mk Target_Interpreter_Grin_C [FFIWay_CCall]
+                    , mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
+                    ]
+                 ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall]]
 %%]]
-                 ]
           ]
         mk t ffis = (t,TargetInfo (FFIWay_Prim : ffis)) 
 
@@ -188,6 +182,16 @@ targetAllowsOLinking t
   = case t of
 %%[[(8 codegen grin)
       Target_Interpreter_Grin_C		 	-> True
+%%]]
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetAllowsJarLinking)
+targetAllowsJarLinking :: Target -> Bool
+targetAllowsJarLinking t
+  = case t of
+%%[[(8 jazy)
+      Target_Interpreter_Core_Jazy		-> True
 %%]]
       _ 								-> False
 %%]

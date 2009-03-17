@@ -106,6 +106,16 @@ data EHCompileUnitState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to compile the final step for a target
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(FinalCompileHow(..))
+data FinalCompileHow
+  = FinalCompile_Module
+  | FinalCompile_Exec
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Shell command construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -115,27 +125,30 @@ mkShellCmd = concat . intersperse " "
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name of output
+%%% Name of output + possible dir which is preprended
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(mkOutputFPathFor)
-mkOutputFPathFor :: FPATH nm => OutputFor -> EHCOpts -> nm -> FPath -> String -> FPath
+mkOutputFPathFor :: FPATH nm => OutputFor -> EHCOpts -> nm -> FPath -> String -> (FPath,Maybe String)
 mkOutputFPathFor outputfor opts modNm fp suffix
-  = fpathSetSuff suffix fp'
 %%[[8
+  = (fpathSetSuff suffix fp', Nothing)
   where fp' = fp
 %%][99
-  where fp' = case outputfor of
-                OutputFor_Module -> f ehcOptOutputDir
-                OutputFor_Pkg    -> f ehcOptOutputPkgLibDir
-        f g = case g opts of
-                Just d -> fpathPrependDir d $ mkFPath modNm
-                _      -> fp
+  = (fpathSetSuff suffix fp', d)
+  where (fp',d) = case outputfor of
+                    OutputFor_Module -> f ehcOptOutputDir
+                    OutputFor_Pkg    -> f ehcOptOutputPkgLibDir
+        f g     = case g opts of
+                    Just d -> (fpathPrependDir d' $ mkFPath modNm, Just d')
+                           where d' = filePathUnPrefix d
+                    _      -> (fp,Nothing)
 %%]]
 %%]
 
 %%[8 export(mkOutputFPath)
 mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
-mkOutputFPath = mkOutputFPathFor OutputFor_Module
+mkOutputFPath opts modNm fp suffix
+  = fst $ mkOutputFPathFor OutputFor_Module opts modNm fp suffix
 %%]
 

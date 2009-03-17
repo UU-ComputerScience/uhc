@@ -102,24 +102,24 @@ SEM CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CMeta context
+%%% CMetaVal context
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR CExpr AllAlt [ cmeta: CMeta | | ]
+ATTR CExpr AllAlt [ cmeta: CMetaVal | | ]
 
 SEM CExpr
   | App         arg         .   cmeta       =   @argMeta.self
-  | Lam         body        .   cmeta       =   CMeta_Val
+  | Lam         body        .   cmeta       =   CMetaVal_Val
 
 SEM CBind
-  | Bind        expr        .   cmeta       =   @bindMeta.self
+  | Bind        expr        .   cmeta       =   cmetasVal @bindMeta.self
 
 SEM CModule
-  | Mod         expr        .   cmeta       =   CMeta_Val
+  | Mod         expr        .   cmeta       =   CMetaVal_Val
 
 SEM CPatBind
-  | Bind        offset      .   cmeta       =   CMeta_Val
+  | Bind        offset      .   cmeta       =   CMetaVal_Val
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -127,7 +127,7 @@ SEM CPatBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-type LevBindSq = Seq.FastSeq (Int,(CBindCateg,CBindL))
+type LevBindSq = Seq.FastSeq (Int,(CBindingsCateg,CBindL))
 
 levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
 levBindSplit lev b
@@ -149,11 +149,11 @@ SEM CExpr
                                             =   let ((hl,_):_) = @binds.bindL
                                                     b1  = @binds.levBindSq
                                                     b2  = Seq.singleton (@strLev hl,(@categ,assocLElts @binds.bindL))
-                                                    b12 = Seq.singleton (@maxBindLev,(CBindRec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 :++: b2)))
+                                                    b12 = Seq.singleton (@maxBindLev,(CBindings_Rec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 :++: b2)))
                                                     b3  = @body.levBindSq
                                                     b   = case @categ of 
-                                                            CBindRec  -> b12 :++: b3
-                                                            _         -> b1  :++: b2 :++: b3
+                                                            CBindings_Rec -> b12 :++: b3
+                                                            _             -> b1  :++: b2 :++: b3
                                                 in  (b,Seq.empty)
                 lhs         .   levBindSq   =   @remBindSq :++: @levBindSq
   | Lam         loc         .   (hereBindSq,remBindSq)
@@ -278,10 +278,10 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-mkTrf :: Bool -> Int -> Int -> HsName -> CMeta -> CExpr -> (CExpr,LevBindSq)
+mkTrf :: Bool -> Int -> Int -> HsName -> CMetaVal -> CExpr -> (CExpr,LevBindSq)
 mkTrf cond outerLev hereLev n m e
   =  if cond
-     then (CExpr_Var n,Seq.singleton (hereLev,(CBindPlain,[mkCBind1Meta n m e])))
+     then (CExpr_Var n,Seq.singleton (hereLev,(CBindings_Plain,[mkCBind1Meta n m e])))
      else (e,Seq.empty)
 %%]
 
@@ -319,7 +319,7 @@ SEM CExpr
                                                           . mkCExprLam1Meta @arg @argMeta.cTrf
                                                           . mkLetTrf @hereBindSq
                                                 in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
-                                                    then mkTLB (CExpr_Let CBindPlain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
+                                                    then mkTLB (CExpr_Let CBindings_Plain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
                                                     else mkTLB @body.cTrf
   | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta $ mkLetTrf @hereBindSq @body.cTrf
 %%]

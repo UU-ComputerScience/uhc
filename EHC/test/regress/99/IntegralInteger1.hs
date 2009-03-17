@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module IntegralInteger1 where
 
 main :: IO ()
 main

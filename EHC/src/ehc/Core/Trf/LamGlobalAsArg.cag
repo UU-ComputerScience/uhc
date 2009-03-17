@@ -115,10 +115,11 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
                                                  in   case @categ of
-                                                        CBindRec  ->  fvsTransClosure lm m
-                                                                  where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
-                                                        _         ->  m
-                                                                  where (m,_)   = start @lhs.varS
+                                                        CBindings_Rec
+                                                          ->  fvsTransClosure lm m
+                                                          where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _ ->  m
+                                                          where (m,_)   = start @lhs.varS
                                                 )
                                                 `Map.union` @lhs.fvSLamMp
 %%]
@@ -178,7 +179,7 @@ SEM CBind
 %%[[8
   | Bind        lhs			.	cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs			.	cTrf        =   mkCBind1Meta @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+  | Bind        lhs			.	cTrf        =   mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
 %%]]
 
 SEM CExpr

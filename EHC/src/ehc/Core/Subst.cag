@@ -187,7 +187,7 @@ coeEvalOn coe ce
        CoeApp a m       -> mkCExprApp1Meta ce a m
        CoeLam n m       -> mkCExprLam1Meta n m ce
        CoeLamLet n i    -> n `mkCExprLam1` mkCExprLetHole i ce
-       CoeLetRec b      -> mkCExprLet CBindRec b ce
+       CoeLetRec b      -> mkCExprLet CBindings_Rec b ce
        -- CoeCaseAlt e n p -> rceMatch e [n] [RAlt_Alt [p] ce False]
        CoeCompose c1 c2	-> c1 `coeEvalOn` (c2 `coeEvalOn` ce)
        CoeC e           -> e `cAppCoeArg` ce
@@ -231,7 +231,7 @@ coeWipe cs l r
      in   (reverse l',reverse r')
 
 mkPoisAppCoe :: EHCOpts -> [PredOccId] -> [Coe]
-mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) (CMeta_Dict Nothing))
+mkPoisAppCoe opts = map (\i -> mkAppCoe1With (mkCExprPrHole opts i) (CMetaVal_Dict Nothing))
 
 mkImplsAppCoe :: EHCOpts -> Impls -> [Coe]
 mkImplsAppCoe opts = mkPoisAppCoe opts . implsPrIds
@@ -245,7 +245,7 @@ mkPoiLLamCoe onLast poiL
                 ->  []
          | otherwise
                 ->  [onLast]
-  where mk poi = mkLamCoe1With (poiHNm poi) (CMeta_Dict Nothing)
+  where mk poi = mkLamCoe1With (poiHNm poi) (CMetaVal_Dict Nothing)
 
 mkImplsLamCoe :: Coe -> Impls -> [Coe]
 mkImplsLamCoe onLast is = mkPoiLLamCoe onLast (implsPrIds is)

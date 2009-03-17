@@ -46,12 +46,15 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     FilePath, 
     IOError,
     IO            (..), 
-    IOResult      (..),
+    -- IOResult      (..),
     IOMode        (..),
     IOException   (..), 
     IOErrorType   (..),
+    State         (..),
+    IOWorld, ioWorld,
+    RealWorld, realWorld,
     
-    Exception     (..),
+    SomeException (..),
     ArithException(..),
     ArrayException(..),
     AsyncException(..),
@@ -124,6 +127,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     
 ) where
 
+import EHC.Base
 
 #include "IntLikeInstance.h"
 
@@ -653,10 +657,17 @@ instance Bounded Bool where
 -- type Char builtin
 type String = [Char]    -- strings are lists of characters
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim   primEqChar    :: Char -> Char -> Bool
+foreign import prim   primCmpChar   :: Char -> Char -> Ordering
+foreign import prim   primCharToInt   :: Char -> Int
+foreign import prim   primIntToChar   :: Int -> Char
+#else
 foreign import prim "primEqInt"   primEqChar    :: Char -> Char -> Bool
 foreign import prim "primCmpInt"  primCmpChar   :: Char -> Char -> Ordering
 foreign import prim "primUnsafeId"  primCharToInt   :: Char -> Int
 foreign import prim "primUnsafeId"  primIntToChar   :: Int -> Char
+#endif
 foreign import prim "primCharIsUpper"   isUpper    :: Char -> Bool
 foreign import prim "primCharIsLower"   isLower    :: Char -> Bool
 
@@ -883,7 +894,11 @@ showInt x | x<0  = '-' : showInt(-x)
 
 instance Show Int where
 --  show   = primShowInt
+#ifdef __EHC_TARGET_JAZY__
+    show   = show . toInteger
+#else
     show   = showInt
+#endif
 
 
 
@@ -982,13 +997,21 @@ instance Enum Integer where
                                         | otherwise = (>= m)
 
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim primShowIntegerToPackedString :: Integer -> PackedString
+#else
 foreign import prim primShowInteger :: Integer -> String
+#endif
 
 instance Read Integer where
     readsPrec p = readSigned readDec
 
 instance Show Integer where
+#ifdef __EHC_TARGET_JAZY__
+    show   = packedStringToString . primShowIntegerToPackedString
+#else
     show   = primShowInteger
+#endif
 
 
 --------------------------------------------------------------
@@ -1106,6 +1129,17 @@ rationalToRealFloat x = x'
 
 -- primitive Float functions
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim  primSinFloat   :: Float -> Float
+foreign import prim  primCosFloat   :: Float -> Float
+foreign import prim  primTanFloat   :: Float -> Float
+foreign import prim  primAsinFloat  :: Float -> Float
+foreign import prim  primAcosFloat  :: Float -> Float
+foreign import prim  primAtanFloat  :: Float -> Float
+foreign import prim  primExpFloat   :: Float -> Float
+foreign import prim  primLogFloat   :: Float -> Float
+foreign import prim  primSqrtFloat  :: Float -> Float
+#else
 foreign import ccall "sinf"  primSinFloat   :: Float -> Float
 foreign import ccall "cosf"  primCosFloat   :: Float -> Float
 foreign import ccall "tanf"  primTanFloat   :: Float -> Float
@@ -1119,6 +1153,7 @@ foreign import ccall "sqrtf" primSqrtFloat  :: Float -> Float
 foreign import ccall "sinhf" primSinhFloat  :: Float -> Float
 foreign import ccall "coshf" primCoshFloat  :: Float -> Float
 foreign import ccall "tanhf" primTanhFloat  :: Float -> Float
+#endif
 
 instance Floating Float where
     exp   = primExpFloat
@@ -1130,10 +1165,23 @@ instance Floating Float where
     asin  = primAsinFloat
     acos  = primAcosFloat
     atan  = primAtanFloat
+#ifndef __EHC_TARGET_JAZY__
     sinh  = primSinhFloat
+#endif
 
 -- primitive Double functions
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim  primSinDouble   :: Double -> Double
+foreign import prim  primCosDouble   :: Double -> Double
+foreign import prim  primTanDouble   :: Double -> Double
+foreign import prim  primAsinDouble  :: Double -> Double
+foreign import prim  primAcosDouble  :: Double -> Double
+foreign import prim  primAtanDouble  :: Double -> Double
+foreign import prim  primExpDouble   :: Double -> Double
+foreign import prim  primLogDouble   :: Double -> Double
+foreign import prim  primSqrtDouble  :: Double -> Double
+#else
 foreign import ccall "sin"  primSinDouble   :: Double -> Double
 foreign import ccall "cos"  primCosDouble   :: Double -> Double
 foreign import ccall "tan"  primTanDouble   :: Double -> Double
@@ -1146,6 +1194,7 @@ foreign import ccall "sqrt" primSqrtDouble  :: Double -> Double
 foreign import ccall "sinh" primSinhDouble  :: Double -> Double
 foreign import ccall "cosh" primCoshDouble  :: Double -> Double
 foreign import ccall "tanh" primTanhDouble  :: Double -> Double
+#endif
 
 instance Floating Double where
     exp   = primExpDouble
@@ -1157,9 +1206,11 @@ instance Floating Double where
     asin  = primAsinDouble
     acos  = primAcosDouble
     atan  = primAtanDouble
+#ifndef __EHC_TARGET_JAZY__
     sinh  = primSinhDouble
     cosh  = primCoshDouble
     tanh  = primTanhDouble
+#endif
 
 
 instance RealFrac Float where
@@ -1187,7 +1238,11 @@ foreign import prim primMaxExpFloat  :: Int
 foreign import prim primMinExpFloat  :: Int
 foreign import prim primDecodeFloat  :: Float -> (Integer, Int)
 foreign import prim primEncodeFloat  :: Integer -> Int -> Float
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim   primAtan2Float   :: Float -> Float -> Float
+#else
 foreign import ccall "atan2f"  primAtan2Float   :: Float -> Float -> Float
+#endif
 
 instance RealFloat Float where
     floatRadix  _ = toInteger primRadixDoubleFloat
@@ -1211,7 +1266,11 @@ foreign import prim primMaxExpDouble  :: Int
 foreign import prim primMinExpDouble  :: Int
 foreign import prim primDecodeDouble  :: Double -> (Integer, Int)
 foreign import prim primEncodeDouble  :: Integer -> Int -> Double
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim   primAtan2Double   :: Double -> Double -> Double
+#else
 foreign import ccall "atan2"  primAtan2Double   :: Double -> Double -> Double
+#endif
 
 instance RealFloat Double where
     floatRadix  _ = toInteger primRadixDoubleFloat
@@ -1246,7 +1305,11 @@ instance Enum Double where
     enumFromTo            = numericEnumFromTo
     enumFromThenTo        = numericEnumFromThenTo
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim primShowFloatToPackedString :: Float -> PackedString
+#else
 foreign import prim primShowFloat :: Float -> String
+#endif
 -- TODO: replace this by a function Float -> PackedString
 
 instance Read Float where
@@ -1258,9 +1321,17 @@ instance Show Float where
     showsPrec   = primShowsFloat
 -----------------------------}
 instance Show Float where
+#ifdef __EHC_TARGET_JAZY__
+    show   = packedStringToString . primShowFloatToPackedString
+#else
     show   = primShowFloat
+#endif
 
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim primShowDoubleToPackedString :: Double -> PackedString
+#else
 foreign import prim primShowDouble :: Double -> String
+#endif
 
 instance Read Double where
     readsPrec p = readSigned readFloat
@@ -1271,7 +1342,11 @@ instance Show Double where
     showsPrec   = primShowsDouble
 -----------------------------}
 instance Show Double where
+#ifdef __EHC_TARGET_JAZY__
+    show   = packedStringToString . primShowDoubleToPackedString
+#else
     show   = primShowDouble
+#endif
 
 
 --------------------------------------------------------------
@@ -1843,7 +1918,7 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
 -- Exception datatype and operations
 ----------------------------------------------------------------
 
-data Exception                              -- alphabetical order of constructors required, assumed Int encoding in comment
+data SomeException                          -- alphabetical order of constructors required, assumed Int encoding in comment
   = ArithException      ArithException      -- 0
   | ArrayException      ArrayException      -- 1
   | AssertionFailed     String              -- 2
@@ -1861,7 +1936,7 @@ data Exception                              -- alphabetical order of constructor
   | RecSelError         String              -- 13
   | RecUpdError         String              -- 14
 
-instance Show Exception where
+instance Show SomeException where
   showsPrec _ (ArithException e)  = shows e
   showsPrec _ (ArrayException e)  = shows e
   showsPrec _ (AssertionFailed s) = showException "assertion failed" s
@@ -1989,29 +2064,39 @@ userError str = IOError Nothing UserError "" str Nothing
 -- Monadic I/O implementation
 ----------------------------------------------------------------
 
-newtype IO a = IO (IOWorld -> IOResult a)
+newtype State s = State s
+data RealWorld = RealWorld
+type IOWorld = State RealWorld
 
-newtype IOResult a = IOResult a
+-- newtype IO a = IO (IOWorld -> IOResult a)
+newtype IO a = IO (IOWorld -> (IOWorld, a))
 
-data IOWorld
+-- newtype IOResult a = IOResult a
+
+-- Only 1 real world exist, never make a RealWorld elsewhere. Currently it is just there for the type system only.
+-- This should be in the RTS... as a primitive?
+realWorld :: RealWorld
+realWorld = RealWorld
+ioWorld :: IOWorld
+ioWorld = State realWorld
 
 ioFromPrim :: (IOWorld -> a) -> IO a
 ioFromPrim f
   = IO (\w -> letstrict x = f w 
-              in IOResult x
+              in (w, x)
        )
 
 primbindIO :: IO a -> (a -> IO b) -> IO b
 primbindIO (IO io) f
   = IO (\w -> case io w of
-                IOResult x -> letstrict x' = x
-                              in case f x' of
-                                  IO fx -> fx w
+                (w', x) -> letstrict x' = x
+                           in case f x' of
+                               IO fx -> fx w'
        )
 
 primretIO :: a -> IO a
 primretIO x
-  = IO (\_ -> IOResult x)
+  = IO (\w -> (w, x))
 
 instance Functor IO where
     fmap f x = x >>= (return . f)
@@ -2046,18 +2131,21 @@ ioError e = IO (\s -> throw (IOException e))
 
 data Handle   -- opaque, contains GB_Chan  or  FILE*
 
-foreign import prim primHFileno  :: Handle -> Int
+-- foreign import prim primHFileno  :: Handle -> Int
+foreign import prim primHEqFileno  :: Handle -> Int -> Bool
+foreign import prim primEqHandle  :: Handle -> Handle -> Bool
+-- foreign import prim primShowHandle  :: Handle -> String
 
 instance Eq Handle where
-    h1==h2 = primHFileno h1 == primHFileno h2
+    (==) = primEqHandle
 
 instance Show Handle where
     showsPrec _ h
-      = if      n == 0 then showString "<stdin>"
-        else if n == 1 then showString "<stdout>"
-        else if n == 2 then showString "<stderr>"
-        else                showString ("<handle:" ++ show n ++ ">")
-      where n = primHFileno h
+      = if      primHEqFileno h 0 then showString "<stdin>"
+        else if primHEqFileno h 1 then showString "<stdout>"
+        else if primHEqFileno h 2 then showString "<stderr>"
+        else                showString ("<handle:" ++ {- show n ++ -} ">")
+      -- where n = primHFileno h
 
 type FilePath = String  -- file pathnames are represented by strings
 
@@ -2089,6 +2177,11 @@ foreign import prim primStdout        :: Handle
 foreign import prim primStderr        :: Handle
 foreign import prim primHIsEOF        :: Handle -> Bool
 #else
+#ifdef __EHC_TARGET_JAZY__
+foreign import prim primStdin         :: Handle
+foreign import prim primStdout        :: Handle
+foreign import prim primStderr        :: Handle
+#endif
 foreign import prim primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
 #endif
 
@@ -2125,9 +2218,15 @@ openFile     :: FilePath -> IOMode -> IO Handle
 openFile f m =  ioFromPrim (\_ -> primOpenFileOrStd f m Nothing)
 
 stdin, stdout, stderr :: Handle
+#ifdef __EHC_TARGET_JAZY__
+stdin  = primStdin
+stdout = primStdout
+stderr = primStderr
+#else
 stdin  = primOpenFileOrStd "<stdin>"  ReadMode  (Just 0)
 stdout = primOpenFileOrStd "<stdout>" WriteMode (Just 1)
 stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
+#endif
 
 #endif
 
@@ -2304,18 +2403,18 @@ ehcRunMain m = m
 
 #else
 
-foreign import prim primThrowException :: forall a . Exception -> a
-foreign import prim primCatchException :: forall a . a -> (([(Int,String)],Exception) -> a) -> a
+foreign import prim primThrowException :: forall a . SomeException -> a
+foreign import prim primCatchException :: forall a . a -> (([(Int,String)],SomeException) -> a) -> a
 
-throw :: Exception -> a
+throw :: SomeException -> a
 throw e = primThrowException e
 
-catchTracedException :: IO a -> (([(Int,String)],Exception) -> IO a) -> IO a
+catchTracedException :: IO a -> (([(Int,String)],SomeException) -> IO a) -> IO a
 catchTracedException (IO m) k = IO $ \s ->
   primCatchException (m s)
                      (\te -> case (k te) of {IO k' -> k' s })
 
-catchException :: IO a -> (Exception -> IO a) -> IO a
+catchException :: IO a -> (SomeException -> IO a) -> IO a
 catchException m k =
   catchTracedException m (\(_,e) -> k e)
 

@@ -309,12 +309,12 @@ doCompileRun fnL@(fn:_) opts
              searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ mkPkgFileLoc p $ Cfg.unPrefix
+                              ++ [ mkPkgFileLoc p $ filePathUnPrefix
                                    $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
                                  | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
                                  ]
-                              ++ [ mkPkgFileLoc p $ Cfg.unPrefix
+                              ++ [ mkPkgFileLoc p $ filePathUnPrefix
                                    $ Cfg.mkDirbasedTargetVariantPkgPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) (ehcenvVariant (ehcOptEnvironment opts)) (show (ehcOptTarget opts)) p
                                  | p <- (   ehcOptLibPackages opts
                                          ++ (if ehcOptHideAllPackages opts then [] else Cfg.ehcAssumedPackages)
@@ -392,7 +392,7 @@ doCompileRun fnL@(fn:_) opts
                      adaptedSearchPath (Just (prevNm,prevFp))
                        = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp) of
                            (Just n, Just p)
-                             -> mkDirFileLoc (Cfg.unPrefix prefix) : searchPath
+                             -> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
                              where (prefix,_) = splitAt (length p - length n) p
                            _ -> searchPath
                      adaptedSearchPath _ = searchPath
@@ -408,7 +408,7 @@ doCompileRun fnL@(fn:_) opts
                             ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
                             ; cpCheckMods' [modBuiltin]
                             ; cpEhcFullProgCompileAllModules
-%%[[99
+%%[[100
                             ; unless (ehcOptKeepIntermediateFiles opts2) cpRmFilesToRm
 %%]]
                             })

@@ -51,7 +51,7 @@ EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
-											$(patsubst %,System/%.hs,) \
+											$(patsubst %,System/%.hs,IO/Unsafe) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
@@ -97,8 +97,12 @@ EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB
 EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
 # as haskell, as is in svn repo
-EHCLIB_HS_ALL_SRC_HS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.hs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.hs)
-EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.hs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_HS_ALL_SRC_HS))
+EHCLIB_HS_ALL_SRC_HS					:= $(foreach suff,hs lhs, \
+											$(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.$(suff) \
+											           $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.$(suff) \
+											 ) \
+											)
+EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_HS_ALL_SRC_HS))
 
 # as C .h include file, as is in svn repo
 EHCLIB_ASIS_ALL_SRC_ASIS				:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)include/*.h)
@@ -155,7 +159,7 @@ ehclib-variant-dflt: \
 	          --pkg-build=$${pkg} \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
-	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.hs'` \
+	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'` \
 	          +RTS -K30m ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
 	      done \
@@ -227,7 +231,7 @@ $(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_AS
 #	) > $@
 
 # plainly copy .hs files
-$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hs
+$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%: $(EHCLIB_SRC_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 	touch $@

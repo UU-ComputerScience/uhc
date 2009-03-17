@@ -25,12 +25,16 @@ module Prelude
   , module EHC.Ix
   , module EHC.Show
   , module EHC.Read
+  
+  -- EHC.IOBase
+  , unsafePerformIO
   )
   where
 
 import EHC.Prelude hiding
   ( absReal, signumReal
   -- , primEqInt
+  -- , State, IOWorld, RealWorld
   )
 import EHC.Eq
 import EHC.Ord
@@ -39,3 +43,4 @@ import EHC.Bounded
 import EHC.Ix
 import EHC.Show
 import EHC.Read
+import EHC.IOBase

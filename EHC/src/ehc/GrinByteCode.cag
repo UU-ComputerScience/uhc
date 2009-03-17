@@ -555,7 +555,7 @@ tagIsUnboxed opts
               GrTag_Unboxed
                 -> True
               _ -> False
-  where check = maybe False biGbcMayLiveUnboxed . builtinMayLiveUnboxed opts
+  where check = maybe False biGbcMayLiveUnboxed . builtinGrinMayLiveUnboxed opts
 %%]
 
 %%[(8 codegen grin) hs export(tagAllowsUnboxedLife)

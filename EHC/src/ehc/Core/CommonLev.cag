@@ -81,10 +81,10 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllBind [ letBindCateg: CBindCateg | | ]
+ATTR AllBind [ letBindingsCateg: CBindingsCateg | | ]
 
 SEM CExpr
-  | Let         loc         .   letBindCateg    =   @categ
+  | Let         loc         .   letBindingsCateg    =   @categ
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

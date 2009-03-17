@@ -90,7 +90,7 @@ cpEhcFullProgLinkAllModules modNmL
                                  ]
                             else []
                            )
-                        ++ [cpEhcExecutablePerModule GCC_CompileExec impModNmL mainModNm]
+                        ++ [cpEhcExecutablePerModule FinalCompile_Exec impModNmL mainModNm]
                        )
             | otherwise
               -> cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayNotHaveMain mainModNm]
@@ -101,8 +101,13 @@ cpEhcFullProgLinkAllModules modNmL
               -> return ()
 %%][99
               -> case ehcOptPkg opts of
-                   Just (PkgOption_Build pkg) | targetAllowsOLinking (ehcOptTarget opts)
-                     -> cpLinkO impModNmL pkg
+                   Just (PkgOption_Build pkg)
+                     | targetAllowsOLinking (ehcOptTarget opts)
+                       -> cpLinkO impModNmL pkg
+%%[[(99 jazy)
+                     | targetAllowsJarLinking (ehcOptTarget opts)
+                       -> cpLinkJar Nothing impModNmL (JarMk_Pkg pkg)
+%%]]
                    _ -> return ()
 %%]]
       }
@@ -577,7 +582,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec mo
              , cpProcessBytecode modNm
              ]
           ++ (if not isMainMod || doMkExec
-              then let how = if doMkExec then GCC_CompileExec else GCC_CompileOnly
+              then let how = if doMkExec then FinalCompile_Exec else FinalCompile_Module
                    in  [cpEhcExecutablePerModule how [] modNm]
               else []
              )
@@ -595,7 +600,7 @@ Core+grin processing, on a per module basis, may only be done when full program 
 cpEhcCoreGrinPerModuleDoneFullProgAnalysis :: HsName -> EHCompilePhase ()
 cpEhcCoreGrinPerModuleDoneFullProgAnalysis modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 modNm
-             , cpEhcExecutablePerModule GCC_CompileExec [] modNm
+             , cpEhcExecutablePerModule FinalCompile_Exec [] modNm
              , cpMsg modNm VerboseALot "Full Program Analysis Core+Grin done"
              ]
           )
@@ -606,12 +611,12 @@ Make final executable code, either still partly or fully (i.e. also linking)
 %%]
 
 %%[(8 codegen grin)
-cpEhcExecutablePerModule :: GCC_CompileHow -> [HsName] -> HsName -> EHCompilePhase ()
+cpEhcExecutablePerModule :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpEhcExecutablePerModule how impModNmL modNm
   = cpSeq [ cpCompileWithGCC how impModNmL modNm
           , cpCompileWithLLVM modNm
 %%[[(8 jazy)
-          , cpCompileJazyJVM modNm
+          , cpCompileJazyJVM how impModNmL modNm
 %%]]
           ]
 %%]
@@ -689,6 +694,9 @@ cpProcessCoreRest modNm
           , cpFlowCoreSem modNm
 %%]]
           , cpTranslateCore2Grin modNm
+%%[[(8 jazy)
+          , cpTranslateCore2Jazy modNm
+%%]]
 %%[[99
           , cpCleanupCore modNm
 %%]]

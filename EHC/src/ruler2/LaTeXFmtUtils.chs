@@ -10,7 +10,7 @@
 %%[1 hs export (mkCmdNmDef, mkCmdNmUse, ppNmLaTeX, ppSelLaTeX, ppWrapShuffle)
 %%]
 
-%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, Common, Expr.Expr)
+%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, EH.Util.PrettyUtils, Common, Expr.Expr)
 %%]
 
 %%[1 hs

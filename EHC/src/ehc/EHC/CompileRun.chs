@@ -8,7 +8,9 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+%%[8 import(System.Cmd)
 %%]
 %%[99 import(System.Directory)
 %%]
@@ -174,10 +176,10 @@ cpMemUsage
 %%% Compile actions: clean up (remove) files to be removed
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(cpRegisterFileToRm)
-cpRegisterFileToRm :: FPath -> EHCompilePhase ()
-cpRegisterFileToRm fp
-  = cpUpdSI (\crsi -> crsi {crsiFilesToRm = fp : crsiFilesToRm crsi})
+%%[99 export(cpRegisterFilesToRm)
+cpRegisterFilesToRm :: [FPath] -> EHCompilePhase ()
+cpRegisterFilesToRm fpL
+  = cpUpdSI (\crsi -> crsi {crsiFilesToRm = fpL ++ crsiFilesToRm crsi})
 %%]
 
 %%[99 export(cpRmFilesToRm)
@@ -185,7 +187,8 @@ cpRmFilesToRm :: EHCompilePhase ()
 cpRmFilesToRm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
-       ; lift $ mapM (rm . fpathToStr) (crsiFilesToRm crsi)
+             files = Set.toList $ Set.fromList $ map fpathToStr $ crsiFilesToRm crsi
+       ; lift $ mapM rm files
        ; cpUpdSI (\crsi -> crsi {crsiFilesToRm = []})
        }
   where rm f = catch (removeFile f)
@@ -234,6 +237,16 @@ cpStepUID
 cpSystem :: String -> EHCompilePhase ()
 cpSystem cmd
   = do { exitCode <- lift $ system cmd
+       ; case exitCode of
+           ExitSuccess -> return ()
+           _           -> cpSetFail
+       }
+%%]
+
+%%[8 export(cpSystemRaw)
+cpSystemRaw :: String -> [String] -> EHCompilePhase ()
+cpSystemRaw cmd args
+  = do { exitCode <- lift $ rawSystem cmd args
        ; case exitCode of
            ExitSuccess -> return ()
            _           -> cpSetFail
@@ -299,4 +312,20 @@ crModCanCompile modNm cr
   = isJust (ecuMbHSTime ecu) && ecuDirIsWritable ecu
   where ecu = crCU modNm cr
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Partition modules into those belonging to a package and the rest
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen) export(crPartitionIntoPkgAndOthers)
+crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgName],[HsName])
+crPartitionIntoPkgAndOthers cr modNmL
+  = (nub $ concat ps,concat ms)
+  where (ps,ms) = unzip $ map loc modNmL
+        loc m = case filelocKind $ ecuFileLocation ecu of
+                  FileLocKind_Dir	-> ([],[m])	
+                  FileLocKind_Pkg p -> ([p],[])
+              where (ecu,_,_,_) = crBaseInfo m cr
+%%]
+
 

@@ -99,6 +99,10 @@ PRIM GB_Word gb_primUnsafeId( GB_Word x )
 %%% Conversion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+PRIM GB_Word gb_primUnsafeId( GB_Word x )
+{
+	return x ;
+}
 %%[97
 PRIM GB_Float gb_primIntToFloat( GB_Int x )
 {
@@ -1310,6 +1314,54 @@ GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% I/O: MutVar: mutable variables for a State
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GB_NodePtr gb_primNewMutVar( GB_Word init, GB_Word state )
+{
+	GB_NodePtr mutVar ;
+	GB_NodePtr res ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe2(init,state) ;
+	GB_GC_Safe1_Zeroed(mutVar) ;
+
+	GB_MkTupNode1_In(mutVar,init) ;
+	GB_MkTupNode2_In(res,state,mutVar) ;
+	
+	GB_GC_SafeLeave ;
+	return res ;
+}
+
+PRIM GB_NodePtr gb_primReadMutVar( GB_NodePtr mutVar, GB_Word state )
+{
+	GB_NodePtr res ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe2(mutVar,state) ;
+
+	GB_MkTupNode2_In(res,state,mutVar->content.fields[0]) ;
+	
+	GB_GC_SafeLeave ;
+	return res ;
+}
+
+PRIM GB_Word gb_primWriteMutVar( GB_NodePtr mutVar, GB_Word newVal, GB_Word state )
+{
+	mutVar->content.fields[0] = newVal ;
+	return state ;
+}
+
+PRIM GB_Word gb_primSameMutVar( GB_Word v1, GB_Word v2 )
+{
+	if ( v1 == v2 )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% I/O: basic primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1335,6 +1387,16 @@ PRIM GB_NodePtr gb_primStderr()
 PRIM GB_Word gb_primHFileno( GB_NodePtr chan )
 {
 	return ( fileno(chan->content.chan.file) ) ;
+}
+
+PRIM GB_Word gb_primEqHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
+{
+	return ( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) ? gb_True : gb_False ) ;
+}
+
+PRIM GB_Word gb_primHEqFileno( GB_NodePtr chan, GB_Word fno )
+{
+	return ( fno == fileno(chan->content.chan.file) ? gb_True : gb_False ) ;
 }
 
 PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr mbHandleNr )   

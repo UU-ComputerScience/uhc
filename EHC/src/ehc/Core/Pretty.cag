@@ -20,7 +20,7 @@
 WRAPPER
   CodeAGItf CExpr
 %%[[9
-  CMeta
+  CMetas
 %%]]
 %%]
 
@@ -53,10 +53,10 @@ ppHole i = "<" >|< pp i >|< ">"
 %%]
 
 %%[(9 codegen) hs
-ppOptCMeta :: CMeta -> PP_Doc
-ppOptCMeta x
-  =  let  t = wrap_CMeta (sem_CMeta x) Inh_CMeta
-     in   (optPP_Syn_CMeta t)
+ppOptCMetas :: CMetas -> PP_Doc
+ppOptCMetas x
+  =  let  t = wrap_CMetas (sem_CMetas x) Inh_CMetas
+     in   (pp_Syn_CMetas t)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,7 +65,7 @@ ppOptCMeta x
 
 %%[(9 codegen) hs export(ppCBindL)
 ppCBindL :: CBindL -> PP_Doc
-ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMeta m))
+ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMetas m))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,13 +134,13 @@ SEM CExpr
                                                 in  fun >#< ppSpaces args
 %%]]
 | Let         loc         .   ppCateg     =   case @categ of
-                                                  CBindRec     -> pp " rec"
-                                                  CBindStrict  -> pp " !"
-                                                  CBindFFI     -> pp " foreign"
+                                                  CBindings_Rec     -> pp " rec"
+                                                  CBindings_Strict  -> pp " !"
+                                                  CBindings_FFI     -> pp " foreign"
 %%[[94
-                                                  CBindFFE     -> pp " foreignexport"
+                                                  CBindings_FFE     -> pp " foreignexport"
 %%]]
-                                                  _            -> empty
+                                                  _                 -> empty
 %%[[8
                             .   pp          =   ppDef ("let" >|< @ppCateg) (ppCurlysSemisBlock @binds.ppL) >#< "in" >-< @body.pp
 %%][8_2
@@ -172,8 +172,8 @@ SEM CExpr
                             .   appArgPPL   =   []
 
 SEM CBind
- | Bind        lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.optPP >#< "=") (@expr.pp)
- | FFI         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
+ | Bind         lhs         .   pp          =   ppDef (ppCNm @nm >|< @bindMeta.pp >#< "=") (@expr.pp)
+ | FFI          lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
 %%[[8
                                                       ("foreign" >#< ppCurlysCommasBlock [pp (show @callconv),pp (show @safety),pp (show @impEnt),ppTyWithCfg' CfgPP_HI @ty])
 %%][8_2
@@ -226,9 +226,17 @@ SEM CPatBindL
                                                 >|< ppParens (@pat.pp >#< "|">#< pp @tag >|< ":" >|< @offset.pp >|< "=" >|< @fldPat.pp)
 
 %%[(8 codegen)
-ATTR CMeta [ | | optPP : PP_Doc ]
+ATTR CMetaVal [ | | optPP : PP_Doc ]
 
-SEM CMeta
+SEM CMetas
+  | Tuple       loc         .   pp          =   ppCurlysCommas [@x1.pp,@x2.pp]
+
+SEM CMetaBind
+  | Plain       loc         .   pp          =   pp "BINDPLAIN"
+  | Lam         loc         .   pp          =   pp "BINDLAM"
+  | CAF         loc         .   pp          =   pp "BINDCAF"
+
+SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
   | Dict        loc         .   pp          =   pp "DICT"         >|< maybe "" (\n->"{ "++show n++"}") @mbPos
@@ -236,7 +244,7 @@ SEM CMeta
   | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
 %%]]
 
-SEM CMeta
+SEM CMetaVal
   | Val         loc         .   optPP       =   empty
   | * - Val     loc         .   optPP       =   " :" >#< @pp
 

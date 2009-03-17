@@ -55,7 +55,7 @@ SEM CPatBind
                             .   isLamBody   =   False
 
 SEM CExpr
-  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindStrict
+  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindings_Strict
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,7 +75,7 @@ SEM CPatBind
 
 
 SEM CExpr
-  | Let         loc         .   evalCtx         =   if @categ == CBindStrict
+  | Let         loc         .   evalCtx         =   if @categ == CBindings_Strict
                                                     then EvalCtx_Eval
                                                     else EvalCtx_None
 %%]

@@ -21,6 +21,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
+%%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
+%%]
 -- Language semantics: HS, EH
 %%[8 import(qualified {%{EH}EH.MainAG} as EHSem, qualified {%{EH}HS.MainAG} as HSSem)
 %%]
@@ -97,6 +99,9 @@ data EHCompileUnit
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
+%%[[(8 jazy)
+      , ecuMbJVMClassL       :: !(Maybe (HsName,[Jvm.Class]))
+%%]]
       , ecuState             :: !EHCompileUnitState
 %%[[20
       , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
@@ -152,6 +157,9 @@ emptyECU
       , ecuMbGrin            = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
+%%]]
+%%[[(8 jazy)
+      , ecuMbJVMClassL       = Nothing
 %%]]
       , ecuState             = ECUSUnknown
 %%[[20
@@ -293,6 +301,14 @@ ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
+
+%%[(8 jazy) export(ecuStoreJVMClassL)
+ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
+ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
+%%]
+
+ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
+ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
 %%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule

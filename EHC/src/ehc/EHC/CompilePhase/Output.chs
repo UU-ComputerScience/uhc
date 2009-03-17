@@ -54,7 +54,7 @@ cpOutputCore suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
-                 fpC = mkOutputFPath opts modNm fp suff                
+                 fpC = mkOutputFPath opts modNm fp suff
          ;  cpMsg modNm VerboseALot "Emit Core"
          ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
          }
@@ -101,7 +101,7 @@ cpOutputByteCodeC suff modNm
                  fpC      = mkOutputFPath opts modNm fp suff
          ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
 %%[[99
-         ;  cpRegisterFileToRm fpC
+         ;  cpRegisterFilesToRm [fpC]
 %%]]
          ;  lift $ putPPFPath fpC bc 150
          }

@@ -19,7 +19,7 @@ import uu.jazy.core.* ;
 /**
  * Base class for data types
  */
-public class Data
+public abstract class Data
 {
 %%]
 
@@ -32,6 +32,13 @@ public class Data
     public Data( )
     {
     }
+%%]
+    
+%%[(98 jazy)
+    /**
+     * unpack (for RTS scrutinization)
+     */
+    public abstract Object[] toTuple( ) ;
 %%]
     
 

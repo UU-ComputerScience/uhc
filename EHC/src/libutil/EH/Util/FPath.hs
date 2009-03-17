@@ -9,8 +9,13 @@ module EH.Util.FPath
   , fpathSetBase, fpathSetSuff, fpathSetDir
   , fpathUpdBase
   , fpathRemoveSuff, fpathRemoveDir
-  , fpathPrependDir, mkTopLevelFPath
   
+  , fpathIsAbsolute
+
+  , fpathAppendDir, fpathPrependDir, fpathUnPrependDir
+  , fpathSplitDirBy
+  , mkTopLevelFPath
+
   , fpathDirSep, fpathDirSepChar
   
   , fpathOpenOrStdin, openFPath
@@ -21,6 +26,9 @@ module EH.Util.FPath
   , searchLocationsForReadableFiles, searchPathForReadableFiles, searchPathForReadableFile
   
   , fpathEnsureExists
+  
+  , filePathMkPrefix, filePathUnPrefix
+  , filePathMkAbsolute, filePathUnAbsolute
   )
 where
 
@@ -31,8 +39,36 @@ import Control.Monad
 import System.IO
 import System.Directory
 
+import EH.Util.Utils
+
 -------------------------------------------------------------------------------------------
--- File path utils
+-- Making prefix and inverse, where a prefix has a tailing '/'
+-------------------------------------------------------------------------------------------
+
+filePathMkPrefix :: String -> String
+filePathMkPrefix d@(_:_) | last d /= '/'    = d ++ "/"
+filePathMkPrefix d                          = d
+
+filePathUnPrefix :: String -> String
+filePathUnPrefix d | isJust il && l == '/'  = i
+  where il = initlast d
+        (i,l) = fromJust il
+filePathUnPrefix d                          = d
+
+-------------------------------------------------------------------------------------------
+-- Making into absolute path and inverse, where absolute means a heading '/'
+-------------------------------------------------------------------------------------------
+
+filePathMkAbsolute :: String -> String
+filePathMkAbsolute d@('/':_ ) = d
+filePathMkAbsolute d          = "/" ++ d
+
+filePathUnAbsolute :: String -> String
+filePathUnAbsolute d@('/':d') = filePathUnAbsolute d'
+filePathUnAbsolute d          = d
+
+-------------------------------------------------------------------------------------------
+-- File path
 -------------------------------------------------------------------------------------------
 
 data FPath
@@ -56,11 +92,29 @@ fpathToStr fpath
         addd f = maybe f (\d -> d ++ fpathDirSep ++ f) (fpathMbDir fpath)
      in addd . adds . fpathBase $ fpath
 
+-------------------------------------------------------------------------------------------
+-- Observations
+-------------------------------------------------------------------------------------------
+
+-- TBD. does not work under WinXX, use FilePath library
+fpathIsAbsolute :: FPath -> Bool
+fpathIsAbsolute fp
+  = case fpathMbDir fp of
+      Just ('/':_) -> True
+      _            -> False
+
+-------------------------------------------------------------------------------------------
+-- Utilities, (de)construction
+-------------------------------------------------------------------------------------------
+
 fpathFromStr :: String -> FPath
 fpathFromStr fn
   = FPath d b' s
   where (d ,b) = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
         (b',s) = maybe (b,Nothing)  (\(b,s) -> (b,Just s)) (splitOnLast '.'             b )
+
+fpathDirFromStr :: String -> FPath
+fpathDirFromStr d = emptyFPath {fpathMbDir = Just d}
 
 fpathSuff :: FPath -> String
 fpathSuff = maybe "" id . fpathMbSuff
@@ -91,11 +145,31 @@ fpathSetDir "" fp
 fpathSetDir d fp
   = fp {fpathMbDir = Just d}
 
+fpathSplitDirBy :: String -> FPath -> Maybe (String,String)
+fpathSplitDirBy byDir fp
+  = do { d      <- fpathMbDir fp
+       ; dstrip <- stripPrefix byDir' d
+       ; return (byDir',filePathUnAbsolute dstrip)
+       }
+  where byDir' = filePathUnPrefix byDir
+
 fpathPrependDir :: String -> FPath -> FPath
 fpathPrependDir "" fp
   = fp
 fpathPrependDir d fp
   = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (d ++ fpathDirSep ++ fd) fp) (fpathMbDir fp)
+
+fpathAppendDir :: FPath -> String -> FPath
+fpathAppendDir fp ""
+  = fp
+fpathAppendDir fp d
+  = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (fd ++ fpathDirSep ++ d) fp) (fpathMbDir fp)
+
+fpathUnPrependDir :: String -> FPath -> FPath
+fpathUnPrependDir d fp
+  = case fpathSplitDirBy d fp of
+      Just (_,d) -> fpathSetDir d fp
+      _          -> fp
 
 fpathRemoveSuff :: FPath -> FPath
 fpathRemoveSuff fp
@@ -114,24 +188,9 @@ splitOnLast splitch fn
                     then maybe (Just ("",fs)) (\(p,s)->Just (f:p,s)) rem
                     else maybe Nothing (\(p,s)->Just (f:p,s)) rem
 
-{-
-mkFPath :: String -> FPath
-mkFPath fn
-  = let (d,b)  = maybe (Nothing,fn) (\(d,b) -> (Just d,b)) (splitOnLast fpathDirSepChar fn)
-        (b',s) = maybe (b,Nothing) (\(b,s) -> (b,Just s)) (splitOnLast '.' b)
-     in FPath d b' s
--}
-
 mkFPathFromDirsFile :: Show s => [s] -> s -> FPath
 mkFPathFromDirsFile dirs f
   = fpathSetDir (concat $ intersperse fpathDirSep $ map show $ dirs) (mkFPath (show f))
-
-fpathSplit :: String -> (String,String)
-fpathSplit fn
-  = let (d,b)  = maybe ("",fn) id (splitOnLast fpathDirSepChar fn)
-        (b',s) = maybe (b,"") id (splitOnLast '.' b)
-        b''    = if null d then b' else d ++ fpathDirSep ++ b'
-     in (b'',s)
 
 mkTopLevelFPath :: String -> String -> FPath
 mkTopLevelFPath suff fn
