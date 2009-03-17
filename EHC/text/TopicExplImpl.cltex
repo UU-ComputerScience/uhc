@@ -624,7 +624,7 @@ elements from a list.
 A definition for |List| has been included; definitions for |Bool|, |filter| and |not| are omitted.
 In this example the class |Eq| also contains |ne| which we will omit in later examples.
 %%[[wrap=code
-%%@[file:eh-frags/9-eq-nub.eh%%]
+%%@[file:text/eh-frags/9-eq-nub.eh%%]
 %%]
 
 Notice that a separate |nubBy|,
@@ -754,7 +754,7 @@ when genericity is implemented using the class system.
 The following example is taken from Hinze \cite{hinze00derive-type-class}:
 
 %%[[wrap=code
-%%@[file:eh-frags/9-snd-order1.eh%%]
+%%@[file:text/eh-frags/9-snd-order1.eh%%]
 %%]
 
 The explicit variant of the computation for |v1| using the explicit parameter passing mechanism reads:

@@ -33,7 +33,7 @@ TEXT_PUB_VARIANTS			= # added to in files1-*.mk, for other public documents
 TEXT_PRIV_VARIANTS			= # added to in files1-*.mk, for private documents
 
 ###########################################################################################
-# all variants, partitioned in its treatment
+# all variants, partitioned according to its treatment
 ###########################################################################################
 
 # through: shuffle + lhs2tex + latex -> pdf

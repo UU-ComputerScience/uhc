@@ -657,7 +657,7 @@ f =   \                    p     q       -> eq (Cons p Nil) q
 \item Useful in class based implementation of generics
 {\small
 %%[[wrap=safecode
-%%@[file:eh-frags/9-snd-order1.eh%%]
+%%@[file:text/eh-frags/9-snd-order1.eh%%]
 %%]
 }
 \end{itemize}
@@ -699,7 +699,7 @@ in   v1
 \item Paper reviewer alternative, what is the difference?
 {\small
 %%[[wrap=safecode
-%%@[file:eh-frags/9-snd-order2.eh%%]
+%%@[file:text/eh-frags/9-snd-order2.eh%%]
 %%]
 }
 \item GHC: option @-fallow-undecidable-instances@

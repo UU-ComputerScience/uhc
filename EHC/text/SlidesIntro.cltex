@@ -536,7 +536,7 @@ infers kind @Eq :: Forall a . a -> a -> *@
 {
 \frametitle{EH version 9: explicit parameter}
 %%[[wrap=safecode
-%%@[file:eh-frags/9-eq-nub.eh%%]
+%%@[file:text/eh-frags/9-eq-nub.eh%%]
 %%]
 }
 

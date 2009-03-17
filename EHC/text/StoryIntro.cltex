@@ -713,7 +713,7 @@ The ninth version (EH version 9, \chapterRef{ehc9})
 adds a class system, and explicit parameter passing to implicit parameters:
 
 %%[[wrap=code
-%%@[file:eh-frags/9-eq-nub.eh%%]
+%%@[file:text/eh-frags/9-eq-nub.eh%%]
 %%]
 
 On top of a class system, we allow instances to be named (1), and passed explicitly (2) when
