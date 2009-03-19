@@ -331,6 +331,12 @@ ehcOptEmitLLVM :: EHCOpts -> Bool
 ehcOptEmitLLVM = targetIsLLVM . ehcOptTarget
 %%]
 
+%%[(8 codegen clr) export(ehcOptEmitCLR)
+-- generate CIL, as .il assembly file
+ehcOptEmitCLR :: EHCOpts -> Bool
+ehcOptEmitCLR = targetIsCLR . ehcOptTarget
+%%]
+
 %%[(8 codegen) export(ehcOptEmitCore)
 -- generate Core
 ehcOptEmitCore :: EHCOpts -> Bool
@@ -662,6 +668,9 @@ ehcCmdLineOpts
                                 Just m | m `elem` ["lexe", "lexec"]
                                              -> o { ehcOptTarget           = Target_FullProgAnal_Grin_LLVM
                                                   }                   
+%%]]
+%%[[(8 codegen clr)
+                                Just "clr"   -> o { ehcOptTarget           = Target_FullProgAnal_Grin_CLR   }
 %%]]
 %%[[(99 hmtyinfer)
                                 Just "dt"    -> o { ehcOptEmitDerivTree    = DerivTreeWay_Final   }

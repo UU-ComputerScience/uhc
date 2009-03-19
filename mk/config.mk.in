@@ -65,3 +65,7 @@ ifeq (@ENABLE_JAVA@,yes)
 ENABLE_JAVA					:= yes
 endif
 
+ifeq (@ENABLE_CLR@,yes)
+ENABLE_CLR					:= yes
+endif
+
