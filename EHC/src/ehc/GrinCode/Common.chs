@@ -17,7 +17,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -185,7 +185,7 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, getHeapLoc, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = ( Array Int AbstractValue   -- env
                , Array Int AbstractValue   -- heap
@@ -231,7 +231,7 @@ absFetch a (HNmNr i _) = case getEnvVar a i of
                              AbsBottom     -> AbsNodes Map.empty
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
-                             AbsNodes _     -> error $ "variable " ++ show i ++ "is a node variable"
+                             AbsNodes _     -> error $ "variable " ++ show i ++ " is a node variable"
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of
