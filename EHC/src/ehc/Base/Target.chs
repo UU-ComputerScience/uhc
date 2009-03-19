@@ -33,7 +33,7 @@ Target_<treatment>_<intermediate-lang>_<codegen-lang>
     - C
     - LLVM
     - JVM
-    - DOTNET
+    - CLR
     - Jazy, Java lazy interpreter
 
 Combinations are all hardcoded to make explicit that only particular combinations are allowed.
@@ -53,8 +53,10 @@ data Target
   | Target_FullProgAnal_Grin_C				-- full program analysis on grin, generating C
   | Target_FullProgAnal_Grin_LLVM			-- full program analysis on grin, generating LLVM
   | Target_FullProgAnal_Grin_JVM			-- full program analysis on grin, generating for Java VM
-  | Target_FullProgAnal_Grin_DOTNET			-- full program analysis on grin, generating for .net
   | Target_Interpreter_Grin_C				-- no full program analysis, grin interpreter, generating C
+%%]]
+%%[[(8 codegen clr)
+  | Target_FullProgAnal_Grin_CLR			-- full program analysis on grin, generating for Common Language Runtime (.NET / Mono)
 %%]]
   deriving (Eq,Ord)
 %%]
@@ -76,8 +78,10 @@ instance Show Target where
   show Target_FullProgAnal_Grin_C			= "C"
   show Target_FullProgAnal_Grin_LLVM		= "llvm"
   show Target_FullProgAnal_Grin_JVM			= "jvm"
-  show Target_FullProgAnal_Grin_DOTNET		= "dotnet"
   show Target_Interpreter_Grin_C			= "bc"
+%%]]
+%%[[(8 codegen clr)
+  show Target_FullProgAnal_Grin_CLR			= "clr"
 %%]]
 %%]
 
@@ -114,6 +118,9 @@ supportedTargetMp :: Map.Map String Target
                     , mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
+%%[[(8 codegen clr)
+                 ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
+%%]]
           ]
         mk t ffis = (t,TargetInfo (FFIWay_Prim : ffis)) 
 
@@ -138,7 +145,9 @@ targetIsFullProgAnal t
       Target_FullProgAnal_Grin_C 		-> True
       Target_FullProgAnal_Grin_LLVM 	-> True
       Target_FullProgAnal_Grin_JVM 		-> True
-      Target_FullProgAnal_Grin_DOTNET 	-> True
+%%]]
+%%[[(8 codegen clr)
+      Target_FullProgAnal_Grin_CLR	 	-> True
 %%]]
       _ 								-> False
 %%]
@@ -219,6 +228,16 @@ targetIsLLVM t
   = case t of
 %%[[(8 codegen grin)
       Target_FullProgAnal_Grin_LLVM 	-> True
+%%]]
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsCLR)
+targetIsCLR :: Target -> Bool
+targetIsCLR t
+  = case t of
+%%[[(8 codegen clr)
+      Target_FullProgAnal_Grin_CLR	 	-> True
 %%]]
       _ 								-> False
 %%]

@@ -672,6 +672,7 @@ javacCmd
 jarCmd
 JAVAC_CMD
 JAR_CMD
+ENABLE_CLR
 ranlibCmd
 RANLIB_CMD
 arCmd
@@ -1336,6 +1337,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
+  --enable-clr            include clr code generation
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2153,6 +2155,16 @@ echo "$as_me: error:
 
 fi
 
+# Check whether --enable-clr was given.
+if test "${enable_clr+set}" = set; then
+  enableval=$enable_clr; enableClr=yes
+else
+  enableClr=no
+fi
+
+ENABLE_CLR=$enableClr
+
+
 ### ar, ranlib, libtool
 
   # Extract the first word of "ranlib", so it can be a program name with args.
@@ -2573,6 +2585,10 @@ HADDOCK_VERSION=$haddockVersion
 
 # GHC version dependencies: packages passed as option, cabal packages
 cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
+if test x$enableClr = "xyes"
+then
+  cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
+fi
 cabal_extra_lib_depends=""
 optCabalAllowUndecidableInstances=UndecidableInstances
 optStandardGHCPackages=""
@@ -7432,6 +7448,7 @@ javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
+ENABLE_CLR!$ENABLE_CLR$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
@@ -7471,7 +7488,6 @@ cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
 llvmAs!$llvmAs$ac_delim
 LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
-llvmOpt!$llvmOpt$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -7513,6 +7529,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+llvmOpt!$llvmOpt$ac_delim
 LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
 llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
@@ -7554,7 +7571,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 39; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 40; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

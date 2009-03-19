@@ -97,6 +97,10 @@
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM.Pretty(prettyLLVMModule)})
 %%]
+%%[(8 codegen clr) hs import(Language.Cil (Assembly (..), cil))
+%%]
+%%[(8 codegen clr) import({%{EH}GrinCode.ToCil(grin2cil)})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
@@ -183,6 +187,13 @@ doCompileGrin input opts
                       ; caWriteLLVM
                       }
                    )
+%%[[(8 codegen clr)
+                ; when (ehcOptEmitCLR options) 
+                  (do { caGrin2Cil
+                      ; caWriteCil ""
+                      }
+                   )
+%%]]
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
 --              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
@@ -196,6 +207,11 @@ initState opts
   = GRINCompileState { gcsGrin       = undefined
                      , gcsSilly      = undefined
                      , gcsLLVM       = undefined
+%%]
+%%[(8 codegen clr)
+                     , gcsCil        = undefined
+%%]
+%%[(8 codegen grin) -1.doCompileGrin
                      , gcsHptMap     = undefined
                      , gcsPath       = emptyFPath
                      , gcsOpts       = opts
@@ -259,6 +275,18 @@ caSilly2LLVM = do
     }
 %%]
 
+%%[(8 codegen clr)
+caGrin2Cil :: CompileAction ()
+caGrin2Cil = do
+    { code <- gets gcsGrin
+    ; hptMap <- gets gcsHptMap
+    ; opts   <- gets gcsOpts
+    ; let cilAst = grin2cil hptMap code opts
+    ; modify (gcsUpdateCil cilAst)
+    }
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Low level compiler actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,7 +307,15 @@ caWriteLLVM  :: CompileAction()
 caWriteLLVM  =
   do { llvm <- gets gcsLLVM
      ; caWriteFile "" "ll" (const prettyLLVMModule) llvm
-     } 
+     }
+
+%%[[(8 codegen clr)
+caWriteCil :: String -> CompileAction()
+caWriteCil extra =
+  do { cilAst <- gets gcsCil
+     ; caWriteFile extra "il" (const (\c -> text (cil c ""))) cilAst
+     }
+%%]]
 
 caWriteGrin :: String -> CompileAction ()
 caWriteGrin extra
@@ -327,6 +363,9 @@ data GRINCompileState = GRINCompileState
     { gcsGrin      :: GrModule
     , gcsSilly     :: SilModule
     , gcsLLVM      :: LLVMModule
+%%[[(8 codegen clr)
+    , gcsCil       :: Assembly
+%%]]
     , gcsHptMap    :: HptMap
     , gcsPath      :: FPath
     , gcsOpts      :: EHCOpts
@@ -335,6 +374,9 @@ data GRINCompileState = GRINCompileState
 gcsUpdateGrin   x s = s { gcsGrin   = x }
 gcsUpdateSilly  x s = s { gcsSilly  = x }
 gcsUpdateLLVM   x s = s { gcsLLVM   = x }
+%%[[(8 codegen clr)
+gcsUpdateCil    x s = s { gcsCil    = x }
+%%]]
 gcsUpdateHptMap x s = s { gcsHptMap = x }
 
 gcsGetCodeHpt

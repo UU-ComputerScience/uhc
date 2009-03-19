@@ -98,6 +98,9 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
+AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
+AC_SUBST(ENABLE_CLR,$enableClr)
+
 ### ar, ranlib, libtool
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
@@ -247,6 +250,10 @@ AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
 cabal_base_lib_depends="base haskell98 mtl fgl directory old-time"
+if test x$enableClr = "xyes"
+then
+  cabal_base_lib_depends="$cabal_base_lib_depends language-cil"
+fi
 cabal_extra_lib_depends=""
 optCabalAllowUndecidableInstances=UndecidableInstances
 optStandardGHCPackages=""

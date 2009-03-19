@@ -54,6 +54,7 @@ GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag
 GrinCode/ToGrinByteCode.cag
+GrinCode/ToCil.cag
 GrinCode/ToSilly.cag
 GrinCode/Trf/ForceEval.cag
 GrinCode/Trf/AliasElim.cag

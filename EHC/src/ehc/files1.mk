@@ -55,6 +55,7 @@ EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_A
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
 													$(addprefix CHR/,Key Constraint Solve) \
+													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore Heuristics CommonCHR RedGraph) \
 													$(addprefix Base/,Opts Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
