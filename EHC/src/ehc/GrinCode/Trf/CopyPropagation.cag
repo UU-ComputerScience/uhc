@@ -135,7 +135,10 @@ testL pat val
 unifyNodes :: [GrVar] -> [GrVal] -> SubstTrafoPair
 unifyNodes []     []      =  (id,id)
 unifyNodes []     xs      =  (id,id)  -- ignore superfluous values
-unifyNodes ps     []      =  error "CopyProp: unify: too many patterns"
+--unifyNodes ps     []      =  error ("CopyProp: unify: too many patterns: " ++ show ps)
+unifyNodes (p:ps) []      =  let (a1,a2) = unifyNodes ps []
+                                 (b1,b2) = unifyVars p GrVal_Empty   -- (GrVal_Var wildcardNr) 
+                             in  (a1 . b1, a2 . b2)
 unifyNodes (p:ps) (x:xs)  =  let (a1,a2) = unifyNodes ps xs 
                                  (b1,b2) = unifyVars p x
                              in  (a1 . b1, a2 . b2)
@@ -174,7 +177,7 @@ getHsName nm subst
       Nothing    -> nm
       Just repl  -> case repl of
                       GrVal_Var v -> v
-                      _           -> nm
+                      _           -> error ("CopyPropagation cannot substitute " ++ show repl)
 
 mbSubstTag nm subst 
   =  case Map.lookup nm subst of
@@ -199,9 +202,20 @@ SEM GrExpr
   | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.subst)
   | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.subst) @offset @mbTag
   | UpdateUnit lhs  .  grTrf  = GrExpr_UpdateUnit (getHsName @nm @lhs.subst) @val.grTrf
+  | Eval       lhs  .  grTrf  = GrExpr_Eval       (getHsName @nm @lhs.subst)
+  | App        lhs  .  grTrf  = GrExpr_App        (getHsName @nm @lhs.subst) @argL.grTrf
 
 SEM GrVar
   | Var        lhs  .  grTrf  = maybe (GrVar_Var @nm) (\t -> GrVar_KnownTag t) (mbSubstTag @nm @lhs.subst)
+
+
+SEM GrValL
+  | Cons       lhs  .  grTrf  = let x = @hd.grTrf
+                                in  if x == GrVal_Empty
+                                    then @tl.grTrf
+                                    else x : @tl.grTrf
+
+
 
 SEM GrBind
   | Bind  expr . subst     = Map.empty

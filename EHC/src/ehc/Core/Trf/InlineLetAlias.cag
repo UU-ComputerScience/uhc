@@ -274,7 +274,7 @@ SEM CBind
 %%[(9 codegen)
 
 ATTR CExpr   [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
-ATTR AllDictMeta   [ bindNmMp: NmMp | | nameS: HsNameS ]
+ATTR AllMetaVal   [ bindNmMp: NmMp | | nameS: HsNameS ]
 
 SEM CBind
   | Bind  bindMeta.bindNmMp  =  @expr.bindNmMp

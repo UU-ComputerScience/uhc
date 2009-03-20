@@ -141,11 +141,12 @@ ATTR GrBind GrGlobal
 
 SEM GrModule
   | Mod  loc   . mainfn   =  if @lhs.numbered then mainNr else hsnMain
-         loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @bindL.genEnv) ) id (Map.lookup @loc.mainfn @bindL.genEnv))
+         -- loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @globalL.genEnv) ) id (Map.lookup @loc.mainfn @globalL.genEnv))
+         loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @loc.bothEnv) ) id (Map.lookup @loc.mainfn @loc.bothEnv))
                . lifeSet  =  Set.fromList @loc.lifeList
          
 SEM GrBind
-  | Bind   lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet
+  | Bind   lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet  ||  @nm == hsnMainFullProg
   | Rec    lhs . life  =  not (null @bindL.grTrf)
 
 SEM GrGlobal

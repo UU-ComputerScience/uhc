@@ -14,7 +14,7 @@ This is done if the tag is statically known, because either
 x is a constant tag, or
 HPT analysis reveals that the list of possible tags for n is singleton.
 
-Otherwise, all but the first fetchfield operations are `floated' to the alternative of a case expression
+Otherwise, all but the first fetchfield operations are 'floated' to the alternative of a case expression
 where the tag \textit{is} known.
 If such a case expression does not follow, the transformation fails.
 
@@ -329,7 +329,8 @@ type RenMap = Map.Map Int HsName
 type RenList = [(Int,HsName)]
 
 getTagName (GrVal_Var v) =  v
-getTagName v             = error $ "getName: value not a variable: '" ++ show v ++ "'"
+getTagName (GrVal_EnumNode v) =  v
+getTagName v             = error $ "getName: value not a variable or EnumNode: '" ++ show v ++ "'"
 
 addFetchInfo ffm Nothing                    = ffm
 addFetchInfo ffm (Just (v, unknownFetches)) = Map.insert v unknownFetches ffm

@@ -90,8 +90,9 @@ TYPE CMetas 	= (CMetaBind,CMetaVal)
 
 DATA CMetaBind
   | Plain		-- by default a binding is Plain
-  | Lam			-- special case of Plain, indicating it is a function
-  | CAF			-- special case of Plain, indicating it is a CAF of nullary Lam
+  | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
+  | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
+  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
 
 DATA CMetaVal
   | Val
@@ -101,8 +102,9 @@ DATA CMetaVal
   | DictInstance  names:  {[Maybe HsName]}
 %%]]
 
-SET AllDictMeta	= CMetaVal CMetas
-SET AllMeta		= AllDictMeta CMetaBind
+SET AllMetaVal	= CMetaVal CMetas
+SET AllMetaBind = CMetaBind CMetas
+SET AllMeta		= CMetaVal CMetaBind CMetas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

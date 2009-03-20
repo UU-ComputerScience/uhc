@@ -384,7 +384,11 @@ a select-equation is generated for each variable in the pattern: the values are 
 SEM GrAlt
   | Alt  lhs . equations  =  case (@pat.patInfo, @lhs.valInfo) of
                                (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
-                               _                               -> error "HPT: Alternative scrutinee must be a variable, pattern a node"
+                               (InNode ttag tnms, InNode stag snms  ) -> if ttag==stag 
+                                                                         then buildUnifyEquations  snms tnms
+                                                                         else []
+                               (_               , InEnum _ _)  -> []
+                               (pat             , val       )  -> error ("HPT: Alternative scrutinee " ++ show val ++ " must be a variable, pattern " ++ show pat ++ " a node")
                              ++ @expr.equations
        
 %%]

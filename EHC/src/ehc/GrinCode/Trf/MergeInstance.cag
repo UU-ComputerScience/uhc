@@ -37,8 +37,7 @@ type ArityMap = Map.Map HsName (Int, [Int])
 
 %%[(9 codegen grin)
 
-ATTR AllBind [ classMap :  {ClassMap}
-               arityMap :  {ArityMap}
+ATTR AllBind [ 
              | 
              | collectClassMap USE {`Map.union`} {Map.empty} : {ClassMap} 
                collectArityMap USE {`Map.union`} {Map.empty} : {ArityMap} 
@@ -47,8 +46,15 @@ ATTR AllBind [ classMap :  {ClassMap}
 ATTR AllBind  [
               |
               | newBinds   USE {++} {[]} : GrBindL
-                newGlobals USE {++} {[]} : GrGlobalL
+                dictInfo   USE {`Map.union`} {Map.empty} : {Map.Map HsName [Maybe HsName]}
               ]
+              
+ATTR AllGlobal [ info   : {Map.Map HsName [Maybe HsName]}
+                 classMap :  {ClassMap}
+                 arityMap :  {ArityMap}
+               | 
+               | 
+               ]
 
 SEM GrBind
   | Bind    lhs.collectClassMap  =  case @annot of
@@ -60,35 +66,39 @@ SEM GrBind
                                       GrBindAnnInstance _    -> Map.empty
                                       _                      -> Map.singleton @nm (length @argNmL            , [] )
 
-SEM GrModule
-  | Mod     bindL.classMap = @bindL.collectClassMap
-            bindL.arityMap = @bindL.collectArityMap
-  
 
 SEM GrModule
-  | Mod    lhs.grTrf  = GrModule_Mod @moduleNm
-                                     (@bindL.newGlobals ++ @globalL.grTrf)
-                                     @bindL.newBinds
-                                     @ctagsMp
-
+  | Mod    globalL.info   = @bindL.dictInfo 
+           globalL.classMap = @bindL.collectClassMap
+           globalL.arityMap = @bindL.collectArityMap
+           
 SEM GrBind
   | Bind    (lhs.newBinds
-            ,lhs.newGlobals)  =  case @annot of
-                                   GrBindAnnInstance ( Just tagNm
-                                                     : Just classNm 
-                                                     : funDefs
-                                                     )    -> let dfltDefs = Map.findWithDefault (error "class not found") classNm @lhs.classMap
-                                                                 arity  = length funDefs
-                                                                 tagAnn = GrTagAnn arity arity
-                                                                 tag    = GrTag_Con tagAnn 0 tagNm
-                                                                 pairs  = mergeFields fields @lhs.arityMap @nm funDefs dfltDefs
-                                                                 fields = [ v | (v, _     ) <- pairs ]
-                                                                 globs  = [ g | (_, Just g) <- pairs ]
-                                                                 value  = GrVal_Node tag fields
-                                                                 glob   = GrGlobal_Global @nm value
-                                                             in  ([],globs++[glob])
-                                   _ -> ([@loc.grTrf], [])
+            ,lhs.dictInfo )     =  case @annot of
+                                     GrBindAnnInstance xs  -> ([], Map.singleton @nm xs)
+                                     _                     -> ([@loc.grTrf], Map.empty)
   | Rec     lhs.newBinds = [GrBind_Rec @bindL.newBinds]
+
+SEM GrGlobalL
+  | Cons     lhs.grTrf  =  case @hd.grTrf of
+                             GrGlobal_Global nm1 (GrVal_Node (GrTag_Fun nm2) []) 
+                                -> maybe @loc.grTrf
+                                         (\(Just tagNm : Just classNm : funDefs)
+                                             ->                let dfltDefs = Map.findWithDefault (error "class not found") classNm @lhs.classMap
+                                                                   arity  = length funDefs
+                                                                   tagAnn = GrTagAnn arity arity
+                                                                   tag    = GrTag_Con tagAnn 0 tagNm
+                                                                   pairs  = mergeFields fields @lhs.arityMap nm1 funDefs dfltDefs
+                                                                   fields = [ v | (v, _     ) <- pairs ]
+                                                                   globs  = [ g | (_, Just g) <- pairs ]
+                                                                   value  = GrVal_Node tag fields
+                                                                   glob   = GrGlobal_Global nm1 value
+                                                               in  ( globs ++ [glob] ++ @tl.grTrf)
+                                         )
+                                         (Map.lookup nm2 @lhs.info)                 
+                             _ -> @loc.grTrf
+
+
 
 %%]
 

@@ -68,7 +68,9 @@ SEM GrAlt
   | Alt      lhs.isPossible     =  @pat.tag `elem` @lhs.possibleTags
 
 SEM GrExpr
-  | Case     altL.possibleTags  =  getTags (getEnvVar @lhs.hptMap @val.varId)
+  | Case     altL.possibleTags  =  case @val.varId of
+                                     Left n -> getTags (getEnvVar @lhs.hptMap n)
+                                     Right t -> [t]
 
 -- remove the impossible alternatives
 SEM GrAltL
@@ -79,7 +81,7 @@ SEM GrAltL
 
 %%[(8 codegen grin)
 ATTR GrPatAlt [ | | tag: GrTag ]
-ATTR GrVal    [ | | varId: Int ]
+ATTR GrVal    [ | | varId: {Either Int GrTag} ]
 
 SEM GrPatAlt 
   | Tag 
@@ -88,6 +90,8 @@ SEM GrPatAlt
 
 
 SEM GrVal
-  | Var            lhs.varId  =  getNr @nm
-  | * - Var        lhs.varId  =  error "ImpossibleCase: not a simple variable as scrutinizer"
+  | Var EnumNode       lhs.varId  =  Left (getNr @nm)
+  | Tag Node           lhs.varId  =  Right @tag.grTrf
+  | * - Var Tag 
+        Node EnumNode  lhs.varId  =  error ("ImpossibleCase: not a simple variable as scrutinizer: " ++ show @loc.grTrf)
 %%]

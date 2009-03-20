@@ -11,7 +11,7 @@
 %%% Level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Level is not defined for CExpr_Let, as the lexical level is assigned differently for various AG's
+Level is not defined for CExpr_Let, as the lexical level is assigned differently for various AGs
 
 %%[(8 codegen)
 ATTR AllCodeNT [ lev: Int | | ]

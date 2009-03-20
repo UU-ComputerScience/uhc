@@ -41,7 +41,7 @@ ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF ]
 
 -- Find out wheter there is only a single alternative in a list:
-ATTR AllAlt [ | | onlyAlt : {Maybe (GrPatLam,GrExpr)} ]
+ATTR AllAlt [ | | onlyAlt : {Maybe (Maybe GrPatLam,GrExpr)} ]
 
 SEM GrAlt
   | Alt     lhs.onlyAlt  =  Just (@pat.lamPat, @expr.grTrf)
@@ -60,15 +60,18 @@ SEM GrAltL
   | Cons    lhs.isEmpty  =  False  
 
 -- Auxiliary: translate a PatAlt to a PatLam
-ATTR GrPatAlt [ | | lamPat : GrPatLam ]
+ATTR GrPatAlt [ | | lamPat : {Maybe GrPatLam} ]
 
 SEM GrPatAlt
-  | Node     lhs . lamPat    = GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL)
-  | * - Node lhs . lamPat    = error "SingleCase: lamPat of non-Node"
+  | Node         lhs . lamPat    = Just (GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL))
+  | Tag          lhs . lamPat    = Nothing
+  | * - Node Tag lhs . lamPat    = error ("SingleCase: lamPat of non-Node " ++ show @loc.grTrf)
 
 -- Do the replacement if possible
 SEM GrExpr
   | Case  lhs.grTrf      =  maybe @loc.grTrf
-                                  (\(p,e) -> GrExpr_Seq (GrExpr_Unit @val.grTrf) p e)
+                                  (\(p,e) -> case p of
+                                               Nothing   -> e
+                                               Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e)
                                   @altL.onlyAlt
 %%]

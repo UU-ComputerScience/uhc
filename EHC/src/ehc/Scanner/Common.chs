@@ -241,7 +241,7 @@ coreScanOpts
                                         [ "let", "in", "case", "of", "rec", "foreign", "uniq"
                                         , "Int", "Char", "String", "Tag", "Rec"
                                         , "module", "default"
-                                        , "BINDPLAIN", "BINDLAM", "BINDCAF"
+                                        , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
                                         , "VAL"
 %%[[9
                                         , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"

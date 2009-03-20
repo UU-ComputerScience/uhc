@@ -217,7 +217,9 @@ SEM Constant
 SEM Variable
   | Global
     Local
-    Param       lhs.prettyC   = text (hsnShowAlphanumeric @name)
+    Param       lhs.prettyC   = case @name of 
+                                  HNmNr _ OrigNone -> text "0"
+                                  _                -> text (hsnShowAlphanumeric @name)
                 lhs.prettyPtr = "((Pointer)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"

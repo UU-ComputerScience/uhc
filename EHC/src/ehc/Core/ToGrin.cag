@@ -4,7 +4,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to Code's GRIN gen
+%%% Haskell importable interface for toGrin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
@@ -71,7 +71,7 @@ SEM CPat
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level, Let's also one level higher
+%%% Level, let also one level higher
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
@@ -83,7 +83,7 @@ SEM CExpr
 %%% Context: evaluation context (to replace isStrict)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-not used yet as it seems not to be equivalent to isStrict. Can't find out why...
+not used yet as it seems not to be equivalent to isStrict. Cannot find out why...
 
 %%[(8 codegen)
 %%]
@@ -196,9 +196,10 @@ SEM CModule
                                                        ( @allFPTags ++ (Map.toList $ arityMpFilterCaf @expr.gathArityMp) )
 
                 lhs         .   grMod       =   GrModule_Mod @moduleNm
-                                                    [] -- TODO: this should contain all the caf variables
-                                                    @expr.grBindL
-                                                    @constrsMp
+                                                             @expr.grGlobalL
+                                                             @expr.grBindL
+                                                             @constrsMp
+
     
 %%]
 
@@ -312,7 +313,9 @@ mkVarBinds            bindL rest  = foldr mkVarBind           rest bindL
 
 %%[(8 codegen grin)
 ATTR CExpr   [ | | grExpr: GrExpr ]
-ATTR CExpr   [ | | grBindL USE {++} {[]}: GrBindL ]
+ATTR CExpr   [ | | grBindL   USE {++} {[]}: GrBindL 
+                   grGlobalL USE {++} {[]}: GrGlobalL 
+             ]
 
 SEM CExpr
   | Let         (loc.grExpr,lhs.grBindL)    =   if @isGlobal
@@ -448,14 +451,17 @@ SEM CAlt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR CBind CBindL  [ | | grBindL USE {++} {[]}: GrBindL ]
+ATTR CBind CBindL  [ | | grBindL   USE {++} {[]}: GrBindL 
+                         grGlobalL USE {++} {[]}: GrGlobalL 
+                   ]
 
 SEM CBind
-  | Bind        lhs         .   grBindL     =   [GrBind_Bind @nm 
-                                                             @bindMeta.grBindAnn 
-                                                             @expr.grLamArgL 
-                                                             @expr.grLamBody
-                                                ]
+  | Bind        (lhs.grBindL, lhs.grGlobalL)=   if   @bindMeta.isApply0
+                                                then let nm2 = case @expr.whatBelow of
+                                                                 ExprIsVar n -> n
+                                                                 _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
+                                                     in  ( [], [GrGlobal_Global @nm (GrVal_Node (GrTag_Fun nm2) [])] )
+                                                else ( [GrBind_Bind @nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
                 bindMeta    .   lamArgDicts =   @expr.lamArgDicts
 
 %%]
@@ -488,7 +494,7 @@ SEM CBind
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mbTagL ty           = case dataGamTagsOfTy ty @lhs.dataGam of
-                                                                             Just ts        -> Just [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]
+                                                                             Just ts        -> Just [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]   -- '
                                                                              _ | tyIsVar ty -> Just [ GrTag_Any ]
                                                                                | otherwise  -> Nothing
                                                      isOpaqueTagL mbTagL = null (maybe [] id mbTagL)
@@ -726,8 +732,8 @@ SEM CExpr
 
 
 %%[(8 codegen grin)
-ATTR AllDictMeta [ lamArgDicts: {[Int]} | | ]
-ATTR AllDictMeta [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
+ATTR AllMetaVal [ lamArgDicts: {[Int]} | | ]
+ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
 
 SEM CMetaVal
   | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
@@ -742,6 +748,14 @@ SEM CMetaVal
   | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @names
                  lhs          .   argDicts    =  []
 %%]]
+
+ATTR AllMetaBind [ | | isApply0 : Bool ]
+
+SEM CMetaBind
+  | Apply0       lhs . isApply0  =  True
+  | * - Apply0   lhs . isApply0  =  False
+
+
 
 -- The synthesized attribute grBindAnn is only needed for CMetaVal's occuring in a CBind_Bind,
 -- not for CMetaVal's occuring in a CExpr_Lam.

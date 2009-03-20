@@ -283,7 +283,7 @@ SEM GrExpr
 
 SEM GrVal
   | Var      lhs.grTrf  =  maybe @loc.grTrf
-                                 (\b -> if b then GrVal_Var @nm else GrVal_Empty)
+                                 (\b -> if b then GrVal_Var @nm else GrVal_LitInt 0) -- GrVal_Empty)
                                  @lhs.mbBit
   | VarNode  fldL.mbBits = @lhs.mbBits
   | Node     fldL.mbBits = maybe Nothing

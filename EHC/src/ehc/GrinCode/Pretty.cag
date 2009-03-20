@@ -113,6 +113,7 @@ ppGrBindAnn _      GrBindAnnNormal            = pp ""
 ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlysCommasWith ppInt xs
+ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
 ppMbGrNm ppGrNm = maybe (ppGrNm (HNm "_")) ppGrNm
@@ -178,7 +179,7 @@ SEM GrExpr
                                                     indent 2 (ppCurlysSemisV $ reverse @altL.ppL)
 %%]]
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
-  | Call        lhs         .   pp          =   ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
+  | Call        lhs         .   pp          =   "call"  >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
 %%[[8
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : @argL.ppL)
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm

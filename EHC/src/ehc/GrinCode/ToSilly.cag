@@ -327,7 +327,8 @@ SEM GrGlobal
 SEM GrVal
  | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
  | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
- | Var     loc.value  = Value_Var (mkVar @nm)
+ | Var
+   EnumNode loc.value = Value_Var (mkVar @nm)
            lhs.value  = @loc.value
            lhs.values = [@loc.value]
  | Tag     lhs.value  = @tag.value
@@ -343,7 +344,7 @@ SEM GrVal
                             
  | BasicNode  lhs.values = [@tag.value, Value_Var (mkVar @nm)]
  | OpaqueNode lhs.values = [Value_Con (Constant_Alias "UNBOXED"), Value_Var (mkVar @nm)]
- | EnumNode   lhs.values = [Value_Var (mkVar @nm)]
+-- | EnumNode   lhs.values = [Value_Var (mkVar @nm)]
  | Tag        lhs.values = [@tag.value]
 
  | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
@@ -354,7 +355,7 @@ SEM GrVal
  -- | Tag        lhs.values = error ("ToSilly: Tag values" ++ show @tag.value)
 
  | BasicNode  lhs.value  = error "ToSilly: BasicNode value"
- | EnumNode   lhs.value  = error "ToSilly: EnumNode value"
+-- | EnumNode   lhs.value  = error "ToSilly: EnumNode value"
  | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
  | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
 -- | Empty      lhs.value  = error "ToSilly: Empty value"
