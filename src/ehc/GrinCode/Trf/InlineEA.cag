@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
 Eliminate Grin \textit{App} and \textit{Eval} expressions 
-by inlining equivalent code, based on full-program `PointsTo' analysis.
+by inlining equivalent code, based on full-program "PointsTo" analysis.
 
 Requires FlattenSeq to be the next transformation.
 Inspects the HPT table and updates it for introduced fresh variables.
@@ -38,7 +38,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map )
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..))})
 %%]
@@ -138,8 +138,18 @@ SEM GrAGItf
 
 
 SEM GrExpr
-  | Eval  loc.(unique, newItems, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm (if @lhs.doUsageAnalysis then (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate) else True)
+  | Eval  loc.(unique, newItems, grTrf)  =  evalCode  @lhs.unique @lhs.hptMap @nm @lhs.dest (if @lhs.doUsageAnalysis then (Map.findWithDefault True (getNr @nm) @lhs.needsUpdate) else True)
   | App   loc.(unique, newItems, grTrf)  =  applyCode @lhs.unique @lhs.hptMap @nm (getEnvVar @lhs.hptMap (getNr @nm)) @argL.grTrf
+
+
+ATTR GrExpr GrAltL GrAlt [ dest : GrPatLam | | ]
+
+SEM GrBind
+  | Bind  expr.dest = GrPatLam_Empty
+  
+SEM GrExpr
+  | Seq   expr.dest = @pat.grTrf
+          body.dest = @lhs.dest
 
 %%]
 
@@ -220,13 +230,14 @@ evalCode
  :: Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     HsName                       ->      -- locatName
+    GrPatLam                     ->      -- dest
     Bool                         ->      -- locatNeedsUpdate
     ( Int                                -- updated unique
     , HptItems                           -- newItems
     , GrExpr                             -- generated code
     )
 
-evalCode unique hptMap locatName locatNeedsUpdate
+evalCode unique hptMap locatName dest locatNeedsUpdate
  = let -- get the abstract value for the original location
        nodeAbsVal    = absFetch hptMap locatName
        -- create new name for the fetched node
@@ -235,11 +246,24 @@ evalCode unique hptMap locatName locatNeedsUpdate
        nodePat       = GrPatLam_Var nodeName
        nodeVal       = GrVal_Var    nodeName
        -- we must generate code for all possible nodes, as found in the abstract value
-       nodes         = getNodes nodeAbsVal
+       nodes         = filter (hasExpectedResultTag dest hptMap) (getNodes nodeAbsVal)
        codeHead      = GrExpr_Seq (GrExpr_FetchNode locatName) nodePat . GrExpr_Case nodeVal
        
        (unique3, newItems3, expr) = makeCaseExpression codeHead (buildEvalAlt locatName locatNeedsUpdate nodeName) unique2 hptMap nodes
    in  (unique3, newItems2++newItems3, expr)
+
+
+isBasicTag (GrTag_Con _ _ nm) = nm==hsnInt || nm==hsnChar || nm==hsnPackedString
+isBasicTag _                  = False
+
+hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[AbstractValue]) -> Bool
+hasExpectedResultTag (GrPatLam_BasicNode _ _) hptMap (tag,args) 
+  = case unevaluatedName tag of
+      Nothing         -> isBasicTag tag
+      Just functName  -> let nodes = getNodes (getEnvVar hptMap (getNr functName))
+                             tags  = map fst nodes
+                         in  any isBasicTag tags
+hasExpectedResultTag _ _ _ = True
 
 %%]
 

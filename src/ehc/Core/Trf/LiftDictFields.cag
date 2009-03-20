@@ -76,8 +76,8 @@ SEM CExpr
 
 -- find out which bindings are needed
 
-ATTR AllDictMeta [  | | lifteeSet : {Set.Set HsName} ]
-ATTR AllDictMeta [  | | isDict : {Bool}
+ATTR AllMetaVal  [  | | lifteeSet : {Set.Set HsName} ]
+ATTR AllMetaVal  [  | | isDict : {Bool}
                         isDictInst : {Bool} 
                         mbPos  : {Maybe Int}         ]
 

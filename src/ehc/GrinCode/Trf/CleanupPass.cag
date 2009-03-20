@@ -1,9 +1,8 @@
 %%[doesWhat doclatex
 
-Clean up the Grin program in three ways:
+Clean up the Grin program in two ways:
 instead of P/0 tags, use F tags;
 do not delay constructorfunctions: instead of F/Con, use C/Con;
-generate a global variable for each parameterless function.
 
 %%]
 
@@ -64,29 +63,3 @@ dontDelayConstructors ctagMap nm
           (Map.lookup nm ctagMap)
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Add Global variables %%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Introduce global variables: each function without arguments (or Constant Applicative Form)
-must have a corresponding global variable.
-When the global variable is evaluated, the function is called,
-and the variable overwritten with the result, so that it needs never be called again.
-
-%%[(8 codegen grin)
-ATTR AllBind   [ | | newGlobals USE {++} {[]}: GrGlobalL ]
-
--- create a new global for each parameterless function
-SEM GrBind
-  | Bind lhs.newGlobals   =  if   null @argNmL 
-                             then [GrGlobal_Global @nm (GrVal_Node (dontDelayConstructors @lhs.ctagMap @nm) [])]
-                             else []
-
--- insert the new global variables in the module
-SEM GrModule
-  | Mod  lhs.grTrf  =  GrModule_Mod @moduleNm 
-                                    (@globalL.grTrf ++ @bindL.newGlobals)
-                                    @bindL.grTrf 
-                                    @ctagsMp
-
-%%]

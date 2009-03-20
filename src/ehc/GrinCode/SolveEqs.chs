@@ -196,9 +196,9 @@ solveEquations :: Int -> Int -> Equations -> HeapEquations -> Limitations -> (In
 solveEquations lenEnv lenHeap eqs1 eqs2 lims =
     runST (
     do { 
-       -- ; trace (unlines ("EQUATIONS"     : map show eqs1)) $ return ()
-       -- ; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
-       -- ; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
+       --; trace (unlines ("EQUATIONS"     : map show eqs1)) $ return ()
+       --; trace (unlines ("HEAPEQUATIONS" : map show eqs2)) $ return ()
+       --; trace (unlines ("LIMITATIONS"   : map show lims)) $ return ()
 
        -- create arrays
        ; env     <- newArray (0, lenEnv   - 1) AbsBottom
@@ -220,13 +220,13 @@ solveEquations lenEnv lenHeap eqs1 eqs2 lims =
              procHeap equat
                 = do
                   { 
-                  --  _ <- trace ("hpequ " ++ show equat) (return ())
+                  --   _ <- trace ("hpequ " ++ show equat) (return ())
                   -- ; ah <- getAssocs heap
                   -- ; ae  <- getAssocs env
                   -- ; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
                   -- ; _ <- trace (unlines ("HEAPSOLUTION"  : map show (ah))) $ return ()
                   ; cs <- heapChange equat env
-                  --; _ <- trace ("hpchs " ++ show cs) (return ())
+                  -- ; _ <- trace ("hpchs " ++ show cs) (return ())
                   ; b  <- procChange heap cs
                   ; return b
                   }

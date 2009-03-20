@@ -108,8 +108,9 @@ pCMetasOpt
 pCMetaBind :: CParser CMetaBind
 pCMetaBind
   =   CMetaBind_Plain       <$ pKeyTk "BINDPLAIN"
-  <|> CMetaBind_Lam         <$ pKeyTk "BINDLAM"
-  <|> CMetaBind_CAF         <$ pKeyTk "BINDCAF"
+  <|> CMetaBind_Function0   <$ pKeyTk "BINDFUNCTION0"
+  <|> CMetaBind_Function1   <$ pKeyTk "BINDFUNCTION1"
+  <|> CMetaBind_Apply0      <$ pKeyTk "BINDAPPLY0"
 
 pCMetaVal :: CParser CMetaVal
 pCMetaVal

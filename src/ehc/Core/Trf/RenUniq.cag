@@ -117,8 +117,8 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 %%[(9 codegen)
 ATTR CExpr 
      AllAlt 
-     AllBind   [ protectedBindingNames : {[HsName]} | | ]
-ATTR AllDictMeta   [ | | protectableBindingNames : {[HsName]} ]
+     AllBind    [ protectedBindingNames : {[HsName]} | | ]
+ATTR AllMetaVal [ | | protectableBindingNames : {[HsName]} ]
 %%]
 
 %%[(8 codegen)

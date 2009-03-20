@@ -233,8 +233,9 @@ SEM CMetas
 
 SEM CMetaBind
   | Plain       loc         .   pp          =   pp "BINDPLAIN"
-  | Lam         loc         .   pp          =   pp "BINDLAM"
-  | CAF         loc         .   pp          =   pp "BINDCAF"
+  | Function0   loc         .   pp          =   pp "BINDFUNCTION0"
+  | Function1   loc         .   pp          =   pp "BINDFUNCTION1"
+  | Apply0      loc         .   pp          =   pp "BINDAPPLY0"
 
 SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"

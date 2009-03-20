@@ -97,8 +97,12 @@ SEM GrExpr
                                (do
                                 { f <- @expr.storedSelectedFunction
                                 ; (ps,pat,rest) <- @body.seqStoredApplyRest
-                                ; let (Just (GrVal_Node (GrTag_PApp i g) qs)) = Map.lookup f @lhs.allGlobs
                                 ; let j = length ps
+                                ; let node = Map.findWithDefault (error (show f ++ " not found in " ++ show @lhs.allGlobs)) f @lhs.allGlobs
+                                ; let node2 = case node of (GrVal_Node (GrTag_PApp i g) qs) -> node
+                                                           (GrVal_Node (GrTag_Fun f)    qs) -> GrVal_Node (GrTag_PApp 0 f) qs
+                                                           _                                -> error (show f ++ " is not a PApp but a " ++ show node ++ " while pat is " ++ show pat)
+                                ; let (GrVal_Node (GrTag_PApp i g) qs) = node2
                                 ; let args = qs ++ ps
                                 ; if j>i
                                   then Nothing  -- TODO: add optimisation for oversaturated case

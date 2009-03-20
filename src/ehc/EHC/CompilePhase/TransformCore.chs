@@ -27,7 +27,7 @@ Core transformations
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.LamGlobalAsArg}, {%{EH}Core.Trf.CAFGlobalAsArg}, {%{EH}Core.Trf.FloatToGlobal}, {%{EH}Core.Trf.ConstProp})
 %%]
-%%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp})
+%%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp}, {%{EH}Core.Trf.FindNullaries})
 %%]
 %%[(9 codegen) import({%{EH}Core.Trf.LiftDictFields})
 %%]
@@ -60,6 +60,9 @@ cpCore1Trf modNm trfNm
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
+                              "CFN"     -> if   ehcOptFullProgAnalysis opts
+                                           then cmodTrfFindNullaries
+                                           else id
 %%[[9
                               "CLDF"    -> if   ehcOptFullProgAnalysis opts
                                            then cmodTrfLiftDictFields

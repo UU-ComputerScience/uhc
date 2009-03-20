@@ -676,6 +676,7 @@ cpProcessCoreBasic modNm
 %%[[8_2        
                        , "CPRNM"
 %%]]
+                       , "CFN"
                        ]
                      )
                , when (ehcOptEmitCore opts) (cpOutputCore "core" modNm)

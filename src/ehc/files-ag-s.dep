@@ -42,6 +42,7 @@ Core/Trf/FullLazy.cag
 Core/Trf/InlineLetAlias.cag
 Core/Trf/LamGlobalAsArg.cag
 Core/Trf/CAFGlobalAsArg.cag
+Core/Trf/FindNullaries.cag
 Core/Trf/FloatToGlobal.cag
 Core/Trf/LiftDictFields.cag
 Core/Trf/LetUnrec.cag
@@ -87,6 +88,7 @@ GrinCode/Trf/NormForHPT.cag
 GrinCode/Trf/NumberIdents.cag
 GrinCode/Trf/PrettyVarNames.cag
 GrinCode/Trf/SetGrinInvariant.cag
+GrinCode/Trf/SimpleNullary.cag
 GrinCode/Trf/SingleCase.cag
 GrinCode/Trf/SpecConst.cag
 GrinCode/Trf/SplitFetch.cag

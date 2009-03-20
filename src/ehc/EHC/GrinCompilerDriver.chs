@@ -23,6 +23,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
 %%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
@@ -129,7 +131,8 @@ doCompileGrin input opts
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
 %%]]
-         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115-cleaned"
+         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115b-cleaned"
+         ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin "-115c-simpleNullary"
 %%[[97
          ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
 %%]]
@@ -138,24 +141,58 @@ doCompileGrin input opts
          ; transformCodeInline                      "Inline" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
 
-         -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-120-specConst"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
 
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-123-evalstored"
-         ; transformCode         applyUnited        "ApplyUnited"      ; caWriteGrin "-124-applyUnited"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-125-unusedExprDropped"
-         
-         -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-126-specConst"
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-123a-evalstored"
+         ; transformCode         applyUnited        "ApplyUnited"      
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-123b-applyUnited"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-123c-unusedExprDropped"
+         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-123d-specConst"
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-123e-after-cp"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-123f-singleCase"
+
+
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-124a-evalstored"
+         ; transformCode         applyUnited        "ApplyUnited"      
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124b-applyUnited"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-124c-unusedExprDropped"
+         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-124d-specConst"
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-124e-after-cp"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124f-singleCase"
+{-
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-125a-evalstored"
+         ; transformCode         applyUnited        "ApplyUnited"      
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-125b-applyUnited"
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-125c-unusedExprDropped"
+         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-125d-specConst"
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-125e-after-cp"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-125f-singleCase"
+-}
+
+         ; transformCode         (dropUnreachableBindings False) 
+                                             "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
+
+
+         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-128-invariant"
+         ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+
          
          ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
                                                     "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
+
+         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-132-possibleCase"
+
+
          --; transformCodeUseHpt   dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
@@ -164,12 +201,18 @@ doCompileGrin input opts
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
+         ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-142-emptyAlts"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
+         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-163-singleCase"
+
+
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
          ; transformCodeChgHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"

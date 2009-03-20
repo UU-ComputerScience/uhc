@@ -98,15 +98,17 @@ SEM Statement
                 dest2.multi = 1
 
 -- In each assignment, insert the RHS in the environment for possible later inlining
+-- but remove environment-entries of which the RHS is isomorphic to the current LHS
 
 SEM Statement
-  | Assignment  lhs.env   =  if @source.isntCall
-                                && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
-                                                 (Map.lookup @dest.self @lhs.allUseMap)
-                                                 (isSimpleValue @source.trf)
-                             then Map.insert @dest.self @source.trf @lhs.env 
-                             else @lhs.env
-  | Assignment2 lhs.env   =  let env2 = Map.filter (notSame @dest2.trf) @lhs.env
+  | Assignment  lhs.env   =  let env2 = Map.filter (notSame @dest.trf) @lhs.env
+                             in  if @source.isntCall
+                                    && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
+                                                     (Map.lookup @dest.self @lhs.allUseMap)
+                                                     (isSimpleValue @source.trf)
+                                 then Map.insert @dest.self @source.trf env2 
+                                 else env2
+  | Assignment2 lhs.env   =  let env2 = Map.filter (notSame @dest1.trf) (Map.filter (notSame @dest2.trf) @lhs.env)  -- not really needed to check against dest1, because it is currently always simple variable, that was thus not assigned to elsewhere. But let's be safe.
                              in  if @source.isntCall
                                     && virtualizable (Map.lookup @dest1.self @lhs.allDefMap)
                                                      (Map.lookup @dest1.self @lhs.allUseMap)
