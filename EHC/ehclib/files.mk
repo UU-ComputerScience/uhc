@@ -52,6 +52,7 @@ EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
 											$(patsubst %,System/%.hs,IO/Unsafe) \
+											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
@@ -100,6 +101,7 @@ EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_V
 EHCLIB_HS_ALL_SRC_HS					:= $(foreach suff,hs lhs, \
 											$(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.$(suff) \
 											           $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.$(suff) \
+											           $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*/*.$(suff) \
 											 ) \
 											)
 EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_HS_ALL_SRC_HS))

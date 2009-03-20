@@ -5,19 +5,19 @@ can be encoded directyl in the global variable that applies them.
 
 %%]
 
-%%[(9 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(9 codegen grin).wrapper
+%%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
 
-%%[(9 codegen grin) hs module {%{EH}GrinCode.Trf.SimpleNullary} import(qualified Data.Map as Map)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SimpleNullary} import(qualified Data.Map as Map)
 %%]
-%%[(9 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
 
 simpleNullary :: GrModule -> GrModule
 simpleNullary code
@@ -27,13 +27,13 @@ simpleNullary code
 
 %%]
 
-%%[(9 codegen grin)
+%%[(8 codegen grin)
 ATTR GrAGItf [ | | grTrf: GrModule ]
 ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 
-%%[(9 codegen grin)
+%%[(8 codegen grin)
 
 ATTR AllBind  [ | | info   USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
               

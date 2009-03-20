@@ -9,6 +9,8 @@ module EH.Util.ParseUtils
   
   , pAnyFromMap, pAnyKey
   , pMaybe, pMb
+  
+  , pDo
   )
   where
 
@@ -97,6 +99,51 @@ parseOffsideToResMsgsStopAtErr
      -> (a, [Message (OffsideSymbol s) p])
 parseOffsideToResMsgsStopAtErr p inp
   = toOffsideResMsgs (parseOffsideStopAtErr p inp)
+
+-------------------------------------------------------------------------
+-- Offside for 'do' notation.
+-- Problem tackled here is that both do statements and the last expr may start with 'let x=e',
+-- and the presence of 'in e' following 'let x=e' indicates that it is the last statement.
+-- This is a variation of pBlock1.
+-------------------------------------------------------------------------
+
+pDo :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
+       => OffsideParser i o s p x 
+       -> OffsideParser i o s p y 
+       -> OffsideParser i o s p z 
+       -> OffsideParser i o s p a 
+       -> OffsideParser i o s p (Maybe last -> a)
+       -> OffsideParser i o s p last 
+       -> OffsideParser i o s p [a]
+pDo open sep close pPlain pLastPrefix pLastRest
+  = pOffside open close explicit implicit
+  where sep'    = () <$ sep
+        elems s = sep0 *> es <* sep0
+                where es =   (:) <$> pPlain <*> esTail
+                         <|> (pLastPrefix
+                              <**> (   (\r pre -> [pre (Just r)]) <$> pLastRest
+                                   <|> (\tl pre -> pre Nothing : tl) <$> esTail
+                                   )
+                             )
+                      esTail = pList1 s *> es <|> pSucceed []
+                      sep0 = pList s
+        explicit = elems sep'
+        implicit = elems (sep' <|> pSeparator)
+
+{-
+pBlock1 :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
+       => OffsideParser i o s p x 
+       -> OffsideParser i o s p y 
+       -> OffsideParser i o s p z 
+       -> OffsideParser i o s p a 
+       -> OffsideParser i o s p [a]
+pBlock1 open sep close p =  pOffside open close explicit implicit
+ where sep'    = () <$ sep
+       elems s = pList s *> pList1Sep (pList1 s) p <* pList s
+       explicit = elems sep'
+       implicit = elems (sep' <|> pSeparator)
+
+-}
 
 -------------------------------------------------------------------------
 -- Misc combinators

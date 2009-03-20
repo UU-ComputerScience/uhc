@@ -374,6 +374,7 @@ scanHandle opts fn fh
 %%[1.offsideScanHandle
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
+        -- ;  putStrLn (" tokens: " ++ show tokens)
         ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
         }
   where   moduleT   = reserved (scoOffsideModule scanOpts) noPos

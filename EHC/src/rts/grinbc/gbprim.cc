@@ -229,48 +229,6 @@ PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Int
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-IntLikeArithPrimsCode(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-%%]
-
-%%[8
-PRIM GB_NodePtr gb_primQuotRemInt( GB_Int x, GB_Int y )
-{
-	GB_NodePtr n ;
-	GB_Int q = x / y ;
-	GB_Int r = x % y ;
-  	// printf( "gb_primQuotRemInt %d %d %d %d\n", x, y, q, r ) ;
-	GB_MkTupNode2_In(n,GB_Int2GBInt(q),GB_Int2GBInt(r)) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDivModInt( GB_Int x, GB_Int y )
-{
-	GB_NodePtr n ;
-	GB_MkTupNode2_In(n, GB_Int2GBInt( gb_primDivInt(x,y) ), GB_Int2GBInt( gb_primModInt(x,y) )) ;
-	return n ;
-}
-
-%%]
-
-%%[95
-PRIM GB_Word gb_primMaxInt()
-{
-  	// return GB_Int2GBInt(Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-  	return (Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-}
-
-PRIM GB_Word gb_primMinInt()
-{
-  	// return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-  	return (Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-}
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Double/Float
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -655,18 +613,129 @@ PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
 #endif
 %%]
 
+%%[99
+PRIM GB_NodePtr gb_primAndInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_And_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primOrInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Or_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primXorInteger( GB_NodePtr x, GB_NodePtr y )
+{
+	GB_NodePtr n ;
+	GB_Integer_Xor_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primComplementInteger( GB_NodePtr x )
+{
+	GB_NodePtr n ;
+	GB_Integer_Complement_In(n,x) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primShiftLeftInteger( GB_NodePtr x, GB_Word y )
+{
+	GB_NodePtr n ;
+	GB_Integer_ShiftLeft_In(n,x,y) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primShiftRightInteger( GB_NodePtr x, GB_Word y )
+{
+	GB_NodePtr n ;
+	GB_Integer_ShiftRight_In(n,x,y) ;	// with sign extend
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primRotateLeftInteger( GB_NodePtr x, GB_Word y )
+{
+	return gb_primShiftLeftInteger( x, y ) ;
+}
+
+PRIM GB_NodePtr gb_primRotateRightInteger( GB_NodePtr x, GB_Word y )
+{
+	return gb_primShiftRightInteger( x, y ) ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Int
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+IntLikeArithPrimsCode(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+%%]
+
+%%[99
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,GB_Word)
+%%]
+
+%%[8
+PRIM GB_NodePtr gb_primQuotRemInt( GB_Int x, GB_Int y )
+{
+	GB_NodePtr n ;
+	GB_Int q = x / y ;
+	GB_Int r = x % y ;
+  	// printf( "gb_primQuotRemInt %d %d %d %d\n", x, y, q, r ) ;
+	GB_MkTupNode2_In(n,GB_Int2GBInt(q),GB_Int2GBInt(r)) ;
+	return n ;
+}
+
+PRIM GB_NodePtr gb_primDivModInt( GB_Int x, GB_Int y )
+{
+	GB_NodePtr n ;
+	GB_MkTupNode2_In(n, GB_Int2GBInt( gb_primDivInt(x,y) ), GB_Int2GBInt( gb_primModInt(x,y) )) ;
+	return n ;
+}
+
+%%]
+
+%%[95
+PRIM GB_Word gb_primMaxInt()
+{
+  	// return GB_Int2GBInt(Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+  	return (Bits_MaxSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
+}
+
+PRIM GB_Word gb_primMinInt()
+{
+  	// return GB_Int2GBInt(Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
+  	return (Bits_MinSInt(GB_Word,GB_Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
+}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Int8, Int16, Int32, Int64
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+See remarks on fitting in word, at code for Word8 etc.
 
 %%[97
 IntLikeBoundedPrimsCode(gb_,Int8,Int8)
 IntLikeIntConversionPrimsCode(gb_,Int8,Int8,GB_Word)
 %%]
 
+%%[99
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,8,Int8,Int8,GB_Word)
+%%]
+
 %%[97
 IntLikeBoundedPrimsCode(gb_,Int16,Int16)
 IntLikeIntConversionPrimsCode(gb_,Int16,Int16,GB_Word)
+%%]
+
+%%[99
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,16,Int16,Int16,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -690,6 +759,14 @@ PRIM Int32 gb_primIntegerToInt32( GB_NodePtr n )
 	Int32 x = mpz_get_si( n->content.mpz ) ;
 	return ( x ) ;
 }
+#endif
+%%]
+
+%%[99
+#ifdef USE_32_BITS
+IntLikeBitsPrimsBitsizeDpdCode1(gb_,32,Int32,Int32,GB_Word)
+#else
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,32,Int32,Int32,GB_Word)
 #endif
 %%]
 
@@ -734,6 +811,11 @@ PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
 }
 %%]
 
+%%[99
+IntLikeBitsPrimsCode(gb_,64,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+IntLikeBitsPrimsBitsizeDpdCode1(gb_,64,Int64,Int64,GB_Word)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Word
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -741,6 +823,11 @@ PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
 %%[97
 IntLikeArithPrimsCode(gb_,Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 IntLikeIntConversionPrimsCode(gb_,Word,Word,GB_Word)
+%%]
+
+%%[99
+IntLikeBitsPrimsCode(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,GB_Word)
 %%]
 
 %%[97
@@ -776,14 +863,25 @@ PRIM Word gb_primMinWord()
 %%% Word8, Word16, Word32, Word64
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Assume the 8, or 16, bits are put into a larger word. Same for 32 bits but this depends on main word size.
+For these we need to use the shift/rotate variants which keep zero the most significant bits
+
 %%[97
 IntLikeBoundedPrimsCode(gb_,Word8,Word8)
 IntLikeIntConversionPrimsCode(gb_,Word8,Word8,GB_Word)
 %%]
 
+%%[99
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,8,Word8,Word8,GB_Word)
+%%]
+
 %%[97
 IntLikeBoundedPrimsCode(gb_,Word16,Word16)
 IntLikeIntConversionPrimsCode(gb_,Word16,Word16,GB_Word)
+%%]
+
+%%[99
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,16,Word16,Word16,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -807,6 +905,15 @@ PRIM Word32 gb_primIntegerToWord32( GB_NodePtr n )
 	Word32 x = mpz_get_ui( n->content.mpz ) ;
 	return ( x ) ;
 }
+#else
+#endif
+%%]
+
+%%[99
+#ifdef USE_32_BITS
+IntLikeBitsPrimsBitsizeDpdCode1(gb_,32,Word32,Word32,GB_Word)
+#else
+IntLikeBitsPrimsBitsizeDpdCode2(gb_,32,Word32,Word32,GB_Word)
 #endif
 %%]
 
@@ -838,6 +945,11 @@ PRIM Word64 gb_primIntegerToWord64( GB_NodePtr n )
 	}
 	return ( x ) ;
 }
+%%]
+
+%%[99
+IntLikeBitsPrimsCode(gb_,64,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+IntLikeBitsPrimsBitsizeDpdCode1(gb_,64,Word64,Word64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -472,11 +472,47 @@ AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
 # AC_CHECK_SIZEOF([unsigned int])
 
 # sizeof GrWord*, Pointer, ...
-# AC_CHECK_SIZEOF([nsigned int *])
+AC_CHECK_SIZEOF([char])
+AC_CHECK_SIZEOF([short])
+AC_CHECK_SIZEOF([int])
+AC_CHECK_SIZEOF([long])
+AC_CHECK_SIZEOF([long long])
+AC_CHECK_SIZEOF([unsigned char])
+AC_CHECK_SIZEOF([unsigned short])
+AC_CHECK_SIZEOF([unsigned int])
+AC_CHECK_SIZEOF([unsigned long])
+AC_CHECK_SIZEOF([unsigned long long])
+AC_CHECK_SIZEOF([void *])
 AC_CHECK_SIZEOF([float])
 AC_CHECK_SIZEOF([double])
 AC_CHECK_SIZEOF([intptr_t])
 AC_CHECK_SIZEOF([uintptr_t])
+
+AC_CHECK_SIZEOF([uint8_t])
+AC_CHECK_SIZEOF([uint16_t])
+AC_CHECK_SIZEOF([uint32_t])
+AC_CHECK_SIZEOF([uint64_t])
+
+AC_CHECK_ALIGNOF([char])
+AC_CHECK_ALIGNOF([short])
+AC_CHECK_ALIGNOF([int])
+AC_CHECK_ALIGNOF([long])
+AC_CHECK_ALIGNOF([long long])
+AC_CHECK_ALIGNOF([unsigned char])
+AC_CHECK_ALIGNOF([unsigned short])
+AC_CHECK_ALIGNOF([unsigned int])
+AC_CHECK_ALIGNOF([unsigned long])
+AC_CHECK_ALIGNOF([unsigned long long])
+AC_CHECK_ALIGNOF([void *])
+AC_CHECK_ALIGNOF([float])
+AC_CHECK_ALIGNOF([double])
+AC_CHECK_ALIGNOF([intptr_t])
+AC_CHECK_ALIGNOF([uintptr_t])
+
+AC_CHECK_ALIGNOF([uint8_t])
+AC_CHECK_ALIGNOF([uint16_t])
+AC_CHECK_ALIGNOF([uint32_t])
+AC_CHECK_ALIGNOF([uint64_t])
 
 AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
                [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
@@ -656,7 +692,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachineDependencies.h])
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h])
 AC_OUTPUT
 
 echo

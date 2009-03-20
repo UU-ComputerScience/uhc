@@ -1,6 +1,9 @@
 {- --------------------------------------------------------------------------
 // Macros to help make various instances for Int like types (Int8, ...).
 //
+// Primitives are defined by 2 forms of macros:
+//  - starting with PRIMS_  : name of Haskell function and primitive is the same
+//  - starting with PRIMS2_ : name of primitive is given explicitly, to allow sharing between primitives
 // --------------------------------------------------------------------------
 -}
 
@@ -183,5 +186,54 @@ instance Integral tycon where \
 instance Show tycon where \
   { show = showIntegral \
   }
+
+
+-- define Bits primitives
+#define PRIMS_BITS(tycon,primAnd,primOr,primXor) \
+foreign import prim primAnd       	:: tycon -> tycon -> tycon ; \
+foreign import prim primOr       	:: tycon -> tycon -> tycon ; \
+foreign import prim primXor      	:: tycon -> tycon -> tycon
+
+#define PRIMS_BITS_SIZEDPD(tycon,primComplement,primShiftLeft,primShiftRight,primRotateLeft,primRotateRight) \
+foreign import prim primComplement	:: tycon -> tycon ; \
+foreign import prim primShiftLeft  	:: tycon -> Int -> tycon ; \
+foreign import prim primShiftRight 	:: tycon -> Int -> tycon ; \
+foreign import prim primRotateLeft  :: tycon -> Int -> tycon ; \
+foreign import prim primRotateRight :: tycon -> Int -> tycon
+
+#define PRIMS_BITS_ROTATE(tycon) \
+
+#define PRIMS2_BITS(tycon,primAnd,primAndNm,primOr,primOrNm,primXor,primXorNm) \
+foreign import prim primAndNm       	primAnd       	:: tycon -> tycon -> tycon ; \
+foreign import prim primOrNm       		primOr       	:: tycon -> tycon -> tycon ; \
+foreign import prim primXorNm      		primXor      	:: tycon -> tycon -> tycon
+
+#define PRIMS2_BITS_SIZEDPD(tycon,primComplement,primComplementNm,primShiftLeft,primShiftLeftNm,primShiftRight,primShiftRightNm,primRotateLeft,primRotateLeftNm,primRotateRight,primRotateRightNm) \
+foreign import prim primComplementNm	primComplement	:: tycon -> tycon ; \
+foreign import prim primShiftLeftNm  	primShiftLeft  	:: tycon -> Int -> tycon ; \
+foreign import prim primShiftRightNm 	primShiftRight 	:: tycon -> Int -> tycon ; \
+foreign import prim primRotateLeftNm  	primRotateLeft  :: tycon -> Int -> tycon ; \
+foreign import prim primRotateRightNm 	primRotateRight :: tycon -> Int -> tycon
+
+#define PRIMS2_BITS_ROTATE(tycon) \
+
+-- define Bits instance
+#define INSTANCE_BITS1(tycon,size,signed,primAnd,primOr,primXor,primComplement,primShiftLeft,primShiftRight,primRotateLeft,primRotateRight) \
+instance Bits tycon where \
+  { (.&.)   	= primAnd \
+  ; (.|.)   	= primOr \
+  ; xor	   		= primXor \
+  ; complement  = primComplement \
+  ; shiftL      = primShiftLeft \
+  ; shiftR      = primShiftRight \
+  ; rotateL     = primRotateLeft \
+  ; rotateR     = primRotateRight \
+  ; bitSize _   = size \
+  ; isSigned _  = signed \
+  }
+
+
+
+
 
 
