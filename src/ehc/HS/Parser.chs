@@ -938,6 +938,19 @@ pExpressionList
                 <|>  Expr_DynVar     <$>  pDynVar
 %%]
 
+%%[9999
+pExpressionDo :: HSParser Expression
+pExpressionDo
+  =   (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement
+  <?> "pExpressionDo"
+  where pStatement :: HSParser Statement
+        pStatement
+          =   Statement_Expression emptyRange <$> pExpression {- pExpressionNoLet -}
+          <|> (\p t e -> Statement_Generator (mkRange1 t) p e) <$> pPattern <*> pLARROW <*> pExpression
+              -- common prefix with 'let x=e in e' dies out
+          <|> (Statement_Let . mkRange1) <$> pLET <*> pDeclarations
+%%]
+
 %%[9
 pExpressionDo :: HSParser Expression
 pExpressionDo
@@ -947,7 +960,30 @@ pExpressionDo
         pStatement
           =   Statement_Expression emptyRange <$> pExpressionNoLet
           <|> (\p t e -> Statement_Generator (mkRange1 t) p e) <$> pPattern <*> pLARROW <*> pExpression
-          <|> (Statement_Let . mkRange1) <$> pLET <*> pDeclarations
+          -- left factorisation is not necessary, above variant works just as well
+          <|> pLET
+              <**> (pDeclarations
+                    <**> (   (\e d t -> let r = mkRange1 t in Statement_Expression r $ Expression_Let r False d e) <$ pIN <*> pExpression
+                         <|> pSucceed (\d t -> Statement_Let (mkRange1 t) d)
+                   )     )
+%%]
+
+%%[9999
+pExpressionDo :: HSParser Expression
+pExpressionDo
+  =   (Expression_Do . mkRange1) <$> pDO <*> pDo pOCURLY pSEMI pCCURLY pPlainStatement pLetPrefix pExpression
+  <?> "pExpressionDo"
+  where pPlainStatement :: HSParser Statement
+        pPlainStatement
+          =   Statement_Expression emptyRange <$> pExpressionNoLet
+          <|> (\p t e -> Statement_Generator (mkRange1 t) p e) <$> pPattern <*> pLARROW <*> pExpression
+        pLetPrefix
+          = (\t d mbExpr -> case mbExpr of
+                Just e -> Statement_Expression r $ Expression_Let r False d e
+                       where r = mkRange1 t
+                _      -> Statement_Let (mkRange1 t) d
+            )
+            <$> pLET <*> pDeclarations
 %%]
 
 %%[1

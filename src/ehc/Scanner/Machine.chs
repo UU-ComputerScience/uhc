@@ -267,6 +267,11 @@ getEscChar s@('x':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
                                   in  (Just $ chr $ fromInteger $ getBaseNumber 16 n, len-1, rest)
 getEscChar s@('o':xs)           = let (tp,n,len,rest) = getNumber ('0' : s)
                                   in  (Just $ chr $ fromInteger $ getBaseNumber 8  n, len-1, rest)
+getEscChar s@('^':x:xs)         = case x `lookup` cntrCntrs of
+                                    Just c -> (Just c,2,xs)
+                                    _      -> (Nothing,0,s)
+                                where cntrCntrs = [ ('@','\^@'), ('[','\^['), ('\\','\^\'), (']','\^]'), ('^','\^^'), ('_','\^_') ]
+                                                  ++ zip ['A' .. 'Z'] ['\^A' .. '\^Z']
 %%]]
 getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                                       val = case tp of
@@ -292,14 +297,14 @@ getEscChar s@(x:xs) | isDigit x = let (tp,n,len,rest) = getNumber s
                     ,('v','\v'),('\\','\\'),('\"','\"'),('\'','\'')]
 %%[[99
         cntrStrs  = [ ("NUL",'\NUL'), ("SOH",'\SOH'), ("STX",'\STX'), ("ETX",'\ETX')
-                    , ("ENQ",'\ENQ'), ("ACK",'\ACK'), ("BEL",'\BEL'), ("BS" ,'\BS' )
-                    , ("HT" ,'\HT' ), ("LF" ,'\LF' ), ("VT" ,'\VT' ), ("FF" ,'\FF' )
-                    , ("CR" ,'\CR' ), ("SO" ,'\SO' ), ("SI" ,'\SI' ), ("DLE",'\DLE')
-                    , ("DC1",'\DC1'), ("DC2",'\DC2'), ("DC3",'\DC3'), ("DC4",'\DC4')
-                    , ("NAK",'\NAK'), ("SYN",'\SYN'), ("ETB",'\ETB'), ("CAN",'\CAN')
-                    , ("EM" ,'\EM' ), ("SUB",'\SUB'), ("ESC",'\ESC'), ("FS" ,'\FS' )
-                    , ("GS" ,'\GS' ), ("RS" ,'\RS' ), ("US" ,'\US' ), ("SP" ,'\SP' )
-                    , ("DEL",'\DEL')
+                    , ("EOT",'\EOT'), ("ENQ",'\ENQ'), ("ACK",'\ACK'), ("BEL",'\BEL')
+                    , ("BS" ,'\BS' ), ("HT" ,'\HT' ), ("LF" ,'\LF' ), ("VT" ,'\VT' )
+                    , ("FF" ,'\FF' ), ("CR" ,'\CR' ), ("SO" ,'\SO' ), ("SI" ,'\SI' )
+                    , ("DLE",'\DLE'), ("DC1",'\DC1'), ("DC2",'\DC2'), ("DC3",'\DC3')
+                    , ("DC4",'\DC4'), ("NAK",'\NAK'), ("SYN",'\SYN'), ("ETB",'\ETB')
+                    , ("CAN",'\CAN'), ("EM" ,'\EM' ), ("SUB",'\SUB'), ("ESC",'\ESC')
+                    , ("FS" ,'\FS' ), ("GS" ,'\GS' ), ("RS" ,'\RS' ), ("US" ,'\US' )
+                    , ("SP" ,'\SP' ), ("DEL",'\DEL')
                     ]
 %%]]
 

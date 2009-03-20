@@ -887,17 +887,23 @@ instance Read Int where
 
 --foreign import prim primShowInt :: Int -> String
 
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+{-
+ This implmentation fails for showInt minBound because in 2's complement arithmetic
+ -minBound == maxBound+1 == minBound
+-}
 showInt :: Int -> String   -- TODO: replace by primitive
 showInt x | x<0  = '-' : showInt(-x)
           | x==0 = "0"
           | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
+#endif
 
 instance Show Int where
 --  show   = primShowInt
-#ifdef __EHC_TARGET_JAZY__
-    show   = show . toInteger
-#else
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
     show   = showInt
+#else
+    show   = show . toInteger
 #endif
 
 

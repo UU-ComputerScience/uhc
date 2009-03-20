@@ -1149,6 +1149,7 @@ typedef __mpz_struct*  GB_mpz ;
 
 #define GB_Integer_Op1_In1(op,z,x)			{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz ) ; }
 #define GB_Integer_Op2_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y->content.mpz ) ; }
+#define GB_Integer_Op2b_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y ) ; }
 #define GB_Integer_Op2_In2(op,z1,z2,x,y)	{ GB_NodeAlloc_Mpz_In(z1) ; GB_NodeAlloc_Mpz_In(z2) ; op( z1->content.mpz, z2->content.mpz, x->content.mpz, y->content.mpz ) ; }
 #define GB_Integer_Add_In(z,x,y)			GB_Integer_Op2_In1(mpz_add,z,x,y)
 #define GB_Integer_Sub_In(z,x,y)			GB_Integer_Op2_In1(mpz_sub,z,x,y)
@@ -1163,6 +1164,17 @@ typedef __mpz_struct*  GB_mpz ;
 
 #define GB_Integer_Cmp(x,y)					mpz_cmp(x->content.mpz, y->content.mpz)
 
+#endif
+%%]
+
+%%[97
+#if USE_GMP
+#define GB_Integer_And_In(z,x,y)			GB_Integer_Op2_In1(mpz_and,z,x,y)
+#define GB_Integer_Or_In(z,x,y)				GB_Integer_Op2_In1(mpz_ior,z,x,y)
+#define GB_Integer_Xor_In(z,x,y)			GB_Integer_Op2_In1(mpz_eor,z,x,y)
+#define GB_Integer_Complement_In(z,x)		GB_Integer_Op1_In1(mpz_com,z,x)
+#define GB_Integer_ShiftLeft_In(z,x,y)		GB_Integer_Op2b_In1(mpz_mul_2exp,z,x,y)
+#define GB_Integer_ShiftRight_In(z,x,y)		GB_Integer_Op2b_In1(mpz_fdiv_q_2exp,z,x,y)
 #endif
 %%]
 

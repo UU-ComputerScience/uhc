@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module LibraryDataEither1 where
 
 import Data.Either
 

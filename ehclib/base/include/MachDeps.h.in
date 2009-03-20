@@ -41,6 +41,12 @@
 #define USE_32_BITS 1
 #endif
 
+#ifdef __EHC_TARGET_BC__
+#define BITSIZEOF_WORDTAG		1
+#else
+#define BITSIZEOF_WORDTAG		0
+#endif
+
 #define SIZEOF_HSCHAR           SIZEOF_INTPTR_T
 #define ALIGNMENT_HSCHAR        ALIGNOF_UINT32_T
 
@@ -68,27 +74,29 @@
 #define SIZEOF_HSSTABLEPTR      SIZEOF_VOID_P
 #define ALIGNMENT_HSSTABLEPTR   ALIGNOF_VOID_P
 
-#define SIZEOF_INT8             SIZEOF_UINT8_T
+#define SIZEOF_INT8             8
 #define ALIGNMENT_INT8          ALIGNOF_UINT8_T
 
-#define SIZEOF_WORD8            SIZEOF_UINT8_T
+#define SIZEOF_WORD8            8
 #define ALIGNMENT_WORD8         ALIGNOF_UINT8_T
 
-#define SIZEOF_INT16            SIZEOF_UINT16_T
+#define SIZEOF_INT16            16
 #define ALIGNMENT_INT16         ALIGNOF_UINT16_T
 
-#define SIZEOF_WORD16           SIZEOF_UINT16_T
+#define SIZEOF_WORD16           16
 #define ALIGNMENT_WORD16        ALIGNOF_UINT16_T
 
-#define SIZEOF_INT32            SIZEOF_UINT32_T
+#define SIZEOF_INT32            32
 #define ALIGNMENT_INT32         ALIGNOF_UINT32_T
 
-#define SIZEOF_WORD32           SIZEOF_UINT32_T
+#define SIZEOF_WORD32           32
 #define ALIGNMENT_WORD32        ALIGNOF_UINT32_T
 
-#define SIZEOF_INT64            SIZEOF_UINT64_T
+#define SIZEOF_INT64            64
 #define ALIGNMENT_INT64         ALIGNOF_UINT64_T
 
-#define SIZEOF_WORD64           SIZEOF_UINT64_T
+#define SIZEOF_WORD64           64
 #define ALIGNMENT_WORD64        ALIGNOF_UINT64_T
+
+#define BITSIZEOF_WORDTAG		1
 

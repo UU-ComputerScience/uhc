@@ -490,6 +490,8 @@ Literate Haskell source format & YN, only \verb@\begin{code}@ .. \verb@\end{code
 Operator infixity determines parsing & YN, some subtle report examples are not treated as defined \\
 Foreign function interface & YN, enough to make @Prelude@ work \\
 Exceptions & YN, depending on backend \\
+Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
+Ix not derivable & N \\
 \end{tabular}
 
 Additionally, availability of features for EH (Essential Haskell), with file suffix @.eh@:
@@ -522,10 +524,11 @@ Extensible records & YN \\
 
 %%]
 
-%%[inEhcNotIn98Prime doclatex
+%%[otherDifferences doclatex
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
 Existential + context + datatype def like: @data Handler a = forall e . Exception e => Handler (e -> IO a)@ & N \\
+UTF8 Char, String & N \\
 \end{tabular}
 
 %%]
