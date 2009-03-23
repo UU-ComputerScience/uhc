@@ -98,5 +98,4 @@
 #define SIZEOF_WORD64           64
 #define ALIGNMENT_WORD64        ALIGNOF_UINT64_T
 
-#define BITSIZEOF_WORDTAG		1
 

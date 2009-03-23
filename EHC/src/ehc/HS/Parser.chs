@@ -938,7 +938,7 @@ pExpressionList
                 <|>  Expr_DynVar     <$>  pDynVar
 %%]
 
-%%[9999
+%%[9
 pExpressionDo :: HSParser Expression
 pExpressionDo
   =   (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement
@@ -951,7 +951,7 @@ pExpressionDo
           <|> (Statement_Let . mkRange1) <$> pLET <*> pDeclarations
 %%]
 
-%%[9
+%%[9999
 pExpressionDo :: HSParser Expression
 pExpressionDo
   =   (Expression_Do . mkRange1) <$> pDO <*> pBlock1 pOCURLY pSEMI pCCURLY pStatement

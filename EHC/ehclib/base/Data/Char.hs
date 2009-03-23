@@ -83,6 +83,10 @@ import NHC.FFI (CInt)
 foreign import ccall unsafe "WCsubst.h u_gencat" wgencat :: CInt -> CInt
 #endif
 
+#ifdef __EHC__
+import EHC.Char
+#endif
+
 -- | Convert a single digit 'Char' to the corresponding 'Int'.  
 -- This function fails unless its argument satisfies 'isHexDigit',
 -- but recognises both upper and lower-case hexadecimal digits
@@ -93,14 +97,6 @@ digitToInt c
  | c >= 'a' && c <= 'f' =  ord c - ord 'a' + 10
  | c >= 'A' && c <= 'F' =  ord c - ord 'A' + 10
  | otherwise            =  error ("Char.digitToInt: not a digit " ++ show c) -- sigh
-
-#ifdef __EHC__
-intToDigit :: Int -> Char
-intToDigit i
- | i >= 0 && i <= 9 = toEnum (fromEnum '0' + i)
- | i >= 10 && i <= 15 = toEnum (fromEnum 'a' + i - 10)
- | otherwise = error "Char.intToDigit: not a digit"
-#endif
 
 #ifndef __GLASGOW_HASKELL__
 isAsciiUpper, isAsciiLower :: Char -> Bool

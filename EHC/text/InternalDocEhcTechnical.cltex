@@ -3,6 +3,7 @@
 %%@InternalDocEhcTechnical.Core
 %%@InternalDocEhcTechnical.GrinCode
 %%@InternalDocEhcTechnical.Silly
+%%@InternalDocEhcTechnical.Ty
 %%@InternalDocEhcTechnical.JVMClass
 %%@InternalDocEhcTechnical.CLR
 %%]
@@ -220,9 +221,39 @@ The following transformations seem to be obsolete:
 
 
 
+%%[Ty
+
+\section{Ty}
+Type structure.
+
+\subsection{Type}
+
+\begin{enumerate}
+\item Ftv:
+%%@EHTyTrfFtv.doesWhat
+
+\end{enumerate}
+
+\subsection{Fitting (aka unification)}
+
+\subsection{Transformations}
+
+\begin{enumerate}
+\item Subst:
+%%@EHTyTrfSubst.doesWhat
+
+\end{enumerate}
+
+%%]
+
+
+
 %%[JVMClass
 
 \section{JVMClass}
+JVM class structure
+
+\subsection{Class}
 %%@EHJVMClassAbsSyn.doesWhat
 
 %%]

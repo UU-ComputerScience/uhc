@@ -384,7 +384,7 @@ fitsInFI fi ty1 ty2
 
 %%[(4 hmtyinfer).fitsIn.bind
             bind fi tv t            =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
-                                       $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< t)
+                                       $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< ppTyWithFI fi t)
                                        $ (res' (fiBindTyVar tv t fi) tv' t)
                                     where tv' = mkTyVar tv
 %%]

@@ -8,6 +8,7 @@ module EHC.Word
 
 import EHC.Prelude
 import EHC.Bits
+import EHC.Show
 import Data.Bits
 
 #include "MachDeps.h"

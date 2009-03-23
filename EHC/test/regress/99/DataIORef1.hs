@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module LibraryDataIORef where
+module DataIORef1 where
 
 import Data.IORef
 

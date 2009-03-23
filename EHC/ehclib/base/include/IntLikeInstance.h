@@ -184,7 +184,7 @@ instance Integral tycon where \
 -- define Show instance
 #define INSTANCE_SHOW(tycon) \
 instance Show tycon where \
-  { show = showIntegral \
+  { show = show . toInteger \
   }
 
 
