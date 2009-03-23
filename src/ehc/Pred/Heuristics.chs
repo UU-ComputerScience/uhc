@@ -145,11 +145,6 @@ contextBinChoice order = contextChoice (const local)
                   | otherwise    = concatMap (\(x,y) -> [x,y]) eqPairs
                    where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
 %%]
-contextBinChoice :: (HeurRed p info -> HeurRed p info -> PartialOrdering) -> SHeuristic p info
-contextBinChoice order = contextChoice (const local)
-  where  local []  = []
-         local is  = [mx]         
-                   where (mx,eqPairs) = heurMaximumBy order is			-- do something with equal pairs, construct Evid_Ambig perhaps?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Determine whether ambiguous really is ambiguous
@@ -263,7 +258,30 @@ heurGHC env
 %%% EHC heuristics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(heurScopedEHC)
+%%[(9 hmtyinfer)
+cmpEqReds :: RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
+%%[[16
+cmpEqReds RedHow_ByEqIdentity           _                               = P_GT
+cmpEqReds _                             RedHow_ByEqIdentity             = P_LT
+cmpEqReds RedHow_ByPredSeqUnpack        _                               = P_GT
+cmpEqReds _                             RedHow_ByPredSeqUnpack          = P_LT
+cmpEqReds RedHow_ByEqFromAssume         _                               = P_GT
+cmpEqReds _                             RedHow_ByEqFromAssume           = P_LT
+cmpEqReds (RedHow_Assumption _ _)       _                               = P_GT
+cmpEqReds _                             (RedHow_Assumption _ _)         = P_LT
+cmpEqReds (RedHow_ByEqTyReduction _ _)  _                               = P_GT
+cmpEqReds _                             (RedHow_ByEqTyReduction _ _)    = P_LT
+cmpEqReds RedHow_ByEqCongr              _                               = P_GT
+cmpEqReds _                             RedHow_ByEqCongr                = P_LT
+cmpEqReds RedHow_ByEqTrans              _                               = P_GT
+cmpEqReds _                             RedHow_ByEqTrans                = P_LT
+cmpEqReds RedHow_ByEqSymmetry           _                               = P_GT
+cmpEqReds _                             RedHow_ByEqSymmetry             = P_LT
+%%]]
+cmpEqReds r1                            r2                              = error ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
+%%]
+
+%%[(9 hmtyinfer)
 anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
 anncmpEHCScoped env ann1 ann2
   = case (ann1,ann2) of
@@ -287,43 +305,56 @@ anncmpEHCScoped env ann1 ann2
       (HeurRed RedHow_ByScope _             , _                                    )  ->  P_LT
       (_                                    , HeurRed RedHow_ByScope _             )  ->  P_GT
       _                                                                               ->  error ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
+%%]
 
-cmpEqReds :: RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
-%%[[16
-cmpEqReds RedHow_ByEqIdentity _          = P_GT
-cmpEqReds _ RedHow_ByEqIdentity          = P_LT
-cmpEqReds RedHow_ByPredSeqUnpack _       = P_GT
-cmpEqReds _ RedHow_ByPredSeqUnpack       = P_LT
-cmpEqReds RedHow_ByEqFromAssume _        = P_GT
-cmpEqReds _ RedHow_ByEqFromAssume        = P_LT
-cmpEqReds (RedHow_Assumption _ _) _      = P_GT
-cmpEqReds _ (RedHow_Assumption _ _)      = P_LT
-cmpEqReds (RedHow_ByEqTyReduction _ _) _ = P_GT
-cmpEqReds _ (RedHow_ByEqTyReduction _ _) = P_LT
-cmpEqReds RedHow_ByEqCongr _             = P_GT
-cmpEqReds _ RedHow_ByEqCongr             = P_LT
-cmpEqReds RedHow_ByEqTrans _             = P_GT
-cmpEqReds _ RedHow_ByEqTrans             = P_LT
-cmpEqReds RedHow_ByEqSymmetry _          = P_GT
-cmpEqReds _ RedHow_ByEqSymmetry          = P_LT
-%%]]
-cmpEqReds r1 r2 = error ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
+If no full solution is possible, we just use the superclass relationship.
+- This relationship is fixed, so closed world choice works here.
+- We also allow for ambiguity here, randomly picking an alternative, the first. This is not good, but will work for now...
 
+%%[(9 hmtyinfer)
+ehcOnlySuperReduce :: a -> [HeurRed CHRPredOcc RedHowAnnotation] -> [HeurRed CHRPredOcc RedHowAnnotation]
+ehcOnlySuperReduce _  reds
+  = take 1 $ filter p reds
+  where p (HeurRed (RedHow_BySuperClass _ _ _) _)  = True
+        p _                                        = False
+%%]
+
+%%[(9 hmtyinfer) export(heurScopedEHC)
 heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
-heurScopedEHC env = toHeuristic $ ifthenelseSHeuristic isEqHeuristic eqHeuristic defaultHeuristic
+heurScopedEHC env
+  = toHeuristic
+    $ ifthenelseSHeuristic isEqHeuristic
+        eqHeuristic
+{-
+        defaultHeuristic
+-}
+        $ heurTry (contextBinChoice (anncmpEHCScoped env))
+                  (contextChoice ehcOnlySuperReduce)
   where
 %%[[16
     isEqHeuristic (CHRPredOcc (Pred_Eq _ _) _) = True
 %%]]
     isEqHeuristic _                            = False
     eqHeuristic = binChoice cmpEqReds . solvable
-    defaultHeuristic = contextBinChoice (anncmpEHCScoped env)
+    defaultHeuristic
+      = contextBinChoice (anncmpEHCScoped env)
 
 ifthenelseSHeuristic :: (p -> Bool) -> SHeuristic p info -> SHeuristic p info -> SHeuristic p info
 ifthenelseSHeuristic g t e alts
   | g (redaltsPredicate alts) = t alts
   | otherwise = e alts
 %%]
+
+Previous heuristic did not behave ghc alike in that instances were eagerly used, also when it still would lead to unresolved predicates.
+These would then end up in the context of a function, the early decision inhibiting the use of other instances at a later moment:
+
+heurScopedEHC :: FIIn -> Heuristic CHRPredOcc RedHowAnnotation
+heurScopedEHC env
+  = toHeuristic
+    $ ifthenelseSHeuristic isEqHeuristic
+        eqHeuristic
+        defaultHeuristic
+
 
 %%[(9 hmtyinfer)
 btHeuristic :: Heuristic p RedHowAnnotation

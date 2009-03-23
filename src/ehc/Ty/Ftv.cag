@@ -7,6 +7,10 @@
 %%% Haskell importable interface to Ty subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+Compute free type variables of a type.
+%%]
+
 %%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
 %%]
 

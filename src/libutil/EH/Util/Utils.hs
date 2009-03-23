@@ -174,4 +174,12 @@ orderingLexic = foldr1 (\o1 o2 -> if o1 == EQ then o2 else o1)
 panicJust :: String -> Maybe a -> a
 panicJust m = maybe (panic m) id
 
+infixr 0  $?
+
+($?) :: (a -> Maybe b) -> Maybe a -> Maybe b
+f $? mx = do x <- mx
+             f x
+
+
+
 

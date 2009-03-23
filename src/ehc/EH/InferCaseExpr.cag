@@ -56,6 +56,6 @@ SEM CaseAlt
 SEM CaseAlts
   | Nil         lhs         .   ty                  =   @lhs.knTy
   | Cons        hd          .   knTy                =   @lhs.knTy
-                tl          .   knTy                =   @hd.ty
+                tl          .   knTy                =   @lhs.knTy -- @hd.ty
 %%]
 

@@ -26,6 +26,9 @@
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable class
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,7 +42,11 @@ infixr 6 |==>
 %%]
 
 %%[(2 hmtyinfer || hmtyast).Substitutable
+%%[[2
 class Substitutable vv k subst | vv -> subst k where
+%%][9999
+class VarLookup subst k vv => Substitutable vv k subst where
+%%]]
   (|=>)         ::  subst -> vv -> vv
 %%[[4
   (|==>)        ::  subst -> vv -> (vv,VarMp)
@@ -76,7 +83,7 @@ ftvClosureSet varmp x
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer || hmtyast) export(varmpinfoFtvMp)
-varmpinfoFtvMp :: VarMpInfo Ty -> TvCatMp
+varmpinfoFtvMp :: VarMpInfo -> TvCatMp
 varmpinfoFtvMp i
   = case i of
       VMITy       t  -> tyFtvMp    t
@@ -89,10 +96,14 @@ varmpinfoFtvMp i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableTy
+%%[[2
 instance Substitutable Ty TyVarId VarMp where
-  (|=>)     = tyAppVarMp
+%%][9999
+instance VarLookup m TyVarId VarMpInfo => Substitutable Ty TyVarId m where
+%%]]
+  (|=>)     = tyAppVarLookup
 %%[[4
-  (|==>)    = tyAppVarMp2
+  (|==>)    = tyAppVarLookup2
 %%]]
   ftv       = tyFtv
 %%]
@@ -125,7 +136,7 @@ instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableVarMp
-instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
+instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = VarMp (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
     where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
@@ -134,7 +145,7 @@ instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
 %%]
 
 %%[(4 hmtyinfer || hmtyast).SubstitutableVarMp -2.SubstitutableVarMp
-instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
+instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = s1 `varmpPlus` s2
   ftv (VarMp sl)
@@ -142,7 +153,7 @@ instance Substitutable (VarMp' TyVarId Ty) TyVarId VarMp where
 %%]
 
 %%[(9 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
-instance Substitutable (VarMp' TyVarId (VarMpInfo Ty)) TyVarId VarMp where
+instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` {- Map.map (s1 |=>) -} sl2)
   ftv                  (VarMp sl)      =   ftv $ Map.elems sl
 %%]
@@ -190,7 +201,7 @@ instance Substitutable Impls TyVarId VarMp where
 
 
 %%[(9 hmtyinfer || hmtyast)
-instance Substitutable (VarMpInfo Ty) TyVarId VarMp where
+instance Substitutable VarMpInfo TyVarId VarMp where
   s |=> vmi =  case vmi of
                  VMITy       t  -> VMITy (s |=> t)
                  VMIImpls    i  -> VMIImpls (s |=> i)

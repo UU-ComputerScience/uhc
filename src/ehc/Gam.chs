@@ -81,6 +81,8 @@
 
 %%[(9 codegen) import({%{EH}Core.Subst})
 %%]
+%%[(9 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%]
 
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.MergePreds})
 %%]

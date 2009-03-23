@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module LibraryDataBitsInteger1 where
+module DataBitsInteger1 where
 
 import Data.Bits
 

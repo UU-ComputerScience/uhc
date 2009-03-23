@@ -105,10 +105,41 @@ uhc --lib-search-path=<install> ...
 If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
 \end{itemize|
 
-\subsection{Backends}
-\subsubsection{GRIN based interpreter, no full program analysis}
-\subsubsection{GRIN based C, with full program analysis}
-\subsubsection{GRIN based LLVM, with full program analysis}
+\subsection{Fully functional backends}
+\subsubsection{@bc@: GRIN based interpreter, no full program analysis}
+
+\begin{itemize}
+\item Only foreign functions with at most 3 arguments are allowed currently.
+\end{itemize}
+
+\subsubsection{@C@: GRIN based C, with full program analysis}
+
+\begin{itemize}
+\item No exceptions.
+\end{itemize}
+
+\subsection{Almost fully functional backends}
+\subsubsection{@jazy@: Core based Java, no full program analysis}
+
+\begin{itemize}
+\item Only when enabled via @configure --enable-java@.
+\item Runs for latest variant, but partial implementation of required primitives.
+\item No exceptions.
+\end{itemize}
+
+\subsection{Partially functional backends}
+\subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
+
+\begin{itemize}
+\item For variant 8 only, little runtime support.
+\end{itemize}
+
+\subsubsection{@clr@: GRIN based CLR, with full program analysis}
+
+\begin{itemize}
+\item For variant 8 only, no runtime support.
+\item Only when enabled via @configure --enable-clr@.
+\end{itemize}
 
 \subsection{XX}
 
@@ -470,6 +501,7 @@ Encoding of availability:
 Y & is available \\
 YN & is partially available \\
 N & is not yet available \\
+N? & is not available, and we are not yet sure whether we'll implement it \\
 NN & is not and will never be available \\
 \end{tabular}
 
@@ -482,7 +514,7 @@ Availability of features for Haskell, with file suffix @.hs@:
 \textbf{Feature} & \textbf{Available?} \\ \hline
 n+k patterns & NN \\
 @deriving@ construct & YN, for @Show@, @Read@, @Eq@, @Ord@, @Enum@, @Bounded@ \\ 
-@default@ construct & N \\ 
+@default@ construct & N?, silently ignored \\ 
 @Prelude@: predefined instances & YN, not for tuples \\ 
 Irrefutable patterns & YN, nested patterns too lazy \\
 Strictness annotation in data types & YN, ignored \\
@@ -492,6 +524,7 @@ Foreign function interface & YN, enough to make @Prelude@ work \\
 Exceptions & YN, depending on backend \\
 Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
 Ix not derivable & N \\
+Monomorphism restriction & N \\
 \end{tabular}
 
 Additionally, availability of features for EH (Essential Haskell), with file suffix @.eh@:
@@ -507,6 +540,11 @@ Literate source format & NN \\
 %%]
 
 %%[inHaskellPrimeNotInEhc doclatex
+\begin{tabular}{ll}
+\textbf{Feature} & \textbf{Available?} \\ \hline
+Functional dependencies & N, pending route taken with Haskell prime \\
+\end{tabular}
+
 %%]
 
 %%[inEhcNotIn98Prime doclatex

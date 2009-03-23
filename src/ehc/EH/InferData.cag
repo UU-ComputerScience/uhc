@@ -166,8 +166,8 @@ SEM DataConstr
 %%[(16 hmtyinfer).dataConXTy -7.dataConXTy
 SEM DataConstr
   | Constr
-      (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarMp2_RhsOfEqOnly` @loc.dataConTy2
-      (loc.dataConProdTy1, _)        = @loc.eqsVarMp `tyAppVarMp2_RhsOfEqOnly` appendEqPreds @eqs.prOccL @loc.dataConProdTy2  -- cyclic occurrences subsumed by @loc.cycVarMp
+      (loc.dataConTy1, loc.cycVarMp) = @loc.eqsVarMp `tyAppVarLookup2_RhsOfEqOnly` @loc.dataConTy2
+      (loc.dataConProdTy1, _)        = @loc.eqsVarMp `tyAppVarLookup2_RhsOfEqOnly` appendEqPreds @eqs.prOccL @loc.dataConProdTy2  -- cyclic occurrences subsumed by @loc.cycVarMp
       loc.occErrL                    = varmpOccurErr 
 %%[[99
                                          @range

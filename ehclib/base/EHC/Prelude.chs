@@ -81,9 +81,10 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     subtract, even, odd, gcd, lcm, (^), (^^), absReal, signumReal,
     fromIntegral, realToFrac,
     boundedSucc, boundedPred, boundedEnumFrom, boundedEnumFromTo, boundedEnumFromThen, boundedEnumFromThenTo,
-    shows, showChar, showString, showIntegral, showParen,
+    shows, showChar, showString, showParen,
     --reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
     reads, read, lex, readParen, readSigned, readInt, readDec, readOct, readHex, readSigned, readFloat, lexDigits, 
+    fromRat,
 
 --  standard functions
     fst, snd, curry, uncurry, id, const, (.), flip, ($), until,
@@ -1081,13 +1082,13 @@ instance Real Double where
 -- TODO: Calls to these functions should be optimised when passed as arguments to fromRational
 floatToRational  :: Float  -> Rational
 doubleToRational :: Double -> Rational
-floatToRational  x = realFloatToRational x 
-doubleToRational x = realFloatToRational x
+floatToRational  x = fromRat x 
+doubleToRational x = fromRat x
 
-realFloatToRational :: RealFloat a => a -> Rational
-realFloatToRational x = (m%1)*(b%1)^^n
-                        where (m,n) = decodeFloat x
-                              b     = floatRadix x
+fromRat :: RealFloat a => a -> Rational
+fromRat x = (m%1)*(b%1)^^n
+          where (m,n) = decodeFloat x
+                b     = floatRadix x
 
 foreign import prim primDivFloat      :: Float -> Float -> Float
 foreign import prim primDoubleToFloat :: Double -> Float
@@ -1697,9 +1698,6 @@ read s        =  case [x | (x,t) <- reads s, ("","") <- lex t] of
                       [x] -> x
                       []  -> error "Prelude.read: no parse"
                       _   -> error "Prelude.read: ambiguous parse"
-
-showIntegral :: Integral x => x -> String
-showIntegral = show . toInteger
 
 showChar     :: Char -> ShowS
 showChar      = (:)

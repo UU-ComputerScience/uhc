@@ -3,7 +3,7 @@
    expected: ok
 ---------------------------------------------------------------------------------------- -}
 
-module DataWord.hs where
+module DataWord1 where
 
 import Data.Word
 
