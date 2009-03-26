@@ -188,6 +188,13 @@ instance Show tycon where \
   }
 
 
+-- define Read instance
+#define INSTANCE_READ(tycon) \
+instance Read tycon where \
+  { readsPrec p = readSigned readDec \
+  }
+
+
 -- define Bits primitives
 #define PRIMS_BITS(tycon,primAnd,primOr,primXor) \
 foreign import prim primAnd       	:: tycon -> tycon -> tycon ; \

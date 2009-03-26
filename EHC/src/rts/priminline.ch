@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define IntLikeArithPrimsInterface(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr) 										\
+#define INTLIKE_ARITH_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr) 									\
 																																	\
 extern PrimTypeC        PrimPrefix ## primAdd   ## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;										\
 extern PrimTypeC        PrimPrefix ## primSub   ## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;										\
@@ -23,12 +23,12 @@ extern PrimTypeWord     PrimPrefix ## primGt    ## PrimTypeName( PrimTypeC x, Pr
 extern PrimTypeWord     PrimPrefix ## primLt    ## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;										\
 extern PrimTypeWord     PrimPrefix ## primCmp   ## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;										\
 
-#define IntLikeBoundedPrimsInterface(PrimPrefix,PrimTypeName,PrimTypeC) 															\
+#define INTLIKE_BOUNDED_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC) 															\
 																																	\
 extern PrimTypeC        PrimPrefix ## primMax   ## PrimTypeName()	;																\
 extern PrimTypeC        PrimPrefix ## primMin   ## PrimTypeName()	;																\
 
-#define IntLikeIntConversionPrimsInterface(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) 											\
+#define INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) 										\
 																																	\
 extern PrimTypeC        PrimPrefix ## primIntTo ## PrimTypeName( PrimTypeWord x ) ;													\
 extern PrimTypeWord     PrimPrefix ## prim      ## PrimTypeName ## ToInt( PrimTypeC x ) ;											\
@@ -36,13 +36,13 @@ extern PrimTypeWord     PrimPrefix ## prim      ## PrimTypeName ## ToInt( PrimTy
 %%]
 
 %%[99
-#define IntLikeBitsPrimsInterface(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr)							 			\
+#define INTLIKE_BITS_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr)							 		\
 																																	\
 extern PrimTypeC 		PrimPrefix ## primAnd 			## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;								\
 extern PrimTypeC 		PrimPrefix ## primOr 			## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;								\
 extern PrimTypeC 		PrimPrefix ## primXor 			## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;								\
 
-#define IntLikeBitsBitsizeDpdPrimsInterface(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr)						 		\
+#define INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr)						\
 																																	\
 extern PrimTypeC 		PrimPrefix ## primShiftLeft 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
 extern PrimTypeC 		PrimPrefix ## primShiftRight 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
@@ -52,12 +52,20 @@ extern PrimTypeC 		PrimPrefix ## primRotateRight 	## PrimTypeName( PrimTypeC x, 
 
 %%]
 
+%%[99
+#define STORABLE_PEEKPOKE_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) 											\
+																																	\
+extern PrimTypeC PrimPrefix ## primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, PrimTypeWord off ) ;							\
+extern PrimTypeWord PrimPrefix ## primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, PrimTypeWord off, PrimTypeC val ) ;			\
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% One macro which expands to code for arithmetic primitives for a primitive type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define IntLikeArithPrimsCode(PrimPrefix,PrimTypeName,PrimTypeC,PrimFalse,PrimTrue,PrimLT,PrimEQ,PrimGT,PrimTypeWord) 				\
+#define INTLIKE_ARITH_PRIMS_CODE(PrimPrefix,PrimTypeName,PrimTypeC,PrimFalse,PrimTrue,PrimLT,PrimEQ,PrimGT,PrimTypeWord) 			\
 																																	\
 PRIM PrimTypeC PrimPrefix ## primAdd ## PrimTypeName( PrimTypeC x, PrimTypeC y )													\
 {																																	\
@@ -146,7 +154,7 @@ PRIM PrimTypeWord PrimPrefix ## primCmp ## PrimTypeName( PrimTypeC x, PrimTypeC 
 %%]
 
 %%[8
-#define IntLikeIntConversionPrimsCode(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) \
+#define INTLIKE_INT_CONVERSION_PRIMS_CODE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) 											\
 																																	\
 PRIM PrimTypeC PrimPrefix ## primIntTo ## PrimTypeName( PrimTypeWord x )															\
 {																																	\
@@ -161,7 +169,7 @@ PRIM PrimTypeWord PrimPrefix ## prim ## PrimTypeName ## ToInt( PrimTypeC x )				
 %%]
 
 %%[8
-#define IntLikeBoundedPrimsCode(PrimPrefix,PrimTypeName,PrimTypeC) \
+#define INTLIKE_BOUNDED_PRIMS_CODE(PrimPrefix,PrimTypeName,PrimTypeC) 																\
 																																	\
 PRIM PrimTypeC PrimPrefix ## primMax ## PrimTypeName()																				\
 {																																	\
@@ -180,7 +188,7 @@ PRIM PrimTypeC PrimPrefix ## primMin ## PrimTypeName()																				\
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#define IntLikeBitsPrimsCode(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimFalse,PrimTrue,PrimLT,PrimEQ,PrimGT,PrimTypeWord) 	\
+#define INTLIKE_BITS_PRIMS_CODE(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimFalse,PrimTrue,PrimLT,PrimEQ,PrimGT,PrimTypeWord) \
 																																	\
 PRIM PrimTypeC PrimPrefix ## primAnd ## PrimTypeName( PrimTypeC x, PrimTypeC y ) {													\
   	return x & y;																													\
@@ -202,7 +210,7 @@ Bitsize dependent operations where PrimTypeName needs exactly the same nr of bit
 Hence no additional masking is needed.
 
 %%[99
-#define IntLikeBitsPrimsBitsizeDpdCode1(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 								\
+#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 							\
 																																	\
 PRIM PrimTypeC PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {											\
 	return x << y ;																													\
@@ -231,7 +239,7 @@ Bitsize dependent operations where PrimTypeName needs strictly less bits of Prim
 For masking take the largest used int variant, Word64.
 
 %%[99
-#define IntLikeBitsPrimsBitsizeDpdCode2(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 								\
+#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 							\
 																																	\
 PRIM PrimTypeC PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {											\
 	return (x << y) & Bits_Size2LoMask(Word64,PrimBitSize) ;																		\
@@ -255,6 +263,24 @@ PRIM PrimTypeC PrimPrefix ## primRotateRight ## PrimTypeName( PrimTypeC x, PrimT
 	return (xx >> y) | (xx << (PrimBitSize - y)) ;																					\
 }																																	\
 																																	\
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% One macro which expands to code for Storable peek/poke primitives for a primitive type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+#define STORABLE_PEEKPOKE_PRIMS_CODE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord) 												\
+																																	\
+PRIM PrimTypeC PrimPrefix ## primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, PrimTypeWord off ) {								\
+	return ptr[ off ] ;																												\
+}																																	\
+																																	\
+PRIM PrimTypeWord PrimPrefix ## primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, PrimTypeWord off, PrimTypeC val ) {			\
+	ptr[ off ] = val ;																												\
+	return (GB_Word)gb_Unit ;																										\
+}																																	\
 
 %%]
 

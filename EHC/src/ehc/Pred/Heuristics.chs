@@ -26,8 +26,8 @@ type SHeuristic p info = HeurAlts p info -> Evidence p info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(HeurAlts(..),HeurRed(..))
-data HeurAlts  p  info = HeurAlts  { redaltsPredicate  :: !p,       redaltsAlts  :: ![HeurRed p info]    }
-data HeurRed   p  info = HeurRed   { redInfo           :: !info,    redContext   :: ![HeurAlts p info]   }
+data HeurAlts  p  info = HeurAlts  { redaltsPredicate  :: p,       redaltsAlts  :: [HeurRed p info]    }
+data HeurRed   p  info = HeurRed   { redInfo           :: info,    redContext   :: [HeurAlts p info]   }
 %%]
 
 %%[(9 hmtyinfer)

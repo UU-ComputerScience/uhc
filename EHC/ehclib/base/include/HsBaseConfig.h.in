@@ -1,0 +1,103 @@
+#ifndef HSBASECONFIG_H
+#define HSBASECONFIG_H
+
+#include "MachDeps.h"
+
+#if SIZEOF_INTPTR_T == 8
+#define HTYPE_INTPTR_T 			Int64
+#define HTYPE_UINTPTR_T 		Word64
+#else
+#define HTYPE_INTPTR_T 			Int32
+#define HTYPE_UINTPTR_T 		Word32
+#endif
+
+/* also here: typedef int sig_atomic_t
+ */
+#if SIZEOF_INT == 8
+#define HTYPE_INT 				Int64
+#define HTYPE_UNSIGNED_INT 		Word64
+#define HTYPE_SIG_ATOMIC_T 		Word64
+#else
+#define HTYPE_INT 				Int32
+#define HTYPE_UNSIGNED_INT 		Word32
+#define HTYPE_SIG_ATOMIC_T 		Word32
+#endif
+
+#if SIZEOF_LONG == 8
+#define HTYPE_LONG 				Int64
+#define HTYPE_UNSIGNED_LONG 	Word64
+#else
+#define HTYPE_LONG 				Int32
+#define HTYPE_UNSIGNED_LONG 	Word32
+#endif
+
+#if SIZEOF_VOID_P == 8
+#define HTYPE_PTRDIFF_T 		Int64
+#else
+#define HTYPE_PTRDIFF_T 		Int32
+#endif
+
+#if SIZEOF_CLOCK_T == 8
+#define HTYPE_CLOCK_T 			Word64
+#else
+#define HTYPE_CLOCK_T 			Word32
+#endif
+
+#if SIZEOF_TIME_T == 8
+#define HTYPE_TIME_T 			Word64
+#else
+#define HTYPE_TIME_T 			Word32
+#endif
+
+#if SIZEOF_SIZE_T == 8
+#define HTYPE_SIZE_T 			Word64
+#else
+#define HTYPE_SIZE_T 			Word32
+#endif
+
+#if SIZEOF_WCHAR_T == 1
+#define HTYPE_WCHAR_T 			Word8
+#elif SIZEOF_WCHAR_T == 2
+#define HTYPE_WCHAR_T 			Word16
+#else
+#define HTYPE_WCHAR_T 			Word32
+#endif
+
+
+
+/* Define to Haskell type for char */
+#undef HTYPE_CHAR
+
+/* Define to Haskell type for double */
+#undef HTYPE_DOUBLE
+
+/* Define to Haskell type for float */
+#undef HTYPE_FLOAT
+
+/* Define to Haskell type for intmax_t */
+#undef HTYPE_INTMAX_T
+
+/* Define to Haskell type for long long */
+#undef HTYPE_LONG_LONG
+
+/* Define to Haskell type for short */
+#undef HTYPE_SHORT
+
+/* Define to Haskell type for signed char */
+#undef HTYPE_SIGNED_CHAR
+
+/* Define to Haskell type for uintmax_t */
+#undef HTYPE_UINTMAX_T
+
+/* Define to Haskell type for unsigned char */
+#undef HTYPE_UNSIGNED_CHAR
+
+/* Define to Haskell type for unsigned long long */
+#undef HTYPE_UNSIGNED_LONG_LONG
+
+/* Define to Haskell type for unsigned short */
+#undef HTYPE_UNSIGNED_SHORT
+
+
+#endif // HSBASECONFIG_H
+

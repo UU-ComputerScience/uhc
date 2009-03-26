@@ -16,7 +16,9 @@
 
 %%[97
 /* use GMP */
+#ifdef __EHC_BUILDS_RTS__
 #undef USE_GMP
+#endif
 %%]
 
 %%[8

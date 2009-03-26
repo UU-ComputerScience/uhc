@@ -83,14 +83,12 @@ module Data.Typeable
 
 #ifndef __EHC__
 import qualified Data.HashTable as HT
+#endif
 import Data.Maybe
 import Data.Int
 import Data.Word
-#endif
 import Data.List( foldl, intersperse )
-#ifndef __EHC__
 import Unsafe.Coerce
-#endif
 
 #ifdef __GLASGOW_HASKELL__
 import GHC.Base
@@ -151,14 +149,22 @@ data TypeRep = TypeRep !Key TyCon [TypeRep]
 
 -- Compare keys for equality
 instance Eq TypeRep where
+#ifdef __EHC__
+  (TypeRep _ c1 r1) == (TypeRep _ c2 r2) = c1 == c2 && r1 == r2
+#else
   (TypeRep k1 _ _) == (TypeRep k2 _ _) = k1 == k2
+#endif
 
 -- | An abstract representation of a type constructor.  'TyCon' objects can
 -- be built using 'mkTyCon'.
 data TyCon = TyCon !Key String
 
 instance Eq TyCon where
+#ifdef __EHC__
+  (TyCon _ s1) == (TyCon _ s2) = s1 == s2
+#else
   (TyCon t1 _) == (TyCon t2 _) = t1 == t2
+#endif
 #endif
 
 -- | Returns a unique integer associated with a 'TypeRep'.  This can

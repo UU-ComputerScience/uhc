@@ -14,6 +14,9 @@ module EHC.IOBase
     -- IOArray(..), newIOArray, readIOArray, writeIOArray, unsafeReadIOArray, unsafeWriteIOArray,
     -- MVar(..),
 
+        -- IO Exception
+    try,
+
   )
   where
 
@@ -61,6 +64,24 @@ unsafeIOToST (IO io) = ST $ \ s -> (unsafeCoerce io) s
 
 unsafeSTToIO :: ST s a -> IO a
 unsafeSTToIO (ST m) = IO (unsafeCoerce m)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% try
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+-- | The construct 'try' @comp@ exposes IO errors which occur within a
+-- computation, and which are not fully handled.
+--
+-- Non-I\/O exceptions are not caught by this variant; to catch all
+-- exceptions, use 'Control.Exception.try' from "Control.Exception".
+
+try            :: IO a -> IO (Either IOError a)
+try f          =  catch (do r <- f
+                            return (Right r))
+                        (return . Left)
 
 %%]
 

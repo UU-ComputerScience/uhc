@@ -205,6 +205,7 @@ showFFloat d x =  showString (formatRealFloat FFFixed d x)
 showGFloat d x =  showString (formatRealFloat FFGeneric d x)
 #endif  /* __GLASGOW_HASKELL__ */
 
+#ifndef __EHC__
 -- ---------------------------------------------------------------------------
 -- Integer printing functions
 
@@ -232,3 +233,4 @@ showHex = showIntAtBase 16 intToDigit
 showOct :: Integral a => a -> ShowS
 showOct = showIntAtBase 8  intToDigit
 
+#endif

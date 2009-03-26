@@ -60,3 +60,12 @@ static inline WPtr mm_rangeMap_At( MM_RangeMap* a, MM_RangeMap_Inx i ) {
 }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dump
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+extern void mm_rangeMap_Dump( MM_RangeMap* a ) ;
+#endif
+%%]

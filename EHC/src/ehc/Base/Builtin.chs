@@ -536,6 +536,14 @@ TBD: Needs cleaning up, correct partitioning in variants
       [ ":%" ]
 %%]
 
+%%[99
+[hsnAddr]
+  = map
+      (mkRV hsnModIntlPtr)
+      [ "Addr"
+      ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known/available runtime values: IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -600,6 +608,7 @@ hsnModPrelude                           =                         hsnFromString 
 %%[99 export(hsnModIntlInt,hsnModIntlWord)
 hsnModIntlInt                           =   hsnPrefixQual hsnEHC (hsnFromString "Int")
 hsnModIntlWord                          =   hsnPrefixQual hsnEHC (hsnFromString "Word")
+hsnModIntlPtr                           =   hsnPrefixQual hsnEHC (hsnFromString "Ptr")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -709,6 +718,7 @@ data EHBuiltinNames
       , ehbnPrelLex                     :: HsName
       , ehbnPrelReadParen               :: HsName
       , ehbnPrimEqChar                  :: HsName
+      , ehbnAddr                        :: HsName
 %%]]
       }
 
@@ -795,6 +805,7 @@ mkEHBuiltinNames f
       , ehbnPrelLex                     = f IdOcc_Val       hsnPrelLex
       , ehbnPrelReadParen               = f IdOcc_Val       hsnPrelReadParen
       , ehbnPrimEqChar                  = f IdOcc_Val       hsnPrimEqChar
+      , ehbnAddr                        = f IdOcc_Type      hsnAddr
 %%]]
       }
 %%]

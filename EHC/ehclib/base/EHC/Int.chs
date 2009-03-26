@@ -41,6 +41,7 @@ INSTANCE_ENUM(Int64,primIntToInt64,primInt64ToInt)
 INSTANCE_REAL(Int64)
 INSTANCE_INTEGRAL1(Int64,primDivInt64,primModInt64,primQuotInt64,primRemInt64,primInt64ToInteger,primInt64ToInt)
 INSTANCE_SHOW(Int64)
+INSTANCE_READ(Int64)
 
 INSTANCE_BITS1(Int64,64,True,primAndInt64,primOrInt64,primXorInt64,primComplementInt64,primShiftLeftInt64,primShiftRightInt64,primRotateLeftInt64,primRotateRightInt64)
 %%]
@@ -75,6 +76,7 @@ INSTANCE_ENUM(Int32,primIntToInt32,primInt32ToInt)
 INSTANCE_REAL(Int32)
 INSTANCE_INTEGRAL1(Int32,primDivInt32,primModInt32,primQuotInt32,primRemInt32,primInt32ToInteger,primInt32ToInt)
 INSTANCE_SHOW(Int32)
+INSTANCE_READ(Int32)
 
 INSTANCE_BITS1(Int32,32,True,primAndInt32,primOrInt32,primXorInt32,primComplementInt32,primShiftLeftInt32,primShiftRightInt32,primRotateLeftInt32,primRotateRightInt32)
 %%]
@@ -100,6 +102,7 @@ INSTANCE_ENUM(Int16,primIntToInt16,primInt16ToInt)
 INSTANCE_REAL(Int16)
 INSTANCE_INTEGRAL1(Int16,primDivInt16,primModInt16,primQuotInt16,primRemInt16,primInt16ToInteger,primInt16ToInt)
 INSTANCE_SHOW(Int16)
+INSTANCE_READ(Int16)
 
 INSTANCE_BITS1(Int16,16,True,primAndInt16,primOrInt16,primXorInt16,primComplementInt16,primShiftLeftInt16,primShiftRightInt16,primRotateLeftInt16,primRotateRightInt16)
 
@@ -126,6 +129,7 @@ INSTANCE_ENUM(Int8,primIntToInt8,primInt8ToInt)
 INSTANCE_REAL(Int8)
 INSTANCE_INTEGRAL1(Int8,primDivInt8,primModInt8,primQuotInt8,primRemInt8,primInt8ToInteger,primInt8ToInt)
 INSTANCE_SHOW(Int8)
+INSTANCE_READ(Int8)
 
 INSTANCE_BITS1(Int8,8,True,primAndInt8,primOrInt8,primXorInt8,primComplementInt8,primShiftLeftInt8,primShiftRightInt8,primRotateLeftInt8,primRotateRightInt8)
 

@@ -326,37 +326,6 @@ GB_Byte gb_code_Startup[] =
 #define GB_InitPatch_gb_code_Startup				*Cast(GB_Ptr,&gb_code_Startup[3]         ) = Cast(GB_Word,&gb_callinfo_EvalWrap)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GMP memory allocation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[97
-#if USE_GMP
-void* gb_Alloc_GMP( size_t nBytes )
-{
-  GB_Node* n ;
-  GB_NodeAlloc_GMP_In(nBytes,n) ;
-  return n->content.fields ;		/* return ptr to usable area */
-}
-
-void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
-{
-  if ( nBytes > nBytesOld )
-  {
-	  GB_Node* nNew ;
-	  GB_NodeAlloc_GMP_In(nBytes,nNew) ;
-	  memcpy( nNew->content.fields, n, nBytesOld ) ;
-	  return nNew->content.fields ;
-  }
-  return n ;
-}
-
-void gb_Free_GMP( void *n, size_t nBytesOld )
-{
-}
-#endif
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Finalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1685,7 +1654,7 @@ GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc )
 	return gb_intl_throwException( Cast(GB_Word,exc) ) ;
 }
 
-GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr )
+GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr )
 {
 	GB_NodePtr ioe_location ;
 	GB_NodePtr ioe_description ;
@@ -1697,8 +1666,8 @@ GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_
 
 	GB_MkListNil( ioe_location ) ;
 	ioe_description = gb_primCStringToString( strErr ) ;
-	GB_MkIOExceptionIOError( ioe, ioe_handle, GB_Int2GBInt(ioe_type), ioe_location, ioe_description, ioe_filename ) ;
-	GB_MkExceptionIOException( exc, ioe ) ;
+	GB_MkIOErrorIOError( ioe, ioe_handle, GB_Int2GBInt(ioe_type), ioe_location, ioe_description, ioe_filename ) ;
+	GB_MkExceptionIOError( exc, ioe ) ;
 	
 	GB_GC_SafeLeave ;
 	return gb_intl_throwExceptionFromPrim( exc ) ;

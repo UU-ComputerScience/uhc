@@ -3,6 +3,8 @@
 -- expected: ok
 ---------------------------------------------------------------------------------------- -}
 
+import Numeric
+
 main :: IO ()
 main =
   do putStrLn (showEFloat Nothing (3.4::Double) "")

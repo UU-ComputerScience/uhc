@@ -42,6 +42,7 @@ INSTANCE_ENUM(Word,primIntToWord,primWordToInt)
 INSTANCE_REAL(Word)
 INSTANCE_INTEGRAL1(Word,primDivWord,primModWord,primQuotWord,primRemWord,primWordToInteger,primWordToInt)
 INSTANCE_SHOW(Word)
+INSTANCE_READ(Word)
 
 INSTANCE_BITS1(Word,SIZEOF_HSWORD*8-BITSIZEOF_WORDTAG,False,primAndWord,primOrWord,primXorWord,primComplementWord,primShiftLeftWord,primShiftRightWord,primRotateLeftWord,primRotateRightWord)
 %%]
@@ -67,6 +68,7 @@ INSTANCE_ENUM(Word64,primIntToWord64,primWord64ToInt)
 INSTANCE_REAL(Word64)
 INSTANCE_INTEGRAL1(Word64,primDivWord64,primModWord64,primQuotWord64,primRemWord64,primWord64ToInteger,primWord64ToInt)
 INSTANCE_SHOW(Word64)
+INSTANCE_READ(Word64)
 
 INSTANCE_BITS1(Word64,64,False,primAndWord64,primOrWord64,primXorWord64,primComplementWord64,primShiftLeftWord64,primShiftRightWord64,primRotateLeftWord64,primRotateRightWord64)
 %%]
@@ -101,6 +103,7 @@ INSTANCE_ENUM(Word32,primIntToWord32,primWord32ToInt)
 INSTANCE_REAL(Word32)
 INSTANCE_INTEGRAL1(Word32,primDivWord32,primModWord32,primQuotWord32,primRemWord32,primWord32ToInteger,primWord32ToInt)
 INSTANCE_SHOW(Word32)
+INSTANCE_READ(Word32)
 
 INSTANCE_BITS1(Word32,32,False,primAndWord32,primOrWord32,primXorWord32,primComplementWord32,primShiftLeftWord32,primShiftRightWord32,primRotateLeftWord32,primRotateRightWord32)
 %%]
@@ -126,6 +129,7 @@ INSTANCE_ENUM(Word16,primIntToWord16,primWord16ToInt)
 INSTANCE_REAL(Word16)
 INSTANCE_INTEGRAL1(Word16,primDivWord16,primModWord16,primQuotWord16,primRemWord16,primWord16ToInteger,primWord16ToInt)
 INSTANCE_SHOW(Word16)
+INSTANCE_READ(Word16)
 
 INSTANCE_BITS1(Word16,16,False,primAndWord16,primOrWord16,primXorWord16,primComplementWord16,primShiftLeftWord16,primShiftRightWord16,primRotateLeftWord16,primRotateRightWord16)
 %%]
@@ -151,6 +155,7 @@ INSTANCE_ENUM(Word8,primIntToWord8,primWord8ToInt)
 INSTANCE_REAL(Word8)
 INSTANCE_INTEGRAL1(Word8,primDivWord8,primModWord8,primQuotWord8,primRemWord8,primWord8ToInteger,primWord8ToInt)
 INSTANCE_SHOW(Word8)
+INSTANCE_READ(Word8)
 
 INSTANCE_BITS1(Word8,8,False,primAndWord8,primOrWord8,primXorWord8,primComplementWord8,primShiftLeftWord8,primShiftRightWord8,primRotateLeftWord8,primRotateRightWord8)
 %%]

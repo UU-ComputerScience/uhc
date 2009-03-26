@@ -264,7 +264,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
                               ; let (ecu,_,opts,fp) = crBaseInfo modNm' cr
-                              ; lift $ putStrLn ("After import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm' ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
+                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm' ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
                               })
                    ; cpUpdCU modNm' (ecuStoreState (ECUSHaskell stnext))
                    ; return modNm'
@@ -274,6 +274,11 @@ cpEhcModuleCompile1 targHSState modNm
              -> do { cpMsg modNm VerboseNormal ("Imports of HI")
                    ; cpEhcHaskellModulePrepare modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
+                   ; when (ehcOptVerbosity opts >= VerboseDebug)
+                          (do { cr <- get
+                              ; let (ecu,_,opts,fp) = crBaseInfo modNm cr
+                              ; lift $ putStrLn ("After HI import: nm=" ++ show modNm ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
+                              })
                    ; return defaultResult
                    }
            (ECUSHaskell st,Just HSOnlyImports)

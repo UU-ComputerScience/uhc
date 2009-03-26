@@ -177,10 +177,10 @@ ehcGccOptsStatic = [ "@EHC_GCC_OPTS_STATIC@" ]
 %%% GCC options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(gccOpts)
+%%[8
+%%]
 gccOpts :: String
 gccOpts = "@GCC_EHC_OPTIONS@"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GCC additional external libraries

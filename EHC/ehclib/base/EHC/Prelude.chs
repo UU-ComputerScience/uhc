@@ -44,11 +44,10 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 
     Handle, 
     FilePath, 
-    IOError,
     IO            (..), 
     -- IOResult      (..),
     IOMode        (..),
-    IOException   (..), 
+    IOError       (..), 
     IOErrorType   (..),
     State         (..),
     IOWorld, ioWorld,
@@ -121,14 +120,13 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     ehcRunMain,
     PackedString,
     packedStringToString, packedStringToInteger,
-    primGtInt, primEqChar -- ,
+    primGtInt, primEqChar,
+    ByteArray,
 
 -- EHC primitives, only exported to EHC. modules, hidden outside Prelude
     -- primEqInt
     
 ) where
-
-import EHC.Base
 
 #include "IntLikeInstance.h"
 
@@ -157,7 +155,7 @@ infixr 0  $, $!, `seq`
 asTypeOf       :: a -> a -> a
 asTypeOf        = const
 
-seq :: a -> b -> b -- forall a . a -> forall b . b -> b
+seq :: forall a b . a -> b -> b
 x `seq` y = letstrict x' = x in y
 
 f $! x                = x `seq` f x
@@ -1919,7 +1917,7 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
 
 
 ----------------------------------------------------------------
--- Exception datatype and operations
+-- Exception datatype and operations, must match the list in the RTS
 ----------------------------------------------------------------
 
 data SomeException                          -- alphabetical order of constructors required, assumed Int encoding in comment
@@ -1932,7 +1930,7 @@ data SomeException                          -- alphabetical order of constructor
   -- | DynException        Dynamic
   | ErrorCall           String              -- 6
   | ExitException       ExitCode            -- 7 
-  | IOException         IOException         -- 8 -- IO exceptions (from 'ioError')
+  | IOException         IOError             -- 8 -- IO exceptions (from 'ioError')
   | NoMethodError       String              -- 9
   | NonTermination                          -- 10
   | PatternMatchFail    String              -- 11
@@ -2008,9 +2006,7 @@ data ExitCode = ExitSuccess | ExitFailure Int
 -- IOError
 ----------------------------------------------------------------
 
-type IOError = IOException
-
-data IOException
+data IOError
   = IOError
       { ioe_handle      :: Maybe Handle   -- the handle used by the action flagging the error
       , ioe_type        :: IOErrorType    -- what kind of (std) error
@@ -2027,9 +2023,11 @@ data IOErrorType        -- alphabetical order of constructors required, assumed 
   | EOF                 -- 3
   | FullError           -- 4
   | IllegalOperation    -- 5
-  | PermissionDenied    -- 6
-  | ResourceExhausted   -- 7
-  | UserError           -- 8
+  | NoSuchThing			-- 6
+  | PermissionDenied    -- 7
+  | ResourceBusy		-- 8
+  | ResourceExhausted   -- 9
+  | UserError           -- 10
     deriving (Eq)
 
 instance Show IOErrorType where
@@ -2044,7 +2042,7 @@ instance Show IOErrorType where
       ResourceExhausted -> "resource exhausted"
       UserError         -> "user error"
 
-instance Show IOException where
+instance Show IOError where
   showsPrec p (IOError hdl iot loc s fn) =
     (case fn of
        Nothing -> case hdl of

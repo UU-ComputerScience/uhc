@@ -35,6 +35,7 @@ import EHC.Prelude hiding
   ( absReal, signumReal
   -- , primEqInt
   -- , State, IOWorld, RealWorld
+  , ByteArray
   )
 import EHC.Eq
 import EHC.Ord
