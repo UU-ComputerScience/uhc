@@ -19,9 +19,6 @@
 %%[97
 #include "math.h"
 #include "float.h"
-#if USE_GMP
-#include "gmp.h"
-#endif
 %%]
 
 %%[97
@@ -112,6 +109,7 @@ typedef int Bool ;
 #include "priminline.h"
 #include "grinbc/gbprimdecl.h"
 #include "grinbc/gbprim.h"
+#include "grinbc/gbprim-integer.h"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

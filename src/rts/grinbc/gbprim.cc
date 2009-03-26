@@ -55,12 +55,16 @@ PRIM GB_Word gb_FullError
 	= GB_MkConEnumNodeAsTag( 4 ) ;
 PRIM GB_Word gb_IllegalOperation
 	= GB_MkConEnumNodeAsTag( 5 ) ;
-PRIM GB_Word gb_PermissionDenied
+PRIM GB_Word gb_NoSuchThing
 	= GB_MkConEnumNodeAsTag( 6 ) ;
-PRIM GB_Word gb_ResourceExhausted
+PRIM GB_Word gb_PermissionDenied
 	= GB_MkConEnumNodeAsTag( 7 ) ;
-PRIM GB_Word gb_UserError
+PRIM GB_Word gb_ResourceBusy
 	= GB_MkConEnumNodeAsTag( 8 ) ;
+PRIM GB_Word gb_ResourceExhausted
+	= GB_MkConEnumNodeAsTag( 9 ) ;
+PRIM GB_Word gb_UserError
+	= GB_MkConEnumNodeAsTag( 10 ) ;
 %%]
 
 The definition of IOMode must coincide with the one in Prelude.hs
@@ -99,10 +103,6 @@ PRIM GB_Word gb_primUnsafeId( GB_Word x )
 %%% Conversion
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-PRIM GB_Word gb_primUnsafeId( GB_Word x )
-{
-	return x ;
-}
 %%[97
 PRIM GB_Float gb_primIntToFloat( GB_Int x )
 {
@@ -141,91 +141,6 @@ PRIM GB_Double gb_primIntToDouble( GB_Int x )
 	return Cast(GB_Double,x) ;
 }
 
-#if USE_GMP
-PRIM GB_Float gb_primRationalToFloat( GB_NodePtr nr )
-{
-	// GB_NodePtr nf ;
-	GB_NodePtr numerator, divisor ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(nr) ;
-	GB_GC_Safe2_Zeroed(numerator, divisor) ;
-	GB_PassExc_Cast_GCSafe( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExc_Cast_GCSafe( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	GB_Float res ;
-	res = Cast( GB_Float, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
-	GB_GC_SafeLeave ;
-	return res ;
-}
-
-PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
-{
-	// GB_NodePtr nf ;
-	GB_NodePtr numerator, divisor ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(nr) ;
-	GB_GC_Safe2_Zeroed(numerator, divisor) ;
-	GB_PassExc_Dflt_GCSafe( 0.0, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExc_Dflt_GCSafe( 0.0, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	// GB_NodeAlloc_Double_In(nf) ;
-	// nf->content.dbl = mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ;
-	// return nf ;
-	GB_GC_SafeLeave ;
-	return Cast( GB_Double, mpz_get_d( numerator->content.mpz ) / mpz_get_d( divisor->content.mpz ) ) ;
-}
-
-PRIM GB_Float gb_primIntegerToFloat( GB_NodePtr n )
-{
-	// GB_NodePtr nf ;
-	// GB_NodeAlloc_Float_In(nf) ;
-	// nf->content.flt = mpz_get_d( n->content.mpz ) ;		// not sure whether this works without explicit truncation or something like that...
-	// return nf ;
-	return Cast( GB_Float, mpz_get_d( n->content.mpz ) ) ;
-}
-
-PRIM GB_Double gb_primIntegerToDouble( GB_NodePtr n )
-{
-	// GB_NodePtr nf ;
-	// GB_NodeAlloc_Double_In(nf) ;
-	// nf->content.dbl = mpz_get_d( n->content.mpz ) ;
-	// return nf ;
-	return Cast( GB_Double, mpz_get_d( n->content.mpz ) ) ;
-}
-
-PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
-{
-	// return GB_Int2GBInt( mpz_get_si( n->content.mpz ) ) ;
-	return ( mpz_get_si( n->content.mpz ) ) ;
-}
-
-PRIM GB_NodePtr gb_primCStringToInteger( char* s )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_set_str( n->content.mpz, s, 10 ) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primFloatToInteger( GB_Float x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
-	return n ;
-}
-#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -247,28 +162,6 @@ PRIM GB_Word gb_primIsIEEE( )
 PRIM GB_Word gb_primRadixDoubleFloat( )
 {
 	return FLT_RADIX ;
-}
-
-%%]
-
-%%[97
-#define gb_intlDecode(ty,x)																	\
-{																							\
-	int exp ;																				\
-	int mantdig = ( sizeof(ty) == sizeof(GB_Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;		\
-	ty mant = ( sizeof(ty) == sizeof(GB_Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;	\
-	if ( fpclassify(x) == FP_ZERO ) {														\
-		exp = 0 ;																			\
-	} else {																				\
-		exp -= mantdig ;																	\
-	}																						\
-	GB_NodePtr n, ni ;																		\
-	GB_GC_SafeEnter ;																		\
-	GB_GC_Safe2_Zeroed(n,ni) ;																		\
-	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, mantdig ) ) ;								\
-	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;												\
-	GB_GC_SafeLeave ;																		\
-	return n ;																				\
 }
 
 %%]
@@ -376,14 +269,6 @@ PRIM GB_Word gb_primMinExpFloat( )
 	return FLT_MIN_EXP ;
 }
 
-PRIM GB_NodePtr gb_primDecodeFloat( GB_Float x )
-	gb_intlDecode(GB_Float,x)
-
-PRIM GB_Float gb_primEncodeFloat( GB_NodePtr frac, GB_Word exp )
-{
-	GB_Float d = ldexp( mpz_get_d( frac->content.mpz ), exp ) ;
-	return d ;
-}
 
 %%]
 
@@ -490,182 +375,54 @@ PRIM GB_Word gb_primMinExpDouble( )
 	return DBL_MIN_EXP ;
 }
 
-PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-	gb_intlDecode(GB_Double,x)
 
-PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Addr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GB_Word gb_primNullAddr( )
 {
-	GB_Double d = ldexp( mpz_get_d( frac->content.mpz ), exp ) ;
-	return d ;
+	return (GB_Word)NULL ;
 }
 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Integer, via GMP
+%%% Stable ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Stable pointers are guaranteed not to be moved by garbage collection.
+The primitives below assum the use of the Boehm garbage collector (BGC),
+making their implementation simple because nothing is ever moved using BGC.
 
-!!!!! Todo: adapt allocation for GMP, GC works improperly here because can create race conditions.
-
-%%[97
-#if USE_GMP
-PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
+%%[99
+#if USE_BOEHM_GC
+PRIM GB_Word gb_primMakeStableAddr( GB_Word a )
 {
-	if ( GB_Integer_Cmp(x,y) == 0 )
+	return a ;
+}
+
+PRIM GB_Word gb_primDeRefStableAddr( GB_Word a )
+{
+	return a ;
+}
+
+PRIM GB_Word gb_primFreeStableAddr( GB_Word a )
+{
+	return (GB_Word)gb_Unit ;
+}
+
+PRIM GB_Word gb_primEqStableAddr( GB_Word x, GB_Word y )
+{
+	if ( x == y )
 		return gb_True ;
   	return gb_False ;
 }
 
-PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	int c = GB_Integer_Cmp(x,y) ;
-	if ( c < 0 )
-		return gb_LT ;
-	else if ( c == 0 )
-		return gb_EQ ;
-  	return gb_GT ;
-}
-
-PRIM GB_NodePtr gb_primAddInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Add_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primSubInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Sub_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primMulInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Mul_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDivInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Div_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primModInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Mod_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primQuotInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Quot_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primRemInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Rem_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n, n1, n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(x,y) ;
-	GB_GC_Safe3_Zeroed(n,n1,n2) ;
-	GB_Integer_QuotRem_In(n1,n2,x,y) ;
-	GB_MkTupNode2_In(n,n1,n2) ;
-	GB_GC_SafeLeave ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primDivModInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n, n1, n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(x,y) ;
-	GB_GC_Safe3_Zeroed(n,n1,n2) ;
-	GB_Integer_DivMod_In(n1,n2,x,y) ;
-	GB_MkTupNode2_In(n,n1,n2) ;
-	GB_GC_SafeLeave ;
-	return n ;
-}
 #endif
-%%]
-
-%%[97
-#if USE_GMP
-PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
-{
-	GB_NodePtr n ;
-	GB_Integer_Neg_In(n,x) ;
-	return n ;
-}
-#endif
-%%]
-
-%%[99
-PRIM GB_NodePtr gb_primAndInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_And_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primOrInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Or_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primXorInteger( GB_NodePtr x, GB_NodePtr y )
-{
-	GB_NodePtr n ;
-	GB_Integer_Xor_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primComplementInteger( GB_NodePtr x )
-{
-	GB_NodePtr n ;
-	GB_Integer_Complement_In(n,x) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primShiftLeftInteger( GB_NodePtr x, GB_Word y )
-{
-	GB_NodePtr n ;
-	GB_Integer_ShiftLeft_In(n,x,y) ;
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primShiftRightInteger( GB_NodePtr x, GB_Word y )
-{
-	GB_NodePtr n ;
-	GB_Integer_ShiftRight_In(n,x,y) ;	// with sign extend
-	return n ;
-}
-
-PRIM GB_NodePtr gb_primRotateLeftInteger( GB_NodePtr x, GB_Word y )
-{
-	return gb_primShiftLeftInteger( x, y ) ;
-}
-
-PRIM GB_NodePtr gb_primRotateRightInteger( GB_NodePtr x, GB_Word y )
-{
-	return gb_primShiftRightInteger( x, y ) ;
-}
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -673,11 +430,11 @@ PRIM GB_NodePtr gb_primRotateRightInteger( GB_NodePtr x, GB_Word y )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-IntLikeArithPrimsCode(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+INTLIKE_ARITH_PRIMS_CODE(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,GB_Word)
 %%]
 
 %%[8
@@ -721,99 +478,48 @@ PRIM GB_Word gb_primMinInt()
 See remarks on fitting in word, at code for Word8 etc.
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Int8,Int8)
-IntLikeIntConversionPrimsCode(gb_,Int8,Int8,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Int8,Int8)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int8,Int8,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,8,Int8,Int8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Int8,Int8,GB_Word)
 %%]
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Int16,Int16)
-IntLikeIntConversionPrimsCode(gb_,Int16,Int16,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Int16,Int16)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int16,Int16,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,16,Int16,Int16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Int16,Int16,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Int32,Int32)
-IntLikeIntConversionPrimsCode(gb_,Int32,Int32,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Int32,Int32)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int32,Int32,GB_Word)
 
-#ifdef USE_32_BITS
-IntLikeArithPrimsCode(gb_,Int32,Int32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primInt32ToInteger( Int32 x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
-	return n ;
-}
-
-PRIM Int32 gb_primIntegerToInt32( GB_NodePtr n )
-{
-	Int32 x = mpz_get_si( n->content.mpz ) ;
-	return ( x ) ;
-}
-#endif
 %%]
 
 %%[99
 #ifdef USE_32_BITS
-IntLikeBitsPrimsBitsizeDpdCode1(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Int32,Int32,GB_Word)
 #else
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Int32,Int32,GB_Word)
 #endif
 %%]
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Int64,Int64)
-IntLikeIntConversionPrimsCode(gb_,Int64,Int64,GB_Word)
-IntLikeArithPrimsCode(gb_,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primInt64ToInteger( Int64 x )
-{
-	GB_NodePtr n ;
-	Int64 xpos = ( x < 0 ? -x : x ) ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_import( n->content.mpz, 1, -1, 8, 0, 0, &xpos ) ;
-	if ( x < 0 ) {
-		mpz_neg( n->content.mpz, n->content.mpz ) ;
-	}
-	return n ;
-}
-
-PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
-{
-	Int64 x ;
-	if ( sizeof(Int64) <= sizeof(unsigned long int) ) {
-		x = mpz_get_si( n->content.mpz ) ;
-	} else { // sizeof(Int32) == sizeof(unsigned long int)
-		mpz_t mpz ;
-		mpz_init_set( mpz, n->content.mpz ) ;
-		int sign = mpz_sgn( mpz ) ;
-		if ( sign < 0 ) {
-			mpz_neg( mpz, mpz ) ;
-		}
-		Word64 i32a = mpz_get_ui( mpz ) ;
-		mpz_fdiv_q_2exp( mpz, mpz, Word32_SizeInBits ) ;
-		Word64 i32b = mpz_get_ui( mpz ) ;
-		x = i32b << Word32_SizeInBits | i32a ;
-		if ( sign < 0 ) {
-			x = -x ;
-		}
-	}
-	return ( x ) ;
-}
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Int64,Int64)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int64,Int64,GB_Word)
+INTLIKE_ARITH_PRIMS_CODE(gb_,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsCode(gb_,64,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-IntLikeBitsPrimsBitsizeDpdCode1(gb_,64,Int64,Int64,GB_Word)
+INTLIKE_BITS_PRIMS_CODE(gb_,64,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Int64,Int64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -821,29 +527,13 @@ IntLikeBitsPrimsBitsizeDpdCode1(gb_,64,Int64,Int64,GB_Word)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-IntLikeArithPrimsCode(gb_,Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-IntLikeIntConversionPrimsCode(gb_,Word,Word,GB_Word)
+INTLIKE_ARITH_PRIMS_CODE(gb_,Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word,Word,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsCode(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,GB_Word)
-%%]
-
-%%[97
-PRIM Word gb_primIntegerToWord( GB_NodePtr n )
-{
-	return ( mpz_get_ui( n->content.mpz ) ) ;
-}
-
-PRIM GB_NodePtr gb_primWordToInteger( Word x )
-{
-	// printf( "gb_primWordToInteger %x\n", x ) ;
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
-	return n ;
-}
-
+INTLIKE_BITS_PRIMS_CODE(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,GB_Word)
 %%]
 
 %%[97
@@ -867,89 +557,48 @@ Assume the 8, or 16, bits are put into a larger word. Same for 32 bits but this 
 For these we need to use the shift/rotate variants which keep zero the most significant bits
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Word8,Word8)
-IntLikeIntConversionPrimsCode(gb_,Word8,Word8,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Word8,Word8)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word8,Word8,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,8,Word8,Word8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Word8,Word8,GB_Word)
 %%]
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Word16,Word16)
-IntLikeIntConversionPrimsCode(gb_,Word16,Word16,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Word16,Word16)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word16,Word16,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,16,Word16,Word16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Word16,Word16,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Word32,Word32)
-IntLikeIntConversionPrimsCode(gb_,Word32,Word32,GB_Word)
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Word32,Word32)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word32,Word32,GB_Word)
 
-#ifdef USE_32_BITS
-IntLikeArithPrimsCode(gb_,Word32,Word32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primWord32ToInteger( Word32 x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
-	return n ;
-}
-
-PRIM Word32 gb_primIntegerToWord32( GB_NodePtr n )
-{
-	Word32 x = mpz_get_ui( n->content.mpz ) ;
-	return ( x ) ;
-}
-#else
-#endif
 %%]
 
 %%[99
 #ifdef USE_32_BITS
-IntLikeBitsPrimsBitsizeDpdCode1(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Word32,Word32,GB_Word)
 #else
-IntLikeBitsPrimsBitsizeDpdCode2(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Word32,Word32,GB_Word)
 #endif
 %%]
 
 %%[97
-IntLikeBoundedPrimsCode(gb_,Word64,Word64)
-IntLikeIntConversionPrimsCode(gb_,Word64,Word64,GB_Word)
-IntLikeArithPrimsCode(gb_,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primWord64ToInteger( Word64 x )
-{
-	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_In(n) ;
-	mpz_import( n->content.mpz, 1, -1, 8, 0, 0, &x ) ;
-	return n ;
-}
-
-PRIM Word64 gb_primIntegerToWord64( GB_NodePtr n )
-{
-	Word64 x ;
-	if ( sizeof(Word64) <= sizeof(unsigned long int) ) {
-		x = mpz_get_ui( n->content.mpz ) ;
-	} else { // sizeof(Word32) == sizeof(unsigned long int)
-		mpz_t mpz ;
-		mpz_init_set( mpz, n->content.mpz ) ;
-		Word64 i32a = mpz_get_ui( mpz ) ;
-		mpz_fdiv_q_2exp( mpz, mpz, Word32_SizeInBits ) ;
-		Word64 i32b = mpz_get_ui( mpz ) ;
-		x = i32b << Word32_SizeInBits | i32a ;
-	}
-	return ( x ) ;
-}
+INTLIKE_BOUNDED_PRIMS_CODE(gb_,Word64,Word64)
+INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word64,Word64,GB_Word)
+INTLIKE_ARITH_PRIMS_CODE(gb_,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[99
-IntLikeBitsPrimsCode(gb_,64,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-IntLikeBitsPrimsBitsizeDpdCode1(gb_,64,Word64,Word64,GB_Word)
+INTLIKE_BITS_PRIMS_CODE(gb_,64,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Word64,Word64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1107,6 +756,39 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Storable read/write (peek/poke)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Word8 ,Word8 ,GB_Word) 
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Word16,Word16,GB_Word) 
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Word32,Word32,GB_Word) 
+// STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Word64,Word64,GB_Word) 
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Word  ,Word  ,GB_Word) 
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Float ,float ,GB_Word) 
+STORABLE_PEEKPOKE_PRIMS_CODE(gb_,Double,double,GB_Word) 
+%%]
+
+Using the above macros for gb_primWriteWord64OffAddr make gcc crash because not enough registers are available.
+Hence the handcoded variant below:
+
+%%[99
+PRIM Word64 gb_primReadWord64OffAddr( Word64* ptr, GB_Word off )
+{					
+	return ptr[ off ] ;																						
+}																															
+																															
+PRIM GB_Word gb_primWriteWord64OffAddr( Word32* ptr, GB_Word off, Word64 val )
+{	
+	ptr += (off << 1) ;
+	Word32* p = (Word32*)(&val) ;
+	*ptr++ = *p++ ;
+	*ptr   = *p   ;
+	return (GB_Word)gb_Unit ;																								
+}																															
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Exiting
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1138,7 +820,7 @@ PRIM GB_Word gb_primExitWith( GB_Word exitCode )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[95
-GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
+PRIM GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 {
 	char* s = Cast(char*,mn->content.bytearray.ptr) ;
 	int   igoff = GB_GBInt2Int(goff) ;
@@ -1201,7 +883,7 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_PassExc_GCSafe( gb_listForceEval( &n, (int*) &sz ) ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
-	GB_NodeAlloc_Malloc2_In( sz, n2 ) ;
+	GB_NodeAlloc_ByteArray_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
 	int bufInx = 0 ;
 %%[[95
@@ -1216,6 +898,110 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_GC_SafeLeave ;
 	return n2 ;
 }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% MutableByteArray interface to ByteArray
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Currently, that is using Boehm GC, a byte array is a node with size + pointer to malloc'ed mem + finalizer
+
+%%[99
+PRIM GB_NodePtr gb_primNewByteArray( GB_Word sz )
+{
+	GB_NodePtr bytearray ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1_Zeroed(bytearray) ;
+	GB_NodeAlloc_ByteArray_In( sz, bytearray ) ;
+	GB_GC_SafeLeave ;
+	return bytearray ;
+}
+
+PRIM GB_NodePtr gb_primNewPinnedByteArray( GB_Word sz )
+{
+	// for now the same
+	return gb_primNewByteArray( sz ) ;
+}
+
+PRIM GB_Word gb_primByteArrayContents( GB_NodePtr bytearray )
+{
+  	return (GB_Word)(bytearray->content.bytearray.ptr) ;
+}
+
+%%]
+
+%%[99
+PRIM Word8 gb_primIndexWord8Array( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadWord8OffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+PRIM Word16 gb_primIndexWord16Array( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadWord16OffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+PRIM Word32 gb_primIndexWord32Array( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadWord32OffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+PRIM Word64 gb_primIndexWord64Array( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadWord64OffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+PRIM double gb_primIndexDoubleArray( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadDoubleOffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+PRIM float gb_primIndexFloatArray( GB_NodePtr bytearray, GB_Word inx )
+{
+	return gb_primReadFloatOffAddr( bytearray->content.bytearray.ptr, inx ) ;
+}
+
+%%]
+
+%%[99
+PRIM GB_Word gb_primWriteWord8Array( GB_NodePtr bytearray, GB_Word inx, Word8 val )
+{
+	return gb_primWriteWord8OffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+PRIM GB_Word gb_primWriteWord16Array( GB_NodePtr bytearray, GB_Word inx, Word16 val )
+{
+	return gb_primWriteWord16OffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+PRIM GB_Word gb_primWriteWord32Array( GB_NodePtr bytearray, GB_Word inx, Word32 val )
+{
+	return gb_primWriteWord32OffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+PRIM GB_Word gb_primWriteWord64Array( GB_NodePtr bytearray, GB_Word inx, Word64 val )
+{
+	return gb_primWriteWord64OffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+PRIM GB_Word gb_primWriteFloatArray( GB_NodePtr bytearray, GB_Word inx, float val )
+{
+	return gb_primWriteFloatOffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+PRIM GB_Word gb_primWriteDoubleArray( GB_NodePtr bytearray, GB_Word inx, double val )
+{
+	return gb_primWriteDoubleOffAddr( bytearray->content.bytearray.ptr, inx, val ) ;
+}
+
+%%]
+
+%%[95
+PRIM GB_Word gb_primSizeofByteArray( GB_NodePtr bytearray )
+{
+  	return (bytearray->content.bytearray.size) ;
+}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1244,7 +1030,7 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
   	IF_GB_TR_ON(3,printf("gb_primShowInt s(%d) %s\n", strlen(buf), buf ););
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
-	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	GB_NodeAlloc_ByteArray_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 	
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
@@ -1261,7 +1047,7 @@ PRIM GB_NodePtr gb_primShowFloat( GB_Float w )
 	
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
-	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	GB_NodeAlloc_ByteArray_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 	
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
@@ -1275,29 +1061,11 @@ PRIM GB_NodePtr gb_primShowDouble( GB_Double w )
 	
 	GB_NodePtr n ;
 	int sz = strlen(buf) + 1 ; // ??? why +1
-	GB_NodeAlloc_Malloc2_In( sz, n ) ;
+	GB_NodeAlloc_ByteArray_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 	
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
 }
-%%]
-
-%%[97
-#if USE_GMP
-PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
-{
-	GB_NodePtr n ;
-	int sz = mpz_sizeinbase( integerNd->content.mpz, 10 ) + 2 ;
-	char* buf = alloca( sz ) ;
-
-	mpz_get_str( buf, 10, integerNd->content.mpz ) ;
-	sz = strlen(buf) ;
-	GB_NodeAlloc_Malloc2_In( sz, n ) ;
-	memcpy( n->content.bytearray.ptr, buf, sz ) ;
-
-  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
-}
-#endif
 %%]
 
 
@@ -1336,7 +1104,7 @@ GB_NodePtr gb_throwChanInteractionException( GB_NodePtr chan, char* strErr )
 	GB_MkMaybeJust( ioe_handle, chan ) ;
 
 	GB_GC_SafeLeave ;
-	return gb_intl_throwIOExceptionFromPrim( ioe_handle, gb_EOF, ioe_filename, strErr ) ;
+	return gb_intl_throwIOErrorFromPrim( ioe_handle, gb_EOF, ioe_filename, strErr ) ;
 }
 
 GB_NodePtr gb_getChanEOFOrThrowExc( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof )
@@ -1418,7 +1186,7 @@ GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 	}
 	
 	GB_GC_SafeLeave ;
-	return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
+	return gb_intl_throwIOErrorFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
 }
 %%]
 
@@ -1577,7 +1345,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		switch ( errno ) {
 			case ENODEV :
 			case ENOENT :
-				ioe_type = gb_DoesNotExist ;
+				ioe_type = gb_NoSuchThing ;
 				break ;
 			case EPERM   :
 			case EACCES  :
@@ -1586,7 +1354,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 				ioe_type = gb_PermissionDenied ;
 				break ;
 			case EBUSY :
-				ioe_type = gb_AlreadyInUse ;
+				ioe_type = gb_ResourceBusy ;
 				break ;
 			default :
 				ioe_type = gb_PermissionDenied ;
@@ -1594,7 +1362,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 		}
 
 		GB_GC_SafeLeave ;
-		return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
+		return gb_intl_throwIOErrorFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
 	}
 	
 	GB_NodePtr chan ;

@@ -2,6 +2,9 @@
 \section{Introduction}
 %%@ToolDocEHC.introduction
 \subsection{System overview}
+
+For now, see the \eref{EhcStructureDocumentation}{EHC structure overview}.
+
 \subsection{Download, build, install, compile and run}
 \glabel{DownloadBuildCompileRun}
 \label{DownloadBuildCompileRun}
@@ -19,7 +22,7 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \subsection{Commandline options}
 %%@ToolDocEHC.commandlineOptions
 
-\section{Language extensions}
+\section{Language extensions and differences with Haskell98}
 %%@ToolDocEHC.extensions
 \subsection{Higher ranked types and impredicativity}
 \label{higher-ranked-types-and-impredicativity}
@@ -38,6 +41,10 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 
 \subsection{Extensible records}
 \label{extensible-records}
+
+\subsection{Absence of monomorphism restriction}
+\label{absence-monomorphism-restriction}
+%%@ToolDocEHC.absenceMonomorphismRestriction
 
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
@@ -59,6 +66,13 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 %%@ToolDocEHC.ffi
 
 \subsection{Library modules}
+
+The library consists of 
+\begin{itemize}
+\item EHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @EHC.@.
+\item Modules from the GHC distribution, used without changes.
+\item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of @#ifdef@s or greater changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
+\end{itemize}
 
 The following librariy modules incorporated in the library, either fully or partially:
 
@@ -110,6 +124,7 @@ If the package is put in the default location (usually something like @lib@ insi
 
 \begin{itemize}
 \item Only foreign functions with at most 3 arguments are allowed currently.
+\item The size of the stack is hardcoded. No runtime overflow check is done.
 \end{itemize}
 
 \subsubsection{@C@: GRIN based C, with full program analysis}
@@ -491,6 +506,52 @@ Hello World
 %%[extensions doclatex
 %%]
 
+%%[absenceMonomorphismRestriction doclatex
+EHC does not feature the monomorphism restriction. For variable bindings like
+\begin{pre}
+x = 1
+\end{pre}
+this leads to type @Num a => a@ for @x@.
+This overloading and loss of sharing can be avoided by using a type signature:
+\begin{pre}
+x :: Int
+x = 1
+\end{pre}
+or
+\begin{pre}
+x = (1 :: Int)
+\end{pre}
+
+More problematic are overloaded bindings inside a tuple (or other aggregrates):
+
+\begin{pre}
+newtype Wrap = Wrap Double
+
+-- properFraction :: (RealFrac a,Integral b) => a -> (b,a)
+
+z (Wrap x) = let my@(m,y) = properFraction x in (m, Wrap y)
+\end{pre}
+
+On its own the non-monomorphically restricted @m@ would have the following type:
+
+\begin{pre}
+m :: Integral a => a
+\end{pre}
+
+If this would be allowed, the dictionary for @Integral@ to be passed to @m@ would have to be passed to @my@ as to pass it to @properFraction@.
+In the end we indirectly would require as many invocations of properFraction as the members of the tuple @my@ are used (without being shared by a let).
+This is currently not allowed in EHC, but the error message is a bit cryptic in that in complains about ambiguity (over the type variable associated with @m@).
+Currently this can be fixed only by using
+\lref{lexically-scoped-type-variables}{lexically scoped type variables}:
+
+\begin{pre}
+z (Wrap x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, Wrap y)
+\end{pre}
+
+In the above \lref{partial-type-signatures}{partial type signatures} were also used.
+
+%%]
+
 %%[languageStatus doclatex
 For now, see info on \eref{FirstRelease}{the upcoming first release} and \eref{LanguageFeatures}{language features}.
 
@@ -524,7 +585,7 @@ Foreign function interface & YN, enough to make @Prelude@ work \\
 Exceptions & YN, depending on backend \\
 Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
 Ix not derivable & N \\
-Monomorphism restriction & N \\
+\lref{absence-monomorphism-restriction}{Monomorphism restriction} & N \\
 \end{tabular}
 
 Additionally, availability of features for EH (Essential Haskell), with file suffix @.eh@:

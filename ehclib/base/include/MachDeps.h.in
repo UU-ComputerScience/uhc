@@ -1,3 +1,6 @@
+#ifndef MACHDEPS_H
+#define MACHDEPS_H
+
 #undef SIZEOF_INTPTR_T
 #undef SIZEOF_CHAR
 #undef SIZEOF_SHORT
@@ -12,6 +15,11 @@
 #undef SIZEOF_UNSIGNED_LONG
 #undef SIZEOF_UNSIGNED_LONG_LONG
 #undef SIZEOF_VOID_P
+
+#undef SIZEOF_CLOCK_T
+#undef SIZEOF_TIME_T
+#undef SIZEOF_SIZE_T
+#undef SIZEOF_WCHAR_T
 
 #undef ALIGNOF_INTPTR_T
 #undef ALIGNOF_CHAR
@@ -99,3 +107,4 @@
 #define ALIGNMENT_WORD64        ALIGNOF_UINT64_T
 
 
+#endif // MACHDEPS_H

@@ -56,7 +56,7 @@ RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 									mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
 									mm/allocator/listoffree mm/allocator/bump \
 								)
-RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim)
+RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim grinbc/gbprim-integer)
 RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									rts config sizes bits utils timing priminline \
 									grinbc/gbprimdecl grinbc/grinbc \
@@ -81,7 +81,7 @@ RTS_C_RTS_DRV_C_OTHER		:= $(RTS_C_RTS_GBCCALL_DRV_C)
 RTS_H_RTS_DRV_H				:= $(patsubst $(SRC_RTS_PREFIX)%.ch,$(RTS_BLD_RTS_PREFIX)%.h,$(RTS_H_RTS_SRC_CH))
 RTS_H_RTS_DRV_H_OTHER		:= $(RTS_H_RTS_GBCCALL_DRV_H)
 MAIN_C_MAIN_DRV_C			:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(MAIN_C_MAIN_SRC_CC))
-RTS_H_RTS_PRIM_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),prim.h grinbc/gbprim.h)
+RTS_H_RTS_PRIM_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),prim.h grinbc/gbprim.h grinbc/gbprim-integer.h)
 
 RTS_H_RTS_ALL_DRV_H			:= $(RTS_H_RTS_DRV_H) $(RTS_H_RTS_PRIM_DRV_H) $(RTS_H_RTS_DRV_H_OTHER)
 RTS_C_RTS_ALL_DRV_C			:= $(RTS_C_RTS_DRV_C) $(RTS_C_RTS_DRV_C_OPTIM_O2) $(RTS_C_RTS_DRV_C_OTHER)

@@ -364,7 +364,7 @@ doCompileRun fnL@(fn:_) opts
                            (cpEhcModuleCompile1 nm)
                     }
 %%][20
-             imp :: Maybe FPath -> Maybe (HsName,FPath) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,FPath))
+             imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
              imp mbFp mbPrev nm
 %%[[20
                = do { fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just nm) mbFp
@@ -383,15 +383,19 @@ doCompileRun fnL@(fn:_) opts
                     ; case fpsFound of
                         (fp:_)
                           -> do { nm' <- cpEhcModuleCompile1 (Just HSOnlyImports) nm
-                                ; return (nm',Just (nm',fp))
+                                ; cr <- get
+                                ; let (ecu,_,_,_) = crBaseInfo nm' cr
+                                ; return (nm',Just (nm',(fp, ecuFileLocation ecu)))
                                 }
                         _ -> return (nm,Nothing)
                     }
 %%[[99
                where -- strip tail part corresponding to module name, and use it to search as well
-                     adaptedSearchPath (Just (prevNm,prevFp))
-                       = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp) of
-                           (Just n, Just p)
+                     adaptedSearchPath (Just (prevNm,(prevFp,prevLoc)))
+                       = case (fpathMbDir (mkFPath prevNm), fpathMbDir prevFp, prevLoc) of
+                           (_, _, p@(FileLoc (FileLocKind_Pkg _) _))
+                             -> p : searchPath
+                           (Just n, Just p, _)
                              -> mkDirFileLoc (filePathUnPrefix prefix) : searchPath
                              where (prefix,_) = splitAt (length p - length n) p
                            _ -> searchPath

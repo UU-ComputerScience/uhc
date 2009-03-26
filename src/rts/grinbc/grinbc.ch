@@ -3,7 +3,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define USE_REGS_FOR_PC_SP 		1
+// #define USE_REGS_FOR_PC_SP 		1
+#define USE_REGS_FOR_PC_SP 		0
 
 %%]
 
@@ -375,10 +376,10 @@ typedef GB_Word GB_NodeHeader ;
 %%]
 
 %%[97
-#if USE_GMP
+// #if USE_GMP
 #define GB_NodeTag_Intl_GMP_mpz			4			// Internal node: A GMP mpz_t 
 #define GB_NodeTag_Intl_GMP_intl		5			// Internal node: GMP internal allocated 
-#endif
+// #endif
 %%]
 
 %%[98
@@ -398,7 +399,7 @@ typedef struct GB_Node {
     float			flt ;				/* when GB_NodeTag_Intl_Float */
     double			dbl ;				/* when GB_NodeTag_Intl_Double */
 #if USE_GMP
-    mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
+    // mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
 %%]]
 %%[[98
@@ -496,10 +497,10 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
 %%[95
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
-#define GB_NodeMallocSize2					(EntierUpDivBy(sizeof(GB_ByteArray),sizeof(GB_Word)) + 1)
+#define GB_NodeMallocSize_ByteArray			(EntierUpDivBy(sizeof(GB_ByteArray),sizeof(GB_Word)) + 1)
 
 #define GB_MkMallocHeader					GB_MkHeader(GB_NodeMallocSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc)
-#define GB_MkMallocHeader2					GB_MkHeader(GB_NodeMallocSize2, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc2)
+#define GB_MkMallocHeader_ByteArray			GB_MkHeader(GB_NodeMallocSize_ByteArray, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Malloc2)
 %%]
 
 %%[97
@@ -509,13 +510,6 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_NodeDoubleSize					(EntierUpDivBy(sizeof(float),sizeof(GB_Word)) + 1)
 #define GB_MkDoubleHeader					GB_MkHeader(GB_NodeDoubleSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Double)
 
-#if USE_GMP
-#define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(GB_Word)) + 1)
-#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(GB_Word)) + 1)
-
-#define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_mpz)
-#define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_intl)
-#endif
 %%]
 
 %%[98
@@ -525,6 +519,18 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
 %%[8
 #define GB_Node_ZeroFields(n)				{ memset( ((GB_NodePtr)n)->content.fields, 0, (GB_NH_Fld_Size(((GB_NodePtr)n)->header) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alloc routines for GMP
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+#if USE_GMP
+extern void* gb_Alloc_GMP( size_t nBytes ) ;
+extern void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes ) ;
+extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -622,15 +628,15 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% IOException
+%%% IOError
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Definition must match the one in Prelude.hs
 
 %%[96
-#define GB_Tag_IOException_IOError						0
+#define GB_Tag_IOError_IOError							0
 
-#define GB_MkIOExceptionIOError(n,x1,x2,x3,x4,x5)		GB_MkConNode5(n,GB_Tag_IOException_IOError,x1,x2,x3,x4,x5)
+#define GB_MkIOErrorIOError(n,x1,x2,x3,x4,x5)			GB_MkConNode5(n,GB_Tag_IOError_IOError,x1,x2,x3,x4,x5)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -648,7 +654,7 @@ Definition must match the one in Prelude.hs
 #define GB_Tag_Exception_Deadlock         					5
 #define GB_Tag_Exception_ErrorCall        					6
 #define GB_Tag_Exception_ExitException    					7
-#define GB_Tag_Exception_IOException      					8
+#define GB_Tag_Exception_IOException       					8
 #define GB_Tag_Exception_NoMethodError    					9
 #define GB_Tag_Exception_NonTermination   					10
 #define GB_Tag_Exception_PatternMatchFail 					11
@@ -664,7 +670,7 @@ Definition must match the one in Prelude.hs
 #define GB_MkExceptionDeadlock(n)							GB_MkConNode0(n,GB_Tag_Exception_Deadlock            )
 #define GB_MkExceptionErrorCall(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_ErrorCall        ,x1)
 #define GB_MkExceptionExitException(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_ExitException    ,x1)
-#define GB_MkExceptionIOException(n,x1)						GB_MkConNode1(n,GB_Tag_Exception_IOException      ,x1)
+#define GB_MkExceptionIOError(n,x1)							GB_MkConNode1(n,GB_Tag_Exception_IOException      ,x1)
 #define GB_MkExceptionNoMethodError(n,x1)					GB_MkConNode1(n,GB_Tag_Exception_NoMethodError    ,x1)
 #define GB_MkExceptionNonTermination(n)						GB_MkConNode0(n,GB_Tag_Exception_NonTermination      )
 #define GB_MkExceptionPatternMatchFail(n,x1)				GB_MkConNode1(n,GB_Tag_Exception_PatternMatchFail ,x1)
@@ -1019,7 +1025,7 @@ This breaks when compiled without bgc.
 											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
 											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
 											}
-#define GB_NodeAlloc_Malloc2_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize2,GB_MkMallocHeader2,n) ; \
+#define GB_NodeAlloc_ByteArray_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize_ByteArray,GB_MkMallocHeader_ByteArray,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
 											  (n)->content.bytearray.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
 											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
@@ -1029,23 +1035,6 @@ This breaks when compiled without bgc.
 %%[97
 #define GB_NodeAlloc_Float_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeFloatSize, GB_MkFloatHeader, n) ; }
 #define GB_NodeAlloc_Double_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeDoubleSize,GB_MkDoubleHeader,n) ; }
-
-#if USE_GMP
-#define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init((n)->content.mpz) ; }
-#define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
-
-extern void* gb_Alloc_GMP( size_t nBytes ) ;
-extern void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes ) ;
-extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
-#endif
-%%]
-
-%%[97
-#if USE_GMP
-#define GB_NodeAlloc_Mpz_SetSignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_si( n->content.mpz, (x) ) ; }
-#define GB_NodeAlloc_Mpz_SetUnsignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_ui( n->content.mpz, (x) ) ; }
-#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)				{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( n->content.mpz, (x) ) ; }
-#endif
 %%]
 
 
@@ -1133,49 +1122,6 @@ extern void gb_Free_GMP( void *n, size_t nBytesOld ) ;
 #define GB_Double_Div_In(z,x,y)				GB_Double_Op2_In1(/,z,x,y)
 
 #define GB_Double_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.dbl,y->content.dbl,lt,eq,gt)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Integer via GMP
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-mpz_t is defined as an array, this makes casting problematic (compiler complains),
-so a pointer based definition is used. However, __mpz_struct is an internal type which may
-undergo name changes as GMP versions progress.
-
-%%[97
-#if USE_GMP
-typedef __mpz_struct*  GB_mpz ;
-
-#define GB_Integer_Op1_In1(op,z,x)			{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz ) ; }
-#define GB_Integer_Op2_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y->content.mpz ) ; }
-#define GB_Integer_Op2b_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( z->content.mpz, x->content.mpz, y ) ; }
-#define GB_Integer_Op2_In2(op,z1,z2,x,y)	{ GB_NodeAlloc_Mpz_In(z1) ; GB_NodeAlloc_Mpz_In(z2) ; op( z1->content.mpz, z2->content.mpz, x->content.mpz, y->content.mpz ) ; }
-#define GB_Integer_Add_In(z,x,y)			GB_Integer_Op2_In1(mpz_add,z,x,y)
-#define GB_Integer_Sub_In(z,x,y)			GB_Integer_Op2_In1(mpz_sub,z,x,y)
-#define GB_Integer_Mul_In(z,x,y)			GB_Integer_Op2_In1(mpz_mul,z,x,y)
-#define GB_Integer_Div_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_q,z,x,y)
-#define GB_Integer_Mod_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_r,z,x,y)
-#define GB_Integer_DivMod_In(z1,z2,x,y)		GB_Integer_Op2_In2(mpz_fdiv_qr,z1,z2,x,y)
-#define GB_Integer_Quot_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_q,z,x,y)
-#define GB_Integer_Rem_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_r,z,x,y)
-#define GB_Integer_QuotRem_In(z1,z2,x,y)	GB_Integer_Op2_In2(mpz_tdiv_qr,z1,z2,x,y)
-#define GB_Integer_Neg_In(z,x)				GB_Integer_Op1_In1(mpz_neg,z,x)
-
-#define GB_Integer_Cmp(x,y)					mpz_cmp(x->content.mpz, y->content.mpz)
-
-#endif
-%%]
-
-%%[97
-#if USE_GMP
-#define GB_Integer_And_In(z,x,y)			GB_Integer_Op2_In1(mpz_and,z,x,y)
-#define GB_Integer_Or_In(z,x,y)				GB_Integer_Op2_In1(mpz_ior,z,x,y)
-#define GB_Integer_Xor_In(z,x,y)			GB_Integer_Op2_In1(mpz_eor,z,x,y)
-#define GB_Integer_Complement_In(z,x)		GB_Integer_Op1_In1(mpz_com,z,x)
-#define GB_Integer_ShiftLeft_In(z,x,y)		GB_Integer_Op2b_In1(mpz_mul_2exp,z,x,y)
-#define GB_Integer_ShiftRight_In(z,x,y)		GB_Integer_Op2b_In1(mpz_fdiv_q_2exp,z,x,y)
-#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1331,7 +1277,7 @@ extern GB_Byte gb_code_Startup[] ;
 extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
 extern GB_NodePtr gb_intl_throwException( GB_Word exc ) ;
 extern GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc ) ;
-extern GB_NodePtr gb_intl_throwIOExceptionFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr ) ;
+extern GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

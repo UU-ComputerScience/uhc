@@ -1,6 +1,7 @@
 %%[main doclatex
 %%@TopicEHCStructure.abstractExpReport
 
+\glabel{EhcStructureDocumentation}
 \section{Introduction}
 
 %%@TopicEHCStructure.introduction

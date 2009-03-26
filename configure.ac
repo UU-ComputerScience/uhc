@@ -364,7 +364,7 @@ fi
 
 case $cc_version in
   4.0.1)
-    cc_std_flag=""
+    cc_std_flag="-std=gnu99"
     ;;
   *)
     cc_std_flag="-std=gnu99"
@@ -493,6 +493,11 @@ AC_CHECK_SIZEOF([uint16_t])
 AC_CHECK_SIZEOF([uint32_t])
 AC_CHECK_SIZEOF([uint64_t])
 
+AC_CHECK_SIZEOF([clock_t])
+AC_CHECK_SIZEOF([time_t])
+AC_CHECK_SIZEOF([size_t])
+AC_CHECK_SIZEOF([wchar_t])
+
 AC_CHECK_ALIGNOF([char])
 AC_CHECK_ALIGNOF([short])
 AC_CHECK_ALIGNOF([int])
@@ -517,6 +522,21 @@ AC_CHECK_ALIGNOF([uint64_t])
 AC_C_BIGENDIAN([AC_DEFINE([BIGENDIAN],[1]) AC_DEFINE([LITTLEENDIAN],[0])],
                [AC_DEFINE([LITTLEENDIAN],[1]) AC_DEFINE([BIGENDIAN],[0])],
                [])
+
+# Haskell types corresponding to C types, defined here for those independent of 32/64 bitness of platform
+AC_DEFINE([HTYPE_CHAR],[Int8],[Haskell type for char])
+AC_DEFINE([HTYPE_DOUBLE],[Double],[Haskell type for double])
+AC_DEFINE([HTYPE_FLOAT],[Float],[Haskell type for float])
+AC_DEFINE([HTYPE_INTMAX_T],[Int64],[Haskell type for intmax_t])
+AC_DEFINE([HTYPE_LONG_LONG],[Int64],[Haskell type for long long])
+AC_DEFINE([HTYPE_SHORT],[Int16],[Haskell type for short])
+AC_DEFINE([HTYPE_SIGNED_CHAR ],[Int8],[Haskell type for signed char])
+AC_DEFINE([HTYPE_UINTMAX_T],[Word64],[Haskell type for uintmax_t])
+AC_DEFINE([HTYPE_UNSIGNED_CHAR],[Word8],[Haskell type for unsigned char])
+AC_DEFINE([HTYPE_UNSIGNED_LONG_LONG],[Word64],[Haskell type for unsigned long long])
+AC_DEFINE([HTYPE_UNSIGNED_SHORT],[Word16],[Haskell type for short])
+
+
 
 ### general configuration
 
@@ -692,7 +712,7 @@ AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in ex
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
-AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h])
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h])
 AC_OUTPUT
 
 echo

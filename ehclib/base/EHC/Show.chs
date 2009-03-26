@@ -5,6 +5,8 @@ module EHC.Show
   , formatRealFloat
   , showIntegral
   , showFloat, showInt
+  
+  , showIntAtBase, showHex, showOct
   )
   where
 
@@ -36,6 +38,40 @@ showIntegral = show . toInteger
 
 showInt :: Integral a => a -> ShowS
 showInt = shows
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Taken from/intended for Numeric:
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+-- ---------------------------------------------------------------------------
+-- Integer printing functions
+
+-- | Shows a /non-negative/ 'Integral' number using the base specified by the
+-- first argument, and the character representation specified by the second.
+showIntAtBase :: Integral a => a -> (Int -> Char) -> a -> ShowS
+showIntAtBase base toChr n0 r0
+  | base <= 1 = error ("Numeric.showIntAtBase: applied to unsupported base " ++ show base)
+  | n0 <  0   = error ("Numeric.showIntAtBase: applied to negative number " ++ show n0)
+  | otherwise = showIt (quotRem n0 base) r0
+   where
+    showIt (n,d) r = seq c $ -- stricter than necessary
+      case n of
+        0 -> r'
+        _ -> showIt (quotRem n base) r'
+     where
+      c  = toChr (fromIntegral d)
+      r' = c : r
+
+-- | Show /non-negative/ 'Integral' numbers in base 16.
+showHex :: Integral a => a -> ShowS
+showHex = showIntAtBase 16 intToDigit
+
+-- | Show /non-negative/ 'Integral' numbers in base 8.
+showOct :: Integral a => a -> ShowS
+showOct = showIntAtBase 8  intToDigit
 
 %%]
 

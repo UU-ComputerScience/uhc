@@ -62,15 +62,15 @@ cpCompileWithGCC how othModNmL modNm
                                    else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
                                  )
-%%[[8
-                              where pkgNmL     = []
-                                    othModNmL2 = othModNmL
-%%][99
-                              where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
-%%]]
                             FinalCompile_Module
                               -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                               where o = fpO modNm fp
+%%[[8
+                 pkgNmL     = [] :: [String]
+                 othModNmL2 = othModNmL
+%%][99
+                 (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
+%%]]
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
                              = mkShellCmd
@@ -92,6 +92,10 @@ cpCompileWithGCC how othModNmL modNm
                      ; when (ehcOptVerbosity opts >= VerboseALot)
                             (do { cpMsg' modNm VerboseALot "GCC" Nothing fpTarg
                                 ; lift $ putStrLn compileC
+                                })
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (do { lift $ putStrLn ("pkgs : " ++ show pkgNmL)
+                                ; lift $ putStrLn ("other: " ++ show othModNmL2)
                                 })
                      ; cpSystem compileC
 %%[[99
