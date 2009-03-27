@@ -210,8 +210,13 @@ cpMsg modNm v m
 cpMsg' :: HsName -> Verbosity -> String -> Maybe String -> FPath -> EHCompilePhase ()
 cpMsg' modNm v m mbInfo fp
   = do { cr <- get
-       ; let (_,_,opts,_) = crBaseInfo modNm cr
-       ; lift $ putCompileMsg v (ehcOptVerbosity opts) m mbInfo modNm fp
+       ; let (ecu,_,opts,_) = crBaseInfo modNm cr
+%%[[8
+             m'             = m
+%%][99
+             m'             = show (ecuSeqNr ecu) ++ " " ++ m
+%%]]
+       ; lift $ putCompileMsg v (ehcOptVerbosity opts) m' mbInfo modNm fp
        -- ; lift $ putStrLn "XX"
        ; cpMemUsage
        }
@@ -289,10 +294,11 @@ crPartitionNewerOlderImports modNm cr
 %%[20 export(crModNeedsCompile)
 crModNeedsCompile :: HsName -> EHCompileRun -> Bool
 crModNeedsCompile modNm cr
-  = ecuIsTopMod ecu
-    || (not $ ehcOptCheckRecompile opts)
-    || not (ecuCanUseHIInsteadOfHS ecu)
-    || not (null newer)
+  = ecuIsMainMod ecu -- ecuIsTopMod ecu
+    || not (  ehcOptCheckRecompile opts
+           && ecuCanUseHIInsteadOfHS ecu
+           && null newer
+           )
   where ecu = crCU modNm cr
         (newer,_) = crPartitionNewerOlderImports modNm cr
         opts = crsiOpts $ crStateInfo cr

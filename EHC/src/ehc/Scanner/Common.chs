@@ -295,6 +295,7 @@ hiScanOpts
                                         , "Value", "Pat", "Type", "Kind", "Class", "Instance", "Default", "Any", "Data"
                                         , "True", "False"
                                         , "tykind", "tykinm", "tykivar"
+                                        , "settings"
 %%[[9
                                         , "chr", "chrstore"
                                         , "Assume", "Prove", "Reduction"

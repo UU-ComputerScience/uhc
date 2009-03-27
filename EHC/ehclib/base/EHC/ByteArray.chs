@@ -7,9 +7,10 @@ Offering the ByteArray related primitives from GHC.Prim.
 module EHC.ByteArray
   ( MutableByteArray
   
-  , newByteArray, sizeofByteArray
-  
-  , sizeofMutableByteArray
+  , newByteArray, newPinnedByteArray
+  , sizeofByteArray, sizeofMutableByteArray
+  , byteArrayContents
+  , unsafeFreezeByteArray
   
   , indexCharArray, indexWideCharArray
   , indexIntArray, indexWordArray, indexAddrArray, indexStablePtrArray
@@ -22,6 +23,12 @@ module EHC.ByteArray
   , readFloatArray, readDoubleArray
   , readInt8Array, readInt16Array, readInt32Array, readInt64Array
   , readWord8Array, readWord16Array, readWord32Array, readWord64Array
+
+  , writeCharArray, writeWideCharArray
+  , writeIntArray, writeWordArray, writeAddrArray, writeStablePtrArray
+  , writeFloatArray, writeDoubleArray
+  , writeInt8Array, writeInt16Array, writeInt32Array, writeInt64Array
+  , writeWord8Array, writeWord16Array, writeWord32Array, writeWord64Array
 
   )
   where
@@ -86,94 +93,173 @@ foreign import prim "primIndexWord8Array" indexCharArray :: ByteArray -> Int -> 
 foreign import prim "primIndexWord32Array" indexWideCharArray :: ByteArray -> Int -> Char
 
 #if USE_64_BITS
-foreign import prim "primIndexWord64Array" indexIntArray :: ByteArray -> Int -> Int
-foreign import prim "primIndexWord64Array" indexWordArray :: ByteArray -> Int -> Word
-foreign import prim "primIndexWord64Array" indexAddrArray :: ByteArray -> Int -> Addr
-foreign import prim "primIndexWord64Array" indexStablePtrArray :: ByteArray -> Int -> Addr
+foreign import prim "primIndexWord64Array" 	indexIntArray 		:: ByteArray -> Int -> Int
+foreign import prim "primIndexWord64Array" 	indexWordArray 		:: ByteArray -> Int -> Word
+foreign import prim "primIndexWord64Array" 	indexAddrArray 		:: ByteArray -> Int -> Addr
 #else
-foreign import prim "primIndexWord32Array" indexIntArray :: ByteArray -> Int -> Int
-foreign import prim "primIndexWord32Array" indexWordArray :: ByteArray -> Int -> Word
-foreign import prim "primIndexWord32Array" indexAddrArray :: ByteArray -> Int -> Addr
-foreign import prim "primIndexWord32Array" indexStablePtrArray :: ByteArray -> Int -> Addr
+foreign import prim "primIndexWord32Array" 	indexIntArray 		:: ByteArray -> Int -> Int
+foreign import prim "primIndexWord32Array" 	indexWordArray 		:: ByteArray -> Int -> Word
+foreign import prim "primIndexWord32Array" 	indexAddrArray 		:: ByteArray -> Int -> Addr
 #endif
 
-foreign import prim "primIndexFloatArray" indexFloatArray :: ByteArray -> Int -> Float
-foreign import prim "primIndexDoubleArray" indexDoubleArray :: ByteArray -> Int -> Double
+foreign import prim "primIndexFloatArray" 	indexFloatArray 	:: ByteArray -> Int -> Float
+foreign import prim "primIndexDoubleArray" 	indexDoubleArray 	:: ByteArray -> Int -> Double
 
-foreign import prim "primIndexWord8Array" indexInt8Array :: ByteArray -> Int -> Int8
-foreign import prim "primIndexWord16Array" indexInt16Array :: ByteArray -> Int -> Int16
-foreign import prim "primIndexWord32Array" indexInt32Array :: ByteArray -> Int -> Int32
-foreign import prim "primIndexWord64Array" indexInt64Array :: ByteArray -> Int -> Int64
+foreign import prim "primIndexWord8Array" 	indexInt8Array 		:: ByteArray -> Int -> Int8
+foreign import prim "primIndexWord16Array" 	indexInt16Array 	:: ByteArray -> Int -> Int16
+foreign import prim "primIndexWord32Array" 	indexInt32Array 	:: ByteArray -> Int -> Int32
+foreign import prim "primIndexWord64Array" 	indexInt64Array 	:: ByteArray -> Int -> Int64
 
-foreign import prim "primIndexWord8Array" indexWord8Array :: ByteArray -> Int -> Word8
-foreign import prim "primIndexWord16Array" indexWord16Array :: ByteArray -> Int -> Word16
-foreign import prim "primIndexWord32Array" indexWord32Array :: ByteArray -> Int -> Word32
-foreign import prim "primIndexWord64Array" indexWord64Array :: ByteArray -> Int -> Word64
+foreign import prim "primIndexWord8Array" 	indexWord8Array 	:: ByteArray -> Int -> Word8
+foreign import prim "primIndexWord16Array" 	indexWord16Array 	:: ByteArray -> Int -> Word16
+foreign import prim "primIndexWord32Array" 	indexWord32Array 	:: ByteArray -> Int -> Word32
+foreign import prim "primIndexWord64Array" 	indexWord64Array 	:: ByteArray -> Int -> Word64
 
+%%]
+
+%%[99
+indexStablePtrArray :: forall s . ByteArray -> Int -> StablePtr s
+indexStablePtrArray a i = letstrict x = indexAddrArray a i in StablePtr x
 %%]
 
 %%[99
 -- |Read 8-bit character; offset in bytes.
 
 readCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
-readCharArray (MutableByteArray a) i s = (s, indexCharArray a i)
+readCharArray (MutableByteArray a) i s = letstrict x = indexCharArray a i in (s, x)
 
 -- |Read 31-bit character; offset in 4-byte words.
 
 readWideCharArray :: MutableByteArray s -> Int -> State s -> ( State s,Char )
-readWideCharArray (MutableByteArray a) i s = (s, indexWideCharArray a i)
+readWideCharArray (MutableByteArray a) i s = letstrict x = indexWideCharArray a i in (s, x)
 
 readIntArray :: MutableByteArray s -> Int -> State s -> ( State s,Int )
-readIntArray (MutableByteArray a) i s = (s, indexIntArray a i)
+readIntArray (MutableByteArray a) i s = letstrict x = indexIntArray a i in (s, x)
 
 readWordArray :: MutableByteArray s -> Int -> State s -> ( State s,Word )
-readWordArray (MutableByteArray a) i s = (s, indexWordArray a i)
+readWordArray (MutableByteArray a) i s = letstrict x = indexWordArray a i in (s, x)
 
 readAddrArray :: MutableByteArray s -> Int -> State s -> ( State s,Addr )
-readAddrArray (MutableByteArray a) i s = (s, indexAddrArray a i)
+readAddrArray (MutableByteArray a) i s = letstrict x = indexAddrArray a i in (s, x)
 
 readFloatArray :: MutableByteArray s -> Int -> State s -> ( State s,Float )
-readFloatArray (MutableByteArray a) i s = (s, indexFloatArray a i)
+readFloatArray (MutableByteArray a) i s = letstrict x = indexFloatArray a i in (s, x)
 
 readDoubleArray :: MutableByteArray s -> Int -> State s -> ( State s,Double )
-readDoubleArray (MutableByteArray a) i s = (s, indexDoubleArray a i)
+readDoubleArray (MutableByteArray a) i s = letstrict x = indexDoubleArray a i in (s, x)
 
 readStablePtrArray :: MutableByteArray s -> Int -> State s -> ( State s,StablePtr s )
-readStablePtrArray (MutableByteArray a) i s = (s, StablePtr (indexStablePtrArray a i))
+readStablePtrArray (MutableByteArray a) i s = letstrict x = indexStablePtrArray a i in (s, x)
 
 readInt8Array :: MutableByteArray s -> Int -> State s -> ( State s,Int8 )
-readInt8Array (MutableByteArray a) i s = (s, indexInt8Array a i)
+readInt8Array (MutableByteArray a) i s = letstrict x = indexInt8Array a i in (s, x)
 
 readInt16Array :: MutableByteArray s -> Int -> State s -> ( State s,Int16 )
-readInt16Array (MutableByteArray a) i s = (s, indexInt16Array a i)
+readInt16Array (MutableByteArray a) i s = letstrict x = indexInt16Array a i in (s, x)
 
 readInt32Array :: MutableByteArray s -> Int -> State s -> ( State s,Int32 )
-readInt32Array (MutableByteArray a) i s = (s, indexInt32Array a i)
+readInt32Array (MutableByteArray a) i s = letstrict x = indexInt32Array a i in (s, x)
 
 readInt64Array :: MutableByteArray s -> Int -> State s -> ( State s,Int64 )
-readInt64Array (MutableByteArray a) i s = (s, indexInt64Array a i)
+readInt64Array (MutableByteArray a) i s = letstrict x = indexInt64Array a i in (s, x)
 
 readWord8Array :: MutableByteArray s -> Int -> State s -> ( State s,Word8 )
-readWord8Array (MutableByteArray a) i s = (s, indexWord8Array a i)
+readWord8Array (MutableByteArray a) i s = letstrict x = indexWord8Array a i in (s, x)
 
 readWord16Array :: MutableByteArray s -> Int -> State s -> ( State s,Word16 )
-readWord16Array (MutableByteArray a) i s = (s, indexWord16Array a i)
+readWord16Array (MutableByteArray a) i s = letstrict x = indexWord16Array a i in (s, x)
 
 readWord32Array :: MutableByteArray s -> Int -> State s -> ( State s,Word32 )
-readWord32Array (MutableByteArray a) i s = (s, indexWord32Array a i)
+readWord32Array (MutableByteArray a) i s = letstrict x = indexWord32Array a i in (s, x)
 
 readWord64Array :: MutableByteArray s -> Int -> State s -> ( State s,Word64 )
-readWord64Array (MutableByteArray a) i s = (s, indexWord64Array a i)
+readWord64Array (MutableByteArray a) i s = letstrict x = indexWord64Array a i in (s, x)
 
 %%]
 
 %%[99
+foreign import prim "primWriteWord8Array"  primWriteCharArray 		:: ByteArray -> Int -> Char -> ()
+
+foreign import prim "primWriteWord32Array" primWriteWideCharArray 	:: ByteArray -> Int -> Char -> ()
+
+#if USE_64_BITS
+foreign import prim "primWriteWord64Array" primWriteIntArray 		:: ByteArray -> Int -> Int -> ()
+foreign import prim "primWriteWord64Array" primWriteWordArray 		:: ByteArray -> Int -> Word -> ()
+foreign import prim "primWriteWord64Array" primWriteAddrArray 		:: ByteArray -> Int -> Addr -> ()
+#else
+foreign import prim "primWriteWord32Array" primWriteIntArray 		:: ByteArray -> Int -> Int -> ()
+foreign import prim "primWriteWord32Array" primWriteWordArray 		:: ByteArray -> Int -> Word -> ()
+foreign import prim "primWriteWord32Array" primWriteAddrArray 		:: ByteArray -> Int -> Addr -> ()
+#endif
+
+foreign import prim "primWriteFloatArray"  primWriteFloatArray 		:: ByteArray -> Int -> Float -> ()
+foreign import prim "primWriteDoubleArray" primWriteDoubleArray 	:: ByteArray -> Int -> Double -> ()
+
+foreign import prim "primWriteWord8Array"  primWriteInt8Array 		:: ByteArray -> Int -> Int8 -> ()
+foreign import prim "primWriteWord16Array" primWriteInt16Array 		:: ByteArray -> Int -> Int16 -> ()
+foreign import prim "primWriteWord32Array" primWriteInt32Array 		:: ByteArray -> Int -> Int32 -> ()
+foreign import prim "primWriteWord64Array" primWriteInt64Array 		:: ByteArray -> Int -> Int64 -> ()
+
+foreign import prim "primWriteWord8Array"  primWriteWord8Array 		:: ByteArray -> Int -> Word8 -> ()
+foreign import prim "primWriteWord16Array" primWriteWord16Array		:: ByteArray -> Int -> Word16 -> ()
+foreign import prim "primWriteWord32Array" primWriteWord32Array 	:: ByteArray -> Int -> Word32 -> ()
+foreign import prim "primWriteWord64Array" primWriteWord64Array 	:: ByteArray -> Int -> Word64 -> ()
+
 %%]
+
+%%[99
 -- |Write 8-bit character; offset in bytes.
 
 writeCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
-writeCharArray (MutableByteArray a) i x s = 
+writeCharArray (MutableByteArray a) i x s = letstrict _ = primWriteCharArray a i x in s
 
 -- |Write 31-bit character; offset in 4-byte words.
+
+writeWideCharArray :: MutableByteArray s -> Int -> Char -> State s -> State s
+writeWideCharArray (MutableByteArray a) i x s = letstrict _ = primWriteWideCharArray a i x in s
+
+writeIntArray :: MutableByteArray s -> Int -> Int -> State s -> State s
+writeIntArray (MutableByteArray a) i x s = letstrict _ = primWriteIntArray a i x in s
+
+writeWordArray :: MutableByteArray s -> Int -> Word -> State s -> State s
+writeWordArray (MutableByteArray a) i x s = letstrict _ = primWriteWordArray a i x in s
+
+writeAddrArray :: MutableByteArray s -> Int -> Addr -> State s -> State s
+writeAddrArray (MutableByteArray a) i x s = letstrict _ = primWriteAddrArray a i x in s
+
+writeFloatArray :: MutableByteArray s -> Int -> Float -> State s -> State s
+writeFloatArray (MutableByteArray a) i x s = letstrict _ = primWriteFloatArray a i x in s
+
+writeDoubleArray :: MutableByteArray s -> Int -> Double -> State s -> State s
+writeDoubleArray (MutableByteArray a) i x s = letstrict _ = primWriteDoubleArray a i x in s
+
+writeStablePtrArray :: MutableByteArray s -> Int -> StablePtr s -> State s -> State s
+writeStablePtrArray (MutableByteArray a) i (StablePtr x) s = letstrict _ = primWriteAddrArray a i x in s
+
+writeInt8Array :: MutableByteArray s -> Int -> Int8 -> State s -> State s
+writeInt8Array (MutableByteArray a) i x s = letstrict _ = primWriteInt8Array a i x in s
+
+writeInt16Array :: MutableByteArray s -> Int -> Int16 -> State s -> State s
+writeInt16Array (MutableByteArray a) i x s = letstrict _ = primWriteInt16Array a i x in s
+
+writeInt32Array :: MutableByteArray s -> Int -> Int32 -> State s -> State s
+writeInt32Array (MutableByteArray a) i x s = letstrict _ = primWriteInt32Array a i x in s
+
+writeInt64Array :: MutableByteArray s -> Int -> Int64 -> State s -> State s
+writeInt64Array (MutableByteArray a) i x s = letstrict _ = primWriteInt64Array a i x in s
+
+writeWord8Array :: MutableByteArray s -> Int -> Word8 -> State s -> State s
+writeWord8Array (MutableByteArray a) i x s = letstrict _ = primWriteWord8Array a i x in s
+
+writeWord16Array :: MutableByteArray s -> Int -> Word16 -> State s -> State s
+writeWord16Array (MutableByteArray a) i x s = letstrict _ = primWriteWord16Array a i x in s
+
+writeWord32Array :: MutableByteArray s -> Int -> Word32 -> State s -> State s
+writeWord32Array (MutableByteArray a) i x s = letstrict _ = primWriteWord32Array a i x in s
+
+writeWord64Array :: MutableByteArray s -> Int -> Word64 -> State s -> State s
+writeWord64Array (MutableByteArray a) i x s = letstrict _ = primWriteWord64Array a i x in s
+
+%%]
 
 

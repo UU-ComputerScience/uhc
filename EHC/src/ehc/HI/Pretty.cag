@@ -33,6 +33,8 @@ SEM Module
         lhs         .   ppSq        =   hiNVSq "module" @nm @bindings.ppSqL
 
 SEM Binding
+    | Settings
+        lhs         .   ppSq        =   hiNV "settings" hsnUnknown [pp @hasMain]
     | Stamp
         lhs         .   ppSq        =   let ps :: Show a => a -> PP_Doc
                                             ps = pp . show

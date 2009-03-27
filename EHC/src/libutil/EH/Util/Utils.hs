@@ -180,6 +180,9 @@ infixr 0  $?
 f $? mx = do x <- mx
              f x
 
+orMb :: Maybe a -> Maybe a -> Maybe a
+orMb m1 m2 = maybe m2 (const m1) m1
+
 
 
 

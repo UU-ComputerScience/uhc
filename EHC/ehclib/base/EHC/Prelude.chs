@@ -175,10 +175,11 @@ stringSum (x:xs) = primCharToInt x + stringSum xs
 
 foreign import prim primError :: String -> a
 
-error          :: String -> a
+error          :: forall a . String -> a
 error s         = primError (forceString s)
 #else
-error          :: String -> a
+error          :: forall a . String -> a
+-- error          :: String -> a
 error s         = throw (ErrorCall s)
 #endif
 

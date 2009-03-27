@@ -78,3 +78,27 @@ SEM Deriving
         loc             .   mbPrevInstancename
                                         =   Nothing
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Does 'main' exists? -- also a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR
+  AGItf AllTopLevel AllDeclarationPlain AllFunctionBinding LeftHandSide Pattern Patterns
+    [ | | mainValExists USE {||} {False}: Bool ]
+%%]
+
+%%[20
+SEM LeftHandSide
+    | Function
+        loc             .   mainValExists
+        								=   @name == hsnMain
+
+
+SEM Pattern
+    | Variable
+        loc             .   mainValExists
+        								=   @name == hsnMain
+%%]
+

@@ -80,13 +80,40 @@ defaultOptim
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compilation sequence nr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This is not a necessity, just a gimmick because GHC has it :-).
+Ok, it is useful to see how much is done.
+
+%%[99 export(EHCCompileSeqNr(..))
+data EHCCompileSeqNr
+  = EHCCompileSeqNr
+      { ecseqnrThis		:: !Int
+      , ecseqnrTotal	:: !Int
+      }
+  deriving (Eq,Ord)
+
+zeroEHCCompileSeqNr = EHCCompileSeqNr 0 0
+
+instance Show EHCCompileSeqNr where
+  show (EHCCompileSeqNr this total)
+    = "[" ++ replicate (length tot - length ths) ' ' ++ ths ++ "/" ++ tot ++ "]"
+    where tot = show total
+          ths = show this
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilation unit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(EHCompileUnit(..))
 data EHCompileUnit
   = EHCompileUnit
-      { ecuFilePath          :: !FPath
+      { ecuSrcFilePath       :: !FPath
+%%[[99
+      , ecuMbCppFilePath     :: !(Maybe FPath)
+%%]]
       , ecuFileLocation      :: !FileLoc
       , ecuGrpNm             :: !HsName
       , ecuModNm             :: !HsName
@@ -129,10 +156,20 @@ data EHCompileUnit
 %%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      :: ![FPath]
+      , ecuSeqNr      		 :: !EHCCompileSeqNr
 %%]]
       }
 %%]
-      , ecuMbEHSem2          :: !(Maybe EHSem.Syn_AGItf)
+
+%%[8 export(ecuFilePath)
+ecuFilePath :: EHCompileUnit -> FPath
+ecuFilePath ecu
+%%[[8
+  = ecuSrcFilePath ecu
+%%][99
+  = maybe (ecuSrcFilePath ecu) id (ecuMbCppFilePath ecu)
+%%]]
+%%]
 
 %%[20 export(ecuIsMainMod)
 ecuIsMainMod :: EHCompileUnit -> Bool
@@ -143,7 +180,10 @@ ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
 emptyECU :: EHCompileUnit
 emptyECU
   = EHCompileUnit
-      { ecuFilePath          = emptyFPath
+      { ecuSrcFilePath       = emptyFPath
+%%[[99
+      , ecuMbCppFilePath     = Nothing
+%%]]
       , ecuFileLocation      = emptyFileLoc
       , ecuGrpNm             = hsnUnknown
       , ecuModNm             = hsnUnknown
@@ -188,6 +228,7 @@ emptyECU
 %%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
+      , ecuSeqNr			 = zeroEHCCompileSeqNr
 %%]]
       }
 %%]
@@ -235,7 +276,7 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuLocation        = fileLocation
   cuKey             = ecuModNm
   cuState           = ecuState
-  cuUpdFPath        = ecuStoreFilePath
+  cuUpdFPath        = ecuStoreSrcFilePath
   cuUpdLocation     = ecuStoreFileLocation
   cuUpdState        = ecuStoreState
   cuUpdKey   nm u   = u {ecuModNm = nm}
@@ -269,11 +310,11 @@ instance PP EHCompileUnit where
 %%% Storing into an EHCompileUnit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(EcuUpdater,ecuStoreFilePath,ecuStoreState,ecuStoreHS,ecuStoreEH,ecuStoreHSSem,ecuStoreEHSem)
+%%[8 export(EcuUpdater,ecuStoreSrcFilePath,ecuStoreState,ecuStoreHS,ecuStoreEH,ecuStoreHSSem,ecuStoreEHSem)
 type EcuUpdater a = a -> EHCompileUnit -> EHCompileUnit
 
-ecuStoreFilePath :: EcuUpdater FPath
-ecuStoreFilePath x ecu = ecu { ecuFilePath = x }
+ecuStoreSrcFilePath :: EcuUpdater FPath
+ecuStoreSrcFilePath x ecu = ecu { ecuSrcFilePath = x }
 
 ecuStoreFileLocation :: EcuUpdater FileLoc
 ecuStoreFileLocation x ecu = ecu { ecuFileLocation = x }
@@ -391,9 +432,15 @@ ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
 
-%%[(99 codegen) export(ecuStoreGenCodeFiles)
+%%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)
 ecuStoreGenCodeFiles :: EcuUpdater [FPath]
 ecuStoreGenCodeFiles x ecu = ecu { ecuGenCodeFiles = x }
+
+ecuStoreSeqNr :: EcuUpdater EHCCompileSeqNr
+ecuStoreSeqNr x ecu = ecu { ecuSeqNr = x }
+
+ecuStoreCppFilePath :: EcuUpdater FPath
+ecuStoreCppFilePath x ecu = ecu { ecuMbCppFilePath = Just x }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -405,7 +452,7 @@ Is HS newer?
 If no HS exists False is returned.
 %%]
 
-%%[20
+%%[20 export(ecuIsHSNewerThanHI)
 ecuIsHSNewerThanHI :: EHCompileUnit -> Bool
 ecuIsHSNewerThanHI ecu
   = case (ecuMbHSTime ecu,ecuMbHITime ecu) of
@@ -414,7 +461,7 @@ ecuIsHSNewerThanHI ecu
       _                   -> True
 %%]
 
-%%[20
+%%[20 export(ecuIsValidHI)
 ecuIsValidHI :: EHCompileUnit -> Bool
 ecuIsValidHI ecu
   = case ecuMbPrevHISem ecu of

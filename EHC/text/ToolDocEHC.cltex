@@ -30,6 +30,10 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \subsection{Partial type signature}
 \label{partial-type-signatures}
 
+\subsection{Quantifier position inference}
+\label{quantifier-position-inference}
+%%@ToolDocEHC.quantifierPositionInference
+
 \subsection{Existential types}
 \label{existential-types}
 
@@ -74,17 +78,20 @@ The library consists of
 \item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of @#ifdef@s or greater changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
 \end{itemize}
 
+Currently, only modules from the @base@ package are available.
 The following librariy modules incorporated in the library, either fully or partially:
 
 \begin{itemize}
-\item Package @base@: 
+\item Package @base@: ...
 \end{itemize}
 
-Some modules do not provide full functionality.
-We give an overview such modules.
+Some modules do not provide full functionality:
 
-\subsubsection{@Prelude@}
-\subsubsection{@Data.Typeable@}
+\begin{itemize}
+\item @Prelude@: 
+\item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@. Equality of type representations is not done efficiently with hashing (not yet available), but with the usual structural comparison of the type representation.
+\item Garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\end{itemize}
 
 \subsection{Library + runtime}
 The C based backends (C, bc) use the following public domain libraries:
@@ -99,6 +106,7 @@ The C based backends (C, bc) use the following public domain libraries:
 \subsubsection{Known issues}
 \begin{itemize}
 \item Stacksize for the C based backends is fixed and not checked for overflow.
+\item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
 \end{itemize}
 
 \subsection{Packages}
@@ -131,6 +139,7 @@ If the package is put in the default location (usually something like @lib@ insi
 
 \begin{itemize}
 \item No exceptions.
+\item The size of the stack is hardcoded. No runtime overflow check is done.
 \end{itemize}
 
 \subsection{Almost fully functional backends}
@@ -504,6 +513,27 @@ Hello World
 %%]
 
 %%[extensions doclatex
+%%]
+
+%%[quantifierPositionInference doclatex
+If left unspecified, the position of a quantifier not automatically is placed in front of a type.
+For example, the type signature
+\begin{pre}
+unsafeCoerce :: a -> b
+\end{pre}
+is interpreted to be:
+\begin{pre}
+unsafeCoerce :: forall a . a -> forall b . b
+\end{pre}
+
+The idea is that after passing a parameter, the result type still can be chosen.
+
+[more explanation here...]
+
+The combination with impredicativity can sometimes cause unexpected behavior. 
+
+[more explanation here...]
+
 %%]
 
 %%[absenceMonomorphismRestriction doclatex

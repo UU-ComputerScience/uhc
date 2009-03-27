@@ -383,7 +383,7 @@ PRIM GrWord primOpenFile(GrWord str, GrWord mode)
 	case 5: modestring = "r+"; break;
 	case 6: modestring = "wb"; break;
 	case 7: modestring = "w"; break;
-	default:  printf("primOpenFile: illegal mode %d\n", mode); fflush(stdout);
+	default:  printf("primOpenFile: illegal mode %d\n", (int)mode); fflush(stdout);
 	          return 0;	
 }
 

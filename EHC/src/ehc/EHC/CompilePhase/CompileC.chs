@@ -141,7 +141,8 @@ cpPreprocessWithCPP modNm
                              ; cpRegisterFilesToRm [fpCPP]
 %%]]
                              })
-                  ; cpUpdCU modNm (ecuStoreFilePath fpCPP)
+                  -- ; cpUpdCU modNm (ecuStoreSrcFilePath fpCPP)
+                  ; cpUpdCU modNm (ecuStoreCppFilePath fpCPP)
                   })
        }
 %%]

@@ -391,6 +391,41 @@ PRIM GB_Word gb_primNullAddr( )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Weak ptr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Weak pointers are not implemented, so these primitives provide an interface only.
+No functionality.
+Conceptually:
+- a weak ptr is created using a key/value pair, with a finalizer
+- a weak ptr is dereferenced, but may be finalized, encoded in a Maybe
+
+%%[99
+PRIM GB_Word gb_primMakeWeakPtr( GB_Word key, GB_Word val, GB_Word finalizer )
+{
+	return val ;
+}
+
+PRIM GB_NodePtr gb_primDeRefWeakPtr( GB_Word wp )
+{
+	GB_NodePtr wpDeref ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe1_Zeroed(wpDeref) ;
+	GB_MkMaybeJust( wpDeref, wp ) ;
+	GB_GC_SafeLeave ;
+	return wpDeref ;
+}
+
+PRIM GB_NodePtr gb_primFinalizeWeakPtr( GB_Word wp )
+{
+	GB_NodePtr fin ;
+	GB_MkMaybeNothing( fin ) ;
+	return fin ;
+}
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stable ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -931,6 +966,17 @@ PRIM GB_Word gb_primByteArrayContents( GB_NodePtr bytearray )
 %%]
 
 %%[99
+PRIM GB_Word gb_primSameByteArray( GB_NodePtr bytearray1, GB_NodePtr bytearray2 )
+{
+	if ( bytearray1->content.bytearray.ptr == bytearray2->content.bytearray.ptr )
+		return gb_True ;
+	else
+		return gb_False ;
+}
+
+%%]
+
+%%[99
 PRIM Word8 gb_primIndexWord8Array( GB_NodePtr bytearray, GB_Word inx )
 {
 	return gb_primReadWord8OffAddr( bytearray->content.bytearray.ptr, inx ) ;
@@ -1020,12 +1066,7 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 		i = -i ;
 		*(s++) = '-' ;
 	}
-#	if USE_64_BITS
-		sprintf( s, "%ld"
-#	else
-		sprintf( s, "%d"
-#	endif
-				, i ) ;
+	sprintf( s, "%d" , i ) ;
 	
   	IF_GB_TR_ON(3,printf("gb_primShowInt s(%d) %s\n", strlen(buf), buf ););
 	GB_NodePtr n ;

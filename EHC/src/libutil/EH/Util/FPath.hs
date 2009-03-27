@@ -12,7 +12,8 @@ module EH.Util.FPath
   
   , fpathIsAbsolute
 
-  , fpathAppendDir, fpathPrependDir, fpathUnPrependDir
+  , fpathAppendDir, fpathUnAppendDir
+  , fpathPrependDir, fpathUnPrependDir
   , fpathSplitDirBy
   , mkTopLevelFPath
 
@@ -159,17 +160,27 @@ fpathPrependDir "" fp
 fpathPrependDir d fp
   = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (d ++ fpathDirSep ++ fd) fp) (fpathMbDir fp)
 
+fpathUnPrependDir :: String -> FPath -> FPath
+fpathUnPrependDir d fp
+  = case fpathSplitDirBy d fp of
+      Just (_,d) -> fpathSetDir d fp
+      _          -> fp
+
 fpathAppendDir :: FPath -> String -> FPath
 fpathAppendDir fp ""
   = fp
 fpathAppendDir fp d
   = maybe (fpathSetDir d fp) (\fd -> fpathSetDir (fd ++ fpathDirSep ++ d) fp) (fpathMbDir fp)
 
-fpathUnPrependDir :: String -> FPath -> FPath
-fpathUnPrependDir d fp
-  = case fpathSplitDirBy d fp of
-      Just (_,d) -> fpathSetDir d fp
-      _          -> fp
+-- remove common trailing part of dir
+fpathUnAppendDir :: FPath -> String -> FPath
+fpathUnAppendDir fp ""
+  = fp
+fpathUnAppendDir fp d
+  = case fpathMbDir fp of
+      Just p -> fpathSetDir (filePathUnPrefix prefix) fp
+             where (prefix,_) = splitAt (length p - length d) p
+      _      -> fp
 
 fpathRemoveSuff :: FPath -> FPath
 fpathRemoveSuff fp
