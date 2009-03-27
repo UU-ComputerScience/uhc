@@ -17,6 +17,8 @@ DATA Module
 
 %%[20
 DATA Binding
+    | Settings
+        hasMain					: Bool
     | Stamp
         srcTimestamp            : String
         srcSig                  : String

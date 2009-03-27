@@ -40,7 +40,8 @@ cpLinkO modNmL pkgNm
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (do { lift $ mapM_ putStrLn linkCode
                   })
-       ; cpSeq [ cpSystem c | c <- linkCode ]
+       ; unless (null codeFiles)
+                (cpSeq [ cpSystem c | c <- linkCode ])
        }
 %%]
 

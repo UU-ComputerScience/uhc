@@ -99,5 +99,5 @@
 #undef HTYPE_UNSIGNED_SHORT
 
 
-#endif // HSBASECONFIG_H
+#endif
 

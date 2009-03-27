@@ -20,6 +20,8 @@
 -- #hide
 module EHC.Ptr
   ( Addr
+  , nullAddr
+
   , Ptr
   , nullPtr, castPtr, plusPtr, alignPtr, minusPtr
   
@@ -53,7 +55,7 @@ foreign import prim "primRemWord32" primRemAddr :: Addr -> Int  -> Int
 foreign import prim "primUnsafeId"  primAddrToWord :: Addr -> Word32
 #endif
 
-foreign import prim primNullAddr :: Addr
+foreign import prim "primNullAddr" nullAddr :: Addr
 
 ------------------------------------------------------------------------
 -- Data pointers.
@@ -73,7 +75,7 @@ newtype Ptr a		= Ptr Addr
 -- |The constant 'nullPtr' contains a distinguished value of 'Ptr'
 -- that is not associated with a valid memory location.
 nullPtr :: Ptr a
-nullPtr = Ptr primNullAddr
+nullPtr = Ptr nullAddr
 
 -- |The 'castPtr' function casts a pointer from one type to another.
 castPtr :: forall a b . Ptr a -> Ptr b
@@ -149,7 +151,7 @@ newtype FunPtr a		= FunPtr Addr
 -- distinguished value of 'FunPtr' that is not
 -- associated with a valid memory location.
 nullFunPtr :: FunPtr a
-nullFunPtr = FunPtr primNullAddr
+nullFunPtr = FunPtr nullAddr
 
 -- |Casts a 'FunPtr' to a 'FunPtr' of a different type.
 castFunPtr :: forall a b . FunPtr a -> FunPtr b
@@ -173,6 +175,15 @@ castFunPtrToPtr (FunPtr addr) = Ptr addr
 castPtrToFunPtr :: forall a b . Ptr a -> FunPtr b
 castPtrToFunPtr (Ptr addr) = FunPtr addr
 
+
+------------------------------------------------------------------------
+-- Eq, Ord instances for Ptr.
+
+instance Eq (Ptr a) where
+  (Ptr a1) == (Ptr a2) = primAddrToWord a1 == primAddrToWord a2
+
+instance Ord (Ptr a) where
+  (Ptr a1) `compare` (Ptr a2) = primAddrToWord a1 `compare` primAddrToWord a2
 
 ------------------------------------------------------------------------
 -- Show instances for Ptr and FunPtr

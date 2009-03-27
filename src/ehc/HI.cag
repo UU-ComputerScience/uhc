@@ -62,6 +62,15 @@ instance Show Visible where
   show VisibleYes = "visibleyes"
 %%]
 
+%%[20 hs export(HiSettings(..),emptyHiSettings)
+data HiSettings
+  = HiSettings
+      { hisettingsHasMain :: Bool
+      }
+
+emptyHiSettings = HiSettings False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% HI info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,6 +84,7 @@ data HIInfo
       , hiiIdDefOccGam      :: !IdDefOccGam
       , hiiHIDeclImpModL    :: ![HsName]
       , hiiHIUsedImpModL    :: ![HsName]
+      , hiiSettings         :: !HiSettings
 %%[[(20 hmtyinfer)
       , hiiValGam           :: !ValGam
       , hiiTyGam            :: !TyGam
@@ -96,6 +106,7 @@ emptyHIInfo :: HIInfo
 emptyHIInfo 
   = HIInfo Rel.empty Rel.empty emptyGam emptyGam
            [] []
+           emptyHiSettings
 %%[[(20 hmtyinfer)
            emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyCHRStore
 %%]]
@@ -139,6 +150,7 @@ hiFromHIInfo i
       (hiiIdDefOccGam   i)
       (hiiHIDeclImpModL i)
       (hiiHIUsedImpModL i)
+      (hiiSettings      i)
 %%[[(20 hmtyinfer)
       (hiiValGam        i)
       (hiiTyGam         i)
@@ -167,6 +179,7 @@ hiFromAllGams
      -> IdDefOccGam
      -> [HsName]
      -> [HsName]
+     -> HiSettings
 %%[[(20 hmtyinfer)
      -> ValGam
      -> TyGam
@@ -185,6 +198,7 @@ hiFromAllGams
      -> Seq.FastSeq Binding
 hiFromAllGams exps hiddenExps fg idg
               impd impu
+              settings
 %%[[(20 hmtyinfer)
               vg tg tkg pg dg ig chrStore
 %%]]
@@ -199,6 +213,7 @@ hiFromAllGams exps hiddenExps fg idg
     Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
     Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
     Seq.:++: Seq.fromList [Binding_ImportModules impd impu]
+    Seq.:++: Seq.fromList [Binding_Settings (hisettingsHasMain settings)]
 %%[[(20 hmtyinfer)
     Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
     Seq.:++: Seq.fromList [Binding_TyPolarities [ (n,pgiPol i) | (n,i) <- gamToAssocL pg ]]

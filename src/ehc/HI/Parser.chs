@@ -130,7 +130,8 @@ pRedHowAnnotation
 %%[20
 pBinding :: HIParser Binding
 pBinding
-  =   Binding_Fixity    <$> pNmIs "fixity"   <* pOCURLY <*> pInt    <* pSEMI <*> pFixity  <* pCCURLY
+  =   Binding_Settings  <$  pNmIs "settings" <* pOCURLY <*> pBool   <* pCCURLY
+  <|> Binding_Fixity    <$> pNmIs "fixity"   <* pOCURLY <*> pInt    <* pSEMI <*> pFixity  <* pCCURLY
   <|> Binding_Stamp     <$  pNmIs "stamp"    <* pOCURLY <*> pString <* pSEMI <*> pString
                                              <* pSEMI   <*> pString <* pSEMI <*> pString
                                              <* pSEMI   <*> pString <* pSEMI <*> pString

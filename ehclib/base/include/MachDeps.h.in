@@ -107,4 +107,4 @@
 #define ALIGNMENT_WORD64        ALIGNOF_UINT64_T
 
 
-#endif // MACHDEPS_H
+#endif

@@ -90,26 +90,37 @@ cpGetHsMod modNm
 cpGetMetaInfo :: HsName -> EHCompilePhase ()
 cpGetMetaInfo modNm
   =  do  {  cr <- get
-         ;  let  ecu    = crCU modNm cr
-         ;  tm ecuStoreHSTime        (                      ecuFilePath ecu)
-         ;  tm ecuStoreHITime        (fpathSetSuff "hi"   $ ecuFilePath ecu)
+         ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
+         ;  tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu)
+         ;  tm opts ecu ecuStoreHITime
+%%[[20
+                                              (fpathSetSuff "hi"        fp     )
+%%][99
+                                              (mkOutputFPath opts modNm fp "hi")
+%%]]
 %%[[(20 codegen)
-         ;  tm ecuStoreCoreTime      (fpathSetSuff "core" $ ecuFilePath ecu)
+         ;  tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     )
 %%]]
 %%[[20
-         ;  wr ecuStoreDirIsWritable (                      ecuFilePath ecu)
+         ;  wr opts ecu ecuStoreDirIsWritable (                         fp     )
 %%]]
          }
-  where tm store fp
+  where tm opts ecu store fp
           = do { let n = fpathToStr fp
                ; nExists <- lift $ doesFileExist n
+               ; when (ehcOptVerbosity opts >= VerboseDebug)
+                      (do { lift $ putStrLn ("meta info of: " ++ show (ecuModNm ecu) ++ ", file: " ++ n ++ ", exists: " ++ show nExists)
+                          })
                ; when nExists
                       (do { t <- lift $ getModificationTime n
+                          ; when (ehcOptVerbosity opts >= VerboseDebug)
+                                 (do { lift $ putStrLn ("time stamp of: " ++ show (ecuModNm ecu) ++ ", time: " ++ show t)
+                                     })
                           ; cpUpdCU modNm $ store t
                           })
                }
 %%[[20
-        wr store fp
+        wr opts ecu store fp
           = do { pm <- lift $ getPermissions (maybe "." id $ fpathMbDir fp)
                -- ; lift $ putStrLn (fpathToStr fp ++ " writ " ++ show (writable pm))
                ; cpUpdCU modNm $ store (writable pm)

@@ -67,6 +67,7 @@ ATTR
       idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
       asDeclImpModL     USE {++}                {[]}                : {[HsName]}				-- declared imports
       asUsedImpModL     USE {++}                {[]}                : {[HsName]}				-- (implicitly) used imports
+      settings          USE {`orMb`}            {Nothing}           : {Maybe HiSettings}		-- various settings: has main def
 %%[[(20 hmtyinfer)
       valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
       tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
@@ -85,6 +86,8 @@ ATTR
    ]
 
 SEM Binding
+    | Settings
+        lhs             .   settings	=	Just $ HiSettings @hasMain
     | ImportModules
         lhs             .   asDeclImpModL
                                         =   @asDeclared

@@ -31,7 +31,7 @@ Folding over AST to compute semantics
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem)
+%%[20 import(qualified {%{EH}HI.MainAG} as HISem,qualified {%{EH}HI} as HI)
 %%]
 
 -- Module
@@ -116,7 +116,7 @@ cpFoldHs modNm
                  (do { cpUpdCU modNm ( ecuStoreHSSem hsSem
 %%[[20
                                      . ecuStoreHIDeclImpL (ecuHSDeclImpNmL ecu)
-                                     . ecuSetHasMain hasMain
+                                     -- . ecuSetHasMain hasMain
 %%]]
                                      )
 %%[[20
@@ -147,8 +147,11 @@ cpFoldHsMod modNm
                                                   (inh { HSSemMod.gUniq_Inh_AGItf        = crsiHereUID crsi
                                                        , HSSemMod.moduleNm_Inh_AGItf     = modNm
                                                        })
+                 hasMain= HSSemMod.mainValExists_Syn_AGItf hsSemMod
          ;  when (isJust mbHS)
-                 (cpUpdCU modNm $! ecuStoreHSSemMod $! hsSemMod)
+                 (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
+                                . ecuSetHasMain hasMain
+                 )              )
          }
 %%]
 
@@ -162,6 +165,8 @@ cpFoldHI modNm
                  hiSem  = HISem.wrap_AGItf (HISem.sem_AGItf $ panicJust "cpFoldHI" mbHI)
                                            (inh { HISem.opts_Inh_AGItf             = crsiOpts crsi
                                                 })
+                 hiSettings = maybe HI.emptyHiSettings id $ HISem.settings_Syn_AGItf hiSem
+                 hasMain    = HI.hisettingsHasMain hiSettings
          ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
@@ -170,6 +175,7 @@ cpFoldHI modNm
                      ; cpUpdCU modNm ( ecuStorePrevHISem hiSem
                                      . ecuStoreHIDeclImpL (HISem.asDeclImpModL_Syn_AGItf hiSem)
                                      . ecuStoreHIUsedImpL (HISem.asUsedImpModL_Syn_AGItf hiSem)
+                                     . ecuSetHasMain hasMain
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))

@@ -607,7 +607,7 @@ void gb_prCallInfoName( GB_CallInfo* ci )
 
 void gb_prCallInfo( GB_CallInfo* ci )
 {
-	printf( "ci=%x", (Word)ci ) ;
+	printf( "ci=%x", (int)ci ) ;
 	if ( ci != NULL )
 	{
 		printf( ": kind %d: ", ci->kind ) ;
@@ -1690,7 +1690,7 @@ void gb_exit( int i )
 		if ( gb_prCallInfoIsVisible( ci ) )
 		// if ( True )
 		{
-			printf( "  bp=%x ", (Word)p ) ;
+			printf( "  bp=%x ", (int)p ) ;
 			gb_prCallInfo( ci ) ;
 			printf( "\n" ) ;
 		}

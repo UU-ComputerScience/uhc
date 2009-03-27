@@ -40,22 +40,27 @@ CompilePhase building blocks: parsers
 %%% Compile actions: parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(cpParseOffside,cpParsePlain',cpParsePlain,cpParseEH)
-cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
-cpParseOffside parser scanOpts store description modNm
+%%[8 export(cpParseOffside)
+cpParseOffsideWithFPath :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> Maybe FPath -> HsName -> EHCompilePhase ()
+cpParseOffsideWithFPath parser scanOpts store description mbFp modNm
  = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath (ecuFilePath (crCU modNm cr)) ReadMode False
+      ; (fn,fh) <- lift $ openFPath (maybe (ecuFilePath (crCU modNm cr)) id mbFp) ReadMode False
       ; tokens  <- lift $ offsideScanHandle scanOpts fn fh
       ; let (res,msgs) = parseOffsideToResMsgs parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
       ; cpUpdCU modNm (store res)
       ; cpSetLimitErrsWhen 5 description errs
       }
+      
+cpParseOffside :: HSPrs.HSParser a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> HsName -> EHCompilePhase ()
+cpParseOffside parser scanOpts store description modNm
+ = cpParseOffsideWithFPath parser scanOpts store description Nothing modNm
+%%]
 
-cpParsePlain' :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
-cpParsePlain' parser scanOpts store fp modNm
+%%[8 export(cpParsePlain)
+cpParsePlainWithHandleToErrs :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> (String, Handle) -> HsName -> EHCompilePhase [Err]
+cpParsePlainWithHandleToErrs parser scanOpts store (fn,fh) modNm
  = do { cr <- get
-      ; (fn,fh) <- lift $ openFPath fp ReadMode False
       ; tokens  <- lift $ scanHandle scanOpts fn fh
       ; let (res,msgs) = parseToResMsgs parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
@@ -64,12 +69,20 @@ cpParsePlain' parser scanOpts store fp modNm
       ; return errs
       }
 
-cpParsePlain :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhase ()
-cpParsePlain parser scanOpts store description fp modNm
- = do { errs <- cpParsePlain' parser scanOpts store fp modNm
-      ; cpSetLimitErrsWhen 5 description errs
+cpParsePlainToErrs :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> FPath -> HsName -> EHCompilePhase [Err]
+cpParsePlainToErrs parser scanOpts store fp modNm
+ = do { fnfh@(fn,fh) <- lift $ openFPath fp ReadMode False
+      ; cpParsePlainWithHandleToErrs parser scanOpts store fnfh modNm
       }
 
+cpParsePlain :: PlainParser Token a -> ScanUtils.ScanOpts -> EcuUpdater a -> String -> FPath -> HsName -> EHCompilePhase ()
+cpParsePlain parser scanOpts store description fp modNm
+ = do { errs <- cpParsePlainToErrs parser scanOpts store fp modNm
+      ; cpSetLimitErrsWhen 5 description errs
+      }
+%%]
+
+%%[8 export(cpParseEH)
 cpParseEH :: HsName -> EHCompilePhase ()
 cpParseEH
   = cpParseOffside EHPrs.pAGItf ehScanOpts ecuStoreEH "Parse (EH syntax) of module"
@@ -90,9 +103,14 @@ cpParseHs = cpParseOffside HSPrs.pAGItf hsScanOpts ecuStoreHS "Parse (Haskell sy
 
 %%[99 -8.cpParseHs export(cpParseHs)
 cpParseHs :: Bool -> HsName -> EHCompilePhase ()
-cpParseHs litmode
-  = cpParseOffside HSPrs.pAGItf (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
-                   ("Parse (" ++ (if litmode then "Literate " else "") ++ "Haskell syntax) of module")
+cpParseHs litmode modNm
+  = do { cr <- get
+       ; let  (ecu,_,_,_) = crBaseInfo modNm cr
+       ; cpParseOffsideWithFPath
+           HSPrs.pAGItf (hsScanOpts {ScanUtils.scoLitmode = litmode}) ecuStoreHS
+           ("Parse (" ++ (if litmode then "Literate " else "") ++ "Haskell syntax) of module")
+           Nothing modNm
+       }
 %%]
 
 %%[20 export(cpParseOffsideStopAtErr)
@@ -123,7 +141,7 @@ cpParseCore modNm
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               fpC     = fpathSetSuff "core" fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
-       ; errs <- cpParsePlain' CorePrs.pCModule coreScanOpts ecuStoreCore fpC modNm
+       ; errs <- cpParsePlainToErrs CorePrs.pCModule coreScanOpts ecuStoreCore fpC modNm
        ; when (ehcDebugStopAtCoreError opts)
               (cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs)
        ; return ()
@@ -135,9 +153,15 @@ cpParseHI :: HsName -> EHCompilePhase ()
 cpParseHI modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[20
               fpH     = fpathSetSuff "hi" fp
+%%][99
+              -- if outputdir is specified, use that location to possibly read hi from.
+              fpH     = mkOutputFPath opts modNm fp "hi"
+%%]]
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpH
-       ; errs <- cpParsePlain' HIPrs.pAGItf hiScanOpts ecuStorePrevHI fpH modNm
+       ; fnfh <- lift $ openFPath fpH ReadMode False
+       ; errs <- cpParsePlainWithHandleToErrs HIPrs.pAGItf hiScanOpts ecuStorePrevHI fnfh modNm
        ; when (ehcDebugStopAtHIError opts)
               (cpSetLimitErrsWhen 5 "Parse HI (of previous compile) of module" errs)
        ; return ()

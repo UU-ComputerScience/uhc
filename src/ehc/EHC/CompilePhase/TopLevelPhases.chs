@@ -120,7 +120,11 @@ cpEhcFullProgCompileAllModules
  = do { cr <- get
       ; let modNmLL = crCompileOrder cr
             modNmL = map head modNmLL
-      ; cpSeq (   [cpEhcFullProgModuleCompileN modNmL]
+      ; cpSeq (   []
+%%[[99
+               ++ (let nrMods = length modNmL in zipWith (\m i -> cpUpdCU m (ecuStoreSeqNr (EHCCompileSeqNr i nrMods)) ) modNmL [1..nrMods])
+%%]]
+               ++ [cpEhcFullProgModuleCompileN modNmL]
 %%[[(20 codegen grin)
                ++ [cpEhcFullProgLinkAllModules modNmL]
 %%]]
@@ -179,11 +183,20 @@ Find out whether a compilation is needed, and if so, can be done.
 cpEhcFullProgModuleDetermineNeedsCompile :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleDetermineNeedsCompile modNm
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (ecu,_,opts,_) = crBaseInfo modNm cr
              needsCompile = crModNeedsCompile modNm cr
              canCompile   = crModCanCompile modNm cr
        ; when (ehcOptVerbosity opts >= VerboseDebug)
-              (lift $ putStrLn (show modNm ++ " needs compile: " ++ show needsCompile ++ " can compile: " ++ show canCompile))
+              (lift $ putStrLn
+                (  show modNm
+                ++ ", needs compile: " ++ show needsCompile
+                ++ ", can compile: " ++ show canCompile
+                ++ ", can use HI instead of HS: " ++ show (ecuCanUseHIInsteadOfHS ecu)
+                ++ ", is main: " ++ show (ecuIsMainMod ecu)
+                ++ ", is top: " ++ show (ecuIsTopMod ecu)
+                ++ ", valid HI: " ++ show (ecuIsValidHI ecu)
+                ++ ", HS newer: " ++ show (ecuIsHSNewerThanHI ecu)
+                ))
        ; cpUpdCU modNm (ecuSetNeedsCompile (needsCompile && canCompile))
        }
 %%]
@@ -258,8 +271,8 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[99
                || st == LHSStart
 %%]]
-             -> do { cpEhcHaskellModulePrepare modNm
-                   ; modNm' <- cpEhcHaskellImport stnext modNm
+             -> do { modNm' <- cpEhcHaskellImport stnext modNm
+                   ; cpEhcHaskellModulePrepare modNm'
                    ; cpMsg modNm' VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
