@@ -59,6 +59,18 @@ cpCheckMods modNmL
 %%% Get info for module analysis
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 export(GetMeta(..),allGetMeta)
+data GetMeta
+  = GetMeta_HS
+  | GetMeta_HI
+  | GetMeta_Core
+  | GetMeta_Dir
+  deriving (Eq,Ord)
+
+allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Dir]
+
+%%]
+
 %%[20 export(cpGetHsImports,cpGetHsMod,cpGetMetaInfo)
 cpGetHsImports :: HsName -> EHCompilePhase HsName
 cpGetHsImports modNm
@@ -87,22 +99,27 @@ cpGetHsMod modNm
          -- ; lift $ putWidthPPLn 120 (pp mod)
          }
 
-cpGetMetaInfo :: HsName -> EHCompilePhase ()
-cpGetMetaInfo modNm
+cpGetMetaInfo :: [GetMeta] -> HsName -> EHCompilePhase ()
+cpGetMetaInfo gm modNm
   =  do  {  cr <- get
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
-         ;  tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu)
-         ;  tm opts ecu ecuStoreHITime
+         ;  when (GetMeta_HS `elem` gm)
+                 (tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu))
+         ;  when (GetMeta_HI `elem` gm)
+                 (tm opts ecu ecuStoreHITime
 %%[[20
                                               (fpathSetSuff "hi"        fp     )
 %%][99
                                               (mkOutputFPath opts modNm fp "hi")
 %%]]
+                 )
 %%[[(20 codegen)
-         ;  tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     )
+         ;  when (GetMeta_Core `elem` gm)
+                 (tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     ))
 %%]]
 %%[[20
-         ;  wr opts ecu ecuStoreDirIsWritable (                         fp     )
+         ;  when (GetMeta_Dir `elem` gm)
+                 (wr opts ecu ecuStoreDirIsWritable (                         fp     ))
 %%]]
          }
   where tm opts ecu store fp

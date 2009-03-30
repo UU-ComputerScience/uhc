@@ -129,12 +129,19 @@ pCBind :: CParser CBind
 pCBind
   = (  (pDollNm P.<+> pCMetasOpt) <* pEQUAL)
     <**> (   (\e (n,m)        -> CBind_Bind n m e) <$> pCExpr
-         <|> (\c s i t (n,m)  -> CBind_FFI (fst c) s i n t) <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\(c,_) s i t (n,m)  -> CBind_FFI c s (mkEnt c i) n t)
+             <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
 %%[[94
-         <|> (\c e en t (n,m) -> CBind_FFE n (fst c) (fst $ parseForeignEnt e) en t) <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
+         <|> (\(c,_) e en t (n,m) -> CBind_FFE n c (mkEnt c e) en t)
+             <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
          )
   where pS = tokMkStr <$> pStringTk
+%%[[8
+        mkEnt _ e = e
+%%][94
+        mkEnt c e = fst $ parseForeignEnt c e
+%%]]
 
 pCAlt :: CParser CAlt
 pCAlt

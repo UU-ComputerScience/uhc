@@ -54,7 +54,13 @@ DATA GrExpr
   | Store       val             : GrVal
   | Call        nm              : {HsName}
                 argL            : GrValL
-  | FFI         nm              : {String}
+  | FFI
+%%[[8
+                nm              : {String}
+%%][94
+                callconv        : {FFIWay}
+                impEnt          : {ForeignEnt}
+%%]]
                 argL            : GrValL
   | Eval        nm              : {HsName}
   | App         nm              : {HsName}

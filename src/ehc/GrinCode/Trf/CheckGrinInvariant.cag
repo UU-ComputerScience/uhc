@@ -9,11 +9,13 @@ This is not a transformation, just an extra check whether SetGrinInvariant worke
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
 %%]
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
 %%]
 %%[(8 codegen grin) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -164,7 +166,7 @@ SEM GrExpr
   | FetchField   lhs.messages    = check @lhs.env @nm ModeNode
   | Store        lhs.messages    = checkMd "Store" ModeNode @val.derivedMode ++ @val.messages
   | Call         lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "Call "++show @nm ++ "(" ++ @argL.text ++ ")") ModeWord) @argL.derivedModes
-  | FFI          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "FFI" ++show @nm) ModeWord) @argL.derivedModes
+  | FFI          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "FFI" ++show @impEntNm) ModeWord) @argL.derivedModes
   | Eval         lhs.messages    = check @lhs.env @nm ModeWord
   | App          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "App" ++show @nm) ModeWord) @argL.derivedModes
   | Throw        lhs.messages    = []

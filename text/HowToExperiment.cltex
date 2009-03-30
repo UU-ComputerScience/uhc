@@ -11,6 +11,11 @@
 \section{Regression testing}
 %%@HowToExperiment.regressionTesting
 
+\section{EHC Makefile reference}
+\label{EhcMakefileReference}
+\glabel{EhcMakefileReference}
+%%@HowToExperiment.ehcMakefile
+
 
 %%]
 
@@ -32,20 +37,15 @@ A variant including the default set of aspects is built by the following command
 make VARIANT/ehc
 \end{verbatim}
 
-This will build the compiler executable for variant \verb=VARIANT= in \sref{bin/VARIANT/ehc}{ehc}. The \verb=--help= option to \sref{bin/VARIANT/ehc}{ehc} displays a list of allowed options which can be passed to \sref{bin/VARIANT/ehc}{ehc}.
+This will build the compiler executable for variant \verb=VARIANT= in \sref{install/VARIANT/bin/ehc}{ehc}. The \verb=--help= option to \sref{install/VARIANT/bin/ehc}{ehc} displays a list of allowed options which can be passed to \sref{install/VARIANT/bin/ehc}{ehc}.
 
-Variants 99 and higher require a library; the library is compiled with:
+Variants 8 and higher require a runtime system and variant 99 and higher a library; these are compiled (for the default code generation target) with:
 
 \begin{verbatim}
 make VARIANT/ehclib
 \end{verbatim}
 
-A path to the library must be explicitly passed in order to use the library when compiling with \sref{bin/VARIANT/ehc}{ehc}:
-
-\begin{verbatim}
-# with pwd == EHCHOME
-bin/VARIANT/ehc -Pbuild/VARIANT/ehclib/ehcbase ...
-\end{verbatim}
+The location of the path is baked into the executable. Additional import search locations can be specified with the option @--import-path@.
 
 \subsection{Variants}
 
@@ -179,3 +179,106 @@ make test-regress TEST_VARIANTS=100
 \end{verbatim}
 %%]
 
+%%[ehcMakefile doclatex
+EHC's makefile offers a set of targets for building EHC variants and other artefacts.
+The following overview is printed by using the command \verb=make=, without specifying a make target:
+
+\begin{pre}
+%%@[exec:make%%]
+\end{pre}
+
+In general, EHC make targets follow these conventions:
+
+\begin{itemize}
+\item
+ If a target @<target>@ also exists for a variant @<variant>@, the target is named @<variant>/<target>@.
+ For example, @make 1/ehc@ builds EHC for variant @1@.
+ The existence of a target @<target>@ does not imply the existence of a target @<variant>/<target>@, nor vice versa.
+\item
+ If a variant specific target @<variant>/<target>@ exists, sometimes a target @<target>s@ also exists, which builds @<variant>/<target>@ for all available variants.
+\end{itemize}
+
+If a target is not mentioned in the following overview it may or may not work, but is not used on a regular basis anymore.
+
+\subsection{Building and installing UHC}
+
+\begin{itemize}
+\item @make uhc@:
+ Build variant 101 and libraries, which after installation can be invoked by @uhc@.
+ Variant 101 only differs from 100 in its number, functionality is all the same.
+ Variant 100 differs from 99 in the absence of debugging facilities.
+\item @make install@:
+ Install @uhc@ and libraries, possibly requiring proper permissisions.
+\end{itemize}
+
+\subsection{Building EHC variants and corresponding libraries}
+
+\begin{itemize}
+\item @make <variant>/ehc@:
+ Build the compiler \sref{install/<variant>/bin/ehc}{executable}.
+\item @make <variant>/ehclib@:
+ Build the library (if any) in the \sref{install/<variant>/lib}{library install directory} for the default code generation target.
+\item @make <variant>/ehclibs@:
+ Build the libraries (if any) in the \sref{install/<variant>/lib}{library install directory} for all code generation targets.
+\item @make <variant>/rts@:
+ Build the C runtime system (if any) in the \sref{install/<variant>/lib}{library install directory}.
+ Depending on the code generation target this is part of the make target @<variant>/ehclib@.
+\end{itemize}
+
+\subsection{Regression testing}
+
+\begin{itemize}
+\item \verb|make test-regress [TEST_VARIANTS=<variant>] [TEST_FILES=<variantdir>/<file>]|:
+ Regress test \sref{regress/<variantdir>/<file>}{file} for @<variant>@.
+ Differences with the expected output are reported.
+ If \verb|TEST_VARIANTS| is not specified, all variants will be regress tested.
+ If \verb|TEST_FILES| is not specified, all available files will be regress tested.
+ The use of test files is accumulative, files for all earlier variants are also tested.
+ This behavior changes slightly tarting at variant 99 because a prelude is used.
+ Variants 98 and earlier are then not included in the tests.
+\item \verb|make test-expect [TEST_VARIANTS=<variant>] [TEST_FILES=<variantdir>/<file>]|:
+ See @make test-regress@.
+ The difference is that the expected output is created instead of compared to.
+\end{itemize}
+
+\subsection{Building barebones versions}
+
+\begin{itemize}
+\item @make <variant>/bare@:
+ Build the barebones for @<variant>@ in ... .
+\end{itemize}
+
+\subsection{Building documentation}
+
+\begin{itemize}
+\item @make www@:
+ Build documentation in pdf and twiki format to be put onto the EHC web.
+ All is put into the \sref{www}{local www directory}.
+\item @make www-sync@:
+ Synchronize (install) the www documentation.
+ Location and permission are hardcoded into the makefile.
+ Permissions on the server are set such that UU staff members should be able to do this.
+\end{itemize}
+
+Remaining make targets for documentation only partly work. No guarantees here.
+
+\subsection{Miscellaneous}
+\begin{itemize}
+\item @make <variant>/clean@:
+ Cleanup for @<variant>@. This means:
+ \begin{itemize}
+ \item Unregister libraries created and registered for @<variant>@.
+ \item Remove most of the \sref{build/<variant>}{build directory}, apart from some generated makefiles (which would then be immediately be remade after removing).
+ \item Remove the \sref{install/<variant>}{install directory}.
+ \end{itemize}
+ Caveat: cleaning asks the compiler executable for some meta information (like location of configuration/environment file). If -for whatever reason- the executable does not exist or cannot execute, the cleaning depending on it will not be done.
+\item @make clean@:
+ \emph{Not implemented yet}, but will clean up for variants and also (e.g.) libraries shared between variants.
+ Cleaning with @make <variant>/clean@ only does per variant cleaning, not global cleaning.
+\item @make ruler@:
+ build the @Ruler@ \sref{bin/ruler}{tool}.
+\item @make shuffle@:
+ build the \eref{Shuffle}{Shuffle} \sref{bin/shuffle}{tool}.
+\end{itemize}
+
+%%]

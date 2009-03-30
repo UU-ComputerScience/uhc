@@ -16,6 +16,9 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
 %%]
 
+%%[(94 codegen grin) hs import({%{EH}Foreign.Pretty})
+%%]
+
 %%[(8 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
@@ -181,10 +184,18 @@ SEM GrExpr
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   "call"  >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
 %%[[8
-  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (pp @nm : @argL.ppL)
-  | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
+  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (@ppent : @argL.ppL)
 %%][8_2
   | FFI         lhs         .   pp          =   "foreign" >#< ppSpaced (pp @nm : @argL.ppL)
+%%]]
+%%[[8
+  | FFI         loc         .   ppent       =   pp @nm
+%%][94
+  | FFI         loc         .   ppent       =   @callconv >#< "\"" >|< @impEnt >|< "\""
+%%]]
+%%[[8
+  | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm
+%%][8_2
   | Eval        lhs         .   pp          =   "$eval" >#< @lhs.ppGrNm @nm
 %%]]
   | Unit        lhs         .   pp          =   "unit" >#< @val.pp

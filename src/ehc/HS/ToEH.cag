@@ -170,7 +170,13 @@ SEM Declaration
 %%]
 %%[(8 codegen)
     | ForeignImport
-        loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) (maybe (show @name) id @importname) @refname @type.eh
+%%[[8
+        loc         .   ent         =   maybe (show @name) id @importname
+%%][94
+        loc         .   (ent,entErrs)
+                                    =   parseForeignEnt @callconvention $ maybe (show @name) id @importname
+%%]]
+        loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) @ent @refname @type.eh
         lhs         .   eh          =   [@eh]
 %%]
 %%[9
@@ -210,7 +216,7 @@ SEM Declaration
 %%[(94 codegen)
     | ForeignExport
         loc         .   (ent,entErrs)
-                                    =   parseForeignEnt $ maybe (show @name) id @exportname
+                                    =   parseForeignEnt @callconvention $ maybe (show @name) id @exportname
                     .   eh          =   rngLift @range EH.Decl_FFE @exportrefname @callconvention @ent (rngLift @range EH.Expr_Var @refname) @type.eh
         lhs         .   eh          =   [@eh]
 %%]

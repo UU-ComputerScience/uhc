@@ -31,6 +31,9 @@ DATA Module
                 constL			: {[Const]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
+%%[[94
+                includeL		: {[String]}				-- C includes
+%%]]
 
 SET AllModule = Module
 %%]

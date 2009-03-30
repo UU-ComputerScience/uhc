@@ -48,7 +48,11 @@ DATA Binding
         nm                      : HsName
         ty                      : Ty
         tags                    : {[(HsName,(CTag,[(HsName,Int)]))]}
+%%[[20
         isNewtype               : Bool
+%%][94
+        mbNewtype               : {Maybe Ty}
+%%]]
     | Ty
         nm                      : HsName
         ty                      : Ty

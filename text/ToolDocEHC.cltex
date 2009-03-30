@@ -75,7 +75,7 @@ The library consists of
 \begin{itemize}
 \item EHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @EHC.@.
 \item Modules from the GHC distribution, used without changes.
-\item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of @#ifdef@s or greater changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
+\item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
 \end{itemize}
 
 Currently, only modules from the @base@ package are available.
@@ -107,6 +107,9 @@ The C based backends (C, bc) use the following public domain libraries:
 \begin{itemize}
 \item Stacksize for the C based backends is fixed and not checked for overflow.
 \item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
+\item
+ Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
+ Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
 \end{itemize}
 
 \subsection{Packages}
@@ -125,7 +128,7 @@ Generated library files like @.hi@ interface files and a linked library are put 
 uhc --lib-search-path=<install> ...
 \end{pre}
 If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
-\end{itemize|
+\end{itemize}
 
 \subsection{Fully functional backends}
 \subsubsection{@bc@: GRIN based interpreter, no full program analysis}

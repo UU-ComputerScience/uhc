@@ -787,8 +787,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                               _              -> last tries
               where fi2   = trfi "ff" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                     limit = ehcOptTyBetaRedCutOffAt globOpts
-                    rt1   = tyBetaRed fi2 t1
-                    rt2   = tyBetaRed fi2 t2
+                    rt1   = tyBetaRed fi2 betaRedTyLookup t1
+                    rt2   = tyBetaRed fi2 betaRedTyLookup t2
                     tries = take (limit+1) $ try fi2 ((t1,[]) : rt1) ((t2,[]) : rt2)
                           where try fi ((t1,tr1):ts1@(_:_)) ((t2,tr2):ts2@(_:_)) = f fi' t1 t2 : try fi' ts1 ts2
                                                                                  where fi' = trfiAdd tr1 $ trfiAdd tr2 fi

@@ -251,15 +251,31 @@ data FFIWay
   = FFIWay_Prim				-- as primitive
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
+  | FFIWay_CLR				-- as CLR, just a placeholder
   deriving (Eq,Ord)
 
 instance Show FFIWay where
   show FFIWay_Prim	= "prim"
   show FFIWay_CCall	= "ccall"
   show FFIWay_Jazy	= "jazy"
+  show FFIWay_CLR	= "dotnet"
 
 instance PP FFIWay where
   pp = pp . show
+%%]
+
+The default FFIWay for FFIWay_Prim for a target
+
+%%[(8 codegen) export(ffiWayForPrim)
+ffiWayForPrim :: Target -> Maybe FFIWay
+%%[[(8 codegen jazy)
+ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
+%%]]
+%%[[(8 codegen clr)
+ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
+%%]]
+ffiWayForPrim t | targetIsC t						= Just FFIWay_CCall
+                | otherwise							= Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

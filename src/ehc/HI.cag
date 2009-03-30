@@ -220,7 +220,12 @@ hiFromAllGams exps hiddenExps fg idg
     Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
     Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
     Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
-                                    in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi) (dgiIsNewtype dgi)
+                                    in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi)
+%%[[20
+                                                          (dgiIsNewtype dgi)
+%%][94
+                                                          (dgiMbNewtype dgi)
+%%]]
                         ) dg
     Seq.:++: hiFromGam  (\n clgi -> Binding_Class n (Pr.clgiPrToEvidTy clgi) (Pr.clgiRuleTy clgi) (Pr.clgiDfltDictNm clgi)) ig
     Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]

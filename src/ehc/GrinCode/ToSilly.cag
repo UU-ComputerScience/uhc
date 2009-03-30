@@ -13,7 +13,7 @@ Transforms a Grin program to a Silly program.
 %%[(8 codegen grin) hs module {%{EH}GrinCode.ToSilly} export(grin2silly)
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
 %%]
 
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -25,6 +25,9 @@ Transforms a Grin program to a Silly program.
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
+%%]
+
+%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin)
@@ -203,7 +206,7 @@ SEM GrExpr
                          else assignments "FFI" [] (map mkVar @lhs.targets) @loc.callres
 
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres   = [Value_Call @nm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
+           loc.callres   = [Value_Call @impEntNm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
 
 
  | Store   lhs.stats  = let ph = case @lhs.targets of

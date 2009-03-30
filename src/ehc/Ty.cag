@@ -859,6 +859,13 @@ tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
+%%[(98 hmtyinfer || hmtyast) hs export(tyAppConArgs)
+tyAppConArgs    :: Ty -> Maybe (HsName,TyL)
+tyAppConArgs t
+  =  fmap (\c -> (c,a)) $ tyMbCon f
+  where (f,a) = tyAppFunArgs t
+%%]
+
 %%[(7 hmtyinfer || hmtyast) hs
 tyAppFunConNm :: Ty -> HsName
 tyAppFunConNm = tyConNm . fst . tyAppFunArgs
@@ -1017,6 +1024,11 @@ tyRowExtr = tyRowExtrWithLkup (const Nothing)
 
 tyRecExtr :: HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtr = tyRecExtrWithLkup (const Nothing)
+%%]
+
+%%[(98 hmtyinfer || hmtyast) hs export(tyMbRecExts)
+tyMbRecExts :: Ty -> Maybe (Ty,AssocL HsName Ty)
+tyMbRecExts = fmap tyRowExts . tyMbRecRow
 %%]
 
 %%[(95 hmtyinfer || hmtyast) hs export(tyRecExts2)

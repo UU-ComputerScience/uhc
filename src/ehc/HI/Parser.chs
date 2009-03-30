@@ -7,7 +7,7 @@
 %%% HI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 module {%{EH}HI.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common})
+%%[20 module {%{EH}HI.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common})
 %%]
 
 %%[20 import( {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}HI})
@@ -168,7 +168,11 @@ pBinding
                                             <*> pList ((,) <$ pSEMI <*> pDollNm <* pEQUAL <*> pInt)
                               <*  pCCURLY
                              ) <* pSEMI
+%%[[20
                        <*> pBool
+%%][94
+                       <*> pMb pTy
+%%]]
                        <*  pCCURLY
   <|> Binding_Class     <$> pNmIs "class"       <* pOCURLY <*> pTy <* pSEMI <*> pTy <* pSEMI <*> pDollNm <* pCCURLY
   <|> Binding_CHRStore  <$  pNmIs "chrstore"    <*> pCurlySemiBlock

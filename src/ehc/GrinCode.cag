@@ -40,6 +40,9 @@
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
+%%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
+%%]
+
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag    : Show, Eq
 DERIVING GrTag        : Show

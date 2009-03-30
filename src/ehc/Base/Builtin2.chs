@@ -219,10 +219,12 @@ builtinKnownBoxedTyMp opts
 %%]]
                }
            )
+%%]]
+%%[[(99 jazy)
          , ( builtinNm opts ehbnAddr
            , emptyBuiltinInfo
                { biGrinBoxAnnot 	= BasicAnnot_Size (if Cfg.use32Bits then BasicSize_Word32 else BasicSize_Word64) BasicTy_Word
-%%[[(97 jazy)
+%%[[(99 jazy)
                , biJazyBasicTy    	= BasicJazy_Int
 %%]]
                }

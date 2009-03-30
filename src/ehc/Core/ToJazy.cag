@@ -21,6 +21,9 @@
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
 %%]
 
+%%[(94 jazy) hs import({%{EH}Foreign.Extract})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -940,7 +943,6 @@ basicTyJUnbox doEval t
         un2 ty jiVal
           =    jiCast ty (if doEval then jiEvl jiVal else jiVal)
 %%]
-  
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation: methods
@@ -1130,7 +1132,7 @@ SEM CBind
                                                              else dflt
                                                         else dflt
                 lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
-  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (HNm @impEnt)
+  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (HNm @impEntNm)
                             .   lkupBuiltin     =   let m = builtinKnownBoxedTyMp @lhs.opts
                                                     in  \n -> Map.lookup n m
                             .   (globClasses,ji)=   let mkxxbox how mbCon
@@ -1156,7 +1158,7 @@ SEM CBind
                                                         (mkResJI,resTy)
                                                                 = mkbox @resMbCon
                                                         funNmJiL= [(jiStrConst (show @nm),jtyStr)]
-                                                        primJI  = j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim @impEnt argsTy (Just resTy))
+                                                        primJI  = j $ J.Instr_Invoke J.InvokeMode_Static (J.Const_Method nmPrim @impEntNm argsTy (Just resTy))
                                                     in  jFunCls @classNm nArgs argTyL (clsInitArgL ++ funNmJiL) (mkResJI $ argsJI ## primJI) Seq.empty Seq.empty
 %%]
 
