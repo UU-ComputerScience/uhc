@@ -829,17 +829,26 @@ data DataGamInfo
       , dgiConstrTagMp 		:: !DataConstrTagMp
 %%[[8
       , dgiFldInConstrMp	:: !DataFldInConstrMp
+%%[[8
       , dgiIsNewtype 		:: !Bool
+%%][94
+      , dgiMbNewtype 		:: !(Maybe Ty)			-- the type lambda corresponding to a newtype
+%%]]
       , dgiMaxConstrArity   :: !Int
 %%]]
       }
+
 
 type DataGam = Gam HsName DataGamInfo
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
 
+%%[[7
 mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
+%%][94
+mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Maybe Ty -> DataGamInfo
+%%]]
 mkDGI tyNm dty cNmL m nt
   = DataGamInfo
       tyNm
@@ -856,9 +865,31 @@ mkDGI tyNm dty cNmL m nt
 %%]]
 %%]
 
+%%[7 export(mkDGIPlain)
+mkDGIPlain :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> DataGamInfo
+mkDGIPlain tyNm dty cNmL m
+  = mkDGI tyNm dty cNmL m
+%%[[7
+          False
+%%][94
+          Nothing
+%%]]
+
+%%]
+
+%%[94 export(dgiIsNewtype)
+dgiIsNewtype :: DataGamInfo -> Bool
+dgiIsNewtype = isJust . dgiMbNewtype
+%%]
+
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
 emptyDataGamInfo, emptyDGI :: DataGamInfo
-emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty False
+emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty
+%%[[7
+                         False
+%%][94
+                         Nothing
+%%]]
 emptyDGI = emptyDataGamInfo
 %%]
 

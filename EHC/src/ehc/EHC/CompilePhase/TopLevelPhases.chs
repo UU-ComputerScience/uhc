@@ -122,7 +122,10 @@ cpEhcFullProgCompileAllModules
             modNmL = map head modNmLL
       ; cpSeq (   []
 %%[[99
-               ++ (let nrMods = length modNmL in zipWith (\m i -> cpUpdCU m (ecuStoreSeqNr (EHCCompileSeqNr i nrMods)) ) modNmL [1..nrMods])
+               ++ (let modNmL' = filter (\m -> let (ecu,_,_,_) = crBaseInfo m cr in not $ filelocIsPkg $ ecuFileLocation ecu) modNmL
+                       nrMods = length modNmL'
+                   in  zipWith (\m i -> cpUpdCU m (ecuStoreSeqNr (EHCCompileSeqNr i nrMods)) ) modNmL' [1..nrMods]
+                  )
 %%]]
                ++ [cpEhcFullProgModuleCompileN modNmL]
 %%[[(20 codegen grin)
@@ -271,8 +274,9 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[99
                || st == LHSStart
 %%]]
-             -> do { modNm' <- cpEhcHaskellImport stnext modNm
-                   ; cpEhcHaskellModulePrepare modNm'
+             -> do { cpEhcHaskellModulePrepare1 modNm
+                   ; modNm' <- cpEhcHaskellImport stnext modNm
+                   ; cpEhcHaskellModulePrepare2 modNm'
                    ; cpMsg modNm' VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
@@ -442,12 +446,29 @@ cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepare _ = return ()
 %%]
 
+We need to know meta info in a more staged manner.
+To be able to cpp preprocess first we need to know whether a Haskell file exists.
+(1) we get the timestamp, so we know the file exists, so we can preprocess.
+(..) then happens other stuff, getting the real module name, getting the import list.
+(2) only then we can get info about derived files because the location is based on the real module name.
+    Previous info also has to be obtained again.
+
 %%[20 -8.cpEhcHaskellModulePrepare
-cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
-cpEhcHaskellModulePrepare modNm
-  = cpSeq [ cpGetMetaInfo modNm
+cpEhcHaskellModulePrepare1 :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepare1 modNm
+  = cpGetMetaInfo [GetMeta_HS,GetMeta_Dir] modNm
+
+cpEhcHaskellModulePrepare2 :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepare2 modNm
+  = cpSeq [ cpGetMetaInfo allGetMeta modNm
           , cpGetPrevHI modNm
           , cpFoldHI modNm
+          ]
+
+cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepare modNm
+  = cpSeq [ cpEhcHaskellModulePrepare1 modNm
+          , cpEhcHaskellModulePrepare2 modNm
           ]
 %%]
 

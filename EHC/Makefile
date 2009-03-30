@@ -102,7 +102,10 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 ###########################################################################################
 
 explanation:
-	@echo "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+	@echo "make uhc                 : make 101/ehc and library, this variant is named uhc" ; \
+	echo  "make install             : make uhc and install globally, possibly needing proper permission" ; \
+	echo  "" ; \
+    echo  "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
 	echo  "make <n>/ehclibs         : make ehc libraries for all codegen targets" ; \
 	echo  "make <n>/rts             : make only the rts part of a library" ; \
@@ -111,7 +114,10 @@ explanation:
 	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
 	echo  "                           then 'cd' to there and 'make'" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
-	echo  "make $(SHUFFLE_NAME)              : make shuffle tool" ; \
+	echo  "make $(SHUFFLE_NAME)             : make shuffle tool" ; \
+	echo  "" ; \
+	echo  "make www                 : make www documentation: $(TEXT_WWW_DOC_PDFS)" ; \
+	echo  "make www-sync            : install www documentation in the EHC web (http://www.cs.uu.nl/wiki/Ehc/WebHome)" ; \
 	echo  "" ; \
 	echo  "make doc/<d>.pdf         : make (public) documentation <d> (where <d> in {$(TEXT_PUB_VARIANTS)})," ; \
 	echo  "                           or (non-public): <d> in {$(TEXT_PRIV_VARIANTS)}" ; \
@@ -133,7 +139,6 @@ explanation:
 	echo  "" ; \
 	echo  "make <n>/clean           : cleanup for variant <n>" ; \
 	echo  "" ; \
-	echo  "make install             : make 100/ehc and library, install globally" ; \
 
 ###########################################################################################
 # Target: make every variant of something

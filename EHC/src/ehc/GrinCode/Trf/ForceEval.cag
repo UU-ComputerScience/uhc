@@ -71,7 +71,11 @@ SEM GrExpr
   | FetchUpdate		lhs		.	trf			=	forceEval @src `seq` forceEval' @dst
   | FetchField		lhs		.	trf			=	forceEval @nm `seq` forceEval @offset `seq` forceEval' @mbTag
   | Call			lhs		.	trf			=	forceEval @nm `seq` @argL.trf
+%%[[8
   | FFI				lhs		.	trf			=	forceEval @nm `seq` forceEval @argL
+%%][94
+  | FFI				lhs		.	trf			=	forceEval @callconv `seq` forceEval @impEnt `seq` forceEval @argL
+%%]]
   | App				lhs		.	trf			=	forceEval @nm `seq` @argL.trf
   | Catch			lhs		.	trf			=	forceEval @arg `seq` @body.trf `seq` @handler.trf
 

@@ -10,10 +10,13 @@
 %%[94 module {%{EH}Foreign.Parser} import(UU.Scanner.GenToken, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Foreign})
 %%]
 
-%%[94 import(EH.Util.ParseUtils, UU.Parsing)
+%%[94 import(EH.Util.ParseUtils, UU.Parsing, EH.Util.Utils)
 %%]
 
 %%[94 import({%{EH}Error},{%{EH}Error.Pretty})
+%%]
+
+%%[94 import({%{EH}Base.Target})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -21,11 +24,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[94 hs export(parseForeignEnt)
-parseForeignEnt :: String -> (ForeignEnt,ErrL)
-parseForeignEnt s
+parseForeignEnt :: FFIWay -> String -> (ForeignEnt,ErrL)
+parseForeignEnt way s
   = (res,errs)
   where tokens     = scan foreignEntScanOpts (initPos s) s
-        (res,msgs) = parseToResMsgs pForeignEnt tokens
+        (res,msgs) = parseToResMsgs (pForeignEnt way) tokens
         errs       = map (rngLift emptyRange mkPPErr) msgs
 %%]
 
@@ -41,9 +44,11 @@ type ForeignParser        ep    =    PlainParser Token ep
 %%]
 
 %%[94 export(pForeignEnt)
-pForeignEnt :: ForeignParser ForeignEnt
-pForeignEnt
-  = ForeignEnt_CCall <$> pCCall
+pForeignEnt :: FFIWay -> ForeignParser ForeignEnt
+pForeignEnt way
+  = case way of
+      FFIWay_CCall -> ForeignEnt_CCall <$> pCCall
+      _            -> ForeignEnt_PlainCall <$> pPlainCall
 
 pCCall :: ForeignParser CCall
 pCCall
@@ -55,6 +60,11 @@ pCCall
   <|> CCall_Dynamic <$ pDYNAMIC
   <|> CCall_Wrapper <$ pWRAPPER
   <|> pSucceed CCall_Empty
+
+pPlainCall :: ForeignParser PlainCall
+pPlainCall
+  =   PlainCall_Id
+        <$> pForeignVar
 
 pForeignVar :: ForeignParser String
 pForeignVar = tokGetVal <$> (pVARID <|> pCONID)

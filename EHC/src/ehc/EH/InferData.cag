@@ -80,7 +80,15 @@ ATTR AGItf [ dataGam: DataGam | | ]
 ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp @isNewtype
+  | Data        loc         .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+%%[[7
+                                                              @isNewtype
+%%][94
+                                                              (if @isNewtype
+                                                               then Just $ foldr Ty_Lam @constrs.dataAltForNewType (map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL)
+                                                               else Nothing
+                                                              )
+%%]]
                 lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
 %%]
 
@@ -124,11 +132,6 @@ SEM Decl
 %%]
 
 %%[(7 hmtyinfer)
-%%]
-SEM Decl
-  | Data        loc         .   dataTy              :=  agFakeDependOn @dataAltTy $ @tyNm `mkConApp` @tyVars.tyL
-
-%%[(7 hmtyinfer)
 SEM Decl
   | Data        lhs         .   patValGam           =   gamUnions
                                                           [ gamNoDups @constrs.fldSelGam
@@ -154,6 +157,13 @@ SEM DataConstr
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
+%%]
+
+%%[(94 hmtyinfer)
+ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
+
+SEM DataConstr
+  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @fields.fldTyL		-- should be only one
 %%]
 
 %%[(7 hmtyinfer).dataConXTy

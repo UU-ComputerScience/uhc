@@ -230,7 +230,7 @@ Type structure.
 
 \begin{enumerate}
 \item Ftv:
-%%@EHTyTrfFtv.doesWhat
+%%@EHTyFtv.doesWhat
 
 \end{enumerate}
 
@@ -241,6 +241,12 @@ Type structure.
 \begin{enumerate}
 \item Subst:
 %%@EHTyTrfSubst.doesWhat
+
+\item Canonic:
+%%@EHTyTrfCanonic.doesWhat
+
+\item BetaReduce:
+%%@EHTyTrfBetaReduce.doesWhat
 
 \end{enumerate}
 

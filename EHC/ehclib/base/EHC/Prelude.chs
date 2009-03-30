@@ -110,8 +110,9 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
 -- Exception related
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 #else
-    catchException, throw, catch,
+    catchException, throw,
 #endif
+    catch,
 
 -- Unsafe
     unsafeCoerce,
@@ -2068,7 +2069,7 @@ userError str = IOError Nothing UserError "" str Nothing
 ----------------------------------------------------------------
 
 newtype State s = State s
-data RealWorld = RealWorld
+data RealWorld = RealWorld			-- known to compiler
 type IOWorld = State RealWorld
 
 -- newtype IO a = IO (IOWorld -> IOResult a)
@@ -2129,6 +2130,8 @@ instance Monad IO where
 
 
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+catch :: IO a -> (IOError -> IO a) -> IO a
+catch m h = m
 
 ioError :: IOError -> IO a
 ioError = error "ioError"

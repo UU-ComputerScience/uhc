@@ -23,7 +23,10 @@
 %%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)})
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar})
+%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen})
 %%]
 
 Debug
@@ -195,14 +198,14 @@ SEM GrBind
   | Bind        (loc.strConst,expr.strMp)       =   strAdd (show @nm) @lhs.strMp
 
 SEM GrExpr
-  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
-                (loc.strConst,lhs.strMp)        =   strAdd @nm @lhs.strMp
+  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @impEntNm @lhs.constMp
+                (loc.strConst,lhs.strMp)        =   strAdd @impEntNm @lhs.strMp
   | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show @nm) @lhs.strMp
   | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
   | App         (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
 %%]
-  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @nm @lhs.constMp
-                (loc.strConst,lhs.strMp)        =   strAdd @nm @lhs.strMp
+  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @impEntNm @lhs.constMp
+                (loc.strConst,lhs.strMp)        =   strAdd @impEntNm @lhs.strMp
   | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show hsnEval) @lhs.strMp
   | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
   | App         (loc.strConst,argL.strMp)       =   strAdd (show hsnApply) @lhs.strMp
@@ -618,7 +621,7 @@ ATTR GrPatLam [ primArgForIntl: Bool | | ]
 ATTR GrExpr [ | | primNrArgForIntl: Int ]
 
 SEM GrExpr
-  | FFI         loc         .   mbGbPrim        =   lookupPrim BackendGrinByteCode @nm
+  | FFI         loc         .   mbGbPrim        =   lookupPrim BackendGrinByteCode @impEntNm
                             .   optimForIntlPrim=   maybe False (\p -> gbprimNrArgs p == @argL.length && ehcOptOptimise @lhs.opts >= OptimiseNormal) @mbGbPrim
                 lhs         .   primNrArgForIntl=   if @optimForIntlPrim then @argL.length else 0
   | Seq         pat         .   primArgForIntl  =   @body.primNrArgForIntl > 0
@@ -666,10 +669,10 @@ SEM GrExpr
                                                     then case gbprimMk (fromJust @mbGbPrim) GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @argL.grvalIntroL of
                                                            GB.GrValIntroAlt_OnTOS ins inc _ _
                                                              -> (ins, inc, False)
-                                                           _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @nm)
+                                                           _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
                                                     else case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
                                                            GB.GrValIntroAlt_OnTOS ins inc _ bann
-                                                             -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@nm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
+                                                             -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
                                                                    bannStr = map basicGrinSizeCharEncoding banns
                                                                    banns = map grinBasicAnnotSize (@lhs.patBasicAnnot : bann)
@@ -808,6 +811,17 @@ SEM GrModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional C include files (we now assume C will be generated)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(94 codegen grin)
+ATTR AllBind AllGrExpr [ | | includeS USE {`Set.union`} {Set.empty} : {Set.Set String} ]
+
+SEM GrExpr
+  | FFI         lhs         .   includeS      	=   Set.fromList $ forextractIncludes @foreignEntInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -828,6 +842,9 @@ SEM GrModule
                                                       [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]
                                                       @mainEntry
+%%[[94
+                                                      (Set.toList @bindL.includeS)
+%%]]
 %%]
                                                       [ e | e@(n,_) <- tyRowCanonOrder $ Map.toList @entryNmMp, n `Set.member` @lhs.expNmS ]
 

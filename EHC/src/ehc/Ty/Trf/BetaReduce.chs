@@ -2,6 +2,18 @@
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+Beta reduce types
+\begin{itemize}
+\item Type lambdas \verb|Ty_Lam| are applied to their arguments.
+\item Type constants \verb|Ty_Con| are expanded to their definition.
+\item (Polarity inferencing only) Special cases are treated: negation of negation, in particular.
+\end{itemize}
+
+All is paremeterized with lookup for type constants.
+The reduction is limited by the expansion cutoff limit indicated by option @ehcOptTyBetaRedCutOffAt@.
+%%]
+
 %%[(11 hmtyinfer) module {%{EH}Ty.Trf.BetaReduce} import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty.FitsInCommon2}, {%{EH}Ty}, {%{EH}Gam}, {%{EH}Substitutable}, {%{EH}VarMp})
 %%]
 
@@ -18,9 +30,16 @@ For debug/trace:
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(11 hmtyinfer) export(tyBetaRed1)
-tyBetaRed1 :: FIIn -> Ty -> Maybe (Ty,[PP_Doc])
-tyBetaRed1 fi tp
+%%[(11 hmtyinfer) export(TyBetaRedLkup,betaRedTyLookup)
+type TyBetaRedLkup = FIIn -> HsName -> Maybe Ty
+
+betaRedTyLookup :: TyBetaRedLkup
+betaRedTyLookup fi nm = fmap tgiTy $ tyGamLookup nm $ feTyGam $ fiEnv fi
+%%]
+
+%%[(11 hmtyinfer)
+tyBetaRed1 :: FIIn -> TyBetaRedLkup -> Ty -> Maybe (Ty,[PP_Doc])
+tyBetaRed1 fi lkup tp
   = eval fun args
   where (fun,args) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) tp
         eval lam@(Ty_Lam fa b) args
@@ -47,21 +66,20 @@ tyBetaRed1 fi tp
                 (fun',args') = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) arg
 %%]]
         eval (Ty_Con nm) aa
-              = case tyGamLookup nm tyGam of
-                  Just tgi -> case tgiTy tgi of
-                                Ty_Con nm' | nm == nm' -> Nothing
-                                f                      -> mkres (mkApp (f:aa))
-                  Nothing  -> Nothing
+              = case lkup fi nm of
+                  Just ty -> case ty of
+                               Ty_Con nm' | nm == nm' -> Nothing
+                               f                      -> mkres (mkApp (f:aa))
+                  Nothing -> Nothing
         eval _ _ = Nothing
         mkres t  = Just (t,[trfitIn "tylam" ("from:" >#< ppTyWithFI fi tp >-< "to  :" >#< ppTyWithFI fi t)])
-        tyGam    = feTyGam $ fiEnv fi
 %%]
 
 %%[(11 hmtyinfer) export(tyBetaRed)
-tyBetaRed :: FIIn -> Ty -> [(Ty,[PP_Doc])]
-tyBetaRed fi ty
-  = case tyBetaRed1 fi ty of
-      Just tf@(ty,_) -> tf : tyBetaRed fi ty
+tyBetaRed :: FIIn -> TyBetaRedLkup -> Ty -> [(Ty,[PP_Doc])]
+tyBetaRed fi lkup ty
+  = case tyBetaRed1 fi lkup ty of
+      Just tf@(ty,_) -> tf : tyBetaRed fi lkup ty
       _              -> []
 %%]
 
@@ -70,12 +88,12 @@ expanding the inner layer with redSub, only if the outer layer has been
 replaced.
 
 %%[(11 hmtyinfer) export(tyBetaRedFullMb)
-tyBetaRedFullMb :: FIIn -> (Ty -> Maybe Ty) -> Ty -> Maybe Ty
-tyBetaRedFullMb fi redSub ty
+tyBetaRedFullMb :: FIIn -> TyBetaRedLkup -> (Ty -> Maybe Ty) -> Ty -> Maybe Ty
+tyBetaRedFullMb fi lkup redSub ty
   = fmap reda $ choose ty $ redl ty
   where env = fiEnv fi
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
-        redl ty = take lim $ map fst $ tyBetaRed fi ty
+        redl ty = take lim $ map fst $ tyBetaRed fi lkup ty
         reda ty = if null (catMaybes as') then ty else mk f (zipWith (\t mt -> maybe t id mt) as as')
                 where (f,as,mk) = tyDecomposeMk ty
                       as' = map redSub as

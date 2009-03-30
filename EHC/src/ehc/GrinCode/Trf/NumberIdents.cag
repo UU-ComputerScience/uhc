@@ -261,7 +261,11 @@ SEM GrExpr
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.varMap @src) (findNewVar @lhs.varMap @dst)
   | Throw       lhs  .  grTrf    =  GrExpr_Throw      @newName
   | Catch       lhs  .  grTrf    =  GrExpr_Catch      @body.grTrf @newName @handler.grTrf
+%%[[8
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
+%%][94
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @argL.grTrf
+%%]]
 
 SEM GrTag
   | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int (protectPrimitive @nm)

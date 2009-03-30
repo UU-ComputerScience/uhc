@@ -115,7 +115,14 @@ mkDirFileLoc
 %%]
 
 %%[99 export(mkPkgFileLoc)
+mkPkgFileLoc :: PkgName -> String -> FileLoc
 mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
+%%]
+
+%%[99 export(filelocIsPkg)
+filelocIsPkg :: FileLoc -> Bool
+filelocIsPkg (FileLoc (FileLocKind_Pkg _) _) = True
+filelocIsPkg _                               = False
 %%]
 
 %%[8 export(FileLocPath)

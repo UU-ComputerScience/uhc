@@ -16,9 +16,9 @@ WRAPPER ForeignAGItf
 
 %%[94 hs export(ppForeignEnt)
 ppForeignEnt :: ForeignEnt -> PP_Doc
-ppForeignEnt ty
+ppForeignEnt ent
   =  let  t =  wrap_ForeignAGItf
-                 (sem_ForeignAGItf (ForeignAGItf_AGItf ty))
+                 (sem_ForeignAGItf (ForeignAGItf_AGItf ent))
                  Inh_ForeignAGItf
      in   pp_Syn_ForeignAGItf t
 
@@ -32,6 +32,9 @@ instance PP ForeignEnt where
 
 %%[94
 ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
+
+SEM PlainCall
+  | Id          lhs     .   pp      =   pp @nm
 
 SEM CCall
   | Id          lhs     .   pp      =   (if @isStatic then pp "static" else empty)

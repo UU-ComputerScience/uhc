@@ -549,14 +549,14 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[98 export(hsnIO)
-[hsnIO,hsnHandle,hsnByteArray]
+[hsnIO,hsnHandle,hsnByteArray,hsnRealWorld]
   = map
 %%[[98
       mkRV
 %%][99
       (mkRV hsnModIntlPrelude)
 %%]]
-      [ "IO", "Handle", "ByteArray" ]
+      [ "IO", "Handle", "ByteArray", "RealWorld" ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -709,6 +709,7 @@ data EHBuiltinNames
       , ehbnIO                          :: HsName
       , ehbnHandle                      :: HsName
       , ehbnByteArray                   :: HsName
+      , ehbnRealWorld                   :: HsName
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  :: HsName
@@ -796,6 +797,7 @@ mkEHBuiltinNames f
       , ehbnIO                          = f IdOcc_Type      hsnIO
       , ehbnHandle                      = f IdOcc_Type      hsnHandle
       , ehbnByteArray                   = f IdOcc_Type      hsnByteArray
+      , ehbnRealWorld                   = f IdOcc_Type      hsnRealWorld
 %%]]
 %%[[99
       -- , ehbnEhcRunMain                  = f IdOcc_Val       hsnEhcRunMain

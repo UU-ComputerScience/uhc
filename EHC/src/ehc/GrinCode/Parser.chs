@@ -13,6 +13,9 @@
 %%[(8 codegen grin) export(pModule,pExprSeq)
 %%]
 
+%%[94 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +64,14 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 					<$  pKey "fetchupdate"  <*> pGrNm   <*>  pGrNm
                 <|>  GrExpr_Case    <$  pKey "case"         <*> pVal    <*   pKey "of" <*> pCurly_pSemics pAlt
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
-                <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId     <*>  pValL
+%%[[8
+                <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
+%%][94
+                <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv ent))
+                                    <$  pKey "ffi"
+                                    <*> pFFIWay <*> pString
+%%]]
+                                    <*> pValL
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq

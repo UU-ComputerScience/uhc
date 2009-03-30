@@ -255,6 +255,7 @@ instance CompileUnitState EHCompileUnitState where
 %%[20 -8.cusIsImpKnown
   cusIsImpKnown s = case s of
                       ECUSHaskell HSOnlyImports  -> True
+                      ECUSHaskell HIOnlyImports  -> True
 %%[[99
                       ECUSHaskell LHSOnlyImports -> True
 %%]]

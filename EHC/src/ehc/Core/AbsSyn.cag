@@ -118,7 +118,11 @@ DATA CBind
                 expr            : CExpr
   | FFI         callconv        : {FFIWay}
                 safety          : {String}
+%%[[8
                 impEnt          : {String}
+%%][94
+                impEnt          : {ForeignEnt}
+%%]]
                 nm              : {HsName}
                 ty              : {Ty}
 %%[[94

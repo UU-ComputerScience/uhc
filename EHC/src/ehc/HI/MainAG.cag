@@ -112,15 +112,20 @@ SEM Binding
     | TyPolarities
         lhs             .   polGam      =   gamFromAssocL [(n,mkPGI p) | (n,p) <- @tyPolarities]
     | DataCon
-        lhs             .   dataGam     =   gamSingleton @nm (mkDGI @nm
-                                                                    @ty (assocLKeys @tags)
-                                                                    (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
-                                                                                                          , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
-                                                                                                          }
-                                                                             )
-                                                                     $ Map.fromList $ @tags
-                                                                    )
-                                                                    False
+        lhs             .   dataGam     =   gamSingleton @nm (mkDGI
+                                                                @nm
+                                                                @ty (assocLKeys @tags)
+                                                                (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
+                                                                                                      , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
+                                                                                                      }
+                                                                         )
+                                                                 $ Map.fromList $ @tags
+                                                                )
+%%[[20
+                                                                @isNewtype
+%%][94
+                                                                @mbNewtype
+%%]]
                                                              )
     | Class
         lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)

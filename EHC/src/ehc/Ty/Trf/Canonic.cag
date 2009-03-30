@@ -7,18 +7,27 @@
 %%% Haskell importable interface to making canonical type structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Compute canonic form of type so syntactic equality can be used, i.e. Eq and Ord instances can be used on Ty to compare.
-This matters at:
-- rows, where fields may be in arbitrary order
-- places where type synonym expansion may occur, because 2 comparands may be differently partially expanded
+%%[doesWhat doclatex
+Compute canonic form of type so e.g. syntactic equality can be used.
+This is necessary for:
+\begin{itemize}
+\item Context reduction, i.e. Eq and Ord instances can be used on Ty to compare.
+\item Foreign function interface (FFI).
+\end{itemize}
+In both cases the ground form of a type is required, type synonyms expanded, and in the case of newtype also the type level wrapper removed.
 
-This matters for:
-- comparing types, in particular within predicates during proving
+Canonicalization is done at
+\begin{itemize}
+\item rows, where fields may be in arbitrary order.
+\item types where type synonym expansion may occur, because 2 comparands may be differently partially expanded.
+\item (FFI only) types which are newtypes because at the value level the type level wrappers (and corresponding constructors) are erased.
+This is only done when FFI types are propagated to Core.
+\end{itemize}
 
-
-Tricky point:
+Tricky implementation point:
 After type synonym expansion, the replacement probably is structurally different and must be canonicalized as well!
-Hence the Maybe return signalling a replacement requiring recursive canonicalization of inner components.
+Hence the Maybe return signalling a replacement requiring recursive canonicalization of inner components, type level beta reduction and canonicalization alternately done.
+%%]
 
 %%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
 %%]
@@ -30,6 +39,17 @@ Hence the Maybe return signalling a replacement requiring recursive canonicaliza
 %%]
 
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
+%%]
+
+%%[(94 hmtyinfer) hs import(EH.Util.Utils)
+%%]
+%%[(94 hmtyinfer) hs import({%{EH}Gam})
+%%]
+%%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
+%%]
+
+-- for debug
+%%[(94 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -116,7 +136,27 @@ tyCanonic fi
   = tyCanonic' opts
   where opts = emptyTyCanonicOpts
 %%[[11
-                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi (tyCanonicMb' opts)}
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
+%%]]
+%%]
+
+%%[(9 hmtyinfer) hs export(tyCanonicFFI)
+tyCanonicFFI :: FIIn -> Ty -> Ty
+tyCanonicFFI fi
+  = tyCanonic' opts
+  where opts = emptyTyCanonicOpts
+%%[[11
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy' (tyCanonicMb' opts)}
+%%]]
+%%[[11
+        canonLkupTy' = canonLkupTy
+%%][98
+        canonLkupTy' fi nm = newtypeLamLkup `orMb` canonLkupTy fi nm
+                     where newtypeLamLkup | ehbnIO (ehcOptBuiltinNames ehcopts) == nm
+                                                      = Nothing
+                                          | otherwise = dgiMbNewtype $? dataGamLookup nm $ feDataGam fe 
+        fe      = fiEnv fi
+        ehcopts = feEHCOpts fe
 %%]]
 %%]
 
@@ -126,8 +166,13 @@ predCanonic fi
   = predCanonic' opts
   where opts = emptyTyCanonicOpts
 %%[[11
-                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi (tyCanonicMb' opts)}
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
 %%]]
+%%]
+
+%%[(11 hmtyinfer) hs
+canonLkupTy :: TyBetaRedLkup
+canonLkupTy = betaRedTyLookup
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -69,7 +69,11 @@ SEM Binding
                                               , ppCurlysSemisBlock
                                                 $ map (\(n,(t,fm)) -> ppForHI n >#< "=" >#< ppCurlysSemisBlock (ppCTag t : ppFldMp fm))
                                                 $ @tags
+%%[[20
                                               , pp @isNewtype
+%%][94
+                                              , maybe empty ppForHI @mbNewtype
+%%]]
                                               ]
     | Ty
         lhs         .   ppSq        =   hiNV "type" @nm [ppForHI @ty]

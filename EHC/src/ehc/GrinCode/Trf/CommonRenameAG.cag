@@ -43,7 +43,11 @@ ATTR AllNT [ | | trf: SELF ]
 SEM GrExpr
   | Call        lhs         .   trf             =   GrExpr_Call (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
   | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
+%%[[8
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf
+%%][94
+  | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @argL.trf
+%%]]
   | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
   | FetchNode   lhs         .   trf             =   GrExpr_FetchNode  (nmAliasRepl @lhs.nmAliasMp @nm)
   | FetchField  lhs         .   trf             =   GrExpr_FetchField (nmAliasRepl @lhs.nmAliasMp @nm) @offset @mbTag

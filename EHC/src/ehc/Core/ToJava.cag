@@ -13,7 +13,10 @@
 %%[(8 codegen java) hs import(Data.Maybe)
 %%]
 
-%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/AbsSyn})
+%%[(94 jazy) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
 WRAPPER CodeAGItf
 %%]
 
@@ -233,7 +236,7 @@ SEM CBind
                             .   jvSrcSetInd =   jvCall (jvNmPP @nm >|< ".set") [@expr.jvSrc] >#< ";"
                             .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
                             .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
-  | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEnt $ primToJavaMp
+  | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
 %%[[94
   | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
 %%]]

@@ -356,6 +356,10 @@ SEM Decl
 SEM Decl
   | *           loc         .   fe                  =   emptyFE
                                                             { feTyGam = @lhs.tyGam
+%%[[94
+                                                            , feEHCOpts = @lhs.opts
+                                                            , feDataGam = @lhs.dataGam		-- required for proper FFI type expansion
+%%]]
 %%[[17
                                                             , fePolGam = @lhs.polGam
 %%]]
@@ -785,7 +789,7 @@ SEM Decl
 %%[[8
                             .   ty_sig_expanded     =   @ty_sig_
 %%][11
-                            .   ty_sig_expanded     =   tyCanonic (emptyFI {fiEnv = @fe}) @ty_sig_
+                            .   ty_sig_expanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @ty_sig_
 %%]]
                 lhs         .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @ty_sig_
 %%]

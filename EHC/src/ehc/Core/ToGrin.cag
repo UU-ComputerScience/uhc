@@ -21,6 +21,10 @@ WRAPPER CodeAGItf
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+
+%%[(94 jazy) hs import({%{EH}Foreign.Extract})
+%%]
+
 %%[(96 codegen grin) hs import({%{EH}BuiltinPrims})
 %%]
 
@@ -29,6 +33,26 @@ WRAPPER CodeAGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 none, directly exports wrap_CodeAGItf,sem_CodeAGItf
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fake AG dependencies to avoid INDUCED cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM CBind
+  | Bind      	lhs			.	opts				<	expr.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type signatures
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM *
+  | *      		loc			.	gUniq			: UID
+  	      		loc			.	lUniq			: UID
+  	      		loc			.	lUniq2			: UID
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Global info
@@ -63,7 +87,12 @@ SEM CExpr
                                             =   mkNewLevUID2  @lhs.gUniq
 
 SEM CBind
+%%[[(8 codegen grin)
   | FFI         (lhs.gUniq,loc.lUniq)       =   mkNewLevUID   @lhs.gUniq
+%%][98
+  | FFI         (lhs.gUniq,loc.lUniq,loc.lUniq2)
+  											=   mkNewLevUID2  @lhs.gUniq
+%%]]
 
 SEM CPat
   | Con         (binds.gUniq,loc.lUniq)     =   mkNewLevUID   @lhs.gUniq
@@ -144,7 +173,7 @@ ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
 
 SEM CBind
   | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
-  | FFI         lhs         .   bindArityMp =   @nm `Map.singleton` length @argTyL
+  | FFI         lhs         .   bindArityMp =   @nm `Map.singleton` (length @argTyL + length @argTyLExtra)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -468,7 +497,52 @@ SEM CBind
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FFI binding
+%%% FFI binding: IO, requires introduction behavior of EHC.Prelude.ioFromPrim:
+%%% extra state param, extra state return (tupled with actual return value)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(98 codegen grin)
+SEM CBind
+  | FFI         loc         .   mbIORes     =   case tyAppConArgs @resTy of
+                                                  Just (n,[a]) | ehbnIO (ehcOptBuiltinNames @lhs.opts) == n
+                                                    -> Just a
+                                                  _ -> Nothing
+                            .   resIsIO     =   isJust @mbIORes
+%%]
+
+%%[(8 codegen grin).ioAdaption
+SEM CBind
+  | FFI         loc         .   resTyAdapted=   @resTy
+                            .   argTyLExtra =   []
+                            .   nmArgLExtra =   []
+                            .   wrapRes     =   id
+%%]
+
+We deal with IO as follow:
+- for f defined as FFI with type f :: a -> IO r, we transform the interface and internal wrapping of f = \a -> r into f' = \a s -> (s, r),
+  the wrapping is similar to the one done in EHC.Prelude.ioFromPrim.
+- when f :: .. -> IO (), the ffi call result is discarded and () returned instead.
+- the extra parameter s is left unevaluated.
+
+%%[(98 codegen grin) -8.ioAdaption
+SEM CBind
+  | FFI         loc         .   (resTyAdapted,argTyLExtra,nmArgLExtra,wrapRes)
+                                            =   case @mbIORes of
+                                                  Just iores
+                                                    -> (iores,[tyState],[nmState],wrapRes)
+                                                    where tyState = Ty_Con $ ehbnRealWorld (ehcOptBuiltinNames @lhs.opts)
+                                                          [nmState,nmRes,nmIgnoreRes] = take 3 (hsnUniqSupply @lUniq2)
+                                                          wrapRes = mkRes . dealWithUnitRes
+                                                                  where mkRes r = GrExpr_Seq r (GrPatLam_Var nmRes) (GrExpr_Unit $ mkGrRecNode $ map GrVal_Var [nmState,nmRes])
+                                                                        dealWithUnitRes
+                                                                                = case tyMbRecExts iores of
+                                                                                    Just (_,[]) -> \r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit $ mkGrRecNode [])
+                                                                                    _           -> id
+                                                  _ -> (@resTy,[],[],id)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI binding: plain stuff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
@@ -545,12 +619,21 @@ SEM CBind
                                                      mkEval (n,needEval,p)
                                                        = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
 %%]]
-                                                in   [GrBind_Bind @nm GrBindAnnNormal @nmArgL
-                                                        (foldr mkEval (mkRes @resTy @nmRes (GrExpr_FFI @impEnt (map GrVal_Var @nmArgPatL)))
+                                                in   [GrBind_Bind @nm GrBindAnnNormal (@nmArgL ++ @nmArgLExtra)
+                                                        (foldr mkEval
+                                                               (@wrapRes
+                                                                $ mkRes @resTyAdapted @nmRes
+%%[[8
+                                                                        (GrExpr_FFI @impEnt
+%%][94
+                                                                        (GrExpr_FFI @callconv @impEnt
+%%]]
+                                                                                    (map GrVal_Var @nmArgPatL
+                                                               )        )           )
 %%[[8
                                                         $ zip @nmArgL
 %%][96
-                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrimNeedsEval @impEnt))
+                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrimNeedsEval @impEntNm))
 %%]]
                                                         $ zipWith mkPat @argTyL
                                                         $ @nmArgPatL
