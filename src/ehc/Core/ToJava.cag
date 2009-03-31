@@ -13,7 +13,7 @@
 %%[(8 codegen java) hs import(Data.Maybe)
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Extract})
+%%[(94 codegen java) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
