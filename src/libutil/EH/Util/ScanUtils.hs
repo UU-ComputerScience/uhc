@@ -121,6 +121,7 @@ data ScanOpts
         ,   scoOffsideClose     ::  !String                 -- offside close symbol
         ,   scoLitmode          ::  !Bool                   -- do literal scanning
         ,   scoVerbOpenClose    ::  ![(String,String)]      -- open/close pairs used for verbatim text
+        ,   scoAllowQualified   ::  !Bool  					-- allow qualified variations, i.e. prefixing with "XXX."
         }
 
 defaultScanOpts :: ScanOpts
@@ -139,6 +140,7 @@ defaultScanOpts
         ,   scoOffsideClose     =   ""
         ,   scoLitmode          =   False
         ,   scoVerbOpenClose    =   []
+        ,   scoAllowQualified   =	True
         }
 
 -------------------------------------------------------------------------
