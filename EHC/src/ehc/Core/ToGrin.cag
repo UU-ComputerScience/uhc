@@ -22,7 +22,7 @@ WRAPPER CodeAGItf
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[(94 jazy) hs import({%{EH}Foreign.Extract})
+%%[(94 codegen) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(96 codegen grin) hs import({%{EH}BuiltinPrims})

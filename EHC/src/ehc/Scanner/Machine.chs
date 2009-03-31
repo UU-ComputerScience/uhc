@@ -55,6 +55,8 @@ scan opts pos input
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
    isQIdChar c = isIdChar   c || c == '.'
 
+   allowQual   = scoAllowQualified opts
+
    scanIdent isId p s
      = (name,advc (length name) p,rest)
      where (name,rest) = span isId s
@@ -158,7 +160,7 @@ scan opts pos input
          =
 %%[[20
            let (qualPrefix,qualTail) = scanQualified cs
-           in  if null qualPrefix
+           in  if null qualPrefix || not allowQual
                then
 %%]]
                     let (name', p', s') = scanIdent isIdChar (advc 1 p) s

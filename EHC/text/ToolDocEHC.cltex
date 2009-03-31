@@ -110,6 +110,8 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
  Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
+\item
+ Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
 \end{itemize}
 
 \subsection{Packages}

@@ -204,11 +204,6 @@ SEM GrExpr
   | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
   | App         (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
 %%]
-  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @impEntNm @lhs.constMp
-                (loc.strConst,lhs.strMp)        =   strAdd @impEntNm @lhs.strMp
-  | Eval        (loc.strConst,lhs.strMp)        =   strAdd (show hsnEval) @lhs.strMp
-  | Call        (loc.strConst,argL.strMp)       =   strAdd (show @nm) @lhs.strMp
-  | App         (loc.strConst,argL.strMp)       =   strAdd (show hsnApply) @lhs.strMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Debug info
@@ -672,10 +667,20 @@ SEM GrExpr
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
                                                     else case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
                                                            GB.GrValIntroAlt_OnTOS ins inc _ bann
-                                                             -> (ins Seq.:++: fins Seq.:++: Seq.fromList [GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr), GB.callc @mbDebugStrInx banns inc], GB.nrValWords, False)
+                                                             -> ( ins
+                                                                  Seq.:++: fins
+                                                                  Seq.:++: Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr)] ++ call)
+                                                                , GB.nrValWords
+                                                                , False
+                                                                )
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
                                                                    bannStr = map basicGrinSizeCharEncoding banns
                                                                    banns = map grinBasicAnnotSize (@lhs.patBasicAnnot : bann)
+%%[[8
+                                                                   call  = [GB.callc @mbDebugStrInx banns inc]
+%%][94
+                                                                   call  = if forextractOptIsPtr @foreignEntInfo then [] else [GB.callc @mbDebugStrInx banns inc]
+%%]]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       GB.GrValIntroAlt_OnTOS ins inc _ _
