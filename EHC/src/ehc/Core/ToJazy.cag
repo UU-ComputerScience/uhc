@@ -21,7 +21,7 @@
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Extract})
+%%[(94 codegen jazy) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
