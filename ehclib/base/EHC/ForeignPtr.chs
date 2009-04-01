@@ -156,7 +156,7 @@ mallocForeignPtr = doMalloc undefined
           r <- newIORef (NoFinalizers, []::[IO ()])
           IO $ \s ->
             case newPinnedByteArray size s of { ( s', mbarr ) ->
-             ( s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
+             ( {- -} s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
                                (MallocPtr mbarr r) )
             }
             where size = sizeOf a
@@ -168,7 +168,7 @@ mallocForeignPtrBytes size = do
   r <- newIORef (NoFinalizers, []::[IO ()])
   IO $ \s ->
      case newPinnedByteArray size s      of { ( s', mbarr ) ->
-       ( s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
+       ( {- -} s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
                          (MallocPtr mbarr r) )
      }
 
@@ -190,7 +190,7 @@ mallocPlainForeignPtr = doMalloc undefined
   where doMalloc :: Storable b => b -> IO (ForeignPtr b)
         doMalloc a = IO $ \s ->
             case newPinnedByteArray size s of { ( s', mbarr ) ->
-             ( s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
+             ( {- -} s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
                                (PlainPtr mbarr) )
             }
             where size = sizeOf a
@@ -202,7 +202,7 @@ mallocPlainForeignPtr = doMalloc undefined
 mallocPlainForeignPtrBytes :: Int -> IO (ForeignPtr a)
 mallocPlainForeignPtrBytes size = IO $ \s ->
     case newPinnedByteArray size s      of { ( s', mbarr ) ->
-       ( s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
+       ( {- -} s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
                          (PlainPtr mbarr) )
      }
 
@@ -220,7 +220,8 @@ addForeignPtrFinalizer (FunPtr fp) (ForeignPtr p c) = case c of
         ioFromPrim $ \s ->
           case r of { IORef (STRef mr) -> do
             w <- mkWeakForeignEnv mr () fp p 0 nullAddr
-            finalizeForeign w}
+            finalizeForeign w
+           }
 
 addForeignPtrFinalizerEnv ::
   FinalizerEnvPtr env a -> Ptr env -> ForeignPtr a -> IO ()
@@ -238,7 +239,8 @@ addForeignPtrFinalizerEnv (FunPtr fp) (Ptr ep) (ForeignPtr p c) = case c of
         ioFromPrim $ \s ->
           case r of { IORef (STRef mr) -> do
             w <- mkWeakForeignEnv mr () fp p 1 ep
-            finalizeForeign w}
+            finalizeForeign w
+           }
 
 finalizeForeign :: Weak () -> IO ()
 finalizeForeign w = finalize w

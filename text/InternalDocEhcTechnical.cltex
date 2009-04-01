@@ -4,6 +4,7 @@
 %%@InternalDocEhcTechnical.GrinCode
 %%@InternalDocEhcTechnical.Silly
 %%@InternalDocEhcTechnical.Ty
+%%@InternalDocEhcTechnical.Foreign
 %%@InternalDocEhcTechnical.JVMClass
 %%@InternalDocEhcTechnical.CLR
 %%]
@@ -247,6 +248,23 @@ Type structure.
 
 \item BetaReduce:
 %%@EHTyTrfBetaReduce.doesWhat
+
+\end{enumerate}
+
+%%]
+
+
+
+%%[Foreign
+
+\section{Foreign}
+Representation of FFI entities
+
+\subsection{Foreign}
+
+\begin{enumerate}
+\item Parser:
+%%@EHForeignParser.doesWhat
 
 \end{enumerate}
 

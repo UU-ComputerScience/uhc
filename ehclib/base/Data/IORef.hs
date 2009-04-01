@@ -86,6 +86,7 @@ atomicModifyIORef (IORef (STRef r#)) f = IO $ \s -> atomicModifyMutVar# r# f s
 
 #elif defined(__EHC__)
 atomicModifyIORef (IORef (STRef r)) f = IO $ \s -> atomicModifyMutVar r f s
+-- atomicModifyIORef (IORef (STRef r)) f = ioFromPrim (\s -> case atomicModifyMutVar r f s of {(_,r') -> r'})
 
 #elif defined(__HUGS__)
 atomicModifyIORef = plainModifyIORef    -- Hugs has no preemption

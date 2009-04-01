@@ -23,7 +23,7 @@ WRAPPER TyAGItf
 %%[(6 hmtyinfer || hmtyast) hs export(kiQuantify)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank,TyQuOut(..),TyQuOpts(..),defaultTyQuOpts)
+%%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank)
 %%]
 
 %%[(99 hmtyinfer || hmtyast)
@@ -50,61 +50,89 @@ tyQuantifyClosed = tyQuantifyRank [1..]
 
 tyQuantifyRank :: [Int] -> Ty -> Ty
 tyQuantifyRank rL ty
-  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL}) (const False) TyQu_Forall ty)
+  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL, tqoptBaseQuant = TyQu_Forall}) (const False) ty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tyQuantify -3.tyQuantify hs
 tyQuantify :: (TyVarId -> Bool) -> Ty -> Ty
-tyQuantify tvIsBound ty
-  = let  t  =  wrap_TyAGItf
-                  (sem_TyAGItf (TyAGItf_AGItf ty))
-                  (Inh_TyAGItf {tvIsBound_Inh_TyAGItf = tvIsBound})
-    in   quTy_Syn_TyAGItf t
+tyQuantify tvIsBound ty = tyQuantify' tvIsBound TyQu_Forall ty
 %%]
 
-%%[(6 hmtyinfer || hmtyast).tyQuantify -4.tyQuantify hs
-tyQuantify :: (TyVarId -> Bool) -> Ty -> Ty
-tyQuantify tvIsBound ty = tyQuantify' tvIsBound TyQu_Forall ty
+%%[(4 hmtyinfer || hmtyast) hs export(tyQuantifyOuter)
+tyQuantifyOuter :: (TyVarId -> Bool) -> Ty -> Ty
+tyQuantifyOuter tvIsBound ty
+  = tqoTy tqo
+  where tqo = tyQuantifyWithOpts
+                (defaultTyQuOpts
+                  { tqoptAllowInnerQuant = False
+%%[[6
+                  , tqoptBaseQuant = TyQu_Forall
+%%]]
+                  }
+                )
+                tvIsBound ty
+%%]
 
+%%[(6 hmtyinfer || hmtyast) hs
 kiQuantify :: (TyVarId -> Bool) -> Ty -> Ty
 kiQuantify tvIsBound ty = tyQuantify' tvIsBound TyQu_KiForall ty
 %%]
 
-%%[(6 hmtyinfer || hmtyast).tyQuantifyPrime hs
+Parameter baseQuant only is needed starting at variant 6.
+
+%%[(4 hmtyinfer || hmtyast) hs
 tyQuantify' :: (TyVarId -> Bool) -> TyQu -> Ty -> Ty
 tyQuantify' tvIsBound baseQuant ty
-  = let  t  =  wrap_TyAGItf
-                  (sem_TyAGItf  (TyAGItf_AGItf ty))
-                  (Inh_TyAGItf  { baseQu_Inh_TyAGItf        = baseQuant
-                                , tvIsBound_Inh_TyAGItf     = tvIsBound
-                                })
-    in   quTy_Syn_TyAGItf t
+  = tqoTy tqo
+  where tqo = tyQuantifyWithOpts
+                (defaultTyQuOpts
+%%[[6
+                  {tqoptBaseQuant = baseQuant}
+%%]]
+                )
+                tvIsBound ty
 %%]
 
-%%[(9 hmtyinfer || hmtyast).tyQuantifyPrime -6.tyQuantifyPrime hs
-tyQuantify' :: (TyVarId -> Bool) -> TyQu -> Ty -> Ty
-tyQuantify' tvIsBound baseQuant ty = tqoTy (tyQuantifyWithOpts defaultTyQuOpts tvIsBound baseQuant ty)
-%%]
-
-%%[(9 hmtyinfer || hmtyast) hs
-data TyQuOpts  = TyQuOpts  {tqoptQuRanks :: [Int]}
+%%[(4 hmtyinfer || hmtyast) hs export(TyQuOpts(..),defaultTyQuOpts)
+data TyQuOpts
+  = TyQuOpts
+      { tqoptAllowInnerQuant	:: Bool
+%%[[6
+      , tqoptBaseQuant			:: TyQu
+%%]]
+%%[[9
+      , tqoptQuRanks 			:: [Int]
+%%]]
+      }
 
 defaultTyQuOpts :: TyQuOpts
-defaultTyQuOpts = TyQuOpts [1..]
+defaultTyQuOpts
+  = TyQuOpts
+      True
+%%[[6
+      TyQu_Forall
+%%]]
+%%[[9
+      [1..]
+%%]]
+%%]
 
+%%[(4 hmtyinfer || hmtyast) hs export(TyQuOut(..))
 data TyQuOut
   = TyQuOut   { tqoTy               ::  Ty
               }
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs
-tyQuantifyWithOpts :: TyQuOpts -> (TyVarId -> Bool) -> TyQu -> Ty -> TyQuOut
-tyQuantifyWithOpts opts tvIsBound baseQuant ty
+%%[(4 hmtyinfer || hmtyast) hs
+tyQuantifyWithOpts :: TyQuOpts -> (TyVarId -> Bool) -> Ty -> TyQuOut
+tyQuantifyWithOpts opts tvIsBound ty
   = let  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (TyAGItf_AGItf ty))
-                  (Inh_TyAGItf  { baseQu_Inh_TyAGItf        = baseQuant
-                                , tvIsBound_Inh_TyAGItf     = tvIsBound
+                  (Inh_TyAGItf  { tvIsBound_Inh_TyAGItf     = tvIsBound
                                 , opts_Inh_TyAGItf          = opts
+%%[[6
+                                , baseQu_Inh_TyAGItf        = tqoptBaseQuant opts
+%%]]
                                 })
     in   TyQuOut
             { tqoTy                 = quTy_Syn_TyAGItf t
@@ -124,11 +152,25 @@ SEM TyAGItf
 %%% Options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast)
+%%[(4 hmtyinfer || hmtyast)
 ATTR TyAGItf AllTy [ opts: TyQuOpts | | ]
+%%]
 
+%%[(9 hmtyinfer || hmtyast)
 SEM TyAGItf
-  | AGItf       ty          .   opts        =   @lhs.opts {tqoptQuRanks = take 5 (tqoptQuRanks @lhs.opts)}
+  | AGItf       ty          .   opts        =   @lhs.opts
+                                                  { tqoptQuRanks = take 5 (tqoptQuRanks @lhs.opts)
+                                                  }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Override hook vor quantifiable location
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | *           loc         .   isQuLocExtraHook
+  											=   @lhs.isAtTop || tqoptAllowInnerQuant @lhs.opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

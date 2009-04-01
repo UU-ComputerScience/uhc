@@ -67,7 +67,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
 %%[[8
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
 %%][94
-                <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv ent))
+                <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent))
                                     <$  pKey "ffi"
                                     <*> pFFIWay <*> pString
 %%]]

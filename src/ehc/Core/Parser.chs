@@ -140,7 +140,7 @@ pCBind
 %%[[8
         mkEnt _ e = e
 %%][94
-        mkEnt c e = fst $ parseForeignEnt c e
+        mkEnt c e = fst $ parseForeignEnt c Nothing e
 %%]]
 
 pCAlt :: CParser CAlt

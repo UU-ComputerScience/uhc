@@ -423,6 +423,30 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+[hsnFunPtr]
+  = map
+%%[[9
+      mkRV
+%%][99
+      (mkRV hsnModIntlPtr)
+%%]]
+      [ "FunPtr"
+      ]
+%%]
+
+%%[99
+[hsnAddr]
+  = map
+      (mkRV hsnModIntlPtr)
+      [ "Addr"
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known/available runtime values: deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -536,14 +560,6 @@ TBD: Needs cleaning up, correct partitioning in variants
       [ ":%" ]
 %%]
 
-%%[99
-[hsnAddr]
-  = map
-      (mkRV hsnModIntlPtr)
-      [ "Addr"
-      ]
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known/available runtime values: IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -655,6 +671,9 @@ data EHBuiltinNames
 %%]]
 %%[[20
 %%]]
+%%[[94
+      , ehbnFunPtr                      :: HsName
+%%]]
 %%[[95
       , ehbnMap                         :: HsName
       , ehbnDataBool                    :: HsName
@@ -742,6 +761,9 @@ mkEHBuiltinNames f
       , ehbnPrelString                  = f IdOcc_Type      hsnPrelString
 %%]]
 %%[[20
+%%]]
+%%[[94
+      , ehbnFunPtr                      = f IdOcc_Type      hsnFunPtr
 %%]]
 %%[[95
       , ehbnMap                         = f IdOcc_Type      hsnMap

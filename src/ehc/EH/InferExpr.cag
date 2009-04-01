@@ -414,7 +414,7 @@ SEM Expr
                                                              (tg,cycVarMp2) = @lhs.tyVarMp |==> @lhs.tyGam
                                                         in   (Set.toList $ ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
                             .   tyTy                :=  @lhs.tyVarMp |=> @tyExpr.ty
-                            .   ty_q_               :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
+                            .   ty_q_               :=  tyQuantifyOuter (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
                             .   knTyDown            =   mkTyVar @lUniq3
