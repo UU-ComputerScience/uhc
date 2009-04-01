@@ -40,18 +40,20 @@ ATTR AllNT [ | | grTrf: SELF ]
 ATTR AllGrVal AllGrTag [ | | copy: SELF ]
 
 
-ATTR AllGlobal [ | | constMap USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+ATTR AllGlobal [ | | genconstMap USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
 
 SEM GrGlobal 
-  | Global  lhs.constMap = Map.singleton @nm @val.copy
+  | Global  lhs.genconstMap = Map.singleton @nm @val.copy
 
 -- distribute global constants
 
 ATTR AllBind AllExpr AllGlobal [ constMap : {Map.Map HsName GrVal} | | ]
 
 SEM GrModule
-  | Mod   globalL.constMap = @globalL.constMap
-          bindL.constMap = @globalL.constMap
+  | Mod   globalL.constMap = -- trace ("Constmap1: " ++ show @globalL.genconstMap) 
+                             @globalL.genconstMap
+          bindL.constMap   = -- trace ("Constmap2: " ++ show @globalL.genconstMap)
+                             @globalL.genconstMap
 
 
 -- find the variables in a value list
@@ -134,27 +136,30 @@ SEM GrVal
                                      in  args2
   
           lhs.specializableCalls  =  maybe Map.empty
-                                           (\nm -> if  hasJust @loc.args2
-                                                   then Map.singleton nm (Set.singleton @loc.args2)
-                                                   else Map.empty
+                                           (\(nm,con,needs) -> if  hasJust @loc.args2
+                                                               then -- trace ("Specnode: " ++ show nm ++ show @fldL.mbVars ++ show @loc.args2)
+                                                                    (Map.singleton nm (Set.singleton (@loc.args2++replicate needs Nothing)))
+                                                               else Map.empty
                                            )
-                                           @tag.mbFName
+                                           @tag.mbPFName
+                                           
           lhs.grTrf               =  maybe @loc.grTrf
-                                           (\nm -> if  hasJust @loc.args2
-                                                   then let m = fromJust (Map.lookup  nm        @lhs.specializedCalls)
-                                                            i = fromJust (Map.lookup @loc.args2 m)
-                                                            nm2 = hsnSuffix nm ("~spec" ++ show i)
-                                                            args3 = [ a | (a,Nothing) <- zip @fldL.grTrf @loc.args2 ]
-                                                        in  GrVal_Node (GrTag_Fun nm2) args3
-                                                   else @loc.grTrf
+                                           (\(nm,con,needs) -> if  hasJust @loc.args2
+                                                               then let m = fromJust (Map.lookup  nm        @lhs.specializedCalls)
+                                                                        i = fromJust (Map.lookup (@loc.args2++replicate needs Nothing) m)
+                                                                        nm2 = hsnSuffix nm ("~spec" ++ show i)
+                                                                        args3 = [ a | (a,Nothing) <- zip @fldL.grTrf @loc.args2 ]
+                                                                    in  GrVal_Node (con nm2) args3
+                                                               else @loc.grTrf
                                            )
-                                           @tag.mbFName
+                                           @tag.mbPFName
 
-ATTR GrTag [ | | mbFName : {Maybe HsName} ]
+ATTR GrTag [ | | mbPFName : {Maybe (HsName, HsName->GrTag, Int)} ]
 
 SEM GrTag
-  |     Fun   lhs . mbFName = Just @nm
-  | * - Fun   lhs . mbFName = Nothing
+  |     Fun        lhs . mbPFName = Just ( @nm, GrTag_Fun        , 0      )
+  |     PApp       lhs . mbPFName = Just ( @nm, GrTag_PApp @needs, @needs )
+  | * - Fun PApp   lhs . mbPFName = Nothing
 
 
 
@@ -165,7 +170,8 @@ SEM GrModule
                      in  Map.mapWithKey (numberset @bindL.collExisting) m
           globalL.specializedCalls = @loc.spc
           bindL  .specializedCalls = @loc.spc
-          -- lhs.grTrf = trace ("existing: " ++ show @bindL.collExisting ++ "\nspecializable: " ++ show @loc.spc) @loc.grTrf
+          lhs.grTrf = -- trace ("existing: " ++ show @bindL.collExisting ++ "\nspecializable: " ++ show @loc.spc) 
+                      @loc.grTrf
 
 {
 numberset :: (Ord a, Show a) => (Map.Map HsName (Map.Map a Int)) -> HsName -> Set.Set a -> Map.Map a Int	

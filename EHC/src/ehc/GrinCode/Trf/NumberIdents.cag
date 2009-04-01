@@ -71,7 +71,7 @@ ATTR AllNT   [ | | grTrf: SELF      ]
 ATTR AllNT   [ | unique: Int | ]
 
 SEM GrAGItf
-  | AGItf  module  . unique       =  3   -- 0,1,2 are reserved for wildcard, main, mainexcept        
+  | AGItf  module  . unique       =  6   -- 0,1,2,3,4,5 are reserved for wildcard, main, mainexcept, eval, evalexcept, evalarg
                    
 %%]
 

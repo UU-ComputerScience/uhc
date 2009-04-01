@@ -76,6 +76,37 @@ PRIM GrWord primEqInteger(GrWord x, GrWord y)
     return CFalse;
 }
 
+PRIM GrWord primAddInteger(GrWord x, GrWord y)
+{   
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = ((Pointer)x)[0] + ((Pointer)y)[0];
+    return res;
+}
+
+PRIM GrWord primSubInteger(GrWord x, GrWord y)
+{   
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = ((Pointer)x)[0] - ((Pointer)y)[0];
+    return res;
+}
+
+PRIM GrWord primMulInteger(GrWord x, GrWord y)
+{   
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = ((Pointer)x)[0] * ((Pointer)y)[0];
+    return res;
+}
+
+PRIM GrWord primNegInteger(GrWord x)
+{   
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = -((Pointer)x)[0];
+    return res;
+}
 
 
 %%]

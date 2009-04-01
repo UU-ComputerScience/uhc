@@ -62,15 +62,15 @@ ATTR GrAGItf
 
 -- decide which alternatives are possible
 ATTR GrAlt     [ | | isPossible: Bool        ]
-ATTR AllAlt    [ possibleTags: {[GrTag]} | | ]
+ATTR AllAlt    [ possibleTags: {Maybe [GrTag]} | | ]
 
 SEM GrAlt
-  | Alt      lhs.isPossible     =  @pat.tag `elem` @lhs.possibleTags
+  | Alt      lhs.isPossible     =  maybe True (@pat.tag `elem`) @lhs.possibleTags
 
 SEM GrExpr
   | Case     altL.possibleTags  =  case @val.varId of
                                      Left n -> getTags (getEnvVar @lhs.hptMap n)
-                                     Right t -> [t]
+                                     Right t -> Just [t]
 
 -- remove the impossible alternatives
 SEM GrAltL

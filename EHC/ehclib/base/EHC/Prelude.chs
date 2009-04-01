@@ -816,9 +816,8 @@ primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 PRIMS_BOUNDED(Int,primMinInt,primMaxInt)
 
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-primIntToInteger     :: Int -> Integer
-primIntToInteger n = undefined
 foreign import prim primIntegerToInt :: Integer -> Int
+foreign import prim primIntToInteger :: Int -> Integer
 #else
 PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
 #endif
@@ -922,20 +921,6 @@ instance Eq  Integer where
 instance Ord Integer where
     compare = primCmpInteger
 
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-
-instance Num Integer where
-    (+)           = undefined
-    (-)           = undefined
-    negate        = undefined
-    (*)           = undefined
-    abs           = undefined
-    signum        = undefined
-    fromInteger x = undefined
-    fromInt       = undefined
-    
-#else
-
 foreign import prim primAddInteger       :: Integer -> Integer -> Integer
 foreign import prim primSubInteger       :: Integer -> Integer -> Integer
 foreign import prim primMulInteger       :: Integer -> Integer -> Integer
@@ -951,7 +936,6 @@ instance Num Integer where
     fromInteger x = x
     fromInt       = primIntToInteger
 
-#endif
 
 instance Real Integer where
     toRational x = x % 1
@@ -960,14 +944,14 @@ instance Real Integer where
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 instance Integral Integer where
-    divMod      = undefined
-    quotRem     = undefined
-    div         = undefined
-    mod         = undefined
-    quot        = undefined
-    rem         = undefined
-    toInteger x = undefined
-    toInt       = undefined
+    divMod      = error "divMod undefined"
+    quotRem     = error "quotRem undefined"
+    div         = error "div undefined"
+    mod         = error "mod undefined"
+    quot        = error "quot undefined"
+    rem         = error "rem undefined"
+    toInteger x = x
+    toInt       = primIntegerToInt
 
 #else
 
