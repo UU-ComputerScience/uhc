@@ -349,7 +349,7 @@ checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
 
 isLocs hptMap p = case p of 
                     (HNmNr i _) -> case getEnvVar hptMap i of
-                                     (AbsLocs _ _) -> True
+                                     (AbsLocs _) -> True
                                      _ -> False
                     _ -> False
 

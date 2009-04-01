@@ -4,10 +4,6 @@
 %%]
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lift fields of a dictionaries
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
 %%[(8 codegen) hs module {%{EH}Core.Trf.FindNullaries} export(cmodTrfFindNullaries)
 %%]
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
@@ -45,10 +41,6 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 ATTR AllCodeNT [ | | cTrf: SELF    ]
 %%]
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Level
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
 SEM CExpr

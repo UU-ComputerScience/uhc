@@ -40,6 +40,8 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
 
+specialize = True
+
 buildAppBindings :: GrModule -> GrModule
 buildAppBindings code
   = let inh = Inh_GrAGItf
@@ -54,14 +56,14 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 %%]
 
 %%[(8 codegen grin)
-ATTR AllBind AllGrExpr [ | applyNodeSizes: {[(Int,Int)]} | ]
+ATTR AllBind AllGrExpr [ | applyNodeSizes: {Set.Set (Int,Int)} | ]
 
 SEM GrModule
-  | Mod           bindL  .  applyNodeSizes  = []
+  | Mod           bindL  .  applyNodeSizes  = Set.empty
 
 SEM GrExpr
   | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes 
-                                        (\e -> (e,@val.atagId) : @lhs.applyNodeSizes) 
+                                        (\e -> Set.insert (e, if specialize then @val.atagId else 0) @lhs.applyNodeSizes) 
                                         @val.applyNodeSize
 
 SEM GrVal [ | | applyNodeSize: {Maybe Int} ]
@@ -122,7 +124,7 @@ SEM GrSplit
 %%[(8 codegen grin).buildAppBinding hs
 
 applyFunctionName size specnr
-  =  HNm $ "app" ++ show size ++ "_" ++ show specnr
+  =  HNm $ "app" ++ show size ++ (if specialize then "_" ++ show specnr else "")
   
 applyFunctionTag size specnr
   =  GrTag_App (applyFunctionName size specnr)
@@ -143,7 +145,7 @@ buildAppBinding (size,specnr)
 SEM GrModule
   | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 
-                                      (@loc.mainFullProg ++ map buildAppBinding @bindL.applyNodeSizes ++ @bindL.grTrf)
+                                      (@loc.mainFullProg ++ map buildAppBinding (Set.toList @bindL.applyNodeSizes) ++ @bindL.grTrf)
                                       @ctagsMp 
                                       
 %%[[8

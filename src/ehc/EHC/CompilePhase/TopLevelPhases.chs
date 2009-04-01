@@ -151,7 +151,7 @@ cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHC
 cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
           , mergeIntoOneBigCore
-          -- , cpOutputCore "fullcore" mainModNm
+          , cpOutputCore "fullcore" mainModNm
           , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
           ]
   where mergeIntoOneBigCore

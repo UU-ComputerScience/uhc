@@ -280,7 +280,7 @@ SEM GrExpr
                                  (InVar tvar        ,  InEnum svar _     )  -> [ IsEnumeration tvar svar ]
                                  (InBasic tvar      ,  _                 )  -> [ IsKnown tvar AbsBasic ]
                                  (InEnum  tvar ttags,  _                 )  -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                                 --(InOpq   tvar      ,  _                 )  -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any []))]
+                                 --(InOpq   tvar      ,  _                 )  -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any [])))]
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
@@ -327,7 +327,7 @@ SEM GrExpr
                                   InVar  svar       -> [ WillEquate @lhs.location svar ]
                                   _                 -> error "HPT: source of Store should be a node"
            lhs . equations   =  case @lhs.targetInfo of
-                                  InVar tvar        -> [IsKnown tvar (AbsLocs (Set.singleton @lhs.location) Nothing)] 
+                                  InVar tvar        -> [IsKnown tvar (AbsLocs (Locs (Set.singleton @lhs.location) Nothing))] 
                                   _                 -> error "HPT: destination of Store should be a variable"
 
 {-
@@ -340,7 +340,7 @@ SEM GrGlobal
                                   InNode stag snms  -> [ WillStore @lhs.location stag snms ]
                                   _                 -> error "HPT: source of Global should be a node"
            loc . tvar        =  getNr @nm
-           lhs . equations   =                         [IsKnown @loc.tvar (AbsLocs (Set.singleton @lhs.location) Nothing)]
+           lhs . equations   =                         [IsKnown @loc.tvar (AbsLocs (Locs (Set.singleton @lhs.location) Nothing))]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -438,11 +438,11 @@ SEM GrExpr
 SEM GrExpr
   | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
          lhs . equations =  case @lhs.targetInfo of
-                              InVar tvar         -> [ IsKnown tvar (AbsNodes @loc.nodemap) ]
+                              InVar tvar         -> [ IsKnown tvar (AbsNodes (Nodes @loc.nodemap)) ]
                               InNode ttag tnms   -> zipWith IsKnown tnms [AbsBasic]
                               InBasic tvar       -> [ IsKnown tvar AbsBasic ]
                               InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any [])) ]
+                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any []))) ]
 
 
 %%]
@@ -459,7 +459,7 @@ SEM GrExpr
                               InVar tvar         -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
                               InBasic tvar       -> [ IsKnown tvar AbsBasic ]
                               InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Map.singleton GrTag_Any [])) ]
+                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any []))) ]
                               _                  -> error "HPT: Eval target should be a variable or Basic/Enum display"
 %%]
 

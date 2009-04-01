@@ -17,7 +17,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
 
 wildcardNm = HNm "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -37,6 +37,8 @@ hsnMainFullProg = hsnSuffix hsnMain "FullProg"
 
 mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 
+evaluateNr    = HNmNr 3 (OrigFunc (HNm "evaluate"))
+evaluateArgNr = HNmNr 5 (OrigNone)
 
 %%]
 
@@ -46,7 +48,7 @@ mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Location, Variable, AbstractValue(..), AbstractCall, AbstractCallList)
+%%[(8 codegen grin) export(Location, Variable, AbstractLocs(..), AbstractNodes(..), AbstractValue(..), AbstractCall, AbstractCallList)
 %%]
 
 %%[(8 codegen grin).AbstractValue
@@ -55,12 +57,22 @@ type Location = Int
 type Variable = Int
 
 
+
+data AbstractLocs
+  = Locs (Set.Set Location) (Maybe (Set.Set GrTag))
+    deriving (Eq, Ord)
+
+data AbstractNodes
+  = Nodes (Map.Map GrTag [AbstractValue])
+--  | Nodes2 (Map.Map GrTag [Set.Set Variable])
+    deriving (Eq, Ord)
+
 data AbstractValue
   = AbsBottom
   | AbsBasic
   | AbsTags  (Set.Set GrTag)
-  | AbsLocs  (Set.Set Location) (Maybe (Set.Set GrTag))
-  | AbsNodes (Map.Map GrTag [AbstractValue])
+  | AbsLocs  AbstractLocs  -- (Set.Set Location) (Maybe (Set.Set GrTag))
+  | AbsNodes AbstractNodes -- (Map.Map GrTag [AbstractValue])
   | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
@@ -73,13 +85,20 @@ type AbstractCallList
   = [AbstractCall]
 
 
+instance Show AbstractLocs where
+  show (Locs ls ml) = show (Set.elems ls) ++ show ml
+
+instance Show AbstractNodes where
+  show (Nodes ns) = show (Map.assocs ns)
+--  show (Nodes2 ns) = show (Map.assocs ns)
+
 instance Show AbstractValue where
     show av = case av of
                   AbsBottom   -> "BOT"
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
-                  AbsLocs  ls ml -> "LOCS" ++ show (Set.elems ls) ++ show ml
-                  AbsNodes ns -> "NODS" ++ show (Map.assocs ns)
+                  AbsLocs  al -> "LOCS" ++ show al
+                  AbsNodes an -> "NODS" ++ show an
                   AbsUnion xs -> "UNION" ++ show (Map.assocs xs)
                   AbsError s  -> "ERR: " ++ s
 
@@ -88,14 +107,29 @@ limitIntersect (Just a) (Just b) = Just (Set.intersection a b)
 limitIntersect Nothing  b        = b
 limitIntersect a        _        = a
 
+
+instance Monoid AbstractLocs where
+   mempty = Locs Set.empty Nothing
+   mappend (Locs al am) (Locs bl bm) = let cl = Set.union al bl
+                                       in  --if   Set.size cl < 5000
+                                           --then 
+                                                  Locs cl (limitIntersect am bm)
+                                           -- else trace ("large set: " ++ show cl) AllLocs
+
+instance Monoid AbstractNodes where
+   mempty = Nodes Map.empty
+   mappend (Nodes  an) (Nodes  bn) = Nodes (Map.unionWith (zipWith mappend)   an bn)
+--   mappend (Nodes2 an) (Nodes2 bn) = Nodes (Map.unionWith (zipWith Set.union) an bn)
+
+
 instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
     mappend  a                 AbsBottom    =  a
     mappend    AbsBottom    b               =  b
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
-    mappend   (AbsLocs  al am)(AbsLocs  bl bm) =  AbsLocs (Set.union al bl) (limitIntersect am bm)
-    mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (Map.unionWith (zipWith mappend) an bn)
+    mappend   (AbsLocs  al)   (AbsLocs  bl) =  AbsLocs      (mappend al bl)
+    mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (mappend an bn)
     mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
@@ -218,7 +252,7 @@ getHeapLoc (_,ah) i = ah ! i
 
 limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
 limit Nothing v = v
-limit (Just tset) (AbsNodes ns) = AbsNodes (Map.fromList (filter (validTag tset) (Map.toList ns)))
+limit (Just tset) (AbsNodes (Nodes ns)) = AbsNodes (Nodes (Map.fromList (filter (validTag tset) (Map.toList ns))))
 limit _ v = error ("limit applied to non-Node " ++ show v)
 
 validTag ts (t@(GrTag_Con _ _ _) , _)  = Set.member t ts
@@ -227,26 +261,27 @@ validTag _  _                          = True
 
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AbsLocs l m   -> mconcat $ map (limit m . getHeapLoc a) (Set.toList l)
-                             AbsBottom     -> AbsNodes Map.empty
+                             AbsLocs (Locs l m) -> mconcat $ map (limit m . getHeapLoc a) (Set.toList l)
+                             AbsBottom     -> AbsNodes (Nodes Map.empty)
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
                              AbsNodes _     -> error $ "variable " ++ show i ++ " is a node variable"
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of
-                 AbsTags  ts -> Set.toList ts
-                 _           -> map fst (getNodes av)
+                 AbsTags  ts -> Just (Set.toList ts)
+                 AbsBottom   -> Nothing
+                 _           -> Just (map fst (getNodes av))
 
 getNodes av = case av of
-                  AbsNodes n  -> Map.toAscList n
+                  AbsNodes (Nodes n)  -> Map.toAscList n
                   AbsBottom   -> []
                   AbsError s  -> error $ "analysis error getNodes: " ++  s
                   _           -> error $ "not a node: " ++ show av
 
 isBottom av = case av of
                   AbsBottom   ->  True
-                  AbsLocs l m ->  Set.null l
+                  AbsLocs (Locs l m) ->  Set.null l
                   AbsNodes n  ->  False -- Map.null n
                   AbsError s  ->  error $ "analysis error isBottom: " ++ s
                   otherwise   ->  False
@@ -279,14 +314,14 @@ isApplyTag _                 = False
 
 
 filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
-filterTaggedNodes p (AbsNodes nodes) = let newNodes = Map.filterWithKey (const . p) nodes
-                                       in -- if Map.null newNodes then AbsBottom else 
-                                          AbsNodes newNodes
+filterTaggedNodes p (AbsNodes (Nodes nodes)) = let newNodes = Map.filterWithKey (const . p) nodes
+                                               in -- if Map.null newNodes then AbsBottom else 
+                                                  AbsNodes (Nodes newNodes)
 filterTaggedNodes p av               = av
 
 
 getApplyNodeVars :: AbstractValue -> [ Variable ]
-getApplyNodeVars (AbsNodes nodes) = [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]
+getApplyNodeVars (AbsNodes (Nodes nodes)) = [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]
 getApplyNodeVars _                = []
 
 %%]

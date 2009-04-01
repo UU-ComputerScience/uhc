@@ -116,6 +116,26 @@ doCompileGrin
 
 
 %%[(8 codegen grin) -1.doCompileGrin
+
+
+specialize s 
+  =    do{ transformCode         evalStored         "EvalStored"       ; caWriteGrin (s++"a-evalstored")
+         ; transformCode         applyUnited        "ApplyUnited"      
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"b-applyUnited")
+         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (s++"c-unusedExprDropped")
+         ; transformCode         specConst          "SpecConst"        ; caWriteGrin (s++"d-specConst")
+         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (s++"e-after-cp")
+         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
+         ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (s++"g-simpleNullary")
+		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (s++"h-memberSelected")
+         ; transformCode         (dropUnreachableBindings False) 
+                                             "DropUnreachableBindings" ; caWriteGrin (s++"i-reachable")
+         }
+
+
+
+
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
   = drive (initialState opts input) putErrs $
@@ -147,34 +167,14 @@ doCompileGrin input opts
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-123a-evalstored"
-         ; transformCode         applyUnited        "ApplyUnited"      
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-123b-applyUnited"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-123c-unusedExprDropped"
-         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-123d-specConst"
-         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-123e-after-cp"
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-123f-singleCase"
-
-
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-124a-evalstored"
-         ; transformCode         applyUnited        "ApplyUnited"      
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124b-applyUnited"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-124c-unusedExprDropped"
-         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-124d-specConst"
-         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-124e-after-cp"
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124f-singleCase"
-{-
-         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin "-125a-evalstored"
-         ; transformCode         applyUnited        "ApplyUnited"      
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-125b-applyUnited"
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-125c-unusedExprDropped"
-         ; transformCode         specConst          "SpecConst"        ; caWriteGrin "-125d-specConst"
-         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-125e-after-cp"
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-125f-singleCase"
--}
+         ; specialize "-123-1"
+         ; specialize "-123-2"
+         ; specialize "-123-3"
+         ; specialize "-123-4"
+         ; specialize "-123-5"
+         ; specialize "-123-6"
+         ; specialize "-123-7"
+         ; specialize "-123-8"
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
@@ -221,7 +221,7 @@ doCompileGrin input opts
 
          ; when (ehcOptFullProgAnalysis options)
            ( do { caGrin2Silly                                         ; caWriteSilly "-201" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
+                -- ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly elimUnused         "ElimUnused"       ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
