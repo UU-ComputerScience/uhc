@@ -30,6 +30,14 @@ import EHC.STRef
 %%% Unsafe
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[9999
+unsafePerformIO :: IO a -> a
+unsafePerformIO (IO m)
+  = case m ioWorld of
+      x -> x
+
+%%]
+
 %%[99
 unsafePerformIO :: IO a -> a
 unsafePerformIO (IO m)
@@ -42,6 +50,33 @@ unsafePerformIO (IO m)
 %%% IO <-> ST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+This version assumes that ST has structure: state -> (state,result), and IO: state -> result
+%%[9999
+-- ---------------------------------------------------------------------------
+-- Coercions between IO and ST
+
+-- | A monad transformer embedding strict state transformers in the 'IO'
+-- monad.  The 'RealWorld' parameter indicates that the internal state
+-- used by the 'ST' computation is a special one supplied by the 'IO'
+-- monad, and thus distinct from those used by invocations of 'runST'.
+stToIO        :: ST RealWorld a -> IO a
+stToIO (ST m) = IO (\s -> case m s of {(_,r) -> r})
+
+ioToST        :: IO a -> ST RealWorld a
+ioToST (IO m) = ST (\s -> case m s of {r -> (s,r)})
+
+-- This relies on IO and ST having the same representation modulo the
+-- constraint on the type of the state
+--
+unsafeIOToST        :: IO a -> ST s a
+unsafeIOToST io = unsafeCoerce (ioToST io)
+
+unsafeSTToIO :: ST s a -> IO a
+unsafeSTToIO m = stToIO (unsafeCoerce m)
+
+%%]
+
+This version assumes that ST and IO have the same internal representation: state -> (state,result)
 %%[99
 -- ---------------------------------------------------------------------------
 -- Coercions between IO and ST

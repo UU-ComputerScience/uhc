@@ -173,8 +173,9 @@ SEM Declaration
 %%[[8
         loc         .   ent         =   maybe (show @name) id @importname
 %%][94
-        loc         .   (ent,entErrs)
-                                    =   parseForeignEnt @callconvention $ maybe (show @name) id @importname
+        loc         .   nmForParse 	=	maybe "" id @importname
+                    . 	(ent,entErrs)
+                                    =   parseForeignEnt @callconvention (Just $ show @name) @nmForParse
 %%]]
         loc         .   eh          =   rngLift @range EH.Decl_FFI @callconvention (maybe "safe" id @safety) @ent @refname @type.eh
         lhs         .   eh          =   [@eh]
@@ -215,8 +216,9 @@ SEM Declaration
 %%]
 %%[(94 codegen)
     | ForeignExport
-        loc         .   (ent,entErrs)
-                                    =   parseForeignEnt @callconvention $ maybe (show @name) id @exportname
+        loc         .   nmForParse 	=	maybe "" id @exportname
+                    .   (ent,entErrs)
+                                    =   parseForeignEnt @callconvention (Just $ show @name) @nmForParse
                     .   eh          =   rngLift @range EH.Decl_FFE @exportrefname @callconvention @ent (rngLift @range EH.Expr_Var @refname) @type.eh
         lhs         .   eh          =   [@eh]
 %%]

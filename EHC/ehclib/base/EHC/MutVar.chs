@@ -28,8 +28,8 @@ foreign import prim "primSameMutVar"  sameMutVar  :: MutVar s a -> MutVar s a ->
 -- no threads, hence no atomicity issues
 atomicModifyMutVar :: MutVar s a -> (a -> (a,b)) -> State s -> (State s, b)
 atomicModifyMutVar mv f s1
-  = s3 `seq` (s3,vres)
+  = letstrict _ = s3 in (s3,vres)
   where (s2,v) = readMutVar mv s1
-        (vnew,vres) = s2 `seq` f v
+        (vnew,vres) = letstrict _ = s2 in f v
         s3 = writeMutVar mv vnew s2
 %%]

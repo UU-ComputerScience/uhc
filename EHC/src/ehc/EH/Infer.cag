@@ -769,14 +769,14 @@ SEM Decl
 -- generated from ruler rules into EHRulerRules, was 3.TySig
 %%[(5 hmtyinfer).TySig
 SEM Decl
-  | TySig       loc         .   ty_sig_             =   tyQuantify (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+  | TySig       loc         .   ty_sig_             =   tyQuantifyOuter (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
                             .   gamSigTy            :=  @ty_sig_
 %%]
 
 %%[(6 hmtyinfer)
 SEM Decl
   | TySig       loc         .   gTyTvL              =   ftv . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
-                            .   ty_sig_             :=  tyQuantify (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
+                            .   ty_sig_             :=  tyQuantifyOuter (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyExpr.ty
 %%]
 
 %%[(8 hmtyinfer)
@@ -785,7 +785,7 @@ SEM Decl
 %%[[94
     FFE
 %%]]
-                loc         .   ty_sig_             =   tyQuantifyClosed @tyExpr.ty
+                loc         .   ty_sig_             =   tyQuantifyOuter (const False) @tyExpr.ty
 %%[[8
                             .   ty_sig_expanded     =   @ty_sig_
 %%][11

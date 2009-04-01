@@ -208,12 +208,12 @@ SEM Declaration
 %%[94
 SEM Declaration
     | ForeignImport
-        loc         .   errSq       =   Seq.unions [ Seq.fromList (rngLift @range mkNestErr (pp "Parse of foreign entity") @entErrs)
+        loc         .   errSq       =   Seq.unions [ Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
                                                    , @type.errSq
                                                    ]
     | ForeignExport
         loc         .   errSq       =   Seq.unions [ Seq.fromList @errIdUse
-                                                   , Seq.fromList (rngLift @range mkNestErr (pp "Parse of foreign entity") @entErrs)
+                                                   , Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
                                                    , @type.errSq
                                                    ]
 %%]

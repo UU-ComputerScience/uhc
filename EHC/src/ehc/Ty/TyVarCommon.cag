@@ -98,6 +98,17 @@ SEM Pred
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Hook for whether location in type a place where quantification can take place,
+%%% to be overridden in AG files using this AG file.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+%%]
+SEM Ty
+  | *           loc         .   isQuLocExtraHook
+  											=   True
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is location in type a place where quantification can take place?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -105,9 +116,9 @@ SEM Pred
 ATTR Ty [ | | isQuLoc USE {&&} {False}: Bool ]
 
 SEM Ty
-  | Var         loc         .   isQuLoc     =   polIsCovariant @lhs.pol
-  | Quant       loc         .   isQuLoc     =   not (polIsInvariant @lhs.pol)
-  | App         loc         .   isQuLoc     =   polIsCovariant @lhs.pol
+  | Var         loc         .   isQuLoc     =   polIsCovariant @lhs.pol && @isQuLocExtraHook
+  | Quant       loc         .   isQuLoc     =   not (polIsInvariant @lhs.pol) && @isQuLocExtraHook
+  | App         loc         .   isQuLoc     =   (  polIsCovariant @lhs.pol
                                                 || (polIsContravariant @lhs.pol
                                                     && (@isProdRoot
                                                         || @isArrowRoot
@@ -115,6 +126,7 @@ SEM Ty
                                                            && (not @func.isPred || @arg.isQuLoc)
 %%]]
                                                    )   )
+                                                ) && @isQuLocExtraHook
                 lhs         .   isQuLoc     =   if @isArrowArg then @arg.isQuLoc else @isQuLoc
 %%]
 SEM Ty
@@ -146,7 +158,7 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Pred        loc         .   isQuLoc     =   polIsCovariant @lhs.pol
+  | Pred        loc         .   isQuLoc     =   polIsCovariant @lhs.pol && @isQuLocExtraHook
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

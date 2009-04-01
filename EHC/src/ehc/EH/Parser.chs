@@ -131,7 +131,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                         -> mkEH Decl_FFI conv saf 
                              (
 %%[[94
-                               (\i -> fst $ parseForeignEnt conv i)
+                               (\i -> fst $ parseForeignEnt conv Nothing i)
 %%]]
                                (if null imp then show nm else imp))
                              nm sig

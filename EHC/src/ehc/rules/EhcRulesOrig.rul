@@ -1304,13 +1304,13 @@ ruleset decl.base scheme decl "Declaration type rules" =
           | tyGam.inh = tyGam
           | tyGam.syn = _
       -- judge Q : tyQuantify = declTyExpr: ty.q === ty.i, tvarv.t.._
-      judge Q : tyQuantify = (tyLVar tvarv.t.._) :- ty.i : ty.q
+      judge Q : tyQuantifyOuter = (tyLVar tvarv.t.._) :- ty.i : ty.q
       judge B : bind1ValIdToTy
           | ty = ty.q
       ---
     view I1 =
       judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyVarMp'
-      judge Q : tyQuantify
+      judge Q : tyQuantifyOuter
           | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
       ---
     view I2 =
@@ -2772,6 +2772,18 @@ relation tyQuantify =
     -- judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
     judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
     judgeuse ag (retain ty.q) `=` tyQuantify (`elem` (gtvars)) ty
+{-
+  view I1 =
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+-}
+
+relation tyQuantifyOuter =
+  view HM =
+    holes [ ty: Ty, gtvars: TyVarIdS | | ty.q: Ty ]
+    judgespec gtvars :- ty : ty.q
+    -- judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+    judgeuse ag (retain ty.q) `=` tyQuantifyOuter (`elem` (gtvars)) ty
 {-
   view I1 =
     judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
