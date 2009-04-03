@@ -43,7 +43,7 @@ infixr 6 |==>
 
 %%[(2 hmtyinfer || hmtyast).Substitutable
 %%[[2
-class Substitutable vv k subst | vv -> subst k where
+class Ord k => Substitutable vv k subst | vv -> subst k where
 %%][9999
 class VarLookup subst k vv => Substitutable vv k subst where
 %%]]
@@ -52,6 +52,12 @@ class VarLookup subst k vv => Substitutable vv k subst where
   (|==>)        ::  subst -> vv -> (vv,VarMp)
 %%]]
   ftv           ::  vv -> [k]
+  ftvSet        ::  vv -> Set.Set k
+  
+  -- default
+  ftv           =   Set.toList . ftvSet
+  ftvSet        =   Set.fromList . ftv
+
 
 %%[[4
   s |==> x = (s |=> x,emptyVarMp)
@@ -63,11 +69,6 @@ substLift :: (v' -> v) -> (v' -> v -> v') -> (subst -> v -> (v,r)) -> subst -> v
 substLift toV updV app s v'
   = (updV v' x,r)
   where (x,r) = app s $ toV v'
-%%]
-
-%%[(2 hmtyinfer || hmtyast) export(ftvSet)
-ftvSet :: (Ord k,Substitutable x k subst) => x -> Set.Set k
-ftvSet = Set.fromList . ftv
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -105,7 +106,7 @@ instance VarLookup m TyVarId VarMpInfo => Substitutable Ty TyVarId m where
 %%[[4
   (|==>)    = tyAppVarLookup2
 %%]]
-  ftv       = tyFtv
+  ftvSet    = tyFtv
 %%]
 
 %%[(10 hmtyinfer || hmtyast)
@@ -132,7 +133,7 @@ instance (Ord k,Substitutable vv k subst) => Substitutable [vv] k subst where
   s      |==> l   =   (l,varmpUnions m)
                   where (l,m) = unzip $ map (s |==>) l
 %%]]
-  ftv         l   =   unions $ map ftv l
+  ftvSet      l   =   Set.unions $ map ftvSet l
 %%]
 
 %%[(2 hmtyinfer || hmtyast).SubstitutableVarMp
@@ -140,34 +141,34 @@ instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = VarMp (sl1 ++ map (\(v,t) -> (v,s1 |=> t)) sl2')
     where sl2' = deleteFirstsBy (\(v1,_) (v2,_) -> v1 == v2) sl2 sl1
-  ftv (VarMp sl)
-    = ftv . map snd $ sl
+  ftvSet (VarMp sl)
+    = ftvSet . map snd $ sl
 %%]
 
 %%[(4 hmtyinfer || hmtyast).SubstitutableVarMp -2.SubstitutableVarMp
 instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=> s2@(VarMp sl2)
     = s1 `varmpPlus` s2
-  ftv (VarMp sl)
-    = ftv $ map snd sl
+  ftvSet (VarMp sl)
+    = ftvSet $ map snd sl
 %%]
 
 %%[(9 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
 instance Substitutable VarMp TyVarId VarMp where
   s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` {- Map.map (s1 |=>) -} sl2)
-  ftv                  (VarMp sl)      =   ftv $ Map.elems sl
+  ftvSet               (VarMp sl)      =   ftvSet $ Map.elems sl
 %%]
 
 %%[(7 hmtyinfer || hmtyast)
 instance Substitutable vv k subst => Substitutable (HsName,vv) k subst where
   s |=>  (k,v) =  (k,s |=> v)
-  ftv    (_,v) =  ftv v
+  ftvSet (_,v) =  ftvSet v
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 instance Substitutable Pred TyVarId VarMp where
   s |=>  p  =  (\(Ty_Pred p) -> p) (s |=> (Ty_Pred p))
-  ftv    p  =  ftv (Ty_Pred p)
+  ftvSet p  =  ftvSet (Ty_Pred p)
 
 instance Substitutable PredScope TyVarId VarMp where
   s |=>  sc                   = maybe sc id $ varmpScopeLookupScopeCyc sc s
@@ -177,24 +178,24 @@ instance Substitutable PredScope TyVarId VarMp where
 instance Substitutable PredOcc TyVarId VarMp where
 %%[[9
   s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) id (s |=> sc)
-  ftv    (PredOcc pr id sc)  = unions [ftv pr,ftv sc]
+  ftvSet (PredOcc pr id sc)  = ftvSet pr `Set.union` ftvSet sc
 %%][99
   s |=>  (PredOcc pr id sc r)  = PredOcc (s |=> pr) id (s |=> sc) r
-  ftv    (PredOcc pr id sc _)  = unions [ftv pr,ftv sc]
+  ftvSet (PredOcc pr id sc _)  = ftvSet pr `Set.union` ftvSet sc
 %%]]
 
 instance Substitutable CHRPredOcc TyVarId VarMp where
 %%[[9
   s |=>  (CHRPredOcc pr sc)  = CHRPredOcc (s |=> pr) (s |=> sc)
-  ftv    (CHRPredOcc pr sc)  = unions [ftv pr,ftv sc]
+  ftvSet (CHRPredOcc pr sc)  = ftvSet pr `Set.union` ftvSet sc
 %%][99
   s |=>  (CHRPredOcc pr sc r)  = CHRPredOcc (s |=> pr) (s |=> sc) r
-  ftv    (CHRPredOcc pr sc _)  = unions [ftv pr,ftv sc]
+  ftvSet (CHRPredOcc pr sc _)  = ftvSet pr `Set.union` ftvSet sc
 %%]]
 
 instance Substitutable Impls TyVarId VarMp where
   s |=>  i  =  (\(Ty_Impls i) -> i) (s |=> (Ty_Impls i))
-  ftv    i  =  ftv (Ty_Impls i)
+  ftvSet i  =  ftvSet (Ty_Impls i)
 %%]
   s |=>  sc@(PredScope_Var v) = maybe sc id $ varmpScopeLookup v s
   s |=>  sc                   = sc
@@ -214,17 +215,17 @@ instance Substitutable VarMpInfo TyVarId VarMp where
                  -- VMIExts     x  -> VMIExts (s |=> x)
                  vmi            -> vmi
 %%]]
-  ftv   vmi =  case vmi of
-                 VMITy       t  -> ftv t
-                 VMIImpls    i  -> ftv i
-                 VMIPred     i  -> ftv i
-                 VMIScope    sc -> ftv sc
+  ftvSet vmi = case vmi of
+                 VMITy       t  -> ftvSet t
+                 VMIImpls    i  -> ftvSet i
+                 VMIPred     i  -> ftvSet i
+                 VMIScope    sc -> ftvSet sc
 %%[[13
-                 VMIPredSeq  x  -> ftv x
+                 VMIPredSeq  x  -> ftvSet x
 %%]]
 %%[[10
-                 -- VMIExts     x  -> ftv x
-                 vmi            -> []
+                 -- VMIExts     x  -> ftvSet x
+                 vmi            -> Set.empty
 %%]]
 %%]
 
@@ -245,9 +246,9 @@ instance Substitutable PredSeq TyVarId VarMp where
   s |=>  a@(PredSeq_Var  v  ) = maybe a id $ varmpPredSeqLookup v s
   s |=>    (PredSeq_Cons h t) = PredSeq_Cons (s |=> h) (s |=> t)
   _ |=>    x                  = x
-  ftv      (PredSeq_Var  v  ) = [v]
-  ftv      (PredSeq_Cons h t) = unions [ftv h, ftv t]
-  ftv    _                    = []
+  ftvSet   (PredSeq_Var  v  ) = Set.singleton v
+  ftvSet   (PredSeq_Cons h t) = ftvSet h `Set.union` ftvSet t
+  ftvSet _                    = Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

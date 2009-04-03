@@ -112,6 +112,11 @@ The C based backends (C, bc) use the following public domain libraries:
  Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
 \item
  Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
+\item
+ Large expressions involving many class constraints take non lineair compile time, consumed by context reduction.
+\item
+ When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
+ Without write permission this will fail.
 \end{itemize}
 
 \subsection{Packages}

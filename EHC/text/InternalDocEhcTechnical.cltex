@@ -3,6 +3,7 @@
 %%@InternalDocEhcTechnical.Core
 %%@InternalDocEhcTechnical.GrinCode
 %%@InternalDocEhcTechnical.Silly
+%%@InternalDocEhcTechnical.EH
 %%@InternalDocEhcTechnical.Ty
 %%@InternalDocEhcTechnical.Foreign
 %%@InternalDocEhcTechnical.JVMClass
@@ -267,6 +268,31 @@ Representation of FFI entities
 %%@EHForeignParser.doesWhat
 
 \end{enumerate}
+
+%%]
+
+
+
+%%[EH
+
+\section{EH}
+
+Simplified (essential) Haskell.
+
+\subsection{Type inference}
+
+More entries appear here everytime a module undergoes major changes, and documentation is added as part of such an overhaul.
+
+\begin{enumerate}
+\item InferIncrFtv:
+%%@EHInferIncrFtv.doesWhat
+
+\item FIEnv:
+%%@EHFIEnv.doesWhat
+
+\end{enumerate}
+
+\subsection{Kind inference}
 
 %%]
 

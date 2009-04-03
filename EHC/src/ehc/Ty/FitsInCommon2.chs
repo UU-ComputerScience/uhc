@@ -129,14 +129,14 @@ data FIEnv
         {   feEHCOpts       :: !EHCOpts
         ,   feDontBind      :: !TyVarIdS
         ,   fePredScope     :: !PredScope
-%%[[7
-        ,   feDataGam       :: !DataGam
-%%]]
 %%[[11
         ,   feTyGam         :: !TyGam
 %%]]
 %%[[17
         ,   fePolGam        :: !PolGam
+%%]]
+%%[[98
+        ,   feDataGam       :: !DataGam
 %%]]
 %%[[99
         ,   feRange         :: !Range
@@ -152,14 +152,14 @@ emptyFE
         {   feEHCOpts       =   defaultEHCOpts
         ,   feDontBind      =   Set.empty
         ,   fePredScope     =   initPredScope
-%%[[7
-        ,   feDataGam       =   emptyGam
-%%]]
 %%[[11
         ,   feTyGam         =   emptyGam
 %%]]
 %%[[17
         ,   fePolGam        =   emptyGam
+%%]]
+%%[[98
+        ,   feDataGam       =   emptyGam
 %%]]
 %%[[99
         ,   feRange         =   emptyRange

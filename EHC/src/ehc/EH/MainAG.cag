@@ -108,6 +108,9 @@ WRAPPER AGItf
 %%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
 %%]
 
+%%[(4 hmtyinfer) ag import({EH/FIEnv})
+%%]
+
 %%[(1 hmtyinfer).EHRulerRules ag import(EHRulerRules)
 %%]
 
@@ -139,6 +142,9 @@ WRAPPER AGItf
 %%]
 
 %%[102 -1.Pretty
+%%]
+
+%%[(2 hmtyinfer) ag import({EH/InferIncrFtv})
 %%]
 
 %%[(5 hmtyinfer) ag import({EH/InferCaseExpr},{EH/InferData})

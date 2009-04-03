@@ -113,7 +113,7 @@ ATTR AllExpr [ | | dtGamL USE {++} {[]} : DtGamL ]
 
 SEM Expr
   | Lam         (loc.dtGamLam,body.dtVarMp)
-                                        =   dtEltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @arg.tyVarMp) @arg.dtVarMp (gamTop @arg.valGam)
+                                        =   dtEltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @arg.patTyVarMp) @arg.dtVarMp (gamTop @arg.valGam)
                 lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLam,@lhs.dtGamNm) )] ++ @body.dtGamL
   | Let         lhs     .   dtGamL      =   [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )] ++ @body.dtGamL
 %%]

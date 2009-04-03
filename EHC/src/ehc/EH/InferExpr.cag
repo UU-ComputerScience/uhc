@@ -41,10 +41,6 @@ SEM AGItf
 ATTR AllExpr [ | | ty: Ty ]
 %%]
 
-%%[(2 hmtyinfer).tyVarMp
-ATTR AllExpr [ | tyVarMp: VarMp | ]
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -314,8 +310,9 @@ SEM Expr
                                                         in   (a,r,[a] `mkArrow` r)
                             .   fo_fitF_            :=  @funTy `fitsIn` (@lhs.tyVarMp |=> @lhs.knTy)
                 arg         .   knTy                :=  @argTy
-                            .   tyVarMp             =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+                            .   patTyVarMp          =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
                 body        .   knTy                :=  @resTy
+                            .   tyVarMp             =   @arg.patTyVarMp
                 loc         .   bodyTyVarMp         =   @body.tyVarMp
                             .   ty                  :=  [@bodyTyVarMp |=> @arg.ty] `mkArrow` @body.ty
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -327,7 +324,7 @@ SEM Expr
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
                             .   fo_fitF_            :=  fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @lhs.knTy
                             .   furtherTyVarMp      =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
-                arg         .   tyVarMp             :=  @furtherTyVarMp
+                arg         .   patTyVarMp          :=  @furtherTyVarMp
                 loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -335,6 +332,11 @@ SEM Expr
                             .   knTySubs            =   @lamKnTyVarMp |=> @lhs.knTy
                             .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @knTySubs
                                                         in   fo {foTy = foVarMp fo |=> @funTy}
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Lam         arg         .   tyGam               =   gamPushNew @lhs.tyGam
+%%]
 
 %%[(9 hmtyinfer).Lam
 SEM Expr
@@ -358,13 +360,22 @@ SEM Expr
                             .   (knArgImpl,knResImpls)
                                                     =   hdAndTl @knImpls
                             .   foPr                =   fitPredToEvid @lUniq4 @knImplsVarMp @knArgImpl @lhs.clGam
+                            .   furtherTyVarMp      =   foVarMp @foPr |=> @knImplsVarMp
                 arg         .   knTy                =   foTy @foPr
-                            .   tyVarMp             =   foVarMp @foPr |=> @knImplsVarMp
+                            .   patTyVarMp          =   @furtherTyVarMp
                 body        .   knTy                =   @knResImpls `mkArrow` @ty_
+                            .   tyVarMp             =   @arg.patTyVarMp
                 loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq4              :   UNIQUEREF gUniq
+%%]
+
+%%[(97 hmtyinfer)
+SEM Expr
+  | Lam LamImpl
+                arg         .   tyVarMp             =   @arg.patTyVarMp
+                body        .   tyVarMp             :=  @arg.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -410,11 +421,16 @@ SEM Expr
 --   latter should have (e.g.) forall skolemized. Which it now does.
 %%[(5 hmtyinfer).TypeAs
 SEM Expr
-  | TypeAs      loc         .   (gTyTvL,cycVarMp)   =   let  (vg,cycVarMp1) = @lhs.tyVarMp |==> @lhs.valGam
+  | TypeAs      loc         .   tyTy                :=  @lhs.tyVarMp |=> @tyExpr.ty
+%%[[5
+                            .   (gTyTvS,cycVarMp)   =   let  (vg,cycVarMp1) = @lhs.tyVarMp |==> @lhs.valGam
                                                              (tg,cycVarMp2) = @lhs.tyVarMp |==> @lhs.tyGam
-                                                        in   (Set.toList $ ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
-                            .   tyTy                :=  @lhs.tyVarMp |=> @tyExpr.ty
-                            .   ty_q_               :=  tyQuantifyOuter (`elem` (@tyExpr.tyVarWildL ++ @gTyTvL)) @tyTy
+                                                        in   (ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
+%%][99
+                            .   gTyTvS				=   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
+%%]]
+                            .   tyVarWildS          =   Set.fromList @tyExpr.tyVarWildL
+                            .   ty_q_               :=  tyQuantifyOuter (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
                             .   knTyDown            =   mkTyVar @lUniq3
@@ -425,6 +441,10 @@ SEM Expr
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unfinished...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(10 hmtyinfer)
 SEM Expr
