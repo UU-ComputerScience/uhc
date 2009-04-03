@@ -436,7 +436,7 @@ SEM GrExpr
 %%[(8 codegen grin).ffi
 
 SEM GrExpr
-  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [AbsBasic] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
+  | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [Set.empty] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
          lhs . equations =  case @lhs.targetInfo of
                               InVar tvar         -> [ IsKnown tvar (AbsNodes (Nodes @loc.nodemap)) ]
                               InNode ttag tnms   -> zipWith IsKnown tnms [AbsBasic]

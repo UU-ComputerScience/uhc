@@ -32,19 +32,16 @@ type AbstractHeap s = STArray s Location AbstractValue
 heapChange :: HeapEquation -> AbstractEnv s -> ST s (Location,AbstractValue)
 heapChange (WillStore locat tag args) env 
  = do  { let mbres       =   tagFun tag
-       ; absArgs         <-  mapM getEnv1 args
        ; absRes          <-  getEnv mbres
        ; absExc          <-  getEnv (mbres >>= return . (+1))
-       ; let absNode     =   AbsNodes (Nodes (Map.singleton tag absArgs))
+       ; let absNode     =   AbsNodes (Nodes (Map.singleton tag (map (maybe Set.empty Set.singleton) args)))
        ; let exceptNode  =   case absExc of
                                AbsBottom                          -> AbsBottom
                                AbsLocs (Locs ls m) | Set.null ls  -> AbsBottom
-                               otherwise                          -> AbsNodes (Nodes (Map.singleton throwTag [AbsBasic, absExc]))
+                               otherwise                          -> AbsNodes (Nodes (Map.singleton throwTag [(maybe Set.empty (Set.singleton . (+1)) mbres)]))
        ; return (locat, absNode `mappend` absRes `mappend` exceptNode)
        }
        where
-       getEnv1 Nothing  =  return AbsBasic
-       getEnv1 (Just v) =  readArray env v
        getEnv Nothing   =  return AbsBottom
        getEnv (Just v)  =  readArray env v
        tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
@@ -70,13 +67,11 @@ envChanges equat env heap
                                       }
       IsSelection     d v i t      -> do
                                       {  av <- readArray env v
-                                      ;  let res = absSelect av i t
+                                      ;  res <- absSelect av i t
                                       ;  return [(d,res)]
                                       }
       IsConstruction  d t as   ev  -> do
-                                      {  vars <- mapM (maybe (return AbsBasic) (readArray env)) as
-                                      ;  let res = AbsNodes (Nodes (Map.singleton t vars))
-                                      -- ;  res <- maybe (return res) (\v -> readArray env v >>= return . mappend res) ev
+                                      {  let res = AbsNodes (Nodes (Map.singleton t (map (maybe Set.empty Set.singleton) as)))
                                       ;  return [(d,res)]
                                       }
       IsEnumeration   d v          -> do
@@ -91,18 +86,26 @@ envChanges equat env heap
                                       ;  return [(d,res)]
                                       }
       IsApplication   d vs     ev  -> do 
-                                      {  (absFun:absArgs)  <-  mapM (readArray env) vs
-                                      ;  (sfx,res)         <-  absApply absFun absArgs (Just ev)
+                                      {  absFun  <-  readArray env (head vs)
+                                      ;  let args = map Set.singleton (tail vs)
+                                      ;  (sfx,res) <-  absApply absFun args (Just ev)
                                       ;  return ((d,res):sfx)
                                       }
       
     where
     absSelect av i t
      = case av of
-         AbsNodes  (Nodes ns)  -> maybe AbsBottom (\xs -> if i<length xs then xs!!i else error ("cannot analyze FFI's returning non-nullary constructors " ++ show ns)) (Map.lookup t ns)
-         AbsBottom     -> av
-         AbsError _    -> av
-         _             -> AbsError ("cannot select " ++ show i ++ " from " ++ show av)
+         AbsNodes (Nodes ns)   -> maybe (return AbsBottom)
+                                        (\xs -> if i<length xs 
+                                                then do { vs <- mapM (readArray env) (Set.toList (xs!!i))
+                                                        ; return (mconcat vs)
+                                                        }
+                                                else error ("cannot analyze FFI's returning non-nullary constructors " ++ show ns)
+                                         ) 
+                                         (Map.lookup t ns)
+         AbsBottom     -> return av
+         AbsError _    -> return av
+         _             -> return (AbsError ("cannot select " ++ show i ++ " from " ++ show av))
          
     
     absEnum av
@@ -134,8 +137,12 @@ envChanges equat env heap
            ; return (mconcat (ws:xs))
            }
 
-    --absApply :: AbstractValue -> [AbstractValue] -> Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
-    
+    --argAbstract :: Set.Set Variable -> ST s AbstractValue
+    argAbstract vset =  do  { avs <- mapM (readArray env) (Set.toList vset)
+                            ; return (mconcat avs)
+                            }
+
+    --absApply :: AbstractValue -> [Set.Set Variable] -> Maybe Variable -> ST s ([(Variable,AbstractValue)],AbstractValue)
     absApply f args mbev
       = do { let as = getNodes (filterTaggedNodes isPAppTag f)
            ; ts <- mapM addArgs as
@@ -146,7 +153,8 @@ envChanges equat env heap
               = do { let n        = length args
                          newtag   = GrTag_PApp (needs-n) nm
                          funnr    = getNr nm
-                         sfx      = zip  [funnr+2+length oldArgs ..] args
+                   ; absArgs <- mapM argAbstract args
+                   ; let sfx      = zip  [funnr+2+length oldArgs ..] absArgs
                    ; res <-  if    n<needs
                              then  return $ AbsNodes (Nodes (Map.singleton newtag (oldArgs++args)))
                              else  readArray env funnr
@@ -164,6 +172,8 @@ envChanges equat env heap
                                          mbev
                                   )
                    }
+
+
 %%]
 
 %%[(8 codegen grin)
@@ -186,6 +196,7 @@ locNodeCount _ = 0
 tableItemSummary :: Char -> (Int,AbstractValue) -> String
 tableItemSummary c (n,a) = c : show n ++ ": " ++ absvalSummary a
 
+
 fixpoint env heap eqs1 eqs2 proc1 proc2 
   = countFixpoint 0
     where
@@ -194,18 +205,18 @@ fixpoint env heap eqs1 eqs2 proc1 proc2
         ; let doStep2 b i = proc2 i >>= return . (b||)
         ; changes1 <- foldM doStep1 False eqs1
         ; changes2 <- foldM doStep2 False eqs2
-        ; ah <- getAssocs heap
-        ; ae <- getAssocs env
-        ; let s  =  unlines (("SOLUTION": map show ae) ++ ("HEAPSOLUTION"  : map show ah)) 
-        ; let s2 =  unlines (("SOLUTION": map (tableItemSummary 'S') ae) ++ ("HEAPSOLUTION"  : map (tableItemSummary 'H') ah)) 
-        ; let lnc = sum (map (locNodeCount . snd) ah)
-        ; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
-                                   ; writeFile ("summ"++ show count++".txt") s2
-                                   ; return (return ())
-                                   }
-                               )
-        ; _ <- trace ("fix " ++ show count ++ " lnc=" ++ show lnc) (return ())
-        ; if    (changes1 || changes2) && count<38
+        --; ah <- getAssocs heap
+        --; ae <- getAssocs env
+        --; let s  =  unlines (("SOLUTION": map show ae) ++ ("HEAPSOLUTION"  : map show ah)) 
+        --; let s2 =  unlines (("SOLUTION": map (tableItemSummary 'S') ae) ++ ("HEAPSOLUTION"  : map (tableItemSummary 'H') ah)) 
+        --; let lnc = sum (map (locNodeCount . snd) ah)
+        --; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
+        --                           ; writeFile ("summ"++ show count++".txt") s2
+        --                           ; return (return ())
+        --                           }
+        --                       )
+        --; _ <- trace ("fix " ++ show count ++ " lnc=" ++ show lnc) (return ())
+        ; if    (changes1 || changes2)
           then  countFixpoint (count+1)
           else  return count
         }
@@ -319,7 +330,7 @@ limit env heap ts (AbsNodes (Nodes ns))
                    ; ls  <- limit env heap ts ans
                    ; let ns2 = case ls of
                                  AbsNodes (Nodes ns) -> ns
-                                 _           -> Map.empty
+                                 _                   -> Map.empty
                    ; return (not (Map.null ns2))
                    }
             validTag _
@@ -328,12 +339,13 @@ limit env heap ts (AbsNodes (Nodes ns))
       ; return (AbsNodes (Nodes (Map.fromList kvs2)))
       }
 
+
 limit env heap ts (AbsLocs (Locs ps m))
  = do { let validPtr p
              = do { ans <- readArray heap p
                   ; lans <- limit env heap ts ans
                   ; return (case lans of
-                             AbsNodes (Nodes ns2) -> (not (Map.null ns2))
+                             AbsNodes (Nodes  ns2) -> (not (Map.null ns2))
                              AbsBottom    -> False
                              _            -> False
                            )

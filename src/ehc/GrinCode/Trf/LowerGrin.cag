@@ -105,17 +105,25 @@ smartAbsUnionFromList xs      = AbsUnion (Map.fromList xs)
 maximum0 [] = 0
 maximum0 xs = maximum xs
 
+vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
+vsetLookup hptMap vset
+  =  let vs = Set.toList vset
+         zs = map (getEnvVar hptMap) vs
+     in if Set.null vset then AbsBasic else mconcat zs
+
 newNames :: HptMap -> Int -> Int -> HsName -> (Int, [HsName], HptItems)
 newNames hptMap maxConstrParameters uniq (HNmNr v _) 
   = if v==0
     then (uniq, [], [])
     else let absval = getEnvVar hptMap v
              (tags,fields) = unzip (getNodes absval)
-             tr      = takeWhile containsNonbottom (transpose ( map (++ repeat AbsBottom) fields ))
+             maxlen  = maximum0 (map length fields)
+             fields2 = map (map (vsetLookup hptMap)) fields
+             tr      = takeWhile containsNonbottom (transpose ( map (++ repeat AbsBottom) fields2))
              avArgs  = map (smartAbsUnionFromList . filter secondNonbottom . zip tags) tr
              avTag   = AbsTags (Set.fromAscList tags)
              avs     = avTag : avArgs
-             count   = 1 + maximum0 (map length fields)
+             count   = 1 + maxlen
              uniq2   = uniq+count
              newNrs = [uniq .. uniq2-1]                                     
          in  (uniq2, map (\n->HNmNr n OrigNone) newNrs, zip newNrs avs)    

@@ -2,6 +2,8 @@
 
 %%[8
 
+#include "rts.h"
+
 // Main C function for compiled silly programs
 
 int main(int argc, char** argv)

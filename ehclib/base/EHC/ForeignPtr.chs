@@ -152,13 +152,14 @@ mallocForeignPtr :: Storable a => IO (ForeignPtr a)
 -- 
 mallocForeignPtr = doMalloc undefined
   where doMalloc :: Storable b => b -> IO (ForeignPtr b)
-        doMalloc a = do
+        doMalloc a = do {
           r <- newIORef (NoFinalizers, []::[IO ()])
-          IO $ \s ->
+        ; IO $ \s ->
             case newPinnedByteArray size s of { ( s', mbarr ) ->
              ( {- -} s', ForeignPtr (byteArrayContents (unsafeCoerce mbarr))
                                (MallocPtr mbarr r) )
             }
+        }
             where size = sizeOf a
 
 -- | This function is similar to 'mallocForeignPtr', except that the

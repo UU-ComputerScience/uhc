@@ -50,7 +50,7 @@ has lower arity than C1.
 %%]
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonArity})
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs import(qualified Data.Set as Set, Data.Monoid)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -180,10 +180,6 @@ SEM GrExpr
 ATTR AllGrExpr [ targetArity : Int | | ]
 ATTR GrPatLam  [ | | arity : Int ]
 ATTR GrVarL    [ | | length : Int ]
-
-
-
-                              
 
 
 SEM GrBind
@@ -368,6 +364,13 @@ specializeFetch tag (var, GrExpr_FetchField nm offset _) (u, renL, fetchesL)
        , (newVar, GrExpr_FetchField nm offset (Just tag)) : fetchesL
        )
 
+
+vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
+vsetLookup hptMap vset
+  =  let vs = Set.toList vset
+         zs = map (getEnvVar hptMap) vs
+     in if Set.null vset then AbsBasic else mconcat zs
+
 absSpecialize (Just t) u@(AbsUnion m) = maybe u id (Map.lookup t m)
 absSpecialize _        u              = u
 
@@ -378,10 +381,11 @@ absFetchField hptmap nm 0 = let absVal = absFetch hptmap nm
                             in  AbsTags (Set.fromList tags)
 absFetchField hptmap nm i = let j = i-1
                                 absVal = absFetch hptmap nm
-                                nodes = getNodes absVal
-                                argss = filter ((j<) . length) (map snd nodes)
-                                fields = map (!!j) argss
-                            in  head fields  -- TODO: is it safe to assume that fields is a singleton? Or do we need to unify all elements of the list?
+                                (tags,fields) = unzip (getNodes absVal)
+                                fields2 = map (map (vsetLookup hptmap)) fields
+                                argss = filter ((j<) . length) fields2
+                                fields5 = map (!!j) argss
+                            in  head fields5  -- TODO: is it safe to assume that fields5 is a singleton? Or do we need to unify all elements of the list? Or select one of them based on tag?
 
 
 %%]
