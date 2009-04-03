@@ -186,7 +186,7 @@ SEM PatExpr
 %%[[1
                 loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTy @lhs.knTy)
 %%][4
-                loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.patTyVarMp @lhs.knTy)
 %%]]
                                         ]
   
@@ -241,17 +241,17 @@ SEM Expr
                                         ]
 
 SEM PatExpr
-  | Var         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @lhs.tyVarMp @ty)
+  | Var         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @lhs.patTyVarMp @ty)
                                         ]
   | AppTop      loc     .  info_2   :=  [ mkInfo1 "patExpr.patFunTy" (ppTy @patExpr.patFunTy)
-                                        , mkInfo1 "patExpr.ty" (ppTyS @patExpr.tyVarMp @patExpr.ty)
-                                        , mkInfo1 "ty" (ppTyS @patExpr.tyVarMp @ty)
-                                        , mkInfo1 "lhs.tyVarMp" (pp @lhs.tyVarMp)
-                                        , mkInfo1 "patExpr.tyVarMp" (pp @patExpr.tyVarMp)
+                                        , mkInfo1 "patExpr.ty" (ppTyS @patExpr.patTyVarMp @patExpr.ty)
+                                        , mkInfo1 "ty" (ppTyS @patExpr.patTyVarMp @ty)
+                                        , mkInfo1 "lhs.patTyVarMp" (pp @lhs.patTyVarMp)
+                                        , mkInfo1 "patExpr.patTyVarMp" (pp @patExpr.patTyVarMp)
                                         ]
-  | Con         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @lhs.tyVarMp @ty)
+  | Con         loc     .  info_2   :=  [ mkInfo1 "ty" (ppTyS @lhs.patTyVarMp @ty)
                                         ]
-                loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+                loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.patTyVarMp @lhs.knTy)
                                         ]
 %%]
 
@@ -312,15 +312,15 @@ SEM Expr
                                         ]
 
 SEM PatExpr
-  | TypeAs      loc     .  info_4   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
+  | TypeAs      loc     .  info_4   :=  [ mkInfo1 "knTy" (ppTyS @lhs.patTyVarMp @lhs.knTy)
                                         , mkInfo1 "lhs.tyGam" (ppGam (@lhs.tyGam))
                                         , mkInfo1 "tyExpr.ty" (ppTy @tyExpr.ty)
-                                        , mkInfo1 "patExpr.ty" (ppTyS @patExpr.tyVarMp @patExpr.ty)
+                                        , mkInfo1 "patExpr.ty" (ppTyS @patExpr.patTyVarMp @patExpr.ty)
                                         , mkInfo1 "foVarMp fo" (pp (foVarMp @fo_))
                                         , mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "ty_g_" (ppTy @ty_g_)
-                                        , mkInfo1 "tvarv1_" (ppTyS (@tyVarMp_p_ |=> @lhs.tyVarMp) @tvarv1_)
+                                        , mkInfo1 "tvarv1_" (ppTyS (@tyVarMp_p_ |=> @lhs.patTyVarMp) @tvarv1_)
                                         ]
 %%]
 
@@ -420,9 +420,9 @@ SEM Expr
                                         ]
 
 SEM PatExpr
-  | Var         loc     .  info_5   :=  [ mkInfo1 "ty_g_" (ppTyS @lhs.tyVarMp @ty_g_)
+  | Var         loc     .  info_5   :=  [ mkInfo1 "ty_g_" (ppTyS @lhs.patTyVarMp @ty_g_)
                                         ]
-  | Con         loc     .  info_5   :=  [ mkInfo1 "patFunTy" (ppTyS @lhs.tyVarMp @patFunTy)
+  | Con         loc     .  info_5   :=  [ mkInfo1 "patFunTy" (ppTyS @lhs.patTyVarMp @patFunTy)
                                         ]
 
 SEM CaseAlts

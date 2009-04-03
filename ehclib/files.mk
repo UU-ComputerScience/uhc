@@ -51,7 +51,7 @@ EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable CTypes)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
-											$(patsubst %,Foreign/%.hs,Marshal/Utils Marshal/Array Marshal/Error) \
+											$(patsubst %,Foreign/%.hs,Marshal/Utils Marshal/Array Marshal/Error C/String) \
 											$(patsubst %,System/%.hs,IO/Unsafe) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)

@@ -193,7 +193,7 @@ SEM Expr
   | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @decls.tyVarMp}
                             .   toProveCnstrMp      =   @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
-                                                    =   Map.partitionWithKey (\k _ -> isLetProveCandidate (Set.fromList @gTyTvL) $ cnstrPred k) @toProveCnstrMp
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveCandidate @gTyTvS $ cnstrPred k) @toProveCnstrMp
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
                                 ,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1EvidCoreMp
@@ -204,7 +204,7 @@ SEM Expr
                                                     =   debugInfo @chrSimplifyResult1
 
                             .   (toAssumeNeverCnstrMp,_)
-                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure (Set.fromList @gTyTvL) $ cnstrPred k) @chrSolve1RemCnstrMp
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure @gTyTvS $ cnstrPred k) @chrSolve1RemCnstrMp
                             .   cannotProveCnstrMp  =   cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
                             .   (_,chrSolve2RemCnstrMp,_,chrSolve2Errs,chrSimplifyResult2,_

@@ -47,6 +47,10 @@ SEM *
 		loc.dataDictTag 				: CTag
 		loc.dataTkgi 					: TyKiGamInfo
 		loc.dataTy 						: Ty
+		loc.extTy 						: Ty
+		loc.rowTy 						: Ty
+		loc.patTu	 					: Ty
+		loc.constTy 					: Ty
 		loc.derivDataDGI 				: DataGamInfo
 		loc.derivDataTGI 				: TyGamInfo
 		loc.derivHdDataTy 				: Ty
@@ -77,10 +81,12 @@ SEM *
 		loc.foPr  						: FIOut
 		loc.foRhsTy  					: FIOut
 		loc.funTy  						: Ty
+		loc.tyKiGam_l_ 					: TyKiGam
 		loc.gSubsTyKiGam 				: TyKiGam
 		loc.gSubsValGam_  				: ValGam
 		loc.gTy 						: Ty
 		loc.gTyTvL  					: {[TyVarId]}
+		loc.gTyTvS  					: {Set.Set TyVarId}
 		loc.gUniq  						: UID
 		loc.gUniq2  					: UID
 		loc.gUniq3  					: UID

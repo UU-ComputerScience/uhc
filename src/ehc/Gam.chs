@@ -37,6 +37,9 @@
 %%[1 export(IdDefOccGam,IdDefOccAsc)
 %%]
 
+%%[(2 hmtyinfer || hmtyast) import(qualified Data.Set as Set)
+%%]
+
 %%[(2 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
@@ -498,8 +501,8 @@ valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
 %%]
 
 %%[(3 hmtyinfer || hmtyast).valGamQuantify export(valGamQuantify)
-valGamQuantify :: TyVarIdL -> ValGam -> ValGam
-valGamQuantify globTvL = valGamMapTy (\t -> tyQuantify (`elem` globTvL) t)
+valGamQuantify :: Set.Set TyVarId -> ValGam -> ValGam
+valGamQuantify globTvS = valGamMapTy (\t -> tyQuantify (`Set.member` globTvS) t)
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast).valGamDoWithVarMp
@@ -537,10 +540,10 @@ gamUnzip g = lgamUnzip g
 %%]
 
 %%[(9 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
-valGamQuantify :: TyVarIdL -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
-valGamQuantify globTvL prL g
+valGamQuantify :: Set.Set TyVarId -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
+valGamQuantify globTvS prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
-                                          ty   = tyQuantify (`elem` globTvL) (tmpoTy tmpo)
+                                          ty   = tyQuantify (`Set.member` globTvS) (tmpoTy tmpo)
                                      in   (vgi {vgiTy = ty},tmpo {tmpoTy = ty})
                            ) g
      in   gamUnzip g'
@@ -666,9 +669,9 @@ tyGamLookup = gamLookup
 %%]
 
 %%[(6 hmtyinfer || hmtyast) export(tyKiGamQuantify)
-tyKiGamQuantify :: TyVarIdL -> TyKiGam -> TyKiGam
-tyKiGamQuantify globTvL
-  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`elem` globTvL) (tkgiKi k)}))
+tyKiGamQuantify :: TyVarIdS -> TyKiGam -> TyKiGam
+tyKiGamQuantify globTvS
+  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`Set.member` globTvS) (tkgiKi k)}))
 %%]
 
 %%[(6 hmtyinfer) export(tyKiGamInst1Exists)
@@ -1057,7 +1060,7 @@ instance (Eq k,Eq tk,Substitutable vv k subst) => Substitutable (Gam tk vv) k su
   s |==> (Gam ll)    =   (Gam ll',varmpUnions $ map (varmpUnions . assocLElts) m)
                      where (ll',m) = unzip $ map (assocLMapUnzip . assocLMapElt (s |==>)) ll
 %%]]
-  ftv    (Gam ll)    =   unions . map ftv . map snd . concat $ ll
+  ftvSet (Gam ll)    =   Set.unions . map ftvSet . map snd . concat $ ll
 %%]
 
 %%[(9 hmtyinfer || hmtyast).Substitutable.LGam -2.Substitutable.Gam
@@ -1067,7 +1070,7 @@ instance (Ord tk,Ord k,Substitutable vv k subst) => Substitutable (LGam tk vv) k
   s |==> g    =   (g',varmpUnions $ gamElts gm)
               where (g',gm) = lgamUnzip $ gamMapElts (s |==>) g
 %%]]
-  ftv    g    =   unions $ map ftv $ gamElts g
+  ftvSet g    =   Set.unions $ map ftvSet $ gamElts g
 %%]
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.ValGamInfo
@@ -1076,7 +1079,7 @@ instance Substitutable ValGamInfo TyVarId VarMp where
 %%[[4
   s |==> vgi         =   substLift vgiTy (\i x -> i {vgiTy = x}) (|==>) s vgi
 %%]]
-  ftv    vgi         =   ftv (vgiTy vgi)
+  ftvSet vgi         =   ftvSet (vgiTy vgi)
 %%]
 
 %%[(2 hmtyinfer || hmtyast).Substitutable.inst.TyGamInfo
@@ -1085,7 +1088,7 @@ instance Substitutable TyGamInfo TyVarId VarMp where
 %%[[4
   s |==> tgi         =   substLift tgiTy (\i x -> i {tgiTy = x}) (|==>) s tgi
 %%]]
-  ftv    tgi         =   ftv (tgiTy tgi)
+  ftvSet tgi         =   ftvSet (tgiTy tgi)
 %%]
 
 %%[(6 hmtyinfer || hmtyast).Substitutable.inst.TyKiGamInfo
@@ -1094,14 +1097,14 @@ instance Substitutable TyKiGamInfo TyVarId VarMp where
 %%[[4
   s |==> tkgi         =   substLift tkgiKi (\i x -> i {tkgiKi = x}) (|==>) s tkgi
 %%]]
-  ftv    tkgi         =   ftv (tkgiKi tkgi)
+  ftvSet tkgi         =   ftvSet (tkgiKi tkgi)
 %%]
 
 %%[(17 hmtyinfer || hmtyast).Substitutable.inst.PolGamInfo
 instance Substitutable PolGamInfo TyVarId VarMp where
   s |=> pgi  = pgi { pgiPol = s |=> pgiPol pgi }
   s |==> pgi = substLift pgiPol (\i x -> i {pgiPol = x}) (|==>) s pgi
-  ftv pgi    = ftv (pgiPol pgi)
+  ftvSet pgi = ftvSet (pgiPol pgi)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

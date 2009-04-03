@@ -83,17 +83,20 @@ SEM Expr
 
 %%[(4 hmtyinfer)
 SEM Expr
-  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @decls.tyVarMp $ @cycTyVarMp_l `varmpUnion` @cycTyVarMp_g
+  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @decls.tyVarMp $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
 %%]
 
-%%[(5 hmtyinfer)
+%%[(5 hmtyinfer).Expr.TypeAs.cycVarMp
 SEM Expr
   | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
 %%]
 
+%%[(99 hmtyinfer) -5.Expr.TypeAs.cycVarMp
+%%]
+
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l `varmpUnion` @cycTyKiVarMp_g
+  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l {- `varmpUnion` @cycTyKiVarMp_g -}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +151,7 @@ SEM Decl
                 loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
 %%]]
   | InstanceIntro
-                loc         .   predErrs            =   if null (ftv @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
+                loc         .   predErrs            =   if Set.null (ftvSet @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
 
 SEM PrExpr
   | Class       loc         .   nmErrs              =   rngLift @range checkClNms @clMissNmS

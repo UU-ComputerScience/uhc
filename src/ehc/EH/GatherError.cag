@@ -150,7 +150,12 @@ SEM PatExpr
 %%[(5 hmtyinfer)
 SEM Expr
   | SConst      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
-  | TypeAs      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList @occCycTyErrs, @expr.errSq, @tyExpr.errSq, foErrSq @fo_, foErrSq @fo_fitDown]
+  | TypeAs      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @expr.errSq, @tyExpr.errSq, foErrSq @fo_, foErrSq @fo_fitDown
+%%[[5
+                                                                              , Seq.fromList @occCycTyErrs
+%%][99
+%%]]
+                                                                              ]
 %%]
 
 %%[5_1

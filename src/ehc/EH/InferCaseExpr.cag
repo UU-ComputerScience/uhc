@@ -12,7 +12,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(5 hmtyinfer)
-ATTR AllCase [ knPatTy: Ty | patTyVarMp: VarMp | patTy: Ty ]
+ATTR AllCase [ knPatTy: Ty | | patTy: Ty ]
 
 SEM Expr
   | Case        alts        .   knPatTy             =   @expr.ty
@@ -20,10 +20,10 @@ SEM Expr
                             .   tyVarMp             =   @alts.patTyVarMp
 
 SEM CaseAlt
-  | Pat         patExpr     .   tyVarMp             =   @lhs.patTyVarMp
+  | Pat         patExpr     .   patTyVarMp          =   @lhs.patTyVarMp
                             .   knTy                =   @lhs.knPatTy
                             .   valGam              =   gamPushNew @lhs.valGam
-                lhs         .   patTyVarMp          =   @patExpr.tyVarMp
+                lhs         .   patTyVarMp          =   @patExpr.patTyVarMp
                             .   patTy               =   @patExpr.ty
 
 SEM CaseAlts
@@ -32,9 +32,9 @@ SEM CaseAlts
 %%]
 
 %%[(6 hmtyinfer)
+SEM CaseAlt
+  | Pat         patExpr     .   tyGam               =   gamPushNew @lhs.tyGam
 %%]
-SEM Expr
-  | Case        alts        .   patTyVarMp          :=  agFakeDependOn @alts.kiVarMp @expr.tyVarMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type of Case Expr
@@ -59,4 +59,10 @@ SEM CaseAlts
                 tl          .   knTy                =   @lhs.knTy -- @hd.ty
 %%]
                 lhs			.	ty					=	@hd.ty
+
+%%[(97 hmtyinfer)
+SEM CaseAlt
+  | Pat         patExpr     .   tyVarMp             =   @lhs.tyVarMp
+                expr        .   tyVarMp             :=  @patExpr.tyVarMp
+%%]
 

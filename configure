@@ -22223,18 +22223,22 @@ fi
 echo "${ECHO_T}$ac_cv_c_bigendian" >&6; }
 case $ac_cv_c_bigendian in
   yes)
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define BIGENDIAN 1
 _ACEOF
- cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LITTLEENDIAN 0
 _ACEOF
  ;;
   no)
-    cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define LITTLEENDIAN 1
 _ACEOF
- cat >>confdefs.h <<\_ACEOF
+
+cat >>confdefs.h <<\_ACEOF
 #define BIGENDIAN 0
 _ACEOF
  ;;
@@ -22280,7 +22284,7 @@ _ACEOF
 
 
 cat >>confdefs.h <<\_ACEOF
-#define HTYPE_SIGNED_CHAR  Int8
+#define HTYPE_SIGNED_CHAR Int8
 _ACEOF
 
 
@@ -22304,23 +22308,532 @@ cat >>confdefs.h <<\_ACEOF
 _ACEOF
 
 
+# C error codes
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_E2BIG E2BIG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EACCES EACCES
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EADDRINUSE EADDRINUSE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EADDRNOTAVAIL EADDRNOTAVAIL
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EADV EADV
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EAFNOSUPPORT EAFNOSUPPORT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EAGAIN EAGAIN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EALREADY EALREADY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EBADF EBADF
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EBADMSG EBADMSG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EBADRPC EBADRPC
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EBUSY EBUSY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ECHILD ECHILD
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ECOMM ECOMM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ECONNABORTED ECONNABORTED
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ECONNREFUSED ECONNREFUSED
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ECONNRESET ECONNRESET
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EDEADLK EDEADLK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EDESTADDRREQ EDESTADDRREQ
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EDIRTY EDIRTY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EDOM EDOM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EDQUOT EDQUOT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EEXIST EEXIST
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EFAULT EFAULT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EFBIG EFBIG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EFTYPE EFTYPE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EHOSTDOWN EHOSTDOWN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EHOSTUNREACH EHOSTUNREACH
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EIDRM EIDRM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EILSEQ EILSEQ
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EINPROGRESS EINPROGRESS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EINTR EINTR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EINVAL EINVAL
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EIO EIO
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EISCONN EISCONN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EISDIR EISDIR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ELOOP ELOOP
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EMFILE EMFILE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EMLINK EMLINK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EMSGSIZE EMSGSIZE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EMULTIHOP EMULTIHOP
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENAMETOOLONG ENAMETOOLONG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENETDOWN ENETDOWN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENETRESET ENETRESET
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENETUNREACH ENETUNREACH
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENFILE ENFILE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOBUFS ENOBUFS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOCIGAR ENOCIGAR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENODATA ENODATA
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENODEV ENODEV
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOENT ENOENT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOEXEC ENOEXEC
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOLCK ENOLCK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOLINK ENOLINK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOMEM ENOMEM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOMSG ENOMSG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENONET ENONET
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOPROTOOPT ENOPROTOOPT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOSPC ENOSPC
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOSR ENOSR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOSTR ENOSTR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOSYS ENOSYS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTBLK ENOTBLK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTCONN ENOTCONN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTDIR ENOTDIR
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTEMPTY ENOTEMPTY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTSOCK ENOTSOCK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENOTTY ENOTTY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ENXIO ENXIO
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EOPNOTSUPP EOPNOTSUPP
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPERM EPERM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPFNOSUPPORT EPFNOSUPPORT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPIPE EPIPE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROCLIM EPROCLIM
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROCUNAVAIL EPROCUNAVAIL
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROGMISMATCH EPROGMISMATCH
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROGUNAVAIL EPROGUNAVAIL
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROTO EPROTO
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROTONOSUPPORT EPROTONOSUPPORT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EPROTOTYPE EPROTOTYPE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ERANGE ERANGE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EREMCHG EREMCHG
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EREMOTE EREMOTE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EROFS EROFS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ERPCMISMATCH ERPCMISMATCH
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ERREMOTE ERREMOTE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESHUTDOWN ESHUTDOWN
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESOCKTNOSUPPORT ESOCKTNOSUPPORT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESPIPE ESPIPE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESRCH ESRCH
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESRMNT ESRMNT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ESTALE ESTALE
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ETIME ETIME
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ETIMEDOUT ETIMEDOUT
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ETOOMANYREFS ETOOMANYREFS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_ETXTBSY ETXTBSY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EUSERS EUSERS
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EWOULDBLOCK EWOULDBLOCK
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_EXDEV EXDEV
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_O_BINARY O_BINARY
+_ACEOF
+
+
+cat >>confdefs.h <<\_ACEOF
+#define CONST_SIGINT SIGINT
+_ACEOF
+
 
 
 ### general configuration
 
 # Use Boehm's GC
+
 cat >>confdefs.h <<\_ACEOF
 #define USE_BOEHM_GC 1
 _ACEOF
 
 
 # Use GMP
+
 cat >>confdefs.h <<\_ACEOF
 #define USE_GMP 1
 _ACEOF
 
 
 # Prefix used for global values, assumed to be present by RTS
+
 cat >>confdefs.h <<\_ACEOF
 #define RTS_GLOBAL_VAR_PREFIX "global_"
 _ACEOF

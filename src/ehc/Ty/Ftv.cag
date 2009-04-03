@@ -14,6 +14,8 @@ Compute free type variables of a type.
 %%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Ftv} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
 %%]
 
+%%[(2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
+%%]
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
@@ -23,17 +25,17 @@ WRAPPER
 %%]
 
 %%[(2 hmtyinfer || hmtyast).tyFtv hs export(tyFtv)
-tyFtv :: Ty -> TyVarIdL
+tyFtv :: Ty -> Set.Set TyVarId
 %%[[2
 tyFtv ty
   =  let  t =  wrap_TyAGItf
                  (sem_TyAGItf (TyAGItf_AGItf ty))
                  (Inh_TyAGItf)
-     in   tvs_Syn_TyAGItf t
+     in   Set.fromList $ tvs_Syn_TyAGItf t
 %%][4
-tyFtv = Map.keys . tyFtvMp
+tyFtv = Map.keysSet . tyFtvMp
 %%][9
-tyFtv = Map.keys . Map.filter (\i -> tvpurposeIsTy (tvinfoPurpose i)) . tyFtvMp
+tyFtv = Map.keysSet . Map.filter (\i -> tvpurposeIsTy (tvinfoPurpose i)) . tyFtvMp
 %%]]
 %%]
 

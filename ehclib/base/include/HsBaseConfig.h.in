@@ -3,6 +3,10 @@
 
 #include "MachDeps.h"
 
+/********************************************************************/
+/**** Sizes                                                      ****/
+/********************************************************************/
+
 #if SIZEOF_INTPTR_T == 8
 #define HTYPE_INTPTR_T 			Int64
 #define HTYPE_UINTPTR_T 		Word64
@@ -97,6 +101,618 @@
 
 /* Define to Haskell type for unsigned short */
 #undef HTYPE_UNSIGNED_SHORT
+
+
+
+/********************************************************************/
+/**** C errors                                                   ****/
+/********************************************************************/
+
+/* (1) Assume errno.h is already included */
+/* (2) Error codes like EADV are not present on all platforms, so a dummy value is provided, this should be done for all codes */
+
+/* The value of E2BIG. */
+#if !defined(E2BIG)
+#define E2BIG 10000
+#endif
+#undef CONST_E2BIG
+
+/* The value of EACCES. */
+#if !defined(EACCES)
+#define EACCES 10000
+#endif
+#undef CONST_EACCES
+
+/* The value of EADDRINUSE. */
+#if !defined(EADDRINUSE)
+#define EADDRINUSE 10000
+#endif
+#undef CONST_EADDRINUSE
+
+/* The value of EADDRNOTAVAIL. */
+#undef CONST_EADDRNOTAVAIL
+
+/* The value of EADV. */
+#if !defined(EADV)
+#define EADV 10000
+#endif
+#undef CONST_EADV
+
+/* The value of EAFNOSUPPORT. */
+#if !defined(EAFNOSUPPORT)
+#define EAFNOSUPPORT 10000
+#endif
+#undef CONST_EAFNOSUPPORT
+
+/* The value of EAGAIN. */
+#if !defined(EAGAIN)
+#define EAGAIN 10000
+#endif
+#undef CONST_EAGAIN
+
+/* The value of EALREADY. */
+#if !defined(EALREADY)
+#define EALREADY 10000
+#endif
+#undef CONST_EALREADY
+
+/* The value of EBADF. */
+#if !defined(EBADF)
+#define EBADF 10000
+#endif
+#undef CONST_EBADF
+
+/* The value of EBADMSG. */
+#if !defined(EBADMSG)
+#define EBADMSG 10000
+#endif
+#undef CONST_EBADMSG
+
+/* The value of EBADRPC. */
+#if !defined(EBADRPC)
+#define EBADRPC 10000
+#endif
+#undef CONST_EBADRPC
+
+/* The value of EBUSY. */
+#if !defined(EBUSY)
+#define EBUSY 10000
+#endif
+#undef CONST_EBUSY
+
+/* The value of ECHILD. */
+#if !defined(ECHILD)
+#define ECHILD 10000
+#endif
+#undef CONST_ECHILD
+
+/* The value of ECOMM. */
+#if !defined(ECOMM)
+#define ECOMM 10000
+#endif
+#undef CONST_ECOMM
+
+/* The value of ECONNABORTED. */
+#if !defined(ECONNABORTED)
+#define ECONNABORTED 10000
+#endif
+#undef CONST_ECONNABORTED
+
+/* The value of ECONNREFUSED. */
+#if !defined(ECONNREFUSED)
+#define ECONNREFUSED 10000
+#endif
+#undef CONST_ECONNREFUSED
+
+/* The value of ECONNRESET. */
+#if !defined(ECONNRESET)
+#define ECONNRESET 10000
+#endif
+#undef CONST_ECONNRESET
+
+/* The value of EDEADLK. */
+#if !defined(EDEADLK)
+#define EDEADLK 10000
+#endif
+#undef CONST_EDEADLK
+
+/* The value of EDESTADDRREQ. */
+#if !defined(EDESTADDRREQ)
+#define EDESTADDRREQ 10000
+#endif
+#undef CONST_EDESTADDRREQ
+
+/* The value of EDIRTY. */
+#if !defined(EDIRTY)
+#define EDIRTY 10000
+#endif
+#undef CONST_EDIRTY
+
+/* The value of EDOM. */
+#if !defined(EDOM)
+#define EDOM 10000
+#endif
+#undef CONST_EDOM
+
+/* The value of EDQUOT. */
+#if !defined(EDQUOT)
+#define EDQUOT 10000
+#endif
+#undef CONST_EDQUOT
+
+/* The value of EEXIST. */
+#if !defined(EEXIST)
+#define EEXIST 10000
+#endif
+#undef CONST_EEXIST
+
+/* The value of EFAULT. */
+#if !defined(EFAULT)
+#define EFAULT 10000
+#endif
+#undef CONST_EFAULT
+
+/* The value of EFBIG. */
+#if !defined(EFBIG)
+#define EFBIG 10000
+#endif
+#undef CONST_EFBIG
+
+/* The value of EFTYPE. */
+#if !defined(EFTYPE)
+#define EFTYPE 10000
+#endif
+#undef CONST_EFTYPE
+
+/* The value of EHOSTDOWN. */
+#if !defined(EHOSTDOWN)
+#define EHOSTDOWN 10000
+#endif
+#undef CONST_EHOSTDOWN
+
+/* The value of EHOSTUNREACH. */
+#if !defined(EHOSTUNREACH)
+#define EHOSTUNREACH 10000
+#endif
+#undef CONST_EHOSTUNREACH
+
+/* The value of EIDRM. */
+#if !defined(EIDRM)
+#define EIDRM 10000
+#endif
+#undef CONST_EIDRM
+
+/* The value of EILSEQ. */
+#if !defined(EILSEQ)
+#define EILSEQ 10000
+#endif
+#undef CONST_EILSEQ
+
+/* The value of EINPROGRESS. */
+#if !defined(EINPROGRESS)
+#define EINPROGRESS 10000
+#endif
+#undef CONST_EINPROGRESS
+
+/* The value of EINTR. */
+#if !defined(EINTR)
+#define EINTR 10000
+#endif
+#undef CONST_EINTR
+
+/* The value of EINVAL. */
+#if !defined(EINVAL)
+#define EINVAL 10000
+#endif
+#undef CONST_EINVAL
+
+/* The value of EIO. */
+#if !defined(EIO)
+#define EIO 10000
+#endif
+#undef CONST_EIO
+
+/* The value of EISCONN. */
+#if !defined(EISCONN)
+#define EISCONN 10000
+#endif
+#undef CONST_EISCONN
+
+/* The value of EISDIR. */
+#if !defined(EISDIR)
+#define EISDIR 10000
+#endif
+#undef CONST_EISDIR
+
+/* The value of ELOOP. */
+#if !defined(ELOOP)
+#define ELOOP 10000
+#endif
+#undef CONST_ELOOP
+
+/* The value of EMFILE. */
+#if !defined(EMFILE)
+#define EMFILE 10000
+#endif
+#undef CONST_EMFILE
+
+/* The value of EMLINK. */
+#if !defined(EMLINK)
+#define EMLINK 10000
+#endif
+#undef CONST_EMLINK
+
+/* The value of EMSGSIZE. */
+#if !defined(EMSGSIZE)
+#define EMSGSIZE 10000
+#endif
+#undef CONST_EMSGSIZE
+
+/* The value of EMULTIHOP. */
+#if !defined(EMULTIHOP)
+#define EMULTIHOP 10000
+#endif
+#undef CONST_EMULTIHOP
+
+/* The value of ENAMETOOLONG. */
+#if !defined(ENAMETOOLONG)
+#define ENAMETOOLONG 10000
+#endif
+#undef CONST_ENAMETOOLONG
+
+/* The value of ENETDOWN. */
+#if !defined(ENETDOWN)
+#define ENETDOWN 10000
+#endif
+#undef CONST_ENETDOWN
+
+/* The value of ENETRESET. */
+#if !defined(ENETRESET)
+#define ENETRESET 10000
+#endif
+#undef CONST_ENETRESET
+
+/* The value of ENETUNREACH. */
+#if !defined(ENETUNREACH)
+#define ENETUNREACH 10000
+#endif
+#undef CONST_ENETUNREACH
+
+/* The value of ENFILE. */
+#if !defined(ENFILE)
+#define ENFILE 10000
+#endif
+#undef CONST_ENFILE
+
+/* The value of ENOBUFS. */
+#if !defined(ENOBUFS)
+#define ENOBUFS 10000
+#endif
+#undef CONST_ENOBUFS
+
+/* The value of ENOCIGAR. */
+#if !defined(ENOCIGAR)
+#define ENOCIGAR 10000
+#endif
+#undef CONST_ENOCIGAR
+
+/* The value of ENODATA. */
+#if !defined(ENODATA)
+#define ENODATA 10000
+#endif
+#undef CONST_ENODATA
+
+/* The value of ENODEV. */
+#if !defined(ENODEV)
+#define ENODEV 10000
+#endif
+#undef CONST_ENODEV
+
+/* The value of ENOENT. */
+#if !defined(ENOENT)
+#define ENOENT 10000
+#endif
+#undef CONST_ENOENT
+
+/* The value of ENOEXEC. */
+#if !defined(ENOEXEC)
+#define ENOEXEC 10000
+#endif
+#undef CONST_ENOEXEC
+
+/* The value of ENOLCK. */
+#if !defined(ENOLCK)
+#define ENOLCK 10000
+#endif
+#undef CONST_ENOLCK
+
+/* The value of ENOLINK. */
+#if !defined(ENOLINK)
+#define ENOLINK 10000
+#endif
+#undef CONST_ENOLINK
+
+/* The value of ENOMEM. */
+#if !defined(ENOMEM)
+#define ENOMEM 10000
+#endif
+#undef CONST_ENOMEM
+
+/* The value of ENOMSG. */
+#if !defined(ENOMSG)
+#define ENOMSG 10000
+#endif
+#undef CONST_ENOMSG
+
+/* The value of ENONET. */
+#if !defined(ENONET)
+#define ENONET 10000
+#endif
+#undef CONST_ENONET
+
+/* The value of ENOPROTOOPT. */
+#if !defined(ENOPROTOOPT)
+#define ENOPROTOOPT 10000
+#endif
+#undef CONST_ENOPROTOOPT
+
+/* The value of ENOSPC. */
+#if !defined(ENOSPC)
+#define ENOSPC 10000
+#endif
+#undef CONST_ENOSPC
+
+/* The value of ENOSR. */
+#if !defined(ENOSR)
+#define ENOSR 10000
+#endif
+#undef CONST_ENOSR
+
+/* The value of ENOSTR. */
+#if !defined(ENOSTR)
+#define ENOSTR 10000
+#endif
+#undef CONST_ENOSTR
+
+/* The value of ENOSYS. */
+#if !defined(ENOSYS)
+#define ENOSYS 10000
+#endif
+#undef CONST_ENOSYS
+
+/* The value of ENOTBLK. */
+#if !defined(ENOTBLK)
+#define ENOTBLK 10000
+#endif
+#undef CONST_ENOTBLK
+
+/* The value of ENOTCONN. */
+#if !defined(ENOTCONN)
+#define ENOTCONN 10000
+#endif
+#undef CONST_ENOTCONN
+
+/* The value of ENOTDIR. */
+#if !defined(ENOTDIR)
+#define ENOTDIR 10000
+#endif
+#undef CONST_ENOTDIR
+
+/* The value of ENOTEMPTY. */
+#if !defined(ENOTEMPTY)
+#define ENOTEMPTY 10000
+#endif
+#undef CONST_ENOTEMPTY
+
+/* The value of ENOTSOCK. */
+#if !defined(ENOTSOCK)
+#define ENOTSOCK 10000
+#endif
+#undef CONST_ENOTSOCK
+
+/* The value of ENOTTY. */
+#if !defined(ENOTTY)
+#define ENOTTY 10000
+#endif
+#undef CONST_ENOTTY
+
+/* The value of ENXIO. */
+#if !defined(ENXIO)
+#define ENXIO 10000
+#endif
+#undef CONST_ENXIO
+
+/* The value of EOPNOTSUPP. */
+#if !defined(EOPNOTSUPP)
+#define EOPNOTSUPP 10000
+#endif
+#undef CONST_EOPNOTSUPP
+
+/* The value of EPERM. */
+#if !defined(EPERM)
+#define EPERM 10000
+#endif
+#undef CONST_EPERM
+
+/* The value of EPFNOSUPPORT. */
+#if !defined(EPFNOSUPPORT)
+#define EPFNOSUPPORT 10000
+#endif
+#undef CONST_EPFNOSUPPORT
+
+/* The value of EPIPE. */
+#if !defined(EPIPE)
+#define EPIPE 10000
+#endif
+#undef CONST_EPIPE
+
+/* The value of EPROCLIM. */
+#if !defined(EPROCLIM)
+#define EPROCLIM 10000
+#endif
+#undef CONST_EPROCLIM
+
+/* The value of EPROCUNAVAIL. */
+#if !defined(EPROCUNAVAIL)
+#define EPROCUNAVAIL 10000
+#endif
+#undef CONST_EPROCUNAVAIL
+
+/* The value of EPROGMISMATCH. */
+#if !defined(EPROGMISMATCH)
+#define EPROGMISMATCH 10000
+#endif
+#undef CONST_EPROGMISMATCH
+
+/* The value of EPROGUNAVAIL. */
+#if !defined(EPROGUNAVAIL)
+#define EPROGUNAVAIL 10000
+#endif
+#undef CONST_EPROGUNAVAIL
+
+/* The value of EPROTO. */
+#if !defined(EPROTO)
+#define EPROTO 10000
+#endif
+#undef CONST_EPROTO
+
+/* The value of EPROTONOSUPPORT. */
+#if !defined(EPROTONOSUPPORT)
+#define EPROTONOSUPPORT 10000
+#endif
+#undef CONST_EPROTONOSUPPORT
+
+/* The value of EPROTOTYPE. */
+#if !defined(EPROTOTYPE)
+#define EPROTOTYPE 10000
+#endif
+#undef CONST_EPROTOTYPE
+
+/* The value of ERANGE. */
+#if !defined(ERANGE)
+#define ERANGE 10000
+#endif
+#undef CONST_ERANGE
+
+/* The value of EREMCHG. */
+#if !defined(EREMCHG)
+#define EREMCHG 10000
+#endif
+#undef CONST_EREMCHG
+
+/* The value of EREMOTE. */
+#if !defined(EREMOTE)
+#define EREMOTE 10000
+#endif
+#undef CONST_EREMOTE
+
+/* The value of EROFS. */
+#if !defined(EROFS)
+#define EROFS 10000
+#endif
+#undef CONST_EROFS
+
+/* The value of ERPCMISMATCH. */
+#if !defined(ERPCMISMATCH)
+#define ERPCMISMATCH 10000
+#endif
+#undef CONST_ERPCMISMATCH
+
+/* The value of ERREMOTE. */
+#if !defined(ERREMOTE)
+#define ERREMOTE 10000
+#endif
+#undef CONST_ERREMOTE
+
+/* The value of ESHUTDOWN. */
+#if !defined(ESHUTDOWN)
+#define ESHUTDOWN 10000
+#endif
+#undef CONST_ESHUTDOWN
+
+/* The value of ESOCKTNOSUPPORT. */
+#if !defined(ESOCKTNOSUPPORT)
+#define ESOCKTNOSUPPORT 10000
+#endif
+#undef CONST_ESOCKTNOSUPPORT
+
+/* The value of ESPIPE. */
+#if !defined(ESPIPE)
+#define ESPIPE 10000
+#endif
+#undef CONST_ESPIPE
+
+/* The value of ESRCH. */
+#if !defined(ESRCH)
+#define ESRCH 10000
+#endif
+#undef CONST_ESRCH
+
+/* The value of ESRMNT. */
+#if !defined(ESRMNT)
+#define ESRMNT 10000
+#endif
+#undef CONST_ESRMNT
+
+/* The value of ESTALE. */
+#if !defined(ESTALE)
+#define ESTALE 10000
+#endif
+#undef CONST_ESTALE
+
+/* The value of ETIME. */
+#if !defined(ETIME)
+#define ETIME 10000
+#endif
+#undef CONST_ETIME
+
+/* The value of ETIMEDOUT. */
+#if !defined(ETIMEDOUT)
+#define ETIMEDOUT 10000
+#endif
+#undef CONST_ETIMEDOUT
+
+/* The value of ETOOMANYREFS. */
+#if !defined(ETOOMANYREFS)
+#define ETOOMANYREFS 10000
+#endif
+#undef CONST_ETOOMANYREFS
+
+/* The value of ETXTBSY. */
+#if !defined(ETXTBSY)
+#define ETXTBSY 10000
+#endif
+#undef CONST_ETXTBSY
+
+/* The value of EUSERS. */
+#if !defined(EUSERS)
+#define EUSERS 10000
+#endif
+#undef CONST_EUSERS
+
+/* The value of EWOULDBLOCK. */
+#if !defined(EWOULDBLOCK)
+#define EWOULDBLOCK 10000
+#endif
+#undef CONST_EWOULDBLOCK
+
+/* The value of EXDEV. */
+#if !defined(EXDEV)
+#define EXDEV 10000
+#endif
+#undef CONST_EXDEV
+
+/* The value of O_BINARY. */
+#if !defined(O_BINARY)
+#define O_BINARY 10000
+#endif
+#undef CONST_O_BINARY
+
+/* The value of SIGINT. */
+#if !defined(SIGINT)
+#define SIGINT 10000
+#endif
+#undef CONST_SIGINT
 
 
 #endif

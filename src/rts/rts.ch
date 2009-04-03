@@ -110,6 +110,7 @@ typedef int Bool ;
 #include "grinbc/gbprimdecl.h"
 #include "grinbc/gbprim.h"
 #include "grinbc/gbprim-integer.h"
+#include "grinbc/gbprim-C.h"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
