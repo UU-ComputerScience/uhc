@@ -57,22 +57,20 @@ type Location = Int
 type Variable = Int
 
 
-
 data AbstractLocs
   = Locs (Set.Set Location) (Maybe (Set.Set GrTag))
     deriving (Eq, Ord)
 
 data AbstractNodes
-  = Nodes (Map.Map GrTag [AbstractValue])
---  | Nodes2 (Map.Map GrTag [Set.Set Variable])
+  = Nodes (Map.Map GrTag [Set.Set Variable])
     deriving (Eq, Ord)
 
 data AbstractValue
   = AbsBottom
   | AbsBasic
   | AbsTags  (Set.Set GrTag)
-  | AbsLocs  AbstractLocs  -- (Set.Set Location) (Maybe (Set.Set GrTag))
-  | AbsNodes AbstractNodes -- (Map.Map GrTag [AbstractValue])
+  | AbsLocs  AbstractLocs
+  | AbsNodes AbstractNodes
   | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
@@ -90,7 +88,6 @@ instance Show AbstractLocs where
 
 instance Show AbstractNodes where
   show (Nodes ns) = show (Map.assocs ns)
---  show (Nodes2 ns) = show (Map.assocs ns)
 
 instance Show AbstractValue where
     show av = case av of
@@ -118,9 +115,7 @@ instance Monoid AbstractLocs where
 
 instance Monoid AbstractNodes where
    mempty = Nodes Map.empty
-   mappend (Nodes  an) (Nodes  bn) = Nodes (Map.unionWith (zipWith mappend)   an bn)
---   mappend (Nodes2 an) (Nodes2 bn) = Nodes (Map.unionWith (zipWith Set.union) an bn)
-
+   mappend (Nodes an) (Nodes bn) = Nodes (Map.unionWith (zipWith Set.union) an bn)
 
 instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
@@ -271,13 +266,13 @@ absFetch a x = error ("absFetch tried on " ++ show x)
 getTags av = case av of
                  AbsTags  ts -> Just (Set.toList ts)
                  AbsBottom   -> Nothing
-                 _           -> Just (map fst (getNodes av))
+                 AbsNodes (Nodes n)  -> Just (map fst (Map.toAscList n))
 
 getNodes av = case av of
-                  AbsNodes (Nodes n)  -> Map.toAscList n
-                  AbsBottom   -> []
-                  AbsError s  -> error $ "analysis error getNodes: " ++  s
-                  _           -> error $ "not a node: " ++ show av
+                 AbsNodes (Nodes n)  -> Map.toAscList n
+                 AbsBottom   -> []
+                 AbsError s  -> error $ "analysis error getNodes2: " ++  s
+                 _           -> error $ "not a node2: " ++ show av
 
 isBottom av = case av of
                   AbsBottom   ->  True
@@ -315,10 +310,8 @@ isApplyTag _                 = False
 
 filterTaggedNodes :: (GrTag->Bool) -> AbstractValue -> AbstractValue
 filterTaggedNodes p (AbsNodes (Nodes nodes)) = let newNodes = Map.filterWithKey (const . p) nodes
-                                               in -- if Map.null newNodes then AbsBottom else 
-                                                  AbsNodes (Nodes newNodes)
+                                               in AbsNodes (Nodes newNodes)
 filterTaggedNodes p av               = av
-
 
 getApplyNodeVars :: AbstractValue -> [ Variable ]
 getApplyNodeVars (AbsNodes (Nodes nodes)) = [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]

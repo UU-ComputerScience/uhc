@@ -36,11 +36,11 @@ Inspects the HPT table and updates it for introduced fresh variables.
 %%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map )
+%%[(8 codegen grin) hs import(Data.List, Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.Monoid)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractLocs(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractLocs(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -85,9 +85,9 @@ isEmptyAbsVal v              = error $ "wrong content of exception variable of b
 
 
 makeCaseExpression
-  :: ([GrAlt] -> GrExpr)                                                    ->   -- given a function to build an Expr from a [Alt]
-     (Int -> HptMap ->  (GrTag,[AbstractValue])  -> (Int,HptItems, GrAlt )) ->   -- and   a function to build an Alt from a Node (updating the unique and generating new HptItems)
-      Int -> HptMap -> [(GrTag,[AbstractValue])] -> (Int,HptItems, GrExpr)       -- we can construct a function to build a (Case-)Expr from a [Node] (updating the unique and generating new HptItems)
+  :: ([GrAlt] -> GrExpr)                                                       ->   -- given a function to build an Expr from a [Alt]
+     (Int -> HptMap ->  (GrTag,[Set.Set Variable])  -> (Int,HptItems, GrAlt )) ->   -- and   a function to build an Alt from a Node (updating the unique and generating new HptItems)
+      Int -> HptMap -> [(GrTag,[Set.Set Variable])] -> (Int,HptItems, GrExpr)       -- we can construct a function to build a (Case-)Expr from a [Node] (updating the unique and generating new HptItems)
 
 makeCaseExpression buildCase buildAlt unique hptMap nodes
   =  let makeAlt node (uniqPrev,             itemsPrev,        altsPrev) 
@@ -97,6 +97,15 @@ makeCaseExpression buildCase buildAlt unique hptMap nodes
          (unique2, items, alts) = foldr makeAlt (unique,[],[]) nodes
      in  (unique2, items, buildCase alts)
 
+
+
+vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
+vsetLookup hptMap vset
+  =  let vs = Set.toList vset
+         zs = map (getEnvVar hptMap) vs
+     in mconcat zs
+
+
 newName :: Int -> AbstractValue -> (Int,HptItems,HsName)
 newName unique av
   =  let name = HNmNr unique OrigNone
@@ -104,12 +113,25 @@ newName unique av
          entries = [(unique,av)]
      in (unique2, entries, name)
 
+
+newName2 :: HptMap -> Int -> Set.Set Variable -> (Int,HptItems,HsName)
+newName2 hptMap unique v
+  =  let av = vsetLookup hptMap v
+     in newName unique av
+
+
 newNames :: Int -> [AbstractValue] -> (Int,HptItems,[HsName])
 newNames unique avs
   =  let entries = zip [unique..] avs
          names   = map (\e -> HNmNr (fst e) OrigNone) entries
          unique2 = unique + length avs
      in (unique2, entries, names)
+
+
+newNames2 :: HptMap -> Int -> [Set.Set Variable] -> (Int,HptItems,[HsName])
+newNames2 hptMap unique vs
+  =  let avs = map (vsetLookup hptMap) vs
+     in newNames unique avs
 
 %%]
 
@@ -147,8 +169,7 @@ SEM GrModule
                                                                        , i <- [1..n-1]
                                                                        ]
                                           allTags2      = Map.union allTags extraTags
-                                          nodeMap       = -- trace ("alltags: " ++ show allTags) 
-                                                                (Map.map (\n -> replicate n AbsBottom) allTags2)
+                                          nodeMap       = (Map.map (\n -> replicate n Set.empty) allTags2)
                                           (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName (const True) True (AbsNodes (Nodes nodeMap))
                                           evalBind      = GrBind_Bind functionName
                                                                       GrBindAnnNormal 
@@ -208,7 +229,7 @@ buildEvalAlt
     Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     ( GrTag                              -- tag
-    , [AbstractValue]                    -- args
+    , [Set.Set Variable]                 -- args
     )                            ->
     ( Int                                -- updated unique
     , HptItems                           -- newItems
@@ -216,7 +237,7 @@ buildEvalAlt
     )
 
 buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
- =  let (unique2, newItems2, patNames) = newNames unique args
+ =  let (unique2, newItems2, patNames) = newNames2 hptMap unique args
         codeHead annot = GrAlt_Alt annot (GrPatAlt_Node tag patNames)
     in  case unevaluatedName tag of
           Nothing -> (unique2, newItems2, codeHead GrAltAnnIdent (GrExpr_Unit (GrVal_Var nodeName)))
@@ -267,7 +288,7 @@ evalCode
  :: Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     HsName                       ->      -- locatName
-    ((GrTag,[AbstractValue]) -> Bool) -> -- isPossibleNode
+    ((GrTag,[Set.Set Variable])->Bool) -> -- isPossibleNode
     Bool                         ->      -- locatNeedsUpdate
     ( Int                                -- updated unique
     , HptItems                           -- newItems
@@ -277,7 +298,7 @@ evalCode
 evalCode unique hptMap locatName isPossibleNode locatNeedsUpdate
  = let -- get the abstract value for the original location
        nodeAbsVal    = absFetch hptMap locatName
-   in  if   False
+   in  if   length (getNodes nodeAbsVal) > 20
        then (unique, [], GrExpr_Call evaluateNr [GrVal_Var locatName])
        else evalCode2 unique hptMap locatName isPossibleNode locatNeedsUpdate nodeAbsVal
 
@@ -286,7 +307,7 @@ evalCode2
  :: Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     HsName                       ->      -- locatName
-    ((GrTag,[AbstractValue]) -> Bool) -> -- isPossibleNode
+    ((GrTag,[Set.Set Variable]) -> Bool) -> -- isPossibleNode
     Bool                         ->      -- locatNeedsUpdate
     AbstractValue                ->      -- nodeAbsVal
     ( Int                                -- updated unique
@@ -313,8 +334,8 @@ evalCode2 unique hptMap locatName isPossibleNode locatNeedsUpdate nodeAbsVal
 isBasicTag (GrTag_Con _ _ nm) = nm==hsnInt || nm==hsnChar || nm==hsnPackedString
 isBasicTag _                  = False
 
-hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[AbstractValue]) -> Bool
-hasExpectedResultTag (GrPatLam_BasicNode _ _) hptMap (tag,args) 
+hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[Set.Set Variable]) -> Bool
+hasExpectedResultTag (GrPatLam_BasicNode _ _) hptMap (tag,_) 
   = case unevaluatedName tag of
       Nothing         -> isBasicTag tag
       Just functName  -> let absval = getEnvVar hptMap (getNr functName)
@@ -338,7 +359,7 @@ buildApplyAlt
     Int                          ->      -- unique
     HptMap                       ->      -- hptMap
     ( GrTag                              -- tag
-    , [AbstractValue]                    -- args
+    , [Set.Set Variable]                 -- args
     )                            ->
     ( Int                                -- updated unique
     , HptItems                           -- newItems
@@ -349,7 +370,7 @@ buildApplyAlt appArgs unique hptMap (tag@(GrTag_PApp needsParams functName), arg
  = 
     let hasParams    = length args
         getsParams   = length appArgs
-        (unique2, newItems2, patNames) = newNames unique args
+        (unique2, newItems2, patNames) = newNames2 hptMap unique args
         patVars      = map GrVal_Var patNames
         codeHead     = GrAlt_Alt GrAltAnnNormal (GrPatAlt_Node tag patNames)
     in  case compare getsParams needsParams of
