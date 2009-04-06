@@ -28,7 +28,7 @@ pDollNm = tokMkQName <$> pVaridTk
 
 -- counterpart of ppUID'
 pUID :: P UID
-pUID = UID <$ pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
+pUID = mkUID <$ pOCURLY <*> pList1Sep pCOMMA pInt <* pCCURLY
 
 pInt :: P Int
 pInt = tokMkInt <$> pInteger10Tk

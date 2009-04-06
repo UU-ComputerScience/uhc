@@ -28,7 +28,7 @@
 %%[1 export(Fixity(..))
 %%]
 
-%%[1 export(UID(..), mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
+%%[1 export(mkNewLevUID, mkNewLevUID2, mkNewLevUID3, mkNewLevUID4, mkNewLevUID5, mkNewLevUID6, mkNewLevUID7, mkNewLevUID8, uidNext, mkNewUID, mkNewUIDL, uidStart, uidNull, uidChild, mkInfNewUIDL)
 %%]
 
 %%[1 export(Range(..),emptyRange,builtinRange,mkRange1,mkRange2)
@@ -115,6 +115,8 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
+%%[99 import({%{EH}Base.Hashable})
+%%]
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -143,8 +145,22 @@ ppHsnNonAlpha scanOpts
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.UID.Base
-newtype UID = UID [Int] deriving (Eq,Ord)
+%%[1.UID.Base export(UID)
+%%[[1
+newtype UID = UID { uidInts :: [Int] }
+%%][99
+data UID = UID { uidHash :: !Hash, uidInts :: [Int] }
+%%]]
+  deriving (Eq,Ord)
+%%]
+
+%%[1 export(mkUID)
+mkUID :: [Int] -> UID
+%%[[1
+mkUID is = UID is
+%%][99
+mkUID is = UID (hashList is) is
+%%]]
 %%]
 
 %%[1
@@ -162,23 +178,33 @@ type UIDS = Set.Set UID
 
 %%[1.UID.Show
 instance Show UID where
-  show (UID ls) = concat . intersperse "_" . map show . reverse $ ls
+  show uid = concat . intersperse "_" . map show . reverse $ uidInts uid
 %%]
 
 %%[1.UID.mkNewLevUID
 uidNext :: UID -> UID
-uidNext (UID (n:ns)) = UID (n+1:ns)
+%%[[1
+uidNext (UID   (n:ns)) = mkUID (n+1:ns)
+%%][99
+uidNext (UID _ (n:ns)) = mkUID (n+1:ns)
+%%]]
 
 uidChild :: UID -> UID
-uidChild (UID ns) = UID (0:ns)
+%%[[1
+uidChild (UID   ns) = mkUID (0:ns)
+%%][99
+uidChild (UID _ ns) = mkUID (0:ns)
+%%]]
+%%]
 
+%%[1.UID.mkNewLevUID
 mkNewLevUID :: UID -> (UID,UID)
 mkNewLevUID u = (uidNext u, uidChild u)
 %%]
 
 %%[1 export(uidFromInt)
 uidFromInt :: Int -> UID
-uidFromInt i = UID [i]
+uidFromInt i = mkUID [i]
 %%]
 
 %%[1
@@ -196,7 +222,7 @@ mkNewLevUID7 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7)    = m
 mkNewLevUID8 u = let { (u',u1,u2,u3,u4) = mkNewLevUID4  u; (u'',u5,u6,u7,u8) = mkNewLevUID4  u'} in (u'',u1,u2,u3,u4,u5,u6,u7,u8)
 
 uidNull :: UID
-uidNull  = UID []
+uidNull  = mkUID []
 
 mkNewUID :: UID -> (UID,UID)
 mkNewUID   uid = (uidNext uid,uid)
@@ -222,7 +248,7 @@ instance PP UID where
 
 %%[8
 ppUID' :: UID -> PP_Doc
-ppUID' (UID ls) = ppCurlysCommas ls
+ppUID' uid = ppCurlysCommas $ uidInts uid
 %%]
 
 %%[7
@@ -1078,14 +1104,14 @@ instance ForceEval OrigName where
   forceEval x                                         = x
 
 instance ForceEval HsName where
-  forceEval x@(HNm     s) | forceEval s `seq` True = x
+  forceEval x@(HNm   _ s) | forceEval s `seq` True = x
   forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
-  forceEval x@(HNmQ    l) | forceEval l `seq` True = x
+  forceEval x@(HNmQ  _ l) | forceEval l `seq` True = x
   forceEval x                                      = x
 %%[[102
-  fevCount (HNm     s) = cm1 "HNm"   `cmUnion` fevCount s
+  fevCount (HNm   _ s) = cm1 "HNm"   `cmUnion` fevCount s
   fevCount (HNmNr i n) = cm1 "HNmNr" `cmUnion` fevCount n
-  fevCount (HNmQ    l) = cm1 "HNmQ"  `cmUnion` fevCount l
+  fevCount (HNmQ  _ l) = cm1 "HNmQ"  `cmUnion` fevCount l
   fevCount (HNPos   p) = cm1 "HNPos" `cmUnion` fevCount p
 %%]]
 
@@ -1124,9 +1150,9 @@ instance ForceEval IdOccKind where
 %%]]
 
 instance ForceEval UID where
-  forceEval x@(UID l) | forceEval l `seq` True = x
+  forceEval x@(UID _ l) | forceEval l `seq` True = x
 %%[[102
-  fevCount (UID l) = cm1 "UID" `cmUnion` fevCount l
+  fevCount (UID _ l) = cm1 "UID" `cmUnion` fevCount l
 %%]]
 
 instance ForceEval a => ForceEval (RLList a) where

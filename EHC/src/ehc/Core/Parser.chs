@@ -9,6 +9,8 @@
 
 %%[(8 codegen) module {%{EH}Core.Parser} import(UU.Parsing as P, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
 %%]
+%%[(8 codegen) import(Data.Maybe)
+%%]
 
 %%[(20 codegen) export(pCModule,pCExpr)
 %%]
@@ -94,7 +96,9 @@ pCExpr
 pMbDollNm :: CParser (Maybe HsName)
 pMbDollNm
   =  f <$> pDollNm
-    where f (HNm "_") = Nothing
+    where f n | isJust ms && fromJust ms == "_"
+                      = Nothing
+                      where ms = mbHNm n
           f x         = Just x
 
 pCMetas :: CParser CMetas

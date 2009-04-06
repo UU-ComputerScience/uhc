@@ -19,7 +19,7 @@
 
 %%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
 
-wildcardNm = HNm "_"
+wildcardNm = hsnFromString "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
 
 getNr :: HsName -> Int
@@ -27,7 +27,7 @@ getNr (HNmNr i _) = i
 getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
 getNr a           = error $ "getNr tried on " ++ show a
 
-throwTag      =  GrTag_Fun (HNm "rethrow")
+throwTag      =  GrTag_Fun (hsnFromString "rethrow")
 
 %%[[8
 hsnMainFullProg = hsnMain
@@ -37,7 +37,7 @@ hsnMainFullProg = hsnSuffix hsnMain "FullProg"
 
 mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 
-evaluateNr    = HNmNr 3 (OrigFunc (HNm "evaluate"))
+evaluateNr    = HNmNr 3 (OrigFunc (hsnFromString "evaluate"))
 evaluateArgNr = HNmNr 5 (OrigNone)
 
 %%]
