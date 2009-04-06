@@ -20,18 +20,16 @@ _ltImin :: Int
 The check in the HS pass is correct, here it would check EH input, which currently is not used much.
 The problem lies in that @decls.patValGam also contains the type signature, and a type for the value in the pattern is added without checking if it already is present.
 
+20090404: put back, but wrapped in option
+
 %%[(1 hmtyinfer).dupErrs
 SEM Expr
-  | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
-                                                        in   [] -- if null nms then [] else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
-%%]
-
-%%[Orig.dupErrs
-SEM Expr
-  | Let         loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
-                                                        in   if null nms
-                                                             then []
-                                                             else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
+  | Let         loc         .   dupErrs             =   if ehcOptHsChecksInEH @lhs.opts
+                                                        then let nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
+                                                             in  if null nms
+                                                                 then []
+                                                                 else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
+                                                        else []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -154,7 +152,9 @@ SEM Decl
                 loc         .   predErrs            =   if Set.null (ftvSet @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
 
 SEM PrExpr
-  | Class       loc         .   nmErrs              =   rngLift @range checkClNms @clMissNmS
+  | Class       loc         .   nmErrs              =   if ehcOptHsChecksInEH @lhs.opts
+                                                        then rngLift @range checkClNms @clMissNmS
+                                                        else []
 
 SEM Expr
 %%[[9

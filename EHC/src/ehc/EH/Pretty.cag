@@ -557,7 +557,7 @@ SEM Expr
   | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
                                             then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
                                                        >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
-                                                       >-<  ppGam @lClGam
+                                                       >-<  ppGam @lClGamNoDups
 %%[[17
                                                        >-<  ppGam @loc.finGathPolGam
 %%]]

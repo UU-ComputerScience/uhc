@@ -347,6 +347,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
            (ECUSEh EHStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling EH"
+                   ; cpUpdOpts (\o -> o {ehcOptHsChecksInEH = True})
                    ; cpEhcEhParse modNm
 %%[[20   
                    ; cpGetDummyCheckEhMod modNm

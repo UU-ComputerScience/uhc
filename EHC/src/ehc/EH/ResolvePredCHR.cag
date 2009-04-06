@@ -121,6 +121,16 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) hs
+%%[[9999
+simplify _ _ _ m1 m2 _ | Map.null m1 && Map.null m2
+  = ( Map.empty, Map.empty
+    , Map.empty
+    , []
+    , emptySimplifyResult
+    , Map.empty
+    , Map.empty, Map.empty, Map.empty
+    )
+%%]]
 simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
   = ( toProveHereCnstrMpCanon, chrSolveRemCnstrMp2
     , cannotResCnstrMp
@@ -219,6 +229,11 @@ SEM Expr
                 loc         .   lUniq4              :   UNIQUEREF gUniq
                 loc         .   lUniq5              :   UNIQUEREF gUniq
 %%]
+  | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @decls.tyVarMp}
+                            .   toProveCnstrMp      =   (\c -> tr ("Let.toProveCnstrMp " ++ show @lUniq) (pp (show c)) c) $ 
+                                                        @decls.tyVarMp `chrAppSubst` @decls.gathCnstrMp
+                            .   cannotProveCnstrMp  =   (\c -> tr ("Let.cannotProveCnstrMp " ++ show @lUniq) (pp (show c)) c) $ 
+                                                        cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
 %%[(9 hmtyinfer)
 SEM Decl

@@ -11,6 +11,22 @@
 %%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
+%%[doesWhat doclatex
+A Coercion represents incomplete code, in that it contains a hole to be filled in later.
+Conceptually, the coercion type is defined only by:
+
+\begin{pre}
+type Coe = CExpr -> CExpr
+\end{pre}
+
+In the implementation here, the hole is represented by CExpr_CoeArg.
+
+We also need to manipulate coercions so more structure is encoded in @Coe@ to match on coercion variants.
+In the end, a coercion is applied to a CExpr to yield code,
+see coeEvalOn in Core/Subst.
+Additionally, this can be done in a lazy manner yielding a substitution CSubst
+to be applied at the last possible moment.
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Coercion
@@ -43,6 +59,7 @@ coeId = CoeC CExpr_CoeArg
 
 coeIsId :: Coe -> Bool
 coeIsId (CoeC CExpr_CoeArg) = True
+-- coeIsId (CoeCompose c1 c2 ) = coeIsId c1 && coeIsId c2
 coeIsId _                   = False
 
 mkLamLetCoe :: HsName -> UID -> Coe
@@ -80,7 +97,9 @@ mkLamCoe1 n = mkLamCoe1With n CMetaVal_Val
 
 %%[(9 codegen) hs export(coeCompose)
 coeCompose :: Coe -> Coe -> Coe
-coeCompose = CoeCompose -- c1 c2 =  mkCoe (\e -> c1 `coeEvalOn` (c2 `coeEvalOn` e))
+coeCompose c1 c2
+  | coeIsId c1 = c2
+  | otherwise  = CoeCompose c1 c2
 
 %%]
 

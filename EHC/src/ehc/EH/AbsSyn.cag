@@ -577,6 +577,11 @@ SET AllNT
 %%]]
 %%]
 
+%%[8
+SET NTCode
+    = AllDecl AllExpr AllCase AllPatExpr
+%%]
+
 %%[9
 SET NTPrf
     = AllDecl AllCase AllExpr AllPatExpr AllData

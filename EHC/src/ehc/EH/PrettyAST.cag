@@ -691,7 +691,7 @@ SEM Expr
 %%[[(9 codegen)
                                         , mkInfo1 "chrSolve2EvidBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2EvidBindMp)
                                         , mkInfo1 "chrSolve2ScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @chrSolve2ScopeBindMp)
-                                        , mkInfo1 "cSubst" (ppAssocLV . Map.toList $ @cSubst)
+                                        , mkInfo1 "cSubst" (ppAssocLV . Map.toList $ @decls.cSubst)
 %%]]
                                         , mkInfo1 "chrSolve2Trace" (ppSolveTrace @chrSolve2Trace)
                                         , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)

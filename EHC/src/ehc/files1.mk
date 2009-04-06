@@ -61,17 +61,17 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
 													$(addprefix Ty/,FitsInCommon FitsInCommon2 FitsIn Utils Trf/BetaReduce) \
-													Core/Coercion Core/Utils \
+													$(addprefix Gam/,Utils LevelMapGam ScopeMapGam) \
+													$(addprefix Core/,Utils Coercion) \
+													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
 														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM Link \
 															Cleanup Module TopLevelPhases \
 													)	) \
-													Gam/Utils \
 													Annotations/StateMachine Annotations/Constraints Annotations/ConstraintSolver Annotations/BelownessSolver Annotations/VarianceSolver Annotations/UniquenessSolver \
 													Debug/HighWaterMark \
-													GrinCode/Common GrinCode/SolveEqs \
 											)
 EHC_HS_UTIL_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_HS_UTIL_SRC_CHS))
 

@@ -48,13 +48,21 @@ SEM AGItf
   | AGItf       lhs         .   cmodule     =   let b = if @insertMainUse then CExpr_Var hsnMain else @expr.letCBody
                                                     d = if @insertMainDef then mkCExprLet CBindings_Plain [mkCBind1 hsnMain @expr.letCBody] else id
                                                 in  CModule_Mod @lhs.moduleNm
-                                                        (foldr (\(c,b) e -> mkCExprLet c b e)
-                                                               (d b)
-                                                               (@extraCBindL ++ @expr.frontCBindL ++ @expr.letCBindL
-%%[[94
-                                                               ++ @expr.backCBindL
+                                                        (
+%%[[9
+                                                           cSubstAppExpr True @expr.cSubst
 %%]]
-                                                               )
+                                                           (foldr (\(c,b) e -> mkCExprLet c b e)
+                                                             (d b)
+                                                             (@extraCBindL ++ @expr.frontCBindL ++ @expr.letCBindL
+%%[[94
+                                                             ++ @expr.backCBindL
+%%]]
+                                                             )
+                                                           )
+%%[[9
+                                                           Nothing
+%%]]
                                                         )
                                                         [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
                 loc         .   extraCBindL =   []
@@ -136,7 +144,10 @@ SEM Expr
 %%[[8
                 loc         .   cexpr       =   @cexprBase
 %%][9
-                loc         .   cexpr       =   foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+                loc         .   (cexpr,cexprCSubst)
+                                            =   foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @lhs.cSubst @cexprCSubst
 %%]]
 %%]
 
@@ -146,19 +157,52 @@ SEM Expr
   | App AppImpred
 %%[[12
     AppImpl
+                loc         .   (cexprapp,cexprappCSubst)
+                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
+                                                    -- ww    = coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
+                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
+                                                    (f ,s2)   = coeEvalOnAsSubst u2 ww @func.cexpr
+                                                in  (mkCExprApp1 f @arg.cexpr, s1 `cSubstApp` s2)
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
 %%]]
-                loc         .   cexprapp   :=  mkCExprApp1
-                                                    (coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @appImplsCoeL []
-                                                      `coeEvalOn` @func.cexpr)
-                                                    @arg.cexpr
   | Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
-  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @lhs.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyVarMp @lhs.cSubst $ @expr.cexpr
+                loc         .   (cexpr,cexprlamCSubst)
+                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
+                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @body.cSubst @lamBodyCoeL @lamArgCoeL
+                                                    (b ,s2)   = coeEvalOnAsSubst u2 ww @body.appFunCExpr
+                                                in  (b, s1 `cSubstApp` s2)
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprlamCSubst
+  | AppTop      loc         .   (cexpr,cexprapptopCSubst)
+                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
+                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @expr.cSubst [] @lamArgCoeL
+                                                    (e ,s2)   = coeEvalOnAsSubst u2 ww @expr.cexpr
+                                                in  (e, s1 `cSubstApp` s2)
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
+  | TypeAs      loc         .   (cexpr,cexprtypeasCSubst)
+                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
+                                                    (e1,s1)   = foAppLRCoeAsSubst @lhs.opts u1 @fo_fitDown @lhs.finTyVarMp @expr.cSubst @expr.cexpr
+                                                    (e2,s2)   = foAppLRCoeAsSubst @lhs.opts u2 @fo_        @lhs.finTyVarMp @expr.cSubst e1
+                                                in  (e2, s1 `cSubstApp` s2)
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprtypeasCSubst
 %%]
+    AppImpl
+                loc         .   cexprapp    :=  mkCExprApp1
+                                                    (coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
+                                                      `coeEvalOn` @func.cexpr)
+                                                    @arg.cexpr
+  | Lam
+                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @body.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
+  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @expr.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
+  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @expr.cSubst
+                                                $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyVarMp @expr.cSubst
+                                                $ @expr.cexpr
 
 %%[(10 codegen)
 SEM Expr
@@ -168,9 +212,16 @@ SEM Expr
 %%[(97 codegen)
 SEM PatExpr
   | Expr        loc         .   cexprBaseEq =   CExpr_Var @eqFldNm
-                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBaseEq)
-                                                           [@expr.cexpr]
+                            .   (cexpr,cexprpatCSubst)
+                                            =   let (e,s) = foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @expr.cSubst @cexprBaseEq
+                                                in  (mkCExprApp e [@expr.cexpr], s)
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+                lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprpatCSubst
 %%]
+                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @expr.cSubst @cexprBaseEq)
+                                                           [@expr.cexpr]
+SEM Expr
+  | Let         loc         .   letCBindL   :=  (tr ("Let.letCBindL " ++ show @lUniq) empty) $ [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Row based records, construction
@@ -238,7 +289,7 @@ SEM RecExpr
 
 %%[(10 codegen)
 SEM RecExpr
-  | Ext Upd     loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
+  | Ext Upd     loc         .   offset          :=  cSubstApp @expr.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -312,7 +363,7 @@ SEM Expr
 
 %%[(10 codegen)
 SEM Expr
-  | Sel         loc         .   offset          :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
+  | Sel         loc         .   offset          :=  cSubstApp @expr.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -489,7 +540,7 @@ SEM RecPatExpr
 
 %%[(10 codegen)
 SEM RecPatExpr
-  | Ext         loc         .   offset      :=  cSubstOptApp @lhs.opts @lhs.cSubst $ mkCExprPrHole @lhs.opts @prUid
+  | Ext         loc         .   offset      :=  cSubstApp @patExpr.cSubst $ mkCExprPrHole @lhs.opts @prUid
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -802,7 +853,7 @@ SEM Decl
                                                                                               f _ _        = Nothing
                                                                                           in zipWith f instanceMbNewNames superMbNewNames
 
-                                                             instanceCHRBindings = cSubstOptApp @lhs.opts @cSubst
+                                                             instanceCHRBindings = -- cSubstApp @decls.cSubst
                                                                                                 (  @chrAssumeSuperBindL 
                                                                                                 ++ @chrAssumeDeclsInstBindL 
                                                                                                 ++ @chrAssumeDeclsCtxtBindL 
@@ -841,7 +892,7 @@ SEM Decl
                                                              defaultNewBindings  = zipWith3 mkCBind1Meta memberNewNames 
                                                                                                          defaultMetas
                                                                                                          defaultBodies
-                                                             defaultCHRBindings  = cSubstOptApp @lhs.opts @cSubst
+                                                             defaultCHRBindings  = -- cSubstApp @decls.cSubst
                                                                                                 (  @chrScopeDeclsBindL 
                                                                                                 ++ @chrAssumeDeclsInstBindL
                                                                                                 )
@@ -855,7 +906,7 @@ SEM Decl
                                                              , CMetaVal_DictClass defaultMbNewNames
                                                              )
 
-                                                in   [mkCBind1Meta @dictNm generatedMeta (cSubstOptApp @lhs.opts @cSubst generatedDictionary)]
+                                                in   [mkCBind1Meta @dictNm generatedMeta (generatedDictionary)]
   | InstanceIntro
                 lhs         .   cbindL      =   [mkCBind1Meta @dictNm (CMetaVal_Dict Nothing) @expr.cexpr]
 %%]

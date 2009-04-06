@@ -514,7 +514,7 @@ SEM Expr
                             .   finGathPolGam       =   quantifyPolGam
                                                         $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
                                                         $ @lSubsPolGam2
-                body        .   polGam              =   gamPushGam @finGathPolGam @lhs.polGam
+                body        .   polGam              =   gamAddGam @finGathPolGam @lhs.polGam
 %%]
 
 
