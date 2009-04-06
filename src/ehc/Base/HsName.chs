@@ -23,6 +23,9 @@
 %%[10 export(hsnConcat)
 %%]
 
+%%[99 import({%{EH}Base.Hashable})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell names, datatype
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -51,9 +54,55 @@ instance Show HsName where
   show (HNm s) = s
 %%]
 
+%%[99
+instance Hashable HsName where
+  hash (HNm  h _ ) = h
+  hash (HNmQ h _ ) = h
+  hash (HNPos p  ) = hash p
+  hash (HNmNr i _) = hash i
+%%]
+
+-- for speed, comparison will be done on the basis of a hash
+%%[7.HsName.type -1.HsName.type
+data HsName
+%%[[7
+  =   HNm   { hsnHNmFld :: !String }
+%%][99
+  =   HNm   { hsnHash :: !Hash, hsnHNmFld :: !String }
+%%]]
+  |   HNPos !Int
+%%[[8
+  |   HNmNr !Int !OrigName
+%%[[7
+  |   HNmQ  ![HsName]
+%%][99
+  |   HNmQ  !Hash ![HsName]
+%%]]
+%%]]
+  deriving (Eq,Ord)
+%%]
+
+%%[1 export(mbHNm)
+mbHNm :: HsName -> Maybe String
+%%[[1
+mbHNm (HNm s  )
+%%][99
+mbHNm (HNm _ s)
+%%]]
+                = Just (hsnHNmFldToString s)
+%%[[7
+mbHNm _         = Nothing
+%%]]
+%%]
+
 %%[1.hsnFromString export(hsnFromString)
 hsnFromString :: String -> HsName
-hsnFromString = HNm
+hsnFromString s
+%%[[1
+  = HNm s
+%%][99
+  = HNm (hash s) s
+%%]]
 %%]
 
 %%[1.hsnHNmFldToString export(hsnHNmFldToString)
@@ -77,31 +126,27 @@ instance PP HsName where
   pp h = pp (show h)
 %%]
 
-%%[7.HsName.type -1.HsName.type
-data HsName
-%%[[7
-  =   HNm   !String
-%%]]
-  |   HNPos !Int
-%%]
-%%[8
-  |   HNmNr !Int !OrigName
-  |   HNmQ  ![HsName]
-%%]
-%%[7
-  deriving (Eq,Ord)
-%%]
 
 %%[7 export(hsnShow)
 hsnShow :: String -> HsName -> String
-hsnShow _   (HNm s    )  = hsnHNmFldToString s
+%%[[7
+hsnShow _   (HNm   s  )
+%%][99
+hsnShow _   (HNm _ s  )
+%%]]
+                         = hsnHNmFldToString s
 hsnShow _   (HNPos p  )  = show p
 %%[[8
 hsnShow _   (HNmNr n OrigNone        )  = "x_"        ++ show n
 hsnShow _   (HNmNr n (OrigLocal  hsn))  = "x_"        ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnShow "." hsn
 hsnShow _   (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." hsn
-hsnShow sep (HNmQ ns  )  = concat $ intersperse sep $ map show ns
+%%[[7
+hsnShow sep (HNmQ   ns)  
+%%][99
+hsnShow sep (HNmQ _ ns)  
+%%]]
+                         = concat $ intersperse sep $ map show ns
 %%]]
 %%]
 
@@ -113,9 +158,11 @@ instance Show HsName where
 %%[1
 hsnToList :: HsName -> [HsName]
 %%[[8
-hsnToList (HNmQ ns) = ns
+hsnToList (HNmQ   ns) = ns
+%%][99
+hsnToList (HNmQ _ ns) = ns
 %%]]
-hsnToList n         = [n]
+hsnToList n           = [n]
 %%]
 
 %%[1 export(hsnInitLast)
@@ -196,9 +243,9 @@ hsnShowAlphanumericShort (HNmNr n (OrigFunc   orig)) = hsnShowAlphanumeric orig
 hsnShowAlphanumericShort x = hsnShowAlphanumeric x
 
 %%[[8
-hsnShowAlphanumeric (HNm s) = dontStartWithDigit(stringAlphanumeric s)
+hsnShowAlphanumeric (HNm s  ) = dontStartWithDigit(stringAlphanumeric s)
 %%][99
-hsnShowAlphanumeric (HNm s) = dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s)
+hsnShowAlphanumeric (HNm _ s) = dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s)
 %%]]
 hsnShowAlphanumeric (HNPos p)                   = "y" ++ show p
 hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
@@ -206,7 +253,12 @@ hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
 %%[[8
-hsnShowAlphanumeric (HNmQ ns) = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
+%%[[8
+hsnShowAlphanumeric (HNmQ   ns)
+%%][99
+hsnShowAlphanumeric (HNmQ _ ns)
+%%]]
+                                = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
 %%]]
 %%]
 
@@ -329,6 +381,8 @@ instance HSNM [HsName] where
   mkHNm []  = hsnFromString "" -- ????, or empty alternative of HsName
 %%[[8
   mkHNm ns  = HNmQ ns
+%%][99
+  mkHNm ns  = HNmQ (hashList ns) ns
 %%]]
 %%]
 

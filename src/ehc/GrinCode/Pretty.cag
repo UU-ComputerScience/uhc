@@ -119,7 +119,7 @@ ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurl
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
-ppMbGrNm ppGrNm = maybe (ppGrNm (HNm "_")) ppGrNm
+ppMbGrNm ppGrNm = maybe (ppGrNm (hsnFromString "_")) ppGrNm
 
 ppInt :: Int -> PP_Doc
 ppInt n = pp (show n)

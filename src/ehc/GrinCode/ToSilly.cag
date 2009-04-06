@@ -139,7 +139,7 @@ SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
                                 (tagConstants (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names              -- variables
-                                ( Function_Function (HNm "initialize") False [] []
+                                ( Function_Function (hsnFromString "initialize") False [] []
                                                     (  @globalL.initStats1
                                                     ++ @globalL.initStats2
                                                     ++ (if @lhs.optOwn>=1

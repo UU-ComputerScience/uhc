@@ -57,7 +57,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Opts Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
+													$(addprefix Base/,Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
 													$(addprefix Ty/,FitsInCommon FitsInCommon2 FitsIn Utils Trf/BetaReduce) \

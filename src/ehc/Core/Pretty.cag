@@ -44,7 +44,7 @@ ppCNm :: HsName -> PP_Doc
 ppCNm = cfgppHsName CfgPP_Core
 
 ppMbCNm :: Maybe HsName -> PP_Doc
-ppMbCNm = maybe (ppCNm (HNm "_")) ppCNm
+ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
 %%]
 
 %%[(9 codegen) hs
