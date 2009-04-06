@@ -82,13 +82,18 @@ For debug/trace:
 %%% Coercion application
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen hmtyinfer) export(foAppLRCoe)
-foAppLRCoe :: EHCOpts -> FIOut -> VarMp -> CSubst -> CExpr -> CExpr
-foAppLRCoe opts fo c cs ce = foAppLRCoe' opts (foCSubst fo,foLRCoe fo) c cs ce
+%%[(9 codegen hmtyinfer) export(foAppLRCoeAsSubst)
+foAppLRCoeAsSubst :: EHCOpts -> UID -> FIOut -> VarMp -> CSubst -> CExpr -> (CExpr,CSubst)
+foAppLRCoeAsSubst opts uniq fo c cs ce
+  = (ce', foCSubst fo `cSubstApp` s1 `cSubstApp` s2)
+  where (u',u1,u2) = mkNewLevUID2 uniq
+        -- s0 = cs `cSubstApp` foCSubst fo
+        (ww ,s1) = lrcoeWipeWeaveAsSubst opts u1 c (foLRCoe fo)
+        (ce',s2) = coeEvalOnAsSubst u2 ww ce
 %%]
 
 -- for use by Ruler
-%%[(9 codegen hmtyinfer) export(foAppLRCoe')
+%%[(9 codegen && hmtyinfer && hmTyRuler) export(foAppLRCoe')
 foAppLRCoe' :: EHCOpts -> (CSubst,LRCoe) -> VarMp -> CSubst -> CExpr -> CExpr
 foAppLRCoe' opts (fCS,fLRCoe) c cs ce
   =  let  s = cs `cSubstApp` fCS
@@ -472,7 +477,7 @@ fitsInFI fi ty1 ty2
             foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo, foGathCnstrMp = foGathCnstrMp afo `cnstrMpUnion` foGathCnstrMp ffo}
 %%]
 %%[(9 codegen hmtyinfer)
-            foCmbCSubst  ffo afo  = afo {foCSubst = cSubstOptApp globOpts (foCSubst afo) (foCSubst ffo)}
+            foCmbCSubst  ffo afo  = afo {foCSubst = cSubstApp (foCSubst afo) (foCSubst ffo)}
 %%]
 
 %%[(4 hmtyinfer).fitsIn.foCmbApp
@@ -669,17 +674,22 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%][10
                                  rowCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
 %%]]
-                                 (fuUpdL,prUpdL,tr1s',_)
-                                   =  foldr  (\(l,c) (fuL,prL,r,u)
-                                                ->  ( ( l
+                                 (fuUpdL,prUpdL,tr1s',csubstUpd,_)
+                                   =  foldr  (\(l,c) (fuL,prL,r,csubst,u)
+                                                ->  let (u',u1,u2) = mkNewLevUID2 u
+                                                        (sel,csubstSel) = coeEvalOnAsSubst u2 c (mkLSel l u1)
+                                                    in  ( ( l
 %%[[(10 codegen)
-                                                      , (CExpr_TupUpd (cundefined globOpts) CTagRec l (mkCExprHole globOpts u) (c `coeEvalOn` mkLSel l u),Nothing)
+                                                          , (CExpr_TupUpd (cundefined globOpts) CTagRec l (mkCExprHole globOpts u) sel,Nothing)
 %%]]
-                                                      ) : fuL
-                                                    , mkLPred r l u : prL,r,uidNext u
-                                                    )
+                                                          ) : fuL
+                                                        , mkLPred r l u1 : prL
+                                                        , r
+                                                        , csubst `cSubstApp` csubstSel
+                                                        , u'
+                                                        )
                                              )
-                                             ([],[],tr1s,u2) rowCoeL
+                                             ([],[],tr1s,emptyCSubst,u2) rowCoeL
                                  (fuDelL,prDelL,_,_)
                                    =  foldl  (\(fuL,prL,r,u) l
                                                   ->  let  (pr,r') = mkLPred' r l u
@@ -693,24 +703,30 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              )
                                              ([],[],tr1s',u3) (sortBy rowLabCmp (assocLKeys e1))
                                  fuL = fuUpdL ++ reverse fuDelL
-                                 (prBldL, fBldL, _, _) 
-                                   =  foldr  (\l (prL,fL,r,u)
-                                                ->  ( mkLPred r l u : prL,
+                                 (prBldL, fBldL, _, csubstBld, _) 
+                                   =  foldr  (\l (prL,fL,r,csubst,u)
+                                                ->  let (u',u1,u2) = mkNewLevUID2 u
+                                                        (sel,csubstSel)
+                                                          = maybe (s,emptyCSubst) (\c -> coeEvalOnAsSubst u2 c s) (lookup l rowCoeL)
+                                                          where s = mkLSel l u1
+                                                    in  ( mkLPred r l u1 : prL,
 %%[[(10 codegen)
-                                                      (maybe id coeEvalOn (lookup l rowCoeL) $ mkLSel l u) :
+                                                          sel :
 %%]]
-                                                      fL
-                                                    , r, uidNext u
-                                                    )
+                                                          fL
+                                                        , r
+                                                        , csubst `cSubstApp` csubstSel
+                                                        , u'
+                                                        )
                                              )
-                                             ([], [], tr1s, u3)
+                                             ([], [], tr1s, emptyCSubst, u3)
                                              (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
                             in   case r2 of
                                    Ty_Con n2
                                      | n2 == hsnRowEmpty && null fuL && null e2
                                      ->  fo
 %%[[(10 codegen)
-                                             {  foLRCoe = emptyLRCoe }
+                                             {  foLRCoe = emptyLRCoe, foCSubst = foCSubst fo `cSubstApp` csubstUpd `cSubstApp` csubstBld }
 %%]]
 {- -- when ext rec deletes are implemented
                                      | n2 == hsnRowEmpty && null fuUpdL && not (null fuDelL) && null e2
@@ -765,12 +781,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(10 codegen hmtyinfer).fitsIn.fRow.Coe
                        foUpdRecFldsCoe eKeys foL tr1 foR
-                         =  let cL =   [  (l,c)
-                                       |  (l,fo) <- zip eKeys foL
-                                       ,  let c = lrcoeWipeWeave globOpts (foVarMp foR) (foCSubst foR) (foLRCoe fo)
+                         =  let (u',u1) = mkNewLevUID (foUniq foR)
+                                us = mkNewLevUIDL (length foL) u1
+                                (cL,sL)
+                                   = unzip
+                                       [  ((l,c),s)
+                                       |  (l,fo,u) <- zip3 eKeys foL us
+                                       ,  let (c,s) = lrcoeWipeWeaveAsSubst globOpts u (foVarMp foR) (foLRCoe fo)
                                        ,  not (coeIsId c)
                                        ]
-                            in  foR {foRowCoeL = cL}
+                            in  foR {foRowCoeL = cL, foUniq = u', foCSubst = foldr cSubstApp (foCSubst foR) sL}
 %%]
 
 %%[(4 hmtyinfer).fitsIn.ff

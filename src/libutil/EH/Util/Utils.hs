@@ -31,8 +31,11 @@ hdAndTl' n []     = (n,[])
 hdAndTl :: [a] -> (a,[a])
 hdAndTl = hdAndTl' undefined
 
+maybeNull :: r -> ([a] -> r) -> [a] -> r
+maybeNull n f l = if null l then n else f l
+
 maybeHd :: r -> (a -> r) -> [a] -> r
-maybeHd n f l = if null l then n else f (head l)
+maybeHd n f = maybeNull n (f . head)
 
 wordsBy :: (a -> Bool) -> [a] -> [[a]]
 wordsBy p l

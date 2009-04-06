@@ -604,6 +604,8 @@ SEM Decl
 SEM Decl
   | TySig       loc         .   gTyTvS              :=  @tyTyUpdFreeTvarS
 %%]
+  | TySig       loc         .   gTyTvS              :=  (\s -> tr ("TySig.gTyTvS " ++ show @lUniq) (pp (show s)) s) $ @tyTyUpdFreeTvarS
+                loc         .   lUniq               :   UNIQUEREF gUniq
 
 %%[(8 hmtyinfer)
 SEM Decl
@@ -909,9 +911,10 @@ SEM AGItf
 SEM Expr
   | Let         decls       .   patClGam1           =   gamPushNew @lhs.clGam
                             .   patClGam2           =   @decls.patClGam1
-                loc         .   (lClGam,gClGam)     =   gamPop $ gamNoDups @decls.patClGam2
-                decls       .   clGam               =   gamPushGam @lClGam @lhs.clGam
-                body        .   clGam               =   gamPushGam @lClGam @gClGam
+                loc         .   (lClGam,_)     		=   gamPop @decls.patClGam2
+                            .   lClGamNoDups		=	gamNoDups @lClGam
+                decls       .   clGam               =   gamPushGam @lClGamNoDups @lhs.clGam
+                body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

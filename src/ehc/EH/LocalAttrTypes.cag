@@ -121,6 +121,7 @@ SEM *
 		loc.knTyDown 					: Ty
 		loc.knTyL  						: TyL
 		loc.lClGam  					: ClGam
+		loc.lClGamNoDups  				: ClGam
 		loc.lQuTyGam  					: TyGam
 		loc.lQuTyKiGam 					: TyKiGam
 		loc.lSubsPolGam1  				: PolGam

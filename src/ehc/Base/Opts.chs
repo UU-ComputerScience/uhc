@@ -201,6 +201,7 @@ data EHCOpts
       ,  ehcOptShowHS         ::  Bool              -- show HS pretty print on stdout
       ,  ehcOptShowEH         ::  Bool              -- show EH pretty print on stdout
       ,  ehcOptPriv           ::  Bool              -- privately used (in general during switch between 2 impls of 1 feature)
+      ,  ehcOptHsChecksInEH   ::  Bool              -- do checks in EH which already have been done in HS (usually related to name absence/duplication). This is used for EH compilation only.
 %%[[1
       ,  ehcOptShowAst        ::  Bool              -- show decorated EH AST on stdout
 %%][100
@@ -361,6 +362,7 @@ defaultEHCOpts
       {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"
       ,  ehcOptShowHS           =   False
       ,  ehcOptPriv             =   False
+      ,  ehcOptHsChecksInEH     =   False
 %%[[1
       ,  ehcOptShowEH           =   True
 %%][99

@@ -239,7 +239,7 @@ SEM Expr
 ATTR AGItf Expr [ | | gathClGam: ClGam ]
 
 SEM Expr
-  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGam
+  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGamNoDups
   | * - Let     lhs         .   gathClGam           =   emptyGam
 %%]
 

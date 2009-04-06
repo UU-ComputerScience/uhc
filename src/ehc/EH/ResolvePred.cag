@@ -66,17 +66,17 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 codegen hmtyinfer)
-ATTR AllNT [ cSubst: CSubst | | ]
+ATTR NTCode [ | cSubst: CSubst | ]
 
 SEM AGItf
   | AGItf       loc         .   cSubst              =   emptyCSubst
 
 SEM Decl
-  | Instance    loc         .   cSubst              =   cSubstApp @lhs.cSubst
+  | Instance    decls       .   cSubst              =   cSubstApp @lhs.cSubst
                                                         $ evidKeyBindMpToCSubst @chrEvidBindMp
 
 SEM Expr
-  | Let         loc         .   cSubst              =   cSubstApp @lhs.cSubst
+  | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
                                                         $ cSubstApp @prvArgCSubst
                                                         $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
                                                         $ evidKeyBindMpToCSubst @chrSolveEvidBindMp

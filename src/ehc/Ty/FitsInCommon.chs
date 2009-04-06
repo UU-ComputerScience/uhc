@@ -214,8 +214,9 @@ arrowAppSpineVertebraeInfoL
 %%[[(9 codegen)
           (Just (\opts [ffo,afo]
                   -> let (u',u1) = mkNewUID (foUniq afo)
-                         c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
-                     in  afo { foLRCoe = c, foUniq = u' }
+                         -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
+                         (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
+                     in  afo { foLRCoe = c, foUniq = u', foCSubst = foCSubst afo `cSubstApp` s }
           )     )
 %%]]
     ]
