@@ -52,7 +52,7 @@ EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
 											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array Marshal/Error C/String) \
-											$(patsubst %,System/%.hs,IO/Unsafe) \
+											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 

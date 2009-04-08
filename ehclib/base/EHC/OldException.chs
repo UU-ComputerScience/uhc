@@ -7,6 +7,7 @@ which is not yet supported by EHC.
 %%[99
 module EHC.OldException
   ( bracket, bracket_
+  , throwIO
   )
   where
 
@@ -47,4 +48,9 @@ bracket_ before after m = do
          case rs of
             Right r -> return r
             Left  e -> ioError e
+%%]
+
+%%[99
+throwIO  :: SomeException -> IO a
+throwIO e = IO (\s -> throw e)
 %%]

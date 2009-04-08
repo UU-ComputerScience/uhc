@@ -3,9 +3,9 @@
    expected: ok, result may vary on how program is invoked from testing environment
 ---------------------------------------------------------------------------------------- -}
 
-module Main where
+module GetProgName where
 
-import System
+import System.Environment
 
 main :: IO ()
 main

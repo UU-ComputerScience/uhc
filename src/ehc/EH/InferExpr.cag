@@ -562,7 +562,7 @@ SEM Expr
                 loc         .   lUniq               :   UNIQUEREF gUniq
   | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq
                                                         in   hsnRec `mkConApp` [r]
-                            .   fo_                 =   fitsIn @fiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
+                            .   fo_                 =   fitsIn @recFiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
                 recExpr     .   knTy                =   @knRecTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   ty                  =   foTy @fo_

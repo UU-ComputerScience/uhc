@@ -91,8 +91,6 @@ cmpHsNameOnNm (HNmQ h1 s1) (HNmQ h2 s2) = compare s1 s2
 %%]]
 cmpHsNameOnNm n1           n2           = compare n1 n2
 %%]
-instance Ord HsName where
-  (HNm h1 s1) == (HNm h2 s2)
 
 %%[1 export(mbHNm)
 mbHNm :: HsName -> Maybe String

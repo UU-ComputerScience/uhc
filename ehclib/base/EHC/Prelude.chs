@@ -2025,7 +2025,9 @@ instance Show IOErrorType where
       DoesNotExist      -> "does not exist"
       EOF               -> "end of file"
       IllegalOperation  -> "illegal operation"
+      NoSuchThing		-> "does not exist"
       PermissionDenied  -> "permission denied"
+      ResourceBusy		-> "resource already in use"
       ResourceExhausted -> "resource exhausted"
       UserError         -> "user error"
 
@@ -2456,14 +2458,20 @@ catchException m k =
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
   catchTracedException m
-    (\(t,e) -> do { hPutStrLn stderr ("Error: " ++ show e)
-                  ; if null t
-                    then return ()
-                    else do { hPutStrLn stderr "Trace:"
-                            ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ show k ++ ": " ++ s)) $ reverse t
-                            }
-                  ; exitWith 1
-                  }
+    (\(t,e) -> case e of
+                 ExitException ExitSuccess
+                   -> exitWith 0
+                 ExitException (ExitFailure code)
+                     | code == 0 -> exitWith 1
+                     | otherwise -> exitWith code
+                 _ -> do { hPutStrLn stderr ("Error: " ++ show e)
+                         ; if null t
+                           then return ()
+                           else do { hPutStrLn stderr "Trace:"
+                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ show k ++ ": " ++ s)) $ reverse t
+                                   }
+                         ; exitWith 1
+                         }
     )
 
 #endif

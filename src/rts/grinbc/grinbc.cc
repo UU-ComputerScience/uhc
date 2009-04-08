@@ -1573,17 +1573,23 @@ See GBM doc for explanation.
 %%[96
 GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 {
-	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException1 bp %x\n", bp) ;}) ;
 	GB_Push( e ) ;																							// build stack frame which just returns the value
 	GB_Push( 1 ) ;
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(GB_CallInfo_Inline)]) ) ;		// return, marked as handler
 	GB_BP_Link ;
+	
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException2 bp %x\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{GB_CallInfo* ci ;ci = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci );printf("\n");}) ;
 	
 	GB_Push( handler ) ;																					// build adapted copy of primitive stack frame
 	GB_Push( e ) ;
 	GB_Push( 2 ) ;
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(GB_CallInfo_Inline)]) ) ;						// with return to evaluation code
 	GB_BP_Link ;
+	
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException3 bp %x\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{GB_CallInfo* ci2 ;ci2 = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci2 );printf("\n");}) ;
 	
 	return e ;
 }
@@ -1592,11 +1598,11 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
 	GB_CallInfo* ci ;
-	GB_NodePtr n ;
+	GB_NodePtr thrownExc ;
 	GB_NodePtr reifiedBackTrace ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(exc) ;
-	GB_GC_Safe2_Zeroed(n,reifiedBackTrace) ;
+	GB_GC_Safe2_Zeroed(thrownExc,reifiedBackTrace) ;
 	
 	gb_ThrownException_NrOfEvalWrappers = 0 ;
 	
@@ -1613,12 +1619,12 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 		if ( ci->kind == GB_CallInfo_Kind_EvCont && (p2 = Cast(GB_Ptr,*p)) != NULL ) {						// if we are in a continuation of an eval then patch it
 			GB_CallInfo* ci2 = GB_FromBPToCallInfo(p2) ;
 			if ( ci2->kind == GB_CallInfo_Kind_Eval || ci2->kind == GB_CallInfo_Kind_EvalWrap || ci2->kind == GB_CallInfo_Kind_EvalTopWrap ) {
-				if ( n == NULL ) {
-					GB_MkCFunNode1In(n,&gb_intl_throwException,exc) ;									// if not done already, construct exception throwing thunk
+				if ( thrownExc == NULL ) {
+					GB_MkCFunNode1In(thrownExc,&gb_intl_throwException,exc) ;									// if not done already, construct exception throwing thunk
 				}
 				GB_NodePtr nOld = Cast(GB_NodePtr,GB_RegRelx(p2,2)) ;
 				IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo2: p %x p2 %x nOld %x: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
-				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,n)) ;											// update node under evaluation with exception throwing thunk
+				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,thrownExc)) ;											// update node under evaluation with exception throwing thunk
 			}
 		} else if ( ci->kind == GB_CallInfo_Kind_EvalTopWrap ) {
 			gb_ThrownException_NrOfEvalWrappers++ ;
@@ -1644,9 +1650,9 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%x bp=%x\n", sp, bp) ;}) ;
 	
-	GB_MkTupNode2_In(n,reifiedBackTrace,exc) ;																// tuple with backtrace
+	GB_MkTupNode2_In(thrownExc,reifiedBackTrace,exc) ;																// tuple with backtrace
 	GB_GC_SafeLeave ;
-	return (gb_ThrownException = n) ;
+	return (gb_ThrownException = thrownExc) ;
 }
 
 GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc )
