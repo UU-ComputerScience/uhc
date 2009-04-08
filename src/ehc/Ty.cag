@@ -1065,7 +1065,7 @@ tyRowIsCanonOrdered = isSortedByOn rowLabCmp fst
 
 %%[(7 hmtyinfer || hmtyast) hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
 rowLabCmp :: HsName -> HsName -> Ordering
-rowLabCmp = compare
+rowLabCmp = cmpHsNameOnNm
 
 rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
 rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2

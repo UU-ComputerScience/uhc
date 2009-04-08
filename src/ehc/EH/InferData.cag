@@ -375,7 +375,7 @@ SEM DataFieldExpr
   | * - Upd     lhs         .   fldL                =   []
 
 SEM Expr
-  | DataFields  loc         .   fldL                =   sort @dataFieldExpr.fldL
+  | DataFields  loc         .   fldL                =   sortBy rowLabCmp @dataFieldExpr.fldL
                             .   fldS                =   Set.fromList @fldL
 %%]
 

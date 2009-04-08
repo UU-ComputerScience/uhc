@@ -34,6 +34,9 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
+%%[9999 import({%{EH}Base.Hashable})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Key into Trie
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,7 +46,7 @@ A TK_One is just a single key.
 TK_Partial is a TK_One, but makes looking up also return the corresponding value when partial matched.
 TK_Sub gives structure to a [TrieKey a] by partioning corresponding to substructure.
 
-%%[9 export(TrieKey(..),TrieKeyKind(..))
+%%[9 export(TrieKey(..),TrieKeyKind(..),mkTrieKeys)
 data TrieKeyKind = TKK_Partial | TKK_Normal
   deriving (Eq, Ord)
 
@@ -68,6 +71,11 @@ instance Show k => Show (TrieKey k) where
 
 instance PP k => PP (TrieKey k) where
   pp k = tkKind k >|< ":" >|< tkKey k
+%%]
+
+%%[9999
+instance Hashable k => Hashable (TrieKey k) where
+  hash = hash . tkKey
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

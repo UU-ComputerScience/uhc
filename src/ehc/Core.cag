@@ -280,7 +280,10 @@ cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 data RPatNm
   = RPatNmOrig {rpatNmNm :: !HsName}
   | RPatNmUniq {rpatNmNm :: !HsName}
-  deriving (Ord,Eq)
+  deriving Eq
+
+instance Ord RPatNm where
+  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y  
 
 instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)

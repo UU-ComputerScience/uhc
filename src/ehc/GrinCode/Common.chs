@@ -167,7 +167,7 @@ instance Ord GrTag where
                               then -- Rec/Unboxed/World/Any/Hole
                                    EQ
                               else -- App/Fun/PApp/Con, all have a name
-                                   case compare (conName t1) (conName t2) of
+                                   case cmpHsNameOnNm (conName t1) (conName t2) of
                                      EQ -> if  x >= 8
                                            then -- App/Fun
                                                 EQ

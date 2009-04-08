@@ -48,10 +48,10 @@ EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
 EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable CTypes)
-EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,) \
+EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
-											$(patsubst %,Foreign/%.hs,Marshal/Utils Marshal/Array Marshal/Error C/String) \
+											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array Marshal/Error C/String) \
 											$(patsubst %,System/%.hs,IO/Unsafe) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
@@ -152,6 +152,7 @@ ehclib-variant-dflt: \
 	     ,pkgs="" ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
+	        time \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          --cpp \
 	          --compile-only \
