@@ -66,7 +66,7 @@ ppExtHTML :: [(HsName, PP_Doc)] -> PP_Doc
 ppExtHTML xs
   = ppListSep "(" ")" "," [ ppSymbolHTML (pp nm >|< "=") >|< p | (nm, p) <- xs' ]
   where
-    xs' = sortBy (\a b -> fst a `compare` fst b) xs
+    xs' = sortBy (\a b -> fst a `cmpHsNameOnNm` fst b) xs
 
 ppAnn :: (Annotation Ty -> String) -> Annotation Ty -> PP_Doc
 ppAnn f ann

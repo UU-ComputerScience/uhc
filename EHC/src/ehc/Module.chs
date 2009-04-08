@@ -437,7 +437,7 @@ expsNmOffMp :: HsName -> ModEntRel -> HsName2OffsetMp
 expsNmOffMp modNm exps
   = Map.fromList
     $ flip zip [0..]
-    $ sortBy rowLabCmp
+    $ sortBy cmpHsNameOnNm
     $ nub
     $ [ nm
       | e <- Set.toList $ Rel.rng exps

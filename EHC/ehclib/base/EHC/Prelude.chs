@@ -101,6 +101,7 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     ord, chr,
 
 -- IO functions
+    ioException,
     ioError, userError,
     putChar, putStr, putStrLn, print, hPrint, getChar, getLine, getContents, interact,
     readFile, writeFile, appendFile,
@@ -2155,6 +2156,8 @@ ioError e = IO (\s -> throw (IOException e))
 
 #endif
 
+ioException :: IOError -> IO a
+ioException = ioError
 
 ----------------------------------------------------------------
 -- I/O types: Handle, FilePath, IOMode

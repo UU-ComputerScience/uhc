@@ -85,9 +85,6 @@
 %%[8 export(ppHsnNonAlpha)
 %%]
 
-%%[88 export(sortByOn,sortOn,groupOn,groupSortOn)
-%%]
-
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
@@ -166,6 +163,11 @@ mkUID is = UID (hashList is) is
 %%[1
 instance HSNM UID where
   mkHNm = mkHNm . show
+%%]
+
+%%[99
+instance Hashable UID where
+  hash = uidHash
 %%]
 
 %%[1.UID.UIDL
@@ -747,14 +749,6 @@ mergeListMap :: Ord k => Map k [a] -> Map k [a] -> Map k [a]
 mergeListMap = Map.unionWith (++)
 %%]
 
-%%[90
-groupByOn :: (b -> b -> Bool) -> (a -> b) -> [a] -> [[a]]
-groupByOn eq sel = groupBy (\e1 e2 -> sel e1 `eq` sel e2)
-
-groupSortByOn :: (b -> b -> Ordering) -> (a -> b) -> [a] -> [[a]]
-groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp sel
-%%]
-
 %%[8 export(replicateBy)
 replicateBy :: [a] -> b -> [b]
 replicateBy l e = replicate (length l) e
@@ -1104,9 +1098,9 @@ instance ForceEval OrigName where
   forceEval x                                         = x
 
 instance ForceEval HsName where
-  forceEval x@(HNm   _ s) | forceEval s `seq` True = x
+  forceEval x@(HNm     s) | forceEval s `seq` True = x
   forceEval x@(HNmNr _ n) | forceEval n `seq` True = x
-  forceEval x@(HNmQ  _ l) | forceEval l `seq` True = x
+  forceEval x@(HNmQ    l) | forceEval l `seq` True = x
   forceEval x                                      = x
 %%[[102
   fevCount (HNm   _ s) = cm1 "HNm"   `cmUnion` fevCount s

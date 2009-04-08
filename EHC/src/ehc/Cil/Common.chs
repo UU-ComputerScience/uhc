@@ -80,7 +80,7 @@ toFieldTypes (TyPApp _ _ needs args) = replicate (args - needs) Object
 
 toTypeDefs :: DottedName -> [TyTag] -> [TypeDef]
 toTypeDefs callbackNm tags =
-  let stags = sortBy (\x y -> compare (toTypeName x) (toTypeName y)) tags
+  let stags = sortBy (\x y -> cmpHsNameOnNm (toTypeName x) (toTypeName y)) tags
       gtags = groupBy (\x y -> toTypeName x == toTypeName y) stags
   in map (toTypeDef callbackNm) gtags
 

@@ -17,6 +17,9 @@
 %%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
+%%[99 import({%{EH}Base.Hashable},Data.Bits)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Key
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,13 +33,18 @@ data Key
   | Key_TyQu    !TyQu			-- quantified type, used with TKK_Partial
   | Key_Ty      !Ty				-- catchall for the rest, used with TKK_Partial
 %%]]
+%%[[9999
+  | Key_Hash	!Hash			-- a hash summary, to be the first value used for comparison, speeding up the comparison
+%%]]
   deriving (Eq,Ord)
 %%]
 
 %%[9
 instance Show Key where
   show _ = "Key"
+%%]
 
+%%[9
 instance PP Key where
   pp (Key_HNm  n) = pp n
   pp (Key_UID  n) = pp n
@@ -45,6 +53,21 @@ instance PP Key where
   pp (Key_TyQu n) = pp $ show n
   pp (Key_Ty   n) = pp n
 %%]]
+%%[[9999
+  pp (Key_Hash h) = pp $ show h
+%%]]
+%%]
+
+%%[9999
+instance Hashable Key where
+  hash (Key_HNm  n) = hash n `xor` 1
+  hash (Key_UID  n) = hash n `xor` 2
+  hash (Key_Str  n) = hash n `xor` 4
+%%[[(99 hmtyinfer || hmtyast)
+  hash (Key_TyQu n) = 0
+  hash (Key_Ty   n) = 0
+%%]]
+  hash (Key_Hash h) = h
 %%]
 
 %%[9 export(Keyable(..))
@@ -61,7 +84,12 @@ class Keyable k where
 
 %%[9
 instance Keyable x => TrieKeyable x Key where
-  toTrieKey = toKey
+%%[[9
+  toTrieKey   = toKey
+%%][9999
+  toTrieKey x = mkTrieKeys [Key_Hash (hashList k)] ++ k
+              where k = toKey x
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,6 +114,7 @@ instance ForceEval Key where
   fevCount (Key_UID  y) = cm1 "Key_UID"  `cmUnion` fevCount y
   fevCount (Key_Str  y) = cm1 "Key_Str"  `cmUnion` fevCount y
   fevCount (Key_HNm  y) = cm1 "Key_HNm"  `cmUnion` fevCount y
+  fevCount (Key_Hash y) = cm1 "Key_Hash" `cmUnion` fevCount y
 %%]]
 %%]
 

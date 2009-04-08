@@ -23,7 +23,7 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[99 import({%{EH}Base.Hashable})
+%%[9999 import({%{EH}Base.Hashable})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +54,7 @@ instance Show HsName where
   show (HNm s) = s
 %%]
 
-%%[99
+%%[9999
 instance Hashable HsName where
   hash (HNm  h _ ) = h
   hash (HNmQ h _ ) = h
@@ -67,7 +67,7 @@ instance Hashable HsName where
 data HsName
 %%[[7
   =   HNm   { hsnHNmFld :: !String }
-%%][99
+%%][9999
   =   HNm   { hsnHash :: !Hash, hsnHNmFld :: !String }
 %%]]
   |   HNPos !Int
@@ -75,18 +75,30 @@ data HsName
   |   HNmNr !Int !OrigName
 %%[[7
   |   HNmQ  ![HsName]
-%%][99
+%%][9999
   |   HNmQ  !Hash ![HsName]
 %%]]
 %%]]
   deriving (Eq,Ord)
 %%]
 
+We also need comparison based on name only, not on hash.
+
+%%[7 export(cmpHsNameOnNm)
+%%[[9999
+cmpHsNameOnNm (HNm  h1 s1) (HNm  h2 s2) = compare s1 s2
+cmpHsNameOnNm (HNmQ h1 s1) (HNmQ h2 s2) = compare s1 s2
+%%]]
+cmpHsNameOnNm n1           n2           = compare n1 n2
+%%]
+instance Ord HsName where
+  (HNm h1 s1) == (HNm h2 s2)
+
 %%[1 export(mbHNm)
 mbHNm :: HsName -> Maybe String
 %%[[1
 mbHNm (HNm s  )
-%%][99
+%%][9999
 mbHNm (HNm _ s)
 %%]]
                 = Just (hsnHNmFldToString s)
@@ -100,7 +112,7 @@ hsnFromString :: String -> HsName
 hsnFromString s
 %%[[1
   = HNm s
-%%][99
+%%][9999
   = HNm (hash s) s
 %%]]
 %%]
@@ -131,7 +143,7 @@ instance PP HsName where
 hsnShow :: String -> HsName -> String
 %%[[7
 hsnShow _   (HNm   s  )
-%%][99
+%%][9999
 hsnShow _   (HNm _ s  )
 %%]]
                          = hsnHNmFldToString s
@@ -143,7 +155,7 @@ hsnShow _   (HNmNr n (OrigGlobal hsn))  = "global_x_" ++ show n ++ "_" ++ hsnSho
 hsnShow _   (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ hsnShow "." hsn
 %%[[7
 hsnShow sep (HNmQ   ns)  
-%%][99
+%%][9999
 hsnShow sep (HNmQ _ ns)  
 %%]]
                          = concat $ intersperse sep $ map show ns
@@ -159,7 +171,7 @@ instance Show HsName where
 hsnToList :: HsName -> [HsName]
 %%[[8
 hsnToList (HNmQ   ns) = ns
-%%][99
+%%][9999
 hsnToList (HNmQ _ ns) = ns
 %%]]
 hsnToList n           = [n]
@@ -244,7 +256,7 @@ hsnShowAlphanumericShort x = hsnShowAlphanumeric x
 
 %%[[8
 hsnShowAlphanumeric (HNm s  ) = dontStartWithDigit(stringAlphanumeric s)
-%%][99
+%%][9999
 hsnShowAlphanumeric (HNm _ s) = dontStartWithDigit(stringAlphanumeric $ hsnHNmFldToString s)
 %%]]
 hsnShowAlphanumeric (HNPos p)                   = "y" ++ show p
@@ -255,7 +267,7 @@ hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumer
 %%[[8
 %%[[8
 hsnShowAlphanumeric (HNmQ   ns)
-%%][99
+%%][9999
 hsnShowAlphanumeric (HNmQ _ ns)
 %%]]
                                 = concat $ intersperse "_" $ map hsnShowAlphanumeric ns
@@ -381,7 +393,7 @@ instance HSNM [HsName] where
   mkHNm []  = hsnFromString "" -- ????, or empty alternative of HsName
 %%[[8
   mkHNm ns  = HNmQ ns
-%%][99
+%%][9999
   mkHNm ns  = HNmQ (hashList ns) ns
 %%]]
 %%]
