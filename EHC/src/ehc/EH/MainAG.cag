@@ -108,6 +108,8 @@ WRAPPER AGItf
 %%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
 %%]
 
+%%[(4 hmtyinfer) ag import({EH/FIOpts})
+%%]
 %%[(4 hmtyinfer) ag import({EH/FIEnv})
 %%]
 
