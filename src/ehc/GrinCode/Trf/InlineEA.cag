@@ -40,7 +40,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractLocs(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, Variable, getBaseEnvList, getNr, absFetch, getEnvVar, getNodes, addEnvElems, getEnvSize, throwTag, AbstractValue(..), AbstractNodes(..), evaluateNr, evaluateArgNr)})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -64,10 +64,6 @@ inlineEA doUsageAnalysis (code,hptMap)
 type HptItems       = [ (Int,AbstractValue) ]
 
 
-getLocs :: AbstractValue -> [Int]
-getLocs AbsBottom = []
-getLocs (AbsLocs (Locs xs _)) = Set.toList xs
-
 maximum0 [] = 0
 maximum0 xs = maximum xs
 
@@ -80,7 +76,6 @@ isPartialApplication ((GrTag_PApp _ _), _) = True
 isPartialApplication _ = False
 
 isEmptyAbsVal AbsBottom      = True
-isEmptyAbsVal (AbsLocs (Locs xs m)) = Set.null xs
 isEmptyAbsVal v              = error $ "wrong content of exception variable of binding " ++ show v
 
 
@@ -416,13 +411,6 @@ applyCode unique hptMap nodeName nodeAbsVal appArgs
 %%]
 
 
-%%[(8 codegen grin) hs
-mapUnionWithPlus = Map.unionWith (+)
-mapUnionWithCat  = Map.unionWith (++)
-%%]
-
-
-
 %%[(8 codegen grin)
 
 ATTR AllBind
@@ -431,6 +419,20 @@ ATTR AllBind
                    | 
                    ]
 
+SEM GrModule
+  | Mod     bindL.needsUpdate  =  Map.empty
+
+%%]
+
+%% TODO: rewrite bitrotten code below
+
+{
+mapUnionWithPlus :: Map Int Int -> Map Int Int -> Map Int Int
+mapUnionWithPlus = Map.unionWith (+)
+
+mapUnionWithCat :: Map Int [Int] -> Map Int [Int] -> Map Int [Int]
+mapUnionWithCat  = Map.unionWith (++)
+}
 
 ATTR AllBind
      AllGrExpr
@@ -548,75 +550,14 @@ SEM GrModule
                                   in  un99  -- trace ("un1: " ++ show un1 ++ "pa: " ++ show pa ++ "un99: " ++ show un99) un99
    
 {
-fixp d (x:y:zs)  |  Map.toAscList x == Map.toAscList y  =  (d,x)
-                 |  otherwise                           =  fixp (d+1) (y:zs)
-}
-   
-%%]
-
-
-
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Unsuccesfull attempt below
-
-
-ATTR AllBind
-     AllGrExpr     [ | | evalPoints USE {++} {[]} : {[HsName]} ] 
-
-SEM GrExpr
-  | Eval   lhs.evalPoints = [@nm]
-
-
-ATTR AllBind
-     AllGrExpr     [ useCountMap : {Map.Map Int Int} | | ]
-     
-SEM GrModule
-  | Mod  bindL.useCountMap = let eps =  @bindL.evalPoints
-                                 ols =  origLocs @lhs.hptMap eps
-                                 lfs =  locFreq ols
-                                 mfs =  maxFreq ols lfs
-                                 mmp =  makeMaxMap mfs
-                             in  trace ("origlocs: " ++ show ols ++ "locFreqs: " ++ show lfs ++ "maxFreqs: " ++ show mfs ++ "maxMap: " ++ show mmp) 
-                                        mmp
-
-
-{
-
-origLocs :: HptMap -> [HsName] -> [(HsName, [Int])]
-origLocs hptMap xs
-  =  [ (x, getLocs (getEnvVar hptMap (getNr x)))
-     | x <- xs
-     ]
-
+    
 getLocs :: AbstractValue -> [Int]
 getLocs AbsBottom = []
 getLocs (AbsLocs (Locs xs _)) = Set.toList xs
-
-locFreq :: [(HsName, [Int])] -> Map.Map Int Int
-locFreq ts
- = foldr count Map.empty (concat (map snd ts))
-
-count :: Int -> Map.Map Int Int -> Map.Map Int Int
-count x m = Map.insertWith (+) x 1 m
-
-maxFreq :: [(HsName, [Int])] -> Map.Map Int Int -> [(HsName, Int)]
-maxFreq ts m
- = [ (name, maximum0 fs)
-   | (name, locs) <- ts
-   , let fs = map (\loc -> Map.findWithDefault 0 loc m) locs
-   ]
-
-makeMaxMap :: [(HsName,Int)] -> Map.Map Int Int
-makeMaxMap ts
- = foldr ins Map.empty ts
  
-ins :: (HsName,Int) -> Map.Map Int Int -> Map.Map Int Int
-ins (name,freq) m = Map.insert (getNr name) freq m
-
-
+    
+    
+fixp d (x:y:zs)  |  Map.toAscList x == Map.toAscList y  =  (d,x)
+                 |  otherwise                           =  fixp (d+1) (y:zs)
 }
+

@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
-Traverse a Grin-program it and collect constraint equations for variables and locations.
-Then solve the equations, and return the resulting abstract environment and heap: the \exprit{HptMap}.
+Traverse a Grin-program it and collect constraint equations which ccharacterize the abstract values of all variables.
+Then solve the equations, and return the resulting abstract environment: the \exprit{HptMap}.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 
 This is not a transformation, but a phase that establishes the HPT table.
@@ -42,13 +42,11 @@ heapPointsToAnalysis grmod
 
         -- get four synthesized attributes
         equations   = equations_Syn_GrAGItf syn
-        heapEqs     = heapEqs_Syn_GrAGItf syn
         limitations = limitations_Syn_GrAGItf syn
-        lenHeap     = location_Syn_GrAGItf syn
         lenEnv      = maxVar_Syn_GrAGItf syn + 1
         
         -- now solve the equations
-    in  solveEquations lenEnv lenHeap equations heapEqs limitations
+    in  solveEquations lenEnv equations limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -57,23 +55,13 @@ heapPointsToAnalysis grmod
 %%[(8 codegen grin)
 {- 
 The overall goal is to collect equations that express
-what constraints variables and heaplocations satisfy.
+what constraints variables satisfy.
 -}
 
 ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations   USE {++} {[]} : {Equations}
-                                             heapEqs     USE {++} {[]} : {HeapEquations}
                                              limitations USE {++} {[]} : {Limitations}
                                        ]
 
-{-
-A unique integer "location" is threaded through all expressions to number all Stores locations
-The value "unique", the first unused variable number, is made available to the root
--}
-
-ATTR GrModule 
-     AllDef 
-     AllGrExpr [ | location: Int |  ]
-ATTR GrAGItf   [ | | location : Int ]
 
 ATTR AllGrPat
      AllGrExpr
@@ -81,9 +69,6 @@ ATTR AllGrPat
      AllGlobal
      GrModule
      GrAGItf   [ | | maxVar USE {`max`} {0} : Int ]
-
-SEM GrAGItf
-  | AGItf  module . location = 0
 
 SEM GrVar
   | Var    lhs . maxVar  =  getNr @nm
@@ -278,9 +263,8 @@ SEM GrExpr
                                  (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                                  (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
                                  (InVar tvar        ,  InEnum svar _     )  -> [ IsEnumeration tvar svar ]
-                                 (InBasic tvar      ,  _                 )  -> [ IsKnown tvar AbsBasic ]
-                                 (InEnum  tvar ttags,  _                 )  -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                                 --(InOpq   tvar      ,  _                 )  -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any [])))]
+                                 (InBasic tvar      ,  _                 )  -> [ IsBasic tvar ]
+                                 (InEnum  tvar ttags,  _                 )  -> [ IsTags  tvar ttags ]
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
@@ -301,7 +285,7 @@ buildSelectEquations svar ttag tnms
 buildUnifyEquations :: [Maybe Variable] -> [Variable] -> Equations
 buildUnifyEquations snms tnms
   = [ case mbSvar of
-       Nothing    -> IsKnown tvar AbsBasic
+       Nothing    -> IsBasic tvar
        Just svar  -> IsEqual tvar svar
     | (tvar,mbSvar) <- zip tnms snms
     , tvar /= getNr wildcardNr
@@ -315,32 +299,33 @@ buildUnifyEquations snms tnms
 %%%%%%%%%%%
 %%[(8 codegen grin).store
 {-
-A unique heaplocation is allocated.
 A heap-equation is generated, which associates the heaplocation with the node to be stored.
 An equation is generated, which states that the targetvariable is known to be associated with this heaplocation.
 -}
 
+{
+tagFun :: GrTag -> Maybe Int
+tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
+tagFun (GrTag_App nm)  =  Just (getNr nm)     -- also track overwrite results of App
+tagFun _               =  Nothing
+    
+}
+
+
 SEM GrExpr
-  | Store  lhs . location    =  @lhs.location + 1  
-           lhs . heapEqs     =  case @val.valInfo of
-                                  InNode stag snms  -> [ WillStore @lhs.location stag snms ]
-                                  InVar  svar       -> [ WillEquate @lhs.location svar ]
-                                  _                 -> error "HPT: source of Store should be a node"
-           lhs . equations   =  case @lhs.targetInfo of
-                                  InVar tvar        -> [IsKnown tvar (AbsLocs (Locs (Set.singleton @lhs.location) Nothing))] 
-                                  _                 -> error "HPT: destination of Store should be a variable"
+  | Store  lhs . equations   =  case (@lhs.targetInfo,@val.valInfo) of
+                                  (InVar tvar, InNode stag snms)  -> [IsPointer tvar stag snms] ++ maybe [] (\n->[IsUpdate tvar n]) (tagFun stag)
+                                  _                 -> error "HPT: destination of Store should be a variable, source a node"
 
 {-
 A global definition is similar to a Store expression
 -}
 
 SEM GrGlobal
-  | Global lhs . location    =  @lhs.location + 1
-           lhs . heapEqs     =  case @val.valInfo of
-                                  InNode stag snms  -> [ WillStore @lhs.location stag snms ]
+  | Global lhs . equations   =  case @val.valInfo of
+                                  InNode stag snms  -> let tvar = getNr @nm
+                                                       in  [ IsPointer tvar stag snms ] ++ maybe [] (\n->[IsUpdate tvar n]) (tagFun stag)
                                   _                 -> error "HPT: source of Global should be a node"
-           loc . tvar        =  getNr @nm
-           lhs . equations   =                         [IsKnown @loc.tvar (AbsLocs (Locs (Set.singleton @lhs.location) Nothing))]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -424,9 +409,9 @@ SEM GrExpr
           lhs  .  equations   =  case @lhs.targetInfo of
                                    InVar  tvar       -> [ IsEqual tvar (getNr @nm) ]
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
-                                   InEnum tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                                   InBasic tvar      -> [ IsKnown tvar AbsBasic ]
-                                   -- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
+                                   InEnum tvar ttags -> [ IsTags tvar ttags ]
+                                   InBasic tvar      -> [ IsBasic tvar ]
+                                   _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
 %%]
 
 
@@ -438,11 +423,9 @@ SEM GrExpr
 SEM GrExpr
   | FFI  loc . nodemap   =  Map.fromList ( [ (con, if con==GrTag_Unboxed then [Set.empty] else [] ) | con <- [] {- 20080228 AD: @tagL.self -} ] )
          lhs . equations =  case @lhs.targetInfo of
-                              InVar tvar         -> [ IsKnown tvar (AbsNodes (Nodes @loc.nodemap)) ]
-                              InNode ttag tnms   -> zipWith IsKnown tnms [AbsBasic]
-                              InBasic tvar       -> [ IsKnown tvar AbsBasic ]
-                              InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any []))) ]
+                              InNode ttag tnms   -> map IsBasic tnms
+                              InBasic tvar       -> [ IsBasic tvar ]
+                              InEnum  tvar ttags -> [ IsTags tvar ttags ]
 
 
 %%]
@@ -457,9 +440,8 @@ A single equation is generated, associating the targetvariable with the evaluati
 SEM GrExpr
   | Eval  lhs . equations = case @lhs.targetInfo of
                               InVar tvar         -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
-                              InBasic tvar       -> [ IsKnown tvar AbsBasic ]
-                              InEnum  tvar ttags -> [ IsKnown tvar (AbsTags (Set.fromList ttags)) ]
-                              --InOpq   tvar       -> [ IsKnown tvar (AbsNodes (Nodes (Map.singleton GrTag_Any []))) ]
+                              InBasic tvar       -> [ IsBasic tvar ]
+                              InEnum  tvar ttags -> [ IsTags tvar ttags ]
                               _                  -> error "HPT: Eval target should be a variable or Basic/Enum display"
 %%]
 
@@ -483,7 +465,7 @@ SEM GrExpr
 SEM GrExpr
   | Throw  loc     .  exceptions =  getNr @nm : @lhs.exceptions
            lhs     .  equations  =  case @lhs.targetInfo of
-                                      InVar tvar  -> [ IsKnown tvar AbsBottom ]
+                                      InVar tvar  -> []
                                       _           -> []
 
   | Catch  body    . exceptions  =  []

@@ -48,18 +48,13 @@ evaluateArgNr = HNmNr 5 (OrigNone)
 %% Abstract interpretation domain %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Location, Variable, AbstractLocs(..), AbstractNodes(..), AbstractValue(..), AbstractCall, AbstractCallList)
+%%[(8 codegen grin) export(Variable, AbstractNodes(..), AbstractValue(..), AbstractCall, AbstractCallList)
 %%]
 
 %%[(8 codegen grin).AbstractValue
 
-type Location = Int
 type Variable = Int
 
-
-data AbstractLocs
-  = Locs (Set.Set Location) (Maybe (Set.Set GrTag))
-    deriving (Eq, Ord)
 
 data AbstractNodes
   = Nodes (Map.Map GrTag [Set.Set Variable])
@@ -69,8 +64,8 @@ data AbstractValue
   = AbsBottom
   | AbsBasic
   | AbsTags  (Set.Set GrTag)
-  | AbsLocs  AbstractLocs
   | AbsNodes AbstractNodes
+  | AbsPtr   AbstractNodes    (Set.Set Variable)
   | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
@@ -83,9 +78,6 @@ type AbstractCallList
   = [AbstractCall]
 
 
-instance Show AbstractLocs where
-  show (Locs ls ml) = show (Set.elems ls) ++ show ml
-
 instance Show AbstractNodes where
   show (Nodes ns) = show (Map.assocs ns)
 
@@ -94,8 +86,8 @@ instance Show AbstractValue where
                   AbsBottom   -> "BOT"
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
-                  AbsLocs  al -> "LOCS" ++ show al
                   AbsNodes an -> "NODS" ++ show an
+                  AbsPtr   an vs -> "PTR"  ++ show an  ++ show vs
                   AbsUnion xs -> "UNION" ++ show (Map.assocs xs)
                   AbsError s  -> "ERR: " ++ s
 
@@ -104,14 +96,6 @@ limitIntersect (Just a) (Just b) = Just (Set.intersection a b)
 limitIntersect Nothing  b        = b
 limitIntersect a        _        = a
 
-
-instance Monoid AbstractLocs where
-   mempty = Locs Set.empty Nothing
-   mappend (Locs al am) (Locs bl bm) = let cl = Set.union al bl
-                                       in  --if   Set.size cl < 5000
-                                           --then 
-                                                  Locs cl (limitIntersect am bm)
-                                           -- else trace ("large set: " ++ show cl) AllLocs
 
 instance Monoid AbstractNodes where
    mempty = Nodes Map.empty
@@ -123,12 +107,12 @@ instance Monoid AbstractValue where
     mappend    AbsBottom    b               =  b
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
-    mappend   (AbsLocs  al)   (AbsLocs  bl) =  AbsLocs      (mappend al bl)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (mappend an bn)
+    mappend   (AbsPtr   an vs)(AbsPtr   bn ws) =  AbsPtr    (mappend an bn) (Set.union vs ws)
     mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
-    mappend a               b               =  AbsError $ "Wrong variable usage: Location, node or basic value mixed" ++ show a ++ " / " ++ show b
+    mappend a               b               =  AbsError $ "Wrong variable usage: pointer, node or basic value mixed" ++ show a ++ " / " ++ show b
 
 
 -- (Ord GrTag) is needed for (Ord AbstractValue) which is needed for Map.unionWith in mergeNodes
@@ -184,28 +168,26 @@ instance Ord GrTag where
 %% Abstract interpretation constraints     %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(Equation(..), Equations, HeapEquation(..), HeapEquations, Limitation, Limitations, limitIntersect)
+%%[(8 codegen grin) export(Equation(..), Equations, Limitation, Limitations, limitIntersect)
 
 data Equation
-  = IsKnown               Variable  AbstractValue
+  = IsBasic               Variable
+  | IsTags                Variable  [GrTag]
+  | IsPointer             Variable  GrTag [Maybe Variable]
+  | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
+  | IsUpdate              Variable  Variable
   | IsEqual               Variable  Variable
   | IsSelection           Variable  Variable Int GrTag
-  | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
   | IsEnumeration         Variable  Variable
   | IsEvaluation          Variable  Variable                     Variable
   | IsApplication         Variable  [Variable]                   Variable
     deriving (Show, Eq)
 
-data HeapEquation
-  = WillStore             Location  GrTag [Maybe Variable]
-  | WillEquate            Location  Variable
-    deriving (Show, Eq)
 
 type Limitation
   = (Variable, [GrTag])
 
 type Equations     = [Equation]
-type HeapEquations = [HeapEquation]
 type Limitations   = [Limitation]
 
 %%]
@@ -214,36 +196,24 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, getHeapLoc, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
-type HptMap  = ( Array Int AbstractValue   -- env
-               , Array Int AbstractValue   -- heap
-               )
+type HptMap  = Array Int AbstractValue
 
 showHptElem :: (Int,AbstractValue) -> String
 showHptElem (n,v) = show n ++ ": " ++ show v
 
 showHptMap :: HptMap -> String
-showHptMap (ae, ah)
-  =  unlines (  ( "HEAP"
-                : map showHptElem (assocs ah)
-                )
-             ++ ( "BASE ENVIRONMENT"
-                : map showHptElem (assocs ae)
-                )
-             )
-     
+showHptMap ae
+  =  unlines (map showHptElem (assocs ae))
 
 getBaseEnvList :: HptMap -> [(Int,AbstractValue)]
-getBaseEnvList (ae,_) = assocs ae
+getBaseEnvList ae = assocs ae
      
 getEnvVar :: HptMap -> Int -> AbstractValue
-getEnvVar (ae,_) i  | snd (bounds ae) >= i = (ae ! i)
-                    | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
+getEnvVar ae i  | snd (bounds ae) >= i = (ae ! i)
+                | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
                          
-getHeapLoc :: HptMap -> Int -> AbstractValue
-getHeapLoc (_,ah) i = ah ! i
-
 
 limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
 limit Nothing v = v
@@ -254,9 +224,16 @@ validTag ts (t@(GrTag_Con _ _ _) , _)  = Set.member t ts
 validTag _  _                          = True
 
 
+absFetchDirect :: HptMap -> Variable -> AbstractValue
+absFetchDirect a i  = case getEnvVar a i of
+                        AbsPtr an vs  -> AbsNodes an
+                        AbsBottom     -> AbsNodes (Nodes Map.empty)
+                        av            -> error ("AbsFetchDirect i=" ++ show i ++ " av=" ++ show av)
+
+
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AbsLocs (Locs l m) -> mconcat $ map (limit m . getHeapLoc a) (Set.toList l)
+                             AbsPtr an vs  -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs))
                              AbsBottom     -> AbsNodes (Nodes Map.empty)
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
@@ -276,21 +253,20 @@ getNodes av = case av of
 
 isBottom av = case av of
                   AbsBottom   ->  True
-                  AbsLocs (Locs l m) ->  Set.null l
                   AbsNodes n  ->  False -- Map.null n
                   AbsError s  ->  error $ "analysis error isBottom: " ++ s
                   otherwise   ->  False
 
 addEnvElems :: HptMap -> [AbstractValue] -> HptMap
-addEnvElems (e,h) vs
+addEnvElems e vs
   =  let (low, high) = bounds e
          extra = length vs 
-         e2 = listArray (low, high+extra) (elems e ++ vs)
-     in (e2,h)
+         e2    = listArray (low, high+extra) (elems e ++ vs)
+     in e2
 
 getEnvSize :: HptMap -> Int
-getEnvSize (e,h) = let (low,high) = bounds e
-                   in  high-low+1
+getEnvSize e  = let (low,high) = bounds e
+                in  high-low+1
 
 isPAppTag :: GrTag -> Bool
 isPAppTag (GrTag_PApp _ _) = True

@@ -186,8 +186,7 @@ doCompileGrin input opts
          
          ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
-         ; transformCodeChgHpt   (inlineEA (ehcOptPriv options))
-                                                    "InlineEA" 
+         ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
 
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-132-possibleCase"

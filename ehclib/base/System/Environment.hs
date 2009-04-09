@@ -98,8 +98,9 @@ getProgName =
 
 unpackProgName  :: Ptr (Ptr CChar) -> IO String   -- argv[0]
 unpackProgName argv = do
-  s <- peekElemOff argv 0 >>= peekCString
-  return (basename s)
+  { s <- peekElemOff argv 0 >>= peekCString
+  ; return (basename s)
+  }
   where
    basename :: String -> String
    basename f = go f f
