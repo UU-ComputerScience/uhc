@@ -44,6 +44,7 @@ ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
 ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int}  embed : {EmbedFunction} | | ]
 ATTR Statement Statements Alternative Alternatives Variable [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives Variable [ | | usedButNotDefined USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 ATTR Statement Statements Alternative Alternatives [ numberParameters : {Int} | | ]
 ATTR Statement  [ | | trfStats: {[Statement]} ]
 ATTR Function Functions  [ optOwn  : {Int}  | | ]
@@ -110,6 +111,9 @@ SEM Variable
   | Unembedded      lhs . localsSet = case @name of
                                        HNmNr _ (OrigGlobal _) -> Set.empty
                                        _                      -> Set.singleton @name
+  | Unembedded      lhs . usedButNotDefined = case @name of
+                                               HNmNr _ (OrigGlobal _) -> Set.empty
+                                               _                      -> Set.singleton @name
 
 SEM Variable
   | Unembedded   lhs.trf = @lhs.embed @name
