@@ -164,6 +164,11 @@ SEM CodeAGItf
   | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
 %%]
 
+%%[(8 codegen grin)
+SEM CExpr
+  | Lam			body		.	arityMp		=	Map.delete @arg @lhs.arityMp
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

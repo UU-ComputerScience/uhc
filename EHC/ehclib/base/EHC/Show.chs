@@ -13,7 +13,10 @@ module EHC.Show
 import EHC.Prelude
 import EHC.Char
 import EHC.Float
+
+#include "TupleInstance.h"
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default instances for Show: tuple
@@ -175,3 +178,18 @@ roundTo base d is =
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tuple instances, using 'poor mans deriving' macros
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+showTuple :: [ShowS] -> ShowS
+showTuple ss = showChar '('
+             . foldr1 (\s r -> s . showChar ',' . r) ss
+             . showChar ')'
+
+TUPLE2_UNOP1_INSTANCE(Show,showsPrec,_,s,shows,showTuple [,COMMA,] s)
+TUPLE3_UNOP1_INSTANCE(Show,showsPrec,_,s,shows,showTuple [,COMMA,] s)
+TUPLE4_UNOP1_INSTANCE(Show,showsPrec,_,s,shows,showTuple [,COMMA,] s)
+TUPLE5_UNOP1_INSTANCE(Show,showsPrec,_,s,shows,showTuple [,COMMA,] s)
+%%]

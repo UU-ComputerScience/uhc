@@ -17,7 +17,6 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     Floating   (pi, exp, log, sqrt, (**), logBase, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, asinh, acosh, atanh),
     RealFrac   (properFraction, truncate, round, ceiling, floor),
     RealFloat  (floatRadix, floatDigits, floatRange, decodeFloat, encodeFloat, exponent, significand, scaleFloat, isNaN, isInfinite, isDenormalized, isIEEE, isNegativeZero, atan2),
-    Ix         (range, index, unsafeIndex, inRange, rangeSize),
     Enum       (succ, pred, toEnum, fromEnum, enumFrom, enumFromThen, enumFromTo, enumFromThenTo),
     Functor    (fmap),
     Monad      ((>>=), (>>), return, fail),
@@ -501,28 +500,8 @@ signumReal x | x == 0    =  0
 
 
 --------------------------------------------------------------
--- class Ix, Enum
+-- class Enum
 --------------------------------------------------------------
-
-class (Ord a) => Ix a where
-    range                :: (a,a) -> [a]
-        -- The unchecked variant unsafeIndex is non-standard, but useful
-    index, unsafeIndex   :: (a,a) -> a -> Int
-    inRange              :: (a,a) -> a -> Bool
-    rangeSize            :: (a,a) -> Int
-
-        -- Must specify one of index, unsafeIndex
-    index b i | inRange b i = unsafeIndex b i
-              | otherwise   = error "Ix.index: index out of range"
-    unsafeIndex b i = index b i
-
-    rangeSize b@(_l,h) | inRange b h = unsafeIndex b h + 1
-                       | otherwise   = 0
-        -- NB: replacing "inRange b h" by  "l <= u"
-        -- fails if the bounds are tuples.  For example,
-        --      (1,2) <= (2,1)
-        -- but the range is nevertheless empty
-        --      range ((1,2),(2,1)) = []
 
 class Enum a where
     succ, pred           :: a -> a
