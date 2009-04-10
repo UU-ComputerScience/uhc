@@ -108,6 +108,7 @@ typedef int Bool ;
 #include "utils.h"
 #include "priminline.h"
 #include "grinbc/gbprimdecl.h"
+#include "grinbc/gbprim-array.h"
 #include "grinbc/gbprim.h"
 #include "grinbc/gbprim-integer.h"
 #include "grinbc/gbprim-C.h"
