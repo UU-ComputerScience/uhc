@@ -78,7 +78,7 @@ EHC_INS_FLAG							:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(EHC_BASE)$(EHC_VARIANT_AS
 ###########################################################################################
 
 # assumed packages, useful only for prelude variants
-EHC_PACKAGES_ASSUMED					:= base
+EHC_PACKAGES_ASSUMED					:= base array
 #EHC_PACKAGES_ASSUMED					:= base containers
 
 ###########################################################################################

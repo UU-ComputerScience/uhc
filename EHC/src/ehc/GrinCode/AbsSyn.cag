@@ -61,6 +61,9 @@ DATA GrExpr
                 callconv        : {FFIWay}
                 impEnt          : {ForeignEnt}
 %%]]
+%%[[99
+                ffiAnnot        : {GrFFIAnnot}
+%%]]
                 argL            : GrValL
   | Eval        nm              : {HsName}
   | App         nm              : {HsName}
@@ -170,6 +173,12 @@ DATA GrAdapt
 TYPE GrSplitL   =   [GrSplit]
 TYPE GrAdaptL   =   [GrAdapt]
 
+%%]
+
+%%[(99 codegen grin)
+DATA GrFFIAnnot
+  | IsResEval	isEvaluated		: {Bool}		-- is the result already evaluated? Default: yes, but e.g. array primitives may have (and return when indexed) unevaluated elements.
+  												-- Whether this is the solution for longterm remains to be seen.
 %%]
 
 %%[(8 codegen grin)

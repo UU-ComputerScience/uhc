@@ -28,10 +28,11 @@ data RCEEnv
       , rceCaseIds          :: !UIDS
       , rceCaseCont         :: !CExpr
       , rceEHCOpts          :: !EHCOpts
+      -- , rceIsStrict			:: !Bool			-- scrutinee must be evaluated
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
-emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts
+emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts -- True
 %%]
 
 %%[(8 codegen)

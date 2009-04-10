@@ -55,6 +55,8 @@ EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
+EHCLIB_SYNC_ALL_PKG_array_ASIS			:= 
+EHCLIB_SYNC_ALL_PKG_array				:=
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
 
@@ -99,16 +101,17 @@ EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB
 EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
 # as haskell, as is in svn repo
-EHCLIB_HS_ALL_SRC_HS					:= $(foreach suff,hs lhs, \
-											$(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.$(suff) \
-											           $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.$(suff) \
-											           $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*/*.$(suff) \
-											 ) \
-											)
+EHCLIB_HS_ALL_SRC_HS					:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
+											$(foreach suff,hs lhs,\
+											 $(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/*.$(suff) \
+											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*.$(suff) \
+											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*/*.$(suff) \
+											  )))
+
 EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_HS_ALL_SRC_HS))
 
 # as C .h include file, as is in svn repo
-EHCLIB_ASIS_ALL_SRC_ASIS				:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)include/*.h)
+EHCLIB_ASIS_ALL_SRC_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/include/*.h))
 EHCLIB_ASIS_ALL_DRV_ASIS				:= $(patsubst $(EHCLIB_SRC_PREFIX)%.h,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.h,$(EHCLIB_ASIS_ALL_SRC_ASIS))
 
 # as haskell, from frozen sync
@@ -120,12 +123,6 @@ EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCL
 EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS)
 EHCLIB_ALL_DRV_ASIS						:= $(EHCLIB_FROZEN_ALL_DRV_ASIS) $(EHCLIB_ASIS_ALL_DRV_ASIS)
 EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS)
-
-# all names, with / as separator
-#EHCLIB_ALL_NAMES_base					:= $(patsubst $(EHCLIB_BASE_SRC_PREFIX)%.chs,%,$(EHCLIB_CHS_ALL_SRC_CHS)) \
-#											$(patsubst $(EHCLIB_BASE_SRC_PREFIX)%.hs,%,$(EHCLIB_HS_ALL_SRC_HS)) \
-#											$(EHCLIB_SYNC_ALL_PKG_base)
-#EHCLIB_ALL_NAMES_containers				:= $(EHCLIB_SYNC_ALL_PKG_containers)
 
 # distribution
 EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
@@ -144,6 +141,10 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 # ehclib targets
 ###########################################################################################
 
+#EHCLIB_DEBUG_OPTS						= -v4 --debug-stopat-hi-error=1 
+#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
+EHCLIB_DEBUG_OPTS						= 
+
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
 			$(if $(EHC_CFG_USE_PRELUDE),$(EHCLIB_ALL_DRV),) \
@@ -152,9 +153,9 @@ ehclib-variant-dflt: \
 	     ,pkgs="" ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
-	        time \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          --cpp \
+	          $(EHCLIB_DEBUG_OPTS) \
 	          --compile-only \
 	          --hide-all-packages \
 	          --target=$(EHC_VARIANT_TARGET) \
@@ -170,6 +171,7 @@ ehclib-variant-dflt: \
 	     ,)
 
 #	     ,$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --cpp --target=$(EHC_VARIANT_TARGET) $(EHCLIB_HS_MAIN_DRV_HS) \
+#	      set -xv;\
 
 ###########################################################################################
 # make all ehclibs target

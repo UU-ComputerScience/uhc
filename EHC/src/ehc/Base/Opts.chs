@@ -59,11 +59,12 @@ data ImmediateQuitOption
 %%% Category of output, used for specifying which location something should be put
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(OutputFor(..))
-data OutputFor
+%%[8 export(InOrOutputFor(..))
+data InOrOutputFor
   = OutputFor_Module
 %%[[99
   | OutputFor_Pkg
+  | InputFrom_Loc FileLoc
 %%]]
 %%]
 

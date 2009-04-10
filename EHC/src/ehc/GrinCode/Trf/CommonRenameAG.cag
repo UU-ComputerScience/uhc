@@ -47,6 +47,8 @@ SEM GrExpr
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf
 %%][94
   | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @argL.trf
+%%][99
+  | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @ffiAnnot @argL.trf
 %%]]
   | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
   | FetchNode   lhs         .   trf             =   GrExpr_FetchNode  (nmAliasRepl @lhs.nmAliasMp @nm)

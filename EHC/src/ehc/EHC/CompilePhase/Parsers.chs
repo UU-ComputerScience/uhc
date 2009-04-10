@@ -157,7 +157,7 @@ cpParseHI modNm
               fpH     = fpathSetSuff "hi" fp
 %%][99
               -- if outputdir is specified, use that location to possibly read hi from.
-              fpH     = mkOutputFPath opts modNm fp "hi"
+              fpH     = mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi"
 %%]]
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpH
        ; fnfh <- lift $ openFPath fpH ReadMode False

@@ -110,7 +110,7 @@ cpGetMetaInfo gm modNm
 %%[[20
                                               (fpathSetSuff "hi"        fp     )
 %%][99
-                                              (mkOutputFPath opts modNm fp "hi")
+                                              (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
 %%]]
                  )
 %%[[(20 codegen)

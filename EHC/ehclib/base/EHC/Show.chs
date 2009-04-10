@@ -7,6 +7,8 @@ module EHC.Show
   , showFloat, showInt
   
   , showIntAtBase, showHex, showOct
+  
+  , appPrec, appPrec1
   )
   where
 
@@ -176,6 +178,16 @@ roundTo base d is =
        (c,ds) = f (n-1) xs
        i'     = c + i
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Precedence levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+appPrec, appPrec1 :: Int
+appPrec = 10        -- Precedence of application:
+appPrec1 = 11       -- appPrec + 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

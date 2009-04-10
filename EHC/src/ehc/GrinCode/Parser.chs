@@ -68,8 +68,15 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
 %%][94
                 <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent))
+%%][99
+                <|>  (\(conv,_) ent annot -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent) annot)
+%%]]
+%%[[94
                                     <$  pKey "ffi"
                                     <*> pFFIWay <*> pString
+%%]]
+%%[[99
+                                    <*> (GrFFIAnnot_IsResEval <$> pBool)
 %%]]
                                     <*> pValL
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm

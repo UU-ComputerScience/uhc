@@ -92,7 +92,9 @@ SEM Expr
 %%]
                             .   howToBind   =   if @isStrict then CBindings_Strict else CBindings_Rec
                             .   letCBindL   =   [(@howToBind,@decls.cbindL)]
-                            .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @body.cexpr @letCBindL
+                            .   letCBindOtherL
+                                            =   []
+                            .   cexpr       =   foldr (\(c,b) e -> mkCExprLet c b e) @letCBody @letCBindRemL
   | App AppImpred
 %%[[12
     AppImpl
@@ -153,7 +155,8 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | Let         loc         .   letCBindL   :=  [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
+  | Let         loc         .   letCBindOtherL
+                            				:=  [ (CBindings_Rec,@chrScopeBindL) ]
   | App AppImpred
 %%[[12
     AppImpl
@@ -651,6 +654,14 @@ SEM Decl
 Front/back bindings are inserted before/after the other bindings, though only on top level.
 Meant for global defs like FFI/FFE
 
+%%[(8 codegen) hs
+mkLetCBodyBindL :: Bool -> CBindingsCateg -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> CExpr -> ([(CBindingsCateg,CBindL)],CExpr)
+mkLetCBodyBindL isStrict howToBind locBindL locOthBindL bodyBindL body
+  = if isStrict
+    then (locOthBindL,foldr (\(c,b) e -> mkCExprLet c b e) body (locBindL ++ bodyBindL))
+    else (locOthBindL ++ locBindL ++ bodyBindL, body)
+%%]
+
 %%[(8 codegen)
 ATTR
   Expr
@@ -664,9 +675,9 @@ ATTR
     ]
 
 SEM Expr
-  | Let         lhs         .   letCBody        =   @body.letCBody
-                            .   letCBindL       =   @letCBindL ++ @body.letCBindL
-                            .   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
+  | Let         (loc.letCBindRemL,loc.letCBody) =   mkLetCBodyBindL @isStrict @howToBind @letCBindL @letCBindOtherL @body.letCBindL @body.letCBody
+                lhs			.	letCBindL		=	@letCBindRemL
+                			.   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
 %%[[94
                             .   backCBindL      =   @backCBindL ++ @body.backCBindL
 %%]]
@@ -677,6 +688,10 @@ SEM Expr
                             .   backCBindL      =   []
 %%]]
 %%]
+  | Let         lhs         .   (letCBindL,letCBody)
+                                                =   mkLetCBodyBindL @isStrict @howToBind @letCBindL @body.letCBindL @body.letCBody
+  | Let         lhs         .   letCBody        =   @body.letCBody
+                            .   letCBindL       =   @letCBindL ++ @body.letCBindL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Class
