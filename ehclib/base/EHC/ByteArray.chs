@@ -3,7 +3,7 @@ Interface to ByteArray, in several varieties: mutable and immutable.
 Offering the ByteArray related primitives from GHC.Prim.
 
 Content is not garbage collected, just bytes.
-For arrays with GC content see EHC.Array.
+For arrays with GC content see EHC.BoxArray.
 %%]
 
 %%[99

@@ -223,10 +223,11 @@ PRIM GB_Word gb_primSizeofByteArray( GB_NodePtr bytearray )
 %%[99
 PRIM GB_NodePtr gb_primNewArray( GB_Word nWords, GB_Word initVal )
 {
+	// printf( "gb_primNewArray n=%d\n", nWords ) ;
 	GB_NodePtr array ;
 	GB_NodeAlloc_Array_In( nWords, array ) ;
 	int i ;
-	for ( i = 0 ; i << nWords ; i++ ) {
+	for ( i = 0 ; i < nWords ; i++ ) {
 		array->content.fields[i] = initVal ;
 	}
 	return array ;
@@ -248,13 +249,15 @@ PRIM GB_Word gb_primSameArray( GB_NodePtr array1, GB_NodePtr array2 )
 %%[99
 PRIM GB_Word gb_primIndexArray( GB_NodePtr array, GB_Word inx )
 {
+	// printf( "gb_primIndexArray i=%d\n", inx ) ;
 	return array->content.fields[inx] ;
 }
 
 PRIM GB_Word gb_primWriteArray( GB_NodePtr array, GB_Word inx, GB_Word val )
 {
+	// printf( "gb_primWriteArray i=%d v=%x\n", inx, val ) ;
 	array->content.fields[inx] = val ;
-	return (GB_Word)gb_Unit ;																										\
+	return (GB_Word)gb_Unit ;
 }
 
 %%]

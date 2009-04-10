@@ -318,9 +318,9 @@ SEM Module
 %%]]
                                             =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm)
                                                                        >-< vlist [ "#include" >#< pp (show i)
-                                                                                 | i <- "rts.h"
+                                                                                 | i <- ["rts.h"]
 %%[[94
-                                                                                        : @includeL
+                                                                                        ++ @includeL
 %%]]
                                                                                  ]
                                                     strNmL  = [ (@ppNmAString i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]

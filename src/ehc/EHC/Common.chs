@@ -125,20 +125,23 @@ mkShellCmd = concat . intersperse " "
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name of output + possible dir which is preprended
+%%% Name of in/output + possible dir which is preprended
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkOutputFPathFor)
-mkOutputFPathFor :: FPATH nm => OutputFor -> EHCOpts -> nm -> FPath -> String -> (FPath,Maybe String)
-mkOutputFPathFor outputfor opts modNm fp suffix
+%%[8 export(mkInOrOutputFPathDirFor)
+mkInOrOutputFPathDirFor :: FPATH nm => InOrOutputFor -> EHCOpts -> nm -> FPath -> String -> (FPath,Maybe String)
+mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
 %%[[8
   = (fpathSetSuff suffix fp', Nothing)
   where fp' = fp
 %%][99
   = (fpathSetSuff suffix fp', d)
-  where (fp',d) = case outputfor of
-                    OutputFor_Module -> f ehcOptOutputDir
-                    OutputFor_Pkg    -> f ehcOptOutputPkgLibDir
+  where (fp',d) = case inoutputfor of
+                    OutputFor_Module   -> f ehcOptOutputDir
+                    OutputFor_Pkg      -> f ehcOptOutputPkgLibDir
+                    InputFrom_Loc l 
+                      | filelocIsPkg l -> f (const Nothing)
+                      | otherwise      -> f ehcOptOutputDir
         f g     = case g opts of
                     Just d -> (fpathPrependDir d' $ mkFPath modNm, Just d')
                            where d' = filePathUnPrefix d
@@ -146,9 +149,14 @@ mkOutputFPathFor outputfor opts modNm fp suffix
 %%]]
 %%]
 
+%%[8 export(mkInOrOutputFPathFor)
+mkInOrOutputFPathFor :: FPATH nm => InOrOutputFor -> EHCOpts -> nm -> FPath -> String -> FPath
+mkInOrOutputFPathFor inoutputfor opts modNm fp suffix
+  = fst $ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
+%%]
+
 %%[8 export(mkOutputFPath)
 mkOutputFPath :: FPATH nm => EHCOpts -> nm -> FPath -> String -> FPath
-mkOutputFPath opts modNm fp suffix
-  = fst $ mkOutputFPathFor OutputFor_Module opts modNm fp suffix
+mkOutputFPath = mkInOrOutputFPathFor OutputFor_Module
 %%]
 

@@ -34,7 +34,7 @@ cpLinkO modNmL pkgNm
   = do { cr <- get
        ; let (crsi,opts) = crBaseInfo' cr
              codeFiles   = [ fpathToStr o | m <- modNmL, o <- ecuGenCodeFiles $ crCU m cr ]
-             (libFile,_) = mkOutputFPathFor OutputFor_Pkg opts l l (fpathSuff l)
+             (libFile,_) = mkInOrOutputFPathDirFor OutputFor_Pkg opts l l (fpathSuff l)
                          where l = mkFPath $ Cfg.mkCLibFilename "" pkgNm
              linkCode    = map mkShellCmd $ Cfg.mkShellCmdLibtool (fpathToStr libFile) codeFiles
        ; when (ehcOptVerbosity opts >= VerboseALot)

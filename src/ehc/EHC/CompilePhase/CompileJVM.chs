@@ -84,7 +84,7 @@ cpLinkJar mbManif modNmL jarMk
              codeFiles = [ o | m <- modNmL, o <- ecuGenCodeFiles $ crCU m cr ]
              (libFile,mbLibDir)
                        = (libf,libd')
-                       where (libf,libd) = mkOutputFPathFor OutputFor_Pkg opts l1 l2 "jar"
+                       where (libf,libd) = mkInOrOutputFPathDirFor OutputFor_Pkg opts l1 l2 "jar"
                              (l1,l2,libd')
                                = case jarMk of
                                    JarMk_Pkg  p    -> (fp, fp, fmap (\d -> d ++ "/" ++ p) libd)

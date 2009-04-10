@@ -1,6 +1,6 @@
-# limits
-# 20070904: does not work under cygwin
-#TEST_LIMIT_TIME						:= 5
+###########################################################################################
+# defs
+###########################################################################################
 
 # this file
 TEST_MKF							:= $(TEST_SRC_PREFIX)files.mk
@@ -9,10 +9,31 @@ TEST_MKF							:= $(TEST_SRC_PREFIX)files.mk
 TEST_REGRESS_ALL_SRC				:= $(wildcard $(TEST_REGRESS_SRC_PREFIX)*.eh)
 TEST_REGRESS_EXP_DRV				:= $(wildcard $(TEST_REGRESS_SRC_PREFIX)*.eh.exp*)
 
+# frozen expected output
+TEST_FROZEN_EXPECT_NAME				:= frozen-test-expect
+TEST_FROZEN_EXPECT_ARCH				:= $(TEST_FROZEN_EXPECT_NAME).tgz
+TEST_FROZEN_EXPECT_EXP				:= $(wildcard $(TEST_REGRESS_SRC_PREFIX)99/*.hs.exp*)
+
 # distribution
 TEST_DIST_FILES						:= $(TEST_REGRESS_ALL_SRC) $(TEST_REGRESS_EXP_DRV) $(TEST_MKF)
 
-# rules
+###########################################################################################
+# targets, for freeze/thaw of expected test output
+###########################################################################################
+
+freeze-test-expect:
+	cd $(TEST_REGRESS_SRC_PREFIX) ; \
+	tar cfz $(TEST_FROZEN_EXPECT_ARCH) $(patsubst $(TEST_REGRESS_SRC_PREFIX)%,%,$(TEST_FROZEN_EXPECT_EXP))
+
+thaw-test-expect:
+	cd $(TEST_REGRESS_SRC_PREFIX) ; \
+	tar xfz $(TEST_FROZEN_EXPECT_ARCH)
+
+###########################################################################################
+# targets, for regression testing
+###########################################################################################
+
+# make lists holding all test files for a variant
 test-lists:
 	@cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	shopt -s nullglob ; \

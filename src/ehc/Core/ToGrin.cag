@@ -547,6 +547,41 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI binding: evaluation need
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The default is to evaluate arguments, and assume the primitive returns an evaluated result.
+These defaults are overridden by a table in BuiltinPrims, used here.
+
+%%[(99 codegen grin) hs
+evalArg :: Bool -> HsName -> GrExpr
+evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm)
+
+evalRes :: Bool -> HsName -> GrExpr -> GrExpr
+evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm) else e
+%%]
+
+%%[(99 codegen grin)
+SEM CBind
+  | FFI         loc         .   mbPrimNeedEval
+                                            =   lookupPrimNeedsEval @impEntNm
+                            .   primArgNeedsEvalL
+                                            =   maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) @mbPrimNeedEval
+                            .   primResNeedsEval
+                                            =   maybe False primResNeedEval @mbPrimNeedEval
+%%]
+
+%%[(8 codegen grin).evalRes
+SEM CBind
+  | FFI         loc         .   evalRes     =   id
+%%]
+
+%%[(99 codegen grin).evalRes -8.evalRes
+SEM CBind
+  | FFI         loc         .   evalRes     =   evalRes @primResNeedsEval @nmEvalRes
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FFI binding: plain stuff
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -568,10 +603,10 @@ SEM CBind
                             .   isEnumable  =   \n -> case dataGamLookup n @lhs.dataGam of
                                                         Just dgi -> dgiMaxConstrArity dgi == 0
                                                         _        -> False
-                            .   (nmRes,nmArgL,nmArgPatL)
-                                            =   let  (nmRes:nmArgL) = take (length @argTyL + 1) (hsnUniqSupply @lUniq)
+                            .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
+                                            =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
-                                                in   (nmRes,nmArgL,nmArgPatL)
+                                                in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  mbTagL ty           = case dataGamTagsOfTy ty @lhs.dataGam of
                                                                              Just ts        -> Just [ GrTag_Con (mkGrTagAnn (ctagArity t) (ctagMaxArity t)) (ctagTag' t) (ctagNm t) | t <- ts ]   -- '
                                                                              _ | tyIsVar ty -> Just [ GrTag_Any ]
@@ -622,23 +657,27 @@ SEM CBind
                                                        = GrExpr_Seq (GrExpr_Eval n) p
 %%][96
                                                      mkEval (n,needEval,p)
-                                                       = GrExpr_Seq (if needEval then GrExpr_Eval n else GrExpr_Unit (GrVal_Var n)) p
+                                                       = GrExpr_Seq (evalArg needEval n) p
 %%]]
                                                 in   [GrBind_Bind @nm GrBindAnnNormal (@nmArgL ++ @nmArgLExtra)
                                                         (foldr mkEval
-                                                               (@wrapRes
+                                                               (@evalRes
+                                                                $ @wrapRes
                                                                 $ mkRes @resTyAdapted @nmRes
 %%[[8
                                                                         (GrExpr_FFI @impEnt
 %%][94
                                                                         (GrExpr_FFI @callconv @impEnt
 %%]]
+%%[[99
+                                                                                    (GrFFIAnnot_IsResEval (not @primResNeedsEval))
+%%]]
                                                                                     (map GrVal_Var @nmArgPatL
                                                                )        )           )
 %%[[8
                                                         $ zip @nmArgL
 %%][96
-                                                        $ zip3 @nmArgL (maybe (repeat True) (\p -> primArgNeedEval p ++ repeat True) (lookupPrimNeedsEval @impEntNm))
+                                                        $ zip3 @nmArgL @primArgNeedsEvalL
 %%]]
                                                         $ zipWith mkPat @argTyL
                                                         $ @nmArgPatL

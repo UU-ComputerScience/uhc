@@ -265,6 +265,8 @@ SEM GrExpr
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
 %%][94
   | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @argL.grTrf
+%%][99
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @ffiAnnot @argL.grTrf
 %%]]
 
 SEM GrTag

@@ -76,6 +76,11 @@ instance PPForHI GrExpr where
   ppForHI = ppGrExpr' CfgPP_HI
 %%]
 
+%%[(99 codegen grin) hs
+ppGrFFIAnnot :: GrFFIAnnot -> PP_Doc
+ppGrFFIAnnot (GrFFIAnnot_IsResEval b) = pp b
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Config how to print names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,7 +189,7 @@ SEM GrExpr
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
   | Call        lhs         .   pp          =   "call"  >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
 %%[[8
-  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (@ppent : @argL.ppL)
+  | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (@ppent : @ppannot : @argL.ppL)
 %%][8_2
   | FFI         lhs         .   pp          =   "foreign" >#< ppSpaced (pp @nm : @argL.ppL)
 %%]]
@@ -192,6 +197,11 @@ SEM GrExpr
   | FFI         loc         .   ppent       =   pp @nm
 %%][94
   | FFI         loc         .   ppent       =   @callconv >#< "\"" >|< @impEnt >|< "\""
+%%]]
+%%[[8
+  | FFI         loc         .   ppannot     =   empty
+%%][99
+  | FFI         loc         .   ppannot     =   ppGrFFIAnnot @ffiAnnot
 %%]]
 %%[[8
   | Eval        lhs         .   pp          =   "eval" >#< @lhs.ppGrNm @nm

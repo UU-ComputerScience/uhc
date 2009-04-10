@@ -23,6 +23,7 @@ Ideally, these tables should be merged.
 data PrimitiveNeedsEval
   = Prim    
       { primArgNeedEval     :: ![Bool]  		-- default: True
+      , primResNeedEval     :: ! Bool   		-- default: False
       }
 
 lookupPrimNeedsEval :: {- Backend -> -} String -> Maybe PrimitiveNeedsEval
@@ -38,8 +39,13 @@ primsNeedsEval :: Map.Map String ({- Map.Map Backend -} PrimitiveNeedsEval)
 primsNeedsEval
   = Map.fromList
       [ 
-        ( "primCatchException", Prim [False,False] )
-      , ( "primThrowException", Prim [False] )
+        ( "primCatchException"	, Prim [False,False]		False )
+      , ( "primThrowException"	, Prim [False] 				False )
+%%[[99
+      , ( "primNewArray"		, Prim [True,False] 		False )
+      , ( "primIndexArray"		, Prim [True,True] 			True  )
+      , ( "primWriteArray"		, Prim [True,True,False] 	False )
+%%]]
       ]
 %%]
 

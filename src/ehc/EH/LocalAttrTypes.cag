@@ -67,6 +67,8 @@ SEM *
 		loc.finGathPolGam  				: PolGam
 		loc.downFIOpts 					: FIOpts
 		loc.fiOpts 						: FIOpts
+		loc.altsFiOpts 					: FIOpts
+		loc.recFiOpts 					: FIOpts
 		loc.fldL  						: {[HsName]}
 		loc.fldS  						: {Set.Set HsName}
 		loc.fo_  						: FIOut

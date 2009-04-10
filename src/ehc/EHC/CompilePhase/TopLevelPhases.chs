@@ -274,9 +274,9 @@ cpEhcModuleCompile1 targHSState modNm
 %%[[99
                || st == LHSStart
 %%]]
-             -> do { cpEhcHaskellModulePrepare1 modNm
+             -> do { cpEhcHaskellModulePrepareHS1 modNm
                    ; modNm' <- cpEhcHaskellImport stnext modNm
-                   ; cpEhcHaskellModulePrepare2 modNm'
+                   ; cpEhcHaskellModulePrepareHS2 modNm'
                    ; cpMsg modNm' VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
@@ -289,7 +289,7 @@ cpEhcModuleCompile1 targHSState modNm
              where stnext = hsstateNext st
            (ECUSHaskell HIStart,Just HSOnlyImports)
              -> do { cpMsg modNm VerboseNormal ("Imports of HI")
-                   ; cpEhcHaskellModulePrepare modNm
+                   ; cpEhcHaskellModulePrepareHI modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell (hsstateNext HIStart)))
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
@@ -455,21 +455,28 @@ To be able to cpp preprocess first we need to know whether a Haskell file exists
     Previous info also has to be obtained again.
 
 %%[20 -8.cpEhcHaskellModulePrepare
-cpEhcHaskellModulePrepare1 :: HsName -> EHCompilePhase ()
-cpEhcHaskellModulePrepare1 modNm
+cpEhcHaskellModulePrepareHS1 :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareHS1 modNm
   = cpGetMetaInfo [GetMeta_HS,GetMeta_Dir] modNm
 
-cpEhcHaskellModulePrepare2 :: HsName -> EHCompilePhase ()
-cpEhcHaskellModulePrepare2 modNm
-  = cpSeq [ cpGetMetaInfo allGetMeta modNm
+cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareHS2 modNm
+  = cpSeq [ cpGetMetaInfo [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Dir] modNm
+          , cpGetPrevHI modNm
+          , cpFoldHI modNm
+          ]
+
+cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
+cpEhcHaskellModulePrepareHI modNm
+  = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core] modNm
           , cpGetPrevHI modNm
           , cpFoldHI modNm
           ]
 
 cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepare modNm
-  = cpSeq [ cpEhcHaskellModulePrepare1 modNm
-          , cpEhcHaskellModulePrepare2 modNm
+  = cpSeq [ cpEhcHaskellModulePrepareHS1 modNm
+          , cpEhcHaskellModulePrepareHS2 modNm
           ]
 %%]
 

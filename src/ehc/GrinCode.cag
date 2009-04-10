@@ -43,6 +43,9 @@
 %%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
+%%[(99 codegen grin) hs export(GrFFIAnnot(..))
+%%]
+
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 DERIVING * - GrTag    : Show, Eq
 DERIVING GrTag        : Show
@@ -153,6 +156,16 @@ data GrAltAnn
   | GrAltAnnReenter
   deriving (Eq,Ord,Show)
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen grin) hs export(grFFIAnnotIsResEvaluated)
+grFFIAnnotIsResEvaluated :: GrFFIAnnot -> Bool
+grFFIAnnotIsResEvaluated (GrFFIAnnot_IsResEval b) = b
+grFFIAnnotIsResEvaluated _                        = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

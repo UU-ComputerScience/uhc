@@ -97,11 +97,15 @@ SEM GrAlt
 ATTR GrExpr GrVal [ | | isEval: IsEval ]
 
 SEM GrExpr
-  | FFI Call Eval
+  | Call Eval
+%%[[8
+    FFI
+%%][99
+%%]]
                 lhs         .   isEval          =   IsEval_EvalToNode
   | App         lhs         .   isEval          =   case @appTrf of
                                                       GrExpr_App f as -> IsEval_Apply f as
-  | * - FFI Call Eval App
+  | * - Call Eval App FFI
         Store Unit
                 lhs         .   isEval          =   IsEval_None
 
@@ -112,6 +116,11 @@ SEM GrVal
                                                           (Map.lookup @nm @lhs.isEvalMp)
   | * - Node LitInt Var
                 lhs         .   isEval          =   IsEval_None
+%%]
+
+%%[99
+SEM GrExpr
+  | FFI			lhs			.	isEval			=	if grFFIAnnotIsResEvaluated @ffiAnnot then IsEval_EvalToNode else IsEval_None
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
