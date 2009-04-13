@@ -55,16 +55,24 @@ PRIM GB_Word gb_FullError
 	= GB_MkConEnumNodeAsTag( 4 ) ;
 PRIM GB_Word gb_IllegalOperation
 	= GB_MkConEnumNodeAsTag( 5 ) ;
-PRIM GB_Word gb_NoSuchThing
+PRIM GB_Word gb_InappropriateType
 	= GB_MkConEnumNodeAsTag( 6 ) ;
-PRIM GB_Word gb_PermissionDenied
+PRIM GB_Word gb_InvalidArgument
 	= GB_MkConEnumNodeAsTag( 7 ) ;
-PRIM GB_Word gb_ResourceBusy
+PRIM GB_Word gb_NoSuchThing
 	= GB_MkConEnumNodeAsTag( 8 ) ;
-PRIM GB_Word gb_ResourceExhausted
+PRIM GB_Word gb_OtherError
 	= GB_MkConEnumNodeAsTag( 9 ) ;
-PRIM GB_Word gb_UserError
+PRIM GB_Word gb_PermissionDenied
 	= GB_MkConEnumNodeAsTag( 10 ) ;
+PRIM GB_Word gb_ResourceBusy
+	= GB_MkConEnumNodeAsTag( 11 ) ;
+PRIM GB_Word gb_ResourceExhausted
+	= GB_MkConEnumNodeAsTag( 12 ) ;
+PRIM GB_Word gb_UnsupportedOperation
+	= GB_MkConEnumNodeAsTag( 13 ) ;
+PRIM GB_Word gb_UserError
+	= GB_MkConEnumNodeAsTag( 14 ) ;
 %%]
 
 The definition of IOMode must coincide with the one in Prelude.hs
@@ -928,113 +936,6 @@ PRIM GB_NodePtr gb_primThrowException( GB_Word exc )
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% I/O: auxiliary functions needed in the implementation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[98
-
-GB_NodePtr gb_throwChanInteractionException( GB_NodePtr chan, char* strErr )
-{
-	GB_NodePtr ioe_handle ;
-	GB_NodePtr ioe_filename ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(chan) ;
-	GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
-	
-	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
-	GB_MkMaybeJust( ioe_handle, chan ) ;
-
-	GB_GC_SafeLeave ;
-	return gb_intl_throwIOErrorFromPrim( ioe_handle, gb_EOF, ioe_filename, strErr ) ;
-}
-
-GB_NodePtr gb_getChanEOFOrThrowExc( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof )
-{
-	FILE *f = chan->content.chan.file ;
-	if ( feof( f ) ) {
-		if ( throwExcForEOF ) {
-			return gb_throwChanInteractionException( chan, "EOF reached" ) ;
-		}
-		*isEof = True ;
-		return NULL ;
-	} else {
-		*isEof = False ;
-		return NULL ;
-	}
-}
-
-/*
- * Read+return a char,
- * unless at EOF which:
- *   throws an exc if throwExcForEOF
- *   or otherwise returns EOF in *isEof
- */
-
-GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, int* pc )
-{
-	FILE *f = chan->content.chan.file ;
-	int c ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(chan) ;
-	
-	// printf( "%d ", feof( f ) ) ;
-	GB_PassExc_GCSafe( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
-	if ( *isEof ) {
-		c == EOF ;
-	} else {
-		c = getc( f ) ;
-		if ( c == EOF ) {
-			GB_PassExc_GCSafe( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
-		} else if ( c == '\r' && chan->content.chan.isText ) {
-			int c2 = getc( f ) ;
-			if ( c2 != '\n' && c2 != EOF ) {
-				ungetc( c2, f ) ;
-			}
-			c = '\n' ;
-		}
-	}
-	// printf( "%d %d %d\n", feof( f ), *isEof, c ) ;
-	*pc = c ;
-	GB_GC_SafeLeave ;
-	return NULL ;
-}
-
-
-GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
-{
-	GB_NodePtr ioe_handle ;
-	GB_Word    ioe_type ;
-	GB_NodePtr ioe_filename ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(chan) ;
-	GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
-
-	GB_MkMaybeJust( ioe_handle, chan ) ;
-	GB_MkMaybeJust( ioe_filename, chan->content.chan.name ) ;
-	
-	switch( errno ) {
-		case ENOMEM :
-		case ENOSPC :
-			ioe_type = gb_FullError ;
-			break ;
-		case EFBIG :
-		case EIO :
-			ioe_type = gb_PermissionDenied ;
-			break ;
-		default :
-			ioe_type = gb_PermissionDenied ;
-			break ;
-	}
-	
-	GB_GC_SafeLeave ;
-	return gb_intl_throwIOErrorFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
-}
-%%]
-
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% I/O: MutVar: mutable variables for a State
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1046,6 +947,8 @@ PRIM GB_NodePtr gb_primNewMutVar( GB_Word init, GB_Word state )
 	GB_GC_SafeEnter ;
 	GB_GC_Safe2(init,state) ;
 	GB_GC_Safe1_Zeroed(mutVar) ;
+	
+	// printf("gb_primNewMutVar\n") ;
 
 	GB_MkTupNode1_In(mutVar,init) ;
 	GB_MkTupNode2_In(res,state,mutVar) ;
@@ -1060,6 +963,8 @@ PRIM GB_NodePtr gb_primReadMutVar( GB_NodePtr mutVar, GB_Word state )
 	GB_GC_SafeEnter ;
 	GB_GC_Safe2(mutVar,state) ;
 
+	// printf("gb_primReadMutVar\n") ;
+
 	GB_MkTupNode2_In(res,state,mutVar->content.fields[0]) ;
 	
 	GB_GC_SafeLeave ;
@@ -1068,6 +973,8 @@ PRIM GB_NodePtr gb_primReadMutVar( GB_NodePtr mutVar, GB_Word state )
 
 PRIM GB_Word gb_primWriteMutVar( GB_NodePtr mutVar, GB_Word newVal, GB_Word state )
 {
+	// printf("gb_primWriteMutVar\n") ;
+
 	mutVar->content.fields[0] = newVal ;
 	return state ;
 }
@@ -1082,224 +989,13 @@ PRIM GB_Word gb_primSameMutVar( GB_Word v1, GB_Word v2 )
 
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% I/O: basic primitives
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-PRIM GB_NodePtr gb_primStdin()
-{
-  	return gb_chan_stdin ;
-}
-
-PRIM GB_NodePtr gb_primStdout()
-{
-  	IF_GB_TR_ON(3,printf("gb_primStdout\n" ););
-  	return gb_chan_stdout ;
-}
-
-PRIM GB_NodePtr gb_primStderr()
-{
-  	return gb_chan_stderr ;
-}
-
-
-%%[98
-
-PRIM GB_Word gb_primHFileno( GB_NodePtr chan )
-{
-	return ( fileno(chan->content.chan.file) ) ;
-}
-
-PRIM GB_Word gb_primEqHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
-{
-	return ( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) ? gb_True : gb_False ) ;
-}
-
-PRIM GB_Word gb_primHEqFileno( GB_NodePtr chan, GB_Word fno )
-{
-	return ( fno == fileno(chan->content.chan.file) ? gb_True : gb_False ) ;
-}
-
-PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr mbHandleNr )   
-{
-    /* mbHandleNr to be used only for std{in,out,err}, ignoring the opening mode. */
-	int nmSz = 0 ;
-	GB_Word mbHandleNrFromJust = 0 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe4(mbHandleNrFromJust,nmNd,modeEnum,mbHandleNr) ;
-	GB_PassExc_GCSafe( gb_listForceEval( &nmNd, &nmSz ) ) ;
-	char* nm = alloca( nmSz + 1 ) ;
-	GB_PassExc_GCSafe( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
-	nm[ nmSz ] = 0 ;
-
-	GB_PassExc_GCSafe( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
-	Bool mbHandleNrIsJust = False ;
-	if ( GB_NH_Fld_Tag(mbHandleNr->header) == GB_Tag_Maybe_Just ) {
-		mbHandleNrIsJust = True ;
-		GB_PassExc_GCSafe( mbHandleNrFromJust = gb_eval( mbHandleNr->content.fields[0] ) ) ;
-	}
-	
-	char *mode ;
-	Bool isText = True ;
-	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) ) {
-		mode = "r" ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadBinaryMode ) ) {
-		mode = "rb" ;
-		isText = False ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) ) {
-		mode = "w" ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteBinaryMode ) ) {
-		mode = "wb" ;
-		isText = False ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) ) {
-		mode = "r+" ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteBinaryMode ) ) {
-		mode = "r+b" ;
-		isText = False ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) ) {
-		mode = "a" ;
-	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendBinaryMode ) ) {
-		mode = "ab" ;
-		isText = False ;
-	}
-	
-	FILE *f = NULL ;
-	if ( mbHandleNrIsJust ) {
-		switch( GB_GBInt2Int( mbHandleNrFromJust ) ) {
-			case 0: f = stdin  ; break ;
-			case 1: f = stdout ; break ;
-			case 2: f = stderr ; break ;
-		}
-	} else {
-		f = fopen( nm, mode ) ;
-	}
-	if ( f == NULL )
-	{
-		GB_NodePtr ioe_handle ;
-		GB_Word    ioe_type ;
-		GB_NodePtr ioe_filename ;
-		GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
-
-		GB_MkMaybeNothing( ioe_handle ) ;
-		GB_MkMaybeJust( ioe_filename, nmNd ) ;
-		
-		switch ( errno ) {
-			case ENODEV :
-			case ENOENT :
-				ioe_type = gb_NoSuchThing ;
-				break ;
-			case EPERM   :
-			case EACCES  :
-			case ENOTDIR :
-			case EMFILE :
-				ioe_type = gb_PermissionDenied ;
-				break ;
-			case EBUSY :
-				ioe_type = gb_ResourceBusy ;
-				break ;
-			default :
-				ioe_type = gb_PermissionDenied ;
-				break ;
-		}
-
-		GB_GC_SafeLeave ;
-		return gb_intl_throwIOErrorFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
-	}
-	
-	GB_NodePtr chan ;
-	GB_NodeAlloc_Chan_In(chan) ;
-	chan->content.chan.file = f ;
-	chan->content.chan.name = nmNd ;
-	chan->content.chan.isText = isText ;
-	
-	GB_GC_SafeLeave ;
-	return chan ;
-}
-
-PRIM GB_NodePtr gb_primHClose( GB_NodePtr chan )
-{
-	fclose(chan->content.chan.file) ;
-	return gb_Unit ;
-}
-
-PRIM GB_NodePtr gb_primHFlush( GB_NodePtr chan )
-{
-	fflush( chan->content.chan.file ) ;
-	return gb_Unit ;
-}
-
-PRIM GB_Word gb_primHGetChar( GB_NodePtr chan )
-{
-	Bool isEof ;
-	int c ;
-	GB_PassExc_CastAsWord( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
-	// return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
-	return Cast(GB_Word,c) ;
-}
-
-PRIM GB_NodePtr gb_primHPutChar( GB_NodePtr chan, GB_Word c )
-{	
-	// int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
-	int c2 = putc( (c), chan->content.chan.file ) ;
-	if (c2 == EOF) {
-		GB_PassExc( gb_ThrowWriteChanError( chan ) ) ;
-	}
-	return gb_Unit ;
-}
-
-
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% I/O: additional primitives for enhanced performance
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[98
-
-PRIM GB_NodePtr gb_primHGetContents( GB_NodePtr chan )
-{
-	Bool isEof ;
-	GB_NodePtr res, n ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(chan) ;
-	GB_GC_Safe2_Zeroed(n,res) ;
-
-	int c ;
-	GB_PassExc_GCSafe( gb_ChanGetChar( chan, False, &isEof, &c ) ) ;
-	if ( isEof ) {
-		GB_MkListNil( res ) ;
-	} else if ( c == EOF ) {
-		GB_GC_SafeLeave ;
-		return gb_throwChanInteractionException( chan, strerror( errno ) ) ;
-	} else {
-		GB_MkCFunNode1In(n,&gb_primHGetContents,chan) ;
-		GB_MkListCons(res,GB_Int2GBInt(c),n) ;
-	}
-	
-	GB_GC_SafeLeave ;
-	return res ;
-}
-
-PRIM GB_NodePtr gb_primHPutByteArray( GB_NodePtr chan, GB_NodePtr a )
-{
-  	IF_GB_TR_ON(3,printf("gb_primWriteChan sz %d\n", a->content.bytearray.size ););
-  	size_t szWritten ;
-	szWritten = fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, chan->content.chan.file ) ;
-	if (szWritten != a->content.bytearray.size) {
-		GB_PassExc( gb_ThrowWriteChanError( chan ) ) ;
-	}
-	return gb_Unit ;
-}
-
-
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+%%]
 PRIM GB_NodePtr gb_primGetProgArgv( )
 {
 	GB_NodePtr res ;
@@ -1318,9 +1014,9 @@ PRIM GB_NodePtr gb_primGetProgArgv( )
 	GB_GC_SafeLeave ;
 	return res ;
 }
-%%]
 
 %%[99
+%%]
 PRIM GB_Word gb_primGetArgC()
 {
 	return Cast(GB_Word,primGetArgC()) ;
@@ -1331,4 +1027,3 @@ PRIM GB_Word gb_primGetArgVAt( GB_Word argc )
 	return Cast(GB_Word,primGetArgVAt(argc)) ;
 }
 
-%%]

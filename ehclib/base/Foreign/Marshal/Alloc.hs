@@ -51,6 +51,7 @@ import NHC.FFI                  ( FinalizerPtr, CInt(..) )
 import IO                       ( bracket )
 #elif defined(__EHC__)
 import Foreign.ForeignPtr       ( FinalizerPtr )
+import EHC.IOBase
 import EHC.OldException         ( bracket )
 #else
 import Control.Exception.Base   ( bracket )

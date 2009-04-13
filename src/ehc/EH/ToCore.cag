@@ -457,14 +457,15 @@ fsL2PatOffsetL l = [ (RPatBind_Bind n oe n p,Just oi) | (o,(foff,p)) <- zip [0..
 SEM PatExpr
   | AppTop      loc         .   rpatBinds   =   fsL2PatOffsetL $ reverse                   $ @fsRPatL
   | Rec         loc         .   rpatBinds   =   fsL2PatOffsetL $ tyRowCanonOrderBy compare $ @fsRPatL
-  | DataFields  loc         .   (rpatBindss,rpatBindsNonSat)
+  | DataFields  loc         .   (rpatBindss,rpatBindsNonSat,rpatBind0)
                                             =   let fsL = reverse @fsRPatL
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
                                                     max = ctagArity @tag - 1
                                                     sat = listSaturateWith 0 max (foffOffset . fst)
                                                             (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupply)
-                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL
-                                                    , fsL2PatOffsetL fsL
+                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL		-- groups of bindings which can be dealt with simultaneously
+                                                    , fsL2PatOffsetL fsL						-- bindings
+                                                    , fsL2PatOffsetL $ sat []					-- 0 binding
                                                     )
 %%]
 
@@ -485,7 +486,11 @@ SEM PatExpr
                                                     CPatRest_Var r
                                                       ->  RPat_Con @cpNm @tag (RPatConBind_One @rest pbL)
                                                           where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
-  | DataFields  loc         .   rpat        =   RPat_Con @cpNm @tag (rpatConBindUnFlatten $ map (RPatConBind_One @rest . map fst) $ @rpatBindss)
+  | DataFields  loc         .   rpat        =   RPat_Con @cpNm @tag
+  													(rpatConBindUnFlatten (RPatConBind_One @rest $ map fst @rpatBind0)
+  													 $ map (RPatConBind_One @rest . map fst)
+  													       @rpatBindss
+  													)
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
 

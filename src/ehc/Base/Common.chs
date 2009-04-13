@@ -608,7 +608,13 @@ instance PP Belowness where
 %%[8 hs
 data CTag
   = CTagRec
-  | CTag {ctagTyNm :: !HsName, ctagNm :: !HsName, ctagTag' :: !Int, ctagArity :: !Int, ctagMaxArity :: !Int}
+  | CTag
+      { ctagTyNm 		:: !HsName
+      , ctagNm 			:: !HsName
+      , ctagTag' 		:: !Int
+      , ctagArity 		:: !Int
+      , ctagMaxArity 	:: !Int
+      }
   deriving (Show,Eq,Ord)
 
 ctagTag :: CTag -> Int

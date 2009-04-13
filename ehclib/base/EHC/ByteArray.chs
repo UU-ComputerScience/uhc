@@ -13,6 +13,7 @@ module EHC.ByteArray
   , newByteArray, newPinnedByteArray
   , sizeofByteArray, sizeofMutableByteArray
   , byteArrayContents
+  , mutableByteArrayContents, mutableByteArrayPtr
   , unsafeFreezeByteArray
   
   , indexCharArray, indexWideCharArray
@@ -39,8 +40,7 @@ module EHC.ByteArray
 import EHC.Prelude
 import EHC.Ptr
 import EHC.StablePtr
-import EHC.Word
-import EHC.Int
+import EHC.Types
 
 #include "MachDeps.h"
 
@@ -73,6 +73,12 @@ newPinnedByteArray sz s = (s, MutableByteArray (primNewPinnedByteArray sz))
 
 byteArrayContents :: ByteArray -> Addr
 byteArrayContents = primByteArrayContents
+
+mutableByteArrayContents :: MutableByteArray s -> Addr
+mutableByteArrayContents (MutableByteArray a) = byteArrayContents a
+
+mutableByteArrayPtr :: MutableByteArray s -> Ptr a
+mutableByteArrayPtr a = Ptr (mutableByteArrayContents a)
 
 -- |Make a mutable byte array immutable, without copying.
 

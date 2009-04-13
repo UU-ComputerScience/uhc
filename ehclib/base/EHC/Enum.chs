@@ -11,3 +11,6 @@ instance Enum () where
     enumFrom ()        = [()]
 
 %%]
+
+%%[99
+%%]

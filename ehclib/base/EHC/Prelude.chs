@@ -41,22 +41,22 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     ReadS,
     Rational, 
 
-    Handle, 
-    FilePath, 
     IO            (..), 
     -- IOResult      (..),
-    IOMode        (..),
-    IOError       (..), 
-    IOErrorType   (..),
     State         (..),
     IOWorld, ioWorld,
     RealWorld, realWorld,
     
-    SomeException (..),
+        -- IO Exception
+    SomeException'(..),
     ArithException(..),
     ArrayException(..),
     AsyncException(..),
+    IOException       ,
     ExitCode      (..),
+#ifndef __EHC_FULL_PROGRAM_ANALYSIS__
+    throw,
+#endif
 
 --  dangerous functions
     asTypeOf, error, undefined, seq, ($!),
@@ -100,32 +100,22 @@ module EHC.Prelude   -- adapted from thye Hugs prelude
     ord, chr,
 
 -- IO functions
-    ioException,
-    ioError, userError,
-    putChar, putStr, putStrLn, print, hPrint, getChar, getLine, getContents, interact,
-    readFile, writeFile, appendFile,
-    stdin, stdout, stderr, openFile, hClose, hGetContents, hGetChar, hGetLine, hPutChar, hPutStr, hPutStrLn, hFlush,
     ioFromPrim,
-
--- Exception related
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-#else
-    catchException, throw,
-#endif
-    catch,
 
 -- Unsafe
     unsafeCoerce,
 
 -- EHC specific functions
-    ehcRunMain,
     PackedString,
     packedStringToString, packedStringToInteger,
     primGtInt, primEqChar,
     ByteArray,
 
 -- EHC primitives, only exported to EHC. modules, hidden outside Prelude
-    -- primEqInt
+    -- primEqInt,
+    
+-- System
+    exitWithIntCode,
     
 ) where
 
@@ -172,6 +162,10 @@ stringSum [] = 0
 stringSum (x:xs) = primCharToInt x + stringSum xs
 
 
+----------------------------------------------------------------
+-- error, undefined
+----------------------------------------------------------------
+
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 foreign import prim primError :: String -> a
@@ -186,6 +180,21 @@ error s         = throw (ErrorCall s)
 
 undefined :: forall a . a
 undefined       = error "Prelude.undefined"
+
+----------------------------------------------------------------
+-- Throw exception
+----------------------------------------------------------------
+
+#ifndef __EHC_FULL_PROGRAM_ANALYSIS__
+
+foreign import prim primThrowException :: forall a x . SomeException' x -> a
+
+throw :: SomeException' x -> a
+throw e = primThrowException e
+
+#else
+-- defined in EHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
+#endif
 
 ----------------------------------------------------------------
 -- PackedString
@@ -218,7 +227,6 @@ foreign import prim primByteArrayToString :: ByteArray -> String
 foreign import prim packedStringToInteger :: PackedString -> Integer
 
 #else
-foreign import prim primStringToByteArray :: String -> Int -> ByteArray
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
 
 #endif
@@ -1886,7 +1894,10 @@ readFloat r    = [(fromRational ((n%1)*10^^(k-d)),t) | (n,d,s) <- readFix r,
 -- Exception datatype and operations, must match the list in the RTS
 ----------------------------------------------------------------
 
-data SomeException                          -- alphabetical order of constructors required, assumed Int encoding in comment
+data ExitCode = ExitSuccess | ExitFailure Int
+                deriving (Eq, Ord, Show)  -- TODO: Read
+
+data SomeException' x                          -- alphabetical order of constructors required, assumed Int encoding in comment
   = ArithException      ArithException      -- 0
   | ArrayException      ArrayException      -- 1
   | AssertionFailed     String              -- 2
@@ -1896,31 +1907,13 @@ data SomeException                          -- alphabetical order of constructor
   -- | DynException        Dynamic
   | ErrorCall           String              -- 6
   | ExitException       ExitCode            -- 7 
-  | IOException         IOError             -- 8 -- IO exceptions (from 'ioError')
+  | IOException         x                   -- 8 -- IO exceptions (from 'ioError')
   | NoMethodError       String              -- 9
   | NonTermination                          -- 10
   | PatternMatchFail    String              -- 11
   | RecConError         String              -- 12
   | RecSelError         String              -- 13
   | RecUpdError         String              -- 14
-
-instance Show SomeException where
-  showsPrec _ (ArithException e)  = shows e
-  showsPrec _ (ArrayException e)  = shows e
-  showsPrec _ (AssertionFailed s) = showException "assertion failed" s
-  showsPrec _ (AsyncException e)  = shows e
-  showsPrec _ BlockedOnDeadMVar   = showString "thread blocked indefinitely"
-  showsPrec _ Deadlock            = showString "<<deadlock>>"
-  --showsPrec _ (DynException _)    = showString "unknown exception"
-  showsPrec _ (ErrorCall s)       = showString s
-  showsPrec _ (ExitException err) = showString "exit: " . shows err
-  showsPrec _ (IOException err)   = shows err
-  showsPrec _ (NoMethodError s)   = showException "undefined member" s
-  showsPrec _ NonTermination      = showString "<<loop>>"
-  showsPrec _ (PatternMatchFail s) = showException "pattern match failure" s
-  showsPrec _ (RecConError s)     = showException "undefined field" s
-  showsPrec _ (RecSelError s)     = showException "select of missing field" s
-  showsPrec _ (RecUpdError s)     = showException "update of missing field" s
 
 data ArithException
   = Overflow
@@ -1930,104 +1923,16 @@ data ArithException
   | Denormal
   deriving (Eq, Ord)
 
-instance Show ArithException where
-  showsPrec _ Overflow        = showString "arithmetic overflow"
-  showsPrec _ Underflow       = showString "arithmetic underflow"
-  showsPrec _ LossOfPrecision = showString "loss of precision"
-  showsPrec _ DivideByZero    = showString "divide by zero"
-  showsPrec _ Denormal        = showString "denormal"
-
 data ArrayException
   = IndexOutOfBounds    String
   | UndefinedElement    String
   deriving (Eq, Ord)
-
-instance Show ArrayException where
-  showsPrec _ (IndexOutOfBounds s) =
-    showException "array index out of range" s
-  showsPrec _ (UndefinedElement s) =
-    showException "undefined array element" s
 
 data AsyncException
   = StackOverflow
   | HeapOverflow
   | ThreadKilled
   deriving (Eq, Ord)
-
-instance Show AsyncException where
-  showsPrec _ StackOverflow   = showString "stack overflow"
-  showsPrec _ HeapOverflow    = showString "heap overflow"
-  showsPrec _ ThreadKilled    = showString "thread killed"
-
-showException :: String -> String -> ShowS
-showException tag msg =
-  showString tag . (if null msg then id else showString ": " . showString msg)
-
-data ExitCode = ExitSuccess | ExitFailure Int
-                deriving (Eq, Ord, Show)  -- TODO: Read
-
-
-
-----------------------------------------------------------------
--- IOError
-----------------------------------------------------------------
-
-data IOError
-  = IOError
-      { ioe_handle      :: Maybe Handle   -- the handle used by the action flagging the error
-      , ioe_type        :: IOErrorType    -- what kind of (std) error
-      , ioe_location    :: String         -- location of the error
-      , ioe_description :: String         -- error-specific string
-      , ioe_filename    :: Maybe FilePath -- the resource involved.
-      } 
-      deriving (Eq)
-
-data IOErrorType        -- alphabetical order of constructors required, assumed Int encoding in comment
-  = AlreadyExists       -- 0
-  | AlreadyInUse        -- 1 -- ResourceBusy
-  | DoesNotExist        -- 2 -- NoSuchThing
-  | EOF                 -- 3
-  | FullError           -- 4
-  | IllegalOperation    -- 5
-  | NoSuchThing			-- 6
-  | PermissionDenied    -- 7
-  | ResourceBusy		-- 8
-  | ResourceExhausted   -- 9
-  | UserError           -- 10
-    deriving (Eq)
-
-instance Show IOErrorType where
-  show x = 
-    case x of
-      AlreadyExists     -> "already exists"
-      AlreadyInUse      -> "resource already in use"
-      DoesNotExist      -> "does not exist"
-      EOF               -> "end of file"
-      IllegalOperation  -> "illegal operation"
-      NoSuchThing		-> "does not exist"
-      PermissionDenied  -> "permission denied"
-      ResourceBusy		-> "resource already in use"
-      ResourceExhausted -> "resource exhausted"
-      UserError         -> "user error"
-
-instance Show IOError where
-  showsPrec p (IOError hdl iot loc s fn) =
-    (case fn of
-       Nothing -> case hdl of
-                      Nothing -> id
-                      Just h  -> showsPrec p h . showString ": "
-       Just name -> showString name . showString ": ") .
-    (case loc of
-       "" -> id
-       _  -> showString loc . showString ": ") .
-    showsPrec p iot .
-    (case s of
-       "" -> id
-       _  -> showString " (" . showString s . showString ")")
-
-
-userError :: String -> IOError
-userError str = IOError Nothing UserError "" str Nothing
 
 
 ----------------------------------------------------------------
@@ -2039,7 +1944,7 @@ data RealWorld = RealWorld			-- known to compiler
 type IOWorld = State RealWorld
 
 -- newtype IO a = IO (IOWorld -> IOResult a)
-newtype IO a = IO (IOWorld -> (IOWorld, a))
+newtype IO a = IO {unIO :: (IOWorld -> (IOWorld, a))}
 -- newtype IO a = IO (IOWorld -> a)
 
 -- newtype IOResult a = IOResult a
@@ -2119,132 +2024,6 @@ instance Monad IO where
 
 
 
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-catch :: IO a -> (IOError -> IO a) -> IO a
-catch m h = m
-
-ioError :: IOError -> IO a
-ioError = error "ioError"
-
-#else
-catch :: IO a -> (IOError -> IO a) -> IO a
-catch m h = catchException m $ \e -> case e of
-                IOException err -> h err
-                _ -> throw e
-
-ioError :: IOError -> IO a
-ioError e = IO (\s -> throw (IOException e))
-
-#endif
-
-ioException :: IOError -> IO a
-ioException = ioError
-
-----------------------------------------------------------------
--- I/O types: Handle, FilePath, IOMode
-----------------------------------------------------------------
-
-data Handle   -- opaque, contains GB_Chan  or  FILE*
-
--- foreign import prim primHFileno  :: Handle -> Int
-foreign import prim primHEqFileno  :: Handle -> Int -> Bool
-foreign import prim primEqHandle  :: Handle -> Handle -> Bool
--- foreign import prim primShowHandle  :: Handle -> String
-
-instance Eq Handle where
-    (==) = primEqHandle
-
-instance Show Handle where
-    showsPrec _ h
-      = if      primHEqFileno h 0 then showString "<stdin>"
-        else if primHEqFileno h 1 then showString "<stdout>"
-        else if primHEqFileno h 2 then showString "<stderr>"
-        else                showString ("<handle:" ++ {- show n ++ -} ">")
-      -- where n = primHFileno h
-
-type FilePath = String  -- file pathnames are represented by strings
-
-data IOMode             -- alphabetical order of constructors required, assumed Int encoding in comment
-  = AppendBinaryMode    -- 0
-  | AppendMode          -- 1
-  | ReadBinaryMode      -- 2
-  | ReadMode            -- 3
-  | ReadWriteBinaryMode -- 4
-  | ReadWriteMode       -- 5
-  | WriteBinaryMode     -- 6
-  | WriteMode           -- 7
-    deriving (Eq, Ord, Bounded, Enum, Show)
-
-
-----------------------------------------------------------------
--- I/O primitives and their wrapping in the I/O monad
-----------------------------------------------------------------
-
-foreign import prim primHClose        :: Handle -> ()
-foreign import prim primHFlush        :: Handle -> ()
-foreign import prim primHGetChar      :: Handle -> Char
-foreign import prim primHPutChar      :: Handle -> Char -> ()
-
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-foreign import prim primOpenFile      :: String -> IOMode -> Handle
-foreign import prim primStdin         :: Handle
-foreign import prim primStdout        :: Handle
-foreign import prim primStderr        :: Handle
-foreign import prim primHIsEOF        :: Handle -> Bool
-#else
-#ifdef __EHC_TARGET_JAZY__
-foreign import prim primStdin         :: Handle
-foreign import prim primStdout        :: Handle
-foreign import prim primStderr        :: Handle
-#endif
-foreign import prim primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
-#endif
-
-
-hClose       :: Handle -> IO ()
-hClose h     =  ioFromPrim (\_ -> primHClose h)
-
-hFlush       :: Handle -> IO ()
-hFlush h     =  ioFromPrim (\_ -> primHFlush h)
-
-hGetChar     :: Handle -> IO Char
-hGetChar h   =  ioFromPrim (\_ -> primHGetChar h)
-
-hPutChar     :: Handle -> Char -> IO ()
-hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
-
-
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-
-openFile     :: FilePath -> IOMode -> IO Handle
-openFile f m =  ioFromPrim (\_ -> primOpenFile (forceString f) m)
-
-stdin, stdout, stderr :: Handle
-stdin  = primStdin
-stdout = primStdout
-stderr = primStderr
-
-hIsEOF       :: Handle -> IO Bool
-hIsEOF h     =  ioFromPrim (\_ -> primHIsEOF h)
-
-#else
-
-openFile     :: FilePath -> IOMode -> IO Handle
-openFile f m =  ioFromPrim (\_ -> primOpenFileOrStd f m Nothing)
-
-stdin, stdout, stderr :: Handle
-#ifdef __EHC_TARGET_JAZY__
-stdin  = primStdin
-stdout = primStdout
-stderr = primStderr
-#else
-stdin  = primOpenFileOrStd "<stdin>"  ReadMode  (Just 0)
-stdout = primOpenFileOrStd "<stdout>" WriteMode (Just 1)
-stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
-#endif
-
-#endif
-
 
 ----------------------------------------------------------------
 -- exit is also an IO primitive
@@ -2252,208 +2031,16 @@ stderr = primOpenFileOrStd "<stderr>" WriteMode (Just 2)
 
 foreign import prim primExitWith      :: forall a . Int -> a
 
-exitWith     :: Int -> IO a
-exitWith e   =  ioFromPrim (\_ -> primExitWith e)
+exitWithIntCode     :: Int -> IO a
+exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
-----------------------------------------------------------------
--- additional I/O primitives and their wrapping in the I/O monad
-----------------------------------------------------------------
-
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-
-#else
-foreign import prim primHPutByteArray   :: Handle -> ByteArray -> ()
-foreign import prim primHGetContents    :: Handle -> String
-#endif
-
-
-
-----------------------------------------------------------------
--- String I/O can be expressed in terms of basic primitives,
---  or for efficiency using additional primitives
-----------------------------------------------------------------
-
-hGetContents     :: Handle -> IO String
-hPutStr          :: Handle -> String -> IO ()
-
-
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-
-hGetContents h = do b <- hIsEOF h
-                    if b
-                     then return ""
-                     else do { c <- hGetChar h
-                             ; cs <- hGetContents h
-                             ; return (c:cs) 
-                             }
-
-hPutStr h s = do if null s 
-                  then return () 
-                  else do { hPutChar h (head s)
-                          ; hPutStr  h (tail s)
-                          }
-
-#else
-
-hGetContents h   = ioFromPrim (\_ -> primHGetContents h)
-
-hPutStr h s = do let (shd,stl) = splitAt 1000 s
-                 ioFromPrim (\_ -> primHPutByteArray h (primStringToByteArray shd 1000))
-                 if null stl then return () else hPutStr h stl
-                   
-#endif
-
-
-
-----------------------------------------------------------------
--- I/O utilities
-----------------------------------------------------------------
-
--- specializations for stdin, stdout
-
-getChar     :: IO Char
-getChar     = hGetChar stdin
-
-getLine     :: IO String
-getLine     = hGetLine stdin
-
-getContents :: IO String
-getContents = hGetContents stdin
-
-putChar     :: Char -> IO ()
-putChar     = hPutChar stdout
-
-print       :: Show a => a -> IO ()
-print       = hPrint stdout
-
-putStr      :: String -> IO ()
-putStr      = hPutStr   stdout
-
-putStrLn    :: String -> IO ()
-putStrLn    = hPutStrLn stdout
-
-interact    :: (String -> String) -> IO ()
-interact f  = getContents >>= (putStr . f)
-
-
--- combinations with newline and show
-
-hPutStrLn     :: Handle -> String -> IO ()
-hPutStrLn h s =  do { hPutStr h s
-                    ; hPutChar h '\n'
-                    }
-
-hPrint        :: Show a => Handle -> a -> IO ()
-hPrint h      =  hPutStrLn h . show
-
-hGetLine :: Handle -> IO String
-hGetLine h = do { c <- hGetChar h
-                ; hGetLine2 c
-                }
-  where
-   hGetLine2 '\n' = return ""
-   hGetLine2 c    = do { cs <- hGetLine h
-                       ; return (c:cs)
-                       }
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-   getRest        = hGetLine h
-#else
-   getRest        = do c <- catch (hGetChar h) 
-                                  (\ ex -> if isEOFError ex 
-                                           then return '\n' 
-                                           else ioError ex
-                                  )
-                       hGetLine2 c
-   isEOFError ex = ioe_type ex == EOF
-#endif
-
-
--- combinations with Read
--- raises an exception instead of an error
-readIO          :: Read a => String -> IO a
-readIO s         = case [x | (x,t) <- reads s, ("","") <- lex t] of
-                        [x] -> return x
-                        []  -> ioError (userError "PreludeIO.readIO: no parse")
-                        _   -> ioError (userError 
-                                       "PreludeIO.readIO: ambiguous parse")
-
-readLn          :: Read a => IO a
-readLn           = do l <- getLine
-                      r <- readIO l
-                      return r
-
-
-
--- file open&process&close wrapped in one function
-
-readFile        :: FilePath -> IO String
-readFile name    = openFile name ReadMode >>= hGetContents
-
-writeFile       :: FilePath -> String -> IO ()
-writeFile        = writeFile2 WriteMode
-
-appendFile      :: FilePath -> String -> IO ()
-appendFile       = writeFile2 AppendMode
-
-writeFile2      :: IOMode -> FilePath -> String -> IO ()
-writeFile2 mode name s 
-    = do h <- openFile name mode
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-         hPutStr h s
-#else
-         catchException (hPutStr h s) (\e -> hClose h >> throw e)
-#endif
-         hClose h
 
 
 ----------------------------------------------------------------
 -- main program
 ----------------------------------------------------------------
 
-#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-
--- Wrapper around 'main', invoked as 'ehcRunMain main'
-ehcRunMain :: IO a -> IO a
-ehcRunMain m = m
-
-#else
-
-foreign import prim primThrowException :: forall a . SomeException -> a
-foreign import prim primCatchException :: forall a . a -> (([(Int,String)],SomeException) -> a) -> a
-
-throw :: SomeException -> a
-throw e = primThrowException e
-
-catchTracedException :: IO a -> (([(Int,String)],SomeException) -> IO a) -> IO a
-catchTracedException (IO m) k = IO $ \s ->
-  primCatchException (m s)
-                     (\te -> case (k te) of {IO k' -> k' s })
-
-catchException :: IO a -> (SomeException -> IO a) -> IO a
-catchException m k =
-  catchTracedException m (\(_,e) -> k e)
-
--- Wrapper around 'main', invoked as 'ehcRunMain main'
-ehcRunMain :: IO a -> IO a
-ehcRunMain m =
-  catchTracedException m
-    (\(t,e) -> case e of
-                 ExitException ExitSuccess
-                   -> exitWith 0
-                 ExitException (ExitFailure code)
-                     | code == 0 -> exitWith 1
-                     | otherwise -> exitWith code
-                 _ -> do { hPutStrLn stderr ("Error: " ++ show e)
-                         ; if null t
-                           then return ()
-                           else do { hPutStrLn stderr "Trace:"
-                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ show k ++ ": " ++ s)) $ reverse t
-                                   }
-                         ; exitWith 1
-                         }
-    )
-
-#endif
+-- see EHC.Run
 
 -- main = return () -- dummy
 %%]

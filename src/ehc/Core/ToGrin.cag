@@ -600,9 +600,7 @@ tyNmMayLiveAsTaggedPtr opts
 %%[(8 codegen grin)
 SEM CBind
   | FFI         loc         .   mbAnnot     =   tyNmIsUnboxedForFFIRes @lhs.opts
-                            .   isEnumable  =   \n -> case dataGamLookup n @lhs.dataGam of
-                                                        Just dgi -> dgiMaxConstrArity dgi == 0
-                                                        _        -> False
+                            .   isEnumable  =   \n -> maybe False dgiIsEnumable $ dataGamLookup n @lhs.dataGam
                             .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                                             =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (hsnUniqSupply @lUniq)
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL

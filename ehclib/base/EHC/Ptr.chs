@@ -33,7 +33,8 @@ module EHC.Ptr
   where
 
 import EHC.Prelude
-import EHC.Word
+import EHC.Types
+import EHC.Prims
 import EHC.Show          ( showHex )
 
 #include "MachDeps.h"
@@ -41,18 +42,22 @@ import EHC.Show          ( showHex )
 ------------------------------------------------------------------------
 -- Address
 
-data Addr			-- opaque, known by compiler
-
 #if USE_64_BITS
 foreign import prim "primAddWord64" primAddAddr :: Addr -> Int  -> Addr
 foreign import prim "primSubWord64" primSubAddr :: Addr -> Addr -> Int
 foreign import prim "primRemWord64" primRemAddr :: Addr -> Int  -> Int
 foreign import prim "primUnsafeId"  primAddrToWord :: Addr -> Word64
+
+addrToInteger :: Addr -> Integer
+addrToInteger a = primWord64ToInteger (primAddrToWord a)
 #else
 foreign import prim "primAddWord32" primAddAddr :: Addr -> Int  -> Addr
 foreign import prim "primSubWord32" primSubAddr :: Addr -> Addr -> Int
 foreign import prim "primRemWord32" primRemAddr :: Addr -> Int  -> Int
 foreign import prim "primUnsafeId"  primAddrToWord :: Addr -> Word32
+
+addrToInteger :: Addr -> Integer
+addrToInteger a = primWord32ToInteger (primAddrToWord a)
 #endif
 
 foreign import prim "primNullAddr" nullAddr :: Addr
@@ -180,16 +185,16 @@ castPtrToFunPtr (Ptr addr) = FunPtr addr
 -- Eq, Ord instances for Ptr.
 
 instance Eq (Ptr a) where
-  (Ptr a1) == (Ptr a2) = primAddrToWord a1 == primAddrToWord a2
+  (Ptr a1) == (Ptr a2) = a1 `primEqAddr` a2
 
 instance Ord (Ptr a) where
-  (Ptr a1) `compare` (Ptr a2) = primAddrToWord a1 `compare` primAddrToWord a2
+  (Ptr a1) `compare` (Ptr a2) = a1 `primCmpAddr` a2
 
 ------------------------------------------------------------------------
 -- Show instances for Ptr and FunPtr
 
 instance Show (Ptr a) where
-   showsPrec _ (Ptr a) rs = pad_out (showHex (toInteger $ primAddrToWord a) "")
+   showsPrec _ (Ptr a) rs = pad_out (showHex (addrToInteger a) "")
      where
         -- want 0s prefixed to pad it out to a fixed length.
        pad_out ls = 

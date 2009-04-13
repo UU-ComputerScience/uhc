@@ -199,7 +199,11 @@ fileSuffMpHs
     , ( "hi"  , ECUSHaskell HIStart )
 %%]]
 %%[[(8 grin)
+    -- currently not supported
     , ( "grin", ECUSGrin )
+%%]]
+%%[[(94 codegen)
+    , ( "c"   , ECUSC CStart )
 %%]]
     ]
 %%]
@@ -411,6 +415,7 @@ doCompileRun fnL@(fn:_) opts
        ; _ <- runStateT (do { topModNmL' <- zipWithM (\fp topModNm -> imp (Just fp) Nothing topModNm) fpL topModNmL
                             ; cpImportGatherFromMods (imp Nothing) (map fst topModNmL')
                             ; cpCheckMods' [modBuiltin]
+                            ; cpEhcCheckAbsenceOfMutRecModules
                             ; cpEhcFullProgCompileAllModules
 %%[[100
                             ; unless (ehcOptKeepIntermediateFiles opts2) cpRmFilesToRm

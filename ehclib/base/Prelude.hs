@@ -25,6 +25,8 @@ module Prelude
   , module EHC.Ix
   , module EHC.Show
   , module EHC.Read
+  , module EHC.Run
+  , module EHC.OldIO
   
   -- EHC.IOBase
   , unsafePerformIO
@@ -36,6 +38,7 @@ import EHC.Prelude hiding
   -- , primEqInt
   -- , State, IOWorld, RealWorld
   , ByteArray
+  , exitWithIntCode
   )
 import EHC.Eq
 import EHC.Ord
@@ -45,3 +48,6 @@ import EHC.Ix
 import EHC.Show
 import EHC.Read
 import EHC.IOBase
+import EHC.OldIO hiding
+  ( hPutStrLn )
+import EHC.Run

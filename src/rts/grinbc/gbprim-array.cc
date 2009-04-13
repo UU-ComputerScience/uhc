@@ -6,6 +6,13 @@
 #include "errno.h"
 %%]
 
+%%[8.dummyForLinker
+int dummy_array ;
+%%]
+
+%%[99 -8.dummyForLinker
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives + plain functions for grin bytecode interpreter, those related to arrays
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -261,4 +268,23 @@ PRIM GB_Word gb_primWriteArray( GB_NodePtr array, GB_Word inx, GB_Word val )
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO into ByteArray
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+%%]
+PRIM GB_Word readIntoByteArray( int fd, GB_NodePtr bytearray, GB_Word off, int sz )
+{
+	void* ptr = bytearray->content.bytearray.ptr ;
+	return readInto(fd,(char *)ptr + off, sz);
+}
+
+PRIM GB_Word writeFromByteArray( int fd, GB_NodePtr bytearray, GB_Word off, int sz )
+{
+	void* ptr = bytearray->content.bytearray.ptr ;
+	return writeFrom(fd,(char *)ptr + off, sz);
+}
+
 

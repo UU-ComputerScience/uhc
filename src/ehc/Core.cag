@@ -119,10 +119,13 @@ raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _ _)  = True
 raltIsBoolExpr _                                       = False
 %%]
 
+Flatten bindings, delaying the handling of many bindings to the rewriting of case patterns.
+
 %%[(8 codegen) hs export(rpatConBindUnFlatten)
-rpatConBindUnFlatten :: [RPatConBind] -> RPatConBind
-rpatConBindUnFlatten [b] = b
-rpatConBindUnFlatten bs  = RPatConBind_Many bs
+rpatConBindUnFlatten :: RPatConBind -> [RPatConBind] -> RPatConBind
+rpatConBindUnFlatten z []  = z
+rpatConBindUnFlatten _ [b] = b
+rpatConBindUnFlatten _ bs  = RPatConBind_Many bs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

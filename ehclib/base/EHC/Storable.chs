@@ -55,10 +55,9 @@ module EHC.Storable
 
 import EHC.Prelude
 import EHC.StablePtr
-import EHC.Int
-import EHC.Word
+import EHC.Types
 import EHC.Ptr
-import EHC.IOBase
+-- import EHC.IOBase
 
 
 foreign import prim "primReadWord8OffAddr" 		primReadWideCharOffAddr  	:: Addr -> Int -> Char

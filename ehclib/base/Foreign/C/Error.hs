@@ -122,6 +122,7 @@ import GHC.Base
 import Hugs.Prelude             ( Handle, IOError, ioError )
 import System.IO.Unsafe         ( unsafePerformIO )
 #elif __EHC__
+import EHC.IOBase
 #else
 import System.IO                ( Handle )
 import System.IO.Error          ( IOError, ioError )

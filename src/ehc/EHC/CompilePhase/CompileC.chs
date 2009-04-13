@@ -29,13 +29,22 @@ C + CPP compilation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-gccDefs :: EHCOpts -> [String]
-gccDefs opts 
-  = map (\d -> "-D__" ++ d ++ "__")
-    $  [ "EHC", "EHC_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+gccDefs :: EHCOpts -> [String] -> [String]
+gccDefs opts builds
+  = map (\d -> "-D__EHC" ++ d ++ "__")
+    $  [ "", "_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+    ++ map ("_BUILDS_" ++) builds
 %%[[(99 codegen grin)
-    ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
+    ++ (if ehcOptFullProgAnalysis opts then ["_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
+%%]
+
+%%[(99 codegen)
+gccInclDirs :: EHCOpts -> [String]
+gccInclDirs opts 
+  = [ mk kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
+  where mk (FileLocKind_Dir  ) d = d
+        mk (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
 %%]
 
 %%[(8 codegen) export(cpCompileWithGCC)
@@ -43,7 +52,11 @@ cpCompileWithGCC :: FinalCompileHow -> [HsName] -> HsName -> EHCompilePhase ()
 cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 fpC    = mkOutputFPath opts modNm fp "c"
+                 fpC    = case ecuStateToKind $ ecuState ecu of
+%%[[94
+                            EHCUKind_C -> fp
+%%]]
+                            _          -> mkOutputFPath opts modNm fp "c"
                  fpO m f= mkOutputFPath opts m f "o"
                  fpExec = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
                  variant= ehcenvVariant (ehcOptEnvironment opts)
@@ -75,9 +88,12 @@ cpCompileWithGCC how othModNmL modNm
                  (do { let compileC
                              = mkShellCmd
                                  (  [ Cfg.shellCmdGcc ]
-                                 ++ gccDefs opts
+                                 ++ gccDefs opts ["O"]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant "" ]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant "" ]
+%%[[(99 codegen)
+                                 ++ [ "-I" ++ d | d <- gccInclDirs opts ]
+%%]]
                                  ++ linkOpts
                                  ++ targOpt
                                  ++ dotOFilesOpt
@@ -114,19 +130,16 @@ cpPreprocessWithCPP modNm
        ; when (  ehcOptCPP opts
               || modNm == hsnModIntlPrelude      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
-              (do { let inclDirs= [ mk kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
-                                where mk (FileLocKind_Dir  ) d = d
-                                      mk (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
-                        defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+              (do { let defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
 %%[[(99 codegen grin)
                                   ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
                         preCPP  = mkShellCmd
                                     (  [ Cfg.shellCmdCpp ]
-                                    ++ gccDefs opts
+                                    ++ gccDefs opts ["CPP"]
                                     ++ [ "-traditional-cpp", {- "-std=gnu99", -} "-fno-show-column", "-P" ]
 %%[[(99 codegen)
-                                    ++ [ "-I" ++ d | d <- inclDirs ]
+                                    ++ [ "-I" ++ d | d <- gccInclDirs opts ]
 %%]]
                                     ++ [ fpathToStr fp, fpathToStr fpCPP ]
                                     )

@@ -898,6 +898,13 @@ valDataGamLookup nm vg dg
        ; dgi <- dataGamDgiOfTy (vgiTy vgi) dg
        }
 
+Is datatype an enum? I.e. has no field for any constructor.
+
+%%[(8 codegen) export(dgiIsEnumable)
+dgiIsEnumable :: DataGamInfo -> Bool
+dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

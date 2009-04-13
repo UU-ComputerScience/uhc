@@ -1056,11 +1056,11 @@ pExpression' pPreE
   <?> "pExpression'"
   where pE  ::  HSParser (Expression,Int)
         pE  =   pExpressionLayout
-                <**> (   pSucceed (\e -> (e,1))
+                <**> (   pSucceed (\e -> (e,0))
                      <|> (\(op,rng) (r,opCnt) l -> (Expression_InfixApplication rng l op r,opCnt+1)) <$> pOp <*> pE
                      )
-            <|> (\p e -> (p $ mkE $ e,1)) <$> pPreE <*> pE
-        mkE (e,1) = e
+            <|> (\p e -> (p $ mkE $ e,0)) <$> pPreE <*> pE
+        mkE (e,0) = e
         mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
 %%]
 

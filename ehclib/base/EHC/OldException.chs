@@ -7,7 +7,14 @@ which is not yet supported by EHC.
 %%[99
 module EHC.OldException
   ( bracket, bracket_
+
   , throwIO
+  
+  , catchAny
+  
+  , block, unblock
+  
+  , assert
   )
   where
 
@@ -51,6 +58,25 @@ bracket_ before after m = do
 %%]
 
 %%[99
+catchAny :: IO a -> (SomeException -> IO a) -> IO a
+catchAny = catchException
+%%]
+
+%%[99
 throwIO  :: SomeException -> IO a
 throwIO e = IO (\s -> throw e)
+%%]
+
+%%[99
+block   :: IO a -> IO a
+block    = id
+
+unblock :: IO a -> IO a
+unblock  = id
+%%]
+
+%%[99
+assert :: Bool -> a -> a
+assert True  x = x
+assert False _ = error "Assertion failed"
 %%]
