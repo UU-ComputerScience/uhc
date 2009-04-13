@@ -353,6 +353,9 @@ SEM GrExpr
                                                       ReturnCtxt_Continues
                                                         | @altL.nrAlts == 1 -> ReturnCtxt_CaseFallThrough
                                                         | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
+                                                      ReturnCtxt_CaseFallThrough
+                                                        | @altL.nrAlts == 1 -> @lhs.returnCtxt
+                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
                                                       _                     -> @lhs.returnCtxt
 %%]
 

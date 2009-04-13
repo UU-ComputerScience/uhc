@@ -17,4 +17,11 @@ main
        putStrLn (show (bounds a1))
        putStrLn (show (indices a1))
        putStrLn (show a1)
+       let a2 = accum (+) a1 [(l+2,l+2)]
+       putStrLn (show a2)
+       putStrLn (show a1)
+       putStrLn (show (a1 == a1))
+       putStrLn (show (a1 == a2))
+       putStrLn (show (a1 `compare` a1))
+       putStrLn (show (a1 `compare` a2))
 

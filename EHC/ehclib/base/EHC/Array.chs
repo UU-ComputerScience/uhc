@@ -378,13 +378,12 @@ instance (Ix a, Show a, Show b) => Show (Array a b) where
 Operations on mutable arrays
 
 %%[99
-%%]
 {-# INLINE newSTArray #-}
 newSTArray :: Ix i => (i,i) -> e -> ST s (STArray s i e)
-newSTArray (l,u) initial = ST $ \s1# ->
-    case safeRangeSize (l,u)            of { n@(I# n#) ->
-    case newArray# n# initial s1#       of { (# s2#, marr# #) ->
-    (# s2#, STArray l u n marr# #) }}
+newSTArray (l,u) initial = ST $ \s1 ->
+    case safeRangeSize (l,u)            of { n ->
+    case newArray n initial s1       of { ( s2, marr ) ->
+    ( s2, STArray l u n marr ) }}
 
 {-# INLINE boundsSTArray #-}
 boundsSTArray :: STArray s i e -> (i,i)  
@@ -401,8 +400,8 @@ readSTArray marr@(STArray l u n _) i =
 
 {-# INLINE unsafeReadSTArray #-}
 unsafeReadSTArray :: Ix i => STArray s i e -> Int -> ST s e
-unsafeReadSTArray (STArray _ _ _ marr#) (I# i#)
-    = ST $ \s1# -> readArray# marr# i# s1#
+unsafeReadSTArray (STArray _ _ _ marr) i
+    = ST $ \s1 -> readArray marr i s1
 
 {-# INLINE writeSTArray #-}
 writeSTArray :: Ix i => STArray s i e -> i -> e -> ST s () 
@@ -411,9 +410,9 @@ writeSTArray marr@(STArray l u n _) i e =
 
 {-# INLINE unsafeWriteSTArray #-}
 unsafeWriteSTArray :: Ix i => STArray s i e -> Int -> e -> ST s () 
-unsafeWriteSTArray (STArray _ _ _ marr#) (I# i#) e = ST $ \s1# ->
-    case writeArray# marr# i# e s1# of
-        s2# -> (# s2#, () #)
+unsafeWriteSTArray (STArray _ _ _ marr) i e = ST $ \s1 ->
+    letstrict s2 = writeArray marr i e s1 in ( s2, () )
+%%]
 
 Moving between mutable and immutable
 
@@ -424,11 +423,13 @@ freezeSTArray (STArray l u n marr) = ST $ \s1 ->
     let copy i s3 | i == n = s3
                   | otherwise =
             case readArray marr i s3 of { ( s4, e ) ->
-            letstrict w = writeArray marr' i e s4 in case w of { s5 ->
-            copy (i + 1) s5 }} in
-    case copy 0 s2                    of { s3 ->
+            letstrict s5 = writeArray marr' i e s4 in 
+            copy (i + 1) s5 } in
+    -- This evaluates too strict, but must be done because of (later) side effects in the original array.
+    -- Looks like the dual problem of thawSTArray.
+    letstrict s3 = copy 0 s2 in
     case unsafeFreezeArray marr' s3  of { ( s4, arr ) ->
-    ( s4, Array l u n arr ) }}}
+    ( s4, Array l u n arr ) }}
 
 {-# INLINE unsafeFreezeSTArray #-}
 unsafeFreezeSTArray :: Ix i => STArray s i e -> ST s (Array i e)
@@ -441,7 +442,9 @@ thawSTArray (Array l u n arr) = ST $ \s1 ->
     case newArray n arrEleBottom s1  of { ( s2, marr ) ->
     let copy i s3 | i == n = s3
                   | otherwise =
-            letstrict e = indexArray arr i in
+            -- There is currently no way (by lack of (un)boxing notation) to indicate we only want to evaluate indexArray, not the content.
+            -- Either the closure, or the evaluated value is put in the new array.
+            let e = indexArray arr i in
             letstrict s4 = writeArray marr i e s3 in 
             copy (i + 1) s4  in
     letstrict s3 = copy 0 s2 in

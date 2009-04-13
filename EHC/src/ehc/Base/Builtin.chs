@@ -446,7 +446,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[99
 [hsnAddr]
   = map
-      (mkRV hsnModIntlPtr)
+      (mkRV hsnModIntlTypes)
       [ "Addr"
       ]
 %%]
@@ -524,7 +524,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlWord)
+      (mkRV hsnModIntlTypes)
 %%]]
       [ "Word", "Word8", "Word16", "Word32", "Word64"
       ]
@@ -537,7 +537,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlInt)
+      (mkRV hsnModIntlTypes)
 %%]]
       [ "Int8" , "Int16" , "Int32" , "Int64"
       ]
@@ -587,7 +587,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[99 export(hsnEhcRunMain)
 [hsnEhcRunMain]
   = map
-      (mkRV hsnModIntlPrelude)
+      (mkRV hsnModIntlRun)
       [ "ehcRunMain" ]
 %%]
 
@@ -626,10 +626,11 @@ hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (hsnFromString 
 hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
 
-%%[99 export(hsnModIntlInt,hsnModIntlWord)
-hsnModIntlInt                           =   hsnPrefixQual hsnEHC (hsnFromString "Int")
-hsnModIntlWord                          =   hsnPrefixQual hsnEHC (hsnFromString "Word")
+%%[99
+hsnModIntlTypes                         =   hsnPrefixQual hsnEHC (hsnFromString "Types")
 hsnModIntlPtr                           =   hsnPrefixQual hsnEHC (hsnFromString "Ptr")
+hsnModIntlRun                           =   hsnPrefixQual hsnEHC (hsnFromString "Run")
+hsnModIntlIOBase                        =   hsnPrefixQual hsnEHC (hsnFromString "IOBase")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -5,6 +5,14 @@
 %%[99
 #include "errno.h"
 %%]
+#include "unistd.h"
+
+%%[8.dummyForLinker
+int dummy_C ;
+%%]
+
+%%[99 -8.dummyForLinker
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives + plain functions for grin bytecode interpreter, those related to C specifics
@@ -59,5 +67,22 @@ PRIM int _setErrno( int e )
 }
 
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+%%]
+PRIM GB_Word readInto( int fd, void* ptr, int sz )
+{
+	return read(fd,(char *)ptr, sz);
+}
+
+PRIM GB_Word writeFrom( int fd, void* ptr, int sz )
+{
+	return write(fd,(char *)ptr, sz);
+}
+
 
 

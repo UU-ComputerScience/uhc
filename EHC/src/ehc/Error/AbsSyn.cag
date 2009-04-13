@@ -194,6 +194,7 @@ DATA Err
                         nmFromSrc  : HsName
   | AmbiguousNameRef    nm         : HsName
                         nmAlts     : {[HsName]}
+  | MutRecModules       mutRecL    : {[[HsName]]}
 %%]
 
 %%[(95 hmtyinfer || hmtyast)

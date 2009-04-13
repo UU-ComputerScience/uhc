@@ -426,7 +426,7 @@ SEM Err
   | MayOnlyHaveNrMain   lhs     .  pp   =   ppMsgErr    "Number of definitions for 'main' exceeds limit"
                                                         (                                         "limit                :" >#< @nrAllowed
                                                          >-<                                      "module               :" >#< @modNm
-                                                         >-< (if null @prevModNmL then empty else "previously defined in:" >#< ppCommas @prevModNmL)
+                                                         >-< (if null @prevModNmL then empty else "previously defined in:" >#< ppCommas' @prevModNmL)
                                                         )
 %%[[99
                                                         @range
@@ -452,6 +452,12 @@ SEM Err
   | AmbiguousNameRef    lhs     .  pp   =   ppMsgErr    "Ambiguous name reference"
                                                         (    "name        :" >#< @nm
                                                          >-< "may refer to:" >#< vlist (map pp @nmAlts)
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+  | MutRecModules       lhs     .  pp   =   ppMsgErr    "Mutual recursive modules"
+                                                        (    "modules:" >#< vlist (map ppCommas' @mutRecL)
                                                         )
 %%[[99
                                                         @range

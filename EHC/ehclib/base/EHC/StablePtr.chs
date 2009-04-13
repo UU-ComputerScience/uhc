@@ -29,7 +29,7 @@ module EHC.StablePtr
 
 import EHC.Ptr
 import EHC.Prelude
-import EHC.IOBase
+-- import EHC.IOBase
 
 -----------------------------------------------------------------------------
 -- Stable Addr

@@ -3,6 +3,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#ifndef __RTS_H__
+#define __RTS_H__
+%%]
+
+%%[8
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -108,10 +113,20 @@ typedef int Bool ;
 #include "utils.h"
 #include "priminline.h"
 #include "grinbc/gbprimdecl.h"
+%%[[99
 #include "grinbc/gbprim-array.h"
+#include "grinbc/gbprim-thread.h"
+%%]]
 #include "grinbc/gbprim.h"
+%%[[97
 #include "grinbc/gbprim-integer.h"
+%%]]
+%%[[98
+#include "grinbc/gbprim-handle.h"
+%%]]
+%%[[99
 #include "grinbc/gbprim-C.h"
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,3 +274,12 @@ extern int traceLevel ;
 
 %%[8
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Postamble
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __RTS_H__ */
+%%]
+

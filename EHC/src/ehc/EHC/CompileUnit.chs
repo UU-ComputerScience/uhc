@@ -260,7 +260,7 @@ instance CompileUnitState EHCompileUnitState where
                       ECUSHaskell LHSOnlyImports -> True
 %%]]
                       ECUSHaskell HSAllSem       -> True
-                      ECUSHaskell HIAllSem     -> True
+                      ECUSHaskell HIAllSem       -> True
                       _                          -> False
 %%]
 

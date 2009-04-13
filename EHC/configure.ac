@@ -466,6 +466,12 @@ AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
 ### what to make
 #AC_SUBST(UUST_SUBDIRS,"shc lib")
 
+### header & function presence
+
+AC_HEADER_TIOCGWINSZ
+AC_CHECK_HEADERS(dirent.h errno.h fcntl.h inttypes.h limits.h signal.h stdint.h string.h sys/resource.h sys/select.h sys/stat.h sys/syscall.h sys/time.h sys/timeb.h sys/timers.h sys/times.h sys/types.h sys/utsname.h sys/wait.h termios.h time.h unistd.h utime.h vfork.h wctype.h windows.h winsock.h)
+AC_CHECK_FUNCS(ftruncate getclock getrusage gettimeofday lstat readdir_r _chsize)
+
 ### type configuration, machine characteristics
 
 # sizeof GrWord
@@ -493,6 +499,19 @@ AC_CHECK_SIZEOF([uint16_t])
 AC_CHECK_SIZEOF([uint32_t])
 AC_CHECK_SIZEOF([uint64_t])
 
+AC_CHECK_SIZEOF([dev_t])
+AC_CHECK_SIZEOF([ino_t])
+AC_CHECK_SIZEOF([mode_t])
+AC_CHECK_SIZEOF([off_t])
+AC_CHECK_SIZEOF([pid_t])
+AC_CHECK_SIZEOF([ssize_t])
+AC_CHECK_SIZEOF([gid_t])
+AC_CHECK_SIZEOF([nlink_t])
+AC_CHECK_SIZEOF([uid_t])
+AC_CHECK_SIZEOF([cc_t])
+AC_CHECK_SIZEOF([speed_t])
+AC_CHECK_SIZEOF([tcflag_t])
+AC_CHECK_SIZEOF([rlim_t])
 AC_CHECK_SIZEOF([clock_t])
 AC_CHECK_SIZEOF([time_t])
 AC_CHECK_SIZEOF([size_t])

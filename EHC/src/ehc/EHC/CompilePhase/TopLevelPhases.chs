@@ -114,6 +114,17 @@ cpEhcFullProgLinkAllModules modNmL
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
 %%]
 
+%%[20 export(cpEhcCheckAbsenceOfMutRecModules)
+cpEhcCheckAbsenceOfMutRecModules :: EHCompilePhase ()
+cpEhcCheckAbsenceOfMutRecModules
+ = do { cr <- get
+      ; let mutRecL = filter (\ml -> length ml > 1) $ crCompileOrder cr
+      ; when (not $ null mutRecL)
+             (cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MutRecModules mutRecL]
+             )
+      }
+%%]
+
 %%[20 export(cpEhcFullProgCompileAllModules)
 cpEhcFullProgCompileAllModules :: EHCompilePhase ()
 cpEhcFullProgCompileAllModules
@@ -284,6 +295,7 @@ cpEhcModuleCompile1 targHSState modNm
                               ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm' ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
                               })
                    ; cpUpdCU modNm' (ecuStoreState (ECUSHaskell stnext))
+                   ; cpStopAt CompilePoint_Imports
                    ; return modNm'
                    }
              where stnext = hsstateNext st
@@ -359,6 +371,14 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    ; return defaultResult
                    }
+%%[[94
+           (ECUSC CStart,_)
+             -> do { cpMsg modNm VerboseMinimal "Compiling C"
+                   ; cpCompileWithGCC FinalCompile_Module [] modNm
+                   ; cpUpdCU modNm (ecuStoreState (ECUSC CAllSem))
+                   ; return defaultResult
+                   }
+%%]]
 %%[[(8 codegen grin)
            (ECUSGrin,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Grin"

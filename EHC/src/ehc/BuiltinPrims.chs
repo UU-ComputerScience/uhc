@@ -45,6 +45,7 @@ primsNeedsEval
       , ( "primNewArray"		, Prim [True,False] 		False )
       , ( "primIndexArray"		, Prim [True,True] 			True  )
       , ( "primWriteArray"		, Prim [True,True,False] 	False )
+      -- , ( "primReadMutVar"		, Prim [True,True]	 		True  )
 %%]]
       ]
 %%]

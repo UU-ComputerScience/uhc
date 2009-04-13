@@ -19,7 +19,8 @@ module Debug.Trace (
         traceShow
   ) where
 
-import Prelude
+import EHC.Prelude
+import EHC.OldIO
 import System.IO.Unsafe
 
 #ifdef __GLASGOW_HASKELL__

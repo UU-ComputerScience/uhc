@@ -93,6 +93,7 @@ import Hugs.Ptr         ( castPtr )
 
 #ifdef __EHC__
 import EHC.Ptr
+import EHC.Types
 #endif
 
 #include "HsBaseConfig.h"
@@ -119,7 +120,15 @@ INSTANCE_REALFLOAT(T)
 #endif
 
 -- | Haskell type representing the C @char@ type.
+#ifdef __EHC__
+ARITHMETIC_TYPE_INSTANCES(CChar,tyConCChar,"CChar",HTYPE_CHAR)
+INTEGRAL_TYPE_INSTANCES(CChar,tyConCChar,"CChar",HTYPE_CHAR)
+INSTANCE_EQ(CChar)
+INSTANCE_ORD(CChar)
+#else
 INTEGRAL_TYPE(CChar,tyConCChar,"CChar",HTYPE_CHAR)
+#endif
+
 -- | Haskell type representing the C @signed char@ type.
 INTEGRAL_TYPE(CSChar,tyConCSChar,"CSChar",HTYPE_SIGNED_CHAR)
 -- | Haskell type representing the C @unsigned char@ type.
@@ -131,7 +140,15 @@ INTEGRAL_TYPE(CShort,tyConCShort,"CShort",HTYPE_SHORT)
 INTEGRAL_TYPE(CUShort,tyConCUShort,"CUShort",HTYPE_UNSIGNED_SHORT)
 
 -- | Haskell type representing the C @int@ type.
+#ifdef __EHC__
+ARITHMETIC_TYPE_INSTANCES(CInt,tyConCInt,"CInt",HTYPE_INT)
+INTEGRAL_TYPE_INSTANCES(CInt,tyConCInt,"CInt",HTYPE_INT)
+INSTANCE_EQ(CInt)
+INSTANCE_ORD(CInt)
+#else
 INTEGRAL_TYPE(CInt,tyConCInt,"CInt",HTYPE_INT)
+#endif
+
 -- | Haskell type representing the C @unsigned int@ type.
 INTEGRAL_TYPE(CUInt,tyConCUInt,"CUInt",HTYPE_UNSIGNED_INT)
 

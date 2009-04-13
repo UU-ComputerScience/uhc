@@ -12,6 +12,13 @@
 #include <alloca.h>
 %%]
 
+%%[8.dummyForLinker
+int dummy_integer ;
+%%]
+
+%%[97 -8.dummyForLinker
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives for grin bytecode interpreter, those related to Integer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

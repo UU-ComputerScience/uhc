@@ -47,30 +47,37 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable CTypes)
+EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils)
+EHCLIB_SYNC_ALL_PKG_base_C				:= $(patsubst %,cbits/%.c,)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
-											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array Marshal/Error C/String) \
-											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt) \
+											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array C/String) \
+											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt Posix/Types) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
 											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
 EHCLIB_SYNC_ALL_PKG_array_ASIS			:= 
+EHCLIB_SYNC_ALL_PKG_array_C				:= 
 EHCLIB_SYNC_ALL_PKG_array				:=
 EHCLIB_SYNC_ALL_PKG_containers_ASIS		:= 
+EHCLIB_SYNC_ALL_PKG_containers_C		:= 
 EHCLIB_SYNC_ALL_PKG_containers			:= $(patsubst %,Data/%.hs,Set Map)
 
 # to compile as HS
 EHCLIB_SYNC_ALL_PKG_SRC_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 EHCLIB_SYNC_ALL_PKG_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 
+# to compile as C
+EHCLIB_SYNC_ALL_PKG_SRC_C				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_C)))
+EHCLIB_SYNC_ALL_PKG_DRV_C				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_C)))
+
 # copy as is
 EHCLIB_SYNC_ALL_PKG_SRC_ASIS			:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
 EHCLIB_SYNC_ALL_PKG_DRV_ASIS			:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
 
 # all src & drv
-EHCLIB_SYNC_ALL_PKG_SRC					:= $(EHCLIB_SYNC_ALL_PKG_SRC_HS) $(EHCLIB_SYNC_ALL_PKG_SRC_ASIS)
-EHCLIB_SYNC_ALL_PKG_DRV					:= $(EHCLIB_SYNC_ALL_PKG_DRV_HS) $(EHCLIB_SYNC_ALL_PKG_DRV_ASIS)
+EHCLIB_SYNC_ALL_PKG_SRC					:= $(EHCLIB_SYNC_ALL_PKG_SRC_HS) $(EHCLIB_SYNC_ALL_PKG_SRC_ASIS) $(EHCLIB_SYNC_ALL_PKG_SRC_C)
+EHCLIB_SYNC_ALL_PKG_DRV					:= $(EHCLIB_SYNC_ALL_PKG_DRV_HS) $(EHCLIB_SYNC_ALL_PKG_DRV_ASIS) $(EHCLIB_SYNC_ALL_PKG_DRV_C)
 
 # Issues with:
 # Exception/Base (and others): #include Typeable.h
@@ -96,11 +103,15 @@ EHCLIB_ALL_LIBS2						= $(foreach variant,$(EHC_VARIANTS),$(call FUN_EHCLIB_ALL_
 FUN_EHCLIB_HS_MAIN_DRV_HS				= $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(1)/$(EHCLIB_MAIN).hs
 EHCLIB_HS_MAIN_DRV_HS					= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_EHCLIB_HS_MAIN_DRV_HS,$(pkg)))
 
-# shuffled
+# shuffled .hs
 EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.chs)
 EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
-# as haskell, as is in svn repo
+# shuffled .c
+EHCLIB_CC_ALL_SRC_CC					:= # not done yet
+EHCLIB_CC_ALL_DRV_C						:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CC_ALL_SRC_CC))
+
+# as haskell .hs, as is in svn repo
 EHCLIB_HS_ALL_SRC_HS					:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
 											$(foreach suff,hs lhs,\
 											 $(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/*.$(suff) \
@@ -110,19 +121,25 @@ EHCLIB_HS_ALL_SRC_HS					:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
 
 EHCLIB_HS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_HS_ALL_SRC_HS))
 
+# as C .c, as is in svn repo
+EHCLIB_C_ALL_SRC_C						:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/cbits/*.c))
+EHCLIB_C_ALL_DRV_C						:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_C_ALL_SRC_C))
+
 # as C .h include file, as is in svn repo
 EHCLIB_ASIS_ALL_SRC_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/include/*.h))
 EHCLIB_ASIS_ALL_DRV_ASIS				:= $(patsubst $(EHCLIB_SRC_PREFIX)%.h,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.h,$(EHCLIB_ASIS_ALL_SRC_ASIS))
 
 # as haskell, from frozen sync
 EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
+EHCLIB_FROZEN_ALL_DRV_C					:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_C)))
 EHCLIB_FROZEN_ALL_DRV_ASIS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
 
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCLIB_ASIS_ALL_SRC_ASIS)
 EHCLIB_ALL_DRV_HS						:= $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_CHS_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_HS)
+EHCLIB_ALL_DRV_C						:= $(EHCLIB_C_ALL_DRV_C) $(EHCLIB_CC_ALL_DRV_C) $(EHCLIB_FROZEN_ALL_DRV_C)
 EHCLIB_ALL_DRV_ASIS						:= $(EHCLIB_FROZEN_ALL_DRV_ASIS) $(EHCLIB_ASIS_ALL_DRV_ASIS)
-EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS)
+EHCLIB_ALL_DRV							:= $(EHCLIB_ALL_DRV_HS) $(EHCLIB_ALL_DRV_ASIS) $(EHCLIB_ALL_DRV_C)
 
 # distribution
 EHCLIB_DIST_FILES						:= $(EHCLIB_ALL_SRC) $(EHCLIB_MKF)
@@ -141,9 +158,11 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 # ehclib targets
 ###########################################################################################
 
+EHCLIB_DEBUG_OPTS						= 
+#EHCLIB_DEBUG_OPTS						= -v3
+#EHCLIB_DEBUG_OPTS						= -v4
 #EHCLIB_DEBUG_OPTS						= -v4 --debug-stopat-hi-error=1 
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
-EHCLIB_DEBUG_OPTS						= 
 
 ehclib-variant-dflt: \
 			$(if $(EHC_CFG_USE_CODEGEN),ehclib-codegentargetspecific-$(EHC_VARIANT_TARGET),) \
@@ -165,6 +184,7 @@ ehclib-variant-dflt: \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'` \
+	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'` \
 	          +RTS -K30m ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
 	      done \
@@ -236,8 +256,8 @@ $(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_AS
 #	  echo "main = return ()" ; \
 #	) > $@
 
-# plainly copy .hs files
-$(EHCLIB_HS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%: $(EHCLIB_SRC_PREFIX)%
+# plainly copy .hs & .c files
+$(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_C_ALL_DRV_C): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%: $(EHCLIB_SRC_PREFIX)%
 	mkdir -p $(@D)
 	cp $< $@
 	touch $@
@@ -248,8 +268,8 @@ $(EHCLIB_ASIS_ALL_DRV_ASIS): $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)%.h: $(EHCLI
 	cp $< $@
 	touch $@
 
-# extract .hs files from frozen archive
-$(EHCLIB_FROZEN_ALL_DRV_HS): $(EHCLIB_GHCSYNC_FROZEN)
+# extract .hs & .c files from frozen archive
+$(EHCLIB_FROZEN_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_C): $(EHCLIB_GHCSYNC_FROZEN)
 	mkdir -p $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
 	cd $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)++'`
 	touch $@
@@ -277,7 +297,7 @@ $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH): $(EHCLIB_MKF)
 
 # template for extraction for a package
 define EHCLIB_PKG_TEMPLATE
-$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1)) $$(EHCLIB_SYNC_ALL_PKG_$(1)_ASIS)): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
+$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1)) $$(EHCLIB_SYNC_ALL_PKG_$(1)_ASIS) $$(EHCLIB_SYNC_ALL_PKG_$(1)_C)): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
 	mkdir -p $$(@D)
 	cp $$< $$@
 	touch $$@
