@@ -542,29 +542,29 @@ absValueGuess hsName hptMap = case absValues hsName hptMap of
   
 
 absValues :: HsName -> HptMap -> [AbstractValue]
-absValues hsName hptMap = Set.toList $ handleVal (getEnvVar hptMap (getNr hsName))
+absValues hsName hptMap = trace (showHptMap hptMap) $ Set.toList $ handleVal (getEnvVar hptMap (getNr hsName))
   where
-    getHeapLoc' x = handleVal (getHeapLoc hptMap x)
+    --getHeapLoc' x = handleVal (getHeapLoc hptMap x)
     handleVal val = 
       case val of
-        (AbsLocs locs _) -> Set.fold (\l s -> getHeapLoc' l `Set.union` s) Set.empty locs
+        --(AbsLocs locs _) -> Set.fold (\l s -> getHeapLoc' l `Set.union` s) Set.empty locs
         _                -> Set.singleton val
 
 -- TODO Think about how to handle AbsLocs (pointers) here.
 absGrTag :: HsName -> HptMap -> GrTag
 absGrTag hsName hptMap =
   case absValueGuess hsName hptMap of
-    (AbsNodes gav) -> handleGav $ Map.keys gav
-    (AbsTags  gav) -> handleGav $ Set.toList gav
-    val            -> error $ "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement: "
-                      ++ show hsName ++ " is " ++ show val
+    (AbsNodes (Nodes gav)) -> handleGav $ Map.keys gav
+    (AbsTags  gav)         -> handleGav $ Set.toList gav
+    val                    -> error $ "GrinCode.ToCil.absGrTag: Code not implemented yet, please implement: "
+                              ++ show hsName ++ " is " ++ show val
   where handleGav [g] = g
         handleGav gs  = trace ("GrinCode.ToCil.absGrTag: AbsNodes/AbsTags has zero or multiple GrTags for "
                         ++ show hsName) $ head gs
 
 absPrimitiveType :: HsName -> HptMap -> PrimitiveType
 absPrimitiveType hsName hptMap = case getEnvVar hptMap (getNr hsName) of
-    AbsLocs _ _  -> ReferenceType "" refObjNm
+    --AbsLocs _ _  -> ReferenceType "" refObjNm
     AbsBasic     -> Int32
     AbsTags _    -> Object
     AbsNodes _   -> Object
