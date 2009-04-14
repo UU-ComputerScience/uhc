@@ -364,10 +364,10 @@ fi
 
 case $cc_version in
   4.0.1)
-    cc_std_flag="-std=gnu99"
+    cc_std_flag="-std=c99"
     ;;
   *)
-    cc_std_flag="-std=gnu99"
+    cc_std_flag="-std=c99"
     ;;
 esac
 AC_SUBST(CC_STD_FLAG,$cc_std_flag)

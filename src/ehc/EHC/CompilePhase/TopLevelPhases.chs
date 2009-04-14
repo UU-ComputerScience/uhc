@@ -222,7 +222,11 @@ Compilation of 1 module, as part of a full program compilation
 %%[20
 cpEhcFullProgModuleCompile1 :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleCompile1 modNm
-  = do { cpEhcFullProgModuleDetermineNeedsCompile modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; when (ehcOptVerbosity opts >= VerboseALot)
+              (lift $ putStrLn ("====================== Compile1: " ++ show modNm ++ "======================"))
+       ; cpEhcFullProgModuleDetermineNeedsCompile modNm
        ; cr <- get
        ; let (ecu,_,_,_) = crBaseInfo modNm cr
              targ = if ecuNeedsCompile ecu then HSAllSem else HIAllSem
@@ -270,6 +274,8 @@ cpEhcModuleCompile1 targHSState modNm
              defaultResult = modNm
 %%]]
 %%[[20
+       ; when (ehcOptVerbosity opts >= VerboseALot)
+              (lift $ putStrLn ("====================== Module: " ++ show modNm ++ "======================"))
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
 %%]]
