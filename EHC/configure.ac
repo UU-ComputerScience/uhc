@@ -137,7 +137,34 @@ AC_ARG_WITH(gcc-ehc-options,
 [AC_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],
                 [Additional options to pass to GCC when compiling with EHC.])],
 [ gccEhcOptions="$withval" ],)
+
+# additional platform dependend options for gcc when compiling C from within ehc
+case $HostPlatform in
+  i*86-pc-linux-gnu )
+        gccEhcOptions="$gccEhcOptions -D__USE_BSD _D__USE_POSIX"
+        ;;
+  *)
+        ;;
+esac  
+
 AC_SUBST(GCC_EHC_OPTIONS, "$gccEhcOptions")
+
+### 'with' option for cpp options
+AC_ARG_WITH(cpp-ehc-options,
+[AC_HELP_STRING([--with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>],
+                [Additional options to pass to GCC when compiling with EHC.])],
+[ cppEhcOptions="$withval" ],)
+
+# additional platform dependend options for cpp when compiling C from within ehc
+case $HostPlatform in
+  i*86-pc-linux-gnu )
+        cppEhcOptions="$cppEhcOptions -D__USE_BSD _D__USE_POSIX -D__STDC__"
+        ;;
+  *)
+        ;;
+esac  
+
+AC_SUBST(CPP_EHC_OPTIONS, "$cppEhcOptions")
 
 ### 'with' option for ghc options
 AC_ARG_WITH(ghc-ehc-options,

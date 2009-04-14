@@ -405,6 +405,8 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "gccOpts = \"$(GCC_OPTS_WHEN_EHC)\"" ; \
 	  echo "" ; \
+	  echo "cppOpts = \"$(CPP_OPTS_WHEN_EHC)\"" ; \
+	  echo "" ; \
 	  echo "ehcSvnRevision = \"`svn info | grep Revision`\"" ; \
 	  echo "" ; \
 	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
