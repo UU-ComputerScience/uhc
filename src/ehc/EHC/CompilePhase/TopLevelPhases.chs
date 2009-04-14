@@ -275,7 +275,7 @@ cpEhcModuleCompile1 targHSState modNm
 %%]]
 %%[[20
        ; when (ehcOptVerbosity opts >= VerboseALot)
-              (lift $ putStrLn ("====================== Module: " ++ show modNm ++ "======================"))
+              (lift $ putStrLn ("====================== Module: " ++ show modNm ++ " ======================"))
        ; when (ehcOptVerbosity opts >= VerboseDebug)
               (lift $ putStrLn ("State: in: " ++ show (ecuState ecu) ++ ", to: " ++ show targHSState))
 %%]]
