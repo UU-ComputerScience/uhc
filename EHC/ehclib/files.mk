@@ -47,7 +47,7 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils)
+EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils consUtils)
 EHCLIB_SYNC_ALL_PKG_base_C				:= $(patsubst %,cbits/%.c,)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
@@ -212,6 +212,8 @@ ehclib-codegentargetspecific-C: $(if $(EHC_CFG_USE_GRIN),$(INSTALL_LIB_RTS),)
 ehclib-codegentargetspecific-jazy: $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
 
 ehclib-codegentargetspecific-core:
+
+ehclib-codegentargetspecific-clr:
 
 ###########################################################################################
 # ehclib dispatch
