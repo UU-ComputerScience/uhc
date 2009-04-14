@@ -23,6 +23,8 @@ import EHC.IOBase
 ----------------------------------------------------------------
 -- Handle
 ----------------------------------------------------------------
+
+-- See IOBase
 %%]
 
 %%[99
@@ -30,17 +32,24 @@ import EHC.IOBase
 -- I/O primitives and their wrapping in the I/O monad
 ----------------------------------------------------------------
 
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+foreign import prim primHClose        :: FHandle -> ()
+foreign import prim primHFlush        :: FHandle -> ()
+foreign import prim primHGetChar      :: FHandle -> Char
+foreign import prim primHPutChar      :: FHandle -> Char -> ()
+#else
 foreign import prim primHClose        :: Handle -> ()
 foreign import prim primHFlush        :: Handle -> ()
 foreign import prim primHGetChar      :: Handle -> Char
 foreign import prim primHPutChar      :: Handle -> Char -> ()
+#endif
 
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
-foreign import prim primOpenFile      :: String -> IOMode -> Handle
-foreign import prim primStdin         :: Handle
-foreign import prim primStdout        :: Handle
-foreign import prim primStderr        :: Handle
-foreign import prim primHIsEOF        :: Handle -> Bool
+foreign import prim primOpenFile      :: String -> IOMode -> FHandle
+foreign import prim primStdin         :: FHandle
+foreign import prim primStdout        :: FHandle
+foreign import prim primStderr        :: FHandle
+foreign import prim primHIsEOF        :: FHandle -> Bool
 #else
 #ifdef __EHC_TARGET_JAZY__
 foreign import prim primStdin         :: Handle
@@ -52,30 +61,46 @@ foreign import prim primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
 
 
 hClose       :: Handle -> IO ()
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+hClose (OldHandle h)     =  ioFromPrim (\_ -> primHClose h)
+#else
 hClose h     =  ioFromPrim (\_ -> primHClose h)
+#endif
 
 hFlush       :: Handle -> IO ()
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+hFlush (OldHandle h)     =  ioFromPrim (\_ -> primHFlush h)
+#else
 hFlush h     =  ioFromPrim (\_ -> primHFlush h)
+#endif
 
 hGetChar     :: Handle -> IO Char
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+hGetChar (OldHandle h)   =  ioFromPrim (\_ -> primHGetChar h)
+#else
 hGetChar h   =  ioFromPrim (\_ -> primHGetChar h)
+#endif
 
 hPutChar     :: Handle -> Char -> IO ()
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+hPutChar (OldHandle h) c =  ioFromPrim (\_ -> primHPutChar h c)
+#else
 hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
+#endif
 
 
 #ifdef __EHC_FULL_PROGRAM_ANALYSIS__
 
 openFile     :: FilePath -> IOMode -> IO Handle
-openFile f m =  ioFromPrim (\_ -> primOpenFile (forceString f) m)
+openFile f m =  ioFromPrim (\_ -> OldHandle (primOpenFile (forceString f) m))
 
 stdin, stdout, stderr :: Handle
-stdin  = primStdin
-stdout = primStdout
-stderr = primStderr
+stdin  = OldHandle primStdin
+stdout = OldHandle primStdout
+stderr = OldHandle primStderr
 
 hIsEOF       :: Handle -> IO Bool
-hIsEOF h     =  ioFromPrim (\_ -> primHIsEOF h)
+hIsEOF (OldHandle h) =  ioFromPrim (\_ -> primHIsEOF h)
 
 #else
 

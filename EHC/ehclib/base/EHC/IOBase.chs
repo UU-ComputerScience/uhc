@@ -50,6 +50,10 @@ module EHC.IOBase
     catchTracedException,
 #endif
     catch, catchException,
+    
+#ifdef __EHC_FULL_PROGRAM_ANALYSIS__
+    FHandle,
+#endif
   )
   where
 
@@ -357,7 +361,21 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-data GBHandle   -- opaque, contains GB_Chan  or  FILE*
+#if __EHC_FULL_PROGRAM_ANALYSIS__
+data FHandle    -- opaque, contains FILE*
+#else
+data GBHandle   -- opaque, contains GB_Chan
+#endif
+
+#if __EHC_FULL_PROGRAM_ANALYSIS__
+
+instance Eq FHandle where
+    _ == _ = False
+
+instance Show FHandle where
+    showsPrec _ h = showString "<handle>"
+
+#else
 
 foreign import prim primEqGBHandleFileno  :: GBHandle -> Int -> Bool
 foreign import prim primEqGBHandle  :: GBHandle -> GBHandle -> Bool
@@ -372,6 +390,8 @@ instance Show GBHandle where
         else if primEqGBHandleFileno h 2 then showString "<stderr>"
         else                showString ("<handle:" ++ {- show n ++ -} ">")
       -- where n = primGBHandleEqFileno h
+
+#endif
 %%]
 
 %%[99
@@ -386,13 +406,17 @@ data Handle
         !(MVar Handle__)                -- The read side
         !(MVar Handle__)                -- The write side
 
-  | GBHandle                            
+  | OldHandle                            
+#if __EHC_FULL_PROGRAM_ANALYSIS__
+        FHandle                        
+#else
         GBHandle                        
+#endif
 
 instance Eq Handle where
  (FileHandle _ h1)     == (FileHandle _ h2)     = h1 == h2
  (DuplexHandle _ h1 _) == (DuplexHandle _ h2 _) = h1 == h2
- (GBHandle h1)         == (GBHandle h2)         = h1 == h2
+ (OldHandle h1)        == (OldHandle h2)        = h1 == h2
  _                     == _                     = False 
 
 type FD = CInt
@@ -437,7 +461,7 @@ instance Show HandleType where
 instance Show Handle where 
   showsPrec _ (FileHandle   file _)   = showHandle file
   showsPrec _ (DuplexHandle file _ _) = showHandle file
-  showsPrec _ (GBHandle     file)     = shows file
+  showsPrec _ (OldHandle    file)     = shows file
 
 showHandle :: FilePath -> String -> String
 showHandle file = showString "{handle: " . showString file . showString "}"
