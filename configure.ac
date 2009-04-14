@@ -141,7 +141,7 @@ AC_ARG_WITH(gcc-ehc-options,
 # additional platform dependend options for gcc when compiling C from within ehc
 case $HostPlatform in
   i*86-pc-linux-gnu )
-        gccEhcOptions="$gccEhcOptions -D__USE_BSD _D__USE_POSIX"
+        gccEhcOptions="$gccEhcOptions -D__USE_BSD -D__USE_POSIX"
         ;;
   *)
         ;;
