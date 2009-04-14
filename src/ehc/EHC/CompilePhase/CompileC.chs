@@ -136,7 +136,7 @@ cpPreprocessWithCPP modNm
 %%]]
                         preCPP  = mkShellCmd
                                     (  [ Cfg.shellCmdCpp ]
-                                    ++ gccDefs opts ["CPP"]
+                                    ++ [ Cfg.cppOpts ] ++ gccDefs opts ["CPP"]
                                     ++ [ "-traditional-cpp", {- "-std=gnu99", -} "-fno-show-column", "-P" ]
 %%[[(99 codegen)
                                     ++ [ "-I" ++ d | d <- gccInclDirs opts ]

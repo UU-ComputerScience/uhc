@@ -679,6 +679,7 @@ arCmd
 AR_CMD
 libtoolStaticCmd
 GCC_EHC_OPTIONS
+CPP_EHC_OPTIONS
 GHC_EHC_OPTIONS
 SHUFFLE_EHC_OPTIONS
 UUAGC_OPTIONS
@@ -1343,6 +1344,9 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>
+                          Additional options to pass to GCC when compiling
+                          with EHC.
+  --with-cpp-ehc-options=<cpp preprocessor options for ehc's cpp invocation>
                           Additional options to pass to GCC when compiling
                           with EHC.
   --with-ghc-ehc-options=<haskell compiler options for compiling ehc>
@@ -2362,7 +2366,37 @@ if test "${with_gcc_ehc_options+set}" = set; then
   withval=$with_gcc_ehc_options;  gccEhcOptions="$withval"
 fi
 
+
+# additional platform dependend options for gcc when compiling C from within ehc
+case $HostPlatform in
+  i*86-pc-linux-gnu )
+        gccEhcOptions="$gccEhcOptions -D__USE_BSD _D__USE_POSIX"
+        ;;
+  *)
+        ;;
+esac
+
 GCC_EHC_OPTIONS="$gccEhcOptions"
+
+
+### 'with' option for cpp options
+
+# Check whether --with-cpp-ehc-options was given.
+if test "${with_cpp_ehc_options+set}" = set; then
+  withval=$with_cpp_ehc_options;  cppEhcOptions="$withval"
+fi
+
+
+# additional platform dependend options for cpp when compiling C from within ehc
+case $HostPlatform in
+  i*86-pc-linux-gnu )
+        cppEhcOptions="$cppEhcOptions -D__USE_BSD _D__USE_POSIX -D__STDC__"
+        ;;
+  *)
+        ;;
+esac
+
+CPP_EHC_OPTIONS="$cppEhcOptions"
 
 
 ### 'with' option for ghc options
@@ -29334,6 +29368,7 @@ arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
 libtoolStaticCmd!$libtoolStaticCmd$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
+CPP_EHC_OPTIONS!$CPP_EHC_OPTIONS$ac_delim
 GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
 SHUFFLE_EHC_OPTIONS!$SHUFFLE_EHC_OPTIONS$ac_delim
 UUAGC_OPTIONS!$UUAGC_OPTIONS$ac_delim
@@ -29366,7 +29401,6 @@ CC_STD_FLAG!$CC_STD_FLAG$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
 llvmAs!$llvmAs$ac_delim
-LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29408,6 +29442,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
 llvmOpt!$llvmOpt$ac_delim
 LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
 llvmLlc!$llvmLlc$ac_delim
@@ -29450,7 +29485,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 40; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 41; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
