@@ -46,7 +46,7 @@ import Control.Monad
 import System.Posix.Internals
 #endif
 
-import UHC.Prelude
+import UHC.Base
 import UHC.IOBase
 import UHC.Handle
 import UHC.ByteArray

@@ -27,7 +27,7 @@ module UHC.Weak
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.IOBase
 import UHC.Ptr
 import UHC.WeakPtr

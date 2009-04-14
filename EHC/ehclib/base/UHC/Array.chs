@@ -15,7 +15,7 @@
 
 module UHC.Array where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Show
 import UHC.ST
 import UHC.Ix

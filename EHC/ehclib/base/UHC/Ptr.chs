@@ -32,7 +32,7 @@ module UHC.Ptr
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Types
 import UHC.Prims
 import UHC.Show          ( showHex )

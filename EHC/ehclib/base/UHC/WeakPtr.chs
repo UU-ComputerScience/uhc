@@ -14,7 +14,7 @@ module UHC.WeakPtr
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Ptr
 
 %%]

@@ -17,7 +17,7 @@ module UHC.Prims
   -- export all
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Types
 
 #include "MachDeps.h"

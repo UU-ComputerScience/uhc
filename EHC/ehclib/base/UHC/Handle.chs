@@ -69,7 +69,7 @@ module UHC.Handle (
 
  ) where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.MVar
 import UHC.ByteArray
 import UHC.OldException

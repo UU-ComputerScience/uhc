@@ -5,7 +5,7 @@ module UHC.Ix
   )
 where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Ord
 import UHC.Show
 

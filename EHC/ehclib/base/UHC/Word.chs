@@ -6,7 +6,7 @@ module UHC.Word
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Bits
 import UHC.Types
 import UHC.Prims

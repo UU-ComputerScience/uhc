@@ -15,7 +15,7 @@ module UHC.Conc
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.OldException
 import System.Posix.Types
 

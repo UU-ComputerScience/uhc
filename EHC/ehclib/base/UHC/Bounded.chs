@@ -3,7 +3,7 @@
 module UHC.Bounded
 where
 
-import UHC.Prelude
+import UHC.Base
 
 instance Bounded () where
     minBound = ()

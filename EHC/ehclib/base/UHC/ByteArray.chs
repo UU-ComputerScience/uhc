@@ -37,7 +37,7 @@ module UHC.ByteArray
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Ptr
 import UHC.StablePtr
 import UHC.Types
