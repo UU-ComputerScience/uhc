@@ -5,7 +5,7 @@
  */
 
 /* needed only for solaris2_HOST_OS */
-#ifndef __EHC__
+#ifndef __UHC__
 #include "ghcconfig.h"
 #endif
 

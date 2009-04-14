@@ -5,7 +5,7 @@
 
 module EhcPtr1 where
 
-import EHC.Ptr
+import UHC.Ptr
 
 main :: IO ()
 main

@@ -54,7 +54,7 @@ module Numeric (
 
         -- * Miscellaneous
 
-#ifndef __EHC__
+#ifndef __UHC__
 #endif
         fromRat,          -- :: (RealFloat a) => Rational -> a
 
@@ -74,10 +74,10 @@ import qualified Text.Read.Lex as L
 import Data.Char
 #endif
 
-#ifdef __EHC__
-import EHC.Float
-import EHC.Real
-import EHC.Show
+#ifdef __UHC__
+import UHC.Float
+import UHC.Real
+import UHC.Show
 -- import Text.ParserCombinators.ReadP( ReadP, readP_to_S, pfail )
 -- import qualified Text.Read.Lex as L
 #endif
@@ -160,7 +160,7 @@ showInt n0 cs0
         (q,r) = n `quotRem` 10
 #endif  /* __GLASGOW_HASKELL__ */
 
-#if defined(__GLASGOW_HASKELL__) || defined(__EHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__UHC__)
 -- Controlling the format and precision of floats. The code that
 -- implements the formatting itself is in @PrelNum@ to avoid
 -- mutual module deps.
@@ -205,7 +205,7 @@ showFFloat d x =  showString (formatRealFloat FFFixed d x)
 showGFloat d x =  showString (formatRealFloat FFGeneric d x)
 #endif  /* __GLASGOW_HASKELL__ */
 
-#ifndef __EHC__
+#ifndef __UHC__
 -- ---------------------------------------------------------------------------
 -- Integer printing functions
 

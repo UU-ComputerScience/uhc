@@ -31,7 +31,7 @@ C + CPP compilation
 %%[(8 codegen)
 gccDefs :: EHCOpts -> [String] -> [String]
 gccDefs opts builds
-  = map (\d -> "-D__EHC" ++ d ++ "__")
+  = map (\d -> "-D__UHC" ++ d ++ "__")
     $  [ "", "_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
     ++ map ("_BUILDS_" ++) builds
 %%[[(99 codegen grin)
@@ -130,9 +130,9 @@ cpPreprocessWithCPP modNm
        ; when (  ehcOptCPP opts
               || modNm == hsnModIntlPrelude      -- 20080211, AD: builtin hack to preprocess EHC.Prelude with cpp, for now, to avoid implementation of pragmas
               )
-              (do { let defs    = [ "EHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
+              (do { let defs    = [ "UHC", "TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
 %%[[(99 codegen grin)
-                                  ++ (if ehcOptFullProgAnalysis opts then ["EHC_FULL_PROGRAM_ANALYSIS"] else [])
+                                  ++ (if ehcOptFullProgAnalysis opts then ["UHC_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
                         preCPP  = mkShellCmd
                                     (  [ Cfg.shellCmdCpp ]

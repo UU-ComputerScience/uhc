@@ -29,8 +29,8 @@ module Data.Word
 import GHC.Word
 #endif
 
-#ifdef __EHC__
-import EHC.Word
+#ifdef __UHC__
+import UHC.Word
 #endif
 
 #ifdef __HUGS__

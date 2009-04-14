@@ -49,10 +49,10 @@ import GHC.Num
 #elif defined(__NHC__)
 import NHC.FFI                  ( FinalizerPtr, CInt(..) )
 import IO                       ( bracket )
-#elif defined(__EHC__)
+#elif defined(__UHC__)
 import Foreign.ForeignPtr       ( FinalizerPtr )
-import EHC.IOBase
-import EHC.OldException         ( bracket )
+import UHC.IOBase
+import UHC.OldException         ( bracket )
 #else
 import Control.Exception.Base   ( bracket )
 #endif
@@ -182,7 +182,7 @@ failWhenNULL :: String -> IO (Ptr a) -> IO (Ptr a)
 failWhenNULL name f = do
    addr <- f
    if addr == nullPtr
-#if __GLASGOW_HASKELL__ || __HUGS__ || __EHC__
+#if __GLASGOW_HASKELL__ || __HUGS__ || __UHC__
       then ioError (IOError Nothing ResourceExhausted name 
                                         "out of memory" Nothing)
 #else

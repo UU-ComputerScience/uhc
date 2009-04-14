@@ -233,7 +233,7 @@ R f0 <++ q =
 #else
 R f <++ q =
   do s <- look
-#ifdef __EHC__
+#ifdef __UHC__
      probe (f return) s (0::Int)
 #else
      probe (f return) s 0

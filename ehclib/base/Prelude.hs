@@ -17,37 +17,37 @@
 -----------------------------------------------------------------------------
 
 module Prelude
-  ( module EHC.Prelude
-  , module EHC.Eq
-  , module EHC.Ord
-  , module EHC.Enum
-  , module EHC.Bounded
-  , module EHC.Ix
-  , module EHC.Show
-  , module EHC.Read
-  , module EHC.Run
-  , module EHC.OldIO
+  ( module UHC.Prelude
+  , module UHC.Eq
+  , module UHC.Ord
+  , module UHC.Enum
+  , module UHC.Bounded
+  , module UHC.Ix
+  , module UHC.Show
+  , module UHC.Read
+  , module UHC.Run
+  , module UHC.OldIO
   
-  -- EHC.IOBase
+  -- UHC.IOBase
   , unsafePerformIO
   )
   where
 
-import EHC.Prelude hiding
+import UHC.Prelude hiding
   ( absReal, signumReal
   -- , primEqInt
   -- , State, IOWorld, RealWorld
   , ByteArray
   , exitWithIntCode
   )
-import EHC.Eq
-import EHC.Ord
-import EHC.Enum
-import EHC.Bounded
-import EHC.Ix
-import EHC.Show
-import EHC.Read
-import EHC.IOBase
-import EHC.OldIO hiding
+import UHC.Eq
+import UHC.Ord
+import UHC.Enum
+import UHC.Bounded
+import UHC.Ix
+import UHC.Show
+import UHC.Read
+import UHC.IOBase
+import UHC.OldIO hiding
   ( hPutStrLn )
-import EHC.Run
+import UHC.Run

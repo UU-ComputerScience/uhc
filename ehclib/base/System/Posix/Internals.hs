@@ -47,8 +47,8 @@ import GHC.IOBase
 #elif __HUGS__
 import Hugs.Prelude (IOException(..), IOErrorType(..))
 import Hugs.IO (IOMode(..))
-#elif __EHC__
-import EHC.IOBase
+#elif __UHC__
+import UHC.IOBase
 #else
 import System.IO
 #endif
@@ -132,7 +132,7 @@ statGetType p_stat = do
         | s_isblk c_mode        -> return RawDevice
         | otherwise             -> ioError ioe_unknownfiletype
     
-#ifdef __EHC__
+#ifdef __UHC__
 ioe_unknownfiletype :: IOException
 #else
 ioe_unknownfiletype :: IOException
@@ -273,7 +273,7 @@ setCooked fd cooked = do
    then ioError (ioe_unk_error "setCooked" "failed to set buffering")
    else return ()
 
-#ifdef __EHC__
+#ifdef __UHC__
 ioe_unk_error :: String -> String -> IOException
 #else
 ioe_unk_error :: String -> String -> IOException

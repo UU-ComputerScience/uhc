@@ -47,8 +47,8 @@ import NHC.FFI
   )
 #endif
 
-#ifdef __EHC__
-import EHC.StablePtr
+#ifdef __UHC__
+import UHC.StablePtr
 #endif
 
 -- $cinterface

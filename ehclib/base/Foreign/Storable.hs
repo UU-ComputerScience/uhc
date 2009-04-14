@@ -61,9 +61,9 @@ import Hugs.Ptr
 import Hugs.Storable
 #endif
 
-#ifdef __EHC__
-import EHC.Ptr
-import EHC.Storable
+#ifdef __UHC__
+import UHC.Ptr
+import UHC.Storable
 #endif
 
 {- |

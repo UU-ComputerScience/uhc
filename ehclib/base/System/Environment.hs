@@ -49,13 +49,13 @@ import System
   )
 #endif
 
-#ifdef __EHC__
+#ifdef __UHC__
 import Data.List
 import Foreign
 import Foreign.C
-import EHC.OldException         ( bracket )
+import UHC.OldException         ( bracket )
 import Control.Monad
-import EHC.IOBase
+import UHC.IOBase
 #endif
 
 -- ---------------------------------------------------------------------------
@@ -64,7 +64,7 @@ import EHC.IOBase
 -- | Computation 'getArgs' returns a list of the program's command
 -- line arguments (not including the program name).
 
-#if defined(__GLASGOW_HASKELL__) || defined(__EHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__UHC__)
 getArgs :: IO [String]
 getArgs =
   alloca $ \ p_argc ->
@@ -201,7 +201,7 @@ getEnvironment = do
         (xs,[])        -> (xs,[]) -- don't barf (like Posix.getEnvironment)
         (name,_:value) -> (name,value)
 
-#ifdef __EHC__
+#ifdef __UHC__
 foreign import ccall unsafe "getEnviron" 
 #else
 foreign import ccall unsafe "__hscore_environ" 

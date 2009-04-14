@@ -94,7 +94,7 @@ module Foreign.C.Error (
 ) where
 
 
-#ifdef __EHC__
+#ifdef __UHC__
 {- ensure any defs are commented out, and errno not expanded
 #include "errno.h"
 #undef errno
@@ -121,8 +121,8 @@ import GHC.Base
 #elif __HUGS__
 import Hugs.Prelude             ( Handle, IOError, ioError )
 import System.IO.Unsafe         ( unsafePerformIO )
-#elif __EHC__
-import EHC.IOBase
+#elif __UHC__
+import UHC.IOBase
 #else
 import System.IO                ( Handle )
 import System.IO.Error          ( IOError, ioError )
@@ -297,7 +297,7 @@ getErrno :: IO Errno
 #ifdef __NHC__
 getErrno = do e <- peek _errno; return (Errno e)
 foreign import ccall unsafe "errno.h &errno" _errno :: Ptr CInt
-#elif __EHC__
+#elif __UHC__
 getErrno = do e <- _getErrno; return (Errno e)
 foreign import ccall unsafe _getErrno :: IO CInt
 #else
@@ -312,7 +312,7 @@ resetErrno :: IO ()
 -- Again, setting errno has to be done via a C function.
 #ifdef __NHC__
 resetErrno = poke _errno 0
-#elif __EHC__
+#elif __UHC__
 resetErrno = _setErrno 0
 foreign import ccall unsafe _setErrno :: CInt -> IO ()
 #else

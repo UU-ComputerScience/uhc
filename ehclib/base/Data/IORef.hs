@@ -51,10 +51,10 @@ import NHC.IOExtras
     )
 #endif
 
-#ifdef __EHC__
-import EHC.MutVar
-import EHC.STRef
-import EHC.IOBase
+#ifdef __UHC__
+import UHC.MutVar
+import UHC.STRef
+import UHC.IOBase
 #endif
 
 
@@ -84,7 +84,7 @@ atomicModifyIORef :: IORef a -> (a -> (a,b)) -> IO b
 #if defined(__GLASGOW_HASKELL__)
 atomicModifyIORef (IORef (STRef r#)) f = IO $ \s -> atomicModifyMutVar# r# f s
 
-#elif defined(__EHC__)
+#elif defined(__UHC__)
 atomicModifyIORef (IORef (STRef r)) f = IO $ \s -> atomicModifyMutVar r f s
 -- atomicModifyIORef (IORef (STRef r)) f = ioFromPrim (\s -> case atomicModifyMutVar r f s of {(_,r') -> r'})
 

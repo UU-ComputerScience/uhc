@@ -129,8 +129,8 @@ import IO
 --import Control.Monad (MonadPlus(mplus))
 #endif
 
-#ifdef __EHC__
-import EHC.IOBase
+#ifdef __UHC__
+import UHC.IOBase
 #endif
 
 -- | The construct 'try' @comp@ exposes IO errors which occur within a
@@ -139,14 +139,14 @@ import EHC.IOBase
 -- Non-I\/O exceptions are not caught by this variant; to catch all
 -- exceptions, use 'Control.Exception.try' from "Control.Exception".
 
-#if !defined(__NHC__) && !defined(__EHC__)
+#if !defined(__NHC__) && !defined(__UHC__)
 try            :: IO a -> IO (Either IOError a)
 try f          =  catch (do r <- f
                             return (Right r))
                         (return . Left)
 #endif
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__EHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__UHC__)
 -- -----------------------------------------------------------------------------
 -- Constructing an IOError
 
@@ -327,7 +327,7 @@ isUserErrorType _ = False
 -- -----------------------------------------------------------------------------
 -- Miscellaneous
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__EHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__UHC__)
 ioeGetErrorType       :: IOError -> IOErrorType
 ioeGetErrorString     :: IOError -> String
 ioeGetLocation        :: IOError -> String

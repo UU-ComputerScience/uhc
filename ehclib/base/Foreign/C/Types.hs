@@ -91,9 +91,9 @@ import Control.Monad    ( liftM )
 import Hugs.Ptr         ( castPtr )
 #endif
 
-#ifdef __EHC__
-import EHC.Ptr
-import EHC.Types
+#ifdef __UHC__
+import UHC.Ptr
+import UHC.Types
 #endif
 
 #include "HsBaseConfig.h"
@@ -101,7 +101,7 @@ import EHC.Types
 
 -- A slightly different def of properFraction is required to avoid problems with absence of monomorphism restriction.
 -- It should be a temporary solution.
-#ifdef __EHC__
+#ifdef __UHC__
 #define INSTANCE_EHC_REALFRAC(T) \
 instance RealFrac T where { \
    properFraction (T x) :: (mt,...) = let (m::mt,y) = properFraction x in (m::mt, T y) ; \
@@ -120,7 +120,7 @@ INSTANCE_REALFLOAT(T)
 #endif
 
 -- | Haskell type representing the C @char@ type.
-#ifdef __EHC__
+#ifdef __UHC__
 ARITHMETIC_TYPE_INSTANCES(CChar,tyConCChar,"CChar",HTYPE_CHAR)
 INTEGRAL_TYPE_INSTANCES(CChar,tyConCChar,"CChar",HTYPE_CHAR)
 INSTANCE_EQ(CChar)
@@ -140,7 +140,7 @@ INTEGRAL_TYPE(CShort,tyConCShort,"CShort",HTYPE_SHORT)
 INTEGRAL_TYPE(CUShort,tyConCUShort,"CUShort",HTYPE_UNSIGNED_SHORT)
 
 -- | Haskell type representing the C @int@ type.
-#ifdef __EHC__
+#ifdef __UHC__
 ARITHMETIC_TYPE_INSTANCES(CInt,tyConCInt,"CInt",HTYPE_INT)
 INTEGRAL_TYPE_INSTANCES(CInt,tyConCInt,"CInt",HTYPE_INT)
 INSTANCE_EQ(CInt)
@@ -189,20 +189,20 @@ INTEGRAL_TYPE(CULLong,tyConCULLong,"CULLong",HTYPE_UNSIGNED_LONG_LONG)
  #-}
 
 -- | Haskell type representing the C @float@ type.
-#ifdef __EHC__
+#ifdef __UHC__
 FLOATING_EHC_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
 #else
 FLOATING_TYPE(CFloat,tyConCFloat,"CFloat",HTYPE_FLOAT)
 #endif
 -- | Haskell type representing the C @double@ type.
-#ifdef __EHC__
+#ifdef __UHC__
 FLOATING_EHC_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
 #else
 FLOATING_TYPE(CDouble,tyConCDouble,"CDouble",HTYPE_DOUBLE)
 #endif
 -- HACK: Currently no long double in the FFI, so we simply re-use double
 -- | Haskell type representing the C @long double@ type.
-#ifdef __EHC__
+#ifdef __UHC__
 FLOATING_EHC_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
 #else
 FLOATING_TYPE(CLDouble,tyConCLDouble,"CLDouble",HTYPE_DOUBLE)
