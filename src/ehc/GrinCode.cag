@@ -165,7 +165,8 @@ data GrAltAnn
 %%[(99 codegen grin) hs export(grFFIAnnotIsResEvaluated)
 grFFIAnnotIsResEvaluated :: GrFFIAnnot -> Bool
 grFFIAnnotIsResEvaluated (GrFFIAnnot_IsResEval b) = b
-grFFIAnnotIsResEvaluated _                        = True
+-- comment away when GrFFIAnnot is extended, for this avoid ghc warnings
+-- grFFIAnnotIsResEvaluated _                        = True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

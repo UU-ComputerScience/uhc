@@ -4,7 +4,7 @@ module UHC.Char
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 %%]
 
 %%[99

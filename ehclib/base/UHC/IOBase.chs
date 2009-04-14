@@ -57,7 +57,7 @@ module UHC.IOBase
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.ST
 import UHC.STRef
 import UHC.Types

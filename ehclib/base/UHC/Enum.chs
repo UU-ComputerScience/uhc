@@ -3,7 +3,7 @@
 module UHC.Enum
 where
 
-import UHC.Prelude
+import UHC.Base
 
 instance Enum () where
     toEnum 0           = ()

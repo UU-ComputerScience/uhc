@@ -19,7 +19,7 @@ module Debug.Trace (
         traceShow
   ) where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.OldIO
 import System.IO.Unsafe
 

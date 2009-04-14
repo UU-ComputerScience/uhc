@@ -20,7 +20,7 @@
 -- #hide
 module UHC.ST where
 
-import UHC.Prelude
+import UHC.Base
 
 -- default ()
 \end{code}

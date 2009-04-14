@@ -53,7 +53,7 @@ module UHC.Storable
         , writeWord64OffPtr   
         ) where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.StablePtr
 import UHC.Types
 import UHC.Ptr

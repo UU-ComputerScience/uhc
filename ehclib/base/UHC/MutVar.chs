@@ -9,7 +9,7 @@ module UHC.MutVar
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 
 %%]
 

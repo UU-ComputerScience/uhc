@@ -3,7 +3,7 @@
 module UHC.Ord
 where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Eq
 
 #include "TupleInstance.h"

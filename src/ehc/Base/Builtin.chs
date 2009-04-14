@@ -276,7 +276,7 @@ mkRV m = hsnSetQual m . hsnFromString
 %%[[1
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlNum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlNum)
 %%]]
       [ "negate" ]
 %%]
@@ -287,7 +287,7 @@ mkRV m = hsnSetQual m . hsnFromString
 %%[[1
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlBase)
 %%]]
       [ "error" ]
 %%]
@@ -304,7 +304,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[5
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlEnum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlEnum)
 %%]]
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
@@ -325,7 +325,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[5
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlBase)
 %%]]
       [ "[]", ":", "[]", "concatMap"
       , "Bool", "True", "False"
@@ -371,7 +371,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[8
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlBase)
 %%]]
       [ "undefined"
       , "PackedString"
@@ -413,7 +413,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlBase)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlBase)
 %%]]
       [ ">>", ">>=", "fail"
       , "Eq"
@@ -464,7 +464,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlShow)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlShow)
 %%]]
       [ "Show"
       , "show", "showsPrec"
@@ -481,7 +481,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[9
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlRead)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlRead)
 %%]]
       [ "Read"
       , "read", "readsPrec"
@@ -499,7 +499,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlNum)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlNum)
 %%]]
       [ "fromInteger" ]
 %%]
@@ -511,7 +511,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude)
+      (mkRV hsnModIntlBase)
 %%]]
       [ "Float", "Double"
       ]
@@ -549,7 +549,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlFractional)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlFractional)
 %%]]
       [ "fromRational" ]
 %%]
@@ -560,7 +560,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude) -- (mkRV hsnModIntlRatio)
+      (mkRV hsnModIntlBase) -- (mkRV hsnModIntlRatio)
 %%]]
       [ ":%" ]
 %%]
@@ -575,7 +575,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[98
       mkRV
 %%][99
-      (mkRV hsnModIntlPrelude)
+      (mkRV hsnModIntlBase)
 %%]]
       [ "IO", "Handle", "ByteArray", "RealWorld" ]
 %%]
@@ -613,7 +613,7 @@ hsnIsInPrelude n
       _         -> False
 %%]
 
-%%[99 export(hsnModPrelude,hsnModIntlPrelude)
+%%[99 export(hsnModPrelude,hsnModIntlBase)
 -- hsnModIntlRatio                         =   hsnPrefixQual hsnUHC (hsnFromString "Ratio")
 -- hsnModIntlReal                          =   hsnPrefixQual hsnUHC (hsnFromString "Real")
 -- hsnModIntlFractional                    =   hsnPrefixQual hsnUHC (hsnFromString "Fractional")
@@ -622,7 +622,6 @@ hsnModIntlEnum                          =   hsnPrefixQual hsnUHC (hsnFromString 
 hsnModIntlNum                           =   hsnPrefixQual hsnUHC (hsnFromString "Num")
 hsnModIntlRead                          =   hsnPrefixQual hsnUHC (hsnFromString "Read")
 hsnModIntlShow                          =   hsnPrefixQual hsnUHC (hsnFromString "Show")
-hsnModIntlPrelude                       =   hsnPrefixQual hsnUHC (hsnFromString "Prelude")
 hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
 

@@ -12,7 +12,7 @@ module UHC.Show
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Char
 import UHC.Float
 

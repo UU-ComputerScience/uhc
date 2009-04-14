@@ -6,7 +6,7 @@ module UHC.Int
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.Types
 import UHC.Prims
 import UHC.Bits

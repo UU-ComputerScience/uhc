@@ -17,7 +17,7 @@
 -----------------------------------------------------------------------------
 
 module Prelude
-  ( module UHC.Prelude
+  ( module UHC.Base
   , module UHC.Eq
   , module UHC.Ord
   , module UHC.Enum
@@ -33,7 +33,7 @@ module Prelude
   )
   where
 
-import UHC.Prelude hiding
+import UHC.Base hiding
   ( absReal, signumReal
   -- , primEqInt
   -- , State, IOWorld, RealWorld

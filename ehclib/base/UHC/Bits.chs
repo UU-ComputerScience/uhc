@@ -3,7 +3,7 @@ module UHC.Bits
   -- export everything
   where
 
-import UHC.Prelude
+import UHC.Base
 
 #include "IntLikeInstance.h"
 

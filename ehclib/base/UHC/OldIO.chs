@@ -15,7 +15,7 @@ module UHC.OldIO
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.IOBase
 %%]
 

@@ -1,5 +1,5 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Types not defined in UHC.Prelude but required for UHC.XX modules
+%%% Types not defined in UHC.Base but required for UHC.XX modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
@@ -15,7 +15,7 @@ module UHC.Types
   -- export all
   where
 
-import UHC.Prelude
+import UHC.Base
 
 #include "HsBaseConfig.h"
 #include "CTypes.h"

@@ -18,7 +18,7 @@ module UHC.OldException
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.IOBase
 
 %%]

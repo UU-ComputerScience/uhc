@@ -39,7 +39,7 @@ module UHC.ForeignPtr
         finalizeForeignPtr
   ) where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.ByteArray
 import UHC.Storable
 import UHC.IOBase

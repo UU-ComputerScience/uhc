@@ -3,7 +3,7 @@
 module UHC.Eq
 where
 
-import UHC.Prelude
+import UHC.Base
 
 #include "TupleInstance.h"
 

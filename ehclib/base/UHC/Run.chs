@@ -8,7 +8,7 @@ module UHC.Run
   )
   where
 
-import UHC.Prelude
+import UHC.Base
 import UHC.IOBase
 import UHC.OldException
 import UHC.OldIO
