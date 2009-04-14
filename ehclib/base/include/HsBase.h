@@ -248,7 +248,7 @@ INLINE int __hscore_s_issock(mode_t m) { return S_ISSOCK(m); }
 #endif
 #endif
 
-#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_WIN32)
+#if ( !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_WIN32) ) || defined(__CYGWIN__)
 INLINE int
 __hscore_sigemptyset( sigset_t *set )
 { return sigemptyset(set); }
@@ -471,7 +471,7 @@ __hscore_PrelHandle_recv( int fd, void *ptr, HsInt off, int sz )
 INLINE int
 __hscore_mkdir( char *pathName, int mode )
 {
-#if defined(_MSC_VER) || defined(__MINGW32__) || defined(_WIN32)
+#if ( defined(_MSC_VER) || defined(__MINGW32__) || defined(_WIN32) ) && !defined(__CYGWIN__)
   return mkdir(pathName);
 #else
   return mkdir(pathName,mode);
