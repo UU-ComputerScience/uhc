@@ -33,8 +33,8 @@ import GHC.Int  ( Int8, Int16, Int32, Int64 )
 import Hugs.Int ( Int8, Int16, Int32, Int64 )
 #endif
 
-#ifdef __EHC__
-import EHC.Int ( Int8, Int16, Int32, Int64 )
+#ifdef __UHC__
+import UHC.Int ( Int8, Int16, Int32, Int64 )
 #endif
 
 #ifdef __NHC__

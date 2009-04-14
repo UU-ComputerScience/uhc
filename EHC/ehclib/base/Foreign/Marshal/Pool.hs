@@ -56,8 +56,8 @@ import GHC.Num               ( Num(..) )
 import Data.IORef            ( IORef, newIORef, readIORef, writeIORef )
 #if defined(__NHC__)
 import IO                    ( bracket )
-#elif defined(__EHC__)
-import EHC.OldException      ( bracket )
+#elif defined(__UHC__)
+import UHC.OldException      ( bracket )
 #else
 import Control.Exception.Base ( bracket )
 #endif

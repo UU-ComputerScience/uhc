@@ -26,7 +26,7 @@ module Data.Char
     , isControl, isSpace
     , isLower, isUpper, isAlpha, isAlphaNum, isPrint
     , isDigit, isOctDigit, isHexDigit
-#ifndef __EHC__
+#ifndef __UHC__
     , isLetter, isMark, isNumber, isPunctuation, isSymbol, isSeparator
 #endif
 
@@ -34,7 +34,7 @@ module Data.Char
     , isAscii, isLatin1
     , isAsciiUpper, isAsciiLower
 
-#ifndef __EHC__
+#ifndef __UHC__
     -- ** Unicode general categories
     , GeneralCategory(..), generalCategory
 #endif
@@ -83,8 +83,8 @@ import NHC.FFI (CInt)
 foreign import ccall unsafe "WCsubst.h u_gencat" wgencat :: CInt -> CInt
 #endif
 
-#ifdef __EHC__
-import EHC.Char
+#ifdef __UHC__
+import UHC.Char
 #endif
 
 -- | Convert a single digit 'Char' to the corresponding 'Int'.  
@@ -107,7 +107,7 @@ isAsciiUpper c          =  c >= 'A' && c <= 'Z'
 -- | Unicode General Categories (column 2 of the UnicodeData table)
 -- in the order they are listed in the Unicode standard.
 
-#ifndef __EHC__
+#ifndef __UHC__
 data GeneralCategory
         = UppercaseLetter       -- ^ Lu: Letter, Uppercase
         | LowercaseLetter       -- ^ Ll: Letter, Lowercase
@@ -215,7 +215,7 @@ isSeparator c = case generalCategory c of
 #endif
 
 -- Use report definitions
-#ifdef __EHC__
+#ifdef __UHC__
 -- Character-testing operations
 isAscii, isLatin1, isControl, isPrint :: Char -> Bool
 isAscii c = c < '\x80'
@@ -228,7 +228,7 @@ foreign import ccall "primCharToLower" toLower :: Char -> Char
 
 #endif
 
-#if (defined(__NHC__) || defined(__EHC__))
+#if (defined(__NHC__) || defined(__UHC__))
 -- dummy implementation
 toTitle :: Char -> Char
 toTitle = toUpper

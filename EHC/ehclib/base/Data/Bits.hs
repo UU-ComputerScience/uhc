@@ -42,7 +42,7 @@ module Data.Bits (
 -- See library document for details on the semantics of the
 -- individual operations.
 
-#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__EHC__)
+#if defined(__GLASGOW_HASKELL__) || defined(__HUGS__) || defined(__UHC__)
 #include "MachDeps.h"
 #endif
 
@@ -56,10 +56,10 @@ import GHC.Base
 import Hugs.Bits
 #endif
 
-#if defined(__EHC__)
+#if defined(__UHC__)
 #include "IntLikeInstance.h"
 
-import EHC.Bits
+import UHC.Bits
 #endif
 
 infixl 8 `shift`, `rotate`, `shiftL`, `shiftR`, `rotateL`, `rotateR`
@@ -251,7 +251,7 @@ instance Bits Int where
     shiftL                 = nhc_primIntLsh
     shiftR                 = nhc_primIntRsh
     bitSize _              = 32
-#elif defined(__EHC__)
+#elif defined(__UHC__)
     (.&.)                  = primAndInt
     (.|.)                  = primOrInt
     xor                    = primXorInt
@@ -260,12 +260,12 @@ instance Bits Int where
     shiftR                 = primShiftRightInt
     rotateL                = primRotateLeftInt
     rotateR                = primRotateRightInt
-#if __EHC_TARGET_BC__
+#if __UHC_TARGET_BC__
     bitSize _              = SIZEOF_HSINT*8 - BITSIZEOF_WORDTAG
 #else
     bitSize _              = SIZEOF_HSINT*8
 #endif
-#endif /* __NHC__ , __EHC__ */
+#endif /* __NHC__ , __UHC__ */
 
     x `rotate`  i
         | i<0 && x<0       = let left = i+bitSize x in
@@ -294,7 +294,7 @@ instance Bits Integer where
    (.|.) = orInteger
    xor = xorInteger
    complement = complementInteger
-#elif defined(__EHC__)
+#elif defined(__UHC__)
    (.&.) = primAndInteger
    (.|.) = primOrInteger
    xor = primXorInteger
@@ -317,7 +317,7 @@ instance Bits Integer where
    complement a = -1 - a
 #endif
 
-#ifdef __EHC__
+#ifdef __UHC__
    shiftL = primShiftLeftInteger
    shiftR = primShiftRightInteger
 #else
@@ -330,7 +330,7 @@ instance Bits Integer where
    bitSize _  = error "Data.Bits.bitSize(Integer)"
    isSigned _ = True
 
-#if !defined(__GLASGOW_HASKELL__) && !defined(__EHC__)
+#if !defined(__GLASGOW_HASKELL__) && !defined(__UHC__)
 -- Crude implementation of bitwise operations on Integers: convert them
 -- to finite lists of Ints (least significant first), zip and convert
 -- back again.

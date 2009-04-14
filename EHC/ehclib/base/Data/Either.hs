@@ -21,7 +21,7 @@ module Data.Either (
    partitionEithers, -- :: [Either a b] -> ([a],[b])
  ) where
 
-#ifndef __EHC__
+#ifndef __UHC__
 #include "Typeable.h"
 #endif
 
@@ -31,7 +31,7 @@ import GHC.Show
 import GHC.Read
 #endif
 
-#ifndef __EHC__
+#ifndef __UHC__
 import Data.Typeable
 #endif
 
@@ -61,7 +61,7 @@ either f _ (Left x)     =  f x
 either _ g (Right y)    =  g y
 #endif  /* __GLASGOW_HASKELL__ */
 
-#ifndef __EHC__
+#ifndef __UHC__
 INSTANCE_TYPEABLE2(Either,eitherTc,"Either")
 #endif
 

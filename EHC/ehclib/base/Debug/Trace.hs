@@ -19,13 +19,13 @@ module Debug.Trace (
         traceShow
   ) where
 
-import EHC.Prelude
-import EHC.OldIO
+import UHC.Prelude
+import UHC.OldIO
 import System.IO.Unsafe
 
 #ifdef __GLASGOW_HASKELL__
 import Foreign.C.String
-#elif __EHC__
+#elif __UHC__
 -- import System.IO (hPutStrLn,stderr)
 #else
 import System.IO (hPutStrLn,stderr)

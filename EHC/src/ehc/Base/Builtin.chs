@@ -604,33 +604,33 @@ hsnModBuiltin                       =   mkHNm "#Builtin"
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(hsnIsInPrelude)
-hsnEHC                              =   hsnFromString "EHC"
+hsnUHC                              =   hsnFromString "UHC"
 
 hsnIsInPrelude :: HsName -> Bool
 hsnIsInPrelude n
   = case hsnInitLast n of
-      ((m:_),_) -> m == hsnEHC
+      ((m:_),_) -> m == hsnUHC
       _         -> False
 %%]
 
 %%[99 export(hsnModPrelude,hsnModIntlPrelude)
--- hsnModIntlRatio                         =   hsnPrefixQual hsnEHC (hsnFromString "Ratio")
--- hsnModIntlReal                          =   hsnPrefixQual hsnEHC (hsnFromString "Real")
--- hsnModIntlFractional                    =   hsnPrefixQual hsnEHC (hsnFromString "Fractional")
-hsnModIntlBase                          =   hsnPrefixQual hsnEHC (hsnFromString "Base")
-hsnModIntlEnum                          =   hsnPrefixQual hsnEHC (hsnFromString "Enum")
-hsnModIntlNum                           =   hsnPrefixQual hsnEHC (hsnFromString "Num")
-hsnModIntlRead                          =   hsnPrefixQual hsnEHC (hsnFromString "Read")
-hsnModIntlShow                          =   hsnPrefixQual hsnEHC (hsnFromString "Show")
-hsnModIntlPrelude                       =   hsnPrefixQual hsnEHC (hsnFromString "Prelude")
+-- hsnModIntlRatio                         =   hsnPrefixQual hsnUHC (hsnFromString "Ratio")
+-- hsnModIntlReal                          =   hsnPrefixQual hsnUHC (hsnFromString "Real")
+-- hsnModIntlFractional                    =   hsnPrefixQual hsnUHC (hsnFromString "Fractional")
+hsnModIntlBase                          =   hsnPrefixQual hsnUHC (hsnFromString "Base")
+hsnModIntlEnum                          =   hsnPrefixQual hsnUHC (hsnFromString "Enum")
+hsnModIntlNum                           =   hsnPrefixQual hsnUHC (hsnFromString "Num")
+hsnModIntlRead                          =   hsnPrefixQual hsnUHC (hsnFromString "Read")
+hsnModIntlShow                          =   hsnPrefixQual hsnUHC (hsnFromString "Show")
+hsnModIntlPrelude                       =   hsnPrefixQual hsnUHC (hsnFromString "Prelude")
 hsnModPrelude                           =                         hsnFromString "Prelude"
 %%]
 
 %%[99
-hsnModIntlTypes                         =   hsnPrefixQual hsnEHC (hsnFromString "Types")
-hsnModIntlPtr                           =   hsnPrefixQual hsnEHC (hsnFromString "Ptr")
-hsnModIntlRun                           =   hsnPrefixQual hsnEHC (hsnFromString "Run")
-hsnModIntlIOBase                        =   hsnPrefixQual hsnEHC (hsnFromString "IOBase")
+hsnModIntlTypes                         =   hsnPrefixQual hsnUHC (hsnFromString "Types")
+hsnModIntlPtr                           =   hsnPrefixQual hsnUHC (hsnFromString "Ptr")
+hsnModIntlRun                           =   hsnPrefixQual hsnUHC (hsnFromString "Run")
+hsnModIntlIOBase                        =   hsnPrefixQual hsnUHC (hsnFromString "IOBase")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

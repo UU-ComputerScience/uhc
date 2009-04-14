@@ -81,7 +81,7 @@ module Data.Typeable
 
   ) where
 
-#ifndef __EHC__
+#ifndef __UHC__
 import qualified Data.HashTable as HT
 #endif
 import Data.Maybe
@@ -149,7 +149,7 @@ data TypeRep = TypeRep !Key TyCon [TypeRep]
 
 -- Compare keys for equality
 instance Eq TypeRep where
-#ifdef __EHC__
+#ifdef __UHC__
   (TypeRep _ c1 r1) == (TypeRep _ c2 r2) = c1 == c2 && r1 == r2
 #else
   (TypeRep k1 _ _) == (TypeRep k2 _ _) = k1 == k2
@@ -160,7 +160,7 @@ instance Eq TypeRep where
 data TyCon = TyCon !Key String
 
 instance Eq TyCon where
-#ifdef __EHC__
+#ifdef __UHC__
   (TyCon _ s1) == (TyCon _ s2) = s1 == s2
 #else
   (TyCon t1 _) == (TyCon t2 _) = t1 == t2
@@ -448,7 +448,7 @@ instance (Typeable7 s, Typeable a)
 
 -- | The type-safe cast operation
 cast :: (Typeable a, Typeable b) => a -> Maybe b
-#ifdef __EHC__
+#ifdef __UHC__
 cast x = Nothing
 #else
 cast x = r
@@ -460,7 +460,7 @@ cast x = r
 
 -- | A flexible variation parameterised in a type constructor
 gcast :: (Typeable a, Typeable b) => c a -> Maybe (c b)
-#ifdef __EHC__
+#ifdef __UHC__
 gcast x = Nothing
 #else
 gcast x = r
@@ -474,7 +474,7 @@ gcast x = r
 
 -- | Cast for * -> *
 gcast1 :: (Typeable1 t, Typeable1 t') => c (t a) -> Maybe (c (t' a)) 
-#ifdef __EHC__
+#ifdef __UHC__
 gcast1 x = Nothing
 #else
 gcast1 x = r
@@ -488,7 +488,7 @@ gcast1 x = r
 
 -- | Cast for * -> * -> *
 gcast2 :: (Typeable2 t, Typeable2 t') => c (t a b) -> Maybe (c (t' a b)) 
-#ifdef __EHC__
+#ifdef __UHC__
 gcast2 x = Nothing
 #else
 gcast2 x = r
@@ -510,7 +510,7 @@ INSTANCE_TYPEABLE0((),unitTc,"()")
 INSTANCE_TYPEABLE1([],listTc,"[]")
 INSTANCE_TYPEABLE1(Maybe,maybeTc,"Maybe")
 INSTANCE_TYPEABLE1(Ratio,ratioTc,"Ratio")
-#ifdef __EHC__
+#ifdef __UHC__
 funTc  = error "Data.Typeable.funTc"
 -- listTc = error "Data.Typeable.listTc"
 #else
@@ -565,7 +565,7 @@ INSTANCE_TYPEABLE0(Char,charTc,"Char")
 INSTANCE_TYPEABLE0(Float,floatTc,"Float")
 INSTANCE_TYPEABLE0(Double,doubleTc,"Double")
 INSTANCE_TYPEABLE0(Int,intTc,"Int")
-#ifndef __EHC__
+#ifndef __UHC__
 #ifndef __NHC__
 INSTANCE_TYPEABLE0(Word,wordTc,"Word" )
 #endif
@@ -574,7 +574,7 @@ INSTANCE_TYPEABLE0(Integer,integerTc,"Integer")
 INSTANCE_TYPEABLE0(Ordering,orderingTc,"Ordering")
 INSTANCE_TYPEABLE0(Handle,handleTc,"Handle")
 
-#ifndef __EHC__
+#ifndef __UHC__
 INSTANCE_TYPEABLE0(Int8,int8Tc,"Int8")
 INSTANCE_TYPEABLE0(Int16,int16Tc,"Int16")
 INSTANCE_TYPEABLE0(Int32,int32Tc,"Int32")
@@ -603,7 +603,7 @@ INSTANCE_TYPEABLE0(RealWorld,realWorldTc,"RealWorld")
 newtype Key = Key Int deriving( Eq )
 #endif
 
-#ifndef __EHC__
+#ifndef __UHC__
 
 data KeyPr = KeyPr !Key !Key deriving( Eq )
 
@@ -661,7 +661,7 @@ foreign import ccall unsafe "genSymZh"
 
 mkTyConKey :: String -> Key
 mkTyConKey str 
-#ifdef __EHC__
+#ifdef __UHC__
   = Key 0
 #else
   = unsafePerformIO $ do
@@ -676,7 +676,7 @@ mkTyConKey str
 
 appKey :: Key -> Key -> Key
 appKey k1 k2
-#ifdef __EHC__
+#ifdef __UHC__
   = Key 0
 #else
   = unsafePerformIO $ do

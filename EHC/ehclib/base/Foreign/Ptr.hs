@@ -91,8 +91,8 @@ import NHC.FFI
 import Hugs.Ptr
 #endif
 
-#ifdef __EHC__
-import EHC.Ptr
+#ifdef __UHC__
+import UHC.Ptr
 #endif
 
 #ifdef __GLASGOW_HASKELL__
@@ -142,7 +142,7 @@ INTEGRAL_TYPE(IntPtr,tyConIntPtr,"IntPtr",CIntPtr)
 
 {-# CFILES cbits/PrelIOUtils.c #-}
 
-#  ifdef __EHC__
+#  ifdef __UHC__
 
 foreign import prim "primUnsafeId"
     ptrToWordPtr :: Ptr a -> WordPtr
@@ -156,7 +156,7 @@ foreign import prim "primUnsafeId"
 foreign import prim "primUnsafeId"
     intPtrToPtr :: IntPtr -> Ptr a
 
-#  else /* !__EHC__ */
+#  else /* !__UHC__ */
 
 foreign import ccall unsafe "__hscore_to_uintptr"
     ptrToWordPtr :: Ptr a -> WordPtr
@@ -170,7 +170,7 @@ foreign import ccall unsafe "__hscore_to_intptr"
 foreign import ccall unsafe "__hscore_from_intptr"
     intPtrToPtr :: IntPtr -> Ptr a
 
-#  endif /* !__EHC__ */
+#  endif /* !__UHC__ */
 
 # endif /* !__GLASGOW_HASKELL__ */
 #endif /* !__NHC_ */

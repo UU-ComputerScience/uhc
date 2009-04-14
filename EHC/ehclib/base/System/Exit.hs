@@ -38,9 +38,9 @@ import System
   )
 #endif
 
-#ifdef __EHC__
-import EHC.IOBase
-import EHC.OldException (throwIO)
+#ifdef __UHC__
+import UHC.IOBase
+import UHC.OldException (throwIO)
 #endif
 
 -- ---------------------------------------------------------------------------
@@ -65,7 +65,7 @@ import EHC.OldException (throwIO)
 
 #ifndef __NHC__
 exitWith :: ExitCode -> IO a
-#ifdef __EHC__
+#ifdef __UHC__
 exitWith code = throwIO (ExitException code)
 #else
 exitWith ExitSuccess = throwIO ExitSuccess
@@ -74,7 +74,7 @@ exitWith code@(ExitFailure n)
 #ifdef __GLASGOW_HASKELL__
   | otherwise = ioError (IOError Nothing InvalidArgument "exitWith" "ExitFailure 0" Nothing)
 #endif  /* __GLASGOW_HASKELL__ */
-#endif  /* __EHC__ */
+#endif  /* __UHC__ */
 #endif  /* ! __NHC__ */
 
 -- | The computation 'exitFailure' is equivalent to

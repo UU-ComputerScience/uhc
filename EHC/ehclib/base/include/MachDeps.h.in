@@ -63,7 +63,7 @@
 #define USE_32_BITS 1
 #endif
 
-#ifdef __EHC_TARGET_BC__
+#ifdef __UHC_TARGET_BC__
 #define BITSIZEOF_WORDTAG		1
 #else
 #define BITSIZEOF_WORDTAG		0

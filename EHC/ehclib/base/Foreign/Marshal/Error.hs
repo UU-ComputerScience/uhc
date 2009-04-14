@@ -40,8 +40,8 @@ import GHC.Num
 import GHC.IOBase
 #endif
 
-#ifdef __EHC__
-import EHC.IOBase
+#ifdef __UHC__
+import UHC.IOBase
 #endif
 
 -- exported functions

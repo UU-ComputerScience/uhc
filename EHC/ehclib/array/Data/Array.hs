@@ -67,8 +67,8 @@ import Hugs.Array
 import Array -- Haskell'98 arrays
 #endif
 
-#ifdef __EHC__
-import EHC.Array
+#ifdef __UHC__
+import UHC.Array
 #endif
 
 -- For instances:

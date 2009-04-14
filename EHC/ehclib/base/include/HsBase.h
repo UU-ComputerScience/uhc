@@ -12,7 +12,7 @@
 #define __HSBASE_H__
 
 #include "HsBaseConfig.h"
-#ifdef __EHC_BUILDS_O__
+#ifdef __UHC_BUILDS_O__
 #include "rts.h"
 #endif
 
@@ -28,9 +28,9 @@
    must work in both single-threaded and multi-threaded programs. */
 #define _REENTRANT 1
 
-#ifndef __EHC__
+#ifndef __UHC__
 #include "HsFFI.h"
-#endif /* !__EHC__ */
+#endif /* !__UHC__ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -133,10 +133,10 @@
 #include <vfork.h>
 #endif
 
-#ifndef __EHC__
+#ifndef __UHC__
 #include "dirUtils.h"
 #include "WCsubst.h"
-#endif /* !__EHC__ */
+#endif /* !__UHC__ */
 
 #if defined(__MINGW32__)
 /* in Win32Utils.c */
@@ -158,12 +158,12 @@ extern HsWord64 getUSecOfDay(void);
 /* in inputReady.c */
 extern int fdReady(int fd, int write, int msecs, int isSock);
 
-#ifndef __EHC__
+#ifndef __UHC__
 /* in Signals.c */
 extern HsInt nocldstop;
-#endif /* !__EHC__ */
+#endif /* !__UHC__ */
 
-#ifndef __EHC__
+#ifndef __UHC__
 /* -----------------------------------------------------------------------------
    64-bit operations, defined in longlong.c
    -------------------------------------------------------------------------- */
@@ -216,7 +216,7 @@ HsWord64 hs_integerToWord64 (HsInt sa, StgByteArray /* Really: mp_limb_t* */ da)
 HsInt64  hs_integerToInt64 (HsInt sa, StgByteArray /* Really: mp_limb_t* */ da);
 
 #endif /* SUPPORT_LONG_LONGS */
-#endif /* !__EHC__ */
+#endif /* !__UHC__ */
 
 /* -----------------------------------------------------------------------------
    INLINE functions.

@@ -846,7 +846,7 @@ PRIM GB_Word gb_primExitWith( GB_Word exitCode )
 }
 %%]
 
-Whereas this is left to the runtime wrapper (see EHC.Prelude.ehcRunMain) in this version
+Whereas this is left to the runtime wrapper (see UHC.Prelude.ehcRunMain) in this version
 
 %%[99 -96.gb_primExitWith
 PRIM GB_Word gb_primExitWith( GB_Word exitCode )

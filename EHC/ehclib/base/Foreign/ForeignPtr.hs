@@ -84,11 +84,11 @@ import GHC.Err          ( undefined )
 import GHC.ForeignPtr
 #endif
 
-#ifdef __EHC__
-import EHC.ForeignPtr
+#ifdef __UHC__
+import UHC.ForeignPtr
 #endif
 
-#if !defined(__NHC__) && !defined(__GLASGOW_HASKELL__) && !defined(__EHC__)
+#if !defined(__NHC__) && !defined(__GLASGOW_HASKELL__) && !defined(__UHC__)
 import Foreign.Marshal.Alloc    ( malloc, mallocBytes, finalizerFree )
 
 instance Eq (ForeignPtr a) where 
@@ -156,7 +156,7 @@ newForeignPtrEnv finalizer env p
        return fObj
 #endif /* __HUGS__ */
 
-#ifndef __EHC__
+#ifndef __UHC__
 #ifndef __GLASGOW_HASKELL__
 mallocForeignPtr :: Storable a => IO (ForeignPtr a)
 mallocForeignPtr = do
@@ -168,7 +168,7 @@ mallocForeignPtrBytes n = do
   r <- mallocBytes n
   newForeignPtr finalizerFree r
 #endif /* !__GLASGOW_HASKELL__ */
-#endif /* !__EHC__ */
+#endif /* !__UHC__ */
 
 -- | This function is similar to 'Foreign.Marshal.Array.mallocArray',
 -- but yields a memory area that has a finalizer attached that releases

@@ -304,9 +304,9 @@
 /**** Runtime types                                              ****/
 /********************************************************************/
 
-#ifdef __EHC_BUILDS_O__
+#ifdef __UHC_BUILDS_O__
 
-#ifdef __EHC_TARGET_BC__
+#ifdef __UHC_TARGET_BC__
 # define HsBool				GB_Word
 # define HsInt				GB_Word
 # define HsWord64			Word64
@@ -315,9 +315,9 @@
 # define HsWord8			Word8
 # define HS_BOOL_FALSE		gb_False
 # define HS_BOOL_TRUE		gb_True
-#endif /* __EHC_TARGET_BC__ */
+#endif /* __UHC_TARGET_BC__ */
 
-#endif /* __EHC_BUILDS_O__ */
+#endif /* __UHC_BUILDS_O__ */
 
 /********************************************************************/
 /**** Read dir EOF error                                         ****/
