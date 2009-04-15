@@ -7,7 +7,10 @@ Signatures for local attributes
 %%[99
 SEM *
   | *
+		loc.mustEnterNewPredScope  		: Bool
+		loc.hasInstDecl  				: Bool
 		loc.arity  						: Int
+		loc.lexLev  					: Int
 		loc.arityErrs  					: ErrL
 		loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
 		loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp

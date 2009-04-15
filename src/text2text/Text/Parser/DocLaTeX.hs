@@ -75,6 +75,7 @@ cmd2argMp
       [ ("href"     , TextItem_RefTo RefType_URL        )
       , ("lref"     , TextItem_RefTo RefType_Local      )
       , ("eref"     , TextItem_RefTo RefType_EhcWeb     )
+      , ("uref"     , TextItem_RefTo RefType_UhcWeb     )
       , ("tref"     , TextItem_RefTo RefType_STWiki     )
       , ("sref"     , TextItem_RefTo RefType_EhcSrc     )
       , ("cref"     , TextItem_RefTo RefType_Cite       )

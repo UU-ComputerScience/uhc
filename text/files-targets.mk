@@ -121,6 +121,11 @@ text-variant-ehc-user-doc:
 	  TEXT_SHUFFLE_VARIANT=43 \
 	  text-variant-dflt-doc
 
+text-variant-getting-started-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=47 \
+	  text-variant-dflt-doc
+
 text-variant-text2text-doc:
 	$(MAKE) \
 	  TEXT_SHUFFLE_VARIANT=44 \

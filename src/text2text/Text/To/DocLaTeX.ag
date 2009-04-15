@@ -133,6 +133,7 @@ SEM RefType
   | Local           loc         .   out         =   dltxCmd "lref"
   | URL             loc         .   out         =   dltxCmd "href"
   | EhcWeb          loc         .   out         =   dltxCmd "eref"
+  | UhcWeb          loc         .   out         =   dltxCmd "uref"
   | STWiki          loc         .   out         =   dltxCmd "tref"
   | EhcSrc          loc         .   out         =   dltxCmd "sref"
   | Cite            loc         .   out         =   dltxCmd "cref"

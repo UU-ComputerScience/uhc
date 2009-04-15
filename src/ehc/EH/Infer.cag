@@ -741,6 +741,24 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has a sequence of let ... in let ... an instance declaration?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR Expr AllDecl [ | | hasInstDecl USE {||} {False}: Bool ]
+
+SEM Decl
+  | Instance InstanceIntro
+  				lhs			.	hasInstDecl			=	True
+  | * - Instance InstanceIntro
+  				lhs			.	hasInstDecl			=	False
+
+SEM Expr
+  | Let			loc			.	hasInstDecl			=	@decls.hasInstDecl || @body.hasInstDecl
+  | * - Let		lhs			.	hasInstDecl			=	False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is let a first let in a sequence of lets?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -769,11 +787,32 @@ SEM AGItf
 
 SEM Expr
   | Let         loc         .   isFirstLet          =   False
+  | * - Let     loc         .   isFirstLet          =   True
 %%]
 
 %%[(97 hmtyinfer)
 SEM PatExpr
   | Expr        loc         .   isFirstLet          =   True
 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lexical level, 0 == global
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ lexLev: Int | | ]
+
+SEM AGItf
+  | AGItf       loc         .   lexLev	          	=   -1
+
+SEM Expr
+  | Let			loc			.	lexLev				=	if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
+  							.	lexLevIsGlobal		=	@lexLev == 0
+  | Lam LamImpl
+  				loc			.	lexLev				=	@lhs.lexLev + 1
+
+SEM CaseAlt
+  | Pat         loc         .   lexLev          	=   @lhs.lexLev + 1
 %%]
 

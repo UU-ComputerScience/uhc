@@ -45,7 +45,7 @@ SEM Binding
                                               , ps @srcSig              >#< pc "cryptographic hash of compiler sources"
                                               , ps @srcVersionMajor     >#< pc "version major"
                                               , ps @srcVersionMinor     >#< pc "version minor"
-                                              , ps @srcVersionQuality   >#< pc "build stability"
+                                              , ps @srcVersionMinorMinor>#< pc "version minorminor"
                                               , ps @srcVersionSvn       >#< pc "svn of compiler build"
                                               , ps @compileFlags        >#< pc "compile flags of which difference implies recompile"
                                               , ps @hash                >#< pc "hash for faster equality check of this info, not yet used"

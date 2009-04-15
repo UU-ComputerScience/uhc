@@ -980,17 +980,17 @@ WWW home page:
 %%]
 
 %%[41
-\title{How to write EHC documentation}
+\title{How to write UHC documentation}
 \author{Atze Dijkstra}
 %%]
 
 %%[42
-\title{EHC technical manual}
+\title{UHC technical manual}
 \author{Jeroen Fokker}
 %%]
 
 %%[43
-\title{EHC user manual}
+\title{UHC user manual}
 \author{Atze Dijkstra}
 %%]
 
@@ -1000,13 +1000,18 @@ WWW home page:
 %%]
 
 %%[45
-\title{How to experiment with EHC}
+\title{How to experiment with UHC/EHC}
 \author{Atze Dijkstra}
 %%]
 
 %%[46
-\title{EHC structure}
+\title{UHC/EHC structure}
 \author{Jeroen Fokker, Atze Dijkstra}
+%%]
+
+%%[47
+\title{Getting started with UHC}
+\author{Atze Dijkstra}
 %%]
 
 
@@ -2808,6 +2813,14 @@ To be done ...
 
 %%[46 doclatex
 %%@InternalDocEhcStructure.main
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% getting started doc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[47 doclatex
+%%@ToolDocEHC.gettingStartedWithUHC
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

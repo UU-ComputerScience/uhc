@@ -81,6 +81,7 @@ DATA RefType
   | Local
   | URL
   | EhcWeb
+  | UhcWeb
   | STWiki
   | EhcSrc
   | Cite

@@ -765,6 +765,11 @@ Anonymity, blinding things
 % #2: title
 \newcommand{\eref}[2]{\href{http://www.cs.uu.nl/wiki/Ehc/#1}{#2}}
 
+% reference to label local to UHC web:
+% #1: ref
+% #2: title
+\newcommand{\uref}[2]{\href{http://www.cs.uu.nl/wiki/UHC/#1}{#2}}
+
 % reference to label local src/svn repository:
 % #1: ref
 % #2: title
