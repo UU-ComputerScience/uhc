@@ -1,9 +1,22 @@
+%%[gettingStartedWithUHC doclatex
+\section{Download}
+%%@ToolDocEHC.gettingStartedDownload
+
+\section{Build and install}
+%%@ToolDocEHC.gettingStartedBuildInstall
+
+\section{Run}
+%%@ToolDocEHC.gettingStartedRun
+
+%%]
+
+
 %%[main doclatex
 \section{Introduction}
 %%@ToolDocEHC.introduction
 \subsection{System overview}
 
-For now, see the \eref{EhcStructureDocumentation}{EHC structure overview}.
+For now, see the \eref{EhcStructureDocumentation}{UHC structure overview}.
 
 \subsection{Download, build, install, compile and run}
 \glabel{DownloadBuildCompileRun}
@@ -13,7 +26,7 @@ For now, see the \eref{EhcStructureDocumentation}{EHC structure overview}.
 \subsection{Installation}
 See \lref{DownloadBuildCompileRun}{downloading etc}.
 
-\subsection{Using EHC}
+\subsection{Using UHC}
 
 \section{Commandline}
 \subsection{Commandline invocation}
@@ -23,12 +36,17 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 %%@ToolDocEHC.commandlineOptions
 
 \section{Language extensions and differences with Haskell98}
+\glabel{LanguageExtensions}
+\label{LanguageExtensions}
+Bear in mind that these extensions are all but tried and tested!
+
 %%@ToolDocEHC.extensions
 \subsection{Higher ranked types and impredicativity}
 \label{higher-ranked-types-and-impredicativity}
 
 \subsection{Partial type signature}
 \label{partial-type-signatures}
+%%@ToolDocEHC.partialTySig
 
 \subsection{Quantifier position inference}
 \label{quantifier-position-inference}
@@ -36,15 +54,24 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 
 \subsection{Existential types}
 \label{existential-types}
+%%@ToolDocEHC.existentialTypes
 
-\subsection{Kind inference}
+\subsection{Kind inference and signatures}
 \label{kind-inference}
+%%@ToolDocEHC.kindInference
+
+\subsection{Local instances}
+\label{local-instances}
+%%@ToolDocEHC.classInstanceExtensions
 
 \subsection{Lexically scoped type variables}
 \label{lexically-scoped-type-variables}
+%%@ToolDocEHC.lexicallyScopedTyVar
 
 \subsection{Extensible records}
 \label{extensible-records}
+Code generation for extensible records is not supported,
+hence no documentation is currently available.
 
 \subsection{Absence of monomorphism restriction}
 \label{absence-monomorphism-restriction}
@@ -54,13 +81,13 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \glabel{LanguageImplementationStatus}
 %%@ToolDocEHC.languageStatus
 
-\subsection{Available in Haskell98 but not or partially in EHC}
+\subsection{Available in Haskell98 but not or partially in UHC}
 %%@ToolDocEHC.inHaskell98NotInEhc
 
-\subsection{Proposed in Haskell prime but not or partially in EHC}
+\subsection{Proposed in Haskell prime but not or partially in UHC}
 %%@ToolDocEHC.inHaskellPrimeNotInEhc
 
-\subsection{Available in EHC but not in Haskell98 or Haskell prime}
+\subsection{Available in UHC but not in Haskell98 or Haskell prime}
 %%@ToolDocEHC.inEhcNotIn98Prime
 
 \subsection{Other differences (to be categorized)}
@@ -73,7 +100,7 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 
 The library consists of 
 \begin{itemize}
-\item EHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @EHC.@.
+\item UHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @UHC.@.
 \item Modules from the GHC distribution, used without changes.
 \item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
 \end{itemize}
@@ -117,6 +144,8 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
  Without write permission this will fail.
+\item
+ Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
 \end{itemize}
 
 \subsection{Packages}
@@ -427,31 +456,42 @@ Show full version information (see also option \DocOptRef{--numeric-version}).
 %%]
 
 %%[downloadBuildCompileRun doclatex
-A separate manual exists on \eref{InstallEhcUnderWindows}{how to install EHC on a Windows system}.
+A separate manual exists on \eref{InstallEhcUnderWindows}{how to install UHC on a Windows system}.
 A list of often occurring build problems is maintained \eref{BuildProblems}{here}.
 
 \subsubsection{Download}
 
+%%[[gettingStartedDownload
 \begin{itemize}
 \item Prerequisites:
 \begin{itemize}
  \item \href{http://haskell.org/ghc/}{GHC}: a recent version, preferably >= 6.8, the installed libraries should include the @mtl@ and @fgl@ library.
- \item \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{HUT library}: the most recent version. This includes uulib (parser combinators, pretty printing) and uuagc (Attribute Grammar compiler).
+  Depending on platform and GHC distribution more libraries may need to be installed.
+ \item Additional libraries, available via \href{http://hackage.haskell.org/packages/hackage.html}{Hackage} or \href{http://www.cs.uu.nl/wiki/HUT/WebHome}{locally}.
+ \begin{itemize}
+  \item \href{http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uulib}{uulib}: parser combinators.
+  \item \href{http://hackage.haskell.org/cgi-bin/hackage-scripts/package/uuagc}{uuagc}: attribute grammar system.
+ \end{itemize}
 \end{itemize}
-\item EHC/UHC download: currently no prebuilt distributions are available, but the most recent version of the whole series of compilers can be checked out from our svn archive:
+\item Download
+\begin{itemize}
+\item Prebuilt versions via the \uref{WebHome}{UHC home page}.
+\item Or the most recent development version from the svn repository:
 \begin{verbatim}
 % svn checkout https://svn.cs.uu.nl:12443/repos/EHC/trunk/EHC
 \end{verbatim}
-      or downloaded as a \href{https://svn.cs.uu.nl:12443/dist/EHC/EHC-trunk-EHC.tar.bz2}{tarball}.
+Also available as a \href{https://svn.cs.uu.nl:12443/dist/EHC/EHC-trunk-EHC.tar.bz2}{tarball}.
 \end{itemize}
+\end{itemize}
+%%]]
 
 \subsubsection{Build and install UHC}
 
+%%[[gettingStartedBuildInstall
 \begin{itemize}
-\item Prerequisites: GHC and HUT must be installed.
+\item Prerequisites: GHC and the abovementioned libraries must be installed.
 \begin{itemize}
- \item Look \eref{InstallEhcUnderWindows}{here} for setting up a cygwin environment and additional info on installing EHC under cygwin.
- \item See \tref{TS.EhcParticularities}{encountered problems} during this year's (2007) run of the seminar on \tref{TS.WebHome}{Type Systems}.
+ \item Look \eref{InstallEhcUnderWindows}{here} for setting up a cygwin environment and additional info on installing UHC under cygwin.
 \end{itemize}
 \item For building UHC, run the following commands from trunk/EHC:
 \begin{verbatim}
@@ -463,9 +503,11 @@ A configuration file (+ directory) will be created in your home directory,
 therefore a systemwide install does not work yet.
 
 \end{itemize}
+%%]]
 
 \subsubsection{Run UHC}
 
+%%[[gettingStartedRun
 \begin{itemize}
 \item Run UHC. A sample session:
 \begin{verbatim}
@@ -473,17 +515,13 @@ therefore a systemwide install does not work yet.
 module HelloWorld where
 main = putStrLn "Hello World"
 % uhc hw.hs
-Imports of Haskell             hw                     (hw.hs)
-Imports of HI                  Prelude                (/usr/local/lib/uhc/lib/bc/base/Prelude.hi)
-Imports of HI                  EHC.Prelude            (/usr/local/lib/uhc/lib/bc/base/EHC/Prelude.hi)
-Reading HI                     EHC.Prelude            (/usr/local/lib/uhc/lib/bc/base/EHC/Prelude.hi)
-Reading HI                     Prelude                (/usr/local/lib/uhc/lib/bc/base/Prelude.hi)
-Compiling Haskell              hw                     (hw.hs)
+[1/1] Compiling Haskell              hw                     (hw.hs)
 % ./hw
 Hello World
 % 
 \end{verbatim}
 \end{itemize}
+%%]]
 
 \subsubsection{Build a EHC variant}
 
@@ -510,8 +548,8 @@ main = putStrLn "Hello World"
 % install/100/bin/ehc hw
 Imports of Haskell             hw                     (hw.hs)
 Imports of Haskell             Prelude                (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/Prelude.hs)
-Imports of Haskell             EHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/EHC/Prelude.hs)
-Reading HI                     EHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/EHC/Prelude.hs-cpp)
+Imports of Haskell             UHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/UHC/Prelude.hs)
+Reading HI                     UHC.Prelude            (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/UHC/Prelude.hs-cpp)
 Reading HI                     Prelude                (/Volumes/Work/Programming/EHC/trunk/EHC/install/100/lib/bc/base/Prelude.hs)
 Compiling Haskell              hw                     (hw.hs)
 % ./hw
@@ -523,6 +561,43 @@ Hello World
 %%]
 
 %%[extensions doclatex
+%%]
+
+%%[partialTySig doclatex
+Partial type signatures are fully specified type signatures where parts may be omitted and then later filled in by the type inferencer.
+Partial type signatures offer a middle way between
+\begin{itemize}
+\item Fully specifying a signature. This can be difficult for complex types.
+\item Not specifying a signature at all. The type inferencer may then not be able to infer a type.
+\end{itemize}
+
+The idea is to provide just enough information so that the type inferencer can figure out the rest.
+This is convenient when a signature involves higher ranked types, which the type inferencer can not infer on its own:
+
+\begin{pre}
+f1 :: (forall a . a->a) -> ... 
+f1 i = (i 'a', i True)
+\end{pre}
+
+The dots @...@ stand for a \emph{wildcard},
+the part to be filled in by the type inferencer, which then infers type \verb|(forall a . a -> a) -> (Char,Bool)|.
+
+A wildcard can also be given a name like any type variable in a type expression.
+To differentiate it from normal type variables the prefix \verb|%| is used, which indicates that the type expression should not be quantified over this type variable:
+
+\begin{pre}
+f1 :: (forall a . a->a) -> %b
+\end{pre}
+
+Giving a name to a wildcard is only useful when referred to from another part of the signature:
+
+\begin{pre}
+f1 :: (forall a . a->a) -> (%b,%b)
+f1 i = (i 'a', i True)
+\end{pre}
+
+Both elements of the tuple are enforced to have the same type, in the example this leads to a type error.
+
 %%]
 
 %%[quantifierPositionInference doclatex
@@ -546,8 +621,128 @@ The combination with impredicativity can sometimes cause unexpected behavior.
 
 %%]
 
+%%[kindInference doclatex
+Unknown kinds of type constructors do not default to kind @*@, instead they lead to polymorphic kinds:
+
+\begin{pre}
+data Eq a b = Eq (forall f . f a -> f b)	-- Eq :: Forall a . a -> a -> *
+\end{pre}
+
+If a more restrictive kind for @Eq@ is desired, this can be enforced by a kind signature, similar to type signatures for values:
+
+\begin{pre}
+Eq :: * -> * -> *
+\end{pre}
+
+%%]
+
+%%[classInstanceExtensions doclatex
+Instances can be declared locally:
+
+\begin{pre}
+eqInt :: Int -> Int -> Bool
+eqInt = (==)
+
+main :: IO ()
+main
+  = do let i = 3 :: Int
+           j = 5 :: Int
+       putStrLn (show (i == j))
+       putStrLn (show (let m = 2 :: Int
+                           instance Eq Int where
+                             x == y = eqInt (x `mod` m) (y `mod` m)
+                       in  i == j
+                      ))
+\end{pre}
+
+The above example respectively prints @False@ and @True@.
+
+Instance declarations as well as arising class constraints have a scope associated.
+The @Eq@ constraint for the second \verb|i == j| arose in the context of the local instance for @Eq Int@,
+which was then used for the context resolution in preference over the one defined globally in the Prelude.
+
+During context resolution the following rules are used:
+\begin{itemize}
+\item
+  Whenever a choice between instances is possible, the one with the innermost scope in relation to the to be proven constraint is chosen.
+  If no such choice is possible (because scopes are equal) this is considered an overlapping instance.
+\item
+  Class constraints over which is quantified lose their scope.
+  They can arise in different scopes as part of instantiation in such a different scope.
+  Quantified class constraints are not reduced via instances, only via superclasses, and only when the superclass constraint also arose.
+  This is to avoid too early binding associated with a closed world of instances.
+\item
+  Being in scope is static, that is, solely determined by the structure of the program text.
+\end{itemize}
+
+
+%%]
+
+%%[lexicallyScopedTyVar doclatex
+Lexically scoped type variables can be introduced via pattern type signatures:
+%%]
+
+%%[existentialTypes doclatex
+Types can be hidden using existential types, using the keyword @exists@:
+
+\begin{pre}
+x1 :: exists a . a
+x1 = 3 :: Int
+\end{pre}
+
+@x1@ holds an @Int@ but when @x1@ is used this knowledge is forgotten. As a consequence nothing can be done anymore with @x1@, except passing it to polymorphic functions (like @id@) which do
+not assume anything about the value being passed.
+
+More useful is the combination with a function accepting a value of the hidden type, providing encapsulation and data abstraction:
+
+\begin{pre}
+x2 :: exists a . (a, a -> Int)
+x2 = (3 :: Int, id)
+
+xapp :: (exists b . (b,b -> a)) -> a
+xapp (v,f) = f v
+
+x2app = xapp x2
+\end{pre}
+
+An existential type being bound to a value identifier has meaning, in that it fixates the type for the existential.
+The type of @x2@ is some type invented by the compiler and cannot be named by the programmer.
+This is to prevent illegal mixing up two different existentials, while still be able to compute different existentials depending on some input:
+
+\begin{pre}
+mkx :: Bool -> exists a . (a, a -> Int)
+mkx b = if b then x2 else ('a',ord)
+
+y1 = mkx True       -- y1 :: (C_3_225_0_0,C_3_225_0_0 -> Int)
+y2 = mkx False      -- y2 :: (C_3_245_0_0,C_3_245_0_0 -> Int)
+
+mixy = let (v1,f1) = y1
+           (v2,f2) = y2
+       in  f1 v2
+\end{pre}
+
+@mixy@ causes a type error.
+However, we can use @y1@ and @y2@ perfectly well:
+
+\begin{pre}
+main :: IO ()
+main
+  = do putStrLn (show (xapp y1))
+       putStrLn (show (xapp y2))
+\end{pre}
+
+The invented types for bound existentials are allowed to be used everywhere;
+their use is limited by the availability of functions existentially hidden together with the existential type.
+
+Existential types do not work with:
+\begin{itemize}
+\item Class instances to be hidden together with the existential.
+\end{itemize}
+
+%%]
+
 %%[absenceMonomorphismRestriction doclatex
-EHC does not feature the monomorphism restriction. For variable bindings like
+UHC does not feature the monomorphism restriction. For variable bindings like
 \begin{pre}
 x = 1
 \end{pre}
@@ -580,7 +775,7 @@ m :: Integral a => a
 
 If this would be allowed, the dictionary for @Integral@ to be passed to @m@ would have to be passed to @my@ as to pass it to @properFraction@.
 In the end we indirectly would require as many invocations of properFraction as the members of the tuple @my@ are used (without being shared by a let).
-This is currently not allowed in EHC, but the error message is a bit cryptic in that in complains about ambiguity (over the type variable associated with @m@).
+This is currently not allowed in UHC, but the error message is a bit cryptic in that in complains about ambiguity (over the type variable associated with @m@).
 Currently this can be fixed only by using
 \lref{lexically-scoped-type-variables}{lexically scoped type variables}:
 
@@ -702,7 +897,7 @@ As printed by \verb=install/100/bin/ehc --help=:
 %%]
 
 %%[commandlineOptions doclatex
-Only options offered by UHC are discussed, lower variants of EHC have more options for debugging available.
+Only options offered by UHC are discussed, lower variants of UHC have more options for debugging available.
 Other options can be used but are either for internal use of can be disabled sometime.
 Defaults for options are valid only for variant 100 of EHC.
 Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicated by one of \verb@0|1|no|yes|off|on|-|+@.

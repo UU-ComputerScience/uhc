@@ -48,6 +48,5 @@ import UHC.Ix
 import UHC.Show
 import UHC.Read
 import UHC.IOBase
-import UHC.OldIO hiding
-  ( hPutStrLn )
+import UHC.OldIO -- hiding ( hPutStrLn )
 import UHC.Run

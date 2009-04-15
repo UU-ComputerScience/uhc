@@ -207,7 +207,7 @@ ATTR RefType [ | | mkRefOut: {OutDoc -> OutDoc -> OutDoc} ] -- \reftext text -> 
 
 SEM RefType
   | Local           loc         .   mkRefOut    =   \r t -> dtwkRef (dtwkLbl $ ensureTWikiAnchor r) t
-  | URL EhcWeb STWiki
+  | URL EhcWeb UhcWeb STWiki
                     loc         .   mkRefOut    =   dtwkRef
   | EhcSrc          loc         .   mkRefOut    =   \r t -> t +++ " (" +++ dhtmOpenClose "code" r +++ ")"
   | Cite            loc         .   mkRefOut    =   \_ t -> t
@@ -344,6 +344,7 @@ SEM RefType
   | URL             loc         .   out         =   emptyout
   | STWiki          loc         .   out         =   emptyout
   | EhcWeb          loc         .   out         =   out "Ehc."
+  | UhcWeb          loc         .   out         =   out "UHC."
   | EhcSrc          loc         .   out         =   out "EHCHOME/"
   | Cite            loc         .   out         =   emptyout
 

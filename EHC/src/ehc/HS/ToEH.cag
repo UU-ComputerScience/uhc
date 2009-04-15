@@ -311,8 +311,8 @@ SEM Type
     | InfixApplication
         loc         .   (eh,ctxtFormErrs)
                                     =   if @operator.isPrArrow && not @lhs.isAsPred
-                                        then let t = foldr mk1Arrow @rightType.eh [ rngLift @range EH.TyExpr_Pred pr | (Just pr) <- @leftType.ehMbAsPrL ]
-                                             in  if all isJust @leftType.ehMbAsPrL
+                                        then let t = foldr mk1Arrow @rightType.eh [ pr | (Just pr) <- @leftType.ehMbAsTyPrL ]
+                                             in  if all isJust @leftType.ehMbAsTyPrL
                                                  then (t, [])
                                                  else (t, [rngLift @range Err_MalformedPred @leftType.pp])
                                         else (mkRngParApp @range [@operator.eh,@leftType.eh,@rightType.eh],[])
@@ -531,13 +531,30 @@ ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]
 
 SEM Type
     | RowRecUpdate
-        lhs         .   ehMbAsPrL   =   @rowTypeUpdates.ehMbAsPrL
+        loc         .   ehMbAsPrL   =   @rowTypeUpdates.ehMbAsPrL
     | * - RowRecUpdate Parenthesized
-        lhs         .   ehMbAsPrL   =   [@ehMbAsPr]
+        loc         .   ehMbAsPrL   =   [@ehMbAsPr]
 
 SEM RowTypeUpdate
     | Extends
-        lhs         .   ehMbAsPrL   =   [@type.ehMbAsPr]
+        loc         .   ehMbAsPrL   =   [@type.ehMbAsPr]
+%%]
+
+%%[9
+ATTR Type [ | | ehMbAsTyPr: {Maybe EH.TyExpr} ]
+ATTR Type AllRowTypeUpdate [ | | ehMbAsTyPrL USE {++} {[]}: {[Maybe EH.TyExpr]} ]
+
+SEM Type
+	| Wildcard
+		loc			.	ehMbAsTyPr	=	Just $ rngLift @range EH.TyExpr_Impls
+	| * - Wildcard
+		loc			.	ehMbAsTyPr	=	fmap (rngLift @range EH.TyExpr_Pred) @ehMbAsPr
+    | RowRecUpdate
+        loc         .   ehMbAsTyPrL =   @rowTypeUpdates.ehMbAsTyPrL
+	| Wildcard
+		loc			.	ehMbAsTyPrL	=	[@ehMbAsTyPr]
+	| * - Wildcard Parenthesized RowRecUpdate
+		loc			.	ehMbAsTyPrL	=	map (fmap (rngLift @range EH.TyExpr_Pred)) @ehMbAsPrL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

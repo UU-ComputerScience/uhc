@@ -98,6 +98,22 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 #WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 ###########################################################################################
+# Version incrementing/bumping
+###########################################################################################
+
+bump-major:
+	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0 > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+bump-minor:
+	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0 > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+bump-minorminor:
+	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)) > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+###########################################################################################
 # Target: explain what can be done
 ###########################################################################################
 
@@ -254,7 +270,7 @@ clean: cleans
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_HS_ALL_SRC_HS)
+	@echo $(VERSION)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

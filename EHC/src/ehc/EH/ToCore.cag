@@ -221,10 +221,6 @@ SEM PatExpr
                 loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprpatCSubst
 %%]
-                            .   cexpr       =   mkCExprApp (foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @expr.cSubst @cexprBaseEq)
-                                                           [@expr.cexpr]
-SEM Expr
-  | Let         loc         .   letCBindL   :=  (tr ("Let.letCBindL " ++ show @lUniq) empty) $ [ (@howToBind,@decls.cbindL ++ @chrScopeBindL) ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Row based records, construction
@@ -657,14 +653,22 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Front/back bindings are inserted before/after the other bindings, though only on top level.
-Meant for global defs like FFI/FFE
+Meant for global defs like FFI/FFE.
+Merging is done to group all mutual recursive stuff together, in particular instances which are out of order declared.
+Reordering and splitting up in smaller groups is then done later by a Core transformation.
 
 %%[(8 codegen) hs
 mkLetCBodyBindL :: Bool -> CBindingsCateg -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> [(CBindingsCateg,CBindL)] -> CExpr -> ([(CBindingsCateg,CBindL)],CExpr)
 mkLetCBodyBindL isStrict howToBind locBindL locOthBindL bodyBindL body
   = if isStrict
-    then (locOthBindL,foldr (\(c,b) e -> mkCExprLet c b e) body (locBindL ++ bodyBindL))
-    else (locOthBindL ++ locBindL ++ bodyBindL, body)
+    then (locOthBindL,foldr (\(c,b) e -> mkCExprLet c b e) body (merge $ locBindL ++ bodyBindL))
+    else (merge $ locOthBindL ++ locBindL ++ bodyBindL, body)
+  where merge (cb1@(c1,b1) : tl)
+          = case merge tl of
+              (c2,b2) : tl' | c1 == c2 && c1 == CBindings_Rec
+                  -> (c1,b1++b2) : tl'
+              tl' -> cb1 : tl'
+        merge [] = []
 %%]
 
 %%[(8 codegen)
@@ -693,10 +697,6 @@ SEM Expr
                             .   backCBindL      =   []
 %%]]
 %%]
-  | Let         lhs         .   (letCBindL,letCBody)
-                                                =   mkLetCBodyBindL @isStrict @howToBind @letCBindL @body.letCBindL @body.letCBody
-  | Let         lhs         .   letCBody        =   @body.letCBody
-                            .   letCBindL       =   @letCBindL ++ @body.letCBindL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Class

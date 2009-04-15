@@ -50,25 +50,41 @@ SEM TyExprs
   | Cons        hd          .   tyVarWildL          <   hd.clGam
 %%]
 
+%%[(9 hmtyinfer)
+%%]
+SEM AGItf
+  | AGItf       expr        .   lexLev          	<   expr.predScope
+
 %%[(17 hmtyinfer)
 SEM DataConstr
   | Constr      lhs         .   polGam              <   loc.dataAltTyL
                 lhs         .   knPolCtx            <   loc.dataAltTyL
                 lhs         .   polVarMp            <   loc.dataAltTyL
-
+  
 SEM TyExpr
   | Pred		lhs			.	knPolCtx			< 	prExpr.tyGam
 
 SEM AGItf
   | AGItf       expr        .   gathPolGam          <   expr.valGam
+                expr        .   range               <   expr.gUniq
                 expr        .   gUniq               <   loc.polGam
                 expr        .   polVarMp            <   expr.tyVarMp
                 expr        .   polVarMp            <   loc.clGam
 %%]
+
+SEM DataFieldExpr
+  | *           lhs         .   lexLev              <   lhs.polVarMp
 
 %%[(99 hmtyinfer)
 SEM AGItf
   | AGItf       expr        .   range               <   expr.kiGam
 %%]
 
-
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf		expr		.	predSameScopeCounter	<	expr.predScope
+       			expr		.	predSameScopeCounter	<	expr.tyGam
+                expr        .   gUniq              		<   expr.predSameScopeCounter
+SEM Expr
+  | Let			decls       .   predSameScopeCounter    <   decls.gathKiSigGam
+%%]

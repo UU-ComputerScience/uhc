@@ -121,7 +121,7 @@ cpOutputHI suff modNm
                  hi     = HISem.wrap_AGItf
                             (HISem.sem_AGItf
                               (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ [ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verQuality Cfg.version) (Cfg.verSvnRevision Cfg.version) (optsDiscrRecompileRepr opts) 0
+                                $ [ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verMinorMinor Cfg.version) (Cfg.verSvnRevision Cfg.version) (optsDiscrRecompileRepr opts) 0
                                   , HI.Binding_Settings (ecuHasMain ecu)
                                   ] ++ binds))
                             (crsiHIInh crsi)

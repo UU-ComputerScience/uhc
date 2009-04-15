@@ -13,15 +13,16 @@ AC_PROG_MAKE_SET
 AC_CANONICAL_HOST
 dnl ** canonicalize platform names
 HostPlatform=`/bin/sh $srcdir/config.sub $host` || exit 1
-echo $host
 
-### Version info
+### Version info, extract from file VERSION
 # big change
-EH_VERSION_MAJOR=0
+EH_VERSION_MAJOR=`awk -F . '{print $1}' VERSION`
 # small change, not usable with previous
-EH_VERSION_MINOR=1
+EH_VERSION_MINOR=`awk -F . '{print $2}' VERSION`
 # small change, still usable with previous
-EH_VERSION_MINORMINOR=1
+EH_VERSION_MINORMINOR=`awk -F . '{print $3}' VERSION`
+
+# 20090415: this amount of detail will not be used, will be obsolete
 EH_VERSION_STABILITY=alpha
 
 AC_SUBST(EH_VERSION_MAJOR)
@@ -29,7 +30,7 @@ AC_SUBST(EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
-AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR.$EH_VERSION_STABILITY)
+AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -865,6 +866,7 @@ AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config
 AC_OUTPUT
 
 echo
+echo "Version: ${EH_VERSION_FULL}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"

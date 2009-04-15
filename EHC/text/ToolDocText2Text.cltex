@@ -204,6 +204,8 @@ Example: \verb|\lref{CommandLine}{command line}| gives: \lref{CommandLine}{comma
 Example: \verb|\href{http://www.cs.uu.nl/groups/ST/Projects/ehc/text2text-doc.pdf}{this doc as pdf}| gives: \href{http://www.cs.uu.nl/groups/ST/Projects/ehc/text2text-doc.pdf}{this doc as pdf}.
 \item \verb|\eref{X}{Y}|, refer to sub twiki page \verb|X| of EHC, displaying \verb|Y|.
 Example: \verb|\eref{Text2Text}{this doc}| gives: \eref{Text2Text}{this doc}.
+\item \verb|\uref{X}{Y}|, refer to sub twiki page \verb|X| of UHC, displaying \verb|Y|.
+Example: \verb|\uref{WebHome}{UHC home page}| gives: \uref{WebHome}{UHC home page}.
 \item \verb|\sref{X}{Y}|, refer to source file \verb|X|, displaying \verb|Y|.
 Example: \verb|\sref{text/ToolDocText2Text.cltex}{source of this doc}| gives: \sref{text/ToolDocText2Text.cltex}{source of this doc}.
 \item \verb|\cref{X}{Y}|, refer to citations \verb|X|, displaying \verb|Y|. Currently no actual reference to \verb|X| is generated, being a placeholder for later.

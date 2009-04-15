@@ -24,7 +24,7 @@ DATA Binding
         srcSig                  : String
         srcVersionMajor         : String
         srcVersionMinor         : String
-        srcVersionQuality       : String
+        srcVersionMinorMinor    : String
         srcVersionSvn           : String
         compileFlags            : String
         hash                    : Integer
