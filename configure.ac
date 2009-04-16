@@ -1,5 +1,5 @@
 ### Process this file with autoconf to produce a configure script.
-AC_INIT(EH, [0.1], [ehc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/Ehc/WebHome])
+AC_INIT(EH, [0.1], [uhc-developers@cs.uu.nl, http://www.cs.uu.nl/wiki/UHC/WebHome])
 
 ### version of autoconf used (and required)
 #AC_PREREQ(2.52)

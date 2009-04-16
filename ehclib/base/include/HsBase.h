@@ -429,6 +429,7 @@ __hscore_ftruncate( int fd, off_t where )
 #endif
 }
 
+#ifndef __UHC_1_0_0__
 INLINE int
 __hscore_setmode( int fd, HsBool toBin )
 {
@@ -438,6 +439,7 @@ __hscore_setmode( int fd, HsBool toBin )
   return 0;
 #endif
 }
+#endif /* !__UHC_1_0_0__ */
 
 #if __GLASGOW_HASKELL__
 
