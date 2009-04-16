@@ -34,6 +34,7 @@ gccDefs opts builds
   = map (\d -> "-D__UHC" ++ d ++ "__")
     $  [ "", "_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
     ++ map ("_BUILDS_" ++) builds
+    ++ [ "_" ++ map (\c -> case c of {'.' -> '_'; c -> c}) (Cfg.verFull Cfg.version) ]
 %%[[(99 codegen grin)
     ++ (if ehcOptFullProgAnalysis opts then ["_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]

@@ -774,7 +774,7 @@ case $HostPlatform in
         # libtool usage
         #libtoolStaticCmd="no"
         # ehcGccOptsStatic="-static"
-	# libtoolStaticCmd="libtool --mode=link gcc -static -o"
+	    # libtoolStaticCmd="libtool --mode=link gcc -static -o"
         libtoolStaticCmd="no"
         ;;
   x86*-*-linux-gnu )

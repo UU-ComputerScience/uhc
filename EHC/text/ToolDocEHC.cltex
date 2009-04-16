@@ -882,7 +882,8 @@ To ensure the use of C calling convention use @ccall@, but support depends on th
 foreign import ccall "sinf"  primSinFloat   :: Float -> Float
 \end{pre}
 
-Other uses of FFI are not yet supported.
+The @Foreign.XX@ library modules are available.
+Calling conventions @dynamic@, @wrapper@, @export@ as well as wrapping as finalizers is not yet supported.
 
 %%]
 
