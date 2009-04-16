@@ -236,7 +236,7 @@ install: uhc-install
 ###########################################################################################
 
 uhc-test: thaw-test-expect
-	@echo "WARNING: output may differ w.r.t. names for the following tests: " IO2.hs IO3.hs
+	@echo "WARNING: output may slightly differ for the following tests: " IO2.hs IO3.hs SysEnv1.hs
 	$(MAKE) test-regress TEST_VARIANTS=uhc
 
 test: uhc-test

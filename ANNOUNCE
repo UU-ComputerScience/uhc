@@ -1,0 +1,76 @@
+to
+--
+
+haskell-cafe@haskell.org
+haskell@haskell.org
+uhc-users@cs.uu.nl
+
+msg
+---
+
+
+	Utrecht Haskell Compiler -- first release, version 1.0.0
+	========================================================
+
+
+The UHC team is happy to announce the first public release of the Utrecht Haskell
+Compiler (UHC). UHC supports almost all Haskell98 features plus
+experimental extensions. The compiler runs under MacOSX, Windows
+(cygwin), and various Unix flavors.
+
+Features:
+
+    * Multiple backends, including a bytecode interpreter backend and a
+      full program analysis backend, both via C.
+      
+    * Experimental language extensions, some of which have not been
+      implemented before.
+      
+    * Implementation via attribute grammars and other high-level tools.
+    
+    * Compiler writers should be able to experiment realtively easily
+      with different language variants, thanks to an aspect-oriented
+      internal organisation.
+
+
+Getting started & Download
+--------------------------
+
+UHC is available in source distribution, downloadable via the UHC home page:
+
+	http://www.cs.uu.nl/wiki/UHC/WebHome
+	
+Here you will also find instructions to get started.
+
+
+
+Status of the implementation
+----------------------------
+
+Like any compiler UHC is work in progress. Although we feel it is mature
+enough to offer it for public availability, much work still needs to be
+done, and we welcome contributions. UHC grew out of our Haskell compiler
+project (called Essential Haskell Compiler, or EHC) over the past 5
+years. UHC internally is organised as a combination of separate aspects,
+which makes UHC also suitable for experimental use.
+
+
+
+Mailing lists
+-------------
+
+For UHC users and developers respectively:
+
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-users
+	http://mail.cs.uu.nl/mailman/listinfo/uhc-developers
+
+
+Bug reporting
+-------------
+
+Please report bugs at:
+
+	http://code.google.com/p/uhc/issues/list
+
+
+
