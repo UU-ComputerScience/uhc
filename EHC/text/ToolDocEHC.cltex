@@ -8,6 +8,9 @@
 \section{Run}
 %%@ToolDocEHC.gettingStartedRun
 
+\section{Check your installation}
+%%@ToolDocEHC.testRegress
+
 %%]
 
 
@@ -518,6 +521,26 @@ main = putStrLn "Hello World"
 [1/1] Compiling Haskell              hw                     (hw.hs)
 % ./hw
 Hello World
+% 
+\end{verbatim}
+\end{itemize}
+%%]]
+
+\subsubsection{Test UHC}
+
+
+%%[[testRegress
+\begin{itemize}
+\item Regress test UHC:
+\begin{verbatim}
+% make test
+WARNING: output may differ w.r.t. names for the following tests:  IO2.hs IO3.hs
+make test-regress TEST_VARIANTS=uhc
+== version 101 ==
+  -- 99/BoundedChar1.hs.exp101 -- 99/BoundedChar1.hs.reg101 --
+  -- 99/BoundedInt1.hs.exp101 -- 99/BoundedInt1.hs.reg101 --
+  -- 99/CaseFall1.hs.exp101 -- 99/CaseFall1.hs.reg101 --
+...
 % 
 \end{verbatim}
 \end{itemize}
