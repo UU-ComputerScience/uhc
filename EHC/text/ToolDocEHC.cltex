@@ -108,19 +108,35 @@ The library consists of
 \item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
 \end{itemize}
 
-Currently, only modules from the @base@ package are available.
-The following librariy modules incorporated in the library, either fully or partially:
+Currently, mostly modules from the @base@ package are available, only arrays from package @array@ are available.
+For each library module in the Haskell98 report we summarize what is working and what not.
+There are no backwards compatibility wrapper modules, as this is part of the @haskell98@ package.
 
 \begin{itemize}
-\item Package @base@: ...
+\item @Prelude@: fully available.
+\item @Ratio@: in @Data.Ratio@, fully available.
+\item @Complex@: in @Data.Complex@, fully available.
+\item @Numeric@: fully available.
+\item @Ix@: in @Data.Ix@, fully available.
+\item @Array@: in @Data.Array@, fully available.
+\item @List@: in @Data.List@, fully available.
+\item @Maybe@: in @Data.Maybe@, fully available.
+\item @Monad@: in @Control.Monad@, fully available.
+\item @IO@: under construction, the @Prelude@ part is as a temporary implementation available.
+\item @Directory@: not available.
+\item @System@: in @System.Environment@ and @System.Exit@, fully available.
+\item @Time@: not available.
+\item @Locale@: not available.
+\item @CPUTime@: not available.
+\item @Random@: not available.
 \end{itemize}
 
-Some modules do not provide full functionality:
+More library modules are incorporated, we only list those which are not fully implemented:
 
 \begin{itemize}
 \item @Prelude@: 
 \item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@. Equality of type representations is not done efficiently with hashing (not yet available), but with the usual structural comparison of the type representation.
-\item Garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\item Foreign, Ptr, Weak, etc: garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
 \end{itemize}
 
 \subsection{Library + runtime}
@@ -149,6 +165,8 @@ The C based backends (C, bc) use the following public domain libraries:
  Without write permission this will fail.
 \item
  Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
+\item
+ Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances.
 \end{itemize}
 
 \subsection{Packages}
@@ -526,6 +544,8 @@ Hello World
 \end{itemize}
 %%]]
 
+By default an executable for code generation target @bc@ (bytecode interpreter) is generated.
+
 \subsubsection{Test UHC}
 
 
@@ -697,6 +717,7 @@ During context resolution the following rules are used:
 \item
   Being in scope is static, that is, solely determined by the structure of the program text.
 \end{itemize}
+
 
 
 %%]
