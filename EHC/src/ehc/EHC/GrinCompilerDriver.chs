@@ -172,9 +172,9 @@ doCompileGrin input opts
          ; specialize "-123-3"
          ; specialize "-123-4"
          ; specialize "-123-5"
-         ; specialize "-123-6"
-         ; specialize "-123-7"
-         ; specialize "-123-8"
+         --; specialize "-123-6"
+         --; specialize "-123-7"
+         --; specialize "-123-8"
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
