@@ -98,36 +98,13 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 #WWW_DOC_PDF					:= www/current-ehc-doc.pdf
 
 ###########################################################################################
-# Version incrementing/bumping
-###########################################################################################
-
-bump-major:
-	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0 > VERSION ; \
-	echo "bumped version to `cat VERSION`"
-
-bump-minor:
-	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0 > VERSION ; \
-	echo "bumped version to `cat VERSION`"
-
-bump-minorminor:
-	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)) > VERSION ; \
-	echo "bumped version to `cat VERSION`"
-
-###########################################################################################
-# Releasing, currently just svn copying
-###########################################################################################
-
-release:
-	cd ../.. ; \
-	svn cp trunk/EHC releases/$(EH_VERSION_FULL)
-
-###########################################################################################
 # Target: explain what can be done
 ###########################################################################################
 
 explanation:
-	@echo "make uhc                 : make 101/ehc and library, this variant is named uhc" ; \
+	@echo "make uhc                 : make uhc and library (ehc variant 101)" ; \
 	echo  "make install             : make uhc and install globally, possibly needing proper permission" ; \
+	echo  "make test                : regress test uhc" ; \
 	echo  "" ; \
     echo  "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
@@ -202,24 +179,7 @@ heliumdoc: $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 	haddock --html --odir=hdoc/helium $(LIB_HELIUM_ALL_DRV_HS) $(LIB_TOP_HS_DRV) $(LIB_LVM_HS_DRV)
 
 ###########################################################################################
-# Target: installation
-###########################################################################################
-
-install-test:
-	#$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
-
-install: uhc-install
-#	rm -f $(EHC_FOR_UHC_BLD_EXEC)
-#	$(MAKE) INSABS_RTS_LIB_PREFIX=$(INSTALL_UHC_LIB_PREFIX) INSABS_RTS_INC_PREFIX=$(INSTALL_UHC_INC_PREFIX) INSABS_PREFIX=$(INSTALL_UHC_PREFIX) INS_PREFIX=$(INSTALL_UHC_PREFIX) \
-#		CABAL_OPT_INSTALL_LOC="--global" \
-#		GHC_PKG_NAME_PREFIX= \
-#		$(EHC_FOR_UHC_BLD_EXEC)
-#	mkdir -p $(dir $(UHC_INSTALL_EXEC))
-#	install $(EHC_FOR_UHC_BLD_EXEC) $(UHC_INSTALL_EXEC)
-#	$(MAKE) EHC_BLD_VARIANT_PREFIX=$(INSTALL_UHC_PREFIX) EHC_BLD_EXEC=$(UHC_INSTALL_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclib
-
-###########################################################################################
-# Target: uhc + libs
+# Target: UHC: uhc + libs
 ###########################################################################################
 
 uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
@@ -266,10 +226,57 @@ uhc-install-postprocess-jazy:
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
 ###########################################################################################
+# Target: UHC: installation
+###########################################################################################
+
+install: uhc-install
+
+###########################################################################################
+# Target: UHC: regression test
+###########################################################################################
+
+uhc-test: thaw-test-expect
+	@echo "WARNING: output may differ w.r.t. names for the following tests: " IO2.hs IO3.hs
+	$(MAKE) test-regress TEST_VARIANTS=uhc
+
+test: uhc-test
+
+###########################################################################################
 # Target: clean build stuff
 ###########################################################################################
 
 clean: cleans
+
+###########################################################################################
+# Version incrementing/bumping
+###########################################################################################
+
+bump-major:
+	@echo $$(($(EH_VERSION_MAJOR)+1)).0.0 > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+bump-minor:
+	@echo $(EH_VERSION_MAJOR).$$(($(EH_VERSION_MINOR)+1)).0 > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+bump-minorminor:
+	@echo $(EH_VERSION_MAJOR).$(EH_VERSION_MINOR).$$(($(EH_VERSION_MINORMINOR)+1)) > VERSION ; \
+	echo "bumped version to `cat VERSION`"
+
+###########################################################################################
+# Releasing, currently just svn copying
+###########################################################################################
+
+release:
+	cd ../.. ; \
+	svn cp trunk/EHC releases/$(EH_VERSION_FULL)
+
+release-prepare:
+	$(MAKE) uhc
+	@echo "WARNING: password may be needed"
+	sudo $(MAKE) install
+	$(MAKE) test-expect TEST_VARIANTS=uhc
+	$(MAKE) freeze-test-expect
 
 ###########################################################################################
 # Target: try outs and debugging of make variable definitions
