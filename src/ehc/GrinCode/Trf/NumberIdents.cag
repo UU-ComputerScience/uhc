@@ -189,8 +189,6 @@ SEM GrAlt
 
 
 SEM GrBind
-  | Bind      
-
   | Bind  lhs.genBindMap =  Map.singleton @nm (HNmNr @lhs.unique (OrigFunc @nm))
                               
           ( loc.parameterMap

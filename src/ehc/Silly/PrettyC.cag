@@ -116,7 +116,7 @@ SEM SilModule
 
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwn 1 "initialize"
 %%[[8
-                                             >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_main"
+                                             >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_fun0tildemain"
 %%][99
                                              >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_mainFullProg"
 %%]]                                             

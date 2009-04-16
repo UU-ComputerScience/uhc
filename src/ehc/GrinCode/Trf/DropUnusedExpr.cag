@@ -14,7 +14,7 @@ Alternatives with tags that involve functions that do no longer exist are remove
 %%]
 %%[(8 codegen grin) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode}, {%{EH}Base.Builtin(hsnMain)})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common})
 %%]
@@ -81,7 +81,7 @@ SEM GrAlt
   | Alt           pat.downstreamUsed   =  @expr.freeUsed
 
 SEM GrModule
-  |  Mod          loc.globalUsed  =  @globalL.freeUsed  `Set.union` (Set.insert mainNr (Set.insert hsnMainFullProg @bindL.freeUsed))
+  |  Mod          loc.globalUsed  =  @globalL.freeUsed  `Set.union` (Set.insert mainNr (Set.insert hsnMainFullProg (Set.insert hsnMain @bindL.freeUsed)))
 
 
 -- At defining positions, the bound variables are removed from the freeFreq map:

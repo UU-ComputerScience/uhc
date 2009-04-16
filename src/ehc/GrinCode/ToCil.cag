@@ -17,12 +17,12 @@ thunks.
 
 %%[(8 codegen clr) hs module {%{EH}GrinCode.ToCil} export(grin2cil)
 %%]
-%%[(8 codegen clr) hs import(Language.Cil hiding(tail))
-%%]
-
 %%[(8 codegen clr) ag import({GrinCode/AbsSyn})
 %%]
-
+%%[(8 codegen clr) ag import({GrinCode/CommonForGen})
+%%]
+%%[(8 codegen clr) hs import(Language.Cil hiding(tail))
+%%]
 %%[(8 codegen clr) hs import(Debug.Trace)
 %%]
 %%[(8 codegen clr) hs import(Data.List((\\), nub), Data.Maybe (maybe, isJust, fromJust), qualified Data.Map as Map, Data.Map (Map), qualified Data.Set as Set, Data.Set (Set), Data.Bits)
@@ -36,6 +36,8 @@ thunks.
 %%[(8 codegen clr) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 %%[(8 codegen clr) hs import({%{EH}Cil.Common}, {%{EH}Cil.TyTag})
+%%]
+%%[(94 codegen clr) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen clr)
@@ -118,11 +120,17 @@ ATTR GrAGItf GrModule
     cilAssembly : {Assembly}
   ]
 
-ATTR AllNT
+ATTR GrModule AllBind AllGrExpr GrPatLam
   [
   |
     -- Supply of unique labels
     labels    : {[Label]}
+  |
+  ]
+
+ATTR AllNT
+  [
+  |
   | self      : SELF
   ]
 
@@ -336,9 +344,8 @@ SEM GrExpr
                               ++ @altL.cilCode
                               ++ [label @loc.caseEndLabel nop]
                 loc.caseStartLabel  = head @lhs.labels
-                val.labels          = tail @lhs.labels
-                loc.caseEndLabel    = head @altL.labels
-                lhs.labels          = tail @altL.labels
+                altL.labels         = drop 2 @lhs.labels
+                loc.caseEndLabel    = head (tail @lhs.labels)
                 altL.caseStartLabel = @loc.caseStartLabel
                 altL.caseEndLabel   = @loc.caseEndLabel
   | FetchNode   lhs.cilCode = error "FetchNode found while generating CIL"
@@ -364,7 +371,7 @@ SEM GrExpr
                                    $ call [] Object "" @lhs.className @loc.varName @loc.params
                                    ]
                 loc.params  = replicate (length @argL.self) Object
-  | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @nm
+  | FFI         lhs.cilCode = debugComment @self $ @argL.cilCode ++ ffcall @impEntNm
   | Eval        lhs.cilCode = error "Eval found while generating CIL"
   | App         lhs.cilCode = error "App found while generating CIL"
   | Throw       lhs.cilCode = [no @self]
@@ -384,7 +391,7 @@ SEM GrAlt
                                   GrAltAnnReenter -> [pop] ++ @expr.cilCode ++ [br @lhs.caseStartLabel]
                                   _               -> [pop] ++ @expr.cilCode ++ [br @lhs.caseEndLabel]
                 loc.label     = head @lhs.labels
-                pat.labels    = tail @lhs.labels
+                expr.labels   = tail @lhs.labels
                 expr.hasNext  = case @ann of
                                   GrAltAnnReenter -> True
                                   _               -> @lhs.hasNext
@@ -409,8 +416,15 @@ SEM GrVal
   | OpaqueNode  lhs.cilCode = [no @self]
   | PtrNode     lhs.cilCode = [no @self]
   | * - Tag Var
-                lhs.cilConst = [no $ "cilConst not defined on " ++ show @self]
+                lhs.cilConst = [no $ "cilConst not defined on "] --  ++ show @self]
+          
   -- TODO NodeAdapt in variant 10
+
+
+-- help the AG scheduler, needed for variant>=10
+SEM GrVar GrVarL
+  | *           lhs.className < lhs.tyTag
+                lhs.methodParams < lhs.tyTag
 
 SEM GrValL
   | Nil         lhs.cilConsts = []
@@ -506,6 +520,7 @@ SEM GrPatLam
 
 
 SEM GrTag
+  | *           loc.self      : GrTag
   | Con         lhs.cilMatch  = debugComment @self [isinst (toConDottedName @loc.tyTag)]
                 lhs.allCons   = Set.singleton @self
                 loc.tyTag     = lookupTag @self @lhs.grTagsMap
@@ -620,3 +635,4 @@ constructTag tag grTagsMap = case Map.lookup tag grTagsMap of
       in debugComment tag [newobj "" name types]
 
 %%]
+

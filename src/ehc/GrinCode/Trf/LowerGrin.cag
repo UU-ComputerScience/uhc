@@ -132,7 +132,7 @@ newNames hptMap maxConstrParameters uniq (HNmNr v _)
 isSingleVar :: HptMap -> HsName -> Bool
 isSingleVar hptMap (HNmNr nr _) 
   = case getEnvVar hptMap nr of
-      AbsPtr  _ _ -> True
+      AbsPtr  _ _ _ -> True
       AbsNodes  _ -> False
       a           -> if nr==0
                      then True
