@@ -118,7 +118,8 @@ bump-minorminor:
 ###########################################################################################
 
 release:
-	svn cp . ../../releases/$(EH_VERSION_FULL)
+	cd ../.. ; \
+	svn cp trunk/EHC releases/$(EH_VERSION_FULL)
 
 ###########################################################################################
 # Target: explain what can be done
