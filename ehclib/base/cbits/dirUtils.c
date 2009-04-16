@@ -15,6 +15,7 @@
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 
+#ifndef __UHC_1_0_0__
 #include "HsBase.h"
 
 #if defined(_MSC_VER) || defined(__MINGW32__) || defined(_WIN32)
@@ -72,3 +73,6 @@ __hscore_readdir( DIR *dirPtr, struct dirent **pDirEnt )
   }  
 #endif
 }
+#else /* !__UHC_1_0_0__ */
+int dummy_dirUtils ;
+#endif /* !__UHC_1_0_0__ */

@@ -133,8 +133,10 @@
 #include <vfork.h>
 #endif
 
-#ifndef __UHC__
+#ifndef __UHC_1_0_0__
 #include "dirUtils.h"
+#endif
+#ifndef __UHC__
 #include "WCsubst.h"
 #endif /* !__UHC__ */
 

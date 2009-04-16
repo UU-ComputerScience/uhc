@@ -447,9 +447,11 @@ foreign import ccall unsafe "HsBase.h waitpid"
    c_waitpid :: CPid -> Ptr CInt -> CInt -> IO CPid
 #endif
 
+#ifndef __UHC_1_0_0__
 -- traversing directories
 foreign import ccall unsafe "dirUtils.h __hscore_readdir"
   readdir  :: Ptr CDir -> Ptr (Ptr CDirent) -> IO CInt
+#endif
  
 foreign import ccall unsafe "HsBase.h __hscore_free_dirent"
   freeDirEnt  :: Ptr CDirent -> IO ()
