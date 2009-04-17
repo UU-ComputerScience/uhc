@@ -162,6 +162,10 @@ case $HostPlatform in
         cppEhcOptions="$cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
+  x86_64-*-linux-gnu )
+        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
+        ;;
   *)
         ;;
 esac  

@@ -7,7 +7,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) module {%{EH}Pred.Heuristics} import({%{EH}Ty},{%{EH}Ty.FitsInCommon2}, {%{EH}CHR},{%{EH}VarMp},{%{EH}Pred.CHR},{%{EH}Pred.Evidence},{%{EH}CHR.Constraint})
 %%]
 
-%%[(9 hmtyinfer) import(Data.List(nub, maximumBy, partition),Data.Maybe)
+%%[(9 hmtyinfer) import(Data.List(nub, partition),Data.Maybe)
 %%]
 
 %%[(9 hmtyinfer) import(EH.Util.Pretty,EH.Util.AGraph,EH.Util.Utils)
