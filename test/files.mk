@@ -51,7 +51,12 @@ test-lists:
 	  else \
 	    startvariant=$(EHC_PREL_VARIANT) ; \
 	  fi ; \
-	  for ((i = $${startvariant} ; i <= $${vv} ; i++)) ; do ehs="$${ehs} `echo $${i}/*.{eh,hs}`" ; done ; \
+	  i=$${startvariant} ; \
+	  while test $${i} -le $${vv} ; \
+	  do \
+	    ehs="$${ehs} `echo $${i}/*.{eh,hs}`" ; \
+	    i=`expr $${i} + 1` ; \
+	  done ; \
 	  echo "$${ehs}" > $${v}.lst ; \
 	done
 

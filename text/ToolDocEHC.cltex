@@ -11,6 +11,9 @@
 \section{Check your installation (optional)}
 %%@ToolDocEHC.testRegress
 
+\section{Shoot trouble (hopefully optional)}
+See the troubleshooting FAQ in the \eref{EhcUserDocumentation}{UHC manual}.
+
 %%]
 
 
@@ -46,6 +49,14 @@ Bear in mind that these extensions are all but tried and tested!
 %%@ToolDocEHC.extensions
 \subsection{Higher ranked types and impredicativity}
 \label{higher-ranked-types-and-impredicativity}
+\subsubsection{Higher ranked types}
+%%@ToolDocEHC.higherRankTypes
+\subsubsection{Co- and contravariance}
+%%@ToolDocEHC.coContraVariance
+\subsubsection{Impredicativity}
+%%@ToolDocEHC.impredicativity
+\subsubsection{Caveats}
+%%@ToolDocEHC.rankImpredCaveats
 
 \subsection{Partial type signature}
 \label{partial-type-signatures}
@@ -100,141 +111,28 @@ hence no documentation is currently available.
 %%@ToolDocEHC.ffi
 
 \subsection{Library modules}
+%%@ToolDocEHC.libraryModules
 
-The library consists of 
-\begin{itemize}
-\item UHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @UHC.@.
-\item Modules from the GHC distribution, used without changes.
-\item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
-\end{itemize}
-
-Currently, mostly modules from the @base@ package are available, only arrays from package @array@ are available.
-For each library module in the Haskell98 report we summarize what is working and what not.
-There are no backwards compatibility wrapper modules, as this is part of the @haskell98@ package.
-
-\begin{itemize}
-\item @Prelude@: fully available.
-\item @Ratio@: in @Data.Ratio@, fully available.
-\item @Complex@: in @Data.Complex@, fully available.
-\item @Numeric@: fully available.
-\item @Ix@: in @Data.Ix@, fully available.
-\item @Array@: in @Data.Array@, fully available.
-\item @List@: in @Data.List@, fully available.
-\item @Maybe@: in @Data.Maybe@, fully available.
-\item @Monad@: in @Control.Monad@, fully available.
-\item @IO@: under construction, the @Prelude@ part is as a temporary implementation available.
-\item @Directory@: not available.
-\item @System@: in @System.Environment@ and @System.Exit@, fully available.
-\item @Time@: not available.
-\item @Locale@: not available.
-\item @CPUTime@: not available.
-\item @Random@: not available.
-\end{itemize}
-
-More library modules are incorporated, we only list those which are not fully implemented:
-
-\begin{itemize}
-\item @Prelude@: 
-\item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@. Equality of type representations is not done efficiently with hashing (not yet available), but with the usual structural comparison of the type representation.
-\item Foreign, Ptr, Weak, etc: garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
-\end{itemize}
-
-\subsection{Library + runtime}
-The C based backends (C, bc) use the following public domain libraries:
-
-\subsubsection{Third party libraries}
-\begin{itemize}
-\item \href{http://gmplib.org/}{GMP} GNU Multiple Precision library.
-\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} library.
- We are working on a replacement for this library.
-\end{itemize}
-
-\subsubsection{Known issues}
-\begin{itemize}
-\item Stacksize for the C based backends is fixed and not checked for overflow.
-\item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
-\item
- Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
- Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
-\item
- Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
-\item
- Large expressions involving many class constraints take non lineair compile time, consumed by context reduction.
-\item
- When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
- Without write permission this will fail.
-\item
- Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
-\item
- Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances.
-\end{itemize}
 
 \subsection{Packages}
-Packages can not be used, although a minimal framework for packages is already in use internally. If so desired one can build and use packages in separate locations as follows:
-
-\begin{itemize}
-\item \emph{Build} a pkg @<pkg>@:
-\begin{pre}
-uhc --target=<target> --odir=<install>/<target>/<pkg> --pkg-build-libdir=<install>/<target>/ --pkg-build=<pkg> --import-path=<install>/<target>/<pkg>/include <pkg-files>
-\end{pre}
-Optionally provide specify commandline options @--cpp@, if @cpp@ preprocessing is necessary.
-If @cpp@ includes are part of the package, these should be in @<install>/<target>/<pkg>/include@; then also pass option @--import-path=<install>/<target>/<pkg>/include@.
-Generated library files like @.hi@ interface files and a linked library are put in the location specified by @--odir@.
-\item \emph{Use} a pkg @<pkg>@:
-\begin{pre}
-uhc --lib-search-path=<install> ...
-\end{pre}
-If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
-\end{itemize}
+%%@ToolDocEHC.packages
 
 \subsection{Fully functional backends}
-\subsubsection{@bc@: GRIN based interpreter, no full program analysis}
-
-\begin{itemize}
-\item Only foreign functions with at most 3 arguments are allowed currently.
-\item The size of the stack is hardcoded. No runtime overflow check is done.
-\end{itemize}
-
-\subsubsection{@C@: GRIN based C, with full program analysis}
-
-\begin{itemize}
-\item No exceptions.
-\item The size of the stack is hardcoded. No runtime overflow check is done.
-\end{itemize}
-
-\subsection{Almost fully functional backends}
-\subsubsection{@jazy@: Core based Java, no full program analysis}
-
-\begin{itemize}
-\item Only when enabled via @configure --enable-java@.
-\item Runs for latest variant, but partial implementation of required primitives.
-\item No exceptions.
-\end{itemize}
-
-\subsection{Partially functional backends}
-\subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
-
-\begin{itemize}
-\item For variant 8 only, little runtime support.
-\end{itemize}
-
-\subsubsection{@clr@: GRIN based CLR, with full program analysis}
-
-\begin{itemize}
-\item For variant 8 only, no runtime support.
-\item Only when enabled via @configure --enable-clr@.
-\end{itemize}
-
-\subsection{XX}
+%%@ToolDocEHC.backends
 
 \section{Troubleshooting FAQ}
 \glabel{TroubleshootingFAQ}
 \label{TroubleshootingFAQ}
 %%@ToolDocEHC.troubleShootFAQ
 
+\section{License}
+\glabel{UhcLicense}
+\label{UhcLicense}
+%%@ToolDocEHC.license
 
 \section{Further reading}
 %%@ToolDocEHC.andFurther
+
 %%]
 
 %%[preamble
@@ -563,7 +461,15 @@ make test-regress TEST_VARIANTS=uhc
 ...
 % 
 \end{verbatim}
+
+Differences may also be reported because of platform dependent representation of linefeeds.
+This is not intended.
 \end{itemize}
+%%]]
+
+\subsubsection{Troubleshoot}
+
+See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
 %%]]
 
 \subsubsection{Build a EHC variant}
@@ -604,6 +510,186 @@ Hello World
 %%]
 
 %%[extensions doclatex
+%%]
+
+%%[higherRankTypes doclatex
+Higher ranked types are specified explicitly:
+
+\begin{pre}
+poly1 :: (forall a . a -> a) -> (Int,Bool)
+poly1 f = (f 1, f True)
+\end{pre}
+
+Alternatively, the type information can be specified without a separate type signature by mixing annotations throughout patterns and expressions:
+
+\begin{pre}
+poly2 (f :: forall a . a -> a) = (f (1::Int), f True)
+\end{pre}
+
+In both cases the relevant specified type information is propagated to where it is needed.
+
+Such type information may be freely mixed with tuples:
+
+\begin{pre}
+poly3 :: (b,forall a . a -> a) -> (Int,b)
+poly3 (b,f) = (f 1, f b)
+
+poly4 (b,f :: forall a . a -> a) = (f (1::Int), f b)
+\end{pre}
+
+or type constructors:
+
+\begin{pre}
+data T a b = T a b
+
+poly5 :: T b (forall a . a -> a) -> (Int,b)
+poly5 (T b f) = (f 1, f b)
+
+poly6 (T b (f :: forall a . a -> a)) = (f (1::Int), f b)
+\end{pre}
+
+Quantified types may also be used at arbitrary rank, in this case rank-3:
+
+\begin{pre}
+poly7 :: ((forall a . a -> a) -> (Int,Bool)) -> (Int,Bool)
+poly7 poly = poly id
+
+pval = poly7 poly1
+\end{pre}
+
+%%]
+
+%%[coContraVariance doclatex
+With rank co- and contravariance swap.
+For example, in the following a more general function can be used where a less general is expected; @id@ can be used as an implementation for @ii@:
+
+\begin{pre}
+ii :: Int -> Int
+ii = id
+\end{pre}
+
+However, the following does \emph{not} work because the instantiation relation swaps direction on a contravariance position.
+
+\begin{pre}
+id2 :: (forall a . a -> a) -> Int
+id2 i = i 3
+
+ii2 :: (Int -> Int) -> Int
+ii2 = id2                      -- type error
+\end{pre}
+
+@ii2@ cannot pass to @id2@ a function of type \verb|forall a . a -> a| because it only gets a \verb|Int -> Int|!
+However, the other way around is perfectly ok:
+
+\begin{pre}
+id2 :: (forall a . a -> a) -> Int
+id2 = ii2
+
+ii2 :: (Int -> Int) -> Int
+ii2 i = i 3
+\end{pre}
+
+This extends to higher ranks as well:
+
+\begin{pre}
+id3 :: ((forall a . a -> a) -> Int) -> Int
+id3 i = i id
+
+ii3 :: ((Int -> Int) -> Int) -> Int
+ii3 = id3
+\end{pre}
+
+@id3@ gets a function to which it must pass a function of type \verb|forall a . a -> a|;
+it is then ok when this function is used as \verb|Int -> Int|, so as a value for @ii3@ we can use @id3@.
+Both of these invocations are therefore legal:
+
+\begin{pre}
+id3app1 = id3 id2
+id3app2 = id3 ii2
+\end{pre}
+
+However, the other way around fails for passing @ii3@ a function @id2@ which then \emph{must} be given a \verb|forall a . a -> a|.
+
+\begin{pre}
+ii3app1 = ii3 id2        -- type error
+ii3app2 = ii3 ii2
+\end{pre}
+
+The mechanism extends to the use of class predicates:
+
+\begin{pre}
+ieq  :: Eq a => a -> a
+ieq = id
+
+iord  :: Ord a => a -> a
+iord = ieq
+\end{pre}
+
+Similarly for rank 2 we can define:
+
+\begin{pre}
+ieq2  :: (forall a . Eq a => a -> a) -> Int
+ieq2 = iord2
+
+iord2  :: (forall a . Ord a => a -> a) -> Int
+iord2 i = i 3
+\end{pre}
+
+This is ok: @ieq2@ constructs a function accepting an @Ord@ dictionary from the function it gets passed itself,
+which can then be passed to @iord2@.
+The compiler provides this coercion automatically.
+
+Currently this mechanism has limits:
+
+\begin{itemize}
+\item Although co- and contravariance is propagated and analysed through datatypes, coercions are only derived
+ for functions and tuples.
+\end{itemize}
+
+%%]
+
+%%[impredicativity doclatex
+UHC allows impredicativity, albeit with assistance of a programmer.
+For example, in the following example impredicativity means that the type
+of the argument to @single@ propagates with quantifiers;
+this must be done explicitly by using @~@ in front of an argument:
+
+\begin{pre}
+single :: forall a . a -> [a]
+single x = [x]
+
+ids1 = single  id          -- :: forall a . [a->a]
+ids2 = single ~id          -- :: [forall a . a->a]
+\end{pre}
+
+For @ids2@ the type \verb|forall a . a->a| has been propagated via the argument type variable of @single@ to inside the list.
+For @ids1@ the argument is first instantiated.
+
+Alternatively we can enforce this by providing a type signature:
+
+\begin{pre}
+ids3 = single  id :: [forall a . a->a]
+ids4 = single (id :: forall a . a->a)
+ids5 = (single :: (forall a. a-> a) -> [forall a. a->a]) id
+\end{pre}
+
+All these result in the same type as for @ids2@.
+Without type signature or use of @~@ the type of the argument will not be propagated impredicatively.
+
+
+
+%%]
+
+%%[rankImpredCaveats doclatex
+\begin{itemize}
+\item Inference is order sensitive, and sometimes difficult to predict/characterize:
+\begin{pre}
+cons1  = (:) (\x->x)  ids
+cons2  = (:) (\x->x) ~ids						-- should be: [forall a. a->a], but is forall a.[a->a]
+cons2' = (:) (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes this
+\end{pre}
+\item Requires programmer assistance to remedy this.
+\end{itemize}
 %%]
 
 %%[partialTySig doclatex
@@ -931,6 +1017,146 @@ Calling conventions @dynamic@, @wrapper@, @export@ as well as wrapping as finali
 
 %%]
 
+%%[libraryModules doclatex
+The library consists of 
+\begin{itemize}
+\item UHC specific modules, tightly coupled with the underlying implementation. The names of these modules start with @UHC.@.
+\item Modules from the GHC distribution, used without changes.
+\item Modules cloned + adapted from the GHC distribution. This maybe involve a couple of \verb|#ifdef|s or more extensive changes. The intention is to have these changes merged back into the GHC library as to avoid library differences between Haskell implementations.
+\end{itemize}
+
+Currently, mostly modules from the @base@ package are available, only arrays from package @array@ are available.
+For each library module in the Haskell98 report we summarize what is working and what not.
+There are no backwards compatibility wrapper modules, as this is part of the @haskell98@ package.
+
+\begin{itemize}
+\item @Prelude@: fully available.
+\item @Ratio@: in @Data.Ratio@, fully available.
+\item @Complex@: in @Data.Complex@, fully available.
+\item @Numeric@: fully available.
+\item @Ix@: in @Data.Ix@, fully available.
+\item @Array@: in @Data.Array@, fully available.
+\item @List@: in @Data.List@, fully available.
+\item @Maybe@: in @Data.Maybe@, fully available.
+\item @Monad@: in @Control.Monad@, fully available.
+\item @IO@: under construction, the @Prelude@ part is as a temporary implementation available.
+\item @Directory@: not available.
+\item @System@: in @System.Environment@ and @System.Exit@, fully available.
+\item @Time@: not available.
+\item @Locale@: not available.
+\item @CPUTime@: not available.
+\item @Random@: not available.
+\end{itemize}
+
+More library modules are incorporated, we only list those which are not fully implemented:
+
+\begin{itemize}
+\item @Prelude@: 
+\item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@. Equality of type representations is not done efficiently with hashing (not yet available), but with the usual structural comparison of the type representation.
+\item Foreign, Ptr, Weak, etc: garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\end{itemize}
+
+\subsection{Library + runtime}
+The C based backends (C, bc) use the following public domain libraries:
+
+\subsubsection{Third party libraries}
+\begin{itemize}
+\item \href{http://gmplib.org/}{GMP} GNU Multiple Precision library.
+\item \href{http://www.hpl.hp.com/personal/Hans_Boehm/gc/}{Boehm Garbage Collection} library.
+ We are working on a replacement for this library.
+\end{itemize}
+
+\subsubsection{Known issues}
+\begin{itemize}
+\item Stacksize for the C based backends is fixed and not checked for overflow.
+\item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
+\item
+ Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
+ Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
+\item
+ Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
+\item
+ Large expressions involving many class constraints take non lineair compile time, consumed by context reduction.
+\item
+ When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
+ Without write permission this will fail.
+\item
+ Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
+\item
+ Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances.
+\item
+ Building uhc on top of a previous one, with a different version number, does not work because the settings file holding the location of libraries is not yet updated.
+ See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
+\item
+ Regression testing may report differences because of different linefeed encoding on different platforms.
+\end{itemize}
+%%]
+
+%%[packages doclatex
+Packages can not be used, although a minimal framework for packages is already in use internally. If so desired one can build and use packages in separate locations as follows:
+
+\begin{itemize}
+\item \emph{Build} a pkg @<pkg>@:
+\begin{pre}
+uhc --target=<target> --odir=<install>/<target>/<pkg> --pkg-build-libdir=<install>/<target>/ --pkg-build=<pkg> --import-path=<install>/<target>/<pkg>/include <pkg-files>
+\end{pre}
+Optionally provide specify commandline options @--cpp@, if @cpp@ preprocessing is necessary.
+If @cpp@ includes are part of the package, these should be in @<install>/<target>/<pkg>/include@; then also pass option @--import-path=<install>/<target>/<pkg>/include@.
+Generated library files like @.hi@ interface files and a linked library are put in the location specified by @--odir@.
+\item \emph{Use} a pkg @<pkg>@:
+\begin{pre}
+uhc --lib-search-path=<install> ...
+\end{pre}
+If the package is put in the default location (usually something like @lib@ inside @/usr/local/lib/uhc-<version>@), option @--lib-search-path@ can be omitted.
+\end{itemize}
+%%]
+
+%%[backends doclatex
+\subsubsection{@bc@: GRIN based interpreter, no full program analysis}
+
+\begin{itemize}
+\item Only foreign functions with at most 3 arguments are allowed currently.
+\item The size of the stack is hardcoded. No runtime overflow check is done.
+\end{itemize}
+
+\subsubsection{@C@: GRIN based C, with full program analysis}
+
+\begin{itemize}
+\item No exceptions.
+\item The size of the stack is hardcoded. No runtime overflow check is done.
+\end{itemize}
+
+\subsection{Almost fully functional backends}
+\subsubsection{@jazy@: Core based Java, no full program analysis}
+
+\begin{itemize}
+\item Only when enabled via @configure --enable-java@.
+\item Runs for latest variant, but partial implementation of required primitives.
+\item No exceptions.
+\end{itemize}
+
+\subsection{Partially functional backends}
+\subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
+
+\begin{itemize}
+\item For variant 8 only, little runtime support.
+\end{itemize}
+
+\subsubsection{@clr@: GRIN based CLR, with full program analysis}
+
+\begin{itemize}
+\item For variant 8 only, no runtime support.
+\item Only when enabled via @configure --enable-clr@.
+\end{itemize}
+
+%%]
+
+%%[license doclatex
+\begin{pre}
+%%@[file:LICENSE%%]
+\end{pre}
+%%]
+
 %%[commandlineInvocation doclatex
 \label{CommandLine}
 As printed by \verb=install/100/bin/ehc --help=:
@@ -994,6 +1220,19 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
 %%]
 
 %%[troubleShootFAQ doclatex
+\subsection{I have installed UHC previously, now the libraries do not compile}
+
+From a previous install the library path settings may linger around.
+This information is stored in the file reported by:
+
+\begin{pre}
+% uhc --meta-dir-env
+/Volumes/Work/.uhc-101
+% 
+\end{pre}
+
+Remove this directory.
+
 \subsection{I have checked out a new EHC version over a previously working one, and now it does not compile anymore}
 
 Many things currently change, in particular also in the build process,
