@@ -8,6 +8,7 @@ $(patsubst %,%/ehc,$(EHC_VARIANTS)): %/ehc: $(call FUN_EHC_INSTALL_VARIANT_ASPEC
 
 # for (e.g.) install/99/bin/ehc, ehc binaries
 $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	$(MAKE) EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehc-variant
 
 # for haddock

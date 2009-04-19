@@ -1,16 +1,5 @@
-to
---
-
-haskell-cafe@haskell.org
-haskell@haskell.org
-uhc-users@cs.uu.nl
-
-msg
----
-
-
-	Utrecht Haskell Compiler -- first release, version 1.0.0
-	========================================================
+	    Utrecht Haskell Compiler -- first release, version 1.0.0
+	    ========================================================
 
 
 The UHC team is happy to announce the first public release of the
@@ -20,22 +9,23 @@ Windows (cygwin), and various Unix flavors.
 
 Features:
 
-    * Multiple backends, including a bytecode interpreter backend and a GRIN  
-      based, full program analysing backend, both via C.                      
-                                                                              
-    * Experimental language extensions, some of which have not been
-      implemented before.
-      
-    * Implementation via attribute grammars and other high-level tools. 
+  * Multiple backends, including a bytecode interpreter backend and a
+    GRIN based, full program analysing backend, both via C.
+                                                                            
+  * Experimental language extensions, some of which have not been
+    implemented before.
+  
+  * Implementation via attribute grammars and other high-level tools.
 
-    * Ease of experimentation with language variants, thanks to an
-      aspect-oriented internal organisation.
+  * Ease of experimentation with language variants, thanks to an
+    aspect-oriented internal organisation.
 
 
 Getting started & Download
 --------------------------
 
-UHC is available for download as source distribution via the UHC home page:
+UHC is available for download as source distribution via the UHC home
+page:
 
 	http://www.cs.uu.nl/wiki/UHC
 	
@@ -86,4 +76,5 @@ Please report bugs at:
 	http://code.google.com/p/uhc/issues/list
 
 
+The UHC Team
 

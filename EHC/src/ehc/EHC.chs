@@ -98,7 +98,8 @@ main
 %%][8
                                unless (null n) (doCompileRun n opts2)
 %%][99
-                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
+                               do { let envKey = fpathToStr (ehcProgName opts2) ++ "-" ++ Cfg.verFull Cfg.version
+                                  ; mbEnv <- importEHCEnvironment (mkEhcenvKey envKey Cfg.ehcDefaultVariant)
                                   ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
                                   ; unless (null n) (doCompileRun n opts3)

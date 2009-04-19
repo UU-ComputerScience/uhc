@@ -1,6 +1,6 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-structure-doc ehc-user-doc text2text-doc howtoexperiment-doc getting-started-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-structure-doc ehc-user-doc text2text-doc howtoexperiment-doc getting-started-doc announce-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -95,6 +95,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 45: doc: how to experiment with ehc
 # 46: doc: ehc structure
 # 47: doc: getting started
+# 48: doc: announcement
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -140,5 +141,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 44, \
 		39 < 45, \
 		39 < 46, \
-		39 < 47
+		39 < 47, \
+		39 < 48
 		
