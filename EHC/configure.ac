@@ -277,6 +277,12 @@ then
     if test "x$ghcLibUulib" != "x" ; then
       ghcLibUulibExists=yes
     fi
+
+    # network
+    ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
+    if test "x$ghcLibNetwork" != "x" ; then
+      ghcLibNetworkExists=yes
+    fi
   fi
 fi
 
@@ -293,14 +299,14 @@ AC_ARG_WITH(haddock,
   fi
 ]
 )
-if test "$haddockCmd" = "no"; then
+if test "$haddockCmd" != "no" -a -x "$haddockCmd"; then
+  haddockExists="yes"
+  haddockVersion=`$haddockCmd --version | head -n 1`
+else
   haddockCmd=""
   haddockExists="no"
-else
-  haddockExists="yes"
 fi
 AC_SUBST(HADDOCK_CMD,$haddockCmd)
-haddockVersion=`$haddockCmd --version | head -n 1`
 AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
@@ -887,7 +893,12 @@ AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in ext
 AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
 ### if some of the required libraries/tools are absent, this def will check for it and exit
-if test "x$uuagcExists" = "xyes" -a "x$ghcExists" = "xyes" -a "x$gccExists" = "xyes" -a "x$ghcLibFglExists" = "xyes" -a "x$ghcLibUulibExists" = "xyes"
+if test "x$uuagcExists" = "xyes" \
+   -a "x$ghcExists" = "xyes" \
+   -a "x$gccExists" = "xyes" \
+   -a "x$ghcLibFglExists" = "xyes" \
+   -a "x$ghcLibUulibExists" = "xyes" \
+   -a "x$ghcLibNetworkExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -921,19 +932,27 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
   then
     echo "        version                 : $ghcLibUulib"
   else
-    echo "        **** ERROR **** : uulib must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
+    echo "        **** ERROR **** : 'uulib' must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
   fi
 echo "      fgl is available?         : $ghcLibFglExists"
   if test "x$ghcLibFglExists" = "xyes"
   then
     echo "        version                 : $ghcLibFgl"
   else
-    echo "        **** ERROR **** : fgl must be installed, use cabal+hackage"
+    echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
+  fi
+echo "      network is available?     : $ghcLibNetworkExists"
+  if test "x$ghcLibNetworkExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibNetwork"
+  else
+    echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
