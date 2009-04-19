@@ -32,10 +32,12 @@ data EHCEnvironment
 %%% The key used to access the proper environment
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(mkEhcenvKey)
-mkEhcenvKey :: String -> String -> String
-mkEhcenvKey progName ehcDefaultVariant
-  = progName ++ "-" ++ ehcDefaultVariant
+%%[99 export(mkEhcenvKey)
+mkEhcenvKey :: String -> String -> String -> String
+mkEhcenvKey version progName ehcDefaultVariant
+  = progName
+    ++ "-" ++ version
+    ++ "-" ++ ehcDefaultVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

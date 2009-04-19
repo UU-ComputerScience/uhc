@@ -98,8 +98,7 @@ main
 %%][8
                                unless (null n) (doCompileRun n opts2)
 %%][99
-                               do { let envKey = fpathToStr (ehcProgName opts2) ++ "-" ++ Cfg.verFull Cfg.version
-                                  ; mbEnv <- importEHCEnvironment (mkEhcenvKey envKey Cfg.ehcDefaultVariant)
+                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
                                   ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
                                   ; unless (null n) (doCompileRun n opts3)
@@ -165,7 +164,7 @@ handleImmQuitOption immq opts
         -> putStrLn (Cfg.verNumeric Cfg.version)
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
-             (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+             (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
              (env {ehcenvInstallRoot = installRootDir, ehcenvVariant = variant})
         where env = ehcOptEnvironment opts
               (installRootDir,variant)
@@ -174,7 +173,7 @@ handleImmQuitOption immq opts
                     Just (d:_)   -> (d,ehcenvVariant env)
                     _            -> (ehcenvInstallRoot env,ehcenvVariant env)
       ImmediateQuitOption_Meta_DirEnv
-        -> do { d <- ehcenvDir (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+        -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
               ; putStrLn d
               }
 %%]]
