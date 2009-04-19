@@ -17,6 +17,13 @@ See the troubleshooting FAQ in the \eref{EhcUserDocumentation}{UHC manual}.
 %%]
 
 
+%%[announcement doclatex
+\begin{pre}
+%%@[file:ANNOUNCE%%]
+\end{pre}
+%%]
+
+
 %%[main doclatex
 \section{Introduction}
 %%@ToolDocEHC.introduction
@@ -864,6 +871,19 @@ main
 The invented types for bound existentials are allowed to be used everywhere;
 their use is limited by the availability of functions existentially hidden together with the existential type.
 
+Existential types can even be used in a manner parallel to laziness on the value level:
+
+\begin{pre}
+f :: forall a . (a -> exists b . (b, a, b -> b -> Int))
+f i = (3, i, (+))
+
+main = print (let  (b, a, g) = f b
+              in   g b a)
+\end{pre}
+
+The @b@ and its type are known after the invocation of @f@ but is immediately passed back as an argument to @f@,
+enforcing both value and type of @a@ to be the same.
+
 Existential types do not work with:
 \begin{itemize}
 \item Class instances to be hidden together with the existential.
@@ -1048,12 +1068,15 @@ There are no backwards compatibility wrapper modules, as this is part of the @ha
 \item @Random@: not available.
 \end{itemize}
 
-More library modules are incorporated, we only list those which are not fully implemented:
+More library modules are available, we only list those which are not fully implemented:
 
 \begin{itemize}
-\item @Prelude@: 
-\item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@. Equality of type representations is not done efficiently with hashing (not yet available), but with the usual structural comparison of the type representation.
-\item Foreign, Ptr, Weak, etc: garbage collection related functionality is influenced by the use of Boehm GC, e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\item @Data.Typeable@: @cast@ (and variants) always yields @Nothing@.
+ Equality of type representations is not done efficiently with hashing (not yet available).
+ but with the usual structural comparison of the type representation.
+\item @Foreign@, @Ptr@, @Weak@, etc:
+ garbage collection related functionality is influenced by the use of Boehm GC,
+ e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
 \end{itemize}
 
 \subsection{Library + runtime}
@@ -1089,6 +1112,9 @@ The C based backends (C, bc) use the following public domain libraries:
  See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
 \item
  Regression testing may report differences because of different linefeed encoding on different platforms.
+\item
+ UHC partially works on 64 bit platforms.
+ Runtime system seems to be ok, but some of the libraries not, the regression tests therefore partially fail.
 \end{itemize}
 %%]
 

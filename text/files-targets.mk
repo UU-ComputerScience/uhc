@@ -126,6 +126,11 @@ text-variant-getting-started-doc:
 	  TEXT_SHUFFLE_VARIANT=47 \
 	  text-variant-dflt-doc
 
+text-variant-announce-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=48 \
+	  text-variant-dflt-doc
+
 text-variant-text2text-doc:
 	$(MAKE) \
 	  TEXT_SHUFFLE_VARIANT=44 \

@@ -102,6 +102,7 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 ###########################################################################################
 
 explanation:
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	@echo "make uhc                 : make uhc and library (ehc variant 101)" ; \
 	echo  "make install             : make uhc and install globally, possibly needing proper permission" ; \
 	echo  "make test                : regress test uhc" ; \
