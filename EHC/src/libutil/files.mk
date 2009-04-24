@@ -24,7 +24,15 @@ LIB_EH_UTIL_SETUP				:= ./setup$(EXEC_SUFFIX)
 LIBUTIL_DIST_FILES				:= $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 
 # target
-lib-eh: $(LIB_EH_UTIL_INS_FLAG)
+libutil-eh: $(LIB_EH_UTIL_INS_FLAG)
+
+libutil-clean:
+	if test -x $(LIB_EH_UTIL_SETUP2) ; \
+	then \
+	  cd $(BLD_LIBUTIL_PREFIX) && \
+	  $(LIB_EH_UTIL_SETUP) unregister ; \
+	fi
+	rm -rf $(BLD_LIBUTIL_PREFIX) $(LIB_EH_UTIL_INS_FLAG)
 
 # rules
 $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)

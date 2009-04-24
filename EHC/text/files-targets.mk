@@ -1,36 +1,42 @@
 # rules
 text-variant-ehc-book:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-ehc-book-tst:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyEhcBook --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-paper:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_RULER_MARK_CHANGES_CFG= RULER2_DEMO_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=targetForPaper --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
 
 text-variant-phd-tst:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-once
 
 text-variant-phd-draft:
 	$(MAKE)  TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=blockstyle --set=storyPHD --unset=asArticle --set=refToPDF --set=useHyperref --set=asDraft --set=inclInx --set=inclApp --set=inclTOC" \
 	  TEXT_SHUFFLE_VARIANT=2 \
 	  text-variant-dflt-bib-inx
@@ -73,18 +79,21 @@ text-variant-truu-explimpl:
 
 text-variant-hw06-impred:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hw06 --set=acm --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
 text-variant-esop07-impred:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=llncs --set=kscode --set=shortStory --set=infer2pass --set=storyImpred --set=asArticle --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
 
 text-variant-esop07-impred-tr:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_INF2PS_MARK_CHANGES_CFG= TEXT_RULER_MARK_CHANGES_CFG= TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=esop07 --set=truu --set=kscode --set=trStory --set=infer2pass --set=storyImpred --set=asArticle --set=wide --set=inclApp" \
 	  TEXT_SHUFFLE_VARIANT=5 \
 	  text-variant-dflt-bib
@@ -113,6 +122,7 @@ text-variant-howtodoc-doc:
 
 text-variant-ehc-technical-doc:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  TEXT_SHUFFLE_VARIANT=42 \
 	  text-variant-dflt-doc
 
@@ -131,6 +141,16 @@ text-variant-announce-doc:
 	  TEXT_SHUFFLE_VARIANT=48 \
 	  text-variant-dflt-doc
 
+text-variant-release-history-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=49 \
+	  text-variant-dflt-doc
+
+text-variant-build-system-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=50 \
+	  text-variant-dflt-doc
+
 text-variant-text2text-doc:
 	$(MAKE) \
 	  TEXT_SHUFFLE_VARIANT=44 \
@@ -143,6 +163,7 @@ text-variant-howtoexperiment-doc:
 
 text-variant-ehc-structure-doc:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  TEXT_SHUFFLE_VARIANT=46 \
 	  text-variant-dflt-doc
 
@@ -208,24 +229,28 @@ text-variant-slides-uniqueness:
 
 text-variant-slides-overview:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyOverview --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=17 \
 	  text-variant-dflt-once
 
 text-variant-slides-status:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStatus --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \
 	  TEXT_SHUFFLE_VARIANT=23 \
 	  text-variant-dflt-once
 
 text-variant-slides-ehcstruct:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=shortStory" \
 	  TEXT_SHUFFLE_VARIANT=28 \
 	  text-variant-dflt-once
 
 text-variant-slides-ehcstruct-ufmg:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=dateUFMG" \
 	  TEXT_SHUFFLE_VARIANT=28 \
 	  text-variant-dflt-once
@@ -256,18 +281,21 @@ text-variant-cc08-chr-locinst:
 
 text-variant-icfp07-ehcstruct:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyEHCstruct --set=acm --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
 
 text-variant-icfp07-ehcstruct-blind:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp07 --set=kscode --set=natbib --set=storyEHCstruct --set=acm --set=blockstyle --set=asArticle --set=blinded" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
 
 text-variant-ifl07-ehcstruct:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=ifl07 --set=kscode --set=storyEHCstruct --set=llncs --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=25 \
 	  text-variant-dflt-bib
@@ -280,36 +308,42 @@ text-variant-ehc-doc:
 
 text-variant-tr-abstrint:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=truu --set=blockstyle --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=33 \
 	  text-variant-dflt-bib
 
 text-variant-ldta08-abstrint:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=entcs --set=blockstyle --set=shortStory --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=33 \
 	  text-variant-dflt-bib
 
 text-variant-icfp08-subst:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=icfp08 --set=kscode --set=natbib --set=storyUnificSubst --set=acm --set=blockstyle --set=asArticle --set=omitlag2TeX" \
 	  TEXT_SHUFFLE_VARIANT=36 \
 	  text-variant-dflt-bib
 
 text-variant-padl09-subst:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=padl09 --set=kscode --set=natbib --set=storyUnificSubst --set=llncs --unset=blockstyle --set=asArticle --set=omitlag2TeX --set=shortStory" \
 	  TEXT_SHUFFLE_VARIANT=36 \
 	  text-variant-dflt-bib
 
 text-variant-padl09-subst-tr:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC_EXPERIMENTS_SUBST=yes TEXT_CFG_TEXT_INCLUDES_EXPERIMENTS_SUBST_TEX=yes TEXT_SHUFFLE_ORDER="1 < 2 < 3, 3 < 32, 2 < 21, 1 < 26 < 36" \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=truu --set=kscode --set=natbib --set=storyUnificSubst --set=blockstyle --set=asArticle --set=omitlag2TeX --unset=hasAppendix" \
 	  TEXT_SHUFFLE_VARIANT=36 \
 	  text-variant-dflt-bib
 
 text-variant-ldta09-agidiom:
 	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes TEXT_CFG_FIGS_INCLUDES_DOT_SRC=no TEXT_CFG_FIGS_INCLUDES_XFIG_SRC=no \
+	  INCLUDE_DERIVED_MK=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=kscode --set=entcs --set=blockstyle --set=shortStory --set=asArticle" \
 	  TEXT_SHUFFLE_VARIANT=38 \
 	  text-variant-dflt-once

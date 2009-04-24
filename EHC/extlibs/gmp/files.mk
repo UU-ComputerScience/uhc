@@ -35,8 +35,12 @@ EXTLIBS_GMP_REMOVE_BEFORE_BUILD			:= $(patsubst %,lib%.la,gmp)
 # distribution
 LIBUTIL_DIST_FILES						:= $(EXTLIBS_GMP_MKF) $(EXTLIBS_GMP_ARCHIVE)
 
-# target
+# target: build
 #lib-gmp: $(EXTLIBS_GMP_INSTALLFORBLD_FLAG)
+
+# target: clean
+gmp-clean:
+	rm -rf $(BLDABS_EXTLIBS_GMP_PREFIX)
 
 # rules
 #$(EXTLIBS_GMP_INSTALLFORBLD_FLAG): $(EXTLIBS_GMP_ARCHIVE) $(EXTLIBS_GMP_MKF)

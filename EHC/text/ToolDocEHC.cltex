@@ -102,19 +102,29 @@ hence no documentation is currently available.
 \glabel{LanguageImplementationStatus}
 %%@ToolDocEHC.languageStatus
 
-\subsection{Available in Haskell98 but not or partially in UHC}
-%%@ToolDocEHC.inHaskell98NotInEhc
 
-\subsection{Proposed in Haskell prime but not or partially in UHC}
-%%@ToolDocEHC.inHaskellPrimeNotInEhc
+\subsection{Feature availability and status}
 
-\subsection{Available in UHC but not in Haskell98 or Haskell prime}
-%%@ToolDocEHC.inEhcNotIn98Prime
+%%@ToolDocEHC.featureAvailability
 
-\subsection{Other differences (to be categorized)}
-%%@ToolDocEHC.otherDifferences
+%\subsection{Available in Haskell98 but not or partially in UHC}
+ %%@ToolDocEHC.inHaskell98NotInEhc
+
+%\subsection{Proposed in Haskell prime but not or partially in UHC}
+ %%@ToolDocEHC.inHaskellPrimeNotInEhc
+
+%\subsection{Available in UHC but not in Haskell98 or Haskell prime}
+ %%@ToolDocEHC.inEhcNotIn98Prime
+
+%\subsection{Other differences (to be categorized)}
+ %%@ToolDocEHC.otherDifferences
+ 
+An older overview can be found on older pages on the \eref{FirstRelease}{first release} and \eref{LanguageFeatures}{language features}.
+
+
 
 \subsection{Foreign function interface (FFI)}
+\label{ffi}
 %%@ToolDocEHC.ffi
 
 \subsection{Library modules}
@@ -125,7 +135,11 @@ hence no documentation is currently available.
 %%@ToolDocEHC.packages
 
 \subsection{Fully functional backends}
-%%@ToolDocEHC.backends
+%%@ToolDocEHC.backendsFull
+\subsection{Almost fully functional backends}
+%%@ToolDocEHC.backendsAlmost
+\subsection{Partially functional backends}
+%%@ToolDocEHC.backendsPartial
 
 \section{Troubleshooting FAQ}
 \glabel{TroubleshootingFAQ}
@@ -811,7 +825,7 @@ During context resolution the following rules are used:
   Being in scope is static, that is, solely determined by the structure of the program text.
 \end{itemize}
 
-
+The implementation still has some quirks when abstracted dictionaries are involved. Sticking to ground instances like in the examples avoid this.
 
 %%]
 
@@ -882,7 +896,7 @@ main = print (let  (b, a, g) = f b
 \end{pre}
 
 The @b@ and its type are known after the invocation of @f@ but is immediately passed back as an argument to @f@,
-enforcing both value and type of @a@ to be the same.
+enforcing both value and type of @a@ to be the same as that of @b@.
 
 Existential types do not work with:
 \begin{itemize}
@@ -938,8 +952,6 @@ In the above \lref{partial-type-signatures}{partial type signatures} were also u
 %%]
 
 %%[languageStatus doclatex
-For now, see info on \eref{FirstRelease}{the upcoming first release} and \eref{LanguageFeatures}{language features}.
-
 Encoding of availability:
 
 \begin{tabular}{ll}
@@ -953,9 +965,7 @@ NN & is not and will never be available \\
 
 %%]
 
-%%[inHaskell98NotInEhc doclatex
-Availability of features for Haskell, with file suffix @.hs@:
-
+%%[featureAvailability doclatex
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
 n+k patterns & NN \\
@@ -966,12 +976,28 @@ Irrefutable patterns & YN, nested patterns too lazy \\
 Strictness annotation in data types & YN, ignored \\
 Literate Haskell source format & YN, only \verb@\begin{code}@ .. \verb@\end{code}@ \\
 Operator infixity determines parsing & YN, some subtle report examples are not treated as defined \\
-Foreign function interface & YN, enough to make @Prelude@ work \\
-Exceptions & YN, depending on backend \\
+\lref{ffi}{Foreign function interface} & YN, enough to make @Prelude@ work \\
+Exceptions & YN, depending on backend, 'old style' data type based (non extensible) \\
 Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
 Ix not derivable & N \\
 \lref{absence-monomorphism-restriction}{Monomorphism restriction} & N \\
+Functional dependencies & N, pending route taken with Haskell prime \\
+\lref{lexically-scoped-type-variables}{Lexically scoped type variables} & Y \\
+\lref{existential-types}{Existential quantification} & Y \\
+\lref{partial-type-signatures}{Partial type signatures} & Y \\
+Multiparameter type classes & Y \\
+Functional dependencies & N \\
+\lref{kind-inference}{Explicit kinding} & Y \\
+\lref{kind-inference}{Polymorphic kind inference} & Y \\
+Extensible records & YN, no runtime support \\
+Existential + context + datatype def like: @data Handler a = forall e . Exception e => Handler (e -> IO a)@ & N \\
+UTF8 Char, String & N \\
 \end{tabular}
+
+%%]
+
+%%[inHaskell98NotInEhc doclatex
+Availability of features for Haskell, with file suffix @.hs@:
 
 Additionally, availability of features for EH (Essential Haskell), with file suffix @.eh@:
 
@@ -988,7 +1014,6 @@ Literate source format & NN \\
 %%[inHaskellPrimeNotInEhc doclatex
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
-Functional dependencies & N, pending route taken with Haskell prime \\
 \end{tabular}
 
 %%]
@@ -996,14 +1021,6 @@ Functional dependencies & N, pending route taken with Haskell prime \\
 %%[inEhcNotIn98Prime doclatex
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
-\lref{lexically-scoped-type-variables}{Lexically scoped type variables} & Y \\
-\lref{existential-types}{Existential quantification} & Y \\
-\lref{partial-type-signatures}{Partial type signatures} & Y \\
-Multiparameter type classes & Y \\
-Functional dependencies & N \\
-\lref{kind-inference}{Explicit kinding} & Y \\
-\lref{kind-inference}{Polymorphic kind inference} & Y \\
-Extensible records & YN \\
 \end{tabular}
 
 %%]
@@ -1011,8 +1028,6 @@ Extensible records & YN \\
 %%[otherDifferences doclatex
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
-Existential + context + datatype def like: @data Handler a = forall e . Exception e => Handler (e -> IO a)@ & N \\
-UTF8 Char, String & N \\
 \end{tabular}
 
 %%]
@@ -1106,7 +1121,7 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
 \item
- Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances.
+ Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances as in the \lref{local-instances}{examples}.
 \item
  Building uhc on top of a previous one, with a different version number, does not work because the settings file holding the location of libraries is not yet updated.
  See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
@@ -1115,6 +1130,9 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  UHC partially works on 64 bit platforms.
  Runtime system seems to be ok, but some of the libraries not, the regression tests therefore partially fail.
+\item
+ Instances for tuples are currently limited to at most 5-tuples.
+ Also not all standard classes have definitions for tuples, in particular @Read@.
 \end{itemize}
 %%]
 
@@ -1137,22 +1155,27 @@ If the package is put in the default location (usually something like @lib@ insi
 \end{itemize}
 %%]
 
-%%[backends doclatex
+%%[backendsFull doclatex
 \subsubsection{@bc@: GRIN based interpreter, no full program analysis}
+
+This is the default backend, and the most complete.
 
 \begin{itemize}
 \item Only foreign functions with at most 3 arguments are allowed currently.
 \item The size of the stack is hardcoded. No runtime overflow check is done.
+\item 64 bits platforms are supported, but libraries not yet deal correctly with bitsize dependencies.
 \end{itemize}
+%%]
 
+%%[backendsAlmost doclatex
 \subsubsection{@C@: GRIN based C, with full program analysis}
 
 \begin{itemize}
-\item No exceptions.
+\item No exceptions, throwing an exception will stop the program.
+\item Runs simple programs using the Prelude only; primitives for many of the other libraries are not yet implemented.
 \item The size of the stack is hardcoded. No runtime overflow check is done.
 \end{itemize}
 
-\subsection{Almost fully functional backends}
 \subsubsection{@jazy@: Core based Java, no full program analysis}
 
 \begin{itemize}
@@ -1161,7 +1184,9 @@ If the package is put in the default location (usually something like @lib@ insi
 \item No exceptions.
 \end{itemize}
 
-\subsection{Partially functional backends}
+%%]
+
+%%[backendsPartial doclatex
 \subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
 
 \begin{itemize}
@@ -1174,7 +1199,6 @@ If the package is put in the default location (usually something like @lib@ insi
 \item For variant 8 only, no runtime support.
 \item Only when enabled via @configure --enable-clr@.
 \end{itemize}
-
 %%]
 
 %%[license doclatex
@@ -1258,6 +1282,13 @@ This information is stored in the file reported by:
 \end{pre}
 
 Remove this directory.
+From version 1.0.1 onwards this should no longer be a problem as the version number is encoded in the filename:
+
+\begin{pre}
+% uhc --meta-dir-env
+/Volumes/Work/.uhc-1.0.1-101
+% 
+\end{pre}
 
 \subsection{I have checked out a new EHC version over a previously working one, and now it does not compile anymore}
 

@@ -1,3 +1,7 @@
+###########################################################################################
+# defines
+###########################################################################################
+
 # location of shuffle src
 SRC_SHUFFLE_PREFIX	:= $(SRC_PREFIX)shuffle/
 
@@ -93,8 +97,18 @@ SHUFFLE_JAVA		:= $(SHUFFLE_PLAIN)
 # distribution
 SHUFFLE_DIST_FILES			:= $(SHUFFLE_ALL_SRC) $(SHUFFLE_MKF)
 
-# make rules
+###########################################################################################
+# targets
+###########################################################################################
+
 $(SHUFFLE_NAME): $(SHUFFLE_BLD_EXEC)
+
+shuffle-clean:
+	rm -rf $(SHUFFLE_BLD_EXEC) $(SHUFFLE_BLD_PREFIX)
+
+###########################################################################################
+# rules
+###########################################################################################
 
 $(SHUFFLE_BLD_EXEC): $(SHUFFLE_AG_ALL_MAIN_DRV_HS) $(SHUFFLE_HS_ALL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)

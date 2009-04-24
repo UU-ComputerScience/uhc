@@ -95,10 +95,10 @@ EHC_MK_AG_S_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-s-dep.mk
 EHC_MK_AG_D_DEP_MK						:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)files-ag-d-dep.mk
 
 # conditional turned off, because text building depends on default rules:
-#ifneq ($(EHC_VARIANT),X)
+ifeq ($(INCLUDE_DERIVED_MK),yes)
 -include $(EHC_MK_AG_S_DEP_MK)
 -include $(EHC_MK_AG_D_DEP_MK)
-#endif
+endif
 
 EHC_AG_DS_MAIN_SRC_CAG					:= 
 EHC_AG_ALL_MAIN_SRC_CAG					:= $(EHC_AG_D_MAIN_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG) $(EHC_AG_DS_MAIN_SRC_CAG)

@@ -35,8 +35,12 @@ EXTLIBS_BGC_REMOVE_BEFORE_BUILD			:= $(patsubst %,lib%.la,gc cord)
 # distribution
 LIBUTIL_DIST_FILES						:= $(EXTLIBS_BGC_MKF) $(EXTLIBS_BGC_ARCHIVE)
 
-# target
+# target: build
 lib-bgc: $(EXTLIBS_BGC_INS_NONTHREAD_FLAG)
+
+# target: clean
+bgc-clean:
+	rm -rf $(BLDABS_EXTLIBS_BGC_PREFIX)
 
 # rules
 #$(EXTLIBS_BGC_INSTALLFORBLD_FLAG): $(EXTLIBS_BGC_ARCHIVE) $(EXTLIBS_BGC_MKF)

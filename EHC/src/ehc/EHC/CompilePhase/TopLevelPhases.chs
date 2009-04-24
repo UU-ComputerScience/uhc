@@ -379,9 +379,10 @@ cpEhcModuleCompile1 targHSState modNm
                    }
 %%[[94
            (ECUSC CStart,_)
-             -> do { cpMsg modNm VerboseMinimal "Compiling C"
-                   ; cpCompileWithGCC FinalCompile_Module [] modNm
-                   ; cpUpdCU modNm (ecuStoreState (ECUSC CAllSem))
+             -> do { cpSeq [ cpMsg modNm VerboseMinimal "Compiling C"
+                           , cpCompileWithGCC FinalCompile_Module [] modNm
+                           , cpUpdCU modNm (ecuStoreState (ECUSC CAllSem))
+                           ]
                    ; return defaultResult
                    }
 %%]]

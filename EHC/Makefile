@@ -103,11 +103,15 @@ VERSIONS			:= $(EHC_PUB_VARIANTS)
 
 explanation:
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-	@echo "make uhc                 : make uhc and library (ehc variant 101)" ; \
-	echo  "make install             : make uhc and install globally, possibly needing proper permission" ; \
+	@echo "UHC" ; \
+	echo  "===" ; \
+	echo  "make uhc                 : make uhc and library (ehc variant 101)" ; \
+	echo  "make install             : make uhc and install globally, possibly needing admin permission" ; \
 	echo  "make test                : regress test uhc" ; \
 	echo  "" ; \
-    echo  "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
+    echo  "EHC & tools" ; \
+	echo  "===========" ; \
+	echo  "make <n>/ehc             : make compiler variant <n> (in bin/, where <n> in {$(EHC_PUB_VARIANTS)})" ; \
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
 	echo  "make <n>/ehclibs         : make ehc libraries for all codegen targets" ; \
 	echo  "make <n>/rts             : make only the rts part of a library" ; \
@@ -118,6 +122,8 @@ explanation:
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
 	echo  "make $(SHUFFLE_NAME)             : make shuffle tool" ; \
 	echo  "" ; \
+    echo  "Documentation" ; \
+	echo  "=============" ; \
 	echo  "make www                 : make www documentation: $(TEXT_WWW_DOC_PDFS)" ; \
 	echo  "make www-sync            : install www documentation in the EHC web (http://www.cs.uu.nl/wiki/Ehc/WebHome)" ; \
 	echo  "" ; \
@@ -126,20 +132,31 @@ explanation:
 	echo  "                           or (doc): <d> in {$(TEXT_DOCLTX_VARIANTS)}" ; \
 	echo  "                           only if text src available, otherwise already generated" ; \
 	echo  "" ; \
-	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
-	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
-	echo  "make top                 : make Typing Our Programs library" ; \
-	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
-	echo  "make helium              : make Helium library" ; \
-	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
+    echo  "Testing" ; \
+	echo  "===========" ; \
 	echo  "make test-regress        : run regression test," ; \
 	echo  "                           restrict to versions <v> by specifying 'TEST_VARIANTS=<v>' (default '${TEST_VARIANTS}')," ; \
 	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME)/$(EHCLIB_EHCLIB) already built" ; \
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
 	echo  "" ; \
-	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
-	echo  "" ; \
+    echo  "Cleaning up" ; \
+	echo  "===========" ; \
 	echo  "make <n>/clean           : cleanup for variant <n>" ; \
+	echo  "make clean               : cleanup all variants + internal libraries and tools" ; \
+	echo  "make clean-extlibs       : cleanup external libraries" ; \
+	echo  "" ; \
+    echo  "Other" ; \
+	echo  "=====" ; \
+	echo  "make ehcs                : make all compiler ($(EHC_EXEC_NAME)) versions" ; \
+	echo  "make top                 : make Typing Our Programs library" ; \
+	echo  "make lvm                 : make Lazy Virtual Machine library" ; \
+	echo  "make helium              : make Helium library" ; \
+	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
+	echo  "" ; \
+    echo  "Obsolecence candidates" ; \
+	echo  "======================" ; \
+	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
+	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
 	echo  "" ; \
 
 ###########################################################################################
@@ -246,7 +263,16 @@ test: uhc-test
 # Target: clean build stuff
 ###########################################################################################
 
-clean: cleans
+clean:
+	$(MAKE) cleans
+	$(MAKE) ruler-clean
+	$(MAKE) shuffle-clean
+	$(MAKE) libutil-clean
+	@echo "NOTE: all but external libraries (gmp, ...) is cleaned. Use 'make clean-extlibs' for cleaning those."
+
+clean-extlibs:
+	$(MAKE) bgc-clean
+	$(MAKE) gmp-clean
 
 ###########################################################################################
 # Version incrementing/bumping
@@ -286,7 +312,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(VERSION)
+	@echo $(EHCLIB_SYNC_ALL_PKG_SRC)
+	@echo $(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_SRC))
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
