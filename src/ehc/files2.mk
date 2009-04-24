@@ -9,7 +9,7 @@ $(patsubst %,%/ehc,$(EHC_VARIANTS)): %/ehc: $(call FUN_EHC_INSTALL_VARIANT_ASPEC
 # for (e.g.) install/99/bin/ehc, ehc binaries
 $(EHC_ALL_EXECS): %: $(EHC_ALL_SRC) $(EHC_MKF) $(RTS_ALL_SRC)
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
-	$(MAKE) EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehc-variant
+	$(MAKE) INCLUDE_DERIVED_MK=yes EHC_VARIANT=`echo $@ | sed -n -e 's+$(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,\([0-9_]*\)).*+\1+p'` ehc-variant
 
 # for haddock
 $(EHC_ALL_HADDOCKS): %: $(EHC_ALL_SRC) $(EHC_MKF)
@@ -79,6 +79,7 @@ ehc-haddock-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_HS_DRV)
 ###########################################################################################
 
 ehc-clean-variant:
+	@echo "Cleaning variant $(EHC_VARIANT)"
 	@if test -d $(EHC_BLD_LIBEHC_VARIANT_PREFIX) ; \
 	then \
 	  cd $(EHC_BLD_LIBEHC_VARIANT_PREFIX) ; \
@@ -98,12 +99,7 @@ ehc-clean-variant:
 	  fi \
 	fi
 	@rm -rf $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) \
-	        $(filter-out $(EHC_MK_AG_S_DEP_MK) $(EHC_MK_AG_D_DEP_MK),$(wildcard $(EHC_BLD_LIB_HS_VARIANT_PREFIX)*)) \
-	        $(wildcard $(addprefix $(EHC_BLD_VARIANT_ASPECTS_PREFIX),*.hs *.o *.hi *.ag *.cag)) \
-	        $(EHC_BLD_BIN_VARIANT_PREFIX) \
-	        $(EHC_BLD_GEN_VARIANT_PREFIX) \
-	        $(RTS_BLD_RTS_PREFIX) \
-	        $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) \
+	        $(EHC_BLD_VARIANT_ASPECTS_PREFIX) \
 	        $(INSTALLFORBLD_EHC_LIB_PREFIX) $(LIB_EHC_INS_FLAG) \
 	        $(INSTALLFORBLD_VARIANT_ASPECTS_PREFIX) \
 	        $(INSTALL_VARIANT_PREFIX)
@@ -137,10 +133,3 @@ ehc-barebones-variant: $(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG) $(EHC
 	  > Makefile \
 	)
 
-###########################################################################################
-# rules for uhc
-###########################################################################################
-
-#$(UHC_BLD_EXEC): $(EHC_FOR_UHC_BLD_EXEC)
-#	mkdir -p $(@D)
-#	cp $< $@

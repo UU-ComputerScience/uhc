@@ -115,10 +115,11 @@ cpCompileWithGCC how othModNmL modNm
                             (do { lift $ putStrLn ("pkgs : " ++ show pkgNmL)
                                 ; lift $ putStrLn ("other: " ++ show othModNmL2)
                                 })
-                     ; cpSystem compileC
+                     ; cpSeq [ cpSystem compileC
 %%[[99
-                     ; cpUpdCU modNm (ecuStoreGenCodeFiles genOFiles)
+                             , cpUpdCU modNm (ecuStoreGenCodeFiles genOFiles)
 %%]]
+                             ]
                      })
          }
 %%]
