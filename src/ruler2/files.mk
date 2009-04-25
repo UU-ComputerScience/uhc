@@ -37,8 +37,8 @@ RULER2_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.chs,$(RULER2_BLD_
 
 # conditional turned off
 ifeq ($(INCLUDE_DERIVED_MK),yes)
-include $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
-include $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+-include $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
+-include $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
 endif
 
 

@@ -209,11 +209,13 @@ UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_
 uhc-install: uhc
 	mkdir -p $(UHC_INSTALL_PREFIX)
 	$(call FUN_COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
-	for target in `$(EHC_FOR_UHC_BLD_EXEC) --meta-targets` ; \
+	alltargets="`$(EHC_FOR_UHC_BLD_EXEC) --meta-targets`" ; \
+	for target in $${alltargets} ; \
 	do \
 	  $(MAKE) uhc-install-postprocess-$${target} EHC_VARIANT_TARGET=$${target} ; \
 	done ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
+	mkdir -p $(INSTALL_UHC_BIN_PREFIX) ; \
 	ehc="$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" ; \
 	$(STRIP) $${ehc} ; \
 	ln -s $${ehc} $(UHC_INSTALL_EXEC)
@@ -312,8 +314,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_SYNC_ALL_PKG_SRC)
-	@echo $(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_SRC))
+	@echo $(UHC_INSTALL_PREFIX)
+	@echo $(INSTALL_UHC_BIN_PREFIX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
