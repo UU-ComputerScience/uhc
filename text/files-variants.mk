@@ -1,6 +1,10 @@
 # all variants
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
-TEXT_DOC_VARIANTS			+= shuffle-doc howtodoc-doc ehc-technical-doc ehc-structure-doc ehc-user-doc text2text-doc howtoexperiment-doc getting-started-doc
+TEXT_DOC_VARIANTS			+= shuffle-doc text2text-doc \
+								howtodoc-doc howtoexperiment-doc \
+								ehc-technical-doc ehc-structure-doc ehc-user-doc \
+								build-system-doc \
+								getting-started-doc announce-doc release-history-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -27,7 +31,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
-								InternalDocEhcTechnical InternalDocEhcStructure \
+								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
@@ -41,7 +45,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
 								uniqueness/Slides uniqueness/TopicImplementation \
-								HowToDoc HowToExperiment
+								HowToDoc HowToExperiment \
+								ReleaseHistory
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -95,6 +100,9 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 45: doc: how to experiment with ehc
 # 46: doc: ehc structure
 # 47: doc: getting started
+# 48: doc: announcement
+# 49: doc: release history
+# 50: doc: build system
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -140,5 +148,8 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 44, \
 		39 < 45, \
 		39 < 46, \
-		39 < 47
+		39 < 47, \
+		39 < 48, \
+		39 < 49, \
+		39 < 50
 		

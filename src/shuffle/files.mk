@@ -1,3 +1,7 @@
+###########################################################################################
+# defines
+###########################################################################################
+
 # location of shuffle src
 SRC_SHUFFLE_PREFIX	:= $(SRC_PREFIX)shuffle/
 
@@ -93,26 +97,41 @@ SHUFFLE_JAVA		:= $(SHUFFLE_PLAIN)
 # distribution
 SHUFFLE_DIST_FILES			:= $(SHUFFLE_ALL_SRC) $(SHUFFLE_MKF)
 
-# make rules
+###########################################################################################
+# targets
+###########################################################################################
+
 $(SHUFFLE_NAME): $(SHUFFLE_BLD_EXEC)
 
+shuffle-clean:
+	rm -rf $(SHUFFLE_BLD_EXEC) $(SHUFFLE_BLD_PREFIX)
+
+###########################################################################################
+# rules
+###########################################################################################
+
 $(SHUFFLE_BLD_EXEC): $(SHUFFLE_AG_ALL_MAIN_DRV_HS) $(SHUFFLE_HS_ALL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_OPTIM) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -i$(SHUFFLE_BLD_PREFIX) $(SHUFFLE_BLD_PREFIX)$(SHUFFLE_MAIN).hs -o $@
 	$(STRIP) $@
 
 $(SHUFFLE_AG_D_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	mkdir -p $(@D) ; \
 	$(AGC) --module=$(*F) -dr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
 
 $(SHUFFLE_AG_S_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	mkdir -p $(@D) ; \
 	$(AGC) -cfspr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
 
 $(SHUFFLE_AG_DS_MAIN_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.ag
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	mkdir -p $(@D) ; \
 	$(AGC) --module=$(*F) -dcfspr $(UUAGC_OPTS_WHEN_EHC) -P$(SRC_SHUFFLE_PREFIX) -o $@ $<
 
 $(SHUFFLE_HS_ALL_DRV_HS): $(SHUFFLE_BLD_PREFIX)%.hs: $(SRC_SHUFFLE_PREFIX)%.hs
+	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	mkdir -p $(@D) ; \
 	cp $< $@
 

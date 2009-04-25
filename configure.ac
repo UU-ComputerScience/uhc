@@ -162,6 +162,10 @@ case $HostPlatform in
         cppEhcOptions="$cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
+  x86_64-*-linux-gnu )
+        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
+        ;;
   *)
         ;;
 esac  
@@ -244,15 +248,43 @@ AC_ARG_WITH(ghc,
   fi
 ]
 )
-if test "$ghcCmd" = "no"; then
+if test "$ghcCmd" != "no" -a -x "$ghcCmd" ; then
+  ghcExists="yes"
+  ghcVersion=`$ghcCmd --numeric-version`
+else
   ghcCmd=""
   ghcExists="no"
-else
-  ghcExists="yes"
 fi
 AC_SUBST(GHC_CMD,$ghcCmd)
-ghcVersion=`$ghcCmd --numeric-version`
 AC_SUBST(GHC_VERSION, $ghcVersion)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
+AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+ghcLibUulibExists=no
+ghcLibFglExists=no
+if test x$ghcExists = xyes
+then
+  if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
+  then
+    # fgl
+    ghcLibFgl=`$ghcPkgCmd list --simple-output fgl`
+    if test "x$ghcLibFgl" != "x" ; then
+      ghcLibFglExists=yes
+    fi
+
+    # uulib
+    ghcLibUulib=`$ghcPkgCmd list --simple-output uulib`
+    if test "x$ghcLibUulib" != "x" ; then
+      ghcLibUulibExists=yes
+    fi
+
+    # network
+    ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
+    if test "x$ghcLibNetwork" != "x" ; then
+      ghcLibNetworkExists=yes
+    fi
+  fi
+fi
 
 ### 'with' option for haddock
 AC_ARG_WITH(haddock,
@@ -267,14 +299,14 @@ AC_ARG_WITH(haddock,
   fi
 ]
 )
-if test "$haddockCmd" = "no"; then
+if test "$haddockCmd" != "no" -a -x "$haddockCmd"; then
+  haddockExists="yes"
+  haddockVersion=`$haddockCmd --version | head -n 1`
+else
   haddockCmd=""
   haddockExists="no"
-else
-  haddockExists="yes"
 fi
 AC_SUBST(HADDOCK_CMD,$haddockCmd)
-haddockVersion=`$haddockCmd --version | head -n 1`
 AC_SUBST(HADDOCK_VERSION, $haddockVersion)
 
 # GHC version dependencies: packages passed as option, cabal packages
@@ -325,12 +357,12 @@ AC_ARG_WITH(uuagc,
   fi
 ]
 )
-if test "$uuagcCmd" = "no"; then
-  uuagcCmd=""
-  uuagcExists="no"
-else
+if test "$uuagcCmd" != "no" -a -x "$uuagcCmd" ; then
   uuagcExists="yes"
   uuagcVersion=`$uuagcCmd --version`
+else
+  uuagcCmd=""
+  uuagcExists="no"
 fi
 AC_SUBST(UUAGC_CMD,$uuagcCmd)
 
@@ -347,12 +379,12 @@ AC_ARG_WITH(gcc,
   fi
 ]
 )
-if test "$gccCmd" = "no"; then
+if test "$gccCmd" != "no" -a -x "$gccCmd" ; then
+  gccExists="yes"
+  gccVersion=`$gccCmd -dumpversion`
+else
   gccCmd=""
   gccExists="no"
-else
-  gccExists="yes"
-  gccVersion=`$gccCmd --version`
 fi
 
 # See remarks about cpp
@@ -414,12 +446,12 @@ AC_ARG_WITH(cpp,
   fi
 ]
 )
-if test "$cppCmd" = "no"; then
-  cppCmd=""
-  cppExists="no"
-else
+if test "$cppCmd" != "no" -a -x "$cppCmd"; then
   cppExists="yes"
   cppVersion=`$cppCmd --version`
+else
+  cppCmd=""
+  cppExists="no"
 fi
 
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
@@ -860,6 +892,20 @@ AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
 AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
+### if some of the required libraries/tools are absent, this def will check for it and exit
+if test "x$uuagcExists" = "xyes" \
+   -a "x$ghcExists" = "xyes" \
+   -a "x$gccExists" = "xyes" \
+   -a "x$ghcLibFglExists" = "xyes" \
+   -a "x$ghcLibUulibExists" = "xyes" \
+   -a "x$ghcLibNetworkExists" = "xyes"
+then
+  exitIfAbsentLibOrTool=""
+else
+  exitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+fi
+AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
+
 ### file generation
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
@@ -878,12 +924,47 @@ echo "  uuagc is available?           : $uuagcExists"
 if test "x$uuagcExists" = "xyes" ;then 
 echo "    version                     : $uuagcVersion"
 echo "    command for uuagc           : $uuagcCmd"
+else
+echo "    **** ERROR **** : uuagc must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
 fi
 
 echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    libraries:"
+echo "      uulib is available?       : $ghcLibUulibExists"
+  if test "x$ghcLibUulibExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibUulib"
+  else
+    echo "        **** ERROR **** : 'uulib' must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
+  fi
+echo "      fgl is available?         : $ghcLibFglExists"
+  if test "x$ghcLibFglExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibFgl"
+  else
+    echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
+  fi
+echo "      network is available?     : $ghcLibNetworkExists"
+  if test "x$ghcLibNetworkExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibNetwork"
+  else
+    echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+else
+echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
+fi
+
+echo "  gcc is available?             : $gccExists"
+if test "x$gccExists" = "xyes" ;then 
+echo "    version                     : $gccVersion"
+echo "    command for gcc             : $gccCmd"
+echo "    command for cpp             : $cppCmd"
+else
+echo "    **** ERROR **** : gcc must be installed, ask your OS guru"
 fi
 
 if test x$enableJava == xyes

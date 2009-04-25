@@ -257,6 +257,9 @@ cpSystem cmd
            _           -> cpSetFail
        }
 %%]
+           _           -> do { lift $ putStrLn ("cpSystem ERR: " ++ show exitCode) 
+                             ; cpSetFail
+                             }
 
 %%[8 export(cpSystemRaw)
 cpSystemRaw :: String -> [String] -> EHCompilePhase ()

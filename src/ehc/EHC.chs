@@ -98,7 +98,7 @@ main
 %%][8
                                unless (null n) (doCompileRun n opts2)
 %%][99
-                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
+                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
                                   ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
                                   ; unless (null n) (doCompileRun n opts3)
@@ -150,21 +150,21 @@ handleImmQuitOption immq opts
         -> putStrLn Cfg.ehcDefaultVariant
 %%[[1
       ImmediateQuitOption_Meta_Targets
-        -> putStrLn ""
+        -> putStr ""
       ImmediateQuitOption_Meta_TargetDefault
-        -> putStrLn "no-target"
+        -> putStr "no-target"
 %%][(8 codegen)
       ImmediateQuitOption_Meta_Targets
-        -> putStrLn showSupportedTargets
+        -> putStr showSupportedTargets
       ImmediateQuitOption_Meta_TargetDefault
-        -> putStrLn (show defaultTarget)
+        -> putStr (show defaultTarget)
 %%]]
 %%[[99
       ImmediateQuitOption_NumericVersion
         -> putStrLn (Cfg.verNumeric Cfg.version)
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
-             (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+             (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
              (env {ehcenvInstallRoot = installRootDir, ehcenvVariant = variant})
         where env = ehcOptEnvironment opts
               (installRootDir,variant)
@@ -173,7 +173,7 @@ handleImmQuitOption immq opts
                     Just (d:_)   -> (d,ehcenvVariant env)
                     _            -> (ehcenvInstallRoot env,ehcenvVariant env)
       ImmediateQuitOption_Meta_DirEnv
-        -> do { d <- ehcenvDir (mkEhcenvKey (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+        -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
               ; putStrLn d
               }
 %%]]
@@ -217,30 +217,6 @@ showSizeCore :: Core.CModule -> String
 showSizeCore x = fevShow "Core" x
 
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% XXX periments
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-infixr 2 >$>
-
-(>$>) :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
-this >$> next = this >-> next
-
-cpLift :: CompilePhase n u i e () -> CompilePhase n u i e ()
-cpLift = id
-%%]
-infixr 2 >$>
-
-(>$>) :: CompileRunError e p => (CompilePhase n u i e () -> CompilePhase n u i e ()) -> CompilePhase n u i e () -> CompilePhase n u i e ()
-this >$> next = this next
-
-cpLift :: CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
-cpLift this next
-  = do { _ <- this
-       ; next
-       }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: compilation of module(s)

@@ -102,6 +102,7 @@ cpCompileWithGCC how othModNmL modNm
 %%[[(8 codegen grin)
                                  ++ [ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant "" ++ "mainSil.c"
                                     | ehcOptTarget opts == Target_FullProgAnal_Grin_C
+                                    , ecuStateToKind (ecuState ecu) == EHCUKind_HS
                                     ]
 %%]]
                                  ++ linkLibOpt
@@ -114,10 +115,11 @@ cpCompileWithGCC how othModNmL modNm
                             (do { lift $ putStrLn ("pkgs : " ++ show pkgNmL)
                                 ; lift $ putStrLn ("other: " ++ show othModNmL2)
                                 })
-                     ; cpSystem compileC
+                     ; cpSeq [ cpSystem compileC
 %%[[99
-                     ; cpUpdCU modNm (ecuStoreGenCodeFiles genOFiles)
+                             , cpUpdCU modNm (ecuStoreGenCodeFiles genOFiles)
 %%]]
+                             ]
                      })
          }
 %%]

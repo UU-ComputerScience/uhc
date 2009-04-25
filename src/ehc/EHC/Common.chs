@@ -128,6 +128,7 @@ data EHCompileUnitKind
   | EHCUKind_C		-- C: .c
 %%]]
   | EHCUKind_None	-- Nothing
+  deriving Eq
 %%]
 
 %%[8 export(ecuStateToKind)

@@ -1,3 +1,7 @@
+###########################################################################################
+# definitions
+###########################################################################################
+
 # location of RULER2 src
 SRC_RULER2_PREFIX	:= $(SRC_PREFIX)ruler2/
 RULER2_DEMO_PREFIX	:= $(SRC_RULER2_PREFIX)demo/
@@ -31,8 +35,11 @@ RULER2_CHS_UTIL_SRC_CHS					:= $(patsubst %,$(SRC_RULER2_PREFIX)%.chs,Config)
 RULER2_CHS_UTIL_DRV_HS					:= $(patsubst $(SRC_RULER2_PREFIX)%.chs,$(RULER2_BLD_PREFIX)%.hs,$(RULER2_CHS_UTIL_SRC_CHS))
 
 
-include $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
-include $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+# conditional turned off
+ifeq ($(INCLUDE_DERIVED_MK),yes)
+-include $(RULER2_BLD_PREFIX)files-ag-d-dep.mk
+-include $(RULER2_BLD_PREFIX)files-ag-s-dep.mk
+endif
 
 
 RULER2_AG_DS_MAIN_SRC_AG				:=
@@ -69,9 +76,18 @@ RULER2_NAME								:= ruler
 RULER2_BLD_EXEC							:= $(BIN_PREFIX)$(RULER2_NAME)$(EXEC_SUFFIX)
 RULER2									:= $(RULER2_BLD_EXEC)
 
-# make rules
+###########################################################################################
+# targets
+###########################################################################################
 
 $(RULER2_NAME): $(RULER2_BLD_EXEC)
+
+ruler-clean:
+	rm -rf $(RULER2_BLD_EXEC) $(RULER2_BLD_PREFIX)
+
+###########################################################################################
+# rules
+###########################################################################################
 
 $(RULER2_BLD_EXEC): $(RULER2_AG_ALL_MAIN_DRV_HS) $(RULER2_HS_ALL_DRV_HS) $(RULER2_CHS_UTIL_DRV_HS) $(LIB_EH_UTIL_INS_FLAG)
 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -i$(RULER2_BLD_PREFIX) $(RULER2_BLD_PREFIX)$(RULER2_MAIN).hs -o $@
@@ -101,6 +117,9 @@ $(RULER2_CHS_UTIL_DRV_HS): $(RULER2_BLD_PREFIX)%.hs: $(SRC_RULER2_PREFIX)%.chs $
 	mkdir -p $(@D) ; \
 	$(SHUFFLE) --gen-reqm=1 --base=$(*F) --hs --preamble=no --lhs2tex=no --variant-order="1" $< > $@
 
+###########################################################################################
+# demo
+###########################################################################################
 
 ### demo stuff
 RULER2_DEMO_AG_MAIN				:= RulerDemoMain

@@ -24,7 +24,10 @@ module EH.Util.CompileRun
   , cpUpdCU, cpUpdCUWithKey
   , cpSetFail, cpSetStop, cpSetStopSeq, cpSetStopAllSeq
   , cpSetOk, cpSetErrs, cpSetLimitErrs, cpSetLimitErrsWhen, cpSetInfos, cpSetCompileOrder
-  , cpSeq, (>->), cpEmpty 
+
+  , cpSeq, cpSeqWhen
+  , cpEmpty
+
   , cpFindFilesForFPathInLocations, cpFindFilesForFPath, cpFindFileForFPath
   , cpImportGather, cpImportGatherFromMods
   , cpPP, cpPPMsg
@@ -119,6 +122,15 @@ data CompileRun nm unit info err
       , crStateInfo     :: info
       }
 
+instance Show (CompileRunState err) where
+  show CRSOk				= "CRSOk"
+  show CRSFail				= "CRSFail"
+  show CRSStopSeq			= "CRSStopSeq"
+  show CRSStopAllSeq		= "CRSStopAllSeq"
+  show CRSStop				= "CRSStop"
+  show (CRSFailErrL _ _ _)	= "CRSFailErrL"
+  show (CRSErrInfoL _ _ _)	= "CRSErrInfoL"
+
 type CompilePhase n u i e a = StateT (CompileRun n u i e) IO a
 
 
@@ -139,7 +151,7 @@ mkEmptyCompileRun nm info
 
 ppCR :: (PP n,PP u) => CompileRun n u i e -> PP_Doc
 ppCR cr
-  = "CR:" >#<
+  = "CR" >#< show (crState cr) >|< ":" >#<
       (   (ppListSepVV "[" "]" "," $ map (\(n,u) -> pp n >#< "->" >#< pp u) $ Map.toList $ crCUCache $ cr)
       >-< ppBracketsCommas (map ppBracketsCommas $ crCompileOrder $ cr)
       )
@@ -409,18 +421,25 @@ cpSetLimitErrsWhen l a e
 cpEmpty :: CompilePhase n u i e ()
 cpEmpty = return ()
 
-infixr 2 >->
-
-(>->) :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
-this >-> next = cpHandle1 next this
-
+-- sequence of phases, each may stop the whole sequencing
 cpSeq :: CompileRunError e p => [CompilePhase n u i e ()] -> CompilePhase n u i e ()
 cpSeq []     = return ()
-cpSeq (a:as) = cpHandle1 (do { cpSetOk
-                             ; cpSeq as
-                             })
-                         a
+cpSeq (a:as) = do { a
+                  ; cpHandleErr
+                  ; cr <- get
+                  ; case crState cr of
+                      CRSOk         -> cpSeq as
+                      CRSStopSeq    -> cpSetOk
+                      CRSStopAllSeq -> cpSetStopAllSeq
+                      _             -> return ()
+                  }
 
+-- conditional sequence
+cpSeqWhen :: CompileRunError e p => Bool -> [CompilePhase n u i e ()] -> CompilePhase n u i e ()
+cpSeqWhen True as = cpSeq as
+cpSeqWhen _    _  = return ()
+
+-- handle possible error in sequence
 cpHandleErr :: CompileRunError e p => CompilePhase n u i e ()
 cpHandleErr
   = do { cr <- get
@@ -461,14 +480,3 @@ cpHandleErr
                                 }
         failOrNot es = if creAreFatal es then lift exitFailure else cpSetOk
 
-cpHandle1 :: CompileRunError e p => CompilePhase n u i e () -> CompilePhase n u i e () -> CompilePhase n u i e ()
-cpHandle1 rest first
-  = do { _ <- first
-       ; cpHandleErr
-       ; cr <- get
-       ; case crState cr of
-           CRSOk         -> rest
-           CRSStopSeq    -> cpSetOk
-           CRSStopAllSeq -> cpSetStopAllSeq
-           _             -> return ()
-       }

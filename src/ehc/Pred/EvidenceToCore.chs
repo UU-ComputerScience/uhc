@@ -31,6 +31,22 @@
 %%% Translation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Sub evidence encodes the evidence needed to construct other evidence, as in Eq Int required for Eq [Int].
+The subevidence is identified/introduced by a UID and defined in scope.
+Subevidence can be an assumption (encoded below) or an already known instance (dealt with otherwise, but must be here too. 20090416)
+
+%%[(9 codegen)
+data SubEvid
+  = SubEvid_Assume
+      { subevdId    :: UID
+      , subevdScope :: PredScope
+      }
+  deriving (Eq,Ord,Show)
+
+instance PP SubEvid where
+  pp (SubEvid_Assume i s) = "SubEvd" >#< i >#< s
+%%]
+
 All code fragments are identified by a UID.
 
 The translation to core yields:
@@ -39,7 +55,7 @@ The translation to core yields:
 - a set of bindings which do not depend on assumptions.
 
 %%[(9 codegen) export(EvidKeyToCBindMap,PredScopeToCBindMap)
-type EvidKeyToCExprMap = Map.Map UID (CExpr,Set.Set (UID,PredScope),PredScope)
+type EvidKeyToCExprMap = Map.Map UID (CExpr,Set.Set SubEvid,PredScope)
 type EvidKeyToCBindMap = Map.Map UID [CBind]
 type PredScopeToCBindMap = Map.Map PredScope [CBind]
 
@@ -53,7 +69,7 @@ data ToCoreState p info
 data ToCoreRes
   = ToCoreRes
       { tcrCExpr    :: !CExpr
-      , tcrUsed     :: !(Set.Set (UID,PredScope))
+      , tcrUsed     :: !(Set.Set SubEvid)
       , tcrScope    :: !PredScope
       }
 %%]
@@ -99,7 +115,7 @@ evidMpToCore env evidMp
                             (u',evk,insk,evnm,uses)
                                             = case info of
                                                 RedHow_ProveObl   i   _ -> (u,choosek i,True,choosen $ mkHNm i,Set.empty)
-                                                RedHow_Assumption vun s -> (u,choosek i,False,choosen (vunmNm vun),Set.singleton (i,s))
+                                                RedHow_Assumption vun s -> (u,choosek i,False,choosen (vunmNm vun),Set.singleton (SubEvid_Assume i s))
                                                                         where i = vunmId vun
                                                 _                       -> (u1,choosek u2,True,choosen $ mkHNm u2,Set.empty)
                                                                         where (u1,u2) = mkNewUID u
@@ -161,14 +177,14 @@ evidMpToCore env evidMp
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrCExpr r >#< tcrCExpr (vr r)) $ (        mkk r                  st,vr r)
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
-%%[(9 codegen) export(evidKeyCoreMpToBinds)
 
-
+%%[(9 codegen)
 getMetaDictMbPos :: CExpr -> Maybe Int
 getMetaDictMbPos (CExpr_Let _ (CBind_Bind _ (_,CMetaVal_Dict m) _ : _) _) = m
 getMetaDictMbPos _ = Nothing
+%%]
 
-
+%%[(9 codegen) export(evidKeyCoreMpToBinds)
 evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds m
   = dbg "evidKeyCoreMpToBinds.res"
@@ -176,7 +192,7 @@ evidKeyCoreMpToBinds m
     ( dbg "evidKeyCoreMpToBinds.res1"
       $! Map.unionsWith (++)
       $ map (\(b,uses)
-               -> let deepestScope = fst . maximumBy (\(_,sc1) (_,sc2) -> sc1 `pscpCmpByLen` sc2) . Set.toList
+               -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
       $ [ (mkCBind1Meta (mkHNm i) (CMetaVal_Dict (getMetaDictMbPos e)) e,u)    
@@ -195,6 +211,43 @@ evidKeyCoreMpToBinds m
             $! m
         dbg m = id -- Debug.tr m (pp m)
 %%]
+
+20090416.
+The above code accidently swaps independentOfAssumes and dependentOnAssumes in the computation of maps.
+The resulting code is ok, as long as it does not concern scope dependent instances, which is the case in Haskell98.
+Below is -for now- at least the start to do it right.
+The code using these mappings has to be checked as well.
+
+Extract from the basic bindings for prove obligations the following:
+- bindings independent of assumption or scope.
+- foreach introduced assumption, the bindings required for depending prove obligations which only require that assumption.
+- the rest, which depends on multiple assumptions, and thus can only be introduced at the deepest scope. Hence a map from scope to such bindings.
+
+%%[(9 codegen) export(EvidCBindL,evidKeyCoreMpToBinds2)
+type EvidCBindL = [CBind]
+
+evidKeyCoreMpToBinds2 :: EvidKeyToCExprMap -> (EvidCBindL,EvidKeyToCBindMap,PredScopeToCBindMap)
+evidKeyCoreMpToBinds2 m
+  = (   [ mkd i e
+        | (i,(e,_,_)) <- Map.toList independentOfAssumes
+        ]
+    , Map.unionsWith (++)
+      $ [ Map.singleton (subevdId $ head $ Set.toList u) [mkd i e]
+        | (i,(e,u,_)) <- Map.toList dependentOn1Assume
+        ]
+    , Map.unionsWith (++)
+      $ [ Map.singleton (deepestScope sc u) [mkd i e]
+        | (i,(e,u,sc)) <- Map.toList dependentOnNAssumes
+        ]
+    )
+  where (independentOfAssumes, dependentOnAssumes)
+          = Map.partition (\(_,uses,_) -> Set.null uses) m
+        (dependentOn1Assume, dependentOnNAssumes)
+          = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
+        mkd i e           = mkCBind1Meta (mkHNm i) (CMetaVal_Dict (getMetaDictMbPos e)) e
+        deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
+%%]
+
 
 %%[(9 codegen) export(evidKeyBindMpToCSubst)
 evidKeyBindMpToCSubst :: EvidKeyToCBindMap -> CSubst

@@ -181,6 +181,8 @@ ehclib-variant-dflt: \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'` \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'` \
 	          +RTS -K30m ; \
+	        err=$$? ; \
+	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
 	        pkgs="$${pkgs} --package $${pkg}" ; \
 	      done \
 	     ,)
@@ -292,18 +294,27 @@ $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH): $(EHCLIB_MKF)
 	mkdir -p $(@D)
 	cd $(EHCLIB_BLD_SYNC_PREFIX) && curl -O $(EHCLIB_GHCSYNC_DOWNLOAD)
 
-# template for extraction for a package
-define EHCLIB_PKG_TEMPLATE
-$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1)) $$(EHCLIB_SYNC_ALL_PKG_$(1)_ASIS) $$(EHCLIB_SYNC_ALL_PKG_$(1)_C)): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
+# extraction for frozen from ghc libraries
+$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_SRC)) \
+			: $(EHCLIB_BLD_SYNC_SRC_PREFIX)% \
+			: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/%
 	mkdir -p $$(@D)
 	cp $$< $$@
 	touch $$@
-endef
+
+# template for extraction for a package
+#define EHCLIB_PKG_TEMPLATE
+#$$(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/,$$(EHCLIB_SYNC_ALL_PKG_$(1)) $$(EHCLIB_SYNC_ALL_PKG_$(1)_ASIS) $$(EHCLIB_SYNC_ALL_PKG_$(1)_C)): $(EHCLIB_BLD_SYNC_SRC_PREFIX)$(1)/%: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/$(1)/%
+#	mkdir -p $$(@D)
+#	cp $$< $$@
+#	touch $$@
+#endef
 
 # expansion for each defined package
-ifneq ($(DEVELOPMENT_PLATFORM),CYGWIN)
-$(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(eval $(call EHCLIB_PKG_TEMPLATE,$(pkg))))
-endif
+#ifneq ($(DEVELOPMENT_PLATFORM),CYGWIN)
+#$(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(eval $(call EHCLIB_PKG_TEMPLATE,$(pkg))))
+#endif
+
 
 # construction of frozen archive
 $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH): $(EHCLIB_SYNC_ALL_PKG_DRV)

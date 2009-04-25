@@ -690,6 +690,7 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
+ghcPkgCmd
 haddockCmd
 HADDOCK_CMD
 HADDOCK_VERSION
@@ -751,6 +752,7 @@ INSTALL_LIB_SUFFIX
 RTS_PKG_NAME
 EXTLIBS_BGC_PKG_NAME
 EXTLIBS_GMP_PKG_NAME
+EXIT_IF_ABSENT_LIB_OR_TOOL
 LIBOBJS
 LTLIBOBJS'
 ac_subst_files=''
@@ -2394,6 +2396,10 @@ case $HostPlatform in
         cppEhcOptions="$cppEhcOptions -D__STDC__"
         #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
         ;;
+  x86_64-*-linux-gnu )
+        cppEhcOptions="$cppEhcOptions -D__STDC__"
+        #cppEhcOptions="$cppEhcOptions -D__USE_BSD -D__USE_POSIX -D__STDC__"
+        ;;
   *)
         ;;
 esac
@@ -2540,17 +2546,84 @@ fi
 
 fi
 
-if test "$ghcCmd" = "no"; then
+if test "$ghcCmd" != "no" -a -x "$ghcCmd" ; then
+  ghcExists="yes"
+  ghcVersion=`$ghcCmd --numeric-version`
+else
   ghcCmd=""
   ghcExists="no"
-else
-  ghcExists="yes"
 fi
 GHC_CMD=$ghcCmd
 
-ghcVersion=`$ghcCmd --numeric-version`
 GHC_VERSION=$ghcVersion
 
+
+### now we know we have ghc, check for some libraries using ghc-pkg
+# Extract the first word of "ghc-pkg", so it can be a program name with args.
+set dummy ghc-pkg; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_ghcPkgCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $ghcPkgCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_ghcPkgCmd="$ghcPkgCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_ghcPkgCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+ghcPkgCmd=$ac_cv_path_ghcPkgCmd
+if test -n "$ghcPkgCmd"; then
+  { echo "$as_me:$LINENO: result: $ghcPkgCmd" >&5
+echo "${ECHO_T}$ghcPkgCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+ghcLibUulibExists=no
+ghcLibFglExists=no
+if test x$ghcExists = xyes
+then
+  if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
+  then
+    # fgl
+    ghcLibFgl=`$ghcPkgCmd list --simple-output fgl`
+    if test "x$ghcLibFgl" != "x" ; then
+      ghcLibFglExists=yes
+    fi
+
+    # uulib
+    ghcLibUulib=`$ghcPkgCmd list --simple-output uulib`
+    if test "x$ghcLibUulib" != "x" ; then
+      ghcLibUulibExists=yes
+    fi
+
+    # network
+    ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
+    if test "x$ghcLibNetwork" != "x" ; then
+      ghcLibNetworkExists=yes
+    fi
+  fi
+fi
 
 ### 'with' option for haddock
 
@@ -2607,15 +2680,15 @@ fi
 
 fi
 
-if test "$haddockCmd" = "no"; then
+if test "$haddockCmd" != "no" -a -x "$haddockCmd"; then
+  haddockExists="yes"
+  haddockVersion=`$haddockCmd --version | head -n 1`
+else
   haddockCmd=""
   haddockExists="no"
-else
-  haddockExists="yes"
 fi
 HADDOCK_CMD=$haddockCmd
 
-haddockVersion=`$haddockCmd --version | head -n 1`
 HADDOCK_VERSION=$haddockVersion
 
 
@@ -2713,12 +2786,12 @@ fi
 
 fi
 
-if test "$uuagcCmd" = "no"; then
-  uuagcCmd=""
-  uuagcExists="no"
-else
+if test "$uuagcCmd" != "no" -a -x "$uuagcCmd" ; then
   uuagcExists="yes"
   uuagcVersion=`$uuagcCmd --version`
+else
+  uuagcCmd=""
+  uuagcExists="no"
 fi
 UUAGC_CMD=$uuagcCmd
 
@@ -2778,12 +2851,12 @@ fi
 
 fi
 
-if test "$gccCmd" = "no"; then
+if test "$gccCmd" != "no" -a -x "$gccCmd" ; then
+  gccExists="yes"
+  gccVersion=`$gccCmd -dumpversion`
+else
   gccCmd=""
   gccExists="no"
-else
-  gccExists="yes"
-  gccVersion=`$gccCmd --version`
 fi
 
 # See remarks about cpp
@@ -3866,12 +3939,12 @@ fi
 
 fi
 
-if test "$cppCmd" = "no"; then
-  cppCmd=""
-  cppExists="no"
-else
+if test "$cppCmd" != "no" -a -x "$cppCmd"; then
   cppExists="yes"
   cppVersion=`$cppCmd --version`
+else
+  cppCmd=""
+  cppExists="no"
 fi
 
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
@@ -28675,6 +28748,21 @@ EXTLIBS_BGC_PKG_NAME="gc"
 EXTLIBS_GMP_PKG_NAME="gmp"
  # should coincide with installed lib in extlibs/gmp
 
+### if some of the required libraries/tools are absent, this def will check for it and exit
+if test "x$uuagcExists" = "xyes" \
+   -a "x$ghcExists" = "xyes" \
+   -a "x$gccExists" = "xyes" \
+   -a "x$ghcLibFglExists" = "xyes" \
+   -a "x$ghcLibUulibExists" = "xyes" \
+   -a "x$ghcLibNetworkExists" = "xyes"
+then
+  exitIfAbsentLibOrTool=""
+else
+  exitIfAbsentLibOrTool='echo "**** ERROR **** : A tool or library is missing. Check ./configure summary." ; exit 1'
+fi
+EXIT_IF_ABSENT_LIB_OR_TOOL=$exitIfAbsentLibOrTool
+
+
 ### file generation
 ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
@@ -29382,6 +29470,7 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
+ghcPkgCmd!$ghcPkgCmd$ac_delim
 haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
@@ -29403,7 +29492,6 @@ OBJEXT!$OBJEXT$ac_delim
 CC_STD_FLAG!$CC_STD_FLAG$ac_delim
 cppCmd!$cppCmd$ac_delim
 CPP_CMD!$CPP_CMD$ac_delim
-llvmAs!$llvmAs$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29445,6 +29533,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+llvmAs!$llvmAs$ac_delim
 LLVM_AS_CMD!$LLVM_AS_CMD$ac_delim
 llvmOpt!$llvmOpt$ac_delim
 LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
@@ -29484,11 +29573,12 @@ INSTALL_LIB_SUFFIX!$INSTALL_LIB_SUFFIX$ac_delim
 RTS_PKG_NAME!$RTS_PKG_NAME$ac_delim
 EXTLIBS_BGC_PKG_NAME!$EXTLIBS_BGC_PKG_NAME$ac_delim
 EXTLIBS_GMP_PKG_NAME!$EXTLIBS_GMP_PKG_NAME$ac_delim
+EXIT_IF_ABSENT_LIB_OR_TOOL!$EXIT_IF_ABSENT_LIB_OR_TOOL$ac_delim
 LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 41; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 43; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -29929,12 +30019,47 @@ echo "  uuagc is available?           : $uuagcExists"
 if test "x$uuagcExists" = "xyes" ;then
 echo "    version                     : $uuagcVersion"
 echo "    command for uuagc           : $uuagcCmd"
+else
+echo "    **** ERROR **** : uuagc must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
 fi
 
 echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    libraries:"
+echo "      uulib is available?       : $ghcLibUulibExists"
+  if test "x$ghcLibUulibExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibUulib"
+  else
+    echo "        **** ERROR **** : 'uulib' must be installed, use (1) cabal+hackage, or (2) http://www.cs.uu.nl/wiki/HUT"
+  fi
+echo "      fgl is available?         : $ghcLibFglExists"
+  if test "x$ghcLibFglExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibFgl"
+  else
+    echo "        **** ERROR **** : 'fgl' must be installed, use cabal+hackage"
+  fi
+echo "      network is available?     : $ghcLibNetworkExists"
+  if test "x$ghcLibNetworkExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibNetwork"
+  else
+    echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+else
+echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
+fi
+
+echo "  gcc is available?             : $gccExists"
+if test "x$gccExists" = "xyes" ;then
+echo "    version                     : $gccVersion"
+echo "    command for gcc             : $gccCmd"
+echo "    command for cpp             : $cppCmd"
+else
+echo "    **** ERROR **** : gcc must be installed, ask your OS guru"
 fi
 
 if test x$enableJava == xyes
