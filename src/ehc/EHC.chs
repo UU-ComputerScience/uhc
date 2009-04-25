@@ -150,14 +150,14 @@ handleImmQuitOption immq opts
         -> putStrLn Cfg.ehcDefaultVariant
 %%[[1
       ImmediateQuitOption_Meta_Targets
-        -> putStrLn ""
+        -> putStr ""
       ImmediateQuitOption_Meta_TargetDefault
-        -> putStrLn "no-target"
+        -> putStr "no-target"
 %%][(8 codegen)
       ImmediateQuitOption_Meta_Targets
-        -> putStrLn showSupportedTargets
+        -> putStr showSupportedTargets
       ImmediateQuitOption_Meta_TargetDefault
-        -> putStrLn (show defaultTarget)
+        -> putStr (show defaultTarget)
 %%]]
 %%[[99
       ImmediateQuitOption_NumericVersion
