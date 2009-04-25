@@ -8,6 +8,9 @@ Over time this document will describe the UHC build structure.
 \section{@make@ defines}
 %%@InternalDocBuildSystem.makeDefines
 
+\section{Release checklist}
+%%@InternalDocBuildSystem.releaseChecklist
+
 %%]
 
 %%[makeDefines
@@ -20,6 +23,16 @@ These defines are all passed to make (or a submake via \verb|$(MAKE)|) by @<name
  for example for text targets including source code.
  If such a flag were not used, make would complain about the absence of derived makefiles, build them (using shuffle, which has to be build then as well), etc.
  This is confusing for make targets which do not require this.
+\end{itemize}
+%%]
+
+%%[releaseChecklist
+\begin{itemize}
+\item run @make release-prepare@, to build expected regression test output.
+\item @svn commit@ this plus other changes.
+\item check whether @make uhc; make install; make test@ works on as many platforms as possible.
+\item @make release@
+\item @svn commit@ the release from the top of the svn repository working copy.
 \end{itemize}
 %%]
 
