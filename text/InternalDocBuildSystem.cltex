@@ -31,8 +31,12 @@ These defines are all passed to make (or a submake via \verb|$(MAKE)|) by @<name
 \item run @make release-prepare@, to build expected regression test output.
 \item @svn commit@ this plus other changes.
 \item check whether @make uhc; make install; make test@ works on as many platforms as possible.
+\item repeat this until it works...
 \item @make release@
 \item @svn commit@ the release from the top of the svn repository working copy.
+\item make @release/version@ available as tarball download on the @svn.cs.uu.nl@.
+\item update the \uref{Download}{download} page.
+\item update the \uref{WebNews}{news} page.
 \end{itemize}
 %%]
 
