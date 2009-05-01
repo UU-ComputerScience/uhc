@@ -1,0 +1,17 @@
+%%[abstract
+In \thispaper\ we describe the architecture of the Utrecht Haskell Compiler (UHC).
+%%]
+
+
+%%[introduction
+This is yet another Haskell compiler, like the
+\cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
+
+%%[[wrap=code
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+product  []      = 1
+product  (x:xs)  = x * product xs
+%%]]
+
+%%]

@@ -22,7 +22,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								icfp07-ehcstruct icfp07-ehcstruct-blind ifl07-ehcstruct \
 								icfp08-subst padl09-subst padl09-subst-tr \
 								tr-abstrint ldta08-abstrint \
-								ldta09-agidiom
+								ldta09-agidiom \
+								hs09-uhcarch
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -35,6 +36,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
+								TopicUHCArchitecture \
 								TopicAbstrInt \
 								TopicSubst \
 								TopicAGIdiom \
@@ -103,6 +105,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 48: doc: announcement
 # 49: doc: release history
 # 50: doc: build system
+# 51: paper "UHC Architecture" to be submitted to Haskell Symposium 2009
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -137,6 +140,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		26 < 24, \
 		26 < 25, \
 		26 < 36, \
+		26 < 51, \
 		30 < 7, \
 		30 < 29, \
 		37 < 33, \

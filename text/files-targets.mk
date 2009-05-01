@@ -348,4 +348,10 @@ text-variant-ldta09-agidiom:
 	  TEXT_SHUFFLE_VARIANT=38 \
 	  text-variant-dflt-once
 
+text-variant-hs09-uhcarch:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=hs09 --set=kscode --set=natbib --set=acm --set=blockstyle --set=asArticle" \
+	  TEXT_SHUFFLE_VARIANT=51 \
+	  text-variant-dflt-bib
 
