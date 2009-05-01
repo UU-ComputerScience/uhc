@@ -743,6 +743,8 @@
 \toappear{Submitted to Programming Language Design and Implementation 2006 (PLDI2006), Ottawa, Canada, June 11-16}
 %elif popl07
 \toappear{Submitted to Principles of Programming Languages 2007 (POPL2007), Nice, France, Jan 17-19}
+%elif hs09
+\toappear{In preparation for the Haskell Symposium 2009 (HS2009), September 3, Edinburgh, Scotland}
 %else
 %endif
 %else %% useSigplanconfSty
@@ -1030,6 +1032,7 @@ WWW home page:
 %%]
 
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Index
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1266,6 +1269,21 @@ WWW home page:
 %endif
 %%]
 
+
+%%[51
+\title{The Architecture of the Utrecht Haskell Compiler}
+%if acm && useSigplanconfSty
+\authorinfo{Atze Dijkstra \and Jeroen Fokker \and S.~Doaitse Swierstra}
+  {Department of Information and Computing Sciences \\
+   Universiteit Utrecht \\
+   P.O.Box 80.089, 3508 TB Utrecht, The Netherlands
+  }
+  {\{atze,jeroen,doaitse\}@@cs.uu.nl}
+%endif
+%%]
+
+
+
 %%[26
 \maketitle
 %%]
@@ -1293,6 +1311,16 @@ and
 %%[39 doclatex
 \maketitle
 %%]
+
+
+
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Indentation
@@ -1515,6 +1543,14 @@ have been submitted to POPL2006 in a slighty extended form.
 \begin{abstract}
 %%@ToolDocShuffle.abstract
 \end{abstract}
+
+
+%%[51
+\begin{abstract}
+%%@TopicUHCArchitecture.abstract
+\end{abstract}
+%%]
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2192,6 +2228,30 @@ and pointing out where and why we differ from the `standard' \cite{stuckey02theo
 
 \section{Conclusion}
 %%]
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UHC Architecture
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[51
+%{
+\section{Introduction}
+
+%%@TopicUHCArchitecture.introduction
+
+%}
+%%]
+
+
+
+
+
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% EHC ??
@@ -3062,7 +3122,7 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %if refToPDF
 %\bibliographystyle{uhcbook}
 \bibliographystyle{plain}
-% natbib
+%elif natbib
 \bibliographystyle{plainnat}
 %elif acm
 \bibliographystyle{abbrv}
