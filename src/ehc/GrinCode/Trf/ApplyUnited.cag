@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
 do not do \textit{APPLY} on variables that bind the result of a previous \textit{UNIT} of a P-node.
-Instead, do a \textit{CALL} if the function if it is now saturated, or build a new P-node if it is undersaturated.
+Instead, do a \textit{CALL} of the function if it is now saturated, or build a new P-node if it is undersaturated.
 
 %%]
 
