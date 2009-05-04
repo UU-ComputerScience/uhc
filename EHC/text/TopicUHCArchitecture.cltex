@@ -7,11 +7,393 @@ In \thispaper\ we describe the architecture of the Utrecht Haskell Compiler (UHC
 This is yet another Haskell compiler, like the
 \cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
 
+%%]
+
+
+
+
+
+
+%%[body
+
+
+\section{Techniques and Tools}
+
+\subsection{Tree-oriented programming}
+
+[generalized fold, UUAGC as a preprocessor]
+
+\subsection{Rule-oriented programming}
+
+[Ruler as a preprocessor]
+
+\subsection{Aspect-oriented programming}
+
+[AG affords aspects-orientation, and shuffle even more]
+
+
+\section{Languages}
+
+\subsection{The HS Language}
+
+\subsection{The EH Language}
+
+\subsection{The Core Language}
+
+\subsection{The Grin Language}
+
+A Grin module consists of its name,
+global variabels with their initializations, and
+bindings of function names with parameters to their bodies.
 %%[[wrap=code
-sum      []      = 0
-sum      (x:xs)  = x + sum xs
-product  []      = 1
-product  (x:xs)  = x * product xs
+DATA  GrModule
+   =  Mod   nm:Name  globals:[GrGlobal]  binds:[GrBind]
+DATA  GrGlobal
+   =  Glob  nm:Name  val:GrVal
+DATA  GrBind
+   =  Bind  nm:Name  args:[Name]  body:GrExpr
 %%]]
+Values manipulated in the Grin language are varied:
+we have nodes (think: heap records) consisting of a tag and a list of fields,
+standalone tags, basic ints and strings, pointers to nodes, and `empty'.
+Some of these are directly representable in the languages (nodes, tags, ints and strings)
+%%[[wrap=code
+DATA  GrVal
+   =  LitInt  int:Int
+   |  LitStr  str:String
+   |  Tag     tag:GrTag
+   |  Node    tag:GrTag   flds:[GrVal]
+%%]]
+Some values are not directly representable (pointers and `empty').
+Although it it not a value, for syntactical convenience we do add
+the notion of a `variable' to the |GrVal| data type:
+%%[[wrap=code
+   |  Var     name:Name
+%%]]
+The tag of a node describes its role.
+It can be a constructor of a datatype (|Con|),
+a denotation of a function of which the call is deferred because of lazy evaluation (|Fun|),
+a denotation of a function that is partially parameterized but still needs more arguments (|PApp|), or
+a denotation of the application of an unknown function (appearing as the first argument of the node)
+to other arguments (|App|).
+%%[[wrap=code
+DATA  GrTag
+   =  Con   name:Name
+   |  Fun   name:Name
+   |  PApp  needs:Int  name:Name
+   |  App
+%%]]
+The body of a function denotes the calculation of a value,
+which is represented in a program by an `expression'.
+Expressions can be combined in a monadic style.
+Thus we have |Unit| for describing a computation immediately returning a value,
+and |Seq| for binding a computation to a variable (or rather a lambda pattern), to be used subsequently in another computation:
+%%[[wrap=code
+DATA  GrExpr
+   =  Unit   val:GrVal
+   |  Seq    expr:GrExpr  pat:GrPatLam  body:GrExpr
+%%]]
+There are some primitive computations (that is, constants in the monad)
+one for storing a node value (returning a pointer value), and two
+for fetching a node previously stored or one field thereof:
+%%[[wrap=code
+   |  Store       val:GrVal
+   |  FetchNode   name:Name
+   |  FetchField  name:Name  offset:Int
+%%]]
+Other primitive computations call Grin and foreign functions, respectively.
+The name mentioned is that of a known function (i.e., there are no function variables) and the argument list should fully saturate it:
+%%[[wrap=code
+   |  Call        name:Name    args:[GrVal]
+   |  FFI         name:String  args:[GrVal]
+%%]]
+Two special primitive computations are provided for evaluating node that may contain a |Fun| tag,
+and for appying a node that must contain a |PApp| tag (a partially parameterized function) to further arguments:
+%%[[wrap=code
+   |  Eval        name:Name
+   |  App         name:Name    args:[GrVal]
+%%]]
+Next, there is a computation for selecting a matching alternative, given the name of the variabele containing a node pointer:
+%%[[wrap=code
+   |  Case        val:GrVal    alts:[GrAlt]
+%%]]
+Finally, we need a primitive computation to express the need of `updating' a variable after it is evaluated.
+Boquist proposed an |Update| expression for the purpose which has a side effect only and an `empty' result value.
+We observed that the need for updates is always next to either a |FetchNode| or a |Unit|, and found it more practical
+and more efficient to introduce two update primitives:
+%%[[wrap=code
+   |  FetchUpdate  src:Name  dst:Name
+   |  UpdateUnit   name:Name  val:GrVal
+%%]]
+Auxiliary data structures are that for describing a single alternative in a |Case| expression:
+%%[[wrap=code
+DATA  GrAlt
+   |  Alt   pat:GrPatAlt   expr:GrExpr
+%%]
+And for two kinds of patterns, occuring in a |Seq| expression and in an |Alt| alternative, respectively.
+A simplified version of these is the following, but we will need some more constructores for patterns later.
+%%[[wrap=code
+DATA  GrPatLam
+   =  Var   name:Name
+DATA  GrPatAlt
+   =  Node  tag:GrTag   args:[Name]
+%%]
+
+
+
+
+
+
+\subsection{The Silly Language}
+
+
+
+
+
+\section{Transformations}
+
+\subsection{HS Transformation}
+
+\subsection{EHC Transformation}
+
+\subsection{Core Transformations}
+
+\begin{enumerate}
+
+\item {\em EtaReduction}
+\item {\em RenameUnique}
+    Renames variables such that all variables are globally unique.
+\item {\em LetUnrec}
+\item {\em InlineLetAlias}
+    Inlines let bindings for variables and constants.
+\item {\em ElimTrivApp}
+    Eliminates application of the |id| function.
+\item {\em ConstProp}
+    Performs addition of int constants at compile time.
+\item {\em FullLazy}
+\item {\em LamGlobalAsArg}
+    Pass global variables of let-bound lambda-expressions as explicit parameters,
+    as a preparation for lambda-lifting.
+\item {\em CAFGlobalAsArg}
+    Similar for let-bound constant applicative forms (CAFs).
+\item {\em FloatToGlobal}
+    Performs 'lambda lifting': move bindings of lambda-expressions and CAFs to the global level.
+\item {\em LiftDictFields}
+    Makes sure that all dictionary fields exist as a top-level binding.
+\item {\em FindNullaries}
+    Finds nullary (parameterless) functions and duplicates them;
+    the two copies are differently annotated,
+    such that one of the two will end up as an updateable global variable.
+
+\end{enumerate}
+
+
+
+
+\subsection{Grin Local Transformations}
+
+Generic
+
+\begin{enumerate}
+
+\item {\em AliasElim}
+
+\item {\em EvalElim}
+
+\item {\em UnusedNameElim}
+
+\item {\em Flatten}
+
+\item {\em Inline}
+
+\end{enumerate}
+
+
+Specific for bytecode generation
+
+\begin{enumerate}
+\item {\em MetaInfoElim}
+
+\item {\em Unbox}
+
+\item {\em ConstantPropagation}
+
+\end{enumerate}
+
+
+\subsection{Grin Full-program Transformations}
+
+\begin{enumerate}
+\item {\em DropUnreachableBindings}
+    Drops all functions not reachable from |main|,
+    either through direct calls, 
+    or through nodes that store a deferred or partially parameterized function.
+    Does a provisional numbering of all functions, and creates a graph of dependencies.
+    A standard reachablility algorithm from determines which functions are reachable from |main|;
+    the others are dropped.
+\item {\em MergeInstance}
+    Introduces an explicit dictionary for each instance declaration,
+    by merging the default definitions of functions taken from class declarations.
+\item {\em MemberSelect}
+    Looks for the selection of a function from a dictionary and its subsequent
+    application to parameters. Replaces that by a direct call.
+\item {\em DropUnreachableBindings}
+    Drops the now obsolete implicit constructions of dictionaries.
+\item {\em Cleanup}
+    Replaces some node tags by equivalent ones:
+    |PApp 0|, a partial application needing 0 more parameters, is changed into |Fun|, a simple deferred function;
+    deferred applications of constructor functions are changed to immediate application of the constructor function.
+\item {\em SimpleNullary}
+    Optimises nullary functions that immediately return a value or call another function,
+    by inlining them in nodes that encode their deferred application.
+\item {\em ConstInt}
+    Replaces deferred applications of |integer2int| to constant integers by a constant int.
+    This situation occurs for every int literal in the source program,
+    because of the way int literals are overloaded in Haskell.
+\item {\em BuildAppBindings}
+    Introduces bindings for |apply| functions with as many parameters as are needed in the program.
+\item {\em GlobalConstants}
+    Introduces global varaibles for each constant foud in the program,
+    instead of allocation the constants locally.
+\item {\em Inline}
+    Inlines functions that are used only once at their call site.
+\item {\em SingleCase}
+    Replaces case expressions that have a single alternative by the body of that alternative.
+\item {\em EvalStored}
+    Do not do |Eval| on pointers that bind the result of a previous |Store|.
+    Instead, do a |Call| if the stored node is a deferred call, 
+    or do a |Unit| of the stored node for other nodes.
+\item {\em ApplyUnited}
+    Do not do |Apply| on variables that bind the result of a previous |Unit| of a node with a |PApp| tag.
+    Instead, do a |Call| of the function if it is now saturated, or build a new |PApp| node if it is undersaturated.
+\item {\em SpecConst}
+    Specialize functions that are called with a constant argument.
+    The transformation is useful for creating a specialized `increment' function instead of |plus 1|,
+    but its main merit lies in making specialized versions of overloaded functions, 
+    that is functions that take a dictionary argument.
+    If the dictionary is a constant, specialization exposes new opporunities for the {\em MemberSelect} transformation,
+    which is why {\em SpecConst} is iterated in conjunction with {\em EvalStored}, {\em ApplyUnited} and {\em MemberSelect}.
+\item {\em DropUnreachableBindings}
+    Drops unspecialized functions that may have become obsolete.
+\item {\em NumberIdents}
+    Attaches an unique number to each variable and function name.
+\item {\em HeapPointsTo}
+    Does a `heap points to analysis' (HPT), that is an abstract interpretation of the program
+    to determine the possible tags of the nodes each variable can refer to.
+\item {\em InlineEA}
+    Replaces all occurences of |Eval| and |Apply| to equivalent constructs.
+    Each |Eval x| is replaced by |FetchNode x|, followed by a |Case| distinction
+    on all possible tag values of the node referred to by |x|,
+    which was revealed by the HPT analysis.
+    If the number of cases is prohibitively big, we can resort to doing a |Call| to a generic |evaluate| function,
+    that is generated for the purpose and that distinguishes all possible node tags.
+    Each |App f x| construct, that is used to apply an unknown function |f| to argument |x|, is replaced
+    by a |Case| distinction on all possible |PApp| tag values of the node referred to by |f|.
+\item {\em ImpossibleCase}
+    Removes alternatives from |Case| constructs that, according to the HPT analysis, can never occur.
+\item {\em LateInline}
+    Inlines functions that are used only once at their call site.
+    New opportunities for this transformation are present because the {\em InlineEA} transformation introduces new |Call| constructs.
+\item {\em SingleCase}
+    Replaces case expressions that have a single alternative by the body of that alternative.
+    New opportunities for this transformation are present because the {\em InlineEA} transformation introduces new |Case| constructs.
+\item {\em DropUnusedExpr}
+    Removes bindings to variables if the variable is never used,
+    but only when the expression has no side effect.
+    Therefore, an analysis is done to determine which expressions may have side effects.
+    |Update| and |FFI| expressions are assumed to have side effect, 
+    and |Case| and |Seq| expressions if one of their childres does.
+    The tricky one is |Call|, which has a side effect if its body does,
+    which is circular if the function is recursive.
+    Thus we take a 2-pass approach: a `coarse' approximation that assumes that every |Call| has a side effect, 
+    and a `fine' approximation that takes into account the coarse approximation for the body.
+    Variables that are never used but which are retained because of the possible side effects of their bodies are replaced by wildcards.
+\item {\em MergeCase}
+    Merges two adjacent |Case| constructs into one in some situations.
+\item {\em LowerGrin}
+    Translates to a lower level version of Grin, in which variables never represent a node.
+    Instead, variables are introduced for the separate fields, of which the number is known because of HPT analysis.
+    Also, after this transformation |Case| constructs scrutinise on tags rather than full nodes.
+\item {\em CopyPropagation}
+    Shortcuts repeated copying of variables.
+\item {\em SplitFetch}
+    Translates to an even lower level version of Grin, in which the node referred to by a pointer is not fetched as a whole,
+    but field by field. That is, the |FetchNode| expression is replaced by a series of |FetchField| expressions.
+    The first of these fetches the tag, the others are specialized in the alternatives of the |Case| expression
+    that always follows a |FetchNode| expression, such that no more fields are fetched than required by this particular tag.
+\item {\em DropUnusedExpr}
+    Removes variable bindings introduced by {\em LowerGrin} if they happen not to be used.    
+\item {\em CopyPropagation}
+    Again shortcuts repeated copying of variables.
+\end{enumerate}    
+    
+
+\paragraph{Class and instance declarations}
+
+\paragraph{HPT analysis}
+
+\paragraph{Foreign functions}
+
+\paragraph{Simplification}
+
+
+
+    
+
+\subsection{Silly Transformations}
+
+
+\begin{enumerate}
+\item {\em InlineExpr}
+
+\item {\em ElimUnused}
+
+\item {\em EmbedVars}
+
+\item {\em GroupAllocs}
+
+\end{enumerate}
+
+
+
+
+\section{Conclusion}
+
+\subsection{Methodological observations}
+
+\paragraph{AG Design Patters}
+
+[Often multi-pass, first collect environment, which is distributed a la repmin.]
+
+[Sometimes there is a need for structure pattern matching.]
+
+
+
+\paragraph{Annotations}
+
+[We tend to extend languages with annotations.
+Either to prevent keeping separate lookup tables (e.g. for arity of constructors),
+or to keep information that is necessary afterwards (e.g. type information of FFI's),
+or to track the origin of constructs (e.g. class declaration).]
+
+
+
+
+\subsection{Related work}
+
+[GHC; YHC; Hugs; Boquist and JHC/LHC]
+
+
+\subsection{Future work}
+
+[More libraries, cabal support etc.
+Full Haskell98 (n+k patterns, type subtleties).
+More optimisations, especially full program.
+Own garbage collector to be independent of B\"ohm.]
+
 
 %%]
+
+
+
+

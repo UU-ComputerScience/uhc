@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
 Nullary functions that immediately return a value or call another function,
-can be encoded directyl in the global variable that applies them.
+can be encoded directly in the global variable that applies them.
 
 %%]
 
