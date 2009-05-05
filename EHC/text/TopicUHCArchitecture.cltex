@@ -16,10 +16,187 @@ This is yet another Haskell compiler, like the
 
 %%[body
 
+\newcounter{enumctr}
+\newenvironment{enumate}{%
+\begin{list}{\arabic{enumctr}}{
+\usecounter{enumctr}
+\parsep  = 0pt
+\parskip = 0pt
+\topsep  = 0pt
+\itemsep = 0pt
+}}{\end{list}}
+\newenvironment{itize}%
+{\begin{list}%
+  {$\bullet$%
+  }%
+  {\parsep  = 0pt%
+   \parskip = 0pt%
+   \topsep  = 0pt%
+   \itemsep = 0pt%
+  }%
+}%
+{\end{list}%
+}
+
+
+
 
 \section{Techniques and Tools}
 
 \subsection{Tree-oriented programming}
+
+
+Using higher order functions on lists, like |map|, |filter| and |foldr|,
+is a good way to abstract from common patterns in
+functional programs.
+
+The idea that underlies the definition of |foldr|, i.e.\ to capture the pattern
+of an inductive definition by having a function parameter for each constructor of
+the data structure, can also be used for other data types, and even for
+multiple mutually recursive data types.
+A function that can be expressed in this way was called a {\em catamorphism}
+by Bird, and the collective extra parameters to |foldr|-like functions 
+an {\em algebra} \cite{bird84circ-traverse,birdmoor96algebra}. 
+Thus, |((+),0)| is an algebra for lists, and |((++),[])| is another.
+In fact, every algebra defines a {\em semantics} of the data structure.
+When applying |foldr|-like functions to the algebra consisting of the original constructor functions,
+such as |((:),[])| for lists, we have the identity function.
+Such an algebra is said to define the ``initial'' semantics.
+Outside circles of functional programmers and category theorists, an
+algebra is simply known as a ``tree walk''.
+
+In compiler construction, algebras could be very useful to define
+a semantics of a language or, bluntly said, to define tree walks over the parse tree.
+The fact that this is not widely done, is due to the following problems:
+
+\begin{enumate}
+\item Unlike lists, for which |foldr| is standard, in a compiler we deal with
+      custom data structures for abstract syntax of a language, 
+      which each need a custom |fold|
+      function. Morover, whenever we change the abstract syntax,
+      we need to change the |fold| function and every algebra.
+\item Generated code can be described as a semantics of the language, but often
+      we need additional semantices: listings, messages,
+      and internal structures (symbol tables etc.).
+      This can be done by having the semantic functions in algebras return
+      tuples, but this makes them hard to handle.
+\item Data structures for abstract syntax tend to have many alternatives,
+      so algebras end up to be clumsy tuples containing dozens of functions.
+\item In practice, information not only flows bottom-up in the parse tree,
+      but also top-down. E.g., symbol tables with global definitions need
+      to be distributed to the leafs of the parse tree to be able to evaluate them.
+      This can be done by using higher-order domains
+      for the algebras, but the resulting code becomes even harder to understand.
+\item A major portion of the algebra is involved with moving information around.
+      The essense of a semantics is sparsely present in the algebra
+      and obscured by lots of boilerplate.
+\end{enumate}
+%Many compiler writers thus end up writing ad hoc recursive functions
+%instead of defining the semantics by a algebra,
+%or even resort to non-functional techniques.
+%Others succeed in giving a concise definition of a semantics,
+%often using proof rules of some kind, but thereby loose the executability.
+%For the implementation they still need conventional techniques,
+%and the issue arises whether the program soundly implements
+%the specified semantics.
+
+To save the nice idea of using an algebra for defining a semantics,
+we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short} that overcomes the abovementioned problems.
+It is not a separate language; we can still use Haskell for writing
+auxiliary functions, and use all abstraction techniques and libraries available.
+The preprocessor just allows a few additional constructs, which can be translated
+into a custom |fold| function and algebras, or an equivalent more efficient implementation.
+
+
+We describe the main features of the preprocessor here, and explain why they overcome
+the five problems mentioned above.
+The abstract syntax of the language is defined in a |DATA| declaration,
+which is like a Haskell |Data| declaration with named fields,
+without the braces and commas.
+Constructor function names need not to be unique between types.
+The preprocessor generates corresponding |Data| declarations
+(making the constructors unique by prepending the type name, like |Expr_Const|),
+and generates a custom |fold| function. This overcomes problem 1.
+
+For any desired value we wish to compute over a tree, we can declare a ``synthesized attribute'',
+possibly for more than one data type.
+For example, we can declare that both statements and expressions need to 
+synthesize bytecode as well as listings, and that expressions
+can be evaluated to integer values:
+\begin{code}
+ATTR Expr Stat  SYN bytecode  :: [Instr]  ^^ ^^ ^^ SYN listing   :: String
+ATTR Expr       SYN value     :: Int
+\end{code}
+The preprocessor generates semantic functions that return appropriate
+tuples, but we can simply refer to attributes by name.
+This overcomes problem 2.
+
+The value of each attribute needs to be defined for 
+every constructor of every data type which has the attribute.
+These definitions
+are known as ``semantic rules'', and start with keyword |SEM|.
+An example is:
+\begin{code}
+SEM Expr  | Const  lhs.value = @num
+          | Add    lhs.value = @left.value + @right.value
+\end{code}
+This states that the synthesized (left hand side) |value| attribute
+of a |Const|ant expression is just the contents of the |num| field,
+and that of an |Add|-expression can be computed
+by adding the |value| attributes of its subtrees.
+The |@|-symbol in this context should be read as ``attribute'',
+not to be confused with Haskell ``as-patterns''.
+At the left of the |=|-symbol, the attribute to be defined is mentioned;
+at the right, any Haskell expression can be given.
+The preprocessor collects and orders all definitions in a single algebra,
+replacing attribute references by suitable selections from the results 
+of the tree walk on the children. 
+This overcomes problem 3.
+
+To be able to pass information downward during a tree walk,
+we can define ``inherited'' attributes
+(the terminology goes back to Knuth \cite{knuth68ag}).
+As an example, it can serve to pass an environment,
+i.e.\ a lookup table that associates variables to values,
+which is needed to evaluate expressions:
+\begin{code}
+TYPE Env = [(String,Int)]
+ATTR Expr INH env::Env
+SEM Expr | Var  lhs.value = fromJust (lookup @lhs.env @name)
+\end{code}
+The preprocessor translates inherited attributes into
+extra parameters for the semantic functions in the algebra.
+This overcomes problem 4.
+
+In many situations, |SEM| rules only specify that attributes
+a tree node inherites 
+should be passed unchanged to its children.
+To scrap the boilerplate expressing this, 
+the preprocessor has
+a convention that, 
+unless stated otherwise, attributes with the same name
+are automatically copied.
+A similar automated copying is done for synthesized attributes
+passed up the tree.
+When more than one child offers a candidate to be copied,
+normally the rightmost one is taken,
+unless we specify to |USE| an operator to combine several candidates:
+\begin{code}
+ATTR Expr Stat SYN listing USE (++) []
+\end{code}
+which specifies that by default, the synthesized
+attribute |listing| is the concatenation of the |listing|s of
+all children that have one, or the empty list if no child has one.
+This overcomes problem 5.
+
+
+
+
+
+
+
+
+
 
 [generalized fold, UUAGC as a preprocessor]
 
@@ -34,11 +211,71 @@ This is yet another Haskell compiler, like the
 
 \section{Languages}
 
-\subsection{The HS Language}
+\subsection{The Haskell Language}
 
-\subsection{The EH Language}
+The Haskell language (HS) closely follows Haskell's concrete syntax.
+It consists of numerous datatypes, some of which have many constructors.
+A |Module| consists of a name, exports, and declarations.
+Declarations can be varied: function bindings, pattern bindings, type signatures, 
+data types, new types, type synonyms, class, instance\dots
+Function bindings involve a right hand side which is either an expression or a list of guarded expressions.
+An expression, in turn, has no less than 29 alternatives.
+All in all, the language description consists of about 1000 lines of code.
+
+As even parentheses, position information are kept in the abstract syntax tree,
+the original source program can be recreated from the abstract syntax tree by pretty printing.
+
+
+\subsection{The Essential Haskell Language}
+
+In constrast to the HS language, the Essential Haskell language (EH)
+brings back the language to its essence, removing as much syntactical sugar as is possible.
+An EH module consists of a single expression only, which can be thought of to contain the
+body of the |main| function, having local let-bindings for the other top-level declarations.
+
+
+
+
 
 \subsection{The Core Language}
+
+A Core module, apart from its name,
+consists of nothing more than an expression,
+which can be thought of as the body of |main|:
+%%[[wrap=code
+DATA  CModule
+   =  Mod  nm:Name   expr:CExpr
+%%]]
+An expression resembles an expression in lambda calculus.
+We have constants, variables, and lambda abstractions and applications of one argument:
+\typeout{todo: encoding of constructors in CExpr}
+%%[[wrap=code
+DATA  CExpr
+   =  Int     int:Int
+   |  Char    char:Char
+   |  String  str:String
+   |  Var     name:Name
+   |  Lam     arg:Name    body:CExpr
+   |  App     func:CExpr  arg:Cexpr
+%%]]
+Furthermore, there is case distinction and local binding:
+%%[[wrap=code
+   |  Case    expr:CExpr   alts:[CAlt]    dflt:CExpr
+   |  Let     categ:Categ  binds:[CBind]  body:CExpr
+%%]]
+The |categ| of a |Let| describes whether the binding is recursive or not.
+These two constructs use the auxiliary notions of alternative and binding:
+%%[[wrap=code
+DATA  CAlt
+   =  Alt     pat:CPat   expr:CExpr
+DATA  CBind   
+   =  Bind    name:Name  expr:CExpr
+   |  FFI     name:Name  imp:String   ty:Ty
+%%]]
+\typeout{todo: description of CPar in Core}
+
+
+
 
 \subsection{The Grin Language}
 
@@ -64,18 +301,18 @@ DATA  GrVal
    |  Tag     tag:GrTag
    |  Node    tag:GrTag   flds:[GrVal]
 %%]]
-Some values are not directly representable (pointers and `empty').
-Although it it not a value, for syntactical convenience we do add
+Pointers to nodes are also values, but they have no direct denotation.
+On the other hand, variables ranging over values are not a value themselves,
+bur for syntactical convenience we do add
 the notion of a `variable' to the |GrVal| data type:
 %%[[wrap=code
    |  Var     name:Name
 %%]]
 The tag of a node describes its role.
 It can be a constructor of a datatype (|Con|),
-a denotation of a function of which the call is deferred because of lazy evaluation (|Fun|),
-a denotation of a function that is partially parameterized but still needs more arguments (|PApp|), or
-a denotation of the application of an unknown function (appearing as the first argument of the node)
-to other arguments (|App|).
+a function of which the call is deferred because of lazy evaluation (|Fun|),
+a function that is partially parameterized but still needs more arguments (|PApp|), or
+an application of an unknown function (appearing as the first argument of the node) to arguments (|App|).
 %%[[wrap=code
 DATA  GrTag
    =  Con   name:Name
@@ -95,7 +332,7 @@ DATA  GrExpr
 %%]]
 There are some primitive computations (that is, constants in the monad)
 one for storing a node value (returning a pointer value), and two
-for fetching a node previously stored or one field thereof:
+for fetching a node previously stored, and for fetching one field thereof:
 %%[[wrap=code
    |  Store       val:GrVal
    |  FetchNode   name:Name
@@ -108,7 +345,7 @@ The name mentioned is that of a known function (i.e., there are no function vari
    |  FFI         name:String  args:[GrVal]
 %%]]
 Two special primitive computations are provided for evaluating node that may contain a |Fun| tag,
-and for appying a node that must contain a |PApp| tag (a partially parameterized function) to further arguments:
+and for applying a node that must contain a |PApp| tag (a partially parameterized function) to further arguments:
 %%[[wrap=code
    |  Eval        name:Name
    |  App         name:Name    args:[GrVal]
@@ -158,8 +395,28 @@ DATA  GrPatAlt
 
 \subsection{Core Transformations}
 
-\begin{enumerate}
+Quite a few gaps have to be bridged in the transformation from 
+Core to Grin.
+Firstly, where Core has a lazy semantics, in Grin de deferring of
+function calls and their later evaluation is explicitly coded.
+Secondly, in Core we can have local function definitions,
+whereas in Grin all function definitions are on the top level.
+Grin does have a mechanism for local variable bindings,
+but they have to be explicitly sequenced.
+Thirdly, wheras Core functions always have one argument,
+in Grin functions can have multiple parameters, but they
+take them all at the same time. 
+Therefore a mechanism for partial parametrization is necessary.
 
+Before the actual translation from Core to Grin takes place,
+a series of Core to Core transformations is applied as preparation.
+Their main task is to perform `lambda lifting', that is move
+lambda-expressions to the top level. Where bodies of lambda expressions
+refer to local variables, they are made into explicit parameters.
+
+Here is the list of transformations. Apart from lambda lifting,
+also a few optimizations are applied.
+\begin{enumerate}
 \item {\em EtaReduction}
 \item {\em RenameUnique}
     Renames variables such that all variables are globally unique.
@@ -171,6 +428,7 @@ DATA  GrPatAlt
 \item {\em ConstProp}
     Performs addition of int constants at compile time.
 \item {\em FullLazy}
+    Lambda abstractions are moved outward as far as possible.
 \item {\em LamGlobalAsArg}
     Pass global variables of let-bound lambda-expressions as explicit parameters,
     as a preparation for lambda-lifting.
@@ -184,8 +442,43 @@ DATA  GrPatAlt
     Finds nullary (parameterless) functions and duplicates them;
     the two copies are differently annotated,
     such that one of the two will end up as an updateable global variable.
-
 \end{enumerate}
+After the transformations, translation to Grin is performed,
+where the following issues are adressed:
+\begin{itemize}
+\item for |Let|-expressions:
+      the global ones are collected and made into Grin function bindings;
+      the local non-recursive ones are put in a row and sequenced by Grin |Seq|-expressions;
+      for the local recursive let-bindings a |Seq|uence is created
+      where variable is bound to a `black hole' node, then the body is processed, and finally a |FetchUpdate|-expression is generated.
+\item for |Case|-expressions:
+      an explicit |Eval|-expression for the scrutinee is generated, in |Seq|uence with
+      a Grin |Case|-expression.
+\item for |App|-expressions:
+      it is determined what it is that is applied:
+      \begin{itemize}
+      \item if it is a constructor, then a node with |Con| tag is returned;
+      \item if it is a lambda of known arity and has exactly the right number of arguments, then
+            either a |Call|-expression is generated (in strict contexts)
+            or a node with |Fun| tag is stored with a |Store|-expression (in lazy contexts);
+      \item if it is a lambda of known arity that is undersaturated (has not enough arguments), then
+            a node with |PApp| tag is returned (in strict contexts) or |Store|d (in lazy contexts)
+      \item if it is a lambda of known arity that is oversaturated (has too many arguments), then
+            (in stict contexts) first a |Call|-expression to the function is generated that applies the function
+            to some of the arguments, and the result is bound to a variable that is sub|Seq|uently |App|lied
+            to the remaining arguments; or
+            (in non-strict contexts) a node with |Fun| tag is |Store|d, and bound to a variable
+            that is used in another node which has an |App| tag.
+      \item if it is a variable that represents a function of unknown arity, then
+            (in strict contexts) the variable is explicitly |Eval|uated, and its result used in an |App|expression to the arguments; or
+            (in non-strict contexts) as a last resort, both function variable and arguments are stored in a node with |App| tag.
+      \end{itemize}
+\item for global bindings:
+      lambda abstractions are `peeled off' the body, to become the arguments of a Grin function binding.
+\item for foreign function bindings:
+      functions with |IO| reslut type are treated specially.
+\end{itemize}
+
 
 
 
@@ -248,12 +541,12 @@ Specific for bytecode generation
     by inlining them in nodes that encode their deferred application.
 \item {\em ConstInt}
     Replaces deferred applications of |integer2int| to constant integers by a constant int.
-    This situation occurs for every int literal in the source program,
-    because of the way int literals are overloaded in Haskell.
+    This situation occurs for every numeric literal in the source program,
+    because of the way literals are overloaded in Haskell.
 \item {\em BuildAppBindings}
     Introduces bindings for |apply| functions with as many parameters as are needed in the program.
 \item {\em GlobalConstants}
-    Introduces global varaibles for each constant foud in the program,
+    Introduces global variables for each constant foud in the program,
     instead of allocation the constants locally.
 \item {\em Inline}
     Inlines functions that are used only once at their call site.
@@ -261,7 +554,7 @@ Specific for bytecode generation
     Replaces case expressions that have a single alternative by the body of that alternative.
 \item {\em EvalStored}
     Do not do |Eval| on pointers that bind the result of a previous |Store|.
-    Instead, do a |Call| if the stored node is a deferred call, 
+    Instead, do a |Call| if the stored node is a deferred call (with a |Fun| tag), 
     or do a |Unit| of the stored node for other nodes.
 \item {\em ApplyUnited}
     Do not do |Apply| on variables that bind the result of a previous |Unit| of a node with a |PApp| tag.
@@ -389,7 +682,8 @@ or to track the origin of constructs (e.g. class declaration).]
 [More libraries, cabal support etc.
 Full Haskell98 (n+k patterns, type subtleties).
 More optimisations, especially full program.
-Own garbage collector to be independent of B\"ohm.]
+Own garbage collector to be independent of B\"ohm.
+Strictness analysis.]
 
 
 %%]
