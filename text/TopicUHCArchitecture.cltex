@@ -202,6 +202,34 @@ This overcomes problem 5.
 
 \section{Languages}
 
+The compiler translates a Haskell program to executable code
+by applying many small transformations.
+In the process, the program is represented using five different
+data structures, or languages.
+Some transformations map one of these languages to the next,
+some are transformations within one language.
+Together, the five languages span the spectrum between
+a full feature, lazy functional language, 
+and a limited, low level imperative language.
+
+Here is a short characterization of these languages.
+The remainder of this section gives a more detailed description.
+\begin{enumerate}
+\item Haskell (HS): a general-purpose, higher-order, typed, lazy functional language.
+\item Essential Haskell (EH): a higher-order, typed, lazy functional language close to lambda-calculus, without syntactical sugar.
+\item Core: an untyped, lazy functional language close to lambda-calculus
+            (similar to, but not the same as the Core language used in GHC).
+\item Grin: `Graph reduction intermediate notation', the instruction set of a virtual machine
+            of a small functional language with strict semantics, with features that enable implementation of lazyness.
+\item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
+            (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
+            easyly translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
+\end{enumerate}
+
+
+
+
+
 \subsection{The Haskell Language}
 
 The Haskell language (HS) closely follows Haskell's concrete syntax.
@@ -761,12 +789,27 @@ in the prelude. In this situation we automatically fall back on the Fax\'en sche
 
 \begin{enumerate}
 \item {\em InlineExpr}
+Avoids copying variables to other variables, 
+if in all uses the original one could be used just as well
+(i.e., are not modified in between).
 
 \item {\em ElimUnused}
+Eliminates assignments to variables that are never used.
 
 \item {\em EmbedVars}
+Silly has a notion of function arguments and local variables.
+After this transformation, these kind of variables are not used anymore,
+but replaced by explicit strack offsets.
+So, this transformation does the mapping of variables to stack positions
+(and, if available, registers).
+At the end of each function, the function result values overwrites the parameter area
+of the stack; the assignments are scheduled in such a way
+that is does not overwrite parameters that are still needed in assignments to follow.
 
 \item {\em GroupAllocs}
+This transformation combines separate, adjacent calls to |malloc| into one,
+enabling to do heap overflow check only once for all the memory that
+is allocated in a particular function.
 
 \end{enumerate}
 
