@@ -191,15 +191,6 @@ This overcomes problem 5.
 
 
 
-
-
-
-
-
-
-
-[generalized fold, UUAGC as a preprocessor]
-
 \subsection{Rule-oriented programming}
 
 [Ruler as a preprocessor]
@@ -312,13 +303,13 @@ The tag of a node describes its role.
 It can be a constructor of a datatype (|Con|),
 a function of which the call is deferred because of lazy evaluation (|Fun|),
 a function that is partially parameterized but still needs more arguments (|PApp|), or
-an application of an unknown function (appearing as the first argument of the node) to arguments (|App|).
+a deferred application of |apply| an unknown function (appearing as the first argument of the node) to arguments (|App|).
 %%[[wrap=code
 DATA  GrTag
    =  Con   name:Name
    |  Fun   name:Name
    |  PApp  needs:Int  name:Name
-   |  App
+   |  App   applyfn:Name
 %%]]
 The body of a function denotes the calculation of a value,
 which is represented in a program by an `expression'.
@@ -395,7 +386,7 @@ DATA  GrPatAlt
 
 \subsection{Core Transformations}
 
-Quite a few gaps have to be bridged in the transformation from 
+Three major gaps have to be bridged in the transformation from 
 Core to Grin.
 Firstly, where Core has a lazy semantics, in Grin de deferring of
 function calls and their later evaluation is explicitly coded.
@@ -413,8 +404,7 @@ a series of Core to Core transformations is applied as preparation.
 Their main task is to perform `lambda lifting', that is move
 lambda-expressions to the top level. Where bodies of lambda expressions
 refer to local variables, they are made into explicit parameters.
-
-Here is the list of transformations. Apart from lambda lifting,
+Here is the list of all transformations. Apart from lambda lifting,
 also a few optimizations are applied.
 \begin{enumerate}
 \item {\em EtaReduction}
@@ -479,42 +469,23 @@ where the following issues are adressed:
       functions with |IO| reslut type are treated specially.
 \end{itemize}
 
+This point in the compilation pipeline is where we start to do full-program analysis.
+The Core module of the program under compilation is merged with the Core modules of all libraries used.
+The resulting big Core module is then translated to Grin.
 
 
 
+\subsection{Grin Transformations}
 
-\subsection{Grin Local Transformations}
+In the Grin world, we take the opportunity to do many optimizing transformations.
+Other transformations are designed to move from graph manipulation concepts
+(complete nodes that can be `fetched', `evaluated' and pattern matched for)
+to a lower level where single word values are moved and inspected in
+the imperative target language.
 
-Generic
-
-\begin{enumerate}
-
-\item {\em AliasElim}
-
-\item {\em EvalElim}
-
-\item {\em UnusedNameElim}
-
-\item {\em Flatten}
-
-\item {\em Inline}
-
-\end{enumerate}
-
-
-Specific for bytecode generation
-
-\begin{enumerate}
-\item {\em MetaInfoElim}
-
-\item {\em Unbox}
-
-\item {\em ConstantPropagation}
-
-\end{enumerate}
-
-
-\subsection{Grin Full-program Transformations}
+We first list all transformations in the order they are performed,
+and then discuss some issues that are tackled with the combined effort
+of multiple transformations.
 
 \begin{enumerate}
 \item {\em DropUnreachableBindings}
@@ -522,7 +493,7 @@ Specific for bytecode generation
     either through direct calls, 
     or through nodes that store a deferred or partially parameterized function.
     Does a provisional numbering of all functions, and creates a graph of dependencies.
-    A standard reachablility algorithm from determines which functions are reachable from |main|;
+    A standard reachablility algorithm determines which functions are reachable from |main|;
     the others are dropped.
 \item {\em MergeInstance}
     Introduces an explicit dictionary for each instance declaration,
@@ -619,16 +590,168 @@ Specific for bytecode generation
 \item {\em CopyPropagation}
     Again shortcuts repeated copying of variables.
 \end{enumerate}    
+
+
+\paragraph{Simplification}
+The Grin language features constructs for manipulating heap nodes,
+including ones that encode deferred function calls, that are explicitly
+triggered by an |Eval| expression.
+As part of the simplification, this high level construct should be decomposed in smaller steps.
+Two strategies can be taken to implement evaluation:
+\begin{itemize}
+\item {\em tagged}:  nodes are tagged by small numbers,
+                     evaluation is performed by calling a special |evaluate| function that scrutinizes the tag,
+                     and for each possible |Fun| tag calls the corresponding function and updates the thunk;
+\item {\em tagless}: nodes are tagged by pointers to code that does the call and update operations,
+                     thus evaluation is tantamount to just jump to the code pointed to by the tag.
+\end{itemize}
+The tagged approach has overhead in calling |evaluate|,
+but the tagless approach has the disadvantage that the indirect jump involved may stall the lookahead buffer of pipelined processors.
+Boquist proposed to inline the |evaluate| function at every occurence of |Eval|,
+where for every instance the |Case| expression involved only contains those cases which can actually occur.
+It is this approach that we take in UHC.
+
+This way, they high level concept of |Eval| is replaced by lower level concepts of |FetchNode|, |Case|, |Call| and |Update|.
+In turn, each |FetchNode| expression is replaced by a series of |FetchField| expressions in a later transformation,
+and the |Case| that scrutinzes a node is replaced by one that scrutinizes the tag only.
+
     
+\paragraph{Abstract interpretation}
+The desire to inline a specialized version of |evaluate| at every |Eval| instance
+brings the need for an analysis that for each pointer variable determines the possible tags of the node.
+An abstract interpretation of the program, known as `heap points to (HPT) analysis' tries to approximate this knowledge.
+As a preparation, the program is scanned to collect constraints on variables.
+Some constaints immediately provides the information needed (e.g., the variable that binds the result of a |Store| expression
+is obviously a pointer to a node with the tag of the node that was stored),
+but other constraints are indirect (e.g., the variable that binds the result of a |Call| expression
+will have the same value as the called function returns).
+The analysis is essentially a full-program analysis, as actual parameters of functions
+impose constraints on the parameters.
+
+The constraint set is solved in a fixpoint iteration, which processes the indirect constraints
+based on onformation gathered thus far. In order to have fast access to the mapping that records
+the abstract value for each variable, we uniquely number all variables, and use mutable arrays to store the mapping.
+
+Special attention deserves the processing of the constraint that expresses that |x| binds the 
+result of |Eval p|.
+If |p| is already known to point to nodes with a |Con| tag (i.e., values) then this is also a possible value for |x|.
+If |p| is known to point to nodes with a |Fun f| tag (i.e., deferred functions), then the possible results for |f| are also possible values for |x|.
+And if |p| is known to point to nodes with an |App apply| tag (i.e., generic applications of unknown functions by |apply|),
+then the possible results for |apply| are also possible values for |x|.
+
+
+\paragraph{HPT performance}
+
+The HPT analysis must at least find all possible tags for each pointer, but it is sound if it reports a superset of these.
+The design of the HPT analysis is a tradeoff between time (the number of iterations it takes to find the fixed point)
+and accuracy.
+A trivial solution is to report (in 1 step) that every pointer may point to every tag;
+a perfect solution would solve the halting problem and thus would take infinite time in some situations.
+
+We found that the number of iterations our implementation takes, is dependent of two factors:
+the depth of the call graph (usually bounded by a dozen or so in practice),
+and the length of static data structures in the program.
+The latter surprised us, but is understandable if one considers the program
+%%[[wrap=code
+main = putStrLn (show (last [id,id,id,id,succ] 1))
+%%]
+where it takes 5 iterations to find out that 1 is a possible parameter of |succ|.
+
+As for accuracy, our HPT algorithm works well for first-order functions.
+In the presence of many higher-order functions, the results suffer from `pollution':
+the use of a higher-order function in one context also influences its result in another context.
+We conter this undesired behaviour in a number of ways:
+\begin{itemize}
+\item instead of a generic |apply| function, the {\em BuildAppBindings} transformation
+      makes a fresh copy for each use by an |App| tag. This prevents mutual pollution of |apply| results,
+      and also increases probability that the |apply| function can be inlined later;
+\item we specialize overloaded functions as much as possible (which is a useful optimization anyway),
+      because selecting the right function from a dictionary and then apply it to its parameters
+      involves the dangerous application of unknown functions;
+\item we fall back on explicitly calling |evaluate| (instead of inlining it) in situations where the
+      number of possible tags is unreasonable big.
+\end{itemize}
+
+
 
 \paragraph{Class and instance declarations}
 
-\paragraph{HPT analysis}
+The basic idea of implementing instances is simple:
+an instance is a tupel (known as a `dictionary') containing all member functions,
+which is passed as an additional parameter to overloaded functions.
+Things are complicated, however, by the presence of default implementations in classes:
+the dictionary for an instance declaration is a merge of the default implementations
+and the implementations in the instance declaration.
+Still worse, the class declaration might reside in another module than the instance declaration,
+and nevertheless be mutally dependent with it.
+Think of the |Eq| class, having mutually circular definitions of |eq| and |ne|, leaving
+it to the instance declaration to implement either of them (or both).
+
+A clever scheme was designed by Fax\'en to generate the dictionary from a generator function
+that is parameterized by the dictionary containing the default implementations,
+while the default dictionary is generated from a generator function
+parameterized by the instance dictionary.
+Lazy evaluation and black holes make this all work, and we emply this scheme in UHC.
+It would be a waste, however, now that we are in a full program analysis situation,
+not to try to do as much work as possible at compile time.
+
+Firstly, we have to merge the default and instance dictionaries.
+In the Grin world, we have to deal with what the Core2Grin transformation
+makes of the Fax\'en scheme. That is:
+\begin{itemize}
+\item A 1-ary generator function |gfd| that, given a default dictionary, will generate the dictionary;
+\item A 0-ary function |fd| that binds a variable to a black hole, calls |gfd|, and returns the result
+\item A global variable |d| bound to a node with tag |Fun fd|.
+\end{itemize}
+We would like to change this in a situation where |d| is bound directly to the dictionary node.
+This would involve reverse engineering the definitions of |d|, |fd| and |gfd| to find the
+actual member function names buried deep in the definition of |gfd|.
+Although possible, this is very volatile as it depends on the details of the Core2Grin translation.
+Instead, we took a different approach: the definition of |fd| is annotated with the names of the member functions
+at the time when it is still explicitly available, that is during the EH2Core translation.
+Similary, class definitions are annotated with the names of the default functions.
+Now the {\em Grin.MergeInstance} transformation can easyly collect the required dictionary fields,
+provided that the {\em Core.LiftDictFields} transformation ensures they are available as top-level functions.
+The |fd| and |gfd| functions are obsolete afterwards, and will be discarded at a later reachability analysis.
+
+Secondly, we hunt the program for 
+dictionaries $d$ (as constructed above) and
+selection functions $s_k$ (easyly recognizable as a function that patternmatches its parameter to a dictionary structure and returns its $k$th field $x_k$).
+Then |Call s_k d| can be replaced by |Eval x_k|.
+A deferred member selection, involving a node with tag |Fun s_k| and field |d|, can be dealt with similarly.
+Both are done by the {\em MemberSelect} transformation.
+
+Thirdly, as $x_k$ is a dictionary field, it is a known node |n|.
+If |n| as a |Fun f| tag, in which case |Eval x_k| can be replaced by |Call f|,
+and otherwise it can be replaced by |Unit n|.
+This is done by the {\em EvalStored} transformation.
+The new |Unit| that is exposed by this transformation can be combined with the |App| expression
+that idiomatically follows the member selection, which is what {\em ApplyUnited} does.
+
+All of this only works when members are selected from a constant dictionary.
+But overloaded functions operate on dictionaries that are passed as parameter.
+The constant dictionary appears where the overloaded function is called,
+or even further up the call chain.
+The constant can be brought to the position where it is needed by
+specializing functions when they are called with constant arguments.
+This is done in the {\em SpecConst} transformation.
+Besides useful in the chain of transformations that together remove the dictionaries,
+it is useful for other constants, like a 1-ary successor function as a 
+specialization of |plus 1|.
+(If constant specialization is also done for string constants, we get
+many specializations of |putStrLn|).
+
+The whole pack of transformations is applied repeatedly, as applying them
+exposes new opportunities for sub-dictionaries.
+Four iterations suffice for the common cases (involving |Eq|, |Ord|, |Integral|, |Read| etc.)
+from the prelude.
+
+The only situation where dictionaries cannot be eliminated, is where an infinite family
+of dictionaries would be necessary, such as arises from the |Eq a => Eq [a]| instance declaration
+in the prelude. In this situation we automatically fall back on the Fax\'en scheme.
+
 
 \paragraph{Foreign functions}
-
-\paragraph{Simplification}
-
 
 
     
