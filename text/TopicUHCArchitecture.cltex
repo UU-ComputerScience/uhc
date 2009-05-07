@@ -11,6 +11,18 @@ In \thispaper\ we describe the architecture of the Utrecht Haskell Compiler (UHC
 This is yet another Haskell compiler, like the
 \cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
 \todo{add real introduction}
+
+
+The UHC pipeline is shown in figure~\ref{fig-uhcstruct-pipeline}.
+
+\begin{figure}[tbfh]
+\FigScaledPDF{0.43}{uhc-pipeline}
+\caption{Intermediate languages and transformations in the UHC pipeline}
+\label{fig-uhcstruct-pipeline}
+\end{figure}
+
+
+
 %%]
 
 
@@ -803,9 +815,11 @@ After this transformation, these kind of variables are not used anymore,
 but replaced by explicit strack offsets.
 So, this transformation does the mapping of variables to stack positions
 (and, if available, registers).
-At the end of each function, the function result values overwrites the parameter area
-of the stack; the assignments are scheduled in such a way
-that is does not overwrite parameters that are still needed in assignments to follow.
+In a tail call, the parameters of the function that is called overwrites
+the parameters and local variables of the function that does the call.
+The assignments are scheduled in such a way
+that no values are overwritten that are still needed in assignments to follow.
+
 
 \item {\em GroupAllocs}
 This transformation combines separate, adjacent calls to |malloc| into one,
