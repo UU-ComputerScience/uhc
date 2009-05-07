@@ -13,12 +13,12 @@ This is yet another Haskell compiler, like the
 \todo{add real introduction}
 
 
-The UHC pipeline is shown in figure~\ref{fig-uhcstruct-pipeline}.
+The UHC pipeline is shown in figure~\ref{fig-uhcarch-pipeline}.
 
 \begin{figure}[tbfh]
 \FigScaledPDF{0.43}{uhc-pipeline}
 \caption{Intermediate languages and transformations in the UHC pipeline}
-\label{fig-uhcstruct-pipeline}
+\label{fig-uhcarch-pipeline}
 \end{figure}
 
 
@@ -772,9 +772,9 @@ of multiple transformations.
     but only when the expression has no side effect.
     Therefore, an analysis is done to determine which expressions may have side effects.
     |Update| and |FFI| expressions are assumed to have side effect, 
-    and |Case| and |Seq| expressions if one of their childres does.
-    The tricky one is |Call|, which has a side effect if its body does,
-    which is circular if the function is recursive.
+    and |Case| and |Seq| expressions if one of their children has them.
+    The tricky one is |Call|, which has a side effect if its body does.
+    This is circular definition of `has a side effect' if the function is recursive.
     Thus we take a 2-pass approach: a `coarse' approximation that assumes that every |Call| has a side effect, 
     and a `fine' approximation that takes into account the coarse approximation for the body.
     Variables that are never used but which are retained because of the possible side effects of their bodies are replaced by wildcards.
@@ -998,12 +998,39 @@ is allocated in a particular function.
 
 \subsection{Code size}
 
+UHC is the standard materialization of a more general code base,
+from which increasingly powerful `variants' of the compiler can be drawn,
+where independent experimental `aspects' can be switched on or off.
+The whole source code base consists of a fairly exact 100.000 lines of code.
+Just over half of it is Attribute Grammar code, which of course has lots
+of embedded Haskell code in it. 
+One third of the code base is plain Haskell (mostly for utility functions, the compiler driver, and the type inferencer),
+and one sixth is C (for the runtime system and a garbage collector).
+
+In figure~\ref{fig-uhcarch-codesize} the breakdown of code size over
+various subsystems in the pipeline is shown.
+All numbers are in kilo-lines-of-code, but because of the total of 100.000 lines
+they can also be interpreted as percentages.
+Column `UHC only' shows the size of the code that is selected by Shuffle
+for the standard compiler, i.e.\ the most powerful variant without experimental aspects.
+On average, 60\% of the total code base is used in UHC.
+The rest is either code for low variants which is overwritten in higher variants,
+code for experimental aspects that are switched off in UHC,
+chunk header overhead, or
+comments that were placed outside chunks.
+
+The fraction of code used for UHC is relatively low in 
+the type inferencer (as there are many experimental aspects here),
+in the experimental backends like Java, Cil and LLVM (as most of them are switched off), and
+in the garbage collector (as it is not yet used: UHC by default uses a third-party generic garbage collector).
+
 
 \begin{figure}
 \begin{center}
-\begin{tabular}{lrrrrrr}
-             &    AG      &    HS      &     C      &    total   &    UHC     &          \\\hline
-utility      &     1.7    &    18.3    &            &    20.0    &    14.0    &    70\%  \\
+\begin{tabular}{l||rrrr||rr}
+subsystem    & \multicolumn{4}{c||}{All variants and aspects}    & \multicolumn{2}{c}{UHC only} \\
+             &    AG      &    HS      &     C      &    total   &    total   &  fract.  \\\hline
+utility/general&   1.7    &    18.3    &            &    20.0    &    14.0    &    70\%  \\
 Haskell      &     6.7    &     3.3    &            &     9.9    &     6.9    &    70\%  \\
 EH           &    11.2    &     0.6    &            &    11.8    &     6.7    &    57\%  \\
 EH typing    &     8.0    &     7.5    &            &    15.5    &     7.0    &    45\%  \\
@@ -1011,13 +1038,16 @@ Core         &     7.1    &     1.0    &            &     8.0    &     4.7    & 
 ByteCode     &     2.1    &            &            &     2.1    &     1.7    &    82\%  \\
 Grin         &    11.3    &     1.6    &            &    12.9    &     8.5    &    66\%  \\
 Silly        &     2.8    &            &            &     2.8    &     2.6    &    93\%  \\
-exp.backend  &     2.5    &     0.4    &            &     2.9    &     0.8    &    26\%  \\
-runtime syst &            &            &     8.1    &     8.1    &     6.2    &    77\%  \\
-garb.coll.   &            &            &     6.0    &     6.0    &     0.7    &    11\%  \\\hline
-total        &    53.4    &    32.5    &    14.1    &   100.1    &    59.8    &    60\%  \\
+exp.backends &     2.5    &     0.4    &            &     2.9    &     0.8    &    26\%  \\
+runtime system&           &            &     8.1    &     8.1    &     6.2    &    77\%  \\
+garb.collector&           &            &     6.0    &     6.0    &     0.7    &    11\%  \\\hline
+total        &    53.4    &    32.5    &    14.1    &   100.0    &    59.8    &    60\%  \\
 \end{tabular}
 \end{center}
-\caption{Code size (in 1000 lines of code)}
+\caption{Code size (in 1000 lines of code) of source files containing Attribute Grammar code (AG), Haskell code (HS) and C code (C),
+for various subsystems. Column `all variants' is the total code base for all variants and aspects, column `UHC' is the selection of the standard compiler,
+where `fract.' shows the fraction of the full code base that is selected for UHC.}
+\label{fig-uhcarch-codesize}
 \end{figure}
 
 
