@@ -415,12 +415,7 @@ A list of often occurring build problems is maintained \eref{BuildProblems}{here
 \end{itemize}
 \item Download
 \begin{itemize}
-\item Prebuilt versions via the \uref{WebHome}{UHC home page}.
-\item Or the most recent development version from the svn repository:
-\begin{verbatim}
-% svn checkout https://svn.cs.uu.nl:12443/repos/EHC/trunk/EHC
-\end{verbatim}
-Also available as a \href{https://svn.cs.uu.nl:12443/dist/EHC/EHC-trunk-EHC.tar.bz2}{tarball}.
+\item See the \uref{Download}{download page}.
 \end{itemize}
 \end{itemize}
 %%]]
@@ -491,6 +486,15 @@ This is not intended.
 \subsubsection{Troubleshoot}
 
 See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
+
+\subsubsection{More make commands}
+
+Type @make help@ to see what more can be build:
+
+\begin{pre}
+%%@[exec:make help%%]
+\end{pre}
+
 %%]]
 
 \subsubsection{Build a EHC variant}
