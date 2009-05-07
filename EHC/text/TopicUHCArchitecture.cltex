@@ -995,6 +995,33 @@ is allocated in a particular function.
 
 \section{Conclusion}
 
+
+\subsection{Code size}
+
+
+\begin{figure}
+\begin{center}
+\begin{tabular}{lrrrrrr}
+             &    AG      &    HS      &     C      &    total   &    UHC     &          \\\hline
+utility      &     1.7    &    18.3    &            &    20.0    &    14.0    &    70\%  \\
+Haskell      &     6.7    &     3.3    &            &     9.9    &     6.9    &    70\%  \\
+EH           &    11.2    &     0.6    &            &    11.8    &     6.7    &    57\%  \\
+EH typing    &     8.0    &     7.5    &            &    15.5    &     7.0    &    45\%  \\
+Core         &     7.1    &     1.0    &            &     8.0    &     4.7    &    58\%  \\
+ByteCode     &     2.1    &            &            &     2.1    &     1.7    &    82\%  \\
+Grin         &    11.3    &     1.6    &            &    12.9    &     8.5    &    66\%  \\
+Silly        &     2.8    &            &            &     2.8    &     2.6    &    93\%  \\
+exp.backend  &     2.5    &     0.4    &            &     2.9    &     0.8    &    26\%  \\
+runtime syst &            &            &     8.1    &     8.1    &     6.2    &    77\%  \\
+garb.coll.   &            &            &     6.0    &     6.0    &     0.7    &    11\%  \\\hline
+total        &    53.4    &    32.5    &    14.1    &   100.1    &    59.8    &    60\%  \\
+\end{tabular}
+\end{center}
+\caption{Code size (in 1000 lines of code)}
+\end{figure}
+
+
+
 \subsection{Methodological observations}
 
 
