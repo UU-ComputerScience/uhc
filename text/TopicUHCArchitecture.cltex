@@ -4,9 +4,13 @@ In \thispaper\ we describe the architecture of the Utrecht Haskell Compiler (UHC
 
 
 %%[introduction
+
+\newcommand{\todo}[1]{{\em Todo: [#1]}}
+
+
 This is yet another Haskell compiler, like the
 \cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
-
+\todo{add real introduction}
 %%]
 
 
@@ -15,30 +19,6 @@ This is yet another Haskell compiler, like the
 
 
 %%[body
-
-\newcounter{enumctr}
-\newenvironment{enumate}{%
-\begin{list}{\arabic{enumctr}}{
-\usecounter{enumctr}
-\parsep  = 0pt
-\parskip = 0pt
-\topsep  = 0pt
-\itemsep = 0pt
-}}{\end{list}}
-\newenvironment{itize}%
-{\begin{list}%
-  {$\bullet$%
-  }%
-  {\parsep  = 0pt%
-   \parskip = 0pt%
-   \topsep  = 0pt%
-   \itemsep = 0pt%
-  }%
-}%
-{\end{list}%
-}
-
-
 
 
 \section{Techniques and Tools}
@@ -65,11 +45,11 @@ Such an algebra is said to define the ``initial'' semantics.
 Outside circles of functional programmers and category theorists, an
 algebra is simply known as a ``tree walk''.
 
-In compiler construction, algebras could be very useful to define
-a semantics of a language or, bluntly said, to define tree walks over the parse tree.
+In compiler construction, algebras are very useful in defining
+a semantics of a syntactic structure or, bluntly said, to define tree walks over the parse tree.
 The fact that this is not widely done, is due to the following problems:
 
-\begin{enumate}
+\begin{enumerate}
 \item Unlike lists, for which |foldr| is standard, in a compiler we deal with
       custom data structures for abstract syntax of a language, 
       which each need a custom |fold|
@@ -79,7 +59,7 @@ The fact that this is not widely done, is due to the following problems:
       we need additional semantices: listings, messages,
       and internal structures (symbol tables etc.).
       This can be done by having the semantic functions in algebras return
-      tuples, but this makes them hard to handle.
+      tuples, but this makes the program hard to maintain.
 \item Data structures for abstract syntax tend to have many alternatives,
       so algebras end up to be clumsy tuples containing dozens of functions.
 \item In practice, information not only flows bottom-up in the parse tree,
@@ -88,9 +68,18 @@ The fact that this is not widely done, is due to the following problems:
       This can be done by using higher-order domains
       for the algebras, but the resulting code becomes even harder to understand.
 \item A major portion of the algebra is involved with moving information around.
-      The essense of a semantics is sparsely present in the algebra
-      and obscured by lots of boilerplate.
-\end{enumate}
+      The essense of a semantics usually forms only a small part of the algebra
+      and is obscured by lots of boilerplate.
+\end{enumerate}
+Some seek the solution to these problems in the use of monads: the reader monad
+to pass information down into the tree, the writer monad to move information
+upwards, and the state monad and its derivatives to accumulate information during
+the tree walk.\cite{jones99thih}.
+
+Despite the attractiveness of staying inside Haskell we think this approach is
+doomed to fail when the algrabras to be decribed are getting more and more
+complicated.
+
 %Many compiler writers thus end up writing ad hoc recursive functions
 %instead of defining the semantics by a algebra,
 %or even resort to non-functional techniques.
@@ -112,14 +101,27 @@ We describe the main features of the preprocessor here, and explain why they ove
 the five problems mentioned above.
 The abstract syntax of the language is defined in a |DATA| declaration,
 which is like a Haskell |Data| declaration with named fields,
-without the braces and commas.
+however without the braces and commas.
 Constructor function names need not to be unique between types.
+As an example, consider a fragment of a typical imperative language:
+\begin{code}
+DATA Stat
+  =  Assign  dest   :: String  ^^  ^^  ^^  ^^  src   :: Expr
+  |  While   cond   :: Expr    ^^  ^^  ^^  ^^  body  :: Stat
+  |  Group   elems  :: [Stat]
+DATA Expr
+  =  Const   num   :: Int
+  |  Var     name  :: String
+  |  Add     left  :: Expr     ^^  ^^  ^^  ^^  right  :: Expr
+  |  Call    name  :: String   ^^  ^^  ^^  ^^  args   :: [Expr]
+\end{code}
+
 The preprocessor generates corresponding |Data| declarations
 (making the constructors unique by prepending the type name, like |Expr_Const|),
 and generates a custom |fold| function. This overcomes problem 1.
 
-For any desired value we wish to compute over a tree, we can declare a ``synthesized attribute'',
-possibly for more than one data type.
+For any desired value we wish to compute over a tree, we can declare a ``synthesized attribute''.
+Possibly more than one data type can have the same attribute.
 For example, we can declare that both statements and expressions need to 
 synthesize bytecode as well as listings, and that expressions
 can be evaluated to integer values:
@@ -127,15 +129,15 @@ can be evaluated to integer values:
 ATTR Expr Stat  SYN bytecode  :: [Instr]  ^^ ^^ ^^ SYN listing   :: String
 ATTR Expr       SYN value     :: Int
 \end{code}
-The preprocessor generates semantic functions that return appropriate
-tuples, but we can simply refer to attributes by name.
+The preprocessor generates semantic functions that return
+tuples of synthesized attributes, but we can simply refer to attributes by name.
 This overcomes problem 2.
+Moreover, if at a later stage we add extra attributes, we do not have to refactor a lot of code.
 
 The value of each attribute needs to be defined for 
 every constructor of every data type which has the attribute.
-These definitions
+Such definitions
 are known as ``semantic rules'', and start with keyword |SEM|.
-An example is:
 \begin{code}
 SEM Expr  | Const  lhs.value = @num
           | Add    lhs.value = @left.value + @right.value
@@ -147,7 +149,7 @@ by adding the |value| attributes of its subtrees.
 The |@|-symbol in this context should be read as ``attribute'',
 not to be confused with Haskell ``as-patterns''.
 At the left of the |=|-symbol, the attribute to be defined is mentioned;
-at the right, any Haskell expression can be given.
+at the right, the defining Haskell expression is given.
 The preprocessor collects and orders all definitions in a single algebra,
 replacing attribute references by suitable selections from the results 
 of the tree walk on the children. 
@@ -156,13 +158,14 @@ This overcomes problem 3.
 To be able to pass information downward during a tree walk,
 we can define ``inherited'' attributes
 (the terminology goes back to Knuth \cite{knuth68ag}).
-As an example, it can serve to pass an environment,
+As an example, it can serve to pass down an environment,
 i.e.\ a lookup table that associates variables to values,
 which is needed to evaluate expressions:
 \begin{code}
 TYPE Env = [(String,Int)]
 ATTR Expr INH env::Env
-SEM Expr | Var  lhs.value = fromJust (lookup @lhs.env @name)
+SEM Expr | Var  lhs.value =  fromJust $ 
+                             lookup @lhs.env @name
 \end{code}
 The preprocessor translates inherited attributes into
 extra parameters for the semantic functions in the algebra.
@@ -170,34 +173,33 @@ This overcomes problem 4.
 
 In many situations, |SEM| rules only specify that attributes
 a tree node inherites 
-should be passed unchanged to its children.
+should be passed unchanged to its children, as in a |Reader| monad.
 To scrap the boilerplate expressing this, 
 the preprocessor has
 a convention that, 
 unless stated otherwise, attributes with the same name
 are automatically copied.
 A similar automated copying is done for synthesized attributes
-passed up the tree.
-When more than one child offers a candidate to be copied,
-normally the rightmost one is taken,
-unless we specify to |USE| an operator to combine several candidates:
+passed up the tree, as in a |Writer| monad.
+When more than one child offers a synthesized attribute with the required name,
+we can specify to |USE| an operator to combine several candidates:
 \begin{code}
 ATTR Expr Stat SYN listing USE (++) []
 \end{code}
 which specifies that by default, the synthesized
 attribute |listing| is the concatenation of the |listing|s of
-all children that have one, or the empty list if no child has one.
+all children that produce a sub-listing, or the empty list if no child produces one.
 This overcomes problem 5.
 
 
 
 \subsection{Rule-oriented programming}
 
-[Ruler as a preprocessor]
+\todo{Ruler as a preprocessor}
 
 \subsection{Aspect-oriented programming}
 
-[AG affords aspects-orientation, and shuffle even more]
+\todo{AG affords aspects-orientation, and shuffle even more}
 
 
 \section{Languages}
@@ -216,14 +218,14 @@ Here is a short characterization of these languages.
 The remainder of this section gives a more detailed description.
 \begin{enumerate}
 \item Haskell (HS): a general-purpose, higher-order, typed, lazy functional language.
-\item Essential Haskell (EH): a higher-order, typed, lazy functional language close to lambda-calculus, without syntactical sugar.
+\item Essential Haskell (EH): a higher-order, typed, lazy functional language close to lambda-calculus, without syntactic sugar.
 \item Core: an untyped, lazy functional language close to lambda-calculus
             (similar to, but not the same as the Core language used in GHC).
 \item Grin: `Graph reduction intermediate notation', the instruction set of a virtual machine
             of a small functional language with strict semantics, with features that enable implementation of lazyness.
 \item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
             (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
-            easyly translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
+            easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
 \end{enumerate}
 
 
@@ -239,18 +241,19 @@ Declarations can be varied: function bindings, pattern bindings, type signatures
 data types, new types, type synonyms, class, instance\dots
 Function bindings involve a right hand side which is either an expression or a list of guarded expressions.
 An expression, in turn, has no less than 29 alternatives.
-All in all, the language description consists of about 1000 lines of code.
+All in all, the description of the context-free grammar consists of about 1000 lines of code.
 
-As even parentheses, position information are kept in the abstract syntax tree,
-the original source program can be recreated from the abstract syntax tree by pretty printing.
+We maintain sufficient information in the abstract syntax tree 
+to reconstruct the original input; this includes parentheses, indentation, etc. (but no comments).
+
 
 
 \subsection{The Essential Haskell Language}
 
 In constrast to the HS language, the Essential Haskell language (EH)
-brings back the language to its essence, removing as much syntactical sugar as is possible.
-An EH module consists of a single expression only, which can be thought of to contain the
-body of the |main| function, having local let-bindings for the other top-level declarations.
+brings back the language to its essence, removing as much syntactic sugar as is possible.
+An EH module consists of a single expression only, which is
+body of the |main| function, with local let-bindings for the other top-level values.
 
 
 
@@ -291,7 +294,7 @@ DATA  CBind
    =  Bind    name:Name  expr:CExpr
    |  FFI     name:Name  imp:String   ty:Ty
 %%]]
-\typeout{todo: description of CPar in Core}
+\todo{description of CPar in Core}
 
 
 
@@ -331,7 +334,7 @@ The tag of a node describes its role.
 It can be a constructor of a datatype (|Con|),
 a function of which the call is deferred because of lazy evaluation (|Fun|),
 a function that is partially parameterized but still needs more arguments (|PApp|), or
-a deferred application of |apply| an unknown function (appearing as the first argument of the node) to arguments (|App|).
+a deferred application |apply| of an unknown function (appearing as the first argument of the node) to a list arguments (|App|).
 %%[[wrap=code
 DATA  GrTag
    =  Con   name:Name
@@ -374,7 +377,7 @@ Next, there is a computation for selecting a matching alternative, given the nam
    |  Case        val:GrVal    alts:[GrAlt]
 %%]]
 Finally, we need a primitive computation to express the need of `updating' a variable after it is evaluated.
-Boquist proposed an |Update| expression for the purpose which has a side effect only and an `empty' result value.
+Boquist proposed an |Update| expression for the purpose which has a side effect only and an `empty' result value \cite{boquist99phd-optim-lazy}.
 We observed that the need for updates is always next to either a |FetchNode| or a |Unit|, and found it more practical
 and more efficient to introduce two update primitives:
 %%[[wrap=code
@@ -402,7 +405,7 @@ DATA  GrPatAlt
 
 \subsection{The Silly Language}
 
-
+\todo{Description of Silly}
 
 
 
@@ -416,24 +419,22 @@ DATA  GrPatAlt
 
 Three major gaps have to be bridged in the transformation from 
 Core to Grin.
-Firstly, where Core has a lazy semantics, in Grin de deferring of
-function calls and their later evaluation is explicitly coded.
+Firstly, where Core has a lazy semantics, in Grin deferring of
+function calls and their later evaluation is explicitly encoded.
 Secondly, in Core we can have local function definitions,
-whereas in Grin all function definitions are on the top level.
-Grin does have a mechanism for local variable bindings,
-but they have to be explicitly sequenced.
+whereas in Grin all function definitions are at top level.
+Grin does have a mechanism for local, explicitly sequenced variable bindings.
 Thirdly, wheras Core functions always have one argument,
 in Grin functions can have multiple parameters, but they
 take them all at the same time. 
 Therefore a mechanism for partial parametrization is necessary.
 
 Before the actual translation from Core to Grin takes place,
-a series of Core to Core transformations is applied as preparation.
-Their main task is to perform `lambda lifting', that is move
+a series of Core to Core transformations is applied, which
+perform `lambda lifting', that is move
 lambda-expressions to the top level. Where bodies of lambda expressions
-refer to local variables, they are made into explicit parameters.
-Here is the list of all transformations. Apart from lambda lifting,
-also a few optimizations are applied.
+refer to non-global variables, they are made into explicit parameters.
+Apart from lambda lifting, also a few optimizations are applied in the following list of all transformations:
 \begin{enumerate}
 \item {\em EtaReduction}
 \item {\em RenameUnique}
@@ -465,10 +466,10 @@ After the transformations, translation to Grin is performed,
 where the following issues are adressed:
 \begin{itemize}
 \item for |Let|-expressions:
-      the global ones are collected and made into Grin function bindings;
-      the local non-recursive ones are put in a row and sequenced by Grin |Seq|-expressions;
-      for the local recursive let-bindings a |Seq|uence is created
-      where variable is bound to a `black hole' node, then the body is processed, and finally a |FetchUpdate|-expression is generated.
+      global expressions are collected and made into Grin function bindings;
+      local non-recursive expressions are sequenced by Grin |Seq|-expressions;
+      for local recursive let-bindings a |Seq|uence is created
+      which starts out to bind a new variable to a `black hole' node, then processes the body, and finally generates a |FetchUpdate|-expression for the introduced variable.
 \item for |Case|-expressions:
       an explicit |Eval|-expression for the scrutinee is generated, in |Seq|uence with
       a Grin |Case|-expression.
@@ -476,7 +477,7 @@ where the following issues are adressed:
       it is determined what it is that is applied:
       \begin{itemize}
       \item if it is a constructor, then a node with |Con| tag is returned;
-      \item if it is a lambda of known arity and has exactly the right number of arguments, then
+      \item if it is a lambda of known arity which has exactly the right number of arguments, then
             either a |Call|-expression is generated (in strict contexts)
             or a node with |Fun| tag is stored with a |Store|-expression (in lazy contexts);
       \item if it is a lambda of known arity that is undersaturated (has not enough arguments), then
@@ -497,15 +498,15 @@ where the following issues are adressed:
       functions with |IO| reslut type are treated specially.
 \end{itemize}
 
-This point in the compilation pipeline is where we start to do full-program analysis.
-The Core module of the program under compilation is merged with the Core modules of all libraries used.
+We have now reached the point in the compilation pipeline where we perform our full-program analysis.
+The Core module of the program under compilation is merged with the Core modules of all used libraries.
 The resulting big Core module is then translated to Grin.
 
 
 
 \subsection{Grin Transformations}
 
-In the Grin world, we take the opportunity to do many optimizing transformations.
+In the Grin world, we take the opportunity to perform many optimizing transformations.
 Other transformations are designed to move from graph manipulation concepts
 (complete nodes that can be `fetched', `evaluated' and pattern matched for)
 to a lower level where single word values are moved and inspected in
@@ -520,12 +521,13 @@ of multiple transformations.
     Drops all functions not reachable from |main|,
     either through direct calls, 
     or through nodes that store a deferred or partially parameterized function.
-    Does a provisional numbering of all functions, and creates a graph of dependencies.
+    The transformation performs a provisional numbering of all functions, and creates a graph of dependencies.
     A standard reachablility algorithm determines which functions are reachable from |main|;
     the others are dropped.
 \item {\em MergeInstance}
     Introduces an explicit dictionary for each instance declaration,
     by merging the default definitions of functions taken from class declarations.
+    This is possible because we have the full program available now (see discussion below).
 \item {\em MemberSelect}
     Looks for the selection of a function from a dictionary and its subsequent
     application to parameters. Replaces that by a direct call.
@@ -556,7 +558,7 @@ of multiple transformations.
     Instead, do a |Call| if the stored node is a deferred call (with a |Fun| tag), 
     or do a |Unit| of the stored node for other nodes.
 \item {\em ApplyUnited}
-    Do not do |Apply| on variables that bind the result of a previous |Unit| of a node with a |PApp| tag.
+    Do not perform |Apply| on variables that bind the result of a previous |Unit| of a node with a |PApp| tag.
     Instead, do a |Call| of the function if it is now saturated, or build a new |PApp| node if it is undersaturated.
 \item {\em SpecConst}
     Specialize functions that are called with a constant argument.
@@ -570,14 +572,14 @@ of multiple transformations.
 \item {\em NumberIdents}
     Attaches an unique number to each variable and function name.
 \item {\em HeapPointsTo}
-    Does a `heap points to analysis' (HPT), that is an abstract interpretation of the program
-    to determine the possible tags of the nodes each variable can refer to.
+    Does a `heap points to analysis' (HPT), which is an abstract interpretation of the program
+    in order to determine the possible tags of the nodes that each variable can refer to.
 \item {\em InlineEA}
     Replaces all occurences of |Eval| and |Apply| to equivalent constructs.
     Each |Eval x| is replaced by |FetchNode x|, followed by a |Case| distinction
     on all possible tag values of the node referred to by |x|,
     which was revealed by the HPT analysis.
-    If the number of cases is prohibitively big, we can resort to doing a |Call| to a generic |evaluate| function,
+    If the number of cases is prohibitively large, we resort to a |Call| to a generic |evaluate| function,
     that is generated for the purpose and that distinguishes all possible node tags.
     Each |App f x| construct, that is used to apply an unknown function |f| to argument |x|, is replaced
     by a |Case| distinction on all possible |PApp| tag values of the node referred to by |f|.
@@ -601,10 +603,10 @@ of multiple transformations.
     and a `fine' approximation that takes into account the coarse approximation for the body.
     Variables that are never used but which are retained because of the possible side effects of their bodies are replaced by wildcards.
 \item {\em MergeCase}
-    Merges two adjacent |Case| constructs into one in some situations.
+    Merges two adjacent |Case| constructs into a single one in some situations.
 \item {\em LowerGrin}
     Translates to a lower level version of Grin, in which variables never represent a node.
-    Instead, variables are introduced for the separate fields, of which the number is known because of HPT analysis.
+    Instead, variables are introduced for the separate fields, of which the number became known through HPT analysis.
     Also, after this transformation |Case| constructs scrutinise on tags rather than full nodes.
 \item {\em CopyPropagation}
     Shortcuts repeated copying of variables.
@@ -631,7 +633,7 @@ Two strategies can be taken to implement evaluation:
                      evaluation is performed by calling a special |evaluate| function that scrutinizes the tag,
                      and for each possible |Fun| tag calls the corresponding function and updates the thunk;
 \item {\em tagless}: nodes are tagged by pointers to code that does the call and update operations,
-                     thus evaluation is tantamount to just jump to the code pointed to by the tag.
+                     thus evaluation is tantamount to just jumping to the code pointed to by the tag.
 \end{itemize}
 The tagged approach has overhead in calling |evaluate|,
 but the tagless approach has the disadvantage that the indirect jump involved may stall the lookahead buffer of pipelined processors.
@@ -657,7 +659,7 @@ The analysis is essentially a full-program analysis, as actual parameters of fun
 impose constraints on the parameters.
 
 The constraint set is solved in a fixpoint iteration, which processes the indirect constraints
-based on onformation gathered thus far. In order to have fast access to the mapping that records
+based on information gathered thus far. In order to have fast access to the mapping that records
 the abstract value for each variable, we uniquely number all variables, and use mutable arrays to store the mapping.
 
 Special attention deserves the processing of the constraint that expresses that |x| binds the 
@@ -688,38 +690,37 @@ where it takes 5 iterations to find out that 1 is a possible parameter of |succ|
 As for accuracy, our HPT algorithm works well for first-order functions.
 In the presence of many higher-order functions, the results suffer from `pollution':
 the use of a higher-order function in one context also influences its result in another context.
-We conter this undesired behaviour in a number of ways:
+We counter this undesired behaviour in a number of ways:
 \begin{itemize}
-\item instead of a generic |apply| function, the {\em BuildAppBindings} transformation
+\item instead of using a generic |apply| function, the {\em BuildAppBindings} transformation
       makes a fresh copy for each use by an |App| tag. This prevents mutual pollution of |apply| results,
-      and also increases probability that the |apply| function can be inlined later;
-\item we specialize overloaded functions as much as possible (which is a useful optimization anyway),
-      because selecting the right function from a dictionary and then apply it to its parameters
-      involves the dangerous application of unknown functions;
+      and also increases the probability that the |apply| function can be inlined later;
+\item we specialize overloaded functions for every dictionary that it is used with,
+      to avoid the |Apply| needed on the unknown function taken from the dictionary;
 \item we fall back on explicitly calling |evaluate| (instead of inlining it) in situations where the
-      number of possible tags is unreasonable big.
+      number of possible tags is unreasonable large.
 \end{itemize}
 
 
 
-\paragraph{Class and instance declarations}
+\paragraph{Instance declarations}
 
 The basic idea of implementing instances is simple:
-an instance is a tupel (known as a `dictionary') containing all member functions,
+an instance is a tuple (known as a `dictionary') containing all member functions,
 which is passed as an additional parameter to overloaded functions.
 Things are complicated, however, by the presence of default implementations in classes:
 the dictionary for an instance declaration is a merge of the default implementations
 and the implementations in the instance declaration.
-Still worse, the class declaration might reside in another module than the instance declaration,
-and nevertheless be mutally dependent with it.
+Even worse, the class declaration may reside in another module than the instance declaration,
+and still be mutally dependent with it.
 Think of the |Eq| class, having mutually circular definitions of |eq| and |ne|, leaving
-it to the instance declaration to implement either of them (or both).
+it to the instance declaration to implement either one of them (or both).
 
 A clever scheme was designed by Fax\'en to generate the dictionary from a generator function
 that is parameterized by the dictionary containing the default implementations,
 while the default dictionary is generated from a generator function
-parameterized by the instance dictionary.
-Lazy evaluation and black holes make this all work, and we emply this scheme in UHC.
+parameterized by the instance dictionary \cite{faxen02semantics-haskell}.
+Lazy evaluation and black holes make this all work, and we employ this scheme in UHC too.
 It would be a waste, however, now that we are in a full program analysis situation,
 not to try to do as much work as possible at compile time.
 
@@ -729,54 +730,54 @@ makes of the Fax\'en scheme. That is:
 \begin{itemize}
 \item A 1-ary generator function |gfd| that, given a default dictionary, will generate the dictionary;
 \item A 0-ary function |fd| that binds a variable to a black hole, calls |gfd|, and returns the result
-\item A global variable |d| bound to a node with tag |Fun fd|.
+\item A global variable |d| which is bound to a node with tag |Fun fd|.
 \end{itemize}
-We would like to change this in a situation where |d| is bound directly to the dictionary node.
-This would involve reverse engineering the definitions of |d|, |fd| and |gfd| to find the
+We want to change this in a situation where |d| is bound directly to the dictionary node.
+This involves reverse engineering the definitions of |d|, |fd| and |gfd| to find the
 actual member function names buried deep in the definition of |gfd|.
 Although possible, this is very volatile as it depends on the details of the Core2Grin translation.
-Instead, we took a different approach: the definition of |fd| is annotated with the names of the member functions
+Instead, we take a different approach: the definition of |fd| is annotated with the names of the member functions
 at the time when it is still explicitly available, that is during the EH2Core translation.
 Similary, class definitions are annotated with the names of the default functions.
-Now the {\em Grin.MergeInstance} transformation can easyly collect the required dictionary fields,
+Now the {\em Grin.MergeInstance} transformation can easily collect the required dictionary fields,
 provided that the {\em Core.LiftDictFields} transformation ensures they are available as top-level functions.
-The |fd| and |gfd| functions are obsolete afterwards, and will be discarded at a later reachability analysis.
+The |fd| and |gfd| functions are obsolete afterwards, and can be discarded by a later reachability analysis.
 
 Secondly, we hunt the program for 
 dictionaries $d$ (as constructed above) and
-selection functions $s_k$ (easyly recognizable as a function that patternmatches its parameter to a dictionary structure and returns its $k$th field $x_k$).
-Then |Call s_k d| can be replaced by |Eval x_k|.
-A deferred member selection, involving a node with tag |Fun s_k| and field |d|, can be dealt with similarly.
-Both are done by the {\em MemberSelect} transformation.
+selection functions $s_k$ (easily recognizable as a function that pattern-matches its parameter to a dictionary structure and returns its $k$th field $x_k$).
+In such situations |Call s_k d| can be replaced by |Eval x_k|.
+A deferred member selection, involving a node with tag |Fun s_k| and field |d|, is dealt with similarly:
+both are done by the {\em MemberSelect} transformation.
 
 Thirdly, as $x_k$ is a dictionary field, it is a known node |n|.
-If |n| as a |Fun f| tag, in which case |Eval x_k| can be replaced by |Call f|,
+If |n| has a |Fun f| tag, then |Eval x_k| can be replaced by |Call f|,
 and otherwise it can be replaced by |Unit n|.
 This is done by the {\em EvalStored} transformation.
 The new |Unit| that is exposed by this transformation can be combined with the |App| expression
 that idiomatically follows the member selection, which is what {\em ApplyUnited} does.
 
 All of this only works when members are selected from a constant dictionary.
-But overloaded functions operate on dictionaries that are passed as parameter.
+Overloaded functions however operate on dictionaries that are passed as parameter,
+and member selection from a variable dictionary is not caught by {\em MemberSelect}.
 The constant dictionary appears where the overloaded function is called,
-or even further up the call chain.
-The constant can be brought to the position where it is needed by
+and can be brought to the position where it is needed by
 specializing functions when they are called with constant arguments.
 This is done in the {\em SpecConst} transformation.
 Besides useful in the chain of transformations that together remove the dictionaries,
-it is useful for other constants, like a 1-ary successor function as a 
+it is useful for removal of other constants, like a 1-ary successor function as a 
 specialization of |plus 1|.
 (If constant specialization is also done for string constants, we get
 many specializations of |putStrLn|).
 
 The whole pack of transformations is applied repeatedly, as applying them
 exposes new opportunities for sub-dictionaries.
-Four iterations suffice for the common cases (involving |Eq|, |Ord|, |Integral|, |Read| etc.)
+Four iterations suffice to deal with the common cases (involving |Eq|, |Ord|, |Integral|, |Read| etc.)
 from the prelude.
 
-The only situation where dictionaries cannot be eliminated, is where an infinite family
-of dictionaries would be necessary, such as arises from the |Eq a => Eq [a]| instance declaration
-in the prelude. In this situation we automatically fall back on the Fax\'en scheme.
+The only situation where dictionaries cannot be eliminated completely, is where an infinite family
+of dictionaries is necessary, such as arises from the |Eq a => Eq [a]| instance declaration
+in the prelude. In this situation we automatically fall back to the Fax\'en scheme.
 
 
 \paragraph{Foreign functions}
@@ -820,36 +821,53 @@ is allocated in a particular function.
 
 \subsection{Methodological observations}
 
+
+\paragraph{Stepwise transformation}
+
+\todo{We roberen zoveel mogelijk te genereren, zo specifiek mogelijke data
+staructuren te gebruiken en zoveel mogelijk stapje voor stapje te doen. Dit in
+contrast met de GHC waar er een grote datastructuur is die alle informatie bevat
+en die langzamerhand getransformeerd wordt. daarbij wordt er af en toe een "the
+impossible happened" "my brain just exploded" boodschap gegenereerd als er een
+onverwachte situatie tegen wordt gekomen: "Ik had niet gedacht dat deze
+constructor in deze fase nog voor kwam". Dat proberen we met aparte types zoveel
+mogelijk te voorkomen.}
+
+
 \paragraph{AG Design Patters}
 
-[Often multi-pass, first collect environment, which is distributed a la repmin.]
+\todo{Often multi-pass, first collect environment, which is distributed a la repmin.}
 
-[Sometimes there is a need for structure pattern matching.]
+\todo{Sometimes there is a need for structure pattern matching.}
 
+\todo{en dan zeggen dat je hier in de evaluatie op terug komt, en dan
+laten zien hoeveel passes er nodig zijn en hoeveel attributen er rond hangen. En
+dan het suggestieve zinnetje: do we really want to build a stack of moe than ten
+monad transformers...}
 
 
 \paragraph{Annotations}
 
-[We tend to extend languages with annotations.
+\todo{We tend to extend languages with annotations.
 Either to prevent keeping separate lookup tables (e.g. for arity of constructors),
 or to keep information that is necessary afterwards (e.g. type information of FFI's),
-or to track the origin of constructs (e.g. class declaration).]
+or to track the origin of constructs (e.g. class declaration).}
 
 
 
 
 \subsection{Related work}
 
-[GHC; YHC; Hugs; Boquist and JHC/LHC]
+\todo{GHC; YHC; Hugs; Boquist and JHC/LHC}
 
 
 \subsection{Future work}
 
-[More libraries, cabal support etc.
+\todo{More libraries, cabal support etc.
 Full Haskell98 (n+k patterns, type subtleties).
 More optimisations, especially full program.
 Own garbage collector to be independent of B\"ohm.
-Strictness analysis.]
+Strictness analysis.}
 
 
 %%]
