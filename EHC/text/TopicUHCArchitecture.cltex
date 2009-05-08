@@ -119,7 +119,7 @@ Finally, in Section~5 we draw conclusions about the methodology used, and mentio
 \begin{figure}[tbfh]
 \FigScaledPDF{0.43}{uhc-pipeline}
 \caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
-full program alalysis (left), bytecode interpreter (middle), and Java (right).}
+full program analysis (left), bytecode interpreter (middle), and Java (right).}
 \label{fig-uhcarch-pipeline}
 \end{figure}
 
