@@ -10,8 +10,8 @@ The compiler is just one materialization of a framework that supports experiment
 
 %%[introduction
 
-\newcommand{\todo}[1]{{\em Todo: [#1]}}
-%\newcommand{\todo}[1]{}
+%\newcommand{\todo}[1]{{\em Todo: [#1]}}
+\newcommand{\todo}[1]{}
 
 On the occasion of the Haskell Hackathon on April 18th, 2009, we announced the first
 release of a new Haskell compiler: the Utrecht Haskell Compiler, or UHC for short.
@@ -22,11 +22,11 @@ is that we feel that UHC is mature enough to use for play and experimentation.
 
 One can ask why there is a need for (yet) another Haskell compiler, 
 where the Glasgow Haskell Compiler (GHC) is already available as a widely used, fully featured, production quality Haskell compiler
-\cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
+\cite{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}.
 In fact, we are using GHC ourselves for the implementation of UHC.
 Also, various alternatives exist, like
 Hugs (that in its incarnation of Gofer was the epoch maker for Haskell), and
-the York Haskell compiler (YHC).
+the Haskell compilers from York (NHC/YHC).
 
 Still, we think UHC has something to add to existing compilers,
 not so much as a production compiler (yet), but
@@ -49,7 +49,7 @@ but a few features are still lacking (like defaulting, and some members of the \
 On the other hand, there are some extensions, notably to the type system.
 The deviations from the standard are not caused by obstinacy or desire to change the standard,
 but rather because of arbitrary prioritizing the feature wish list.
-
+\todo{Nog twee zinnen}
 
 The main structure of the compiler is shown in figure~\ref{fig-uhcarch-pipeline}.
 Haskell source text is translated to an executable program by stepwise transformation.
@@ -100,8 +100,6 @@ Then there is a choice from three modes of operation:
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itemize}
 
-
-
 \begin{figure}[tbfh]
 \FigScaledPDF{0.43}{uhc-pipeline}
 \caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
@@ -109,6 +107,12 @@ full program alalysis (left), bytecode interpreter (middle), and Java (right).}
 \label{fig-uhcarch-pipeline}
 \end{figure}
 
+
+In Section~2 we describe the tools that play an important role in UHC:
+the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
+In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, together with a running example.
+In Section~4 the transformations are characterized in more detail.
+Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
 
 
 %%]
@@ -194,7 +198,7 @@ complicated.
 %the specified semantics.
 
 To save the nice idea of using an algebra for defining a semantics,
-we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short} that overcomes the abovementioned problems.
+we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short,ICFP09:VSS} that overcomes the abovementioned problems.
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
 The preprocessor just allows a few additional constructs, which can be translated
@@ -752,10 +756,7 @@ DATA  GrPatAlt
 
 
 
-\subsection{The Silly Language}
-
-\todo{Description of Silly}
-
+\todo{The Silly Language}
 
 
 \section{Transformations}
@@ -1144,7 +1145,7 @@ of dictionaries is necessary, such as arises from the |Eq a => Eq [a]| instance 
 in the prelude. In this situation we automatically fall back to the Fax\'en scheme.
 
 
-\paragraph{Foreign functions}
+\todo{Foreign functions}
 
 
     
@@ -1170,7 +1171,7 @@ So, this transformation does the mapping of variables to stack positions
 In a tail call, the parameters of the function that is called overwrites
 the parameters and local variables of the function that does the call.
 The assignments are scheduled in such a way
-that no values are overwritten that are still needed in assignments to follow.
+that no values are overridden that are still needed in assignments to follow.
 
 
 \item {\em GroupAllocs}
@@ -1245,10 +1246,10 @@ where `fract.' shows the fraction of the full code base that is selected for UHC
 
 \paragraph{Internal organisation}
 
-UHC and its internal framework uses an aspectwise organisation,
+UHC and its framework use an aspectwise organisation,
 in which as much as possible is described by higher level domain specific languages from which we generate lower level implementations.
 UHC as a framework offers a set of compilers, thus allowing picking and choosing a starting point for play and experimentation.
-This makes UHC a good starting point for research but debugging is also facilitated by it.
+This makes UHC a good starting point for research, but debugging is also facilitated by it.
 A problem can more easily pinpointed to originate in a particular step of the whole sequence of language increments;
 the framework then allows to debug the compiler in this limited context, with less interaction by other features.
 
@@ -1264,8 +1265,8 @@ subsequently to be passed back as an inherited attribute.
 This leads to a 2-pass tree traversal.
 
 Some idiomatic use is directly supported by the AG system.
-For example, transformations are expressed as attribute grammars with a single, specially annotated, attribute declaration for a copy of the tree begin walked over.
-Only where the transformation differs from the original needs to be specified.
+For example, transformations are expressed as attribute grammars with a single, specially designated, attribute declaration for a copy of the tree being walked over.
+The only thing that remains to be specified is where the transformation differs from the original.
 
 The AG notation allows us to avoid writing much boilerplate code, similar
 to \cref{visser05stratego-www,visser01stratego-system05,laemmel03boilerplate}{other tree traversal approaches}.
@@ -1277,22 +1278,22 @@ something we'd rather not write by hand using monads (and monad transformers) or
 
 However, not all idiomatic use is supported by AG.
 For example, the need to pattern match on subtrees arises when case analysis on abstract syntax trees must be done.
-Currently this must be programmed by hand, and we would like to have automated support for it (see e.g. \cref{visser05stratego-www,visser01stratego-system05}{Stratego}).
+Currently this must be programmed by hand, and we would like to have automated support for it (as in \cref{visser05stratego-www,visser01stratego-system05}{Stratego}).
 
 \paragraph{The use of domain specific languages (DSL)}
 
 We use various special purpose languages for subproblems:
 AG for tree traversals, Shuffle for incremental, aspectwise, and better explainable development, Ruler for type systems.
 Although this means a steeper learning curve for those new to the implementation,
-in practice the used DSL's and their supporting tools effectively solve a identifiable design problem.
-There lies a balance here, but for us the used DSL's make development life easier.
+in practice the used DSLs and their supporting tools effectively solve a identifiable design problem.
+There lies a balance here, but for us the used DSLs make development life easier.
 
 \paragraph{Annotations}
 
 We tend to extend languages with annotations.
 This is either to prevent keeping separate lookup tables
 (e.g. for arity of constructors),
-or to propagate information that is required in a later stage (e.g. type information of FFI's),
+or to propagate information that is required in a later stage (e.g. type information of FFIs),
 or to track the origin of constructs (e.g. class declaration).
 
 
@@ -1302,15 +1303,8 @@ Clearly other Haskell compilers exist, most notably \cref{www04ghc}{GHC},
 which is hard if not impossible to match in its reliability and feature richness:
 UHC itself uses GHC as its main development tool.
 
-The strong point of UHC is its internal organisation.
-UHC, in particular its internal aspectwise organised framework,
-is designed to be (relatively) easy to use as a platform for research and education.
-In Utrecht students regularly use the UHC framework to experiment with.
-The use of AG and other tools also distinguishes UHC from other Haskell compilers,
-most of them written in Haskell and lower level languages.
-
 Recently,
-\cref{www09jhc}{JHC} and \cref{www09lhc}{LHC} (derived from JHC) also take the full program analysis approach taken by \cref{boquist96grin-optim,boquist99phd-optim-lazy}{Boquist}
+\cref{www09jhc}{JHC} and \cref{www09lhc}{LHC} (derived from JHC) also take the full program analysis approach proposed by \cref{boquist96grin-optim,boquist99phd-optim-lazy}{Boquist}
 as their starting point.
 LHC in its most recent incarnation is available as a backend to GHC, and in that sense is not a standalone Haskell compiler.
 
@@ -1319,6 +1313,16 @@ Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was infl
 with extensions.
 \cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell 98 but focusses on good error reporting,
 thereby being suitable for learning Haskell.
+
+The distinguishing feature of UHC is its internal organisation.
+UHC, in particular its internal aspectwise organised framework,
+is designed to be (relatively) easy to use as a platform for research and education.
+In Utrecht students regularly use the UHC framework to experiment with.
+The use of AG and other tools also make UHC differ from other Haskell compilers,
+most of them written in Haskell or lower level languages.
+
+
+
 
 \subsection{Future work}
 
