@@ -8,6 +8,7 @@ The compiler is just one materialization of a framework that supports experiment
 %%]
 
 
+
 %%[introduction
 
 %\newcommand{\todo}[1]{{\em Todo: [#1]}}
@@ -48,10 +49,10 @@ In its current state, UHC supports most of the Haskell 98
 but a few features are still lacking (like defaulting, and some members of the \cref{peytonjones02awkward-squad}{awkward squad}).
 On the other hand, there are some extensions, notably to the type system.
 The deviations from the standard are not caused by obstinacy or desire to change the standard,
-but rather because of arbitrary prioritizing the feature wish list.
+but rather because of arbitrary priorisation the feature wish list.
 \todo{Nog twee zinnen}
 
-The main structure of the compiler is shown in figure~\ref{fig-uhcarch-pipeline}.
+The main structure of the compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
 Haskell source text is translated to an executable program by stepwise transformation.
 Some of the transformations translate the program to a lower level language,
 many others are transformations within one language,
@@ -79,14 +80,14 @@ desugaring the Haskell source text to Essential Haskell, typechecking it and tra
 Then there is a choice from three modes of operation:
 \begin{itemize}
 \item In {\em full program analysis mode},
-      the Core modules of the program and required libraries are concatenated
+      the Core modules of the program and required libraries are assembled together
       and processed further as a whole.
       At the Grin level, elaborate inter-module optimization takes place.
       Ultimately, all functions are translated to low level C,
       which can be compiled by a standard compiler.
       As alternative backends, we are experimenting with other target languages,
       among which are the Common Intermediate Language (CIL) from the Common language infrastructure used by .NET \cite{iso-cil},
-      and the Low-level virtual machine (LLVM) compiler infrastructure \cite{llvm-cgo04}.
+      and the Low-Level Virtual Machine (LLVM) compiler infrastructure \cite{llvm-cgo04}.
 \item In {\em bytecode interpreter mode},
       the Core modules are translated to Grin separately.
       Each Grin module is translated into instructions for a custom bytecode machine.
@@ -100,19 +101,18 @@ Then there is a choice from three modes of operation:
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itemize}
 
+In Section~2 we describe the tools that play an important role in UHC:
+the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
+In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, together with a running example.
+In Section~4 the transformations are characterized in more detail.
+Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
+
 \begin{figure}[tbfh]
 \FigScaledPDF{0.43}{uhc-pipeline}
 \caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
 full program alalysis (left), bytecode interpreter (middle), and Java (right).}
 \label{fig-uhcarch-pipeline}
 \end{figure}
-
-
-In Section~2 we describe the tools that play an important role in UHC:
-the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
-In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, together with a running example.
-In Section~4 the transformations are characterized in more detail.
-Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
 
 
 %%]
@@ -185,7 +185,7 @@ upwards, and the state monad and its derivatives to accumulate information durin
 the tree walk.\cite{jones99thih}.
 
 Despite the attractiveness of staying inside Haskell we think this approach is
-doomed to fail when the algrabras to be decribed are getting more and more
+doomed to fail when the algebras to be decribed are getting more and more
 complicated.
 
 %Many compiler writers thus end up writing ad hoc recursive functions
@@ -198,12 +198,15 @@ complicated.
 %the specified semantics.
 
 To save the nice idea of using an algebra for defining a semantics,
-we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short,ICFP09:VSS} that overcomes the abovementioned problems.
+we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short} that overcomes the abovementioned problems.
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
 The preprocessor just allows a few additional constructs, which can be translated
 into a custom |fold| function and algebras, or an equivalent more efficient implementation.
-
+However, if one really wants to avoid a preprocessor,
+Viera, Swierstra and Swierstra recently described a technique
+to encode an attribute grammar directly in Haskell while keeping the 
+advantages described below \cite{ICFP09:VSS}.
 
 We describe the main features of the preprocessor here, and explain why they overcome
 the five problems mentioned above.
@@ -318,7 +321,7 @@ The idea of Ruler is to generate from a single source both generate a \emph{LaTe
 in technical writing:
 
 \[
-%%@Poster.langSeriesSem2Rule
+\rulerCmdUse{rules3.HM.expr.base.e.app}
 \]
 
 and its corresponding AG implementation:
@@ -445,6 +448,7 @@ and a limited, low level imperative language.
 \subsection{The Haskell Language}
 
 The Haskell language (HS) closely follows Haskell's concrete syntax.
+A combinator-based, error-correcting parser parses the source text and generates a HS parse tree.
 It consists of numerous datatypes, some of which have many constructors.
 A |Module| consists of a name, exports, and declarations.
 Declarations can be varied: function bindings, pattern bindings, type signatures, 
@@ -473,7 +477,7 @@ When processing HS we deal with the following tasks:
  List comprehension, |do|-notation, etc. are desugared.
 \end{itemize}
 
-In the remainder of this languages section we use the following running example program to show how
+In the remainder of this section on languages we use the following running example program to show how
 the various intermediate languages are used:
 
 %%[[wrap=code
@@ -489,7 +493,7 @@ main = putStr (show (len (replicate 4 'x')))
 \subsection{The Essential Haskell Language}
 
 HS processing generates Essential Haskell (EH).
-The EH equivalent of the running looks like the following program.
+The EH equivalent of the running example is shown below.
 Some details have been omitted and replaced by dots.
 
 %%[[wrap=code
@@ -503,13 +507,13 @@ redOn^ let blackOn  M.len :: [a] -> Int
 redOn ^ in blackOn
 let  M.main = redOn UHC.Prelude.blackOn ^putStr ...
  in
-let  redOn ^ main :: blackOn UHC.Prelude.redOn ^IO ... blackOn
+let  main :: blackOn UHC.Prelude.redOn ^IO ...
      main = UHC.Prelude.redOn ^ehcRunMain blackOn M.main
  in
 main
 %%]]
 
-In constrast to the HS language, the Essential Haskell language (EH)
+In constrast to the HS language, the EH language
 brings back the language to its essence, removing as much syntactic sugar as is possible.
 An EH module consists of a single expression only, which is the
 body of the |main| function, with local let-bindings for the other top-level values.
@@ -517,30 +521,31 @@ body of the |main| function, with local let-bindings for the other top-level val
 Processing EH deals with the following tasks:
 
 \begin{itemize}
-\item \textbf{Type system:}
+\item {\em Type system:}
  Type analysis is done, types are erased when Core is generated.
-\item \textbf{Evaluation:}
+\item {\em Evaluation:}
  Enforcing evaluation is made explicit by means of a |let !| Core construct.
-\item \textbf{Recursion:}
+\item {\em Recursion:}
  Recursiveness is made explicit by means of a |let rec| Core construct.
-\item \textbf{Type classes:}
+\item {\em Type classes:}
  All evidence for type class predicates are transformed to explicit dictionary parameters.
-\item \textbf{Patterns:}
+\item {\em Patterns:}
  Patterns are transformed to their more basic equivalent, inspecting one constructor at a time, etc. .
 \end{itemize}
 
 
 \subsection{The Core Language}
 
-EH processing basically generates |lambda|-calculus, or Core.
-The Core equivalent of the running looks like the following program.
+The Core language is basically the same as lambda-calculus.
+The Core equivalent of the running example program is:
 
 %{
 %format under = "\_"
 %format excl = "!"
+%format letrec = "\mathbf{letrec}"
 %%[[wrap=code
 module ^^ M =
-let redOn^ rec blackOn
+letrec blackOn
   { ^ M ^ .len =
       \ ^ M ^ .x1 ^ under ^ 1 ->
         let ^ redOn excl ^ blackOn { ^ under ^ 2 = ^ M ^ .x1 ^ under ^ 1} in
@@ -568,61 +573,61 @@ consists of nothing more than an expression,
 which can be thought of as the body of |main|:
 %%[[wrap=code
 DATA  CModule
-   =  Mod  nm:Name   expr:CExpr
+   =  Mod  nm::Name   expr::CExpr
 %%]]
 An expression resembles an expression in lambda calculus.
 We have constants, variables, and lambda abstractions and applications of one argument:
 %%[[wrap=code
 DATA  CExpr
-   =  Int     int:Int
-   |  Char    char:Char
-   |  String  str:String
-   |  Var     name:Name
-   |  Tup     tag:Tag
-   |  Lam     arg:Name    body:CExpr
-   |  App     func:CExpr  arg:Cexpr
+   =  Int     int::Int
+   |  Char    char::Char
+   |  String  str::String
+   |  Var     name::Name
+   |  Tup     tag::Tag
+   |  Lam     arg::Name    body::CExpr
+   |  App     func::CExpr  arg::Cexpr
 %%]]
 Alternative |Tup| encodes a constructor, to be used with |App| to construct actual data alternatives or tuples.
 The |Tag| of a |Tup| encodes the |Int| tag, arity, and other information.
 
 Furthermore, there is case distinction and local binding:
 %%[[wrap=code
-   |  Case    expr:CExpr   alts:[CAlt]    dflt:CExpr
-   |  Let     categ:Categ  binds:[CBind]  body:CExpr
+   |  Case    expr::CExpr   alts::[CAlt]    dflt::CExpr
+   |  Let     categ::Categ  binds::[CBind]  body::CExpr
 %%]]
 The |categ| of a |Let| describes whether the binding is recursive, strict, or plain.
 These two constructs use the auxiliary notions of alternative and binding:
 %%[[wrap=code
 DATA  CAlt
-   =  Alt     pat:CPat   expr:CExpr
+   =  Alt     pat:CPat   expr::CExpr
 DATA  CBind   
-   =  Bind    name:Name  expr:CExpr
-   |  FFI     name:Name  imp:String   ty:Ty
+   =  Bind    name:Name  expr::CExpr
+   |  FFI     name:Name  imp::String   ty::Ty
 %%]]
 
 A pattern introduces bindings, either directly or as a field of a constructor:
 
 %%[[wrap=code
 DATA CPat
-  =  Var         name:Name
-  |  Con         name:Name   tag:Tag   binds:[CPatBind]
-  |  BoolExpr    name:Name   cexpr:CExpr
+  =  Var         name::Name
+  |  Con         name::Name   tag::Tag   binds::[CPatBind]
+  |  BoolExpr    name::Name   cexpr::CExpr
 DATA CPatBind
-  =  Bind        offset:Int  pat:CPat
+  =  Bind        offset::Int  pat::CPat
 %%]]
 
-The actual Core is more complex because of the following:
+The actual Core language is more complex because of the following:
 \begin{itemize}
 \item
 Experiments with extensible records;
 we omit this part as extensible records are currently not supported in UHC.
 \item
-Type classes involves implies codegeneration because only after context reduction dictionary values and coercions are known.
+Type classes involve code generation because only after context reduction dictionary values and coercions are known.
 Core has syntax for expressing holes to be filled in later;
 this is a mechanism similar to type variables representing yet unknown types.
 \item
 An annotation mechanism is used to propagate information about dictionary values.
-This mechanism is somewhat ad-hoc and ee expect it to be changed when more analyses are done in earlier stages of the compiler.
+This mechanism is somewhat ad hoc and we expect it to be changed when more analyses are done in earlier stages of the compiler.
 \end{itemize}
 
 
@@ -631,28 +636,31 @@ This mechanism is somewhat ad-hoc and ee expect it to be changed when more analy
 
 \subsection{The Grin Language}
 
+The Grin equivalent of the running example program is:
+
 %{
 %format doll = "\$"
 %format under = "\_"
 %format excl = "!"
 %format slash = "/"
+%format eval = "\mathbf{eval}"
+%format store = "\mathbf{store}"
 %%[[wrap=code
 module ^^ M
-{ rec
-    {  M.len ^^ M.x1 ^ under ^ 1 =
+{      M.len ^^ M.x1 ^ under ^ 1 =
        {  redOn ^ eval ^^ M.x1 ^ under ^ 1 ; \ ^ under ^ 2 -> ^ blackOn
           case ^^ under ^ 2 of
-             { C ^ : ^ ->
+             { C slash : ^ ->
                  {  ... } 
-             ; C ^ [ ^ ] ^ ->
-                 {  store  (redOn ^ C ^ blackOn ^ UHC.Prelude.PackedString "0") ; \ ^ under ^ 6 ->
+             ; C slash [ ^ ] ^ ->
+                 {  store  (redOn ^ C ^ blackOn ^ slash ^ UHC.Prelude.PackedString "0") ; \ ^ under ^ 6 ->
                     store  (redOn ^ F ^ blackOn ^ slash ^ UHC.Prelude.packedStringToInteger ^^ under ^ 6) ;
                       \ ^ under ^ 3 ->
                     store  (redOn ^ P ^ slash ^ 0 ^ blackOn ^ slash ^ UHC.Prelude.fromInteger
                                UHC.Prelude.under ^ d1 ^ under ^ Num) ; \ ^ under ^ 5 ->
-                    store  (redOn ^ A ^ blackOn ^^ under ^ 5 ^^ under ^ 3) ; \ ^ under ^ 4 ->
+                    store  (redOn ^ A ^ blackOn slash ^ apply ^^ under ^ 5 ^^ under ^ 3) ; \ ^ under ^ 4 ->
                     eval   under ^ 4 blackOn}
-             } } } 
+             } } }
 %%]]
 %}
 
@@ -661,11 +669,11 @@ global variabels with their initializations, and
 bindings of function names with parameters to their bodies.
 %%[[wrap=code
 DATA  GrModule
-   =  Mod   nm:Name  globals:[GrGlobal]  binds:[GrBind]
+   =  Mod   nm::Name  globals::[GrGlobal]  binds::[GrBind]
 DATA  GrGlobal
-   =  Glob  nm:Name  val:GrVal
+   =  Glob  nm::Name  val::GrVal
 DATA  GrBind
-   =  Bind  nm:Name  args:[Name]  body:GrExpr
+   =  Bind  nm::Name  args::[Name]  body::GrExpr
 %%]]
 Values manipulated in the Grin language are varied:
 we have nodes (think: heap records) consisting of a tag and a list of fields,
@@ -673,17 +681,17 @@ standalone tags, basic ints and strings, pointers to nodes, and `empty'.
 Some of these are directly representable in the languages (nodes, tags, ints and strings)
 %%[[wrap=code
 DATA  GrVal
-   =  LitInt  int:Int
-   |  LitStr  str:String
-   |  Tag     tag:GrTag
-   |  Node    tag:GrTag   flds:[GrVal]
+   =  LitInt  int::Int
+   |  LitStr  str::String
+   |  Tag     tag::GrTag
+   |  Node    tag::GrTag   flds::[GrVal]
 %%]]
 Pointers to nodes are also values, but they have no direct denotation.
 On the other hand, variables ranging over values are not a value themselves,
 bur for syntactical convenience we do add
 the notion of a `variable' to the |GrVal| data type:
 %%[[wrap=code
-   |  Var     name:Name
+   |  Var     name::Name
 %%]]
 The tag of a node describes its role.
 It can be a constructor of a datatype (|Con|),
@@ -692,11 +700,13 @@ a function that is partially parameterized but still needs more arguments (|PApp
 a deferred application |apply| of an unknown function (appearing as the first argument of the node) to a list arguments (|App|).
 %%[[wrap=code
 DATA  GrTag
-   =  Con   name:Name
-   |  Fun   name:Name
-   |  PApp  needs:Int  name:Name
-   |  App   applyfn:Name
+   =  Con   name::Name
+   |  Fun   name::Name
+   |  PApp  needs::Int  name::Name
+   |  App   applyfn::Name
 %%]]
+The four tags are represented as |C|, |F|, |P| and |A| in the example program above.
+
 The body of a function denotes the calculation of a value,
 which is represented in a program by an `expression'.
 Expressions can be combined in a monadic style.
@@ -704,55 +714,54 @@ Thus we have |Unit| for describing a computation immediately returning a value,
 and |Seq| for binding a computation to a variable (or rather a lambda pattern), to be used subsequently in another computation:
 %%[[wrap=code
 DATA  GrExpr
-   =  Unit   val:GrVal
-   |  Seq    expr:GrExpr  pat:GrPatLam  body:GrExpr
+   =  Unit   val::GrVal
+   |  Seq    expr::GrExpr  pat::GrPatLam  body::GrExpr
 %%]]
 There are some primitive computations (that is, constants in the monad)
 one for storing a node value (returning a pointer value), and two
 for fetching a node previously stored, and for fetching one field thereof:
 %%[[wrap=code
-   |  Store       val:GrVal
-   |  FetchNode   name:Name
-   |  FetchField  name:Name  offset:Int
+   |  Store       val::GrVal
+   |  FetchNode   name::Name
+   |  FetchField  name::Name  offset::Int
 %%]]
 Other primitive computations call Grin and foreign functions, respectively.
 The name mentioned is that of a known function (i.e., there are no function variables) and the argument list should fully saturate it:
 %%[[wrap=code
-   |  Call        name:Name    args:[GrVal]
-   |  FFI         name:String  args:[GrVal]
+   |  Call        name::Name    args::[GrVal]
+   |  FFI         name::String  args::[GrVal]
 %%]]
 Two special primitive computations are provided for evaluating node that may contain a |Fun| tag,
 and for applying a node that must contain a |PApp| tag (a partially parameterized function) to further arguments:
 %%[[wrap=code
-   |  Eval        name:Name
-   |  App         name:Name    args:[GrVal]
+   |  Eval        name::Name
+   |  App         name::Name    args::[GrVal]
 %%]]
 Next, there is a computation for selecting a matching alternative, given the name of the variabele containing a node pointer:
 %%[[wrap=code
-   |  Case        val:GrVal    alts:[GrAlt]
+   |  Case        val::GrVal    alts::[GrAlt]
 %%]]
 Finally, we need a primitive computation to express the need of `updating' a variable after it is evaluated.
 Boquist proposed an |Update| expression for the purpose which has a side effect only and an `empty' result value \cite{boquist99phd-optim-lazy}.
 We observed that the need for updates is always next to either a |FetchNode| or a |Unit|, and found it more practical
 and more efficient to introduce two update primitives:
 %%[[wrap=code
-   |  FetchUpdate  src:Name  dst:Name
-   |  UpdateUnit   name:Name  val:GrVal
+   |  FetchUpdate  src::Name  dst::Name
+   |  UpdateUnit   name::Name  val::GrVal
 %%]]
 Auxiliary data structures are that for describing a single alternative in a |Case| expression:
 %%[[wrap=code
 DATA  GrAlt
-   |  Alt   pat:GrPatAlt   expr:GrExpr
+   |  Alt   pat::GrPatAlt   expr::GrExpr
 %%]
 And for two kinds of patterns, occuring in a |Seq| expression and in an |Alt| alternative, respectively.
 A simplified version of these is the following, but we will need some more constructores for patterns later.
 %%[[wrap=code
 DATA  GrPatLam
-   =  Var   name:Name
+   =  Var   name::Name
 DATA  GrPatAlt
-   =  Node  tag:GrTag   args:[Name]
+   =  Node  tag::GrTag   args::[Name]
 %%]
-
 
 
 
@@ -774,7 +783,7 @@ Thirdly, wheras Core functions always have one argument,
 in Grin functions can have multiple parameters, but they
 take them all at the same time. 
 Therefore a mechanism for partial parametrization is necessary.
-The endresult is lambda lifted Core, that is the floating of lambda-expressions to the top level
+The end result is lambda lifted Core, that is the floating of lambda-expressions to the top level
 and passing of non-global variables explicitly as parameters.
 
 The Core transformations listed below also perform some trivial cleanup and optimisations,
@@ -1196,7 +1205,7 @@ of embedded Haskell code in it.
 One third of the code base is plain Haskell (mostly for utility functions, the compiler driver, and the type inferencer),
 and one sixth is C (for the runtime system and a garbage collector).
 
-In figure~\ref{fig-uhcarch-codesize} the breakdown of code size over
+In Figure~\ref{fig-uhcarch-codesize} the breakdown of code size over
 various subsystems in the pipeline is shown.
 All numbers are in kilo-lines-of-code, but because of the total of 100.000 lines
 they can also be interpreted as percentages.
@@ -1250,7 +1259,7 @@ UHC and its framework use an aspectwise organisation,
 in which as much as possible is described by higher level domain specific languages from which we generate lower level implementations.
 UHC as a framework offers a set of compilers, thus allowing picking and choosing a starting point for play and experimentation.
 This makes UHC a good starting point for research, but debugging is also facilitated by it.
-A problem can more easily pinpointed to originate in a particular step of the whole sequence of language increments;
+A problem can more easily be pinpointed to originate in a particular step of the whole sequence of language increments;
 the framework then allows to debug the compiler in this limited context, with less interaction by other features.
 
 The stepwise organisation, where langauge features are built on top of each other, offers a degree of isolation.
