@@ -11,6 +11,7 @@ The compiler is just one materialization of a framework that supports experiment
 %%[introduction
 
 \newcommand{\todo}[1]{{\em Todo: [#1]}}
+%\newcommand{\todo}[1]{}
 
 
 This is yet another Haskell compiler, like the
@@ -1206,52 +1207,87 @@ where `fract.' shows the fraction of the full code base that is selected for UHC
 \subsection{Methodological observations}
 
 
-\paragraph{Stepwise transformation}
+\paragraph{Internal organisation}
 
-\todo{We roberen zoveel mogelijk te genereren, zo specifiek mogelijke data
-staructuren te gebruiken en zoveel mogelijk stapje voor stapje te doen. Dit in
-contrast met de GHC waar er een grote datastructuur is die alle informatie bevat
-en die langzamerhand getransformeerd wordt. daarbij wordt er af en toe een "the
-impossible happened" "my brain just exploded" boodschap gegenereerd als er een
-onverwachte situatie tegen wordt gekomen: "Ik had niet gedacht dat deze
-constructor in deze fase nog voor kwam". Dat proberen we met aparte types zoveel
-mogelijk te voorkomen.}
+UHC and its internal framework uses an aspectwise organisation,
+in which as much as possible is described by higher level domain specific languages from which we generate lower level implementations.
+UHC as a framework offers a set of compilers, thus allowing picking and choosing a starting point for play and experimentation.
+This makes UHC a good starting point for research but debugging is also facilitated by it.
+A problem can more easily pinpointed to originate in a particular step of the whole sequence of language increments;
+the framework then allows to debug the compiler in this limited context, with less interaction by other features.
 
+The stepwise organisation, where langauge features are built on top of each other, offers a degree of isolation.
+Much better would be to completely independently describe language features.
+However, this is hard to accomplish because language features always interact and require redefinition of parts of their independent implementation when combined.
+To do this for arbitrary combinations would be much more complicated then to do it for a sequence of increments.
 
-\paragraph{AG Design Patters}
+\paragraph{AG Design Patterns}
 
-\todo{Often multi-pass, first collect environment, which is distributed a la repmin.}
+We tend to use various AG idioms frequently. For example, information often is gathered over a tree via a synthesized attribute,
+subsequently to be passed back as an inherited attribute.
+This leads to a 2-pass tree traversal.
 
-\todo{Sometimes there is a need for structure pattern matching.}
+Some idiomatic use is directly supported by the AG system.
+For example, transformations are expressed as attribute grammars with a single, specially annotated, attribute declaration for a copy of the tree begin walked over.
+Only where the transformation differs from the original needs to be specified.
 
-\todo{en dan zeggen dat je hier in de evaluatie op terug komt, en dan
-laten zien hoeveel passes er nodig zijn en hoeveel attributen er rond hangen. En
-dan het suggestieve zinnetje: do we really want to build a stack of moe than ten
-monad transformers...}
+The AG notation allows us to avoid writing much boilerplate code, similar
+to \cref{visser05stratego-www,visser01stratego-system05,laemmel03boilerplate}{other tree traversal approaches}.
+The use of attributes sometimes also resembles reader, writer, and state monads.
+In practice, the real strength of the AG system lies in combining the separately defined tree traversals into one.
+For example, the EH type analysis repeatedly builds environments for kinds, types, datatypes, etc.
+Combined with the above idiomatic use this easily leads to many passes over the EH tree;
+something we'd rather not write by hand using monads (and monad transformers) or other mechanisms more suitable for single-pass tree traversals!
 
+However, not all idiomatic use is supported by AG.
+For example, the need to pattern match on subtrees arises when case analysis on abstract syntax trees must be done.
+Currently this must be programmed by hand, and we would like to have automated support for it (see e.g. \cref{visser05stratego-www,visser01stratego-system05}{Stratego}).
+
+\paragraph{The use of domain specific languages (DSL)}
+
+We use various special purpose languages for subproblems:
+AG for tree traversals, Shuffle for incremental, aspectwise, and better explainable development, Ruler for type systems.
+Although this means a steeper learning curve for those new to the implementation,
+in practice the used DSL's and their supporting tools effectively solve a identifiable design problem.
+There lies a balance here, but for us the used DSL's make development life easier.
 
 \paragraph{Annotations}
 
-\todo{We tend to extend languages with annotations.
-Either to prevent keeping separate lookup tables (e.g. for arity of constructors),
-or to keep information that is necessary afterwards (e.g. type information of FFI's),
-or to track the origin of constructs (e.g. class declaration).}
-
-
+We tend to extend languages with annotations.
+This is either to prevent keeping separate lookup tables
+(e.g. for arity of constructors),
+or to propagate information that is required in a later stage (e.g. type information of FFI's),
+or to track the origin of constructs (e.g. class declaration).
 
 
 \subsection{Related work}
 
-\todo{GHC; YHC; Hugs; Boquist and JHC/LHC}
+Clearly other Haskell compilers exist, most notably \cref{www04ghc}{GHC},
+which is hard if not impossible to match in its reliability and feature richness:
+UHC itself uses GHC as its main development tool.
 
+The strong point of UHC is its internal organisation.
+UHC, in particular its internal aspectwise organised framework,
+is designed to be (relatively) easy to use as a platform for research and education.
+In Utrecht students regularly use the UHC framework to experiment with.
+The use of AG and other tools also distinguishes UHC from other Haskell compilers,
+most of them written in Haskell and lower level languages.
+
+Recently,
+\cref{www09jhc}{JHC} and \cref{www09lhc}{LHC} (derived from JHC) also take the full program analysis approach taken by \cref{boquist96grin-optim,boquist99phd-optim-lazy}{Boquist}
+as their starting point.
+LHC in its most recent incarnation is available as a backend to GHC, and in that sense is not a standalone Haskell compiler.
+
+Already longer available alongside GHC are \cref{www03hugs}{Hugs}, \cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell98 compilers
+with extensions.
 
 \subsection{Future work}
 
-\todo{More libraries, cabal support etc.
-Full Haskell98 (n+k patterns, type subtleties).
-More optimisations, especially full program.
-Own garbage collector to be independent of B\"ohm.
-Strictness analysis.}
+We have recently released a first version of UHC.
+In the near future we intend to add support for better installation, in particular the use of Cabal, and add missing language features and libraries.
+On a longer time scale we continue working on full program analysis, the optimisations allowed by it, add classical analyses (e.g. strictness),
+improve the runtime system (own garbage collector).
+We welcome those who want to contribute in these or other areas of interest.
 
 
 %%]
