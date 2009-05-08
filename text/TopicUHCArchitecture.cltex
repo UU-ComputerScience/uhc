@@ -207,7 +207,73 @@ This overcomes problem 5.
 
 \subsection{Rule-oriented programming}
 
-\todo{Ruler as a preprocessor}
+With the AG language we can describe the part of a compiler related to tree walks concisely and efficiently.
+However, this does not give us any means of looking at such an implementation in a more formal setting.
+We use the domain specific language |Ruler| for describing the AG part related to the type system.
+From a Ruler description we both generate the corresponding AG implementation and a LaTeX rendering for use
+in text about the formal aspects.
+
+Although the use of Ruler currently is in flux because we are working on a newer version and therefore
+are only partially using Ruler for type system descriptions,
+we demonstrate some of its capabilities because it is our intent to tackle the difficulties involved with type system implementations
+by generating as much as possible automatically from higher level descriptions.
+
+The idea of Ruler is to generate from a single source both generate a \emph{LaTeX} rendering for human use
+in technical writing:
+
+\[
+%%@Poster.langSeriesSem2Rule
+\]
+
+and its corresponding AG implementation:
+
+%%@Poster.langSeriesImpl2
+
+In \thispaper\ we neither further discuss the meaning or intention of 
+\cref{dijkstra05phd}{the above fragments}
+nor explain \cref{dijkstra06ruler}{Ruler} in depth.
+However, to sketch the underlying ideas we show the Ruler code required for the above output;
+we need to define the scheme (or type) of a judgement and populate these with actual rules.
+
+%{
+%include ruler.fmt
+
+A scheme defines a LaTeX output template (\texttt{judgeuse tex}) with \texttt{holes} to be filled in by rules and a parsing template (\texttt{judgespec}).
+
+%%[[wrap=code
+scheme expr =
+    holes  [ node e: Expr, inh valGam: ValGam, inh knTy: Ty
+           , thread tyVarMp: VarMp, syn ty: Ty ]
+    judgeuse tex  valGam ; tyVarMp.inh ; knTy
+                  :-.."e" e : ty ~> tyVarMp.syn
+    judgespec  valGam ; tyVarMp.inh ; knTy
+               :- e : ty ~> tyVarMp.syn
+%%]]
+
+The rule for application is then specified by specifying premise judgements (\texttt{judge} above the dash) and a conclusion (blow the dash) using
+the parsing template defined for scheme \texttt{expr}.
+%%[[wrap=code
+rule e.app =
+      judge tvarvFresh
+      judge expr =  tyVarMp.inh ; tyVarMp ; (tvarv -> knTy)
+                    :- eFun : (ty.a -> ty) ~> tyVarMp.fun
+      judge expr =  tyVarMp.fun ; valGam ; ty.a
+                    :- eArg : ty.a ~> tyVarMp.arg
+      -
+      judge expr =  tyVarMp.inh ; valGam ; knTy
+                    :- (eFun ^^ eArg)
+                    : (tyVarMp.arg ty) ~> tyVarMp.arg
+%%]]
+
+For this example no further annotations are required to automatically produce AG code, except for the freshness of a type variable.
+The judgement \texttt{tvarvFresh} encapsulates this by providing the means to insert some handwritten AG code.
+
+In summary, the basic idea of Ruler thus is to provide a description resembling the original type rule as much as possible,
+and then helping the system with annotations to allow the generation of an implementation and a LaTeX rendering.
+Obviously the above examples does not contain all the annotations required to achieve this.
+
+%}
+
 
 \subsection{Aspect-oriented programming}
 
@@ -427,16 +493,19 @@ DATA  CModule
 %%]]
 An expression resembles an expression in lambda calculus.
 We have constants, variables, and lambda abstractions and applications of one argument:
-\typeout{todo: encoding of constructors in CExpr}
 %%[[wrap=code
 DATA  CExpr
    =  Int     int:Int
    |  Char    char:Char
    |  String  str:String
    |  Var     name:Name
+   |  Tup     tag:Tag
    |  Lam     arg:Name    body:CExpr
    |  App     func:CExpr  arg:Cexpr
 %%]]
+Alternative |Tup| encodes a constructor, to be used with |App| to construct actual data alternatives or tuples.
+The |Tag| of a |Tup| encodes the |Int| tag, arity, and other information.
+
 Furthermore, there is case distinction and local binding:
 %%[[wrap=code
    |  Case    expr:CExpr   alts:[CAlt]    dflt:CExpr
@@ -451,7 +520,31 @@ DATA  CBind
    =  Bind    name:Name  expr:CExpr
    |  FFI     name:Name  imp:String   ty:Ty
 %%]]
-\todo{description of CPar in Core}
+
+A pattern introduces bindings, either directly or as a field of a constructor:
+
+%%[[wrap=code
+DATA CPat
+  =  Var         name:Name
+  |  Con         name:Name   tag:Tag   binds:[CPatBind]
+  |  BoolExpr    name:Name   cexpr:CExpr
+DATA CPatBind
+  =  Bind        offset:Int  pat:CPat
+%%]]
+
+The actual Core is more complex because of the following:
+\begin{itemize}
+\item
+Experiments with extensible records;
+we omit this part as extensible records are currently not supported in UHC.
+\item
+Type classes involves implies codegeneration because only after context reduction dictionary values and coercions are known.
+Core has syntax for expressing holes to be filled in later;
+this is a mechanism similar to type variables representing yet unknown types.
+\item
+An annotation mechanism is used to propagate information about dictionary values.
+This mechanism is somewhat ad-hoc and ee expect it to be changed when more analyses are done in earlier stages of the compiler.
+\end{itemize}
 
 
 
@@ -604,18 +697,28 @@ Thirdly, wheras Core functions always have one argument,
 in Grin functions can have multiple parameters, but they
 take them all at the same time. 
 Therefore a mechanism for partial parametrization is necessary.
+The endresult is lambda lifted Core, that is the floating of lambda-expressions to the top level
+and passing of non-global variables explicitly as parameters.
 
-Before the actual translation from Core to Grin takes place,
-a series of Core to Core transformations is applied, which
-perform `lambda lifting', that is move
-lambda-expressions to the top level. Where bodies of lambda expressions
-refer to non-global variables, they are made into explicit parameters.
-Apart from lambda lifting, also a few optimizations are applied in the following list of all transformations:
+The Core transformations listed below also perform some trivial cleanup and optimisations,
+because we avoid burdening the Core generation from EH with such aspects.
+
 \begin{enumerate}
 \item {\em EtaReduction}
+    Perform |eta|-reduction, that is replace expressions like |\x y -> f x y| with |f|.
+    Such expressions are introduced by coercions which (after context reduction) turn out not to coerce anything at all.
 \item {\em RenameUnique}
     Renames variables such that all variables are globally unique.
 \item {\em LetUnrec}
+    Replace mutually recursive bindings
+%%[[wrap=code
+let rec {v1 = .. ; v2 = ..} in ..
+%%]]
+    which actually are not mutually recursive by plain bindings
+%%[[wrap=code
+let v1 = .. in let v2 = .. in ..
+%%]]
+    Such bindings are introduced because some bindings are potentially mutually recursive, in particular groups of dictionaries.
 \item {\em InlineLetAlias}
     Inlines let bindings for variables and constants.
 \item {\em ElimTrivApp}
@@ -623,7 +726,15 @@ Apart from lambda lifting, also a few optimizations are applied in the following
 \item {\em ConstProp}
     Performs addition of int constants at compile time.
 \item {\em FullLazy}
-    Lambda abstractions are moved outward as far as possible.
+    Complex expressions like
+%%[[wrap=code
+f (g a) (h b)
+%%]]
+    are broken up into a sequence of bindings and simpler expressions
+%%[[wrap=code
+let v1 = g a in let v2 = h b in f v1 v2
+%%]]
+    which only have variable references as their subexpressions.
 \item {\em LamGlobalAsArg}
     Pass global variables of let-bound lambda-expressions as explicit parameters,
     as a preparation for lambda-lifting.

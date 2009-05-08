@@ -235,9 +235,9 @@ esac
 
 AC_SUBST(TOPLEVEL_SYSTEM_ABSPATH_PREFIX, "$toplevelSystemAbsolutePathPrefix")
 
-### 'with' option for ghc
+### 'with' option for Haskell compiler, by default ghc
 AC_ARG_WITH(ghc,
-[AC_HELP_STRING([--with-ghc=<haskell compiler>],
+[AC_HELP_STRING([--with-hc=<haskell compiler>],
                 [Use a command different from 'ghc' to compile with GHC.])],
 [ ghcCmd="$withval" ],
 [ 
