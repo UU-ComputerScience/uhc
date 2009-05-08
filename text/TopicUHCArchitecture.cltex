@@ -1,5 +1,10 @@
 %%[abstract
-In \thispaper\ we describe the architecture of the Utrecht Haskell Compiler (UHC).
+In this paper we describe the architecture of the Utrecht Haskell Compiler (UHC).
+UHC is a new Haskell compiler, that supports most (but not all) Haskell98 features, plus some experimental extensions.
+It targets multiple backends, including a bytecode interpreter backend and a full program analysis backend, both via C. 
+The implementation is rigourously organized as stepwise transformations through some explicit intermediate languages.
+The treewalks of all transformations are expressed as an algebra, with the aid of an Attribute Grammar based preprocessor.
+The compiler is just one materialization of a framework that supports experimentation with language variants, thanks to an aspect-oriented internal organisation. 
 %%]
 
 
@@ -46,8 +51,8 @@ Then there is a choice from three modes of operation:
       Ultimately, all functions are translated to low level C,
       which can be compiled by a standard compiler.
       As alternative backends, we are experimenting with other target languages,
-      among which are the Common intermediate language (CIL) from the C\# family
-      and the Low-level virtual machine (LLVM).
+      among which are the Common Intermediate Language (CIL) from the Common language infrastructure used by .NET \cite{iso-cil},
+      and the Low-level virtual machine (LLVM) compiler infrastructure \cite{llvm-cgo04}.
 \item In {\em bytecode interpreter mode},
       the Core modules are translated to Grin separately.
       Each Grin module is translated into instructions for a custom bytecode machine.
@@ -61,6 +66,8 @@ Then there is a choice from three modes of operation:
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itemize}
 
+
+% dijkstra07ehcstruct
 
 
 \begin{figure}[tbfh]
@@ -381,7 +388,7 @@ For example,
 the above code for \verb@2.mkTyVar@ and \verb@3.mkTyVar@ are extracted from the chunked source code of UHC and
 combined with the text for this explanation by Shuffle.
 
-\section{Languages}
+\section{Languages}\label{sec-uhcarch-lang}
 
 The compiler translates a Haskell program to executable code
 by applying many small transformations.
