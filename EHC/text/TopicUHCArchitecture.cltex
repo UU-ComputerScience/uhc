@@ -2,9 +2,9 @@
 In this paper we describe the architecture of the Utrecht Haskell Compiler (UHC).
 UHC is a new Haskell compiler, that supports most (but not all) Haskell 98 features, plus some experimental extensions.
 It targets multiple backends, including a bytecode interpreter backend and a full program analysis backend, both via C. 
-The implementation is rigourously organized as stepwise transformations through some explicit intermediate languages.
-The treewalks of all transformations are expressed as an algebra, with the aid of an Attribute Grammar based preprocessor.
-The compiler is just one materialization of a framework that supports experimentation with language variants, thanks to an aspect-oriented internal organisation. 
+The implementation is rigorously organized as stepwise transformations through some explicit intermediate languages.
+The tree walks of all transformations are expressed as an algebra, with the aid of an Attribute Grammar based preprocessor.
+The compiler is just one materialization of a framework that supports experimentation with language variants, thanks to an aspect-oriented internal organization. 
 %%]
 
 
@@ -40,7 +40,7 @@ The UHC compiler {\em sensu strictu} is just the culmination point of the series
 We have been referring to the framework as `EHC' (E for extensible, educational, essential, experimental\dots)
 in the past \cite{dijkstra07ehcstruct},
 but for ease we now call both the framework and its main compiler `UHC'.
-Internally we use a stepwise and aspectwise approach, realised by the use of attribute grammars (AG)
+Internally we use a stepwise and aspect-wise approach, realized by the use of attribute grammars (AG)
 and other tools.
 
 
@@ -49,14 +49,23 @@ In its current state, UHC supports most of the Haskell 98
 but a few features are still lacking (like defaulting, and some members of the \cref{peytonjones02awkward-squad}{awkward squad}).
 On the other hand, there are some extensions, notably to the type system.
 The deviations from the standard are not caused by obstinacy or desire to change the standard,
-but rather because of arbitrary priorisation the feature wish list.
-\todo{Nog twee zinnen}
+but rather because of arbitrary priorization of the feature wish list.
 
 The main structure of the compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
 Haskell source text is translated to an executable program by stepwise transformation.
 Some of the transformations translate the program to a lower level language,
 many others are transformations within one language,
 establishing some invariant or performing some optimization.
+
+All transformations, both within a language and between languages, are expressed
+as an algebra giving a semantics to the language.
+The algebras are described with the aid of an attirbute grammar,
+which makes it possible to write multi-pass tree-traversals
+without even realizing the exact number of passes.
+Although the compiler driver is set up to pass data structures between transformations,
+for all intermediate languages we have a concrete syntax with a parser
+and a pretty printer. This facilitates debugging the compiler, by inspecting
+code between transformations.
 
 Here is a short characterization of the intermediate languages.
 In section~\ref{sec-uhcarch-lang} we give a more detailed description.
@@ -67,16 +76,16 @@ In section~\ref{sec-uhcarch-lang} we give a more detailed description.
             (similar to, but not the same as the Core language used in GHC).
 \item Grin: `Graph reduction intermediate notation', 
             the instruction set of a virtual machine of a small functional language with strict semantics, 
-            with features that enable implementation of lazyness \cite{boquist99phd-optim-lazy}.
+            with features that enable implementation of laziness \cite{boquist99phd-optim-lazy}.
 \item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
             (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
             easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
-\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not fully program analysed and transformed.
+\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not fully program analyzed and transformed.
           We do not discuss this language in \thispaper.
 \end{itemize}
 The compiler targets different backends, based on a choice of the user.
 In all cases, the compiler starts compiling on a per module basis,
-desugaring the Haskell source text to Essential Haskell, typechecking it and translating it to Core.
+desugaring the Haskell source text to Essential Haskell, type checking it and translating it to Core.
 Then there is a choice from three modes of operation:
 \begin{itemize}
 \item In {\em full program analysis mode},
@@ -161,7 +170,7 @@ The fact that this is not widely done, is due to the following problems:
 \item Unlike lists, for which |foldr| is standard, in a compiler we deal with
       custom data structures for abstract syntax of a language, 
       which each need a custom |fold|
-      function. Morover, whenever we change the abstract syntax,
+      function. Moreover, whenever we change the abstract syntax,
       we need to change the |fold| function and every algebra.
 \item Generated code can be described as a semantics of the language, but often
       we need additional semantices: listings, messages,
@@ -176,7 +185,7 @@ The fact that this is not widely done, is due to the following problems:
       This can be done by using higher-order domains
       for the algebras, but the resulting code becomes even harder to understand.
 \item A major portion of the algebra is involved with moving information around.
-      The essense of a semantics usually forms only a small part of the algebra
+      The essence of a semantics usually forms only a small part of the algebra
       and is obscured by lots of boilerplate.
 \end{enumerate}
 Some seek the solution to these problems in the use of monads: the reader monad
@@ -185,7 +194,7 @@ upwards, and the state monad and its derivatives to accumulate information durin
 the tree walk.\cite{jones99thih}.
 
 Despite the attractiveness of staying inside Haskell we think this approach is
-doomed to fail when the algebras to be decribed are getting more and more
+doomed to fail when the algebras to be described are getting more and more
 complicated.
 
 %Many compiler writers thus end up writing ad hoc recursive functions
@@ -283,7 +292,7 @@ extra parameters for the semantic functions in the algebra.
 This overcomes problem 4.
 
 In many situations, |SEM| rules only specify that attributes
-a tree node inherites 
+a tree node inherits 
 should be passed unchanged to its children, as in a |Reader| monad.
 To scrap the boilerplate expressing this, 
 the preprocessor has
@@ -332,7 +341,7 @@ In \thispaper\ we neither further discuss the meaning or intention of
 \cref{dijkstra05phd}{the above fragments}
 nor explain \cref{dijkstra06ruler}{Ruler} in depth.
 However, to sketch the underlying ideas we show the Ruler code required for the above output;
-we need to define the scheme (or type) of a judgement and populate these with actual rules.
+we need to define the scheme (or type) of a judgment and populate these with actual rules.
 
 %{
 %include ruler.fmt
@@ -349,7 +358,7 @@ scheme expr =
                :- e : ty ~> tyVarMp.syn
 %%]]
 
-The rule for application is then specified by specifying premise judgements (\texttt{judge} above the dash) and a conclusion (blow the dash) using
+The rule for application is then specified by specifying premise judgments (\texttt{judge} above the dash) and a conclusion (blow the dash) using
 the parsing template defined for scheme \texttt{expr}.
 %%[[wrap=code
 rule e.app =
@@ -365,7 +374,7 @@ rule e.app =
 %%]]
 
 For this example no further annotations are required to automatically produce AG code, except for the freshness of a type variable.
-The judgement \texttt{tvarvFresh} encapsulates this by providing the means to insert some handwritten AG code.
+The judgment \texttt{tvarvFresh} encapsulates this by providing the means to insert some handwritten AG code.
 
 In summary, the basic idea of Ruler thus is to provide a description resembling the original type rule as much as possible,
 and then helping the system with annotations to allow the generation of an implementation and a LaTeX rendering.
@@ -383,7 +392,7 @@ Independent of a variant each step adds features in terms of aspects.
 For example, the type system and code generation are defined as different aspects.
 UHC's build system allows for selectively building a compiler for a variant and a set of aspects.
 
-Source code fragments assigned to a variant and asepcts are stored in \emph{chunked} text files.
+Source code fragments assigned to a variant and aspects are stored in \emph{chunked} text files.
 A tool called \emph{Shuffle} then generates the actual source code when parameterized with the desired variant and aspects.
 Shuffle is language neutral, so all varieties of implementation languages can be stored in chunked format.
 For example, the following chunk defines a Haskell wrapper for variant @2@ for the construction of a type variable:
@@ -413,7 +422,7 @@ which we achieve by explicitly overriding \verb@2.mkTyVar@ by a chunk for \verb@
 
 Although the type signature can be factored out, we refrain from doing so for small definitions.
 
-Chunked sources are organised on a per file basis.
+Chunked sources are organized on a per file basis.
 Each chunked file for source code for UHC is processed by Shuffle to yield a corresponding file for further processing,
 depending on the language used.
 For chunked Haskell a single module is generated, for chunked AG the file may be combined with other AG files by the AG compiler.
@@ -465,8 +474,8 @@ When processing HS we deal with the following tasks:
 \begin{itemize}
 \item {\em Name resolution:}
  Checking for properly introduced names and renaming all identifiers to the equivalent fully qualified name.
-\item {\em Operator infixity and priority:}
- Expressions are parsed without taking into account the fixity and priority of operators.
+\item {\em Operator fixity and precedence:}
+ Expressions are parsed without taking into account the fixity and precedence of operators.
  Expressions are rewritten to remedy this.
 \item {\em Name dependency:}
  Definitions are reordered into different let bindings such that all identifier uses come after their definition.
@@ -665,7 +674,7 @@ module ^^ M
 %}
 
 A Grin module consists of its name,
-global variabels with their initializations, and
+global variables with their initializations, and
 bindings of function names with parameters to their bodies.
 %%[[wrap=code
 DATA  GrModule
@@ -754,8 +763,8 @@ Auxiliary data structures are that for describing a single alternative in a |Cas
 DATA  GrAlt
    |  Alt   pat::GrPatAlt   expr::GrExpr
 %%]
-And for two kinds of patterns, occuring in a |Seq| expression and in an |Alt| alternative, respectively.
-A simplified version of these is the following, but we will need some more constructores for patterns later.
+And for two kinds of patterns, occurring in a |Seq| expression and in an |Alt| alternative, respectively.
+A simplified version of these is the following, but we will need some more constructors for patterns later.
 %%[[wrap=code
 DATA  GrPatLam
    =  Var   name::Name
@@ -779,14 +788,14 @@ function calls and their later evaluation is explicitly encoded.
 Secondly, in Core we can have local function definitions,
 whereas in Grin all function definitions are at top level.
 Grin does have a mechanism for local, explicitly sequenced variable bindings.
-Thirdly, wheras Core functions always have one argument,
+Thirdly, whereas Core functions always have one argument,
 in Grin functions can have multiple parameters, but they
 take them all at the same time. 
 Therefore a mechanism for partial parametrization is necessary.
 The end result is lambda lifted Core, that is the floating of lambda-expressions to the top level
 and passing of non-global variables explicitly as parameters.
 
-The Core transformations listed below also perform some trivial cleanup and optimisations,
+The Core transformations listed below also perform some trivial cleanup and optimizations,
 because we avoid burdening the Core generation from EH with such aspects.
 
 \begin{enumerate}
@@ -836,7 +845,7 @@ let v1 = g a in let v2 = h b in f v1 v2
     such that one of the two will end up as an updateable global variable.
 \end{enumerate}
 After the transformations, translation to Grin is performed,
-where the following issues are adressed:
+where the following issues are addressed:
 \begin{itemize}
 \item for |Let|-expressions:
       global expressions are collected and made into Grin function bindings;
@@ -856,7 +865,7 @@ where the following issues are adressed:
       \item if it is a lambda of known arity that is undersaturated (has not enough arguments), then
             a node with |PApp| tag is returned (in strict contexts) or |Store|d (in lazy contexts)
       \item if it is a lambda of known arity that is oversaturated (has too many arguments), then
-            (in stict contexts) first a |Call|-expression to the function is generated that applies the function
+            (in strict contexts) first a |Call|-expression to the function is generated that applies the function
             to some of the arguments, and the result is bound to a variable that is sub|Seq|uently |App|lied
             to the remaining arguments; or
             (in non-strict contexts) a node with |Fun| tag is |Store|d, and bound to a variable
@@ -868,7 +877,7 @@ where the following issues are adressed:
 \item for global bindings:
       lambda abstractions are `peeled off' the body, to become the arguments of a Grin function binding.
 \item for foreign function bindings:
-      functions with |IO| reslut type are treated specially.
+      functions with |IO| result type are treated specially.
 \end{itemize}
 
 We have now reached the point in the compilation pipeline where we perform our full-program analysis.
@@ -895,7 +904,7 @@ of multiple transformations.
     either through direct calls, 
     or through nodes that store a deferred or partially parameterized function.
     The transformation performs a provisional numbering of all functions, and creates a graph of dependencies.
-    A standard reachablility algorithm determines which functions are reachable from |main|;
+    A standard reachability algorithm determines which functions are reachable from |main|;
     the others are dropped.
 \item {\em MergeInstance}
     Introduces an explicit dictionary for each instance declaration,
@@ -920,7 +929,7 @@ of multiple transformations.
 \item {\em BuildAppBindings}
     Introduces bindings for |apply| functions with as many parameters as are needed in the program.
 \item {\em GlobalConstants}
-    Introduces global variables for each constant foud in the program,
+    Introduces global variables for each constant found in the program,
     instead of allocation the constants locally.
 \item {\em Inline}
     Inlines functions that are used only once at their call site.
@@ -938,7 +947,7 @@ of multiple transformations.
     The transformation is useful for creating a specialized `increment' function instead of |plus 1|,
     but its main merit lies in making specialized versions of overloaded functions, 
     that is functions that take a dictionary argument.
-    If the dictionary is a constant, specialization exposes new opporunities for the {\em MemberSelect} transformation,
+    If the dictionary is a constant, specialization exposes new opportunities for the {\em MemberSelect} transformation,
     which is why {\em SpecConst} is iterated in conjunction with {\em EvalStored}, {\em ApplyUnited} and {\em MemberSelect}.
 \item {\em DropUnreachableBindings}
     Drops unspecialized functions that may have become obsolete.
@@ -948,7 +957,7 @@ of multiple transformations.
     Does a `heap points to analysis' (HPT), which is an abstract interpretation of the program
     in order to determine the possible tags of the nodes that each variable can refer to.
 \item {\em InlineEA}
-    Replaces all occurences of |Eval| and |Apply| to equivalent constructs.
+    Replaces all occurrences of |Eval| and |Apply| to equivalent constructs.
     Each |Eval x| is replaced by |FetchNode x|, followed by a |Case| distinction
     on all possible tag values of the node referred to by |x|,
     which was revealed by the HPT analysis.
@@ -980,7 +989,7 @@ of multiple transformations.
 \item {\em LowerGrin}
     Translates to a lower level version of Grin, in which variables never represent a node.
     Instead, variables are introduced for the separate fields, of which the number became known through HPT analysis.
-    Also, after this transformation |Case| constructs scrutinise on tags rather than full nodes.
+    Also, after this transformation |Case| constructs scrutinize on tags rather than full nodes.
 \item {\em CopyPropagation}
     Shortcuts repeated copying of variables.
 \item {\em SplitFetch}
@@ -1010,13 +1019,13 @@ Two strategies can be taken to implement evaluation:
 \end{itemize}
 The tagged approach has overhead in calling |evaluate|,
 but the tagless approach has the disadvantage that the indirect jump involved may stall the lookahead buffer of pipelined processors.
-Boquist proposed to inline the |evaluate| function at every occurence of |Eval|,
+Boquist proposed to inline the |evaluate| function at every occurrence of |Eval|,
 where for every instance the |Case| expression involved only contains those cases which can actually occur.
 It is this approach that we take in UHC.
 
 This way, they high level concept of |Eval| is replaced by lower level concepts of |FetchNode|, |Case|, |Call| and |Update|.
 In turn, each |FetchNode| expression is replaced by a series of |FetchField| expressions in a later transformation,
-and the |Case| that scrutinzes a node is replaced by one that scrutinizes the tag only.
+and the |Case| that scrutinizes a node is replaced by one that scrutinizes the tag only.
 
     
 \paragraph{Abstract interpretation}
@@ -1024,7 +1033,7 @@ The desire to inline a specialized version of |evaluate| at every |Eval| instanc
 brings the need for an analysis that for each pointer variable determines the possible tags of the node.
 An abstract interpretation of the program, known as `heap points to (HPT) analysis' tries to approximate this knowledge.
 As a preparation, the program is scanned to collect constraints on variables.
-Some constaints immediately provides the information needed (e.g., the variable that binds the result of a |Store| expression
+Some constraints immediately provides the information needed (e.g., the variable that binds the result of a |Store| expression
 is obviously a pointer to a node with the tag of the node that was stored),
 but other constraints are indirect (e.g., the variable that binds the result of a |Call| expression
 will have the same value as the called function returns).
@@ -1064,7 +1073,7 @@ where it takes 5 iterations to find out that 1 is a possible parameter of |succ|
 As for accuracy, our HPT algorithm works well for first-order functions.
 In the presence of many higher-order functions, the results suffer from `pollution':
 the use of a higher-order function in one context also influences its result in another context.
-We counter this undesired behaviour in a number of ways:
+We counter this undesired behavior in a number of ways:
 \begin{itemize}
 \item instead of using a generic |apply| function, the {\em BuildAppBindings} transformation
       makes a fresh copy for each use by an |App| tag. This prevents mutual pollution of |apply| results,
@@ -1086,7 +1095,7 @@ Things are complicated, however, by the presence of default implementations in c
 the dictionary for an instance declaration is a merge of the default implementations
 and the implementations in the instance declaration.
 Even worse, the class declaration may reside in another module than the instance declaration,
-and still be mutally dependent with it.
+and still be mutually dependent with it.
 Think of the |Eq| class, having mutually circular definitions of |eq| and |ne|, leaving
 it to the instance declaration to implement either one of them (or both).
 
@@ -1112,7 +1121,7 @@ actual member function names buried deep in the definition of |gfd|.
 Although possible, this is very volatile as it depends on the details of the Core2Grin translation.
 Instead, we take a different approach: the definition of |fd| is annotated with the names of the member functions
 at the time when it is still explicitly available, that is during the EH2Core translation.
-Similary, class definitions are annotated with the names of the default functions.
+Similarly, class definitions are annotated with the names of the default functions.
 Now the {\em Grin.MergeInstance} transformation can easily collect the required dictionary fields,
 provided that the {\em Core.LiftDictFields} transformation ensures they are available as top-level functions.
 The |fd| and |gfd| functions are obsolete afterwards, and can be discarded by a later reachability analysis.
@@ -1174,7 +1183,7 @@ Eliminates assignments to variables that are never used.
 \item {\em EmbedVars}
 Silly has a notion of function arguments and local variables.
 After this transformation, these kind of variables are not used anymore,
-but replaced by explicit strack offsets.
+but replaced by explicit stack offsets.
 So, this transformation does the mapping of variables to stack positions
 (and, if available, registers).
 In a tail call, the parameters of the function that is called overwrites
@@ -1253,16 +1262,16 @@ where `fract.' shows the fraction of the full code base that is selected for UHC
 \subsection{Methodological observations}
 
 
-\paragraph{Internal organisation}
+\paragraph{Internal organization}
 
-UHC and its framework use an aspectwise organisation,
+UHC and its framework use an aspect-wise organization,
 in which as much as possible is described by higher level domain specific languages from which we generate lower level implementations.
 UHC as a framework offers a set of compilers, thus allowing picking and choosing a starting point for play and experimentation.
 This makes UHC a good starting point for research, but debugging is also facilitated by it.
 A problem can more easily be pinpointed to originate in a particular step of the whole sequence of language increments;
 the framework then allows to debug the compiler in this limited context, with less interaction by other features.
 
-The stepwise organisation, where langauge features are built on top of each other, offers a degree of isolation.
+The stepwise organization, where language features are built on top of each other, offers a degree of isolation.
 Much better would be to completely independently describe language features.
 However, this is hard to accomplish because language features always interact and require redefinition of parts of their independent implementation when combined.
 To do this for arbitrary combinations would be much more complicated then to do it for a sequence of increments.
@@ -1292,7 +1301,7 @@ Currently this must be programmed by hand, and we would like to have automated s
 \paragraph{The use of domain specific languages (DSL)}
 
 We use various special purpose languages for subproblems:
-AG for tree traversals, Shuffle for incremental, aspectwise, and better explainable development, Ruler for type systems.
+AG for tree traversals, Shuffle for incremental, aspect-wise, and better explainable development, Ruler for type systems.
 Although this means a steeper learning curve for those new to the implementation,
 in practice the used DSLs and their supporting tools effectively solve a identifiable design problem.
 There lies a balance here, but for us the used DSLs make development life easier.
@@ -1320,11 +1329,11 @@ LHC in its most recent incarnation is available as a backend to GHC, and in that
 Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was influential on Haskell as a language,
 \cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell 98 compilers
 with extensions.
-\cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell 98 but focusses on good error reporting,
+\cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell 98 but focuses on good error reporting,
 thereby being suitable for learning Haskell.
 
-The distinguishing feature of UHC is its internal organisation.
-UHC, in particular its internal aspectwise organised framework,
+The distinguishing feature of UHC is its internal organization.
+UHC, in particular its internal aspect-wise organized framework,
 is designed to be (relatively) easy to use as a platform for research and education.
 In Utrecht students regularly use the UHC framework to experiment with.
 The use of AG and other tools also make UHC differ from other Haskell compilers,
@@ -1337,7 +1346,7 @@ most of them written in Haskell or lower level languages.
 
 We have recently released a first version of UHC.
 In the near future we intend to add support for better installation, in particular the use of Cabal, and add missing language features and libraries.
-On a longer time scale we continue working on full program analysis, the optimisations allowed by it, add classical analyses (e.g. strictness),
+On a longer time scale we continue working on full program analysis, the optimizations allowed by it, add classical analyses (e.g. strictness),
 improve the runtime system (own garbage collector).
 We welcome those who want to contribute in these or other areas of interest.
 
