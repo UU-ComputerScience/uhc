@@ -1278,8 +1278,11 @@ Recently,
 as their starting point.
 LHC in its most recent incarnation is available as a backend to GHC, and in that sense is not a standalone Haskell compiler.
 
-Already longer available alongside GHC are \cref{www03hugs}{Hugs}, \cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell98 compilers
+Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was influential on Haskell as a language,
+\cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell98 compilers
 with extensions.
+\cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell98 but focusses on good error reporting,
+thereby being suitable for learning Haskell.
 
 \subsection{Future work}
 
