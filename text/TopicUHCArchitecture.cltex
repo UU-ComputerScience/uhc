@@ -1,6 +1,6 @@
 %%[abstract
 In this paper we describe the architecture of the Utrecht Haskell Compiler (UHC).
-UHC is a new Haskell compiler, that supports most (but not all) Haskell98 features, plus some experimental extensions.
+UHC is a new Haskell compiler, that supports most (but not all) Haskell 98 features, plus some experimental extensions.
 It targets multiple backends, including a bytecode interpreter backend and a full program analysis backend, both via C. 
 The implementation is rigourously organized as stepwise transformations through some explicit intermediate languages.
 The treewalks of all transformations are expressed as an algebra, with the aid of an Attribute Grammar based preprocessor.
@@ -15,10 +15,10 @@ The compiler is just one materialization of a framework that supports experiment
 
 On the occasion of the Haskell Hackathon on April 18th, 2009, we announced the first
 release of a new Haskell compiler: the Utrecht Haskell Compiler, or UHC for short.
-UHC strives to be a full Haskell'98 compiler (although currently it lacks a few features).
+Until \cref{www09haskell-prime}{Haskell Prime} is available as a standard,
+UHC strives to be a full \cref{peytonjones03has98-rev-rep}{Haskell 98} compiler (although currently it lacks a few features).
 The reason that we announce the compiler even though it is not yet fully finished,
-is that we hope that by documenting the architecture, more people can get involved
-in bringing it to completion.
+is that we feel that UHC is mature enough to use for play and experimentation.
 
 One can ask why there is a need for (yet) another Haskell compiler, 
 where the Glasgow Haskell Compiler (GHC) is already available as a widely used, fully featured, production quality Haskell compiler
@@ -34,16 +34,18 @@ more because of its systematically designed and extensible architecture.
 It is intended to be a platform for those who wish to experiment
 with adding new language or type system features.
 In a broader sense, UHC is a framework from which one can construct a series of increasingly complex compilers
-for languages reaching from simple lambda calculus to (almost-)Haskell'98.
+for languages reaching from simple lambda calculus to (almost-)Haskell 98.
 The UHC compiler {\em sensu strictu} is just the culmination point of the series.
 We have been referring to the framework as `EHC' (E for extensible, educational, essential, experimental\dots)
 in the past \cite{dijkstra07ehcstruct},
 but for ease we now call both the framework and its main compiler `UHC'.
+Internally we use a stepwise and aspectwise approach, realised by the use of attribute grammars (AG)
+and other tools.
 
 
-In its current state, UHC supports most of the Haskell'98
+In its current state, UHC supports most of the Haskell 98
 (including polymorphic typing, type classes, input/output, base library),
-but a few features are still lacking (like $n+k$ patterns, and some members of the awkward squad).
+but a few features are still lacking (like defaulting, and some members of the \cref{peytonjones02awkward-squad}{awkward squad}).
 On the other hand, there are some extensions, notably to the type system.
 The deviations from the standard are not caused by obstinacy or desire to change the standard,
 but rather because of arbitrary prioritizing the feature wish list.
@@ -68,7 +70,8 @@ In section~\ref{sec-uhcarch-lang} we give a more detailed description.
 \item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
             (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
             easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
-\item BC: A bytecode language for a low-level, stack-based graph reduction machine.
+\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not fully program analysed and transformed.
+          We do not discuss this language in \thispaper.
 \end{itemize}
 The compiler targets different backends, based on a choice of the user.
 In all cases, the compiler starts compiling on a per module basis,
@@ -117,6 +120,10 @@ full program alalysis (left), bytecode interpreter (middle), and Java (right).}
 
 %%[body
 
+% lhs2tex overrides to avoid coloring
+%format redOn			= 
+%format blueOn			= 
+%format blackOn			= 
 
 \section{Techniques and Tools}
 
@@ -532,8 +539,7 @@ module ^^ M =
 let redOn^ rec blackOn
   { ^ M ^ .len =
       \ ^ M ^ .x1 ^ under ^ 1 ->
-        redOn ^ let ^ redOn excl ^ blackOn
-          { ^ under ^ 2 = ^ M ^ .x1 ^ under ^ 1} in
+        let ^ redOn excl ^ blackOn { ^ under ^ 2 = ^ M ^ .x1 ^ under ^ 1} in
         case ^^ under ^ 2 of
          {  redOn C ^ : ^ blackOn { ..., ... } -> ...
          ;  redOn C ^ [ ^ ] ^ blackOn {  } ->
@@ -635,12 +641,13 @@ module ^^ M
              { C ^ : ^ ->
                  {  ... } 
              ; C ^ [ ^ ] ^ ->
-                 {  redOn ^ store  blackOn (redOn ^ C ^ blackOn ^ UHC.Prelude.PackedString "0") ; \ ^ under ^ 6 ->
-                    store          (redOn ^ F ^ blackOn ^ slash ^ UHC.Prelude.packedStringToInteger ^^ under ^ 6) ; \ ^ under ^ 3 ->
-                    store          (redOn ^ P ^ slash ^ 0 ^ blackOn ^ slash ^ UHC.Prelude.fromInteger
-                                      UHC.Prelude.under ^ d1 ^ under ^ Num) ; \ ^ under ^ 5 ->
-                    store          (redOn ^ A ^ blackOn ^^ under ^ 5 ^^ under ^ 3) ; \ ^ under ^ 4 ->
-                    redOn ^ eval ^^ under ^ 4 blackOn}
+                 {  store  (redOn ^ C ^ blackOn ^ UHC.Prelude.PackedString "0") ; \ ^ under ^ 6 ->
+                    store  (redOn ^ F ^ blackOn ^ slash ^ UHC.Prelude.packedStringToInteger ^^ under ^ 6) ;
+                      \ ^ under ^ 3 ->
+                    store  (redOn ^ P ^ slash ^ 0 ^ blackOn ^ slash ^ UHC.Prelude.fromInteger
+                               UHC.Prelude.under ^ d1 ^ under ^ Num) ; \ ^ under ^ 5 ->
+                    store  (redOn ^ A ^ blackOn ^^ under ^ 5 ^^ under ^ 3) ; \ ^ under ^ 4 ->
+                    eval   under ^ 4 blackOn}
              } } } 
 %%]]
 %}
@@ -1203,7 +1210,7 @@ comments that were placed outside chunks.
 The fraction of code used for UHC is relatively low in 
 the type inferencer (as there are many experimental aspects here),
 in the experimental backends like Java, Cil and LLVM (as most of them are switched off), and
-in the garbage collector (as it is not yet used: UHC by default uses a third-party generic garbage collector).
+in the garbage collector (as it is not yet used: UHC by default uses the \cref{boehm88gc-c,boehm06gc-www}{Boehm garbage collector}).
 
 
 \begin{figure}
@@ -1308,9 +1315,9 @@ as their starting point.
 LHC in its most recent incarnation is available as a backend to GHC, and in that sense is not a standalone Haskell compiler.
 
 Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was influential on Haskell as a language,
-\cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell98 compilers
+\cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell 98 compilers
 with extensions.
-\cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell98 but focusses on good error reporting,
+\cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell 98 but focusses on good error reporting,
 thereby being suitable for learning Haskell.
 
 \subsection{Future work}
