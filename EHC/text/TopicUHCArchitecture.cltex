@@ -13,10 +13,40 @@ The compiler is just one materialization of a framework that supports experiment
 \newcommand{\todo}[1]{{\em Todo: [#1]}}
 %\newcommand{\todo}[1]{}
 
+On the occasion of the Haskell Hackathon on April 18th, 2009, we announced the first
+release of a new Haskell compiler: the Utrecht Haskell Compiler, or UHC for short.
+UHC strives to be a full Haskell'98 compiler (although currently it lacks a few features).
+The reason that we announce the compiler even though it is not yet fully finished,
+is that we hope that by documenting the architecture, more people can get involved
+in bringing it to completion.
 
-This is yet another Haskell compiler, like the
+One can ask why there is a need for (yet) another Haskell compiler, 
+where the Glasgow Haskell Compiler (GHC) is already available as a widely used, fully featured, production quality Haskell compiler
 \cref{www04ghc,marlow98new-ghc-run,peytonjones96hs-transf,peytonjones02hs-inline}{Glasgow Haskell Compiler (GHC)}.
-\todo{add real introduction}
+In fact, we are using GHC ourselves for the implementation of UHC.
+Also, various alternatives exist, like
+Hugs (that in its incarnation of Gofer was the epoch maker for Haskell), and
+the York Haskell compiler (YHC).
+
+Still, we think UHC has something to add to existing compilers,
+not so much as a production compiler (yet), but
+more because of its systematically designed and extensible architecture.
+It is intended to be a platform for those who wish to experiment
+with adding new language or type system features.
+In a broader sense, UHC is a framework from which one can construct a series of increasingly complex compilers
+for languages reaching from simple lambda calculus to (almost-)Haskell'98.
+The UHC compiler {\em sensu strictu} is just the culmination point of the series.
+We have been referring to the framework as `EHC' (E for extensible, educational, essential, experimental\dots)
+in the past \cite{dijkstra07ehcstruct},
+but for ease we now call both the framework and its main compiler `UHC'.
+
+
+In its current state, UHC supports most of the Haskell'98
+(including polymorphic typing, type classes, input/output, base library),
+but a few features are still lacking (like $n+k$ patterns, and some members of the awkward squad).
+On the other hand, there are some extensions, notably to the type system.
+The deviations from the standard are not caused by obstinacy or desire to change the standard,
+but rather because of arbitrary prioritizing the feature wish list.
 
 
 The main structure of the compiler is shown in figure~\ref{fig-uhcarch-pipeline}.
@@ -67,8 +97,6 @@ Then there is a choice from three modes of operation:
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itemize}
 
-
-% dijkstra07ehcstruct
 
 
 \begin{figure}[tbfh]
@@ -420,17 +448,17 @@ to reconstruct the original input; this includes parentheses, source code positi
 When processing HS we deal with the following tasks:
 
 \begin{itemize}
-\item \textbf{Name resolution:}
+\item {\em Name resolution:}
  Checking for properly introduced names and renaming all identifiers to the equivalent fully qualified name.
-\item \textbf{Operator infixity and priority:}
+\item {\em Operator infixity and priority:}
  Expressions are parsed without taking into account the fixity and priority of operators.
  Expressions are rewritten to remedy this.
-\item \textbf{Name dependency:}
+\item {\em Name dependency:}
  Definitions are reordered into different let bindings such that all identifier uses come after their definition.
  Mutually recursive definitions are put into one let binding.
-\item \textbf{Definition gathering:}
+\item {\em Definition gathering:}
  Multiple definitions for the same identifier are merged into one.
-\item \textbf{Desugaring:}
+\item {\em Desugaring:}
  List comprehension, |do|-notation, etc. are desugared.
 \end{itemize}
 
@@ -996,6 +1024,7 @@ If |p| is already known to point to nodes with a |Con| tag (i.e., values) then t
 If |p| is known to point to nodes with a |Fun f| tag (i.e., deferred functions), then the possible results for |f| are also possible values for |x|.
 And if |p| is known to point to nodes with an |App apply| tag (i.e., generic applications of unknown functions by |apply|),
 then the possible results for |apply| are also possible values for |x|.
+For a more detailed description of the algorithm, we refer to another paper \cite{fokker08abstrint}.
 
 
 \paragraph{HPT performance}
