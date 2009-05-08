@@ -310,7 +310,7 @@ echo-gen-by-ruler:
 # rules for ehc library construction
 $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	mkdir -p $(@D)
-	$(call GEN_CABAL \
+	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
 		, $(LIB_EH_UTIL_PKG_NAME) \

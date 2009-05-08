@@ -37,7 +37,7 @@ libutil-clean:
 # rules
 $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 	mkdir -p $(@D)
-	$(call GEN_CABAL \
+	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
 		, mtl \

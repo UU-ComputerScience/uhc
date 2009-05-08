@@ -12,7 +12,9 @@ TOP_PREFIX				:=
 # First (default) target just explains what can be done
 ###########################################################################################
 
-default: explanation
+default: uhc
+
+help: explanation
 
 ###########################################################################################
 # Definitions, dependencies, rules, etc: spread over subdirectories for subproducts
@@ -50,16 +52,16 @@ include $(SRC_PREFIX)ehc/shared.mk
 include $(MK_PREFIX)shared.mk
 
 include $(SRC_PREFIX)libutil/files.mk
-include $(SRC_PREFIX)top/files.mk
-include $(SRC_PREFIX)helium/files.mk
-include $(SRC_PREFIX)lvm/files.mk
-include $(SRC_PREFIX)text2text/files.mk
+-include $(SRC_PREFIX)top/files.mk
+-include $(SRC_PREFIX)helium/files.mk
+-include $(SRC_PREFIX)lvm/files.mk
+-include $(SRC_PREFIX)text2text/files.mk
 include $(SRC_PREFIX)shuffle/files.mk
 include $(SRC_PREFIX)ruler2/files.mk
 include $(SRC_PREFIX)ehc/variant.mk
 include $(SRC_PREFIX)gen/files.mk
 include $(SRC_PREFIX)ehc/files1.mk
-include $(SRC_PREFIX)grini/files.mk
+-include $(SRC_PREFIX)grini/files.mk
 
 -include $(SRC_PREFIX)experiments/files.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
@@ -71,7 +73,7 @@ ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
 endif
 include $(SRC_PREFIX)ehc/files2.mk
-include $(SRC_PREFIX)agprimer/files.mk
+-include $(SRC_PREFIX)agprimer/files.mk
 -include $(SRC_PREFIX)infer2pass/variant.mk
 -include $(SRC_PREFIX)infer2pass/files.mk
 -include figs/files.mk
@@ -105,6 +107,7 @@ explanation:
 	@$(EXIT_IF_ABSENT_LIB_OR_TOOL)
 	@echo "UHC" ; \
 	echo  "===" ; \
+	echo  "make                     : default is 'make uhc'" ; \
 	echo  "make uhc                 : make uhc and library (ehc variant 101)" ; \
 	echo  "make install             : make uhc and install globally, possibly needing admin permission" ; \
 	echo  "make test                : regress test uhc" ; \
@@ -115,8 +118,6 @@ explanation:
 	echo  "make <n>/ehclib          : make ehc library (i.e. used to compile with ehc) variant <n> (in bin/, where <n> in {$(EHC_PREL_VARIANTS)})" ; \
 	echo  "make <n>/ehclibs         : make ehc libraries for all codegen targets" ; \
 	echo  "make <n>/rts             : make only the rts part of a library" ; \
-	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
-	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
 	echo  "make <n>/bare            : make bare source dir for variant <n> (in bare/)," ; \
 	echo  "                           then 'cd' to there and 'make'" ; \
 	echo  "make $(RULER2_NAME)               : make ruler tool" ; \
@@ -124,6 +125,7 @@ explanation:
 	echo  "" ; \
     echo  "Documentation" ; \
 	echo  "=============" ; \
+	echo  "make help                : print this help" ; \
 	echo  "make www                 : make www documentation: $(TEXT_WWW_DOC_PDFS)" ; \
 	echo  "make www-sync            : install www documentation in the EHC web (http://www.cs.uu.nl/wiki/Ehc/WebHome)" ; \
 	echo  "" ; \
@@ -153,9 +155,11 @@ explanation:
 	echo  "make helium              : make Helium library" ; \
 	echo  "make heliumdoc           : make Haddock documentation for Helium, Top and Lvm (in hdoc/)" ; \
 	echo  "" ; \
-    echo  "Obsolecence candidates" ; \
+    echo  "Obsolesence candidates" ; \
 	echo  "======================" ; \
 	echo  "make <n>/infer2pass      : make infer2pass demo version <n> (in bin/, where <n> in {$(INF2PS_VARIANTS)})" ; \
+	echo  "make <n>/grini           : make grin interpreter variant <n> (in bin/, where <n> in {$(GRIN_PUB_VARIANTS)}) (obsolete)" ; \
+	echo  "make <n>/hdoc            : make Haddock documentation for variant <n> (in hdoc/)" ; \
 	echo  "make grinis              : make all grin interpreter ($(GRINI_EXEC_NAME)) versions" ; \
 	echo  "" ; \
 
@@ -174,7 +178,7 @@ docs: $(TEXT_DIST_DOC_FILES)
 cleans: $(patsubst %,%/clean,$(EHC_VARIANTS))
 
 ###########################################################################################
-# Target: www stuff + sync to www
+# Target: www stuff + sync to www. The full content of www is copied, including releases
 ###########################################################################################
 
 # www: $(WWW_SRC_TGZ) www-ex $(WWW_DOC_FILES)
@@ -293,16 +297,51 @@ bump-minorminor:
 	echo "bumped version to `cat VERSION`"
 
 ###########################################################################################
+# Releasing, construct distribution
+###########################################################################################
+
+DISTS_DIR		:= $(BLD_PREFIX)dists
+DIST_UHC_SRC_NM	:= uhc-$(TODAY)-$(EH_VERSION_FULL)-src
+
+uhc-src-dist:
+	mkdir -p $(DISTS_DIR)/$(DIST_UHC_SRC_NM) ; \
+	( (tar cf - --exclude '.*' \
+	       src \
+	       ehclib extlibs \
+	       doc/*-doc.pdf \
+	       bin/filterOutEmptyFiles bin/agdepend bin/llvm-*.in \
+	       test/files.mk test/regress/frozen-test-expect.tgz \
+	       Makefile mk \
+	       configure.ac configure install-sh config.sub config.guess \
+	       Setup.hs \
+	       VERSION README ANNOUNCE LICENSE \
+	  ) \
+	| (cd $(DISTS_DIR)/$(DIST_UHC_SRC_NM) && tar xf -) \
+	) ; \
+	$(call FUN_GEN_CABAL_EXEC \
+		, uhc \
+		, $(EH_VERSION_FULL) \
+		, mtl \
+		,  \
+		, Utrecht Haskell Compiler \
+		, \
+		, \
+	) > $(DISTS_DIR)/$(DIST_UHC_SRC_NM)/uhc.cabal ; \
+	(cd $(DISTS_DIR) && tar cfj $(DIST_UHC_SRC_NM).tar.bz2 $(DIST_UHC_SRC_NM)) ; \
+	cp $(DISTS_DIR)/$(DIST_UHC_SRC_NM).tar.bz2 www
+
+###########################################################################################
 # Releasing, currently just svn copying
 ###########################################################################################
 
 release:
 	cd ../.. ; \
 	svn cp trunk/EHC releases/$(EH_VERSION_FULL)
+	$(MAKE) uhc-src-dist
 
 release-prepare:
 	$(MAKE) uhc
-	@echo "WARNING: password may be needed"
+	@echo "WARNING: password may be needed to install uhc"
 	sudo $(MAKE) install
 	$(MAKE) test-expect TEST_VARIANTS=uhc
 	$(MAKE) freeze-test-expect

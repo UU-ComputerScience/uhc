@@ -378,13 +378,18 @@ EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 1
 # $5: synopsis
 # $6: exposed modules
 # $7: extra C sources
-GEN_CABAL			= \
+# $8: build type
+# $9: license
+FUN_GEN_CABAL		= \
 					( \
 					echo   "Name:				$(strip $(1))" ; \
 					echo   "Version:			$(strip $(2))" ; \
-					echo   "License:			PublicDomain" ; \
-					echo   "Author:				Atze Dijkstra" ; \
-					echo   "Homepage:			http://www.cs.uu.nl/wiki/Ehc/WebHome" ; \
+					echo   "License:			BSD3" ; \
+					echo   "Copyright:			Utrecht University, Department of Information and Computing Sciences, Software Technology group" ; \
+					echo   "Build-Type:			$(8)" ; \
+					echo   "license-file:		$(9)" ; \
+					echo   "Author:				UHC Team" ; \
+					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC/WebHome" ; \
 					echo   "Category:			Testing" ; \
 					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(GHC_EHC_PKG_UULIB) $(3)))" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
@@ -393,6 +398,34 @@ GEN_CABAL			= \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
 					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fglasgow-exts" \
 					)
+
+# generate cabal file for library
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+# $7: extra C sources
+FUN_GEN_CABAL_LIB	= $(call FUN_GEN_CABAL,\
+						$(1),$(2),$(3),$(4),$(5),$(6),$(7),\
+						Simple,\
+						$(TOPABS_PREFIX)LICENSE \
+						)
+
+# generate cabal file for executable
+# $1: pkg name
+# $2: version
+# $3: build-depends (additional)
+# $4: extensions (additional)
+# $5: synopsis
+# $6: exposed modules
+# $7: extra C sources
+FUN_GEN_CABAL_EXEC	= $(call FUN_GEN_CABAL,\
+						$(1),$(2),$(3),$(4),$(5),$(6),$(7),\
+						Custom,\
+						LICENSE \
+						)
 
 # generate simplest cabal Setup.hs
 GEN_CABAL_SETUP		= @(echo "import Distribution.Simple" ; echo "main = defaultMain")
@@ -425,6 +458,9 @@ FUN_COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (c
 ###########################################################################################
 # Misc
 ###########################################################################################
+
+# date
+TODAY				:= $(shell date '+%G%m%d')
 
 # strip a '/' at the end, turning a prefix into a directory
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
