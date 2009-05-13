@@ -193,10 +193,16 @@ SEM Decl
 %%[[(6 hmtyinfer)
                                                                               , foErrSq @fo_
 %%]]
+%%[[(7 hmtyinfer)
+                                                                              , Seq.fromList @inconsistFldErrs
+%%]]
                                                                               ]
 
 SEM DataConstr
   | Constr      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @fields.errSq
+%%[[(7 hmtyinfer)
+                                                                              , Seq.fromList @dupErrs
+%%]]
 %%[[(6 hmtyinfer)
                                                                               , foErrSq @fo_
 %%]]
@@ -204,12 +210,6 @@ SEM DataConstr
 %%]
 
 %%[(7 hmtyinfer)
-SEM Decl
-  | Data        lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@tyVars.errSq, @constrs.errSq, foErrSq @fo_, Seq.fromList @inconsistFldErrs]
-
-SEM DataConstr
-  | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, Seq.fromList @dupErrs, foErrSq @fo_]
-
 SEM RecExpr
   | Empty       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
 

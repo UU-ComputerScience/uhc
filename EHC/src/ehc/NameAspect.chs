@@ -58,7 +58,7 @@ data IdAspect
   | IdAsp_Val_Fix
   | IdAsp_Val_Con
 %%[[5
-  | IdAsp_Val_Fld
+  | IdAsp_Val_Fld       {iaspDataNm :: !HsName, iaspConNm :: !HsName    }
 %%]]
   | IdAsp_Type_Con
 %%[[3
@@ -120,8 +120,8 @@ iaspIsValCon IdAsp_Val_Con = True
 iaspIsValCon _             = False
 
 iaspIsValFld :: IdAspect -> Bool
-iaspIsValFld IdAsp_Val_Fld = True
-iaspIsValFld _             = False
+iaspIsValFld (IdAsp_Val_Fld _ _) = True
+iaspIsValFld _                   = False
 
 iaspIsTypeDef :: IdAspect -> Bool
 iaspIsTypeDef (IdAsp_Type_Def _) = True
@@ -160,7 +160,7 @@ instance PP IdAspect where
   pp  IdAsp_Val_Fix         = pp "fixity"
   pp  IdAsp_Val_Con         = pp "data constructor"
 %%[[5
-  pp  IdAsp_Val_Fld         = pp "data field"
+  pp (IdAsp_Val_Fld _ _  )  = pp "data field"
 %%]]
   pp  IdAsp_Type_Con        = pp "type constructor"
 %%[[3

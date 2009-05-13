@@ -718,6 +718,8 @@ llvmOpt
 LLVM_OPT_CMD
 llvmLlc
 LLVM_LLC_CMD
+md5Cmd
+MD5_CMD
 CPP
 GREP
 EGREP
@@ -4139,6 +4141,54 @@ fi
 
 LLVM_LLC_CMD=$llvmLlc
 
+
+# md5
+# Extract the first word of "md5 md5sum", so it can be a program name with args.
+set dummy md5 md5sum; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_md5Cmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $md5Cmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_md5Cmd="$md5Cmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_md5Cmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+md5Cmd=$ac_cv_path_md5Cmd
+if test -n "$md5Cmd"; then
+  { echo "$as_me:$LINENO: result: $md5Cmd" >&5
+echo "${ECHO_T}$md5Cmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+MD5_CMD=$md5Cmd
+
+
+# xxx
+#AC_PATH_PROG(xxxCmd,xxx)
+#echo xxxCmd: $xxxCmd
 
 ### Checks for libraries.
 
@@ -29569,6 +29619,8 @@ llvmOpt!$llvmOpt$ac_delim
 LLVM_OPT_CMD!$LLVM_OPT_CMD$ac_delim
 llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
+md5Cmd!$md5Cmd$ac_delim
+MD5_CMD!$MD5_CMD$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
@@ -29609,7 +29661,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 44; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 46; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

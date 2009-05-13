@@ -85,6 +85,8 @@ SEM Declaration
 %%% Duplicate introductions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+A table of checks for duplicate introductions.
+
 %%[1 hs
 idDupCheckInfo :: AssocL IdOccKind (AssocL String (IdAspect -> Bool))
 idDupCheckInfo
@@ -142,9 +144,17 @@ idDefOccGamCheckDupNames g
                , (info,defs) <- filter (\(_,x) -> length x > 1)
                                 $ assocLMapElt (\c -> filter (\d -> c (doccAsp d)) $ collapse ds) check
                ]
+        -- Functions and data fields are allowed to have duplicate entries, so they are collapsed into 1.
+        -- For data fields under the provision that the type to which they belong is the same, but the constructor not (another weird language complexity check)
         collapse ds
-          = take 1 funs ++ others
-          where (funs,others) = partition (iaspIsFun . doccAsp) ds
+          =    take 1 funs
+            ++ (map head $ filter (\l -> length l > 0) $ map concat flds1PerCon)
+            ++ (concat $ concat fldsManyPerCon)
+            ++ others2
+          where (funs,others1) = partition (iaspIsFun . doccAsp) ds
+                (flds,others2) = partition (iaspIsValFld . doccAsp) others1
+                fldsGrouped = map (groupOn (iaspConNm . doccAsp)) $ groupOn (iaspDataNm . doccAsp) flds
+                (flds1PerCon,fldsManyPerCon) = unzip $ map (partition (\l -> length l == 1)) $ fldsGrouped
 %%]
 
 %%[1

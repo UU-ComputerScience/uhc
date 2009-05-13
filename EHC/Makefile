@@ -353,8 +353,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(LIB_EH_UTIL_INS_FLAG)
-	@echo $(INSTALL_UHC_BIN_PREFIX)
+	@echo $(EHC_ALL_SRC)
+	@echo $(EHC_ALL_SRC_FIND)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

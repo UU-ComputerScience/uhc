@@ -516,6 +516,14 @@ AC_ARG_WITH(llc,
 )
 AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
 
+# md5
+AC_PATH_PROG(md5Cmd,md5 md5sum)
+AC_SUBST(MD5_CMD,$md5Cmd)
+
+# xxx
+#AC_PATH_PROG(xxxCmd,xxx)
+#echo xxxCmd: $xxxCmd
+
 ### Checks for libraries.
 
 ### Checks for header files.
