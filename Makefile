@@ -353,7 +353,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(UHC_INSTALL_PREFIX)
+	@echo $(LIB_EH_UTIL_INS_FLAG)
 	@echo $(INSTALL_UHC_BIN_PREFIX)
 
 tstv:

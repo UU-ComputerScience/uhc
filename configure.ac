@@ -721,6 +721,34 @@ AC_DEFINE([CONST_EXDEV],[EXDEV],[Value of EXDEV])
 AC_DEFINE([CONST_O_BINARY],[O_BINARY],[Value of O_BINARY])
 AC_DEFINE([CONST_SIGINT],[SIGINT],[Value of SIGINT])
 
+### Find out whether we use 32 or 64 bits platform
+# Here we assume a bit of the implementation to check on the result of AC_CHECK_SIZEOF([intptr_t]).
+# We need it to add 32/64 bit related flags for external libraries.
+# Usually this is ok, but for some combinations not so.
+if test "x$ac_cv_sizeof_intptr_t" == "x4"
+then
+  use32bits="yes"
+  use64bits="no"
+elif test "x$ac_cv_sizeof_intptr_t" == "x8"
+then
+  use32bits="no"
+  use64bits="yes"
+else
+  use32bits=""
+  use64bits=""
+fi
+
+if test "x$use32bits" == "xyes"
+then
+  gccExtlibsOptions="$gccExtlibsOptions -m32"
+fi
+
+if test "x$use64bits" == "xyes"
+then
+  gccExtlibsOptions="$gccExtlibsOptions -m64"
+fi
+
+AC_SUBST(GCC_EXTLIBS_OPTIONS,$gccExtlibsOptions)
 
 ### general configuration
 
