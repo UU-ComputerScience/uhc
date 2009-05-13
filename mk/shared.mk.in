@@ -212,6 +212,14 @@ PDFLATEX					:= TEXINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP
 BIBTEX						:= BSTINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(PATHS_SEP_COL)$(LATEX_ENV)" BIBINPUTS=".$(PATHS_SEP_COL)../../$(LATEX_SRC_PREFIX)$(LATEX_ENV)" bibtex
 MAKEINDEX					:= makeindex
 
+# misc
+# $1: files to md5
+ifneq (@MD5_CMD@,)
+FUN_MD5						= cat $(1) | @MD5_CMD@
+else
+FUN_MD5						= echo -n "no md5"
+endif
+
 ###########################################################################################
 # installation locations for ehc running time, as functions still depending on variant + target
 ###########################################################################################

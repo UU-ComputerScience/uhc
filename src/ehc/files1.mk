@@ -111,6 +111,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
 EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
+EHC_ALL_SRC_FIND						:= $(shell find $(SRC_EHC_PREFIX) \( -name '*.chs' -or -name '*.cag' \))
 
 # distribution
 EHC_DIST_FILES							:= $(EHC_ALL_SRC)
@@ -392,7 +393,7 @@ $(EHC_HS_UTILCPP_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX
 # signature of source code
 $(EHC_HS_SIG_DRV_HS): $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
 	@(echo "module $(LIB_EHC_PKG_NAMEBASE).$(EHC_HS_SIG_MAIN) where" ; \
-	  echo "sig = \"`cat $^ | md5`\"" ; \
+	  echo "sig = \"`$(call FUN_MD5,$^)`\"" ; \
 	  echo "timestamp = \"`date '+%G%m%d %z %H%M%S'`\"" \
 	) > $@
 

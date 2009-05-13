@@ -174,7 +174,8 @@ SEM Constructor
 %%]
 
 %%[7
-ATTR AllFieldDeclaration AllConstructor [ | | fldrefnames USE {++} {[]} : Names ]
+ATTR AllFieldDeclaration [ | | fldrefnames USE {++} {[]} : Names ]
+ATTR AllConstructor [ | | conAndFldrefnames USE {++} {[]} : {AssocL Name Names} ]
 %%]
 
 %%[7.FieldDeclaration.refname
@@ -187,6 +188,13 @@ SEM FieldDeclaration
 SEM FieldDeclaration
     | FieldDeclaration
         loc             .   fldrefnames =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
+%%]
+
+%%[7
+SEM Constructor
+    | Record
+    	loc				.	conAndFldrefnames
+    									=	[(@conrefname,@fieldDeclarations.fldrefnames)]
 %%]
 
 %%[7.RecordPatternBinding.refname
@@ -244,7 +252,7 @@ SEM Declaration
         loc             .   idOccDef    =   IdOcc @typerefname IdOcc_Type
                         .   idOccDefsCon=   [ IdOcc n IdOcc_Val | n <- @constructors.conrefnames ]
 %%[[7
-                        .   idOccDefsFld=   [ IdOcc n IdOcc_Val | n <- @constructors.fldrefnames ]
+                        .   idOccDefsFld=   [ IdOcc n IdOcc_Val | (_,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
                         .   idOccDefs   =   [@idOccDef]
                                             ++ @idOccDefsCon
