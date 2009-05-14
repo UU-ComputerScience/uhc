@@ -3,8 +3,6 @@
 -- UUAGC 0.9.6 (repmin)
 module Repmin where
 
-import Onzin
-
 -- import System.Environment
 
 

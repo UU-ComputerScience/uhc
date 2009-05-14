@@ -25,8 +25,6 @@ level 2..6 : with prefix 'cpEhc'
 -- general imports
 %%[8 import(qualified Data.Map as Map)
 %%]
-%%[(20 codegen grin) import(Data.Maybe(catMaybes))
-%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -65,9 +63,6 @@ level 2..6 : with prefix 'cpEhc'
 -- Language syntax: Core
 %%[(20 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
--- Language syntax: Grin
-%%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Per full program compile actions: level 6
@@ -88,14 +83,9 @@ cpEhcFullProgLinkAllModules modNmL
           [mainModNm]
             | ehcOptDoLinking opts
               -> cpSeq (   (if ehcOptFullProgAnalysis opts
-                            then [ -- deed mergen:
-                                   -- cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-                                   -- Zorg dat er Grin klaarstaat:
-                                   ensureGrin mainModNm modNmL
-                                 , cpMsg mainModNm VerboseDebug "HACKING cpEhcMergeIntoOneBigGrin"
-                                 , cpMergeIntoOneBigGrin opts modNmL (impModNmL, mainModNm)
-                                 , panic "Ik vind het wel genoeg"
-                                 , cpProcessGrin mainModNm
+                            then [ cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
+                                 -- , cpMsg mainModNm VerboseDebug "XX"
+                                 , cpEhcCorePerModulePart2 mainModNm
                                  -- , cpMsg mainModNm VerboseDebug "YY"
                                  ]
                             else []
@@ -122,24 +112,9 @@ cpEhcFullProgLinkAllModules modNmL
 %%]]
       }
   where splitMain cr = partition (\n -> ecuHasMain $ crCU n cr)
-        ensureGrin mainModNm modNmL
-          = do { cpSeq [cpGetPrevGrin m | m <- modNmL]
-               ; cr <- get
-               ; let noGrinYet = [ m | m <- modNmL , isNothing (ecuMbGrin $ crCU m cr) ]
-               ; let welGrin   = [ m | m <- modNmL , isJust (ecuMbGrin $ crCU m cr) ]
-               ; cpMsg mainModNm VerboseDebug ("HACKING al wel   Grin: " ++ show welGrin)
-               ; cpMsg mainModNm VerboseDebug ("HACKING nog geen Grin: " ++ show noGrinYet)
-               ; cpSeq [cpGetPrevCore m | m <- noGrinYet]
-               -- ; cpMsg mainModNm VerboseDebug ("HACKING cpProcessCoreRest on " ++ show noGrinYet)
-               -- deed processCoreRest (ongeveer= vertalen
-               -- naar GRIN) en processGrin:
-               -- , cpEhcCorePerModulePart2 mainModNm
-               -- , map (crCU nm AAP
-               ; mapM_ cpProcessCoreRest noGrinYet
-               }
 %%]
 
-%%[20 export(cpEhcCheckAbsenceOfMutRecModules,cpUpdCU)
+%%[20 export(cpEhcCheckAbsenceOfMutRecModules)
 cpEhcCheckAbsenceOfMutRecModules :: EHCompilePhase ()
 cpEhcCheckAbsenceOfMutRecModules
  = do { cr <- get
@@ -183,33 +158,19 @@ Post processing involves the following:
 %%]
 
 %%[(20 codegen grin)
--- cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
--- cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
---   = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
---           , mergeIntoOneBigCore
---           , cpOutputCore "fullcore" mainModNm
---           , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
---           ]
---   where mergeIntoOneBigCore
---           = do { cr <- get
---                ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
---                                                                  | m <- modNmL
---                                                                  ]
---                                    )             )
---                }
-
--- TODO: gaat kapot als je een core-bestand weggooit en de hi laat staan.
-cpMergeIntoOneBigGrin :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
-cpMergeIntoOneBigGrin opts modNmL (impModNmL,mainModNm)
-  = cpSeq [ -- cpSeq [cpGetPrevGrin m | m <- modNmL]
-            mergeIntoOneBigGrin
-          , cpOutputGrin' "fullgrin" mainModNm
-          , cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
+cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHCompilePhase ()
+cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
+  = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
+          , mergeIntoOneBigCore
+          , cpOutputCore "fullcore" mainModNm
+          , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
           ]
-  where mergeIntoOneBigGrin
+  where mergeIntoOneBigCore
           = do { cr <- get
-               ; let grins = [ panicJust "cpMergeIntoOneBigGrin.mergeIntoOneBigGrin" g | m <- modNmL , let g = ecuMbGrin $ crCU m cr ]
-               ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge grins))
+               ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
+                                                                 | m <- modNmL
+                                                                 ]
+                                   )             )
                }
 %%]
 
@@ -807,7 +768,6 @@ cpProcessCoreRest modNm
 %%[[20
           , cpFlowCoreSem modNm
 %%]]
-          , cpMsg modNm VerboseDebug ("HACKING: cpTranslateCore2Grin on " ++ show modNm)
           , cpTranslateCore2Grin modNm
 %%[[(8 jazy)
           , cpTranslateCore2Jazy modNm
