@@ -127,6 +127,7 @@ data EHCompileUnit
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
+      , ecuMbGrinTime        :: !(Maybe ClockTime)
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
@@ -199,6 +200,7 @@ emptyECU
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            = Nothing
+      , ecuMbGrinTime        = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
 %%]]
@@ -356,13 +358,16 @@ ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
 ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
-%%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
+%%[(8 grin) export(ecuStoreGrin,ecuStoreGrinTime,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
+
+ecuStoreGrinTime :: EcuUpdater ClockTime
+ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 
 ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8
