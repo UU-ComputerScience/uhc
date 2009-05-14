@@ -12,7 +12,7 @@ import CDocCommon
 import CDocSubst
 import CDocInline
 import qualified Data.Set as Set
-import qualified UU.DData.Seq as Seq
+import qualified EH.Util.FastSeq as Seq
 import EH.Util.Utils(initlast)
 
 -- for debugging:
@@ -265,7 +265,7 @@ xrKindIsDefining _ = False
 xrIsDefining :: XRef -> Bool
 xrIsDefining = xrKindIsDefining . xrKind
 
-type XRefL = Seq.Seq XRef
+type XRefL = Seq.FastSeq XRef
 type XRefExcept = Set.Set String
 
 passXR :: XRefExcept -> String -> ([XRef],Int) -> ([XRef],Int)
@@ -273,7 +273,7 @@ passXR exc r xr = if Set.member r exc then ([],0) else xr
 }
 
 ATTR AGItf AllNT [ xrefExcept: XRefExcept | | ]
-ATTR AllWord AllLine [ | | xrefL USE {`Seq.append`} {Seq.empty} : XRefL ]
+ATTR AllWord AllLine [ | | xrefL USE {`Seq.union`} {Seq.empty} : XRefL ]
 ATTR Word [ | rCtxtUsed: Int | ]
 ATTR Words [ rCtxtUsed: Int | | ]
 

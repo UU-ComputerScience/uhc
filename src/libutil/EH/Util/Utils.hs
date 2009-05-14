@@ -5,6 +5,7 @@ import Data.Char
 import Data.List
 import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.Graph as Graph
 
 -------------------------------------------------------------------------
 -- Set
@@ -186,6 +187,10 @@ f $? mx = do x <- mx
 orMb :: Maybe a -> Maybe a -> Maybe a
 orMb m1 m2 = maybe m2 (const m1) m1
 
+-------------------------------------------------------------------------
+-- Strongly Connected Components
+-------------------------------------------------------------------------
 
-
+scc :: Ord n => [(n,[n])] -> [[n]]
+scc = map Graph.flattenSCC . Graph.stronglyConnComp . map (\(n,ns) -> (n, n, ns))
 

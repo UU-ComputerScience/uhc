@@ -43,7 +43,7 @@
 %%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 
-%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, qualified UU.DData.Scc as Scc, Common, Gam, FmGam, JdShpGam)
+%%[1 hs import (EH.Util.Utils, EH.Util.Pretty, Common, Gam, FmGam, JdShpGam)
 %%]
 
 %%[1 hs import (Expr.Utils, Ty.Utils)
@@ -711,7 +711,7 @@ vrwlIsEmpty i
 
 vwrlScc :: VwRlInfo e -> [[Nm]]
 vwrlScc i
-  = map reorder . unNm . Scc.scc . concat . dpd . vwrlFullPreGam $ i
+  = map reorder . unNm . scc . concat . dpd . vwrlFullPreGam $ i
   where dpd g = d' ++ d
           where d = [ (jd n,map nm . Set.toList $ is) : zip (map nm . Set.toList $ os) (repeat [jd n])
                     | (REInfoJudge n _ is os _ _) <- gamElemsShadow g
