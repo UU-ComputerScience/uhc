@@ -4,7 +4,8 @@ TEXT_DOC_VARIANTS			+= shuffle-doc text2text-doc \
 								howtodoc-doc howtoexperiment-doc \
 								ehc-technical-doc ehc-structure-doc ehc-user-doc \
 								build-system-doc \
-								getting-started-doc announce-doc release-history-doc
+								getting-started-doc announce-doc release-history-doc \
+								roadmap-doc
 TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								popl07-explimpl \
 								hw06-impred esop07-impred esop07-impred-tr \
@@ -48,7 +49,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/TopicPerformance uniqueness/TopicRelatedWork uniqueness/TopicConclusion \
 								uniqueness/Slides uniqueness/TopicImplementation \
 								HowToDoc HowToExperiment \
-								ReleaseHistory
+								ReleaseHistory \
+								RoadMap
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -106,6 +108,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 49: doc: release history
 # 50: doc: build system
 # 51: paper "UHC Architecture" to be submitted to Haskell Symposium 2009
+# 52: doc: roadmap
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -155,5 +158,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 47, \
 		39 < 48, \
 		39 < 49, \
-		39 < 50
+		39 < 50, \
+		39 < 52
 		

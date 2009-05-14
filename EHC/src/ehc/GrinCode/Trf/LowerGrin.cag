@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
 Vectorisation:
-In a lambda pattern \textit{n}, if HPT says that \texit{n} refers to a node, replace it by  \textit{(t x y)}.
+In a lambda pattern \textit{n}, if HPT says that \textit{n} refers to a node, replace it by  \textit{(t x y)}.
 Also, in Case expressions, scrutinize on tags rather than nodes.
 
 Inspects the HPT table and updates it for introduced fresh variables.

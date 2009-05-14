@@ -146,6 +146,11 @@ text-variant-release-history-doc:
 	  TEXT_SHUFFLE_VARIANT=49 \
 	  text-variant-dflt-doc
 
+text-variant-roadmap-doc:
+	$(MAKE) \
+	  TEXT_SHUFFLE_VARIANT=52 \
+	  text-variant-dflt-doc
+
 text-variant-build-system-doc:
 	$(MAKE) \
 	  TEXT_SHUFFLE_VARIANT=50 \
