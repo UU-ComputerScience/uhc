@@ -43,8 +43,7 @@ import Control.Monad.State
 import IO
 import qualified Data.Map as Map
 import EH.Util.Pretty
-import UU.DData.Scc as Scc
-import EH.Util.Utils( panicJust )
+import EH.Util.Utils(panicJust, scc)
 import EH.Util.FPath
 
 
@@ -322,7 +321,7 @@ crImportDepL :: (CompileUnit u n l s) => CompileRun n u i e -> [(n,[n])]
 crImportDepL = map (\cu -> (cuKey cu,cuImports cu)) . Map.elems . crCUCache
 
 cpImportScc :: (Ord n,CompileUnit u n l s) => CompilePhase n u i e ()
-cpImportScc = modify (\cr -> (cr {crCompileOrder = Scc.scc (crImportDepL cr)}))
+cpImportScc = modify (\cr -> (cr {crCompileOrder = scc (crImportDepL cr)}))
 
 
 -------------------------------------------------------------------------
