@@ -779,4 +779,8 @@ Anonymity, blinding things
 % #1: citations
 % #2: title
 \newcommand{\cref}[2]{#2}
+
+% index a def
+% #1: index term
+\newcommand{\IxAsDef}[1]{\emph{#1}}
 %%]

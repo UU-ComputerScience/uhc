@@ -175,6 +175,7 @@ SEM TableColFormat
   | JustifyCenter   loc         .   out         =   out "c"
   | JustifyRight    loc         .   out         =   out "r"
   | SepbyLine       loc         .   out         =   out "|"
+  | ParBox		    loc         .   out         =   out "p" +++ dltxArg @sizetext.out
 
 SEM TableRow
   | Row             lhs         .   out         =   outListSep "" "" "&" @cols.outL +++ "\\\\" +++ @extrabrktext.out

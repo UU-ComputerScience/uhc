@@ -184,7 +184,7 @@ scan scoMp st pos sci
 
         -- doclatex
         sc p st@(ScState _ sctp@(ScTpContent TextType_DocLaTeX)) ('\\':s@(c:s')) sci
-          | isVarStart c                            = scKw isVarStart isCmd TkCmd (infpAdvCol 1 p) st s sci
+          | isVarStart c                            = scKw isVarStart isCmd TkCmd ("\\"++) (infpAdvCol 1 p) st s sci
           | c == '\\'                               = Tok TkCmd cmd p st : sc (infpAdvStr cmd p) st s' sci
                                                     where cmd = "\\\\"
         sc p st@(ScState l sctp@(ScTpContent TextType_DocLaTeX)) ('%':s') sci
@@ -197,7 +197,7 @@ scan scoMp st pos sci
         
         -- text2text
         sc p st@(ScState _ sctp@ScTpMetaMeta) s@(c:_) sci
-          | isVarStart c                            = scKw isVarRest isKeyw TkReserved p st s sci
+          | isVarStart c                            = scKw isVarRest isKeyw TkReserved id p st s sci
         sc p st@(ScState _ ScTpMeta) s@(c:s') sci
           | isLF c                                  = Tok TkText       ""  p st : sc (infpAdv1Line p) st s' sci
           | otherwise                               = Tok TkText       b   p st : sc p' st s'' sci
@@ -210,7 +210,7 @@ scan scoMp st pos sci
 
         -- any type
         sc p st@(ScState _ sctp@(ScTpContent _)) s@(c:_) sci
-          | isVarStart c                            = scKw isVarRest isKeyw TkReserved p st s sci
+          | isVarStart c                            = scKw isVarRest isKeyw TkReserved id p st s sci
 {-
         sc p st@(ScState _ ScTpMetaMeta) s@(c:_) sci
           | isDigit c                               = Tok TkInt        w   p st : sc (infpAdvStr w p) st s' sci
@@ -237,9 +237,10 @@ scan scoMp st pos sci
         sc p st             s@(c:s') sci            = Tok TkErr        [c] p st : sc (infpAdvCol 1 p) st s' sci
 
         -- utils
-        scKw f isKeyCmd keytok p st@(ScState _ sctp) s sci   = Tok tk w p st : sc (infpAdvStr w p) st s' sci
-                                                    where (w,s') = span f s
-                                                          tk = if isKeyCmd sctp w then keytok else TkText
+        scKw f isKeyCmd keytok mkNoKeyStr p st@(ScState _ sctp) s sci
+                                                    = Tok tk w' p st : sc (infpAdvStr w p) st s' sci
+                                                    where (w ,s') = span f s
+                                                          (tk,w') = if isKeyCmd sctp w then (keytok,w) else (TkText,mkNoKeyStr w)
 
         opt st p                                    = maybe False p $ Map.lookup st scoMp
         isSpec st c                                 = opt st (\o -> c `Set.member` scoSpecChars o)
