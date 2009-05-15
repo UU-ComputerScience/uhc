@@ -108,12 +108,12 @@ Word mm_space_Fragment_GetGrowDefaultLog( MM_Space* fragmentSpace ) {
 void mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
-	printf( ">------------------------> MM_Space: Fragment: space=%x spc=%x\n", fragmentSpace, spc ) ;
+	printf( ">------------------------> MM_Space: Fragment: space=%p spc=%p\n", fragmentSpace, spc ) ;
 
 	int i ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
 		MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, i ) ;
-		printf( "  Frg %x: frag=%x size=%x\n", i, frg->frag, frg->size ) ;
+		printf( "  Frg %x: frag=%p size=%x\n", i, frg->frag, frg->size ) ;
 	}
 
 	printf( "<------------------------< MM_Space: Fragment\n" ) ;

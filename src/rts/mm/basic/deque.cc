@@ -130,14 +130,14 @@ void mm_deque_Dump( MM_DEQue* deque ) {
 	
 	printf( ">------------------------>\n" ) ;
 	printf
-		( "DEQue: headOff=%x tailOff=%x dll.next=%x dll.prev=%x\n"
+		( "DEQue: headOff=%x tailOff=%x dll.next=%p dll.prev=%p\n"
 		, deque->headOff, deque->tailOff, deque->dll.next, deque->dll.prev
 		) ;
 	MM_DLL* dll = deque->dll.next ;
 	for ( ; dll != &deque->dll ; dll = dll->next ) {
 		MM_DEQue_PageHeader* pg = (MM_DEQue_PageHeader*)dll ;
 		printf
-			( "  Pg: pg=%x tailOff=%x\n"
+			( "  Pg: pg=%p tailOff=%x\n"
 			, pg, pg->tailOff
 			) ;
 	}

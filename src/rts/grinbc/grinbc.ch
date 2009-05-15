@@ -615,7 +615,7 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 											{ \
 												action	; \
 												if ( gb_ThrownException != NULL && extratest ) {\
-													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%x\n",gb_ThrownException) ;}) ; \
+													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%p\n",gb_ThrownException) ;}) ; \
 													gcsafe ; \
 													whenexc ; \
 												} \

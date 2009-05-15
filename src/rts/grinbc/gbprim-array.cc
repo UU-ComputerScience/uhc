@@ -38,7 +38,7 @@ PRIM GB_NodePtr gb_primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 	} else {
   		GB_MkListNil(n) ;
 	}
-  	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primByteArrayToString1Char n %p\n", n ););
 	GB_GC_SafeLeave ;
   	return n ;
 }
@@ -78,13 +78,13 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(n) ;
 	GB_GC_Safe1_Zeroed(n2) ;
-  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%x\n", sz, n ););
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray1 sz=%d n=%p\n", sz, n ););
 %%[[95
 	gb_listForceEval( &n, (int*) &sz ) ;
 %%][96
 	GB_PassExc_GCSafe( gb_listForceEval( &n, (int*) &sz ) ) ;
 %%]]
-  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%x\n", sz, n ););
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray2 sz=%d n=%p\n", sz, n ););
 	GB_NodeAlloc_ByteArray_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
 	int bufInx = 0 ;
@@ -94,7 +94,7 @@ PRIM GB_NodePtr gb_primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_List_Iterate(n,sz,{GB_Word xx ; GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%]]
 	// does not work: GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
-  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%x buf=", bufInx, n ););
+  	IF_GB_TR_ON(3,printf("gb_primStringToByteArray4 bufInx=%d, n=%p buf=", bufInx, n ););
   	IF_GB_TR_ON(3,{int i ; for (i = 0 ; i < bufInx ; i++) {printf(" %d",s[i]);};});
   	IF_GB_TR_ON(3,printf("\n"););
 	GB_GC_SafeLeave ;
