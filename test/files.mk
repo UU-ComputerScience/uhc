@@ -34,9 +34,8 @@ thaw-test-expect:
 ###########################################################################################
 
 # make lists holding all test files for a variant
-test-lists:
+test-lists: $(TEST_MKF)
 	@cd $(TEST_REGRESS_SRC_PREFIX) ; \
-	shopt -s nullglob ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
 	  if test $${v} = $(UHC_EXEC_NAME) ; \
@@ -54,7 +53,10 @@ test-lists:
 	  i=$${startvariant} ; \
 	  while test $${i} -le $${vv} ; \
 	  do \
-	    ehs="$${ehs} `echo $${i}/*.{eh,hs}`" ; \
+	    for f in $${i}/*.eh $${i}/*.hs ; \
+	    do \
+	      ehs="$${ehs} $${f}" ; \
+	    done ; \
 	    i=`expr $${i} + 1` ; \
 	  done ; \
 	  echo "$${ehs}" > $${v}.lst ; \
