@@ -11,7 +11,7 @@ INTLIKE_ARITH_PRIMS_INTERFACE(gb_,Int,Int,GB_Word,GB_NodePtr)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int,Int,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int,Int,SWord,GB_Word,GB_NodePtr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,7 +26,7 @@ INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(gb_,Word,Word,GB_Word)
 
 %%[99
 INTLIKE_BITS_PRIMS_INTERFACE(gb_,Word,Word,GB_Word,GB_NodePtr)
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word,Word,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word,Word,Word,GB_Word,GB_NodePtr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,7 +40,7 @@ INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(gb_,Word8,Word8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word8,Word8,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word8,Word8,Word,GB_Word,GB_NodePtr)
 %%]
 
 %%[97
@@ -50,12 +50,12 @@ INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(gb_,Word16,Word16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word16,Word16,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word16,Word16,Word,GB_Word,GB_NodePtr)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word16,Word16,GB_Word,GB_NodePtr)
 %%]
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word16,Word16,Word,GB_Word,GB_NodePtr)
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
 
@@ -69,7 +69,7 @@ INTLIKE_ARITH_PRIMS_INTERFACE(gb_,Word32,Word32,GB_Word,GB_NodePtr)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word32,Word32,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word32,Word32,Word,GB_Word,GB_NodePtr)
 %%]
 
 %%[97
@@ -81,7 +81,7 @@ INTLIKE_ARITH_PRIMS_INTERFACE(gb_,Word64,Word64,GB_Word,GB_NodePtr)
 
 %%[99
 INTLIKE_BITS_PRIMS_INTERFACE(gb_,Word64,Word64,GB_Word,GB_NodePtr)
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word64,Word64,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Word64,Word64,Word64,GB_Word,GB_NodePtr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +95,7 @@ INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(gb_,Int8,Int8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int8,Int8,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int8,Int8,SWord,GB_Word,GB_NodePtr)
 %%]
 
 %%[97
@@ -105,7 +105,7 @@ INTLIKE_INT_CONVERSION_PRIMS_INTERFACE(gb_,Int16,Int16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int16,Int16,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int16,Int16,SWord,GB_Word,GB_NodePtr)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -120,7 +120,7 @@ INTLIKE_ARITH_PRIMS_INTERFACE(gb_,Int32,Int32,GB_Word,GB_NodePtr)
 %%]
 
 %%[99
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int32,Int32,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int32,Int32,SWord,GB_Word,GB_NodePtr)
 %%]
 
 %%[97
@@ -132,7 +132,7 @@ INTLIKE_ARITH_PRIMS_INTERFACE(gb_,Int64,Int64,GB_Word,GB_NodePtr)
 
 %%[99
 INTLIKE_BITS_PRIMS_INTERFACE(gb_,Int64,Int64,GB_Word,GB_NodePtr)
-INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int64,Int64,GB_Word,GB_NodePtr)
+INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(gb_,Int64,Int64,SWord64,GB_Word,GB_NodePtr)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

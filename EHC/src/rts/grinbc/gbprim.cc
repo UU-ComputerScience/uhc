@@ -477,7 +477,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,SWord,GB_Word)
 %%]
 
 %%[8
@@ -526,7 +526,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int8,Int8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Int8,Int8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Int8,Int8,SWord,GB_Word)
 %%]
 
 %%[97
@@ -535,7 +535,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int16,Int16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Int16,Int16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Int16,Int16,SWord,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -548,9 +548,9 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int32,Int32,GB_Word)
 
 %%[99
 #ifdef USE_32_BITS
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Int32,Int32,SWord,GB_Word)
 #else
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Int32,Int32,SWord,GB_Word)
 #endif
 %%]
 
@@ -562,7 +562,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_W
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,64,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Int64,Int64,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Int64,Int64,SWord64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -576,7 +576,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word,Word,GB_Word)
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,Word,GB_Word)
 %%]
 
 %%[97
@@ -605,7 +605,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word8,Word8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Word8,Word8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Word8,Word8,Word,GB_Word)
 %%]
 
 %%[97
@@ -614,7 +614,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word16,Word16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Word16,Word16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Word16,Word16,Word,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -627,9 +627,9 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word32,Word32,GB_Word)
 
 %%[99
 #ifdef USE_32_BITS
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Word32,Word32,Word,GB_Word)
 #else
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Word32,Word32,Word,GB_Word)
 #endif
 %%]
 
@@ -641,7 +641,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,64,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Word64,Word64,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Word64,Word64,Word64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
