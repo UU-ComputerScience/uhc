@@ -353,7 +353,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_ALL_SRC)
+	@echo $(SHELL)
 	@echo $(EHC_ALL_SRC_FIND)
 
 tstv:

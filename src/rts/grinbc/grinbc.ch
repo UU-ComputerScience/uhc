@@ -1072,7 +1072,7 @@ This breaks when compiled without bgc.
 
 %%[8
 #define GB_GBInt2CastedInt(ty,x)	(Cast(ty,(x)&GB_Word_IntMask) / GB_Int_ShiftPow2)
-#define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
+#define GB_GBInt2Int(x)				GB_GBInt2CastedInt(SWord,x)
 #define GB_TagWord2Word(x)			(((x)<<GB_Word_SizeOfWordTag) | GB_Word_TagInt)
 #define GB_UntagWord2Word(x)		((x)>>GB_Word_SizeOfWordTag)
 #define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_SizeOfWordTag | GB_Word_TagInt)

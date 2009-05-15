@@ -42,13 +42,13 @@ extern PrimTypeC 		PrimPrefix ## primAnd 			## PrimTypeName( PrimTypeC x, PrimTy
 extern PrimTypeC 		PrimPrefix ## primOr 			## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;								\
 extern PrimTypeC 		PrimPrefix ## primXor 			## PrimTypeName( PrimTypeC x, PrimTypeC y ) ;								\
 
-#define INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeWord,PrimNodePtr)						\
+#define INTLIKE_BITS_BITSIZE_DPD_PRIMS_INTERFACE(PrimPrefix,PrimTypeName,PrimTypeC,PrimTypeCWord,PrimTypeWord,PrimNodePtr)						\
 																																	\
-extern PrimTypeC 		PrimPrefix ## primShiftLeft 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
-extern PrimTypeC 		PrimPrefix ## primShiftRight 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
-extern PrimTypeC 		PrimPrefix ## primComplement 	## PrimTypeName( PrimTypeC x ) ;											\
-extern PrimTypeC 		PrimPrefix ## primRotateLeft 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
-extern PrimTypeC 		PrimPrefix ## primRotateRight 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;							\
+extern PrimTypeCWord 		PrimPrefix ## primShiftLeft 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;						\
+extern PrimTypeCWord 		PrimPrefix ## primShiftRight 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;						\
+extern PrimTypeCWord 		PrimPrefix ## primComplement 	## PrimTypeName( PrimTypeC x ) ;										\
+extern PrimTypeCWord 		PrimPrefix ## primRotateLeft 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;						\
+extern PrimTypeCWord 		PrimPrefix ## primRotateRight 	## PrimTypeName( PrimTypeC x, PrimTypeWord y ) ;						\
 
 %%]
 
@@ -210,25 +210,25 @@ Bitsize dependent operations where PrimTypeName needs exactly the same nr of bit
 Hence no additional masking is needed.
 
 %%[99
-#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 							\
+#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeCWord,PrimTypeWord) 				\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {											\
+PRIM PrimTypeCWord PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
 	return x << y ;																													\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primShiftRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primShiftRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	return x >> y ;																													\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primComplement ## PrimTypeName( PrimTypeC x ) {														\
+PRIM PrimTypeCWord PrimPrefix ## primComplement ## PrimTypeName( PrimTypeC x ) {													\
   	return ~x ;																														\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primRotateLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primRotateLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	return (x << y) | (x >> (PrimBitSize - y)) ;																					\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primRotateRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primRotateRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	return (x >> y) | (x << (PrimBitSize - y)) ;																					\
 }																																	\
 																																	\
@@ -239,28 +239,29 @@ Bitsize dependent operations where PrimTypeName needs strictly less bits of Prim
 For masking take the largest used int variant, Word64.
 
 %%[99
-#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeWord) 							\
+#define INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(PrimPrefix,PrimBitSize,PrimTypeName,PrimTypeC,PrimTypeCWord,PrimTypeWord) 				\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {											\
-	return (x << y) & Bits_Size2LoMask(Word64,PrimBitSize) ;																		\
+PRIM PrimTypeCWord PrimPrefix ## primShiftLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+	PrimTypeC xx = x & Bits_Size2LoMask(Word64,PrimBitSize) ;																		\
+	return (PrimTypeC) (xx << y) ;																									\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primShiftRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primShiftRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	return x >> y ;																													\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primComplement ## PrimTypeName( PrimTypeC x ) {														\
-  	return (~x) & Bits_Size2LoMask(Word64,PrimBitSize) ;																														\
+PRIM PrimTypeCWord PrimPrefix ## primComplement ## PrimTypeName( PrimTypeC x ) {													\
+  	return (PrimTypeC) ((~x) & Bits_Size2LoMask(Word64,PrimBitSize)) ;																\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primRotateLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primRotateLeft ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	PrimTypeC xx = x & Bits_Size2LoMask(Word64,PrimBitSize) ;																		\
-	return ((xx << y) | (xx >> (PrimBitSize - y))) & Bits_Size2LoMask(Word64,PrimBitSize) ;											\
+	return (PrimTypeC) (((xx << y) | (xx >> (PrimBitSize - y))) & Bits_Size2LoMask(Word64,PrimBitSize)) ;							\
 }																																	\
 																																	\
-PRIM PrimTypeC PrimPrefix ## primRotateRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {										\
+PRIM PrimTypeCWord PrimPrefix ## primRotateRight ## PrimTypeName( PrimTypeC x, PrimTypeWord y ) {									\
 	PrimTypeC xx = x & Bits_Size2LoMask(Word64,PrimBitSize) ;																		\
-	return (xx >> y) | (xx << (PrimBitSize - y)) ;																					\
+	return (PrimTypeC) (((xx >> y) | (xx << (PrimBitSize - y))) & Bits_Size2LoMask(Word64,PrimBitSize)) ;							\
 }																																	\
 																																	\
 

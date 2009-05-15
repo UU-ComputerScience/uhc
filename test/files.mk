@@ -53,10 +53,8 @@ test-lists: $(TEST_MKF)
 	  i=$${startvariant} ; \
 	  while test $${i} -le $${vv} ; \
 	  do \
-	    for f in $${i}/*.eh $${i}/*.hs ; \
-	    do \
-	      ehs="$${ehs} $${f}" ; \
-	    done ; \
+	    for f in $${i}/*.eh ; do if test -r "$${f}" ; then ehs="$${ehs} $${f}" ; fi ; done ; \
+	    for f in $${i}/*.hs ; do if test -r "$${f}" ; then ehs="$${ehs} $${f}" ; fi ; done ; \
 	    i=`expr $${i} + 1` ; \
 	  done ; \
 	  echo "$${ehs}" > $${v}.lst ; \
