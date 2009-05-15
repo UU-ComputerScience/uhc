@@ -57,7 +57,7 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 		Word szLog  = firstNonZeroMsBit( szBase >> MM_Allocator_LOF_RoundGroupSize_Log, MM_Allocator_LOF_NrRoundGroup-1 ) ;
 		Word szInx  = szLog * MM_Allocator_LOF_RoundGroupSize + Bits_ExtrTo(Word,szBase >> szLog,MM_Allocator_LOF_RoundGroupSize_Log-1) ;
 		MM_Allocator_LOF_PerSize* perSize = &alc->perSizeRounded[ szInx ] ;
-		// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc sz=%x szWord=%x szBase=%x szLog=%x szInx=%x perSize=%x perSize->free=%x\n", sz, szWord, szBase, szLog, szInx, perSize, perSize->free );}) ;
+		// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc sz=%x szWord=%x szBase=%x szLog=%x szInx=%x perSize=%p perSize->free=%p\n", sz, szWord, szBase, szLog, szInx, perSize, perSize->free );}) ;
 		
 		// ensure elements on free list
 		if ( perSize->free == NULL ) {
@@ -165,21 +165,21 @@ void mm_allocator_LOF_Dump( MM_Allocator* alcr ) {
 		MM_Allocator_LOF_PerSize* perSize = &alc->perSizeRounded[i] ;
 		if ( perSize->free != NULL || perSize->pages != NULL ) {
 			printf
-				( "  Sz: %d: perSize=%x\n"
+				( "  Sz: %d: perSize=%p\n"
 				, i, perSize
 				) ;
 			
 			MM_Allocator_LOF_PageRounded* pages = perSize->pages ;
 			printf( "    Pgs :" ) ;
 			for ( ; pages != NULL ; pages = pages->next ) {
-				printf( " %x(%x)", pages, mm_pages_Buddy_GetSizeLog(&mm_pages,(MM_Page)pages) ) ;
+				printf( " %p(%p)", pages, mm_pages_Buddy_GetSizeLog(&mm_pages,(MM_Page)pages) ) ;
 			}
 			printf( "\n" ) ;
 			
 			MM_Allocator_LOF_FreeRounded* free = perSize->free ;
 			printf( "    Free:" ) ;
 			for ( ; free != NULL ; free = free->next ) {
-				printf( " %x", free ) ;
+				printf( " %p", free ) ;
 			}
 			printf( "\n" ) ;
 		}

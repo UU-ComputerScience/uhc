@@ -39,7 +39,7 @@ void mm_rangeMap_Free( MM_RangeMap* a ) {
 // assume this does not happen too often, so allocate exactly what is asked for
 // assume it only grows
 void mm_rangeMap_Realloc( MM_RangeMap* a, WPtr ptr, MM_RangeMap_Inx firstInx, MM_RangeMap_Inx aftLastInx ) {
-	// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc a=%x firstInx=%x aftLastInx=%x a->firstInx=%x a->size=%x\n", a, firstInx, aftLastInx, a->firstInx, a->size);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc a=%p firstInx=%x aftLastInx=%x a->firstInx=%x a->size=%x\n", a, firstInx, aftLastInx, a->firstInx, a->size);}) ;
 	if ( a->firstInx == 0 ) {
 		a->firstInx = firstInx ;
 	} else {

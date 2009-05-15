@@ -688,7 +688,7 @@ PRIM GB_Word gb_primCharToLower( GB_Word x )
 
 PRIM GB_Word gb_primPackedStringNull( char *s )
 {
-  	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %x, %d, %s\n", s, *s, s ););
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %p, %d, %s\n", s, *s, s ););
 	if ( *s )
 		return gb_False ;
   	return gb_True ;
@@ -696,7 +696,7 @@ PRIM GB_Word gb_primPackedStringNull( char *s )
 
 PRIM GB_Word gb_primPackedStringTail( char *s )
 {
-  	IF_GB_TR_ON(3,printf("gb_primPackedStringTail %x, %d, %s\n", s, *s, s ););
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringTail %p, %d, %s\n", s, *s, s ););
   	return Cast(GB_Word,s+1) ;
 }
 
@@ -736,14 +736,14 @@ GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
   	GB_NodePtr n, n2 ;
 	GB_GC_SafeEnter ;
   	GB_GC_Safe2_Zeroed(n,n2) ;
-  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %p:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2In(n2,&gb_primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
 	}
-  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %p\n", n ););
   	GB_GC_SafeLeave ;
   	return n ;
 }
@@ -781,15 +781,15 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	int sz = 99 ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(n) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %p\n", n ););
 %%[[8
 	gb_listForceEval( &n, &sz ) ;
 %%][96
 	GB_PassExc_GCSafe( gb_listForceEval( &n, &sz ) ) ;
 %%]]
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %p\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %p\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 `%s'\n", buf ););
 	GB_GC_SafeLeave ;

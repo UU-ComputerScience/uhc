@@ -80,7 +80,7 @@ MM_Module mm_module_GBSS =
 void mm_module_GBSS_Dump( MM_Module* module ) {
 	MM_Module_GBSS_Data* moduleyyy = (MM_Module_GBSS_Data*)module->data ;
 
-	printf( ">------------------------> MM_Module: GBSS: module=%x moduleyyy=%x\n", module, moduleyyy ) ;
+	printf( ">------------------------> MM_Module: GBSS: module=%p moduleyyy=%p\n", module, moduleyyy ) ;
 
 	printf( "<------------------------< MM_Module: GBSS\n" ) ;
 

@@ -105,7 +105,7 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 	}
 	plss->gcInProgress = True ;
 
-	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC plan=%x plss=%x\n",plan,plss);}) ;
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC plan=%p plss=%p\n",plan,plss);}) ;
 	if ( isSpaceFull ) {
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
@@ -143,7 +143,7 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 void mm_plan_SS_Dump( MM_Plan* plan ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	
-	printf( ">------------------------> MM_Plan: SS: plan=%x plss=%x\n", plan, plss ) ;
+	printf( ">------------------------> MM_Plan: SS: plan=%p plss=%p\n", plan, plss ) ;
 
 	mm_Spaces_Dump() ;
 	plss->ssAllocator.dump( &plss->ssAllocator ) ;

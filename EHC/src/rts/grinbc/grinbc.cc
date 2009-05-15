@@ -91,7 +91,7 @@ Equivalent of Base.BasicTy
 #define GB_PushNodeArgs(nd,hdr,pfr,pto)	/* push args of `fun + args' node fields */ 				\
 								pfr = Cast(GB_Ptr,&((nd)->content.fields[GB_NH_NrFlds(hdr)])) ;	\
 								pto = Cast(GB_Ptr,&((nd)->content.fields[1])) ;								\
-								IF_GB_TR_ON(3,printf("pfr %x pto %x sp %x\n",pfr,pto,sp);) ;			\
+								IF_GB_TR_ON(3,printf("pfr %p pto %p sp %p\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
 %%]
@@ -416,11 +416,11 @@ GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz )
 %%]]
 		if ( GB_List_IsNull( *pn ) )
 			break ;
-  		IF_GB_TR_ON(3,printf("gb_listForceEval1 *psz %d, sz %d, n %x: ", *psz, sz, *pn ););
+  		IF_GB_TR_ON(3,printf("gb_listForceEval1 *psz %d, sz %d, n %p: ", *psz, sz, *pn ););
   		IF_GB_TR_ON(3,gb_prWord(Cast(GB_Word,*pn)););
   		IF_GB_TR_ON(3,printf("\n" ););
 		pn = GB_List_TailPtr(*pn) ;
-  		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %x\n", *pn ););
+  		IF_GB_TR_ON(3,printf("gb_listForceEval2 n %p\n", *pn ););
   		sz++ ;
 	}
 	*psz = sz ;
@@ -548,12 +548,7 @@ int gb_Opt_Info = 0 ;
 void gb_prByteCodeInstrEntry( GB_ByteCodeInstrEntry* e )
 {
 	int i ;
-#	if USE_64_BITS
-		printf( "0x%lx: "
-#	else
-		printf( "0x%x: "
-#	endif
-	      , e->bcLoc ) ;
+	printf( "%p: ", e->bcLoc ) ;
 	for ( i = 0 ; i < e->bcSize ; i++ )
 	{
 		printf("%0.2x ", e->bcLoc[i]) ;
@@ -607,7 +602,7 @@ void gb_prCallInfoName( GB_CallInfo* ci )
 
 void gb_prCallInfo( GB_CallInfo* ci )
 {
-	printf( "ci=%x", (GB_Word)ci ) ;
+	printf( "ci=%p", ci ) ;
 	if ( ci != NULL )
 	{
 		printf( ": kind %d: ", ci->kind ) ;
@@ -770,10 +765,10 @@ void gb_prState( char* msg, int maxStkSz )
 		// printf("bcm=%x bce=%x bci=%x\n",bcm, bce, bci) ;
 		printf
 %%[[8
-			( "%s.%s + %d/0x%x: %s\n"
+			( "%s.%s + %p/%p: %s\n"
 			, bcm->bcModNm
 %%][20
-			( "%s + %d/0x%x: %s\n"
+			( "%s + %p/%p: %s\n"
 %%]]
 			, bce->nm
 			, bci - bce->bcInstr, pc - bce->bcInstr->bcLoc
@@ -1230,7 +1225,7 @@ gb_interpreter_InsCallEntry:
 				// GC sensitive:
 				gb_callc( x2, callenc ) ;
 %%[[96
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %p, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 				GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 %%]]
 				// GB_CallC_Code_Postamble(x2,x) ;
@@ -1294,7 +1289,7 @@ gb_interpreter_InsEvalEntry:
 %%[[8
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 %%][96
-									IF_GB_TR_ON(3,{printf("GB_Ins_Eval.GB_NodeTagCat_CFun: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
+									IF_GB_TR_ON(3,{printf("GB_Ins_Eval.GB_NodeTagCat_CFun: gb_ThrownException = %p, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 									GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 									if ( gb_ThrownException ) {
 										// postamble only because we now know we end up in a handler, which uses the default convention
@@ -1426,7 +1421,7 @@ gb_interpreter_InsApplyEntry:
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
-				IF_GB_TR_ON(3,{printf( "alloc sz=%d p=0x%x: ", x, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf( "alloc sz=%d p=%p: ", x, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
 				break ;
 
 			/* allocstorer */
@@ -1487,7 +1482,7 @@ gb_interpreter_InsApplyEntry:
 
 %%[[96
 					case GB_InsExt_ResetThrownException:
-						IF_GB_TR_ON(3,{printf("GB_InsExt_ResetThrownException: gb_ThrownException = %x, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
+						IF_GB_TR_ON(3,{printf("GB_InsExt_ResetThrownException: gb_ThrownException = %p, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 						gb_ThrownException = NULL ;
 						gb_ThrownException_NrOfEvalWrappers = 0 ;
 						break ;
@@ -1573,13 +1568,13 @@ See GBM doc for explanation.
 %%[96
 GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 {
-	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException1 bp %x\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException1 bp %p\n", bp) ;}) ;
 	GB_Push( e ) ;																							// build stack frame which just returns the value
 	GB_Push( 1 ) ;
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(GB_CallInfo_Inline)]) ) ;		// return, marked as handler
 	GB_BP_Link ;
 	
-	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException2 bp %x\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException2 bp %p\n", bp) ;}) ;
 	IF_GB_TR_ON(3,{GB_CallInfo* ci ;ci = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci );printf("\n");}) ;
 	
 	GB_Push( handler ) ;																					// build adapted copy of primitive stack frame
@@ -1588,7 +1583,7 @@ GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(GB_CallInfo_Inline)]) ) ;						// with return to evaluation code
 	GB_BP_Link ;
 	
-	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException3 bp %x\n", bp) ;}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException3 bp %p\n", bp) ;}) ;
 	IF_GB_TR_ON(3,{GB_CallInfo* ci2 ;ci2 = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci2 );printf("\n");}) ;
 	
 	return e ;
@@ -1608,13 +1603,13 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	
 	GB_MkListNil(reifiedBackTrace) ;
 	
-	IF_GB_TR_ON(3,{printf("gb_intl_throwException bp %x : ", bp) ; printf("\n");}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_throwException bp %p : ", bp) ; printf("\n");}) ;
 	for ( p = bp
 	    ; p != NULL && ((ci = GB_FromBPToCallInfo(p))->kind) != GB_CallInfo_Kind_Hdlr
 	    ; p = Cast(GB_Ptr,*p)
 	    )
 	{
-		IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo1: p %x : ", p) ; gb_prCallInfo( ci ); printf("\n");}) ;
+		IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo1: p %p : ", p) ; gb_prCallInfo( ci ); printf("\n");}) ;
 		GB_Ptr p2 ;
 		if ( ci->kind == GB_CallInfo_Kind_EvCont && (p2 = Cast(GB_Ptr,*p)) != NULL ) {						// if we are in a continuation of an eval then patch it
 			GB_CallInfo* ci2 = GB_FromBPToCallInfo(p2) ;
@@ -1623,7 +1618,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 					GB_MkCFunNode1In(thrownExc,&gb_intl_throwException,exc) ;									// if not done already, construct exception throwing thunk
 				}
 				GB_NodePtr nOld = Cast(GB_NodePtr,GB_RegRelx(p2,2)) ;
-				IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo2: p %x p2 %x nOld %x: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo2: p %p p2 %p nOld %p: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
 				GB_UpdWithIndirection_Code(nOld,Cast(GB_Word,thrownExc)) ;											// update node under evaluation with exception throwing thunk
 			}
 		} else if ( ci->kind == GB_CallInfo_Kind_EvalTopWrap ) {
@@ -1648,7 +1643,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	} else {
 		gb_panic( "uncaught exception" ) ;
 	}
-	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%x bp=%x\n", sp, bp) ;}) ;
+	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%p bp=%p\n", sp, bp) ;}) ;
 	
 	GB_MkTupNode2_In(thrownExc,reifiedBackTrace,exc) ;																// tuple with backtrace
 	GB_GC_SafeLeave ;
@@ -1696,7 +1691,7 @@ void gb_exit( int i )
 		if ( gb_prCallInfoIsVisible( ci ) )
 		// if ( True )
 		{
-			printf( "  bp=%x ", (GB_Word)p ) ;
+			printf( "  bp=%p ", p ) ;
 			gb_prCallInfo( ci ) ;
 			printf( "\n" ) ;
 		}
@@ -1795,25 +1790,25 @@ void gb_InitTables
 			case GB_LinkTbl_EntryKind_CodeEntry :
 				IF_GB_TR_ON(3,{printf("link CodeEntry") ; printf("\n");}) ;
 				*p = Cast(GB_Word,globalEntries[ linkEntries[i].linkVal ]) ;
-				IF_GB_TR_ON(3,{printf("link CodeEntry p %x v %x", p, globalEntries[ linkEntries[i].linkVal ]) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link CodeEntry p %p v %x", p, globalEntries[ linkEntries[i].linkVal ]) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref0 :
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0") ; printf("\n");}) ;
 				*p = linkEntries[i].linkVal ;
-				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref0 p %p v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref1 :
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1") ; printf("\n");}) ;
 				*p = GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)) ;
-				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1 p %x v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref1 p %p v %x", p, linkEntries[i].linkVal) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchCode_Deref2 :
 				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2") ; printf("\n");}) ;
 				*p = GB_Deref(Cast(GB_Ptr,GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal)))) ;
-				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2 p %x v %x", p, GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal))) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link PatchCode_Deref2 p %p v %x", p, GB_Deref(Cast(GB_Ptr,linkEntries[i].linkVal))) ; printf("\n");}) ;
 				break ;
 
 			case GB_LinkTbl_EntryKind_PatchOffsets :
@@ -1821,14 +1816,14 @@ void gb_InitTables
 				{
 					IF_GB_TR_ON(3,{printf("link PatchOffsets") ; printf("\n");}) ;
 					p[j] = Cast(GB_Word,&p[j+1]) + p[j] ;
-					IF_GB_TR_ON(3,{printf("link PatchOffsets i %d p %x v %x", j, &p[j], Cast(GB_Word,&p[j+1]) + p[j]) ; printf("\n");}) ;
+					IF_GB_TR_ON(3,{printf("link PatchOffsets i %d p %p v %x", j, &p[j], Cast(GB_Word,&p[j+1]) + p[j]) ; printf("\n");}) ;
 				}
 				break ;
 
 %%[[20
 			case GB_LinkTbl_EntryKind_ImpEntry :
-				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x linkVal=%x", p, (linkEntries[i].linkVal)) ; printf("\n");}) ;
-				IF_GB_TR_ON(3,{printf("link ImpEntry p=%x expNode=%x", p, (modTbl[ impModules[ linkEntries[i].linkVal ].globModInx ].expNode)) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p=%p linkVal=%x", p, (linkEntries[i].linkVal)) ; printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf("link ImpEntry p=%p expNode=%x", p, (modTbl[ impModules[ linkEntries[i].linkVal ].globModInx ].expNode)) ; printf("\n");}) ;
 				*p = Cast(GB_Word,(modTbl[ impModules[ linkEntries[i].linkVal ].globModInx ].expNode)) ;
 				// IF_GB_TR_ON(3,{printf("link ImpEntry p=%x v=%x", p, (modTbl[ linkEntries[i].linkVal ].expNode)) ; printf("\n");}) ;
 				break ;
@@ -1841,7 +1836,7 @@ void gb_InitTables
 	for ( i = 0 ; i < expNodeSz ; i++ )
 	{
 		(*expNode)->content.fields[i] = Cast(GB_Word,globalEntries[ expNodeOffs[i] ]) ;
-		IF_GB_TR_ON(3,{printf("link nd=%x flds=%x exp i=%d/%x off=%x p=%x glob[off]=%x", (*expNode), (*expNode)->content.fields, i, i, expNodeOffs[i], &(*expNode)->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
+		IF_GB_TR_ON(3,{printf("link nd=%p flds=%p exp i=%d/%x off=%x p=%x glob[off]=%x", (*expNode), (*expNode)->content.fields, i, i, expNodeOffs[i], &(*expNode)->content.fields[i], globalEntries[ expNodeOffs[i] ]) ; printf("\n");}) ;
 	}
 %%]]
 	
