@@ -91,9 +91,18 @@ cpParseEH
 %%[(8 grin) export(cpParseGrin)
 cpParseGrin :: HsName -> EHCompilePhase ()
 cpParseGrin modNm
+--  = do { cr <- get
+--       ; cpMsg modNm VerboseDebug "HACKING cpParseGrin"
+--       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
+--       }
   = do { cr <- get
-       ; cpMsg modNm VerboseDebug "HACKING cpParseGrin"
-       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              fpC     = fpathSetSuff "grin" fp
+       ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
+       ; errs <- cpParsePlainToErrs GrinParser.pModule grinScanOpts ecuStoreGrin fpC modNm
+       -- ; when (ehcDebugStopAtCoreError opts)
+       --        (cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs)
+       ; return ()
        }
 %%]
 

@@ -78,6 +78,7 @@ Top level entry point into compilation by the compiler driver, apart from import
 %%]
 
 %%[20
+-- TODO parset nu gecachede Grin, ook als de HS nieuwer is
 cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
 cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
@@ -135,7 +136,7 @@ cpEhcFullProgLinkAllModules modNmL
                -- naar GRIN) en processGrin:
                -- , cpEhcCorePerModulePart2 mainModNm
                -- , map (crCU nm AAP
-               ; mapM_ cpProcessCoreRest noGrinYet
+               ; mapM_ (\m -> do cpProcessCoreRest m ; cpOutputGrin' "grin" m) noGrinYet
                }
 %%]
 
@@ -527,14 +528,14 @@ cpEhcHaskellModulePrepareHS1 modNm
 
 cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHS2 modNm
-  = cpSeq [ cpGetMetaInfo [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Dir] modNm
+  = cpSeq [ cpGetMetaInfo [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir] modNm
           , cpGetPrevHI modNm
           , cpFoldHI modNm
           ]
 
 cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHI modNm
-  = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core] modNm
+  = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core, GetMeta_Grin] modNm -- TODO Grin hier?
           , cpGetPrevHI modNm
           , cpFoldHI modNm
           ]

@@ -114,7 +114,7 @@ cpGetMetaInfo gm modNm
                                               (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
 %%]]
                  )
-%%[[(20 grin)
+%%[[(20 codegen)
          ;  when (GetMeta_Grin `elem` gm)
                  (tm opts ecu ecuStoreGrinTime      (fpathSetSuff "grin"      fp     ))
 %%]]
