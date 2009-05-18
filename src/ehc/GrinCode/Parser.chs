@@ -122,9 +122,23 @@ pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
                      <|>  pSucceed GrAltAnnNormal
                      )
 
-pGrBindAnn      ::  GRIParser GrBindAnn
-pGrBindAnn      =    pSucceed GrBindAnnNormal    -- TODO: GrBindAnnClass/Instance
-                     
+pGrBindAnn      ::   GRIParser GrBindAnn
+pGrBindAnn      =    pSucceed GrBindAnnNormal
+                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pMbGrNm
+                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList pMbGrNm
+                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList pInt
+                <|>  GrBindAnnSpecialized <$
+                       pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
+
+-- TODO O jee: DICTOVERLOADED{-1} clasht met commentaarsyntax {- ... -}
+pCurlyList      ::   GRIParser a -> GRIParser [a]
+pCurlyList p    =    pCurly $ pListSep pComma p
+
+-- TODO niet een vieze hack gebruiken voor _
+pMbGrNm         ::   GRIParser (Maybe HsName)
+pMbGrNm         =    f <$> pGrNm
+  where f n | show n == "_" = Nothing
+            | otherwise     = Just n
 
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm

@@ -275,6 +275,7 @@ grinScanOpts
                                         , "basicnode", "enumnode", "opaquenode", "ptrnode", "basicannot", "enumannot", "opaqueannot", "ptrannot"
                                         , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
                                         , "word"
+                                        , "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED", "SPECIALIZED"
 %%[[97
                                         , "float", "double"
 %%]]
