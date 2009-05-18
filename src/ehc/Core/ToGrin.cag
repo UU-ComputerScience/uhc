@@ -515,6 +515,14 @@ SEM CBind
                             .   resIsIO     =   isJust @mbIORes
 %%]
 
+%%[(8 codegen grin)
+SEM CBind
+  | FFI         loc         .   resTyAdapted:   Ty
+                loc         .   argTyLExtra :   {[Ty]}
+                loc         .   nmArgLExtra :   {[HsName]}
+                loc         .   wrapRes     :   {GrExpr -> GrExpr}
+%%]
+
 %%[(8 codegen grin).ioAdaption
 SEM CBind
   | FFI         loc         .   resTyAdapted=   @resTy

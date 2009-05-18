@@ -114,8 +114,8 @@ typedef uint8_t  	GB_Byte ;
 %%]
 
 %%[97
-typedef float GB_Float ;
-typedef double GB_Double ;
+typedef Float 	GB_Float 	;
+typedef Double 	GB_Double 	;
 %%]
 
 %%[97
@@ -1103,6 +1103,7 @@ This breaks when compiled without bgc.
 %%]
 
 %%[97
+%%]
 #define GB_Float_Op1_In1(op,z,x)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = op x->content.flt ; }
 #define GB_Float_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = x->content.flt op y->content.flt ; }
 
@@ -1113,9 +1114,9 @@ This breaks when compiled without bgc.
 #define GB_Float_Div_In(z,x,y)				GB_Float_Op2_In1(/,z,x,y)
 
 #define GB_Float_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.flt,y->content.flt,lt,eq,gt)
-%%]
 
 %%[97
+%%]
 #define GB_Double_Op1_In1(op,z,x)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = op x->content.dbl ; }
 #define GB_Double_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = x->content.dbl op y->content.dbl ; }
 
@@ -1126,7 +1127,6 @@ This breaks when compiled without bgc.
 #define GB_Double_Div_In(z,x,y)				GB_Double_Op2_In1(/,z,x,y)
 
 #define GB_Double_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.dbl,y->content.dbl,lt,eq,gt)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instruction opcode inline operands

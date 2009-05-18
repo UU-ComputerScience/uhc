@@ -86,7 +86,37 @@ basicSizeInBytes BasicSize_Double  = Cfg.sizeofDouble
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% BasicSize encoding
+%%% BasicSize type representation for GrinByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(BasicGBTy(..))
+data BasicGBTy
+  = BasicGBTy
+      { gbtyOnStack		:: String			-- as it lives on the stack
+      , gbtyAsIs		:: String			-- as it is
+      }
+%%]
+
+%%[(8 codegen) export(basicGBTy)
+basicGBTyMp :: Map.Map BasicSize BasicGBTy
+basicGBTyMp
+  = Map.fromList
+      [ (BasicSize_Word8	, BasicGBTy "Word" 		"Word8"		)
+      , (BasicSize_Word16	, BasicGBTy "Word" 		"Word16"	)
+      , (BasicSize_Word32	, BasicGBTy "Word" 		"Word32"	)
+      , (BasicSize_Word64	, BasicGBTy "Word64" 	"Word64"	)
+%%[[97
+      , (BasicSize_Float	, BasicGBTy "GB_Float" 	"Float"		)
+      , (BasicSize_Double	, BasicGBTy "GB_Double" "Double"	)
+%%]]
+      ]
+
+basicGBTy :: BasicSize -> BasicGBTy
+basicGBTy b = panicJust "basicGBTy" $ Map.lookup b basicGBTyMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BasicSize encoding for GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(allGrinBasicSize)

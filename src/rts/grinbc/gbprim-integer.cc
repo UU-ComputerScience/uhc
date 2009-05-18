@@ -139,7 +139,7 @@ void gb_Free_GMP( void *n, size_t nBytesOld )
 
 %%[97
 #if USE_GMP
-PRIM GB_Float gb_primRationalToFloat( GB_NodePtr nr )
+PRIM Float gb_primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
@@ -148,13 +148,13 @@ PRIM GB_Float gb_primRationalToFloat( GB_NodePtr nr )
 	GB_GC_Safe2_Zeroed(numerator, divisor) ;
 	GB_PassExc_Cast_GCSafe( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
 	GB_PassExc_Cast_GCSafe( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
-	GB_Float res ;
-	res = Cast( GB_Float, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
+	Float res ;
+	res = Cast( Float, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
 	GB_GC_SafeLeave ;
 	return res ;
 }
 
-PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
+PRIM Double gb_primRationalToDouble( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
@@ -167,25 +167,25 @@ PRIM GB_Double gb_primRationalToDouble( GB_NodePtr nr )
 	// nf->content.dbl = mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ;
 	// return nf ;
 	GB_GC_SafeLeave ;
-	return Cast( GB_Double, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
+	return Cast( Double, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
 }
 
-PRIM GB_Float gb_primIntegerToFloat( GB_NodePtr n )
+PRIM Float gb_primIntegerToFloat( GB_NodePtr n )
 {
 	// GB_NodePtr nf ;
 	// GB_NodeAlloc_Float_In(nf) ;
 	// nf->content.flt = mpz_get_d( MPZ(n) ) ;		// not sure whether this works without explicit truncation or something like that...
 	// return nf ;
-	return Cast( GB_Float, mpz_get_d( MPZ(n) ) ) ;
+	return Cast( Float, mpz_get_d( MPZ(n) ) ) ;
 }
 
-PRIM GB_Double gb_primIntegerToDouble( GB_NodePtr n )
+PRIM Double gb_primIntegerToDouble( GB_NodePtr n )
 {
 	// GB_NodePtr nf ;
 	// GB_NodeAlloc_Double_In(nf) ;
 	// nf->content.dbl = mpz_get_d( MPZ(n) ) ;
 	// return nf ;
-	return Cast( GB_Double, mpz_get_d( MPZ(n) ) ) ;
+	return Cast( Double, mpz_get_d( MPZ(n) ) ) ;
 }
 
 PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
@@ -209,14 +209,14 @@ PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primFloatToInteger( GB_Float x )
+PRIM GB_NodePtr gb_primFloatToInteger( Float x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primDoubleToInteger( GB_Double x )
+PRIM GB_NodePtr gb_primDoubleToInteger( Double x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
@@ -553,8 +553,8 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 #define gb_intlDecode(ty,x)																	\
 {																							\
 	int exp ;																				\
-	int mantdig = ( sizeof(ty) == sizeof(GB_Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;		\
-	ty mant = ( sizeof(ty) == sizeof(GB_Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;	\
+	int mantdig = ( sizeof(ty) == sizeof(Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;		\
+	ty mant = ( sizeof(ty) == sizeof(Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;	\
 	if ( fpclassify(x) == FP_ZERO ) {														\
 		exp = 0 ;																			\
 	} else {																				\
@@ -576,14 +576,14 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Float gb_primEncodeFloat( GB_NodePtr frac, GB_Word exp )
+PRIM Float gb_primEncodeFloat( GB_NodePtr frac, GB_Word exp )
 {
-	GB_Float d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
+	Float d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }
 
-PRIM GB_NodePtr gb_primDecodeFloat( GB_Float x )
-	gb_intlDecode(GB_Float,x)
+PRIM GB_NodePtr gb_primDecodeFloat( Float x )
+	gb_intlDecode(Float,x)
 
 %%]
 
@@ -592,14 +592,14 @@ PRIM GB_NodePtr gb_primDecodeFloat( GB_Float x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
+PRIM Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
 {
-	GB_Double d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
+	Double d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }
 
-PRIM GB_NodePtr gb_primDecodeDouble( GB_Double x )
-	gb_intlDecode(GB_Double,x)
+PRIM GB_NodePtr gb_primDecodeDouble( Double x )
+	gb_intlDecode(Double,x)
 
 %%]
 
