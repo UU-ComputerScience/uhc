@@ -553,8 +553,8 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 #define gb_intlDecode(ty,x)																	\
 {																							\
 	int exp ;																				\
-	int mantdig = ( sizeof(ty) == sizeof(Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;		\
-	ty mant = ( sizeof(ty) == sizeof(Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;	\
+	int mantdig = ( sizeof(ty) == sizeof(Double) ? DBL_MANT_DIG : FLT_MANT_DIG ) ;			\
+	ty mant = ( sizeof(ty) == sizeof(Double) ? frexp( x, &exp ) : frexpf( x, &exp) ) ;		\
 	if ( fpclassify(x) == FP_ZERO ) {														\
 		exp = 0 ;																			\
 	} else {																				\
@@ -562,7 +562,7 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 	}																						\
 	GB_NodePtr n, ni ;																		\
 	GB_GC_SafeEnter ;																		\
-	GB_GC_Safe2_Zeroed(n,ni) ;																		\
+	GB_GC_Safe2_Zeroed(n,ni) ;																\
 	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, mantdig ) ) ;								\
 	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;												\
 	GB_GC_SafeLeave ;																		\

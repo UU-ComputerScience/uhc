@@ -413,11 +413,11 @@ SEM GrPatLam
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
   | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
-                                                                BasicAnnot_ToTaggedPtr _
+                                                                BasicAnnot_ToTaggedPtr _ _
                                                                   | @lhs.primResForIntl -> BasicAnnot_Dflt
                                                                 _                       -> @annot
                                                     in  NmIntro_Single @nm ann
-  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False
+  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False BasicTy_Word
                                                     in  NmIntro_Single @nm ann
   | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
@@ -726,8 +726,8 @@ SEM GrExpr
                                                                 -> (ins Seq.:++: @pat.i,patinc,Map.fromList [(nm,val)])
                                                                 where val
                                                                         = case annot of
-                                                                            BasicAnnot_FromTaggedPtr _ -> GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt
-                                                                            _                          -> GB.Val_NodeFldLocal (@expr.stkDepth + patinc) annot
+                                                                            BasicAnnot_FromTaggedPtr _ _ -> GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt
+                                                                            _                            -> GB.Val_NodeFldLocal (@expr.stkDepth + patinc) annot
                                                                       patinc = @pat.patStkInc + inc
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins Seq.:++: fins, inc' + length nmL * GB.nrValWords,g)
@@ -737,7 +737,7 @@ SEM GrExpr
                                                               _ -> (ins,inc,Map.empty)
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
-                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz == Cfg.sizeofGrWord
+                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz <= Cfg.sizeofGrWord
                                                               -> (Seq.empty,0,Map.singleton nmp (GB.Val_Int i))
                                                               where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
@@ -883,7 +883,7 @@ SEM GrAlt
 
 SEM GrPatLam
   | BasicNode   (lhs.i,loc.patStkInc)           =   case @annot of
-                                                      BasicAnnot_FromTaggedPtr sgn
+                                                      BasicAnnot_FromTaggedPtr sgn _
                                                         | @lhs.primArgForIntl  -> (Seq.empty,0)
                                                         | otherwise            -> (Seq.fromList [GB.untag2 sgn],0)
                                                       BasicAnnot_Size bsz _    -> (Seq.empty,0)
