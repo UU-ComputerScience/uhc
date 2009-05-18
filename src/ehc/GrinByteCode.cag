@@ -377,20 +377,20 @@ nmLd' optim env modNmConstInx stkDepth nm
                -> (mva,loadWithPrePostFrom [meta' AnnIdUse (nm >#< annot >#< src)] 0 src post,annot)
                where (src,post)
                          = case annot of
-                             BasicAnnot_FromTaggedPtr sgn  -> (srcDflt Cfg.sizeofGrWord ,[untag2 sgn])
-                             BasicAnnot_ToTaggedPtr   sgn  -> (srcDflt Cfg.sizeofGrWord ,[])
-                             BasicAnnot_Size bsz _         -> (srcDflt (basicSizeInBytes bsz),[])
-                             BasicAnnot_Dflt               -> (srcDflt Cfg.sizeofGrWord ,[])
+                             BasicAnnot_FromTaggedPtr sgn _ -> (srcDflt Cfg.sizeofGrWord ,[untag2 sgn])
+                             BasicAnnot_ToTaggedPtr   sgn _ -> (srcDflt Cfg.sizeofGrWord ,[])
+                             BasicAnnot_Size bsz _          -> (srcDflt (basicSizeInBytes bsz),[])
+                             BasicAnnot_Dflt                -> (srcDflt Cfg.sizeofGrWord ,[])
                          where srcDflt n = offSrc (stkDepth - o) (nrByte2Word n)
              Val_NodeTagLocal o
                -> (mva,loadFrom (offSrc (stkDepth - o) nrValWords),BasicAnnot_Dflt)
              Val_NodeFldLocal o annot
                -> (mva,l,annot)
                where l   = case annot of
-                             BasicAnnot_FromTaggedPtr sgn  -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [untag2 sgn]
-                             BasicAnnot_ToTaggedPtr   sgn  -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [tag2   sgn]
-                             BasicAnnot_Size bsz _         -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word $ basicSizeInBytes bsz)
-                             _                             -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
+                             BasicAnnot_FromTaggedPtr sgn _ -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [untag2 sgn]
+                             BasicAnnot_ToTaggedPtr   sgn _ -> loadWithPost0From (offSrc (stkDepth - o) nrValWords) [tag2   sgn]
+                             BasicAnnot_Size bsz _          -> loadWithPre0From [ldlr (stkDepth - o)] (LoadSrc_Reg_Rel nrNodeHdrWords $ nrByte2Word $ basicSizeInBytes bsz)
+                             _                              -> panic "GrinByteCode.nmLd'.Val_NodeFldLocal"
              Val_Int i
                -> (mva,loadFrom (LoadSrc_Imm_Int i),BasicAnnot_Dflt)
              Val_GlobEntry o
@@ -470,17 +470,17 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
-                            BasicAnnot_Dflt            -> basicAnnotDflt nm
-                            BasicAnnot_ToTaggedPtr sgn -> basicAnnotTaggedPtr sgn nm ml
-                            _                          -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
+                            BasicAnnot_Dflt              -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr sgn _ -> basicAnnotTaggedPtr sgn nm ml
+                            _                            -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Enum.Nothing"
                 where ml@(mbva,l,bann) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Basic gtag nm
                 -> case mbva of
                      Just va | vaHasAnnot va
                        -> case vaBasicAnnot va of
-                            BasicAnnot_Dflt            -> basicAnnotDflt nm
-                            BasicAnnot_ToTaggedPtr sgn -> basicAnnotTaggedPtr sgn nm ml
+                            BasicAnnot_Dflt              -> basicAnnotDflt nm
+                            BasicAnnot_ToTaggedPtr sgn _ -> basicAnnotTaggedPtr sgn nm ml
                             BasicAnnot_Size bsz _
                               -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [bann]
                               where (ins,inc) = vaAndLd2Ins optim nm ml

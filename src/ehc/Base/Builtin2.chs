@@ -59,11 +59,11 @@ emptyBuiltinInfo
 
 %%[(97 codegen) hs
 builtin32BitsTyMp :: EHCOpts -> Bool -> Map.Map HsName BuiltinInfo
-builtin32BitsTyMp opts livesUnboxed
+builtin32BitsTyMp opts _
   = Map.fromList
        [ ( builtinNm opts ehbnInt32
          , emptyBuiltinInfo
-             { biGbcMayLiveUnboxed	= Cfg.use64Bits
+             { biGbcMayLiveUnboxed	= livesUnboxed
              , biIsSigned           = True
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
@@ -72,7 +72,7 @@ builtin32BitsTyMp opts livesUnboxed
          )
        , ( builtinNm opts ehbnWord32
          , emptyBuiltinInfo
-             { biGbcMayLiveUnboxed	= Cfg.use64Bits
+             { biGbcMayLiveUnboxed	= livesUnboxed
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
 %%]]
@@ -80,7 +80,7 @@ builtin32BitsTyMp opts livesUnboxed
          )
        , ( builtinNm opts ehbnFloat
          , emptyBuiltinInfo
-             { biGbcMayLiveUnboxed	= Cfg.use64Bits
+             { biGbcMayLiveUnboxed	= livesUnboxed
              , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat  BasicTy_Float
 %%[[(97 jazy)
              , biJazyBasicTy    	= BasicJazy_Float
@@ -88,6 +88,7 @@ builtin32BitsTyMp opts livesUnboxed
              }
          )
        ]
+  where livesUnboxed = Cfg.use64Bits
 %%]
 
 %%[(8 codegen) hs export(builtinMayLiveUnboxedTyMp)

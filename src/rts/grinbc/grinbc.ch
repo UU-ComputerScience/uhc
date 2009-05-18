@@ -114,7 +114,11 @@ typedef uint8_t  	GB_Byte ;
 %%]
 
 %%[97
+#if USE_64_BITS
+typedef Word 	GB_Float 	;
+#else
 typedef Float 	GB_Float 	;
+#endif
 typedef Double 	GB_Double 	;
 %%]
 
