@@ -278,7 +278,13 @@ grinScanOpts
 %%[[97
                                         , "float", "double"
 %%]]
+%%[[99
+                                        , "True", "False"  -- for FFI annotation
+%%]]
                                         ]
+%%[[94
+                                        ++ map show allFFIWays
+%%]]
         ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
         ,   scoSpecChars        =   Set.fromList "();{}#/\\|,"
         ,   scoOpChars          =   Set.fromList "<->:=+*"
