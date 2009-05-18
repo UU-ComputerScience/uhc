@@ -74,7 +74,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 		}
 	}
 
-	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject ind obj=%p\n",obj);}) ;
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject ind obj=%x\n",obj);}) ;
 	GB_NodePtr objRepl = (GB_NodePtr)obj ;
 	
 	switch ( GB_NH_Fld_NdEv(h) ) {
@@ -97,7 +97,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 				// new obj, copy old into new, allocate
 				if ( doCopy ) {
 					objRepl = (GB_NodePtr)( alc->alloc( alc, szWords << Word_SizeInBytes_Log ) ) ;
-					IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject COPY obj=%p, objRepl=%p\n", obj, objRepl);}) ;
+					IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject COPY obj=%x, objRepl=%p\n", obj, objRepl);}) ;
 					// copy header
 					objRepl->header = h ;
 

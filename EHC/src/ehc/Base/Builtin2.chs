@@ -17,6 +17,16 @@ hence must be in a separate module.
 %%[8 import(qualified Data.Map as Map)
 %%]
 
+%%[doesWhat doclatex
+BuiltinInfo encodes the mapping from HS types to their representation for a specific target.
+For each target some info is maintained:
+\begin{itemize}
+\item Grin: biGrinBoxAnnot, lower level type.
+\item Grin bytecode: biGbcMayLiveUnboxed, whether can live unboxed + tagged.
+\item Jazy: biJazyBasicTy, lower level Java type.
+\end{itemize}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin names of known boxed types, for which it is known how to box/unbox
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,6 +75,15 @@ builtin32BitsTyMp opts livesUnboxed
              { biGbcMayLiveUnboxed	= Cfg.use64Bits
 %%[[(97 jazy)
              , biJazyBasicTy      	= BasicJazy_Int
+%%]]
+             }
+         )
+       , ( builtinNm opts ehbnFloat
+         , emptyBuiltinInfo
+             { biGbcMayLiveUnboxed	= Cfg.use64Bits
+             , biGrinBoxAnnot 		= BasicAnnot_Size basicSizeFloat  BasicTy_Float
+%%[[(97 jazy)
+             , biJazyBasicTy    	= BasicJazy_Float
 %%]]
              }
          )
@@ -183,14 +202,6 @@ builtinKnownBoxedTyMp opts
                { biGrinBoxAnnot 	= BasicAnnot_None
 %%[[(97 jazy)
                , biJazyBasicTy    	= BasicJazy_Integer
-%%]]
-               }
-           )
-         , ( builtinNm opts ehbnFloat
-           , emptyBuiltinInfo
-               { biGrinBoxAnnot 	= BasicAnnot_Size basicSizeFloat  BasicTy_Float
-%%[[(97 jazy)
-               , biJazyBasicTy    	= BasicJazy_Float
 %%]]
                }
            )

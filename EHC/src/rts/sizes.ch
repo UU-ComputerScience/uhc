@@ -22,6 +22,9 @@ typedef  int16_t Int16   ;
 typedef uint8_t  Word8   ;
 typedef  int8_t  SWord8  ;
 typedef  int8_t  Int8    ;
+
+typedef float    Float   ;
+typedef double   Double  ;
 %%]
 
 %%[8
@@ -84,12 +87,12 @@ typedef  int8_t  Int8    ;
 
 %%[97
 typedef union {
-  float			f ;
+  Float			f ;
   Word32		w ;
 } Float_Word32 ;
 
 typedef union {
-  double		d ;
+  Double		d ;
   Word64		w ;
 } Double_Word64 ;
 %%]
