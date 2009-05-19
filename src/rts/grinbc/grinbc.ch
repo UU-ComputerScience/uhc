@@ -122,10 +122,29 @@ typedef Float 	GB_Float 	;
 typedef Double 	GB_Double 	;
 %%]
 
-%%[97
+%%[8
 typedef union GB_WordEquiv {
-  GB_Word 		wrd ;
-  GB_Float		flt ;
+  Word 		w ;
+%%[[97
+#if USE_64_BITS
+#if LITTLEENDIAN
+  struct {
+    Float 	lo ;
+    Float 	hi ;
+  } __attribute__ ((__packed__)) f ;
+#else /* LITTLEENDIAN */
+  struct {
+    Float 	hi ;
+    Float 	lo ;
+  } __attribute__ ((__packed__)) f ;
+  Float		f ;
+#endif
+#else /* USE_64_BITS */
+  struct {
+    Float 	lo ;
+  } f ;
+#endif
+%%]]
 } GB_WordEquiv ;
 %%]
 
@@ -209,6 +228,7 @@ extern   GB_Word     rr ;
 
 #define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
 #define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
+#define GB_SetCallCResult(tys,tyv,r,o,v)	{ *GB_RegByteRel(tyv,r,o) = *Cast(tyv*,Cast(void*,&v)) ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

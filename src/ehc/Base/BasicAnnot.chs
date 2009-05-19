@@ -94,6 +94,7 @@ data BasicGBTy
   = BasicGBTy
       { gbtyOnStack		:: String			-- as it lives on the stack
       , gbtyAsIs		:: String			-- as it is
+      , gbtyWordEquiv	:: String			-- its Word equivalent
       }
 %%]
 
@@ -101,13 +102,13 @@ data BasicGBTy
 basicGBTyMp :: Map.Map BasicSize BasicGBTy
 basicGBTyMp
   = Map.fromList
-      [ (BasicSize_Word8	, BasicGBTy "Word" 		"Word8"		)
-      , (BasicSize_Word16	, BasicGBTy "Word" 		"Word16"	)
-      , (BasicSize_Word32	, BasicGBTy "Word" 		"Word32"	)
-      , (BasicSize_Word64	, BasicGBTy "Word64" 	"Word64"	)
+      [ (BasicSize_Word8	, BasicGBTy "Word" 		"Word8"		"Word"		)
+      , (BasicSize_Word16	, BasicGBTy "Word" 		"Word16"	"Word"		)
+      , (BasicSize_Word32	, BasicGBTy "Word" 		"Word32"	"Word"		)
+      , (BasicSize_Word64	, BasicGBTy "Word64" 	"Word64"	"Word64"	)
 %%[[97
-      , (BasicSize_Float	, BasicGBTy "GB_Float" 	"Float"		)
-      , (BasicSize_Double	, BasicGBTy "GB_Double" "Double"	)
+      , (BasicSize_Float	, BasicGBTy "GB_Float" 	"Float"		"Word32" 	)
+      , (BasicSize_Double	, BasicGBTy "GB_Double" "Double"	"Word64"	)
 %%]]
       ]
 
