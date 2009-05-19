@@ -66,6 +66,7 @@ mkC maxCCallArgs
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")
            ]
+        -- ++ [ localvar "GB_WordEquiv" rw Nothing ]
         ++ [ localvar (gbtyAsIs $ basicGBTy t) (r' t) Nothing | t <- allGrinBasicSize ]
         ++ [ stat (call "GB_SetTOS" [pp nargs])
            , stat (call "GB_Push" [pp pc])
@@ -84,7 +85,8 @@ mkC maxCCallArgs
                         , stat (call "GB_PopCastIn" ["GB_BytePtr",pc])
                         , stat (call "GB_PopIn" [nargs])
                         , assign sp (call "GB_RegByteRel" [pp "GB_Word", pp sp, op "-" (op "*" nargs (sizeof "GB_Word")) (sizeof restyStck)])
-                        , stat (call "GB_SetRegByteRel" [pp restyStck, pp sp, pp "0", pp $ r' res])
+                        -- , stat (call "GB_SetRegByteRel" [pp restyStck, pp sp, pp "0", pp $ r' res])
+                        , stat (call "GB_SetCallCResult" [pp restyStck, pp (gbtyWordEquiv resgbty), pp sp, pp "0", pp $ r' res])
                         ]
                    )
                | (_,fs) <- allFunTyL maxCCallArgs
@@ -103,6 +105,7 @@ mkC maxCCallArgs
         sp = "sp"
         callenc = "callenc"
         nargs = "nargs"
+        -- rw = "res_wordEquiv"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
