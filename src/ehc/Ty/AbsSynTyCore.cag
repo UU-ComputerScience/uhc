@@ -1,0 +1,102 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type structure: for TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({Ty/AbsSynCore})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type structure: TyCore only part
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+System FC support (from GHC core).
+For now in variant 99, but must be in variant for GADT, when implemented.
+
+%%[(8 hmtyinfer || hmtyast)
+DATA Ty
+  | Trans       fromTy          : Ty		-- transitive coercion
+                toTy            : Ty
+  | Unsafe      fromTy          : Ty		-- unsafe coercion
+                toTy            : Ty
+  | Inst        fromTy          : Ty		-- instantiation coercion
+                toTy            : Ty
+  | Sym         ty              : Ty		-- symmetric coercion
+  | Left        ty              : Ty		-- left coercion
+  | Right       ty              : Ty		-- right coercion
+%%]
+
+Often occurring types are given their own AST alternative, easing subsequent analyses
+
+%%[(8 hmtyinfer || hmtyast)
+DATA Ty
+  | Arrow       args            : TySeq		-- function type
+                res             : TySeq
+  | Tup         flds            : TyL		-- tuple, i.e. non extensible record
+  | Seq         seq             : TySeq		-- wrapper around seq
+
+TYPE TyL		= [Ty]
+%%]
+
+Argument or result
+
+%%[(8 hmtyinfer || hmtyast)
+DATA TySeq1
+  | Val         nm            	: {Maybe HsName}	-- value (binding)
+                ty              : Ty
+  | Ty          tv            	: {Maybe TyVarId}	-- type (binding)
+                ki              : Ty
+
+TYPE TySeq1L	= [TySeq1]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sequences
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast)
+DATA TySeq
+  | Seq			seq				: TySeq1L
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore specific variant of quantification and tyvar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast)
+DATA Ty
+  | Var         tv              : {TyVarId}
+%%]
+
+%%[(8 hmtyinfer || hmtyast)
+%%]
+DATA Ty
+  | Quant       qu              : TyQu
+                tv              : {TyVarId}
+                ki              : Ty
+                ty              : Ty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with errors, only to be used internally to avoid use of Haskell 'error'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast)
+DATA Ty
+  | Err			msg				: {String}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SET's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast)
+SET AllTyCore
+  = Ty TyL
+    TySeq1 TySeq1L
+    TySeq
+    TyAnn
+%%]
+

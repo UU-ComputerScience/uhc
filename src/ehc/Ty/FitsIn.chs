@@ -49,6 +49,8 @@
 
 %%[(9 codegen hmtyinfer) import({%{EH}Core.Pretty},{%{EH}Core},{%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]
+%%[(9 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full2} as C)
+%%]
 
 %%[(9 hmtyinfer) import({%{EH}Pred.CommonCHR})
 %%]
@@ -90,6 +92,16 @@ foAppLRCoeAsSubst opts uniq fo c cs ce
         -- s0 = cs `cSubstApp` foCSubst fo
         (ww ,s1) = lrcoeWipeWeaveAsSubst opts u1 c (foLRCoe fo)
         (ce',s2) = coeEvalOnAsSubst u2 ww ce
+%%]
+
+%%[(9 codegen hmtyinfer) export(foAppLRTCoeAsSubst)
+foAppLRTCoeAsSubst :: EHCOpts -> UID -> FIOut -> VarMp -> C.CSubst -> C.Expr -> (C.Expr,C.CSubst)
+foAppLRTCoeAsSubst opts uniq fo c cs ce
+  = (ce', foTCSubst fo `C.cSubstApp` s1 `C.cSubstApp` s2)
+  where (u',u1,u2) = mkNewLevUID2 uniq
+        -- s0 = cs `C.cSubstApp` foTCSubst fo
+        (ww ,s1) = C.lrcoeWipeWeaveAsSubst opts u1 c (foLRTCoe fo)
+        (ce',s2) = C.coeEvalOnAsSubst u2 ww ce
 %%]
 
 -- for use by Ruler
@@ -478,6 +490,7 @@ fitsInFI fi ty1 ty2
 %%]
 %%[(9 codegen hmtyinfer)
             foCmbCSubst  ffo afo  = afo {foCSubst = cSubstApp (foCSubst afo) (foCSubst ffo)}
+            foCmbTCSubst ffo afo  = afo {foTCSubst = C.cSubstApp (foTCSubst afo) (foTCSubst ffo)}
 %%]
 
 %%[(4 hmtyinfer).fitsIn.foCmbApp
@@ -496,6 +509,7 @@ fitsInFI fi ty1 ty2
             foCmbPrfRes  ffo      = foCmbPrL ffo
 %%[[(9 codegen)
                                     . foCmbCSubst ffo
+                                    . foCmbTCSubst ffo
 %%]]
 %%]
 
@@ -514,8 +528,9 @@ fitsInFI fi ty1 ty2
                             $ fo
 %%[[(9 codegen)
             foUpdLRCoe lrcoe fo = fo {foLRCoe = lrcoe `lrcoeUnion` foLRCoe fo}
-            foUpdImplExplCoe iv im tpr lrcoe fo
-                            = foUpdImplExpl iv im tpr $ foUpdLRCoe lrcoe fo
+            foUpdLRTCoe lrcoe fo = fo {foLRTCoe = lrcoe `C.lrcoeUnion` foLRTCoe fo}
+            foUpdImplExplCoe iv im tpr lrcoe tlrcoe fo
+                            = foUpdImplExpl iv im tpr $ foUpdLRCoe lrcoe $ foUpdLRTCoe tlrcoe fo
 %%][9
             foUpdImplExplCoe
                             = foUpdImplExpl
@@ -633,14 +648,19 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fR fi r1 r2 [] [] []
                          = (f fi r1 r2)
 %%[[(10 codegen)
-                              {foLRCoe = emptyLRCoe}
+                              { foLRCoe = emptyLRCoe
+                              , foLRTCoe = C.emptyLRCoe
+                              }
 %%]]
 %%]
                        fR fi r1@(Ty_Var _ cat) r2@(Ty_Con n2) [] [] []
                          | tvCatIsFixed cat && n2 == hsnRowEmpty && isRec
                          = res fi r2
                        fR fi r1 r2 [] [] []
-                         = (f fi r1 r2) {foLRCoe = emptyLRCoe}
+                         = (f fi r1 r2)
+                             { foLRCoe = emptyLRCoe
+                             , foLRTCoe = C.emptyLRCoe
+                             }
 
 %%[(7 hmtyinfer).fitsIn.fRow.Final1
                        fR fi _ _ _ _ _
@@ -663,7 +683,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
 %%[[(10 codegen)
                                  r = CExpr_Var rn
+                                 tr = C.Expr_Var rn
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
+                                 mkLTSel n u = C.mkExprSelCase (C.emptyRCEEnv globOpts) (Just (hsnSuffix rn "!",C.tyErr ("fitsIn.mkLTSel: " ++ show n ++ ":" ++ show u))) tr CTagRec n (C.mkExprHole globOpts u) Nothing
 %%]]
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst $ tyRowExtr l r
@@ -671,8 +693,10 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  mkLPred r l u = fst (mkLPred' r l u)
 %%[[(10 codegen)
                                  rowCoeL = sortByOn rowLabCmp fst (foRowCoeL fo)
+                                 rowTCoeL = sortByOn rowLabCmp fst (foRowTCoeL fo)
 %%][10
                                  rowCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
+                                 rowTCoeL = sortByOn rowLabCmp fst $ map fst extsIn12
 %%]]
                                  (fuUpdL,prUpdL,tr1s',csubstUpd,_)
                                    =  foldr  (\(l,c) (fuL,prL,r,csubst,u)
@@ -690,6 +714,22 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                         )
                                              )
                                              ([],[],tr1s,emptyCSubst,u2) rowCoeL
+                                 (tfuUpdL,tprUpdL,ttr1s',tcsubstUpd,_)
+                                   =  foldr  (\(l,c) (fuL,prL,r,csubst,u)
+                                                ->  let (u',u1,u2) = mkNewLevUID2 u
+                                                        (sel,csubstSel) = C.coeEvalOnAsSubst u2 c (mkLTSel l u1)
+                                                    in  ( ( l
+%%[[(10 codegen)
+                                                          , (C.Expr_TupUpd (C.tcUndefined globOpts) CTagRec l (C.mkExprHole globOpts u) sel,Nothing)
+%%]]
+                                                          ) : fuL
+                                                        , mkLPred r l u1 : prL
+                                                        , r
+                                                        , csubst `C.cSubstApp` csubstSel
+                                                        , u'
+                                                        )
+                                             )
+                                             ([],[],tr1s,C.emptyCSubst,u2) rowTCoeL
                                  (fuDelL,prDelL,_,_)
                                    =  foldl  (\(fuL,prL,r,u) l
                                                   ->  let  (pr,r') = mkLPred' r l u
@@ -702,7 +742,20 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                            )
                                              )
                                              ([],[],tr1s',u3) (sortBy rowLabCmp (assocLKeys e1))
+                                 (tfuDelL,tprDelL,_,_)
+                                   =  foldl  (\(fuL,prL,r,u) l
+                                                  ->  let  (pr,r') = mkLPred' r l u
+                                                      in   ( ( l
+%%[[(10 codegen)
+                                                             , (C.Expr_TupDel (C.Expr_Var hsnWild) CTagRec l (C.mkExprHole globOpts u),Nothing)
+%%]]
+                                                             ) : fuL
+                                                           , pr:prL,r',uidNext u
+                                                           )
+                                             )
+                                             ([],[],tr1s',u3) (sortBy rowLabCmp (assocLKeys e1))
                                  fuL = fuUpdL ++ reverse fuDelL
+                                 tfuL = tfuUpdL ++ reverse tfuDelL
                                  (prBldL, fBldL, _, csubstBld, _) 
                                    =  foldr  (\l (prL,fL,r,csubst,u)
                                                 ->  let (u',u1,u2) = mkNewLevUID2 u
@@ -721,12 +774,34 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              )
                                              ([], [], tr1s, emptyCSubst, u3)
                                              (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
+                                 (tprBldL, tfBldL, _, tcsubstBld, _) 
+                                   =  foldr  (\l (prL,fL,r,csubst,u)
+                                                ->  let (u',u1,u2) = mkNewLevUID2 u
+                                                        (sel,csubstSel)
+                                                          = maybe (s,C.emptyCSubst) (\c -> C.coeEvalOnAsSubst u2 c s) (lookup l rowTCoeL)
+                                                          where s = mkLTSel l u1
+                                                    in  ( mkLPred r l u1 : prL,
+%%[[(10 codegen)
+                                                          sel :
+%%]]
+                                                          fL
+                                                        , r
+                                                        , csubst `C.cSubstApp` csubstSel
+                                                        , u'
+                                                        )
+                                             )
+                                             ([], [], tr1s, C.emptyCSubst, u3)
+                                             (sortBy rowLabCmp ((assocLKeys . map fst $ e12) ++ assocLKeys e2))
                             in   case r2 of
                                    Ty_Con n2
                                      | n2 == hsnRowEmpty && null fuL && null e2
                                      ->  fo
 %%[[(10 codegen)
-                                             {  foLRCoe = emptyLRCoe, foCSubst = foCSubst fo `cSubstApp` csubstUpd `cSubstApp` csubstBld }
+                                             { foLRCoe = emptyLRCoe
+                                             , foLRTCoe = C.emptyLRCoe
+                                             , foCSubst  = foCSubst fo `cSubstApp` csubstUpd `cSubstApp` csubstBld
+                                             , foTCSubst = foTCSubst fo `C.cSubstApp` tcsubstUpd `C.cSubstApp` tcsubstBld
+                                             }
 %%]]
 {- -- when ext rec deletes are implemented
                                      | n2 == hsnRowEmpty && null fuUpdL && not (null fuDelL) && null e2
@@ -741,12 +816,14 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      ->  let
 %%[[(10 codegen)
                                              coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
+                                             tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.Expr_Tup CTagRec `C.mkExprApp` tfBldL))
 %%]]
                                          in  fo  {  foPredOccL = prBldL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo
                                                  ,  foUniq = u'
 %%[[(10 codegen)
                                                  ,  foLRCoe = lrcoeLSingleton coe
+                                                 ,  foLRTCoe = C.lrcoeLSingleton tcoe
 %%]]
                                                  }
                                    Ty_Var _ cat
@@ -756,10 +833,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              ,  foUniq = u'
 %%[[(10 codegen)
                                              ,  foLRCoe = lrcoeLSingleton coe
+                                             ,  foLRTCoe = C.lrcoeLSingleton tcoe
 %%]]
                                              }
 %%[[(10 codegen)
                                      where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuL r))
+                                           tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuL tr))
 %%]]
                                    _ |  not (null fuUpdL)
                                      ->  fo  {  foPredOccL = prUpdL ++ foPredOccL fo
@@ -767,15 +846,19 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              ,  foUniq = u'
 %%[[(10 codegen)
                                              ,  foLRCoe = lrcoeLSingleton coe
+                                             ,  foLRTCoe = C.lrcoeLSingleton tcoe
 %%]]
                                              }
                                      |  otherwise
                                      ->  fo
 %%[[(10 codegen)
-                                             {  foLRCoe = emptyLRCoe }
+                                             {  foLRCoe = emptyLRCoe
+                                             ,  foLRTCoe = C.emptyLRCoe
+                                             }
 %%]]
 %%[[(10 codegen)
                                      where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuUpdL r))
+                                           tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuUpdL tr))
 %%]]
 %%]
 
@@ -790,7 +873,19 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                        ,  let (c,s) = lrcoeWipeWeaveAsSubst globOpts u (foVarMp foR) (foLRCoe fo)
                                        ,  not (coeIsId c)
                                        ]
-                            in  foR {foRowCoeL = cL, foUniq = u', foCSubst = foldr cSubstApp (foCSubst foR) sL}
+                                (tcL,tsL)
+                                   = unzip
+                                       [  ((l,c),s)
+                                       |  (l,fo,u) <- zip3 eKeys foL us
+                                       ,  let (c,s) = C.lrcoeWipeWeaveAsSubst globOpts u (foVarMp foR) (foLRTCoe fo)
+                                       ,  not (C.coeIsId c)
+                                       ]
+                            in  foR { foUniq = u'
+                                    , foRowCoeL = cL
+                                    , foRowTCoeL = tcL
+                                    , foCSubst = foldr cSubstApp (foCSubst foR) sL
+                                    , foTCSubst = foldr C.cSubstApp (foTCSubst foR) tsL
+                                    }
 %%]
 
 %%[(4 hmtyinfer).fitsIn.ff
@@ -959,6 +1054,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                else Just  ( foUpdTy ([foTy pfo] `mkArrow` foTy fo)
 %%[[(9 codegen)
                                           $ foUpdLRCoe (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                          $ foUpdLRTCoe (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.1: " ++ show n)))
 %%]]
                                           $ fo)
                             where  pfo   = fVar f (fi {fiFIOpts = predFIOpts}) tpr2 tpr1
@@ -974,6 +1070,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                       tpr1
 %%[[(9 codegen)
                                                       (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                                      (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.2: " ++ show n)))
 %%]]
                                                       fo)
                             where  im2   = Impls_Tail u1 ipo2
@@ -989,6 +1086,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                       tpr2
 %%[[(9 codegen)
                                                       (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                                      (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.3: " ++ show n)))
 %%]]
                                                       fo)
                             where  im1   = Impls_Tail u1 ipo1
@@ -1004,6 +1102,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2')
 %%[[(9 codegen)
                                                       (mkLRCoe (CoeImplApp iv2) (CoeImplLam iv2))
+                                                      (C.mkLRCoe (C.CoeImplApp iv2) (C.CoeImplLam iv2))
 %%]]
                                                       (fVar ff fi tr1 tr2))
                             where im2' = Impls_Tail iv2 (ipo1 ++ ipo2)
@@ -1036,10 +1135,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                     fo    = fVar ff fi3 t1 tr2
 %%[[(9 codegen)
                                     rCoe  = mkLamLetCoe pr2n (poiId pr2v)
+                                    trCoe  = C.mkLamLetCoe pr2n (C.tyErr ("fitsIn.fSub.mkLamLetCoe: " ++ show pr2n)) (poiId pr2v)
 %%]]
                                in   ( foUpdCnstrMp cnstrMp fo
 %%[[(9 codegen)
                                     , rCoe
+                                    , trCoe
 %%]]
                                     )
                        fP fi (Ty_Impls (Impls_Nil))
@@ -1056,10 +1157,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just ( foUpdTy (mkPrTy pr2 fo)
 %%[[(9 codegen)
                                     $ foUpdLRCoe (lrcoeRSingleton rCoe)
+                                    $ foUpdLRTCoe (C.lrcoeRSingleton trCoe)
 %%]]
                                     $ fo )
 %%[[(9 codegen)
-                            where (fo,rCoe)
+                            where (fo,rCoe,trCoe)
 %%][9
                             where fo
 %%]]
@@ -1068,10 +1170,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just ( foUpdTy (mkPrTy pr2 fo)
 %%[[(9 codegen)
                                     $ foUpdLRCoe (lrcoeRSingleton rCoe)
+                                    $ foUpdLRTCoe (C.lrcoeRSingleton trCoe)
 %%]]
                                     $ fo )
 %%[[(9 codegen)
-                            where (fo,rCoe)
+                            where (fo,rCoe,trCoe)
 %%][9
                             where fo
 %%]]
@@ -1093,10 +1196,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                     prfPrL= [rngLift range mkPredOccRng pr1 pv1 psc1]
 %%[[(9 codegen)
                                     coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) (CMetaVal_Dict Nothing)
+                                    tcoe   = C.mkAppCoe1With (C.mkExprPrHole globOpts pv1) (C.MetaVal_Dict Nothing)
 %%]]
                                in   ( fo
 %%[[(9 codegen)
                                     , coe
+                                    , tcoe
 %%]]
                                     , gathPredLToProveCnstrMp prfPrL
                                     )
@@ -1112,22 +1217,26 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just ( foUpdPrL [] cnstrMp
 %%[[(9 codegen)
                                     $ foUpdLRCoe (lrcoeLSingleton lCoe)
+                                    $ foUpdLRTCoe (C.lrcoeLSingleton tlCoe)
 %%]]
                                     $ fo )
                             where ( fo
 %%[[(9 codegen)
                                    , lCoe
+                                   , tlCoe
 %%]]
                                    , cnstrMp ) = fSub fi pv1 prfPredScope pr1 ([Ty_Impls im1] `mkArrow` tr1)
                        fP fi (Ty_Pred pr1)
                             =  Just ( foUpdPrL [] cnstrMp
 %%[[(9 codegen)
                                     $ foUpdLRCoe (lrcoeLSingleton lCoe)
+                                    $ foUpdLRTCoe (C.lrcoeLSingleton tlCoe)
 %%]]
                                     $ fo )
                             where ( fo
 %%[[(9 codegen)
                                    , lCoe
+                                   , tlCoe
 %%]]
                                    , cnstrMp ) = fSub fi (mkPrIdCHR u1) prfPredScope pr1 tr1
                        fP fi _ =  Nothing
@@ -1194,6 +1303,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                   _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
                               where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
                                     hasSubCoerce = not $ lrcoeIsId $ foLRCoe afo
+                                    -- hasSubCoerce = not $ C.lrcoeIsId $ foLRTCoe afo
 %%]]
 %%]
 

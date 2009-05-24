@@ -271,6 +271,8 @@ SEM Kind
         lhs         .   eh          =   rngLift @range EH.KiExpr_Var @name
     | Forall
         lhs         .   eh          =   {- foldr (rngLift @range EH.KiExpr_Quant TyQu_Forall) -} @kind.eh {- @kindvariables -}
+	| Annotate
+		loc			.	eh			=	rngLift @range EH.KiExpr_Ann @annotation.eh @kind.eh
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -337,6 +339,8 @@ SEM Type
         lhs         .   eh          =   rngLift @range EH.TyExpr_Con @refname
     | Parenthesized
         lhs         .   eh          =   rngLift @range EH.TyExpr_Parens @type.eh
+	| Annotate
+		loc			.	eh			=	rngLift @range EH.TyExpr_Ann @annotation.eh @type.eh
 %%]
 %%[2
     | Wildcard
@@ -670,6 +674,8 @@ SEM Expression
         loc         .   eh          =   rngLift @range EH.Expr_TypeAs @type.eh @expression.eh
     | Negate
         loc         .   eh          =   ehExpVarApp @range @refname [@expression.eh]
+	| Annotate
+		loc			.	eh			=	rngLift @range EH.Expr_Ann @annotation.eh @expression.eh
 %%]
 %%[4
     | ImpredicativeApplication
@@ -1090,6 +1096,8 @@ SEM Pattern
                                                 @pattern.eh
     | Wildcard
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var hsnWild
+	| Annotate
+		loc			.	eh			=	rngLift @range EH.PatExpr_Ann @annotation.eh @pattern.eh
 %%]
 %%[4
     | Typed
@@ -1160,6 +1168,42 @@ SEM Declaration
 SEM Body
     | Body
         loc         .   caseId      =   uidStart
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR TypeAnnotation [ | | eh: {EH.TyExprAnn} ]
+
+SEM TypeAnnotation
+	| Empty
+		loc			.	eh			=	EH.TyExprAnn_Empty
+%%]
+
+%%[1
+ATTR PatternAnnotation [ | | eh: {EH.PatExprAnn} ]
+
+SEM PatternAnnotation
+	| Empty
+		loc			.	eh			=	EH.PatExprAnn_Empty
+%%]
+
+%%[1
+ATTR ExpressionAnnotation [ | | eh: {EH.ExprAnn} ]
+
+SEM ExpressionAnnotation
+	| Empty
+		loc			.	eh			=	EH.ExprAnn_Empty
+%%]
+
+%%[6
+ATTR KindAnnotation [ | | eh: {EH.KiExprAnn} ]
+
+SEM KindAnnotation
+	| Empty
+		loc			.	eh			=	EH.KiExprAnn_Empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

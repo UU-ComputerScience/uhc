@@ -43,6 +43,7 @@ This may change later if/when combinations can be chosen independent/orthogonal.
 data Target
   = Target_None								-- no codegen
   | Target_None_Core_None					-- only Core
+  | Target_None_TyCore_None					-- only TyCore
 %%[[(8 codegen jazy)
   | Target_Interpreter_Core_Jazy			-- java base on Core, using jazy library
 %%]]
@@ -68,6 +69,7 @@ Is derived from the abstract, attempting to keep each part of similar size (most
 instance Show Target where
   show Target_None							= "NONE"
   show Target_None_Core_None				= "core"
+  show Target_None_TyCore_None				= "tycore"
 %%[[(8 codegen jazy)
   show Target_Interpreter_Core_Jazy			= "jazy"
 %%]]
@@ -209,6 +211,14 @@ targetIsCore :: Target -> Bool
 targetIsCore t
   = case t of
       Target_None_Core_None				-> True
+      _ 								-> False
+%%]
+
+%%[(8 codegen) export(targetIsTyCore)
+targetIsTyCore :: Target -> Bool
+targetIsTyCore t
+  = case t of
+      Target_None_TyCore_None			-> True
       _ 								-> False
 %%]
 

@@ -81,7 +81,7 @@ external
   fioJoinY fioMeetY fioFitY
   fioDontBind
   emptyFO
-  foCSubst foLRCoe
+  foCSubst foTCSubst foLRCoe foLRTCoe
 
 format tex howToMatch = <=>
 format ag  fiopt = fiOpts

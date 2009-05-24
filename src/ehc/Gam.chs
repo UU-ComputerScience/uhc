@@ -930,8 +930,11 @@ appSpineGam =  assocLToGam [(hsnArrow, emptyAppSpineInfo {asgiVertebraeL = arrow
 appSpineGam :: AppSpineGam
 appSpineGam
   = assocLToGam
-      [ (hsnArrow,    emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})
-      , (hsnRec,      emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
+      [ (hsnArrow       , emptyAppSpineInfo {asgiVertebraeL = arrowAppSpineVertebraeInfoL})
+      , (hsnRec         , emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
+%%[[18
+      , (hsnRecUnboxed  , emptyAppSpineInfo {asgiVertebraeL = take 1 prodAppSpineVertebraeInfoL})
+%%]]
       ]
 %%]
 
@@ -1218,34 +1221,60 @@ initTyGam :: TyGam
 initTyGam
   = assocLToGam
 %%[[(6 hmtyinfer || hmtyast)
-      [ (hsnArrow,      mkTGI (Ty_Con hsnArrow))
-      , (hsnInt,        mkTGI tyInt)
-      , (hsnChar,       mkTGI tyChar)
-%%][6
-      [ (hsnArrow,      emtpyTGI)
-      , (hsnInt,        emtpyTGI)
-      , (hsnChar,       emtpyTGI)
+      [ (hsnArrow			, mkTGI (Ty_Con hsnArrow))
+      , (hsnInt				, mkTGI tyInt)
+      , (hsnChar			, mkTGI tyChar)
+%%[[7
+      , (hsnRow				, mkTGI (Ty_Con hsnUnknown))
+      , (hsnRec				, mkTGI (Ty_Con hsnRec))
+      , (hsnSum				, mkTGI (Ty_Con hsnSum))
 %%]]
-%%[[(7 hmtyinfer || hmtyast)
-      , (hsnRow,        mkTGI (Ty_Con hsnUnknown))
-      , (hsnRec,        mkTGI (Ty_Con hsnRec))
-      , (hsnSum,        mkTGI (Ty_Con hsnSum))
-%%][7
-      , (hsnRow,        emtpyTGI)
-      , (hsnRec,        emtpyTGI)
-      , (hsnSum,        emtpyTGI)
+%%[[9
+      , (hsnPrArrow			, mkTGI (Ty_Con hsnPrArrow))
 %%]]
-%%[[(9 hmtyinfer || hmtyast)
-      , (hsnPrArrow,    mkTGI (Ty_Con hsnPrArrow))
-%%][9
-      , (hsnPrArrow,    emtpyTGI)
+%%[[18
+      , (hsnRecUnboxed		, mkTGI (Ty_Con hsnRecUnboxed))
+      , (hsnIntUnboxed		, mkTGI tyIntUnboxed)
 %%]]
-%%[[(97 hmtyinfer || hmtyast)
-      , (hsnInteger,    mkTGI tyInteger)
-%%][97
-      , (hsnInteger,    emtpyTGI)
+%%[[97
+      , (hsnInteger			, mkTGI tyInteger		)
+      , (hsnInt8Unboxed  	, mkTGI (Ty_Con hsnInt8Unboxed  )	)
+      , (hsnInt16Unboxed 	, mkTGI (Ty_Con hsnInt16Unboxed )	)
+      , (hsnInt32Unboxed 	, mkTGI (Ty_Con hsnInt32Unboxed )	)
+      , (hsnInt64Unboxed 	, mkTGI (Ty_Con hsnInt64Unboxed )	)
+      , (hsnWordUnboxed  	, mkTGI (Ty_Con hsnWordUnboxed  )	)
+      , (hsnWord8Unboxed 	, mkTGI (Ty_Con hsnWord8Unboxed )	)
+      , (hsnWord16Unboxed	, mkTGI (Ty_Con hsnWord16Unboxed)	)
+      , (hsnWord32Unboxed	, mkTGI (Ty_Con hsnWord32Unboxed)	)
+      , (hsnWord64Unboxed	, mkTGI (Ty_Con hsnWord64Unboxed)	)
 %%]]
+%%[[99
+      , (hsnAddrUnboxed		, mkTGI (Ty_Con hsnAddrUnboxed  )	)
+%%]]  
       ]
+%%][6
+      zip [ hsnArrow, hsnInt, hsnChar
+%%[[7
+          , hsnRow, hsnRec, hsnSum
+%%]]
+%%[[9
+          , hsnPrArrow
+%%]]
+%%[[18
+          , hsnIntUnboxed, hsnRecUnboxed
+%%]]
+%%[[97
+          , hsnInteger
+          , tyInt8Unboxed, tyInt16Unboxed, tyInt32Unboxed, tyInt64Unboxed
+          , tyWordUnboxed
+          , tyWord8Unboxed, tyWord16Unboxed, tyWord32Unboxed, tyWord64Unboxed
+%%]]
+%%[[99
+          , hsnAddrUnboxed
+%%]]
+          ]
+          (repeat emtpyTGI)
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1255,36 +1284,53 @@ initTyGam
 %%[6 export(initTyKiGam)
 initTyKiGam :: TyKiGam
 initTyKiGam
-  = gamUnions
 %%[[(6 hmtyinfer || hmtyast)
+  = gamUnions
       [ (tyKiGamNameSingleton hsnArrow      (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
-      , (tyKiGamNameSingleton hsnInt        (TyKiGamInfo kiStar))
-      , (tyKiGamNameSingleton hsnChar       (TyKiGamInfo kiStar))
-%%][6
-      [ (tyKiGamNameSingleton hsnArrow      TyKiGamInfo)
-      , (tyKiGamNameSingleton hsnInt        TyKiGamInfo)
-      , (tyKiGamNameSingleton hsnChar       TyKiGamInfo)
+      , gamUnions
+          (zipWith tyKiGamNameSingleton
+               [ hsnInt, hsnChar
+%%[[97
+               , hsnInteger
 %%]]
-%%[[(7 hmtyinfer || hmtyast)
+               ]
+               (repeat star)
+          )
+%%[[18
+      , gamUnions
+          (zipWith tyKiGamNameSingleton
+               [ hsnIntUnboxed
+%%[[97
+               , hsnInt8Unboxed, hsnInt16Unboxed, hsnInt32Unboxed, hsnInt64Unboxed
+               , hsnWordUnboxed
+               , hsnWord8Unboxed, hsnWord16Unboxed, hsnWord32Unboxed, hsnWord64Unboxed
+%%]]
+%%[[99
+               , hsnAddrUnboxed
+%%]]
+               ]
+               (repeat unbx)
+          )
+%%]]
+%%[[7
       , (tyKiGamNameSingleton hsnRow        (TyKiGamInfo kiRow))
       , (tyKiGamNameSingleton hsnRec        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
       , (tyKiGamNameSingleton hsnSum        (TyKiGamInfo ([kiRow] `mkArrow` kiStar)))
-%%][7
-      , (tyKiGamNameSingleton hsnRow        TyKiGamInfo)
-      , (tyKiGamNameSingleton hsnRec        TyKiGamInfo)
-      , (tyKiGamNameSingleton hsnSum        TyKiGamInfo)
 %%]]
-%%[[(9 hmtyinfer || hmtyast)
+%%[[9
       , (tyKiGamNameSingleton hsnPrArrow    (TyKiGamInfo ([kiStar,kiStar] `mkArrow` kiStar)))
-%%][9
-      , (tyKiGamNameSingleton hsnPrArrow    TyKiGamInfo)
 %%]]
-%%[[(97 hmtyinfer || hmtyast)
-      , (tyKiGamNameSingleton hsnInteger    (TyKiGamInfo kiStar))
-%%][97
-      , (tyKiGamNameSingleton hsnInteger    TyKiGamInfo)
+%%[[18
+      , (tyKiGamNameSingleton hsnRecUnboxed (TyKiGamInfo ([kiRow] `mkArrow` kiUnboxed)))
 %%]]
       ]
+  where star = TyKiGamInfo kiStar
+%%[[18
+        unbx = TyKiGamInfo kiUnboxed
+%%]]
+%%][6
+  = gamMap (\(k,_) -> (k,TyKiGamInfo)) initTyGam
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1296,16 +1342,16 @@ initKiGam :: KiGam
 initKiGam
   = assocLToGam
 %%[[(6 hmtyinfer || hmtyast)
-      [ (hsnArrow,  KiGamInfo (Ty_Con hsnArrow))
-      , (hsnStar,   KiGamInfo kiStar)
+      [ (hsnArrow   ,   KiGamInfo (Ty_Con hsnArrow))
+      , (hsnKindStar,   KiGamInfo kiStar)
 %%][6
-      [ (hsnArrow,  KiGamInfo)
-      , (hsnStar,   KiGamInfo)
+      [ (hsnArrow   ,   KiGamInfo)
+      , (hsnKindStar,   KiGamInfo)
 %%]]
 %%[[(7 hmtyinfer || hmtyast)
-      , (hsnRow,    KiGamInfo kiRow)
+      , (hsnKindRow ,   KiGamInfo kiRow)
 %%][7
-      , (hsnRow,    KiGamInfo)
+      , (hsnKindRow ,   KiGamInfo)
 %%]]
       ]
 %%]
@@ -1328,18 +1374,35 @@ type PolGam = Gam HsName PolGamInfo
 initPolGam :: PolGam
 initPolGam
   = assocLToGam
-      [ (hsnArrow,   mkPGI $ quant $ [mkPolNegate var, var] `mkArrow` var)
-      , (hsnInt,     mkPGI $ quant var)
-      , (hsnChar,    mkPGI $ quant var)
-      , (hsnRec,     mkPGI $ quant $ [var] `mkArrow` var)
+      [ (hsnArrow       	, mkPGI $ quant $ [mkPolNegate var, var] `mkArrow` var)
+      , (hsnInt         	, mkPGI   quantvar)
+      , (hsnChar        	, mkPGI   quantvar)
+      , (hsnRec         	, mkPGI $ quant $ [var] `mkArrow` var)
+%%[[18
+      , (hsnRecUnboxed  	, mkPGI $ quant $ [var] `mkArrow` var)
+      , (hsnIntUnboxed  	, mkPGI quantvar)
+%%]]
 %%[[97
-      , (hsnInteger, mkPGI $ quant var)
+      , (hsnInteger     	, mkPGI quantvar)
+      , (hsnInt8Unboxed  	, mkPGI quantvar)
+      , (hsnInt16Unboxed  	, mkPGI quantvar)
+      , (hsnInt32Unboxed  	, mkPGI quantvar)
+      , (hsnInt64Unboxed  	, mkPGI quantvar)
+      , (hsnWordUnboxed  	, mkPGI quantvar)
+      , (hsnWord8Unboxed  	, mkPGI quantvar)
+      , (hsnWord16Unboxed  	, mkPGI quantvar)
+      , (hsnWord32Unboxed  	, mkPGI quantvar)
+      , (hsnWord64Unboxed  	, mkPGI quantvar)
+%%]]
+%%[[99
+      , (hsnAddrUnboxed  	, mkPGI quantvar)
 %%]]
       ]
   where
     u     = uidStart
     quant = mkTyQu TyQu_Forall [u]
     var   = mkPolVar u
+    quantvar = quant var
 
 mapPolGam :: (Ty -> Ty) -> PolGam -> PolGam
 mapPolGam f

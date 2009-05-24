@@ -1,0 +1,148 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%]
+%%[(8 codegen) hs import({%{EH}Ty}(TyVarCateg(..),TyQu(..),TyAGItf(..),Ty(..),TyVarId,TyAnn(..)))
+%%]
+%%[(8 codegen) hs import({%{EH}Ty}(TyVarIdS))
+%%]
+%%[(9 codegen) hs import({%{EH}Ty}(Pred(..),Impls(..),ImplsProveOcc,ImplsVarId))
+%%]
+%%[(10 codegen) hs import({%{EH}Ty}(Label(..),LabelAGItf(..),LabelVarId))
+%%]
+%%[(13 codegen) hs import({%{EH}Ty}(PredSeq(..)))
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%]
+%%[(8 codegen) hs import (qualified {%{EH}TyCore} as C)
+%%]
+
+%%[(8 codegen) hs import (qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty quantify
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyToTyCore)
+tyToTyCore :: Ty -> C.Ty
+tyToTyCore ty
+  = ct_Syn_TyAGItf t
+  where  t  =  wrap_TyAGItf
+                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (Inh_TyAGItf)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Base/builtin defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyChar,tyInt)
+tyInt  = tyToTyCore T.tyInt
+tyChar = tyToTyCore T.tyChar
+%%]
+
+%%[(8 codegen) hs export(kiStar)
+kiStar = tyToTyCore T.kiStar
+%%]
+
+%%[(8 codegen) hs export(tyBuiltinCon)
+tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> C.Ty
+tyBuiltinCon opts bnmOf = C.Ty_Con (bnmOf $ ehcOptBuiltinNames opts)
+%%]
+
+%%[(8 codegen).tyString hs export(tyString)
+tyString opts = tyToTyCore T.tyString
+%%]
+
+%%[(11 codegen).tyString -8.tyString hs export(tyString)
+tyString opts = tyBuiltinCon opts ehbnPrelString
+%%]
+
+%%[(97 codegen) hs export(tyBool)
+tyBool opts = tyBuiltinCon opts ehbnDataBool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore variant of Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Ty TyAGItf [ | | ct: {C.Ty} ]
+
+SEM Ty
+  | Var         loc         .   ct          =   C.Ty_Var @tv
+  | Con         loc         .   ct          =   C.Ty_Con @nm
+  | Any         loc         .   ct          =   C.tyErr "ANY"
+  | App         loc         .   ct          =   let dflt = C.Ty_App @func.ct @arg.ct
+                                                in  if @isSpineRoot
+                                                    then if @appIsArrow
+                                                         then C.mkTyArrow1 (C.mkTySeqVals [C.mkTyThunk $ @appRevArgL !! 1]) [@appRevArgL !! 0]
+                                                         else if @appIsLikeProd
+                                                         then case @recMbExt of
+                                                                Just _ -> C.tyErr "EXTREC"
+                                                                _      -> C.Ty_Tup flds
+                                                                       where flds = assocLElts $ T.tyRowCanonOrder @recFldL
+                                                         else dflt
+                                                    else dflt
+  | Quant       loc         .   ct          =   let dflt = @ty.ct
+                                                in  if T.tyquIsForall @qu.self
+                                                    then C.mkTyArrow1 [C.TySeq1_Ty (Just @tv) kiStar] [@ty.ct]
+                                                    else dflt -- for now
+%%]
+
+%%[(9 codegen)
+SEM Ty
+  | Impls       loc         .   ct          =   C.tyErr "IMPLS"
+  | Pred        loc         .   ct          =   C.tyErr "PRED"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Reverse App spine
+
+%%[(8 codegen)
+ATTR Ty [ | | appRevArgL: {[C.Ty]} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | App         loc         .   appRevArgL  =   @arg.ct : @func.appRevArgL
+  | * - App     loc         .   appRevArgL  =   []
+%%]
+
+Extensible record fields + maybe the extended type
+
+%%[(8 codegen)
+ATTR Ty [ | | recFldL: {AssocL HsName C.Ty} ]
+ATTR Ty [ | | recMbExt: {Maybe TyVarId} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Ext         loc         .   recFldL     =   (@nm,@extTy.ct) : @ty.recFldL
+  | App         loc         .   recFldL     =   @arg.recFldL
+  | * - Ext App loc         .   recFldL     =   []
+
+SEM Ty
+  | Ext         loc         .   recMbExt    =   @ty.recMbExt
+  | App         loc         .   recMbExt    =   @arg.recMbExt
+  | Var         loc         .   recMbExt    =   Just @tv
+  | * - Ext Var App
+                loc         .   recMbExt    =   Nothing
+%%]
+
+

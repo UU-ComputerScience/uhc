@@ -6,6 +6,7 @@ HS/MainAG.cag
 HS/ModImpExp.cag
 HI/MainAG.cag
 Ty/Ftv.cag
+Ty/ToTyCore.cag
 Ty/TrieKey.cag
 Ty/Pretty.cag
 Ty/AnnInferKind.cag
@@ -27,6 +28,9 @@ Ty/Trf/ElimEqual.cag
 Ty/Trf/InfuseAnn.cag
 Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
+TyCore/Pretty.cag
+TyCore/Subst.cag
+TyCore/SubstCaseAltFail.cag
 JVMClass/ToBinary.cag
 Error/Pretty.cag
 Core/ToGrin.cag

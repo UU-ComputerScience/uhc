@@ -29,7 +29,7 @@ l >###< r = l >-< indent 2 r
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1.Base.ExprSimple
-ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+ATTR AllNT AllAnn AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 
 SEM Expr
   | IConst      loc     .   pp      =   pp (show @int)
@@ -64,6 +64,7 @@ SEM Expr
   | App         loc     .   pp      =   @func.pp >#< @arg.pp
   | Parens      loc     .   pp      =   ppParens @expr.pp
   | TypeAs      loc     .   pp      =   ppParens @expr.pp >#< "::" >#< @tyExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @expr.pp
 %%]
 
 %%[1.Base.ExprComplex
@@ -98,6 +99,7 @@ SEM PatExpr
   | AppTop      loc     .   pp      =   ppAppTop  (@patExpr.appFunNm,@patExpr.appFunPP)
                                                   @patExpr.appArgPPL @patExpr.pp
   | Parens      loc     .   pp      =   ppParens @patExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @patExpr.pp
 
 SEM TyExpr
   | Con         loc     .   pp      =   ppCon @nm
@@ -105,6 +107,7 @@ SEM TyExpr
   | AppTop      loc     .   pp      =   ppAppTop  (@tyExpr.appFunNm,@tyExpr.appFunPP)
                                                   @tyExpr.appArgPPL @tyExpr.pp
   | Parens      loc     .   pp      =   ppParens @tyExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @tyExpr.pp
 
 SEM Decls
   | Cons        lhs     .   pp      =   @hd.pp
@@ -228,6 +231,7 @@ SEM KiExpr
   | AppTop      loc     .   pp      =   ppAppTop  (@kiExpr.appFunNm,@kiExpr.appFunPP)
                                                   @kiExpr.appArgPPL @kiExpr.pp
   | Parens      loc     .   pp      =   ppParens @kiExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @kiExpr.pp
 
 SEM Decl
   | KiSig       loc     .   pp      =   @nm >#< "::" >#< @kiExpr.pp
@@ -405,6 +409,26 @@ SEM Expr
 %%[97
 SEM PatExpr
   | Expr        loc     .   pp      =   "`" >|< @expr.pp >|< "`"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM ExprAnn
+  | Empty		loc		.	pp		=	empty
+
+SEM PatExprAnn
+  | Empty		loc		.	pp		=	empty
+
+SEM TyExprAnn
+  | Empty		loc		.	pp		=	empty
+%%]
+
+%%[6
+SEM KiExprAnn
+  | Empty		loc		.	pp		=	empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

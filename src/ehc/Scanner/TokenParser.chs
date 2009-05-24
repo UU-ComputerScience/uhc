@@ -13,6 +13,8 @@
 %%[5 import({%{EH}Scanner.Token})
 %%]
 
+Everything is exported.
+
 %%[5
 -------------------------------------------------------------------------
 -- IsParsers for  Symbols
@@ -33,27 +35,39 @@ pSpec c           =  [c] <$ pSpecPos c
       
 pStringPos, pCharPos,
   pInteger8Pos, pInteger10Pos, pInteger16Pos, pFractionPos,
-  pVaridPos, pConidPos,
-  pTextnmPos, pTextlnPos, pIntegerPos, pVarsymPos, pConsymPos  :: IsParser p Token => p (String,Pos)
+  pVaridPos, pConidPos, pVarsymPos, pConsymPos,
+%%[[18
+  pVaridUnboxedPos, pConidUnboxedPos, pVarsymUnboxedPos, pConsymUnboxedPos,
+%%]]
+  pTextnmPos, pTextlnPos, pIntegerPos  :: IsParser p Token => p (String,Pos)
 
-pStringPos     =   pValToken TkString    ""        
-pCharPos       =   pValToken TkChar      "\NUL"    
-pInteger8Pos   =   pValToken TkInteger8  "0"       
-pInteger10Pos  =   pValToken TkInteger10 "0"       
-pInteger16Pos  =   pValToken TkInteger16 "0"
-pFractionPos   =   pValToken TkFraction  "0.0"
-pVaridPos      =   pValToken TkVarid     "<identifier>" 
-pConidPos      =   pValToken TkConid     "<Identifier>" 
-pConsymPos     =   pValToken TkConOp 	 "<conoperator>"
-pVarsymPos     =   pValToken TkOp        "<operator>" 
-pTextnmPos     =   pValToken TkTextnm    "<name>"       
-pTextlnPos     =   pValToken TkTextln    "<line>"     
-pIntegerPos    =   pInteger10Pos
+pStringPos            =   pValToken TkString           ""        
+pCharPos              =   pValToken TkChar             "\NUL"    
+pInteger8Pos          =   pValToken TkInteger8         "0"       
+pInteger10Pos         =   pValToken TkInteger10        "0"       
+pInteger16Pos         =   pValToken TkInteger16        "0"
+pFractionPos          =   pValToken TkFraction         "0.0"
+pVaridPos             =   pValToken TkVarid            "<identifier>" 
+pConidPos             =   pValToken TkConid            "<Identifier>" 
+pConsymPos            =   pValToken TkConOp 	       "<conoperator>"
+pVarsymPos            =   pValToken TkOp               "<operator>" 
+%%[[18
+pVaridUnboxedPos      =   pValToken TkVaridUnboxed     "<identifier#>" 
+pConidUnboxedPos      =   pValToken TkConidUnboxed     "<Identifier#>" 
+pConsymUnboxedPos     =   pValToken TkConOpUnboxed 	   "<conoperator#>"
+pVarsymUnboxedPos     =   pValToken TkOpUnboxed        "<operator#>" 
+%%]]
+pTextnmPos            =   pValToken TkTextnm           "<name>"       
+pTextlnPos            =   pValToken TkTextln           "<line>"     
+pIntegerPos           =   pInteger10Pos
 
 pString, pChar,
   pInteger8, pInteger10, pInteger16, pFraction,
-  pVarid, pConid,
-  pTextnm, pTextln, pInteger, pVarsym, pConsym  :: IsParser p Token => p String
+  pVarid, pConid, pVarsym, pConsym,
+%%[[18
+  pVaridUnboxed, pConidUnboxed, pVarsymUnboxed, pConsymUnboxed,
+%%]]
+  pTextnm, pTextln, pInteger  :: IsParser p Token => p String
 
 pString        = fst <$> pStringPos        
 pChar          = fst <$> pCharPos          
@@ -64,7 +78,13 @@ pFraction      = fst <$> pFractionPos
 pVarid         = fst <$> pVaridPos         
 pConid         = fst <$> pConidPos         
 pVarsym        = fst <$> pVarsymPos  
-pConsym        = fst <$> pConsymPos       
+pConsym        = fst <$> pConsymPos 
+%%[[18
+pVaridUnboxed  = fst <$> pVaridUnboxedPos         
+pConidUnboxed  = fst <$> pConidUnboxedPos         
+pVarsymUnboxed = fst <$> pVarsymUnboxedPos  
+pConsymUnboxed = fst <$> pConsymUnboxedPos 
+%%]]
 pTextnm        = fst <$> pTextnmPos       
 pTextln        = fst <$> pTextlnPos            
 pInteger       = fst <$> pIntegerPos       

@@ -133,7 +133,7 @@ SEM CExpr
                                                     fun  = @appFunPP
                                                 in  fun >#< ppSpaces args
 %%]]
-| Let         loc         .   ppCateg     =   case @categ of
+  | Let         loc         .   ppCateg     =   case @categ of
                                                   CBindings_Rec     -> pp " rec"
                                                   CBindings_Strict  -> pp " !"
                                                   CBindings_FFI     -> pp " foreign"

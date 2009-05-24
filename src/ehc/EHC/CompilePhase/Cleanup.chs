@@ -59,7 +59,9 @@ cpCleanupCore :: HsName -> EHCompilePhase ()
 cpCleanupCore modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbCore            = Nothing
+               , ecuMbTyCore          = Nothing
                , ecuMbCoreSem         = Nothing
+               -- , ecuMbTyCoreSem       = Nothing
                }
       )
 %%]

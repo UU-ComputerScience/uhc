@@ -56,13 +56,14 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix Cil/,Common TyTag) \
-													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore Heuristics CommonCHR RedGraph) \
+													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
 													$(addprefix Base/,Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
 													$(addprefix Ty/,FitsInCommon FitsInCommon2 FitsIn Utils Trf/BetaReduce) \
 													$(addprefix Gam/,Utils LevelMapGam ScopeMapGam) \
 													$(addprefix Core/,Utils Coercion) \
+													$(addprefix TyCore/,Base Utils Coercion Full Full2) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
 														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
@@ -111,7 +112,7 @@ $(patsubst $(SRC_EHC_PREFIX)%.cag,$(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(EHC_EH_
 # all src
 EHC_ALL_CHUNK_SRC						:= $(EHC_AG_ALL_MAIN_SRC_CAG) $(EHC_AG_ALL_DPDS_SRC_CAG) $(EHC_HS_ALL_SRC_CHS)
 EHC_ALL_SRC								:= $(EHC_ALL_CHUNK_SRC) $(EHC_RULES_ALL_SRC) $(EHC_MKF)
-EHC_ALL_SRC_FIND						:= $(shell find $(SRC_EHC_PREFIX) \( -name '*.chs' -or -name '*.cag' \))
+EHC_ALL_SRC_FIND						:= $(shell find $(call FUN_PREFIX2DIR,$(SRC_EHC_PREFIX)) \( -name '*.chs' -or -name '*.cag' \))
 
 # distribution
 EHC_DIST_FILES							:= $(EHC_ALL_SRC)
@@ -132,7 +133,7 @@ EHC_HS_CFGINSTALL_DRV_HS				:= $(EHC_BLD_LIB_HS_VARIANT_PREFIX)$(EHC_HS_CFGINSTA
 # (re)generate derived makefiles
 ###########################################################################################
 
-$(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_ODPDS_SRC_CAG) $(EHC_AG_S_MAIN_SRC_CAG)
+$(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)files-ag-s.dep $(SHUFFLE) $(EHC_ALL_SRC_FIND)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
 	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-s.dep --dep \
 	  --depnameprefix=EHC_ \
@@ -146,7 +147,7 @@ $(EHC_MK_AG_S_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-s.dep $(SHUFFLE) $(EHC_AG_S_O
 	  --depign="EHRulerRules EHRulerRules.cag" \
 	    > $@
 
-$(EHC_MK_AG_D_DEP_MK) : $(SRC_EHC_PREFIX)/files-ag-d.dep $(SHUFFLE) $(EHC_AG_D_ODPDS_SRC_CAG) $(EHC_AG_D_MAIN_SRC_CAG)
+$(EHC_MK_AG_D_DEP_MK) : $(SRC_EHC_PREFIX)files-ag-d.dep $(SHUFFLE) $(EHC_ALL_SRC_FIND)
 	mkdir -p $(EHC_BLD_LIB_HS_VARIANT_PREFIX)
 	$(SHUFFLE) $(SRC_EHC_PREFIX)files-ag-d.dep --dep \
 	  --depnameprefix=EHC_ \
@@ -201,6 +202,7 @@ EHC_ON_RULES_VIEW_14					:= EP
 EHC_ON_RULES_VIEW_15					:= EP
 EHC_ON_RULES_VIEW_16					:= EP
 EHC_ON_RULES_VIEW_17					:= EP
+EHC_ON_RULES_VIEW_18					:= EP
 EHC_ON_RULES_VIEW_20					:= MD
 EHC_ON_RULES_VIEW_94					:= MD
 EHC_ON_RULES_VIEW_95					:= MD
@@ -242,7 +244,8 @@ EHC_BY_RULER_RULES_14					:= $(EHC_BY_RULER_RULES_13)
 EHC_BY_RULER_RULES_15					:= $(EHC_BY_RULER_RULES_14)
 EHC_BY_RULER_RULES_16					:= $(EHC_BY_RULER_RULES_15)
 EHC_BY_RULER_RULES_17					:= $(EHC_BY_RULER_RULES_16)
-EHC_BY_RULER_RULES_20					:= $(EHC_BY_RULER_RULES_17)
+EHC_BY_RULER_RULES_18					:= $(EHC_BY_RULER_RULES_17)
+EHC_BY_RULER_RULES_20					:= $(EHC_BY_RULER_RULES_18)
 EHC_BY_RULER_RULES_94					:= $(EHC_BY_RULER_RULES_20)
 EHC_BY_RULER_RULES_95					:= $(EHC_BY_RULER_RULES_94)
 EHC_BY_RULER_RULES_96					:= $(EHC_BY_RULER_RULES_95)

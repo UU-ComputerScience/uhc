@@ -63,6 +63,8 @@
 
 %%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
+%%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
+%%]
 
 %%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
 %%]
@@ -74,6 +76,8 @@
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
+%%]
+%%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
 
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
@@ -158,7 +162,9 @@ WRAPPER AGItf
 %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
 %%]
 
-%%[(8 codegen).ToCore ag import({EH/ToCore})
+%%[(8 codegen) ag import({EH/ToCore})
+%%]
+%%[(8 codegen) ag import({EH/ToTyCore})
 %%]
 
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})

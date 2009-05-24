@@ -3,13 +3,14 @@
 %include afp.fmt
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanning machine
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
 %%[5 import(qualified Data.Set as Set)
-%%]
-
-%%[5 export(scanHandle,scanFile)
 %%]
 
 %%[8 export(getRational)
@@ -18,7 +19,15 @@
 %%[97 export(getBaseNumber)
 %%]
 
-%%[5.scanHandle -1.scanHandle
+-- debugging
+%%[5 import(EH.Util.Debug)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanner
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5.scanHandle export(scanHandle)
 scanHandle :: ScanOpts -> FilePath -> Handle -> IO [Token]
 scanHandle opts fn fh
   = do  {  txt <- hGetContents fh
@@ -26,7 +35,7 @@ scanHandle opts fn fh
         }
 %%]
 
-%%[5 export(scan)
+%%[5 export(scanFile,scan)
 scanFile :: ScanOpts -> FilePath -> IO [Token]
 scanFile opts fn = 
         do txt <- readFile fn
@@ -60,6 +69,12 @@ scan opts pos input
    scanIdent isId p s
      = (name,advc (length name) p,rest)
      where (name,rest) = span isId s
+%%]
+
+%%[18
+   isUnboxed c = c == '#'
+   scanUnboxed p s@(c:s') | isUnboxed c = (tokTpUnboxed, (++"#"), advc 1 p, s')
+   scanUnboxed p s                      = (id          , id     ,        p, s )
 %%]
 
 %%[8
@@ -165,10 +180,17 @@ scan opts pos input
 %%]]
                     let (name', p', s') = scanIdent isIdChar (advc 1 p) s
                         name            = c:name'
-                        tok             = if iskw name
+                        nmiskw          = iskw name
+                        (mktok,mknm,p'',s'')
+%%[[18
+                                             | not nmiskw = scanUnboxed p' s'
+%%]]
+                                             | otherwise  = (id,id,p',s')
+                        tok             = if nmiskw
                                           then reserved name p
-                                          else valueToken (varKind name) name p
-                    in  tok : doScan p' s'
+                                          else let n = mknm name
+                                               in  valueToken (mktok $ varKind n) n p
+                    in  tok : doScan p'' s''
 %%[[20
                else case doScan (advc (length qualPrefix) p) qualTail of
                       (tok@(ValToken tp val _):toks)
@@ -209,6 +231,10 @@ scan opts pos input
      | otherwise = errToken ("Unexpected character " ++ show c) p
                  : doScan (adv p c) s
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanner utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
 varKind :: String -> EnumValToken

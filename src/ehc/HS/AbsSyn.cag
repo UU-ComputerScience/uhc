@@ -320,11 +320,16 @@ DATA Kind                                         {- *** -}
         range                    : Range
         kindvariables            : Names
         kind                     : Kind
+	| Annotate
+        range                    : Range
+        annotation               : KindAnnotation
+        kind                     : Kind
 %%]
 
 %%[6
 SET AllKind
   = Kind Kinds
+    KindAnnotation
 %%]
 
 -- ------------------------------------------------------------------------
@@ -357,6 +362,10 @@ DATA Type                                         {- *** -}
         leftType                 : MaybeType
         operator                 : Type
         rightType                : MaybeType
+	| Annotate
+        range                    : Range
+        annotation               : TypeAnnotation
+        type                     : Type
 %%]
 %%[2
     | Wildcard
@@ -566,6 +575,7 @@ SET AllAnnotatedType
 %%[1
 SET AllType
   = Type Types MaybeType
+    TypeAnnotation
 %%]
 %%[5
     SimpleType
@@ -645,6 +655,10 @@ DATA Expression                                   {- *** -}
         type                     : Type
     | Negate
         range                    : Range
+        expression               : Expression
+	| Annotate
+        range                    : Range
+        annotation               : ExpressionAnnotation
         expression               : Expression
 %%]
 %%[55
@@ -1017,6 +1031,7 @@ DATA RightHandSide
 %%[1
 SET AllExpression
   = Expression Expressions MaybeExpression
+    ExpressionAnnotation
     AllFunctionBinding
     LeftHandSide RightHandSide
 %%]
@@ -1067,6 +1082,10 @@ DATA Pattern
     | Tuple
         range                    : Range
         patterns                 : Patterns
+	| Annotate
+        range                    : Range
+        annotation               : PatternAnnotation
+        pattern                  : Pattern
 %%]
     | Negate                    -- see Literal
         range                    : Range
@@ -1133,6 +1152,7 @@ SET AllContextedPattern
 %%[1
 SET AllPattern
   = Pattern Patterns
+    PatternAnnotation
 %%]
 %%[7
     AllRowRecordPatternBinding
@@ -1140,6 +1160,26 @@ SET AllPattern
 %%]
 %%[12
     AllContextedPattern
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Annotations                                                        --
+-- ------------------------------------------------------------------------
+
+%%[1
+DATA TypeAnnotation
+	| Empty
+
+DATA ExpressionAnnotation
+	| Empty
+
+DATA PatternAnnotation
+	| Empty
+%%]
+
+%%[6
+DATA KindAnnotation
+	| Empty
 %%]
 
 -- ------------------------------------------------------------------------

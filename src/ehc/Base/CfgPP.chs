@@ -23,7 +23,7 @@ As class variations on PP
 %%[8 import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Scanner.Common})
 %%]
 
-%%[8 import(Data.Char)
+%%[8 import(Data.Char,qualified Data.Set as Set)
 %%]
 
 %%[8 import(EH.Util.Pretty)
@@ -50,11 +50,12 @@ class CfgPP x where
   cfgppFollowAST _              = False
 %%]
 
-%%[8 export(CfgPP_Plain(..),CfgPP_HI(..),CfgPP_Core(..),CfgPP_Grin(..))
-data CfgPP_Plain = CfgPP_Plain
-data CfgPP_HI    = CfgPP_HI
-data CfgPP_Core  = CfgPP_Core
-data CfgPP_Grin  = CfgPP_Grin
+%%[8 export(CfgPP_Plain(..),CfgPP_HI(..),CfgPP_Core(..),CfgPP_Grin(..),CfgPP_TyCore(..))
+data CfgPP_Plain   = CfgPP_Plain
+data CfgPP_HI      = CfgPP_HI
+data CfgPP_Core    = CfgPP_Core
+data CfgPP_TyCore  = CfgPP_TyCore
+data CfgPP_Grin    = CfgPP_Grin
 %%]
 
 %%[8
@@ -81,6 +82,13 @@ instance CfgPP CfgPP_HI where
 %%[8
 instance CfgPP CfgPP_Core where
   cfgppHsName    _ = ppHsnNonAlpha coreScanOpts
+%%]
+
+%%[8
+ppNmTyCore = ppHsnEscaped (Right $ Set.fromList ['0'..'9']) '$' (hsnEscapeeChars '$' tycoreScanOpts)
+
+instance CfgPP CfgPP_TyCore where
+  cfgppHsName    _ = ppNmTyCore
 %%]
 
 %%[8

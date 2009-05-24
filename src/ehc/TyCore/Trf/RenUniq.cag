@@ -1,0 +1,213 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Simplify code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenUniq)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfRenUniq :: CModule -> CModule
+cmodTrfRenUniq cmod
+  =  let  t = wrap_AGItf  (sem_AGItf (AGItf_AGItf cmod))
+                              (Inh_AGItf {gUniq_Inh_AGItf = uidStart})
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | gUniq: UID | ]
+ATTR AGItf [ gUniq: UID | | ]
+
+SEM Expr
+  | Let         (binds.gUniq,loc.lUniq)     =   mkNewLevUID  @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq)      =   mkNewUID     @lhs.gUniq
+
+SEM Alt
+  | Alt         (pat.gUniq,loc.lUniq)       =   mkNewLevUID  @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name used to uniqify globally over all modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR AllExpr [ moduleNm: HsName | | ]
+
+SEM CModule
+  | Mod         expr        .   moduleNm    =   @moduleNm
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% alpha renaming so all identifiers are unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type ARenMp = Map.Map HsName HsName
+%%]
+
+%%[(20 codegen) hs
+-- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
+mkUniq :: HsName -> HsName -> UID -> HsName
+mkUniq q n u
+  = (if hsnIsQual n
+     then id
+     else hsnSetQual q
+    ) $ hsnSuffix n ("__" ++ show u)
+%%]
+
+%%[(8 codegen) hs
+%%[[8
+aRenAdd :: Bool -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd isGlob nL u m
+%%][20
+aRenAdd :: Bool -> HsName -> [HsName] -> UID -> ARenMp -> ARenMp
+aRenAdd isGlob q nL u m
+%%]]
+  = Map.fromList [ (n,mkNm n u) | (n,u) <- zip nL uL ] `Map.union` m
+  where uL = mkNewUIDL (length nL) u
+        doChngNm n = not isGlob || n `Map.member` m
+%%[[8
+        mkNm n u = if doChngNm n then hsnSuffix n ("__" ++ show u) else n
+%%][20
+        mkNm n u = if doChngNm n then mkUniq q n u else n
+%%]]
+%%]
+
+%%[(8 codegen) hs
+aRenRepl :: ARenMp -> HsName -> HsName
+aRenRepl m n = maybe n id . Map.lookup n $ m
+%%]
+
+
+
+%%[(8 codegen)
+ATTR AllCodeNT [ aRenMp: ARenMp  lev: Int | | ]
+ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
+%%]
+
+%%[(9 codegen)
+ATTR Expr 
+     AllAlt 
+     AllBind    [ protectedBindingNames : {[HsName]} | | ]
+ATTR AllMetaVal [ | | protectableBindingNames : {[HsName]} ]
+%%]
+
+%%[(8 codegen)
+SEM AGItf
+  | AGItf       module      .   aRenMp      =   Map.empty
+                            .   lev         =   cLevModule
+SEM CBind
+%%[[8
+  | Bind        lhs         .   nmL         =   [@nm]
+%%][9
+  | Bind        lhs         .   nmL         =   if   @nm `elem` @lhs.protectedBindingNames
+                                                then []
+                                                else [@nm]
+%%]]
+
+SEM FldBind
+  | Fld         lhs         .   nmL         =   [@nm] ++ @pat.nmL
+
+SEM Pat
+  | Var Con     loc         .   nm          =   @pnm
+                loc         .   nm          :   {HsName}
+  | Var         lhs         .   nmL         =   [@nm]
+  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
+
+SEM PatRest
+  | Var         lhs         .   nmL         =   [@nm]
+
+SEM Expr
+  | Let         loc         .   aRenMp      =   aRenAdd (@lhs.lev == cLevModule) @binds.nmL @lUniq @lhs.aRenMp
+                binds       .   lev         =   @lhs.lev + 1
+  | Lam         loc         .   aRenMp      =   aRenAdd False [@arg] @lUniq @lhs.aRenMp
+                body        .   lev         =   if @body.isLamBody then @lhs.lev + 1 else @lhs.lev
+
+SEM Alt
+  | Alt         loc         .   aRenMp      =   aRenAdd False @pat.nmL @lUniq @lhs.aRenMp
+                expr        .   lev         =   @lhs.lev + 1
+%%]
+
+%%[(20 codegen)
+SEM Expr
+  | Let         loc         .   aRenMp      :=  aRenAdd (@lhs.lev == cLevModule) @lhs.moduleNm @binds.nmL @lUniq @lhs.aRenMp
+  | Lam         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm [@arg] @lUniq @lhs.aRenMp
+
+SEM Alt
+  | Alt         loc         .   aRenMp      :=  aRenAdd False @lhs.moduleNm @pat.nmL @lUniq @lhs.aRenMp
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | isLamBody: Bool ]
+
+SEM Expr
+  | Lam         lhs         .   isLamBody   =   False
+  | * - Lam     lhs         .   isLamBody   =   True
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Var         lhs         .   cTrf        =   Expr_Var (aRenRepl @lhs.aRenMp @nm)
+  | Lam         lhs         .   cTrf        =   Expr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
+
+SEM ValBind
+  | Val         lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindMeta.cTrf @expr.cTrf
+
+SEM FldBind
+  | Fld         lhs         .   cTrf        =   FldBind_Fld @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf
+
+SEM Pat
+  | Var         lhs         .   cTrf        =   Pat_Var (aRenRepl @lhs.aRenMp $ @nm)
+  | Con         lhs         .   cTrf        =   Pat_Con (aRenRepl @lhs.aRenMp $ @nm) @tag @rest.cTrf @binds.cTrf
+
+SEM PatRest
+  | Var         lhs         .   cTrf        =   PatRest_Var (aRenRepl @lhs.aRenMp @nm)
+  
+%%]
+
+
+%%[(9 codegen)
+SEM ValBind
+  | Val         expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
+
+SEM MetaVal
+  | DictClass   lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
+  | DictInstance lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
+  | Dict         lhs.protectableBindingNames  =   []
+  | Val          lhs.protectableBindingNames   =   []
+  
+SEM CModule
+  | Mod          expr.protectedBindingNames  =   []
+
+SEM FldBind
+  | Fld          offset.protectedBindingNames  =   []
+%%]

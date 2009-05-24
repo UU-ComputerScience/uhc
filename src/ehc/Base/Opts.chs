@@ -16,6 +16,9 @@
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Ty})
 %%]
 
+%%[7 import(qualified Data.Set as Set)
+%%]
+
 %%[8 import(Data.List,Data.Char,qualified Data.Map as Map,{%{EH}Base.Builtin})
 %%]
 
@@ -25,9 +28,6 @@
 %%]
 
 %%[(8 codegen) import({%{EH}Base.Target})
-%%]
-
-%%[9 import(qualified Data.Set as Set)
 %%]
 
 %%[8 import(EH.Util.Utils)
@@ -222,6 +222,7 @@ data EHCOpts
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTrf            ::  [TrfOpt]
       ,  ehcOptTarget         ::  Target            -- code generation target
+      ,  ehcOptUseTyCore      ::  Bool              -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -353,6 +354,13 @@ ehcOptEmitCore opts
   = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
+%%[(8 codegen) export(ehcOptEmitTyCore)
+-- generate TyCore
+ehcOptEmitTyCore :: EHCOpts -> Bool
+ehcOptEmitTyCore opts
+  = {- ehcOptFullProgAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -387,6 +395,7 @@ defaultEHCOpts
       ,  ehcOptOptimise         =   OptimiseNormal
       ,  ehcOptTrf              =   []
       ,  ehcOptTarget           =   defaultTarget
+      ,  ehcOptUseTyCore        =   False
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
@@ -579,6 +588,9 @@ ehcCmdLineOpts
      ,  Option ""   ["pkg-build"]        (ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
      ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")            "pkg: where to put the lib part of a package"
 %%]]
+%%[[(8 codegen)
+     ,  Option ""   ["tycore"]           (NoArg oUseTyCore)                   "temporary/development: use typed core"
+%%]]
      ]
 %%]
 %%[1
@@ -624,6 +636,7 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
+         oUseTyCore      o =  o { ehcOptUseTyCore         = True    }
 %%]]
 %%[[1
          oTarget     _   o =  o
@@ -644,6 +657,8 @@ ehcCmdLineOpts
 %%[[(8 codegen)
                                 Just "-"     -> o -- { ehcOptEmitCore         = False  }
                                 Just "core"  -> o { ehcOptTarget           = Target_None_Core_None
+                                                  }
+                                Just "tycore"-> o { ehcOptTarget           = Target_None_TyCore_None
                                                   }
 %%]]
 %%[[(8 codegen java)
@@ -884,10 +899,10 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioMode           ::  FIMode              ,  fioUniq                 ::  UID
 %%[[7
                         ,  fioNoRLabElimFor  ::  [HsName]            ,  fioNoLLabElimFor        ::  [HsName]
+                        ,  fioDontBind       ::  TyVarIdS
 %%]]
 %%[[9
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
-                        ,  fioDontBind       ::  TyVarIdS
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
 %%]]
 %%[[16
@@ -907,10 +922,10 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
                         ,  fioMode           =   FitSubLR            ,  fioUniq                 =   uidStart
 %%[[7
                         ,  fioNoRLabElimFor  =   []                  ,  fioNoLLabElimFor        =   []
+                        ,  fioDontBind       =   Set.empty
 %%]]
 %%[[9
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True
-                        ,  fioDontBind       =   Set.empty
                         ,  fioBindLVars      =   FIOBindYes          ,  fioBindRVars            =   FIOBindYes
 %%]]
 %%[[16

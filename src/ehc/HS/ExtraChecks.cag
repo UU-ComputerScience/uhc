@@ -148,13 +148,19 @@ idDefOccGamCheckDupNames g
         -- For data fields under the provision that the type to which they belong is the same, but the constructor not (another weird language complexity check)
         collapse ds
           =    take 1 funs
+%%[[1
+            ++ others1
+%%][5
             ++ (map head $ filter (\l -> length l > 0) $ map concat flds1PerCon)
             ++ (concat $ concat fldsManyPerCon)
             ++ others2
+%%]]
           where (funs,others1) = partition (iaspIsFun . doccAsp) ds
+%%[[5
                 (flds,others2) = partition (iaspIsValFld . doccAsp) others1
                 fldsGrouped = map (groupOn (iaspConNm . doccAsp)) $ groupOn (iaspDataNm . doccAsp) flds
                 (flds1PerCon,fldsManyPerCon) = unzip $ map (partition (\l -> length l == 1)) $ fldsGrouped
+%%]]
 %%]
 
 %%[1

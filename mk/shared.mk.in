@@ -35,6 +35,7 @@ MK_SHARED_MKF								:= $(MK_PREFIX)shared.mk
 # 15: + functional dependencies (TBD)
 # 16: + GADT (TBD)
 # 17: + Polarity inference (co/contravariance)
+# 18: + Unboxed types
 # 20: + module system
 # 94: + full FFI (foreign function interface) (TBD)
 # 95: + deriving construct
@@ -365,7 +366,7 @@ GHC_PKG_NAME_PREFIX						:=
 
 # order to shuffle (see ehc/src/files1.mk for a complete list)
 # 4_99: interim for stuff from 4, needed for 4_2, because of ruler generated material uptil 4_2
-EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
+EHC_SHUFFLE_ORDER	:= 1 < 2 < 3 < 4 < 4_99 < 5 < 6 < 7 < 8 < 9 < 10 < 11 < 12 < 13 < 14 < 15 < 17 < 18 < 20 < 94 < 95 < 96 < 97 < 98 < $(EHC_PREL_VARIANT) < $(EHC_UHC_VARIANT) < $(EHC_UHC_INSTALL_VARIANT), \
 						$(EHC_UHC_VARIANT) < 102, \
 						$(EHC_PREL_VARIANT) < 103, \
 						4_99 < 4_2, \
