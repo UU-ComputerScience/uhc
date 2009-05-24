@@ -1,0 +1,359 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore Pretty Printer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Pretty printing of TyCore follows the GHC external core concrete syntax as much as possible.
+Differences:
+\begin{itemize}
+\item Predefined identifiers do not follow GHCs naming convention, that is, with lots of 'z' etc in them.
+\item Bindings are organised more general, always allowing multiple simultaneously definitions with a category distinguishing between plain, recursive and others.
+\end{itemize}
+%%]
+
+%%[(8 codegen) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
+%%]
+
+%%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER
+  AGItf Expr
+%%[[9
+  Metas
+%%]]
+%%]
+
+%%[(8 codegen) hs export(ppModule)
+ppModule :: EHCOpts -> Module -> PP_Doc
+ppModule opts cmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
+     in   (pp_Syn_AGItf t)
+
+ppExpr :: Expr -> PP_Doc
+ppExpr ce
+  =  let  t = wrap_Expr (sem_Expr ce) Inh_Expr
+     in   (pp_Syn_Expr t)
+
+instance PP Expr where
+  pp ce = ppExpr ce
+%%]
+
+%%[(9 codegen) hs
+ppHole :: UID -> PP_Doc
+ppHole i = "<" >|< pp i >|< ">"
+%%]
+
+%%[(9 codegen) hs
+ppOptMetas :: Metas -> PP_Doc
+ppOptMetas x
+  =  let  t = wrap_Metas (sem_Metas x) Inh_Metas
+     in   (pp_Syn_Metas t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debugging only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs
+%%]
+ppValBindL :: ValBindL -> PP_Doc
+ppValBindL = ppAssocL . map (\(ValBind_Val n m v) -> (n,v >|< ppOptMetas m))
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+ppDef :: (PP a, PP b) => a -> b -> PP_Doc
+ppDef n v   = n >-< indent 2 v
+
+ppNm :: HsName -> PP_Doc
+ppNm = cfgppHsName CfgPP_TyCore
+
+ppTVar :: UID -> PP_Doc
+ppTVar v = ppKeyw "v" >|< cfgppUID CfgPP_TyCore v
+
+ppMbTVar :: Maybe UID -> PP_Doc
+ppMbTVar = maybe empty (\v -> ppTVar v >#< ":: ")
+
+ppKeyw :: String -> PP_Doc
+ppKeyw k = "%" >|< k
+
+ppMbNm2 :: Maybe HsName -> PP_Doc
+ppMbNm2 = maybe empty (\v -> ppNm v >#< ":: ")
+
+ppMbNm :: Maybe HsName -> PP_Doc
+ppMbNm = maybe (ppNm (hsnFromString "_")) ppNm
+%%]
+
+%%[(8 codegen) hs
+ppSeq :: PP x => [x] -> PP_Doc
+ppSeq = ppListSep "[" "]" ", "
+%%]
+
+%%[(8 codegen) hs
+ppLit :: String -> String -> PP_Doc
+ppLit kind val = "#" >|< kind >|< pp (show val)
+
+ppTag :: CTag -> PP_Doc
+ppTag t = ppCTag' CfgPP_TyCore t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code: pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AGItf AllNT AllTyCore [ | | pp USE {>-<} {empty} : PP_Doc ]
+%%]
+
+%%[(8 codegen)
+SEM Module
+  | Mod         lhs         .   pp          =   let semic = map (>#< ";")
+  												in	ppKeyw "module" >#< ppNm @moduleNm
+													>-< ppCurlysBlock (semic @tbinds.ppL)
+													>-< ppCurlysBlock (semic @vbinds.ppL)
+
+SEM Expr
+  | Int         loc         .   pp          =   ppParens (show @int  >#< "::" >#< @ty.pp)
+  | Char        loc         .   pp          =   ppParens (show @char >#< "::" >#< @ty.pp)
+  | String      loc         .   pp          =   ppParens (show @str  >#< "::" >#< @ty.pp)
+  | Var         loc         .   pp          =   ppNm @nm
+  | App         loc         .   pp          =   let args = reverse $ map ppSeq $ @appArgPPL
+                                                    fun  = ppParens @appFunPP
+                                                in  ppDef fun (vlist args)
+  | Lam         loc         .   pp          =   ppDef ("\\" >|< ppSpaces (map ppSeq @lamArgPPL) >#< "->") (@lamBodyPP)
+  | Let         loc         .   ppCateg     =   case @categ of
+                                                  ValBindCateg_Rec     -> pp " rec"
+                                                  ValBindCateg_Strict  -> pp " !"
+                                                  ValBindCateg_FFI     -> pp " foreign"
+%%[[94
+                                                  ValBindCateg_FFE     -> pp " foreignexport"
+%%]]
+                                                  _                 -> empty
+                            .   pp          =   ppDef (ppKeyw "let" >|< @ppCateg) (ppCurlysSemisBlock @vbinds.ppL) >#< ppKeyw "in" >-< @body.pp
+  | Case        loc         .   pp          =   ppKeyw "case" >#< @expr.pp >#< ppKeyw "of"
+                                                >-< indent 1 (ppCurlysSemisBlock (@alts.ppL ++ [ppDef (ppKeyw "_") ("->" >#< @dflt.pp)]))
+  | Tup         loc         .   pp          =   ppKeyw "tag" >#< ppTag @tag
+  | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
+  | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
+%%[[8
+				loc			.	ppent		=	pp (show @impEnt)
+%%][94
+				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
+%%]]
+%%[[94
+  | FFE         loc         .   pp          =   ppKeyw "dynexternal" >#< show @callconv >#< "\"" >|< @expEnt >|< "\"" >#< ppParens @ty.pp
+%%]]
+  | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm])
+  | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
+  | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
+  | Box			loc			.	pp			=	ppDef (ppKeyw "box" >#< ppParens (@fromTy.pp >#< "->" >#< @toTy.pp)) @expr.pp
+  | Unbox		loc			.	pp			=	ppDef (ppKeyw "unbox" >#< ppParens (@fromTy.pp >#< "->" >#< @toTy.pp)) @expr.pp
+%%]
+
+%%[(8 codegen)
+SEM ValBind
+  | Val         lhs         .   pp          =   ppDef (ppNm @nm >#< ":" >#< @bindMeta.pp) ("::" >#< @ty.pp >-< "= " >#< @expr.pp)
+
+SEM Alt
+  | Alt         lhs         .   pp          =   ppDef (@pat.pp) ("->" >#< @expr.pp)
+
+SEM Pat
+  | Var         lhs         .   pp          =   ppNm @pnm  >#< "::" >#< @ty.pp
+  | Int         lhs         .   pp          =   show @int  >#< "::" >#< @ty.pp
+  | Char        lhs         .   pp          =   show @char >#< "::" >#< @ty.pp
+  | Con         lhs         .   pp          =   ppDef (ppKeyw "tag" >#< ppTag @tag)
+                                                      (ppCurly (@rest.pp >#< "|" >#< ppCommas' @flds.ppL))
+SEM Arg
+  | Val         lhs         .   pp          =   ppParens @expr.pp >#< ":" >#< @meta.pp
+  | Ty          lhs         .   pp          =   "@" >|< ppParens @ty.pp
+
+SEM ArgBind
+  | Val         lhs         .   pp          =   ppNm @nm >#< ":" >#< @meta.pp >#< "::" >#< @ty.pp
+  | Ty          lhs         .   pp          =   "@" >#< ppTVar @tv >#< "::" >#< @ki.pp
+
+SEM FldBind
+  | Fld         lhs         .   pp          =   ppNm @nm >#< ":" >#< ppParens @offset.pp >#< "::" >#< @ty.pp
+  | Ty          lhs         .   pp          =   "@" >#< ppNm @nm >#< "::" >#< @ki.pp
+
+SEM PatRest
+  | Var         lhs         .   pp          =   ppNm @nm
+
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Var			loc			.	pp			=	ppTVar @tv
+  | Con			loc			.	pp			=	ppNm @nm
+  | Arrow		loc			.	pp			= 	@args.pp >#< "->" >#< @res.pp
+  | Seq 		loc			.	pp			= 	@seq.pp
+  | Tup			loc			.	pp			=	ppParensCommas' @flds.ppL
+  | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
+                                                    fun  = ppParens @appFunPP
+                                                in  fun >#< ppSpaces args
+  | Ann			loc			.	pp			=	@ty.pp {- annot ... -}
+  | Ext			loc			.	pp			=	ppNm $ mkHNm "?EXT?"
+  | Err			loc			.	pp			=	ppKeyw "ERR" >#< show @msg
+%%]
+
+%%[(8 codegen)
+SEM TySeq
+  | Seq 		loc			.	pp			=	ppSeq @seq.ppL
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Trans		loc			.	pp			=	ppKeyw "trans"  >#< ppParens @fromTy.pp >#< ppParens @toTy.pp
+  | Unsafe		loc			.	pp			=	ppKeyw "unsafe" >#< ppParens @fromTy.pp >#< ppParens @toTy.pp
+  | Inst		loc			.	pp			=	ppKeyw "inst"   >#< ppParens @fromTy.pp >#< ppParens @toTy.pp
+  | Sym			loc			.	pp			=	ppKeyw "sym"    >#< ppParens @ty.pp
+  | Left		loc			.	pp			=	ppKeyw "left"   >#< ppParens @ty.pp
+  | Right		loc			.	pp			=	ppKeyw "right"  >#< ppParens @ty.pp
+%%]
+
+%%[(8 codegen)
+SEM TySeq1
+  | Val			loc			.	pp			=	ppMbNm2 @nm >|< @ty.pp
+  | Ty			loc			.	pp			=	"@" >#< ppMbTVar @tv >|< @ki.pp
+%%]
+
+%%[(8 codegen)
+SEM Metas
+  | Tuple       loc         .   pp          =   ppCurlysCommas [@x1.pp,@x2.pp]
+
+SEM MetaBind
+  | Plain       loc         .   pp          =   ppKeyw "BINDPLAIN"
+  | Function0   loc         .   pp          =   ppKeyw "BINDFUNCTION0"
+  | Function1   loc         .   pp          =   ppKeyw "BINDFUNCTION1"
+  | Apply0      loc         .   pp          =   ppKeyw "BINDAPPLY0"
+
+SEM MetaVal
+  | Val         loc         .   pp          =   ppKeyw "VAL"
+%%[[9
+  | Dict        loc         .   pp          =   ppKeyw "DICT"         >|< maybe "" (\n->"{ "++show n++"}") @mbPos
+  | DictClass   loc         .   pp          =   ppKeyw "DICTCLASS"    >|< ppCurlysCommasWith ppMbNm @names
+  | DictInstance loc        .   pp          =   ppKeyw "DICTINSTANCE" >|< ppCurlysCommasWith ppMbNm @names
+%%]]
+%%]
+
+%%[(9 codegen)
+SEM Expr
+  | Hole        loc         .   pp          =   ppKeyw "hole" >#< @uid
+  | HoleLet     loc         .   pp          =   ppKeyw "let" >#< "--" >#< ppKeyw "hole" >#< @bindsUid >#< ppKeyw "in" >-< @body.pp
+  | CoeArg      loc         .   pp          =   ppKeyw "hole" >#< ppKeyw "_"
+  | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppKeyw "hole" >#< @uid)
+  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppKeyw "hole" >#< @uid >#< "-- Impl") ("->" >#< @body.pp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code: ppL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  FldBindL ValBindL TyBindL ArgBindL
+  PatL AltL ArgL TyL TySeq1L
+    [ | | ppL: {[PP_Doc]} ]
+%%]
+
+%%[(8 codegen)
+SEM FldBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM ValBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM TyBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM ArgBindL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM PatL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM AltL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM ArgL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM TyL
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+SEM TySeq1L
+  | Nil         lhs         .   ppL         =   []
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[[PP_Doc]]} ]
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Lam         loc         .   lamBodyPP   =   @body.lamBodyPP
+                            .   lamArgPPL   =   @args.ppL : @body.lamArgPPL
+  | * - Lam     lhs         .   lamBodyPP   =   @pp
+                            .   lamArgPPL   =   []
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | appFunPP : PP_Doc  appArgPPL: {[[PP_Doc]]} ]
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | App         loc         .   appFunPP    =   @func.appFunPP
+                            .   appArgPPL   =   @args.ppL : @func.appArgPPL
+  | * - App     lhs         .   appFunPP    =   @pp
+                            .   appArgPPL   =   []
+%%]
+
+%%[(8 codegen)
+ATTR Ty [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | App         loc         .   appFunPP    =   @func.appFunPP
+                            .   appArgPPL   =   @arg.pp : @func.appArgPPL
+  | * - App     lhs         .   appFunPP    =   @pp
+                            .   appArgPPL   =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8888 codegen)
+
+
+
+%%]
+
+

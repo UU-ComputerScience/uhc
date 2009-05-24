@@ -23,25 +23,31 @@ instance Show Token where
        )
 instance Show EnumValToken where
  show tp = case tp of       
-  TkVarid      -> "lower case identifier" 
-  TkConid      -> "upper case identifier" 
-  TkOp         -> "operator"  
-  TkConOp      -> "con operator"  
-%%[[20          
-  TkQOp        -> "qualified operator"  
-  TkQVarid     -> "lower case qualified identifier" 
-  TkQConid     -> "upper case qualified identifier" 
-  TkQConOp     -> "qualified con operator"            
-%%]
-  TkString     -> "string"              
-  TkChar       -> "character"            
-  TkInteger8   -> "octal integer"         
-  TkInteger10  -> "decimal Integer"       
-  TkInteger16  -> "hexadecimal integer"   
-  TkFraction   -> "fraction (float,...)"   
-  TkTextnm     -> "text name"             
-  TkTextln     -> "text lines"             
-  TkError      -> "error in scanner:"   
+  TkVarid            -> "lower case identifier" 
+  TkConid            -> "upper case identifier" 
+  TkOp               -> "operator"  
+  TkConOp            -> "con operator"  
+%%[[18
+  TkOpUnboxed        -> "operator (unboxed)"  
+  TkVaridUnboxed     -> "lower case identifier (unboxed)" 
+  TkConidUnboxed     -> "upper case identifier (unboxed)" 
+  TkConOpUnboxed     -> "con operator (unboxed)"            
+%%]]
+%%[[20
+  TkQOp              -> "qualified operator"  
+  TkQVarid           -> "lower case qualified identifier" 
+  TkQConid           -> "upper case qualified identifier" 
+  TkQConOp           -> "qualified con operator"            
+%%]]
+  TkString           -> "string"              
+  TkChar             -> "character"            
+  TkInteger8         -> "octal integer"         
+  TkInteger10        -> "decimal Integer"       
+  TkInteger16        -> "hexadecimal integer"   
+  TkFraction         -> "fraction (float,...)"   
+  TkTextnm           -> "text name"             
+  TkTextln           -> "text lines"             
+  TkError            -> "error in scanner:"   
   
 maybeshow :: Pos -> String
 maybeshow (Pos l c fn) | l <= 0 || c <= 0 =  ""

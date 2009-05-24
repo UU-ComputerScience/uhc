@@ -22,6 +22,8 @@
 
 %%[(20 codegen) hs import({%{EH}Core})
 %%]
+%%[(20 codegen) hs import(qualified {%{EH}TyCore} as C)
+%%]
 
 %%[(20 codegen grin) hs import({%{EH}GrinCode},{%{EH}GrinCode.Pretty})
 %%]

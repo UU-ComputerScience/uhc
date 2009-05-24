@@ -12,6 +12,8 @@
 
 %%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
 %%]
+%%[1 hs export(ExprAnn(..), PatExprAnn(..), TyExprAnn(..))
+%%]
 
 %%[1 hs import({%{EH}HS}(Range))
 %%]
@@ -28,7 +30,7 @@
 %%[5 hs export(mkCase,mkCase',mkIf,mkIf',mkError,mkStr,mkAlt)
 %%]
 
-%%[6 hs export(KiExpr(..))
+%%[6 hs export(KiExpr(..), KiExprAnn(..))
 %%]
 
 %%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields, DataFieldExpr(..), DataFieldPatExpr(..))

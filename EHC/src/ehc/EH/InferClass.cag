@@ -124,7 +124,7 @@ SEM Decl
                                                                     where (a,r) = tyArrowArgsRes ki
                                                                           mk ki tv
                                                                             = case ki of
-                                                                                Ty_Con n | n == hsnStar
+                                                                                Ty_Con n | n == hsnKindStar
                                                                                   -> (mkTyPr $ Pred_Class $ predTyCon `mk1App` tv,uniq,[])
                                                                                 _ -> (Ty_Any,uniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" (tkgiKi tkgi)])
                                                                   (cxDt,_,errs3)                                                        -- for each type arg a context pred is made
@@ -215,7 +215,7 @@ SEM PrExpr
 
 SEM TyExpr
   | App         loc             .   evTy            =   Ty_App @func.evTy @arg.evTy
-  | * - App AppTop Parens Pred
+  | * - App AppTop Parens Pred Ann
                 lhs             .   evTy            =   @ty
 %%]
 

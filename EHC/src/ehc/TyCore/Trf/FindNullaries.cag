@@ -1,0 +1,75 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.FindNullaries} export(cmodTrfFindNullaries)
+%%]
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%]
+%%[(8 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfFindNullaries :: CModule -> CModule
+cmodTrfFindNullaries cmod
+  =  let  t = wrap_AGItf  (sem_AGItf (AGItf_AGItf cmod))
+                              (Inh_AGItf)
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+
+%%[(8 codegen)
+SEM Expr
+  | Let         binds . lev  =  @lhs.lev + 1
+%%]
+
+%%[(8 codegen)
+
+SEM ValBind
+  | Val         lhs.cTrf  =  if  @lhs.lev == cLevModule+1
+                             then let (metabind, metaval) = @bindMeta.cTrf
+                                      newmetabind = case @expr.whatBelow of
+                                                       ExprIsLam -> CMetaBind_Function1
+                                                       _         -> CMetaBind_Function0
+                                  in  CBind_Bind @nm (newmetabind, metaval) @expr.cTrf
+                             else @loc.cTrf
+
+SEM ValBindL
+  | Cons        lhs.cTrf  =  case @hd.cTrf of
+                               CBind_Bind nm (CMetaBind_Function0,metaval) expr -> let nm1 = hsnPrefix "fun0~" nm
+                                                                                       b1  = CBind_Bind nm1 (CMetaBind_Function0, metaval) expr
+                                                                                       b2  = CBind_Bind nm  (CMetaBind_Apply0,    metaval) (Expr_Var nm1)
+                                                                                   in  b1 : b2 : @tl.cTrf
+                               CBind_FFI c s i nm (Ty_Con t) -> let nm1 = hsnPrefix "fun0~" nm
+                                                                    b1  = CBind_FFI c s i nm1 (Ty_Con t)
+                                                                    b2  = CBind_Bind nm  (CMetaBind_Apply0, MetaVal_Val) (Expr_Var nm1)
+                                                                    in  b1 : b2 : @tl.cTrf
+                               _ -> @loc.cTrf
+
+
+
+%%]

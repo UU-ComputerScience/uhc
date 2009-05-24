@@ -15,7 +15,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[1 hs module {%{EH}Ty} import(EH.Util.Utils,{%{EH}Base.Common}, {%{EH}Base.Builtin})
 %%]
 
-%%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyL, tyInt, tyChar, mkTyCon)
+%%[(1 hmtyinfer || hmtyast) hs export(TyAGItf(..), Ty(..), TyAnn(..), TyL, tyInt, tyChar, mkTyCon)
 %%]
 
 %%[(1 hmtyinfer || hmtyast) hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
@@ -106,9 +106,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
-%%]
-
-%%[(97 hmtyinfer || hmtyast) hs export(tyInteger) 
 %%]
 
 %%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
@@ -718,19 +715,40 @@ tyString  = mkConApp hsnDataList [tyChar]
 %%]
 
 %%[(6 hmtyinfer || hmtyast) hs
-kiStar  = Ty_Con hsnStar
+kiStar  = Ty_Con hsnKindStar
 %%]
 
 %%[(7 hmtyinfer || hmtyast) hs
-kiRow       = Ty_Con hsnRow
+kiRow       = Ty_Con hsnKindRow
 tyRowEmpty  = Ty_Con hsnRowEmpty
 tyRecEmpty  = mkTyRec []
 tySumEmpty  = mkTySum []
 %%]
 
-%%[(97 hmtyinfer || hmtyast) hs
-tyInteger   = Ty_Con hsnInteger
+%%[(18 hmtyinfer || hmtyast) hs export(tyIntUnboxed)
+tyIntUnboxed   = Ty_Con hsnIntUnboxed
 %%]
+
+%%[(18 hmtyinfer || hmtyast) hs export(kiUnboxed)
+kiUnboxed  = Ty_Con hsnKindUnboxed
+%%]
+
+%%[(97 hmtyinfer || hmtyast) hs export(tyInteger)
+tyInteger      	  = Ty_Con hsnInteger
+%%]
+tyInt8Unboxed     = Ty_Con hsnInt8Unboxed  
+tyInt16Unboxed    = Ty_Con hsnInt16Unboxed 
+tyInt32Unboxed    = Ty_Con hsnInt32Unboxed 
+tyInt64Unboxed    = Ty_Con hsnInt64Unboxed 
+tyWordUnboxed     = Ty_Con hsnWordUnboxed  
+tyWord8Unboxed    = Ty_Con hsnWord8Unboxed 
+tyWord16Unboxed   = Ty_Con hsnWord16Unboxed
+tyWord32Unboxed   = Ty_Con hsnWord32Unboxed
+tyWord64Unboxed   = Ty_Con hsnWord64Unboxed
+
+%%[(99 hmtyinfer || hmtyast) hs
+%%]
+tyAddrUnboxed   = Ty_Con hsnAddrUnboxed
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Destruction
@@ -1063,10 +1081,7 @@ tyRowIsCanonOrdered :: AssocL HsName a -> Bool
 tyRowIsCanonOrdered = isSortedByOn rowLabCmp fst
 %%]
 
-%%[(7 hmtyinfer || hmtyast) hs export(rowExtCmp,rowLabCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
-rowLabCmp :: HsName -> HsName -> Ordering
-rowLabCmp = cmpHsNameOnNm
-
+%%[(7 hmtyinfer || hmtyast) hs export(rowExtCmp,tyRowCanonOrder,tyRowCanonOrderBy,tyRowCanonOrderOn,tyRowCanonLblOrder)
 rowExtCmp :: (HsName,a) -> (HsName,a) -> Ordering
 rowExtCmp (n1,_) (n2,_) = n1 `rowLabCmp` n2
 
@@ -1074,7 +1089,7 @@ tyRowCanonOrderOn :: (o -> HsName) -> AssocL o a -> AssocL o a
 tyRowCanonOrderOn sel = sortByOn rowLabCmp (sel . fst)
 
 tyRowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
-tyRowCanonOrderBy cmp = sortByOn cmp fst
+tyRowCanonOrderBy = rowCanonOrderBy
 
 tyRowCanonOrder :: AssocL HsName a -> AssocL HsName a
 tyRowCanonOrder = tyRowCanonOrderBy rowLabCmp
@@ -1399,7 +1414,7 @@ annotationsStar
       = case kind of
           Ty_Ann ann k   -> (if snd (anns_ k) then [ann] else [], False)
           Ty_Quant _ _ k -> anns_ k
-          Ty_Con hsn     -> ([], hsn == hsnStar || hsn == hsnRow)
+          Ty_Con hsn     -> ([], hsn == hsnKindStar || hsn == hsnKindRow)
           Ty_Var _ _     -> ([], False)
           Ty_App f a     -> let (af, _) = anns_ f
                                 (aa, _) = anns_ a

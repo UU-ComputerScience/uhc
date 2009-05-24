@@ -1,0 +1,237 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lift fields of a dictionaries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs module {%{EH}Core.Trf.LiftDictFields} export(cmodTrfLiftDictFields)
+%%]
+%%[(9 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%]
+%%[(9 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
+%%]
+-- for debug
+%%[(9 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(9 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(9 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen) hs
+cmodTrfLiftDictFields :: CModule -> CModule
+cmodTrfLiftDictFields cmod
+  =  let  t = wrap_AGItf  (sem_AGItf (AGItf_AGItf cmod))
+                              (Inh_AGItf)
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(9 codegen)
+ATTR AGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen)
+SEM Expr
+  | Let         binds . lev  =  @lhs.lev + 1
+%%]
+
+%%[(9 codegen)
+
+ATTR AllBind Expr AllAlt [ | | liftedBinds USE {++} {[]} : {[CBind]} ]
+
+
+-- consume lifted bindings at the module level
+
+SEM Expr
+  | Let         lhs .( cTrf
+                     , liftedBinds
+                     )              =   if @lhs.lev == cLevModule
+                                        then ( mkExprLet @categ (@binds.cTrf ++ @binds.liftedBinds ++ @body.liftedBinds) @body.cTrf
+                                             , []
+                                             )
+                                        else ( mkExprLet @categ @binds.cTrf @body.cTrf
+                                             , @binds.liftedBinds ++ @body.liftedBinds
+                                             )
+
+
+-- find out which bindings are needed
+
+ATTR AllMetaVal  [  | | lifteeSet : {Set.Set HsName} ]
+ATTR AllMetaVal  [  | | isDict : {Bool}
+                        isDictInst : {Bool} 
+                        mbPos  : {Maybe Int}         ]
+
+SEM MetaVal
+  | Val           lhs.lifteeSet  = Set.empty
+                  lhs.isDict     = False
+                  lhs.isDictInst = False
+                  lhs.mbPos      = Nothing
+  | Dict          lhs.lifteeSet  = Set.empty
+                  lhs.isDict     = True
+                  lhs.isDictInst = False
+                  lhs.mbPos      = @mbPos
+  | DictClass     lhs.lifteeSet  = Set.fromList [ nm | Just nm <- @names ]
+                  lhs.isDict     = True
+                  lhs.isDictInst = False
+                  lhs.mbPos      = Nothing
+  | DictInstance  lhs.lifteeSet  = Set.fromList [ nm | Just nm <- @names ]
+                  lhs.isDict     = True
+                  lhs.isDictInst = True
+                  lhs.mbPos      = Nothing
+
+ATTR AllBind [ | | directBoundNameSet USE {`Set.union`} {Set.empty} : {Set.Set HsName} ]
+
+SEM ValBind
+  | Val    lhs.directBoundNameSet = Set.singleton @nm
+
+
+
+ATTR AllBind Expr AllAlt [ lifteeSet : {Set.Set HsName} | | ]
+
+SEM ValBind
+  | Val    loc.isDictWithCtxt =  @bindMeta.isDictInst && @expr.isLam
+           expr.lifteeSet     =  if   @loc.isDictWithCtxt
+                                 then Set.empty
+                                 else @bindMeta.lifteeSet
+           lhs.cTrf           =  if   @loc.isDictWithCtxt
+                                 then CBind_Bind @nm (metasMapVal (const $ MetaVal_Dict Nothing) @bindMeta.cTrf) @expr.cTrf
+                                 else CBind_Bind @nm  @bindMeta.cTrf                                               @expr.cTrf
+  
+SEM Expr
+  | Lam    body.lifteeSet     =  @lhs.lifteeSet  -- this rule is necessary, because the copyrule would copy argMeta.lifteeSet insteadof lhs.lifteeSet
+  | Let    binds.lifteeSet    =  let names = @binds.directBoundNameSet
+                                 in  if @categ==ValBindCateg_Rec  &&  not (null (Set.toList (names `Set.intersection` @lhs.lifteeSet)))
+                                     then @lhs.lifteeSet `Set.union` names   -- if one of the names in a LetRec group is in lifteeSet, put all of them in it
+                                     else @lhs.lifteeSet
+           body.lifteeSet     =  @lhs.lifteeSet
+
+SEM CModule
+  | Mod    expr.lifteeSet = Set.empty
+SEM FldBind
+  | Fld    offset.lifteeSet =  Set.empty
+
+
+-- insert the bindings requested
+
+SEM ValBind
+  | Val    lhs.liftedBinds  =  if   @nm `Set.member` @lhs.lifteeSet
+                               then let dependencies = @lhs.findDependencies @expr.fvS
+                                        locals       = filter isValBind dependencies
+                                        args         = (maybe id (\nm->((nm,-1):)) @lhs.selfDictNm)
+                                                       [ (nm, p)
+                                                       | (CBind_Bind nm bm _) <- dependencies
+                                                       , let mbp = mbMetaPos $ metasVal bm
+                                                       , isJust mbp
+                                                       , let Just p = mbMetaPos $ metasVal bm
+                                                       ]
+                                        lamBody      = foldr mkLet @expr.cTrf locals
+                                        body         = foldr mkLam lamBody    args
+                                        extraBind    = CBind_Bind @nm @bindMeta.cTrf body
+                                    in  extraBind : @expr.liftedBinds
+                               else @expr.liftedBinds
+
+
+
+-- flatten chain of nested Let-expressions
+
+ATTR Expr [ olderBrothers  : {[CBind]}   
+             olderFvMp : {FvSMp}   
+           | | ]
+
+ATTR Expr
+     AllBind [ selfDictNm : {Maybe HsName} | | ]
+
+SEM Expr
+  | Let    (body.olderBrothers
+           ,body.olderFvMp
+           )                   =  if @lhs.lev == cLevModule
+                                  then ([], Map.empty)
+                                  else ( @lhs.olderBrothers ++ @binds.cTrf
+                                       , @lhs.olderFvMp  `Map.union` @binds.fvSMp
+                                       )
+                  
+SEM Expr
+  | Lam    body.selfDictNm    =  maybe Nothing (\p->if p== -1 then Just @arg else Nothing) @argMeta.mbPos
+                                
+
+SEM CModule
+  | Mod    expr.olderBrothers = []
+           expr.olderFvMp     = Map.empty
+           expr.selfDictNm    = Nothing
+SEM FldBind
+  | Fld    offset.olderBrothers = []
+           offset.olderFvMp     = Map.empty
+           offset.selfDictNm    = Nothing
+SEM ValBind
+  | Val    expr.olderBrothers = []
+           expr.olderFvMp     = Map.empty
+           expr.selfDictNm    = Nothing
+SEM Alt
+  | Alt    expr.olderBrothers = []
+           expr.olderFvMp     = Map.empty
+           expr.selfDictNm    = Nothing
+
+
+
+-- find dependencies
+
+ATTR AllBind [ findDependencies : {FvS -> [CBind]} | | ]
+
+SEM Expr
+  | Let    binds.findDependencies  =  \needed -> let extend xS = Set.unions (xS : [ Map.findWithDefault Set.empty x @lhs.olderFvMp
+                                                                                  | x <- Set.toList xS
+                                                                                  ]
+                                                                            )
+                                                     allNeeded = fix extend needed
+                                                 in  [ CBind_Bind nm bm e
+                                                     | (CBind_Bind nm bm e) <- @lhs.olderBrothers
+                                                     , nm `Set.member` allNeeded
+                                                     ]
+                                                 
+%%]
+
+%%[(9 codegen) hs
+
+fix :: Eq a => (a->a) -> a -> a
+fix f x = let y = f x
+          in  if y==x 
+              then x
+              else fix f y
+
+
+isValBind :: CBind -> Bool
+isValBind (CBind_Bind _ (_,MetaVal_Val) _) = True
+isValBind _                                 = False
+
+mbMetaPos :: MetaVal -> Maybe Int
+mbMetaPos (MetaVal_Dict mbp) = mbp
+mbMetaPos _                   = Nothing
+
+
+mkLam :: (HsName,Int) -> Expr -> Expr
+mkLam (nm,p) body = Expr_Lam nm (MetaVal_Dict (Just p)) body
+
+mkLet :: CBind -> Expr -> Expr
+mkLet bind body = Expr_Let ValBindCateg_Rec [bind] body
+
+%%]

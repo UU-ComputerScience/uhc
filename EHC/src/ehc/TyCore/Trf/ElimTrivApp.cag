@@ -1,0 +1,84 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate trivial applications of known functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Eliminate function applications for which the semantics is fixed.
+This is done for Prelude functions:
+  - id
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.ElimTrivApp} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfElimTrivApp)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfElimTrivApp :: EHCOpts -> CModule -> CModule
+cmodTrfElimTrivApp opts cmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) (Inh_AGItf {opts_Inh_AGItf = opts})
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an app
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | mbFunVar: {Maybe HsName} ]
+
+SEM Expr
+  | Var         lhs         .   mbFunVar    =   @mbVar
+  | App         lhs         .   mbFunVar    =   @func.mbFunVar
+  | * - Var App lhs         .   mbFunVar    =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | argL: {[Expr]} ]
+
+SEM Expr
+  | App         loc         .   argL        =   @arg.cTrf : @func.argL
+  | * - App     lhs         .   argL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AGItf [ | | cTrf: CModule ]
+
+SEM Expr
+  | App         lhs         .   cTrf        =   if @lhs.isTopApp
+                                                then case (@func.mbFunVar,reverse @argL) of
+                                                       (Just f,[a]) | f == (ehbnId $ ehcOptBuiltinNames @lhs.opts)
+                                                         -> a
+                                                       _ -> @cTrf
+                                                else @cTrf
+%%]
+

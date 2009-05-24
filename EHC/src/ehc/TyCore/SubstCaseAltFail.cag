@@ -1,0 +1,58 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substituting fail place holder for case expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}TyCore.Base}) export(tcSubstCaseAltFail)
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+-- Substitute failRepl for CaseAltFail in ce
+tcSubstCaseAltFail :: EHCOpts -> CaseFailSubst -> Expr -> Expr
+tcSubstCaseAltFail opts caseFailSubst ce
+  = cRepl_Syn_Expr t
+  where t = wrap_Expr (sem_Expr ce)
+                       (Inh_Expr
+                          { caseFailSubst_Inh_Expr = caseFailSubst
+                          , opts_Inh_Expr          = opts
+                          })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT AGItf [ caseFailSubst: CaseFailSubst | | ]
+ATTR AllNT AGItf [ | | cRepl: SELF ]
+
+SEM Expr
+  | CaseAltFail lhs         .   cRepl       =   case Map.lookup @caseId @lhs.caseFailSubst of
+                                                  Just ce -> ce
+                                                  Nothing -> @cRepl -- cerror @lhs.opts ("FAIL " ++ show @caseId)
+%%]
+
+

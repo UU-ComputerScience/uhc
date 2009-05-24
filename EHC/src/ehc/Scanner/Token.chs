@@ -16,9 +16,6 @@
 %%[8 import(Data.Set) export(tokTpIsId)
 %%]
 
-%%[20 export(tokTpQual)
-%%]
-
 %%[5
 type Token = GenToken String EnumValToken String
 
@@ -27,12 +24,18 @@ data EnumValToken
   | TkConid
   | TkOp
   | TkConOp
+%%[[18
+  | TkVaridUnboxed
+  | TkConidUnboxed
+  | TkOpUnboxed
+  | TkConOpUnboxed
+%%]]
 %%[[20
   | TkQVarid
   | TkQConid
   | TkQOp
   | TkQConOp
-%%]
+%%]]
   | TkString
   | TkChar
   | TkInteger8
@@ -67,13 +70,25 @@ tokTpIsId
   = (`member` ts)
   where ts = fromList
   			   [TkVarid,TkConid,TkOp,TkConOp
+%%[[18
+  			   ,TkVaridUnboxed,TkConidUnboxed,TkOpUnboxed,TkConOpUnboxed
+%%]]
 %%[[20
   			   ,TkQVarid,TkQConid,TkQOp,TkQConOp
-%%]
+%%]]
   			   ]
 %%]
 
-%%[20
+%%[18 export(tokTpUnboxed)
+tokTpUnboxed :: EnumValToken -> EnumValToken
+tokTpUnboxed TkVarid = TkVaridUnboxed
+tokTpUnboxed TkConid = TkConidUnboxed
+tokTpUnboxed TkOp    = TkOpUnboxed
+tokTpUnboxed TkConOp = TkConOpUnboxed
+tokTpUnboxed t       = t
+%%]
+
+%%[20 export(tokTpQual)
 tokTpQual :: EnumValToken -> EnumValToken
 tokTpQual TkVarid = TkQVarid
 tokTpQual TkConid = TkQConid

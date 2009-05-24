@@ -427,6 +427,37 @@ SEM Decl
   | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
 %%]
 
+TyCore variant/clone:
+
+%%[(8 hmtyinfer codegen)
+SEM Expr
+  | Lam Sel DataFields
+%%[[12
+    LamImpl
+%%]]
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts)
+                                                            { C.rceValGam  = @lhs.valGam, C.rceDataGam = @lhs.dataGam
+                                                            , C.rceCaseIds = @caseIds
+                                                            }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM PatExpr
+  | AppTop Rec DataFields
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM Decl
+  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(95 hmtyinfer codegen)
+SEM Decl
+  | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Init of tyGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -809,7 +840,10 @@ SEM AGItf
 SEM Expr
   | Let			loc			.	lexLev				=	if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
   							.	lexLevIsGlobal		=	@lexLev == 0
-  | Lam LamImpl
+  | Lam
+%%[[12
+    LamImpl
+%%]]
   				loc			.	lexLev				=	@lhs.lexLev + 1
 
 SEM CaseAlt

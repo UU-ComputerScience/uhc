@@ -63,6 +63,9 @@ level 2..6 : with prefix 'cpEhc'
 -- Language syntax: Core
 %%[(20 codegen) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
+-- Language syntax: TyCore
+%%[(20 codegen) import(qualified {%{EH}TyCore} as C)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Per full program compile actions: level 6
@@ -622,6 +625,7 @@ cpEhcCorePerModulePart1 :: HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart1 modNm
   = cpSeq [ cpStepUID
           , cpProcessCoreBasic modNm
+          , cpProcessTyCoreBasic modNm
           , cpMsg modNm VerboseALot "Core (basic) done"
           , cpStopAt CompilePoint_Core
           ]
@@ -732,6 +736,41 @@ cpProcessEH modNm
 %%]
 
 %%[(8 codegen)
+cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
+cpProcessTyCoreBasic modNm 
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq [ {-
+                 cpTransformCore
+                   modNm
+                     (
+%%[[102
+                       -- [ "CS" ] ++
+%%]]
+                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
+%%[[9               
+                       ,  "CLDF"
+%%]
+%%[[8_2        
+                       , "CPRNM"
+%%]]
+                       , "CFN"
+                       ]
+                     )
+                 -}
+               -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
+                 when (ehcOptEmitTyCore opts || ehcOptUseTyCore opts)
+                      (do { cpOutputTyCore "tycore" modNm
+                          })
+%%[[(8 codegen java)
+               -- , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
+%%]]
+               ]
+        }
+%%]
+
+%%[(8 codegen)
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
@@ -753,9 +792,9 @@ cpProcessCoreBasic modNm
                        , "CFN"
                        ]
                      )
-               , when (ehcOptEmitCore opts) (cpOutputCore "core" modNm)
+               , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
 %%[[(8 codegen java)
-               , when (ehcOptEmitJava opts) (cpOutputJava "java" modNm)
+               , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
 %%]]
                ]
         }
@@ -767,6 +806,7 @@ cpProcessCoreRest modNm
   = cpSeq [ cpFoldCore modNm
 %%[[20
           , cpFlowCoreSem modNm
+          -- , cpFlowTyCoreSem modNm
 %%]]
           , cpTranslateCore2Grin modNm
 %%[[(8 jazy)

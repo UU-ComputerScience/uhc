@@ -411,7 +411,7 @@ SEM GrExpr
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsTags tvar ttags ]
                                    InBasic tvar      -> [ IsBasic tvar ]
-                                   _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
+                                   {- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm) -} {- 20090519 AD: in comment because: Warning: Pattern match(es) are overlapped -}
 %%]
 
 

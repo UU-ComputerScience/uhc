@@ -119,11 +119,12 @@ ehScanOpts
         ,   scoSpecPairs        = Set.fromList $
                 [  show hsnORow, show hsnCRow
                 ,  show hsnOSum, show hsnCSum
-%%]
-%%[9
+%%[[9
                 ,  show hsnOImpl, show hsnCImpl
-%%]
-%%[7
+%%]]
+%%[[18
+                ,  show hsnOParensUnboxed, show hsnCParensUnboxed
+%%]]
                 ]
 %%]
 %%[1
@@ -262,6 +263,39 @@ coreScanOpts
         ,   scoSpecPairs        =   scoSpecPairs hsScanOpts
         }
 %%]
+
+Todo:
+
+%%[8
+tycoreScanOpts :: ScanOpts
+tycoreScanOpts
+  =  defaultScanOpts
+        {   scoKeywordsTxt      =   (Set.fromList $
+                                        [ "let", "in", "case", "of", "rec", "foreign", "uniq"
+                                        , "Int", "Char", "String", "Tag", "Rec"
+                                        , "module", "default"
+                                        , "BINDPLAIN", "BINDFUNCTION0", "BINDFUNCTION1", "BINDAPPLY0"
+                                        , "VAL"
+%%[[9
+                                        , "DICT", "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED"
+%%]]
+%%[[20
+                                        , "Integer" 
+%%]]
+%%[[94
+                                        , "foreignexport" 
+%%]]
+                                        ])
+        ,   scoKeywordsOps      =   Set.fromList [ "->", "=", ":", "::", "|", "\\" ]
+        ,   scoSpecChars        =   Set.fromList "();{},[]"
+        ,   scoOpChars          =   Set.fromList "|\\:=-<>"
+        ,   scoDollarIdent      =   True
+        }
+%%]
+
+                "();,[]{}`"
+        ,   scoOpChars          = Set.fromList $
+                "!#$%&*+/<=>?@\\^|-:.~"
 
 %%[8
 grinScanOpts :: ScanOpts
@@ -428,6 +462,10 @@ pKeyw k                 =   pKeyTk (show k)
 pStringTk, pCharTk,
   pInteger8Tk, pInteger10Tk, pInteger16Tk, pFractionTk,
 %%]
+%%[18
+  pVaridUnboxedTk, pConidUnboxedTk,
+  pVarsymUnboxedTk, pConsymUnboxedTk,
+%%]
 %%[20
   pQVaridTk, pQConidTk,
   pQVarsymTk, pQConsymTk,
@@ -454,6 +492,12 @@ pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"
 pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
+%%[18
+pVaridUnboxedTk      =   pCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
+pConidUnboxedTk      =   pCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
+pConsymUnboxedTk     =   pCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
+pVarsymUnboxedTk     =   pCostValToken' 7 TkOpUnboxed        "<operator#>" 
+%%]
 %%[20
 pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
 pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
@@ -474,6 +518,15 @@ pCONSYM          = pConsymTk
 pVARID           = pVaridTk
 pVARID'          = pVaridTk'
 pVARSYM          = pVarsymTk
+%%]
+
+%%[18
+pCONIDUNBOXED, pCONSYMUNBOXED, pVARIDUNBOXED, pVARSYMUNBOXED :: IsParser p Token => p Token
+
+pCONIDUNBOXED    = pConidUnboxedTk
+pCONSYMUNBOXED   = pConsymUnboxedTk
+pVARIDUNBOXED    = pVaridUnboxedTk
+pVARSYMUNBOXED   = pVarsymUnboxedTk
 %%]
 
 %%[20

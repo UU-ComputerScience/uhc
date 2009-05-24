@@ -11,34 +11,7 @@
 %%[3 import(Data.List) export(hsnUn, hsnIsUn, hsnUnUn)
 %%]
 
-%%[5 export(hsnIsList)
-%%]
-
-%%[6 export(hsnStar)
-%%]
-
-%%[7 export(hsnRow,hsnRec,hsnSum,hsnRowEmpty,hsnIsRec,hsnIsSum)
-%%]
-
-%%[7 export(hsnORow,hsnCRow,hsnORec,hsnCRec,hsnOSum,hsnCSum)
-%%]
-
-%%[7 export(hsnIsRow)
-%%]
-
-%%[7 export(positionalFldNames)
-%%]
-
-%%[7 export(hsnFldUpd)
-%%]
-
-%%[8 export(hsnMain)
-%%]
-
-%%[8 import(Char(isUpper)) export(hsnIsConstructorName)
-%%]
-
-%%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+%%[8 import(Char(isUpper))
 %%]
 
 %%[95 export(hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT)
@@ -147,36 +120,30 @@ hsnUnUn         hsn
                          where ms = mbHNm n
 %%]
 
-%%[7.hsnFldUpd
+%%[7.hsnFldUpd export(hsnFldUpd)
 hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   hsnFromString (strFldUpd ++ show nm)
 %%]
 
-%%[20 -7.hsnFldUpd
+%%[20 -7.hsnFldUpd export(hsnFldUpd)
 hsnFldUpd                           ::  HsName -> HsName
 hsnFldUpd       nm                  =   strFldUpd `hsnPrefix` nm
 %%]
 
-%%[5
+%%[5 export(hsnIsList)
 hsnIsList       hsn                 =   hsn == hsnDataList
 %%]
 
-%%[6
-hsnStar                             =   hsnFromString "*"
-%%]
-
-hsnORow                             =   hsnFromString "(|"
-hsnCRow                             =   hsnFromString "|)"
-hsnOSum                             =   hsnFromString "(<"
-hsnCSum                             =   hsnFromString ">)"
-%%[7
+%%[7 export(hsnORow,hsnCRow,hsnORec,hsnCRec,hsnOSum,hsnCSum)
 hsnORow                             =   hsnFromString "{|"
 hsnCRow                             =   hsnFromString "|}"
 hsnOSum                             =   hsnFromString "{<"
 hsnCSum                             =   hsnFromString ">}"
 hsnORec                             =   hsnFromString "("
 hsnCRec                             =   hsnFromString ")"
+%%]
 
+%%[7 export(hsnRow,hsnRec,hsnSum,hsnRowEmpty,hsnIsRec,hsnIsSum,hsnIsRow)
 hsnRow                              =   hsnFromString (hsnStrSpecialPrefix ++ "Row")
 hsnRec                              =   hsnFromString (hsnStrSpecialPrefix ++ "Rec")
 hsnSum                              =   hsnFromString (hsnStrSpecialPrefix ++ "Var")
@@ -186,16 +153,18 @@ hsnIsRec, hsnIsSum, hsnIsRow        ::  HsName -> Bool
 hsnIsRec        hsn                 =   hsn == hsnRec
 hsnIsSum        hsn                 =   hsn == hsnSum
 hsnIsRow        hsn                 =   hsn == hsnRow
+%%]
 
+%%[7 export(positionalFldNames)
 positionalFldNames                  ::  [HsName]
 positionalFldNames                  =   map HNPos [1..]
 %%]
 
-%%[8
+%%[8 export(hsnMain)
 hsnMain                             =   hsnFromString "main"
 %%]
 
-%%[8
+%%[8 export(hsnIsConstructorName)
 constructorInitial :: Char -> Bool
 constructorInitial ':' = True
 constructorInitial '[' = True
@@ -213,19 +182,10 @@ hsnIsConstructorName (HNPos n)     = False
 hsnIsConstructorName n             = hsnIsConstructorName (snd $ hsnInitLast n)
 %%]
 
-
-
-
-
-
-
-
-hsnOImpl                            =   hsnFromString "(!"
-hsnCImpl                            =   hsnFromString "!)"
-%%[9
-hsnOImpl                            =   hsnFromString "{!"
-hsnCImpl                            =   hsnFromString "!}"
-hsnPrArrow                          =   hsnFromString "=>"
+%%[9 export(hsnOImpl,hsnCImpl,hsnPrArrow,hsnIsPrArrow,hsnIsUnknown)
+hsnOImpl          =   hsnFromString "{!"
+hsnCImpl          =   hsnFromString "!}"
+hsnPrArrow        =   hsnFromString "=>"
 
 hsnIsPrArrow                        ::  HsName -> Bool
 hsnIsPrArrow    hsn                 =   hsn == hsnPrArrow
@@ -233,7 +193,7 @@ hsnIsUnknown                        =   (==hsnUnknown)
 %%]
 
 %%[10 export(hsnDynVar)
-hsnDynVar                           =   hsnFromString "?"
+hsnDynVar         =   hsnFromString "?"
 %%]
 
 %%[4 export(hsnCovariant, hsnContravariant, hsnInvariant)
@@ -248,8 +208,60 @@ hsnPolNegation :: HsName
 hsnPolNegation    = mkHNm "^Negate"
 %%]
 
+%%[18 export(hsnOParensUnboxed,hsnCParensUnboxed)
+hsnOParensUnboxed =   hsnFromString "(#"
+hsnCParensUnboxed =   hsnFromString "#)"
+%%]
+
+%%[18 export(hsnRecUnboxed)
+hsnRecUnboxed     =   hsnFromString (hsnStrSpecialPrefix ++ "Rec#")
+%%]
+
 %%[97 export(hsnInteger)
-hsnInteger                          =   hsnFromString "Integer"
+hsnInteger        =   hsnFromString "Integer"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin: kinds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6 export(hsnKindStar)
+hsnKindStar                         =   hsnFromString "*"
+%%]
+
+%%[7 export(hsnKindRow)
+hsnKindRow                          =   hsnRow
+%%]
+
+%%[18 export(hsnKindUnboxed)
+hsnKindUnboxed                      =   hsnFromString "#"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin: unboxed types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+These are *really* builtin in that they do are not related to Prelude defined equivalents.
+In fact, no unboxed types can be user defined.
+
+%%[18 export(hsnIntUnboxed)
+hsnIntUnboxed      =   hsnFromString "Int#"
+%%]
+
+%%[97 export(hsnInt8Unboxed, hsnInt16Unboxed, hsnInt32Unboxed, hsnInt64Unboxed, hsnWordUnboxed, hsnWord8Unboxed, hsnWord16Unboxed, hsnWord32Unboxed, hsnWord64Unboxed)
+hsnInt8Unboxed     =   hsnFromString "Int8#"
+hsnInt16Unboxed    =   hsnFromString "Int16#"
+hsnInt32Unboxed    =   hsnFromString "Int32#"
+hsnInt64Unboxed    =   hsnFromString "Int64#"
+hsnWordUnboxed     =   hsnFromString "Word#"
+hsnWord8Unboxed    =   hsnFromString "Word8#"
+hsnWord16Unboxed   =   hsnFromString "Word16#"
+hsnWord32Unboxed   =   hsnFromString "Word32#"
+hsnWord64Unboxed   =   hsnFromString "Word64#"
+%%]
+
+%%[99 export(hsnAddrUnboxed)
+hsnAddrUnboxed     =   hsnFromString "Addr#"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -472,6 +472,7 @@ SEM Ty
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
+  | Ann             loc     .   pp      =   {- @ann.pp >#< -} @ty.pp
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
@@ -663,6 +664,15 @@ SEM Pred
 %%[(50 hmtyinfer || hmtyast)
 SEM Ty
   | Equal           loc     .   pp      =   ppParens (maybe (cfgPPTyPPVarDflt @lhs.cfg @lhs.cfg "e" @tv) id (tnLookupPP @tv @lhs.tnMap) >|< "=" >|< @ty.pp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast)
+SEM TyAnn
+  | Empty			loc		.	pp		=	empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
