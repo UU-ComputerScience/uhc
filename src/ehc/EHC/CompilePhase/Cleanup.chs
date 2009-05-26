@@ -96,7 +96,11 @@ cpCleanupCU modNm
                     }
            )
 %%[[(99 codegen grin)
-       ; cpCleanupGrin modNm
+       -- Only cleanup Grin when we don't need to merge it.
+       -- TODO think about this a bit longer.
+       ; cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; when (not $ ehcOptFullProgAnalysis opts) $ cpCleanupGrin modNm
 %%]]
        }
 

@@ -167,6 +167,7 @@ cpEhcFullProgPostModulePhases :: EHCOpts -> [HsName] -> ([HsName],HsName) -> EHC
 cpEhcFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq [ cpSeq [cpGetPrevGrin m | m <- modNmL]
           , mergeIntoOneBigGrin
+          , mapM_ cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
           , cpOutputGrin' "fullgrin" mainModNm
           , cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
           ]
