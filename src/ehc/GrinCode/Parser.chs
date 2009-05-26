@@ -130,15 +130,12 @@ pGrBindAnn      =    pSucceed GrBindAnnNormal
                 <|>  GrBindAnnSpecialized <$
                        pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
 
--- TODO O jee: DICTOVERLOADED{-1} clasht met commentaarsyntax {- ... -}
 pCurlyList      ::   GRIParser a -> GRIParser [a]
 pCurlyList p    =    pCurly $ pListSep pComma p
 
--- TODO niet een vieze hack gebruiken voor _
 pMbGrNm         ::   GRIParser (Maybe HsName)
-pMbGrNm         =    f <$> pGrNm
-  where f n | show n == "_" = Nothing
-            | otherwise     = Just n
+pMbGrNm         =    Just    <$> pGrNm
+                <|>  Nothing <$  pKey "_"
 
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm
@@ -156,8 +153,9 @@ pPatLam         =    GrPatLam_Var      <$> pGrNm
                         )
 
 pPatAlt         ::   GRIParser GrPatAlt
-pPatAlt         =    GrPatAlt_LitInt   <$> pInt
-                <|>  GrPatAlt_Tag      <$> pTag
+pPatAlt         =    GrPatAlt_LitInt    <$> pInt
+                <|>  GrPatAlt_Tag       <$> pTag
+                <|>  GrPatAlt_Otherwise <$  pKey "_"
                 <|>  pParens
                         (    pTag
                              <**>  (pGrNm
@@ -193,7 +191,7 @@ pBasicAnnot     =    BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
-                     *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+                     *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> ((undefined <$ pKey "_") <|> pGrNm)
                          <|> GrTag_Unboxed <$ pKey "U"
                          <|> GrTag_Any     <$ pKey "*"
                          )

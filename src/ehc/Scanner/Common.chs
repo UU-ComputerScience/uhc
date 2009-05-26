@@ -276,6 +276,7 @@ grinScanOpts
                                         , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
                                         , "word"
                                         , "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED", "SPECIALIZED"
+                                        , "_"
 %%[[97
                                         , "float", "double"
 %%]]
