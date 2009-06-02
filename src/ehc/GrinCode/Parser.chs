@@ -82,7 +82,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
-                <|>  GrExpr_Call                            <$> pGrNm   <*>  pSValL
+                <|>  GrExpr_Call    <$  pKey "call"         <*> pGrNm   <*>  pSValL
 
 pSVal           ::   GRIParser GrVal
 pSVal           =    GrVal_Var      <$> pGrNm
