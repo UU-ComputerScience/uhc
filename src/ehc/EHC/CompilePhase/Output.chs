@@ -75,7 +75,7 @@ cpOutputJava suff modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpOutputGrin, cpOutputGrin')
+%%[(8 codegen grin) export(cpOutputGrin, cpOutputGrinForLaterUse)
 cpOutputGrin :: String -> HsName -> EHCompilePhase ()
 cpOutputGrin suff modNm
   =  do  {  cr <- get
@@ -91,8 +91,8 @@ cpOutputGrin suff modNm
                      })
          }
 
-cpOutputGrin' :: String -> HsName -> EHCompilePhase ()
-cpOutputGrin' suff modNm
+cpOutputGrinForLaterUse :: String -> HsName -> EHCompilePhase ()
+cpOutputGrinForLaterUse suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrin = ecuMbGrin ecu

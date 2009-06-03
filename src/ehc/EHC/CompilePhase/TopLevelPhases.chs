@@ -174,7 +174,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq [ cpSeq [cpEnsureGrin m | m <- modNmL]
           , mergeIntoOneBigGrin
           , mapM_ cpCleanupGrin impModNmL -- clean up unused Grin (moved here from cpCleanupCU)
-          , cpOutputGrin' "fullgrin" mainModNm
+          , cpOutputGrinForLaterUse "fullgrin" mainModNm
           , cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
           ]
   where mergeIntoOneBigGrin
@@ -818,7 +818,7 @@ cpProcessCoreFold modNm
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
 cpProcessCoreRest modNm 
   = cpSeq [ cpTranslateCore2Grin modNm
-          , cpOutputGrin' "grin" modNm
+          , cpOutputGrinForLaterUse "grin" modNm
 %%[[(8 jazy)
           , cpTranslateCore2Jazy modNm
 %%]]

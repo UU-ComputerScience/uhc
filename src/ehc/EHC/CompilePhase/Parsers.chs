@@ -65,7 +65,7 @@ cpParsePlainWithHandleToErrs parser scanOpts store (fn,fh) modNm
       ; let (res,msgs) = parseToResMsgs parser tokens
             errs       = map (rngLift emptyRange mkPPErr) msgs
       ; when (null errs)
-             (do cpUpdCU modNm (store res); cpMsg modNm VerboseALot "HACKING PrevGrin opgeslagen")
+             (cpUpdCU modNm (store res))
       ; return errs
       }
 
@@ -91,17 +91,11 @@ cpParseEH
 %%[(8 grin) export(cpParseGrin)
 cpParseGrin :: HsName -> EHCompilePhase ()
 cpParseGrin modNm
---  = do { cr <- get
---       ; cpMsg modNm VerboseDebug "HACKING cpParseGrin"
---       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
---       }
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
               fpC     = fpathSetSuff "grin" fp
        ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
        ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" fpC modNm
-       -- ; when (ehcDebugStopAtCoreError opts)
-       --        (cpSetLimitErrsWhen 5 "Parse Core (of previous compile) of module" errs)
        ; return ()
        }
 %%]
@@ -206,10 +200,9 @@ cpGetPrevCore modNm
 cpGetPrevGrin :: HsName -> EHCompilePhase ()
 cpGetPrevGrin modNm
   = do { cr <- get
-       -- ; cpMsg modNm VerboseDebug "HACKING PrevGrin"
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbGrinTime ecu) && isNothing (ecuMbGrin ecu))
-              (do cpParseGrin modNm {- ; cpMsg modNm VerboseDebug "HACKING grin geparset ofzo" -})
+              (cpParseGrin modNm)
        }
 %%]
 

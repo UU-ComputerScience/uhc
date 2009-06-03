@@ -325,10 +325,7 @@ mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec
 grModMerge :: [GrModule] -> GrModule
 grModMerge mL
   = foldr1 cmb mL
-  where -- get (CExpr_Let c b e) = CExpr_Let c b . get e
-        -- get  _                = id
-        -- TODO: zorgen dat identifiers uniek blijven
-        cmb (GrModule_Mod m1 g1 b1 t1) (GrModule_Mod m2 g2 b2 t2)
+  where cmb (GrModule_Mod m1 g1 b1 t1) (GrModule_Mod m2 g2 b2 t2)
           = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (List.union t1 t2)
 %%]
 

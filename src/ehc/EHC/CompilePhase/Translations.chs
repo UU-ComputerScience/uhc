@@ -142,8 +142,7 @@ cpTranslateCore2Grin modNm
                  coreSem   = panicJust "cpTranslateCore2Grin" mbCoreSem
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
          ;  when (isJust mbCoreSem && targetIsGrin (ehcOptTarget opts))
-                 (do cpUpdCU modNm $! ecuStoreGrin $! grin {- ; cpMsg modNm VerboseDebug "HACKING: inderdaad vertaling opgeslagen" -})
-         -- ; cpMsg modNm VerboseDebug "HACKING: vertaling moet hiervoor zijn opgeslagen"
+                 (cpUpdCU modNm $! ecuStoreGrin $! grin)
          }
 %%]
 
