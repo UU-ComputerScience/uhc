@@ -119,10 +119,10 @@ mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> OptimCtxt -> NmEnv -> Int -> StackDepth 
 mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
   = case gviLd' optim env modNmConstInx (stkDepth+inc1) a2 of
       GrValIntroAlt_OnTOS ins2 inc2 optimEffect _
-        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect [BasicAnnot_Dflt]
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect [grinBasicAnnotSize BasicAnnot_Dflt]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
-      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins) bann
-        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) 1 optimEffect [BasicAnnot_Dflt]
+      GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins) _
+        -> GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) 1 optimEffect [grinBasicAnnotSize BasicAnnot_Dflt]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of

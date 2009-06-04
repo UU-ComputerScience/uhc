@@ -114,14 +114,37 @@ typedef uint8_t  	GB_Byte ;
 %%]
 
 %%[97
-typedef float GB_Float ;
-typedef double GB_Double ;
+#if USE_64_BITS
+typedef Word 	GB_Float 	;
+#else
+typedef Float 	GB_Float 	;
+#endif
+typedef Double 	GB_Double 	;
 %%]
 
-%%[97
+%%[8
 typedef union GB_WordEquiv {
-  GB_Word 		wrd ;
-  GB_Float		flt ;
+  Word 		w ;
+%%[[97
+#if USE_64_BITS
+#if LITTLEENDIAN
+  struct {
+    Float 	lo ;
+    Float 	hi ;
+  } __attribute__ ((__packed__)) f ;
+#else /* LITTLEENDIAN */
+  struct {
+    Float 	hi ;
+    Float 	lo ;
+  } __attribute__ ((__packed__)) f ;
+  Float		f ;
+#endif
+#else /* USE_64_BITS */
+  struct {
+    Float 	lo ;
+  } f ;
+#endif
+%%]]
 } GB_WordEquiv ;
 %%]
 
@@ -205,6 +228,7 @@ extern   GB_Word     rr ;
 
 #define GB_SetRegRel(r,o,v)			{ *GB_RegRel(r,o) = v ; }
 #define GB_SetRegByteRel(ty,r,o,v)	{ *GB_RegByteRel(ty,r,o) = v ; }
+#define GB_SetCallCResult(tys,tyv,r,o,v)	{ *GB_RegByteRel(tyv,r,o) = *Cast(tyv*,Cast(void*,&v)) ; }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,7 +639,7 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 											{ \
 												action	; \
 												if ( gb_ThrownException != NULL && extratest ) {\
-													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%x\n",gb_ThrownException) ;}) ; \
+													IF_GB_TR_ON(3,{printf("GB_PassExcWith exc=%p\n",gb_ThrownException) ;}) ; \
 													gcsafe ; \
 													whenexc ; \
 												} \
@@ -1072,7 +1096,7 @@ This breaks when compiled without bgc.
 
 %%[8
 #define GB_GBInt2CastedInt(ty,x)	(Cast(ty,(x)&GB_Word_IntMask) / GB_Int_ShiftPow2)
-#define GB_GBInt2Int(x)				GB_GBInt2CastedInt(int,x)
+#define GB_GBInt2Int(x)				GB_GBInt2CastedInt(SWord,x)
 #define GB_TagWord2Word(x)			(((x)<<GB_Word_SizeOfWordTag) | GB_Word_TagInt)
 #define GB_UntagWord2Word(x)		((x)>>GB_Word_SizeOfWordTag)
 #define GB_Int2GBInt(x)				((Cast(GB_Int,x)) << GB_Word_SizeOfWordTag | GB_Word_TagInt)
@@ -1103,6 +1127,7 @@ This breaks when compiled without bgc.
 %%]
 
 %%[97
+%%]
 #define GB_Float_Op1_In1(op,z,x)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = op x->content.flt ; }
 #define GB_Float_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Float_In(z) ; z->content.flt = x->content.flt op y->content.flt ; }
 
@@ -1113,9 +1138,9 @@ This breaks when compiled without bgc.
 #define GB_Float_Div_In(z,x,y)				GB_Float_Op2_In1(/,z,x,y)
 
 #define GB_Float_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.flt,y->content.flt,lt,eq,gt)
-%%]
 
 %%[97
+%%]
 #define GB_Double_Op1_In1(op,z,x)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = op x->content.dbl ; }
 #define GB_Double_Op2_In1(op,z,x,y)			{ GB_NodeAlloc_Double_In(z) ; z->content.dbl = x->content.dbl op y->content.dbl ; }
 
@@ -1126,7 +1151,6 @@ This breaks when compiled without bgc.
 #define GB_Double_Div_In(z,x,y)				GB_Double_Op2_In1(/,z,x,y)
 
 #define GB_Double_Cmp(x,y,lt,eq,gt)			GB_CmpBasic(x->content.dbl,y->content.dbl,lt,eq,gt)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instruction opcode inline operands

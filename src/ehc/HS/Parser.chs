@@ -848,7 +848,7 @@ pLiteral
 pExpressionBase :: HSParser Expression
 pExpressionBase
   =   Expression_Literal emptyRange  <$> pLiteral
-  <|> mkRngNm Expression_Variable    <$> qvar -- qvarid
+  <|> mkRngNm Expression_Variable    <$> qvar
 %%[[5
   <|> pExpressionList
 %%]]
@@ -1591,6 +1591,13 @@ varid
   <?> "varid"
 %%]
 
+%%[18
+%%]
+varid_unboxed :: HSParser Token
+varid_unboxed
+  =   pVARIDUNBOXED
+  <?> "varid_unboxed"
+
 %%[1
 varid_no_unsafe :: HSParser Token
 varid_no_unsafe
@@ -1610,6 +1617,9 @@ varid_no_foreign
 %%]]
 %%[[8
   <|> special_id_no_callconv
+%%]]
+%%[[18
+  <|> pVARIDUNBOXED
 %%]]
   <?> "varid_no_foreign"
 %%]
@@ -1685,7 +1695,10 @@ gtycon
 %%[1
 tycon   :: HSParser Token   -- Unqualified
 tycon
-  =   pCONID                
+  =   pCONID
+%%[[18
+  <|> pCONIDUNBOXED
+%%]]
   <?> "tycon"
 
 oqtycon :: HSParser Token   -- An "ordinary" qualified tycon

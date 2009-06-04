@@ -185,8 +185,8 @@ pBasicSize      =    basicSizeOf      <$> pInt
 
 pBasicAnnot     ::   GRIParser BasicAnnot
 pBasicAnnot     =    BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
-                <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr" <*> pBool
-                <|>  BasicAnnot_ToTaggedPtr   <$  pKey "annottotaggedptr"   <*> pBool
+                <|>  BasicAnnot_FromTaggedPtr <$  pKey "annotfromtaggedptr" <*> pBool <*> pBasicTy
+                <|>  BasicAnnot_ToTaggedPtr   <$  pKey "annottotaggedptr"   <*> pBool <*> pBasicTy
                 <|>  BasicAnnot_Dflt          <$  pKey "annotdflt"
 
 pTag            ::   GRIParser GrTag

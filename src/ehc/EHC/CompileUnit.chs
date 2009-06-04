@@ -16,8 +16,10 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 -- Language syntax: HS, EH
 %%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}EH} as EH)
 %%]
--- Language syntax: Core, Grin, ...
+-- Language syntax: Core, TyCore, Grin, ...
 %%[(8 codegen) import( qualified {%{EH}Core} as Core)
+%%]
+%%[(8 codegen) import(qualified {%{EH}TyCore} as C)
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
@@ -124,10 +126,11 @@ data EHCompileUnit
 %%[[(8 codegen)
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
+      , ecuMbTyCore          :: !(Maybe C.Module)
+      -- , ecuMbTyCoreSem       :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
-      , ecuMbGrinTime        :: !(Maybe ClockTime)
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
@@ -146,6 +149,9 @@ data EHCompileUnit
       , ecuMbHITime          :: !(Maybe ClockTime)
 %%[[(8 codegen)
       , ecuMbCoreTime        :: !(Maybe ClockTime)
+%%]]
+%%[[(8 codegen grin)
+      , ecuMbGrinTime        :: !(Maybe ClockTime)
 %%]]
       , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
       , ecuMod               :: !Mod
@@ -197,10 +203,11 @@ emptyECU
 %%[[(8 codegen)
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
+      , ecuMbTyCore          = Nothing
+      -- , ecuMbTyCoreSem       = Nothing
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            = Nothing
-      , ecuMbGrinTime        = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
 %%]]
@@ -219,6 +226,9 @@ emptyECU
       , ecuMbHITime          = Nothing
 %%[[(20 codegen)
       , ecuMbCoreTime        = Nothing
+%%]]
+%%[[(20 codegen grin)
+      , ecuMbGrinTime        = Nothing
 %%]]
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
@@ -350,6 +360,14 @@ ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
 
+%%[(8 codegen) export(ecuStoreTyCore)
+-- ecuStoreTyCoreSem :: EcuUpdater Core2GrSem.Syn_CodeAGItf
+-- ecuStoreTyCoreSem x ecu = ecu { ecuMbCoreSem = Just x }
+
+ecuStoreTyCore :: EcuUpdater C.Module
+ecuStoreTyCore x ecu = ecu { ecuMbTyCore = Just x }
+%%]
+
 %%[(8 jazy) export(ecuStoreJVMClassL)
 ecuStoreJVMClassL :: EcuUpdater (HsName,[Jvm.Class])
 ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
@@ -358,16 +376,13 @@ ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
 ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
-%%[(8 grin) export(ecuStoreGrin,ecuStoreGrinTime,ecuStoreBytecode,ecuStoreBytecodeSem)
+%%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
-
-ecuStoreGrinTime :: EcuUpdater ClockTime
-ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 
 ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8
@@ -431,6 +446,11 @@ ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%[(20 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
+%%]
+
+%%[(20 codegen grin) export(ecuStoreGrinTime)
+ecuStoreGrinTime :: EcuUpdater ClockTime
+ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%]
 
 %%[20 export(ecuStoreDirIsWritable)

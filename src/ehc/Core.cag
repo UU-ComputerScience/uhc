@@ -22,7 +22,7 @@
 %%[(8 codegen) hs export(RPatNm(..))
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty}) export(FvS,FvSMp)
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty})
 %%]
 
 %%[(8 codegen) hs export(mkCMod)
@@ -639,11 +639,6 @@ cvrFromCvi i
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Support for transformations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs
-type FvS = HsNameS
-type FvSMp = Map.Map HsName FvS
-%%]
 
 %%[(8 codegen) hs export(fvLev,fvsLev)
 fvLev :: HsName -> CVarIntroMp -> Int

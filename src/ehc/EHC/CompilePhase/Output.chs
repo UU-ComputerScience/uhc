@@ -30,6 +30,8 @@ Output generation, on stdout or file
 -- Core output
 %%[(8 codegen) import({%{EH}Core.Pretty})
 %%]
+%%[(8 codegen) import({%{EH}TyCore.Pretty})
+%%]
 -- Grin input and output
 %%[(8 codegen grin) import({%{EH}GrinCode.Pretty})
 %%]
@@ -45,6 +47,20 @@ Output generation, on stdout or file
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: output
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(cpOutputTyCore)
+cpOutputTyCore :: String -> HsName -> EHCompilePhase ()
+cpOutputTyCore suff modNm
+  =  do  {  cr <- get
+         -- part 1: current .tycore
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbTyCore = ecuMbTyCore ecu
+                 cMod   = panicJust "cpOutputTyCore" mbTyCore
+                 fpC = mkOutputFPath opts modNm fp suff
+         ;  cpMsg modNm VerboseALot "Emit TyCore"
+         ;  lift $ putPPFPath fpC (ppModule opts cMod) 100
+         }
+%%]
 
 %%[(8 codegen) export(cpOutputCore)
 cpOutputCore :: String -> HsName -> EHCompilePhase ()

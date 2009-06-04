@@ -44,7 +44,7 @@ void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A\n");}) ;
 	WPtr s ;
 	for ( s = sp ; s < (WPtr)StackAreaHigh ; s++ ) {
-		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%x\n",s);}) ;
+		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%p\n",s);}) ;
 		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run C\n");}) ;

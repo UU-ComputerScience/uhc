@@ -30,7 +30,7 @@
 %%[20 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
 %%]
 
-%%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp),{%{EH}Ty}(rowLabCmp))
+%%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
 %%[99 export(modImpPrelude)

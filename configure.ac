@@ -70,7 +70,7 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
 ### enable options
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
 AC_SUBST(ENABLE_JAVA,$enableJava)
-if test x$enableJava == xyes
+if test x$enableJava = xyes
 then
   REQUIRED_PROG_FOR_EH(javacCmd,javac)
   REQUIRED_PROG_FOR_EH(jarCmd,jar)
@@ -733,11 +733,11 @@ AC_DEFINE([CONST_SIGINT],[SIGINT],[Value of SIGINT])
 # Here we assume a bit of the implementation to check on the result of AC_CHECK_SIZEOF([intptr_t]).
 # We need it to add 32/64 bit related flags for external libraries.
 # Usually this is ok, but for some combinations not so.
-if test "x$ac_cv_sizeof_intptr_t" == "x4"
+if test "x$ac_cv_sizeof_intptr_t" = "x4"
 then
   use32bits="yes"
   use64bits="no"
-elif test "x$ac_cv_sizeof_intptr_t" == "x8"
+elif test "x$ac_cv_sizeof_intptr_t" = "x8"
 then
   use32bits="no"
   use64bits="yes"
@@ -746,12 +746,12 @@ else
   use64bits=""
 fi
 
-if test "x$use32bits" == "xyes"
+if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
 fi
 
-if test "x$use64bits" == "xyes"
+if test "x$use64bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m64"
 fi
@@ -1003,7 +1003,7 @@ else
 echo "    **** ERROR **** : gcc must be installed, ask your OS guru"
 fi
 
-if test x$enableJava == xyes
+if test x$enableJava = xyes
 then
   echo "  javac is available?           : $javacExists"
   if test "x$javacExists" = "xyes" ;then 

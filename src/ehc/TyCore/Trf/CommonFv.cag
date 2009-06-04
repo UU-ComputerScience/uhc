@@ -1,0 +1,52 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | fvS USE {`Set.union`} {Set.empty}: FvS ]
+ATTR AllBind [ | | fvSMp USE {`Map.union`} {Map.empty}: FvSMp ]
+
+SEM Expr
+  | Lam         loc         .   fvS         =   @arg `Set.delete` @body.fvS
+  | Let         loc         .   fvS         =   (@body.fvS `Set.union` @binds.fvS) `Set.difference` Set.fromList @binds.nmL
+  | Var         lhs         .   fvS         =   Set.singleton @nm
+  | App         loc         .   fvS         =   @func.fvS `Set.union` @arg.fvS
+
+SEM ValBind
+  | Val         lhs         .   fvSMp       =   Map.singleton @nm @expr.fvS
+
+SEM Alt
+  | Alt         loc         .   fvS         =   @expr.fvS `Set.difference` Set.fromList @pat.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding to id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
+
+SEM ValBind
+  | Val         lhs         .   nmL         =   [@nm]
+
+SEM FldBind
+  | Fld         lhs         .   nmL         =   [@nm] ++ @pat.nmL
+
+SEM PatRest
+  | Var         lhs         .   nmL         =   [@nm]
+
+SEM Pat
+  | Var Con     loc         .   nm          =   @pnm
+  | Var         lhs         .   nmL         =   [@nm]
+  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
+%%]
+

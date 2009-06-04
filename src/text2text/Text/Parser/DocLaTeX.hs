@@ -13,6 +13,7 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 
 import qualified EH.Util.FastSeq as Seq
+import EH.Util.Utils
 
 import Common
 import Text
@@ -121,12 +122,13 @@ itemizestyleMp
 -- Allowed table column formattings
 -------------------------------------------------------------------------
 
-tablecolfmtMp :: Map.Map Char TableColFormat
+tablecolfmtMp :: Map.Map Char (TextItems -> TableColFormat)
 tablecolfmtMp
   = Map.fromList
-      [ ('l'            , TableColFormat_JustifyLeft    )
-      , ('c'            , TableColFormat_JustifyCenter  )
-      , ('r'            , TableColFormat_JustifyRight   )
+      [ ('l'            , const TableColFormat_JustifyLeft    )
+      , ('c'            , const TableColFormat_JustifyCenter  )
+      , ('r'            , const TableColFormat_JustifyRight   )
+      , ('p'            ,       TableColFormat_ParBox         )
       ]
 
 -------------------------------------------------------------------------
@@ -367,8 +369,10 @@ pTableRows          =   pList ((\row rowsep -> TableRow_Row (row []) rowsep)
 
 pTableFormat        ::  T2TPr TableFormat
 pTableFormat        =   concat
-                        <$> pList1 (   (\s -> catMaybes [Map.lookup c tablecolfmtMp | c <- s])
-                                       <$> pText
+                        <$> pList1 (   (\s t -> maybe [] (\(ls,l) -> [x [] | x <- ls] ++ [l t])
+                                                $ initlast
+                                                $ catMaybes [Map.lookup c tablecolfmtMp | c <- s]
+                                       ) <$> pText <*> (pArg pTextItemsArg `opt` [])
                                    <|> [TableColFormat_SepbyLine]
                                        <$  pKey "|"
                                    )

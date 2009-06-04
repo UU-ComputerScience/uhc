@@ -1,7 +1,7 @@
 %%[doesWhat doclatex
 
 Traverse a Grin-program it and collect constraint equations which ccharacterize the abstract values of all variables.
-Then solve the equations, and return the resulting abstract environment: the \exprit{HptMap}.
+Then solve the equations, and return the resulting abstract environment: the \emph{HptMap}.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 
 This is not a transformation, but a phase that establishes the HPT table.
@@ -411,7 +411,7 @@ SEM GrExpr
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsTags tvar ttags ]
                                    InBasic tvar      -> [ IsBasic tvar ]
-                                   _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
+                                   {- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm) -} {- 20090519 AD: in comment because: Warning: Pattern match(es) are overlapped -}
 %%]
 
 

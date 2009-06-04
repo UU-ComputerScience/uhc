@@ -43,9 +43,6 @@ to a loop.
 %%[(20 codegen grin) hs import({%{EH}GrinCode.FreeVars})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Core}(FvS))
-%%]
-
 -- for debugging:
 %%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]

@@ -112,41 +112,41 @@ PRIM GB_Word gb_primUnsafeId( GB_Word x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Float gb_primIntToFloat( GB_Int x )
+PRIM Float gb_primIntToFloat( GB_Int x )
 {
 	// GB_NodePtr n ;
 	// GB_NodeAlloc_Float_In(n) ;
 	// n->content.flt = (float)GB_GBInt2Int(x) ;
 	// n->content.flt = (float)x ;
-	return Cast(GB_Float,x) ;
+	return Cast(Float,x) ;
 }
 
-PRIM GB_Float gb_primDoubleToFloat( GB_Double /*nd*/ x )
+PRIM Float gb_primDoubleToFloat( Double /*nd*/ x )
 {
 	//GB_NodePtr nf ;
 	//GB_NodeAlloc_Float_In(nf) ;
 	//nf->content.flt = nd->content.dbl ;
 	//return nf ;
-	return Cast(GB_Float,x) ;
+	return Cast(Float,x) ;
 }
 
-PRIM GB_Double gb_primFloatToDouble( GB_Float x )
+PRIM Double gb_primFloatToDouble( Float x )
 {
 	//GB_NodePtr nd ;
 	//GB_NodeAlloc_Double_In(nd) ;
 	//nd->content.dbl = nf->content.flt ;
 	//return nd ;
-	return Cast(GB_Double,x) ;
+	return Cast(Double,x) ;
 }
 
-PRIM GB_Double gb_primIntToDouble( GB_Int x )
+PRIM Double gb_primIntToDouble( GB_Int x )
 {
 	// GB_NodePtr n ;
 	// GB_NodeAlloc_Double_In(n) ;
 	// n->content.dbl = (double)GB_GBInt2Int(x) ;
 	// n->content.dbl = (double)x ;
 	// return n ;
-	return Cast(GB_Double,x) ;
+	return Cast(Double,x) ;
 }
 
 %%]
@@ -179,17 +179,17 @@ PRIM GB_Word gb_primRadixDoubleFloat( )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Word gb_primEqFloat( GB_Float x, GB_Float y )
+PRIM GB_Word gb_primEqFloat( Float x, Float y )
 {
 	return GB_CmpBasic(x,y, gb_False, gb_True, gb_False ) ;
 }
 
-PRIM GB_Word gb_primCmpFloat( GB_Float x, GB_Float y )
+PRIM GB_Word gb_primCmpFloat( Float x, Float y )
 {
 	return GB_CmpBasic(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
-PRIM GB_Float gb_primAddFloat( GB_Float x, GB_Float y )
+PRIM Float gb_primAddFloat( Float x, Float y )
 {
 	// GB_NodePtr n ;
 	// GB_Float_Add_In(n,x,y) ;
@@ -197,7 +197,7 @@ PRIM GB_Float gb_primAddFloat( GB_Float x, GB_Float y )
 	return x + y ;
 }
 
-PRIM GB_Float gb_primSubFloat( GB_Float x, GB_Float y )
+PRIM Float gb_primSubFloat( Float x, Float y )
 {
 	// GB_NodePtr n ;
 	// GB_Float_Sub_In(n,x,y) ;
@@ -205,7 +205,7 @@ PRIM GB_Float gb_primSubFloat( GB_Float x, GB_Float y )
 	return x - y ;
 }
 
-PRIM GB_Float gb_primMulFloat( GB_Float x, GB_Float y )
+PRIM Float gb_primMulFloat( Float x, Float y )
 {
 	// GB_NodePtr n ;
 	// GB_Float_Mul_In(n,x,y) ;
@@ -213,7 +213,7 @@ PRIM GB_Float gb_primMulFloat( GB_Float x, GB_Float y )
 	return x * y ;
 }
 
-PRIM GB_Float gb_primDivFloat( GB_Float x, GB_Float y )
+PRIM Float gb_primDivFloat( Float x, Float y )
 {
 	// GB_NodePtr n ;
 	// GB_Float_Div_In(n,x,y) ;
@@ -221,7 +221,7 @@ PRIM GB_Float gb_primDivFloat( GB_Float x, GB_Float y )
 	return x / y ;
 }
 
-PRIM GB_Float gb_primNegFloat( GB_Float x )
+PRIM Float gb_primNegFloat( Float x )
 {
 	// GB_NodePtr n ;
 	// GB_Float_Neg_In(n,x) ;
@@ -229,7 +229,7 @@ PRIM GB_Float gb_primNegFloat( GB_Float x )
 	return -x ;
 }
 
-PRIM GB_Word gb_primIsNaNFloat( GB_Float x )
+PRIM GB_Word gb_primIsNaNFloat( Float x )
 {
 	if ( isnan(x) )
 		return gb_True ;
@@ -237,7 +237,7 @@ PRIM GB_Word gb_primIsNaNFloat( GB_Float x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsDenormalizedFloat( GB_Float x )
+PRIM GB_Word gb_primIsDenormalizedFloat( Float x )
 {
 	if ( ! isnormal(x) )
 		return gb_True ;
@@ -245,7 +245,7 @@ PRIM GB_Word gb_primIsDenormalizedFloat( GB_Float x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsInfiniteFloat( GB_Float x )
+PRIM GB_Word gb_primIsInfiniteFloat( Float x )
 {
 	if ( isinf(x) )
 		return gb_True ;
@@ -253,7 +253,7 @@ PRIM GB_Word gb_primIsInfiniteFloat( GB_Float x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsNegativeZeroFloat( GB_Float x )
+PRIM GB_Word gb_primIsNegativeZeroFloat( Float x )
 {
 	 
 	if ( fpclassify(x) == FP_ZERO && signbit(x) )
@@ -285,17 +285,17 @@ PRIM GB_Word gb_primMinExpFloat( )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM GB_Word gb_primEqDouble( GB_Double x, GB_Double y )
+PRIM GB_Word gb_primEqDouble( Double x, Double y )
 {
 	return GB_CmpBasic(x,y, gb_False, gb_True, gb_False ) ;
 }
 
-PRIM GB_Word gb_primCmpDouble( GB_Double x, GB_Double y )
+PRIM GB_Word gb_primCmpDouble( Double x, Double y )
 {
 	return GB_CmpBasic(x,y, gb_LT, gb_EQ, gb_GT ) ;
 }
 
-PRIM GB_Double gb_primAddDouble( GB_Double x, GB_Double y )
+PRIM Double gb_primAddDouble( Double x, Double y )
 {
 	// GB_NodePtr n ;
 	// GB_Double_Add_In(n,x,y) ;
@@ -303,7 +303,7 @@ PRIM GB_Double gb_primAddDouble( GB_Double x, GB_Double y )
 	return x + y ;
 }
 
-PRIM GB_Double gb_primSubDouble( GB_Double x, GB_Double y )
+PRIM Double gb_primSubDouble( Double x, Double y )
 {
 	// GB_NodePtr n ;
 	// GB_Double_Sub_In(n,x,y) ;
@@ -311,7 +311,7 @@ PRIM GB_Double gb_primSubDouble( GB_Double x, GB_Double y )
 	return x - y ;
 }
 
-PRIM GB_Double gb_primMulDouble( GB_Double x, GB_Double y )
+PRIM Double gb_primMulDouble( Double x, Double y )
 {
 	// GB_NodePtr n ;
 	// GB_Double_Mul_In(n,x,y) ;
@@ -319,7 +319,7 @@ PRIM GB_Double gb_primMulDouble( GB_Double x, GB_Double y )
 	return x * y ;
 }
 
-PRIM GB_Double gb_primDivDouble( GB_Double x, GB_Double y )
+PRIM Double gb_primDivDouble( Double x, Double y )
 {
 	// GB_NodePtr n ;
 	// GB_Double_Div_In(n,x,y) ;
@@ -327,7 +327,7 @@ PRIM GB_Double gb_primDivDouble( GB_Double x, GB_Double y )
 	return x / y ;
 }
 
-PRIM GB_Double gb_primNegDouble( GB_Double x )
+PRIM Double gb_primNegDouble( Double x )
 {
 	// GB_NodePtr n ;
 	// GB_Double_Neg_In(n,x) ;
@@ -335,7 +335,7 @@ PRIM GB_Double gb_primNegDouble( GB_Double x )
 	return -x ;
 }
 
-PRIM GB_Word gb_primIsNaNDouble( GB_Double x )
+PRIM GB_Word gb_primIsNaNDouble( Double x )
 {
 	if ( isnan(x) )
 		return gb_True ;
@@ -343,7 +343,7 @@ PRIM GB_Word gb_primIsNaNDouble( GB_Double x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsDenormalizedDouble( GB_Double x )
+PRIM GB_Word gb_primIsDenormalizedDouble( Double x )
 {
 	if ( ! isnormal(x) )
 		return gb_True ;
@@ -351,7 +351,7 @@ PRIM GB_Word gb_primIsDenormalizedDouble( GB_Double x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsInfiniteDouble( GB_Double x )
+PRIM GB_Word gb_primIsInfiniteDouble( Double x )
 {
 	if ( isinf(x) )
 		return gb_True ;
@@ -359,7 +359,7 @@ PRIM GB_Word gb_primIsInfiniteDouble( GB_Double x )
 		return gb_False ;
 }
 
-PRIM GB_Word gb_primIsNegativeZeroDouble( GB_Double x )
+PRIM GB_Word gb_primIsNegativeZeroDouble( Double x )
 {
 	 
 	if ( fpclassify(x) == FP_ZERO && signbit(x) )
@@ -477,7 +477,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Int,Int,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Int,Int,SWord,GB_Word)
 %%]
 
 %%[8
@@ -526,7 +526,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int8,Int8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Int8,Int8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Int8,Int8,SWord,GB_Word)
 %%]
 
 %%[97
@@ -535,7 +535,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int16,Int16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Int16,Int16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Int16,Int16,SWord,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -548,9 +548,9 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Int32,Int32,GB_Word)
 
 %%[99
 #ifdef USE_32_BITS
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Int32,Int32,SWord,GB_Word)
 #else
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Int32,Int32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Int32,Int32,SWord,GB_Word)
 #endif
 %%]
 
@@ -562,7 +562,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_W
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,64,Int64,Int64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Int64,Int64,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Int64,Int64,SWord64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -576,7 +576,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word,Word,GB_Word)
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,(Word_SizeInBits-GB_Word_SizeOfWordTag),Word,Word,Word,GB_Word)
 %%]
 
 %%[97
@@ -605,7 +605,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word8,Word8,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Word8,Word8,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,8,Word8,Word8,Word,GB_Word)
 %%]
 
 %%[97
@@ -614,7 +614,7 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word16,Word16,GB_Word)
 %%]
 
 %%[99
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Word16,Word16,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,16,Word16,Word16,Word,GB_Word)
 %%]
 
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
@@ -627,9 +627,9 @@ INTLIKE_INT_CONVERSION_PRIMS_CODE(gb_,Word32,Word32,GB_Word)
 
 %%[99
 #ifdef USE_32_BITS
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,32,Word32,Word32,Word,GB_Word)
 #else
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Word32,Word32,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE2(gb_,32,Word32,Word32,Word,GB_Word)
 #endif
 %%]
 
@@ -641,7 +641,7 @@ INTLIKE_ARITH_PRIMS_CODE(gb_,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB
 
 %%[99
 INTLIKE_BITS_PRIMS_CODE(gb_,64,Word64,Word64,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Word64,Word64,GB_Word)
+INTLIKE_BITS_PRIMS_BITSIZE_DPD_CODE1(gb_,64,Word64,Word64,Word64,GB_Word)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,7 +688,7 @@ PRIM GB_Word gb_primCharToLower( GB_Word x )
 
 PRIM GB_Word gb_primPackedStringNull( char *s )
 {
-  	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %x, %d, %s\n", s, *s, s ););
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringNull %p, %d, %s\n", s, *s, s ););
 	if ( *s )
 		return gb_False ;
   	return gb_True ;
@@ -696,7 +696,7 @@ PRIM GB_Word gb_primPackedStringNull( char *s )
 
 PRIM GB_Word gb_primPackedStringTail( char *s )
 {
-  	IF_GB_TR_ON(3,printf("gb_primPackedStringTail %x, %d, %s\n", s, *s, s ););
+  	IF_GB_TR_ON(3,printf("gb_primPackedStringTail %p, %d, %s\n", s, *s, s ););
   	return Cast(GB_Word,s+1) ;
 }
 
@@ -736,14 +736,14 @@ GB_NodePtr gb_primCStringToString1Char( char* s, GB_Int goff )
   	GB_NodePtr n, n2 ;
 	GB_GC_SafeEnter ;
   	GB_GC_Safe2_Zeroed(n,n2) ;
-  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %x:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char1 %p:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2In(n2,&gb_primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
 	} else {
   		GB_MkListNil(n) ;
 	}
-  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primCStringToString1Char2 n %p\n", n ););
   	GB_GC_SafeLeave ;
   	return n ;
 }
@@ -781,15 +781,15 @@ PRIM GB_NodePtr gb_primTraceStringExit( GB_NodePtr n )
 	int sz = 99 ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(n) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit1 n %p\n", n ););
 %%[[8
 	gb_listForceEval( &n, &sz ) ;
 %%][96
 	GB_PassExc_GCSafe( gb_listForceEval( &n, &sz ) ) ;
 %%]]
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit2 n %p\n", n ););
 	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
-  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %x\n", n ););
+  	IF_GB_TR_ON(3,printf("gb_primTraceStringExit3 n %p\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("gb_primTraceStringExit4 `%s'\n", buf ););
 	GB_GC_SafeLeave ;
@@ -888,9 +888,9 @@ PRIM GB_NodePtr gb_primShowInt( GB_Int intNd )
 
 %%[97
 
-PRIM GB_NodePtr gb_primShowFloat( GB_Float w )
+PRIM GB_NodePtr gb_primShowFloat( Float w )
 {
-	char buf[sizeof(GB_Float)*10] ;
+	char buf[sizeof(Float)*10] ;
 	char *s = buf ;
 	sprintf( s, "%f", w ) ;
 	
@@ -902,9 +902,9 @@ PRIM GB_NodePtr gb_primShowFloat( GB_Float w )
   	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
 }
 
-PRIM GB_NodePtr gb_primShowDouble( GB_Double w )
+PRIM GB_NodePtr gb_primShowDouble( Double w )
 {
-	char buf[sizeof(GB_Double)*10] ;
+	char buf[sizeof(Double)*10] ;
 	char *s = buf ;
 	sprintf( s, "%lf", w ) ;
 	

@@ -413,11 +413,11 @@ SEM GrPatLam
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
   | BasicAnnot  lhs         .   nmIntro         =   let ann = case @annot of
-                                                                BasicAnnot_ToTaggedPtr _
+                                                                BasicAnnot_ToTaggedPtr _ _
                                                                   | @lhs.primResForIntl -> BasicAnnot_Dflt
                                                                 _                       -> @annot
                                                     in  NmIntro_Single @nm ann
-  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False
+  | EnumAnnot   lhs         .   nmIntro         =   let ann = if @lhs.primResForIntl then BasicAnnot_Dflt else BasicAnnot_ToTaggedPtr False BasicTy_Word
                                                     in  NmIntro_Single @nm ann
   | * - Var VarNode BasicNode EnumNode BasicAnnot EnumAnnot
                 lhs         .   nmIntro         =   NmIntro_None
@@ -458,7 +458,7 @@ patNmL2DepL2 :: [HsName] -> AssocL HsName Int
 patNmL2DepL2 nmL = zip nmL [0, (- GB.nrValWords) ..]
 
 patNmL2VAGam' :: GB.StackDepth -> AssocL HsName Int -> GB.ValAccessGam
-patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) defaultGrinBasicAnnot) | (n,d) <- nmDepL ]
+patNmL2VAGam' dep nmDepL = Map.fromList [ (n,GB.Val_Local (dep+d) (Left defaultGrinBasicAnnot)) | (n,d) <- nmDepL ]
 
 patNmL2VAGam :: GB.StackDepth -> [HsName] -> GB.ValAccessGam
 patNmL2VAGam dep nmL = patNmL2VAGam' dep $ patNmL2DepL nmL
@@ -474,7 +474,7 @@ SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) defaultGrinBasicAnnot) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) (Left defaultGrinBasicAnnot)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
@@ -669,20 +669,20 @@ SEM GrExpr
                                                              -> (ins, inc, False)
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
                                                     else case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ @argL.grvalIntroL of
-                                                           GB.GrValIntroAlt_OnTOS ins inc _ bann
+                                                           GB.GrValIntroAlt_OnTOS ins inc _ basicsz
                                                              -> ( ins
                                                                   Seq.:++: fins
-                                                                  Seq.:++: Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "bann=" >|< bannStr)] ++ call)
+                                                                  Seq.:++: Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "basicsz=" >|< basicszStr)] ++ call)
                                                                 , GB.nrValWords
                                                                 , False
                                                                 )
                                                              where fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkConst @constInx]
-                                                                   bannStr = map basicGrinSizeCharEncoding banns
-                                                                   banns = map grinBasicAnnotSize (@lhs.patBasicAnnot : bann)
+                                                                   basicszStr = map basicGrinSizeCharEncoding basicszs
+                                                                   basicszs = (grinBasicAnnotSize @lhs.patBasicAnnot : basicsz)
 %%[[8
-                                                                   call  = [GB.callc @mbDebugStrInx banns inc]
+                                                                   call  = [GB.callc @mbDebugStrInx basicszs inc]
 %%][94
-                                                                   call  = if forextractOptIsPtr @foreignEntInfo then [] else [GB.callc @mbDebugStrInx banns inc]
+                                                                   call  = if forextractOptIsPtr @foreignEntInfo then [] else [GB.callc @mbDebugStrInx basicszs inc]
 %%]]
   | FetchUpdate loc         .   (valIns,valStkInc,retIsDone)
                                                 =   case GB.gviLdFold GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth $ map GB.GrValIntro_Nm $ [@src,@dst] of
@@ -718,17 +718,19 @@ SEM GrExpr
                                                 =   let nm ins inc nmIntro
                                                           = case nmIntro of
                                                               (NmIntro_Single nm annot)
-                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth+inc) annot)])
+                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth+inc) (Left annot))])
                                                               (NmIntro_GrpTag nm)
-                                                                -> (ins Seq.:++: @pat.i,patinc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt)])
-                                                                where patinc = @pat.patStkInc + inc
+                                                                -> (ins Seq.:++: pati,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth + inc) (Left BasicAnnot_Dflt))])
+                                                                where patinc = {- @pat.patStkInc + -} inc
+                                                                      pati   = maybe Seq.empty fst @pat.mbi
                                                               (NmIntro_GrpBasic nm annot)
-                                                                -> (ins Seq.:++: @pat.i,patinc,Map.fromList [(nm,val)])
-                                                                where val
-                                                                        = case annot of
-                                                                            BasicAnnot_FromTaggedPtr _ -> GB.Val_Local (@expr.stkDepth + patinc) BasicAnnot_Dflt
-                                                                            _                          -> GB.Val_NodeFldLocal (@expr.stkDepth + patinc) annot
-                                                                      patinc = @pat.patStkInc + inc
+                                                                -> (ins Seq.:++: pati,inc,Map.fromList [(nm,val)])
+                                                                where (pati,val)
+                                                                        = case (annot,@pat.mbi) of
+                                                                            (BasicAnnot_FromTaggedPtr _ _, Just (i,bSz)) -> (i        ,GB.Val_Local (@expr.stkDepth + inc)        (Right bSz)           )
+                                                                            (BasicAnnot_FromTaggedPtr _ _, _           ) -> (Seq.empty,GB.Val_Local (@expr.stkDepth + inc)        (Left BasicAnnot_Dflt))
+                                                                            (_                           , Just (i,bSz)) -> (i        ,GB.Val_NodeFldLocal (@expr.stkDepth + inc) (Right bSz)           )	-- does this happen?
+                                                                            (_                           , _           ) -> (Seq.empty,GB.Val_NodeFldLocal (@expr.stkDepth + inc) (Left annot)          )
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
                                                                 -> (ins Seq.:++: fins, inc' + length nmL * GB.nrValWords,g)
                                                                 where fins = Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
@@ -737,7 +739,7 @@ SEM GrExpr
                                                               _ -> (ins,inc,Map.empty)
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
-                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz == Cfg.sizeofGrWord
+                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz <= Cfg.sizeofGrWord
                                                               -> (Seq.empty,0,Map.singleton nmp (GB.Val_Int i))
                                                               where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
@@ -880,17 +882,26 @@ SEM GrAlt
                                                         Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @exprStkDepth]
                                                         Seq.:++: @expr.i
                                                         Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @bodyStkDepth]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation, additional for a variable intro for a FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrPatLam [ | | mbi: {Maybe (GB.InsSeq,BasicSize)} ]
 
 SEM GrPatLam
-  | BasicNode   (lhs.i,loc.patStkInc)           =   case @annot of
-                                                      BasicAnnot_FromTaggedPtr sgn
-                                                        | @lhs.primArgForIntl  -> (Seq.empty,0)
-                                                        | otherwise            -> (Seq.fromList [GB.untag2 sgn],0)
-                                                      BasicAnnot_Size bsz _    -> (Seq.empty,0)
-                                                      _                        -> panic "GrPatLam.BasicNode.i"
-  | EnumNode    (lhs.i,loc.patStkInc)           =   if @lhs.primArgForIntl
-                                                    then (Seq.empty,0)
-                                                    else (Seq.fromList [GB.untag2 False],0)
+  | BasicNode   lhs         .   mbi             =   let basicSize = grinBasicAnnotSize @annot
+                                                    in  case @annot of
+                                                          BasicAnnot_FromTaggedPtr sgn _
+                                                            | not @lhs.primArgForIntl  -> Just (Seq.fromList [GB.untag2 sgn],basicSize)
+                                                          _                            -> Nothing
+  | EnumNode    lhs         .   mbi             =   if @lhs.primArgForIntl
+                                                    then Nothing
+                                                    else Just (Seq.fromList [GB.untag2 False],grinBasicAnnotSize BasicAnnot_Dflt)
+  | * - BasicNode EnumNode
+                lhs         .   mbi             =   Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

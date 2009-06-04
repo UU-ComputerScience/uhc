@@ -86,7 +86,38 @@ basicSizeInBytes BasicSize_Double  = Cfg.sizeofDouble
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% BasicSize encoding
+%%% BasicSize type representation for GrinByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(BasicGBTy(..))
+data BasicGBTy
+  = BasicGBTy
+      { gbtyOnStack		:: String			-- as it lives on the stack
+      , gbtyAsIs		:: String			-- as it is
+      , gbtyWordEquiv	:: String			-- its Word equivalent
+      }
+%%]
+
+%%[(8 codegen) export(basicGBTy)
+basicGBTyMp :: Map.Map BasicSize BasicGBTy
+basicGBTyMp
+  = Map.fromList
+      [ (BasicSize_Word8	, BasicGBTy "Word" 		"Word8"		"Word"		)
+      , (BasicSize_Word16	, BasicGBTy "Word" 		"Word16"	"Word"		)
+      , (BasicSize_Word32	, BasicGBTy "Word" 		"Word32"	"Word"		)
+      , (BasicSize_Word64	, BasicGBTy "Word64" 	"Word64"	"Word64"	)
+%%[[97
+      , (BasicSize_Float	, BasicGBTy "GB_Float" 	"Float"		"Word32" 	)
+      , (BasicSize_Double	, BasicGBTy "GB_Double" "Double"	"Word64"	)
+%%]]
+      ]
+
+basicGBTy :: BasicSize -> BasicGBTy
+basicGBTy b = panicJust "basicGBTy" $ Map.lookup b basicGBTyMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% BasicSize encoding for GrinByteCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(allGrinBasicSize)
@@ -184,6 +215,15 @@ instance Show BasicTy where
 %%]
 
 %%[(8 codegen) hs
+btBasicSize :: BasicTy -> BasicSize
+btBasicSize BasicTy_Word   = basicSizeWord
+%%[[97
+btBasicSize BasicTy_Float  = BasicSize_Float
+btBasicSize BasicTy_Double = BasicSize_Double
+%%]]
+%%]
+
+%%[(8 codegen) hs
 instance PP BasicTy where
   pp = pp . show
 %%]
@@ -194,9 +234,9 @@ instance PP BasicTy where
 
 %%[(8 codegen) hs export(BasicAnnot(..),defaultGrinBasicAnnot)
 data BasicAnnot
-  = BasicAnnot_Size        		BasicSize BasicTy
-  | BasicAnnot_FromTaggedPtr	{ baIsSigned :: Bool }
-  | BasicAnnot_ToTaggedPtr		{ baIsSigned :: Bool }
+  = BasicAnnot_Size        		{ baSize     :: BasicSize, baTy :: BasicTy }
+  | BasicAnnot_FromTaggedPtr	{ baIsSigned :: Bool     , baTy :: BasicTy }
+  | BasicAnnot_ToTaggedPtr		{ baIsSigned :: Bool     , baTy :: BasicTy }
   | BasicAnnot_Dflt
   | BasicAnnot_None
   deriving (Show,Eq)
@@ -209,32 +249,28 @@ defaultGrinBasicAnnot = BasicAnnot_Size basicSizeWord BasicTy_Word
 grinBasicAnnotSizeInBytes :: BasicAnnot -> Int
 grinBasicAnnotSizeInBytes = basicSizeInBytes . grinBasicAnnotSize
 %%]
-grinBasicAnnotSizeInBytes (BasicAnnot_Size          s _) = basicSizeInBytes s
-grinBasicAnnotSizeInBytes (BasicAnnot_FromTaggedPtr _  ) = Cfg.sizeofWord
-grinBasicAnnotSizeInBytes (BasicAnnot_ToTaggedPtr   _  ) = Cfg.sizeofWord
-grinBasicAnnotSizeInBytes (BasicAnnot_Dflt             ) = Cfg.sizeofWord
 
 %%[(8 codegen grin) hs export(grinBasicAnnotSize)
 grinBasicAnnotSize :: BasicAnnot -> BasicSize
 grinBasicAnnotSize (BasicAnnot_Size          s _) = s
-grinBasicAnnotSize (BasicAnnot_FromTaggedPtr _  ) = basicSizeWord
-grinBasicAnnotSize (BasicAnnot_ToTaggedPtr   _  ) = basicSizeWord
+grinBasicAnnotSize (BasicAnnot_FromTaggedPtr _ t) = btBasicSize t
+grinBasicAnnotSize (BasicAnnot_ToTaggedPtr   _ t) = btBasicSize t
 grinBasicAnnotSize (BasicAnnot_Dflt             ) = basicSizeWord
 %%]
 
-%%[(8 codegen grin) hs export(grinBasicAnnotTy)
+%%[(8 codegen grin) hs
+%%]
 grinBasicAnnotTy :: BasicAnnot -> BasicTy
 grinBasicAnnotTy (BasicAnnot_Size          _ t) = t
-grinBasicAnnotTy (BasicAnnot_FromTaggedPtr _  ) = BasicTy_Word
-grinBasicAnnotTy (BasicAnnot_ToTaggedPtr   _  ) = BasicTy_Word
+grinBasicAnnotTy (BasicAnnot_FromTaggedPtr _ t) = t
+grinBasicAnnotTy (BasicAnnot_ToTaggedPtr   _ t) = t
 grinBasicAnnotTy (BasicAnnot_Dflt             ) = BasicTy_Word
-%%]
 
 %%[(8 codegen) hs
 instance PP BasicAnnot where
   pp (BasicAnnot_Size          s t) = s >#< t
-  pp (BasicAnnot_FromTaggedPtr b  ) = "annotfromtaggedptr" >#< b
-  pp (BasicAnnot_ToTaggedPtr   b  ) = "annottotaggedptr" >#< b
+  pp (BasicAnnot_FromTaggedPtr b t) = "annotfromtaggedptr" >#< b >#< t
+  pp (BasicAnnot_ToTaggedPtr   b t) = "annottotaggedptr" >#< b >#< t
   pp (BasicAnnot_Dflt             ) = pp "annotdflt"
 %%]
 

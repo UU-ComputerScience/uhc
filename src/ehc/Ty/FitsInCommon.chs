@@ -30,6 +30,8 @@
 
 %%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
 %%]
+%%[(9 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full} as C)
+%%]
 
 For debug/trace:
 %%[(4 hmtyinfer) import(EH.Util.Pretty)
@@ -76,6 +78,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
 %%[[(9 codegen)
                         ,  foCSubst          :: !CSubst              ,  foLRCoe           :: !LRCoe
+                        ,  foTCSubst         :: !(C.CSubst)          ,  foLRTCoe          :: !(C.LRCoe)
 %%]]
 %%[[9
                         ,  foPredOccL        :: ![PredOcc]
@@ -83,6 +86,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 %%]]
 %%[[(10 codegen)
                         ,  foRowCoeL         :: !(AssocL HsName Coe)
+                        ,  foRowTCoeL        :: !(AssocL HsName C.Coe)
 %%]]
 %%[[50
                         ,  foEqVarMp         :: !VarMp
@@ -102,6 +106,7 @@ emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy    
                         ,  foErrL            =   []                  ,  foTrace           =   []
 %%[[(9 codegen)
                         ,  foCSubst          =   emptyCSubst         ,  foLRCoe           =   emptyLRCoe
+                        ,  foTCSubst         =   C.emptyCSubst       ,  foLRTCoe          =   C.emptyLRCoe
 %%]]
 %%[[9
                         ,  foPredOccL        =   []
@@ -109,6 +114,7 @@ emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy    
 %%]]
 %%[[(10 codegen)
                         ,  foRowCoeL         =   []
+                        ,  foRowTCoeL        =   []
 %%]]
 %%[[50
                         ,  foEqVarMp         =   emptyVarMp
@@ -216,7 +222,13 @@ arrowAppSpineVertebraeInfoL
                   -> let (u',u1) = mkNewUID (foUniq afo)
                          -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
                          (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
-                     in  afo { foLRCoe = c, foUniq = u', foCSubst = foCSubst afo `cSubstApp` s }
+                         (tc,ts) = C.lrcoeForLamTyAppAsSubst opts u1 (C.tyErr ("arrowAppSpineVertebraeInfoL: " ++ show u1)) (foLRTCoe ffo) (foLRTCoe afo)
+                     in  afo { foUniq = u'
+                             , foLRCoe = c
+                             , foLRTCoe = tc
+                             , foCSubst = foCSubst afo `cSubstApp` s
+                             , foTCSubst = foTCSubst afo `C.cSubstApp` ts
+                             }
           )     )
 %%]]
     ]

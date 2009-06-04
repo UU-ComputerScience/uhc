@@ -12,6 +12,8 @@
 
 %%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, MaybeType, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
 %%]
+%%[1 hs export(TypeAnnotation(..), ExpressionAnnotation(..), PatternAnnotation(..))
+%%]
 
 %%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
 %%]
@@ -25,7 +27,7 @@
 %%[5 hs export(SimpleType(..), AnnotatedType(..), AnnotatedTypes)
 %%]
 
-%%[6 hs export(Kind(..), Kinds)
+%%[6 hs export(Kind(..), Kinds, KindAnnotation(..))
 %%]
 
 %%[7 hs export(FieldDeclaration(..), FieldDeclarations)

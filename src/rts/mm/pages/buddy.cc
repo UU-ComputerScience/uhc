@@ -428,14 +428,14 @@ void mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 	
 	printf( ">------------------------>\n" ) ;
 	printf
-		( "Pgs: nrPages=%x firstPage=%x aftPage=%x extl=%x extlSz=%x\n"
+		( "Pgs: nrPages=%x firstPage=%p aftPage=%p extl=%x extlSz=%x\n"
 		, pgs->nrPages, pgs->firstPage, pgs->afterLastPage, pgs->extlData, pgs->extlDataSize
 		) ;
 
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&pgs->buddyGroups) ; i++ ) {
 		MM_BuddyGroup* grp = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, i ) ;
 		printf
-			( "  Grp: %d: nrPages=%x firstPage=%x aftPage=%x alloc=%x allocSz=%x\n"
+			( "  Grp: %d: nrPages=%x firstPage=%p aftPage=%p alloc=%p allocSz=%x\n"
 			, i, grp->nrPages, grp->firstPage, grp->afterLastPage, grp->malloced, grp->mallocedSize
 			) ;
 	}
@@ -445,14 +445,14 @@ void mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 		if ( ! mm_pages_Buddy_Dealloc_IsEmpty( fpg ) ) {
 			MM_DLL* dll = fpg->dllPages.next ;
 			printf
-				( "  Free: %d: dll=%x\n"
+				( "  Free: %d: dll=%p\n"
 				, i, dll
 				) ;
 			for ( ; dll != &fpg->dllPages ; dll = dll->next ) {
 				MM_Pages_Buddy_FreePage* pg = (MM_Pages_Buddy_FreePage*)dll ;
 				MM_BuddyPage_ExtlData* pgd = MM_Pages_Buddy_ExtlDataOfPage( pgs, pg ) ;
 				printf
-					( "    Pg: pg=%x pgd=%x tag=%x sizeLog=%d grp=%x user=%x\n"
+					( "    Pg: pg=%p pgd=%p tag=%x sizeLog=%d grp=%x user=%x\n"
 					, pg, pgd, pgd->system.data.tag, pgd->system.data.sizeLog, pgd->system.data.groupId, pgd->user
 					) ;
 			}

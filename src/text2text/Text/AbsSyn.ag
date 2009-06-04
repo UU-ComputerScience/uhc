@@ -107,9 +107,12 @@ DATA TableColFormat
   | JustifyLeft
   | JustifyCenter
   | JustifyRight
+  | ParBox				sizetext		: TextItems
   | SepbyLine
 
 TYPE TableFormat		= [TableColFormat] 
+
+SET AllTableFormat		= TableFormat TableColFormat
 
 TYPE TableRows			= [TableRow] 
 
@@ -154,6 +157,7 @@ SET AllGraphicsInlineOption
 SET AllText
   = TextItem TextItems
     AllGraphicsInlineOption
+    AllTableFormat
 
 SET AllTable
   = TableRow TableRows TableFields TableField
@@ -163,4 +167,3 @@ SET AllNT
     AllTable
     GroupType TextStyle RefType ItemizeStyle HeaderLevel LabelType
     AllDocumentOption
-    TableFormat TableColFormat

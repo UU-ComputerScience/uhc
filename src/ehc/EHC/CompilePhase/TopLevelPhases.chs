@@ -63,8 +63,13 @@ level 2..6 : with prefix 'cpEhc'
 -- Language syntax: Core
 %%[(20 codegen grin) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
+
 -- Language syntax: Grin
 %%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
+%%]
+
+-- Language syntax: TyCore
+%%[(20 codegen) import(qualified {%{EH}TyCore} as C)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -659,6 +664,7 @@ cpEhcCorePerModulePart1 :: Bool -> HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart1 earlyMerge modNm
   = cpSeq [ cpStepUID
           , cpProcessCoreBasic modNm
+          , cpProcessTyCoreBasic modNm
           , cpMsg modNm VerboseALot "Core (basic) done"
           , when (not earlyMerge) $ cpProcessCoreRest modNm
           , cpStopAt CompilePoint_Core
@@ -770,6 +776,42 @@ cpProcessEH modNm
 %%]
 
 %%[(8 codegen)
+cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
+cpProcessTyCoreBasic modNm 
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq [ {-
+                 cpTransformCore
+                   modNm
+                     (
+%%[[102
+                       -- [ "CS" ] ++
+%%]]
+                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
+%%[[9               
+                       ,  "CLDF"
+%%]
+%%[[8_2        
+                       , "CPRNM"
+%%]]
+                       , "CFN"
+                       ]
+                     )
+                 -}
+               -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
+                 when (ehcOptEmitTyCore opts || ehcOptUseTyCore opts)
+                      (do { cpOutputTyCore "tycore" modNm
+                          })
+%%[[(8 codegen java)
+               -- , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
+%%]]
+               -- , cpProcessCoreFold modNm
+               ]
+        }
+%%]
+
+%%[(8 codegen)
 -- unprocessed core -> folded core
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
@@ -792,9 +834,9 @@ cpProcessCoreBasic modNm
                        , "CFN"
                        ]
                      )
-               , when (ehcOptEmitCore opts) (cpOutputCore "core" modNm)
+               , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
 %%[[(8 codegen java)
-               , when (ehcOptEmitJava opts) (cpOutputJava "java" modNm)
+               , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
 %%]]
                , cpProcessCoreFold modNm
                ]
@@ -809,6 +851,7 @@ cpProcessCoreFold modNm
   = cpSeq [ cpFoldCore modNm
 %%[[20
           , cpFlowCoreSem modNm
+          -- , cpFlowTyCoreSem modNm
 %%]]
           ]
 %%]

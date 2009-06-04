@@ -86,7 +86,7 @@ Word mm_space_CopySpace_GetGrowDefaultLog( MM_Space* copySpace ) {
 void mm_space_CopySpace_Dump( MM_Space* copySpace ) {
 	MM_Space_CopySpace_Data* spc = (MM_Space_CopySpace_Data*)copySpace->data ;
 
-	printf( ">------------------------> MM_Space: CopySpace: space=%x spc=%x\n", copySpace, spc ) ;
+	printf( ">------------------------> MM_Space: CopySpace: space=%p spc=%p\n", copySpace, spc ) ;
 
 	spc->onTopOfSpace->dump( spc->onTopOfSpace ) ;
 	printf( "  Copy nrfrag=%x\n", copySpace->getNrFragments(copySpace) ) ;

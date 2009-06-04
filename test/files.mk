@@ -34,9 +34,8 @@ thaw-test-expect:
 ###########################################################################################
 
 # make lists holding all test files for a variant
-test-lists:
+test-lists: $(TEST_MKF)
 	@cd $(TEST_REGRESS_SRC_PREFIX) ; \
-	shopt -s nullglob ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \
 	  if test $${v} = $(UHC_EXEC_NAME) ; \
@@ -54,7 +53,8 @@ test-lists:
 	  i=$${startvariant} ; \
 	  while test $${i} -le $${vv} ; \
 	  do \
-	    ehs="$${ehs} `echo $${i}/*.{eh,hs}`" ; \
+	    for f in $${i}/*.eh ; do if test -r "$${f}" ; then ehs="$${ehs} $${f}" ; fi ; done ; \
+	    for f in $${i}/*.hs ; do if test -r "$${f}" ; then ehs="$${ehs} $${f}" ; fi ; done ; \
 	    i=`expr $${i} + 1` ; \
 	  done ; \
 	  echo "$${ehs}" > $${v}.lst ; \
@@ -180,12 +180,12 @@ test-expect test-regress: test-lists
 	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
 	            diff $${te} $${th} | $(INDENT4) ; \
-	            nerrors=$$[ $$nerrors + 1 ]; \
+	            nerrors="`expr $${nerrors} + 1`" ; \
 	          fi \
 	        elif test ! -r $${te} ; \
 	        then \
 	          echo "-- no $${te} to compare to" | $(INDENT2) ; \
-	          nwarnings=$$[ $$nwarnings + 1 ]; \
+	          nwarnings="`expr $${nwarnings} + 1`" ; \
 	        fi \
 	      fi ; \
 	      $${cleanup} ; \
@@ -196,8 +196,8 @@ test-expect test-regress: test-lists
 	    exit 1; \
 	  fi \
 	done; \
-	echo "== completed with $$nerrors errors and $$nwarnings warnings =="; \
-	exit $$nerrors;
+	echo "== completed with $${nerrors} errors and $${nwarnings} warnings =="; \
+	exit $${nerrors};
 
 
 # 	    optPreludePath="--search-path=$(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$${v},$(EHC_VARIANT_TARGET))$(EHCLIB_EHCBASE_PREFIX)" ; \

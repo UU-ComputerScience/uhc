@@ -86,6 +86,7 @@ SEM AGItf
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
+  | Ann			loc			.	cexpr		=	@expr.cexpr
   | Let         loc         .   frontCBindL =   [(CBindings_FFI,@decls.ffiCBindL)]
 %%[[94
                             .   backCBindL  =   [(CBindings_FFE,@decls.ffeCBindL)]
@@ -160,6 +161,7 @@ SEM Expr
   | App AppImpred
 %%[[12
     AppImpl
+%%]]
                 loc         .   (cexprapp,cexprappCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     -- ww    = coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
@@ -168,7 +170,6 @@ SEM Expr
                                                 in  (mkCExprApp1 f @arg.cexpr, s1 `cSubstApp` s2)
                 loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
-%%]]
   | Lam
 %%[[12
     LamImpl
@@ -538,7 +539,8 @@ SEM DataFieldPatExpr
                             .   offset      =   CExpr_Int @ioffset
 
 SEM RecPatExpr
-  | Ext         loc         .   offset      =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recPatExpr.ty)
+  | Ext         loc         .   ioffset     =   tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @nm @recPatExpr.ty
+                            .   offset      =   CExpr_Int @ioffset
 %%]
   | Ext         loc         .   offset      =   CExpr_Int (tyRecOffset @nm (@lhs.finTyVarMp |=> @recPatExpr.ty))
 

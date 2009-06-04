@@ -66,14 +66,17 @@ mkC maxCCallArgs
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")
            ]
-        ++ [ localvar (basicSizeGBTy t) (r' t) Nothing | t <- allGrinBasicSize ]
+        -- ++ [ localvar "GB_WordEquiv" rw Nothing ]
+        ++ [ localvar (gbtyAsIs $ basicGBTy t) (r' t) Nothing | t <- allGrinBasicSize ]
         ++ [ stat (call "GB_SetTOS" [pp nargs])
            , stat (call "GB_Push" [pp pc])
            , stat "GB_BP_Link"
            , switch callenc
                [ switchcase (show $ basicGrinSizeLEncoding ra)
                    (let (cl,sz) = funCCall ra f a
-                        resty = basicSizeGBTy res
+                        resgbty = basicGBTy res
+                        restyStck = gbtyOnStack resgbty
+                        restyAsIs = gbtyAsIs    resgbty
                     in  [ assign (r' res) cl
 %%[[96
                         , stat (call "GB_PassExcWith" [empty,empty,op ">" "gb_ThrownException_NrOfEvalWrappers" "0",pp "return"])
@@ -81,8 +84,9 @@ mkC maxCCallArgs
                         , stat "GB_BP_UnlinkSP"
                         , stat (call "GB_PopCastIn" ["GB_BytePtr",pc])
                         , stat (call "GB_PopIn" [nargs])
-                        , assign sp (call "GB_RegByteRel" [pp "GB_Word", pp sp, op "-" (op "*" nargs (sizeof "GB_Word")) (sizeof resty)])
-                        , stat (call "GB_SetRegByteRel" [pp resty, pp sp, pp "0", pp $ r' res])
+                        , assign sp (call "GB_RegByteRel" [pp "GB_Word", pp sp, op "-" (op "*" nargs (sizeof "GB_Word")) (sizeof restyStck)])
+                        -- , stat (call "GB_SetRegByteRel" [pp restyStck, pp sp, pp "0", pp $ r' res])
+                        , stat (call "GB_SetCallCResult" [pp restyStck, pp (gbtyWordEquiv resgbty), pp sp, pp "0", pp $ r' res])
                         ]
                    )
                | (_,fs) <- allFunTyL maxCCallArgs
@@ -93,14 +97,15 @@ mkC maxCCallArgs
                (switchdefault $ stat $ call "gb_panic1_1" [str "no C call for call encoding", pp callenc])
            ]
         )
-  where r = "res"
-        r' t = r ++ basicSizeGBTy t
+  where r = "res_"
+        r' t = r ++ (gbtyAsIs $ basicGBTy t)
         f = "func"
         a = "args"
         pc = "pc"
         sp = "sp"
         callenc = "callenc"
         nargs = "nargs"
+        -- rw = "res_wordEquiv"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,8 +197,8 @@ funCCall ty@(res:args) fun argbase
   where (argsStack,sz)
           = foldl
               (\(stk,off) bt
-                 -> let t = basicSizeGBTy bt
-                    in  (call "GB_RegByteRelCastx" [pp t,pp argbase,pp off] : stk, op "+" off (sizeof t))
+                 -> let t = basicGBTy bt
+                    in  (call "GB_RegByteRelCastx" [pp (gbtyAsIs t),pp argbase,pp off] : stk, op "+" off (sizeof $ gbtyOnStack t))
               )
               ([],pp (0::Int)) args
 %%]
@@ -214,9 +219,9 @@ typedef GB_Word (*GB_CFun_w4wwww)(GB_Word,GB_Word,GB_Word,GB_Word);
 %%[8
 funTyDef :: [BasicSize] -> PP_Doc
 funTyDef ty@(res:args)
-  = typedef (basicSizeGBTy res) (ppParens (ppDrf (funTyNm ty)) >|< ppParensCommas (ppargs args))
+  = typedef (gbtyAsIs $ basicGBTy res) (ppParens (ppDrf (funTyNm ty)) >|< ppParensCommas (ppargs args))
   where ppargs []         = ["void"]
-        ppargs args@(_:_) = map basicSizeGBTy args
+        ppargs args@(_:_) = map (gbtyAsIs . basicGBTy) args
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

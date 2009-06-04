@@ -82,9 +82,6 @@
 %%[8 export(putCompileMsg)
 %%]
 
-%%[8 export(ppHsnNonAlpha)
-%%]
-
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
@@ -121,15 +118,35 @@
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-hsnEscapeeChars :: ScanOpts -> Set.Set Char
-hsnEscapeeChars scanOpts
-  = Set.fromList "$" `Set.union` scoSpecChars scanOpts `Set.union` scoOpChars scanOpts
+instance Show (Ptr a) where
+   showsPrec _ (Ptr a) rs = pad_out (showHex (addrToInteger a) "")
+     where
+        -- want 0s prefixed to pad it out to a fixed length.
+       pad_out ls = 
+          '0':'x':(replicate (2*SIZEOF_HSPTR - length ls) '0') ++ ls ++ rs
+
+
+%%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars)
+ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
+ppHsnEscaped first escChar escapeeChars
+  = \n -> let (nh:nt) = show n
+          in  pp $ hd ++ chkhd nh ++ (concatMap esc nt)
+  where (hd,chkhd) = either (\c -> ([c],(:""))) (\chs -> ("",\h -> if Set.member h chs then [escChar,h] else [h])) first
+        escapeeChars' = Set.unions [escapeeChars, Set.fromList [escChar]]
+        hexChars      = Set.fromList $ ['\NUL'..' '] ++ "\t\r\n"
+        esc c | Set.member c escapeeChars' = [escChar,c]
+              | Set.member c hexChars      = [escChar,'x'] ++ pad_out (showHex (ord c) "")
+              | otherwise                  = [c]
+        pad_out ls = (replicate (2 - length ls) '0') ++ ls
+
+hsnEscapeeChars :: Char -> ScanOpts -> Set.Set Char
+hsnEscapeeChars escChar scanOpts
+  = Set.fromList [escChar] `Set.union` scoSpecChars scanOpts `Set.union` scoOpChars scanOpts
 
 ppHsnNonAlpha :: ScanOpts -> HsName -> PP_Doc
 ppHsnNonAlpha scanOpts
   = p
-  where escapeeChars = hsnEscapeeChars scanOpts
+  where escapeeChars = hsnEscapeeChars '$' scanOpts
         p n = let name = show n
               in  {- if name `elem`  scoKeywordsTxt scanOpts
                    then pp ('$' : '_' : name)
@@ -1385,6 +1402,16 @@ data DerivTreeWay
   | DerivTreeWay_Final		-- use final mapping of type variables instead
   | DerivTreeWay_None		-- no printing
   deriving Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row specific
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7 hs export(rowCanonOrderBy)
+-- order on ...
+rowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
+rowCanonOrderBy cmp = sortByOn cmp fst
 %%]
 
 

@@ -32,6 +32,9 @@ CompilePhase building blocks: parsers
 -- Core parser
 %%[(20 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
 %%]
+-- TyCore parser
+%%[(20 codegen) import(qualified {%{EH}TyCore} as C)
+%%]
 -- Grin parser
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]

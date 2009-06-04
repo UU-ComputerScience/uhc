@@ -189,7 +189,7 @@ Allowed itemizing environments, with \verb|\item| for individual items:
 
 \subsubsection{Table}
 The tabular environment \verb|\begin{tabular}{FMT} ... \end{tabular}| can be used, with \verb|\\| for row termination, and \verb|&| for column separation.
-Allowed formatting for \verb|FMT|: \verb=l r c |=
+Allowed formatting for \verb|FMT|: \verb=l r c p{...} |=
 
 %%]
 

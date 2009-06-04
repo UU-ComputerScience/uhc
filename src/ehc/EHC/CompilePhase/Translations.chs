@@ -126,9 +126,10 @@ cpTranslateEH2Core modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
-                 core   = EHSem.cmodule_Syn_AGItf ehSem
+                 core   = EHSem.cmodule_Syn_AGItf  ehSem
+                 tycore = EHSem.tcmodule_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
-                 (cpUpdCU modNm ( ecuStoreCore core
+                 (cpUpdCU modNm ( ecuStoreTyCore tycore . ecuStoreCore core
                                 ))
          }
 %%]

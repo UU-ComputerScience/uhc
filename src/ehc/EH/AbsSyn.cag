@@ -109,6 +109,8 @@ DATA TyExpr
                     arg             : TyExpr
   | AppTop          tyExpr          : TyExpr
   | Parens          tyExpr          : TyExpr
+  | Ann             ann             : TyExprAnn
+                    tyExpr          : TyExpr
 %%]
 
 %%[2.TyExpr
@@ -165,6 +167,7 @@ SET AllTyVar        = TyVar TyVars
 %%[1.AllTyExpr
 SET AllTyExpr
     = TyExpr
+      -- TyExprAnn
 %%[[5
       TyExprs
 %%]]
@@ -277,8 +280,12 @@ DATA KiExpr
                     arg             : KiExpr
   | AppTop          kiExpr          : KiExpr
   | Parens          kiExpr          : KiExpr
+  | Ann             ann             : KiExprAnn
+                    kiExpr          : KiExpr
 
-SET AllKiExpr       = KiExpr
+SET AllKiExpr
+  = KiExpr
+    -- KiExprAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,6 +312,8 @@ DATA Expr
   | AppTop          expr            : Expr
   | Parens          expr            : Expr
   | TypeAs          tyExpr          : TyExpr
+                    expr            : Expr
+  | Ann             ann             : ExprAnn
                     expr            : Expr
 %%]
 
@@ -363,6 +372,7 @@ DATA Expr
 %%[1.AllExpr
 SET AllExpr
     = Expr
+      -- ExprAnn
 %%[[7
       RecExpr DataFieldExpr
 %%]]
@@ -384,6 +394,8 @@ DATA PatExpr
                     arg             : PatExpr
   | AppTop          patExpr         : PatExpr
   | Parens          patExpr         : PatExpr
+  | Ann             ann             : PatExprAnn
+                    patExpr         : PatExpr
 %%]
       
 %%[4
@@ -416,6 +428,7 @@ DATA PatExpr
 %%[1.AllPatExpr
 SET AllPatExpr
     = PatExpr
+      -- PatExprAnn
 %%[[7
       RecPatExpr DataFieldPatExpr
 %%]]
@@ -541,6 +554,34 @@ DATA FuncDep
 TYPE FuncDeps       = [FuncDep]
 
 SET AllFuncDep      = FuncDep FuncDeps
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+DATA ExprAnn
+  | Empty
+
+DATA TyExprAnn
+  | Empty
+
+DATA PatExprAnn
+  | Empty
+%%]
+
+%%[6
+DATA KiExprAnn
+  | Empty
+%%]
+
+%%[1
+SET AllAnn
+    = ExprAnn TyExprAnn PatExprAnn
+%%[[6
+      KiExprAnn
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
