@@ -119,7 +119,7 @@ pCMetaBind
 pCMetaVal :: CParser CMetaVal
 pCMetaVal
   =   CMetaVal_Val          <$ pKeyTk "VAL"
-  <|> CMetaVal_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
+  <|> CMetaVal_Dict         <$ pKeyTk "DICT"  <*> ( Just <$ pOCURLY <*> pListSep pCOMMA (pInt <|> ((\_ n -> 0-n) <$> pMINUS <*> pInt)) <* pCCURLY
                                                   <|> pSucceed Nothing
                                                   )
   <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY

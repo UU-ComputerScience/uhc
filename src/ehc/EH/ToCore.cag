@@ -918,13 +918,16 @@ SEM Decl
                                                                                                 (  @chrScopeDeclsBindL 
                                                                                                 ++ @chrAssumeDeclsInstBindL
                                                                                                 )
+                                                                                                
+                                                             defaultCHRBindingsAnnotated = annotateBindings @dictSelfNm defaultCHRBindings
+                                                                                                
                                                              dict5     = mkCExprAppMeta (CExpr_Tup @dictTag)
                                                                                         (zip memberNewVars defaultMetas)
-                                                             dict6     = mkCExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
+                                                             dict6     = mkCExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindingsAnnotated) rsltVar
                                                              
                                                              bind5     = mkCBind1Meta rsltNm (CMetaVal_Dict Nothing) dict5
-                                                             
-                                                         in  ( mkCExprLam1Meta selfNm (CMetaVal_Dict (Just (-1))) dict6
+
+                                                         in  ( mkCExprLam1Meta selfNm (CMetaVal_Dict (Just [])) dict6
                                                              , CMetaVal_DictClass defaultMbNewNames
                                                              )
 
@@ -947,6 +950,23 @@ getBindLeftAndRightVar (CBind_Bind nm1 _ (CExpr_Var nm2)) = (nm1,nm2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
 
+
+annBind (CBind_Bind x _ e) mba = CBind_Bind x (CMetaBind_Plain, CMetaVal_Dict mba) e
+
+annotateBindings selfnm bs = zipWith annBind bs (map mbFindValueVar xs)
+  where ps = map (\(CBind_Bind x _ e)->(x,e)) bs
+        mp = Map.fromList ps
+        xs = map fst ps
+        mbFindValueVar x  |  x==selfnm  =  Just []
+                          |  otherwise  =  maybe Nothing mbFindValueExpr (Map.lookup x mp)
+        mbFindValueExpr (CExpr_Var y) = mbFindValueVar y
+        mbFindValueExpr (CExpr_Let _ [CBind_Bind _ _ (CExpr_Var v)] c) = let  mba = mbFindValueVar v
+                                                                         in   maybe (trace ("ToCore: annotateBindings: name not found:"++show v) Nothing) (\a->Just (a ++ [findPlace c])) mba
+        mbFindValueExpr e = Nothing
+        findPlace (CExpr_Case _ [CAlt_Alt (CPat_Con _ _ _ zs) (CExpr_Var v)] _) = findPosition v 0 zs
+        findPosition v n [] = error ("ToCore: annotateBindings: position not found: " ++ show v)
+        findPosition v n (CPatBind_Bind x _ _ _:zs) | v==x       =  n
+                                                    | otherwise  =  findPosition v (n+1) zs       
 
 %%]
 

@@ -146,7 +146,7 @@ unifyNodes (p:ps) (x:xs)  =  let (a1,a2) = unifyNodes ps xs
 unifyVars :: GrVar -> GrVal -> SubstTrafoPair
 unifyVars GrVar_Ignore        _                            =  (id, id)
 unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2)  | t1==t2     =  (id, id)
-                                              | otherwise  =  error "CopyProp: unify: tags do not match"
+                                              | otherwise  =  error $ "CopyProp: unify: tags do not match: " ++ show t1 ++ " and " ++ show t2
 unifyVars (GrVar_KnownTag t1) (GrVal_Var v2)               =  (id, Map.insert v2 (GrVal_Tag t1))
 unifyVars (GrVar_KnownTag _ ) _                            =  (id,id)
 unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, id)

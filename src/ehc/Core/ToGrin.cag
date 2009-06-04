@@ -546,12 +546,18 @@ SEM CBind
                                                     where tyState = Ty_Con $ ehbnRealWorld (ehcOptBuiltinNames @lhs.opts)
                                                           [nmState,nmRes,nmIgnoreRes] = take 3 (hsnUniqSupply @lUniq2)
                                                           wrapRes = mkRes . dealWithUnitRes
-                                                                  where mkRes r = GrExpr_Seq r (GrPatLam_Var nmRes) (GrExpr_Unit $ mkGrRecNode $ map GrVal_Var [nmState,nmRes])
+                                                                  where mkRes r = GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit $ mkGrRecNode $ map GrVal_Var [nmState,nmRes])
                                                                         dealWithUnitRes
                                                                                 = case tyMbRecExts iores of
                                                                                     Just (_,[]) -> \r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit $ mkGrRecNode [])
                                                                                     _           -> id
                                                   _ -> (@resTy,[],[],id)
+                                                  
+{
+unit2store :: GrExpr -> GrExpr
+unit2store (GrExpr_Seq e p (GrExpr_Unit x))  =  GrExpr_Seq e p (GrExpr_Store x)
+unit2store e                                 =  error $ "unit2store applied to non-unit " ++ show e
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -832,7 +838,7 @@ SEM CExpr
 
 %%[(8 codegen grin)
 ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
-ATTR CExpr [ | | lamArgDicts: {[Int]} ]
+ATTR CExpr [ | | lamArgDicts: {[[Int]]} ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
@@ -865,8 +871,8 @@ SEM CExpr
 
 
 %%[(8 codegen grin)
-ATTR AllMetaVal [ lamArgDicts: {[Int]} | | ]
-ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[Int]} ]
+ATTR AllMetaVal [ lamArgDicts: {[[Int]]} | | ]
+ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[[Int]]} ]
 
 SEM CMetaVal
   | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts

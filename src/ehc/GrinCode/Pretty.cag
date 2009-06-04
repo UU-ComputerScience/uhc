@@ -120,14 +120,14 @@ ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
 ppGrBindAnn _      GrBindAnnNormal            = pp ""
 ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
-ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlysCommasWith ppInt xs
+ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlysCommasWith ppInts xs
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
 ppMbGrNm ppGrNm = maybe (ppGrNm (hsnFromString "_")) ppGrNm
 
-ppInt :: Int -> PP_Doc
-ppInt n = pp (show n)
+ppInts :: [Int] -> PP_Doc
+ppInts n = pp (show n)
 
 %%]
 ppGrNm :: PPGrNm

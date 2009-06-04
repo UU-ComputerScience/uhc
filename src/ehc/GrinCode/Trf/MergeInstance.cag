@@ -30,7 +30,9 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 %%[(9 codegen grin) hs
 
 type ClassMap = Map.Map HsName [Maybe HsName]
-type ArityMap = Map.Map HsName (Int, [Int])
+type DictMap  = Map.Map HsName [Maybe HsName]
+type ArityMap = Map.Map HsName (Int, [[Int]])
+type SynoMap  = Map.Map HsName HsName
 
 %%]
 
@@ -41,20 +43,25 @@ ATTR AllBind [
              | 
              | collectClassMap USE {`Map.union`} {Map.empty} : {ClassMap} 
                collectArityMap USE {`Map.union`} {Map.empty} : {ArityMap} 
+               collectDictMap  USE {`Map.union`} {Map.empty} : {DictMap}
+               newBinds        USE {++}          {[]}        : GrBindL
              ]
-
-ATTR AllBind  [
-              |
-              | newBinds   USE {++} {[]} : GrBindL
-                dictInfo   USE {`Map.union`} {Map.empty} : {Map.Map HsName [Maybe HsName]}
-              ]
               
-ATTR AllGlobal [ info   : {Map.Map HsName [Maybe HsName]}
+ATTR AllGlobal [ dictMap  :  {DictMap}
                  classMap :  {ClassMap}
                  arityMap :  {ArityMap}
                | 
-               | 
+               | collectSynoMap USE {`Map.union`} {Map.empty} : {SynoMap}
                ]
+
+ATTR GrTag GrVal [ | | mbFunNm : {Maybe HsName} ]
+
+
+SEM GrModule
+  | Mod    globalL.dictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error "MergeInstance: no synonym") k @globalL.collectSynoMap)) @bindL.collectDictMap 
+           globalL.classMap = @bindL.collectClassMap
+           globalL.arityMap = @bindL.collectArityMap
+
 
 SEM GrBind
   | Bind    lhs.collectClassMap  =  case @annot of
@@ -67,17 +74,30 @@ SEM GrBind
                                       _                      -> Map.singleton @nm (length @argNmL            , [] )
 
 
-SEM GrModule
-  | Mod    globalL.info   = @bindL.dictInfo 
-           globalL.classMap = @bindL.collectClassMap
-           globalL.arityMap = @bindL.collectArityMap
-           
+
 SEM GrBind
   | Bind    (lhs.newBinds
-            ,lhs.dictInfo )     =  case @annot of
-                                     GrBindAnnInstance xs  -> ([], Map.singleton @nm xs)
-                                     _                     -> ([@loc.grTrf], Map.empty)
+            ,lhs.collectDictMap)  =  case @annot of
+                                           GrBindAnnInstance xs  -> ([], Map.singleton @nm xs)
+                                           _                     -> ([@loc.grTrf], Map.empty)
   | Rec     lhs.newBinds = [GrBind_Rec @bindL.newBinds]
+
+
+SEM GrGlobal
+  | Global  lhs.collectSynoMap  =  maybe Map.empty
+                                         (\nm2 -> Map.singleton nm2 @nm)
+                                         @val.mbFunNm                             
+
+SEM GrTag
+  | Fun     lhs.mbFunNm  =  Just @nm
+  | *-Fun   lhs.mbFunNm  =  Nothing
+
+SEM GrVal
+  | Node    lhs.mbFunNm  =  if    null @fldL.grTrf
+                            then  @tag.mbFunNm
+                            else  Nothing
+  | *-Node  lhs.mbFunNm  =  Nothing
+
 
 SEM GrGlobalL
   | Cons     lhs.grTrf  =  case @hd.grTrf of
@@ -88,14 +108,14 @@ SEM GrGlobalL
                                                                    arity  = length funDefs
                                                                    tagAnn = GrTagAnn arity arity
                                                                    tag    = GrTag_Con tagAnn 0 tagNm
-                                                                   pairs  = mergeFields fields @lhs.arityMap nm1 funDefs dfltDefs
+                                                                   pairs  = mergeFields @lhs.dictMap @lhs.arityMap nm1 funDefs dfltDefs
                                                                    fields = [ v | (v, _     ) <- pairs ]
                                                                    globs  = [ g | (_, Just g) <- pairs ]
                                                                    value  = GrVal_Node tag fields
                                                                    glob   = GrGlobal_Global nm1 value
                                                                in  ( globs ++ [glob] ++ @tl.grTrf)
                                          )
-                                         (Map.lookup nm2 @lhs.info)                 
+                                         (Map.lookup nm1 @lhs.dictMap)                 
                              _ -> @loc.grTrf
 
 
@@ -104,22 +124,30 @@ SEM GrGlobalL
 
 %%[(9 codegen grin) hs
 
-mergeFields :: [GrVal] -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
-mergeFields fields am i =  zipWith3 (mergeField fields am i) [0..]
+mergeFields :: DictMap -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
+mergeFields dictMap am i fundefs defltdefs =  zipWith3 (mergeField dictMap fundefs am i) [0..] fundefs defltdefs
 
-mergeField :: [GrVal] -> ArityMap -> HsName -> Int -> Maybe HsName -> Maybe HsName -> (GrVal, Maybe GrGlobal)
-mergeField fields am nm k (Just v) _        = makeGlobal fields am nm k v
-mergeField fields am nm k _        (Just v) = makeGlobal fields am nm k v
-mergeField fields am nm k Nothing  Nothing  = (GrVal_Var hsnUndefined, Nothing)
+mergeField :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> Maybe HsName -> Maybe HsName -> (GrVal, Maybe GrGlobal)
+mergeField dictMap fundefs am nm k (Just v) _        = makeGlobal dictMap fundefs am nm k v
+mergeField dictMap fundefs am nm k _        (Just v) = makeGlobal dictMap fundefs am nm k v
+mergeField dictMap fundefs am nm k Nothing  Nothing  = (GrVal_Var hsnUndefined, Nothing)
 
-makeGlobal :: [GrVal] -> ArityMap -> HsName -> Int -> HsName -> (GrVal, Maybe GrGlobal)
-makeGlobal fields am nm k v = case Map.lookup v am of
-                        Nothing     -> (GrVal_Var v, Nothing)
-                        Just (a,ds) -> let tag  = GrTag_PApp a v
-                                           args = map f ds
-                                           f d =  if d>=0 then fields!!d else GrVal_Var nm
-                                           node = GrVal_Node tag args
-                                           name = hsnSuffix nm ('~':show k)
-                                       in  (GrVal_Var name, Just (GrGlobal_Global name node))
+makeGlobal :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> HsName -> (GrVal, Maybe GrGlobal)
+makeGlobal dictMap fundefs am nm k v 
+   = case Map.lookup v am of
+                        Nothing      -> (GrVal_Var v, Nothing)
+                        Just (a,dss) -> let tag  = GrTag_PApp a v
+                                            args = map f dss
+                                            f ds = selectField dictMap fundefs nm ds
+                                            node = GrVal_Node tag args
+                                            name = hsnSuffix nm ('~':show k)
+                                        in  (GrVal_Var name, Just (GrGlobal_Global name node))
+
+selectField :: DictMap -> [Maybe HsName] -> HsName -> [Int] -> GrVal
+selectField dictMap fundefs nm []     =  GrVal_Var nm
+selectField dictMap fundefs nm (x:xs) =  let Just a = fundefs!!x
+                                             b = Map.findWithDefault (error ("not found: " ++ show a ++ " being " ++ show x ++ " from " ++ show fundefs )) a dictMap
+                                         in selectField dictMap (drop 2 b) a xs
+
 
 %%]

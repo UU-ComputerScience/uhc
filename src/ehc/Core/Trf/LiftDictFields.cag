@@ -79,7 +79,7 @@ SEM CExpr
 ATTR AllMetaVal  [  | | lifteeSet : {Set.Set HsName} ]
 ATTR AllMetaVal  [  | | isDict : {Bool}
                         isDictInst : {Bool} 
-                        mbPos  : {Maybe Int}         ]
+                        mbPos  : {Maybe [Int]}         ]
 
 SEM CMetaVal
   | Val           lhs.lifteeSet  = Set.empty
@@ -137,7 +137,7 @@ SEM CBind
   | Bind   lhs.liftedBinds  =  if   @nm `Set.member` @lhs.lifteeSet
                                then let dependencies = @lhs.findDependencies @expr.fvS
                                         locals       = filter isValBind dependencies
-                                        args         = (maybe id (\nm->((nm,-1):)) @lhs.selfDictNm)
+                                        args         = (maybe id (\nm->((nm,[]):)) @lhs.selfDictNm)
                                                        [ (nm, p)
                                                        | (CBind_Bind nm bm _) <- dependencies
                                                        , let mbp = mbMetaPos $ cmetasVal bm
@@ -171,7 +171,7 @@ SEM CExpr
                                        )
                   
 SEM CExpr
-  | Lam    body.selfDictNm    =  maybe Nothing (\p->if p== -1 then Just @arg else Nothing) @argMeta.mbPos
+  | Lam    body.selfDictNm    =  maybe Nothing (\p->if p==[] then Just @arg else Nothing) @argMeta.mbPos
                                 
 
 SEM CModule
@@ -223,12 +223,12 @@ isValBind :: CBind -> Bool
 isValBind (CBind_Bind _ (_,CMetaVal_Val) _) = True
 isValBind _                                 = False
 
-mbMetaPos :: CMetaVal -> Maybe Int
+mbMetaPos :: CMetaVal -> Maybe [Int]
 mbMetaPos (CMetaVal_Dict mbp) = mbp
 mbMetaPos _                   = Nothing
 
 
-mkLam :: (HsName,Int) -> CExpr -> CExpr
+mkLam :: (HsName,[Int]) -> CExpr -> CExpr
 mkLam (nm,p) body = CExpr_Lam nm (CMetaVal_Dict (Just p)) body
 
 mkLet :: CBind -> CExpr -> CExpr

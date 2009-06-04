@@ -73,6 +73,10 @@ ppCBindL = ppAssocL . map (\(CBind_Bind n m v) -> (n,v >|< ppOptCMetas m))
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
+
+ppSignedInt :: Int -> PP_Doc
+ppSignedInt n = " " >#< show n
+
 ppDef :: (PP a, PP b) => a -> b -> PP_Doc
 ppDef n v   = n >-< indent 2 v
 
@@ -245,7 +249,7 @@ SEM CMetaBind
 SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe "" (\n->"{ "++show n++"}") @mbPos
+  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
   | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
   | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
 %%]]

@@ -123,7 +123,7 @@ ehScanOpts
                 ,  show hsnOImpl, show hsnCImpl
 %%]]
 %%[[18
-                ,  show hsnOParensUnboxed, show hsnCParensUnboxed
+                -- ,  show hsnOParensUnboxed, show hsnCParensUnboxed
 %%]]
                 ]
 %%]
