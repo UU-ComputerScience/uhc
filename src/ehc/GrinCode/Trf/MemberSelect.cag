@@ -35,6 +35,8 @@ by
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]
+%%[(8 codegen grin) hs import(Control.Monad(when))
+%%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
@@ -96,9 +98,10 @@ SEM GrExpr
                                id
                                (do
                                 { f <- @expr.storedSelectedFunction
+                                ; when (show f == "_") Nothing
                                 ; (ps,pat,rest) <- @body.seqStoredApplyRest
                                 ; let j = length ps
-                                ; let node = Map.findWithDefault (error (show f ++ " not found in " ++ show @lhs.allGlobs)) f @lhs.allGlobs
+                                ; let node = Map.findWithDefault (error ("MemberSelect: " ++ show f ++ " not found in " ++ show @lhs.allGlobs)) f @lhs.allGlobs
                                 ; let node2 = case node of (GrVal_Node (GrTag_PApp i g) qs) -> node
                                                            (GrVal_Node (GrTag_Fun f)    qs) -> GrVal_Node (GrTag_PApp 0 f) qs
                                                            _                                -> error (show f ++ " is not a PApp but a " ++ show node ++ " while pat is " ++ show pat)

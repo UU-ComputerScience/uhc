@@ -95,7 +95,11 @@ cpParseEH
 cpParseGrin :: HsName -> EHCompilePhase ()
 cpParseGrin modNm
   = do { cr <- get
-       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" (ecuFilePath (crCU modNm cr)) modNm
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              fpC     = fpathSetSuff "grin" fp
+       ; cpMsg' modNm VerboseALot "Parsing" Nothing fpC
+       ; cpParsePlain GrinParser.pModule grinScanOpts ecuStoreGrin "Parse grin" fpC modNm
+       ; return ()
        }
 %%]
 
@@ -195,5 +199,14 @@ cpGetPrevCore modNm
        }
 %%]
 
+%%[(20 codegen) export(cpGetPrevGrin)
+cpGetPrevGrin :: HsName -> EHCompilePhase ()
+cpGetPrevGrin modNm
+  = do { cr <- get
+       ; let  ecu    = crCU modNm cr
+       ; when (isJust (ecuMbGrinTime ecu) && isNothing (ecuMbGrin ecu))
+              (cpParseGrin modNm)
+       }
+%%]
 
 
