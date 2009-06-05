@@ -126,7 +126,7 @@ pGrBindAnn      ::   GRIParser GrBindAnn
 pGrBindAnn      =    pSucceed GrBindAnnNormal
                 <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pMbGrNm
                 <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList pMbGrNm
-                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList pInt
+                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList (pCurlyList pInt)
                 <|>  GrBindAnnSpecialized <$
                        pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
 

@@ -157,8 +157,11 @@ envChanges equat env
 
     findFinalValueIntern nodes
       = do { let x = AbsNodes (Nodes (Map.filterWithKey (const . isFinalTag) nodes))
-           ; zs <- mapM (readAV2 False env) [ getNr nm  | (GrTag_App nm) <- Map.keys nodes ]
+           --; zs <- mapM (readAV2 False env) [ getNr (trace (show nm ++ " = " ++ show f ++ "\n") nm)  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
+           ; zs <- mapM (readAV2 False env) [ getNr nm  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
            ; avs <- mapM (findFinalValue undefined) zs
+           --; qs <- mapM (readAV2 False env) (concat [ Set.toList f | (GrTag_App nm, (f:_)) <- Map.toList nodes ])
+           --; avs <- mapM (findFinalValue undefined) qs
            ; return (mconcat (x:avs))           
            }
 
@@ -198,20 +201,20 @@ envChanges equat env
 
 %%[(8 codegen grin)
 
-fixpoint procEqs
+fixpoint procEqs env
   = countFixpoint 0
     where
     countFixpoint count = do
         { 
           changes <- procEqs
         
-        --; ae <- getAssocs env
+        ; ae <- getAssocs env
         --; let s  =  unlines (("SOLUTION": map show ae)) 
         --; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
         --                           ; return (return ())
         --                           }
         --                       )
-        --; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
+        -- ; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
 
         ; if    changes>0
           then  countFixpoint (count+1)
@@ -234,13 +237,13 @@ solveEquations :: Int -> Equations -> Limitations -> (Int,HptMap)
 solveEquations lenEnv eqs lims =
     runST (
     do { 
-       --; let eqsStr = unlines (map show eqs )
+       ; let eqsStr = unlines (map show eqs )
        --; let limsStr = unlines (map show lims)
-       --; _ <- unsafePerformIO (do { writeFile ("eqs .txt") eqsStr
+       ; _ <- unsafePerformIO (do { writeFile ("eqs.txt") eqsStr
        --                           ; writeFile ("lims.txt") limsStr
-       --                           ; return (return ())
-       --                           }
-       --                       )
+                                  ; return (return ())
+                                  }
+                              )
 
        -- create arrays
        ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
@@ -286,7 +289,7 @@ solveEquations lenEnv eqs lims =
                   
        ; _ <- mapM procEq eqs1a
                   
-       ; count <- fixpoint procEqs
+       ; count <- fixpoint procEqs env
       
        ; let limsMp = Map.fromList lims
              lims2 = [ (y,z) 

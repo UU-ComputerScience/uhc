@@ -110,6 +110,9 @@ ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = vlist pL
 %%]]
 
+-- list between {}, but with spaces, to avoid syntax clash with integers:
+--  {- comment -}
+--  {-1, -2}
 ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
 ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
 
@@ -123,7 +126,7 @@ ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
 ppGrBindAnn _      GrBindAnnNormal            = pp ""
 ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
 ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
-ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList ppInt xs
+ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList (ppCurlyList ppInt) xs
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlyList (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc

@@ -122,15 +122,16 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 --      They contain "Just" the name of the instance implementation, or "Nothing" if it relies on the default implementation.
 --   Overloaded: binds a function with dictionary parameters
 --      The numbers specify which dictionaries are needed:
---            -1 if the dictionary of which the function is a member is needed
---            0  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
---            1  if the second superclass is needed, etc.
+--            [-1] if the dictionary of which the function is a member is needed
+--            [0]  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
+--            [1]  if the second superclass is needed, etc.
+--            [2,1] if the third superclass of the second superclass is needed
 
 data GrBindAnn
   = GrBindAnnNormal
   | GrBindAnnClass    [Maybe HsName]
   | GrBindAnnInstance [Maybe HsName]
-  | GrBindAnnOverloaded [Int]
+  | GrBindAnnOverloaded [[Int]]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
 

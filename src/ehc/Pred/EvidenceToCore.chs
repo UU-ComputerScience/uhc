@@ -26,6 +26,9 @@
 %%[(9 codegen) import({%{EH}Base.Debug} as Debug)
 %%]
 
+%%[(9 codegen) import(Debug.Trace)
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Translation
@@ -143,12 +146,18 @@ evidMpToCore env evidMp
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
         ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
-        ann (RedHow_BySuperClass n o t ) [sub] = ( mkCExprSatSelsCaseMeta
-                                                     (emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                     (Just $ hsnSuffix n "!") (CMetaVal_Dict (Just o)) (tcrCExpr sub) t
-                                                     [(n,n,o)] Nothing (CExpr_Var n)
-                                                 , tcrScope sub
-                                                 )
+        ann (RedHow_BySuperClass n o t ) [sub] = let res = mkCExprSatSelsCaseMeta
+                                                             (emptyRCEEnv $ feEHCOpts $ fiEnv env)
+                                                             (Just $ hsnSuffix n "!") 
+                                                             (CMetaVal_Dict (Just [o])) 
+                                                             (tcrCExpr sub) 
+                                                             t
+                                                             [(n,n,o)] 
+                                                             Nothing 
+                                                             (CExpr_Var n)
+                                                 in ( res
+                                                    , tcrScope sub
+                                                    )
 %%[[10
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( CExpr_Int o, sc )
         ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( caddint (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
@@ -178,12 +187,6 @@ evidMpToCore env evidMp
                       = maybe (mkc r $ mkk (ToCoreRes c uses) st, r) (\r -> (mkk r st,vr r)) $ Map.lookup ev $ tcsEvMp st
 
 
-%%[(9 codegen)
-getMetaDictMbPos :: CExpr -> Maybe Int
-getMetaDictMbPos (CExpr_Let _ (CBind_Bind _ (_,CMetaVal_Dict m) _ : _) _) = m
-getMetaDictMbPos _ = Nothing
-%%]
-
 %%[(9 codegen) export(evidKeyCoreMpToBinds)
 evidKeyCoreMpToBinds :: EvidKeyToCExprMap -> (EvidKeyToCBindMap,PredScopeToCBindMap)
 evidKeyCoreMpToBinds m
@@ -195,7 +198,7 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (mkCBind1Meta (mkHNm i) (CMetaVal_Dict (getMetaDictMbPos e)) e,u)    
+      $ [ (mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e,u)    -- Nothing will be replaced by the correct annotation in ToCore
         | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
@@ -244,7 +247,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\(_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = mkCBind1Meta (mkHNm i) (CMetaVal_Dict (getMetaDictMbPos e)) e
+        mkd i e           = mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e    -- Nothing will be replaced by the correct annotation in ToCore
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 
