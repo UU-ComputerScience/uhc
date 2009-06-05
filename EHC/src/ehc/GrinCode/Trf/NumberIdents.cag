@@ -51,7 +51,7 @@ Haskell datatype NameMapping and utility functions for it
 %%[(8 codegen grin) hs
 type NameMapping = Map.Map HsName HsName
 
-findNewVar fm e  = Map.findWithDefault (trace (show e ++ " not found in " ++ show fm) e) e fm
+findNewVar fm e  = Map.findWithDefault (trace ("NumberIdents.findNewVar: " ++ show e ++ " not found in " ++ show fm) e) e fm
 
 
 -- numbers the non-wildcard variables in xs, counting from left-to-right (because that is needed when numbering argument lists)

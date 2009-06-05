@@ -64,10 +64,11 @@ data GetMeta
   = GetMeta_HS
   | GetMeta_HI
   | GetMeta_Core
+  | GetMeta_Grin
   | GetMeta_Dir
   deriving (Eq,Ord)
 
-allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Dir]
+allGetMeta = [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir]
 
 %%]
 
@@ -113,6 +114,10 @@ cpGetMetaInfo gm modNm
                                               (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
 %%]]
                  )
+%%[[(20 codegen)
+         ;  when (GetMeta_Grin `elem` gm)
+                 (tm opts ecu ecuStoreGrinTime      (fpathSetSuff "grin"      fp     ))
+%%]]
 %%[[(20 codegen)
          ;  when (GetMeta_Core `elem` gm)
                  (tm opts ecu ecuStoreCoreTime      (fpathSetSuff "core"      fp     ))

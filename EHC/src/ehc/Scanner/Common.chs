@@ -303,16 +303,25 @@ grinScanOpts
   =  defaultScanOpts
         {   scoKeywordsTxt      =   Set.fromList $
                                         [ "eval", "apply"
+                                        , "call"
                                         , "module", "update", "fetch", "store", "unit", "of", "rec", "case", "ffi", "fetchupdate"
                                         , "throw", "try", "catch", "ctags", "applymap", "evalmap"
                                         , "C", "F", "P", "A", "R", "H", "U", "W"
                                         , "basicnode", "enumnode", "opaquenode", "ptrnode", "basicannot", "enumannot", "opaqueannot", "ptrannot"
                                         , "annotfromtaggedptr", "annottotaggedptr", "annotdflt"
                                         , "word"
+                                        , "DICTCLASS", "DICTINSTANCE", "DICTOVERLOADED", "SPECIALIZED"
+                                        , "_"
 %%[[97
                                         , "float", "double"
 %%]]
+%%[[99
+                                        , "True", "False"  -- for FFI annotation
+%%]]
                                         ]
+%%[[94
+                                        ++ map show allFFIWays
+%%]]
         ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
         ,   scoSpecChars        =   Set.fromList "();{}#/\\|,"
         ,   scoOpChars          =   Set.fromList "<->:=+*"

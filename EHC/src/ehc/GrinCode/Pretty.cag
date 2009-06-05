@@ -110,6 +110,12 @@ ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = vlist pL
 %%]]
 
+-- list between {}, but with spaces, to avoid syntax clash with integers:
+--  {- comment -}
+--  {-1, -2}
+ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
+ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
+
 ppGrAltAnn :: GrAltAnn -> PP_Doc
 ppGrAltAnn GrAltAnnNormal         = pp ""
 ppGrAltAnn GrAltAnnIdent          = pp "ident "
@@ -118,16 +124,16 @@ ppGrAltAnn GrAltAnnReenter        = pp "reenter "
 
 ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
 ppGrBindAnn _      GrBindAnnNormal            = pp ""
-ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
-ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
-ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlysCommasWith ppInts xs
-ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlysCommasWith (ppMbGrNm ppGrNm) xs
+ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
+ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
+ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList (ppCurlyList ppInt) xs
+ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlyList (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
-ppMbGrNm ppGrNm = maybe (ppGrNm (hsnFromString "_")) ppGrNm
+ppMbGrNm ppGrNm = maybe (pp "_") ppGrNm
 
-ppInts :: [Int] -> PP_Doc
-ppInts n = pp (show n)
+ppInt :: Int -> PP_Doc
+ppInt n = pp (show n)
 
 %%]
 ppGrNm :: PPGrNm

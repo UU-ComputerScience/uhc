@@ -91,7 +91,7 @@ cpOutputJava suff modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpOutputGrin)
+%%[(8 codegen grin) export(cpOutputGrin, cpOutputGrinForLaterUse)
 cpOutputGrin :: String -> HsName -> EHCompilePhase ()
 cpOutputGrin suff modNm
   =  do  {  cr <- get
@@ -105,6 +105,18 @@ cpOutputGrin suff modNm
                  (do { cpMsg modNm VerboseALot "Emit Grin"
                      ; lift $ putPPFPath fpG grinPP 1000
                      })
+         }
+
+cpOutputGrinForLaterUse :: String -> HsName -> EHCompilePhase ()
+cpOutputGrinForLaterUse suff modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbGrin = ecuMbGrin ecu
+                 grin   = panicJust "cpOutputGrin'" mbGrin
+                 grinPP = ppGrModule grin
+                 fpG    = mkOutputFPath opts modNm fp suff
+         ;  cpMsg modNm VerboseALot "Emit Grin"
+         ;  lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
          }
 %%]
 

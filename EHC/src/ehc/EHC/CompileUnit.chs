@@ -150,6 +150,9 @@ data EHCompileUnit
 %%[[(8 codegen)
       , ecuMbCoreTime        :: !(Maybe ClockTime)
 %%]]
+%%[[(8 codegen grin)
+      , ecuMbGrinTime        :: !(Maybe ClockTime)
+%%]]
       , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
       , ecuMod               :: !Mod
       , ecuMbPrevHI          :: !(Maybe HI.AGItf)
@@ -223,6 +226,9 @@ emptyECU
       , ecuMbHITime          = Nothing
 %%[[(20 codegen)
       , ecuMbCoreTime        = Nothing
+%%]]
+%%[[(20 codegen grin)
+      , ecuMbGrinTime        = Nothing
 %%]]
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
@@ -440,6 +446,11 @@ ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%[(20 codegen) export(ecuStoreCoreTime)
 ecuStoreCoreTime :: EcuUpdater ClockTime
 ecuStoreCoreTime x ecu = ecu { ecuMbCoreTime = Just x }
+%%]
+
+%%[(20 codegen grin) export(ecuStoreGrinTime)
+ecuStoreGrinTime :: EcuUpdater ClockTime
+ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%]
 
 %%[20 export(ecuStoreDirIsWritable)

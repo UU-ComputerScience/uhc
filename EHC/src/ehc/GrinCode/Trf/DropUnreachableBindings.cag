@@ -142,7 +142,7 @@ ATTR GrBind GrGlobal
 SEM GrModule
   | Mod  loc   . mainfn   =  if @lhs.numbered then mainNr else hsnMain
          -- loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @globalL.genEnv) ) id (Map.lookup @loc.mainfn @globalL.genEnv))
-         loc   . lifeList =  reachable @graph (maybe (error (show @loc.mainfn ++ " not found in " ++ show @loc.bothEnv) ) id (Map.lookup @loc.mainfn @loc.bothEnv))
+         loc   . lifeList =  reachable @graph (maybe (error ("DropUnreachableBindings: " ++ show @loc.mainfn ++ " not found in " ++ show @loc.bothEnv) ) id (Map.lookup @loc.mainfn @loc.bothEnv))
                . lifeSet  =  Set.fromList @loc.lifeList
          
 SEM GrBind

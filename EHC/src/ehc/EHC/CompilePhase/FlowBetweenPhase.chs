@@ -265,7 +265,7 @@ cpFlowCoreSem modNm
                  hii'     = hii
                               { HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 codegen grin)
-                              , HI.hiiCArityMp      = if ehcOptFullProgAnalysis opts then Map.empty else am
+                              , HI.hiiCArityMp      = am
 %%]]
                               }
          ;  when (isJust (ecuMbCoreSem ecu))

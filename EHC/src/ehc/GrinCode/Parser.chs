@@ -82,7 +82,7 @@ pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_Throw   <$  pKey "throw"        <*> pGrNm
                 <|>  GrExpr_Catch   <$  pKey "try"          <*> pCurly pExprSeq
                                     <*  pKey "catch"        <*> pParens pGrNm <*> pCurly pExprSeq
-                <|>  GrExpr_Call                            <$> pGrNm   <*>  pSValL
+                <|>  GrExpr_Call    <$  pKey "call"         <*> pGrNm   <*>  pSValL
 
 pSVal           ::   GRIParser GrVal
 pSVal           =    GrVal_Var      <$> pGrNm
@@ -122,9 +122,20 @@ pAltAnn         =    (    GrAltAnnNormal  <$ pKey "normal"
                      <|>  pSucceed GrAltAnnNormal
                      )
 
-pGrBindAnn      ::  GRIParser GrBindAnn
-pGrBindAnn      =    pSucceed GrBindAnnNormal    -- TODO: GrBindAnnClass/Instance
-                     
+pGrBindAnn      ::   GRIParser GrBindAnn
+pGrBindAnn      =    pSucceed GrBindAnnNormal
+                <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pMbGrNm
+                <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList pMbGrNm
+                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList (pCurlyList pInt)
+                <|>  GrBindAnnSpecialized <$
+                       pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm
+
+pCurlyList      ::   GRIParser a -> GRIParser [a]
+pCurlyList p    =    pCurly $ pListSep pComma p
+
+pMbGrNm         ::   GRIParser (Maybe HsName)
+pMbGrNm         =    Just    <$> pGrNm
+                <|>  Nothing <$  pKey "_"
 
 pPatLam         ::   GRIParser GrPatLam
 pPatLam         =    GrPatLam_Var      <$> pGrNm
@@ -142,8 +153,9 @@ pPatLam         =    GrPatLam_Var      <$> pGrNm
                         )
 
 pPatAlt         ::   GRIParser GrPatAlt
-pPatAlt         =    GrPatAlt_LitInt   <$> pInt
-                <|>  GrPatAlt_Tag      <$> pTag
+pPatAlt         =    GrPatAlt_LitInt    <$> pInt
+                <|>  GrPatAlt_Tag       <$> pTag
+                <|>  GrPatAlt_Otherwise <$  pKey "_"
                 <|>  pParens
                         (    pTag
                              <**>  (pGrNm
@@ -179,7 +191,7 @@ pBasicAnnot     =    BasicAnnot_Size          <$> pBasicSize <*> pBasicTy
 
 pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
-                     *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> pGrNm
+                     *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> ((undefined <$ pKey "_") <|> pGrNm)
                          <|> GrTag_Unboxed <$ pKey "U"
                          <|> GrTag_Any     <$ pKey "*"
                          )
