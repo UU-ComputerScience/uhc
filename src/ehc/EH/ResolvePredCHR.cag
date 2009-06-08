@@ -325,7 +325,7 @@ TyCore variant/clone:
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   prvArgTCSubst       =   let mk a = (C.mkExprHole @lhs.opts a,(C.MetaVal_Dict Nothing))
+  | Let         loc         .   prvArgTCSubst       =   let mk a = (mkHNm a,(C.MetaVal_Dict Nothing))
                                                         in  C.uidImplsLToCSubst [ (occ, ([C.mkAppCoeWith $ map mk args], [])) | (occ,args) <- Map.toList @coeArgIdMp ]
 %%]
 

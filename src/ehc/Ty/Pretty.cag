@@ -87,6 +87,12 @@ instance PP FIMode where
   pp m = pp (show m)
 %%]
 
+%%[(4 hmtyinfer || hmtyast) hs
+instance PP InstTo where
+  pp  InstTo_Plain       = pp "_"
+  pp (InstTo_Qu q v t k) = t >|< "/" >|< v
+%%]
+
 %%[(4_2 hmtyinfer || hmtyast) hs
 instance PP TyHardness where
   pp = pp . show

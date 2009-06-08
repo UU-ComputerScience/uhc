@@ -11,8 +11,10 @@
 %%]
 %%[(8 codegen) hs import ({%{EH}TyCore},{%{EH}Ty.ToTyCore}) export(module {%{EH}TyCore},module {%{EH}Ty.ToTyCore})
 %%]
+%%[(8 codegen) hs import({%{EH}Error})
+%%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -187,8 +189,9 @@ isStrict _                   = False
 
 %%[(8 codegen) hs export(exprIsLam)
 exprIsLam :: Expr -> Bool
-exprIsLam (Expr_Lam _ _) = True
-exprIsLam _              = False
+exprIsLam (Expr_Lam   _ _) = True
+exprIsLam (Expr_Arrow _ _) = True
+exprIsLam _                = False
 %%]
 
 %%[(8 codegen) hs export(valBindNm)
@@ -241,12 +244,12 @@ metaLiftDict = metaLift' (MetaVal_Dict Nothing)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction
+%%% Construction: val binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(mkValBind1Metas)
 mkValBind1Metas :: HsName -> Metas -> Ty -> Expr -> ValBind
-mkValBind1Metas n m t e = ValBind_Val n m t e
+mkValBind1Metas n m t e = ValBind_Val n (if metasIsDflt m then Nothing else Just m) t e
 %%]
 
 %%[(8 codegen) hs export(mkValBind1Meta)
@@ -254,9 +257,22 @@ mkValBind1Meta :: HsName -> MetaVal -> Ty -> Expr -> ValBind
 mkValBind1Meta n m t e = mkValBind1Metas n (MetaBind_Plain,m) t e
 %%]
 
-%%[(8 codegen) hs export(mkValBind1)
+%%[(8 codegen) hs export(mkValBind1,mkValThunkBind1)
 mkValBind1 :: HsName -> Ty -> Expr -> ValBind
 mkValBind1 n t e = mkValBind1Meta n MetaVal_Val t e
+
+mkValThunkBind1 :: HsName -> Ty -> Expr -> ValBind
+mkValThunkBind1 n t e = mkValBind1 n (mkTyThunk t) (mkExprThunk e)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construction: cast
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(mkCast)
+mkCast :: Ty -> Ty -> Expr -> Expr
+mkCast frTy toTy e
+  = Expr_Cast e (Expr_Unsafe frTy toTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -264,8 +280,14 @@ mkValBind1 n t e = mkValBind1Meta n MetaVal_Val t e
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(mkExprAppMeta,mkExprApp1Meta)
+mkExprApp1Meta' :: (Expr->Expr) -> Expr -> Expr -> MetaVal -> Expr
+mkExprApp1Meta' mka f a m = Expr_App f (mka $ Expr_Seq [ExprSeq1_L0Val a (if metaValIsDflt m then Nothing else Just m)])
+
 mkExprApp1Meta :: Expr -> Expr -> MetaVal -> Expr
-mkExprApp1Meta f a m = Expr_App f [Arg_Val a m]
+mkExprApp1Meta = mkExprApp1Meta' id
+
+mkExprAppMeta' :: (Expr->Expr) -> Expr -> [(Expr,MetaVal)] -> Expr
+mkExprAppMeta' mka f as = foldl (\f (a,m) -> mkExprApp1Meta' mka f a m) f as
 
 mkExprAppMeta :: Expr -> [(Expr,MetaVal)] -> Expr
 mkExprAppMeta f as = foldl (\f (a,m) -> mkExprApp1Meta f a m) f as
@@ -273,39 +295,53 @@ mkExprAppMeta f as = foldl (\f (a,m) -> mkExprApp1Meta f a m) f as
 
 %%[(8 codegen) hs export(mkExprAppTy,mkExprApp1Ty)
 mkExprApp1Ty :: Expr -> Ty -> Expr
-mkExprApp1Ty f t = Expr_App f [Arg_Ty t]
+mkExprApp1Ty f t = Expr_App f (Expr_Seq [ExprSeq1_L1Val t])
 
 mkExprAppTy :: Expr -> [Ty] -> Expr
 mkExprAppTy f as = foldl mkExprApp1Ty f as
 %%]
 
 %%[(8 codegen) hs export(mkExprApp,mkExprApp1)
+mkExprApp1' :: (Expr->Expr) -> Expr -> Expr -> Expr
+mkExprApp1' mka f a = mkExprApp1Meta' mka f a MetaVal_Val
+
 mkExprApp1 :: Expr -> Expr -> Expr
-mkExprApp1 f a = mkExprApp1Meta f a MetaVal_Val
+mkExprApp1 = mkExprApp1' id
 
 mkExprApp :: Expr -> [Expr] -> Expr
 mkExprApp f as = mkExprAppMeta f (metaLift as)
 %%]
 
+%%[(8 codegen) hs export(mkTyApp)
+mkTyApp :: Ty -> [Ty] -> Ty
+mkTyApp f as = mkExprAppMeta' mkTySeq1 f (metaLift as)
+%%]
+
 %%[(8 codegen) hs export(mkExprLamMeta,mkExprLam1Meta)
+mkExprLam1Meta' :: (Expr->Expr) -> HsName -> MetaVal -> Ty -> Expr -> Expr
+mkExprLam1Meta' mka a m t e = Expr_Lam (mka $ Expr_Seq [ExprSeq1_L0Bind a (if metaValIsDflt m then Nothing else Just m) t]) e
+
 mkExprLam1Meta :: HsName -> MetaVal -> Ty -> Expr -> Expr
-mkExprLam1Meta a m t e = Expr_Lam [ArgBind_Val a m t] e
+mkExprLam1Meta = mkExprLam1Meta' id
 
 mkExprLamMeta :: [(HsName,MetaVal,Ty)] -> Expr -> Expr
 mkExprLamMeta as e = foldr (\(n,m,t) e -> mkExprLam1Meta n m t e) e as
 %%]
 
 %%[(8 codegen) hs export(mkExprLamTy,mkExprLam1Ty)
-mkExprLam1Ty :: TyVarId -> Ty -> Expr -> Expr
-mkExprLam1Ty a t e = Expr_Lam [ArgBind_Ty a t] e
+mkExprLam1Ty :: HsName -> Ty -> Expr -> Expr
+mkExprLam1Ty a t e = Expr_Lam (Expr_Seq [ExprSeq1_L1Bind a t]) e
 
-mkExprLamTy :: [(TyVarId,Ty)] -> Expr -> Expr
+mkExprLamTy :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLamTy as e = foldr (\(n,t) e -> mkExprLam1Ty n t e) e as
 %%]
 
 %%[(8 codegen) hs export(mkExprLam,mkExprLam1)
+mkExprLam1' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
+mkExprLam1' mka a t e = mkExprLam1Meta' mka a MetaVal_Val t e
+
 mkExprLam1 :: HsName -> Ty -> Expr -> Expr
-mkExprLam1 a t e = mkExprLam1Meta a MetaVal_Val t e
+mkExprLam1 = mkExprLam1' id
 
 mkExprLam :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLam as e = mkExprLamMeta [ (n,MetaVal_Val,t) | (n,t) <- as ] e
@@ -321,7 +357,7 @@ mkExprTuple = mkExprTuple' CTagRec
 
 %%[(8 codegen) hs export(mkExprStrictInMeta)
 mkExprStrictInMeta :: HsName -> MetaVal -> Ty -> Expr -> (Expr -> Expr) -> Expr
-mkExprStrictInMeta nm m t e mkC = Expr_Let ValBindCateg_Strict [mkValBind1Meta nm m (mkTyUnThunk t) (mkExprUnThunk e)] (mkC (Expr_Var nm))
+mkExprStrictInMeta nm m t e mkC = Expr_Let ValBindCateg_Strict [mkValBind1Meta nm m (tyUnThunkTySeq t) (mkExprUnThunk e)] (mkC (Expr_Var nm))
 %%]
 
 %%[(8 codegen) hs export(mkExprLet,mkExprLet')
@@ -367,7 +403,7 @@ mkIf opts cn c t f
                [ Alt_Alt (Pat_Con (ctagFalse opts) PatRest_Empty []) f
                , Alt_Alt (Pat_Con (ctagTrue  opts) PatRest_Empty []) t
                ]
-               (tcUndefined opts)
+               Nothing {-(tcUndefined opts)-}
       )
 %%]
 
@@ -383,9 +419,10 @@ mkMatchChar opts cn cchar cexpr t f
 
 %%[(8 codegen) hs export(exprMbVar,exprVar)
 exprMbVar :: Expr -> Maybe HsName
-exprMbVar (Expr_Var n)               = Just n
-exprMbVar (Expr_Lam [] (Expr_Var n)) = Just n
-exprMbVar _                          = Nothing
+exprMbVar (Expr_Var                           n ) = Just n
+exprMbVar (Expr_Lam   (Expr_Seq []) (Expr_Var n)) = Just n
+exprMbVar (Expr_Arrow (Expr_Seq []) (Expr_Var n)) = Just n
+exprMbVar _                                       = Nothing
 
 exprVar :: Expr -> HsName
 exprVar = maybe hsnUnknown id . exprMbVar
@@ -394,7 +431,7 @@ exprVar = maybe hsnUnknown id . exprMbVar
 %%[(8 codegen) hs export(exprTupFld)
 exprTupFld :: Expr -> Expr
 exprTupFld (Expr_TupIns _ _ _ _ e) = e
-exprTupFld _                        = Expr_Var hsnUnknown
+exprTupFld e                       = e	-- default to expr itself
 %%]
 
 %%[(8 codegen) hs export(exprIsEvaluated)
@@ -695,16 +732,85 @@ type CaseFailSubst = Map.Map UID Expr
 %%% Lam args merge of type and actual code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Assumption: only singleton argument sequences in the type
+Assumption: singleton argument sequences in the type
 
-%%[(8 codegen) hs export(tcMergeArgTypeAndCode)
-tcMergeArgTypeAndCode :: [TySeq1L] -> [(HsName,Expr->Expr)] -> Expr -> Expr
-tcMergeArgTypeAndCode ts as body
+%%[(8 codegen) hs export(tcMergeArgTypeSeqAndCode')
+tcMergeArgTypeSeqAndCode' :: (Ty -> TySeq) -> [TySeq1L] -> [(HsName,Expr->Expr)] -> (Expr->Expr,[TySeq])
+tcMergeArgTypeSeqAndCode' mka ts as
   = merge ts as
-  where merge ((TySeq1_Val _ t:ts):tss) ((argNm,mkBody):as) = mkExprLam1   argNm    t (mkBody $ merge (ts:tss) as)
-        merge ((TySeq1_Ty  v k:ts):tss)                 as  = mkExprLam1Ty (mknm v) k (         merge (ts:tss) as)
-        merge (_                  :tss)                 as  =                                   merge     tss  as
-        merge _                                         _   = body
-        mknm = maybe uidStart id
+  where merge ((ExprSeq1_L0Val  t   _:ts):tss) ((argNm,mkBody):as) = (mkExprLam1' mka argNm t . mkBody . body, mka t : args)
+                                                                   where (body,args) = merge (ts:tss) as
+        merge ((ExprSeq1_L0Bind v _ k:ts):tss)                 as  = (mkExprLam1Ty v        k          . body,         args)
+                                                                   where (body,args) = merge (ts:tss) as
+        merge (_                         :tss)                 as  =                   merge     tss  as
+        merge _                                                _   = (id,[])
+%%]
+
+%%[(8 codegen) hs export(tcMergeArgTypeSeqAndCode)
+tcMergeArgTypeSeqAndCode :: [TySeq1L] -> [(HsName,Expr->Expr)] -> Expr -> Expr
+tcMergeArgTypeSeqAndCode ts as
+  = fst $ tcMergeArgTypeSeqAndCode' mkTySeq ts as
+%%]
+
+%%[(8 codegen) hs export(tcMergeLamTySeqAndArgNms,tcMergeLamTySeq1AndArgNms)
+tcMergeLamTySeqAndArgNms' :: (Ty -> TySeq) -> (Ty -> TySeq) -> Ty -> [HsName] -> (Expr->Expr,([TySeq],TySeq))
+tcMergeLamTySeqAndArgNms' mka mkr t as
+  = (mk,(args,mkr res))
+  where (ts,res ) = tyArrowArgsResSeq t
+        (mk,args) = tcMergeArgTypeSeqAndCode' mka ts (zip as (repeat id))
+
+tcMergeLamTySeqAndArgNms :: Ty -> [HsName] -> (Expr->Expr,([TySeq],TySeq))
+tcMergeLamTySeqAndArgNms
+  = tcMergeLamTySeqAndArgNms' mkTySeq id
+
+tcMergeLamTySeq1AndArgNms :: Ty -> [HsName] -> (Expr->Expr,([TySeq],TySeq))
+tcMergeLamTySeq1AndArgNms
+  = tcMergeLamTySeqAndArgNms' mkTySeq1 mkTySeq1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environment for bindings as used by TyCore checking
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(MetaLev, metaLevVal, metaLevTy, metaLevKi, metaLevSo)
+type MetaLev = Int
+
+metaLevVal, metaLevTy, metaLevKi, metaLevSo :: MetaLev
+metaLevVal = 0
+metaLevTy  = metaLevVal + 1
+metaLevKi  = metaLevTy  + 1
+metaLevSo  = metaLevKi  + 1
+%%]
+
+%%[(8 codegen) hs export(Env,emptyEnv,envUnion,envLookup,envSingleton,envUnions)
+type Env = Map.Map HsName (Map.Map MetaLev Ty)
+
+emptyEnv :: Env
+emptyEnv = Map.empty
+
+envUnion :: Env -> Env -> Env
+envUnion = Map.unionWith Map.union
+
+envUnions :: [Env] -> Env
+envUnions [] = emptyEnv
+envUnions l  = foldr1 envUnion l
+
+envLookup :: HsName -> MetaLev -> Env -> (Ty,ErrSq)
+envLookup n ml e
+  = case Map.lookup n e of
+      Just m -> case Map.lookup ml m of
+                  Just x -> (x,Seq.empty)
+                  _      -> dflt
+      _      -> dflt
+  where dflt = (tyErr $ "envLookup:" ++ show n,Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("TyCore metalevel " ++ show ml) [n])
+
+envSingleton :: HsName -> MetaLev -> Ty -> Env 
+envSingleton n ml t = Map.singleton n (Map.singleton ml t)
+%%]
+
+%%[(8 codegen) hs export(envFromGam)
+envFromGam :: (v -> T.Ty) -> MetaLev -> AssocL HsName v -> Env
+envFromGam getTy ml g
+  = envUnions [ envSingleton n ml (tyToTyCore $ getTy x) | (n,x) <- g ]
 %%]
 

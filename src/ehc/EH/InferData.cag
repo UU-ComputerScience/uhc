@@ -111,10 +111,11 @@ ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
+                            .	dataConTyFv			=	ftv @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @fields.tyL
-                loc         .   dataConProdTy       :   Ty
-                loc         .   dataQuUnConTy       =   let  fvD = ftv @lhs.dataTy
-                                                             fvU = ftv @dataConProdTy
+                            .   dataConProdTyFv     =   ftv @dataConProdTy
+                loc         .   dataQuUnConTy       =   let  fvD = @dataConTyFv
+                                                             fvU = @dataConProdTyFv
                                                         in (mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy))
 
                 lhs         .   patValGam           =   gamUnions

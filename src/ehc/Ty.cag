@@ -1611,3 +1611,41 @@ instance Show FIMode where
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instantiation trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+An InstTo encodes the instantiation structure.
+It gives evidence of instantiation is done.
+
+%%[(4 hmtyinfer || hmtyast) hs export(InstTo(..))
+data InstTo
+  = InstTo_Plain        				-- a plain value
+  | InstTo_Qu                           -- the fresh type (tyvar) instantiated to
+      { instoQu     :: TyQu
+      , instoFrom   :: TyVarId
+      , instoTy     :: Ty
+      , instoKi     :: Ty
+      }
+{-
+  | InstTo_Lam                          -- a lambda
+      { instoLam    :: [InstTo]
+      }
+-}
+  deriving Show
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs
+instToIsQu :: InstTo -> Bool
+instToIsQu (InstTo_Qu _ _ _ _) = True
+instToIsQu _                   = False
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs export(instToSplitQu)
+-- split of initial quantifier instantiations, to be used for Sys F generation for type parameterization
+instToSplitQu :: [InstTo] -> ([InstTo],[InstTo])
+instToSplitQu = span instToIsQu
+%%]
+
+
+

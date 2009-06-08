@@ -141,6 +141,10 @@ DATA Err
 %%[(8 codegen)
 DATA Err
   | IllegalFFIWay       ffiWay     : {FFIWay}
+  | TyCoreMatchClash    ty1        : {PP_Doc}
+                        ty2        : {PP_Doc}
+                        ty1detail  : {PP_Doc}
+                        ty2detail  : {PP_Doc}
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

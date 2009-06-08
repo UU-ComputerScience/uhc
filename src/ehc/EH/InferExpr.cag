@@ -191,11 +191,16 @@ SEM Expr
 %%% Variable/Constructor, identifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 hmtyinfer noHmTyRuler) hs
+type DoFit = FIOpts -> VarMp -> FIOut
+%%]
+
 -- between variant 5 .. 99, reconstruction of AG rules, getting rid of ruler3 until Arie's ruler4 can be used
 %%[(8 hmtyinfer noHmTyRuler)
 SEM Expr
   | Var Con     (loc.ty_g_,loc.nmErrs)              =   valGamLookupTy @nm @lhs.valGam
-                loc         .   fo_                 =   fitsIn @lhs.fiOpts @fe @lUniq @lhs.tyVarMp @ty_g_ @lhs.knTy
+                loc         .   doFit               =   \o m -> fitsIn o @fe @lUniq m @ty_g_ @lhs.knTy
+                            .   fo_                 =   @doFit @lhs.fiOpts @lhs.tyVarMp
                             .   ty                  =   foTy @fo_
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq

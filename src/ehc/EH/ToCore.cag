@@ -86,7 +86,7 @@ SEM AGItf
 ATTR Expr [ | | cexpr: CExpr ]
 
 SEM Expr
-  | Ann			loc			.	cexpr		=	@expr.cexpr
+  | Ann         loc         .   cexpr       =   @expr.cexpr
   | Let         loc         .   frontCBindL =   [(CBindings_FFI,@decls.ffiCBindL)]
 %%[[94
                             .   backCBindL  =   [(CBindings_FFE,@decls.ffeCBindL)]
@@ -157,7 +157,7 @@ SEM Expr
 %%[(9 codegen)
 SEM Expr
   | Let         loc         .   letCBindOtherL
-                            				:=  [ (CBindings_Rec,@chrScopeBindL) ]
+                                            :=  [ (CBindings_Rec,@chrScopeBindL) ]
   | App AppImpred
 %%[[12
     AppImpl
@@ -432,12 +432,16 @@ SEM PatExpr
 
 %%[(8 codegen)
 SEM PatExpr
-  | AppTop Con  loc         .   tag         =   let  (c,_)  = tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
-                                                     dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
-                                                              $ dataGamLookup (tyConNm c) $ @lhs.dataGam
-                                                in   dtiCTag
-                                                     $ panicJust ("PatExpr.{AppTop,Con}.tag: " ++ show (tyConNm c) ++ "." ++ show @appFunNm)
-                                                     $ Map.lookup @appFunNm $ dgiConstrTagMp dgi
+  | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
+                            .   dgi         =   panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm)
+                                                    $ dataGamLookup @tyConNm $ @lhs.dataGam
+                            .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)
+                                                    $ Map.lookup @appFunNm $ dgiConstrTagMp @dgi
+%%]
+
+%%[(8 codegen)
+SEM PatExpr
+  | AppTop Con  loc         .   tag         =   dtiCTag @dti
                             .   rest        =   CPatRest_Empty
   | Rec         loc         .   tag         =   CTagRec
                             .   rest        =   @recPatExpr.patCRest
@@ -460,9 +464,9 @@ SEM PatExpr
                                                     max = ctagArity @tag - 1
                                                     sat = listSaturateWith 0 max (foffOffset . fst)
                                                             (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupply)
-                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL		-- groups of bindings which can be dealt with simultaneously
-                                                    , fsL2PatOffsetL fsL						-- bindings
-                                                    , fsL2PatOffsetL $ sat []					-- 0 binding
+                                                in  ( map (fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
+                                                    , fsL2PatOffsetL fsL                        -- bindings
+                                                    , fsL2PatOffsetL $ sat []                   -- 0 binding
                                                     )
 %%]
 
@@ -484,10 +488,10 @@ SEM PatExpr
                                                       ->  RPat_Con @cpNm @tag (RPatConBind_One @rest pbL)
                                                           where  pbL = map fst $ fsL2PatOffsetL $ fsLReorder @lhs.opts $ reverse $ @fsRPatL
   | DataFields  loc         .   rpat        =   RPat_Con @cpNm @tag
-  													(rpatConBindUnFlatten (RPatConBind_One @rest $ map fst @rpatBind0)
-  													 $ map (RPatConBind_One @rest . map fst)
-  													       @rpatBindss
-  													)
+                                                    (rpatConBindUnFlatten (RPatConBind_One @rest $ map fst @rpatBind0)
+                                                     $ map (RPatConBind_One @rest . map fst)
+                                                           @rpatBindss
+                                                    )
   | Irrefutable loc         .   rpat        =   RPat_Irrefutable @cpNm @patExpr.cbindL
 %%]
 
@@ -687,8 +691,8 @@ ATTR
 
 SEM Expr
   | Let         (loc.letCBindRemL,loc.letCBody) =   mkLetCBodyBindL @isStrict @howToBind @letCBindL @letCBindOtherL @body.letCBindL @body.letCBody
-                lhs			.	letCBindL		=	@letCBindRemL
-                			.   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
+                lhs         .   letCBindL       =   @letCBindRemL
+                            .   frontCBindL     =   @frontCBindL ++ @body.frontCBindL
 %%[[94
                             .   backCBindL      =   @backCBindL ++ @body.backCBindL
 %%]]
@@ -864,9 +868,9 @@ SEM Decl
                                                              
                                                              doubleLookup :: HsName -> Maybe HsName
                                                              doubleLookup nm   =  do { nm2 <- lookup nm superNameMapping2
-                                                             	                     ; nm3 <- lookup nm2 superPairs
-                                                             	                     ; return nm3
-                                                             	                     }
+                                                                                     ; nm3 <- lookup nm2 superPairs
+                                                                                     ; return nm3
+                                                                                     }
                                                              
                                                              superMbNewNames   =  map doubleLookup memberNames
 

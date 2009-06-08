@@ -30,6 +30,7 @@ Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
 TyCore/Pretty.cag
 TyCore/Subst.cag
+TyCore/Check.cag
 TyCore/SubstCaseAltFail.cag
 JVMClass/ToBinary.cag
 Error/Pretty.cag

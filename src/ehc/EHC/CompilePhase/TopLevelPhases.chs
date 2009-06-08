@@ -64,7 +64,7 @@ level 2..6 : with prefix 'cpEhc'
 %%[(20 codegen grin) import(qualified {%{EH}Core} as Core(cModMerge))
 %%]
 -- Language syntax: TyCore
-%%[(20 codegen) import(qualified {%{EH}TyCore} as C)
+%%[(8 codegen) import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 -- Language syntax: Grin
 %%[(20 codegen grin) import(qualified {%{EH}GrinCode} as Grin(grModMerge))
@@ -778,6 +778,12 @@ cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
+             check m  = do { cr <- get
+                           ; let (ecu,_,opts,_) = crBaseInfo m cr
+                                 cMod   = panicJust "cpProcessTyCoreBasic" $ ecuMbTyCore ecu
+                                 errs   = C.tcCheck opts C.emptyCheckEnv cMod
+                           ; cpSetLimitErrsWhen 500 "Check TyCore" errs
+                           }
        ; cpSeq [ {-
                  cpTransformCore
                    modNm
@@ -800,6 +806,7 @@ cpProcessTyCoreBasic modNm
                -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
                  when (ehcOptEmitTyCore opts || ehcOptUseTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
+                          ; check modNm
                           })
 %%[[(8 codegen java)
                -- , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)

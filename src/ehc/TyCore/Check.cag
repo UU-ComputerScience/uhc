@@ -1,0 +1,508 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore Checker
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Type checking of TyCore.
+Matching of types to
+\begin{itemize}
+\item check for syntactic equality.
+\item to extract info by allowing tvars to bind (with option @minAllowLBind@).
+\end{itemize}
+%%]
+
+%%[(8 codegen) hs module {%{EH}TyCore.Check} import({%{EH}Base.Common},{%{EH}Base.Opts})
+%%]
+
+%%[(8 codegen) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
+%%]
+%%[(8 codegen) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen) hs import({%{EH}Error})
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore.Full})
+%%]
+
+-- import Ty + Gam only qualified
+%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}Gam} as G)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER
+  AGItf
+%%]
+
+-- 20090608: visit sequence generation AG bug
+%%[(99 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(CheckEnv(..),emptyCheckEnv)
+data CheckEnv
+  = CheckEnv
+
+emptyCheckEnv = CheckEnv
+%%]
+
+%%[(8 codegen) hs export(tcCheck)
+tcCheck :: EHCOpts -> CheckEnv -> Module -> ErrL
+tcCheck opts env cmod
+  = Seq.toList $ gathErrs_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod))
+                       (Inh_AGItf
+                         {-
+                         -})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initial env
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(initEnv)
+initEnv :: Env
+initEnv
+  = envUnions
+      [ envFromGam G.tkgiKi         metaLevTy  [ (n,x) | (T.TyKiKey_Name n,x) <- G.gamToAssocL G.initTyKiGam]
+      , envFromGam (const T.kiStar) metaLevKi  (G.gamToAssocL G.initKiGam)
+      -- , envFromGam G.vgiTy          metaLevVal G.initValGam
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(MatchIn(..),emptyMatchIn)
+-- match input/options
+data MatchIn
+  = MatchIn
+      { minAllowLBind       :: Bool     -- allow tvars in left/first type to bind
+      , minAllowRL0BindBind :: Bool     --
+      }
+
+emptyMatchIn :: MatchIn
+emptyMatchIn = MatchIn False False
+%%]
+
+%%[(8 codegen) hs export(allowLBindMatchIn)
+allowLBindMatchIn :: MatchIn
+allowLBindMatchIn = emptyMatchIn {minAllowLBind = True}
+
+allowRL0BindMatchIn :: MatchIn
+allowRL0BindMatchIn = emptyMatchIn {minAllowRL0BindBind = True}
+%%]
+
+%%[(8 codegen) hs export(MatchOut(..))
+-- match output/result
+data MatchOut
+  = MatchOut
+      { moutErrL            :: [Err]    -- errors
+      , moutCSubst          :: CSubst   -- tvar bindings, possibly
+      }
+
+emptyMatchOut :: MatchOut
+emptyMatchOut = MatchOut [] emptyCSubst
+
+moutHasErr :: MatchOut -> Bool
+moutHasErr = not . null . moutErrL
+
+moutErrs :: MatchOut -> ErrSq
+moutErrs = Seq.fromList . moutErrL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Match types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyMatchBind)
+tyMatchBind :: Expr -> Expr -> MatchOut
+tyMatchBind = tyMatch' allowLBindMatchIn
+
+tyMatchRL0Bind :: Expr -> Expr -> MatchOut
+tyMatchRL0Bind = tyMatch' allowRL0BindMatchIn
+
+tyMatch :: Expr -> Expr -> MatchOut
+tyMatch = tyMatch' emptyMatchIn
+%%]
+
+%%[doesWhat.tyMatch doclatex
+Matching is asymmetric in the following:
+\begin{itemize}
+\item
+ When tyvar binding is allowed, a var in the first (left) param may bind.
+ Used by TyCore generation to find instantiated types.
+\item
+ When toplevel L0Bind binding is allowed, a var in the toplevel second (right) may bind.
+ Used by TyCore checking to match actual param to formal param of a function.
+\end{itemize}
+For the rest, all matches are exact on syntactic structure.
+%%]
+
+%%[(8 codegen) hs
+tyMatch' :: MatchIn -> Expr -> Expr -> MatchOut
+tyMatch' min ty1 ty2
+  = m min emptyMatchOut ty1 ty2
+  where -- matching: tvar
+        m min mout      t1@(Expr_Var v1)                t2@(Expr_Var v2)
+            | v1 == v2                                                          =   mout
+            | minAllowLBind min                                                 =   bind mout v1 t2
+
+        -- matching: constant
+        m min mout      t1@(Expr_Tup n1)                t2@(Expr_Tup n2)
+            | n1 == n2                                                          =   mout
+
+        -- matching: annotations are ignored
+        m min mout      t1@(Expr_Ann _ t1')             t2                      =   m min mout t1' t2
+        m min mout      t1                              t2@(Expr_Ann _ t2')     =   m min mout t1  t2'
+        
+        -- matching: structure
+        m min mout      t1@(Expr_Arrow  a1 r1)          t2@(Expr_Arrow  a2 r2)  =   mm m min mout [(a1,a2),(r1,r2)]
+        m min mout      t1@(Expr_App    f1 a1)          t2@(Expr_App    f2 a2)  =   mm m min mout [(f1,f2),(a1,a2)]
+%%[[1010
+        m min mout      t1@(Ty_ExtRec e1 b1)            t2@(Ty_ExtRec e2 b2)    =   mm m min mout [(e1,e2),(b1,b2)]
+%%]]
+        m min mout      t1@(Expr_Seq1   s1)             t2@(Expr_Seq1   s2)     =   ms1 min mout s1 s2
+        m min mout      t1@(Expr_Seq    s1)             t2@(Expr_Seq    s2)     =   mm ms1 min mout (zip s1 s2)
+        m min mout      t1@(Expr_Node tg1 s1)           t2@(Expr_Node tg2 s2)  
+            | tg1 == tg2                                                        =   mm ms1 min mout (zip s1 s2)
+{-
+        m min mout      t1@(Ty_Rec    f1)               t2@(Ty_Rec    f2)       =   mm mf1 mout (zip f1 f2)
+-}
+
+        -- error
+        m min mout      t1                              t2                      =   err mout t1 t2
+
+        -- matching: 1 record field
+{-
+        mf1 mout    s1@(TyFld_Fld n1 t1)            s2@(TyFld_Fld n2 t2)
+            | n1 == n2                                                          =   m min mout t1 t2
+            | otherwise                                                         =   err' mout (pp n1) (pp n2)
+-}
+
+        -- matching: 1 sequence element
+        ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Bind n2 _ _)
+            | minAllowRL0BindBind min                                               =   bind mout n2 t1
+        ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Val t2 _)    =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L0LblVal _ t1)     s2@(ExprSeq1_L0LblVal _ t2) =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L0Bind n1 _ t1)    s2@(ExprSeq1_L0Bind n2 _ t2)
+            | n1 == n2                                                              =   m min mout t1 t2
+            | otherwise                                                             =   err' mout (pp n1) (pp n2)
+        ms1 min mout    s1@(ExprSeq1_L1Val t1)          s2@(ExprSeq1_L1Val t2)      =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L1Bind v1 k1)      s2@(ExprSeq1_L1Bind v2 k2)
+            | v1 == v2                                                              =   m min mout k1 k2
+            | otherwise                                                             =   err' mout (pp v1) (pp v2)
+        ms1 min mout    s1                              s2                          =   err' mout (pp s1) (pp s2)
+
+        -- match multiple
+        mm m min mout   ((t1,t2):tts)     
+            | moutHasErr mout'              = mout'
+            | otherwise                     = mm m min mout' tts
+            where mout' = m min mout t1 t2
+        mm m min mout   _                   = mout
+
+        -- binding of tvar
+        bind mout v t = mout {moutCSubst = uidTyLToCSubst [(v,t)] `cSubstApp` moutCSubst mout}
+        -- error
+        err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (ppTy ty1) (ppTy ty2) pp1 pp2]}
+        err  mout t1  t2  = err' mout (ppTy t1) (ppTy t2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: environment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ env: Env | | ]
+
+SEM AGItf
+  | AGItf       module      .   env                 =   initEnv
+%%]
+
+Gather:
+
+%%[(8 codegen)
+ATTR AllValBind AllTyBind AllExprSeq1 AllPat Expr [ | | gathEnv USE {`envUnion`} {emptyEnv} : Env ]
+
+SEM ValBind
+  | Val         loc         .   gathEnv             =   envSingleton @nm @mlevHere @l1.t
+
+SEM ExprSeq1
+  | L0Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l1.t
+  | L1Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l2.t
+
+SEM Expr
+  | * - Seq Seq1
+                lhs         .   gathEnv             =   emptyEnv
+
+SEM FldBind
+  | Fld         loc         .   gathEnv             =   envSingleton @nm @mlevHere @ty.t
+  | Ty          loc         .   gathEnv             =   envSingleton @nm @mlevHere @ki.t
+
+SEM Pat
+  | Var         loc         .   gathEnv             =   envSingleton @nm @mlevHere @ty.t
+%%]
+
+Bind:
+
+%%[(8 codegen)
+SEM Expr
+  | Let         loc         .   env                 =   @vbinds.gathEnv `envUnion` @lhs.env
+  | Arrow Lam   loc         .   env                 =   @arg.gathEnv `envUnion` @lhs.env
+
+SEM Alt
+  | Alt         loc         .   env                 =   @pat.gathEnv `envUnion` @lhs.env
+
+SEM Module
+  | Mod         loc         .   env                 =   @vbinds.gathEnv `envUnion` @tbinds.gathEnv `envUnion` @lhs.env
+%%]
+
+Use:
+
+%%[(8 codegen)
+SEM Expr
+  | Var         loc         .   (ty,nmErrs)         =   envLookup @nm @lhs.mlev @lhs.env
+  | Tup         loc         .   (tyTup,nmErrs)      =   ctag (tyErr "TUP",Seq.empty) (\_ cn _ _ _ -> envLookup cn @lhs.mlev @lhs.env) @tag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta level, used to stratify name space
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT [ mlev: MetaLev | | ]
+
+SEM AGItf
+  | AGItf       loc         .   mlev                =   metaLevVal
+
+SEM Module
+  | Mod         tbinds      .   mlev                =   @lhs.mlev + 1
+
+SEM ValBind
+  | Val         loc         .   mlevHere            =   @lhs.mlev
+                l1          .   mlev                =   @mlevHere + 1
+
+SEM Pat
+  | Var         loc         .   mlevHere            =   @lhs.mlev
+                ty          .   mlev                =   @mlevHere + 1
+
+SEM Expr
+  | Cast Int Char String
+                ty          .   mlev                =   @lhs.mlev + 1
+
+SEM ExprSeq1
+  | L0Bind      loc         .   mlevHere            =   @lhs.mlev
+                l1          .   mlev                =   @mlevHere + 1
+  | L1Bind      loc         .   mlevHere            =   @lhs.mlev + 1
+                l2          .   mlev                =   @mlevHere + 1
+  | L1Val       l1          .   mlev                =   @lhs.mlev + 1
+
+SEM FldBind
+  | Fld         loc         .   mlevHere            =   @lhs.mlev
+                ty          .   mlev                =   @mlevHere + 1
+  | Ty          loc         .   mlevHere            =   @lhs.mlev + 1
+                ki          .   mlev                =   @mlevHere + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+No errors == ok
+
+%%[(8 codegen)
+ATTR AllNT [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
+ATTR AllNT AGItf [ | | gathErrs USE {`Seq.union`} {Seq.empty} : ErrSq ]
+
+SEM ValBind
+  | Val         lhs         .   gathErrs            =   let e = Seq.unions [@l1.errs,@l0.errs,moutErrs @mout]
+                                                        in  Seq.unions
+                                                              [ @l1.gathErrs, @l0.gathErrs
+                                                              , Seq.fromList $ rngLift emptyRange mkNestErr (ppValBind @t) $ Seq.toList e
+                                                              ]
+                            .   errs                =   Seq.empty
+
+SEM Expr
+  | App         lhs         .   errs                =   Seq.unions [@func.errs,@arg.errs,moutErrs @mout]
+  | Case        lhs         .   errs                =   Seq.unions ([@expr.errs,@alts.errs] ++ map moutErrs @moutL)
+  | Cast        lhs         .   errs                =   Seq.unions [@expr.errs,@ty.errs,@castErrs]
+  | Var Tup     lhs         .   errs                =   @nmErrs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: actual checking, bottom up ty construction, to be checked on top
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr ExprSeq1 Alt [ | | ty: Ty ]
+
+SEM Expr
+  | App         loc         .   (argTy,resTy)       =   tyArrowArgRes @func.ty
+                            .   ty                  =   moutCSubst @mout `cSubstApp` @resTy
+  | Lam         loc         .   ty                  =   Expr_Arrow @arg.ty @res.ty
+  | Int Char String
+                loc         .   ty                  =   @ty.t
+  | Seq         loc         .   ty                  =   Expr_Seq @seq.tySeq1L
+  | Seq1        loc         .   ty                  =   Expr_Seq1 @seq1.tySeq1
+  | Err         loc         .   ty                  =   tyErr @msg
+  | Cast        loc         .   (ty,castErrs)       =   @ty.doCast @expr.ty
+  | Tup         loc         .   ty                  =   tyStripL1Args $ tyUnThunkTy @tyTup
+  | Node        loc         .   ty                  =   mkTySeq $ Expr_Node @tag @flds.tySeq1L
+%%[[9
+  | CoeArg      loc         .   ty                  =   tyErr "CoeArg"
+  | Hole        loc         .   ty                  =   tyErr "Hole"
+%%]]
+
+SEM ExprSeq1
+  | L1Val       loc         .   ty                  =   @l1.t
+  | L0Bind      loc         .   ty                  =   @l1.t
+
+SEM Alt
+  | Alt         loc         .   ty                  =   @expr.ty
+%%]
+
+%%[(8 codegen)
+ATTR ExprSeq1 [ | | tySeq1: ExprSeq1 ]
+
+SEM ExprSeq1
+  | L0Val       loc         .   tySeq1              =   ExprSeq1_L0Val @l0.ty Nothing
+  | L0LblVal    loc         .   tySeq1              =   ExprSeq1_L0LblVal @nm @l0.ty
+  | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
+  | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind @nm Nothing @l2.t
+  | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Unsafe      loc         .   ty                  =   @toTy.t
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | App         loc         .   mout                =   tyMatchRL0Bind @arg.ty @argTy
+  | Case        loc         .   (ty,moutL)          =   let match ts = filter moutHasErr $ zipWith tyMatch (tail ts) (init ts)
+                                                        in  case (@alts.tyL,@dflt.tyMb) of
+                                                              (ts      ,Just t) -> (t,match (t:ts))
+                                                              ([]      ,_     ) -> (panic "TyCore.Check.Expr.Case.ty",[])
+                                                              (ts@(t:_),_     ) -> (t,match ts)
+  
+SEM ValBind
+  | Val         loc         .   mout                =   tyMatch @l0.ty @l1.t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: casting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type DoCast = Ty -> (Ty,ErrSq)
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | doCast: DoCast ]
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch t @fromTy.t)
+  | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)								-- TBD: the rest
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Possible name for binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+%%]
+ATTR ExprSeq1 [ | | mbL1Nm: {Maybe HsName} ]
+
+SEM ExprSeq1
+  | L1Bind      lhs         .   mbL1Nm              =   Just @nm
+  | * - L1Bind  lhs         .   mbL1Nm              =   Nothing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lists of XX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AltL [ | | tyL: {[Ty]} ]
+%%]
+
+%%[(8 codegen)
+SEM AltL
+  | Nil         lhs         .   tyL                 =   []
+  | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
+%%]
+
+%%[(8 codegen)
+ATTR ExprSeq1L [ | | tySeq1L: ExprSeq1L ]
+%%]
+
+%%[(8 codegen)
+SEM ExprSeq1L
+  | Nil         lhs         .   tySeq1L             =   []
+  | Cons        lhs         .   tySeq1L             =   @hd.tySeq1 : @tl.tySeq1L
+%%]
+
+%%[(8 codegen)
+%%]
+ATTR ExprSeq1L [ | | mbL1NmL: {[Maybe HsName]} ]
+
+%%[(8 codegen)
+%%]
+SEM ExprSeq1L
+  | Nil         lhs         .   mbL1NmL             =   []
+  | Cons        lhs         .   mbL1NmL             =   @hd.mbL1Nm : @tl.mbL1NmL
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: maybe of ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  MbExpr
+    [ | | tyMb: {Maybe Ty} ]
+%%]
+
+%%[(8 codegen)
+SEM MbExpr
+  | Nothing     lhs         .   tyMb                =   Nothing
+  | Just        lhs         .   tyMb                =   Just @just.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllExpr [ | | t: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AG specific: Ordering dependencies + type defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+SEM *
+  | *           loc         .   mlevHere            :   MetaLev
+
+SEM ValBind
+  | Val         loc         .   t                   :   ValBind
+%%]
+SEM Module
+  | Mod       vbinds        .   t                   <   vbinds.mlev
+              vbinds        .   mlev                =   const @lhs.mlev @vbinds.t
+
+SEM AGItf
+  | AGItf       expr        .   t                   <   loc.mlev

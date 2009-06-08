@@ -30,6 +30,7 @@ SEM *
 		-- loc.lUniq8  					: UID
 		-- loc.lUniq9  					: UID
 		-- loc.uniq1  						: UID
+		loc.doFit	 					: DoFit
 		loc.altsFiOpts 					: FIOpts
 		loc.arity  						: Int
 		loc.arityErrs  					: ErrL
@@ -109,6 +110,8 @@ SEM *
 		loc.gSubsValGam_  				: ValGam
 		loc.gTy 						: Ty
 		loc.gTyTvL  					: {[TyVarId]}
+        loc.dataConProdTy       		: Ty
+		loc.dataConTyFv  				: {[TyVarId]}
 		loc.gTyTvS  					: {Set.Set TyVarId}
 		loc.gUniq  						: UID
 		loc.gUniq2  					: UID
@@ -129,6 +132,7 @@ SEM *
 		loc.ki 							: Ty
 		loc.knDataTy 					: Ty
 		loc.knExprTy 					: Ty
+		loc.knArgTy 					: Ty
 		loc.knFIOpts  					: FIOpts
 		loc.knFunFIOpts					: FIOpts
 		loc.knFunKi 					: Ty
@@ -159,7 +163,7 @@ SEM *
 		loc.nmErrs2  					: ErrL
 		loc.nmPolErrs  					: ErrL
 		loc.patFunTy  					: Ty
-		loc.patTu	 					: Ty
+		loc.patTy	 					: Ty
 		loc.pgi_  						: PolGamInfo
 		loc.polCtxVar  					: Polarity
 		loc.polErrCyc  					: {AssocL UID Polarity}

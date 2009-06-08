@@ -63,11 +63,11 @@ coeIsId (CoeC CExpr_CoeArg) = True
 coeIsId _                   = False
 
 mkLamLetCoe :: HsName -> UID -> Coe
-mkLamLetCoe = CoeLamLet -- n i = mkCoe (\e -> n `mkCExprLam1` mkCExprLetHole i e)
+mkLamLetCoe = CoeLamLet
 
 mkLetRecCoe :: CBindL -> Coe
 mkLetRecCoe [] = coeId
-mkLetRecCoe b  = CoeLetRec b --  = mkCoe (\e -> mkCExprLet CBindings_Rec b e)
+mkLetRecCoe b  = CoeLetRec b
 
 instance Show Coe where
   show _ = "COE"
@@ -75,7 +75,7 @@ instance Show Coe where
 
 %%[(9 codegen) hs export(mkAppCoe1With,mkAppCoe1,mkAppCoeWith,mkAppCoe)
 mkAppCoe1With :: CExpr -> CMetaVal -> Coe
-mkAppCoe1With = CoeApp -- a m = mkCoe (\e -> mkCExprApp1Meta e a m)
+mkAppCoe1With = CoeApp
 
 mkAppCoe1 :: CExpr -> Coe
 mkAppCoe1 a = mkAppCoe1With a CMetaVal_Val
@@ -89,7 +89,7 @@ mkAppCoe as = mkAppCoeWith (cmetaLift as)
 
 %%[(9 codegen) hs export(mkLamCoe1With,mkLamCoe1)
 mkLamCoe1With :: HsName -> CMetaVal -> Coe
-mkLamCoe1With = CoeLam -- n m = mkCoe (\e -> mkCExprLam1Meta n m e)
+mkLamCoe1With = CoeLam
 
 mkLamCoe1 :: HsName -> Coe
 mkLamCoe1 n = mkLamCoe1With n CMetaVal_Val

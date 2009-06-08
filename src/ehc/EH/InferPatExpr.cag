@@ -115,6 +115,9 @@ SEM Expr
 SEM PatExpr
   | AppTop      loc         .  (knPatTy,knProdTy)   :=  tyArrowArgRes @patFunTy
   | Con         loc         .  knPatTy              :=  @tvarv1_
+%%[[7
+  | Rec         loc         .  knPatTy              =	@lhs.knTy
+%%]]
 %%]
 
 %%[(5 hmtyinfer)
@@ -198,10 +201,6 @@ SEM PatExpr
   | Var         lhs         .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
   | VarAs       patExpr     .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
 %%]
-SEM PatExpr
-  | Var VarAs   loc         .   (ty_g_,_)           =   valGamLookupTy @nm @lhs.tySigGam
-                            .   ty_kn_              =   tyEnsureNonAny @lUniq @lhs.knTy
-                            .   ty                  :=  tyInst1Exists @lUniq2 @ty_kn_
 
 %%[(9 hmtyinfer).Var
 SEM PatExpr
@@ -259,17 +258,6 @@ SEM PatExpr
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   lUniq_97_fitsIn_ty  :   UNIQUEREF gUniq
 %%]
-SEM PatExpr
-  | Expr        loc         .   eqFldNm             =   ehbnClassEqFldEq $ ehcOptBuiltinNames @lhs.opts
-                            .   (eqTy,nmErrs)       =   valGamLookupTy @eqFldNm @lhs.valGam
-                            .   knExprTy            =   mkTyVar @lUniq
-                            .   fo_                 =   fitsIn strongFIOpts @fe @lUniq_97_fitsIn_ty @lhs.patTyVarMp
-                                                            @eqTy
-                                                            ([@knExprTy,@lhs.knTy] `mkArrow` (semCon $ ehbnDataBool $ ehcOptBuiltinNames @lhs.opts))
-                expr        .   knTy                =   @knExprTy
-                            .   tyVarMp             =   foVarMp @fo_ |=> @lhs.patTyVarMp
-                loc         .   lUniq_97_fitsIn_ty  :   UNIQUEREF gUniq
-                lhs			.	patTyVarMp			=	@expr.tyVarMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data based records

@@ -135,10 +135,10 @@ mkExprStrictSatCaseMeta env mbNm meta e alts
       Just (n,ty)  -> mkExprStrictInMeta n meta ty e $ mk alts
       Nothing -> mk alts e
   where mk (alt:alts) n
-          = mkExprLet ValBindCateg_Strict altOffBL (Expr_Case n (caltLSaturate env (alt':alts)) (rceCaseCont env))
+          = mkExprLet ValBindCateg_Strict altOffBL (Expr_Case n (caltLSaturate env (alt':alts)) Nothing {-(rceCaseCont env)-})
           where (alt',altOffBL) = caltOffsetL alt
         mk [] n
-          = Expr_Case n [] (rceCaseCont env) -- dummy case
+          = Expr_Case n [] Nothing {-(rceCaseCont env)-} -- dummy case
 
 mkExprStrictSatCase :: RCEEnv -> Maybe (HsName,Ty) -> Expr -> AltL -> Expr
 mkExprStrictSatCase env eNm e alts = mkExprStrictSatCaseMeta env eNm MetaVal_Val e alts
@@ -309,17 +309,24 @@ mkMatchTuple env fldNmL ok e
 %%% Reorder record Field Update (to sorted on label, upd's first, then ext's)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(FieldUpdateL,fuL2ExprL,fuMap)
+%%[(8 codegen) export(FieldUpdateL,fuL2ExprL,fuL2ExprNodeFldL,fuMap)
 type FieldUpdateL e = AssocL HsName (e,Maybe Int)
 
 fuMap :: (HsName -> e -> (e',Int)) -> FieldUpdateL e -> FieldUpdateL e'
 fuMap f = map (\(l,(e,_)) -> let (e',o) = f l e in (l,(e',Just o)))
 
-fuL2ExprL' :: (e -> Expr) -> FieldUpdateL e -> [Expr]
-fuL2ExprL' f l = [ f e | (_,(e,_)) <- l ]
+fuL2ExprL' :: (HsName -> e -> x) -> FieldUpdateL e -> [x]
+fuL2ExprL' f l = [ f n e | (n,(e,_)) <- l ]
 
 fuL2ExprL :: FieldUpdateL Expr -> [Expr]
-fuL2ExprL = fuL2ExprL' exprTupFld
+fuL2ExprL = fuL2ExprL' (\n e -> exprTupFld e)
+
+fuL2ExprNodeFldL :: Bool -> (HsName -> Maybe HsName) -> FieldUpdateL Expr -> [ExprSeq1]
+fuL2ExprNodeFldL yesThunk withLbl
+  = fuL2ExprL' (\n e -> mk (withLbl n) e)
+  where mk mbNm e = maybe (ExprSeq1_L0Val f Nothing) (\n -> ExprSeq1_L0LblVal n f) mbNm
+           where f = mkth $ exprTupFld e
+        mkth = if yesThunk then mkExprThunk else id
 
 fuReorder :: EHCOpts -> [HsName] -> FieldUpdateL Expr -> (ValBindL,FieldUpdateL (Expr -> Expr))
 fuReorder opts nL fuL
@@ -602,7 +609,7 @@ rceMatchConMany env ((arg,ty):args) [RAlt_Alt (RPat_Con n _ t (RPatConBind_Many 
 
 rceMatchConst :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
 rceMatchConst env ((arg,ty):args) alts
-  = mkExprStrictIn arg' ty (Expr_Var arg) (\n -> mkExprLet ValBindCateg_Plain (rceRebinds (arg,ty) alts) (Expr_Case n alts' (rceCaseCont env)))
+  = mkExprStrictIn arg' ty (Expr_Var arg) (\n -> mkExprLet ValBindCateg_Plain (rceRebinds (arg,ty) alts) (Expr_Case n alts' Nothing {-(rceCaseCont env)-}))
   where arg' = hsnSuffix arg "!"
         alts' = [ Alt_Alt (rpat2Pat p) (tcSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
 %%]

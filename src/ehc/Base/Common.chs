@@ -131,7 +131,7 @@ ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> 
 ppHsnEscaped first escChar escapeeChars
   = \n -> let (nh:nt) = show n
           in  pp $ hd ++ chkhd nh ++ (concatMap esc nt)
-  where (hd,chkhd) = either (\c -> ([c],(:""))) (\chs -> ("",\h -> if Set.member h chs then [escChar,h] else [h])) first
+  where (hd,chkhd) = either (\c -> ([c],(:""))) (\chs -> ("",\h -> if Set.member h chs then [escChar,h] else esc h)) first
         escapeeChars' = Set.unions [escapeeChars, Set.fromList [escChar]]
         hexChars      = Set.fromList $ ['\NUL'..' '] ++ "\t\r\n"
         esc c | Set.member c escapeeChars' = [escChar,c]
@@ -697,7 +697,7 @@ ppAssocL :: (PP k, PP v) => AssocL k v -> PP_Doc
 ppAssocL al = ppListSepFill "[ " " ]" ", " (map (\(k,v) -> pp k >|< ":" >|< pp v) al)
 %%]
 
-%%[9.ppAssocL -1.ppAssocL export(ppAssocL,ppAssocL',ppAssocLV)
+%%[8.ppAssocL -1.ppAssocL export(ppAssocL,ppAssocL',ppAssocLV)
 ppAssocL' :: (PP k, PP v, PP s) => ([PP_Doc] -> PP_Doc) -> s -> AssocL k v -> PP_Doc
 ppAssocL' ppL sep al = ppL (map (\(k,v) -> pp k >|< sep >#< pp v) al)
 
