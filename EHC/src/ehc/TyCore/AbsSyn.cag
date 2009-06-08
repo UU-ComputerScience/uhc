@@ -11,9 +11,6 @@
 %%% Import
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) ag import({Ty/AbsSynTyCore})
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +27,7 @@ DATA AGItf
 %%[(8 codegen)
 DATA Module
   | Mod         moduleNm        : {HsName}
-                tbinds          : TyBindL
+                tbinds          : ValBindL
                 vbinds          : ValBindL
 %%]
 
@@ -44,30 +41,98 @@ DATA Expr
                 vbinds          : ValBindL
                 body            : Expr
   | App         func            : Expr
-                args            : ArgL
-  | Lam         args            : ArgBindL
-                body            : Expr
-  | Var         nm              : {HsName}
+                arg             : Expr
+  | Lam         arg             : Expr			-- computation from something to something
+                res             : Expr
+  | Arrow       arg             : Expr			-- type of a Lam
+                res             : Expr
+  | Var         nm              : {HsName}		-- used for any value on any level, for constants as well
   | Case        expr            : Expr
                 alts            : AltL
-                dflt            : Expr
-  | Int         int             : {Integer}
-                ty              : Ty
-  | Char        char            : {Char}
-                ty              : Ty
-  | String      str             : {String}
-                ty              : Ty
-  | Tup         tag             : {CTag}
+                dflt            : MbExpr
+  | Int         int             : {Integer}		-- int constant
+                ty              : Expr
+  | Char        char            : {Char}		-- char constant
+                ty              : Expr
+  | String      str             : {String}		-- string constant
+                ty              : Expr
+  | Tup         tag             : {CTag}		-- tuple/data constructor, must be used with saturated App, will be obsolete, repl by Node
+  | Node        tag             : {CTag}		-- a real node
+                flds            : ExprSeq1L
+                -- ty              : Expr
+
+  -- sequences are specifically used for argument/result of Lam/Arrow
+  | Seq         seq             : ExprSeq1L		-- sequence as passed from/to function calls
+  | Seq1        seq1            : ExprSeq1		-- singleton sequence (i.e. no sequence), just one
+
+TYPE MbExpr		= MAYBE Expr
 %%]
 
--- Argument(s) for an App
-%%[(8 codegen)
-DATA Arg
-  | Val			expr			: Expr
-                meta			: MetaVal
-  | Ty			ty				: Ty
+Value, possibly bound as well
 
-TYPE ArgL		= [Arg]
+%%[(8 codegen)
+DATA ExprSeq1
+  | L0Val       l0              : Expr				-- value on the same level
+                meta			: MbMetaVal			-- for backwards compatibility, will be obsolete some day
+  | L0LblVal    nm            	: HsName			-- value on the same level, but also labeled
+                l0              : Expr
+  | L0Bind      nm            	: HsName			-- binding on same level, with type 1 level higher
+                meta			: MbMetaVal			-- for backwards compatibility, will be obsolete some day
+                l1              : Expr
+  | L1Val       l1              : Expr				-- same, but level higher
+  | L1Bind      nm            	: HsName
+                l2              : Expr
+
+TYPE ExprSeq1L	= [ExprSeq1]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with errors, only to be used internally to avoid use of Haskell 'error'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | Err			msg				: {String}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+-- use of coercion
+DATA Expr
+  | Cast        expr            : Expr
+                ty              : Expr
+%%]
+
+%%[(8 codegen)
+-- coercion
+DATA Expr
+  | Trans       fromTy          : Expr		-- transitive coercion
+                toTy            : Expr
+  | Unsafe      fromTy          : Expr		-- unsafe coercion
+                toTy            : Expr
+  | Inst        fromTy          : Expr		-- instantiation coercion
+                toTy            : Expr
+  | Sym         ty              : Expr		-- symmetric coercion
+  | Left        ty              : Expr		-- left coercion
+  | Right       ty              : Expr		-- right coercion
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | Ann         ann             : ExprAnn
+                expr            : Expr
+%%]
+
+%%[(8 codegen)
+DATA ExprAnn
+  | Empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,11 +142,11 @@ TYPE ArgL		= [Arg]
 %%[(8 codegen)
 DATA Expr
   | Box         expr        	: Expr
-                fromTy          : Ty
-                toTy          	: Ty
+                fromTy          : Expr
+                toTy          	: Expr
   | Unbox       expr        	: Expr
-                fromTy          : Ty
-                toTy          	: Ty
+                fromTy          : Expr
+                toTy          	: Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -97,12 +162,12 @@ DATA Expr
 %%][94
                 impEnt          : {ForeignEnt}
 %%]]
-                ty              : Ty
+                ty              : Expr
 %%[[94
   | FFE         callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
                 expNm           : {HsName}
-                ty              : Ty
+                ty              : Expr
 %%]]
 %%]
 
@@ -171,9 +236,14 @@ DATA MetaVal
   | DictInstance  names:  {[Maybe HsName]}
 %%]]
 
-SET AllMetaVal	= MetaVal Metas
-SET AllMetaBind = MetaBind Metas
-SET AllMeta		= MetaVal MetaBind Metas
+TYPE MbMetaVal	= MAYBE MetaVal
+TYPE MbMetas	= MAYBE Metas
+%%]
+
+%%[(8 codegen)
+SET AllMetaVal	= MbMetaVal MetaVal Metas MbMetas
+SET AllMetaBind = MetaBind Metas MbMetas
+SET AllMeta		= MetaVal MbMetaVal MetaBind Metas MbMetas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,9 +253,9 @@ SET AllMeta		= MetaVal MetaBind Metas
 %%[(8 codegen)
 DATA ValBind
   | Val         nm              : {HsName}
-                bindMeta        : Metas
-                ty              : Ty
-                expr            : Expr
+                bindMeta        : MbMetas
+                l1              : Expr
+                l0              : Expr
 
 TYPE ValBindL   =   [ValBind]
 %%]
@@ -195,17 +265,6 @@ DATA TyBind
   | Data        nm              : {HsName}
 
 TYPE TyBindL    =   [TyBind]
-%%]
-
-%%[(8 codegen)
-DATA ArgBind
-  | Val         nm              : {HsName}
-                meta            : MetaVal
-                ty              : Ty
-  | Ty          tv              : {TyVarId}
-                ki              : Ty
-
-TYPE ArgBindL   =   [ArgBind]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,15 +281,15 @@ TYPE AltL       =   [Alt]
 
 %%[(8 codegen)
 DATA Pat
-  | Var         pnm             : {HsName}
-                ty              : Ty
+  | Var         nm              : {HsName}
+                ty              : Expr
   | Con         tag             : {CTag}
                 rest            : PatRest
                 flds            : FldBindL
   | Int         int             : {Integer}
-                ty              : Ty
+                ty              : Expr
   | Char        char            : {Char}
-                ty              : Ty
+                ty              : Expr
 
 TYPE PatL       =   [Pat]
 %%]
@@ -242,20 +301,13 @@ DATA PatRest
 
 DATA FldBind
   | Fld         nm              : {HsName}
-                ty              : Ty
+                ty              : Expr
                 offset          : Expr
   | Ty          nm              : {HsName}
-                ki              : Ty
+                ki              : Expr
 
 TYPE FldBindL   =   [FldBind]
 %%]
-
-DATA PatBind
-  | Bind        lbl             : {HsName}
-                offset          : Expr
-                nm              : {HsName}
-                pat             : Pat
-
 
 %%[(97 codegen)
 DATA Pat
@@ -268,24 +320,27 @@ DATA Pat
 
 %%[(8 codegen)
 SET AllAlt      =   Alt AltL
-SET AllArg      =   Arg ArgL
-SET AllArgBind  =	ArgBind ArgBindL
 SET AllValBind  =   ValBind ValBindL
 SET AllTyBind   =   TyBind TyBindL
 SET AllFldBind  =   FldBind FldBindL
+SET AllExprSeq1 =   ExprSeq1 ExprSeq1L
 SET AllPat      =   PatRest Pat PatL AllFldBind
 
-SET AllExpr
-  = Expr
-    AllArg
-    AllArgBind AllValBind AllTyBind
+SET AllExprBase
+  = Expr MbExpr ExprAnn
+    AllExprSeq1
     AllAlt AllPat
     AllMeta
+
+SET AllExpr
+  = AllExprBase
+    AllValBind AllTyBind
 
 SET AllCodeNT
   = Module AllExpr
 
 SET AllNT
-  = AllCodeNT AllTyCore
+  = AllCodeNT
 %%]
+  = AllCodeNT AllTyCore
 

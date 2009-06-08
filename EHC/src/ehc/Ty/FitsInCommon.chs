@@ -76,6 +76,7 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
+                        ,  foInstToL         :: [InstTo]
 %%[[(9 codegen)
                         ,  foCSubst          :: !CSubst              ,  foLRCoe           :: !LRCoe
                         ,  foTCSubst         :: !(C.CSubst)          ,  foLRTCoe          :: !(C.LRCoe)
@@ -104,6 +105,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []                  ,  foTrace           =   []
+                        ,  foInstToL         =   []
 %%[[(9 codegen)
                         ,  foCSubst          =   emptyCSubst         ,  foLRCoe           =   emptyLRCoe
                         ,  foTCSubst         =   C.emptyCSubst       ,  foLRTCoe          =   C.emptyLRCoe
@@ -162,10 +164,11 @@ type AppSpineFOUpdCoe = EHCOpts -> [FIOut] -> FIOut
 %%[(4 hmtyinfer).AppSpine export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
 data AppSpineVertebraeInfo
   =  AppSpineVertebraeInfo
-       { asPolarity     :: Polarity
-       , asFIO          :: FIOpts -> FIOpts
+       { asPolarity     :: Polarity						-- the polarity on this spine position
+       , asFIO          :: FIOpts -> FIOpts				-- how to update the context (swap ...)
+       , asFO			:: FIOut -> FIOut -> FIOut		-- \ffo afo -> afo, update app function arg FIOut with app function FIOut
 %%[[(9 codegen)
-       , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe
+       , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe		-- possibly update coercion
 %%]]
        }
 %%]
@@ -183,9 +186,20 @@ unknownAppSpineVertebraeInfo :: AppSpineVertebraeInfo
 unknownAppSpineVertebraeInfo
   = AppSpineVertebraeInfo
       polInvariant fioMkUnify
+      asFODflt
 %%[[(9 codegen)
       Nothing
 %%]]
+%%]
+
+%%[(4 hmtyinfer)
+asFODflt :: FIOut -> FIOut -> FIOut
+asFODflt _ afo = afo
+%%]
+
+%%[(8 codegen hmtyinfer)
+asFOArrow :: FIOut -> FIOut -> FIOut
+asFOArrow _ afo = afo {foInstToL = InstTo_Plain : foInstToL afo}
 %%]
 
 %%[(9 codegen hmtyinfer) export(asFOUpdCoe)
@@ -203,20 +217,37 @@ unknownAppSpineVertebraeInfoL = repeat unknownAppSpineVertebraeInfo
 
 %%[(4 hmtyinfer).vertebraeInfoL
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-arrowAppSpineVertebraeInfoL = [AppSpineVertebraeInfo polContravariant fioMkStrong, AppSpineVertebraeInfo polCovariant id]
+arrowAppSpineVertebraeInfoL
+  = [ AppSpineVertebraeInfo
+        polContravariant fioMkStrong
+        asFODflt
+    , AppSpineVertebraeInfo
+        polCovariant id
+%%[[4
+        asFODflt
+%%][(8 codegen)
+        asFOArrow
+%%]]
+    ]
 
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL = repeat $ AppSpineVertebraeInfo polCovariant id
+prodAppSpineVertebraeInfoL
+  = repeat
+    $ AppSpineVertebraeInfo
+        polCovariant id
+        asFODflt
 %%]
 
 %%[(9 hmtyinfer).vertebraeInfoL -4.vertebraeInfoL
 arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 arrowAppSpineVertebraeInfoL
   = [ AppSpineVertebraeInfo polContravariant fioMkStrong
+          asFODflt
 %%[[(9 codegen)
           (Just dfltFOUpdCoe)
 %%]]
     , AppSpineVertebraeInfo polCovariant id
+          asFOArrow
 %%[[(9 codegen)
           (Just (\opts [ffo,afo]
                   -> let (u',u1) = mkNewUID (foUniq afo)
@@ -236,7 +267,7 @@ arrowAppSpineVertebraeInfoL
 prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 prodAppSpineVertebraeInfoL
   = repeat
-    $ AppSpineVertebraeInfo polCovariant id
+    $ AppSpineVertebraeInfo polCovariant id asFODflt
 %%[[(9 codegen)
           (Just dfltFOUpdCoe)
 %%]]

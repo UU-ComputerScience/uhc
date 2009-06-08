@@ -609,17 +609,6 @@ tyGamLookup :: HsName -> TyGam -> Maybe TyGamInfo
 tyGamLookup = gamLookup
 %%]
 
-%%[(6 hmtyinfer || hmtyast) export(tyKiGamQuantify)
-tyKiGamQuantify :: TyVarIdS -> TyKiGam -> TyKiGam
-tyKiGamQuantify globTvS
-  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`Set.member` globTvS) (tkgiKi k)}))
-%%]
-
-%%[(6 hmtyinfer) export(tyKiGamInst1Exists)
-tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
-tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Kind of type variable/name" gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -698,6 +687,17 @@ tyKiGamSingleton t k
       Nothing -> case tyMbCon t of
                    Just n -> tyKiGamNameSingleton n k
                    _      -> panic "Gam.tyKiGamSingleton"
+%%]
+
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamQuantify)
+tyKiGamQuantify :: TyVarIdS -> TyKiGam -> TyKiGam
+tyKiGamQuantify globTvS
+  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`Set.member` globTvS) (tkgiKi k)}))
+%%]
+
+%%[(6 hmtyinfer) export(tyKiGamInst1Exists)
+tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
+tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -32,16 +32,79 @@ WRAPPER TyAGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell importable interface to Ty quantify
+%%% Haskell importable interface to Ty -> TyCore transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(tyToTyCore)
-tyToTyCore :: Ty -> C.Ty
-tyToTyCore ty
+%%[(8 codegen) hs
+-- how to wrap an argument of Lam/Arrow, a bit hackish
+data T2THowArg
+  = T2TArg_AsIs			-- no wrap, reflects directly the original type, used for matching
+  | T2TArg_Seq1			-- wrap as singleton sequence, for type/kind/... Lam/Arrow
+  | T2TArg_Seq			-- wrap as sequence, for value Lam/Arrow
+  | T2TArg_Seq1'		-- same as T2TArg_Seq1, but only wraps if not done already, and not an arrow
+  | T2TArg_Seq'			-- same as T2TArg_Seq, but only wraps if not done already, and not an arrow
+
+argWrap' :: T2THowArg -> (C.Ty -> C.TySeq1) -> C.Ty -> C.Ty
+argWrap' T2TArg_AsIs  _  x = x
+argWrap' T2TArg_Seq1  sq x = C.Expr_Seq1 $ sq x
+argWrap' T2TArg_Seq   sq x = C.Expr_Seq   [sq x]
+argWrap' T2TArg_Seq1' sq x = case x of {C.Expr_Seq1 _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq1  sq x}
+argWrap' T2TArg_Seq'  sq x = case x of {C.Expr_Seq  _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq   sq x}
+
+argWrap :: T2THowArg -> C.Ty -> C.Ty
+argWrap how t = argWrap' how (flip C.ExprSeq1_L0Val Nothing) t
+%%]
+
+%%[(8 codegen) hs
+data T2TCOpts
+  = T2TCOpts
+      { t2tcOptQuantvarKi		::	Bool		-- introduce tyvar bindings for quantified tyvars
+      , t2tcOptMkThunk			::	Bool		-- thunkify value arguments
+      , t2tcOptHowArrowArg		::	T2THowArg	-- how to wrap arrow argument (is on the value level)
+      , t2tcOptHowArrowRes		::	T2THowArg	-- how to wrap arrow result (is on the value level)
+      , t2tcOptHowAppArg		::	T2THowArg	-- how to wrap app argument (is on the type level)
+      }
+
+defaultT2TCOpts
+  = T2TCOpts True True T2TArg_Seq T2TArg_Seq' T2TArg_Seq1
+%%]
+
+%%[(8 codegen) hs
+tyToTyCore' :: T2TCOpts -> Ty -> C.Ty
+tyToTyCore' opts ty
   = ct_Syn_TyAGItf t
   where  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (TyAGItf_AGItf ty))
-                  (Inh_TyAGItf)
+                  (Inh_TyAGItf
+                     { opts_Inh_TyAGItf = opts
+                     })
+%%]
+
+%%[(8 codegen) hs export(tyToTyCore, tyToTyCoreBare, tyToTyCoreKi)
+-- with all additional annotation
+tyToTyCore :: Ty -> C.Ty
+tyToTyCore = tyToTyCore' defaultT2TCOpts
+
+-- without TyCore specifics
+tyToTyCoreBare :: Ty -> C.Ty
+tyToTyCoreBare
+  = tyToTyCore'
+      (defaultT2TCOpts
+         { t2tcOptMkThunk 		= False
+         , t2tcOptQuantvarKi 	= False
+         , t2tcOptHowArrowArg 		= T2TArg_AsIs
+         , t2tcOptHowArrowRes 		= T2TArg_AsIs
+         })
+
+-- for kinds
+tyToTyCoreKi :: Ty -> C.Ty
+tyToTyCoreKi
+  = tyToTyCore'
+      (defaultT2TCOpts
+         { t2tcOptMkThunk 		= False
+         , t2tcOptHowArrowArg 		= T2TArg_Seq1
+         , t2tcOptHowArrowRes 		= T2TArg_Seq1'
+         })
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -59,7 +122,7 @@ kiStar = tyToTyCore T.kiStar
 
 %%[(8 codegen) hs export(tyBuiltinCon)
 tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> C.Ty
-tyBuiltinCon opts bnmOf = C.Ty_Con (bnmOf $ ehcOptBuiltinNames opts)
+tyBuiltinCon opts bnmOf = C.Expr_Var (bnmOf $ ehcOptBuiltinNames opts)
 %%]
 
 %%[(8 codegen).tyString hs export(tyString)
@@ -75,6 +138,14 @@ tyBool opts = tyBuiltinCon opts ehbnDataBool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllTy TyAGItf [ opts: T2TCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TyCore variant of Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -82,25 +153,43 @@ tyBool opts = tyBuiltinCon opts ehbnDataBool
 ATTR Ty TyAGItf [ | | ct: {C.Ty} ]
 
 SEM Ty
-  | Var         loc         .   ct          =   C.Ty_Var @tv
-  | Con         loc         .   ct          =   C.Ty_Con @nm
+  | Var         loc         .   ct          =   C.Expr_Var $ mkHNm @tv
+  | Con         loc         .   ct          =   C.Expr_Var @nm
   | Any         loc         .   ct          =   C.tyErr "ANY"
-  | App         loc         .   ct          =   let dflt = C.Ty_App @func.ct @arg.ct
+  | App         loc         .   ct          =   let dflt = C.Expr_App @func.ct (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.ct)
+                                                    th = if t2tcOptMkThunk @lhs.opts then C.mkTyThunk else id
+                                                    wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
+                                                    wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
                                                 in  if @isSpineRoot
                                                     then if @appIsArrow
-                                                         then C.mkTyArrow1 (C.mkTySeqVals [C.mkTyThunk $ @appRevArgL !! 1]) [@appRevArgL !! 0]
+                                                         then C.Expr_Arrow
+                                                                (wra $ th $ @appRevArgL !! 1)
+                                                                (wrr      $ @appRevArgL !! 0)
                                                          else if @appIsLikeProd
-                                                         then case @recMbExt of
-                                                                Just _ -> C.tyErr "EXTREC"
-                                                                _      -> C.Ty_Tup flds
-                                                                       where flds = assocLElts $ T.tyRowCanonOrder @recFldL
+                                                         then let flds = C.mkTySeqNmVals $ assocLMapElt th $ T.tyRowCanonOrder @recFldL
+                                                              in  case @recMbExt of
+%%[[8
+																	Just _ -> C.tyErr "EXTREC"
+%%][1010
+																	Just v -> C.Ty_ExtRec (C.Expr_Var v) (C.Expr_Rec flds)
+%%]]
+																	_      -> C.Expr_Node CTagRec flds
                                                          else dflt
                                                     else dflt
   | Quant       loc         .   ct          =   let dflt = @ty.ct
-                                                in  if T.tyquIsForall @qu.self
-                                                    then C.mkTyArrow1 [C.TySeq1_Ty (Just @tv) kiStar] [@ty.ct]
+                                                in  if t2tcOptQuantvarKi @lhs.opts && T.tyquIsForall @qu.self
+                                                    then let wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) (C.ExprSeq1_L0Bind (mkHNm @tv) Nothing)
+                                                         in  C.Expr_Arrow
+                                                               (wra kiStar)	-- for now kiStar...
+                                                               @ty.ct
                                                     else dflt -- for now
 %%]
+
+                                                         then if t2tcOptMkThunk @lhs.opts
+                                                              then C.mkTyArrow1Ty     (C.mkTySeqVals [C.mkTyThunk $ @appRevArgL !! 1]) (@appRevArgL !! 0)
+                                                              else C.mkTyBareArrow1Ty (                             @appRevArgL !! 1 ) (@appRevArgL !! 0)
+
+                                                    then C.mkTyArrow1Ty [C.ExprSeq1_L0Bind (mkHNm @tv) Nothing kiStar] @ty.ct
 
 %%[(9 codegen)
 SEM Ty

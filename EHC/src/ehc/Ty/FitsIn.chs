@@ -312,12 +312,16 @@ manyFO = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2)
 
 fitsIn :: FIOpts -> FIEnv -> UID -> VarMp -> Ty -> Ty -> FIOut
 fitsIn opts env uniq varmp
-  =  fitsInFI (emptyFI  { fiUniq = uniq, fiFIOpts = opts, fiVarMp = varmp
+  =  fitsInFI
+       (emptyFI
+          { fiUniq = uniq
+          , fiFIOpts = opts
+          , fiVarMp = varmp
 %%[[9
-                        , fiEnv = env
+          , fiEnv = env
 %%]]
-                        }
-              )
+          }
+       )
 %%]
 
 %%[(4 hmtyinfer).fitsInFI
@@ -423,11 +427,11 @@ fitsInFI fi ty1 ty2
 %%[(4 hmtyinfer).fitsIn.unquant
             -- removal of quantifier
             unquant fi t hide howToInst
-                =   (fi {fiUniq = u},uqt,back)
-                where  (u,uq)         = mkNewLevUID (fiUniq fi)
-                       (uqt,rtvs)     = tyInst1Quants uq howToInst t
-                       back           = if hide  then  \fo -> foSetVarMp (varmpDel rtvs (foVarMp fo)) $ foUpdTy t fo
-                                                 else  id
+                =   (fi {fiUniq = u},uqt,back,instto)
+                where  (u,uq)            = mkNewLevUID (fiUniq fi)
+                       (uqt,rtvs,instto) = tyInst1Quants uq howToInst t
+                       back              = if hide  then  \fo -> foSetVarMp (varmpDel rtvs (foVarMp fo)) $ foUpdTy t fo
+                                                    else  id
 %%]
 
 %%[(16 hmtyinfer).fitsIn.eqProofAssume
@@ -481,9 +485,6 @@ fitsInFI fi ty1 ty2
             foCmbVarMp   ffo afo  = afo -- {foVarMp = foVarMp afo |=> foVarMp ffo}
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 %%]
-            foCmbAppTy   ffo afo  = afo {foTy = Ty_App (foVarMp afo |=> foTy ffo) (foTy afo)}
-            foCmbVarMp   ffo afo  = afo {foVarMp = foVarMp afo |=> foVarMp ffo}
-            foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 
 %%[(9 hmtyinfer)
             foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo, foGathCnstrMp = foGathCnstrMp afo `cnstrMpUnion` foGathCnstrMp ffo}
@@ -816,7 +817,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      ->  let
 %%[[(10 codegen)
                                              coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
-                                             tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.Expr_Tup CTagRec `C.mkExprApp` tfBldL))
+                                             tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.Expr_Tup CTagRec `C.mkExprApp` tfBldL))
 %%]]
                                          in  fo  {  foPredOccL = prBldL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo
@@ -838,7 +839,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              }
 %%[[(10 codegen)
                                      where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuL r))
-                                           tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuL tr))
+                                           tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuL tr))
 %%]]
                                    _ |  not (null fuUpdL)
                                      ->  fo  {  foPredOccL = prUpdL ++ foPredOccL fo
@@ -858,7 +859,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 %%[[(10 codegen)
                                      where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuUpdL r))
-                                           tcoe = C.Coe (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuUpdL tr))
+                                           tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuUpdL tr))
 %%]]
 %%]
 
@@ -917,7 +918,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(4 hmtyinfer).fitsIn.fVar
             fVar f fi t1@(Ty_Var v1 f1)     t2@(Ty_Var v2 f2)
-                | v1 == v2 && f1 == f2                        = res fi t1
+                | v1 == v2 && f1 == f2
+%%[[8
+                  && not (fioExpandEqTyVar (fiFIOpts fi))
+%%]]
+                                                              = res fi t1
             fVar f fi t1@(Ty_Var v1 f1)     t2
                 | isJust mbTy1                                = if fiVarIsExpandedL v1 fi
                                                                 then errInfinite fi v1 t1'
@@ -1018,25 +1023,26 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
                 | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
                                                     = fVar ff fi2 uqt1 uqt2
-                where  (fi1,uqt1,_) = unquant fi   t1 False instCoConst
-                       (fi2,uqt2,_) = unquant fi1  t2 False instCoConst
+                where  (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
+                       (fi2,uqt2,_,_) = unquant fi1  t2 False instCoConst
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QR
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
                                                     = back2 (fVar ff fi2 t1 uqt2)
-                where (fi2,uqt2,back2) = unquant fi t2 False instCoConst
+                where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
                                                     = back2 (fVar ff fi2 t1 uqt2)
-                where (fi2,uqt2,back2) = unquant fi t2 False instContra
+                where (fi2,uqt2,back2,instto2) = unquant fi t2 False instContra
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QL
             f fi t1@(Ty_Quant _ _ _)    t2
-                | fioIsSubsume (fiFIOpts fi)        = fVar ff fi1 uqt1 t2
-                where (fi1,uqt1,back1) = unquant fi t1 False instCoConst
+                | fioIsSubsume (fiFIOpts fi)        = fo {foInstToL = instto1 ++ foInstToL fo}
+                where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst
+                      fo = fVar ff fi1 uqt1 t2
 %%]
 
 %%[(9 hmtyinfer)
@@ -1102,7 +1108,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                             =  Just (foUpdImplExplCoe iv1 im2' (Ty_Impls im2')
 %%[[(9 codegen)
                                                       (mkLRCoe (CoeImplApp iv2) (CoeImplLam iv2))
-                                                      (C.mkLRCoe (C.CoeImplApp iv2) (C.CoeImplLam iv2))
+                                                      (C.mkLRCoe (C.Coe_ImplApp iv2) (C.Coe_ImplLam iv2))
 %%]]
                                                       (fVar ff fi tr1 tr2))
                             where im2' = Impls_Tail iv2 (ipo1 ++ ipo2)
@@ -1293,14 +1299,14 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        fi4    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
                        afo    = fVar ff fi4 ta1 ta2
 %%[[4
-                       rfo    = foCmbApp ffo afo
+                       rfo    = asFO as ffo $ foCmbApp ffo afo
 %%][(9 codegen)
                        rfo    = case (foMbAppSpineInfo ffo,asMbFOUpdCoe as) of
                                   (Nothing,_) | hasSubCoerce
                                     -> errCoerce
                                   (Just _,Nothing) | hasSubCoerce
                                     -> errCoerce
-                                  _ -> asFOUpdCoe as globOpts [ffo, foCmbApp ffo afo]
+                                  _ -> asFOUpdCoe as globOpts [ffo, asFO as ffo $ foCmbApp ffo afo]
                               where errCoerce = err fi4 [rngLift range Err_NoCoerceDerivation (foVarMp afo |=> foTy ffo) (foVarMp afo |=> foTy afo)]
                                     hasSubCoerce = not $ lrcoeIsId $ foLRCoe afo
                                     -- hasSubCoerce = not $ C.lrcoeIsId $ foLRTCoe afo

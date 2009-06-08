@@ -39,6 +39,13 @@ DATA Ty
                 ty              : Ty
 %%]
 
+%%[(7 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Ext         ty              : Ty
+                nm              : {HsName}
+                extTy           : Ty
+%%]
+
 %%[(9 hmtyinfer || hmtyast).Ty
 DATA Ty
   | Pred        pr              : Pred

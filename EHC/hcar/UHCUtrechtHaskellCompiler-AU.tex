@@ -1,0 +1,119 @@
+\begin{hcarentry}[section,new]{UHC, Utrecht Haskell Compiler (previously: EHC, ``Essential Haskell'' compiler)}
+\report{Atze Dijkstra}%05/09
+\status{active development}
+\participants{Jeroen Fokker,
+  Doaitse Swierstra,
+  Arie Middelkoop,
+  Luc\'ilia Camar\~ao de Figueiredo,
+  Carlos Camar\~ao de Figueiredo}
+\label{uhc}
+\label{ehc}
+\makeheader
+
+\paragraph{What is UHC? and EHC?}
+UHC is the Utrecht Haskell Compiler, supporting almost all Haskell 98 features plus many
+experimental extensions.
+The first release of UHC was announced on April 18 at the 5th Haskell Hackathon, held in Utrecht.
+
+EHC is the Essential Haskell Compiler project, a series of compilers of which the last is UHC, plus 
+an aspectwise organized infrastructure for facilitating experimentation and extension.
+
+The end-user will probably only be aware of UHC as a Haskell compiler,
+whereas compiler writers will be more
+aware of the internals known as EHC.
+The name EHC however will disappear over time, both EHC and UHC together will be branded as UHC.
+
+UHC in its current state still very much is work in progress.
+Although we feel it is stable enough to offer the public,
+much work needs to be done to make it usable for serious development work.
+By design its strong point is the internal aspectwise organization which we started as EHC.
+UHC also offers more advanced and experimental features like higher-ranked polymorphism, partial type signatures,
+and local instances.
+
+\paragraph{Under the hood}
+
+For the description of UHC an Attribute Grammar system (AG) is used as well as other
+formalisms allowing compact notation like parser combinators.  For the
+description of type rules, and the generation of an AG implementation for
+those type rules, we use the Ruler system.
+For source code management we use Shuffle, which allows partitioning the system into a sequence of steps and aspects.
+(Both Ruler and Shuffle are included in UHC).
+
+The implementation of UHC also tackles other issues:
+\begin{itemize}
+\item
+   To deal with the inherent complexity of a compiler the implementation of UHC is organized as a series of
+   increasingly complex steps.
+   Each step corresponds to a Haskell subset which itself is an extension
+   of the previous step.
+   The first step starts with the essentials, namely typed lambda
+   calculus; the last step corresponds to UHC.
+
+\item
+   Independent of each step the implementation is organized into a set of aspects.
+   Currently the type system and code generation are defined as aspects,
+   which can then be left out so the remaining part can be used as a barebones starting point.
+
+\item
+   Each combination of step + aspects corresponds to an actual, that is, an executable compiler.
+   Each of these compilers is a compiler in its own right.
+
+\item
+   The description of the compiler uses code fragments which are
+   retrieved from the source code of the compilers.
+   In this way the description and source code are kept synchronized.
+\end{itemize}
+
+Part of the description of the series of EH compilers is available
+as a PhD thesis.
+
+\paragraph{What is UHC's status, what is new?}
+\begin{itemize}
+\item
+   UHC has seen daylight as a first release.
+   At the time of this writing the current release is 1.0.1, fixing reported installation problems.
+\item
+   Previously started work is still continuing: GRIN backend, full program analysis (Jeroen Fokker),
+   type system formalization and automatic generation from type rules
+   (Luc\'ilia Camar\~ao de Figueiredo, Arie Middelkoop).
+%   A GRIN (Graph Reduction Intermediate Notation) based backend is available,
+%   offering global program optimization and code generation to C (done by Jeroen Fokker) as well as LLVM (done by John van Schie).
+%\item
+%   Work has started on formalizing UHC's type system; extending our Ruler system will be part of this effort
+%   (by Luc\'ilia Camar\~ao de Figueiredo, Carlos Camar\~ao de Figueiredo, Arie Middelkoop, Atze Dijkstra).
+%\item
+%   The organization of UHC into aspects, allowing better partial reuse of UHC.
+%\item
+%   Though not a direct part of UHC, its supporting tools (AG, Shuffle) are regularly adapted to allow a cleaner UHC code base.
+%\item
+%   Arie Middelkoop will continue with the development of the Ruler system~\cref{ruler}. 
+\end{itemize}
+
+\paragraph{What will happen with UHC in the near future?}
+We plan to do the following:
+
+\begin{itemize}
+\item
+  Improving installation of UHC and its use as a Haskell compiler: use of Cabal, adding missing Haskell 98 features.
+\item
+  Work on adding static analyses (such as strictness analysis), to enable optimizations.
+\end{itemize}
+
+\FurtherReading
+\begin{compactitem}
+\item UHC Homepage:
+\url{http://www.cs.uu.nl/wiki/UHC/WebHome}
+
+\item Attribute grammar system:
+\url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
+
+\item Parser combinators:
+\url{http://www.cs.uu.nl/wiki/HUT/ParserCombinators}
+
+\item Shuffle:
+\url{http://www.cs.uu.nl/wiki/Ehc/Shuffle}
+
+\item Ruler:
+\url{http://www.cs.uu.nl/wiki/Ehc/Ruler}
+\end{compactitem}
+\end{hcarentry}

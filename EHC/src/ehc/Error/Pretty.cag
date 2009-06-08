@@ -321,6 +321,15 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | TyCoreMatchClash    lhs     .  pp   :=  ppMsgErr    "TyCore type mismatch"
+                                                        (    "between          :" >#< @ty1
+                                                         >-< "and              :" >#< @ty2
+                                                         >-< "in detail between:" >#< @ty1detail
+                                                         >-< "and              :" >#< @ty2detail
+                                                        )
+%%[[99
+                                                        @range
+%%]]
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

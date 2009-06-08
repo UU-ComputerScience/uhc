@@ -13,6 +13,8 @@
 %%]
 %%[(8 codegen) hs import ({%{EH}TyCore.Utils}) export(module {%{EH}TyCore.Utils})
 %%]
+%%[(8 codegen) hs import ({%{EH}TyCore.Check}) export(module {%{EH}TyCore.Check})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TyCore wrapper around all available base modules

@@ -905,6 +905,9 @@ data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindR
                         ,  fioNoRLabElimFor  ::  [HsName]            ,  fioNoLLabElimFor        ::  [HsName]
                         ,  fioDontBind       ::  TyVarIdS
 %%]]
+%%[[8
+                        ,  fioExpandEqTyVar  ::  Bool                -- expand tyvars also when equal. Required for Sys F translation.
+%%]]
 %%[[9
                         ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
                         ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
@@ -927,6 +930,9 @@ strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindR
 %%[[7
                         ,  fioNoRLabElimFor  =   []                  ,  fioNoLLabElimFor        =   []
                         ,  fioDontBind       =   Set.empty
+%%]]
+%%[[8
+                        ,  fioExpandEqTyVar  =   False
 %%]]
 %%[[9
                         ,  fioPredAsTy       =   False               ,  fioAllowRPredElim       =   True

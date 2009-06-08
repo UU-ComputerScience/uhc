@@ -36,37 +36,38 @@ The semantics of a coercion is its application to a Expr. See coeEvalOn.
 
 %%[(9 codegen) hs export(Coe(..))
 data Coe
-  = Coe         !(Expr -> Expr)				-- normal, expression as function
-  | CoeApp      !Expr !MetaVal				-- apply
-  | CoeLam      !HsName !MetaVal !Ty		-- lambda
-  | CoeLamLet   !HsName !Ty !UID			-- lambda with a let binding in the body
-  | CoeLetRec   !ValBindL						-- let rec
-  | CoeCompose  !Coe !Coe					-- composition
-  | CoeC        !Expr						-- constant
-  | CoeImplApp  !ImplsVarId					-- implicits, for apply
-  | CoeImplLam  !ImplsVarId					-- implicits, for lambda
+  = Coe_Map      !(Expr -> Expr)				-- normal, expression as function
+  | Coe_App1     !Expr !MetaVal				-- apply
+  | Coe_App      (AssocL HsName MetaVal)	-- apply n args
+  | Coe_Lam      !HsName !MetaVal !Ty		-- lambda
+  | Coe_LamLet   !HsName !Ty !UID			-- lambda with a let binding in the body
+  | Coe_LetRec   !ValBindL						-- let rec
+  | Coe_Compose  !Coe !Coe					-- composition
+  | Coe_C        !Expr						-- constant
+  | Coe_ImplApp  !ImplsVarId					-- implicits, for apply
+  | Coe_ImplLam  !ImplsVarId					-- implicits, for lambda
 %%]
 
 %%[(9 codegen) hs export(mkCoe)
 mkCoe :: (Expr -> Expr) -> Coe
-mkCoe = Coe
+mkCoe = Coe_Map
 %%]
 
 %%[(9 codegen) hs export(coeId, coeIsId, mkLamLetCoe, mkLetRecCoe)
 coeId :: Coe
-coeId = CoeC Expr_CoeArg
+coeId = Coe_C Expr_CoeArg
 
 coeIsId :: Coe -> Bool
-coeIsId (CoeC Expr_CoeArg) = True
--- coeIsId (CoeCompose c1 c2 ) = coeIsId c1 && coeIsId c2
+coeIsId (Coe_C Expr_CoeArg) = True
+-- coeIsId (Coe_Compose c1 c2 ) = coeIsId c1 && coeIsId c2
 coeIsId _                   = False
 
 mkLamLetCoe :: HsName -> Ty -> UID -> Coe
-mkLamLetCoe = CoeLamLet
+mkLamLetCoe = Coe_LamLet
 
 mkLetRecCoe :: ValBindL -> Coe
 mkLetRecCoe [] = coeId
-mkLetRecCoe b  = CoeLetRec b
+mkLetRecCoe b  = Coe_LetRec b
 
 instance Show Coe where
   show _ = "COE"
@@ -74,21 +75,23 @@ instance Show Coe where
 
 %%[(9 codegen) hs export(mkAppCoe1With,mkAppCoe1,mkAppCoeWith,mkAppCoe)
 mkAppCoe1With :: Expr -> MetaVal -> Coe
-mkAppCoe1With = CoeApp -- a m = mkCoe (\e -> mkExprApp1Meta e a m)
+mkAppCoe1With = Coe_App1
 
 mkAppCoe1 :: Expr -> Coe
 mkAppCoe1 a = mkAppCoe1With a MetaVal_Val
 
+mkAppCoeWith :: [(HsName,MetaVal)] -> Coe
+mkAppCoeWith = Coe_App
+
+mkAppCoe :: [Expr] -> Coe
+mkAppCoe as = mkCoe (\e -> mkExprAppMeta e (metaLift as))
+%%]
 mkAppCoeWith :: [(Expr,MetaVal)] -> Coe
 mkAppCoeWith as = mkCoe (\e -> mkExprAppMeta e as)
 
-mkAppCoe :: [Expr] -> Coe
-mkAppCoe as = mkAppCoeWith (metaLift as)
-%%]
-
 %%[(9 codegen) hs export(mkLamCoe1With,mkLamCoe1)
 mkLamCoe1With :: HsName -> MetaVal -> Ty -> Coe
-mkLamCoe1With = CoeLam -- n m = mkCoe (\e -> mkExprLam1Meta n m e)
+mkLamCoe1With = Coe_Lam
 
 mkLamCoe1 :: HsName -> Ty -> Coe
 mkLamCoe1 n t = mkLamCoe1With n MetaVal_Val t
@@ -98,7 +101,7 @@ mkLamCoe1 n t = mkLamCoe1With n MetaVal_Val t
 coeCompose :: Coe -> Coe -> Coe
 coeCompose c1 c2
   | coeIsId c1 = c2
-  | otherwise  = CoeCompose c1 c2
+  | otherwise  = Coe_Compose c1 c2
 
 %%]
 
@@ -148,7 +151,7 @@ mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
 
 %%[(9 codegen) hs export(mkIdLRCoeWith)
 mkIdLRCoeWith :: HsName -> MetaVal -> Ty -> LRCoe
-mkIdLRCoeWith n m t = mkIdLRCoe' (mkAppCoeWith [(Expr_Var n,m)]) (mkLamCoe1With n m t)
+mkIdLRCoeWith n m t = mkIdLRCoe' (mkAppCoeWith [(n,m)]) (mkLamCoe1With n m t)
 %%]
 
 %%[(9 codegen) hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)
