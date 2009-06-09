@@ -106,27 +106,31 @@ typedef int Bool ;
 #include "bits.h"
 #include "mm/mmitf.h"
 
-// extern GB_NodePtr gb_Unit ; // defined in grinbc/gbprim.h, but required here
+// extern GB_NodePtr gb_Unit ; // defined in bc/prim.h, but required here
 
-#include "grinbc/grinbc.h"
+#ifdef __UHC_TARGET_BC__
+#endif
+#include "bc/interpreter.h"		// TBD: fix dependencies between mm
 #include "mm/mm.h"
 #include "utils.h"
 #include "priminline.h"
-#include "grinbc/gbprimdecl.h"
+#ifdef __UHC_TARGET_BC__
+#include "bc/primdecl.h"
 %%[[99
-#include "grinbc/gbprim-array.h"
-#include "grinbc/gbprim-thread.h"
+#include "bc/prim-array.h"
+#include "bc/prim-thread.h"
 %%]]
-#include "grinbc/gbprim.h"
+#include "bc/prim.h"
 %%[[97
-#include "grinbc/gbprim-integer.h"
+#include "bc/prim-integer.h"
 %%]]
 %%[[98
-#include "grinbc/gbprim-handle.h"
+#include "bc/prim-handle.h"
 %%]]
 %%[[99
-#include "grinbc/gbprim-C.h"
+#include "bc/prim-C.h"
 %%]]
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +152,9 @@ typedef GrWord* Pointer;
 */
 #define PRIM
 
-#include "prim.h"
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_BC__)
+#include "bc-C/prim.h"
+#endif
 %%]
 
 Aliasing of primitives, as a preparation of removal of duplicates and not having two sets
@@ -224,13 +230,17 @@ extern char** rtsArgV ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#ifdef __UHC_TARGET_C__
 extern int main_Sil_Init1(int argc, char** argv) ;
 extern int main_Sil_Run(int argc, char** argv) ;
 extern int main_Sil_Exit(int argc, char** argv) ;
+#endif
 
+#ifdef __UHC_TARGET_BC__
 extern int main_GB_Init1(int argc, char** argv, int* nRtsOpt) ;
 extern int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF) ;
 extern int main_GB_Exit(int argc, char** argv) ;
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

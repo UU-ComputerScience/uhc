@@ -171,7 +171,7 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% TyCore's Ty: splitting into args/res for Lam/App
+%%% TyCore's Ty: splitting into args/res for Lam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
@@ -588,7 +588,7 @@ ATTR RecExpr [ | | tcrecExpr: {C.Expr} ]
 ATTR RecExpr Expr [ | | tcfuExprL: {C.FieldUpdateL C.Expr} ]
 
 SEM RecExpr
-  | Empty       loc         .   tcrecExpr       =   C.Expr_Tup CTagRec
+  | Empty       loc         .   tcrecExpr       =   C.mkExprTuple []
                 lhs         .   tcfuExprL       =   []
   | Expr        loc         .   tcrecExpr       =   @expr.tcexpr
                 lhs         .   tcfuExprL       =   []
@@ -649,7 +649,7 @@ SEM Expr
                                                              where alts = [ ( dtiCTag dti
                                                                             , [ (f,{-f,-}dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
                                                                             , Nothing
-                                                                            , mkTup dti C.Expr_Var (C.Expr_Tup $ dtiCTag dti) @dataFieldExpr.tcfuExprL
+                                                                            , mkTup dti C.Expr_Var (C.mkExprTuple' $ dtiCTag dti) @dataFieldExpr.tcfuExprL
                                                                             )
                                                                           | dti <- @dtiInFldL
                                                                           ]
