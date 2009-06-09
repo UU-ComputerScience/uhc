@@ -163,7 +163,8 @@ SEM GrModule
                                                                        | (GrTag_PApp n nm, k) <- Map.toList allTags
                                                                        , i <- [1..n-1]
                                                                        ]
-                                          allTags2      = Map.union allTags extraTags
+                                          allTags2      = -- trace ("allTags: " ++ show allTags ++ "\nextraTags: " ++ show extraTags ) 
+                                                          (Map.union allTags extraTags)
                                           nodeMap       = (Map.map (\n -> replicate n Set.empty) allTags2)
                                           (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName (const True) True (AbsNodes (Nodes nodeMap))
                                           evalBind      = GrBind_Bind functionName
@@ -204,8 +205,8 @@ ATTR AllDef AllExpr [ | | genAllTags USE {`Map.union`} {Map.empty} : {Map.Map Gr
 ATTR GrTag [ | | self : SELF ]
 
 SEM GrVal
-  | Node    lhs.genAllTags  =  -- trace ("found a tag" ++ show @tag.self) 
-                                     (Map.singleton @tag.self (length @fldL.grTrf))
+  | Node          lhs.genAllTags  =  Map.singleton @tag.self (length @fldL.grTrf)
+  | BasicNode     lhs.genAllTags  =  Map.singleton @tag.self 1
 
 %%]
 
@@ -326,7 +327,7 @@ evalCode2 unique hptMap locatName isPossibleNode locatNeedsUpdate nodeAbsVal
 
 
 
-isBasicTag (GrTag_Con _ _ nm) = nm==hsnInt || nm==hsnChar || nm==hsnPackedString
+isBasicTag (GrTag_Con _ _ nm) = True  -- nm==hsnInt || nm==hsnChar || nm==hsnPackedString
 isBasicTag _                  = False
 
 hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[Set.Set Variable]) -> Bool

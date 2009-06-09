@@ -202,11 +202,12 @@ SEM GrExpr
            lhs.localsSet = Set.fromList @lhs.targets
 
  | FFI     lhs.stats  = if not @lhs.hasNext
-                         then yielding  "FFI" (@lhs.optOwn>=1) @loc.callres @lhs.numberParameters
-                         else assignments "FFI" [] (map mkVar @lhs.targets) @loc.callres
-
+                         then yielding  "FFI" (@lhs.optOwn>=1) [@loc.callres] @lhs.numberParameters
+                         else case @lhs.targets
+                              of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
+                                  _             -> assignments "FFI" [] (map mkVar @lhs.targets) [@loc.callres]
            lhs.localsSet = Set.fromList @lhs.targets
-           loc.callres   = [Value_Call @impEntNm @argL.values]   -- TODO: check that argL contains Var's or singleton Node's only
+           loc.callres   = Value_Call @impEntNm @argL.values   -- TODO: check that argL contains Var's or singleton Node's only
 
 
  | Store   lhs.stats  = let ph = case @lhs.targets of

@@ -149,6 +149,7 @@ SEM Statement
   | Return      lhs.prettyC   = returnFromSillyFunction @retdiff @lhs.optOwn
   | Label       lhs.prettyC   = label @name
   | Smart       lhs.prettyC   = error "Silly.PrettyC: Statement_Smart"
+  | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
                                            (if @elsepart.isEmpty then Nothing else Just @elsepart.prettyC)

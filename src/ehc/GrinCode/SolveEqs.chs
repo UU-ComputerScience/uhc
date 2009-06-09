@@ -214,7 +214,7 @@ fixpoint procEqs env
         --                           ; return (return ())
         --                           }
         --                       )
-        -- ; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
+        --; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
 
         ; if    changes>0
           then  countFixpoint (count+1)

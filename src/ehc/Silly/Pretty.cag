@@ -73,6 +73,7 @@ SEM Statement
   | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
   | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+  | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
   | Comment     lhs.pretty = comment @comment
