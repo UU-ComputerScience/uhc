@@ -349,7 +349,7 @@ mkExprLam as e = mkExprLamMeta [ (n,MetaVal_Val,t) | (n,t) <- as ] e
 
 %%[(8 codegen) hs export(mkExprTuple,mkExprTuple')
 mkExprTuple' :: CTag -> [Expr] -> Expr
-mkExprTuple' t = mkExprApp (Expr_Tup t)
+mkExprTuple' t = Expr_Node t . map (flip ExprSeq1_L0Val Nothing)
 
 mkExprTuple :: [Expr] -> Expr
 mkExprTuple = mkExprTuple' CTagRec
@@ -555,7 +555,7 @@ ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNi
 %%[(99 codegen) hs export(mkListSingleton)
 mkListSingleton :: EHCOpts -> Expr -> Expr
 mkListSingleton opts e
-  = mkExprApp (Expr_Tup $ ctagCons opts) [e,Expr_Tup $ ctagNil opts]
+  = mkExprTuple' (ctagCons opts) [e, mkExprTuple' (ctagNil opts) []]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -4,7 +4,9 @@
 
 %%[8
 #include "../rts.h"
-#include "gbccall.h"
+#ifdef __UHC_TARGET_BC__
+#include "ccall.h"
+#endif
 %%]
 
 %%[8

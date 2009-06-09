@@ -246,10 +246,12 @@ mkExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
   = mkExprSatSelsCaseMeta env mbNm meta e ct nmLblOffL mbRest sel
   where ns = take arity hsnLclSupply
         nmLblOffL = zip ns [0..] -- zip3 ns ns [0..]
+        sel = mkExprTuple' ct
+                $ map (fst.snd) $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL
+%%]
         sel = mkExprAppMeta
                 (Expr_Tup ct)
                 (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL)
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% List comprehension utilities for deriving, see also HS/ToEH

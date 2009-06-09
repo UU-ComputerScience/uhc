@@ -61,7 +61,7 @@ mkC :: Int -> PP_Doc
 mkC maxCCallArgs
   =   ppCmt maxCCallArgs
   >-< include "../rts.h"
-  >-< include "gbccall.h"
+  >-< include "ccall.h"
   >-< fundef "void" "gb_callc" [fundefarg "GB_Word" nargs, fundefarg "GB_Word" callenc ]
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")

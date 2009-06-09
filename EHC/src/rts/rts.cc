@@ -201,6 +201,7 @@ static struct option gb_longopts2[] =
 %%]
 
 %%[8
+#ifdef __UHC_TARGET_BC__
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
 	memorySetup() ;
@@ -222,6 +223,7 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 	return 0 ;
 	
 }
+#endif
 %%]
 	// following crashes, dunno why
 	gb_opt_rtsOn = False ;
@@ -256,6 +258,7 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 	return 0 ;
 
 %%[8
+#ifdef __UHC_TARGET_BC__
 int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
 	gb_push( initCAF ) ;
@@ -285,9 +288,11 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 	}
 	return 0 ;
 }
+#endif
 %%]
 
 %%[8
+#ifdef __UHC_TARGET_BC__
 int main_GB_Exit(int argc, char** argv)
 {	
 #if TIMING
@@ -307,6 +312,7 @@ int main_GB_Exit(int argc, char** argv)
 #endif
 	return 0 ;
 }
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

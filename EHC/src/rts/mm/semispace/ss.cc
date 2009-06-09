@@ -63,18 +63,22 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	MM_TraceSupply* moduleTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
 	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
 	
+#ifdef __UHC_TARGET_BC__
 	*regsTraceSupply = mm_traceSupply_GBRegs ;
 	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+#endif
 	
 	*rootsTraceSupply = mm_traceSupply_Roots ;
 	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
+#ifdef __UHC_TARGET_BC__
 	*stackTraceSupply = mm_traceSupply_GBStack ;
 	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	
 	*moduleTraceSupply = mm_traceSupply_GBModule ;
 	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
-	
+#endif
+
 	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
 	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	plss->queTraceSupply = queTraceSupply ;
@@ -82,11 +86,13 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->allTraceSupply = mm_traceSupply_Group ;
 	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, &plss->gbmTrace, traceSupplies ) ;
 	
+#ifdef __UHC_TARGET_BC__
 	plss->gbmTrace = mm_trace_GBM ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
 	
 	plss->gbmModule = mm_module_GBSS ;
 	plss->gbmModule.init( &plss->gbmModule, &plss->memMgt ) ;
+#endif
 	
 	plss->gcInProgress = False ;
 	

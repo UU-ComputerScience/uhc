@@ -44,8 +44,7 @@ INSTALL_LIB_RTS						:= $(call FUN_MK_CLIB_FILENAME,$(INSTALLABS_RTS_LIB_PREFIX)
 
 # main + sources + dpds, for .c/.h
 RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
-									rts prim utils llvm-gc timing \
-									grinbc/grinbc \
+									rts utils llvm-gc timing \
 									mm/mm mm/common \
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan \
@@ -53,13 +52,23 @@ RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/bumpsupply mm/tracesupply/supplyroots \
 									mm/space/fragment mm/space/copyspace \
 									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator mm/semispace/gbssmodule \
-									mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
 									mm/allocator/listoffree mm/allocator/bump \
+									$(if $(EHC_CFG_TARGET_IS_bc),\
+										bc/interpreter \
+										mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
+										,\
+										) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),bc-C/prim,) \
+									$(if $(EHC_CFG_TARGET_IS_C),,) \
 								)
-RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,grinbc/gbprim grinbc/gbprim-handle grinbc/gbprim-array grinbc/gbprim-thread grinbc/gbprim-integer grinbc/gbprim-C)
+RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+									$(if $(EHC_CFG_TARGET_IS_bc),bc/prim bc/prim-handle bc/prim-array bc/prim-thread bc/prim-integer bc/prim-C,) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
+									$(if $(EHC_CFG_TARGET_IS_C),,) \
+									)
 RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									rts config sizes bits utils timing priminline \
-									grinbc/gbprimdecl grinbc/grinbc \
+									bc/interpreter \
 									mm/mmitf mm/mm mm/config mm/common \
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan mm/module \
@@ -67,13 +76,27 @@ RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									mm/tracesupply/group mm/tracesupply/buffer mm/tracesupply/bumpsupply mm/tracesupply/supplyroots \
 									mm/space/fragment mm/space/copyspace \
 									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator mm/semispace/gbssmodule \
-									mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
 									mm/allocator/listoffree mm/allocator/bump \
+									$(if $(EHC_CFG_TARGET_IS_bc),\
+										bc/primdecl \
+										mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
+										, \
+										) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
+									$(if $(EHC_CFG_TARGET_IS_C),,) \
 								)
-MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,mainSil)
+MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+									$(if $(EHC_CFG_TARGET_IS_bc),,) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
+									$(if $(EHC_CFG_TARGET_IS_C),mainSil,) \
+								)
 
-RTS_C_RTS_GBCCALL_DRV_C		:= $(addprefix $(RTS_BLD_RTS_PREFIX),grinbc/gbccall.c)
-RTS_H_RTS_GBCCALL_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),grinbc/gbccall.h)
+RTS_C_RTS_GBCCALL_DRV_C		:= $(addprefix $(RTS_BLD_RTS_PREFIX),\
+									$(if $(EHC_CFG_TARGET_IS_bc),bc/ccall.c,) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
+									$(if $(EHC_CFG_TARGET_IS_C),,) \
+								)
+RTS_H_RTS_GBCCALL_DRV_H		:= $(patsubst %.c,%.h,$(RTS_C_RTS_GBCCALL_DRV_C))
 
 RTS_C_RTS_DRV_C				:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(RTS_C_RTS_SRC_CC))
 RTS_C_RTS_DRV_C_OPTIM_O2	:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(RTS_C_RTS_SRC_CC_OPTIM_O2))
@@ -81,7 +104,11 @@ RTS_C_RTS_DRV_C_OTHER		:= $(RTS_C_RTS_GBCCALL_DRV_C)
 RTS_H_RTS_DRV_H				:= $(patsubst $(SRC_RTS_PREFIX)%.ch,$(RTS_BLD_RTS_PREFIX)%.h,$(RTS_H_RTS_SRC_CH))
 RTS_H_RTS_DRV_H_OTHER		:= $(RTS_H_RTS_GBCCALL_DRV_H)
 MAIN_C_MAIN_DRV_C			:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(MAIN_C_MAIN_SRC_CC))
-RTS_H_RTS_PRIM_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),prim.h grinbc/gbprim.h grinbc/gbprim-array.h grinbc/gbprim-handle.h grinbc/gbprim-thread.h grinbc/gbprim-integer.h grinbc/gbprim-C.h)
+RTS_H_RTS_PRIM_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),\
+									$(if $(EHC_CFG_TARGET_IS_bc),$(addprefix bc/,prim.h prim-array.h prim-handle.h prim-thread.h prim-integer.h prim-C.h),) \
+									$(if $(EHC_CFG_TARGET_IS_bc_C),bc-C/prim.h,) \
+									$(if $(EHC_CFG_TARGET_IS_C),,) \
+								)
 
 RTS_H_RTS_ALL_DRV_H			:= $(RTS_H_RTS_DRV_H) $(RTS_H_RTS_PRIM_DRV_H) $(RTS_H_RTS_DRV_H_OTHER)
 RTS_C_RTS_ALL_DRV_C			:= $(RTS_C_RTS_DRV_C) $(RTS_C_RTS_DRV_C_OPTIM_O2) $(RTS_C_RTS_DRV_C_OTHER)

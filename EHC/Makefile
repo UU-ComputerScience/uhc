@@ -353,8 +353,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(SRC_EHC_PREFIX)
-	@echo $(EHC_ALL_SRC_FIND)
+	@echo $(EHC_CFG_TARGET_IS_bc_C)
+	@echo 
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

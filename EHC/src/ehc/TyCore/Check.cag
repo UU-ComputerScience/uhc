@@ -159,9 +159,11 @@ tyMatch' min ty1 ty2
             | v1 == v2                                                          =   mout
             | minAllowLBind min                                                 =   bind mout v1 t2
 
+{-
         -- matching: constant
         m min mout      t1@(Expr_Tup n1)                t2@(Expr_Tup n2)
             | n1 == n2                                                          =   mout
+-}
 
         -- matching: annotations are ignored
         m min mout      t1@(Expr_Ann _ t1')             t2                      =   m min mout t1' t2
