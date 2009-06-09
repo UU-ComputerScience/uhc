@@ -46,6 +46,7 @@ DATA Statement
   |  Label       name       : {String}
   |  Comment     comment    : {[String]}
   |  Smart       vals       : Values
+  |  Voiden      val        : Value
 
 DATA Alternative
   |  Alternative when       : Constant

@@ -54,12 +54,28 @@ PRIM GrWord primIntToInteger(GrWord n)
     return res;
 }
 
+PRIM GrWord primInt32ToInteger(Word32 n)
+{
+	GrWord res;
+    res = heapalloc(1);
+    ((Pointer)res)[0] = n;
+    return res;
+}
+
 PRIM GrWord primIntegerToInt(GrWord p)
 {
 	GrWord res;
     res = ((Pointer)p)[0];
     return res;
 }
+
+PRIM Word32 primIntegerToWord32(GrWord p)
+{
+	Word32 res;
+    res = ((Pointer)p)[0];
+    return res;
+}
+
 
 PRIM GrWord primCmpInteger(GrWord x, GrWord y)
 {   if (((Pointer)x)[0] > ((Pointer)y)[0])
@@ -210,6 +226,18 @@ PRIM GrWord primEqInt(GrWord x, GrWord y)
     return CFalse;
 }
 %%]
+
+%%[8
+PRIM GrWord primEqInt32(Int32 x, Int32 y)
+{
+	 //printf("eq %d %d\n", x, y );
+	
+    if (x==y)
+        return CTrue;
+    return CFalse;
+}
+%%]
+
 
 %%[8
 PRIM GrWord primNeInt(GrWord x, GrWord y)
@@ -480,4 +508,53 @@ PRIM GrWord primGetArgVAt( GrWord argc )
 }
 
 %%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Storable read/write (peek/poke)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+
+PRIM Word8 primReadWord8OffAddr( Word8* ptr, GrWord off )
+{
+	return ptr[ off ] ;
+}
+
+PRIM Word16 primReadWord16OffAddr( Word16* ptr, GrWord off )
+{
+	return ptr[ off ] ;
+}
+
+PRIM Word32 primReadWord32OffAddr( Word32* ptr, GrWord off )
+{
+	return ptr[ off ] ;
+}
+
+PRIM Word primReadWordOffAddr( Word* ptr, GrWord off )
+{
+	return ptr[ off ] ;
+}
+
+PRIM Word32 primAddWord32(Word32 x, Word32 y)
+{
+    return x+y;   
+}
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Addr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+PRIM GrWord primNullAddr( )
+{
+	return (GrWord)NULL ;
+}
+
+%%]
+
+
 
