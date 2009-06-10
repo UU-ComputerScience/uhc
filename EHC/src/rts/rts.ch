@@ -108,12 +108,11 @@ typedef int Bool ;
 
 // extern GB_NodePtr gb_Unit ; // defined in bc/prim.h, but required here
 
-#ifdef __UHC_TARGET_BC__
-#endif
 #include "bc/interpreter.h"		// TBD: fix dependencies between mm
 #include "mm/mm.h"
 #include "utils.h"
 #include "priminline.h"
+
 #ifdef __UHC_TARGET_BC__
 #include "bc/primdecl.h"
 %%[[99
@@ -131,6 +130,7 @@ typedef int Bool ;
 #include "bc/prim-C.h"
 %%]]
 #endif
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -140,6 +140,12 @@ typedef int Bool ;
 %%[8
 typedef SWord GrWord;
 typedef GrWord* Pointer;
+
+#ifdef __UHC_TARGET_C__
+#include "C/prim.h"
+#endif
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,7 +159,7 @@ typedef GrWord* Pointer;
 #define PRIM
 
 #if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_BC__)
-#include "bc-C/prim.h"
+#include "prim-shared.h"
 #endif
 %%]
 
