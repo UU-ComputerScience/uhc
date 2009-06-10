@@ -92,7 +92,6 @@ EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
 
 # which specific target is built, used by rts
 EHC_CFG_TARGET_IS_bc					:= $(filter bc,$(EHC_VARIANT_TARGET))
-EHC_CFG_TARGET_IS_bc_C					:= $(filter bc C,$(EHC_VARIANT_TARGET))
 EHC_CFG_TARGET_IS_C						:= $(filter C,$(EHC_VARIANT_TARGET))
 
 ###########################################################################################

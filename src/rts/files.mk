@@ -43,8 +43,10 @@ INSTALL_LIB_RTS						:= $(call FUN_MK_CLIB_FILENAME,$(INSTALLABS_RTS_LIB_PREFIX)
 ###########################################################################################
 
 # main + sources + dpds, for .c/.h
-RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
-									rts utils llvm-gc timing \
+
+
+RTS_C_RTS_SRC_CC_SHARED		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+									rts utils llvm-gc timing prim-shared\
 									mm/mm mm/common \
 									mm/basic/flexarray mm/basic/dll mm/basic/deque mm/basic/rangemap \
 									mm/pages mm/allocator mm/trace mm/tracesupply mm/collector mm/space mm/mutator mm/roots mm/plan \
@@ -53,20 +55,34 @@ RTS_C_RTS_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
 									mm/space/fragment mm/space/copyspace \
 									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator mm/semispace/gbssmodule \
 									mm/allocator/listoffree mm/allocator/bump \
-									$(if $(EHC_CFG_TARGET_IS_bc),\
-										bc/interpreter \
-										mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
-										,\
-										) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),bc-C/prim,) \
-									$(if $(EHC_CFG_TARGET_IS_C),,) \
 								)
-RTS_C_RTS_SRC_CC_OPTIM_O2	:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
-									$(if $(EHC_CFG_TARGET_IS_bc),bc/prim bc/prim-handle bc/prim-array bc/prim-thread bc/prim-integer bc/prim-C,) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
-									$(if $(EHC_CFG_TARGET_IS_C),,) \
-									)
-RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+RTS_C_RTS_SRC_CC_BC		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+									bc/interpreter mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
+								)
+RTS_C_RTS_SRC_CC_C		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+									C/prim \
+								)
+RTS_C_RTS_SRC_CC_ALL		:=  $(RTS_C_RTS_SRC_CC_SHARED) $(RTS_C_RTS_SRC_CC_BC) $(RTS_C_RTS_SRC_CC_C)
+
+RTS_C_RTS_SRC_CC			:= $(RTS_C_RTS_SRC_CC_SHARED) \
+								$(if $(EHC_CFG_TARGET_IS_bc),$(RTS_C_RTS_SRC_CC_BC),) \
+								$(if $(EHC_CFG_TARGET_IS_C),$(RTS_C_RTS_SRC_CC_C),)
+
+
+RTS_C_RTS_SRC_CC_OPTIM_O2_SHARED		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+								)
+RTS_C_RTS_SRC_CC_OPTIM_O2_BC		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+								bc/prim bc/prim-handle bc/prim-array bc/prim-thread bc/prim-integer bc/prim-C \
+								)
+RTS_C_RTS_SRC_CC_OPTIM_O2_C		:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
+								)
+RTS_C_RTS_SRC_CC_OPTIM_O2_ALL		:=  $(RTS_C_RTS_SRC_CC_OPTIM_O2_SHARED) $(RTS_C_RTS_SRC_CC_OPTIM_O2_BC) $(RTS_C_RTS_SRC_CC_OPTIM_O2_C)
+
+RTS_C_RTS_SRC_CC_OPTIM_O2			:= $(RTS_C_RTS_SRC_CC_OPTIM_O2_SHARED) \
+								$(if $(EHC_CFG_TARGET_IS_bc), $(RTS_C_RTS_SRC_CC_OPTIM_O2_BC) ,) \
+								$(if $(EHC_CFG_TARGET_IS_C),  $(RTS_C_RTS_SRC_CC_OPTIM_O2_C) ,)
+
+RTS_H_RTS_SRC_CH_SHARED		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									rts config sizes bits utils timing priminline \
 									bc/interpreter \
 									mm/mmitf mm/mm mm/config mm/common \
@@ -77,23 +93,34 @@ RTS_H_RTS_SRC_CH			:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
 									mm/space/fragment mm/space/copyspace \
 									mm/semispace/ss mm/semispace/sscollector mm/semispace/gbssmutator mm/semispace/gbssmodule \
 									mm/allocator/listoffree mm/allocator/bump \
-									$(if $(EHC_CFG_TARGET_IS_bc),\
-										bc/primdecl \
-										mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule \
-										, \
-										) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
-									$(if $(EHC_CFG_TARGET_IS_C),,) \
 								)
-MAIN_C_MAIN_SRC_CC			:= $(patsubst %,$(SRC_RTS_PREFIX)%.cc,\
-									$(if $(EHC_CFG_TARGET_IS_bc),,) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
-									$(if $(EHC_CFG_TARGET_IS_C),mainSil,) \
+RTS_H_RTS_SRC_CH_BC		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+								mm/gbm/gbtrace mm/gbm/gbtracesupregs mm/gbm/gbtracesupstack mm/gbm/gbtracesupmodule bc/primdecl \
 								)
+RTS_H_RTS_SRC_CH_C		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+								)
+RTS_H_RTS_SRC_CH_ALL		:=  $(RTS_H_RTS_SRC_CH_SHARED) $(RTS_H_RTS_SRC_CH_BC) $(RTS_H_RTS_SRC_CH_C)
+
+RTS_H_RTS_SRC_CH			:= $(RTS_H_RTS_SRC_CH_SHARED)  \
+								$(if $(EHC_CFG_TARGET_IS_bc), $(RTS_H_RTS_SRC_CH_BC) ,) \
+								$(if $(EHC_CFG_TARGET_IS_C),  $(RTS_H_RTS_SRC_CH_C)  ,)
+
+MAIN_C_MAIN_SRC_CC_SHARED		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+								)
+MAIN_C_MAIN_SRC_CC_BC		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+								)
+MAIN_C_MAIN_SRC_CC_C		:= $(patsubst %,$(SRC_RTS_PREFIX)%.ch,\
+								mainSil \
+								)
+MAIN_C_MAIN_SRC_CC_ALL		:=  $(RTS_C_RTS_SRC_CH_SHARED) $(RTS_C_RTS_SRC_CH_BC) $(RTS_C_RTS_SRC_CH_C)
+
+MAIN_C_MAIN_SRC_CC			:= $(RTS_C_RTS_SRC_CH_SHARED) \
+								$(if $(EHC_CFG_TARGET_IS_bc), $(RTS_C_RTS_SRC_CH_BC) ,) \
+								$(if $(EHC_CFG_TARGET_IS_C),  $(RTS_C_RTS_SRC_CH_C) ,)
+
 
 RTS_C_RTS_GBCCALL_DRV_C		:= $(addprefix $(RTS_BLD_RTS_PREFIX),\
 									$(if $(EHC_CFG_TARGET_IS_bc),bc/ccall.c,) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),,) \
 									$(if $(EHC_CFG_TARGET_IS_C),,) \
 								)
 RTS_H_RTS_GBCCALL_DRV_H		:= $(patsubst %.c,%.h,$(RTS_C_RTS_GBCCALL_DRV_C))
@@ -105,9 +132,9 @@ RTS_H_RTS_DRV_H				:= $(patsubst $(SRC_RTS_PREFIX)%.ch,$(RTS_BLD_RTS_PREFIX)%.h,
 RTS_H_RTS_DRV_H_OTHER		:= $(RTS_H_RTS_GBCCALL_DRV_H)
 MAIN_C_MAIN_DRV_C			:= $(patsubst $(SRC_RTS_PREFIX)%.cc,$(RTS_BLD_RTS_PREFIX)%.c,$(MAIN_C_MAIN_SRC_CC))
 RTS_H_RTS_PRIM_DRV_H		:= $(addprefix $(RTS_BLD_RTS_PREFIX),\
+									prim-shared.h \
 									$(if $(EHC_CFG_TARGET_IS_bc),$(addprefix bc/,prim.h prim-array.h prim-handle.h prim-thread.h prim-integer.h prim-C.h),) \
-									$(if $(EHC_CFG_TARGET_IS_bc_C),bc-C/prim.h,) \
-									$(if $(EHC_CFG_TARGET_IS_C),,) \
+									$(if $(EHC_CFG_TARGET_IS_C),C/prim.h,) \
 								)
 
 RTS_H_RTS_ALL_DRV_H			:= $(RTS_H_RTS_DRV_H) $(RTS_H_RTS_PRIM_DRV_H) $(RTS_H_RTS_DRV_H_OTHER)
@@ -120,7 +147,7 @@ RTS_C_RTS_DRV_O_OPTIM_O2	:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(RTS_BLD_RTS_PR
 RTS_C_RTS_DRV_O_OTHER		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.c,$(RTS_BLD_RTS_PREFIX)%.o,$(RTS_C_RTS_DRV_C_OTHER))
 RTS_O_RTS_ALL_DRV_O			:= $(RTS_C_RTS_DRV_O) $(RTS_C_RTS_DRV_O_OPTIM_O2) $(RTS_C_RTS_DRV_O_OTHER)
 
-RTS_ALL_SRC					:= $(RTS_H_RTS_SRC_CH) $(RTS_C_RTS_SRC_CC) $(RTS_C_RTS_SRC_CC_OPTIM_O2) $(MAIN_C_MAIN_SRC_CC)
+RTS_ALL_SRC					:= $(RTS_H_RTS_SRC_CH_ALL) $(RTS_C_RTS_SRC_CC_ALL) $(RTS_C_RTS_SRC_CC_OPTIM_O2_ALL) $(MAIN_C_MAIN_SRC_CC_ALL)
 
 # for installation
 #RTS_O_RTS_INSFORBLD_O		:= $(patsubst $(RTS_BLD_RTS_PREFIX)%.o,$(INSTALLFORBLDABS_RTS_LIB_PREFIX)%.o,$(RTS_O_RTS_ALL_DRV_O))
