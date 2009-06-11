@@ -78,6 +78,9 @@
 %format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
 %format (SCard(x)(z)(y)) = "{{" x "} \bowtie^{" z "} {" y "}}"
 
+% various keywords
+%format letrec 	= "\mathbf{letrec}"
+
 %format restr		= "\backslash "
 
 %format Gammap      = Gamma "_{p}"
