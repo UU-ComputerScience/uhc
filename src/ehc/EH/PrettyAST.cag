@@ -278,7 +278,7 @@ SEM TyExpr
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .  info_3   :=  [ mkInfo1 "lSubsValGam_" (ppGam @lSubsValGam_)
+  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @decls.tyVarMp |=> @valGam_l_)
                                         ]
   | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyVarMp" (ppTy (@lhs.tyVarMp |=> @lhs.knTy))
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
@@ -353,7 +353,7 @@ SEM Expr
                                         , mkInfo1 "decls.tyVarMp" (ppVarMpV @decls.tyVarMp)
                                         , mkInfo1 "body.imprTyVarMp" (ppVarMpV @body.imprTyVarMp)
                                         , mkInfo1 "imprTyVarMp_elim_" (ppVarMpV @imprTyVarMp_elim_)
-                                        , mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
+                                        , mkInfo1 "quValGam_ex_subst" (ppGam (@quValGam_ex_subst))
                                         ]
   | App AppImpred
                 loc     .  info_4_2 :=  [ mkInfo1 "arg.imprTy" (ppTy @arg.imprTy)
@@ -634,7 +634,7 @@ SEM AGItf
                                         ]
 
 SEM Expr
-  | Var         loc     .  info_8   :=  [ mkInfo1 "foInstToL" (ppCommas $ foInstToL @fo_fin)
+  | Var         loc     .  info_8   :=  [ mkInfo1 "foLInstToL" (ppCommas $ foLInstToL @fo_fin)
                                         , mkInfo1 "ctyForMatch" (C.ppTy @ctyForMatch)
                                         , mkInfo1 "cty" (C.ppTy @cty)
                                         , mkInfo1 "ctyTyAppArgL" (ppCommas $ map C.ppTy @ctyTyAppArgL)
@@ -648,7 +648,8 @@ SEM Expr
                                         , mkInfo1 "ctyTyAppArgL" (ppCommas $ map C.ppTy @ctyTyAppArgL)
                                         , mkInfo1 "ctyTyAppRes" (C.ppTy @ctyTyAppRes)
                                         ]
-  | Lam         loc     .  info_8   :=  [ mkInfo1 "ctyRes" (C.ppTy @ctyRes)
+  | Lam         loc     .  info_8   :=  [ mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
+                                        , mkInfo1 "ctyRes" (C.ppTy @ctyRes)
                                         ]
   | AppTop      loc     .  info_8   :=  [ mkInfo1 "expr.ctyBotUp" (C.ppTy @expr.ctyBotUp)
                                         ]
@@ -757,7 +758,7 @@ SEM Expr
 %%]]
                                         , mkInfo1 "quantPrOccL (decl)" (ppBracketsCommasV @quantPrOccL)
                                         , mkInfo1 "quantCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @quantCnstrMp)
-                                        , mkInfo1 "tqoGam" (ppGam @tqoGam)
+                                        -- , mkInfo1 "tqoGam" (ppGam @tqoGam)
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)

@@ -327,16 +327,13 @@ SEM Expr
 %%[(5 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
-                            .   fo_fitF_            :=  fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @lhs.knTy
+                            .	doFit				=	\o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            :=  @doFit @knFunFIOpts @lamKnTyVarMp
                             .   furtherTyVarMp      =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
                 arg         .   patTyVarMp          :=  @furtherTyVarMp
                 loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
-  | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
-                            .   knTySubs            =   @lamKnTyVarMp |=> @lhs.knTy
-                            .   fo_fitF_            :=  let  fo = fitsIn @knFunFIOpts @fe @lUniq2 @lamKnTyVarMp @funTy @knTySubs
-                                                        in   fo {foTy = foVarMp fo |=> @funTy}
 
 %%[(6 hmtyinfer)
 SEM Expr

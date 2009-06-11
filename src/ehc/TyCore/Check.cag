@@ -195,7 +195,7 @@ tyMatch' min ty1 ty2
 
         -- matching: 1 sequence element
         ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Bind n2 _ _)
-            | minAllowRL0BindBind min                                               =   bind mout n2 t1
+            | minAllowRL0BindBind min                                               =   m (min {minAllowLBind=True}) mout (Expr_Var n2) t1
         ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Val t2 _)    =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0LblVal _ t1)     s2@(ExprSeq1_L0LblVal _ t2) =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0Bind n1 _ t1)    s2@(ExprSeq1_L0Bind n2 _ t2)

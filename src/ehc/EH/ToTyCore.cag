@@ -59,6 +59,7 @@ ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
 %%[(8 hmtyinfer noHmTyRuler codegen)
 SEM Expr
   | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+  | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -132,7 +133,7 @@ ATTR Expr [ | | instToL: {[InstTo]} ]
 %%[(8 codegen)
 SEM Expr
   | Var Con     loc         .   (instToLHere,instToL)
-                                            =   instToSplitQu (foInstToL @fo_fin)
+                                            =   instToSplitQu (foLInstToL @fo_fin)
   | App AppImpred
 %%[[12
     AppImpl

@@ -359,7 +359,7 @@ ATTR AllExpr AllDecl [ | | dtGrpL USE {++} {[]}: {[DtGrp]} ]
 SEM Expr
   | Let         (loc.dtGamLet,decls.dtVarMp)
                                         =   dtEltGam (dtChooseDT @lhs.opts @lhs.finTyVarMp @decls.patTyVarMp) @dtVmKnTy
-                                                   (dtChooseDT @lhs.opts @quValGam_ex_ @valGam_l_)
+                                                   (dtChooseDT @lhs.opts @quValGam_ex_subst @valGam_l_)
                 lhs     .   dtGrpL      =   [( [( @dtGamNm, (@dtGamLet,@lhs.dtGamNm) )], @decls.dtL )] ++ @decls.dtGrpL ++ @body.dtGrpL
 %%]
 

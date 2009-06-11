@@ -90,7 +90,11 @@ instance PP FIMode where
 %%[(4 hmtyinfer || hmtyast) hs
 instance PP InstTo where
   pp  InstTo_Plain       = pp "_"
+%%[[4
+  pp (InstTo_Qu q v t  ) = t >|< "/" >|< v
+%%][6
   pp (InstTo_Qu q v t k) = t >|< "/" >|< v
+%%]]
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast) hs

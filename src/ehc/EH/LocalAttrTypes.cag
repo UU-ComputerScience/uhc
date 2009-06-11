@@ -7,29 +7,6 @@ Signatures for local attributes
 %%[99
 SEM *
   | *
-		-- loc.lUniq 						: UID
-		-- loc.lUniq_17_fitsIn_pol 		: UID
-		-- loc.lUniq_17_pol  				: UID
-		-- loc.lUniq_17_polArg 			: UID
-		-- loc.lUniq_17_polCtx  			: UID
-		-- loc.lUniq_17_seed_pol  			: UID
-		-- loc.lUniq_4_fo 					: UID
-		-- loc.lUniq_9_prTyFix 			: UID
-		-- loc.lUniq_95_altsPrOcc 			: UID
-		-- loc.lUniq_95_extraPrOcc 		: UID
-		-- loc.lUniq_95_fitsIn_dataTy 		: UID
-		-- loc.lUniq_97_fitsIn_ty 			: UID
-		-- loc.lUniq1  					: UID
-		-- loc.lUniq10  					: UID
-		-- loc.lUniq2  					: UID
-		-- loc.lUniq3  					: UID
-		-- loc.lUniq4  					: UID
-		-- loc.lUniq5  					: UID
-		-- loc.lUniq6  					: UID
-		-- loc.lUniq7  					: UID
-		-- loc.lUniq8  					: UID
-		-- loc.lUniq9  					: UID
-		-- loc.uniq1  						: UID
 		loc.doFit	 					: DoFit
 		loc.altsFiOpts 					: FIOpts
 		loc.arity  						: Int
@@ -59,6 +36,7 @@ SEM *
 		loc.clsNm 						: HsName
 		loc.clsTyRec 					: Ty
 		loc.clsTySigGam 				: ValGam
+		loc.quValGam_qu_ 				: ValGam
 		loc.constTy 					: Ty
 		loc.cpNm  						: RPatNm
 		loc.ctxtPrTyFixL 				: {[Ty]}
@@ -69,6 +47,7 @@ SEM *
 		loc.cycTyVarMp_g  				: VarMp
 		loc.cycTyVarMp_l  				: VarMp
 		loc.cycVarMp  					: VarMp
+		loc.quVarMp  					: VarMp
 		loc.dataAltTy 					: Ty
 		loc.dataConTy1  				: Ty
 		loc.dataDictTag 				: CTag
@@ -92,6 +71,7 @@ SEM *
 		loc.finGathPolGam  				: PolGam
 		loc.fiOpts 						: FIOpts
 		loc.fixPrTyVarMp  				: VarMp
+		loc.bodyVarMp2  				: VarMp
 		loc.fldL  						: {[HsName]}
 		loc.fldS  						: {Set.Set HsName}
 		loc.fo_  						: FIOut
@@ -155,7 +135,6 @@ SEM *
 		loc.lQuTyKiGam 					: TyKiGam
 		loc.lSubsPolGam1  				: PolGam
 		loc.lSubsTyKiGam 				: TyKiGam
-		loc.lSubsValGam_  				: ValGam
 		loc.mbTopNm  					: {Maybe HsName}
 		loc.mustEnterNewPredScope  		: Bool
 		loc.nm  						: HsName
@@ -183,6 +162,7 @@ SEM *
 		loc.prUid  						: PredOccId
 		loc.quantPrOccL 				: {[PredOcc]}
 		loc.quValGam_ex_ 				: ValGam
+		loc.quValGam_ex_subst 			: ValGam
 		loc.range	  					: Range
 		loc.recFiOpts 					: FIOpts
 		loc.recKnTlTy  					: Ty

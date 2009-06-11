@@ -73,7 +73,10 @@ In section~\ref{sec-uhcarch-lang} we give a more detailed description.
 \item Haskell (HS): a general-purpose, higher-order, polymorphically typed, lazy functional language.
 \item Essential Haskell (EH): a higher-order, polymorphically typed, lazy functional language close to lambda-calculus, without syntactic sugar.
 \item Core: an untyped, lazy functional language close to lambda-calculus
-            (similar to, but not the same as the Core language used in GHC).
+            (at the time of this writing we are working on moving to a typed intermediate language,
+             a combination of Henk \cite{peytonjones97henk-ty-interm},
+             GHC core,
+             and recent work on calling conventions \cite{bolingbroke09type-call-conv}).
 \item Grin: `Graph reduction intermediate notation', 
             the instruction set of a virtual machine of a small functional language with strict semantics, 
             with features that enable implementation of laziness \cite{boquist99phd-optim-lazy}.
@@ -318,15 +321,15 @@ This overcomes problem 5.
 With the AG language we can describe the part of a compiler related to tree walks concisely and efficiently.
 However, this does not give us any means of looking at such an implementation in a more formal setting.
 We use the domain specific language |Ruler| for describing the AG part related to the type system.
-From a Ruler description we both generate the corresponding AG implementation and a LaTeX rendering for use
-in text about the formal aspects.
+% From a Ruler description we both generate the corresponding AG implementation and a LaTeX rendering for use
+% in text about the formal aspects.
 
 Although the use of Ruler currently is in flux because we are working on a newer version and therefore
 are only partially using Ruler for type system descriptions,
 we demonstrate some of its capabilities because it is our intent to tackle the difficulties involved with type system implementations
 by generating as much as possible automatically from higher level descriptions.
 
-The idea of Ruler is to generate from a single source both generate a \emph{LaTeX} rendering for human use
+The idea of Ruler is to generate from a single source both a \emph{LaTeX} rendering for human use
 in technical writing:
 
 \[
@@ -378,7 +381,6 @@ The judgment \texttt{tvarvFresh} encapsulates this by providing the means to ins
 
 In summary, the basic idea of Ruler thus is to provide a description resembling the original type rule as much as possible,
 and then helping the system with annotations to allow the generation of an implementation and a LaTeX rendering.
-Obviously the above examples does not contain all the annotations required to achieve this.
 
 %}
 
@@ -532,6 +534,8 @@ Processing EH deals with the following tasks:
 \begin{itemize}
 \item {\em Type system:}
  Type analysis is done, types are erased when Core is generated.
+ Type analysis can be done unhindered by syntactical sugar,
+ error messages refer to the original source location but cannot reconstruct the original textual context anymore.
 \item {\em Evaluation:}
  Enforcing evaluation is made explicit by means of a |let !| Core construct.
 \item {\em Recursion:}
@@ -541,6 +545,7 @@ Processing EH deals with the following tasks:
 \item {\em Patterns:}
  Patterns are transformed to their more basic equivalent, inspecting one constructor at a time, etc. .
 \end{itemize}
+
 
 
 \subsection{The Core Language}
@@ -631,8 +636,9 @@ The actual Core language is more complex because of the following:
 Experiments with extensible records;
 we omit this part as extensible records are currently not supported in UHC.
 \item
-Type classes involve code generation because only after context reduction dictionary values and coercions are known.
-Core has syntax for expressing holes to be filled in later;
+Core generation is partly non syntax directed because context reduction determines which dictionaries to be used for class predicates.
+The syntax directed part of Core generation therefore leaves holes,
+later to be filled in with the results context reduction;
 this is a mechanism similar to type variables representing yet unknown types.
 \item
 An annotation mechanism is used to propagate information about dictionary values.
@@ -783,7 +789,8 @@ DATA  GrPatAlt
 
 Three major gaps have to be bridged in the transformation from 
 Core to Grin.
-Firstly, where Core has a lazy semantics, in Grin deferring of
+Firstly, where Core has a lazy semantics,
+in Grin deferring of
 function calls and their later evaluation is explicitly encoded.
 Secondly, in Core we can have local function definitions,
 whereas in Grin all function definitions are at top level.
@@ -795,12 +802,16 @@ Therefore a mechanism for partial parametrization is necessary.
 The end result is lambda lifted Core, that is the floating of lambda-expressions to the top level
 and passing of non-global variables explicitly as parameters.
 
+Core has one construct |let !| for enforcing evaluation to WHNF independent of other Core language constructs.
+This makes the implementation of |seq| easier but burdens Core transformations with the need not to cross an `evaluation boundary' when moving code around.
+
 The Core transformations listed below also perform some trivial cleanup and optimizations,
 because we avoid burdening the Core generation from EH with such aspects.
 
 \begin{enumerate}
 \item {\em EtaReduction}
-    Perform |eta|-reduction, that is replace expressions like |\x y -> f x y| with |f|.
+    Perform restricted |eta|-reduction, that is replace expressions like |\x y -> f x y| with |f|
+    with the restriction that arity is not changed.
     Such expressions are introduced by coercions which (after context reduction) turn out not to coerce anything at all.
 \item {\em RenameUnique}
     Renames variables such that all variables are globally unique.
@@ -820,7 +831,7 @@ let v1 = .. in let v2 = .. in ..
     Eliminates application of the |id| function.
 \item {\em ConstProp}
     Performs addition of int constants at compile time.
-\item {\em FullLazy}
+\item {\em ANormal}
     Complex expressions like
 %%[[wrap=code
 f (g a) (h b)
@@ -1262,7 +1273,7 @@ where `fract.' shows the fraction of the full code base that is selected for UHC
 \subsection{Methodological observations}
 
 
-\paragraph{Internal organization}
+\paragraph{Aspect-oriented organization}
 
 UHC and its framework use an aspect-wise organization,
 in which as much as possible is described by higher level domain specific languages from which we generate lower level implementations.
@@ -1276,11 +1287,43 @@ Much better would be to completely independently describe language features.
 However, this is hard to accomplish because language features always interact and require redefinition of parts of their independent implementation when combined.
 To do this for arbitrary combinations would be much more complicated then to do it for a sequence of increments.
 
+Testing can also be kept relatively simple this way. As long as a increment in features does not removes previous features or only changes the generated test output,
+tests for a previous step can still be reused and extended with new tests.
+In UHC this only breaks when the presence of a Prelude is assumed; the testing framework is aware of this.
+
+% \paragraph{Aspect-oriented programming}
+% 
+% The used tools allow a restricted form of aspect-oriented programming.
+% Full aspect-oriented programming would mean that arbitrary independent aspects of separate language features can be selected and combined.
+% For example, ``code generation'' for ``type classes'' with ``type analysis'' for ``|lambda|-calculus''.
+% However, in practice neither language features nor aspects are independent.
+% In the above example the combination also would require ``code generation'' for ``|lambda|-calculus'',
+% and on top of that such code generation would also need to be aware of and interact with the code generation for type classes.
+% In UHC we restrict combinations to only incrementally layer language features on top of each other,
+% thus avoiding the need to define interactions between \emph{all} such language features independently.
+
+The aspect-wise organisation impacts all source code: AG code, Haskell code, C code, the build system, etc..
+Implementing aspects as part of the used languages would be a major undertaking,
+as all languages then should be aware of aspects, and in a similar way.
+In UHC we have chosen to factor out aspect management and deal with it by preprocessing.
+
+\paragraph{UHC as an experimentation platform}
+
+An obvious tension exists between UHC as a ``full Haskell compiler'' and a ``nimble compiler for experimentation''.
+Many seemingly innocent paragraphs of the Haskell language report have major impact on the implementation,
+thereby corrupting implementation simplicity.
+Although this cannot be avoided, it can be isolated to a certain degree,
+which is what we hope to have accomplished using an aspectwise approach.
+Although the chosen layering of language features and implementation techniques restricts how far one can deviate from it for experimentation,
+one can always select a minimal starting point in the sequence of compilers and build on top of that.
+When we add new functionality, we usually start by making it work in an early variant, and then gradually make it work for subsequent variants.
+
 \paragraph{AG Design Patterns}
 
 We tend to use various AG idioms frequently. For example, information often is gathered over a tree via a synthesized attribute,
 subsequently to be passed back as an inherited attribute.
-This leads to a 2-pass tree traversal.
+This leads to a ``cyclic program'' when lazy code is generated from the AG description,
+or a 2-pass tree traversal when strict code is generated (after checking for absence of cycles).
 
 Some idiomatic use is directly supported by the AG system.
 For example, transformations are expressed as attribute grammars with a single, specially designated, attribute declaration for a copy of the tree being walked over.
@@ -1298,6 +1341,26 @@ However, not all idiomatic use is supported by AG.
 For example, the need to pattern match on subtrees arises when case analysis on abstract syntax trees must be done.
 Currently this must be programmed by hand, and we would like to have automated support for it (as in \cref{visser05stratego-www,visser01stratego-system05}{Stratego}).
 
+% \paragraph{The use of intermediate languages}
+% 
+% UHC uses various intermediate languages and transformations on them.
+% The HS language deals with concrete language aspects like names and ordering of declarations,
+% the EH language is used for type analysis,
+% Core for |lambda|-calculus related transformations where laziness is implicitly assumed,
+% Grin for transformations where laziness is made explicit, optionally using whole-program analysis.
+% 
+% \begin{itemize}
+% \item
+%   With each translation to a subsequent intermediate language some information is lost, thereby making some work less and some work more difficult.
+%   For example, type analysis in EH can be done unhindered by syntactical sugar present in HS,
+%   but the quality of type errors suffers: positional information is propagated, but not the original textual context.
+% \item
+%   Similarly, types are erased early when Core is generated.
+%   Originally, the idea was that Grin contains sufficient type information based on nodes and their constructor,
+%   and all analyses could be done
+%   
+% \end{itemize}
+
 \paragraph{The use of domain specific languages (DSL)}
 
 We use various special purpose languages for subproblems:
@@ -1306,13 +1369,13 @@ Although this means a steeper learning curve for those new to the implementation
 in practice the used DSLs and their supporting tools effectively solve a identifiable design problem.
 There lies a balance here, but for us the used DSLs make development life easier.
 
-\paragraph{Annotations}
-
-We tend to extend languages with annotations.
-This is either to prevent keeping separate lookup tables
-(e.g. for arity of constructors),
-or to propagate information that is required in a later stage (e.g. type information of FFIs),
-or to track the origin of constructs (e.g. class declaration).
+% \paragraph{Annotations}
+% 
+% We tend to extend languages with annotations.
+% This is either to prevent keeping separate lookup tables
+% (e.g. for arity of constructors),
+% or to propagate information that is required in a later stage (e.g. type information of FFIs),
+% or to track the origin of constructs (e.g. class declaration).
 
 
 \subsection{Related work}
@@ -1331,6 +1394,7 @@ Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was infl
 with extensions.
 \cref{heeren05www-helium}{Helium} (also from Utrecht) does not implement full Haskell 98 but focuses on good error reporting,
 thereby being suitable for learning Haskell.
+We also mention \cref{www98hbc}{HBC} (not maintained anymore) for completeness.
 
 The distinguishing feature of UHC is its internal organization.
 UHC, in particular its internal aspect-wise organized framework,
@@ -1347,7 +1411,7 @@ most of them written in Haskell or lower level languages.
 We have recently released a first version of UHC.
 In the near future we intend to add support for better installation, in particular the use of Cabal, and add missing language features and libraries.
 On a longer time scale we continue working on full program analysis, the optimizations allowed by it, add classical analyses (e.g. strictness),
-improve the runtime system (own garbage collector).
+improve the runtime system (swithing to our own garbage collector).
 We welcome those who want to contribute in these or other areas of interest.
 
 

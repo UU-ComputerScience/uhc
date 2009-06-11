@@ -44,7 +44,7 @@ Core/FvS.cag
 Core/UsedModNms.cag
 Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
-Core/Trf/FullLazy.cag
+Core/Trf/ANormal.cag
 Core/Trf/InlineLetAlias.cag
 Core/Trf/LamGlobalAsArg.cag
 Core/Trf/CAFGlobalAsArg.cag

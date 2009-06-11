@@ -23,7 +23,7 @@ Core transformations
 %%]
 
 -- Core transformations
-%%[(8 codegen) import({%{EH}Core.Trf.RenUniq}, {%{EH}Core.Trf.FullLazy}, {%{EH}Core.Trf.InlineLetAlias}, {%{EH}Core.Trf.LetUnrec})
+%%[(8 codegen) import({%{EH}Core.Trf.RenUniq}, {%{EH}Core.Trf.ANormal}, {%{EH}Core.Trf.InlineLetAlias}, {%{EH}Core.Trf.LetUnrec})
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.LamGlobalAsArg}, {%{EH}Core.Trf.CAFGlobalAsArg}, {%{EH}Core.Trf.FloatToGlobal}, {%{EH}Core.Trf.ConstProp})
 %%]
@@ -56,7 +56,7 @@ cpCore1Trf modNm trfNm
 %%[[20
                                              (Map.keysSet $ crsiExpNmOffMp modNm crsi)
 %%]]
-                              "CFL"     -> cmodTrfFullLazy modNm u1
+                              "CFL"     -> cmodTrfANormal modNm u1
                               "CLGA"    -> cmodTrfLamGlobalAsArg
                               "CCGA"    -> cmodTrfCAFGlobalAsArg
                               "CLFG"    -> cmodTrfFloatToGlobal
