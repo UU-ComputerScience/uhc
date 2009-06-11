@@ -61,7 +61,7 @@ All transformations, both within a language and between languages, are expressed
 as an algebra giving a semantics to the language.
 The algebras are described with the aid of an attribute grammar,
 which makes it possible to write multi-pass tree-traversals
-without even realizing the exact number of passes.
+without even knowing the exact number of passes.
 Although the compiler driver is set up to pass data structures between transformations,
 for all intermediate languages we have a concrete syntax with a parser
 and a pretty printer. This facilitates debugging the compiler, by inspecting
@@ -83,7 +83,7 @@ In section~\ref{sec-uhcarch-lang} we give a more detailed description.
 \item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
             (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
             easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
-\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not whole-program analyzed and transformed.
+\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not whole-program analyzed nor transformed.
           We do not discuss this language in \thispaper.
 \end{itemize}
 The compiler targets different backends, based on a choice of the user.
@@ -119,7 +119,7 @@ it takes more time to compile, but generates code that is more efficient.
 
 In Section~2 we describe the tools that play an important role in UHC:
 the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
-In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, together with a running example.
+In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, illustrated with a running example.
 In Section~4 the transformations are characterized in more detail.
 Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
 
@@ -198,8 +198,7 @@ The fact that this is not widely done, is due to the following problems:
 Some seek the solution to these problems in the use of monads: the reader monad
 to pass information down into the tree, the writer monad to move information
 upwards, and the state monad and its derivatives to accumulate information during
-the tree walk.\cite{jones99thih}.
-
+the tree walk \cite{jones99thih}.
 Despite the attractiveness of staying inside Haskell we think this approach is
 doomed to fail when the algebras to be described are getting more and more
 complicated.
@@ -214,7 +213,7 @@ complicated.
 %the specified semantics.
 
 To save the nice idea of using an algebra for defining a semantics,
-we use a preprocessor for Haskell \cite{swierstra99comb-lang-Short} that overcomes the abovementioned problems.
+we use a preprocessor \cite{swierstra99comb-lang-Short} for Haskell that overcomes the abovementioned problems.
 It is not a separate language; we can still use Haskell for writing
 auxiliary functions, and use all abstraction techniques and libraries available.
 The preprocessor just allows a few additional constructs, which can be translated
@@ -227,7 +226,7 @@ advantages described below \cite{ICFP09:VSS}.)
 We describe the main features of the preprocessor here, and explain why they overcome
 the five problems mentioned above.
 The abstract syntax of the language is defined in a |DATA| declaration,
-which is like a Haskell |data| declaration with named fields,
+which is like an Haskell |data| declaration with named fields,
 however without the braces and commas.
 Constructor function names need not to be unique between types.
 As an example, consider a fragment of a typical imperative language:
@@ -352,7 +351,7 @@ and its corresponding AG implementation:
 In \thispaper\ we neither further discuss the meaning or intention of 
 \cref{dijkstra05phd}{the above fragments}
 nor explain \cref{dijkstra06ruler}{Ruler} in depth.
-However, to sketch the underlying ideas we show the Ruler code required for the above output;
+However, to sketch the underlying ideas we show the Ruler source code required for the above output;
 we need to define the scheme (or type) of a judgment and populate these with actual rules.
 
 %{
@@ -388,7 +387,7 @@ rule e.app =
 For this example no further annotations are required to automatically produce AG code, except for the freshness of a type variable.
 The judgment \texttt{tvarvFresh} encapsulates this by providing the means to insert some handwritten AG code.
 
-In summary, the basic idea of Ruler thus is to provide a description resembling the original type rule as much as possible,
+In summary, the basic idea of Ruler is to provide a description resembling the original type rule as much as possible,
 and then helping the system with annotations to allow the generation of an implementation and a LaTeX rendering.
 
 %}
@@ -478,20 +477,20 @@ An expression, in turn, has no less than 29 alternatives.
 All in all, the description of the context-free grammar consists of about 1000 lines of code.
 
 We maintain sufficient information in the abstract syntax tree 
-to reconstruct the original input, including layout and superfluous parantheses,
+to reconstruct the original input, including layout and superfluous parentheses,
 with only the comments removed.
 
 When processing HS we deal with the following tasks:
 
 \begin{itemize}
 \item {\em Name resolution:}
- Checking for properly introduced names and renaming all identifiers to the equivalent fully qualified name.
+ Checking for properly introduced names and renaming all identifiers to the equivalent fully qualified names.
 \item {\em Operator fixity and precedence:}
  Expressions are parsed without taking into account the fixity and precedence of operators.
  Expressions are rewritten to remedy this.
 \item {\em Name dependency:}
- Definitions are reordered into different let bindings such that all identifier uses come after their definition.
- Mutually recursive definitions are put into one let binding.
+ Definitions are reordered into different |let| bindings such that all identifier uses come after their definition.
+ Mutually recursive definitions are put into one |letrec| binding.
 \item {\em Definition gathering:}
  Multiple definitions for the same identifier are merged into one.
 \item {\em Desugaring:}
@@ -549,7 +548,7 @@ Processing EH deals with the following tasks:
 \item {\em Evaluation:}
  Enforcing evaluation is made explicit by means of a |let !| Core construct.
 \item {\em Recursion:}
- Recursiveness is made explicit by means of a |let rec| Core construct.
+ Recursion is made explicit by means of a |letrec| Core construct.
 \item {\em Type classes:}
  All evidence for type class predicates are transformed to explicit dictionary parameters.
 \item {\em Patterns:}
@@ -646,9 +645,9 @@ The actual Core language is more complex because of:
 Experiments with extensible records;
 we omit this part as extensible records are currently not supported in UHC.
 \item
-Core generation is partly non syntax directed because context reduction determines which dictionaries to be used for class predicates.
+Core generation is partly non syntax directed because context reduction determines which dictionaries are to be used for class predicates.
 The syntax directed part of Core generation therefore leaves holes,
-later to be filled in with the results context reduction;
+later to be filled in with the results of context reduction;
 this is a mechanism similar to type variables representing yet unknown types.
 \item
 An annotation mechanism is used to propagate information about dictionary values.
@@ -702,8 +701,8 @@ DATA  GrBind
 %%]]
 Values manipulated in the Grin language are varied:
 we have nodes (think: heap records) consisting of a tag and a list of fields,
-standalone tags, basic ints and strings, pointers to nodes, and `empty'.
-Some of these are directly representable in the languages (nodes, tags, ints and strings)
+stand\-alone tags, literal ints and strings, pointers to nodes, and `empty'.
+Some of these are directly representable in the languages (nodes, tags, literal ints and strings)
 %%[[wrap=code
 DATA  GrVal
    =  LitInt  int::Int
@@ -722,7 +721,7 @@ The tag of a node describes its role.
 It can be a constructor of a datatype (|Con|),
 a function of which the call is deferred because of lazy evaluation (|Fun|),
 a function that is partially applied but still needs more arguments (|PApp|), or
-a deferred application |apply| of an unknown function (appearing as the first argument of the node) to a list arguments (|App|).
+a deferred application of an unknown function (appearing as the first field of the node) to a list of arguments (|App|).
 %%[[wrap=code
 DATA  GrTag
    =  Con   name::Name
@@ -730,7 +729,7 @@ DATA  GrTag
    |  PApp  needs::Int  name::Name
    |  App   applyfn::Name
 %%]]
-The four tags are represented as |C|, |F|, |P| and |A| in the example program above.
+The four tag types are represented as |C|, |F|, |P| and |A| in the example program above.
 
 The body of a function denotes the calculation of a value,
 which is represented in a program by an `expression'.
@@ -779,8 +778,8 @@ Auxiliary data structures are that for describing a single alternative in a |Cas
 DATA  GrAlt
    |  Alt   pat::GrPatAlt   expr::GrExpr
 %%]
-And for two kinds of patterns, occurring in a |Seq| expression and in an |Alt| alternative, respectively.
-A simplified version of these is the following, but we will need some more constructors for patterns later.
+and for two kinds of patterns, occurring in a |Seq| expression and in an |Alt| alternative, respectively.
+A simplified version of these is the following, but in reality we have more pattern forms.
 %%[[wrap=code
 DATA  GrPatLam
    =  Var   name::Name
@@ -842,15 +841,15 @@ because we avoid burdening the Core generation from EH with such aspects.
 
 \begin{enumerate}
 \item {\em EtaReduction}
-    Perform restricted |eta|-reduction, that is replace expressions like |\x y -> f x y| with |f|
+    Performs restricted |eta|-reduction, that is replace expressions like |\x y -> f x y| with |f|
     with the restriction that arity is not changed.
     Such expressions are introduced by coercions which (after context reduction) turn out not to coerce anything at all.
 \item {\em RenameUnique}
     Renames variables such that all variables are globally unique.
 \item {\em LetUnrec}
-    Replace mutually recursive bindings
+    Replaces mutually recursive bindings
 %%[[wrap=code
-let rec {v1 = .. ; v2 = ..} in ..
+letrec {v1 = .. ; v2 = ..} in ..
 %%]]
     which actually are not mutually recursive by plain bindings
 %%[[wrap=code
@@ -858,7 +857,7 @@ let v1 = .. in let v2 = .. in ..
 %%]]
     Such bindings are introduced because some bindings are potentially mutually recursive, in particular groups of dictionaries.
 \item {\em InlineLetAlias}
-    Inlines let bindings for variables and constants.
+    Inlines |let| bindings for variables and constants.
 \item {\em ElimTrivApp}
     Eliminates application of the |id| function.
 \item {\em ConstProp}
@@ -879,7 +878,7 @@ let v1 = g a in let v2 = h b in f v1 v2
 \item {\em CAFGlobalAsArg}
     Similar for let-bound constant applicative forms (CAFs).
 \item {\em FloatToGlobal}
-    Performs 'lambda lifting': move bindings of lambda-expressions and CAFs to the global level.
+    Performs `lambda lifting': move bindings of lambda-expressions and CAFs to the global level.
 \item {\em LiftDictFields}
     Makes sure that all dictionary fields exist as a top-level binding.
 \item {\em FindNullaries}
@@ -914,7 +913,7 @@ where the following issues are addressed:
             (in non-strict contexts) a node with |Fun| tag is |Store|d, and bound to a variable
             that is used in another node which has an |App| tag.
       \item if it is a variable that represents a function of unknown arity, then
-            (in strict contexts) the variable is explicitly |Eval|uated, and its result used in an |App|expression to the arguments; or
+            (in strict contexts) the variable is explicitly |Eval|uated, and its result used in an |App| expression to the arguments; or
             (in non-strict contexts) as a last resort, both function variable and arguments are stored in a node with |App| tag.
       \end{itemize}
 \item for global bindings:
@@ -969,13 +968,13 @@ of multiple transformations.
     by inlining them in nodes that encode their deferred application.
 \item {\em ConstInt}
     Replaces deferred applications of |integer2int| to constant integers by a constant int.
-    This situation occurs for every numeric literal in the source program,
+    This situation occurs for every numeric literal in an |Int| context in the source program,
     because of the way literals are overloaded in Haskell.
 \item {\em BuildAppBindings}
     Introduces bindings for |apply| functions with as many parameters as are needed in the program.
 \item {\em GlobalConstants}
     Introduces global variables for each constant found in the program,
-    instead of allocation the constants locally.
+    instead of allocating the constants locally.
 \item {\em Inline}
     Inlines functions that are used only once at their call site.
 \item {\em SingleCase}
@@ -1002,7 +1001,7 @@ of multiple transformations.
     Does a `heap points to analysis' (HPT), which is an abstract interpretation of the program
     in order to determine the possible tags of the nodes that each variable can refer to.
 \item {\em InlineEA}
-    Replaces all occurrences of |Eval| and |Apply| to equivalent constructs.
+    Replaces all occurrences of |Eval| and |App| to equivalent constructs.
     Each |Eval x| is replaced by |FetchNode x|, followed by a |Case| distinction
     on all possible tag values of the node referred to by |x|,
     which was revealed by the HPT analysis.
@@ -1022,7 +1021,7 @@ of multiple transformations.
     Removes bindings to variables if the variable is never used,
     but only when the expression has no side effect.
     Therefore, an analysis is done to determine which expressions may have side effects.
-    |Update| and |FFI| expressions are assumed to have side effect, 
+    |Update| and |FFI| expressions are assumed to have side effects, 
     and |Case| and |Seq| expressions if one of their children has them.
     The tricky one is |Call|, which has a side effect if its body does.
     This is circular definition of `has a side effect' if the function is recursive.
@@ -1041,7 +1040,7 @@ of multiple transformations.
     Translates to an even lower level version of Grin, in which the node referred to by a pointer is not fetched as a whole,
     but field by field. That is, the |FetchNode| expression is replaced by a series of |FetchField| expressions.
     The first of these fetches the tag, the others are specialized in the alternatives of the |Case| expression
-    that always follows a |FetchNode| expression, such that no more fields are fetched than required by this particular tag.
+    that always follows a |FetchNode| expression, such that no more fields are fetched than required by the tag of each alternative.
 \item {\em DropUnusedExpr} (again)
     Removes variable bindings introduced by {\em LowerGrin} if they happen not to be used.    
 \item {\em CopyPropagation}
@@ -1050,7 +1049,7 @@ of multiple transformations.
 
 
 \paragraph{Simplification}
-The Grin language features constructs for manipulating heap nodes,
+The Grin language has constructs for manipulating heap nodes,
 including ones that encode deferred function calls, that are explicitly
 triggered by an |Eval| expression.
 As part of the simplification, this high level construct should be decomposed in smaller steps.
@@ -1124,7 +1123,7 @@ We counter this undesired behavior in several ways:
       makes a fresh copy for each use by an |App| tag. This prevents mutual pollution of |apply| results,
       and also increases the probability that the |apply| function can be inlined later;
 \item we specialize overloaded functions for every dictionary that it is used with,
-      to avoid the |Apply| needed on the unknown function taken from the dictionary;
+      to avoid the |App| needed on the unknown function taken from the dictionary;
 \item we fall back on explicitly calling |evaluate| (instead of inlining it) in situations where the
       number of possible tags is unreasonable large.
 \end{itemize}
@@ -1165,7 +1164,7 @@ This involves reverse engineering the definitions of |d|, |fd| and |gfd| to find
 actual member function names buried deep in the definition of |gfd|.
 Although possible, this is very fragile as it depends on the details of the Core2Grin translation.
 Instead, we take a different approach: the definition of |fd| is annotated with the names of the member functions
-at the time when it is still explicitly available, that is during the EH2Core translation.
+at the time when they are still explicitly available, that is during the EH2Core translation.
 Similarly, class definitions are annotated with the names of the default functions.
 Now the {\em Grin.MergeInstance} transformation can easily collect the required dictionary fields,
 provided that the {\em Core.LiftDictFields} transformation ensures they are available as top-level functions.
@@ -1318,12 +1317,12 @@ the framework then allows to debug the compiler in this limited context, with le
 
 The stepwise organization, where language features are built on top of each other, offers a degree of isolation.
 Much better would be to completely independently describe language features.
-However, this is hard to accomplish because language features always interact and require redefinition of parts of their independent implementation when combined.
-To do this for arbitrary combinations would be much more complicated then to do it for a sequence of increments.
+However, this is hard to accomplish because language features often interact and require redefinition of parts of their independent implementation when combined.
+To do this for arbitrary combinations would be more complicated then to do it for a sequence of increments.
 
-Testing can also be kept relatively simple this way. As long as a increment in features does not removes previous features or only changes the generated test output,
+Testing can also be kept relatively simple this way. As long as an increment in features does not remove previous features or only changes the generated test output,
 tests for a previous step can still be reused and extended with new tests.
-In UHC this only breaks when the presence of a Prelude is assumed; the testing framework is aware of this.
+In UHC this only fails when the presence of a Prelude is assumed; the testing framework is aware of this.
 
 % \paragraph{Aspect-oriented programming}
 % 
@@ -1336,7 +1335,7 @@ In UHC this only breaks when the presence of a Prelude is assumed; the testing f
 % In UHC we restrict combinations to only incrementally layer language features on top of each other,
 % thus avoiding the need to define interactions between \emph{all} such language features independently.
 
-The aspect-wise organisation impacts all source code: AG code, Haskell code, C code, the build system, etc..
+The aspect-wise organization impacts all source code: AG code, Haskell code, C code, the build system, etc..
 Implementing aspects as part of the used languages would be a major undertaking,
 as all languages then should be aware of aspects, and in a similar way.
 In UHC we have chosen to factor out aspect management and deal with it by preprocessing.
@@ -1348,25 +1347,25 @@ Many seemingly innocent paragraphs of the Haskell language report have major imp
 making the implementation disproportional complex.
 Although this cannot be avoided, it can be isolated to a certain degree,
 which is what we hope to have accomplished using an aspect-wise approach.
-Although the chosen layering of language features and implementation techniques restricts how far one can deviate from it for experimentation,
+Although the chosen layering of language features and implementation techniques restricts the extent one can deviate from it for experimentation,
 one can always select a minimal starting point in the sequence of compilers and build on top of that.
 When we add new functionality, we usually start by making it work in an early variant, and then gradually make it work for subsequent variants.
 
 \paragraph{AG Design Patterns}
 
-We tend to use various AG idioms frequently. For example, information often is gathered over a tree via a synthesized attribute,
-subsequently to be passed back as an inherited attribute.
+We tend to use various AG idioms frequently. For example, information is often gathered over a tree via a synthesized attribute,
+and subsequently passed back as an inherited attribute.
 This leads to a ``cyclic program'' when lazy code is generated from the AG description,
 or a 2-pass tree traversal when strict code is generated (after checking for absence of cycles).
 
 Some idiomatic use is directly supported by the AG system.
 For example, transformations are expressed as attribute grammars with a single, specially designated, attribute declaration for a copy of the tree being walked over.
-The only thing that remains to be specified is where the transformation differs from the original.
+The only thing that remains to be specified is where the transformed tree differs from the original.
 
 The AG notation allows us to avoid writing much boilerplate code, similar
 to \cref{visser05stratego-www,visser01stratego-system05,laemmel03boilerplate}{other tree traversal approaches}.
 The use of attributes sometimes also resembles reader, writer, and state monads.
-In practice, the real strength of the AG system lies in combining the separately defined tree traversals into one.
+In practice, the real strength of the AG system lies in combining separately defined tree traversals into one.
 For example, the EH type analysis repeatedly builds environments for kinds, types, datatypes, etc.
 Combined with the above idiomatic use this easily leads to many passes over the EH tree;
 something we'd rather not write by hand using monads (and monad transformers) or other mechanisms more suitable for single-pass tree traversals!
@@ -1425,7 +1424,7 @@ UHC itself uses GHC as its main development tool.
 Recently,
 \cref{www09jhc}{JHC} and \cref{www09lhc}{LHC} (derived from JHC) also take the whole-program analysis approach proposed by \cref{boquist96grin-optim,boquist99phd-optim-lazy}{Boquist}
 as their starting point.
-LHC in its most recent incarnation is available as a backend to GHC, and in that sense is not a standalone Haskell compiler.
+LHC in its most recent incarnation is available as a backend to GHC, and thus is not a standalone Haskell compiler.
 
 Already longer available alongside GHC are \cref{www03hugs}{Hugs} which was influential on Haskell as a language,
 \cref{www09nhc98}{NHC98}, and \cref{www09yhc}{YHC} derived from NHC98, all mature Haskell 98 compilers
@@ -1446,13 +1445,13 @@ most of them written in Haskell or lower level languages.
 
 \subsection{Future work}
 
-We have recently made a \cref{www09uhc}{first public of UHC}.
+We have recently made a \cref{www09uhc}{first public release of UHC}.
 In the near future we intend to add support for better installation, in particular the use of Cabal, and to add missing language features and libraries.
 On a longer time scale we will continue working on whole-program analysis, the optimizations allowed by it, add classical analyses (e.g. strictness), and
-improve the runtime system (swithing to our own garbage collector).
+improve the runtime system (switching to our own garbage collector).
 As we recently included the standard libraries, we will be able to run benchmark suites to compare the 
 performance (code size, compilation time, run time) of each operation mode (bytecode interpreter, whole-program analysis)
-with eachother and with other compilers.
+with each other and with other compilers.
 We welcome those who want to contribute in these or other areas of interest.
 
 
