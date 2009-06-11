@@ -182,7 +182,7 @@ SEM CExpr
 
 SEM CExpr
   | Hole HoleLet ImplsApp ImplsLam
-                repl'       .   cSubst      =   @lhs.cSubst
+                repl'       .   cSubst      =   Map.delete @uid @lhs.cSubst
 %%]
 
 %%[(9 codegen)

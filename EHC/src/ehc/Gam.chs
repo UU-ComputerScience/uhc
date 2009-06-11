@@ -437,30 +437,38 @@ valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
 %%]
 
 %%[(3 hmtyinfer || hmtyast).valGamQuantify export(valGamQuantify)
-valGamQuantify :: Set.Set TyVarId -> ValGam -> ValGam
+valGamQuantify :: TyVarIdS -> ValGam -> ValGam
 valGamQuantify globTvS = valGamMapTy (\t -> tyQuantify (`Set.member` globTvS) t)
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast).valGamDoWithVarMp
-valGamDoWithVarMp :: (Ty -> thr -> (Ty,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp)
+%%[(8 hmtyinfer || hmtyast).valGamDoWithVarMp
+-- Do something with each ty in a ValGam.
+-- The global VarMp is kept separately so a new tyvar binding can be computed, which is threaded separatedly and also returned.
+-- This allows the retainment of the original tyvar in the ValGam, which is required when used twice with different VarMp's.
+valGamDoWithVarMp :: (HsName -> (Ty,VarMp) -> VarMp -> thr -> (Ty,VarMp,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp,thr)
 valGamDoWithVarMp f gamVarMp thr gam
-  =  let  (g,(_,c))
-            =  gamMapThr
-                    (\(n,vgi) (thr,c)
-                        ->  let  t = vgiTy vgi
-                                 (t',thr') = f (gamVarMp |=> t) thr
-                                 (tg,cg) =  case t of
-                                                Ty_Var v _ -> (t,v `varmpTyUnit` t')
-                                                _ -> (t',emptyVarMp)
-                            in   ((n,vgi {vgiTy = tg}),(thr',cg `varmpPlus` c))
-                    )
-                    (thr,emptyVarMp) gam
-     in   (g,c)
+  = (g,c,thr')
+  where (g,(thr',c))
+           = gamMapThr
+               (\(n,vgi) (thr,c)
+                   -> let t = vgiTy vgi
+                          (t',c',thr') = f n (gamVarMp |==> t) c thr
+                          (tg,cg)      = case (t,t') of
+                                           (Ty_Var v1 _  ,Ty_Var v2 _) | v1 == v2
+                                             -> dflt
+                                           (Ty_Var v  cat,_          ) | not (tvCatIsFixed cat)
+                                             -> (t ,v `varmpTyUnit` t')
+                                           _ -> dflt
+                                       where dflt = (t',emptyVarMp)
+                      in  ((n,vgi {vgiTy = tg}),(thr',cg `varmpPlus` c'))
+               )
+               (thr,emptyVarMp) gam
 %%]
 
-%%[(4_2 hmtyinfer || hmtyast).valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
-valGamQuantifyWithVarMp :: VarMp -> TyVarIdL -> ValGam -> (ValGam,VarMp)
-valGamQuantifyWithVarMp = valGamDoWithVarMp (\t globTvL -> (tyQuantify (`elem` globTvL) t,globTvL))
+%%[(8 hmtyinfer || hmtyast).valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
+valGamQuantifyWithVarMp :: VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
+valGamQuantifyWithVarMp gamVarMp globTvS gam
+  = valGamDoWithVarMp (\_ (t,tyCycMp) m cycMp -> (tyQuantify (`Set.member` globTvS) t,m,tyCycMp |=> cycMp)) gamVarMp emptyVarMp gam
 %%]
 
 %%[6.gamUnzip
@@ -475,19 +483,27 @@ gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
 gamUnzip g = sgamUnzip g
 %%]
 
-%%[9999 -(9.gamUnzip 6.gamUnzip)
-gamUnzip :: Ord k => Gam k (v1,v2) -> (Gam k v1,Gam k v2)
-gamUnzip g = sgamUnzip g
-%%]
-
 %%[(9 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
-valGamQuantify :: Set.Set TyVarId -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
+valGamQuantify :: TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
 valGamQuantify globTvS prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
                                           ty   = tyQuantify (`Set.member` globTvS) (tmpoTy tmpo)
                                      in   (vgi {vgiTy = ty},tmpo {tmpoTy = ty})
                            ) g
      in   gamUnzip g'
+%%]
+
+%%[(9 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -8.valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
+valGamQuantifyWithVarMp :: VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,Gam HsName TyMergePredOut))
+valGamQuantifyWithVarMp gamVarMp globTvS prL valGam
+  = valGamDoWithVarMp quant gamVarMp (emptyVarMp,emptyGam) valGam
+  where quant nm (t,tyCycVarMp) newVarMp (cycVarMp,tmpoGam)
+          = (ty,newVarMp',(cycVarMp', tmpoGam'))
+          where tmpo        = tyMergePreds prL t
+                ty          = tyQuantify (`Set.member` globTvS) (tmpoTy tmpo)
+                newVarMp'   = newVarMp -- tmpoImplsVarMp tmpo `varmpPlus` m
+                tmpoGam'    = gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
+                cycVarMp'   = tyCycVarMp |=> cycVarMp
 %%]
 
 %%[(4 hmtyinfer).valGamInst1Exists export(gamInst1Exists,valGamInst1Exists)
@@ -504,13 +520,16 @@ valGamCloseExists :: ValGam -> ValGam
 valGamCloseExists = valGamMapTy (\t -> tyQuantify (not . tvIsEx (tyFtvMp t)) t)
 %%]
 
-%%[(4_2 hmtyinfer).valGamInst1ExistsWithVarMp
+%%[(8 hmtyinfer).valGamInst1ExistsWithVarMp export(valGamInst1ExistsWithVarMp)
 valGamInst1ExistsWithVarMp :: VarMp -> UID -> ValGam -> (ValGam,VarMp)
-valGamInst1ExistsWithVarMp
-  =  valGamDoWithVarMp
-        (\t u ->  let  (u',ue) = mkNewLevUID u
-                  in   (tyInst1Exists ue t,u')
-        )
+valGamInst1ExistsWithVarMp gamVarMp u g
+  = (g',m)
+  where (g',m,_)
+          = valGamDoWithVarMp
+              (\_ (t,_) m u -> let (u',ue) = mkNewLevUID u
+                           in  (tyInst1Exists ue t,m,u')
+              )
+              gamVarMp u g
 %%]
 
 %%[(7 hmtyinfer || hmtyast) export(valGamTyOfDataCon)

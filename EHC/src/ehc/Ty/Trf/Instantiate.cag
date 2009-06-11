@@ -237,9 +237,19 @@ SEM Ty
 
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
+  | Quant           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tyNew
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc         .   instTo      :=  InstTo_Qu @qu.repl @tv @tyNew kiStar
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
   | Quant           lhs         .   (repl,replTvL,instToL)
                                                 =   if @allow
-                                                    then (@ty.repl,@tvNew : @ty.replTvL, InstTo_Qu @qu.repl @tv @tyNew kiStar : @ty.instToL)
+                                                    then (@ty.repl,@tvNew : @ty.replTvL, @instTo : @ty.instToL)
                                                     else (@repl,[],[])
   | Var             lhs         .   repl        =   maybe @repl id (varmpTyLookup @tv @lhs.replSubst)
 %%]

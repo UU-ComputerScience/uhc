@@ -76,7 +76,7 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
                         ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
                         ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
-                        ,  foInstToL         :: [InstTo]
+                        ,  foLInstToL        :: [InstTo]             ,  foRInstToL        :: [InstTo]
 %%[[(9 codegen)
                         ,  foCSubst          :: !CSubst              ,  foLRCoe           :: !LRCoe
                         ,  foTCSubst         :: !(C.CSubst)          ,  foLRTCoe          :: !(C.LRCoe)
@@ -105,7 +105,7 @@ data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy    
 emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
                         ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
                         ,  foErrL            =   []                  ,  foTrace           =   []
-                        ,  foInstToL         =   []
+                        ,  foLInstToL        =   []                  ,  foRInstToL        =   []
 %%[[(9 codegen)
                         ,  foCSubst          =   emptyCSubst         ,  foLRCoe           =   emptyLRCoe
                         ,  foTCSubst         =   C.emptyCSubst       ,  foLRTCoe          =   C.emptyLRCoe
@@ -199,7 +199,7 @@ asFODflt _ afo = afo
 
 %%[(8 codegen hmtyinfer)
 asFOArrow :: FIOut -> FIOut -> FIOut
-asFOArrow _ afo = afo {foInstToL = InstTo_Plain : foInstToL afo}
+asFOArrow _ afo = afo {foLInstToL = InstTo_Plain : foLInstToL afo, foRInstToL = InstTo_Plain : foRInstToL afo}
 %%]
 
 %%[(9 codegen hmtyinfer) export(asFOUpdCoe)

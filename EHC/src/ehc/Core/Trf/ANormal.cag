@@ -13,7 +13,7 @@ The purpose is to end up with bindings which (later) directly correspond to a CA
 For that to work, all arguments of an application closure must themselves be bound to names, i.e. be closures themselves.
 %%]
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.FullLazy} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFullLazy)
+%%[(8 codegen) hs module {%{EH}Core.Trf.ANormal} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfANormal)
 %%]
 
 %%[(8 codegen) hs import({%{EH}Base.Debug})
@@ -64,8 +64,8 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-cmodTrfFullLazy :: HsName -> UID -> CModule -> CModule
-cmodTrfFullLazy modNm uniq cmod
+cmodTrfANormal :: HsName -> UID -> CModule -> CModule
+cmodTrfANormal modNm uniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                               (Inh_CodeAGItf
                                  { gUniq_Inh_CodeAGItf = uniq

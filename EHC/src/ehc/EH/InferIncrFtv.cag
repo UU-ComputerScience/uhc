@@ -44,7 +44,7 @@ SEM AGItf
 SEM Expr
   | Let         loc         .   valTyUpdFreeTvarS   =   setSubst @decls.tyVarMp @lhs.valTyGlobFreeTvarS
                 decls       .   valTyGlobFreeTvarS  =   ftvSet @valGam_l_ `Set.union` @lhs.valTyGlobFreeTvarS
-                body        .   valTyGlobFreeTvarS  =   ftvSet @quValGam_ex_ `Set.union` @valTyUpdFreeTvarS
+                body        .   valTyGlobFreeTvarS  =   ftvSet @quValGam_ex_subst `Set.union` @valTyUpdFreeTvarS
   | Lam			body		.	valTyGlobFreeTvarS  =   ftvSet (gamTop @arg.valGam) `Set.union` @lhs.valTyGlobFreeTvarS
   | TypeAs      loc         .   valTyUpdFreeTvarS   =   setSubst @lhs.tyVarMp @lhs.valTyGlobFreeTvarS
 

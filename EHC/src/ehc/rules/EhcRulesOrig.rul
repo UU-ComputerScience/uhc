@@ -55,8 +55,8 @@ format ag def (t1 | Ty) (t2 | Ty) = (Ty_App (t1) (t2) | Ty)
 format ag def Ty_Quant q v `.` t = (Ty_Quant (q) (tyVar (v)) (t) | Ty)
 
 -- TyVarIdS
-format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) = (l1 ++ l2 | TyVarIdS)
-format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) + (l3 | TyVarIdS) = (l1 ++ l2 ++ l3 | TyVarIdS)
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) = (l1 "`Set.union`" l2 | TyVarIdS)
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) + (l3 | TyVarIdS) = (l1 "`Set.union`" l2 "`Set.union`" l3 | TyVarIdS)
 
 -------------------------------------------------------------------------
 -- Formatting
@@ -152,13 +152,14 @@ format ag  tyString2 = "(Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))
 format tex tyString2 = tyString
 
 -- tvars
-external tyLVar
+external tyLVar tySVar
 
 format tex tyLVar =
 format tvars.f = tvarv.f.._
 format tvars.g = tvarv.g.._
 
 format ag tyLVar = map tyVar
+format ag tySVar = ((Set.fromList . map tyVar))
 
 -- Impred VarMp
 format tex ityVarMp = IVarMp
@@ -1159,7 +1160,7 @@ ruleset expr.base scheme expr "Expression type rules" =
           | tyVarMp.syn = tyVarMp.e
     view HM =
       -- judge Q : tyQuantify = tAnn: ty.q === ty.a, tvarv.t.._
-      judge Q : tyQuantify = (tyLVar tvarv.t.._) :- ty.a : ty.q
+      judge Q : tyQuantify = (tySVar tvarv.t.._) :- ty.a : ty.q
       judge instKnown : inst.known = ty.i === inst.K(ty.q)
       judge T : tyexpr
           | tyWildL = tvarv.t.._
@@ -1176,7 +1177,7 @@ ruleset expr.base scheme expr "Expression type rules" =
       judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, tyVarMp.inh
       judge GFtv : valGamFtv = tvarv.Gamma.._ === tyVarMp.inh valGam
       judge Q : tyQuantify
-          | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.Gamma.._ + tvarv.TGamma.._
+          | gtvars = (tySVar tvarv.t.._ | TyVarIdS) + tvarv.Gamma.._ + tvarv.TGamma.._
           | ty = tyVarMp.inh ty.a
       judge - instKnown
       judge F : fit
@@ -1304,14 +1305,14 @@ ruleset decl.base scheme decl "Declaration type rules" =
           | tyGam.inh = tyGam
           | tyGam.syn = _
       -- judge Q : tyQuantify = declTyExpr: ty.q === ty.i, tvarv.t.._
-      judge Q : tyQuantifyOuter = (tyLVar tvarv.t.._) :- ty.i : ty.q
+      judge Q : tyQuantifyOuter = (tySVar tvarv.t.._) :- ty.i : ty.q
       judge B : bind1ValIdToTy
           | ty = ty.q
       ---
     view I1 =
       judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyVarMp'
       judge Q : tyQuantifyOuter
-          | gtvars = (tyLVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
+          | gtvars = (tySVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
       ---
     view I2 =
       judge V : tyEnsureTVar = ty.v, tyVarMp.v, tvarv.v === ty.q

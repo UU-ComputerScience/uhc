@@ -1030,17 +1030,19 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[(4 hmtyinfer).fitsIn.QR
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
-                                                    = back2 (fVar ff fi2 t1 uqt2)
+                                                    = back2 (fo {foRInstToL = instto2 ++ foRInstToL fo})
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
+                      fo = fVar ff fi2 t1 uqt2
             f fi t1                     t2@(Ty_Quant _ _ _)
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
-                                                    = back2 (fVar ff fi2 t1 uqt2)
+                                                    = back2 (fo {foRInstToL = instto2 ++ foRInstToL fo})
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instContra
+                      fo = fVar ff fi2 t1 uqt2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QL
             f fi t1@(Ty_Quant _ _ _)    t2
-                | fioIsSubsume (fiFIOpts fi)        = fo {foInstToL = instto1 ++ foInstToL fo}
+                | fioIsSubsume (fiFIOpts fi)        = fo {foLInstToL = instto1 ++ foLInstToL fo}
                 where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst
                       fo = fVar ff fi1 uqt1 t2
 %%]

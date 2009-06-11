@@ -175,7 +175,7 @@ SEM Expr
 %%][99
                                                                     (map (mkRangedPred @lhs.rangeMp) amb)
 %%]]
-                                                                    (mkg @quValGam_ex_) (mkg @lSubsValGam_)
+                                                                    (mkg @quValGam_ex_subst) (mkg $ @decls.tyVarMp |=> @valGam_l_)
                                                                  ]
 %%]
 

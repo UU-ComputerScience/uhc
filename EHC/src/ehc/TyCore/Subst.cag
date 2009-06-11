@@ -33,8 +33,8 @@ PRAGMA novisit
 
 %%[(8 codegen) hs export(CSubstKey(..),CSubst,emptyCSubst)
 data CSubstKey
-  = CSKey_UID	UID
-  | CSKey_Nm	HsName
+  = CSKey_UID   UID
+  | CSKey_Nm    HsName
   deriving (Show,Eq,Ord)
 
 data CSubstInfo
@@ -221,7 +221,8 @@ ATTR AllNT AGItf [ coeArg: Expr | | ]
 
 %%[(8 codegen)
 SEM Expr
-  | Var         (loc.replv,loc.isRepl)      =   case Map.lookup (CSKey_Nm @nm) @lhs.cSubst of
+  | Var         loc         .   csKey       =   CSKey_Nm @nm
+                (loc.replv,loc.isRepl)      =   case Map.lookup @csKey @lhs.cSubst of
                                                   Just (CSITy t)     -> (t,True)
                                                   _                  -> (@cRepl,False)
 %%]
@@ -235,7 +236,7 @@ SEM Expr
 
 %%[(9 codegen)
 SEM Expr
-  | Var         repl'       .   cSubst      =   @lhs.cSubst
+  | Var         repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
 %%]
 
 %%[(9 codegen)
@@ -269,7 +270,7 @@ SEM Expr
 %%[(9 codegen)
 SEM Expr
   | Hole HoleLet ImplsApp ImplsLam
-                repl'       .   cSubst      =   @lhs.cSubst
+                repl'       .   cSubst      =   Map.delete (CSKey_UID @uid) @lhs.cSubst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

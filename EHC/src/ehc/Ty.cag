@@ -1625,7 +1625,9 @@ data InstTo
       { instoQu     :: TyQu
       , instoFrom   :: TyVarId
       , instoTy     :: Ty
+%%[[6
       , instoKi     :: Ty
+%%]]
       }
 {-
   | InstTo_Lam                          -- a lambda
@@ -1637,7 +1639,11 @@ data InstTo
 
 %%[(4 hmtyinfer || hmtyast) hs
 instToIsQu :: InstTo -> Bool
+%%[[4
+instToIsQu (InstTo_Qu _ _ _  ) = True
+%%][6
 instToIsQu (InstTo_Qu _ _ _ _) = True
+%%]]
 instToIsQu _                   = False
 %%]
 

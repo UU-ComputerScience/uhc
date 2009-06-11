@@ -303,12 +303,13 @@ SEM Expr
                                                               = (cnstrMpFromList ass `cnstrMpUnion` cnstrMpUnions (map cnstrMpFromList prvs), concat coeArgIds)
                                                               where assSc = maybe @predScope id $ gamLookup nm @decls.scopeGam
                                                                     (ass,prvs,coeArgIds)
-                                                                      = unzip3 [ ( rngLift @range mkAssumeConstraint (poPr po) (poId po) assSc
-                                                                                 , zipWith (\u i -> rngLift @range mkProveConstraint (poPr po) u (ipoScope i)) ups ipos
+                                                                      = unzip3 [ ( rngLift @range mkAssumeConstraint pr (poId po) assSc
+                                                                                 , zipWith (\u i -> rngLift @range mkProveConstraint pr u (ipoScope i)) ups ipos
                                                                                  , zipWith (\i u -> (ipoId i,u)) ipos ups
                                                                                  )
                                                                                | ((po,ipos),u') <- zip impls $ mkNewLevUIDL (length impls) u
                                                                                , let ups = mkNewLevUIDL (length ipos) u'
+                                                                                     pr  = poPr po -- @bodyVarMp2 |=> poPr po
                                                                                ]
                                                                       where impls = tmpoImplsPrvReq tmpo
                                                             tmpos = gamToAssocL @tqoGam

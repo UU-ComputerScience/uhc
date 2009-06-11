@@ -29,7 +29,7 @@ SEM Expr
 -- 20080212, AD: incompatible because of addition of marked lines, for lexically scoped type variables
 %%[(5 hmtyinfer).Let
 SEM Expr
-  | Let         (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
+  | Let         -- (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
 %%[[5
                 (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
                 loc         .   gTyTvS              =   ftvSet @gSubsValGam_
@@ -38,7 +38,10 @@ SEM Expr
                 loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
-                            .   quValGam_           =   valGamQuantify @gTyTvS @lSubsValGam
+                            .   (quValGam_qu_,cycTyVarMp_l)
+                                                    =   let (g,cycMp) = @decls.tyVarMp |==> @valGam_l_
+                                                        in  (valGamQuantify @gTyTvS g,cycMp)
+                            .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
 
@@ -46,31 +49,34 @@ SEM Expr
 %%[(5 hmtyinfer).Let
 SEM Expr
   | Let         loc         .   gathTySigGam_l_     :=  valGamInst1Exists @lUniq @decls.gathTySigGam
-                loc         .   quValGam_ex_        :=  valGamInst1Exists @lUniq2 $ valGamQuantify @gTyTvS $ @lSubsValGam_
-                            .   quValGam_           :=  emptyGam
-                body        .   valGam              :=  gamPushGam @quValGam_ex_ @gSubsValGam_
+                loc         .   quValGam_ex_        =   valGamInst1Exists @lUniq2 @quValGam_qu_
+                            .   quValGam_ex_subst   =   @quValGam_ex_
+                            .   quValGam_           :=  @quValGam_ex_
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
-%%[(9 hmtyinfer)
+%%[(8 hmtyinfer)
 SEM Expr
-  | Let         loc         .   (quValGam_ex_,tqoGam)
-                                                    :=  let  (vg,tqog) = valGamQuantify @gTyTvS @quantPrOccL @lSubsValGam_
-                                                        in   (valGamInst1Exists @lUniq2 vg,tqog)
-                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
+  | Let         loc         .   (gathTySigGam_l_,exVarMp1)
+                                                    :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
+                decls       .   patTyVarMp          :=  @exVarMp1 |=> @lhs.tyVarMp
+                loc         .   (quValGam_qu_,quVarMp, cycTyVarMp_l)
+                                                    :=  valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvS @valGam_l_
+                            .   bodyVarMp1          =   @quVarMp |=> @decls.tyVarMp
+                            .   (quValGam_ex_,exVarMp2)
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quVarMp |=> @quValGam_qu_), emptyVarMp)
+                            .   bodyVarMp2          =   @exVarMp2 |=> @bodyVarMp1
+                            .   quValGam_ex_subst   :=  @bodyVarMp2 |=> @quValGam_ex_
+                body        .   tyVarMp             =   @bodyVarMp2
 %%]
 
-%%[(99 hmtyinfer).Let
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   (quValGam_qu_,quVarMp, (cycTyVarMp_l,tqoGam))
+                                                    :=  valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvS @quantPrOccL @valGam_l_
+                            .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
-  | Let         loc         .   gTyTvS              :=  (\so sn -> tr ("gTyTvS " ++ show @lUniq) (show so >-< show sn >-< show @range >-< show (gamKeys @valGam_l_)) sn)
-                                                        (ftvSet @gSubsValGam_ `Set.union` ftvSet (@decls.tyVarMp |=> @lhs.tyGam))
-                                                        (@valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS)
-                loc         .   gTyTvS              =   ftvSet @gSubsValGam_
-                                                        `Set.union` ftvSet (@decls.tyVarMp |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
-                                                        ftvSet @gSubsValGam_
-                                                        `Set.union` ftvSet (@decls.tyVarMp |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
-                                                        @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Known type and instantiation required
@@ -360,7 +366,6 @@ SEM Expr
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
                 loc         .   lUniq3              :   UNIQUEREF gUniq
 %%]
-                            .   gKiTvS              =   (\s -> tr "gKiTvS" (pp$ show s) s) $ ftvSet @gSubsTyKiGam
 
 %%[(6 hmtyinfer)
 SEM Decl
