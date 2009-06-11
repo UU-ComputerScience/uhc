@@ -1345,9 +1345,9 @@ In UHC we have chosen to factor out aspect management and deal with it by prepro
 
 An obvious tension exists between UHC as a ``full Haskell compiler'' and a ``nimble compiler for experimentation''.
 Many seemingly innocent paragraphs of the Haskell language report have major impact on the implementation,
-thereby corrupting implementation simplicity.
+making the implementation disproportional complex.
 Although this cannot be avoided, it can be isolated to a certain degree,
-which is what we hope to have accomplished using an aspectwise approach.
+which is what we hope to have accomplished using an aspect-wise approach.
 Although the chosen layering of language features and implementation techniques restricts how far one can deviate from it for experimentation,
 one can always select a minimal starting point in the sequence of compilers and build on top of that.
 When we add new functionality, we usually start by making it work in an early variant, and then gradually make it work for subsequent variants.
@@ -1375,9 +1375,14 @@ However, not all idiomatic use is supported by AG.
 For example, the need to pattern match on subtrees arises when case analysis on abstract syntax trees must be done.
 Currently this must be programmed by hand, and we would like to have automated support for it (as in \cref{visser05stratego-www,visser01stratego-system05}{Stratego}).
 
-% \paragraph{The use of intermediate languages}
-% 
-% UHC uses various intermediate languages and transformations on them.
+\paragraph{The use of intermediate languages}
+
+UHC uses various intermediate languages and transformations on them.
+The benefit of this approach is that various compiling tasks can be done where it best fits an intermediate language
+and can be expressed as small, easy to understand, transformations independently from other tasks.
+Drawbacks are that some tasks have more than one appropriate place in the pipeline
+and sometimes require information thrown away in earlier stages (e.g. absence of types in Core).
+
 % The HS language deals with concrete language aspects like names and ordering of declarations,
 % the EH language is used for type analysis,
 % Core for |lambda|-calculus related transformations where laziness is implicitly assumed,
