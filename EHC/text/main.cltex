@@ -1276,6 +1276,11 @@ WWW home page:
 
 
 %%[51
+
+\conferenceinfo{Haskell'09,} {September 3, 2009, Edinburgh, Scotland, UK.}
+\CopyrightYear{2009}
+\copyrightdata{978-1-60558-508-6/09/09}
+
 \title{The Architecture of the Utrecht Haskell Compiler}
 %if acm && useSigplanconfSty
 \authorinfo{Atze Dijkstra \and Jeroen Fokker \and S.~Doaitse Swierstra}
@@ -1554,6 +1559,16 @@ have been submitted to POPL2006 in a slighty extended form.
 \begin{abstract}
 %%@TopicUHCArchitecture.abstract
 \end{abstract}
+
+\category{D.3.4}{Programming languages}{Compilers; Preprocessors}
+\category{F.3.2}{Logics and meanings of programs}{Program analysis}
+
+\terms
+Languages, Design
+
+\keywords
+Haskell, compiler architecture, attribute grammar, aspect orientation
+
 %%]
 
 
