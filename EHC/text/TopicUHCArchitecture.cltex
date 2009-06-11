@@ -53,9 +53,9 @@ but rather because of arbitrary priorization of the feature wish list.
 
 The main structure of the compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
 Haskell source text is translated to an executable program by stepwise transformation.
-Some of the transformations translate the program to a lower level language,
+Some transformations translate the program to a lower level language,
 many others are transformations within one language,
-establishing some invariant or performing some optimization.
+establishing an invariant or performing an optimization.
 
 All transformations, both within a language and between languages, are expressed
 as an algebra giving a semantics to the language.
@@ -114,7 +114,7 @@ Then there is a choice from three modes of operation:
 \end{itemize}
 The bytecode interpreter mode is intended for use during program development:
 it compiles fast, but because of the interpretation overhead the generated code is not very fast.
-The whole-program analysis mode is intended to use at the end of program development:
+The whole-program analysis mode is intended to use for the final program:
 it takes more time to compile, but generates code that is more efficient.
 
 In Section~2 we describe the tools that play an important role in UHC:
@@ -281,7 +281,7 @@ at the right, the defining Haskell expression is given.
 Each definition (or group of definitions) is labeled with a constructor
 (|Const| and |Add| in the example), which in turn are labeled with
 the datatype (|Expr| in the example).
-Vertical bars separate the constructors (and should not be confused with `guarded' equation syntax).
+Vertical bars separate the constructors (and should not be confused with `guarded' equations).
 The preprocessor collects and orders all definitions in a single algebra,
 replacing attribute references by suitable selections from the results 
 of the tree walk on the children. 
@@ -640,7 +640,7 @@ DATA CPatBind
   =  Bind        offset::Int  pat::CPat
 %%]]
 
-The actual Core language is more complex because of the following:
+The actual Core language is more complex because of:
 \begin{itemize}
 \item
 Experiments with extensible records;
@@ -1054,7 +1054,7 @@ The Grin language features constructs for manipulating heap nodes,
 including ones that encode deferred function calls, that are explicitly
 triggered by an |Eval| expression.
 As part of the simplification, this high level construct should be decomposed in smaller steps.
-Two strategies can be taken to implement evaluation:
+Two strategies can be used:
 \begin{itemize}
 \item {\em tagged}:  nodes are tagged by small numbers,
                      evaluation is performed by calling a special |evaluate| function that scrutinizes the tag,
@@ -1139,7 +1139,7 @@ which is passed as an additional parameter to overloaded functions.
 Things are complicated, however, by the presence of default implementations in classes:
 the dictionary for an instance declaration is a merge of the default implementations
 and the implementations in the instance declaration.
-Even worse, the class declaration may reside in another module than the instance declaration,
+Worse, the class declaration may reside in another module than the instance declaration,
 and still be mutually dependent with it.
 Think of the |Eq| class, having mutually circular definitions of |eq| and |ne|, leaving
 it to the instance declaration to implement either one of them (or both).
@@ -1205,7 +1205,7 @@ from the prelude.
 
 The only situation where dictionaries cannot be eliminated completely, is where an infinite family
 of dictionaries is necessary, such as arises from the |Eq a => Eq [a]| instance declaration
-in the prelude. In this situation we automatically fall back to the Fax\'en scheme.
+in the prelude. We then automatically fall back to the Fax\'en scheme.
 
 
 \todo{Foreign functions}
