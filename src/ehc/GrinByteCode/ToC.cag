@@ -429,8 +429,6 @@ SEM Module
                                                                                      , pp "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
                                                                                  )
-                                                    etc     = ppLine $ ppCmtC @lhs.opts "Dummy defs for Silly"
-                                                              >-< "void silly_main(void){}"
 %%[[20
                                                     expnd   = ppLine $ "GB_NodePtr" >#< @ppNmExpNode >#< ";"
                                                                        >-< "static int" >#< @ppNmExpNodeOffs >|< "[] ="
@@ -481,7 +479,6 @@ SEM Module
 %%[[8
                                                          , mods
                                                          , maincaf
-                                                         , etc
                                                          , mainf
 %%][20
 %%]]
@@ -492,7 +489,6 @@ SEM Module
                                                       $  [ maincaf ]
                                                       ++ externs
                                                       ++ [ mods
-                                                         , etc
                                                          , mainf
                                                          ]
 %%]]

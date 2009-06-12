@@ -238,7 +238,7 @@ extern char** rtsArgV ;
 %%[8
 #ifdef __UHC_TARGET_C__
 extern int main_Sil_Init1(int argc, char** argv) ;
-extern int main_Sil_Run(int argc, char** argv) ;
+extern int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() );
 extern int main_Sil_Exit(int argc, char** argv) ;
 #endif
 
