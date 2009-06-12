@@ -130,14 +130,6 @@ void memoryDumpResult_Sil()
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Main generated entry point for Silly
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-extern int silly_main();
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main entry points for Silly init,run,exit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -151,12 +143,12 @@ int main_Sil_Init1(int argc, char** argv)
     return 0;
 }
 
-int main_Sil_Run(int argc, char** argv)
+int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() )
 {
 #	if TIMING
 		clockStart = clock() ;
 #	endif
-    silly_main();
+        (*sillymainfunction)();
 #	if TIMING
 		clockStop = clock() ;
 #	endif

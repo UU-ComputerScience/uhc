@@ -91,29 +91,28 @@ SEM SilModule
                                 >-< text "GrWord auxPtr;"
                                 >-< text ""
                                 >-< comment ["Function definitions"]
-                                >-< if @loc.optOwn>=3
-                                     then  @loc.silMain1
-
+                                >-< (if @loc.optOwn>=3
+                                     then  (   @loc.silMain1
                                            >-< text ""
                                            >-< @functions.prettyC
                                            >-< @loc.silMain2
-
-                                     else  @functions.protoC
+                                           )
+                                     else  (   @functions.protoC
                                            >-< text ""
                                            >-< @loc.silMain1
-
                                            >-< @loc.silMain2
-
                                            >-< text ""
                                            >-< @functions.prettyC
+                                           )
+                                    )
                                 >-< text ""
-                loc.silMain1 =  text "int silly_main()"
+                                >-< @loc.mainFun
+                                >-< text ""
 
+                loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 >-< ppWhen (@loc.optOwn>=4) (text "register GrWord* SP asm (\"%esp\");")
-
                                 -- >-< ppWhen (@loc.optOwn>=4) (text "register GrWord  auxPtr asm (\"%ecx\");")
-
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwn 1 "initialize"
 %%[[8
                                              >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_fun0tildemain"
@@ -122,10 +121,16 @@ SEM SilModule
 %%]]                                             
                                              >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
                                              >-<  "return 0;"
-
                                              )
 
                 loc.silMain2 =  text "}"
+
+                loc.mainFun  =  text "int main(int argc, char** argv)"
+                                >-< text "{"
+                                >-< text "    main_Sil_Init1(argc, argv);"
+                                >-< text "    main_Sil_Run(argc, argv, &silly_main);"
+                                >-< text "    return main_Sil_Exit(argc, argv);"
+                                >-< text "}"
 
 
 SEM Function
