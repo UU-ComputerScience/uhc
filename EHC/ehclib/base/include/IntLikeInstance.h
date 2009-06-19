@@ -22,49 +22,49 @@ foreign import prim primToInt     :: tycon -> Int
 
 
 -- define Eq primitives
-#define PRIMS_EQ(tycon,primEq) \
-foreign import prim primEq      :: tycon -> tycon -> Bool
+#define PRIMS_EQ(tycon,primEq,primNe) \
+foreign import prim primEq      :: tycon -> tycon -> Bool ; \
+foreign import prim primNe      :: tycon -> tycon -> Bool 
 
-#define PRIMS2_EQ(tycon,primEq,primEqNm) \
-foreign import prim primEqNm primEq     :: tycon -> tycon -> Bool
+#define PRIMS2_EQ(tycon,primEq,primEqNm,primNe,primNeNm) \
+foreign import prim primEqNm primEq     :: tycon -> tycon -> Bool ; \
+foreign import prim primNeNm primNe     :: tycon -> tycon -> Bool
 
 
 -- define Eq instance
-#define INSTANCE_EQ(tycon,primEq) \
+#define INSTANCE_EQ(tycon,primEq,primNe) \
 instance Eq tycon where \
-  { (==) = primEq \
+  { (==) = primEq ; \
+  	(/=) = primNe \
   }
 
 
 -- define Ord primitives
-#define PRIMS_ORD1(tycon,primCmp) \
-foreign import prim primCmp     :: tycon -> tycon -> Ordering 
 
-#define PRIMS2_ORD1(tycon,primCmp,primCmpNm) \
-foreign import prim primCmpNm primCmp     :: tycon -> tycon -> Ordering 
-
-#define PRIMS_ORD2(tycon,primCmp,primLt,primGt) \
-PRIMS_ORD1(tycon,primCmp) ; \
+#define PRIMS_ORD(tycon,primCmp,primLt,primGt,primLe,primGe) \
+foreign import prim primCmp     :: tycon -> tycon -> Ordering ; \
 foreign import prim primLt      :: tycon -> tycon -> Bool ; \
-foreign import prim primGt      :: tycon -> tycon -> Bool 
+foreign import prim primGt      :: tycon -> tycon -> Bool ; \
+foreign import prim primLe      :: tycon -> tycon -> Bool ; \
+foreign import prim primGe      :: tycon -> tycon -> Bool 
 
-#define PRIMS2_ORD2(tycon,primCmp,primCmpNm,primLt,primLtNm,primGt,primGtNm) \
-PRIMS2_ORD1(tycon,primCmp,primCmpNm) ; \
+#define PRIMS2_ORD(tycon,primCmp,primCmpNm,primLt,primLtNm,primGt,primGtNm,primLe,primLeNm,primGe,primGeNm) \
+foreign import prim primCmpNm primCmp     :: tycon -> tycon -> Ordering ; \
 foreign import prim primLtNm primLt      :: tycon -> tycon -> Bool ; \
-foreign import prim primGtNm primGt      :: tycon -> tycon -> Bool 
+foreign import prim primGtNm primGt      :: tycon -> tycon -> Bool ; \
+foreign import prim primLeNm primLe      :: tycon -> tycon -> Bool ; \
+foreign import prim primGeNm primGe      :: tycon -> tycon -> Bool 
 
 
 -- define Ord instance
-#define INSTANCE_ORD1(tycon,primCmp) \
-instance Ord tycon where \
-  { compare = primCmp \
-  }
 
-#define INSTANCE_ORD2(tycon,primCmp,primLt,primGt) \
+#define INSTANCE_ORD(tycon,primCmp,primLt,primGt,primLe,primGe) \
 instance Ord tycon where \
   { compare = primCmp \
   ; (<) = primLt \
   ; (>) = primGt \
+  ; (<=) = primLe \
+  ; (>=) = primGe \
   }
 
 
@@ -196,33 +196,29 @@ instance Read tycon where \
 
 
 -- define Bits primitives
-#define PRIMS_BITS(tycon,primAnd,primOr,primXor) \
+#define PRIMS_BITLOGIC(tycon,primAnd,primOr,primXor) \
 foreign import prim primAnd       	:: tycon -> tycon -> tycon ; \
 foreign import prim primOr       	:: tycon -> tycon -> tycon ; \
 foreign import prim primXor      	:: tycon -> tycon -> tycon
 
-#define PRIMS_BITS_SIZEDPD(tycon,primComplement,primShiftLeft,primShiftRight,primRotateLeft,primRotateRight) \
+#define PRIMS_BITSHIFT(tycon,primComplement,primShiftLeft,primShiftRight,primRotateLeft,primRotateRight) \
 foreign import prim primComplement	:: tycon -> tycon ; \
 foreign import prim primShiftLeft  	:: tycon -> Int -> tycon ; \
 foreign import prim primShiftRight 	:: tycon -> Int -> tycon ; \
 foreign import prim primRotateLeft  :: tycon -> Int -> tycon ; \
 foreign import prim primRotateRight :: tycon -> Int -> tycon
 
-#define PRIMS_BITS_ROTATE(tycon) \
-
-#define PRIMS2_BITS(tycon,primAnd,primAndNm,primOr,primOrNm,primXor,primXorNm) \
+#define PRIMS2_BITLOGIC(tycon,primAnd,primAndNm,primOr,primOrNm,primXor,primXorNm) \
 foreign import prim primAndNm       	primAnd       	:: tycon -> tycon -> tycon ; \
 foreign import prim primOrNm       		primOr       	:: tycon -> tycon -> tycon ; \
 foreign import prim primXorNm      		primXor      	:: tycon -> tycon -> tycon
 
-#define PRIMS2_BITS_SIZEDPD(tycon,primComplement,primComplementNm,primShiftLeft,primShiftLeftNm,primShiftRight,primShiftRightNm,primRotateLeft,primRotateLeftNm,primRotateRight,primRotateRightNm) \
+#define PRIMS2_BITSHIFT(tycon,primComplement,primComplementNm,primShiftLeft,primShiftLeftNm,primShiftRight,primShiftRightNm,primRotateLeft,primRotateLeftNm,primRotateRight,primRotateRightNm) \
 foreign import prim primComplementNm	primComplement	:: tycon -> tycon ; \
 foreign import prim primShiftLeftNm  	primShiftLeft  	:: tycon -> Int -> tycon ; \
 foreign import prim primShiftRightNm 	primShiftRight 	:: tycon -> Int -> tycon ; \
 foreign import prim primRotateLeftNm  	primRotateLeft  :: tycon -> Int -> tycon ; \
 foreign import prim primRotateRightNm 	primRotateRight :: tycon -> Int -> tycon
-
-#define PRIMS2_BITS_ROTATE(tycon) \
 
 -- define Bits instance
 #define INSTANCE_BITS1(tycon,size,signed,primAnd,primOr,primXor,primComplement,primShiftLeft,primShiftRight,primRotateLeft,primRotateRight) \

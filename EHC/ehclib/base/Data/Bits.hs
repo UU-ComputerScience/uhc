@@ -260,7 +260,7 @@ instance Bits Int where
     shiftR                 = primShiftRightInt
     rotateL                = primRotateLeftInt
     rotateR                = primRotateRightInt
-#if __UHC_TARGET_BC__
+#ifdef __UHC_TARGET_BC__
     bitSize _              = SIZEOF_HSINT*8 - BITSIZEOF_WORDTAG
 #else
     bitSize _              = SIZEOF_HSINT*8

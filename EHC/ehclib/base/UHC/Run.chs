@@ -16,7 +16,7 @@ import UHC.OldIO
 %%]
 
 %%[99
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a

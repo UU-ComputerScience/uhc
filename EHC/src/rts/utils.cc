@@ -43,6 +43,11 @@ void rts_panic2_1( char* msg1, char* msg2, int i )
 %%]
 
 %%[8
+
+#ifdef __UHC_TARGET_BC__
+
+void gb_exit(int);
+
 void gb_error( char* msg )
 {
 	fprintf( stderr, "error: %s\n", msg ) ;
@@ -78,7 +83,7 @@ void gb_panic2_2( char* msg1, char* msg2, int i1, int i2 )
 	fprintf( stderr, "grinbc: %s panic: %s: 0x%x: 0x%x\n", msg1, msg2, i1, i2 ) ;
 	gb_exit( 1 ) ;
 }
-
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

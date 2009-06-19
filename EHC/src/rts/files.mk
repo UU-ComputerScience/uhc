@@ -5,7 +5,7 @@
 RTS_SRC_PREFIX := $(SRC_PREFIX)rts/
 
 # Build location
-RTS_BLD_PREFIX := $(EHC_BLD_VARIANT_ASPECTS_PREFIX)rts/
+RTS_BLD_PREFIX := $(EHC_BLD_VARIANT_ASPECTS_PREFIX)rts/$(EHC_VARIANT_TARGET)/
 
 # lib/cabal config
 #RTS_PKG_NAME						:= EH-RTS # via mk/config.mk.in
@@ -84,7 +84,8 @@ RTS_SRC_CH_SHARED := \
         utils \
         timing \
         priminline \
-        bc/interpreter \
+        primdecl \
+        types \
         mm/mmitf \
         mm/mm \
         mm/config \
@@ -120,15 +121,18 @@ RTS_SRC_CH_SHARED := \
 
 RTS_SRC_CH_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+        bc/interpreter \
         mm/gbm/gbtrace \
         mm/gbm/gbtracesupregs \
         mm/gbm/gbtracesupstack \
         mm/gbm/gbtracesupmodule \
+        bc/prim-const \
         bc/primdecl \
     )
 
 RTS_SRC_CH_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+    	C/prim-const \
     )
 
 PRM_SRC_CC_SHARED := \
@@ -143,7 +147,6 @@ PRM_SRC_CC_BYTECODE := \
         bc/prim-array \
         bc/prim-thread \
         bc/prim-integer \
-        bc/prim-C \
     )
 
 PRM_SRC_CC_WHOLEPROG := \

@@ -1,3 +1,16 @@
+%%[8.TRACE
+#define TRACE 					1
+
+#if TRACE
+#define GB_COUNT_STEPS			1
+#else
+#define GB_COUNT_STEPS			0
+#endif
+%%]
+
+%%[100 -8.TRACE
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Includes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -15,23 +28,72 @@
 #include <limits.h>
 #include "config.h"
 #include "sizes.h"
+#include "bits.h"
+#include "types.h"
+#include "utils.h"
+#include "mm/mmitf.h"
+#include "mm/mm.h"
+%%]
+
+%%[97
+#include <math.h>
+#include <float.h>
+#ifndef FP_ZERO
+#warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
+#define FP_ZERO 2
+#endif
 %%]
 
 %%[98
 #include <errno.h>
 %%]
 
-%%[97
-#include "math.h"
-#include "float.h"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Primitives
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+
+#ifdef __UHC_TARGET_BC__
+#include "bc/prim-const.h"
+#else
+#include "C/prim-const.h"
+#endif
+
+#include "priminline.h"
+#include "primdecl.h"
+
+#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_BC__)
+#include "prim-shared.h"
+#endif
+
+#ifdef __UHC_TARGET_C__
+#include "C/prim.h"
+#endif
+
+
+#ifdef __UHC_TARGET_BC__
+#include "bc/primdecl.h"
+%%[[99
+#include "bc/prim-array.h"
+#include "bc/prim-thread.h"
+%%]]
+#include "bc/prim.h"
+%%[[97
+#include "bc/prim-integer.h"
+%%]]
+%%[[98
+#include "bc/prim-handle.h"
+%%]]
+#endif
+
+
+// the empty PRIM define is used to mark exported functions from prim.c, used to automatically generate prim.h
+#define PRIM
+
 %%]
 
-%%[97
-#ifndef FP_ZERO
-#warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
-#define FP_ZERO 2
-#endif
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal config
@@ -49,33 +111,11 @@ For now, switch off Boehm GC, turn on own GC
 // not used
 #define GB_IND_IN_HDR			1
 
-%%[8.TRACE
-#define TRACE 					1
-
-#if TRACE
-#define GB_COUNT_STEPS			1
-#else
-#define GB_COUNT_STEPS			0
-#endif
-%%]
-
-%%[100 -8.TRACE
-%%]
 
 %%[8
 #define INFO_EXITSTATE			1
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Very basic types
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-typedef int Bool ;
-
-#define True		1
-#define False		0
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Hacks
@@ -89,85 +129,8 @@ typedef int Bool ;
 
 #define fp_iszero(x)	( sizeof(x) == sizeof(float) ? ((x)&(1<<31)) == 0 : ((x)&(1<<63)) == 0 )
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utilities
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-// identity macro
-#define ID(x)		x
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% More includes
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#include "bits.h"
-#include "mm/mmitf.h"
-
-// extern GB_NodePtr gb_Unit ; // defined in bc/prim.h, but required here
-
-#include "bc/interpreter.h"		// TBD: fix dependencies between mm
-#include "mm/mm.h"
-#include "utils.h"
-#include "priminline.h"
-
-#ifdef __UHC_TARGET_BC__
-#include "bc/primdecl.h"
-%%[[99
-#include "bc/prim-array.h"
-#include "bc/prim-thread.h"
-%%]]
-#include "bc/prim.h"
-%%[[97
-#include "bc/prim-integer.h"
-%%]]
-%%[[98
-#include "bc/prim-handle.h"
-%%]]
-%%[[99
-#include "bc/prim-C.h"
-%%]]
-#endif
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Basic types
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-typedef SWord GrWord;
-typedef GrWord* Pointer;
-
-#ifdef __UHC_TARGET_C__
-#include "C/prim.h"
-#endif
 
 
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Primitives
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-/* the empty PRIM define is used to mark exported functions from prim.c,
-   used to automatically generate prim.h
-*/
-#define PRIM
-
-#if defined(__UHC_TARGET_C__) || defined(__UHC_TARGET_BC__)
-#include "prim-shared.h"
-#endif
-%%]
-
-Aliasing of primitives, as a preparation of removal of duplicates and not having two sets
-
-%%[8
-// include "primalias.h"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack, heap
@@ -181,22 +144,21 @@ Aliasing of primitives, as a preparation of removal of duplicates and not having
 
 #define HEAPSIZE 1000000
 
-extern Pointer HP;
-extern Pointer HeapAreaLow;
-extern Pointer HeapAreaHigh;
-
+extern WPtr HP;
+extern WPtr HeapAreaLow;
+extern WPtr HeapAreaHigh;
 #endif
 %%]
 
 %%[8
 #if USE_BOEHM_GC
-#	define heapalloc(sz)                Cast(GrWord,GC_MALLOC(sz*sizeof(GrWord)))
-#	define heapalloc_uncollectable(sz)  Cast(GrWord,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(GrWord)))
+#	define heapalloc(sz)                Cast(Word,GC_MALLOC(sz*sizeof(Word)))
+#	define heapalloc_uncollectable(sz)  Cast(Word,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(Word)))
 #elif USE_EHC_MM
-#	define heapalloc(sz)                Cast(GrWord,mm_itf_alloc(sz*sizeof(GrWord)))
-#	define heapalloc_uncollectable(sz)  Cast(GrWord,mm_itf_allocResident(sz*sizeof(GrWord)))
+#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word)))
+#	define heapalloc_uncollectable(sz)  Cast(Word,mm_itf_allocResident(sz*sizeof(Word)))
 #else
-	GrWord heapalloc(int);
+	Word heapalloc(int);
 #	define heapalloc_uncollectable(sz)  heapalloc(sz)
 #endif
 %%]
@@ -204,27 +166,15 @@ extern Pointer HeapAreaHigh;
 %%[8
 #define STACKSIZE 800000
 #define RETURNSIZE 100
-
-extern Pointer SP, RP;
-extern Pointer Stack, ReturnArea;
-
-extern Pointer StackAreaHigh, StackAreaLow ;
+extern WPtr SP, RP;
+extern WPtr Stack, ReturnArea;
+extern WPtr StackAreaHigh, StackAreaLow ;
 %%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-extern GrWord global_False;
-extern GrWord global_True;
-%%]
-
-%%[8
-extern GrWord global_LT;
-extern GrWord global_GT;
-extern GrWord global_EQ;
-%%]
 
 %%[99
 extern int rtsArgC ;

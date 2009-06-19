@@ -637,9 +637,10 @@ tagConstants tagset
                 , "CEHC_Prelude_WriteBinaryMode"                
                 , "CEHC_Prelude_WriteMode"                
 %%]]
-                 ] -- needed by RTS. Make sure that the numbers are the same in src/rts/prim.cc
+                 ] -- needed by RTS. Make sure that they are defined in src/rts/C/prim-const.ch
        inprog = map showGrTag (Set.toAscList (Set.insert GrTag_Hole tagset))
-   in  zip (needed ++ (inprog \\ needed)) [0..]
+   -- in  zip (needed ++ (inprog \\ needed)) [0..]
+   in  zip (inprog \\ needed) [length needed..]
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm

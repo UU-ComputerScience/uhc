@@ -10,12 +10,12 @@ import UHC.Base
 %%]
 
 %%[99
-PRIMS2_BITS(Int,primAndInt,"primAndWord",primOrInt,"primOrWord",primXorInt,"primXorWord")
-PRIMS_BITS_SIZEDPD(Int,primComplementInt,primShiftLeftInt,primShiftRightInt,primRotateLeftInt,primRotateRightInt)
+PRIMS2_BITLOGIC(Int,primAndInt,"primAndWord",primOrInt,"primOrWord",primXorInt,"primXorWord")
+PRIMS_BITSHIFT(Int,primComplementInt,primShiftLeftInt,primShiftRightInt,primRotateLeftInt,primRotateRightInt)
 %%]
 
 %%[99
-PRIMS_BITS(Integer,primAndInteger,primOrInteger,primXorInteger)
-PRIMS_BITS_SIZEDPD(Integer,primComplementInteger,primShiftLeftInteger,primShiftRightInteger,primRotateLeftInteger,primRotateRightInteger)
+PRIMS_BITLOGIC(Integer,primAndInteger,primOrInteger,primXorInteger)
+PRIMS_BITSHIFT(Integer,primComplementInteger,primShiftLeftInteger,primShiftRightInteger,primRotateLeftInteger,primRotateRightInteger)
 %%]
 

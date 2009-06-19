@@ -4,9 +4,8 @@
 
 %%[8
 #include "../rts.h"
-#ifdef __UHC_TARGET_BC__
+#include "interpreter.h"
 #include "ccall.h"
-#endif
 %%]
 
 %%[8
@@ -508,6 +507,16 @@ GB_Word gb_eval( GB_Word x )
 %%]]
 	GB_PopIn( x ) ;
 	return x ;
+}
+
+GB_Word gb_getTOS()
+{
+	return GB_TOS ;	
+}
+
+void gb_setTOS(GB_Word x)
+{
+	GB_SetTOS(x);	
 }
 %%]
 
@@ -1630,7 +1639,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 			GB_NodePtr n1, n2, n3 ;
 			GB_GC_SafeEnter ;
 			GB_GC_Safe3_Zeroed(n1, n2, n3) ;
-			GB_MkCFunNode1In(n1,gb_primCStringToString,ci->name) ;
+			GB_MkCFunNode1In(n1,primCStringToString,ci->name) ;
 			GB_MkTupNode2_In(n2,GB_Int2GBInt(ci->kind),n1) ;
 			n3 = reifiedBackTrace ;
 			GB_MkListCons(reifiedBackTrace,n2,n3) ;
@@ -1668,7 +1677,7 @@ GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type
 	GB_GC_Safe4_Zeroed(ioe_location,ioe_description,ioe,exc) ;
 
 	GB_MkListNil( ioe_location ) ;
-	ioe_description = gb_primCStringToString( strErr ) ;
+	ioe_description = primCStringToString( strErr ) ;
 	GB_MkIOErrorIOError( ioe, ioe_handle, GB_Int2GBInt(ioe_type), ioe_location, ioe_description, ioe_filename ) ;
 	GB_MkExceptionIOError( exc, ioe ) ;
 	
@@ -1864,8 +1873,8 @@ void gb_checkInterpreterAssumptions()
 		gb_panic2_1( m, "size of word and pointer must be equal", 0 ) ;
 	}
 	
-	if ( sizeof(GrWord) != sizeof(GB_Word) ) {
-		gb_panic2_1( m, "size of GrWord and GB_Word must be equal", 0 ) ;
+	if ( sizeof(Word) != sizeof(GB_Word) ) {
+		gb_panic2_1( m, "size of Word and GB_Word must be equal", 0 ) ;
 	}
 	
 	if ( sizeof( GB_Word ) != sizeof(uint32_t) && sizeof( GB_Word ) != sizeof(uint64_t) ) {
