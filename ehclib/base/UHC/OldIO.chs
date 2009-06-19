@@ -32,7 +32,7 @@ import UHC.IOBase
 -- I/O primitives and their wrapping in the I/O monad
 ----------------------------------------------------------------
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 foreign import prim primHClose        :: FHandle -> ()
 foreign import prim primHFlush        :: FHandle -> ()
 foreign import prim primHGetChar      :: FHandle -> Char
@@ -44,7 +44,7 @@ foreign import prim primHGetChar      :: Handle -> Char
 foreign import prim primHPutChar      :: Handle -> Char -> ()
 #endif
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 foreign import prim primOpenFile      :: String -> IOMode -> FHandle
 foreign import prim primStdin         :: FHandle
 foreign import prim primStdout        :: FHandle
@@ -61,35 +61,35 @@ foreign import prim primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
 
 
 hClose       :: Handle -> IO ()
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 hClose (OldHandle h)     =  ioFromPrim (\_ -> primHClose h)
 #else
 hClose h     =  ioFromPrim (\_ -> primHClose h)
 #endif
 
 hFlush       :: Handle -> IO ()
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 hFlush (OldHandle h)     =  ioFromPrim (\_ -> primHFlush h)
 #else
 hFlush h     =  ioFromPrim (\_ -> primHFlush h)
 #endif
 
 hGetChar     :: Handle -> IO Char
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 hGetChar (OldHandle h)   =  ioFromPrim (\_ -> primHGetChar h)
 #else
 hGetChar h   =  ioFromPrim (\_ -> primHGetChar h)
 #endif
 
 hPutChar     :: Handle -> Char -> IO ()
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 hPutChar (OldHandle h) c =  ioFromPrim (\_ -> primHPutChar h c)
 #else
 hPutChar h c =  ioFromPrim (\_ -> primHPutChar h c)
 #endif
 
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 openFile     :: FilePath -> IOMode -> IO Handle
 openFile f m =  ioFromPrim (\_ -> OldHandle (primOpenFile (forceString f) m))
@@ -174,7 +174,7 @@ hGetLine h = do { c <- hGetChar h
    hGetLine2 c    = do { cs <- hGetLine h
                        ; return (c:cs)
                        }
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
    getRest        = hGetLine h
 #else
    getRest        = do c <- catch (hGetChar h) 
@@ -217,7 +217,7 @@ appendFile       = writeFile2 AppendMode
 writeFile2      :: IOMode -> FilePath -> String -> IO ()
 writeFile2 mode name s 
     = do h <- openFile name mode
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
          hPutStr h s
 #else
          catchException (hPutStr h s) (\e -> hClose h >> throw e)
@@ -232,7 +232,7 @@ writeFile2 mode name s
 -- additional I/O primitives and their wrapping in the I/O monad
 ----------------------------------------------------------------
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 #else
 foreign import prim primHPutByteArray   :: Handle -> ByteArray -> ()
@@ -250,7 +250,7 @@ hGetContents     :: Handle -> IO String
 hPutStr          :: Handle -> String -> IO ()
 
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 hGetContents h = do b <- hIsEOF h
                     if b

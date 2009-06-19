@@ -1,5 +1,6 @@
 %%[8
 #include "../rts.h"
+#include "interpreter.h"
 %%]
 
 %%[97
@@ -29,8 +30,8 @@ int dummy_integer ;
 
 %%[97
 #if USE_GMP
-#define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(GB_Word)) + 1)
-#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(GB_Word)) + 1)
+#define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(Word)) + 1)
+#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(Word)) + 1)
 
 #define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_mpz)
 #define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_intl)
@@ -139,22 +140,22 @@ void gb_Free_GMP( void *n, size_t nBytesOld )
 
 %%[97
 #if USE_GMP
-PRIM Float gb_primRationalToFloat( GB_NodePtr nr )
+PRIM Float primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(nr) ;
 	GB_GC_Safe2_Zeroed(numerator, divisor) ;
-	GB_PassExc_Cast_GCSafe( GB_Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
-	GB_PassExc_Cast_GCSafe( GB_Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
+	GB_PassExc_Cast_GCSafe( Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
+	GB_PassExc_Cast_GCSafe( Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	Float res ;
 	res = Cast( Float, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
 	GB_GC_SafeLeave ;
 	return res ;
 }
 
-PRIM Double gb_primRationalToDouble( GB_NodePtr nr )
+PRIM Double primRationalToDouble( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
@@ -170,7 +171,7 @@ PRIM Double gb_primRationalToDouble( GB_NodePtr nr )
 	return Cast( Double, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
 }
 
-PRIM Float gb_primIntegerToFloat( GB_NodePtr n )
+PRIM Float primIntegerToFloat( GB_NodePtr n )
 {
 	// GB_NodePtr nf ;
 	// GB_NodeAlloc_Float_In(nf) ;
@@ -179,7 +180,7 @@ PRIM Float gb_primIntegerToFloat( GB_NodePtr n )
 	return Cast( Float, mpz_get_d( MPZ(n) ) ) ;
 }
 
-PRIM Double gb_primIntegerToDouble( GB_NodePtr n )
+PRIM Double primIntegerToDouble( GB_NodePtr n )
 {
 	// GB_NodePtr nf ;
 	// GB_NodeAlloc_Double_In(nf) ;
@@ -188,13 +189,13 @@ PRIM Double gb_primIntegerToDouble( GB_NodePtr n )
 	return Cast( Double, mpz_get_d( MPZ(n) ) ) ;
 }
 
-PRIM GB_Word gb_primIntegerToInt( GB_NodePtr n )
+PRIM Word primIntegerToInt( GB_NodePtr n )
 {
 	// return GB_Int2GBInt( mpz_get_si( MPZ(n) ) ) ;
 	return ( mpz_get_si( MPZ(n) ) ) ;
 }
 
-PRIM GB_NodePtr gb_primCStringToInteger( char* s )
+PRIM GB_NodePtr primCStringToInteger( char* s )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
@@ -202,21 +203,21 @@ PRIM GB_NodePtr gb_primCStringToInteger( char* s )
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primIntToInteger( GB_Int x )
+PRIM GB_NodePtr primIntToInteger( GB_Int x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primFloatToInteger( Float x )
+PRIM GB_NodePtr primFloatToInteger( Float x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primDoubleToInteger( Double x )
+PRIM GB_NodePtr primDoubleToInteger( Double x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
@@ -234,14 +235,14 @@ PRIM GB_NodePtr gb_primDoubleToInteger( Double x )
 
 %%[97
 #if USE_GMP
-PRIM GB_Word gb_primEqInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM Word primEqInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	if ( GB_Integer_Cmp(x,y) == 0 )
 		return gb_True ;
   	return gb_False ;
 }
 
-PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM Word primCmpInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	int c = GB_Integer_Cmp(x,y) ;
 	if ( c < 0 )
@@ -251,56 +252,56 @@ PRIM GB_Word gb_primCmpInteger( GB_NodePtr x, GB_NodePtr y )
   	return gb_GT ;
 }
 
-PRIM GB_NodePtr gb_primAddInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primAddInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Add_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primSubInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primSubInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Sub_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primMulInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primMulInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Mul_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primDivInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primDivInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Div_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primModInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Mod_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primQuotInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primQuotInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Quot_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primRemInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Rem_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
 	GB_GC_SafeEnter ;
@@ -312,7 +313,7 @@ PRIM GB_NodePtr gb_primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primDivModInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
 	GB_GC_SafeEnter ;
@@ -328,7 +329,7 @@ PRIM GB_NodePtr gb_primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 
 %%[97
 #if USE_GMP
-PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
+PRIM GB_NodePtr primNegInteger( GB_NodePtr x )
 {
 	GB_NodePtr n ;
 	GB_Integer_Neg_In(n,x) ;
@@ -338,56 +339,56 @@ PRIM GB_NodePtr gb_primNegInteger( GB_NodePtr x )
 %%]
 
 %%[99
-PRIM GB_NodePtr gb_primAndInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primAndInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_And_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primOrInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primOrInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Or_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primXorInteger( GB_NodePtr x, GB_NodePtr y )
+PRIM GB_NodePtr primXorInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
 	GB_Integer_Xor_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primComplementInteger( GB_NodePtr x )
+PRIM GB_NodePtr primComplementInteger( GB_NodePtr x )
 {
 	GB_NodePtr n ;
 	GB_Integer_Complement_In(n,x) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primShiftLeftInteger( GB_NodePtr x, GB_Word y )
+PRIM GB_NodePtr primShiftLeftInteger( GB_NodePtr x, Word y )
 {
 	GB_NodePtr n ;
 	GB_Integer_ShiftLeft_In(n,x,y) ;
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primShiftRightInteger( GB_NodePtr x, GB_Word y )
+PRIM GB_NodePtr primShiftRightInteger( GB_NodePtr x, Word y )
 {
 	GB_NodePtr n ;
 	GB_Integer_ShiftRight_In(n,x,y) ;	// with sign extend
 	return n ;
 }
 
-PRIM GB_NodePtr gb_primRotateLeftInteger( GB_NodePtr x, GB_Word y )
+PRIM GB_NodePtr primRotateLeftInteger( GB_NodePtr x, Word y )
 {
-	return gb_primShiftLeftInteger( x, y ) ;
+	return primShiftLeftInteger( x, y ) ;
 }
 
-PRIM GB_NodePtr gb_primRotateRightInteger( GB_NodePtr x, GB_Word y )
+PRIM GB_NodePtr primRotateRightInteger( GB_NodePtr x, Word y )
 {
-	return gb_primShiftRightInteger( x, y ) ;
+	return primShiftRightInteger( x, y ) ;
 }
 
 %%]
@@ -398,16 +399,14 @@ PRIM GB_NodePtr gb_primRotateRightInteger( GB_NodePtr x, GB_Word y )
 
 %%[97
 #ifdef USE_32_BITS
-INTLIKE_ARITH_PRIMS_CODE(gb_,Int32,Int32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primInt32ToInteger( Int32 x )
+PRIM GB_NodePtr primInt32ToInteger( Int32 x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
 	return n ;
 }
 
-PRIM Int32 gb_primIntegerToInt32( GB_NodePtr n )
+PRIM Int32 primIntegerToInt32( GB_NodePtr n )
 {
 	Int32 x = mpz_get_si( MPZ(n) ) ;
 	return ( x ) ;
@@ -416,7 +415,7 @@ PRIM Int32 gb_primIntegerToInt32( GB_NodePtr n )
 %%]
 
 %%[97
-PRIM GB_NodePtr gb_primInt64ToInteger( Int64 x )
+PRIM GB_NodePtr primInt64ToInteger( Int64 x )
 {
 	GB_NodePtr n ;
 	Int64 xpos = ( x < 0 ? -x : x ) ;
@@ -428,7 +427,7 @@ PRIM GB_NodePtr gb_primInt64ToInteger( Int64 x )
 	return n ;
 }
 
-PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
+PRIM Int64 primIntegerToInt64( GB_NodePtr n )
 {
 	Int64 x ;
 	if ( sizeof(Int64) <= sizeof(unsigned long int) ) {
@@ -457,14 +456,14 @@ PRIM Int64 gb_primIntegerToInt64( GB_NodePtr n )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM Word gb_primIntegerToWord( GB_NodePtr n )
+PRIM Word primIntegerToWord( GB_NodePtr n )
 {
 	return ( mpz_get_ui( MPZ(n) ) ) ;
 }
 
-PRIM GB_NodePtr gb_primWordToInteger( Word x )
+PRIM GB_NodePtr primWordToInteger( Word x )
 {
-	// printf( "gb_primWordToInteger %x\n", x ) ;
+	// printf( "primWordToInteger %x\n", x ) ;
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
 	return n ;
@@ -478,26 +477,23 @@ PRIM GB_NodePtr gb_primWordToInteger( Word x )
 
 %%[97
 #ifdef USE_32_BITS
-INTLIKE_ARITH_PRIMS_CODE(gb_,Word32,Word32,gb_False,gb_True,gb_LT,gb_EQ,gb_GT,GB_Word)
-
-PRIM GB_NodePtr gb_primWord32ToInteger( Word32 x )
+PRIM GB_NodePtr primWord32ToInteger( Word32 x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
 	return n ;
 }
 
-PRIM Word32 gb_primIntegerToWord32( GB_NodePtr n )
+PRIM Word32 primIntegerToWord32( GB_NodePtr n )
 {
 	Word32 x = mpz_get_ui( MPZ(n) ) ;
 	return ( x ) ;
 }
-#else
 #endif
 %%]
 
 %%[97
-PRIM GB_NodePtr gb_primWord64ToInteger( Word64 x )
+PRIM GB_NodePtr primWord64ToInteger( Word64 x )
 {
 	GB_NodePtr n ;
 	GB_NodeAlloc_Mpz_In(n) ;
@@ -505,7 +501,7 @@ PRIM GB_NodePtr gb_primWord64ToInteger( Word64 x )
 	return n ;
 }
 
-PRIM Word64 gb_primIntegerToWord64( GB_NodePtr n )
+PRIM Word64 primIntegerToWord64( GB_NodePtr n )
 {
 	Word64 x ;
 	if ( sizeof(Word64) <= sizeof(unsigned long int) ) {
@@ -528,7 +524,7 @@ PRIM Word64 gb_primIntegerToWord64( GB_NodePtr n )
 
 %%[97
 #if USE_GMP
-PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
+PRIM GB_NodePtr primShowInteger( GB_NodePtr integerNd )
 {
 	GB_NodePtr n ;
 	int sz = mpz_sizeinbase( MPZ(integerNd), 10 ) + 2 ;
@@ -539,7 +535,7 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 	GB_NodeAlloc_ByteArray_In( sz, n ) ;
 	memcpy( n->content.bytearray.ptr, buf, sz ) ;
 
-  	return gb_primByteArrayToString1Char( n, GB_Int0 ) ;
+  	return primByteArrayToString1Char( n, GB_Int0 ) ;
 }
 #endif
 %%]
@@ -576,13 +572,13 @@ PRIM GB_NodePtr gb_primShowInteger( GB_NodePtr integerNd )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM Float gb_primEncodeFloat( GB_NodePtr frac, GB_Word exp )
+PRIM Float primEncodeFloat( GB_NodePtr frac, Word exp )
 {
 	Float d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }
 
-PRIM GB_NodePtr gb_primDecodeFloat( Float x )
+PRIM GB_NodePtr primDecodeFloat( Float x )
 	gb_intlDecode(Float,x)
 
 %%]
@@ -592,13 +588,13 @@ PRIM GB_NodePtr gb_primDecodeFloat( Float x )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97
-PRIM Double gb_primEncodeDouble( GB_NodePtr frac, GB_Word exp )
+PRIM Double primEncodeDouble( GB_NodePtr frac, Word exp )
 {
 	Double d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }
 
-PRIM GB_NodePtr gb_primDecodeDouble( Double x )
+PRIM GB_NodePtr primDecodeDouble( Double x )
 	gb_intlDecode(Double,x)
 
 %%]

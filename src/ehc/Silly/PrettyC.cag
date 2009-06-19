@@ -87,8 +87,8 @@ SEM SilModule
                                 >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
                                 >-< text ""
                                 >-< comment ["Auxiliary variable"]
-                                >-< text "GrWord auxVar;"
-                                >-< text "GrWord auxPtr;"
+                                >-< text "Word auxVar;"
+                                >-< text "Word auxPtr;"
                                 >-< text ""
                                 >-< comment ["Function definitions"]
                                 >-< (if @loc.optOwn>=3
@@ -111,8 +111,8 @@ SEM SilModule
 
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
-                                >-< ppWhen (@loc.optOwn>=4) (text "register GrWord* SP asm (\"%esp\");")
-                                -- >-< ppWhen (@loc.optOwn>=4) (text "register GrWord  auxPtr asm (\"%ecx\");")
+                                >-< ppWhen (@loc.optOwn>=4) (text "register WPtr SP asm (\"%esp\");")
+                                -- >-< ppWhen (@loc.optOwn>=4) (text "register Word  auxPtr asm (\"%ecx\");")
                                 >-< indent 4 (    callSillyFunctionFromC @loc.optOwn 1 "initialize"
 %%[[8
                                              >-<  callSillyFunctionFromC @loc.optOwn 2 "fun_fun0tildemain"
@@ -180,15 +180,15 @@ SEM Values
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
-  | Offset      lhs.prettyC   = "(GrWord)(" >|< @var.prettyPtr >|< "+" ++ show @off ++ ")"
-  | Cast        lhs.prettyC   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyC >|< "))"
+  | Offset      lhs.prettyC   = "(Word)(" >|< @var.prettyPtr >|< "+" ++ show @off ++ ")"
+  | Cast        lhs.prettyC   = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyC >|< "))"
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
   | Alloc       lhs.prettyC   =  case @gcManaged of
                                    NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
                                    GCManaged  -> "heapalloc("               >|< show @size >|< ")"
-  | Label       lhs.prettyC   = "((GrWord)(&&" >|< @name >|< "))"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< "))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
   | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
@@ -199,25 +199,25 @@ SEM Value
   | Con         lhs.prettyTXT = @con.prettyTXT
   | Var         lhs.prettyTXT = @var.prettyC
   | Offset      lhs.prettyTXT = @var.prettyPtr >|< "+" ++ show @off
-  | Cast        lhs.prettyTXT = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyTXT >|< "))"
+  | Cast        lhs.prettyTXT = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyTXT >|< "))"
   | Call        lhs.prettyTXT = ( maybe (callCfunction @name)
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyTXTs
   | Alloc       lhs.prettyTXT =  case @gcManaged of
                                    NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
                                    GCManaged  -> "heapalloc("               >|< show @size >|< ")"
-  | Label       lhs.prettyTXT = "((GrWord)(&&" >|< @name >|< "))"
+  | Label       lhs.prettyTXT = "((Word)(&&" >|< @name >|< "))"
   | CompareGT   lhs.prettyTXT = @val.prettyC >#< ">" >#< @con.prettyC
 
 
 SEM Constant
   | LiteralInt  lhs.prettyC   = text (show @value)
-  | LiteralStr  lhs.prettyC   = "((GrWord)" >|< text (show @value) >|< ")"
+  | LiteralStr  lhs.prettyC   = "((Word)" >|< text (show @value) >|< ")"
   | Alias       lhs.prettyC   = text @name
 
 SEM Constant
   | LiteralInt  lhs.prettyTXT = text (show @value)
-  | LiteralStr  lhs.prettyTXT = "((GrWord)" >|< text @value >|< ")"
+  | LiteralStr  lhs.prettyTXT = "((Word)" >|< text @value >|< ")"
   | Alias       lhs.prettyTXT = text @name
 
 SEM Variable
@@ -226,7 +226,7 @@ SEM Variable
     Param       lhs.prettyC   = case @name of 
                                   HNmNr _ OrigNone -> text "0"
                                   _                -> text (hsnShowAlphanumeric @name)
-                lhs.prettyPtr = "((Pointer)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+                lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
   | BP          lhs.prettyC   = text "BP"
@@ -234,11 +234,11 @@ SEM Variable
   | RP          lhs.prettyC   = text "RP"
                 lhs.prettyPtr = text "RP"
   | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
-                lhs.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
+                lhs.prettyPtr = "((WPtr)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
   | Aux         lhs.prettyC   = text "auxVar"
-                lhs.prettyPtr = text "((Pointer)auxVar)"
+                lhs.prettyPtr = text "((WPtr)auxVar)"
   | Ptr         lhs.prettyC   = text "auxPtr"
-                lhs.prettyPtr = text "((Pointer)auxPtr)"
+                lhs.prettyPtr = text "((WPtr)auxPtr)"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
                 lhs.prettyPtr = error "attempt to use Variable_None as pointer"
   | Unembedded  lhs.prettyC   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
@@ -300,10 +300,10 @@ callSillyFunctionFromC :: Int -> Int -> String -> PP_Doc
 callSillyFunctionFromC optOwn n nm
  | optOwn<=2 = nm >|< "();"
  | optOwn>=3 = let lab = "mainlab" ++ show n
-               in  "*--SP = (GrWord)(&&" >|< lab >|< ");"   -- return address
+               in  "*--SP = (Word)(&&" >|< lab >|< ");"   -- return address
                    >-< ppWhen optTraceAssign
                               (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
-                   >-< "*--SP = (GrWord)0;"                 -- link
+                   >-< "*--SP = (Word)0;"                 -- link
                    >-< "goto" >#< nm >|< ";"                -- do the call
                    >-< label lab                            -- return here
  
@@ -349,13 +349,13 @@ constantDefinition (x,n)
 
 variableDeclaration :: String -> PP_Doc
 variableDeclaration x
- = "GrWord" >#< text x >|< ";"
+ = "Word" >#< text x >|< ";"
 
 methodHead :: String -> [String] -> PP_Doc
 methodHead nm params
  =  let parameters = if null params
                       then "void"
-                      else commaSeparated (map (declareName "GrWord") params)
+                      else commaSeparated (map (declareName "Word") params)
     in  "void" >#< nm >|< "(" >|< parameters >|< ")"
 
 
@@ -381,7 +381,7 @@ methodLocals :: [String] -> PP_Doc
 methodLocals ns
  = ppUnless (null ns)
             (   comment ["Local names"]
-            >-< declareNames "GrWord" ns
+            >-< declareNames "Word" ns
             )
 
 

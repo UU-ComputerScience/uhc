@@ -8,6 +8,7 @@
 #include <getopt.h>
 %%]
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Timing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -17,7 +18,6 @@
 
 #if TIMING
 #include <time.h>
-
 static clock_t clockStart, clockStop ;
 #endif
 %%]
@@ -26,10 +26,8 @@ static clock_t clockStart, clockStop ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Globals
+%%% Globals: Program arguments
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Program arguments
 
 %%[99
 int rtsArgC ;
@@ -49,15 +47,15 @@ void globalsSetup(int argc, char** argv)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-Pointer SP, RP ;
-Pointer Stack, ReturnArea ;
+WPtr SP, RP ;
+WPtr Stack, ReturnArea ;
 
-Pointer StackAreaHigh, StackAreaLow ;
+WPtr StackAreaHigh, StackAreaLow ;
 
 #if ! ( USE_BOEHM_GC || USE_EHC_MM )
-Pointer HP;
-Pointer HeapAreaLow;
-Pointer HeapAreaHigh;
+WPtr HP;
+WPtr HeapAreaLow;
+WPtr HeapAreaHigh;
 #endif
 %%]
 
@@ -67,20 +65,20 @@ void memorySetup()
 #if USE_BOEHM_GC
     GC_INIT() ;
 
-    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
-    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);
+    ReturnArea = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*RETURNSIZE);
 #elif USE_EHC_MM
     mm_init() ;
 
-    Stack = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*STACKSIZE);
-    ReturnArea = (Pointer)GC_MALLOC_UNCOLLECTABLE(sizeof(GrWord)*RETURNSIZE);
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);
+    ReturnArea = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*RETURNSIZE);
 #else
-    HeapAreaLow = (Pointer)malloc(sizeof(GrWord)*HEAPSIZE);
+    HeapAreaLow = (WPtr)malloc(sizeof(Word)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
     HP = HeapAreaLow;
 
-    Stack = (Pointer)malloc(sizeof(GrWord)*STACKSIZE);
-    ReturnArea = (Pointer)malloc(sizeof(GrWord)*RETURNSIZE);
+    Stack = (WPtr)malloc(sizeof(Word)*STACKSIZE);
+    ReturnArea = (WPtr)malloc(sizeof(Word)*RETURNSIZE);
 #endif
     RP = ReturnArea;
 
@@ -99,9 +97,9 @@ void memorySetup()
 %%[8
 #if USE_BOEHM_GC || USE_EHC_MM
 #else
-GrWord heapalloc(int n)
+Word heapalloc(int n)
 {
-    GrWord res = (GrWord) HP;
+    Word res = (Word) HP;
     HP += n;
     if (HP>=HeapAreaHigh)
     {
@@ -115,25 +113,15 @@ GrWord heapalloc(int n)
 
 %%]
 
-%%[8
-void memoryDumpResult_Sil()
-{
-#if USE_BOEHM_GC
-     //printf("result SP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, RP[0], RP[1] );
-
-     printf("%d\n", (int)RP[1] );
-#else
-     //printf("result SP offset=%d HP offset=%d tag=%d value=%d\n", Stack+STACKSIZE-1-SP, HP-HeapAreaLow, RP[0], RP[1] );
-     printf("%d\n", (int)RP[1] );
-#endif
-}
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main entry points for Silly init,run,exit
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+
+#ifdef __UHC_TARGET_C__
+
 int main_Sil_Init1(int argc, char** argv)
 {
 	memorySetup() ;
@@ -158,7 +146,7 @@ int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() )
 int main_Sil_Exit(int argc, char** argv)
 {
 %%[[8
-	memoryDumpResult_Sil() ;
+     printf("%d\n", (int)RP[1] );
 %%][100
 %%]]
 	
@@ -168,6 +156,8 @@ int main_Sil_Exit(int argc, char** argv)
 #	endif
     return 0;
 }
+
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,24 +166,23 @@ int main_Sil_Exit(int argc, char** argv)
 
 %%[8
 
-void gb_prState( char* msg, int maxStkSz );
-
-/* options descriptor */
-int gb_opt_rtsOn ;
-
-static struct option gb_longopts1[] =
-  { { "rts+"	, no_argument	, &gb_opt_rtsOn		, 1 }
-  , { NULL		, 0				, NULL				, 0 }
-  } ;
-
-static struct option gb_longopts2[] =
-  { { "rts-"	, no_argument	, &gb_opt_rtsOn		, 0 }
-  , { NULL		, 0				, NULL				, 0 }
-  } ;
-%%]
-
-%%[8
 #ifdef __UHC_TARGET_BC__
+
+
+// Interface with interpreter
+void gb_prState( char* msg, int maxStkSz );
+void gb_chan_initstd(void);
+void gb_Initialize(void);
+void gb_checkInterpreterAssumptions(void);
+void gb_interpretLoopWith(GB_BytePtr) ;
+void gb_push(GB_Word);
+void gb_setTOS(GB_Word);
+GB_Word gb_getTOS(void);
+void gb_prTOSAsInt(void);
+extern unsigned long gb_StepCounter;
+
+
+
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
 	memorySetup() ;
@@ -210,13 +199,24 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 %%]]
 	gb_checkInterpreterAssumptions() ;
 	gb_Initialize() ;
-	
-	
 	return 0 ;
-	
 }
-#endif
-%%]
+
+/*
+int gb_opt_rtsOn ;
+
+static struct option gb_longopts1[] =
+  { { "rts+"	, no_argument	, &gb_opt_rtsOn		, 1 }
+  , { NULL		, 0				, NULL				, 0 }
+  } ;
+
+static struct option gb_longopts2[] =
+  { { "rts-"	, no_argument	, &gb_opt_rtsOn		, 0 }
+  , { NULL		, 0				, NULL				, 0 }
+  } ;
+
+
+
 	// following crashes, dunno why
 	gb_opt_rtsOn = False ;
 	int ch ;
@@ -248,16 +248,16 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 	// optreset = True ; // flag unknown at some platforms
 	
 	return 0 ;
+*/
 
-%%[8
-#ifdef __UHC_TARGET_BC__
+
 int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 {
 	gb_push( initCAF ) ;
 %%[[99
 	GB_NodePtr initCAFApp ;
-	GB_MkAppNode1In( initCAFApp, GB_TOS, gb_Unit ) ;
-	GB_SetTOS(initCAFApp) ;
+	GB_MkAppNode1In( initCAFApp, gb_getTOS(), gb_Unit ) ;
+	gb_setTOS(Cast(GB_Word,initCAFApp)) ;
 %%]]
 	// printf( "main_GB_Run\n" ) ;
 #	if TIMING
@@ -280,11 +280,9 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 	}
 	return 0 ;
 }
-#endif
-%%]
 
-%%[8
-#ifdef __UHC_TARGET_BC__
+
+
 int main_GB_Exit(int argc, char** argv)
 {	
 #if TIMING
@@ -296,7 +294,7 @@ int main_GB_Exit(int argc, char** argv)
 	IF_INFO_EXITSTATE_ON(printf("Time %.3f secs, instr/sec %.0f\n", clockDiff, speed ) ;) ;
 #endif
 #ifdef TRACE
-	// absolutely most definitely the wrong place to do this, but for now, for quick testing
+	// quick testing of memory manager:
 	// mm_pages_Buddy_Test() ;
 	// mm_allocator_LOF_Test() ;
 	// mm_deque_Test() ;
@@ -305,6 +303,7 @@ int main_GB_Exit(int argc, char** argv)
 	return 0 ;
 }
 #endif
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

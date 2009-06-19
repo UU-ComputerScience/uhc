@@ -133,7 +133,7 @@
 #include <vfork.h>
 #endif
 
-#ifndef __UHC_1_0_0__
+#ifndef __UHC__
 #include "dirUtils.h"
 #endif
 #ifndef __UHC__
@@ -429,7 +429,7 @@ __hscore_ftruncate( int fd, off_t where )
 #endif
 }
 
-#ifndef __UHC_1_0_0__
+#ifndef __UHC__
 INLINE int
 __hscore_setmode( int fd, HsBool toBin )
 {
@@ -439,7 +439,7 @@ __hscore_setmode( int fd, HsBool toBin )
   return 0;
 #endif
 }
-#endif /* !__UHC_1_0_0__ */
+#endif /* !__UHC__ */
 
 #if __GLASGOW_HASKELL__
 

@@ -1,5 +1,6 @@
 %%[8
 #include "../rts.h"
+#include "interpreter.h"
 %%]
 
 %%[8.dummyForLinker
@@ -89,7 +90,7 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 {
 	GB_NodePtr ioe_handle ;
-	GB_Word    ioe_type ;
+	Word    ioe_type ;
 	GB_NodePtr ioe_filename ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe1(chan) ;
@@ -121,18 +122,18 @@ GB_NodePtr gb_ThrowWriteChanError( GB_NodePtr chan )
 %%% I/O: basic primitives
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-PRIM GB_NodePtr gb_primStdin()
+PRIM GB_NodePtr primStdin()
 {
   	return gb_chan_stdin ;
 }
 
-PRIM GB_NodePtr gb_primStdout()
+PRIM GB_NodePtr primStdout()
 {
-  	IF_GB_TR_ON(3,printf("gb_primStdout\n" ););
+  	IF_GB_TR_ON(3,printf("primStdout\n" ););
   	return gb_chan_stdout ;
 }
 
-PRIM GB_NodePtr gb_primStderr()
+PRIM GB_NodePtr primStderr()
 {
   	return gb_chan_stderr ;
 }
@@ -140,26 +141,26 @@ PRIM GB_NodePtr gb_primStderr()
 
 %%[98
 
-PRIM GB_Word gb_primGBHandleFileno( GB_NodePtr chan )
+PRIM Word primGBHandleFileno( GB_NodePtr chan )
 {
 	return ( fileno(chan->content.chan.file) ) ;
 }
 
-PRIM GB_Word gb_primEqGBHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
+PRIM Word primEqGBHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
 {
 	return ( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) ? gb_True : gb_False ) ;
 }
 
-PRIM GB_Word gb_primEqGBHandleFileno( GB_NodePtr chan, GB_Word fno )
+PRIM Word primEqGBHandleFileno( GB_NodePtr chan, Word fno )
 {
 	return ( fno == fileno(chan->content.chan.file) ? gb_True : gb_False ) ;
 }
 
-PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr mbHandleNr )   
+PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mbHandleNr )   
 {
     /* mbHandleNr to be used only for std{in,out,err}, ignoring the opening mode. */
 	int nmSz = 0 ;
-	GB_Word mbHandleNrFromJust = 0 ;
+	Word mbHandleNrFromJust = 0 ;
 	GB_GC_SafeEnter ;
 	GB_GC_Safe4(mbHandleNrFromJust,nmNd,modeEnum,mbHandleNr) ;
 	GB_PassExc_GCSafe( gb_listForceEval( &nmNd, &nmSz ) ) ;
@@ -167,7 +168,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	GB_PassExc_GCSafe( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
 	nm[ nmSz ] = 0 ;
 
-	GB_PassExc_GCSafe( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
+	GB_PassExc_GCSafe( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(Word,mbHandleNr) ) ) ) ;
 	Bool mbHandleNrIsJust = False ;
 	if ( GB_NH_Fld_Tag(mbHandleNr->header) == GB_Tag_Maybe_Just ) {
 		mbHandleNrIsJust = True ;
@@ -211,7 +212,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 	if ( f == NULL )
 	{
 		GB_NodePtr ioe_handle ;
-		GB_Word    ioe_type ;
+		Word    ioe_type ;
 		GB_NodePtr ioe_filename ;
 		GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
 
@@ -260,7 +261,7 @@ PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_Node
 %%]]
 }
 
-PRIM GB_NodePtr gb_primHClose( GB_NodePtr handle )
+PRIM GB_NodePtr primHClose( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -271,7 +272,7 @@ PRIM GB_NodePtr gb_primHClose( GB_NodePtr handle )
 	return gb_Unit ;
 }
 
-PRIM GB_NodePtr gb_primHFlush( GB_NodePtr handle )
+PRIM GB_NodePtr primHFlush( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -282,7 +283,7 @@ PRIM GB_NodePtr gb_primHFlush( GB_NodePtr handle )
 	return gb_Unit ;
 }
 
-PRIM GB_Word gb_primHGetChar( GB_NodePtr handle )
+PRIM Word primHGetChar( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -293,10 +294,10 @@ PRIM GB_Word gb_primHGetChar( GB_NodePtr handle )
 	int c ;
 	GB_PassExc_CastAsWord( gb_ChanGetChar( chan, True, &isEof, &c ) ) ;
 	// return Cast(GB_NodePtr,GB_Int2GBInt(c)) ;
-	return Cast(GB_Word,c) ;
+	return Cast(Word,c) ;
 }
 
-PRIM GB_NodePtr gb_primHPutChar( GB_NodePtr handle, GB_Word c )
+PRIM GB_NodePtr primHPutChar( GB_NodePtr handle, Word c )
 {	
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -320,7 +321,7 @@ PRIM GB_NodePtr gb_primHPutChar( GB_NodePtr handle, GB_Word c )
 
 %%[98
 
-PRIM GB_NodePtr gb_primHGetContents( GB_NodePtr handle )
+PRIM GB_NodePtr primHGetContents( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -341,7 +342,7 @@ PRIM GB_NodePtr gb_primHGetContents( GB_NodePtr handle )
 		GB_GC_SafeLeave ;
 		return gb_throwChanInteractionException( chan, strerror( errno ) ) ;
 	} else {
-		GB_MkCFunNode1In(n,&gb_primHGetContents
+		GB_MkCFunNode1In(n,&primHGetContents
 %%[[98
 		                ,chan) ;
 %%][99
@@ -354,14 +355,14 @@ PRIM GB_NodePtr gb_primHGetContents( GB_NodePtr handle )
 	return res ;
 }
 
-PRIM GB_NodePtr gb_primHPutByteArray( GB_NodePtr handle, GB_NodePtr a )
+PRIM GB_NodePtr primHPutByteArray( GB_NodePtr handle, GB_NodePtr a )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
 %%]]
-  	IF_GB_TR_ON(3,printf("gb_primWriteChan sz %d\n", a->content.bytearray.size ););
+  	IF_GB_TR_ON(3,printf("primWriteChan sz %d\n", a->content.bytearray.size ););
   	size_t szWritten ;
 	szWritten = fwrite( a->content.bytearray.ptr, 1, a->content.bytearray.size, chan->content.chan.file ) ;
 	if (szWritten != a->content.bytearray.size) {

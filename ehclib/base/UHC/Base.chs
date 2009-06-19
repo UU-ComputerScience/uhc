@@ -54,13 +54,15 @@ module UHC.Base   -- adapted from thye Hugs prelude
     AsyncException(..),
     IOException       ,
     ExitCode      (..),
-#ifndef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
+    forceString,
+#else
     throw,
 #endif
 
 --  dangerous functions
     asTypeOf, error, undefined, seq, ($!),
-        forceString,
+ 
  
 -- functions on specific types    
     -- Bool
@@ -154,6 +156,12 @@ f $! x                = x `seq` f x
 foreign import prim "primUnsafeId" unsafeCoerce :: forall a b . a -> b
 
 
+----------------------------------------------------------------
+-- error, undefined
+----------------------------------------------------------------
+
+#ifdef __UHC_TARGET_C__
+
 forceString :: String -> String
 forceString s = stringSum s `seq` s
 
@@ -161,21 +169,16 @@ stringSum :: String -> Int
 stringSum [] = 0
 stringSum (x:xs) = primCharToInt x + stringSum xs
 
-
-----------------------------------------------------------------
--- error, undefined
-----------------------------------------------------------------
-
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
-
 foreign import prim primError :: String -> a
 
 error          :: forall a . String -> a
 error s         = primError (forceString s)
+
 #else
+
 error          :: forall a . String -> a
--- error          :: String -> a
 error s         = throw (ErrorCall s)
+
 #endif
 
 undefined :: forall a . a
@@ -185,15 +188,15 @@ undefined       = error "Prelude.undefined"
 -- Throw exception
 ----------------------------------------------------------------
 
-#ifndef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
+-- defined in UHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
+#else
 
 foreign import prim primThrowException :: forall a x . SomeException' x -> a
 
 throw :: SomeException' x -> a
 throw e = primThrowException e
 
-#else
--- defined in UHC.OldException, on top of error because exceptions are not implemented, and show of exc is needed.
 #endif
 
 ----------------------------------------------------------------
@@ -222,13 +225,10 @@ foreign import prim primByteArrayLength   :: ByteArray -> Int
 foreign import prim primByteArrayToString :: ByteArray -> String
 
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
-
+#ifdef __UHC_TARGET_C__
 foreign import prim packedStringToInteger :: PackedString -> Integer
-
 #else
 foreign import prim "primCStringToInteger" packedStringToInteger :: PackedString -> Integer
-
 #endif
 
 
@@ -770,6 +770,9 @@ instance Eq a => Eq [a] where
     []     == []     =  True
     (x:xs) == (y:ys) =  x==y && xs==ys
     _      == _      =  False
+    []     /= []     =  False
+    (x:xs) /= (y:ys) =  x/=y || xs/=ys
+    _      /= _      =  True
 
 instance Ord a => Ord [a] where
     compare []     (_:_)  = LT
@@ -802,36 +805,30 @@ primCompAux x y o = case compare x y of EQ -> o; LT -> LT; GT -> GT
 -- type Int builtin
 
 PRIMS_BOUNDED(Int,primMinInt,primMaxInt)
-
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
-foreign import prim primIntegerToInt :: Integer -> Int
-foreign import prim primIntToInteger :: Int -> Integer
-#else
 PRIMS_CONVERSION_INTEGER(Int,primIntegerToInt,primIntToInteger)
-#endif
 
-PRIMS_EQ(Int,primEqInt)
-PRIMS_ORD2(Int,primCmpInt,primLtInt,primGtInt)
+PRIMS_EQ(Int,primEqInt,primNeInt)
+PRIMS_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
 PRIMS_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt)
 
-INSTANCE_EQ(Int,primEqInt)
-INSTANCE_ORD2(Int,primCmpInt,primLtInt,primGtInt)
+INSTANCE_EQ(Int,primEqInt,primNeInt)
+INSTANCE_ORD(Int,primCmpInt,primLtInt,primGtInt,primLeInt,primGeInt)
 INSTANCE_BOUNDED(Int,primMinInt,primMaxInt)
 INSTANCE_REAL(Int)
 INSTANCE_NUM(Int,primAddInt,primSubInt,primMulInt,primNegInt,primIntegerToInt,id)
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
 
 foreign import prim primDivInt       :: Int -> Int -> Int
 foreign import prim primModInt       :: Int -> Int -> Int
---foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
 foreign import prim primQuotInt      :: Int -> Int -> Int
 foreign import prim primRemInt       :: Int -> Int -> Int
---foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
+
+
+#ifdef __UHC_TARGET_C__
 
 instance Integral Int where
-    divMod    = undefined
-    quotRem   = undefined
+    divMod x y   = (primDivInt x y, primModInt x y)
+    quotRem x y  = (primQuotInt x y, primRemInt x y)
     div       = primDivInt
     quot      = primQuotInt
     rem       = primRemInt
@@ -841,11 +838,7 @@ instance Integral Int where
 
 #else
 
-foreign import prim primDivInt       :: Int -> Int -> Int
-foreign import prim primModInt       :: Int -> Int -> Int
 foreign import prim primDivModInt    :: Int -> Int -> (Int,Int)
-foreign import prim primQuotInt      :: Int -> Int -> Int
-foreign import prim primRemInt       :: Int -> Int -> Int
 foreign import prim primQuotRemInt   :: Int -> Int -> (Int,Int)
 
 instance Integral Int where
@@ -875,23 +868,24 @@ instance Read Int where
 
 --foreign import prim primShowInt :: Int -> String
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 {-
- This implmentation fails for showInt minBound because in 2's complement arithmetic
+ This implementation fails for showInt minBound because in 2's complement arithmetic
  -minBound == maxBound+1 == minBound
 -}
-showInt :: Int -> String   -- TODO: replace by primitive
+showInt :: Int -> String
 showInt x | x<0  = '-' : showInt(-x)
           | x==0 = "0"
           | otherwise = (map primIntToChar . map (+48) . reverse . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
-#endif
 
 instance Show Int where
---  show   = primShowInt
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
     show   = showInt
+    
 #else
+
+instance Show Int where
     show   = show . toInteger
+
 #endif
 
 
@@ -929,38 +923,41 @@ instance Real Integer where
     toRational x = x % 1
 
 
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+foreign import prim primQuotInteger          :: Integer -> Integer -> Integer
+foreign import prim primRemInteger           :: Integer -> Integer -> Integer
+foreign import prim primDivInteger           :: Integer -> Integer -> Integer
+foreign import prim primModInteger           :: Integer -> Integer -> Integer
+
+
+#ifdef __UHC_TARGET_C__
 
 instance Integral Integer where
-    divMod      = error "divMod undefined"
-    quotRem     = error "quotRem undefined"
-    div         = error "div undefined"
-    mod         = error "mod undefined"
-    quot        = error "quot undefined"
-    rem         = error "rem undefined"
+    divMod x y  = (primDivInteger x y, primModInteger x y)
+    quotRem x y = (primQuotInteger x y, primRemInteger x y)
+    div         = primDivInteger
+    quot        = primQuotInteger
+    rem         = primRemInteger
+    mod         = primModInteger
     toInteger x = x
     toInt       = primIntegerToInt
 
 #else
 
-foreign import prim primQuotInteger          :: Integer -> Integer -> Integer
-foreign import prim primRemInteger           :: Integer -> Integer -> Integer
 foreign import prim primQuotRemInteger       :: Integer -> Integer -> (Integer,Integer)
-foreign import prim primDivInteger           :: Integer -> Integer -> Integer
-foreign import prim primModInteger           :: Integer -> Integer -> Integer
 foreign import prim primDivModInteger        :: Integer -> Integer -> (Integer,Integer)
 
 instance Integral Integer where
     divMod      = primDivModInteger
     quotRem     = primQuotRemInteger
     div         = primDivInteger
-    mod         = primModInteger
     quot        = primQuotInteger
     rem         = primRemInteger
+    mod         = primModInteger
     toInteger x = x
     toInt       = primIntegerToInt
 
 #endif
+
 
 instance Enum Integer where
     succ x         = x + 1
@@ -1062,19 +1059,23 @@ fromRat x = (m%1)*(b%1)^^n
           where (m,n) = decodeFloat x
                 b     = floatRadix x
 
-foreign import prim primDivFloat      :: Float -> Float -> Float
+foreign import prim primDivideFloat      :: Float -> Float -> Float
+foreign import prim primRecipFloat      :: Float -> Float
 foreign import prim primDoubleToFloat :: Double -> Float
 foreign import prim primFloatToDouble :: Float -> Double
 
 instance Fractional Float where
-    (/)          = primDivFloat
+    (/)          = primDivideFloat
+    recip        = primRecipFloat
     fromRational = primRationalToFloat
     fromDouble   = primDoubleToFloat
 
-foreign import prim primDivDouble :: Double -> Double -> Double
+foreign import prim primDivideDouble :: Double -> Double -> Double
+foreign import prim primRecipDouble :: Double -> Double
 
 instance Fractional Double where
-    (/)          = primDivDouble
+    (/)          = primDivideDouble
+    recip        = primRecipDouble
     fromRational = primRationalToDouble
     fromDouble x = x
 

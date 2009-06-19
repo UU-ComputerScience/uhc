@@ -165,6 +165,7 @@ ehclib-variant-dflt: \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,pkgs="" ; \
+	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) --meta-export-env ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \

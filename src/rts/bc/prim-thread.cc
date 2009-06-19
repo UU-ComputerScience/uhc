@@ -19,7 +19,7 @@ int dummy_thread ;
 Just telling the outside world we do not have threads
 
 %%[99
-PRIM GB_Word rtsSupportsBoundThreads()
+PRIM Word rtsSupportsBoundThreads()
 {
 	return gb_False ;
 }

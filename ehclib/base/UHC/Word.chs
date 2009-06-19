@@ -19,8 +19,8 @@ import Data.Bits
 %%]
 
 %%[99
-INSTANCE_EQ(Word,primEqWord)
-INSTANCE_ORD2(Word,primCmpWord,primLtWord,primGtWord)
+INSTANCE_EQ(Word,primEqWord,primNeWord)
+INSTANCE_ORD(Word,primCmpWord,primLtWord,primGtWord,primLeWord,primGeWord)
 INSTANCE_BOUNDED(Word,primMinWord,primMaxWord)
 INSTANCE_NUM(Word,primAddWord,primSubWord,primMulWord,primNegWord,primIntegerToWord,primIntToWord)
 INSTANCE_ENUM(Word,primIntToWord,primWordToInt)
@@ -33,8 +33,8 @@ INSTANCE_BITS1(Word,SIZEOF_HSWORD*8-BITSIZEOF_WORDTAG,False,primAndWord,primOrWo
 %%]
 
 %%[99
-INSTANCE_EQ(Word64,primEqWord64)
-INSTANCE_ORD2(Word64,primCmpWord64,primLtWord64,primGtWord64)
+INSTANCE_EQ(Word64,primEqWord64,primNeWord64)
+INSTANCE_ORD(Word64,primCmpWord64,primLtWord64,primGtWord64,primLeWord64,primGeWord64)
 INSTANCE_BOUNDED(Word64,primMinWord64,primMaxWord64)
 INSTANCE_NUM(Word64,primAddWord64,primSubWord64,primMulWord64,primNegWord64,primIntegerToWord64,primIntToWord64)
 INSTANCE_ENUM(Word64,primIntToWord64,primWord64ToInt)
@@ -49,8 +49,8 @@ INSTANCE_BITS1(Word64,64,False,primAndWord64,primOrWord64,primXorWord64,primComp
 If possible (when 32 bits fit into Int), use Int stuff, otherwise boxed with additional primitives.
 
 %%[99
-INSTANCE_EQ(Word32,primEqWord32)
-INSTANCE_ORD2(Word32,primCmpWord32,primLtWord32,primGtWord32)
+INSTANCE_EQ(Word32,primEqWord32,primNeWord32)
+INSTANCE_ORD(Word32,primCmpWord32,primLtWord32,primGtWord32,primLeWord32,primGeWord32)
 INSTANCE_BOUNDED(Word32,primMinWord32,primMaxWord32)
 INSTANCE_NUM(Word32,primAddWord32,primSubWord32,primMulWord32,primNegWord32,primIntegerToWord32,primIntToWord32)
 INSTANCE_ENUM(Word32,primIntToWord32,primWord32ToInt)
@@ -63,8 +63,8 @@ INSTANCE_BITS1(Word32,32,False,primAndWord32,primOrWord32,primXorWord32,primComp
 %%]
 
 %%[99
-INSTANCE_EQ(Word16,primEqWord16)
-INSTANCE_ORD2(Word16,primCmpWord16,primLtWord16,primGtWord16)
+INSTANCE_EQ(Word16,primEqWord16,primNeWord16)
+INSTANCE_ORD(Word16,primCmpWord16,primLtWord16,primGtWord16,primLeWord16,primGeWord16)
 INSTANCE_BOUNDED(Word16,primMinWord16,primMaxWord16)
 INSTANCE_NUM(Word16,primAddWord16,primSubWord16,primMulWord16,primNegWord16,primIntegerToWord16,primIntToWord16)
 INSTANCE_ENUM(Word16,primIntToWord16,primWord16ToInt)
@@ -77,8 +77,8 @@ INSTANCE_BITS1(Word16,16,False,primAndWord16,primOrWord16,primXorWord16,primComp
 %%]
 
 %%[99
-INSTANCE_EQ(Word8,primEqWord8)
-INSTANCE_ORD2(Word8,primCmpWord8,primLtWord8,primGtWord8)
+INSTANCE_EQ(Word8,primEqWord8,primNeWord8)
+INSTANCE_ORD(Word8,primCmpWord8,primLtWord8,primGtWord8,primLeWord8,primGeWord8)
 INSTANCE_BOUNDED(Word8,primMinWord8,primMaxWord8)
 INSTANCE_NUM(Word8,primAddWord8,primSubWord8,primMulWord8,primNegWord8,primIntegerToWord8,primIntToWord8)
 INSTANCE_ENUM(Word8,primIntToWord8,primWord8ToInt)

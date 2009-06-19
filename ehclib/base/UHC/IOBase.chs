@@ -36,22 +36,23 @@ module UHC.IOBase
     
         -- Exception
     SomeException,
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
     throw,
 #endif
     
-        -- MVar
-    MVar, MVar',
+    	-- MVar
+    MVar, MVar',   -- '
 
     try,
 
         -- Exception related: catch, throw
-#ifndef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
+#else
     catchTracedException,
 #endif
     catch, catchException,
     
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
     FHandle,
 #endif
   )
@@ -361,13 +362,13 @@ data IOMode             -- alphabetical order of constructors required, assumed 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#if __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 data FHandle    -- opaque, contains FILE*
 #else
 data GBHandle   -- opaque, contains GB_Chan
 #endif
 
-#if __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 instance Eq FHandle where
     _ == _ = False
@@ -407,7 +408,7 @@ data Handle
         !(MVar Handle__)                -- The write side
 
   | OldHandle                            
-#if __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
         FHandle                        
 #else
         GBHandle                        
@@ -618,7 +619,7 @@ showException tag msg =
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = m
@@ -652,7 +653,7 @@ catch m h = catchException m $ \e -> case e of
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 
 throw :: SomeException -> a
 throw e = error (show e)
@@ -660,28 +661,13 @@ throw e = error (show e)
 #endif
 %%]
 
-%%[99
-%%]
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
-
-throw :: SomeException -> a
-throw e = error (show e)
-
-#else
-
-foreign import prim primThrowException :: forall a . SomeException -> a
-
-throw :: SomeException -> a
-throw e = primThrowException e
-
-#endif
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% IOError wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-#ifdef __UHC_FULL_PROGRAM_ANALYSIS__
+#ifdef __UHC_TARGET_C__
 ioError :: IOError -> IO a
 ioError = error "ioError"
 
