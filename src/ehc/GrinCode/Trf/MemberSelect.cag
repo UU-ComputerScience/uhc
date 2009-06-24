@@ -107,7 +107,7 @@ SEM GrExpr
                                                            _                                -> error (show f ++ " is not a PApp but a " ++ show node ++ " while pat is " ++ show pat)
                                 ; let (GrVal_Node (GrTag_PApp i g) qs) = node2
                                 ; let args = qs ++ ps
-                                ; if j>i
+                                ; if  j>i
                                   then Nothing  -- TODO: add optimisation for oversaturated case
                                   else return ( if j==i
                                                 then GrExpr_Seq (GrExpr_Store (GrVal_Node (GrTag_Fun        g) args)) pat rest

@@ -45,7 +45,7 @@ cpMsgGrinTrf :: HsName -> String -> EHCompilePhase ()
 cpMsgGrinTrf modNm m
   = do { cr <- get
        ; let (_,_,_,fp) = crBaseInfo modNm cr
-       ; cpMsg' modNm VerboseALot "Local GRIN optim" (Just m) fp
+       ; cpMsg' modNm VerboseALot "Local GRIN optim" (Just m) fp     -- '
        }
 
 cpFromGrinTrf :: HsName -> (Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhase ()

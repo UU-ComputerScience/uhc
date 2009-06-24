@@ -894,7 +894,7 @@ SEM Decl
                                                              
                                                              bind1     = mkCBind1Meta dfltNmStrict (CMetaVal_Dict Nothing) dict1
                                                              bind2     = mkCBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
-                                                             bind3     = mkCBind1Meta rsltNm       (CMetaVal_Dict Nothing) dict3
+                                                             bind3     = mkCBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
                                                              contextArguments = cmetaLiftDict @chrCtxtArgNmL
                                                          in  ( mkCExprLamMeta contextArguments dict4   
                                                              , CMetaVal_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames)

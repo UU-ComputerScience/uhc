@@ -83,7 +83,7 @@ cpEhcFullProgLinkAllModules :: [HsName] -> EHCompilePhase ()
 cpEhcFullProgLinkAllModules modNmL
  = do { cr <- get
       ; let (mainModNmL,impModNmL) = splitMain cr modNmL
-            (_,opts) = crBaseInfo' cr
+            (_,opts) = crBaseInfo' cr   -- '
       ; cpMsg (head modNmL) VerboseDebug ("Main mod split: " ++ show mainModNmL ++ ": " ++ show impModNmL)
       ; case mainModNmL of
           [mainModNm]
@@ -139,9 +139,9 @@ cpEhcFullProgCompileAllModules
             modNmL = map head modNmLL
       ; cpSeq (   []
 %%[[99
-               ++ (let modNmL' = filter (\m -> let (ecu,_,_,_) = crBaseInfo m cr in not $ filelocIsPkg $ ecuFileLocation ecu) modNmL
-                       nrMods = length modNmL'
-                   in  zipWith (\m i -> cpUpdCU m (ecuStoreSeqNr (EHCCompileSeqNr i nrMods)) ) modNmL' [1..nrMods]
+               ++ (let modNmL2 = filter (\m -> let (ecu,_,_,_) = crBaseInfo m cr in not $ filelocIsPkg $ ecuFileLocation ecu) modNmL
+                       nrMods = length modNmL2
+                   in  zipWith (\m i -> cpUpdCU m (ecuStoreSeqNr (EHCCompileSeqNr i nrMods)) ) modNmL2 [1..nrMods]
                   )
 %%]]
                ++ [cpEhcFullProgModuleCompileN modNmL]
@@ -174,12 +174,14 @@ cpEhcFullProgPostModulePhases opts modNmL modSpl
     ) opts modNmL modSpl
 
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-  = cpSeq [ cpSeq [cpEnsureGrin m | m <- modNmL]
-          , mergeIntoOneBigGrin
-          , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
-          , cpOutputGrinForLaterUse "fullgrin" mainModNm
-          , cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
-          ]
+  = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
+           , mergeIntoOneBigGrin
+           , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
+           ]
+           ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-fullgrin" mainModNm] else [])
+           ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
+              ]
+          )
   where mergeIntoOneBigGrin
           = do { cr <- get
                ; cpUpdCU mainModNm (ecuStoreGrin (Grin.grModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigGrin" $ ecuMbGrin $ crCU m cr
@@ -198,12 +200,14 @@ cpEnsureGrin nm
        }
 
 cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
-  = cpSeq [ cpSeq [cpGetPrevCore m | m <- modNmL]
-          , mergeIntoOneBigCore
-          , cpProcessCoreFold mainModNm -- redo folding for replaced main module
-          , cpOutputCore "fullcore" mainModNm
-          , cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
-          ]
+  = cpSeq ([ cpSeq [cpGetPrevCore m | m <- modNmL]
+           , mergeIntoOneBigCore
+           , cpProcessCoreFold mainModNm -- redo folding for replaced main module
+           ]
+           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "full.core" mainModNm] else [])
+           ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
+              ]
+          )
   where mergeIntoOneBigCore
           = do { cr <- get
                ; cpSeq [cpCleanupCore m | m <- modNmL] -- clean up Core and CoreSem (it can still be read through cr in the next statement)
@@ -263,7 +267,7 @@ Compilation of 1 module, as part of a full program compilation
 cpEhcFullProgModuleCompile1 :: HsName -> EHCompilePhase ()
 cpEhcFullProgModuleCompile1 modNm
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,opts) = crBaseInfo' cr   -- '
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (lift $ putStrLn ("====================== Compile1: " ++ show modNm ++ "======================"))
        ; cpEhcFullProgModuleDetermineNeedsCompile modNm
@@ -332,17 +336,17 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSStart
 %%]]
              -> do { cpEhcHaskellModulePrepareHS1 modNm
-                   ; modNm' <- cpEhcHaskellImport stnext modNm
-                   ; cpEhcHaskellModulePrepareHS2 modNm'
-                   ; cpMsg modNm' VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
+                   ; modNm2 <- cpEhcHaskellImport stnext modNm
+                   ; cpEhcHaskellModulePrepareHS2 modNm2
+                   ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
                           (do { cr <- get
-                              ; let (ecu,_,opts,fp) = crBaseInfo modNm' cr
-                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm' ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
+                              ; let (ecu,_,opts,fp) = crBaseInfo modNm2 cr
+                              ; lift $ putStrLn ("After HS import: nm=" ++ show modNm ++ ", newnm=" ++ show modNm2 ++ ", fp=" ++ show fp ++ ", imp=" ++ show (ecuImpNmL ecu))
                               })
-                   ; cpUpdCU modNm' (ecuStoreState (ECUSHaskell stnext))
+                   ; cpUpdCU modNm2 (ecuStoreState (ECUSHaskell stnext))
                    ; cpStopAt CompilePoint_Imports
-                   ; return modNm'
+                   ; return modNm2
                    }
              where stnext = hsstateNext st
            (ECUSHaskell HIStart,Just HSOnlyImports)
@@ -777,7 +781,7 @@ cpProcessEH modNm
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,opts) = crBaseInfo' cr    -- '
              check m  = do { cr <- get
                            ; let (ecu,_,opts,_) = crBaseInfo m cr
                                  cMod   = panicJust "cpProcessTyCoreBasic" $ ecuMbTyCore ecu
@@ -821,7 +825,7 @@ cpProcessTyCoreBasic modNm
 cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,opts) = crBaseInfo' cr   -- '
        ; cpSeq [ cpTransformCore
                    modNm
                      (
@@ -866,7 +870,7 @@ cpProcessCoreFold modNm
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
 cpProcessCoreRest modNm 
   = cpSeq [ cpTranslateCore2Grin modNm
-          , cpOutputGrinForLaterUse "grin" modNm
+          , cpOutputGrin "" modNm
 %%[[(8 jazy)
           , cpTranslateCore2Jazy modNm
 %%]]
@@ -881,11 +885,10 @@ cpProcessCoreRest modNm
 cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
-       ; cpSeq ([ cpOutputGrin "-000-initial" modNm
-                , cpTransformGrin modNm
-                , cpOutputGrin "-099-final" modNm
-                ]
+       ; let (_,opts) = crBaseInfo' cr     -- '
+       ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin "-000-initial" modNm] else [])
+                ++ [cpTransformGrin modNm]
+                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-099-final" modNm]  else [])
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
                 ++ (if ehcOptFullProgAnalysis opts then [cpTranslateGrin modNm] else [])
                )
@@ -896,7 +899,7 @@ cpProcessGrin modNm
 cpProcessBytecode :: HsName -> EHCompilePhase ()
 cpProcessBytecode modNm 
   = do { cr <- get
-       ; let (_,opts) = crBaseInfo' cr
+       ; let (_,opts) = crBaseInfo' cr    -- '
        ; cpSeq [ cpTranslateByteCode modNm
 %%[[99
                , cpCleanupFoldBytecode modNm

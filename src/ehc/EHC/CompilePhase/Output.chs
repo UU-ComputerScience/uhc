@@ -91,7 +91,7 @@ cpOutputJava suff modNm
          }
 %%]
 
-%%[(8 codegen grin) export(cpOutputGrin, cpOutputGrinForLaterUse)
+%%[(8 codegen grin) export(cpOutputGrin)
 cpOutputGrin :: String -> HsName -> EHCompilePhase ()
 cpOutputGrin suff modNm
   =  do  {  cr <- get
@@ -101,23 +101,10 @@ cpOutputGrin suff modNm
                  grinPP = ppGrModule grin
                  mkb x  = x ++ suff
                  fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
-         ;  when (ehcOptDumpGrinStages opts)
-                 (do { cpMsg modNm VerboseALot "Emit Grin"
-                     ; lift $ putPPFPath fpG grinPP 1000
-                     })
-         }
-
-cpOutputGrinForLaterUse :: String -> HsName -> EHCompilePhase ()
-cpOutputGrinForLaterUse suff modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpOutputGrin'" mbGrin
-                 grinPP = ppGrModule grin
-                 fpG    = mkOutputFPath opts modNm fp suff
          ;  cpMsg modNm VerboseALot "Emit Grin"
          ;  lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
          }
+
 %%]
 
 %%[(8 codegen grin) export(cpOutputByteCodeC)
@@ -127,7 +114,7 @@ cpOutputByteCodeC suff modNm
          ;  let  (ecu,_,opts,fp) = crBaseInfo modNm cr
                  bc       = panicJust "cpOutputByteCodeC" $ ecuMbBytecodeSem ecu
                  fpC      = mkOutputFPath opts modNm fp suff
-         ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC
+         ;  cpMsg' modNm VerboseALot "Emit ByteCode C" Nothing fpC     -- '
 %%[[99
          ;  cpRegisterFilesToRm [fpC]
 %%]]

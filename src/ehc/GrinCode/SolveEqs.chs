@@ -237,13 +237,13 @@ solveEquations :: Int -> Equations -> Limitations -> (Int,HptMap)
 solveEquations lenEnv eqs lims =
     runST (
     do { 
-       ; let eqsStr = unlines (map show eqs )
+       --; let eqsStr = unlines (map show eqs )
        --; let limsStr = unlines (map show lims)
-       ; _ <- unsafePerformIO (do { writeFile ("eqs.txt") eqsStr
+       --; _ <- unsafePerformIO (do { writeFile ("eqs.txt") eqsStr
        --                           ; writeFile ("lims.txt") limsStr
-                                  ; return (return ())
-                                  }
-                              )
+       --                           ; return (return ())
+       --                           }
+       --                       )
 
        -- create arrays
        ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
