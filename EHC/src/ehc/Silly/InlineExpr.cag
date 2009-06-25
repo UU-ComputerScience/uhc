@@ -116,7 +116,7 @@ SEM Statement
                                  then Map.insert @dest1.self @source.trf env2
                                  else env2
   
--- In each Call-statement, remove the environment-entries of which the RHS uses the RP-register
+-- In each Call-statement, remove the environment-entries of which the RHS uses the RP-register or a negative offset from SP
 
 SEM Statement
   | Call        lhs.env   =  Map.filter (not . isRPValue) @lhs.env
@@ -131,9 +131,15 @@ SEM Value
 %%]
 
 %%[(8 codegen grin) hs
+
+isSP :: Variable -> Bool
+isSP (Variable_SP)          = True
+isSP (Variable_Subs var n)  = isSP var
+isSP _                      = False 
+
 isRP :: Variable -> Bool
 isRP (Variable_RP)          = True
-isRP (Variable_Subs var _)  = isRP var
+isRP (Variable_Subs var n)  = isRP var || (isSP var && n<0)
 isRP _                      = False 
 
 isRPValue :: Value -> Bool
