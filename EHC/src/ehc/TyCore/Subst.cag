@@ -52,39 +52,43 @@ emptyCSubst :: CSubst
 emptyCSubst = Map.empty
 %%]
 
-On Ty
-
-%%[(8888 codegen) hs export(cSubstAppTy)
-cSubstAppTy :: CSubst -> Ty -> Ty
-cSubstAppTy cs ct
-  = cRepl_Syn_Ty t
-  where t = wrap_Ty
-              (sem_Ty ct)
-              (Inh_Ty { cSubst_Inh_Ty = cs
-%%[[9
-                      , coeArg_Inh_Ty = Expr_CoeArg
-                      -- , doDeepSubst_Inh_Ty = doDeepSubst
-%%]]
-                      })
-%%]
+Options to CSubst
 
 %%[(8 codegen) hs
-cSubstAppTy :: CSubst -> Ty -> Ty
-cSubstAppTy cs ct = cSubstAppExpr False cs ct Nothing
+data CSubstOpts
+  = CSubstOpts
+      { csoptsDoSubstBind		:: 	Bool
+%%[[9
+      , csoptsDoDeepSubst		:: 	Bool
+%%]]
+      }
+
+defaultCSubstOpts :: CSubstOpts
+defaultCSubstOpts
+  = CSubstOpts
+      False
+%%[[9
+      False
+%%]]
 %%]
 
-On Expr
+%%[(8 codegen) hs export(cSubstAppExprAndBinds)
+cSubstAppExprAndBinds :: CSubst -> Ty -> Ty
+cSubstAppExprAndBinds cs ct = cSubstAppExpr (defaultCSubstOpts {csoptsDoSubstBind = True}) cs ct Nothing
+%%]
+
+Subst on Expr
 
 %%[(8 codegen) hs export(cSubstAppExpr)
-cSubstAppExpr :: Bool -> CSubst -> Expr -> Maybe Expr -> Expr
-cSubstAppExpr doDeepSubst cs ce mbOnCe
+cSubstAppExpr :: CSubstOpts -> CSubst -> Expr -> Maybe Expr -> Expr
+cSubstAppExpr opts cs ce mbOnCe
   = cRepl_Syn_Expr t
   where t = wrap_Expr
               (sem_Expr ce)
               (Inh_Expr { cSubst_Inh_Expr = cs
+                        , opts_Inh_Expr = opts
 %%[[9
                         , coeArg_Inh_Expr = maybe Expr_CoeArg id mbOnCe
-                        , doDeepSubst_Inh_Expr = doDeepSubst
 %%]]
                         })
 %%]
@@ -93,7 +97,8 @@ On ValBind
 
 %%[(9 codegen) hs export(cSubstAppValBind)
 cSubstAppValBind :: Bool -> CSubst -> ValBind -> ValBind
-cSubstAppValBind doDeepSubst cs (ValBind_Val n m t e) = ValBind_Val n m t (cSubstAppExpr doDeepSubst cs e Nothing)
+cSubstAppValBind doDeepSubst cs (ValBind_Val n m t e)
+  = ValBind_Val n m t (cSubstAppExpr (defaultCSubstOpts {csoptsDoDeepSubst = doDeepSubst}) cs e Nothing)
 %%]
 
 On CSubst, merges only, application is postponed
@@ -112,7 +117,7 @@ uidTyLToCSubst l = Map.fromList [ (CSKey_Nm k,CSITy v) | (k,v) <- l ]
 %%[(9 codegen) hs export(uidImplsLToCSubst,uidValBindLLToCSubst,uidExprLToCSubst,poiExprLToCSubst,cnstrImplsToCSubst,cAppCoeArg)
 cAppCoeArg :: Expr -> Expr -> Expr
 cAppCoeArg ce coeArg
-  = cSubstAppExpr False emptyCSubst ce (Just coeArg)
+  = cSubstAppExpr defaultCSubstOpts emptyCSubst ce (Just coeArg)
 
 uidExprLToCSubst :: AssocL UID Expr -> CSubst
 uidExprLToCSubst l = Map.fromList [ (CSKey_UID k,CSIExpr v) | (k,v) <- l ]
@@ -165,7 +170,7 @@ instance CSubstitutable Expr where
   cSubstApp cs ce | Map.null cs
     =  ce
   cSubstApp cs ce
-    = cSubstAppExpr False cs ce Nothing
+    = cSubstAppExpr defaultCSubstOpts cs ce Nothing
 
 instance CSubstitutable CSubst where
   cSubstApp cs s = cs `cSubstAppSubst` s
@@ -180,15 +185,19 @@ instance CSubstitutable Expr where
   cSubstApp cs ce | Map.null cs
     =  ce
   cSubstApp cs ce
-    = cSubstAppExpr False cs ce Nothing
+    = cSubstAppExpr defaultCSubstOpts cs ce Nothing
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT AGItf [ opts: CSubstOpts | | ]
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Deepness/shallowness of subst
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 codegen)
-ATTR AllCodeNT AGItf [ doDeepSubst: Bool | | ]
-%%]
 
 %%[(9 codegen)
 SEM Expr
@@ -197,7 +206,7 @@ SEM Expr
                                             =   False
   | Hole
                 loc         .   doDeepSubstHere
-                                            =   @lhs.doDeepSubst
+                                            =   csoptsDoDeepSubst @lhs.opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -225,6 +234,14 @@ SEM Expr
                 (loc.replv,loc.isRepl)      =   case Map.lookup @csKey @lhs.cSubst of
                                                   Just (CSITy t)     -> (t,True)
                                                   _                  -> (@cRepl,False)
+
+SEM ExprSeq1
+  | L1Bind      loc         .   csKey       =   CSKey_Nm @nm
+                (loc.replv,loc.isRepl)      =   if csoptsDoSubstBind @lhs.opts
+                                                then case Map.lookup @csKey @lhs.cSubst of
+                                                       Just (CSITy (Expr_Var n)) -> (ExprSeq1_L1Bind n @l2.cRepl,True)
+                                                       _                         -> (@cRepl,False)
+                                                else (@cRepl,False)
 %%]
 
 %%[(8 codegen)
@@ -232,11 +249,18 @@ SEM Expr
   | Var         inst        .   repl'       :   Expr
                 inst        .   repl'       =   @replv
 
+SEM ExprSeq1
+  | L1Bind      inst        .   repl'       :   ExprSeq1
+                inst        .   repl'       =   @replv
+
 %%]
 
 %%[(9 codegen)
 SEM Expr
   | Var         repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
+
+SEM ExprSeq1
+  | L1Bind      repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
 %%]
 
 %%[(9 codegen)
@@ -288,14 +312,17 @@ ATTR
 
 %%[(8 codegen)
 SEM Expr
-  | Var         lhs         .   cRepl       =   if {- @lhs.doDeepSubst && -} @isRepl then @repl'.cRepl else @replv
+  | Var         lhs         .   cRepl       =   if {- csoptsDoDeepSubst @lhs.opts && -} @isRepl then @repl'.cRepl else @replv
+
+SEM ExprSeq1
+  | L1Bind      lhs         .   cRepl       =   if {- csoptsDoDeepSubst @lhs.opts && -} @isRepl then @repl'.cRepl else @replv
 %%]
 
 %%[(9 codegen)
 SEM Expr
   | CoeArg      lhs         .   cRepl       =   @replv -- if @isRepl then @repl'.cRepl else @cRepl
   | Hole HoleLet ImplsApp ImplsLam
-                lhs         .   cRepl       =   if @lhs.doDeepSubst && @isRepl then @repl'.cRepl else @replv
+                lhs         .   cRepl       =   if csoptsDoDeepSubst @lhs.opts && @isRepl then @repl'.cRepl else @replv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -359,7 +386,7 @@ coeWeaveOn cs lCoeL rCoeL ce
 %%[(9 codegen) hs
 coeWeaveOn2 :: CSubst -> [Coe] -> [Coe] -> Expr -> Expr
 coeWeaveOn2 cs lCoeL rCoeL ce
-  = cSubstAppExpr True s e Nothing
+  = cSubstAppExpr (defaultCSubstOpts {csoptsDoDeepSubst = True}) s e Nothing
   where (e,s) = coeWeaveWithSubstOnAsSubst cs uidStart lCoeL rCoeL ce
 %%]
 

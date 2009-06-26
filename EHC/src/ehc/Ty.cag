@@ -487,6 +487,20 @@ mkCHRPredOccRng r p sc = CHRPredOcc p sc r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Base quantifiers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast) hs export(tyQu_Forall,tyQu_Exists)
+tyQu_Forall = TyQu_Forall metaLevVal
+tyQu_Exists = TyQu_Exists metaLevVal
+%%]
+
+%%[(6 hmtyinfer || hmtyast) hs export(tyQu_KiForall,tyQu_KiExists)
+tyQu_KiForall = TyQu_Forall metaLevTy
+tyQu_KiExists = TyQu_Exists metaLevTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of quantifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -495,21 +509,11 @@ tyquIsExists, tyquIsForall :: TyQu -> Bool
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tyQuProps hs
-tyquIsForall TyQu_Forall              = True
-tyquIsForall _                        = False
+tyquIsForall (TyQu_Forall _)         = True
+tyquIsForall _                       = False
 
-tyquIsExists TyQu_Exists              = True
-tyquIsExists _                        = False
-%%]
-
-%%[(6 hmtyinfer || hmtyast).tyQuProps -4.tyQuProps hs
-tyquIsForall TyQu_Forall              = True
-tyquIsForall TyQu_KiForall            = True
-tyquIsForall _                        = False
-
-tyquIsExists TyQu_Exists              = True
-tyquIsExists TyQu_KiExists            = True
-tyquIsExists _                        = False
+tyquIsExists (TyQu_Exists _)         = True
+tyquIsExists _                       = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -521,30 +525,20 @@ tyquExists, tyquForall :: TyQu -> TyQu
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tyquMisc hs
-tyquForall   TyQu_Exists              = TyQu_Forall
-tyquForall   q                        = q
+tyquForall   (TyQu_Exists l)         = TyQu_Forall l
+tyquForall   q                       = q
 
-tyquExists   TyQu_Forall              = TyQu_Exists
-tyquExists   q                        = q
-%%]
-
-%%[(6 hmtyinfer || hmtyast).tyquMisc -4.tyquMisc hs
-tyquForall   TyQu_Exists              = TyQu_Forall
-tyquForall   TyQu_KiExists            = TyQu_KiForall
-tyquForall   q                        = q
-
-tyquExists   TyQu_Forall              = TyQu_Exists
-tyquExists   TyQu_KiForall            = TyQu_KiExists
-tyquExists   q                        = q
+tyquExists   (TyQu_Forall l)         = TyQu_Exists l
+tyquExists   q                       = q
 %%]
 
 %%[4.showTyQu hs export(showTyQu)
-showTyQu  TyQu_Forall     =  "forall"
-showTyQu  TyQu_Exists     =  "exists"
-%%[[6
-showTyQu  TyQu_KiForall   =  "Forall"
-showTyQu  TyQu_KiExists   =  "Exists"
-%%]]
+showTyQu  (TyQu_Forall 0) =  "forall"
+showTyQu  (TyQu_Forall 1) =  "forall" ++ [charKindStar]
+showTyQu  (TyQu_Forall l) =  "forall" ++ [charKindStar] ++ show l
+showTyQu  (TyQu_Exists 0) =  "exists"
+showTyQu  (TyQu_Exists 1) =  "exists" ++ [charKindStar]
+showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -559,7 +553,15 @@ tyIsCon :: Ty -> Bool
 tyIsCon = isJust . tyMbCon
 
 tyMbQu :: Ty -> Maybe TyQu
-tyMbQu t = case t of {Ty_Quant q _ _ -> Just q; _ -> Nothing}
+tyMbQu t
+  = case t of
+%%[[4
+      Ty_Quant q _ _
+%%][6
+      Ty_Quant q _ _ _
+%%]]
+        -> Just q
+      _ -> Nothing
 
 tyIsQu :: Ty -> Bool
 tyIsQu = isJust . tyMbQu
@@ -652,6 +654,11 @@ mkTyQu tvL t = foldr (\tv t -> Ty_Quant tv t) t tvL
 %%[(4 hmtyinfer || hmtyast).mkTyQu -3.mkTyQu hs
 mkTyQu :: TyQu -> TyVarIdL -> Ty -> Ty
 mkTyQu q tvL t = foldr (\tv t -> Ty_Quant q tv t) t tvL
+%%]
+
+%%[(6 hmtyinfer || hmtyast).mkTyQu -(3.mkTyQu 4.mkTyQu) hs
+mkTyQu :: TyQu -> [(TyVarId,Ty)] -> Ty -> Ty
+mkTyQu q tvL t = foldr (\(tv,k) t -> Ty_Quant q tv k t) t tvL
 %%]
 
 %%[(2 hmtyinfer || hmtyast).mkTyFreshProd hs
@@ -785,7 +792,7 @@ tyArrowArgResWithLkup lookup = tyVarLift lookup tyArrowArgRes tyArrowArgRes
 tyArrowArgsRes t
   =  case t of
 %%[[7
-       Ty_Quant _ _ t     -> tyArrowArgsRes t
+       Ty_Quant _ _ _ t   -> tyArrowArgsRes t
 %%]]
        Ty_App (Ty_App (Ty_Con nm) a) r
          | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
@@ -807,9 +814,9 @@ tyAppFunArgsWithLkup lookup
   =  extr []
   where  extr as t
            =  case t of
-                Ty_Quant _ _ t  -> tyAppFunArgsWithLkup lookup t
-                Ty_App f a      -> extr (a:as) f
-                _               -> tyVarLift lookup (extr as) (flip (,) as) t
+                Ty_Quant _ _ _ t  -> tyAppFunArgsWithLkup lookup t
+                Ty_App f a        -> extr (a:as) f
+                _                 -> tyVarLift lookup (extr as) (flip (,) as) t
 
 tyAppFunArgs = tyAppFunArgsWithLkup (const Nothing)
 %%]
@@ -820,10 +827,10 @@ tyAppFunArgsMk
   =  extr []
   where  extr as t
            =  case t of
-                Ty_Quant q v t  -> (f,as,\f as -> Ty_Quant q v $ mk f as)
-                                where (f,as,mk) = tyAppFunArgsMk t
-                Ty_App f a      -> extr (a:as) f
-                _               -> (t,as,\f as -> mkApp (f:as))
+                Ty_Quant q v k t  -> (f,as,\f as -> Ty_Quant q v k $ mk f as)
+                                  where (f,as,mk) = tyAppFunArgsMk t
+                Ty_App f a        -> extr (a:as) f
+                _                 -> (t,as,\f as -> mkApp (f:as))
 %%]
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.funs hs
@@ -893,8 +900,8 @@ tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 tyQuant :: Ty -> Ty
 tyQuant t
   =  case t of
-       Ty_Quant _ _ t'  -> tyQuant t'
-       _                -> t
+       Ty_Quant _ _ _ t'  -> tyQuant t'
+       _                  -> t
 
 tyArrowArity :: Ty -> Int
 tyArrowArity = length . tyArrowArgs
@@ -1063,13 +1070,13 @@ tyRecExts2
 tyDecomposeMk    :: Ty -> (Ty, TyL, Ty -> TyL -> Ty)
 tyDecomposeMk t
   = case t of
-      Ty_Quant q v t' -> (f,as,\f' as' -> Ty_Quant q v $ mk f' as')
-                      where (f,as,mk) = tyDecomposeMk t'
-      Ty_App _ _      -> (f,as,\f' as' -> mkApp (f':as'))
-                      where (f,as) = tyAppFunArgs t
-      Ty_Ext _ _ _    -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
-                      where (r,e) = tyRowExts t
-      _               -> (t,[],const)
+      Ty_Quant q v k t' -> (f,as,\f' as' -> Ty_Quant q v k $ mk f' as')
+                        where (f,as,mk) = tyDecomposeMk t'
+      Ty_App _ _        -> (f,as,\f' as' -> mkApp (f':as'))
+                        where (f,as) = tyAppFunArgs t
+      Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
+                        where (r,e) = tyRowExts t
+      _                 -> (t,[],const)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1624,7 +1631,7 @@ data InstTo
   | InstTo_Qu                           -- the fresh type (tyvar) instantiated to
       { instoQu     :: TyQu
       , instoFrom   :: TyVarId
-      , instoTy     :: Ty
+      , instoTo     :: TyVarId
 %%[[6
       , instoKi     :: Ty
 %%]]
@@ -1651,6 +1658,12 @@ instToIsQu _                   = False
 -- split of initial quantifier instantiations, to be used for Sys F generation for type parameterization
 instToSplitQu :: [InstTo] -> ([InstTo],[InstTo])
 instToSplitQu = span instToIsQu
+%%]
+
+%%[(6 hmtyinfer || hmtyast) hs export(instToKiAssocL)
+-- get tvar -> kind bindings of instantiation
+instToKiAssocL :: [InstTo] -> AssocL TyVarId Ty
+instToKiAssocL l = [ (v,k) | (InstTo_Qu _ _ v k) <- l ]
 %%]
 
 

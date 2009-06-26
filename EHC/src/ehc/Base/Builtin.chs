@@ -225,8 +225,9 @@ hsnInteger        =   hsnFromString "Integer"
 %%% Builtin: kinds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 export(hsnKindStar)
-hsnKindStar                         =   hsnFromString "*"
+%%[6 export(charKindStar,hsnKindStar)
+charKindStar                        =   '*'
+hsnKindStar                         =   hsnFromString [charKindStar]
 %%]
 
 %%[7 export(hsnKindRow)

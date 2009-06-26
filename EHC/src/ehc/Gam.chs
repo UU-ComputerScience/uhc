@@ -438,7 +438,13 @@ valGamMapTy f = gamMapElts (\vgi -> vgi {vgiTy = f (vgiTy vgi)})
 
 %%[(3 hmtyinfer || hmtyast).valGamQuantify export(valGamQuantify)
 valGamQuantify :: TyVarIdS -> ValGam -> ValGam
-valGamQuantify globTvS = valGamMapTy (\t -> tyQuantify (`Set.member` globTvS) t)
+valGamQuantify globTvS = valGamMapTy (\t -> valTyQuantify (`Set.member` globTvS) t)
+%%]
+
+%%[(6 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
+valGamQuantify :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> ValGam
+valGamQuantify tyKiGam tvKiVarMp gamVarMp globTvS
+  = valGamMapTy (\t -> valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t)
 %%]
 
 %%[(8 hmtyinfer || hmtyast).valGamDoWithVarMp
@@ -465,10 +471,10 @@ valGamDoWithVarMp f gamVarMp thr gam
                (thr,emptyVarMp) gam
 %%]
 
-%%[(8 hmtyinfer || hmtyast).valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
-valGamQuantifyWithVarMp :: VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
-valGamQuantifyWithVarMp gamVarMp globTvS gam
-  = valGamDoWithVarMp (\_ (t,tyCycMp) m cycMp -> (tyQuantify (`Set.member` globTvS) t,m,tyCycMp |=> cycMp)) gamVarMp emptyVarMp gam
+%%[(8 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -6.valGamQuantify export(valGamQuantifyWithVarMp)
+valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
+valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
+  = valGamDoWithVarMp (\_ (t,tyCycMp) m cycMp -> (valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t,m,tyCycMp |=> cycMp)) gamVarMp emptyVarMp gam
 %%]
 
 %%[6.gamUnzip
@@ -487,20 +493,20 @@ gamUnzip g = sgamUnzip g
 valGamQuantify :: TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
 valGamQuantify globTvS prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
-                                          ty   = tyQuantify (`Set.member` globTvS) (tmpoTy tmpo)
+                                          ty   = valTyQuantify (const kiStar) (`Set.member` globTvS) (tmpoTy tmpo)
                                      in   (vgi {vgiTy = ty},tmpo {tmpoTy = ty})
                            ) g
      in   gamUnzip g'
 %%]
 
 %%[(9 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -8.valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
-valGamQuantifyWithVarMp :: VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,Gam HsName TyMergePredOut))
-valGamQuantifyWithVarMp gamVarMp globTvS prL valGam
+valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,Gam HsName TyMergePredOut))
+valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
   = valGamDoWithVarMp quant gamVarMp (emptyVarMp,emptyGam) valGam
   where quant nm (t,tyCycVarMp) newVarMp (cycVarMp,tmpoGam)
           = (ty,newVarMp',(cycVarMp', tmpoGam'))
           where tmpo        = tyMergePreds prL t
-                ty          = tyQuantify (`Set.member` globTvS) (tmpoTy tmpo)
+                ty          = valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) (tmpoTy tmpo)
                 newVarMp'   = newVarMp -- tmpoImplsVarMp tmpo `varmpPlus` m
                 tmpoGam'    = gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
                 cycVarMp'   = tyCycVarMp |=> cycVarMp
@@ -717,6 +723,26 @@ tyKiGamQuantify globTvS
 %%[(6 hmtyinfer) export(tyKiGamInst1Exists)
 tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
 tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determinining the kind of a type variable, after being used in type inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The tricky point is to get from substituted tyvars back to the original one,
+because that is what is stored in the mapping for type variables to kinds.
+It is the responsibility to prepare tvKiVarMp that it contains the correct mapping,
+possibly using varmpMapTyVarKey.
+Defaults to * (kiStar).
+
+%%[(6 hmtyinfer || hmtyast) export(tvarKi)
+tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
+tvarKi tyKiGam tvKiVarMp _ tv
+  = case tyKiGamLookup tv' tyKiGam of
+      Just tkgi -> tvKiVarMp |=> tkgiKi tkgi
+      _         -> maybe k (const kiStar) $ tyMbVar k
+                where k = tvKiVarMp |=> tv'
+  where tv' = {- tyVarMp |=> -} mkTyVar tv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -995,8 +1021,6 @@ idDefOccGamByKind k g = [ (n,head i) | (IdOcc n _,i) <- fst (idDefOccGamPartitio
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier definition additional aspect gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-not used
 
 %%[1 export(IdDefAspGam,IdDefAspAsc)
 type IdDefAspGam = Gam    IdOcc  IdDefAsp
@@ -1419,7 +1443,7 @@ initPolGam
       ]
   where
     u     = uidStart
-    quant = mkTyQu TyQu_Forall [u]
+    quant = mkTyQu tyQu_Forall [(u,kiStar)]	-- TBD
     var   = mkPolVar u
     quantvar = quant var
 

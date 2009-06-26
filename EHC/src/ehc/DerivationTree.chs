@@ -185,9 +185,10 @@ dtEltVarMp :: VarMp -> VarMp -> VarMp -> (PP_Doc,VarMp)
 dtEltVarMp m dm vm
   = (ppAssocL' ppBracketsCommas' ":->" [ (ppTyDt $ dm' |=> varmpinfoMkVar tv i,ppVarMpInfoDt i) | (tv,i) <- varmpToAssocL vm'], dm')
   where (vm',dm')
-           = varmpMapThr (\tv i dm -> let (i',dm2) = dtEltTy' varmpinfoFtvMp id m dm i
-                                          (_ ,dm3) = dtEltTy m dm (varmpinfoMkVar tv i)
-                                      in  (i',dm3)
+           = varmpMapThr (\_ tv i dm
+                            -> let (i',dm2) = dtEltTy' varmpinfoFtvMp id m dm i
+                                   (_ ,dm3) = dtEltTy m dm (varmpinfoMkVar tv i)
+                               in  (i',dm3)
                          ) dm vm
 %%]
 

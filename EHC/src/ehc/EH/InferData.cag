@@ -114,9 +114,14 @@ SEM DataConstr
                             .	dataConTyFv			=	ftv @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @fields.tyL
                             .   dataConProdTyFv     =   ftv @dataConProdTy
-                loc         .   dataQuUnConTy       =   let  fvD = @dataConTyFv
-                                                             fvU = @dataConProdTyFv
-                                                        in (mkTyQu TyQu_Forall fvD ([@lhs.dataTy] `mkArrow` mkTyQu TyQu_Exists (fvU \\ fvD) @dataConProdTy))
+                loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
+                                                            fvU = @dataConProdTyFv
+%%[[5
+                                                            mkk = id
+%%][6
+                                                            mkk tvs = [ (v,tvarKi @lhs.finTyKiGam @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
+%%]]
+                                                        in  (mkTyQu tyQu_Forall (mkk fvD) ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
 
                 lhs         .   patValGam           =   gamUnions
                                                           [ assocLToGam

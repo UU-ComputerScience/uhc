@@ -28,11 +28,18 @@ DATA TyVarCateg
 
 %%[(3 hmtyinfer || hmtyast).Quant
 DATA Ty
-  | Quant       tv              : {TyVarId}
+  | Quant
+%%[[4
+				qu              : TyQu
+%%]]
+  				tv              : {TyVarId}
+%%[[6
+				ki              : {Ty}
+%%]]
                 ty              : Ty
 %%]
 
-%%[(4 hmtyinfer || hmtyast).Quant -3.Quant
+%%[(4444 hmtyinfer || hmtyast).Quant -3.Quant
 DATA Ty
   | Quant       qu              : TyQu
                 tv              : {TyVarId}
@@ -61,20 +68,23 @@ DATA Ty
 %%% Quantifiers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) haddock
+%%[doesWhatTyQu doclatex
 Quantifiers: forall & exists
+
+A mlev == 0 means: quantify over the immediate meta of ...,
+e.g.
+\begin{itemize}
+\item
+0: quantify over a type in a type for a value.
+\item
+1: quantify over a kind in a type for a value.
+\end{itemize}
 %%]
 
 %%[4
 DATA TyQu
-  | Forall
-  | Exists
-%%]
-
-%%[6.TyQu
-DATA TyQu
-  | KiForall
-  | KiExists
+  | Forall		mlev			: MetaLev
+  | Exists		mlev			: MetaLev
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

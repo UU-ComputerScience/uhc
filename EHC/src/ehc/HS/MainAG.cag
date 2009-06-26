@@ -23,7 +23,7 @@
 %%[3 hs import(qualified Data.Set as Set)
 %%]
 
-%%[4 hs import({%{EH}Ty}(TyQu(..)))
+%%[4 hs import({%{EH}Ty}(tyQu_Forall,tyQu_Exists))
 %%]
 
 %%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)

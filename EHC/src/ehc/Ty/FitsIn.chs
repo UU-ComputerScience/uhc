@@ -486,6 +486,10 @@ fitsInFI fi ty1 ty2
             foCmbCoCon   ffo afo  = afo {foMbAppSpineInfo = fmap asgiShift1SpinePos $ foMbAppSpineInfo ffo}
 %%]
 
+%%[(6 hmtyinfer)
+            foCmbTvKiVarMp ffo afo = afo {foTvKiVarMp = foTvKiVarMp afo |=> foTvKiVarMp ffo}
+%%]
+
 %%[(9 hmtyinfer)
             foCmbPrL     ffo afo  = afo {foPredOccL = foPredOccL afo ++ foPredOccL ffo, foGathCnstrMp = foGathCnstrMp afo `cnstrMpUnion` foGathCnstrMp ffo}
 %%]
@@ -495,11 +499,14 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.foCmbApp
-            foCmbApp     ffo      = foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
-%%]
-
-%%[(9 hmtyinfer).fitsIn.foCmbApp -4.fitsIn.foCmbApp
-            foCmbApp     ffo      = foCmbPrfRes ffo . foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
+            foCmbApp     ffo      = 
+%%[[6
+                                    foCmbTvKiVarMp ffo .
+%%]]
+%%[[9
+                                    foCmbPrfRes ffo .
+%%]]
+                                    foCmbCoCon ffo . foCmbVarMp ffo . foCmbAppTy ffo
 %%]
 
 %%[(7 hmtyinfer).fitsIn.foCmbPrfRes
@@ -1020,7 +1027,11 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QLR
+%%[[4
             f fi t1@(Ty_Quant q1 _ _)   t2@(Ty_Quant q2 _ _)
+%%][6
+            f fi t1@(Ty_Quant q1 _ _ _) t2@(Ty_Quant q2 _ _ _)
+%%]]
                 | fioMode (fiFIOpts fi) == FitUnify && q1 == q2
                                                     = fVar ff fi2 uqt1 uqt2
                 where  (fi1,uqt1,_,_) = unquant fi   t1 False instCoConst
@@ -1028,21 +1039,45 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QR
+%%[[4
             f fi t1                     t2@(Ty_Quant _ _ _)
+%%][6
+            f fi t1                     t2@(Ty_Quant _ _ _ _)
+%%]]
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
-                                                    = back2 (fo {foRInstToL = instto2 ++ foRInstToL fo})
+                                                    = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
+%%[[6
+                                                                , foTvKiVarMp = instToKiVarMp instto2 |=> foTvKiVarMp fo
+%%]]
+                                                                })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
                       fo = fVar ff fi2 t1 uqt2
+%%[[4
             f fi t1                     t2@(Ty_Quant _ _ _)
+%%][6
+            f fi t1                     t2@(Ty_Quant _ _ _ _)
+%%]]
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
-                                                    = back2 (fo {foRInstToL = instto2 ++ foRInstToL fo})
+                                                    = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
+%%[[6
+                                                                , foTvKiVarMp = instToKiVarMp instto2 |=> foTvKiVarMp fo
+%%]]
+                                                                })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instContra
                       fo = fVar ff fi2 t1 uqt2
 %%]
 
 %%[(4 hmtyinfer).fitsIn.QL
+%%[[4
             f fi t1@(Ty_Quant _ _ _)    t2
-                | fioIsSubsume (fiFIOpts fi)        = fo {foLInstToL = instto1 ++ foLInstToL fo}
+%%][6
+            f fi t1@(Ty_Quant _ _ _ _)  t2
+%%]]
+                | fioIsSubsume (fiFIOpts fi)        = fo { foLInstToL = instto1 ++ foLInstToL fo
+%%[[6
+                                                         , foTvKiVarMp = instToKiVarMp instto1 |=> foTvKiVarMp fo
+%%]]
+                                                         }
                 where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst
                       fo = fVar ff fi1 uqt1 t2
 %%]

@@ -625,7 +625,7 @@ SET NTCode
 
 %%[9
 SET NTPrf
-    = AllDecl AllCase AllExpr AllPatExpr AllData
+    = NTCode AllData
 %%]
 
 

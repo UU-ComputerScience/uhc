@@ -186,11 +186,23 @@ tyStripL1Args t
 %%]
 
 %%[(8 codegen) hs export(tyL0BindToL1Val)
--- convert type level l0 binding to l1 argument
+-- convert type level l0 binding to l1 argument, used to convert from type signature to value application
 tyL0BindToL1Val :: Ty -> Ty
 tyL0BindToL1Val t
   = to t
   where tosq (ExprSeq1_L0Bind n _ _) = ExprSeq1_L1Val (Expr_Var n)
+        tosq s                       = s
+        to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
+        to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
+        to   t             = t
+%%]
+
+%%[(8 codegen) hs export(tyL0BindToL1Bind)
+-- convert type level l0 binding to l1 binding, used to convert from type signature to value abstraction
+tyL0BindToL1Bind :: Ty -> Ty
+tyL0BindToL1Bind t
+  = to t
+  where tosq (ExprSeq1_L0Bind n _ t) = ExprSeq1_L1Bind n t
         tosq s                       = s
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
@@ -270,7 +282,7 @@ tyArrowInstQuArgsRes instToL t
         extr _                          t                = ([],t)
 %%]
 
-%%[(8 codegen) hs export(tyArrowGetExprArg)
+%%[(8888 codegen) hs export(tyArrowGetExprArg)
 -- get from a arrow args+res: immediately preceding type args + 1 value arg + and the remainder as a lam result
 tyArrowGetExprArg :: Int -> ([TySeq1L],TySeq) -> ([Ty],TySeq1,TySeq)
 tyArrowGetExprArg n (as,res)

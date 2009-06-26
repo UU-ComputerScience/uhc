@@ -33,11 +33,18 @@ WRAPPER
 %%]]
 %%]
 
-%%[(8 codegen) hs export(ppModule,ppTy,ppValBind)
+%%[(8 codegen) hs
+defaultPPEHCOpts = defaultEHCOpts
+%%]
+
+%%[(8 codegen) hs export(ppModule,ppTy,ppValBind,ppExprSeq1)
 ppModule :: EHCOpts -> Module -> PP_Doc
 ppModule opts cmod
-  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
-     in   (pp_Syn_AGItf t)
+  = pp_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod))
+                       (Inh_AGItf
+                         { opts_Inh_AGItf = opts
+                         })
 
 ppExpr :: Expr -> PP_Doc
 ppExpr ce
@@ -45,6 +52,7 @@ ppExpr ce
   where t = wrap_Expr (sem_Expr ce)
   					  (Inh_Expr
   					  	{ ppHow_Inh_Expr = howVert
+  					  	, opts_Inh_Expr = defaultPPEHCOpts
   					  	})
 
 ppExprSeq1 :: ExprSeq1 -> PP_Doc
@@ -53,6 +61,7 @@ ppExprSeq1 ce
   where t = wrap_ExprSeq1 (sem_ExprSeq1 ce)
   					  (Inh_ExprSeq1
   					  	{ ppHow_Inh_ExprSeq1 = howHor
+  					  	, opts_Inh_ExprSeq1 = defaultPPEHCOpts
   					  	})
 
 ppValBind :: ValBind -> PP_Doc
@@ -61,6 +70,7 @@ ppValBind ce
   where t = wrap_ValBind (sem_ValBind ce)
   					  (Inh_ValBind
   					  	{ ppHow_Inh_ValBind = howVert
+  					  	, opts_Inh_ValBind = defaultPPEHCOpts
   					  	})
 
 ppTy :: Ty -> PP_Doc
@@ -69,6 +79,7 @@ ppTy ce
   where t = wrap_Expr (sem_Expr ce)
   					  (Inh_Expr
   					  	{ ppHow_Inh_Expr = howHor
+  					  	, opts_Inh_Expr = defaultPPEHCOpts
   					  	})
 
 
@@ -130,7 +141,7 @@ ppMbNm :: Maybe HsName -> PP_Doc
 ppMbNm = maybe (ppNm (hsnFromString "_")) ppNm
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(ppSeq)
 ppSeq' :: HowPP -> [PP_Doc] -> PP_Doc
 ppSeq' h = howSep h "[" "]" ", "
 
@@ -156,7 +167,7 @@ data HowPP
       { howDef 		:: CmbPP
       , howAside 	:: CmbPP 
       , howList 	:: [PP_Doc] -> PP_Doc 
-      , howSep	 	:: String -> String -> String -> [PP_Doc] -> PP_Doc 
+      , howSep	 	:: String -> String -> String -> [PP_Doc] -> PP_Doc
       }
 
 howVert = HowPP  ppDef  (>-<)  vlist     ppBlock
@@ -188,6 +199,10 @@ SEM ValBind
   				l1			.	ppHow		=	howHor
 %%]
 
+%%[(8 codegen)
+ATTR AGItf AllNT - AllMeta [ opts: EHCOpts | | ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printed code: pp
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -208,11 +223,20 @@ SEM Expr
   | Char        loc         .   pp          =   ppParens (show @char >#< "::" >#< @ty.pp)
   | String      loc         .   pp          =   ppParens (show @str  >#< "::" >#< @ty.pp)
   | Var         loc         .   pp          =   ppNm @nm
-  | App         loc         .   pp          =   let args = reverse @appArgPPL
-                                                    fun  = ppParens @appFunPP
-                                                in  howDef @lhs.ppHow fun (howList @lhs.ppHow args)
-  | Lam         loc         .   pp          =   howDef @lhs.ppHow ("\\" >|< ppSpaces @lamArgPPL >#< "->") (@lamBodyPP)
-  | Arrow       loc         .   pp          =   @arg.pp >#< "->" >#< @res.pp
+  | App         loc         .   pp          =   let ppApp argL | null argL = @appFunPP
+                                                               | otherwise = howDef @lhs.ppHow (ppParens @appFunPP) (howList @lhs.ppHow argL)
+                                                    args = reverse @appArgPPL
+                                                in  if @isUnThunk
+                                                    then ppKeyw "eval" >#< ppParens (ppApp (tail args))
+                                                    else ppApp args
+  | Lam         loc         .   pp          =   let ppLam argL | null argL = @lamBodyPP
+                                                               | otherwise = howDef @lhs.ppHow ("\\" >|< ppSpaces argL >#< "->") (@lamBodyPP)
+                                                in  if @isThunk
+                                                    then ppCurlys (ppLam (tail @lamArgPPL))
+                                                    else ppLam @lamArgPPL
+  | Arrow       loc         .   pp          =   if @isThunk
+                                                then ppCurlys @res.pp
+                                                else @arg.pp >#< "->" >#< @res.pp
   | Let         loc         .   ppCateg     =   case @categ of
                                                   ValBindCateg_Rec     -> pp " rec"
                                                   ValBindCateg_Strict  -> pp " !"
@@ -432,21 +456,29 @@ SEM ExprSeq1L
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 %%]
-SEM TyFldL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
-
-SEM TyL
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
-
-SEM TySeq1L
-  | Nil         lhs         .   ppL         =   []
-  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Utility attr's
+%%% Utility attr's: is Expr a thunk? is Expr a Seq?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | mbSeq: {Maybe [PP_Doc]} ]
+
+SEM Expr
+  | Seq			lhs			.	mbSeq		=	Just @seq.ppL
+  | Seq1		lhs			.	mbSeq		=	Just [@seq1.pp]
+  | * - Seq Seq1
+  				lhs			.	mbSeq		=	Nothing
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Arrow Lam	loc			.	isThunk		=	maybe False null @arg.mbSeq
+  | App			loc			.	isUnThunk	=	maybe False null @arg.mbSeq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's: spine like info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
