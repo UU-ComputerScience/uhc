@@ -265,7 +265,7 @@ PRIM Word primWriteArray( GB_NodePtr array, Word inx, Word val )
 {
 	// printf( "primWriteArray i=%d v=%x\n", inx, val ) ;
 	array->content.fields[inx] = val ;
-	return (Word)gb_Unit ;
+	return gb_Unit ;
 }
 
 %%]

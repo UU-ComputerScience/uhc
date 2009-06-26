@@ -119,6 +119,7 @@ data NodeInfo a
   |  InNode  GrTag [a]
   |  InBasic Variable
   |  InEnum  Variable [GrTag]
+  |  InPtr   Variable [GrTag]
   deriving Show
   
 fromInVar :: NodeInfo a -> Variable
@@ -143,7 +144,7 @@ SEM GrVal
   | BasicNode  lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
   | EnumNode   lhs.valInfo  =  InEnum  (getNr @nm) []
   | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just(getNr @nm)]
-  | PtrNode    lhs.valInfo  =  InEnum  (getNr @nm) []   -- TODO should in fact be InPtr
+  | PtrNode    lhs.valInfo  =  InPtr   (getNr @nm) []
   | Empty
     LitInt
     LitStr
@@ -189,8 +190,8 @@ SEM GrPatLam
     OpaqueAnnot lhs.patInfo =  InBasic (getNr @nm)
   | EnumNode    lhs.patInfo =  InEnum (getNr @nm) [GrTag_Any]
   | EnumAnnot   lhs.patInfo =  InEnum (getNr @nm) @tagL.self
-  | PtrNode     lhs.patInfo =  InEnum (getNr @nm) [GrTag_Any]  -- TODO: should be InPtr?
-  | PtrAnnot    lhs.patInfo =  InEnum (getNr @nm) (filter (/=GrTag_Any) @tagL.self)   -- TODO: should be InPtr?
+  | PtrNode     lhs.patInfo =  InPtr  (getNr @nm) [GrTag_Any]
+  | PtrAnnot    lhs.patInfo =  InPtr  (getNr @nm) @tagL.self
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
@@ -244,7 +245,7 @@ ATTR AllAlt [ valInfo: {NodeInfo (Maybe Variable)} | | ]
 %%%%%%%%%%
 %%[(8 codegen grin).unit
 {-
-There are seven cases, depending on the structure of target and source
+There are eight cases, depending on the structure of target and source
 If the target is a variable, we generate a single equation for it
  - if the source is a variable as well, the equation states that they should be the same
  - if the source is a node, the equation states that the variable refers to the node
@@ -260,11 +261,13 @@ SEM GrExpr
                loc.equations1 = case (@lhs.targetInfo, @val.valInfo) of
                                  (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar svar]
                                  (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
+                                 (InVar tvar        ,  InPtr svar _      )  -> []  -- TODO copy or return a pointer
                                  (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                                  (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
                                  (InVar tvar        ,  InEnum svar _     )  -> [ IsEnumeration tvar svar ]
                                  (InBasic tvar      ,  _                 )  -> [ IsBasic tvar ]
                                  (InEnum  tvar ttags,  _                 )  -> [ IsTags  tvar ttags ]
+                                 (InPtr   tvar _    ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
@@ -411,7 +414,8 @@ SEM GrExpr
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsTags tvar ttags ]
                                    InBasic tvar      -> [ IsBasic tvar ]
-                                   {- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm) -} {- 20090519 AD: in comment because: Warning: Pattern match(es) are overlapped -}
+                                   InPtr  tvar ttags -> [ IsPointer tvar ttag []   |  ttag <- ttags ]
+                                   -- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
 %%]
 
 
@@ -426,6 +430,9 @@ SEM GrExpr
                               InNode ttag tnms   -> map IsBasic tnms
                               InBasic tvar       -> [ IsBasic tvar ]
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
+                              InPtr   tvar [GrTag_Any] -> [ IsPointer tvar GrTag_Any []  ]
+                              InPtr   _ _ -> error "PointToAnalysis: cannot analyze FFI with pointer result"
+                              --InPtr   tvar ttags -> [ IsPointer tvar ttag []   |  ttag <- ttags ]
 
 
 %%]

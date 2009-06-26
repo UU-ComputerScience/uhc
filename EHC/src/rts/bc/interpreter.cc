@@ -1735,11 +1735,6 @@ void gb_Initialize()
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
 	bp = Cast(GB_Ptr,0) ;
 
-#	if USE_BOEHM_GC
-		GB_MkConNodeN_Fixed(gb_Unit,GB_GC_MinAlloc_Fields(0),0) ;
-#	else
-		GB_MkConNodeN_Rooted(gb_Unit,GB_GC_MinAlloc_Fields(0),0) ;
-#	endif
 }
 
 %%]

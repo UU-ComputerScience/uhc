@@ -532,7 +532,7 @@ SEM CBind
 %%]
 
 We deal with IO as follow:
-- for f defined as FFI with type f :: a -> IO r, we transform the interface and internal wrapping of f = \a -> r into f' = \a s -> (s, r),
+- for f defined as FFI with type f :: a -> IO r, we transform the interface and internal wrapping of f = \a -> r into f2 = \a s -> (s, r),
   the wrapping is similar to the one done in EHC.Prelude.ioFromPrim.
 - when f :: .. -> IO (), the ffi call result is discarded and () returned instead.
 - the extra parameter s is left unevaluated.
@@ -653,8 +653,11 @@ SEM CBind
                                                          then let arity = length $ snd $ tyRecExts resTy
                                                                   nm    = builtinRecNm arity
                                                                   tag   = GrTag_Con (mkGrTagAnn arity arity) 0 nm
-                                                              in  GrExpr_Seq e (GrPatLam_PtrAnnot [tag] @nmRes)
-                                                                               (GrExpr_Unit (GrVal_PtrNode v))
+                                                              in  if arity==0
+                                                                  then GrExpr_Seq e (GrPatLam_EnumAnnot [tag] @nmRes)
+                                                                                    (GrExpr_Unit (GrVal_EnumNode v))
+                                                                  else GrExpr_Seq e (GrPatLam_PtrAnnot [tag] @nmRes)
+                                                                                    (GrExpr_Unit (GrVal_PtrNode v))
                                                          else if isOpaqueTagL mbResTagL
                                                          then GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
                                                                            (GrExpr_Unit (GrVal_OpaqueNode v))

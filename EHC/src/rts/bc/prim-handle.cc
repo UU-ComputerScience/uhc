@@ -261,7 +261,7 @@ PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mb
 %%]]
 }
 
-PRIM GB_NodePtr primHClose( GB_NodePtr handle )
+PRIM Word primHClose( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -272,7 +272,7 @@ PRIM GB_NodePtr primHClose( GB_NodePtr handle )
 	return gb_Unit ;
 }
 
-PRIM GB_NodePtr primHFlush( GB_NodePtr handle )
+PRIM Word primHFlush( GB_NodePtr handle )
 {
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -297,7 +297,7 @@ PRIM Word primHGetChar( GB_NodePtr handle )
 	return Cast(Word,c) ;
 }
 
-PRIM GB_NodePtr primHPutChar( GB_NodePtr handle, Word c )
+PRIM Word primHPutChar( GB_NodePtr handle, Word c )
 {	
 %%[[98
 	GB_NodePtr chan = handle ;
@@ -355,7 +355,7 @@ PRIM GB_NodePtr primHGetContents( GB_NodePtr handle )
 	return res ;
 }
 
-PRIM GB_NodePtr primHPutByteArray( GB_NodePtr handle, GB_NodePtr a )
+PRIM Word primHPutByteArray( GB_NodePtr handle, GB_NodePtr a )
 {
 %%[[98
 	GB_NodePtr chan = handle ;

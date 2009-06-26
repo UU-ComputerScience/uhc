@@ -968,8 +968,8 @@ instance Enum Integer where
     enumFrom       = numericEnumFrom
     enumFromThen   = numericEnumFromThen
     enumFromTo n m = takeWhile (<= m) (numericEnumFrom n)
-    enumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
-                                where p | n' >= n   = (<= m)
+    enumFromThenTo n n2 m = takeWhile p (numericEnumFromThen n n2)
+                                where p | n2 >= n   = (<= m)
                                         | otherwise = (>= m)
 
 
