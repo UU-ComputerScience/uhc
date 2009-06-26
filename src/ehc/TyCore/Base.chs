@@ -772,17 +772,7 @@ tcMergeLamTySeq1AndArgNms
 %%% Environment for bindings as used by TyCore checking
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(MetaLev, metaLevVal, metaLevTy, metaLevKi, metaLevSo)
-type MetaLev = Int
-
-metaLevVal, metaLevTy, metaLevKi, metaLevSo :: MetaLev
-metaLevVal = 0
-metaLevTy  = metaLevVal + 1
-metaLevKi  = metaLevTy  + 1
-metaLevSo  = metaLevKi  + 1
-%%]
-
-%%[(8 codegen) hs export(Env,emptyEnv,envUnion,envLookup,envSingleton,envUnions)
+%%[(8 codegen) hs export(Env,emptyEnv,envUnion,envLookup,envLookup',envSingleton,envUnions)
 type Env = Map.Map HsName (Map.Map MetaLev Ty)
 
 emptyEnv :: Env
@@ -795,14 +785,17 @@ envUnions :: [Env] -> Env
 envUnions [] = emptyEnv
 envUnions l  = foldr1 envUnion l
 
+envLookup' :: HsName -> MetaLev -> Env -> Maybe Ty
+envLookup' n ml e
+  = case Map.lookup n e of
+      Just m -> Map.lookup ml m 
+      _      -> Nothing
+
 envLookup :: HsName -> MetaLev -> Env -> (Ty,ErrSq)
 envLookup n ml e
-  = case Map.lookup n e of
-      Just m -> case Map.lookup ml m of
-                  Just x -> (x,Seq.empty)
-                  _      -> dflt
-      _      -> dflt
-  where dflt = (tyErr $ "envLookup:" ++ show n,Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("TyCore metalevel " ++ show ml) [n])
+  = case envLookup' n ml e of
+      Just x -> (x,Seq.empty)
+      _      -> (tyErr $ "envLookup:" ++ show n,Seq.singleton $ rngLift emptyRange mkErr_NamesNotIntrod ("TyCore metalevel " ++ show ml) [n])
 
 envSingleton :: HsName -> MetaLev -> Ty -> Env 
 envSingleton n ml t = Map.singleton n (Map.singleton ml t)

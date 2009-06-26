@@ -148,7 +148,7 @@ initScopedPredStore
                          ==> [Reduction l3s1 (RedHow_ByLabel lab1 (LabelOffset_Off 0) sc1) []]
 %%]]
 %%[[13
-        f1s1         = mkCHRPredOcc (tyPred $ mkTyQu TyQu_Forall [pr1v] $ mkTyPr pr1) sc1
+        f1s1         = mkCHRPredOcc (tyPred $ mkTyQu tyQu_Forall [(pr1v,kiStar)] $ mkTyPr pr1) sc1	-- TBD
         f2s1         = mkCHRPredOcc pr1 sc1
         instForall   = [Assume f1s1]
                          ==> [Assume f2s1]

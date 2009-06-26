@@ -111,10 +111,13 @@ WRAPPER AGItf
 
 %%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
 %%]
-
+%%[(2 hmtyinfer) ag import({EH/FinalInfo})
+%%]
 %%[(4 hmtyinfer) ag import({EH/FIOpts})
 %%]
 %%[(4 hmtyinfer) ag import({EH/FIEnv})
+%%]
+%%[(6 hmtyinfer) ag import({EH/TvKiVarMp})
 %%]
 
 %%[(1 hmtyinfer).EHRulerRules ag import(EHRulerRules)
@@ -268,11 +271,13 @@ ATTR AGItf [ isMainMod: Bool | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is top Lam? Used in Pretty
+%%% Is a lam a top/first lam?
+%%% Is let a first let in a sequence of lets?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 ATTR Expr [ isTopLam: Bool | | ]
+ATTR Expr [ isFirstLet: Bool | | ]
 
 SEM Decl
   | Val
@@ -282,11 +287,17 @@ SEM Decl
 %%[[94
     FFE
 %%]]
-                expr        .   isTopLam            =   True
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 
 SEM AGItf
-  | AGItf       expr        .   isTopLam            =   True
+  | AGItf       expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 
+
+SEM Expr
+  | Let         loc         .   isFirstLet          =   False
+  | * - Let     loc         .   isFirstLet          =   True
 
 SEM Expr
   | Lam
@@ -303,21 +314,25 @@ SEM Expr
 
 %%[5
 SEM CaseAlt
-  | Pat         expr        .   isTopLam            =   True
+  | Pat         expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 %%]
 
 %%[7
 SEM DataFieldExpr
-  | Upd Expr    expr        .   isTopLam            =   True
+  | Upd Expr    expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 
 SEM RecExpr
   | Upd Expr Ext
-                expr        .   isTopLam            =   True
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 %%]
 
 %%[97
 SEM PatExpr
-  | Expr        expr        .   isTopLam            =   True
+  | Expr        expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

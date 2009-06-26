@@ -60,6 +60,19 @@ ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
 SEM Expr
   | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
   | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%[[9
+  | AppTop      loc         .   fo_fin     	=   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%]]
+%%[[12
+  | LamImpl     loc         .   fo_fin      =   @doFit (implFIOpts {fioBindRFirst=True, fioExpandEqTyVar=True}) @lhs.finTyVarMp
+%%]]
+%%]
+
+%%[(8 hmtyinfer noHmTyRuler codegen)
+SEM Decl
+  | Val         loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @expr.ty @exprKnTy
+                            .   fo_fin      =   @doFit (@exprFiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+                loc         .   lUniq_fo    :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -74,18 +87,22 @@ SEM AGItf
   | AGItf       expr        .   ctyTopDown  =   C.tyErr "AGItf.AGItf.ctyTopDown"
 
 SEM Expr
-  | IConst		loc			.	cty			=	C.mkTySeq C.tyInt
+  | IConst      loc         .   cty         =   C.mkTySeq C.tyInt
   | Var Con     loc         .   cty         =   ctyFromTy @lhs.finTyVarMp @ty_g_
-  | Lam         arg         .   ctyTopDown  =   @ctyArg
-                body        .   ctyTopDown  =   @ctyRes
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                arg         .   ctyTopDown  =   C.cSubstApp @tcSubstLamSpine @ctyLamArg
+                body        .   ctyTopDown  =   C.cSubstApp @tcSubstLamSpine @ctyLamRes
   | Case        alts        .   ctyPatTopDown
                                             =   @expr.ctyBotUp
   | App AppImpred
 %%[[12
     AppImpl
 %%]]
-                arg         .   ctyTopDown  =   C.cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyArg
-                loc         .   cty         =   @ctyRes
+                arg         .   ctyTopDown  =   C.cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyAppArg
+                loc         .   cty         =   @ctyAppRes
   | * - Var Con IConst App AppImpred
 %%[[12
     AppImpl
@@ -126,26 +143,37 @@ SEM Expr
 %%% TyCore's Ty: splitting into args/res for App
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Instantiation info [InstTo] drives the splitting up into type and value args.
+For now this is extracted from value bindings only, but must be done for other constructs as well.
+
 %%[(8 codegen)
-ATTR Expr [ | | instToL: {[InstTo]} ]
+ATTR Expr [ | | appInstToL: {[InstTo]} ]
 %%]
 
 %%[(8 codegen)
 SEM Expr
-  | Var Con     loc         .   (instToLHere,instToL)
+  | Var Con     
+%%[[9
+    AppTop
+%%]]
+  				loc         .   (appInstToLHere,appInstToL)
                                             =   instToSplitQu (foLInstToL @fo_fin)
   | App AppImpred
 %%[[12
     AppImpl
 %%]]
-                loc         .   (instToLHere,instToL)
-                                            =   instToSplitQu $ drop 1 @func.instToL
+                loc         .   (appInstToLHere,appInstToL)
+                                            =   instToSplitQu $ drop 1 @func.appInstToL
   | * - Var Con App AppImpred
+%%[[9
+    AppTop
+%%]]
 %%[[12
     AppImpl
 %%]]
-                loc         .   instToLHere =   []
-                            .   instToL     =   []
+                loc         .   appInstToLHere
+                                            =   []
+                            .   appInstToL  =   []
 %%]
 
 %%[(8 codegen)
@@ -154,50 +182,79 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   (ctyTyAppArgL,ctyTyAppRes)
-                                            =   C.tyArrowInstQuArgsRes @instToLHere @ctyRes
-                            .   (ctyArg,ctyRes)
+                loc         .   (ctyAppArg,ctyAppRes)
                                             =   C.tyArrowArgRes @func.ctyBotUp
+                            .   (ctyTyAppArgL,ctyTyAppRes)
+                                            =   C.tyArrowInstQuArgsRes @appInstToLHere @ctyAppRes
   | * - App AppImpred
 %%[[12
     AppImpl
 %%]]
                 loc         .   (ctyTyAppArgL,ctyTyAppRes)
-                                            =   C.tyArrowInstQuArgsRes @instToLHere @cty
+                                            =   C.tyArrowInstQuArgsRes @appInstToLHere @cty
 %%]
 
 %%[(8 codegen)
 SEM Expr
-  | *           loc         .   tcexprTyWrap=   \e -> foldr (flip C.Expr_App) e $ @tcSubstAppSpine `C.cSubstApp` map C.tyL0BindToL1Val @ctyTyAppArgL
+  | *           loc         .   tcTyArgAppWrap
+                                            =   \e -> foldr (flip C.Expr_App) e $ @tcSubstAppSpine `C.cSubstApp` map C.tyL0BindToL1Val @ctyTyAppArgL
+                            .   tcTyArgLamWrap
+                                            =   \e -> foldr C.Expr_Lam e $ map (C.cSubstAppExprAndBinds @lhs.tcSubstLamSpine . C.tyL0BindToL1Bind) @ctyTyLamArgL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TyCore's Ty: splitting into args/res for Lam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Instantiation info [InstTo] drives the splitting up into type and value args,
+see remarks for appInstToL.
+
 %%[(8 codegen)
-ATTR Expr [ ctyLamRes: {C.TySeq} | | ]
-ATTR Expr [ ctyLamArgL: {[C.TySeq1L]} | | ]
-ATTR Expr [ tcLamArgNr: Int | | ]
+ATTR Expr [ lamInstToL: {[InstTo]} | | ]
+%%]
 
+%%[(8 codegen)
 SEM Decl
-  | Val         loc         .   (ctyLamArgL,ctyLamRes)
-                                            =   C.tyArrowArgsResSeq @cty
-                            .   tcLamArgNr  =   0
-
-SEM Expr
-  | Lam         body        .   tcLamArgNr  =   @lhs.tcLamArgNr + 1
-  | * - Lam     loc         .   tcLamArgNr  =   0
+  | Val         loc         .   lamInstToL  =   foRInstToL @fo_fin
 %%]
 
 %%[(8 codegen)
 SEM Expr
-  | Lam         loc         .   (_,ctyArgSeq1,ctyRes)
-                                            =   C.tyArrowGetExprArg @lhs.tcLamArgNr (@lhs.ctyLamArgL,@lhs.ctyLamRes)
-                            .   ctyArg      =   C.tySeq1Ty @ctyArgSeq1
+  | Lam         
 %%[[12
-  | LamImpl     loc         .   ctyArg      =   C.tyErr ("Expr.LamImpl.ctyArg")
+    LamImpl
 %%]]
+                loc         .   (lamInstToLHere,lamInstToL)
+                                            =   let lamInstToL = if @lhs.isTopLam then foRInstToL @fo_fin else @lhs.lamInstToL
+                                                in  instToSplitQu lamInstToL
+				body		.	lamInstToL	=	drop 1 @lamInstToL
+                            
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   (lamInstToLHere,lamInstToL)
+                                            =   instToSplitQu @lhs.lamInstToL
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                loc         .   (ctyTyLamArgL,ctyTyLamRes)
+                                            =   C.tyArrowInstQuArgsRes @lamInstToLHere @lhs.ctyTopDown
+                            .   (ctyLamArg,ctyLamRes)
+                                            =   C.tyArrowArgRes @ctyTyLamRes
+                            .   ctyLamArgHere
+                            				=   @tcSubstLamSpine `C.cSubstApp` C.unTySeq @ctyLamArg
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   (ctyTyLamArgL,ctyTyLamRes)
+                                            =   C.tyArrowInstQuArgsRes @lamInstToLHere @lhs.ctyTopDown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -230,6 +287,35 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   tcSubstAppSpine
+                                            =   C.emptyCSubst
+%%]
+
+%%[(8 codegen)
+-- the CSubst binding Ty tvars to TyCore Ty vars, to propagate the abstraction of a lambda
+ATTR Expr [ tcSubstLamSpine: {C.CSubst} | | ]
+%%]
+
+%%[(8 codegen)
+SEM Decl
+  | Val         loc         .   ctyForMatch =   ctyBareFromTy @lhs.finTyVarMp @exprKnTy
+                            .   moutExpr    =   C.tyMatchBind @ctyForMatch $ ctyBareFromTy @lhs.finTyVarMp @expr.ty
+                            .   tcSubstLamSpine
+                                            =   C.moutCSubst @moutExpr
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   tcSubstLamSpine
+                                            =   @lhs.tcSubstLamSpine
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   tcSubstLamSpine
                                             =   C.emptyCSubst
 %%]
 
@@ -267,24 +353,24 @@ SEM PatExpr
 
 %%[(8 codegen)
 SEM AGItf
-  | AGItf       expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "AGItf.AGItf.ctyLamRes"
-                            .   tcLamArgNr  =   0
+  | AGItf       expr        .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 
 SEM CaseAlt
-  | Pat         expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "CaseAlt.Pat.ctyLamRes"
-                            .   tcLamArgNr  =   0
+  | Pat         expr        .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 
 SEM DataFieldExpr RecExpr
-  | Expr Upd    expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "Fld/RecExpr.Expr/Upd.ctyLamRes"
-                            .   tcLamArgNr  =   0
+  | Expr Upd    expr        .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 
 SEM RecExpr
-  | Ext         expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "RecExpr.Ext.ctyLamRes"
-                            .   tcLamArgNr  =   0
+  | Ext         expr        .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 
 %%[[9
 SEM Decl
@@ -292,18 +378,18 @@ SEM Decl
 %%[[94
     FFE
 %%]]
-                expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "Decl.InstanceIntro.ctyLamRes"
-                            .   tcLamArgNr  =   0
-                            .   ctyTopDown  =   C.tyErr "Decl.InstanceIntro.ctyTopDown"
+                expr        .   ctyTopDown  =   C.tyErr "Decl.InstanceIntro.ctyTopDown"
+                            .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 %%]]
 
 %%[[97
 SEM PatExpr
-  | Expr        expr        .   ctyLamArgL  =   []
-                            .   ctyLamRes   =   C.mkTySeq $ C.tyErr "PatExpr.Expr.ctyLamRes"
-                            .   tcLamArgNr  =   0
-                            .   ctyTopDown  =   C.tyErr "PatExpr.Expr.ctyTopDown"
+  | Expr        expr        .   ctyTopDown  =   C.tyErr "PatExpr.Expr.ctyTopDown"
+                            .   lamInstToL  =   []
+                            .   tcSubstLamSpine
+                                            =   C.emptyCSubst
 %%]]
 %%]
 
@@ -382,7 +468,7 @@ SEM Expr
 %%[[97
     IIConst
 %%]]
-                loc         .   tcexpr      =   @tcexprTyWrap @tcexprBase
+                loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @tcexprBase
 %%]
 
 %%[(9 codegen noHmTyRuler)
@@ -392,13 +478,13 @@ SEM Expr
     IIConst
 %%]]
                 loc         .   (tcexpr,tcexprCSubst)
-                                            :=  foAppLRTCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.tcSubst $ @tcexprTyWrap @tcexprBase
+                                            :=  foAppLRTCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.tcSubst $ @tcTyArgLamWrap $ @tcTyArgAppWrap @tcexprBase
                 lhs         .   tcSubst     =   C.cSubstApp @lhs.tcSubst @tcexprCSubst
 %%]
 
 %%[(8 codegen noHmTyRuler)
 SEM Expr
-  | Ann         loc         .   tcexpr      =   @tcexprTyWrap @expr.tcexpr
+  | Ann         loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @expr.tcexpr
   | Let         loc         .   frontValBindL
                                             =   [(C.ValBindCateg_FFI,@decls.ffiValBindL)]
 %%[[94
@@ -413,10 +499,14 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   tcexprapp   =   @tcexprTyWrap $ C.mkExprApp1 @func.tcexpr (C.mkExprThunk @arg.tcexpr)
+                loc         .   tcexprapp   =   @tcTyArgLamWrap $ @tcTyArgAppWrap $ C.mkExprApp1 @func.tcexpr (C.mkExprThunk @arg.tcexpr)
                             .   tcexpr      =   if @func.isNewtype then @arg.tcexpr else @tcexprapp
-  | Lam         loc         .   tcBodyWrap  =   \e -> C.rceMatch @rceEnvTC [(@arg.topNm,@ctyArg)] [C.RAlt_Alt [@arg.rpatTC] e @body.caseFailS]
-                            .   tcexpr      =   C.mkExprLam1 @arg.topNm @ctyArg (@tcBodyWrap @body.tcexpr)
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+  				loc         .   tcArgWrap   =   \e -> C.rceMatch @rceEnvTC [(@arg.topNm,@ctyLamArgHere)] [C.RAlt_Alt [@arg.rpatTC] e Set.empty] -- @body.caseFailS]
+  | Lam         loc         .   tcexpr      =   @tcTyArgLamWrap $ C.mkExprLam1 @arg.topNm @ctyLamArgHere (@tcArgWrap @body.tcexpr)
   | Case        loc         .   tcexpr      =   let (ns,bs,as)
                                                       = if @isTupOfArg
                                                         then let ns = [ (n, ty "1" n) | (C.Expr_Var n) <- C.fuL2ExprL (reverse @expr.tcfuExprL) ]
@@ -444,7 +534,7 @@ SEM Expr
                                                     -- ww    = coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.tcSubst @appImplsCoeLTC []
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.tcSubst @appImplsCoeLTC []
                                                     (f ,s2)   = C.coeEvalOnAsSubst u2 ww @func.tcexpr
-                                                in  (@tcexprTyWrap $ C.mkExprApp1 f (C.mkExprThunk @arg.tcexpr), s1 `C.cSubstApp` s2)
+                                                in  (@tcTyArgLamWrap $ @tcTyArgAppWrap $ C.mkExprApp1 f (C.mkExprThunk @arg.tcexpr), s1 `C.cSubstApp` s2)
                 lhs         .   tcSubst     =   C.cSubstApp @arg.tcSubst @tcexprappCSubst
   | Lam
 %%[[12
@@ -454,7 +544,7 @@ SEM Expr
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @body.tcSubst @lamBodyCoeLTC @lamArgCoeLTC
                                                     (b ,s2)   = C.coeEvalOnAsSubst u2 ww @body.appFunExprTC
-                                                in  (b, s1 `C.cSubstApp` s2)
+                                                in  (@tcTyArgLamWrap b, s1 `C.cSubstApp` s2)
                 lhs         .   tcSubst     =   C.cSubstApp @body.tcSubst @tcexprlamCSubst
   | AppTop      loc         .   (tcexpr,tcexprapptopCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
@@ -493,7 +583,7 @@ ATTR Expr [ | | tcLamArgs: {[(HsName,C.Expr->C.Expr)]} ]
 ATTR Expr [ | | tcLamBody: {C.Expr} ]
 
 SEM Expr
-  | Lam         lhs         .   tcLamArgs   =   (@arg.topNm,@tcBodyWrap) : @body.tcLamArgs
+  | Lam         lhs         .   tcLamArgs   =   (@arg.topNm,@tcArgWrap) : @body.tcLamArgs
                             .   tcLamBody   =   @body.tcLamBody
   | * - Lam     lhs         .   tcLamArgs   =   []
                             .   tcLamBody   =   @tcexpr
@@ -1002,9 +1092,7 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   lamBodyCoeLTC       =   C.mkLamBodyCoe
-                                                            (C.mkCoe (\e -> C.rceMatch @rceEnvTC [(@arg.topNm,@ctyArg)] [C.RAlt_Alt [@arg.rpatTC] e Set.empty]))
-                                                            @body.appArgCoeLTC
+                loc         .   lamBodyCoeLTC       =   C.mkLamBodyCoe (C.mkCoe @tcArgWrap) @body.appArgCoeLTC
 %%]
 
 %%[(9 codegen)
@@ -1070,13 +1158,14 @@ ATTR
 
 %%[(8 codegen)
 SEM Decl
-  | Val         loc         .   tcVal           =   (if @lhs.isStrict then id else C.mkExprThunk) $ C.tcMergeArgTypeSeqAndCode @ctyLamArgL @expr.tcLamArgs @expr.tcLamBody
+  | Val         loc         .   tcVal           =   (if @lhs.isStrict then id else C.mkExprThunk) @expr.tcexpr -- $ C.tcMergeArgTypeSeqAndCode @ctyLam2ArgL @expr.tcLamArgs @expr.tcLamBody
                 lhs         .   valBindL        =   [C.mkValBind1 @patExpr.topNm @ctyBind @tcVal] ++ @patExpr.valBindL
 %%]
 
 %%[(9 codegen)
 SEM Decl
-  | Val         lhs         .   valBindL        :=  [C.mkValBind1 @patExpr.topNm @ctyBind $ C.mkExprLet' True C.ValBindCateg_Rec @chrScopeValBindLTC @tcVal] ++ @patExpr.valBindL   -- '
+  | Val         lhs         .   valBindL        :=  [ C.mkValBind1 @patExpr.topNm @ctyBind $ C.mkExprLet' True C.ValBindCateg_Rec @chrScopeValBindLTC @tcVal
+                                                    ] ++ @patExpr.valBindL   -- '
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

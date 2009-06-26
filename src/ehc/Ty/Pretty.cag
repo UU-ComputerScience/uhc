@@ -529,23 +529,31 @@ SEM Ty
 
 %%[(3 hmtyinfer || hmtyast).Quant
 SEM Ty
-  | Quant           loc     .   pp      =   ppParNeed  @parNeed @lhs.parNeed
-                                                       ("forall" >#< @tnPP >#< "." >#< @ty.pp)
+  | Quant           loc     .   ppQu    =   pp "forall"
+                            .   ppTv    =   @tnPP
+                            .   ppTvPre =   empty
+                            .   ppTvPost=   empty
+                            .   pp      =   ppParNeed  @parNeed @lhs.parNeed
+                                                       (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost >#< "." >#< @ty.pp)
 %%]
 
-%%[(4 hmtyinfer || hmtyast).Quant -3.Quant
+%%[(4 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
-                                                       (@qu.pp >#< @tnPP >#< "." >#< @ty.pp)
+  | Quant           loc     .   ppQu 	:=	@qu.pp
   
-SEM TyQu
-  | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant           loc     .   ppKi    =   ppTy @ki
+                            .   ppTvPost:=  if maybe False (== hsnKindStar) $ tyMbCon @ki then empty else ppParens @ppKi
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
-                                                       (cfgppAside @lhs.cfg (@qu.pp >#< @tnPP) ("." >#< @ty.pp))
+  | Quant           loc     .   ppKi    :=  ppTyWithCfg @lhs.cfg @ki
+                            .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+                                                       (cfgppAside @lhs.cfg (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost) ("." >#< @ty.pp))
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast)
@@ -569,10 +577,9 @@ SEM TyPlus
   | Ty              lhs     .   pp      =   @ty.pp >#< "::" >#<  pp @hardness >|< "/" >|< pp @offering
 %%]
 
-%%[(6 hmtyinfer || hmtyast)
+%%[(4 hmtyinfer || hmtyast)
 SEM TyQu
-  | KiForall KiExists
-                    lhs     .   pp      =   text (showTyQu @self)
+  | Forall Exists   lhs     .   pp      =   text (showTyQu @self)
 %%]
 
 %%[(7 hmtyinfer || hmtyast)

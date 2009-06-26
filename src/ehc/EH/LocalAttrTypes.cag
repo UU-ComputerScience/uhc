@@ -7,6 +7,7 @@ Signatures for local attributes
 %%[99
 SEM *
   | *
+		loc.foL		 					: {[FIOut]}
 		loc.doFit	 					: DoFit
 		loc.altsFiOpts 					: FIOpts
 		loc.arity  						: Int
@@ -53,6 +54,7 @@ SEM *
 		loc.dataDictTag 				: CTag
 		loc.dataTkgi 					: TyKiGamInfo
 		loc.dataTy 						: Ty
+		loc.exprKnTy 					: Ty
 		loc.derivDataDGI 				: DataGamInfo
 		loc.derivDataTGI 				: TyGamInfo
 		loc.derivHdDataTy 				: Ty

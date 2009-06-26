@@ -256,7 +256,7 @@ pTyExprs        =    pList pTyExprBase
 
 %%[4.pTyExprPrefix
 pTyExprPrefix   =    mkEH TyExpr_Quant
-                     <$>  (TyQu_Forall <$ pKey "forall" <|> TyQu_Exists <$ pKey "exists")
+                     <$>  (tyQu_Forall <$ pKey "forall" <|> tyQu_Exists <$ pKey "exists")
                      <*>  pVar <* pKey "."
 %%]
 %%[9.pTyExprPrefix

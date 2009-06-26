@@ -73,59 +73,81 @@ emptyFO     =  FIOut  {  foTy     =   Ty_Any  ,  foErrL   =   []    ,  foVarMp  
 %%]
 
 %%[(4 hmtyinfer).FIOut -(2.FIOut 2.FIOut.empty)
-data FIOut  =  FIOut    {  foVarMp           :: !VarMp               ,  foTy              :: !Ty
-                        ,  foUniq            :: !UID                 ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)
-                        ,  foErrL            :: !ErrL                ,  foTrace           :: [PP_Doc]
-                        ,  foLInstToL        :: [InstTo]             ,  foRInstToL        :: [InstTo]
+data FIOut
+  =  FIOut
+       {  foVarMp           :: !VarMp					-- tvar bindings found during fitsIn
+       ,  foTy              :: !Ty						-- the unified type
+       ,  foUniq            :: !UID						-- uniq value seed for fresh tvars
+       ,  foMbAppSpineInfo  :: !(Maybe AppSpineInfo)	-- Ty_App spine info
+       ,  foErrL            :: !ErrL					-- errors
+       ,  foTrace           :: [PP_Doc]					-- trace
+       ,  foLInstToL        :: [InstTo]					-- instantiation over arrow '->' of left ty
+       ,  foRInstToL        :: [InstTo]					-- instantiation over arrow '->' of right ty
+%%[[6
+       ,  foTvKiVarMp       :: !VarMp					-- tvar -> kind
+%%]]
 %%[[(9 codegen)
-                        ,  foCSubst          :: !CSubst              ,  foLRCoe           :: !LRCoe
-                        ,  foTCSubst         :: !(C.CSubst)          ,  foLRTCoe          :: !(C.LRCoe)
+       ,  foCSubst          :: !CSubst					-- subst for holes in the Core
+       ,  foLRCoe           :: !LRCoe					-- coercion over arrow structure
+       ,  foTCSubst         :: !(C.CSubst)				-- 
+       ,  foLRTCoe          :: !(C.LRCoe)				-- 
 %%]]
 %%[[9
-                        ,  foPredOccL        :: ![PredOcc]
-                        ,  foGathCnstrMp     :: !CHRPredOccCnstrMp
+       ,  foPredOccL        :: ![PredOcc]				-- arisen predicates (to be obsolete)
+       ,  foGathCnstrMp     :: !CHRPredOccCnstrMp		-- arisen predicates
 %%]]
 %%[[(10 codegen)
-                        ,  foRowCoeL         :: !(AssocL HsName Coe)
-                        ,  foRowTCoeL        :: !(AssocL HsName C.Coe)
+       ,  foRowCoeL         :: !(AssocL HsName Coe)		-- internal, coercions for row fields
+       ,  foRowTCoeL        :: !(AssocL HsName C.Coe)	-- 
 %%]]
 %%[[50
-                        ,  foEqVarMp         :: !VarMp
+       ,  foEqVarMp         :: !VarMp
 %%]]
 %%[[99
-                            -- top binding -> format (for DT) -> final inference VarMp -> threaded pretty print tyvar VarMp
-                            --   -> (rule, threaded ...)
-                        ,  foMkDT            :: Maybe PP_Doc -> String -> VarMp -> VarMp -> (PP_Doc,VarMp)
+       -- top binding -> format (for DT) -> final inference VarMp -> threaded pretty print tyvar VarMp
+       --   -> (rule, threaded ...)
+       ,  foMkDT            :: Maybe PP_Doc -> String -> VarMp -> VarMp -> (PP_Doc,VarMp)
 %%][100
 %%]]
-                        }
+       }
 %%]
 
 %%[(4 hmtyinfer).emptyFO
-emptyFO     =  FIOut    {  foVarMp           =   emptyVarMp          ,  foTy              =   Ty_Any
-                        ,  foUniq            =   uidStart            ,  foMbAppSpineInfo  =   Nothing
-                        ,  foErrL            =   []                  ,  foTrace           =   []
-                        ,  foLInstToL        =   []                  ,  foRInstToL        =   []
+emptyFO
+  =  FIOut
+       {  foVarMp           =   emptyVarMp
+       ,  foTy              =   Ty_Any
+       ,  foUniq            =   uidStart
+       ,  foMbAppSpineInfo  =   Nothing
+       ,  foErrL            =   []
+       ,  foTrace           =   []
+       ,  foLInstToL        =   []
+       ,  foRInstToL        =   []
+%%[[6
+       ,  foTvKiVarMp       =   emptyVarMp
+%%]]
 %%[[(9 codegen)
-                        ,  foCSubst          =   emptyCSubst         ,  foLRCoe           =   emptyLRCoe
-                        ,  foTCSubst         =   C.emptyCSubst       ,  foLRTCoe          =   C.emptyLRCoe
+       ,  foCSubst          =   emptyCSubst
+       ,  foLRCoe           =   emptyLRCoe
+       ,  foTCSubst         =   C.emptyCSubst
+       ,  foLRTCoe          =   C.emptyLRCoe
 %%]]
 %%[[9
-                        ,  foPredOccL        =   []
-                        ,  foGathCnstrMp     =   emptyCnstrMp
+       ,  foPredOccL        =   []
+       ,  foGathCnstrMp     =   emptyCnstrMp
 %%]]
 %%[[(10 codegen)
-                        ,  foRowCoeL         =   []
-                        ,  foRowTCoeL        =   []
+       ,  foRowCoeL         =   []
+       ,  foRowTCoeL        =   []
 %%]]
 %%[[50
-                        ,  foEqVarMp         =   emptyVarMp
+       ,  foEqVarMp         =   emptyVarMp
 %%]]
 %%[[99
-                        ,  foMkDT            =   \_ _ m dm -> (empty,dm)
+       ,  foMkDT            =   \_ _ m dm -> (empty,dm)
 %%][100
 %%]]
-                        }
+       }
 %%]
 
 %%[(1 hmtyinfer).foHasErrs

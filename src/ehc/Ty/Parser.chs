@@ -7,7 +7,7 @@
 %%% Ty parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils(PlainParser), {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
+%%[(20 hmtyinfer || hmtyast) module {%{EH}Ty.Parser} import(UU.Parsing, EH.Util.ParseUtils, {%{EH}Base.Parser}, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Ty})
 %%]
 
 %%[(20 hmtyinfer || hmtyast) export(pTy,pPred)
@@ -56,11 +56,11 @@ pTyApp
 pTy :: P Ty
 pTy
   =   pTyApp
-  <|> (    Ty_Quant TyQu_Forall <$ pFORALL
-       <|> Ty_Quant TyQu_Exists <$ pEXISTS
-       <|> Ty_Quant TyQu_KiForall <$ pFFORALL
-       <|> Ty_Quant TyQu_KiExists <$ pEEXISTS
-      )
-      <*> pUIDHI <* pDOT <*> pTy
+  <|> Ty_Quant
+      <$> ((TyQu_Forall <$ pFORALL <|> TyQu_Exists <$ pEXISTS) <*> pMaybe 0 id (pSTAR *> pMaybe 1 id pInt))
+      <*> pUIDHI
+      <*> pMaybe kiStar id (pParens pTy)
+      <*  pDOT
+      <*> pTy
   <|> Ty_Lam <$ pLAM <*> pUIDHI <* pRARROW <*> pTy
 %%]

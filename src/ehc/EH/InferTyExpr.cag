@@ -338,7 +338,11 @@ SEM TyExpr
 -- generated from ruler rules into EHRulerRules, was 4.ty
 %%[(5 hmtyinfer).ty
 SEM TyExpr
-  | Quant       loc         .   ty                  =   Ty_Quant @qu @tv @tyExpr.ty
+  | Quant       loc         .   ty                  =   Ty_Quant @qu @tv
+%%[[6
+                                                                 kiStar			-- TBD: user specified kind
+%%]]
+                                                                 @tyExpr.ty
 %%]
 
 %%[(5 hmtyinfer)
@@ -410,7 +414,7 @@ ATTR PrExpr [ | | prTy: Ty ]
 
 SEM PrExpr
   | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
-  | Forall      loc         .   prTy                =   mkTyQu TyQu_Forall [@tv] @prExpr.prTy
+  | Forall      loc         .   prTy                =   mkTyQu tyQu_Forall [(@tv,kiStar)] @prExpr.prTy	-- TBD
   | * - Arrow Forall
                 loc         .   prTy                =   @ty
 %%]

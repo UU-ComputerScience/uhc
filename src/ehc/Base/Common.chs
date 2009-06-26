@@ -1414,5 +1414,19 @@ rowCanonOrderBy :: (o -> o -> Ordering) -> AssocL o a -> AssocL o a
 rowCanonOrderBy cmp = sortByOn cmp fst
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta levels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6 hs export(MetaLev, metaLevVal, metaLevTy, metaLevKi, metaLevSo)
+type MetaLev = Int
+
+metaLevVal, metaLevTy, metaLevKi, metaLevSo :: MetaLev
+metaLevVal = 0
+metaLevTy  = metaLevVal + 1
+metaLevKi  = metaLevTy  + 1
+metaLevSo  = metaLevKi  + 1
+%%]
+
 
 

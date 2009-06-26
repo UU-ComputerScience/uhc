@@ -277,7 +277,7 @@ An type at apptop may not introduce an implicits.
 This is to avoid a scope introduction (see implsIsEmpty).
 Consequences are yet unclear.
 - Does not work, that is enforcing empty predicates here: im = mkImplsNil
-  Likely caused by partiap apps yielding types taking more predicates (?)
+  Likely caused by partial apps yielding types taking more predicates (?)
 
 %%[(9 hmtyinfer).AppTop
 SEM Expr
@@ -285,7 +285,8 @@ SEM Expr
                                                              im = mkImplsVar i
                                                              rt = mkTyVar r
                                                         in   (im,rt,[im] `mkArrow` rt)
-                            .   foKnRes             =   fitsIn @lhs.fiOpts @fe @lUniq2 @lhs.tyVarMp @resTy @lhs.knTy
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @resTy @lhs.knTy
+                            .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
                             .   knTy                :=  @knTopTy
                             .   furtherTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
                 expr        .   tyVarMp             =   @furtherTyVarMp
@@ -327,7 +328,7 @@ SEM Expr
 %%[(5 hmtyinfer).Lam
 SEM Expr
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
-                            .	doFit				=	\o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
                             .   fo_fitF_            :=  @doFit @knFunFIOpts @lamKnTyVarMp
                             .   furtherTyVarMp      =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
                 arg         .   patTyVarMp          :=  @furtherTyVarMp
@@ -356,7 +357,8 @@ SEM Expr
 SEM Expr
   | LamImpl     loc         .   funTy               =   let  r = mkNewTyVar @lUniq
                                                         in   [@argPr.ty] `mkArrow` r
-                            .   fo_fitF_            =   fitsIn (implFIOpts {fioBindRFirst=True}) @fe @lUniq2 @lhs.tyVarMp @funTy @lhs.knTy
+                            .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
+                            .   fo_fitF_            =   @doFit (implFIOpts {fioBindRFirst=True}) @lhs.tyVarMp
                             .   knImplsVarMp        =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
                             .   (knImpls,ty_)       =   tyArrowImplsResWithLkup (varmpTyLookupCyc2 @knImplsVarMp) @funTy
                             .   (knArgImpl,knResImpls)
@@ -429,7 +431,7 @@ SEM Expr
                                                              (tg,cycVarMp2) = @lhs.tyVarMp |==> @lhs.tyGam
                                                         in   (ftvSet vg `Set.union` ftvSet tg, cycVarMp1 |+> cycVarMp2)
 %%][99
-                            .   gTyTvS				=   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
+                            .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
 %%]]
                             .   tyVarWildS          =   Set.fromList @tyExpr.tyVarWildL
                             .   ty_q_               :=  tyQuantifyOuter (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
@@ -442,15 +444,6 @@ SEM Expr
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
                 loc         .   lUniq3              :   UNIQUEREF gUniq
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Unfinished...
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(10 hmtyinfer)
-SEM Expr
-  | DynVar      loc         .   ty                  =   Ty_Any
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -509,21 +502,21 @@ SEM DataFieldExpr
 
 %%[(7 hmtyinfer)
 SEM Expr
-  | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyVarMp,loc.dfErrs)
+  | DataFields  (dataFieldExpr.knTy,dataFieldExpr.tyVarMp,loc.dfErrs,loc.foL)
                                                     =   case @dataFieldExpr.mbConNm of
                                                           Just _
-                                                            -> (@lhs.knTy,@lhs.tyVarMp,[])
-                                                          _ -> (t,c,e)
-                                                            where (t,_,c,e,_)
-                                                                    = foldr (\fldNm (knTy,updExprTy,tyVarMp,errL,u)
+                                                            -> (@lhs.knTy,@lhs.tyVarMp,[],[])
+                                                          _ -> (t,c,e,foL)
+                                                            where (t,_,c,e,foL,_)
+                                                                    = foldr (\fldNm (knTy,updExprTy,tyVarMp,errL,foL,u)
                                                                                -> let (u',u1,u2) = mkNewLevUID2 u
                                                                                       (knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyVarMp knTy
                                                                                       tyVarMp' = foVarMp fo1 |=> tyVarMp
                                                                                       (gTy,nmErrs) = valGamLookupTy fldNm @lhs.valGam
                                                                                       fo2 = fitsIn @fldFIOpts @fe u2 tyVarMp' gTy ([updExprTy] `mkArrow` knFTy)
-                                                                                  in  (knDTy, updExprTy, foVarMp fo2 |=> tyVarMp', foErrL fo2 ++ foErrL fo1 ++ e1 ++ nmErrs ++ errL, u')
+                                                                                  in  (knDTy, updExprTy, foVarMp fo2 |=> tyVarMp', foErrL fo2 ++ foErrL fo1 ++ e1 ++ nmErrs ++ errL, fo1:fo2:foL, u')
                                                                             )
-                                                                            (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyVarMp,[],@lUniq)
+                                                                            (@lhs.knTy,@dataFieldExpr.updExprTy,@dataFieldExpr.updExprTyVarMp,[],[],@lUniq)
                                                                             (Set.toList $ Set.unions [ Map.keysSet (dtiFldMp i) | i <- @dtiL ] `Set.difference` @fldS)
                 loc         .   lUniq               :   UNIQUEREF gUniq
 %%]
@@ -579,5 +572,11 @@ SEM Expr
                 loc         .   (_,ty)              :=  maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl $ snd $ tyArrowImplsResWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @expr.ty)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unfinished...
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
+%%[(10 hmtyinfer)
+SEM Expr
+  | DynVar      loc         .   ty                  =   Ty_Any
+%%]

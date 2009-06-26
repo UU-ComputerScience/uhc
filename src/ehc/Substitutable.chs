@@ -23,10 +23,10 @@
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Error})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
+%%[(6 hmtyinfer || hmtyast) import(qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -70,14 +70,6 @@ substLift toV updV app s v'
   = (updV v' x,r)
   where (x,r) = app s $ toV v'
 %%]
-
-%%[(9 hmtyinfer || hmtyast)
-%%]
-ftvClosureSet :: (Substitutable x TyVarId VarMp) => VarMp -> x -> Set.Set TyVarId
-ftvClosureSet varmp x
-  = fvs `Set.union` fv
-  where fv = ftvSet x
-        (fvs,_,mcyc) = varmpClosure (`Set.member` fv) ftvSet varmp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Substitutable like computations, partially implemented
@@ -153,10 +145,10 @@ instance Substitutable VarMp TyVarId VarMp where
     = ftvSet $ map snd sl
 %%]
 
-%%[(9 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
+%%[(6 hmtyinfer || hmtyast).SubstitutableVarMp -4.SubstitutableVarMp
 instance Substitutable VarMp TyVarId VarMp where
-  s1@(VarMp sl1) |=>   s2@(VarMp sl2)  =   VarMp (sl1 `Map.union` {- Map.map (s1 |=>) -} sl2)
-  ftvSet               (VarMp sl)      =   ftvSet $ Map.elems sl
+  (|=>)                                =   varmpPlus
+  ftvSet               (VarMp _ sl)    =   Set.unions $ map (ftvSet . Map.elems) sl
 %%]
 
 %%[(7 hmtyinfer || hmtyast)
@@ -201,13 +193,15 @@ instance Substitutable Impls TyVarId VarMp where
   s |=>  sc                   = sc
 
 
-%%[(9 hmtyinfer || hmtyast)
+%%[(6 hmtyinfer || hmtyast)
 instance Substitutable VarMpInfo TyVarId VarMp where
   s |=> vmi =  case vmi of
                  VMITy       t  -> VMITy (s |=> t)
+%%[[9
                  VMIImpls    i  -> VMIImpls (s |=> i)
                  VMIPred     i  -> VMIPred (s |=> i)
                  VMIScope    sc -> VMIScope (s |=> sc)
+%%]]
 %%[[13
                  VMIPredSeq  x  -> VMIPredSeq (s |=> x)
 %%]]
@@ -217,9 +211,11 @@ instance Substitutable VarMpInfo TyVarId VarMp where
 %%]]
   ftvSet vmi = case vmi of
                  VMITy       t  -> ftvSet t
+%%[[9
                  VMIImpls    i  -> ftvSet i
                  VMIPred     i  -> ftvSet i
                  VMIScope    sc -> ftvSet sc
+%%]]
 %%[[13
                  VMIPredSeq  x  -> ftvSet x
 %%]]
@@ -261,13 +257,33 @@ fixTyVarsVarMp uniq t
   = (mk TyVarCateg_Fixed fv rv,mk TyVarCateg_Plain rv fv)
   where fv = ftv t
         rv = mkNewUIDL (length fv) uniq
-        mk cat fv rv = VarMp $ Map.fromList $ zipWith (\v r -> (v,VMITy (Ty_Var r cat))) fv rv
+        mk cat fv rv = mkVarMp $ Map.fromList $ zipWith (\v r -> (v,VMITy (Ty_Var r cat))) fv rv
 
 tyFixTyVars :: UID -> Ty -> (Ty,VarMp,VarMp)
 tyFixTyVars uniq t
   = (sTo |=> t, sTo, sFr)
   where (sTo,sFr) = fixTyVarsVarMp uniq t
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% map VarMp keys to another key, filtering out non-keys.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer || hmtyast) export(varmpMapTyVarKey)
+varmpMapTyVarKey :: VarMp -> VarMp -> VarMp
+varmpMapTyVarKey mMap m
+  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> mMap |=> mkTyVar v) $ varmpToAssocTyL m ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extract tyvars mapped to tyvars from m2, and build a mapping for the mapped tyvars from m1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer || hmtyast)
+%%]
+varmpForward :: VarMp -> VarMp -> VarMp
+varmpForward m1 m2
+  =  varmpFilterTy (\_ t -> case t of {Ty_Alts v _ -> isJust (varmpTyLookup v cMp) ; _ -> False}) c
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pretty printing

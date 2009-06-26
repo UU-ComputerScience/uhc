@@ -7,7 +7,7 @@
 %%% Options of all sorts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), defaultEHCOpts, ehcCmdLineOpts)
+%%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), ehcCmdLineOpts)
 %%]
 
 %%[4 import(EH.Util.Pretty)
@@ -366,7 +366,7 @@ ehcOptEmitTyCore opts
 %%% Default compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.defaultEHCOpts
+%%[1.defaultEHCOpts export(defaultEHCOpts)
 defaultEHCOpts
   = EHCOpts
       {  ehcOptAspects          =   "%%@{%{ASPECTS}%%}"

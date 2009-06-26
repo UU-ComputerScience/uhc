@@ -237,12 +237,12 @@ SEM Ty
 
 %%[(4 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tyNew
+  | Quant           loc         .   instTo      =   InstTo_Qu @qu.repl @tv @tvNew
 %%]
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   instTo      :=  InstTo_Qu @qu.repl @tv @tyNew kiStar
+  | Quant           loc         .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @ki
 %%]
 
 %%[(4 hmtyinfer || hmtyast)

@@ -25,7 +25,7 @@ to be used for generating error messages elsewhere.
 %%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -48,7 +48,7 @@ tyAppVarLookup varmp ty
 %%[(4 hmtyinfer || hmtyast) -2.tyAppVarLookup hs export(tyAppVarLookup,tyAppVarLookup2)
 %%[[4
 tyAppVarLookup' :: SubstOpts -> VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
-%%][9
+%%][6
 tyAppVarLookup' :: VarLookup m TyVarId VarMpInfo => SubstOpts -> m -> TVUseMp -> Ty -> (Ty,VarMp)
 %%]]
 tyAppVarLookup' opts m usemp ty
@@ -59,7 +59,7 @@ tyAppVarLookup' opts m usemp ty
 
 %%[[4
 tyAppVarLookup :: VarMp -> Ty -> Ty
-%%][9
+%%][6
 tyAppVarLookup :: VarLookup m TyVarId VarMpInfo => m -> Ty -> Ty
 %%]]
 tyAppVarLookup m ty
@@ -68,7 +68,7 @@ tyAppVarLookup m ty
 
 %%[[4
 tyAppVarLookup2 :: VarMp -> Ty -> (Ty,VarMp)
-%%][9
+%%][6
 tyAppVarLookup2 :: VarLookup m TyVarId VarMpInfo => m -> Ty -> (Ty,VarMp)
 %%]]
 tyAppVarLookup2 m ty
@@ -112,7 +112,7 @@ mkLkup :: VarMp -> Lkup
 mkLkup = flip varmpTyLookup
 %%]
 
-%%[(9 hmtyinfer || hmtyast).Lkup -2.Lkup hs
+%%[(6 hmtyinfer || hmtyast).Lkup -2.Lkup hs
 type Lkup = TyVarId -> Maybe VarMpInfo
 
 mkLkup :: VarLookup m TyVarId VarMpInfo => m -> Lkup

@@ -21,7 +21,7 @@ Matching of types to
 
 %%[(8 codegen) hs import(EH.Util.Pretty,EH.Util.Utils,qualified EH.Util.FastSeq as Seq)
 %%]
-%%[(8 codegen) hs import(qualified Data.Map as Map)
+%%[(8 codegen) hs import(qualified Data.Map as Map, Data.Maybe)
 %%]
 %%[(8 codegen) hs import({%{EH}Error})
 %%]
@@ -90,10 +90,13 @@ data MatchIn
   = MatchIn
       { minAllowLBind       :: Bool     -- allow tvars in left/first type to bind
       , minAllowRL0BindBind :: Bool     --
+      , minAllowAlphaRename :: Bool     --
+      , minMetaLev          :: MetaLev  -- the base meta level
+      , minEnv              :: Env      -- introduced bindings
       }
 
 emptyMatchIn :: MatchIn
-emptyMatchIn = MatchIn False False
+emptyMatchIn = MatchIn False False False metaLevVal emptyEnv
 %%]
 
 %%[(8 codegen) hs export(allowLBindMatchIn)
@@ -110,10 +113,11 @@ data MatchOut
   = MatchOut
       { moutErrL            :: [Err]    -- errors
       , moutCSubst          :: CSubst   -- tvar bindings, possibly
+      , moutEnv             :: Env      -- introduced bindings
       }
 
 emptyMatchOut :: MatchOut
-emptyMatchOut = MatchOut [] emptyCSubst
+emptyMatchOut = MatchOut [] emptyCSubst emptyEnv
 
 moutHasErr :: MatchOut -> Bool
 moutHasErr = not . null . moutErrL
@@ -130,11 +134,11 @@ moutErrs = Seq.fromList . moutErrL
 tyMatchBind :: Expr -> Expr -> MatchOut
 tyMatchBind = tyMatch' allowLBindMatchIn
 
-tyMatchRL0Bind :: Expr -> Expr -> MatchOut
-tyMatchRL0Bind = tyMatch' allowRL0BindMatchIn
+tyMatchRL0Bind :: MetaLev -> Expr -> Expr -> MatchOut
+tyMatchRL0Bind l = tyMatch' (allowRL0BindMatchIn {minMetaLev = l})
 
-tyMatch :: Expr -> Expr -> MatchOut
-tyMatch = tyMatch' emptyMatchIn
+tyMatch :: MetaLev -> Expr -> Expr -> MatchOut
+tyMatch l = tyMatch' (emptyMatchIn {minMetaLev = l, minAllowAlphaRename = True})
 %%]
 
 %%[doesWhat.tyMatch doclatex
@@ -157,6 +161,16 @@ tyMatch' min ty1 ty2
   where -- matching: tvar
         m min mout      t1@(Expr_Var v1)                t2@(Expr_Var v2)
             | v1 == v2                                                          =   mout
+
+        m min mout      t1@(Expr_Var v1)                t2
+            | isJust mbv                                                        =   m min mout (fromJust mbv) t2
+            where mbv = envLookup' v1 (minMetaLev min) (minEnv min)
+        m min mout      t1                              t2@(Expr_Var v2)
+            | isJust mbv                                                        =   m min mout t1 (fromJust mbv)
+            where mbv = envLookup' v2 (minMetaLev min) (minEnv min)
+
+        m min mout      t1@(Expr_Var v1)                t2@(Expr_Var v2)
+            | v1 == v2                                                          =   mout
             | minAllowLBind min                                                 =   bind mout v1 t2
 
 {-
@@ -169,8 +183,12 @@ tyMatch' min ty1 ty2
         m min mout      t1@(Expr_Ann _ t1')             t2                      =   m min mout t1' t2
         m min mout      t1                              t2@(Expr_Ann _ t2')     =   m min mout t1  t2'
         
-        -- matching: structure
-        m min mout      t1@(Expr_Arrow  a1 r1)          t2@(Expr_Arrow  a2 r2)  =   mm m min mout [(a1,a2),(r1,r2)]
+        -- matching: structure with binding intro's
+        m min mout      t1@(Expr_Arrow  a1 r1)          t2@(Expr_Arrow  a2 r2)  =   mm' ( \i o -> i {minEnv = moutEnv o `envUnion` minEnv i}
+                                                                                        , \o -> o {moutEnv = moutEnv mout}
+                                                                                        )
+                                                                                        m min mout [(a1,a2),(r1,r2)]
+        -- matching: structure without binding intro's
         m min mout      t1@(Expr_App    f1 a1)          t2@(Expr_App    f2 a2)  =   mm m min mout [(f1,f2),(a1,a2)]
 %%[[1010
         m min mout      t1@(Ty_ExtRec e1 b1)            t2@(Ty_ExtRec e2 b2)    =   mm m min mout [(e1,e2),(b1,b2)]
@@ -199,22 +217,26 @@ tyMatch' min ty1 ty2
         ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Val t2 _)    =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0LblVal _ t1)     s2@(ExprSeq1_L0LblVal _ t2) =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0Bind n1 _ t1)    s2@(ExprSeq1_L0Bind n2 _ t2)
-            | n1 == n2                                                              =   m min mout t1 t2
+            | n1 == n2                                                              =   m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
+            | minAllowAlphaRename min                                               =   let mout' = m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
+                                                                                        in  mout' {moutEnv = envSingleton n1 (minMetaLev min) (Expr_Var n2) `envUnion` moutEnv mout' }
             | otherwise                                                             =   err' mout (pp n1) (pp n2)
         ms1 min mout    s1@(ExprSeq1_L1Val t1)          s2@(ExprSeq1_L1Val t2)      =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L1Bind v1 k1)      s2@(ExprSeq1_L1Bind v2 k2)
-            | v1 == v2                                                              =   m min mout k1 k2
+            | v1 == v2                                                              =   m (min {minMetaLev = minMetaLev min + 2}) mout k1 k2
             | otherwise                                                             =   err' mout (pp v1) (pp v2)
         ms1 min mout    s1                              s2                          =   err' mout (pp s1) (pp s2)
 
         -- match multiple
-        mm m min mout   ((t1,t2):tts)     
-            | moutHasErr mout'              = mout'
-            | otherwise                     = mm m min mout' tts
+        mm' (mout2min,finalize) m min mout   ((t1,t2):tts)     
+            | moutHasErr mout'              = finalize mout'
+            | otherwise                     = mm m (mout2min min mout') mout' tts
             where mout' = m min mout t1 t2
-        mm m min mout   _                   = mout
+        mm' (_       ,finalize) m min mout   _
+                                            = finalize mout
+        mm                                  = mm' (const,id)
 
-        -- binding of tvar
+        -- binding of tvar for output
         bind mout v t = mout {moutCSubst = uidTyLToCSubst [(v,t)] `cSubstApp` moutCSubst mout}
         -- error
         err' mout pp1 pp2 = mout {moutErrL = [rngLift emptyRange Err_TyCoreMatchClash (ppTy ty1) (ppTy ty2) pp1 pp2]}
@@ -392,15 +414,15 @@ SEM Expr
 
 %%[(8 codegen)
 SEM Expr
-  | App         loc         .   mout                =   tyMatchRL0Bind @arg.ty @argTy
-  | Case        loc         .   (ty,moutL)          =   let match ts = filter moutHasErr $ zipWith tyMatch (tail ts) (init ts)
+  | App         loc         .   mout                =   tyMatchRL0Bind @lhs.mlev @arg.ty @argTy
+  | Case        loc         .   (ty,moutL)          =   let match ts = filter moutHasErr $ zipWith (tyMatch @lhs.mlev) (tail ts) (init ts)
                                                         in  case (@alts.tyL,@dflt.tyMb) of
                                                               (ts      ,Just t) -> (t,match (t:ts))
                                                               ([]      ,_     ) -> (panic "TyCore.Check.Expr.Case.ty",[])
                                                               (ts@(t:_),_     ) -> (t,match ts)
   
 SEM ValBind
-  | Val         loc         .   mout                =   tyMatch @l0.ty @l1.t
+  | Val         loc         .   mout                =   tyMatch @lhs.mlev @l0.ty @l1.t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -417,8 +439,8 @@ ATTR Expr [ | | doCast: DoCast ]
 
 %%[(8 codegen)
 SEM Expr
-  | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch t @fromTy.t)
-  | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)								-- TBD: the rest
+  | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch @lhs.mlev t @fromTy.t)
+  | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)                                -- TBD: the rest
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

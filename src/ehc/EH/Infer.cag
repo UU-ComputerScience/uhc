@@ -40,7 +40,11 @@ SEM Expr
 %%]]
                             .   (quValGam_qu_,cycTyVarMp_l)
                                                     =   let (g,cycMp) = @decls.tyVarMp |==> @valGam_l_
+%%[[5
                                                         in  (valGamQuantify @gTyTvS g,cycMp)
+%%][6
+                                                        in  (valGamQuantify @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS g,cycMp)
+%%]]
                             .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
@@ -62,7 +66,7 @@ SEM Expr
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
                 decls       .   patTyVarMp          :=  @exVarMp1 |=> @lhs.tyVarMp
                 loc         .   (quValGam_qu_,quVarMp, cycTyVarMp_l)
-                                                    :=  valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvS @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS @valGam_l_
                             .   bodyVarMp1          =   @quVarMp |=> @decls.tyVarMp
                             .   (quValGam_ex_,exVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quVarMp |=> @quValGam_qu_), emptyVarMp)
@@ -74,7 +78,7 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   (quValGam_qu_,quVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @decls.tyVarMp @gTyTvS @quantPrOccL @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS @quantPrOccL @valGam_l_
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
@@ -86,12 +90,14 @@ SEM Expr
 %%[(5 hmtyinfer).tyInstKnown
 SEM Decl
   | Val         loc         .   knTy                =   @ty_sig_
+                            .   exprKnTy            =   @knTy
+                expr        .   knTy                =   @exprKnTy
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.tyInstKnown
 %%[(5 hmtyinfer).tyInstKnown
 SEM Decl
-  | Val         expr        .   knTy                =   if @hasTySig then @knTy else @patExpr.ty
+  | Val         loc         .   exprKnTy            :=  if @hasTySig then @knTy else @patExpr.ty
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyInstKnown
@@ -110,70 +116,9 @@ SEM Decl
 %%[(9 hmtyinfer).tyInstKnown
 %%]
 
-SEM Decl
-  | Val         expr        .   knTy                :=  if @hasTySig  then @knTy
-                                                                      else [mkImplsVar @lUniq2] `mkArrow` @patExpr.ty
-
 %%[(94 hmtyinfer)
 SEM Decl
   | FFE         loc         .   knTy                =   @ty_sig_
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final type
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(2 hmtyinfer).finValGam
-ATTR AllDecl [ finValGam: ValGam | | ]
-ATTR AllNT [ finTyVarMp: VarMp | | ]
-
-SEM Expr
-  | Let         loc         .   finValGamDecls      =   @lhs.finTyVarMp |=> (gamTop @decls.patValGam)
-                decls       .   finValGam           =   @finValGamDecls
-
-SEM Decl
-  | TySig       loc         .   finalTy             =   vgiTy $ fromJust
-                                                        $ valGamLookup @nm $ @lhs.finValGam
-
-SEM AGItf
-  | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
-%%]
-
-%%[(3 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_
-%%]
-
-%%[(4 hmtyinfer).finValGam
-SEM Expr
-  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
-%%]
-
-%%[(9 hmtyinfer)
-SEM Expr
-  | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Final kind
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(7 hmtyinfer).finTyGam
-ATTR AllNT [ finKiVarMp: VarMp | | ]
-
-SEM AGItf
-  | AGItf       expr        .   finKiVarMp          =   @expr.kiVarMp
-%%]
-
-%%[(7 hmtyinfer)
-ATTR AllNT [ finTyKiGam: TyKiGam |  | ]
-
-SEM AGItf
-  | AGItf       expr        .   finTyKiGam          =   emptyGam
-
-SEM Expr
-  | Let         loc         .   finTyKiGam          =   @lhs.finKiVarMp |=> @decls.patTyKiGam
-
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -259,6 +204,56 @@ ATTR AllCase [ | tyVarMp: VarMp   patTyVarMp: VarMp | ]
 
 %%[(97 hmtyinfer)
 ATTR AllPatExpr [ | tyVarMp: VarMp | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type variable kind mapping, as VarMp: tvKiVarMp, patTvKiVarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+These VarMp's run parallel to tyVarMp and patTyVarMp.
+Their purpose is to map type variables to their kind, so this info can be incorporated into quantified types.
+It must run independently of kind inference as kind inference is done and ready.
+Kind inferred info can be used, but we cannot add to it.
+In that case a cycle would then be created.
+
+%%[(6666 hmtyinfer)
+ATTR AllDecl AllData AllDataConstr AllCase [ | tvKiVarMp: VarMp  patTvKiVarMp: VarMp | ]
+ATTR AllExpr [ | tvKiVarMp: VarMp | ]
+ATTR AllPatExpr [ | patTvKiVarMp: VarMp | ]
+%%]
+
+%%[(9797 hmtyinfer)
+ATTR AllPatExpr [ | tvKiVarMp: VarMp | ]
+%%]
+
+%%[(6666 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   tvKiVarMp           =   @expr.kiVarMp
+
+SEM Expr
+  | Let         decls       .   patTvKiVarMp        =   @lhs.tvKiVarMp
+                            .   tvKiVarMp           =   @decls.patTvKiVarMp
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                arg         .   patTvKiVarMp        =   @lhs.tvKiVarMp
+                body        .   tvKiVarMp           =   @arg.patTvKiVarMp
+
+SEM Expr
+  | Case        alts        .   patTvKiVarMp        =   @expr.tvKiVarMp
+                            .   tvKiVarMp           =   @alts.patTvKiVarMp
+
+SEM CaseAlt
+  | Pat         patExpr     .   patTvKiVarMp        =   @lhs.patTvKiVarMp
+                lhs         .   patTvKiVarMp        =   @patExpr.patTvKiVarMp
+%%]
+
+%%[(9797 hmtyinfer)
+SEM Expr
+  | Lam LamImpl
+                arg         .   tvKiVarMp           =   @arg.patTvKiVarMp
+                body        .   tvKiVarMp           :=  @arg.tvKiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -357,7 +352,7 @@ SEM Expr
                                                     =   @decls.kiVarMp |==> @tyKiGam_g_
                             .   gKiTvS              =   ftvSet @gSubsTyKiGam
 %%][99
-                            .   gSubsTyKiGam		=	@tyKiGam_g_
+                            .   gSubsTyKiGam        =   @tyKiGam_g_
                             .   gKiTvS              =   @tyKiUpdFreeTvarS
 %%]]
                             .   lQuTyGam            =   {- @decls.tyVarMp |=> -} @tyGam_l_
@@ -770,8 +765,8 @@ SEM AGItf
 SEM Expr
   | Let         decls       .   patClGam1           =   gamPushNew @lhs.clGam
                             .   patClGam2           =   @decls.patClGam1
-                loc         .   (lClGam,_)     		=   gamPop @decls.patClGam2
-                            .   lClGamNoDups		=	gamNoDups @lClGam
+                loc         .   (lClGam,_)          =   gamPop @decls.patClGam2
+                            .   lClGamNoDups        =   gamNoDups @lClGam
                 decls       .   clGam               =   gamPushGam @lClGamNoDups @lhs.clGam
                 body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
 %%]
@@ -785,51 +780,13 @@ ATTR Expr AllDecl [ | | hasInstDecl USE {||} {False}: Bool ]
 
 SEM Decl
   | Instance InstanceIntro
-  				lhs			.	hasInstDecl			=	True
+                lhs         .   hasInstDecl         =   True
   | * - Instance InstanceIntro
-  				lhs			.	hasInstDecl			=	False
+                lhs         .   hasInstDecl         =   False
 
 SEM Expr
-  | Let			loc			.	hasInstDecl			=	@decls.hasInstDecl || @body.hasInstDecl
-  | * - Let		lhs			.	hasInstDecl			=	False
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Is let a first let in a sequence of lets?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer)
-ATTR Expr [ isFirstLet: Bool | | ]
-
-SEM CaseAlt
-  | Pat         loc         .   isFirstLet          =   True
-
-SEM DataFieldExpr
-  | Expr Upd    loc         .   isFirstLet          =   True
-
-SEM Decl
-  | InstanceIntro Val
-%%[[94
-    FFE
-%%]]
-                loc         .   isFirstLet          =   True
-
-SEM RecExpr
-  | Expr Ext Upd
-                loc         .   isFirstLet          =   True
-
-SEM AGItf
-  | AGItf       loc         .   isFirstLet          =   True
-
-SEM Expr
-  | Let         loc         .   isFirstLet          =   False
-  | * - Let     loc         .   isFirstLet          =   True
-%%]
-
-%%[(97 hmtyinfer)
-SEM PatExpr
-  | Expr        loc         .   isFirstLet          =   True
-
+  | Let         loc         .   hasInstDecl         =   @decls.hasInstDecl || @body.hasInstDecl
+  | * - Let     lhs         .   hasInstDecl         =   False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -840,18 +797,18 @@ SEM PatExpr
 ATTR NTPrf [ lexLev: Int | | ]
 
 SEM AGItf
-  | AGItf       loc         .   lexLev	          	=   -1
+  | AGItf       loc         .   lexLev              =   -1
 
 SEM Expr
-  | Let			loc			.	lexLev				=	if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
-  							.	lexLevIsGlobal		=	@lexLev == 0
+  | Let         loc         .   lexLev              =   if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
+                            .   lexLevIsGlobal      =   @lexLev == 0
   | Lam
 %%[[12
     LamImpl
 %%]]
-  				loc			.	lexLev				=	@lhs.lexLev + 1
+                loc         .   lexLev              =   @lhs.lexLev + 1
 
 SEM CaseAlt
-  | Pat         loc         .   lexLev          	=   @lhs.lexLev + 1
+  | Pat         loc         .   lexLev              =   @lhs.lexLev + 1
 %%]
 

@@ -20,7 +20,7 @@
 WRAPPER TyAGItf
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs export(kiQuantify)
+%%[(6 hmtyinfer || hmtyast) hs
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank)
@@ -39,6 +39,11 @@ tyQuantify :: (TyVarId -> Bool) -> Ty -> Ty
 tyQuantify tvIsBound ty = mkTyQu (filter (not.tvIsBound) (ftv ty)) ty
 %%]
 
+%%[(3 hmtyinfer || hmtyast).valTyQuantify hs export(valTyQuantify)
+valTyQuantify :: (TyVarId -> Bool) -> Ty -> Ty
+valTyQuantify = tyQuantify
+%%]
+
 %%[(3 hmtyinfer || hmtyast).tyQuantifyClosed hs
 tyQuantifyClosed :: Ty -> Ty
 tyQuantifyClosed = tyQuantify (const False)
@@ -50,12 +55,12 @@ tyQuantifyClosed = tyQuantifyRank [1..]
 
 tyQuantifyRank :: [Int] -> Ty -> Ty
 tyQuantifyRank rL ty
-  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL, tqoptBaseQuant = TyQu_Forall}) (const False) ty)
+  = tqoTy (tyQuantifyWithOpts (defaultTyQuOpts {tqoptQuRanks = rL, tqoptBaseQuant = tyQu_Forall, tqoptTvIsBound = const False}) ty)
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tyQuantify -3.tyQuantify hs
 tyQuantify :: (TyVarId -> Bool) -> Ty -> Ty
-tyQuantify tvIsBound ty = tyQuantify' tvIsBound TyQu_Forall ty
+tyQuantify tvIsBound ty = tyQuantify' tvIsBound tyQu_Forall ty
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyQuantifyOuter)
@@ -65,17 +70,26 @@ tyQuantifyOuter tvIsBound ty
   where tqo = tyQuantifyWithOpts
                 (defaultTyQuOpts
                   { tqoptAllowInnerQuant = False
+                  , tqoptTvIsBound       = tvIsBound
 %%[[6
-                  , tqoptBaseQuant = TyQu_Forall
+                  , tqoptBaseQuant       = tyQu_Forall
 %%]]
                   }
                 )
-                tvIsBound ty
+                ty
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs
+%%[(6 hmtyinfer || hmtyast) -3.valTyQuantify hs export(kiQuantify,valTyQuantify)
 kiQuantify :: (TyVarId -> Bool) -> Ty -> Ty
-kiQuantify tvIsBound ty = tyQuantify' tvIsBound TyQu_KiForall ty
+kiQuantify tvIsBound ty = tyQuantify' tvIsBound tyQu_KiForall ty
+
+valTyQuantify :: (TyVarId -> Ty) -> (TyVarId -> Bool) -> Ty -> Ty
+valTyQuantify tvKi tvIsBound ty
+  = tqoTy $ tyQuantifyWithOpts opts ty
+  where opts = defaultTyQuOpts
+                  { tqoptTvIsBound      = tvIsBound
+                  , tqoptTvKi       	= tvKi
+                  }
 %%]
 
 Parameter baseQuant only is needed starting at variant 6.
@@ -86,19 +100,25 @@ tyQuantify' tvIsBound baseQuant ty
   = tqoTy tqo
   where tqo = tyQuantifyWithOpts
                 (defaultTyQuOpts
+                  { tqoptTvIsBound       = tvIsBound
 %%[[6
-                  {tqoptBaseQuant = baseQuant}
+                  , tqoptBaseQuant       = baseQuant
 %%]]
+                  }
                 )
-                tvIsBound ty
+                ty
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs export(TyQuOpts(..),defaultTyQuOpts)
+%%[(3 hmtyinfer || hmtyast) hs export(TyQuOpts(..),defaultTyQuOpts)
 data TyQuOpts
   = TyQuOpts
-      { tqoptAllowInnerQuant	:: Bool
+      { tqoptTvIsBound			:: TyVarId -> Bool
+%%[[4
+      , tqoptAllowInnerQuant	:: Bool
+%%]]
 %%[[6
       , tqoptBaseQuant			:: TyQu
+      , tqoptTvKi				:: TyVarId -> Ty
 %%]]
 %%[[9
       , tqoptQuRanks 			:: [Int]
@@ -108,28 +128,31 @@ data TyQuOpts
 defaultTyQuOpts :: TyQuOpts
 defaultTyQuOpts
   = TyQuOpts
+      (const False)
+%%[[4
       True
+%%]]
 %%[[6
-      TyQu_Forall
+      tyQu_Forall
+      (const kiStar)
 %%]]
 %%[[9
       [1..]
 %%]]
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs export(TyQuOut(..))
+%%[(3 hmtyinfer || hmtyast) hs export(TyQuOut(..))
 data TyQuOut
   = TyQuOut   { tqoTy               ::  Ty
               }
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs
-tyQuantifyWithOpts :: TyQuOpts -> (TyVarId -> Bool) -> Ty -> TyQuOut
-tyQuantifyWithOpts opts tvIsBound ty
+%%[(3 hmtyinfer || hmtyast) hs
+tyQuantifyWithOpts :: TyQuOpts -> Ty -> TyQuOut
+tyQuantifyWithOpts opts ty
   = let  t  =  wrap_TyAGItf
                   (sem_TyAGItf  (TyAGItf_AGItf ty))
-                  (Inh_TyAGItf  { tvIsBound_Inh_TyAGItf     = tvIsBound
-                                , opts_Inh_TyAGItf          = opts
+                  (Inh_TyAGItf  { opts_Inh_TyAGItf          = opts
 %%[[6
                                 , baseQu_Inh_TyAGItf        = tqoptBaseQuant opts
 %%]]
@@ -315,11 +338,11 @@ tvMayQuFx qu fxTvM isQuFxLoc tv
 %%]
 
 %%[(4 hmtyinfer || hmtyast).tvIsBound
-ATTR TyAGItf AllTy [ tvIsBound: {TyVarId -> Bool} | | ]
+ATTR AllTy [ tvIsBound: {TyVarId -> Bool} | | ]
 
 SEM TyAGItf
   | AGItf       loc         .   (qBndTvS,qBndExTvS,tvIsBound)
-                                                        =   tvarsToQuant True @fxTvM (const False) @lhs.tvIsBound @qHereTvS
+                                                        =   tvarsToQuant True @fxTvM (const False) (tqoptTvIsBound @lhs.opts) @qHereTvS
 
 SEM Ty
   | App Var     loc         .   (qBndTvS,qBndExTvS,tvIsBound)
@@ -353,12 +376,12 @@ SEM Ty
 
 %%[(4 hmtyinfer || hmtyast).hereQu
 SEM TyAGItf
-  | AGItf       loc         .   hereQu          =   TyQu_Forall
+  | AGItf       loc         .   hereQu          =   tyQu_Forall
 
 SEM Ty
   | App         loc         .   qAsExist        =   @appIsLikeProd || polIsContravariant @lhs.pol && not @appIsArrow
   | Var         loc         .   qAsExist        =   polIsContravariant @lhs.pol
-  | App Var     loc         .   hereQu          =   if @qAsExist then TyQu_Exists else TyQu_Forall
+  | App Var     loc         .   hereQu          =   if @qAsExist then tyQu_Exists else tyQu_Forall
   | Quant       loc         .   hereQu          =   @qu.self
 %%]
 
@@ -392,8 +415,14 @@ SEM Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer || hmtyast) hs
-mkTyQuEx :: TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
-mkTyQuEx q tvS tvExS t = mkTyQu q (Set.toList tvS) (mkTyQu (tyquExists q) (Set.toList tvExS) t)
+mkTyQuEx :: TyQuOpts -> TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
+mkTyQuEx opts q tvS tvExS t
+  = mkTyQu q (mkk $ Set.toList tvS) (mkTyQu (tyquExists q) (mkk $ Set.toList tvExS) t)
+%%[[4
+  where mkk = id
+%%][6
+  where mkk tvs = [ (v,tqoptTvKi opts v) | v <- tvs ]
+%%]]
 %%]
 
 %%[(4 hmtyinfer || hmtyast).quTy
@@ -401,27 +430,31 @@ ATTR TyAGItf [ | | quTy: Ty ]
 ATTR AllTyAndFlds [ | | quTy: SELF ]
 
 SEM TyAGItf
-  | AGItf       lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS @ty.quTy
+  | AGItf       lhs         .   quTy            =   mkTyQuEx @lhs.opts @hereQu @qBndTvS @qBndExTvS @ty.quTy
 
 SEM Ty
-  | Var         lhs         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS (Ty_Var @tv @categ.quTy)
-  | App         loc         .   quTy            =   mkTyQuEx @hereQu @qBndTvS @qBndExTvS (Ty_App @func.quTy @arg.quTy)
+  | Var         lhs         .   quTy            =   mkTyQuEx @lhs.opts @hereQu @qBndTvS @qBndExTvS (Ty_Var @tv @categ.quTy)
+  | App         loc         .   quTy            =   mkTyQuEx @lhs.opts @hereQu @qBndTvS @qBndExTvS (Ty_App @func.quTy @arg.quTy)
+%%[[4
   | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv @ty.quTy
+%%][6
+  | Quant       lhs         .   quTy            =   Ty_Quant @qu.self @tv (tqoptTvKi @lhs.opts @tv) @ty.quTy
+%%]]
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
-mkTyQuForRank :: Bool -> TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
-mkTyQuForRank allow q tvS tvExS t = if allow then mkTyQuEx q tvS tvExS t else t
+mkTyQuForRank :: TyQuOpts -> Bool -> TyQu -> TyVarIdS -> TyVarIdS -> Ty -> Ty
+mkTyQuForRank opts allow q tvS tvExS t = if allow then mkTyQuEx opts q tvS tvExS t else t
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Var         lhs         .   quTy            :=  mkTyQuForRank @isQuRank @hereQu @qBndTvS @qBndExTvS $ Ty_Var @tv @categ.quTy
+  | Var         lhs         .   quTy            :=  mkTyQuForRank @lhs.opts @isQuRank @hereQu @qBndTvS @qBndExTvS $ Ty_Var @tv @categ.quTy
   | App         loc         .   quTy            :=  let  (rwYTvS,rwNTvS) = Set.partition (`Set.member` @frRowTvS) @qBndTvS
-                                                    in   mkTyQuForRank @isQuRank @hereQu rwNTvS @qBndExTvS
-                                                         $  mkTyQuForRank @isQuRank @lhs.baseQu rwYTvS Set.empty
+                                                    in   mkTyQuForRank @lhs.opts @isQuRank @hereQu rwNTvS @qBndExTvS
+                                                         $  mkTyQuForRank @lhs.opts @isQuRank @lhs.baseQu rwYTvS Set.empty
                                                          $  Ty_App @func.quTy @arg.quTy
-  | Pred        lhs         .   quTy            =   mkTyQuForRank @isQuRank @hereQu @qBndTvS @qBndExTvS (Ty_Pred @pr.quTy)
+  | Pred        lhs         .   quTy            =   mkTyQuForRank @lhs.opts @isQuRank @hereQu @qBndTvS @qBndExTvS (Ty_Pred @pr.quTy)
 %%]
 
 %%[(11 hmtyinfer || hmtyast)

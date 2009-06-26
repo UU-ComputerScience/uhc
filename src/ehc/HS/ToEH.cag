@@ -270,7 +270,7 @@ SEM Kind
     | Variable
         lhs         .   eh          =   rngLift @range EH.KiExpr_Var @name
     | Forall
-        lhs         .   eh          =   {- foldr (rngLift @range EH.KiExpr_Quant TyQu_Forall) -} @kind.eh {- @kindvariables -}
+        lhs         .   eh          =   {- foldr (rngLift @range EH.KiExpr_Quant tyQu_Forall) -} @kind.eh {- @kindvariables -}
 	| Annotate
 		loc			.	eh			=	rngLift @range EH.KiExpr_Ann @annotation.eh @kind.eh
 %%]
@@ -358,9 +358,9 @@ SEM Type
 %%]
 %%[4
     | Forall
-        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant TyQu_Forall) @type.eh @typevariables
+        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Forall) @type.eh @typevariables
     | Exists
-        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant TyQu_Exists) @type.eh @typevariables
+        lhs         .   eh          =   foldr (rngLift @range EH.TyExpr_Quant tyQu_Exists) @type.eh @typevariables
 %%]
 %%[7
     | RowUpdate

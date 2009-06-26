@@ -48,7 +48,7 @@ tyElimForgetAlts ty
 cnstrElimForgetAlts :: VarMp -> (VarMp,Set.Set TyVarId)
 cnstrElimForgetAlts c
   = (c'',s)
-  where  (c',s) = varmpMapThrTy  (\_ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
+  where  (c',s) = varmpMapThrTy  (\_ _ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
          c'' = varmpDelAlphaRename c'
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
