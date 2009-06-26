@@ -189,10 +189,9 @@ SEM GrExpr
            lhs.stats   = if not @lhs.hasNext
                           then assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
                                ++ yielding "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
-                          else 
-                               --    assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
-                               -- ++ assignments "Unit" [] (map mkVar @lhs.targets) @val.values 
-                               assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values
+                          else maybe (assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values)
+                                     (\t -> Statement_Comment ["Updateunit to PtrNode"] : store2 (mkVar t) (length @val.values) (length @val.values) (map (arrayVariab @loc.name) [0..]) @val.values)
+                                     @lhs.mbPtrTarget
 
  | Unit    lhs.stats  = if not @lhs.hasNext
                          then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
@@ -360,7 +359,9 @@ SEM GrVal
 -- | EnumNode   lhs.values = [Value_Var (mkVar @nm)]
  | Tag        lhs.values = [@tag.value]
 
- | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
+-- | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
+ | PtrNode    lhs.values = []    -- TODO: do something useful with a pointernode. It is now discarded, because it can only occur after returning from error, which won't happen
+ 
  -- | PtrNode    lhs.values = error "ToSilly: PtrNode values"
  | Empty      lhs.values = take 10 (repeat (Value_Con (Constant_LiteralInt 0))) -- error "ToSilly: Empty values"
  | LitInt     lhs.values = error ("ToSilly: LitInt values" ++ show @int)
@@ -603,6 +604,17 @@ storePopulate v vs
 store :: Variable -> Int -> Int -> [Value] -> Statements
 store v n1 n2 vs
        =  storeAlloc GCManaged v n1 n2 vs : storePopulate v vs
+
+storePopulate2 :: Variable -> [Variable] -> [Value] -> Statements
+storePopulate2 v xs vs
+       =  zipWith3 Statement_Assignment2
+                   xs
+                   (map (arrayVariab v) [0..])
+                   vs
+
+store2 :: Variable -> Int -> Int -> [Variable] -> [Value] -> Statements
+store2 v n1 n2 xs vs
+       =  storeAlloc GCManaged v n1 n2 vs : storePopulate2 v xs vs
 
 
 
