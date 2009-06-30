@@ -34,7 +34,7 @@ DATA Ty
 %%]]
   				tv              : {TyVarId}
 %%[[6
-				ki              : {Ty}
+				l1              : {Ty}	-- 1 (or more, if MetaLev > 0) meta level higher, and its kind/sort/...
 %%]]
                 ty              : Ty
 %%]

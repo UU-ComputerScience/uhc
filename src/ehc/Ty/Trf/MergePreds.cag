@@ -37,7 +37,7 @@ tyMergePreds prL ty
     in   TyMergePredOut
             { tmpoTy                 = prTy_Syn_TyAGItf t
             , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
-            , tmpoImplsVarMp         = assocLToVarMpImpls (prImpls_Syn_TyAGItf t)
+            , tmpoImplsVarMp         = assocImplsLToVarMp (prImpls_Syn_TyAGItf t)
             , tmpoImplsPrvReq        = prvReqs_Syn_TyAGItf t
             }
 %%]

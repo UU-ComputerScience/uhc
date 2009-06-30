@@ -740,7 +740,7 @@ tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
 tvarKi tyKiGam tvKiVarMp _ tv
   = case tyKiGamLookup tv' tyKiGam of
       Just tkgi -> tvKiVarMp |=> tkgiKi tkgi
-      _         -> maybe k (const kiStar) $ tyMbVar k
+      _         -> maybe k (const k) $ tyMbVar k
                 where k = tvKiVarMp |=> tv'
   where tv' = {- tyVarMp |=> -} mkTyVar tv
 %%]

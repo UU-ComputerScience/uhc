@@ -31,19 +31,19 @@ SEM Expr
 SEM Expr
   | Let         -- (loc.lSubsValGam_,loc.cycTyVarMp_l) =   @decls.tyVarMp |==> @valGam_l_
 %%[[5
-                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @decls.tyVarMp |==> @valGam_g_
+                (loc.gSubsValGam_,loc.cycTyVarMp_g) =   @tyVarMpDeclsL0 |==> @valGam_g_
                 loc         .   gTyTvS              =   ftvSet @gSubsValGam_
-                                                        `Set.union` ftvSet (@decls.tyVarMp |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
+                                                        `Set.union` ftvSet (@tyVarMpDeclsL0 |=> @lhs.tyGam)      -- 20080212 incompatibility with ruler version
 %%][99
                 loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
                             .   (quValGam_qu_,cycTyVarMp_l)
-                                                    =   let (g,cycMp) = @decls.tyVarMp |==> @valGam_l_
+                                                    =   let (g,cycMp) = @tyVarMpDeclsL0 |==> @valGam_l_
 %%[[5
                                                         in  (valGamQuantify @gTyTvS g,cycMp)
 %%][6
-                                                        in  (valGamQuantify @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS g,cycMp)
+                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
@@ -60,14 +60,19 @@ SEM Expr
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.gathTyKiGam]
+%%]
+
 %%[(8 hmtyinfer)
 SEM Expr
   | Let         loc         .   (gathTySigGam_l_,exVarMp1)
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
                 decls       .   patTyVarMp          :=  @exVarMp1 |=> @lhs.tyVarMp
                 loc         .   (quValGam_qu_,quVarMp, cycTyVarMp_l)
-                                                    :=  valGamQuantifyWithVarMp @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS @valGam_l_
-                            .   bodyVarMp1          =   @quVarMp |=> @decls.tyVarMp
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS @valGam_l_
+                            .   bodyVarMp1          =   @quVarMp |=> @tyVarMpDeclsL0
                             .   (quValGam_ex_,exVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quVarMp |=> @quValGam_qu_), emptyVarMp)
                             .   bodyVarMp2          =   @exVarMp2 |=> @bodyVarMp1
@@ -78,8 +83,27 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   (quValGam_qu_,quVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @lhs.finTyKiGam @quTvKiVarMp @decls.tyVarMp @gTyTvS @quantPrOccL @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS @quantPrOccL @valGam_l_
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Restriction of @decls.tyVarMp to meta level 0
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL0      =   @decls.tyVarMp
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL0      :=  varmpSelectMetaLev [0] @decls.tyVarMp
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] @decls.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -204,56 +228,6 @@ ATTR AllCase [ | tyVarMp: VarMp   patTyVarMp: VarMp | ]
 
 %%[(97 hmtyinfer)
 ATTR AllPatExpr [ | tyVarMp: VarMp | ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type variable kind mapping, as VarMp: tvKiVarMp, patTvKiVarMp
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-These VarMp's run parallel to tyVarMp and patTyVarMp.
-Their purpose is to map type variables to their kind, so this info can be incorporated into quantified types.
-It must run independently of kind inference as kind inference is done and ready.
-Kind inferred info can be used, but we cannot add to it.
-In that case a cycle would then be created.
-
-%%[(6666 hmtyinfer)
-ATTR AllDecl AllData AllDataConstr AllCase [ | tvKiVarMp: VarMp  patTvKiVarMp: VarMp | ]
-ATTR AllExpr [ | tvKiVarMp: VarMp | ]
-ATTR AllPatExpr [ | patTvKiVarMp: VarMp | ]
-%%]
-
-%%[(9797 hmtyinfer)
-ATTR AllPatExpr [ | tvKiVarMp: VarMp | ]
-%%]
-
-%%[(6666 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   tvKiVarMp           =   @expr.kiVarMp
-
-SEM Expr
-  | Let         decls       .   patTvKiVarMp        =   @lhs.tvKiVarMp
-                            .   tvKiVarMp           =   @decls.patTvKiVarMp
-  | Lam
-%%[[12
-    LamImpl
-%%]]
-                arg         .   patTvKiVarMp        =   @lhs.tvKiVarMp
-                body        .   tvKiVarMp           =   @arg.patTvKiVarMp
-
-SEM Expr
-  | Case        alts        .   patTvKiVarMp        =   @expr.tvKiVarMp
-                            .   tvKiVarMp           =   @alts.patTvKiVarMp
-
-SEM CaseAlt
-  | Pat         patExpr     .   patTvKiVarMp        =   @lhs.patTvKiVarMp
-                lhs         .   patTvKiVarMp        =   @patExpr.patTvKiVarMp
-%%]
-
-%%[(9797 hmtyinfer)
-SEM Expr
-  | Lam LamImpl
-                arg         .   tvKiVarMp           =   @arg.patTvKiVarMp
-                body        .   tvKiVarMp           :=  @arg.tvKiVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

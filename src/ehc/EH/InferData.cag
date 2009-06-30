@@ -121,7 +121,7 @@ SEM DataConstr
 %%][6
                                                             mkk tvs = [ (v,tvarKi @lhs.finTyKiGam @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
 %%]]
-                                                        in  (mkTyQu tyQu_Forall (mkk fvD) ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
+                                                        in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
 
                 lhs         .   patValGam           =   gamUnions
                                                           [ assocLToGam
