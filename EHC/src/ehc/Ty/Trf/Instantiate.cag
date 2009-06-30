@@ -203,7 +203,14 @@ SEM Ty
   | Quant           loc         .   tvNew       =   @lUniq
                     (loc.tyNew,ty.gathSubst)    =   if @allow
                                                     then let t = @lhs.howToInst @qu.repl @tvNew
-                                                         in (t,(@tv `varmpTyUnit` t) `varmpPlus` @lhs.gathSubst)
+                                                         in ( t
+%%[[4
+                                                            , (varmpTyUnit @tv t)
+%%][6
+                                                            , (varmpMetaLevTyUnit (tyquMetaLev @qu.repl) @tv t)
+%%]]
+                                                                `varmpPlus` @lhs.gathSubst
+                                                            )
                                                     else (Ty_Any,@lhs.gathSubst)
 %%]
 
@@ -242,7 +249,8 @@ SEM Ty
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc         .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @ki
+  | Quant           loc         .   l1Subst     =   varmpDecMetaLev @lhs.replSubst |=> @l1
+                                .   instTo      :=  InstTo_Qu @qu.repl @tv @tvNew @l1Subst
 %%]
 
 %%[(4 hmtyinfer || hmtyast)

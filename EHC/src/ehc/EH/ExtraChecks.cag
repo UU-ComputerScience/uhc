@@ -83,7 +83,7 @@ SEM Expr
 
 %%[(4 hmtyinfer)
 SEM Expr
-  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @decls.tyVarMp $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
+  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @tyVarMpDeclsL0 $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
 %%]
 
 %%[(5 hmtyinfer).Expr.TypeAs.cycVarMp
@@ -175,7 +175,7 @@ SEM Expr
 %%][99
                                                                     (map (mkRangedPred @lhs.rangeMp) amb)
 %%]]
-                                                                    (mkg @quValGam_ex_subst) (mkg $ @decls.tyVarMp |=> @valGam_l_)
+                                                                    (mkg @quValGam_ex_subst) (mkg $ @tyVarMpDeclsL0 |=> @valGam_l_)
                                                                  ]
 %%]
 

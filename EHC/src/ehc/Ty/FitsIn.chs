@@ -427,7 +427,13 @@ fitsInFI fi ty1 ty2
 %%[(4 hmtyinfer).fitsIn.unquant
             -- removal of quantifier
             unquant fi t hide howToInst
-                =   (fi {fiUniq = u},uqt,back,instto)
+                = ( fi { fiUniq = u
+%%[[6
+                       , fiVarMpLoc = instToL1VarMp instto |=> fiVarMpLoc fi
+%%]]
+                       }
+                  , uqt,back,instto
+                  )
                 where  (u,uq)            = mkNewLevUID (fiUniq fi)
                        (uqt,rtvs,instto) = tyInst1Quants uq howToInst t
                        back              = if hide  then  \fo -> foSetVarMp (varmpDel rtvs (foVarMp fo)) $ foUpdTy t fo
@@ -487,7 +493,7 @@ fitsInFI fi ty1 ty2
 %%]
 
 %%[(6 hmtyinfer)
-            foCmbTvKiVarMp ffo afo = afo {foTvKiVarMp = foTvKiVarMp afo |=> foTvKiVarMp ffo}
+            -- foCmbTvKiVarMp ffo afo = afo {foTvKiVarMp = foTvKiVarMp afo |=> foTvKiVarMp ffo}
 %%]
 
 %%[(9 hmtyinfer)
@@ -501,7 +507,7 @@ fitsInFI fi ty1 ty2
 %%[(4 hmtyinfer).fitsIn.foCmbApp
             foCmbApp     ffo      = 
 %%[[6
-                                    foCmbTvKiVarMp ffo .
+                                    -- foCmbTvKiVarMp ffo .
 %%]]
 %%[[9
                                     foCmbPrfRes ffo .
@@ -1047,7 +1053,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 | fioIsSubsume (fiFIOpts fi) && fioLeaveRInst (fiFIOpts fi)
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
 %%[[6
-                                                                , foTvKiVarMp = instToKiVarMp instto2 |=> foTvKiVarMp fo
+                                                                -- , foTvKiVarMp = instToL1VarMp instto2 |=> foTvKiVarMp fo
 %%]]
                                                                 })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instCoConst
@@ -1060,7 +1066,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 | fioIsSubsume (fiFIOpts fi) && not (fioLeaveRInst (fiFIOpts fi))
                                                     = back2 (fo { foRInstToL = instto2 ++ foRInstToL fo
 %%[[6
-                                                                , foTvKiVarMp = instToKiVarMp instto2 |=> foTvKiVarMp fo
+                                                                -- , foTvKiVarMp = instToL1VarMp instto2 |=> foTvKiVarMp fo
 %%]]
                                                                 })
                 where (fi2,uqt2,back2,instto2) = unquant fi t2 False instContra
@@ -1075,7 +1081,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                 | fioIsSubsume (fiFIOpts fi)        = fo { foLInstToL = instto1 ++ foLInstToL fo
 %%[[6
-                                                         , foTvKiVarMp = instToKiVarMp instto1 |=> foTvKiVarMp fo
+                                                         -- , foTvKiVarMp = instToL1VarMp instto1 |=> foTvKiVarMp fo
 %%]]
                                                          }
                 where (fi1,uqt1,back1,instto1) = unquant fi t1 False instCoConst

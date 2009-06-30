@@ -50,7 +50,7 @@ tyBetaRed1 fi lkup tp
           where (lamArgs,lamBody) = tyLamArgsRes lam
                 lamLen = length lamArgs
                 argLen = length args
-                subst  = assocLToVarMp (zip lamArgs args)
+                subst  = assocTyLToVarMp (zip lamArgs args)
 %%[[17
         -- normalization for polarity types
         -- * removes double negations

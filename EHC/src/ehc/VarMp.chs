@@ -29,7 +29,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%% Substitution for types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast) module {%{EH}VarMp} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(VarMp'(..), VarMp, emptyVarMp, varmpTyUnit, varmpTyLookup)
+%%[(2 hmtyinfer || hmtyast) module {%{EH}VarMp} import(Data.List, {%{EH}Base.Common}, {%{EH}Ty}) export(VarMp'(..), VarMp, emptyVarMp, varmpTyLookup)
 %%]
 
 %%[(2 hmtyinfer || hmtyast) import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
@@ -41,7 +41,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(4 hmtyinfer || hmtyast) export(varmpFilterTy,varmpDel,(|\>))
 %%]
 
-%%[(4 hmtyinfer || hmtyast) export(assocLToVarMp,varmpToAssocTyL)
+%%[(4 hmtyinfer || hmtyast)
 %%]
 
 %%[(4 hmtyinfer || hmtyast) import({%{EH}Error})
@@ -76,22 +76,15 @@ newtype VarMp' k v = VarMp (AssocL k v) deriving Show
 %%[(6 hmtyinfer || hmtyast) -2.VarMpQ.Base
 data VarMp' k v
   = VarMp
-      { varmpMetaLev 	:: !MetaLev
-      , varmpMpL 		:: [Map.Map k v]
+      { varmpMetaLev 	:: !MetaLev				-- the base meta level
+      , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
 %%]
 
 %%[(99 hmtyinfer || hmtyast) export(varmpToMap)
+-- get the base meta level map, ignore the others
 varmpToMap :: VarMp' k v -> Map.Map k v
 varmpToMap (VarMp _ (m:_)) = m
-%%]
-
-%%[(2 hmtyinfer || hmtyast).VarMp.emptyVarMp
-emptyVarMp :: VarMp' k v
-emptyVarMp = VarMp []
-
-varmpIsEmpty :: VarMp' k v -> Bool
-varmpIsEmpty (VarMp l) = null l
 %%]
 
 %%[(6 hmtyinfer || hmtyast) export(mkVarMp)
@@ -99,12 +92,14 @@ mkVarMp :: Map.Map k v -> VarMp' k v
 mkVarMp m = VarMp 0 [m]
 %%]
 
+%%[(2 hmtyinfer || hmtyast).VarMp.emptyVarMp
+emptyVarMp :: VarMp' k v
+emptyVarMp = VarMp []
+%%]
+
 %%[(6 hmtyinfer || hmtyast).VarMp.emptyVarMp -2.VarMp.emptyVarMp
 emptyVarMp :: VarMp' k v
 emptyVarMp = mkVarMp Map.empty
-
-varmpIsEmpty :: VarMp' k v -> Bool
-varmpIsEmpty (VarMp _ m) = all Map.null m
 %%]
 
 %%[(4 hmtyinfer || hmtyast).varmpFilter export(varmpFilter)
@@ -127,30 +122,6 @@ varmpPartition f (VarMp l m)
   where (p1,p2) = unzip $ map (Map.partitionWithKey f) m
 %%]
 
-%%[(2 hmtyinfer || hmtyast).varmpPlus export(varmpPlus, (|+>))
-infixr 7 `varmpPlus`, |+>
-
-varmpPlus, (|+>) :: VarMp -> VarMp -> VarMp
-varmpPlus (VarMp l1) (VarMp l2) = VarMp (l1 ++ l2)
-(|+>) = varmpPlus
-%%]
-
-%%[(6 hmtyinfer || hmtyast).varmpPlus -2.varmpPlus export(varmpPlus)
-infixr 7 `varmpPlus`
-
-varmpPlus :: VarMp -> VarMp -> VarMp
-varmpPlus = (|+>) -- (VarMp l1) (VarMp l2) = VarMp (l1 `Map.union` l2)
-%%]
-
-%%[(4 hmtyinfer || hmtyast) export(varmpUnion,varmpUnions)
-varmpUnion :: VarMp -> VarMp -> VarMp
-varmpUnion = varmpPlus
-
-varmpUnions :: [VarMp] -> VarMp
-varmpUnions [x] = x
-varmpUnions l   = foldr varmpPlus emptyVarMp l
-%%]
-
 %%[(4 hmtyinfer || hmtyast).varmpDel
 varmpDel :: Ord k => [k] -> VarMp' k v -> VarMp' k v
 varmpDel tvL c = varmpFilter (const.not.(`elem` tvL)) c
@@ -159,27 +130,34 @@ varmpDel tvL c = varmpFilter (const.not.(`elem` tvL)) c
 (|\>) = flip varmpDel
 %%]
 
-%%[(4 hmtyinfer || hmtyast).assocLToVarMp
-assocLToVarMp :: AssocL k v -> VarMp' k v
-assocLToVarMp = VarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp: meta level changes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-varmpToAssocTyL :: VarMp' k v -> AssocL k v
-varmpToAssocTyL (VarMp l) = l
+%%[(6 hmtyinfer || hmtyast) export(varmpShiftMetaLev,varmpIncMetaLev,varmpDecMetaLev)
+-- shift up the level,
+-- or down when negative, throwing away the lower levels
+varmpShiftMetaLev :: MetaLev -> VarMp' k v -> VarMp' k v
+varmpShiftMetaLev inc (VarMp mlev fm)
+  | inc < 0   = let mlev' = mlev+inc in VarMp (mlev' `max` 0) (drop (- (mlev' `min` 0)) fm)
+  | otherwise = VarMp (mlev+inc) fm
 
-varmpToAssocL :: VarMp' k v -> AssocL k v
-varmpToAssocL = varmpToAssocTyL
+varmpIncMetaLev :: VarMp' k v -> VarMp' k v
+varmpIncMetaLev = varmpShiftMetaLev 1
+
+varmpDecMetaLev :: VarMp' k v -> VarMp' k v
+varmpDecMetaLev = varmpShiftMetaLev (-1)
 %%]
 
-%%[(6 hmtyinfer || hmtyast).assocLToVarMp -4.assocLToVarMp
-assocLToVarMp :: Ord k => AssocL k Ty -> VarMp' k VarMpInfo
-assocLToVarMp l = VarMp 0 [Map.fromList $ assocLMapElt VMITy l]
-
-varmpToAssocL :: VarMp' k VarMpInfo -> AssocL k VarMpInfo
-varmpToAssocL (VarMp _ (l:_)) = Map.toList l
-
-varmpToAssocTyL :: VarMp' k VarMpInfo -> AssocL k Ty
-varmpToAssocTyL c = [ (v,t) | (v,VMITy t) <- varmpToAssocL c ]
+%%[(6 hmtyinfer || hmtyast) export(varmpSelectMetaLev)
+varmpSelectMetaLev :: [MetaLev] -> VarMp' k v -> VarMp' k v
+varmpSelectMetaLev mlevs (VarMp mlev ms)
+  = (VarMp mlev [ if l `elem` mlevs then m else Map.empty | (l,m) <- zip [mlev..] ms ])
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp: properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer || hmtyast) export(varmpSize)
 varmpSize :: VarMp' k v -> Int
@@ -203,12 +181,70 @@ varmpKeysSet (VarMp _ fm) = Set.unions $ map Map.keysSet fm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp: from/to AssocL
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast).assocTyLToVarMp export(assocTyLToVarMp,varmpToAssocTyL)
+assocTyLToVarMp :: AssocL k v -> VarMp' k v
+assocTyLToVarMp = VarMp
+
+varmpToAssocTyL :: VarMp' k v -> AssocL k v
+varmpToAssocTyL (VarMp l) = l
+
+varmpToAssocL :: VarMp' k v -> AssocL k v
+varmpToAssocL = varmpToAssocTyL
+%%]
+
+%%[(6 hmtyinfer || hmtyast).assocTyLToVarMp -4.assocTyLToVarMp export(assocMetaLevTyLToVarMp,assocTyLToVarMp,varmpToAssocTyL)
+assocMetaLevTyLToVarMp :: Ord k => AssocL k (MetaLev,Ty) -> VarMp' k VarMpInfo
+assocMetaLevTyLToVarMp l = varmpUnions [ varmpMetaLevTyUnit lev v t | (v,(lev,t)) <- l ]
+
+assocTyLToVarMp :: Ord k => AssocL k Ty -> VarMp' k VarMpInfo
+assocTyLToVarMp l = mkVarMp (Map.fromList $ assocLMapElt VMITy l)
+
+varmpToAssocL :: VarMp' k VarMpInfo -> AssocL k VarMpInfo
+varmpToAssocL (VarMp _ []   ) = []
+varmpToAssocL (VarMp _ (l:_)) = Map.toList l
+
+varmpToAssocTyL :: VarMp' k VarMpInfo -> AssocL k Ty
+varmpToAssocTyL c = [ (v,t) | (v,VMITy t) <- varmpToAssocL c ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarMp: combine
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer || hmtyast).varmpPlus export(varmpPlus, (|+>))
+infixr 7 `varmpPlus`, |+>
+
+varmpPlus, (|+>) :: Ord k => VarMp' k v -> VarMp' k v -> VarMp' k v
+varmpPlus (VarMp l1) (VarMp l2) = VarMp (l1 ++ l2)
+(|+>) = varmpPlus
+%%]
+
+%%[(6 hmtyinfer || hmtyast).varmpPlus -2.varmpPlus export(varmpPlus)
+infixr 7 `varmpPlus`
+
+varmpPlus :: Ord k => VarMp' k v -> VarMp' k v -> VarMp' k v
+varmpPlus = (|+>) -- (VarMp l1) (VarMp l2) = VarMp (l1 `Map.union` l2)
+%%]
+
+%%[(4 hmtyinfer || hmtyast) export(varmpUnion,varmpUnions)
+varmpUnion :: Ord k => VarMp' k v -> VarMp' k v -> VarMp' k v
+varmpUnion = varmpPlus
+
+varmpUnions :: Ord k => [VarMp' k v] -> VarMp' k v
+varmpUnions [x] = x
+varmpUnions l   = foldr varmpPlus emptyVarMp l
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construction specific for InstTo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer || hmtyast) export(instToKiVarMp)
-instToKiVarMp :: [InstTo] -> VarMp
-instToKiVarMp = assocLToVarMp . instToKiAssocL
+%%[(6 hmtyinfer || hmtyast) export(instToL1VarMp)
+instToL1VarMp :: [InstTo] -> VarMp
+instToL1VarMp = varmpIncMetaLev . assocMetaLevTyLToVarMp . instToL1AssocL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -347,14 +383,17 @@ varmpinfoMkVar v i
 %%% VarMp singleton
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast).VarMp.varmpTyUnit
+%%[(2 hmtyinfer || hmtyast).VarMp.varmpTyUnit export(varmpTyUnit)
 varmpTyUnit :: k -> v -> VarMp' k v
 varmpTyUnit tv t = VarMp [(tv,t)]
 %%]
 
-%%[(6 hmtyinfer || hmtyast).VarMp.varmpTyUnit -2.VarMp.varmpTyUnit
+%%[(6 hmtyinfer || hmtyast).VarMp.varmpTyUnit -2.VarMp.varmpTyUnit export(varmpMetaLevTyUnit,varmpTyUnit)
+varmpMetaLevTyUnit :: Ord k => MetaLev -> k -> Ty -> VarMp' k VarMpInfo
+varmpMetaLevTyUnit mlev v t = VarMp mlev [Map.fromList [(v,VMITy t)]]
+
 varmpTyUnit :: Ord k => k -> Ty -> VarMp' k VarMpInfo
-varmpTyUnit v t = mkVarMp (Map.fromList [(v,VMITy t)])
+varmpTyUnit = varmpMetaLevTyUnit 0
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast).varmpTyRevUnit
@@ -362,7 +401,7 @@ varmpTyRevUnit :: TyVarId -> Ty -> (Ty,VarMp)
 varmpTyRevUnit tv t = maybe (t,varmpTyUnit tv t) (\v -> let t' = mkTyVar tv in (t',varmpTyUnit v t')) . tyMbVar $ t
 %%]
 
-%%[(9 hmtyinfer || hmtyast) export(varmpImplsUnit,assocLToVarMpImpls,varmpScopeUnit,varmpPredUnit,varmpAssNmUnit)
+%%[(9 hmtyinfer || hmtyast) export(varmpImplsUnit,assocImplsLToVarMp,varmpScopeUnit,varmpPredUnit,varmpAssNmUnit)
 varmpImplsUnit :: ImplsVarId -> Impls -> VarMp
 varmpImplsUnit v i = mkVarMp (Map.fromList [(v,VMIImpls i)])
 
@@ -375,8 +414,8 @@ varmpPredUnit v p = mkVarMp (Map.fromList [(v,VMIPred p)])
 varmpAssNmUnit :: TyVarId -> VarUIDHsName -> VarMp
 varmpAssNmUnit v p = mkVarMp (Map.fromList [(v,VMIAssNm p)])
 
-assocLToVarMpImpls :: AssocL ImplsVarId Impls -> VarMp
-assocLToVarMpImpls = mkVarMp . Map.fromList . assocLMapElt VMIImpls
+assocImplsLToVarMp :: AssocL ImplsVarId Impls -> VarMp
+assocImplsLToVarMp = mkVarMp . Map.fromList . assocLMapElt VMIImpls
 %%]
 
 
@@ -447,7 +486,8 @@ varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast)
-instance Ord k => VarLookup (VarMp' k VarMpInfo) k VarMpInfo where
+instance Ord k => VarLookup (VarMp' k v) k v where
+  varlookupWithMetaLev l k    (VarMp vmlev []) = Nothing
   varlookupWithMetaLev l k    (VarMp vmlev ms) = Map.lookup k $ ms !! (l - vmlev)
   varlookup              k vm@(VarMp vmlev _ ) = varlookupWithMetaLev vmlev k vm
   
@@ -578,7 +618,10 @@ ppVarMpV = ppVarMp vlist
 
 %%[(6 hmtyinfer || hmtyast).ppVarMp -2.ppVarMp export(ppVarMp)
 ppVarMp :: ([PP_Doc] -> PP_Doc) -> VarMp -> PP_Doc
-ppVarMp ppL (VarMp _ l) = ppL $ map (ppL . map (\(n,v) -> pp n >|< ":->" >|< pp v) . Map.toList) $ l
+ppVarMp ppL (VarMp mlev ms)
+  = ppL [ "@" >|< pp lev >|< ":" >#< ppL [ pp n >|< ":->" >|< pp v | (n,v) <- Map.toList m]
+        | (lev,m) <- zip [mlev..] ms
+        ]
 %%]
 
 %%[(2 hmtyinfer || hmtyast).PP

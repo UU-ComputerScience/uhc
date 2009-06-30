@@ -62,7 +62,7 @@ SEM Impls
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | Pred Var App
+  | Pred Var App Quant
                 loc         .   frTvS       :   TyVarIdS
   | App         loc         .   frTvSL		: 	{[TyVarIdS]}
                 loc         .   frRowTvS    :   TyVarIdS
@@ -163,7 +163,7 @@ SEM Ty
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
-  | App Pred Var
+  | App Pred Var Quant
                 loc         .   isQuLoc     :   Bool
 %%]
 
@@ -184,7 +184,7 @@ SEM TyAGItf
   | AGItf       loc         .   qHereTvS        =   Set.empty
 
 SEM Ty
-  | Var         loc         .   qHereTvS        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvS else Set.empty
+  | Var Quant   loc         .   qHereTvS        =   if @isQuLoc then {- filter (tvIsPlain @lhs.fxTvM) -} @frTvS else Set.empty
   | App         loc         .   qHereTvS        =   if @isQuLoc
                                                     then  if    @appIsArrow || @appIsLikeProd
                                                           then  let fv = Set.unions (tvarSOccurGE2 @frTvSL : [@qOrphanTvS])
@@ -206,15 +206,6 @@ SEM Ty
                                                           else  Set.filter (not . tvIsEx @lhs.fxTvM) @frTvS
                                                     else  Set.empty
 %%]
-SEM Ty
-  | Var         loc         .   qHereTvL        =   if @isQuLoc
-                                                    then  [@tv]
-                                                    else  []
-  | App         loc         .   qHereTvL        :=  if @isQuLoc
-                                                    then  if    @isSpecLoc
-                                                          then  tvarLOccurGE2 @frTvLL
-                                                          else  filter (not . tvIsEx @lhs.fxTvM) @frTvL
-                                                    else  []
 
 %%[(9 hmtyinfer || hmtyast)
 SEM Ty
@@ -302,6 +293,7 @@ SEM TyAGItf
   | AGItf       loc         .   qSurrTvS                =   @qHereTvS
 
 SEM Ty
-  | App Var     loc         .   qSurrTvS                =   @qHereTvS `Set.union` @lhs.qSurrTvS
+  | App Var Quant
+                loc         .   qSurrTvS                =   @qHereTvS `Set.union` @lhs.qSurrTvS
 %%]
 

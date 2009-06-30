@@ -1418,11 +1418,15 @@ rowCanonOrderBy cmp = sortByOn cmp fst
 %%% Meta levels
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[6 hs export(MetaLev, metaLevVal, metaLevTy, metaLevKi, metaLevSo)
+%%[4 hs export(MetaLev, metaLevVal)
 type MetaLev = Int
 
-metaLevVal, metaLevTy, metaLevKi, metaLevSo :: MetaLev
+metaLevVal :: MetaLev
 metaLevVal = 0
+%%]
+
+%%[6 hs export(metaLevTy, metaLevKi, metaLevSo)
+metaLevTy, metaLevKi, metaLevSo :: MetaLev
 metaLevTy  = metaLevVal + 1
 metaLevKi  = metaLevTy  + 1
 metaLevSo  = metaLevKi  + 1

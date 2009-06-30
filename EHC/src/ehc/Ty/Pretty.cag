@@ -446,7 +446,7 @@ SEM Ty
     Lam
 %%]]
                     loc     .   tnPP        =   ppTnUniq @lhs.tnUniq
-                    ty      .   tnUniq      =   @lhs.tnUniq + 1
+                            .   tnUniq      =   @lhs.tnUniq + 1
                             .   tnMap       =   tnMapInsert @tv @tnPP @lhs.tnMap
                     lhs     .   tnMap       =   Map.filterWithKey (\v _ -> v /= @tv) @ty.tnMap
 %%]
@@ -545,14 +545,15 @@ SEM Ty
 
 %%[(6 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   ppKi    =   ppTy @ki
-                            .   ppTvPost:=  if maybe False (== hsnKindStar) $ tyMbCon @ki then empty else ppParens @ppKi
+  | Quant           inst    .   l1'     :   Ty
+                    inst    .   l1'     =   @l1
+                    loc     .   ppL1    :=  @l1'.pp
+                            .   ppTvPost:=  if maybe False (== hsnKindStar) $ tyMbCon @l1 then empty else ppParens @ppL1
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
 SEM Ty
-  | Quant           loc     .   ppKi    :=  ppTyWithCfg @lhs.cfg @ki
-                            .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
+  | Quant           loc     .   pp      :=  ppParNeed  @parNeed @lhs.parNeed
                                                        (cfgppAside @lhs.cfg (@ppQu >#< @ppTvPre >|< @ppTv >|< @ppTvPost) ("." >#< @ty.pp))
 %%]
 

@@ -252,8 +252,8 @@ SEM Expr
                                         ]
   | Let         loc     .  info_2   :=  [ mkInfo1 "decls.gathTySigGam" (pp @decls.gathTySigGam)
                                         , mkInfo1 "valGam_l_" (pp (gamTop @decls.patValGam))
-                                        , mkInfo1 "valGam_l_+decls.tyVarMp" (pp (@decls.tyVarMp |=> gamTop @decls.patValGam))
-                                        -- , mkInfo1 "decls.tyVarMp" (ppVarMpV @decls.tyVarMp)
+                                        , mkInfo1 "valGam_l_+decls.tyVarMp" (pp (@tyVarMpDeclsL0 |=> gamTop @decls.patValGam))
+                                        -- , mkInfo1 "decls.tyVarMp" (ppVarMpV @tyVarMpDeclsL0)
                                         ]
 
 SEM PatExpr
@@ -281,7 +281,7 @@ SEM TyExpr
 
 %%[(3 hmtyinfer)
 SEM Expr
-  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @decls.tyVarMp |=> @valGam_l_)
+  | Let         loc     .  info_3   :=  [ -- mkInfo1 "valGam_l_ (+ decls.tyVarMp)" (ppGam $ @tyVarMpDeclsL0 |=> @valGam_l_)
                                         ]
   | TypeAs      loc     .  info_3   :=  [ mkInfo1 "knTy+lhs.tyVarMp" (ppTy (@lhs.tyVarMp |=> @lhs.knTy))
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
@@ -353,7 +353,7 @@ SEM Expr
   | Let         loc     .  info_4_2 :=  [ mkInfo1 "decls.imprTyVarMp" (ppVarMpV @decls.imprTyVarMp)
                                         , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
                                         , mkInfo1 "decls.patTyVarMp" (ppVarMpV @decls.patTyVarMp)
-                                        , mkInfo1 "decls.tyVarMp" (ppVarMpV @decls.tyVarMp)
+                                        , mkInfo1 "decls.tyVarMp" (ppVarMpV @tyVarMpDeclsL0)
                                         , mkInfo1 "body.imprTyVarMp" (ppVarMpV @body.imprTyVarMp)
                                         , mkInfo1 "imprTyVarMp_elim_" (ppVarMpV @imprTyVarMp_elim_)
                                         , mkInfo1 "quValGam_ex_subst" (ppGam (@quValGam_ex_subst))
@@ -485,10 +485,14 @@ SEM DataConstr
                                         ]
 
 SEM Expr
-  | Let         loc     .  info_6   :=  [ mkInfo1 "lQuTyGam" (ppGam @lQuTyGam)
+  | Let         loc     .  info_6   :=  [ mkInfo1 "tyGam_l_" (ppGam @tyGam_l_)
+                                        , mkInfo1 "tyKiGam_l_" (ppGam @tyKiGam_l_)
+                                        , mkInfo1 "valQuTyKiGam" (ppGam @valQuTyKiGam)
+                                        , mkInfo1 "lQuTyGam" (ppGam @lQuTyGam)
+                                        , mkInfo1 "quTvKiVarMp" (pp @quTvKiVarMp)
                                         , mkInfo1 "decls.kiVarMp" (pp @decls.kiVarMp)
                                         ]
-  | Var Con     loc     .  info_6   :=  [ mkInfo1 "foTvKiVarMp @fo_" (pp (foTvKiVarMp @fo_))
+  | Var Con     loc     .  info_6   :=  [ -- mkInfo1 "foTvKiVarMp @fo_" (pp (foTvKiVarMp @fo_))
                                         ]
 %%]
 

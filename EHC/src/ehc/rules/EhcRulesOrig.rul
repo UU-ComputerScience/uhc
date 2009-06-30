@@ -2644,7 +2644,7 @@ relation bind2TyVarToTy =
     holes [ tvarv.1: TyVarId, tvarv.2: TyVarId, ty: Ty | | tyVarMp: VarMp ]
     judgespec tyVarMp === [tvarv.1, tvarv.2 :-> ty]
     judgeuse tex tyVarMp === [tvarv.1 :-> ty, tvarv.2 :-> ty]
-    judgeuse ag  tyVarMp `=` assocLToVarMp [(tvarv.1,ty),(tvarv.2,ty)]
+    judgeuse ag  tyVarMp `=` assocTyLToVarMp [(tvarv.1,ty),(tvarv.2,ty)]
 
 -------------------------------------------------------------------------
 -- Remove keys from VarMp

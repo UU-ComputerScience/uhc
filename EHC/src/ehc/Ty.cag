@@ -36,7 +36,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[4 hs export(TyQu(..)) 
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyquExists, tyquIsExists, tyquIsForall) 
+%%[(4 hmtyinfer || hmtyast) hs
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyConNm) 
@@ -504,7 +504,7 @@ tyQu_KiExists = TyQu_Exists metaLevTy
 %%% Properties of quantifier
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs
+%%[(4 hmtyinfer || hmtyast) hs export(tyquIsExists, tyquIsForall)
 tyquIsExists, tyquIsForall :: TyQu -> Bool
 %%]
 
@@ -516,11 +516,16 @@ tyquIsExists (TyQu_Exists _)         = True
 tyquIsExists _                       = False
 %%]
 
+%%[(4 hmtyinfer || hmtyast) hs export(tyquMetaLev)
+tyquMetaLev (TyQu_Forall l)         = l
+tyquMetaLev (TyQu_Exists l)         = l
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type quantifier utils
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs
+%%[(4 hmtyinfer || hmtyast) hs export(tyquExists)
 tyquExists, tyquForall :: TyQu -> TyQu
 %%]
 
@@ -534,11 +539,15 @@ tyquExists   q                       = q
 
 %%[4.showTyQu hs export(showTyQu)
 showTyQu  (TyQu_Forall 0) =  "forall"
+%%[[6
 showTyQu  (TyQu_Forall 1) =  "forall" ++ [charKindStar]
 showTyQu  (TyQu_Forall l) =  "forall" ++ [charKindStar] ++ show l
+%%]]
 showTyQu  (TyQu_Exists 0) =  "exists"
+%%[[6
 showTyQu  (TyQu_Exists 1) =  "exists" ++ [charKindStar]
 showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1629,11 +1638,11 @@ It gives evidence of instantiation is done.
 data InstTo
   = InstTo_Plain        				-- a plain value
   | InstTo_Qu                           -- the fresh type (tyvar) instantiated to
-      { instoQu     :: TyQu
-      , instoFrom   :: TyVarId
-      , instoTo     :: TyVarId
+      { instoQu     	:: TyQu			-- how tvar was quantified, also includes the meta level
+      , instoFrom   	:: TyVarId		-- the tvar from which is instantiated
+      , instoTo     	:: TyVarId		-- the new tvar to which is instantiated
 %%[[6
-      , instoKi     :: Ty
+      , instoL1     	:: Ty
 %%]]
       }
 {-
@@ -1660,10 +1669,10 @@ instToSplitQu :: [InstTo] -> ([InstTo],[InstTo])
 instToSplitQu = span instToIsQu
 %%]
 
-%%[(6 hmtyinfer || hmtyast) hs export(instToKiAssocL)
+%%[(6 hmtyinfer || hmtyast) hs export(instToL1AssocL)
 -- get tvar -> kind bindings of instantiation
-instToKiAssocL :: [InstTo] -> AssocL TyVarId Ty
-instToKiAssocL l = [ (v,k) | (InstTo_Qu _ _ v k) <- l ]
+instToL1AssocL :: [InstTo] -> AssocL TyVarId (MetaLev,Ty)
+instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%]
 
 

@@ -10,6 +10,8 @@ used, but we cannot add to it. In that case a cycle would then be
 created. With tvKiVarMp this info is distributed, with gathTvKiVarMp it
 is gathered from fitsIn's where instantiations take place.
 We start out with the info gathered by kind inference.
+
+20090629: gathering is now piggybacked on tyVarMp which allows mappings for multiple meta levels.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,7 +32,7 @@ SEM AGItf
   | AGItf       expr        .   tvKiVarMp           =   @expr.kiVarMp
 
 SEM Expr
-  | Let         loc         .   gathTvKiVarMp1      =   varmpMapTyVarKey @decls.tyVarMp @decls.gathTvKiVarMp
+  | Let         loc         .   gathTvKiVarMp1      =   varmpMapTyVarKey @tyVarMpDeclsL0 (varmpDecMetaLev @decls.tyVarMp) -- @decls.gathTvKiVarMp -- (varmpDecMetaLev @decls.gathTvKiVarMp)
                             .   quTvKiVarMp         =   @gathTvKiVarMp1 |=> @lhs.tvKiVarMp
                             .   gathTvKiVarMp2      =   varmpFilterTy (\v _ -> v `Set.member` @gTyTvS) @gathTvKiVarMp1
                 body        .   tvKiVarMp           =   @gathTvKiVarMp2 |=> @lhs.tvKiVarMp
@@ -40,7 +42,7 @@ SEM Expr
 %%% Gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 noHmTyRuler hmtyinfer)
+%%[(6666 noHmTyRuler hmtyinfer)
 SEM Expr
   | IConst CConst SConst Var Con
 %%[[97
@@ -64,7 +66,7 @@ SEM Expr
 %%]]
 %%]
 
-%%[(6 noHmTyRuler hmtyinfer)
+%%[(6666 noHmTyRuler hmtyinfer)
 SEM PatExpr
   | AppTop      lhs         .   gathTvKiVarMp       =   foTvKiVarMp @fo_fitR_
   | Con         lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @fo_fitP_,foTvKiVarMp @fo_fitR_]
@@ -76,7 +78,7 @@ SEM PatExpr
 %%]]
 %%]
 
-%%[(7 hmtyinfer)
+%%[(7777 hmtyinfer)
 SEM DataFieldExpr
   | Upd         lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @fo_,@dataFieldExpr.gathTvKiVarMp,@expr.gathTvKiVarMp]
   | Con         lhs         .   gathTvKiVarMp       =   foTvKiVarMp @fo_
@@ -86,12 +88,12 @@ SEM DataFieldPatExpr
   | Con         lhs         .   gathTvKiVarMp       =   foTvKiVarMp @fo_
 %%]
 
-%%[(7 hmtyinfer)
+%%[(7777 hmtyinfer)
 SEM Expr
   | DataFields  lhs         .   gathTvKiVarMp       =   varmpUnions $ map foTvKiVarMp @foL
 %%]
 
-%%[(7 hmtyinfer)
+%%[(7777 hmtyinfer)
 SEM RecExpr
   | Empty       lhs         .   gathTvKiVarMp       =   foTvKiVarMp @fo_
   | Ext Upd     lhs         .   gathTvKiVarMp       =   varmpUnions [foTvKiVarMp @foKnRec,@recExpr.gathTvKiVarMp,@expr.gathTvKiVarMp]

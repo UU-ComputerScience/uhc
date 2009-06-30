@@ -42,7 +42,7 @@ SEM AGItf
   | AGItf       expr        .   valTyGlobFreeTvarS  =   Set.empty
 
 SEM Expr
-  | Let         loc         .   valTyUpdFreeTvarS   =   setSubst @decls.tyVarMp @lhs.valTyGlobFreeTvarS
+  | Let         loc         .   valTyUpdFreeTvarS   =   setSubst @tyVarMpDeclsL0 @lhs.valTyGlobFreeTvarS
                 decls       .   valTyGlobFreeTvarS  =   ftvSet @valGam_l_ `Set.union` @lhs.valTyGlobFreeTvarS
                 body        .   valTyGlobFreeTvarS  =   ftvSet @quValGam_ex_subst `Set.union` @valTyUpdFreeTvarS
   | Lam			body		.	valTyGlobFreeTvarS  =   ftvSet (gamTop @arg.valGam) `Set.union` @lhs.valTyGlobFreeTvarS
@@ -69,7 +69,7 @@ SEM AGItf
   | AGItf       expr        .   tyTyGlobFreeTvarS   =   Set.empty
 
 SEM Expr
-  | Let         loc         .   tyTyUpdFreeTvarS    =   setSubst @decls.tyVarMp @lhs.tyTyGlobFreeTvarS
+  | Let         loc         .   tyTyUpdFreeTvarS    =   setSubst @tyVarMpDeclsL0 @lhs.tyTyGlobFreeTvarS
                 decls       .   tyTyGlobFreeTvarS   =   ftvSet @tyGam_l_ `Set.union` @lhs.tyTyGlobFreeTvarS
                 body        .   tyTyGlobFreeTvarS   =   ftvSet @lQuTyGam `Set.union` @tyTyUpdFreeTvarS
   | Lam			body		.	tyTyGlobFreeTvarS   =   ftvSet (gamTop @arg.tyGam) `Set.union` @lhs.tyTyGlobFreeTvarS

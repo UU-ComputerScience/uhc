@@ -506,9 +506,9 @@ SEM Expr
                                                                        in  mkPolNegate v' == p'
                                                             )
                                                             (varmpToAssocTyL @polVarMpCyc)
-                loc         .   polInvVarMp         =   assocLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
+                loc         .   polInvVarMp         =   assocTyLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
                             .   lSubsPolGam2        =   @polInvVarMp |=> @lSubsPolGam1
-                            .   cycVarMp            =   assocLToVarMp @polErrCyc
+                            .   cycVarMp            =   assocTyLToVarMp @polErrCyc
                             .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
       
                             .   finGathPolGam       =   quantifyPolGam

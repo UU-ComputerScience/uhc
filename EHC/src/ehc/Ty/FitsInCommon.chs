@@ -84,7 +84,7 @@ data FIOut
        ,  foLInstToL        :: [InstTo]					-- instantiation over arrow '->' of left ty
        ,  foRInstToL        :: [InstTo]					-- instantiation over arrow '->' of right ty
 %%[[6
-       ,  foTvKiVarMp       :: !VarMp					-- tvar -> kind
+       -- ,  foTvKiVarMp       :: !VarMp					-- tvar -> kind
 %%]]
 %%[[(9 codegen)
        ,  foCSubst          :: !CSubst					-- subst for holes in the Core
@@ -124,7 +124,7 @@ emptyFO
        ,  foLInstToL        =   []
        ,  foRInstToL        =   []
 %%[[6
-       ,  foTvKiVarMp       =   emptyVarMp
+       -- ,  foTvKiVarMp       =   emptyVarMp
 %%]]
 %%[[(9 codegen)
        ,  foCSubst          =   emptyCSubst

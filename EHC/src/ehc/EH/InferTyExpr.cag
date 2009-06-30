@@ -43,15 +43,15 @@ ATTR AllTyVar AllTyExpr [ | tyKiGam: TyKiGam | ]
 ATTR TyVar [ | | nm: HsName ]
 
 SEM TyVar
-  | Var         lhs			.	nm					= 	@nm
+  | Var         lhs         .   nm                  =   @nm
 %%]
 
 %%[(8 hmtyinfer)
 ATTR TyVars [ | | nmL: {[HsName]} ]
 
 SEM TyVars
-  | Nil         lhs			.	nmL					= 	[]
-  | Cons		lhs			.	nmL					=	@hd.nm : @tl.nmL
+  | Nil         lhs         .   nmL                 =   []
+  | Cons        lhs         .   nmL                 =   @hd.nm : @tl.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,12 +72,13 @@ Type 't' is assumed to be a Ty_Con or Ty_Var.
 Should only be used on result from tyGamLookupOrAdd.
 
 %%[(6 hmtyinfer) hs
-tyKiGamLookupOrAdd :: Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam)
-tyKiGamLookupOrAdd t tyKiGam
+tyKiGamLookupOrAdd :: UID -> Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam,TyKiGam)
+tyKiGamLookupOrAdd uniq t tyKiGam
   =  case tyKiGamLookup t tyKiGam of
-       Nothing    ->  (tkgi,tyKiGamSingleton t tkgi `gamUnion` tyKiGam)
-                  where tkgi  =  TyKiGamInfo t
-       Just tkgi  ->  (tkgi,tyKiGam)
+       Nothing    ->  (tkgi, newg `gamUnion` tyKiGam, newg)
+                  where tkgi  =  TyKiGamInfo (mkNewTyVar uniq) -- t
+                        newg  =  tyKiGamSingleton t tkgi
+       Just tkgi  ->  (tkgi,tyKiGam,emptyGam)
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
@@ -121,7 +122,9 @@ SEM TyExpr
 %%[(6 hmtyinfer)
 SEM TyExpr
   | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.tyVarGather
@@ -137,9 +140,11 @@ SEM TyExpr
 %%[(6 hmtyinfer)
 SEM TyExpr
   | Quant       loc         .   (tv,tgi_,tkgi_)     :=  let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
-                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
+                            .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
                 lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
 
 %%[(5 hmtyinfer).tyVarGather
@@ -158,37 +163,44 @@ SEM TyVar
 %%[(6 hmtyinfer)
 SEM TyVar
   | Var         (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam) @lhs.tyGam
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd emptyVarMp (tgiTy @tgi_) @lhs.tyKiGam
 
 %%[(9 hmtyinfer).tyVarGather
 SEM PrExpr
   | Forall      loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
                 prExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @prExpr.tyGam
-                prExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                loc         .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                prExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
                 lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @prExpr.tyKiGam
                 loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
 SEM RowTyExpr
   | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
-                (loc.tkgi_,lhs.tyKiGam)             =   tyKiGamLookupOrAdd (tgiTy @tgi_) @lhs.tyKiGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
                 loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
 
 %%[(11 hmtyinfer)
 SEM TyExpr
   | Lam         loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
-                                                        in   (@lUniq,mkTGI t,TyKiGamInfo t)
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
                 tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
                 lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
-                tyExpr      .   tyKiGam             =   tvGathFlowIn  (tgiTy @tgi_ `tyKiGamSingleton` @tkgi_) @lhs.tyKiGam
+                loc         .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
                 lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
                 loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,6 +231,38 @@ SEM TyExpr
 %%[(9 hmtyinfer).Wild
 SEM TyExpr
   | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering of Ty var -> Ki mapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Required by abstraction, in particular kind of quantified ty var.
+Not used/intended to propagate any further.
+
+%%[(6 hmtyinfer)
+ATTR AllTyExpr AllData AllDecl AllTyVar [ | | gathTyKiGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Var VarWild lhs         .   gathTyKiGam         =   @tyKiGamNew
+  | Quant
+%%[[11
+    Lam
+%%]]
+                lhs         .   gathTyKiGam         =   gamUnions [@tyKiGamNew,@tyExpr.gathTyKiGam]
+
+SEM TyVar
+  | Var         lhs         .   gathTyKiGam         =   @tyKiGamNew
+%%]
+
+%%[(9 hmtyinfer)
+SEM PrExpr
+  | Forall      lhs         .   gathTyKiGam         =   gamUnions [@tyKiGamNew,@prExpr.gathTyKiGam]
+
+SEM RowTyExpr
+  | Var         lhs         .   gathTyKiGam         =   @tyKiGamNew
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,7 +384,7 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   ty                  =   Ty_Quant @qu @tv
 %%[[6
-                                                                 kiStar			-- TBD: user specified kind
+                                                                 kiStar         -- TBD: user specified kind
 %%]]
                                                                  @tyExpr.ty
 %%]
@@ -414,7 +458,7 @@ ATTR PrExpr [ | | prTy: Ty ]
 
 SEM PrExpr
   | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
-  | Forall      loc         .   prTy                =   mkTyQu tyQu_Forall [(@tv,kiStar)] @prExpr.prTy	-- TBD
+  | Forall      loc         .   prTy                =   mkTyQu tyQu_Forall [(@tv,kiStar)] @prExpr.prTy  -- TBD
   | * - Arrow Forall
                 loc         .   prTy                =   @ty
 %%]
