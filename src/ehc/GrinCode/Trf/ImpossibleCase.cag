@@ -31,11 +31,13 @@ Assumptions:
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common(HsName, CTagsMp)})
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common(HsName, CTagsMp)})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getTags, getNr, getEnvVar)})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -65,7 +67,8 @@ ATTR GrAlt     [ | | isPossible: Bool        ]
 ATTR AllAlt    [ possibleTags: {Maybe [GrTag]} | | ]
 
 SEM GrAlt
-  | Alt      lhs.isPossible     =  maybe True (@pat.tag `elem`) @lhs.possibleTags
+  | Alt      lhs.isPossible     =  -- trace ("tag: " ++ show @pat.tag ++ " possible: " ++ show @lhs.possibleTags) $
+                                   maybe True (@pat.tag `elem`) @lhs.possibleTags
 
 SEM GrExpr
   | Case     altL.possibleTags  =  case @val.varId of

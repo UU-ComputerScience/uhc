@@ -4,7 +4,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Prettyprint Silly program as C
+%%% Prettyprint Silly program as Assembly (not finished)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs module {%{EH}Silly.PrettyS} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyS)
@@ -15,7 +15,6 @@
 %%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
-
 %%[(8 codegen grin) hs
 prettyS :: EHCOpts -> SilModule -> PP_Doc
 prettyS opts silmod

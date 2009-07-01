@@ -35,7 +35,7 @@ Examples:
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Set as Set)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
@@ -146,7 +146,7 @@ SEM GrModule
   | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
                                       @globalL.grTrf 
                                       (@loc.mainFullProg ++ map buildAppBinding (Set.toList @bindL.applyNodeSizes) ++ @bindL.grTrf)
-                                      @ctagsMp 
+                                      @tagsMp 
                                       
 %%[[8
          loc . mainFullProg = []

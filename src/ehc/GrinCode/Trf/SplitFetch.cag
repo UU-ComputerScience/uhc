@@ -48,8 +48,6 @@ has lower arity than C1.
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) ag import({GrinCode/Trf/CommonArity})
-%%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set, Data.Monoid)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -70,6 +68,7 @@ splitFetch (input,hptMap)
 type HptItems       = [ (Int,AbstractValue) ]
 
 %%]
+
 
 %%[(8 codegen grin)
 
@@ -389,3 +388,33 @@ absFetchField hptmap nm i = let j = i-1
 
 
 %%]
+
+
+%%[(8 codegen grin) hs
+
+tagArity :: GrTag -> Map.Map Int Int -> Int
+tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+tagArity  GrTag_Unboxed       _        = 1
+tagArity  GrTag_Hole          _        = 0
+tagArity t                    _        = error ("SplitFetch: tagArity " ++ show t)
+
+%%]
+
+%%[(8 codegen grin)
+
+ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
+ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
+
+SEM GrBind
+  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
+  | Arity  lhs.genArities = Map.singleton (getNr @nm) @arity
+
+SEM GrModule
+  | Mod  bindL.arityMap = @bindL.genArities
+
+%%]
+
+

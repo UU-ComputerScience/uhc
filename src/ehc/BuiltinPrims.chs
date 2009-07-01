@@ -141,6 +141,6 @@ infixOperator :: String -> [PP_Doc] -> PP_Doc
 infixOperator op [arg1,arg2] = "((int)" >|< arg1 >|< ")" >#< op >#< "(int)(" >|< arg2 >|< ")"
 
 compareOperator :: String -> [PP_Doc] -> PP_Doc
-compareOperator op args = "((" >#< infixOperator op args >#< ")?" >#< "CTrue" >#< ":" >#< "CFalse" >#< ")"
+compareOperator op args = "((" >#< infixOperator op args >#< ")?" >#< "RTS_True" >#< ":" >#< "RTS_False" >#< ")"
 --compareOperator op args@[arg1,arg2] = "((" >#< infixOperator op args >#< ")?" >#< "printf(\"%08x %08x groter\\n\", " >#< arg1 >#< "," >#< arg2 >#< "),((Pointer)global_True)[0]" >#< ":" >#< "printf(\"niet groter\\n\"),((Pointer)global_False)[0]" >#< ")"
 %%]

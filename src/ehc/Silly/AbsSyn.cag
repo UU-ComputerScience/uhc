@@ -16,7 +16,8 @@ TYPE Alternatives = [Alternative]
 TYPE Values       = [Value]
 
 DATA SilModule
-  |  SilModule   constants  : {[(String,Int)]}
+  |  SilModule   aliases    : {[(String,String)]}
+                 constants  : {[(String,Int)]}
                  variables  : {[HsName]}
                  functions  : Functions
 

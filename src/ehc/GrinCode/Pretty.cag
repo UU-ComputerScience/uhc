@@ -6,11 +6,11 @@
 Pretty print GrinCode.
 
 Tricky (in version 20):
-Printing names depends on the printing context. ppGrNm factors this out, but for GrExpr's printed as part
+Printing names depends on the printing context. ppGrNm factors this out, but for a GrExpr printed as part
 if .hi interface files ppGrExpr requires a parameterised variant which prints names as required for .hi files.
 20070310: this is now done via CfgPP
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Pretty} import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
@@ -23,7 +23,7 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
 
-%%[(8 codegen grin) hs export(ppGrModule,ppGrExpr,ppGrExpr',ppGrPatAlt,ppGrPatLam,ppGrTag)
+%%[(8 codegen grin) hs export(ppGrModule,ppGrExpr,ppGrExpr2,ppGrPatAlt,ppGrPatLam,ppGrTag)
 ppGrModule :: GrModule -> PP_Doc
 ppGrModule cmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf cmod))
@@ -39,8 +39,8 @@ ppGrTag tg
                              })
      in   (pp_Syn_GrTag t)
 
-ppGrExpr' :: CfgPP x => x -> GrExpr -> PP_Doc
-ppGrExpr' x tg
+ppGrExpr2 :: CfgPP x => x -> GrExpr -> PP_Doc
+ppGrExpr2 x tg
   =  let  t = wrap_GrExpr  (sem_GrExpr tg)
                            (Inh_GrExpr
                              { ppGrNm_Inh_GrExpr = cfgppHsName x
@@ -48,7 +48,7 @@ ppGrExpr' x tg
      in   (pp_Syn_GrExpr t)
 
 ppGrExpr :: GrExpr -> PP_Doc
-ppGrExpr = ppGrExpr' CfgPP_Grin
+ppGrExpr = ppGrExpr2 CfgPP_Grin
 
 ppGrPatLam :: GrPatLam -> PP_Doc
 ppGrPatLam tg
@@ -70,10 +70,10 @@ ppGrPatAlt tg
 
 %%[(20 codegen grin) hs
 instance PP GrExpr where
-  pp = ppGrExpr' CfgPP_Plain
+  pp = ppGrExpr2 CfgPP_Plain
 
 instance PPForHI GrExpr where
-  ppForHI = ppGrExpr' CfgPP_HI
+  ppForHI = ppGrExpr2 CfgPP_HI
 %%]
 
 %%[(99 codegen grin) hs
@@ -110,7 +110,7 @@ ppCurlysSemisV :: [PP_Doc] -> PP_Doc
 ppCurlysSemisV pL = vlist pL
 %%]]
 
--- list between {}, but with spaces, to avoid syntax clash with integers:
+-- list between {}, but with spaces, to avoid syntax clash with negative integers:
 --  {- comment -}
 --  {-1, -2}
 ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
@@ -147,17 +147,16 @@ SEM GrModule
 %%[[8
                                                 >-< ppCurlysSemisV @globalL.ppL
                                                 >-< ppCurlysSemisV @bindL.ppL
-                                                >-< "ctags"
                                                 >-< ppCurlysSemisV
                                                          (map  (\(tn,ts)
                                                                     ->  cfgppHsName CfgPP_Grin tn >#< "="
                                                                         >#< ( ppListSep "" "" " | "
-                                                                            . map  (\(n,CTag _ _ t a ma) -> cfgppHsName CfgPP_Grin n >#< t >#< a >#< ma)
+                                                                            --  . map  (\(n,CTag _ _ t a ma) -> cfgppHsName CfgPP_Grin n >#< t >#< a >#< ma)
+                                                                            . map (\(GrTag_Con ann n nm) ->  "#" >|< show n >|< "/" >|< "C" >|< show ann >|< "/" >|< cfgppHsName CfgPP_Grin nm)
                                                                             $ ts
                                                                             )
-                                                                        >-< ""    
                                                                )
-                                                               @ctagsMp)
+                                                               (Map.assocs @tagsMp))
 %%][8_2
                                                 >-< ppCurlysSemisV @bindL.ppL
 %%]]
@@ -171,6 +170,8 @@ SEM GrBind
                                                   >#< ppGrBindAnn @loc.ppGrNm @annot
                                                   >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) 
                                                   >-< indent 2 ("=" >#< ppCurlysSemisV [@expr.pp])
+  | Arity       lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm 
+                                                  >#< ":" >#< show @arity
   | Rec         lhs         .   pp          =   "rec" >-< indent 2 (ppCurlysSemisV @bindL.ppL)
 %%][8_2
   | Bind        lhs         .   pp          =   cfgppHsName CfgPP_Grin @nm >#< ppSpaced (map (cfgppHsName CfgPP_Grin) @argNmL) >#< "="
@@ -280,9 +281,9 @@ SEM GrPatLam
   | PtrNode     lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrnode" , @lhs.ppGrNm @nm]
   | OpaqueNode  lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaquenode" , @lhs.ppGrNm @nm]
   | BasicAnnot  lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicannot", pp @annot, @lhs.ppGrNm @nm]
-  | EnumAnnot   lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumannot" , ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+  | EnumAnnot   lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
   | OpaqueAnnot lhs         .   pp          =   ppListSep "(" ")" " " [pp "opaqueannot" , @lhs.ppGrNm @nm]
-  | PtrAnnot    lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrannot" , ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+  | PtrAnnot    lhs         .   pp          =   ppListSep "(" ")" " " [pp "ptrannot" , @lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
 %%][8_2
   | BasicNode   lhs         .   pp          =   ppListSep "(" ")" " " [pp "_", @lhs.ppGrNm @nm]
   | EnumNode    lhs         .   pp          =   ppListSep "(" ")" " " [@lhs.ppGrNm @nm]
@@ -311,7 +312,6 @@ SEM GrTag
   | Fun         lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "F" >|< "/" >|< @lhs.ppGrNm @nm
   | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm
   | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @lhs.ppGrNm @nm
-  | World       lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "W" >|< "/" >|< "_"
 %%][8_2
   | Hole        lhs         .   pp          =   pp "Hole" 
   | Rec         lhs         .   pp          =   "R" >|< @lhs.ppGrNm (mkHNm "()")
@@ -319,10 +319,8 @@ SEM GrTag
   | Fun         lhs         .   pp          =   "F" >|< pp @nm
   | PApp        lhs         .   pp          =   "P" >|< pp @nm >|< @needs
   | Con         lhs         .   pp          =   "C" >|< pp @nm
-  | World       lhs         .   pp          =   pp "World"
 %%]]
   | Unboxed     lhs         .   pp          =   pp "#U"
-  | Any         lhs         .   pp          =   pp "#*"
 %%]
 
 %%[(8 codegen grin)

@@ -15,7 +15,6 @@
 %%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
-
 %%[(8 codegen grin) hs
 pretty :: EHCOpts -> SilModule -> PP_Doc
 pretty opts silmod

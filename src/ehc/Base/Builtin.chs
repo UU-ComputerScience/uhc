@@ -681,6 +681,8 @@ data EHBuiltinNames
       , ehbnPrimGtInt                   :: HsName
       , ehbnBoolTrue                    :: HsName
       , ehbnBoolFalse                   :: HsName
+      , ehbnDataListAltNil              :: HsName
+      , ehbnDataListAltCons             :: HsName
       , ehbnDataOrderingAltLT           :: HsName
       , ehbnDataOrderingAltEQ           :: HsName
       , ehbnDataOrderingAltGT           :: HsName
@@ -739,8 +741,6 @@ data EHBuiltinNames
       , ehbnDouble                      :: HsName
       , ehbnPackedStringToInteger       :: HsName
       , ehbnDataList                    :: HsName
-      , ehbnDataListAltCons             :: HsName
-      , ehbnDataListAltNil              :: HsName
 %%]]
 %%[[98
       , ehbnIO                          :: HsName
@@ -772,6 +772,8 @@ mkEHBuiltinNames f
       , ehbnPrimGtInt                   = f IdOcc_Val       hsnPrimGtInt
       , ehbnBoolTrue                    = f IdOcc_Val       hsnTrue
       , ehbnBoolFalse                   = f IdOcc_Val       hsnFalse
+      , ehbnDataListAltNil              = f IdOcc_Val       hsnDataListAltNil
+      , ehbnDataListAltCons             = f IdOcc_Val       hsnDataListAltCons
       , ehbnDataOrderingAltLT           = f IdOcc_Val       hsnDataOrderingAltLT
       , ehbnDataOrderingAltEQ           = f IdOcc_Val       hsnDataOrderingAltEQ
       , ehbnDataOrderingAltGT           = f IdOcc_Val       hsnDataOrderingAltGT
@@ -830,8 +832,6 @@ mkEHBuiltinNames f
       , ehbnDouble                      = f IdOcc_Type      hsnDouble
       , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
       , ehbnDataList                    = f IdOcc_Type      hsnDataList
-      , ehbnDataListAltCons             = f IdOcc_Type      hsnDataListAltCons
-      , ehbnDataListAltNil              = f IdOcc_Type      hsnDataListAltNil
 %%]]
 %%[[98
       , ehbnIO                          = f IdOcc_Type      hsnIO

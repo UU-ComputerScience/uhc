@@ -34,7 +34,7 @@ Normalisation for the Heap-points-to analysis
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NormForHPT} import({%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NormForHPT} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
 normForHPT :: (GrModule,Int) -> (GrModule,Int)
 normForHPT (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
                                                  (Inh_GrAGItf { unique_Inh_GrAGItf = unique })

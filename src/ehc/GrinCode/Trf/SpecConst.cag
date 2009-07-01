@@ -177,7 +177,7 @@ SEM GrModule
 numberset :: (Ord a, Show a) => (Map.Map HsName (Map.Map a Int)) -> HsName -> Set.Set a -> Map.Map a Int	
 numberset exi nm s =  let p = Map.findWithDefault Map.empty nm exi
                           q = Set.filter (\e -> maybe True (const False) (Map.lookup e p)) s
-                          n = if Map.null p then 1 else 1 + snd (Map.findMax p)
+                          n = if Map.null p then 1 else 1 + maximum (Map.elems p)
                           r = Map.fromList (zip (Set.toList q) [n..])
                       in  -- trace ("numberset " ++ show nm ++ show p ++ show r) 
                                 (Map.union p r)

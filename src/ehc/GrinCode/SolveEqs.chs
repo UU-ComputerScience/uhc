@@ -75,7 +75,7 @@ envChanges equat env
                                                     AbsNodes ns -> AbsPtr ns Set.empty Set.empty
                                                     -- AbsNodes ns -> AbsPtr (Nodes Map.empty) Set.empty (Set.singleton v)   -- doesnt work yet
                                                     AbsBottom   -> AbsBottom
-                                                    _           -> error ("IsUpdate av=" ++ show av)
+                                                    _           -> error ("IsUpdate v=" ++ show v ++ " av=" ++ show av)
                                       ;  return [(d,res)]
                                       } else return [] }
 

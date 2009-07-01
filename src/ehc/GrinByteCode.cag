@@ -868,7 +868,6 @@ tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,StackDep
 tag env modNmConstInx stkDepth gt sz
   = case gt of
       GrTag_Unboxed -> (Seq.empty,0,0,False)
-      GrTag_Any     -> (Seq.empty,0,0,False) 
       _
         -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,allocInc,isEvaluated)
         where (needEval,categ',tg',tins,tinc,allocInc)

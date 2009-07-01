@@ -5,7 +5,6 @@
 
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
-
 %%[(8 codegen grin).wrapper
 WRAPPER SilModule
 %%]

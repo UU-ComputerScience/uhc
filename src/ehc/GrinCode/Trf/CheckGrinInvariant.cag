@@ -116,8 +116,6 @@ SEM GrTag
   | Unboxed   lhs.text = 'U' : []
   | Hole      lhs.text = 'H' : []
   | Rec       lhs.text = 'R' : []
-  | World     lhs.text = 'W' : []
-  | Any       lhs.text = 'A' : []
 
 SEM GrVal
   | Empty      lhs.text = "()"

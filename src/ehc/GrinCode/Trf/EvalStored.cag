@@ -198,9 +198,7 @@ SEM GrTag
   | Con
     Unboxed
     Hole
-    Rec
-    World
-    Any           lhs.freeFreq  =  Map.empty
+    Rec           lhs.freeFreq  =  Map.empty
 
 -- In lists, the freeFreq maps are merged.
 -- The merge is normally done by adding, but in Alternative lists we take the maximum.

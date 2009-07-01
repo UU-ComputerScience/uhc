@@ -308,7 +308,8 @@ ATTR GrBind GrGlobal GrAlt [ | | life : Bool ]
 
 -- Bindings and Globals are life if they are used
 SEM GrBind
-  | Bind   lhs . life  =  @nm `Set.member` @lhs.globalUsed
+  | Bind
+    Arity  lhs . life  =  @nm `Set.member` @lhs.globalUsed
   | Rec    lhs . life  =  not (null @bindL.grTrf)
 
 SEM GrGlobal
@@ -338,9 +339,7 @@ SEM GrTag
   | Con
     Hole
     Rec
-    World
-    Unboxed
-    Any        lhs.mbTagName = Nothing
+    Unboxed    lhs.mbTagName = Nothing
 
 %%]
 
@@ -356,9 +355,9 @@ SEM GrPatLam
   | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode             (mkWildcard @lhs.downstreamUsed  @nm)
   | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode                (mkWildcard @lhs.downstreamUsed  @nm)
   | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot      (mkWildcard @lhs.downstreamUsed  @nm)
-  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tagL.grTrf (mkWildcard @lhs.downstreamUsed  @nm)
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot  @tycon      (mkWildcard @lhs.downstreamUsed  @nm)
   | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot            (mkWildcard @lhs.downstreamUsed  @nm)
-  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tagL.grTrf (mkWildcard @lhs.downstreamUsed  @nm)
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot   @tycon      (mkWildcard @lhs.downstreamUsed  @nm)
 
 SEM GrPatAlt
   | Node     lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf (map (mkWildcard @lhs.downstreamUsed) @fldL)

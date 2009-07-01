@@ -174,7 +174,7 @@ SEM GrModule
                                       in  ( GrModule_Mod @moduleNm
                                                          @globalL.grTrf
                                                          (evalBind : @bindL.grTrf)
-                                                         @ctagsMp
+                                                         @tagsMp
                                            , u2
                                            , @bindL.newItems ++ ni
                                            )

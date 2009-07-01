@@ -24,7 +24,7 @@ parameterised with a function telling whether a node represents an unboxed value
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MayLiveUnboxed}
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs export(grMayLiveUnboxed)

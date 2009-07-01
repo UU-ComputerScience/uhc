@@ -70,7 +70,8 @@ SEM GrGlobal
               lhs.genEnv       = Map.singleton @nm @lhs.globalNumber
   
 SEM GrBind
-  | Bind      lhs.globalNumber = @lhs.globalNumber+1
+  | Bind
+    Arity     lhs.globalNumber = @lhs.globalNumber+1
               lhs.genEnv       = Map.singleton @nm @lhs.globalNumber
   
 %%]
@@ -110,6 +111,7 @@ SEM GrTag
 
 SEM GrBind
     | Bind        lhs.usage    = Map.singleton @lhs.globalNumber @expr.used
+    | Arity       lhs.usage    = Map.singleton @lhs.globalNumber Set.empty
 
 SEM GrGlobal
     | Global      lhs.usage    = Map.singleton @lhs.globalNumber @val.used
@@ -125,8 +127,8 @@ SEM GrModule
   | Mod  loc  .  usageL  = Map.toAscList (Map.map Set.toList (Map.union @globalL.usage @bindL.usage))
               .  biggest = fst (last @loc.usageL)
               .  graph   = array (0, @loc.biggest) @loc.usageL
-         lhs  .  grTrf   = -- trace ("environment: " ++ show @loc.bothEnv ++ "usageList: " ++ show @loc.usageL ++ " lifelist: " ++ show @loc.lifeList) $
-                           GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @ctagsMp
+         lhs  .  grTrf   = -- trace ("environment: " ++ show @loc.bothEnv ++ "usageList: " ++ show @loc.usageL) ++ " lifelist: " ++ show @loc.lifeList) $
+                           GrModule_Mod @moduleNm @globalL.grTrf @bindL.grTrf @tagsMp
 %%]
 
 %%[(8 codegen grin)
@@ -146,7 +148,8 @@ SEM GrModule
                . lifeSet  =  Set.fromList @loc.lifeList
          
 SEM GrBind
-  | Bind   lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet  ||  @nm == hsnMainFullProg
+  | Bind
+    Arity  lhs . life  =  @lhs.globalNumber `Set.member` @lhs.lifeSet  ||  @nm == hsnMainFullProg
   | Rec    lhs . life  =  not (null @bindL.grTrf)
 
 SEM GrGlobal
@@ -168,9 +171,7 @@ SEM GrTag
   | Con
     Unboxed
     Hole
-    Rec
-    World
-    Any     lhs . life  =  True
+    Rec     lhs . life  =  True
       
   
   

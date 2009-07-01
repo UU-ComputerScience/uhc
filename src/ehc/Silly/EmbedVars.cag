@@ -25,7 +25,6 @@ WRAPPER SilModule
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-
 %%[(8 codegen grin) hs
 embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   

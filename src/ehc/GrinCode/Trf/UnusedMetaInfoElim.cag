@@ -22,7 +22,7 @@ that are not necessary for the bytecode backend.
 %%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs export(grUnusedMetaInfoElim)
@@ -52,7 +52,7 @@ ATTR AllNT [ | | trf: SELF ]
 
 %%[(8 codegen grin)
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf []
+  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm [] @bindL.trf Map.empty
 
 SEM GrVal
   | PtrNode OpaqueNode
@@ -61,6 +61,6 @@ SEM GrVal
 SEM GrPatLam
   | PtrAnnot PtrNode OpaqueAnnot OpaqueNode
                 lhs         .   trf             =   GrPatLam_Var @nm
-  | EnumAnnot   lhs         .   trf             =   GrPatLam_EnumAnnot [] @nm
+--  | EnumAnnot   lhs         .   trf             =   GrPatLam_EnumAnnot [] @nm
 %%]
 

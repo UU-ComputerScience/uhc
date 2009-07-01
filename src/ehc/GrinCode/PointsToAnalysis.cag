@@ -119,7 +119,7 @@ data NodeInfo a
   |  InNode  GrTag [a]
   |  InBasic Variable
   |  InEnum  Variable [GrTag]
-  |  InPtr   Variable [GrTag]
+  |  InPtr   Variable
   deriving Show
   
 fromInVar :: NodeInfo a -> Variable
@@ -130,12 +130,18 @@ fromInVar _          = error "HPT: Apply arguments should all be variables"
 
 %%[(8 codegen grin).valInfo
 
+ATTR GrBindL GrBind GrExpr GrPatLam GrAltL GrAlt [ tagsMp : {Map.Map HsName [GrTag]} | | ] 
+
+
 ATTR GrVal             [ | | valInfo : { NodeInfo (Maybe Variable) }  var   : { Maybe Variable } ]
 ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[Maybe Variable]} ]
 ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }  tag   : { Maybe GrTag}     ]
 ATTR GrVar             [ | | tag     : GrTag                          var   : { Variable }       ]
 ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[Variable]}       ]
 
+
+SEM GrModule
+  | Mod        bindL.tagsMp = @tagsMp
 
 SEM GrVal
   | Tag        lhs.valInfo  =  InNode  @tag.self []
@@ -144,7 +150,7 @@ SEM GrVal
   | BasicNode  lhs.valInfo  =  InNode  @tag.self [Just(getNr @nm)]
   | EnumNode   lhs.valInfo  =  InEnum  (getNr @nm) []
   | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just(getNr @nm)]
-  | PtrNode    lhs.valInfo  =  InPtr   (getNr @nm) []
+  | PtrNode    lhs.valInfo  =  InPtr   (getNr @nm)
   | Empty
     LitInt
     LitStr
@@ -188,10 +194,12 @@ SEM GrPatLam
     BasicAnnot lhs.patInfo  =  InBasic (getNr @nm)
   | OpaqueNode
     OpaqueAnnot lhs.patInfo =  InBasic (getNr @nm)
-  | EnumNode    lhs.patInfo =  InEnum (getNr @nm) [GrTag_Any]
-  | EnumAnnot   lhs.patInfo =  InEnum (getNr @nm) @tagL.self
-  | PtrNode     lhs.patInfo =  InPtr  (getNr @nm) [GrTag_Any]
-  | PtrAnnot    lhs.patInfo =  InPtr  (getNr @nm) @tagL.self
+  | EnumNode    lhs.patInfo =  InEnum (getNr @nm) []   -- any tag is possible
+  | EnumAnnot   lhs.patInfo =  InEnum (getNr @nm) (Map.findWithDefault (error ("PointsToAnalysis: EnumAnnot " ++ show @tycon ++ " not found")) @tycon @lhs.tagsMp)
+  | PtrNode     lhs.patInfo =  InPtr  (getNr @nm)
+  | PtrAnnot    lhs.patInfo =  maybe (InPtr  (getNr @nm)) 
+                                     (error "PointsToAnalysis: cant analyze FFI returning pointer") 
+                                     (Map.lookup @tycon @lhs.tagsMp)
   | * - VarNode lhs.tag     =  Nothing
 
 SEM GrVarL  
@@ -210,6 +218,15 @@ SEM GrVar
   | KnownTag     lhs.var   =  error "var taken from KnownTag"
 
 %%]
+
+%%[(8 codegen grin) hs
+
+lookupTags tagsMp tycon = maybe []
+                                id
+                                (Map.lookup tycon tagsMp)
+
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%
 %% Target Information %%
@@ -261,13 +278,13 @@ SEM GrExpr
                loc.equations1 = case (@lhs.targetInfo, @val.valInfo) of
                                  (InVar tvar        ,  InVar svar        )  -> [IsEqual tvar svar]
                                  (InVar tvar        ,  InNode stag snms  )  -> [IsConstruction tvar stag snms Nothing]
-                                 (InVar tvar        ,  InPtr svar _      )  -> []  -- TODO copy or return a pointer
+                                 (InVar tvar        ,  InPtr svar        )  -> []  -- [IsEqual tvar svar] -- error ("PointsToAnalysis: cant copy or return the pointer " ++ show svar ++ " to " ++ show tvar)
                                  (InNode ttag tnms  ,  InVar svar        )  -> buildSelectEquations svar ttag tnms
                                  (InNode ttag tnms  ,  InNode stag snms  )  -> buildUnifyEquations  snms tnms
                                  (InVar tvar        ,  InEnum svar _     )  -> [ IsEnumeration tvar svar ]
                                  (InBasic tvar      ,  _                 )  -> [ IsBasic tvar ]
                                  (InEnum  tvar ttags,  _                 )  -> [ IsTags  tvar ttags ]
-                                 (InPtr   tvar _    ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
+                                 (InPtr   tvar      ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
 
                                  
   | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
@@ -414,7 +431,7 @@ SEM GrExpr
                                    InNode ttag tnms  -> buildSelectEquations (getNr @nm) ttag tnms
                                    InEnum tvar ttags -> [ IsTags tvar ttags ]
                                    InBasic tvar      -> [ IsBasic tvar ]
-                                   InPtr  tvar ttags -> [ IsPointer tvar ttag []   |  ttag <- ttags ]
+                                   InPtr  tvar       -> [ IsPointer tvar GrTag_Hole []  ]
                                    -- _                 -> error ("unknown target " ++ show @lhs.targetInfo ++ " in call to " ++ show @nm)
 %%]
 
@@ -430,9 +447,7 @@ SEM GrExpr
                               InNode ttag tnms   -> map IsBasic tnms
                               InBasic tvar       -> [ IsBasic tvar ]
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
-                              InPtr   tvar [GrTag_Any] -> [ IsPointer tvar GrTag_Any []  ]
-                              InPtr   _ _ -> error "PointToAnalysis: cannot analyze FFI with pointer result"
-                              --InPtr   tvar ttags -> [ IsPointer tvar ttag []   |  ttag <- ttags ]
+                              InPtr   tvar       -> [ IsPointer tvar GrTag_Hole []  ]
 
 
 %%]
@@ -449,7 +464,8 @@ SEM GrExpr
                               InVar tvar         -> [ IsEvaluation tvar (getNr @nm) @lhs.exceptVar ]
                               InBasic tvar       -> [ IsBasic tvar ]
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
-                              _                  -> error "HPT: Eval target should be a variable or Basic/Enum display"
+                              InPtr tvar         -> [ IsPointer tvar GrTag_Hole []  ]
+                              _                  -> error ("HPT: Eval target " ++ show @lhs.targetInfo ++ " should be a variable or Basic/Enum display")
 %%]
 
 

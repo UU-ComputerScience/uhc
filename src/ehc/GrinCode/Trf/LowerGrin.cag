@@ -67,12 +67,14 @@ SEM GrAGItf
                                   in  addEnvElems @lhs.hptMap (map snd filleditems)
 
 SEM GrModule
-  | Mod loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
+  | Mod loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
 
 
 %%]
 
 %%[(8 codegen grin) hs
+
+tagArity (GrTag_Con ann _ nm)  = gtannArity ann
 
 fillgaps :: HptItems -> HptItems
 fillgaps [] = []
