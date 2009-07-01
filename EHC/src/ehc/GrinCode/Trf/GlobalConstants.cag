@@ -21,7 +21,7 @@ Todo: apart form literals, also other global constants are permitted as n_i
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.GlobalConstants} export(globalConstants)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
@@ -86,8 +86,7 @@ SEM GrTag
     App       lhs.isConstant   =  False
   | Hole
     Rec
-    World
-    Any       lhs.isConstant   =  False
+    Unboxed   lhs.isConstant   =  False
 
 SEM GrExpr
   | Seq       (lhs.grTrf
@@ -102,6 +101,6 @@ SEM GrModule
   | Mod       lhs.grTrf        =  GrModule_Mod @moduleNm
                                                (@globalL.grTrf ++ @bindL.newGlobals)
                                                @bindL.grTrf
-                                               @ctagsMp
+                                               @tagsMp
 
 %%]

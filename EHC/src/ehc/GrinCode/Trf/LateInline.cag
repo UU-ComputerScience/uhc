@@ -8,7 +8,7 @@ because its arity is still needed in SplitFetch.
 So we keep a binding with a trivial body.
 
 Requires FlattenSeq to be the next transformation.
-Inspects the HPT table, and returns it unchanged. It does not (yet) update the HPT table because it doesn't yet clone function bodies.
+Inspects the HPT table, and returns it unchanged. It does not (yet) update the HPT table because it does not yet clone function bodies.
 
 %%]
 
@@ -105,12 +105,12 @@ SEM GrBindL
 -}
 
 -- Do not completely drop the function, because its arity is still needed in SplitFetch
--- So, keep a binding with a trivial body
+-- So, keep an "Arity" binding to retain the arity
 
 SEM GrBind
   | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
            lhs . grTrf  =  if   @loc.drop
-                           then GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
+                           then GrBind_Arity @nm (length @argNmL)
                            else @loc.grTrf
 
 %%]

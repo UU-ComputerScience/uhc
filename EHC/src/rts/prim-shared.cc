@@ -73,7 +73,7 @@ PRIM Word primWriteWord64OffAddr( Word32* ptr, Word off, Word64 val )
 	Word32* p = (Word32*)(&val) ;
 	*ptr++ = *p++ ;
 	*ptr   = *p   ;
-	return (Word)Ccomma0 ;																								
+	return (Word)RTS_Unit ;																								
 }																															
 %%]
 
@@ -92,34 +92,34 @@ PRIMS_FLOATLIKE_CODE(Double,Double)
 PRIM Word primIsNaNFloat( Float x )
 {
 	if ( isnan(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsDenormalizedFloat( Float x )
 {
 	if ( ! isnormal(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsInfiniteFloat( Float x )
 {
 	if ( isinf(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsNegativeZeroFloat( Float x )
 {
 	 
 	if ( fpclassify(x) == FP_ZERO && signbit(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primDigitsFloat( )
@@ -140,34 +140,34 @@ PRIM Word primMinExpFloat( )
 PRIM Word primIsNaNDouble( Double x )
 {
 	if ( isnan(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsDenormalizedDouble( Double x )
 {
 	if ( ! isnormal(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsInfiniteDouble( Double x )
 {
 	if ( isinf(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primIsNegativeZeroDouble( Double x )
 {
 	 
 	if ( fpclassify(x) == FP_ZERO && signbit(x) )
-		return CTrue ;
+		return RTS_True ;
 	else
-		return CFalse ;
+		return RTS_False ;
 }
 
 PRIM Word primDigitsDouble( )
@@ -209,7 +209,7 @@ PRIM Word primIsIEEE( )
 {
 	// We do not know for sure whether we use IEEE or not.
 	// This should be dependending on some compile time C info, but not yet sorted out.
-	return CTrue ;
+	return RTS_True ;
 }
 
 PRIM Word primRadixDoubleFloat( )
@@ -249,16 +249,16 @@ PRIM Word primCharIsUpper( Word x )
 {
 	char c = x;
 	if ( c >= 'A' && c <= 'Z' )
-		return CTrue ;
-  	return CFalse ;
+		return RTS_True ;
+  	return RTS_False ;
 }
 
 PRIM Word primCharIsLower( Word x )
 {
 	char c = x;
 	if ( c >= 'a' && c <= 'z' )
-		return CTrue ;
-  	return CFalse ;
+		return RTS_True ;
+  	return RTS_False ;
 }
 
 PRIM Word primCharToUpper( Word x )
@@ -282,8 +282,8 @@ PRIM Word primPackedStringNull(Word w)
 {
 	char *s = (char *)w;
 	if ( *s )
-		return CFalse ;
-  	return CTrue ;
+		return RTS_False ;
+  	return RTS_True ;
 }
 
 PRIM Word primPackedStringTail(Word w)
@@ -364,14 +364,14 @@ PRIM Word primDeRefStableAddr( Word a )
 
 PRIM Word primFreeStableAddr( Word a )
 {
-	return (Word)Ccomma0 ;
+	return (Word)RTS_Unit ;
 }
 
 PRIM Word primEqStableAddr( Word x, Word y )
 {
 	if ( x == y )
-		return CTrue ;
-  	return CFalse ;
+		return RTS_True ;
+  	return RTS_False ;
 }
 
 #endif

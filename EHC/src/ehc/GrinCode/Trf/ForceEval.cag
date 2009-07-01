@@ -7,7 +7,7 @@
 %%% Haskell importable interface to forceEval on GrinCode
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen grin) hs module {%{EH}GrinCode.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}GrinCode})
+%%[(99 codegen grin) hs module {%{EH}GrinCode.Trf.ForceEval} import(qualified Data.Map as Map, {%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}GrinCode})
 %%]
 
 %%[(99 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
@@ -49,14 +49,14 @@ instance ForceEval GrInl where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval over structore
+%%% ForceEval over structure
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 codegen grin)
 ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM GrModule
-  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @ctagsMp `seq` @globalL.trf `seq` @bindL.trf
+  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @tagsMp `seq` @globalL.trf `seq` @bindL.trf
 
 SEM GrGlobal
   | Global			lhs		.	trf			=	forceEval @nm `seq` @val.trf
@@ -72,9 +72,9 @@ SEM GrExpr
   | FetchField		lhs		.	trf			=	forceEval @nm `seq` forceEval @offset `seq` forceEval' @mbTag
   | Call			lhs		.	trf			=	forceEval @nm `seq` @argL.trf
 %%[[8
-  | FFI				lhs		.	trf			=	forceEval @nm `seq` forceEval @argL
+  | FFI				lhs		.	trf			=	forceEval @nm `seq` @argL.trf
 %%][94
-  | FFI				lhs		.	trf			=	forceEval @callconv `seq` forceEval @impEnt `seq` forceEval @argL
+  | FFI				lhs		.	trf			=	forceEval @callconv `seq` forceEval @impEnt `seq` @argL.trf
 %%]]
   | App				lhs		.	trf			=	forceEval @nm `seq` @argL.trf
   | Catch			lhs		.	trf			=	forceEval @arg `seq` @body.trf `seq` @handler.trf

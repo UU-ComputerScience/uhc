@@ -28,8 +28,8 @@ PRIM Word primChr(Word x)
 PRIM Word primOdd(Word x)
 {
     if (x&1)
-        return CTrue;
-    return CFalse;
+        return RTS_True;
+    return RTS_False;
 }
 
 
@@ -41,7 +41,7 @@ PRIM Word primError(Word s)
 	printf("\nError function called from Haskell with message: ");
 	fflush(stdout);
 	
-	while (  ((Word*)s)[0] == Ccolon )
+	while (  ((Word*)s)[0] == RTS_Cons )
 	{
 		c = ((Word*)s)[1];	
 		x = ((Word*)c)[1];
@@ -119,7 +119,7 @@ PRIM Word primOpenFile(Word str, Word mode)
 	FILE *f;
 
 	d = filename;
-	while (  ((Word*)str)[0] == Ccolon )
+	while (  ((Word*)str)[0] == RTS_Cons )
 	{
 		c = ((Word*)str)[1];	
 		x = ((Word*)c)[1];
@@ -129,7 +129,7 @@ PRIM Word primOpenFile(Word str, Word mode)
 	*d = 0;
 
 	
-	switch(mode - CEHC_Prelude_AppendBinaryMode)
+	switch(mode - CAppendBinaryMode)
 	{
 	case 0: modestring = "ab"; break;
 	case 1: modestring = "a"; break;
@@ -151,13 +151,13 @@ PRIM Word primOpenFile(Word str, Word mode)
 PRIM Word primHClose(Word chan)
 {
 	fclose( (FILE*)chan );
-	return Ccomma0;	
+	return RTS_Unit;	
 }
 
 PRIM Word primHFlush(Word chan)
 {
 	fflush( (FILE*)chan );
-	return Ccomma0;	
+	return RTS_Unit;	
 }
 
 PRIM Word primHGetChar(Word h)
@@ -171,7 +171,7 @@ PRIM Word primHGetChar(Word h)
 PRIM Word primHPutChar(Word h, Word c)
 {
 	putc(c, (FILE*)h );
-	return Ccomma0;
+	return RTS_Unit;
 }
 
 PRIM Word primHIsEOF(Word h)
@@ -179,10 +179,10 @@ PRIM Word primHIsEOF(Word h)
 	int c;
 	c = getc( (FILE*)h );
 	if (c==EOF)
-		return CTrue;
+		return RTS_True;
 	
 	ungetc( c, (FILE*)h );
-	return CFalse;
+	return RTS_False;
 }
 %%]
 
@@ -238,17 +238,17 @@ PRIM Word32 primIntegerToWord32(Word p)
 
 PRIM Word primCmpInteger(Word x, Word y)
 {   if (((WPtr)x)[0] > ((WPtr)y)[0])
-        return CGT;
+        return RTS_GT;
     if (((WPtr)x)[0] == ((WPtr)y)[0])
-        return CEQ;
-    return CLT;
+        return RTS_EQ;
+    return RTS_LT;
 }
 
 PRIM Word primEqInteger(Word x, Word y)
 {
     if (((WPtr)x)[0] == ((WPtr)y)[0])
-        return CTrue;
-    return CFalse;
+        return RTS_True;
+    return RTS_False;
 }
 
 PRIM Word primAddInteger(Word x, Word y)

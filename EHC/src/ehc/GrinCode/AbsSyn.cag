@@ -19,7 +19,7 @@ DATA GrModule
   | Mod         moduleNm        : {HsName}
                 globalL         : GrGlobalL
                 bindL           : GrBindL
-                ctagsMp         : {CTagsMp}
+                tagsMp          : {Map.Map HsName [GrTag]}
 
 DATA GrGlobal
   | Global      nm              : {HsName}
@@ -32,6 +32,8 @@ DATA GrBind
                 annot           : GrBindAnn
                 argNmL          : {[HsName]}
                 expr            : GrExpr
+  | Arity       nm              : {HsName}
+                arity           : {Int}
   | Rec         bindL           : GrBindL
 
 TYPE GrBindL    =   [GrBind]
@@ -134,9 +136,9 @@ DATA GrPatLam
   | OpaqueNode  nm              : {HsName}
   | BasicAnnot  annot           : {BasicAnnot}
                 nm              : {HsName}
-  | EnumAnnot   tagL            : GrTagL
+  | EnumAnnot   tycon           : {HsName}
                 nm              : {HsName}
-  | PtrAnnot    tagL            : GrTagL
+  | PtrAnnot    tycon           : {HsName}
                 nm              : {HsName}
   | OpaqueAnnot nm              : {HsName}
 
@@ -152,8 +154,6 @@ DATA GrTag
   | Unboxed
   | Hole
   | Rec
-  | World
-  | Any
 
 TYPE GrTagL     =   [GrTag]
 %%]

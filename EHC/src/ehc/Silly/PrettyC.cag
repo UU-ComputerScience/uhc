@@ -80,13 +80,16 @@ ATTR Statements Statement Alternatives Alternative
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
+                                >-< comment ["Tag aliases"]
+                                >-< ppVertically (map aliasDefinition @aliases)
+                                >-< text ""
                                 >-< comment ["Tag constants"]
                                 >-< ppVertically (map constantDefinition @constants)
                                 >-< text ""
-                                >-< comment ["Global table"]
+                                >-< comment ["Global variables"]
                                 >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
                                 >-< text ""
-                                >-< comment ["Auxiliary variable"]
+                                >-< comment ["Auxiliary variables"]
                                 >-< text "Word auxVar;"
                                 >-< text "Word auxPtr;"
                                 >-< text ""
@@ -339,13 +342,16 @@ returnFromSillyFunction retdiff optOwn
 
 preambule :: PP_Doc
 preambule
- = comment ["Generated C code"]
-   >-< text "#include \"rts.h\""
+ = text "#include \"rts.h\""
    >-< text ""
 
 constantDefinition :: (String,Int) -> PP_Doc
 constantDefinition (x,n)
  = macroDefinition (text x) (text (show n))
+
+aliasDefinition :: (String,String) -> PP_Doc
+aliasDefinition (x,y)
+ = macroDefinition (text x) (text y)
 
 variableDeclaration :: String -> PP_Doc
 variableDeclaration x

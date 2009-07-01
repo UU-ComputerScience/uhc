@@ -2,14 +2,14 @@
 
 If the body of a function contains a case-expression with zero alternatives
 we know that the function can never be called.
-Replace the body of the function with an Empty expression in that situation.
+Replace the binding of the function with the arity placeholder.
 
 %%]
 
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin)
@@ -50,11 +50,12 @@ SEM GrExpr
   | Seq           lhs.valid  =  @expr.valid && @body.valid
   | * - Case Seq  lhs.valid  =  True
 
--- Binding bodies that are not valid are replaced by "UNIT Empty"
+-- Binding bodies that are not valid are replaced by an arity placeholder
 
 SEM GrBind
   | Bind          lhs.grTrf  =  if @expr.valid
                                 then @loc.grTrf
+                                -- else GrBind_Arity @nm (length @argNmL)
                                 else GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
                                 
 -- Invalid alternatives are removed from the list

@@ -6,7 +6,6 @@
 -}
 }
 %%]
-
 %%[(8 codegen grin) hs module {%{EH}Silly.ToLLVM}
 %%]
 %%[(8 codegen grin) hs import({%{EH}LLVM})

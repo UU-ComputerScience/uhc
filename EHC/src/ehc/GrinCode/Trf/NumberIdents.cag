@@ -107,37 +107,6 @@ SEM GrModule
 %%]
 
 
-%%[(8 codegen grin) hs
-
-protectPrimitive :: HsName -> HsName
-%%[[8
-protectPrimitive x = x
-%%][20
-protectPrimitive x = let u = hsnQualified x 
-                         b = u `Set.member` builtinGlobalNamesUnqualifiedSet
-                     in -- trace ("protect b=" ++ show b ++ " u=" ++ show u ++ " set=" ++ show builtinGlobalNamesUnqualifiedSet) $
-                        if b
-                        then u
-                        else x
-
-builtinGlobalNamesUnqualifiedList
- = map hsnQualified $ 
-   [ hsnTrue, hsnFalse
-   , hsnDataListAltCons, hsnDataListAltNil
-%%[[99
-   , hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
-%%]]
-   ]
-
-builtinGlobalNamesUnqualifiedSet = Set.fromList builtinGlobalNamesUnqualifiedList
-
-%%]]
-
-%%]
-
-
-
-
 %%[(8 codegen grin)
 
 ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
@@ -225,9 +194,9 @@ SEM GrPatLam
   | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode @newName
   | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode @newName
   | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot @newName
-  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot @tagL.grTrf @newName
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot @tycon @newName
   | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot @newName
-  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot @tagL.grTrf @newName
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot @tycon @newName
 
 SEM GrBind
   | Bind        lhs  .  grTrf  =  GrBind_Bind (findNewVar @lhs.bindMap @nm) @annot @newNames @expr.grTrf
@@ -268,7 +237,7 @@ SEM GrExpr
 %%]]
 
 SEM GrTag
-  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int (protectPrimitive @nm)
+  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @nm
   | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bindMap @nm)
   | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bindMap @nm)
   | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bindMap @nm)

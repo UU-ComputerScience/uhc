@@ -7,7 +7,7 @@
 %%% GRI parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
+%%[(8 codegen grin) module {%{EH}GrinCode.Parser} import(IO, UU.Parsing, qualified Data.Map as Map, EH.Util.ParseUtils(PlainParser), EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Scanner}, {%{EH}GrinCode}, {%{EH}Base.Parser} hiding (pInt))
 %%]
 
 %%[(8 codegen grin) export(pModule,pExprSeq)
@@ -27,7 +27,7 @@ pModule         ::   GRIParser GrModule
 pModule         =    GrModule_Mod <$ pKey "module" <*> (pGrNm <|> mkHNm <$> pString)
                      <*> pGlobalL
                      <*> pBindL
-                     <*  pKey "ctags"     <*> pCTags
+                     <*> pTagMap
 
 pGlobalL        ::   GRIParser GrGlobalL
 pGlobalL        =    pCurly_pSemics pGlobal
@@ -40,13 +40,15 @@ pBindL          =    pCurly_pSemics pBind
 
 pBind           ::   GRIParser GrBind
 pBind           =    GrBind_Bind <$> pGrNm <*> pGrBindAnn <*> pGrNmL <* pKey "=" <*> pCurly pExprSeq
+                <|>  GrBind_Arity <$> pGrNm <* pKey ":" <*> pInt
                 <|>  GrBind_Rec <$ pKey "rec" <*> pBindL
 
-pCTags          ::   GRIParser CTagsMp
-pCTags          =    pCurly_pSemics
-                        ((\tn ts -> (tn,map (\(n,t,a,ma) -> (n,CTag tn n t a ma)) ts))
-                        <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") ((,,,) <$> pGrNm <*> pInt <*> pInt <*> pInt)
-                        )
+pTagMap         ::   GRIParser (Map.Map HsName [GrTag])
+pTagMap         =    Map.fromList
+                     <$> pCurly_pSemics
+                            (   (\tn ts -> (tn,ts))
+                            <$> pGrNm <* pKey "=" <*> pListSep (pKey "|") pTag
+                            )
 
 pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPatLam <* pKey "->") pExpr
@@ -146,9 +148,9 @@ pPatLam         =    GrPatLam_Var      <$> pGrNm
                         <|>  GrPatLam_PtrNode      <$  pKey "ptrnode"      <*> pGrNm
                         <|>  GrPatLam_OpaqueNode   <$  pKey "opaquenode"   <*> pGrNm
                         <|>  GrPatLam_BasicAnnot   <$  pKey "basicannot"   <*> pBasicAnnot <*> pGrNm
-                        <|>  GrPatLam_EnumAnnot    <$  pKey "enumannot"    <*> pParens (pList pTag) <*> pGrNm
+                        <|>  GrPatLam_EnumAnnot    <$  pKey "enumannot"    <*> pGrNm <*> pGrNm
                         <|>  GrPatLam_OpaqueAnnot  <$  pKey "opaqueannot"  <*> pGrNm
-                        <|>  GrPatLam_PtrAnnot     <$  pKey "ptrannot"     <*> pParens (pList pTag) <*> pGrNm
+                        <|>  GrPatLam_PtrAnnot     <$  pKey "ptrannot"     <*> pGrNm <*> pGrNm
                         <|>  pSucceed GrPatLam_Empty
                         )
 
@@ -193,7 +195,6 @@ pTag            ::   GRIParser GrTag
 pTag            =    pKey "#"
                      *>  (   (\i c n -> c i n) <$> pInt <* pKey "/" <*> pTagCateg <* pKey "/" <*> ((undefined <$ pKey "_") <|> pGrNm)
                          <|> GrTag_Unboxed <$ pKey "U"
-                         <|> GrTag_Any     <$ pKey "*"
                          )
 
 pTagAnn         ::   GRIParser GrTagAnn
@@ -206,7 +207,6 @@ pTagCateg       =    (\a     -> GrTag_Con a   )    <$ pKey "C" <*> pTagAnn
                 <|>  (\  i   -> GrTag_App     )    <$ pKey "A"
                 <|>  (\  i   -> GrTag_Fun     )    <$ pKey "F"
                 <|>  (\x i   -> GrTag_PApp x  )    <$ pKey "P" <* pKey "/" <*> pInt
-                <|>  (\  i n -> GrTag_World   )    <$ pKey "W"
 
 pGrNmL          ::   GRIParser [HsName]
 pGrNmL          =    pList pGrNm

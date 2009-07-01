@@ -100,14 +100,14 @@ extern Word       primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off
 PRIM Word  primEq ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x == y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 PRIM Word  primNe ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x != y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 
 
@@ -115,34 +115,34 @@ PRIM Word  primNe ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 PRIM Word  primGt ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x > y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 PRIM Word  primLt ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x < y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 PRIM Word  primGe ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x >= y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 PRIM Word  primLe ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x <= y )																									\
-		return CTrue ;																								\
-  	return CFalse ;																									\
+		return RTS_True ;																							\
+  	return RTS_False ;																								\
 }																													\
 PRIM Word  primCmp ## PrimTypeName( PrimTypeC x, PrimTypeC y )														\
 {																													\
 	if ( x < y )																									\
-		return CLT ;																								\
+		return RTS_LT ;																								\
 	else if ( x == y )																								\
-		return CEQ ;																								\
-  	return CGT ;																									\
+		return RTS_EQ ;																								\
+  	return RTS_GT ;																									\
 }																													\
 																													\
 
@@ -197,7 +197,7 @@ PRIM PrimTypeC  primRem ## PrimTypeName( PrimTypeC x, PrimTypeC y )													
 
 
 #define PRIMS_FRACTIONAL_CODE(PrimTypeName,PrimTypeC) 		\
-PRIM PrimTypeC  primDivide ## PrimTypeName( PrimTypeC numerator, PrimTypeC divisor )									\
+PRIM PrimTypeC  primDivide ## PrimTypeName( PrimTypeC numerator, PrimTypeC divisor )								\
 {																													\
 	return numerator / divisor ;																			\
 }																													\
@@ -354,7 +354,7 @@ PRIM PrimTypeC  primRead ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off ) 
 																														\
 PRIM Word  primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimTypeC val ) {							\
 	ptr[ off ] = val ;																									\
-	return (Word)Ccomma0 ;																								\
+	return (Word)RTS_Unit ;																								\
 }																														\
 
 %%]

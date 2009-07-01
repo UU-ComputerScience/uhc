@@ -22,7 +22,7 @@ Transforms a Grin program to a Silly program.
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%[(8 codegen grin) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
@@ -137,7 +137,8 @@ SEM GrBind
 
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagConstants (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
+                                (tagAliases @lhs.opts) -- aliases
+                                (tagConstants @lhs.opts (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names              -- variables
                                 ( Function_Function (hsnFromString "initialize") False [] []
                                                     (  @globalL.initStats1
@@ -151,7 +152,7 @@ SEM GrModule
                                 : @bindL.functions            -- functions
                                 )
 
-        loc . maxConstrParameters = foldr max 0 (map (ctagArity.snd) (concat (map snd @ctagsMp)))
+        loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
         bindL . retNr   = 3
 
 
@@ -397,11 +398,9 @@ SEM GrTag
            lhs.value    = Value_Con (@loc.constant)
 
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
- | Any     lhs.value    = error "GrTag:Any value"
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
- | Any     lhs.constant = error "GrTag:Any constant"
 
- | * - Con Fun App PApp Hole Unboxed Any
+ | * - Con Fun App PApp Hole Unboxed
            lhs.constant = error "GrTag:other constant"
            lhs.value    = error "GrTag:other value"
 
@@ -507,8 +506,7 @@ ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set Gr
 ATTR GrTag [ | | self : SELF ]
 
 SEM GrTag
-  | Any    lhs.genAllTags = Set.empty
-  | *-Any  lhs.genAllTags = Set.singleton @loc.self
+  | *     lhs.genAllTags = Set.singleton @loc.self
 
 %%]
 
@@ -517,6 +515,10 @@ SEM GrTag
 %%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
+
+
+tagArity (GrTag_Con ann _ _) = gtannArity ann
+
 
 yielding what own values numberParameters
   =  let nMyRes  = length values
@@ -628,31 +630,51 @@ arrayValue a i = Value_Var (Variable_Subs a i)
 arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
-tagConstants :: Set.Set GrTag -> [(String,Int)]
-tagConstants tagset
+
+
+neededTags opts 
+  =  let nameSupplier = ehcOptBuiltinNames opts
+     in  [ (ehbnBoolFalse          nameSupplier, "False")
+         , (ehbnBoolTrue           nameSupplier, "True" )
+         , (ehbnDataListAltCons    nameSupplier, "Cons" )
+         , (ehbnDataListAltNil     nameSupplier, "Nil"  )
+         , (ehbnDataOrderingAltEQ  nameSupplier, "EQ"   )
+         , (ehbnDataOrderingAltGT  nameSupplier, "GT"   )
+         , (ehbnDataOrderingAltLT  nameSupplier, "LT"   )
+         ]
+
+tagAliases :: EHCOpts -> [(String,String)]
+tagAliases opts
+  =  ( "Ccomma0", "RTS_Unit" )
+     : [ ("C" ++ hsnShowAlphanumericShort x, "RTS_"++y)
+       | (x,y) <- neededTags opts
+       ]
+
+
+tagConstants :: EHCOpts -> Set.Set GrTag -> [(String,Int)]
+tagConstants opts tagset
  = let f ((t,_),_) = showGrTag t
-       needed = -- Make sure these are the same as in Rts/Prim.cc
-                [ "UNBOXED"
-                , "CFalse"
-                , "CTrue"
-                , "Ccolon"
-                , "Csubbus"
-                , "CEQ", "CGT", "CLT"
-                , "Ccomma0"
+       predef = -- Make sure these are the same as in src/rts/C/prim-const.ch
+                [ "Ccomma0"
+                ]
+                ++
+                [ "C" ++ hsnShowAlphanumericShort x
+                | (x,y) <- neededTags opts
+                ]
 %%[[98
-                , "CEHC_Prelude_AppendBinaryMode"
-                , "CEHC_Prelude_AppendMode"                
-                , "CEHC_Prelude_ReadBinaryMode"                
-                , "CEHC_Prelude_ReadMode"                
-                , "CEHC_Prelude_ReadWriteBinaryMode"                
-                , "CEHC_Prelude_ReadWriteMode"                
-                , "CEHC_Prelude_WriteBinaryMode"                
-                , "CEHC_Prelude_WriteMode"                
+                ++
+                [ "CUHC_IOBase_AppendBinaryMode"
+                , "CUHC_IOBase_AppendMode"                
+                , "CUHC_IOBase_ReadBinaryMode"                
+                , "CUHC_IOBase_ReadMode"                
+                , "CUHC_IOBase_ReadWriteBinaryMode"                
+                , "CUHC_IOBase_ReadWriteMode"                
+                , "CUHC_IOBase_WriteBinaryMode"                
+                , "CUHC_IOBase_WriteMode"
+                ]
 %%]]
-                 ] -- needed by RTS. Make sure that they are defined in src/rts/C/prim-const.ch
        inprog = map showGrTag (Set.toAscList (Set.insert GrTag_Hole tagset))
-   -- in  zip (needed ++ (inprog \\ needed)) [0..]
-   in  zip (inprog \\ needed) [length needed..]
+   in  zip (inprog \\ predef) [length predef..]
 
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm
@@ -662,7 +684,5 @@ showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"
 showGrTag (GrTag_Hole) = "HOLE"
 showGrTag (GrTag_Unboxed) = "UNBOXED"
-showGrTag (GrTag_Any    ) = "GrTag:Any"
-showGrTag (GrTag_World    ) = "GrTag:World"
 
 %%]

@@ -28,7 +28,7 @@
 %%[(10 codegen grin) hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
 %%]
 
-%%[(10 codegen grin) hs export(GrNodeAdapt(..), grRecTag)
+%%[(10 codegen grin) hs export(GrNodeAdapt(..))
 %%]
 
 %%[(8 codegen grin) hs export(mkGrBox,mkGrRecNode,mkGrConNode)
@@ -81,8 +81,6 @@ instance Eq GrTag where
   GrTag_Unboxed    == GrTag_Unboxed    = True
   GrTag_Hole       == GrTag_Hole       = True
   GrTag_Rec        == GrTag_Rec        = True
-  GrTag_World      == GrTag_World      = True
-  GrTag_Any        == GrTag_Any        = True
   _                == _                = False
   
 
@@ -274,8 +272,6 @@ type GrInlMp = Map.Map HsName GrInl
 %%[(10 codegen grin) hs
 data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
 
-grRecTag :: GrTag
-grRecTag = GrTag_Rec
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -327,6 +323,6 @@ grModMerge :: [GrModule] -> GrModule
 grModMerge mL
   = foldr1 cmb mL
   where cmb (GrModule_Mod m1 g1 b1 t1) (GrModule_Mod m2 g2 b2 t2)
-          = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (List.union t1 t2)
+          = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (Map.union t1 t2)
 %%]
 

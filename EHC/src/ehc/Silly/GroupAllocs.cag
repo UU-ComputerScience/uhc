@@ -60,6 +60,7 @@ groupAllocs options input
     in trf_Syn_SilModule t
 %%]
 
+
 %%[(8 codegen grin)
 -- Result of the AG transformation.
 ATTR AllNT [ | | trf: SELF ]

@@ -124,8 +124,6 @@ conNumber (GrTag_Con _ _ _) = 1
 conNumber (GrTag_PApp _ _)  = 2
 conNumber GrTag_Rec         = 3
 conNumber GrTag_Unboxed     = 4
-conNumber GrTag_World       = 5
-conNumber GrTag_Any         = 6
 -- "Hole" separates final tags from unevaluated tags (this fact is exploited Grin2Silly, for generating code for Reenter alternatives)
 conNumber GrTag_Hole        = 7
 -- Unevaluated tags last
@@ -274,7 +272,6 @@ isPAppTag (GrTag_PApp _ _) = True
 isPAppTag _                = False
 
 isFinalTag :: GrTag -> Bool
-isFinalTag  GrTag_Any        = True
 isFinalTag  GrTag_Hole       = True
 isFinalTag  GrTag_Unboxed    = True
 isFinalTag (GrTag_PApp _ _)  = True
