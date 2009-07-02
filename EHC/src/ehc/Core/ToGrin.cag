@@ -213,36 +213,25 @@ SEM CExpr
 ATTR CodeAGItf CModule [ | | grMod: GrModule ]
 
 SEM CModule
-  | Mod         loc         .   primTyconMp =   map (\n -> let arity = if hsnIsProd n then hsnProdArity n else 1
-                                                           in  (n,[(n,CTag n n 0 arity arity)]))
-                                                    (grBuiltinTyNmL @lhs.opts)
-                            .   constrsMp   =   cTagsMp2tagmap  (@primTyconMp ++ @ctagsMp)
-
-                            .   allFPTags   =   Map.toList $ arityMpFilterLam @expr.gathArityMp
-                            .   allPTags    =   [ (nm, arity, k)
-                                                | (nm, arity) <- filter ((`Set.member` @expr.asArgNmS) . fst) @allFPTags
-                                                , k <- [1..arity]
-                                                ]
-                            .   allCTags    =   [ ct | (_,xs) <- @constrsMp, (_,ct) <- xs ]
-                            
-                                                -- constructorfunctions are never called via an F-thunk, so no cases for it are generated
-                            .   allFTags    =   filter (\(fNm,_) -> not (fNm `elem` map ctagNm @allCTags))
-                                                       ( @allFPTags ++ (Map.toList $ arityMpFilterCaf @expr.gathArityMp) )
-
-                lhs         .   grMod       =   GrModule_Mod @moduleNm
+  | Mod         lhs         .   grMod       =   GrModule_Mod @moduleNm
                                                              @expr.grGlobalL
                                                              @expr.grBindL
-                                                             @constrsMp
-
-    
+                                                             (            primNmList2GrTagMap (grBuiltinTyNmL @lhs.opts)
+                                                             `Map.union`  cTagsMp2GrTagMap @ctagsMp
+                                                             )
 %%]
 
 
 %%[(8 codegen grin) hs
 
-cTagsMp2tagmap :: CTagsMp -> Map.Map HsName [GrTag]
-cTagsMp2tagmap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
-        where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i nm) 
+primNmList2GrTagMap :: [HsName] -> Map.Map HsName [GrTag]
+primNmList2GrTagMap = Map.fromList . map (\tn -> (tn, [tr tn]))
+                where tr nm = let arity = if hsnIsProd nm then hsnProdArity nm else 1
+                              in  GrTag_Con (mkGrTagAnn arity arity) 0 nm
+
+cTagsMp2GrTagMap :: CTagsMp -> Map.Map HsName [GrTag]
+cTagsMp2GrTagMap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
+             where  tr = map (\(_,(CTag _ nm i a ma)) -> GrTag_Con (mkGrTagAnn a ma) i nm) 
 
 %%]
 
