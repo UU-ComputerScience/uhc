@@ -160,17 +160,17 @@ SEM Statement
                 loc.(uniqNr2,fitsVar,fitsCode) =
                                makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar                                         
 
-  | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest1.llvmCode ++ @loc.dest1ptrCode ++ @loc.fits1Code ++
-                               [ LLVMStatement_Store @loc.fits1Var @loc.dest1ptrVar ] ++
+  | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
+                               [ LLVMStatement_Store @loc.fits1Var @loc.destptrVar ] ++
                                @dest2.llvmCode ++ @loc.dest2ptrCode ++ @loc.fits2Code ++
                                [ LLVMStatement_Store @loc.fits2Var @loc.dest2ptrVar] 
                 
-                loc.(uniqNr1,dest1ptrVar,dest1ptrCode) =
-                               cast2ptr @dest2.gUniq @dest1.llvmVar @lhs.pointerType
+                loc.(uniqNr1,destptrVar,destptrCode) =
+                               cast2ptr @dest2.gUniq @dest.llvmVar @lhs.pointerType
                 loc.(uniqNr2,dest2ptrVar,dest2ptrCode) =
                                cast2ptr @loc.uniqNr1 @dest2.llvmVar @lhs.pointerType                                        
                 loc.(uniqNr3,fits1Var,fits1Code) =
-                               makeFitting @loc.uniqNr2 @source.llvmVar @loc.dest1ptrVar
+                               makeFitting @loc.uniqNr2 @source.llvmVar @loc.destptrVar
                 loc.(uniqNr4,fits2Var,fits2Code) =
                                makeFitting @loc.uniqNr3 @source.llvmVar @loc.dest2ptrVar  
 
@@ -395,11 +395,11 @@ SEM Statement
                 dest  .gUniq = @source.gUniq
                 lhs   .gUniq = @loc.uniqNr2
 
-  -- Set the order source -> dest1 -> dest2 explicit, because it is differs
+  -- Set the order source -> dest -> dest2 explicit, because it is differs
   -- from the data type definition.
   | Assignment2 source.gUniq = @lhs.gUniq
-                dest1 .gUniq = @source.gUniq
-                dest2 .gUniq = @dest1.gUniq
+                dest  .gUniq = @source.gUniq
+                dest2 .gUniq = @dest.gUniq
                 lhs   .gUniq = @loc.uniqNr4
 
   -- The passing down to the args is performed by the copy rules.

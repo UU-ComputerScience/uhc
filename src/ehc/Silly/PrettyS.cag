@@ -166,7 +166,7 @@ SEM Statement
                                                else instruction2 "addl" (immediate   n ) (text esp)
                                  else @source.loadInA >-< @dest.storeFromA
   | Assignment2 loc.prettyS   = ";" >#< @loc.pretty >-<
-                                @source.loadInA >-< @dest1.storeFromA >-< @dest2.storeFromA
+                                @source.loadInA >-< @dest.storeFromA >-< @dest2.storeFromA
   | Switch      loc.prettyS   = ";" >#< "SWITCH" >#< @scrutinee.pretty >-<
                                 @scrutinee.loadInA >-< @body.prettyS
   | IfThenElse  loc.prettyS   = ";" >#< "IF" >#< @condition.pretty >-<
@@ -332,7 +332,7 @@ SEM Function
 
 SEM Statement
   | Assignment  loc.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
-  | Assignment2 loc.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
+  | Assignment2 loc.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
   | Switch      loc.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  loc.pretty = "IF"     >#< @condition.pretty >-< "{" >-< @thenpart.pretty >-< "}" >-< "{" >-< @elsepart.pretty >-< "}"
   | Call        loc.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
