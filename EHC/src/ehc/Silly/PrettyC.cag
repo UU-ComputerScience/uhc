@@ -149,8 +149,8 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @dest.prettyC  (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
-  | Assignment2 lhs.prettyC   = assignment2 @dest1.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
+  | Assignment  lhs.prettyC   = assignment  @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment2 lhs.prettyC   = assignment2 @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
@@ -220,7 +220,7 @@ SEM Constant
 
 SEM Constant
   | LiteralInt  lhs.prettyTXT = text (show @value)
-  | LiteralStr  lhs.prettyTXT = "((Word)" >|< text @value >|< ")"
+  | LiteralStr  lhs.prettyTXT = text (show 99999)   --  "((Word)" >|< text @value >|< ")"
   | Alias       lhs.prettyTXT = text @name
 
 SEM Variable

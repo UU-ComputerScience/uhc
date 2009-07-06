@@ -41,12 +41,16 @@ embedVars options input
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
-ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int}  embed : {EmbedFunction} | | ]
-ATTR Statement Statements Alternative Alternatives Variable [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives Variable [ | | usedButNotDefined USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives [ numberParameters : {Int} | | ]
-ATTR Statement  [ | | trfStats: {[Statement]} ]
-ATTR Function Functions  [ optOwn  : {Int}  | | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
+ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
+ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
+ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
+ATTR Function Functions 
+     Statement Statements Alternative Alternatives Value Values Variable [ optOwn  : {Int}  | | ]
 
 SEM SilModule
   | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
@@ -87,7 +91,6 @@ SEM Function
                                                    )
                                                 ++ (if   @lhs.optOwn>=1
                                                     then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.distance))
-                                                         -- , Statement_Comment (map (showEmbedPair @loc.distance @lhs.hptMap) @loc.embedList)
                                                          ]
                                                     else []
                                                    )
@@ -96,26 +99,60 @@ SEM Function
                                                 
 SEM Function
   | Function  body . numberParameters = length @parameters
-              loc  . distance = @loc.nLocals + @loc.roomForCcalls
-              loc  . nLocals      = if @lhs.optOwn>=2  then length @loc.newlocals   else 0
+              loc  . distance = maxNeededLocal @body.localsSet @body.embedMap + @loc.roomForCcalls
               loc  . roomForCcalls= 2
-              body . embed    = (if @lhs.optOwn>=2 then (embed2 @loc.distance) else embed) @loc.embedMap
               loc  . newlocals  =  Set.toList (Set.difference @body.localsSet (Set.fromList @parameters))
-              loc  . embedMap = Map.fromList @loc.embedList
-              loc  . embedList = @loc.paramsTup ++ @loc.localsTup
-              loc  . localsTup = zipWith (makeEmbedTupel Variable_Local) [1..] @loc.newlocals
-              loc  . paramsTup = zipWith (makeEmbedTupel Variable_Param) [1..] @parameters
+              body . embedMap = Map.fromList (zipWith (makeEmbedTupel Variable_Param) [1..] @parameters)
+
+
+ATTR Variable [ | | unembeddedName : {Maybe HsName} ]
+SEM Variable
+  | Unembedded   lhs.unembeddedName = Just @name
+  | *-Unembedded lhs.unembeddedName = Nothing
+
+SEM Statement
+  | Assignment
+    Assignment2 loc . embedMap : EmbedMap
+                loc . embedMap = maybe @lhs.embedMap
+                                       (\name@(HNmNr nr _) -> if    Map.member nr @lhs.embedMap
+                                                              then  @lhs.embedMap
+                                                              else  let newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
+                                                                        newvar = Variable_Local newint name
+                                                                    in  -- trace ("new local: " ++ show newvar ) $
+                                                                        Map.insert nr newvar @lhs.embedMap
+                                       )
+                                       @dest.unembeddedName
+  
+{
+maxNeededLocal :: Set.Set HsName -> EmbedMap -> Int
+maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m , Set.member v s ]
+                     in  if null ns then 0 else maximum ns
+}
+
+
+
+SEM Function
+  | Function       body . neededSet = Set.empty
+  
+SEM Statements
+  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+SEM Alternatives
+  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
 
 SEM Variable
   | Unembedded      lhs . localsSet = case @name of
                                        HNmNr _ (OrigGlobal _) -> Set.empty
                                        _                      -> Set.singleton @name
-  | Unembedded      lhs . usedButNotDefined = case @name of
-                                               HNmNr _ (OrigGlobal _) -> Set.empty
-                                               _                      -> Set.singleton @name
+  | *-Unembedded    lhs . localsSet = Set.empty
 
 SEM Variable
-  | Unembedded   lhs.trf = @lhs.embed @name
+  | Unembedded      lhs . usedSet = Set.singleton @name
+
+
+SEM Variable
+  | Unembedded   lhs.trf = (if @lhs.optOwn>=2 then (embed2 @lhs.distance) else embed) @lhs.embedMap @name
 
 SEM Variable
   | Subs         lhs.trf = if @array.trf==Variable_BP

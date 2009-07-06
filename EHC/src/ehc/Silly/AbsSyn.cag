@@ -31,7 +31,7 @@ DATA Function
 DATA Statement
   |  Assignment  dest       : Variable
                  source     : Value
-  |  Assignment2 dest1      : Variable
+  |  Assignment2 dest       : Variable
                  dest2      : Variable
                  source     : Value
   |  IfThenElse  condition  : Value

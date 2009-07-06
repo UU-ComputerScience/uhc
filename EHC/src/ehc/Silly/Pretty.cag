@@ -65,7 +65,7 @@ SEM Function
 
 SEM Statement
   | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >|< ";"
-  | Assignment2 lhs.pretty = @dest1.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
+  | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
   | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"

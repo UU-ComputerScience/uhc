@@ -73,7 +73,7 @@ SEM Variable
 
 SEM Statement
   | Assignment  dest.multi = 0
-  | Assignment2 dest1.multi = 0
+  | Assignment2 dest.multi = 0
                 dest2.multi = 0
 
 
@@ -86,9 +86,9 @@ SEM Statement
                                then Statement_Comment [" (inlined)" ++ show @dest.self ++ " = " ++ show @source.trf ]
                                else Statement_Assignment @dest.self @source.trf
   | Assignment2 lhs.trf     =  if @source.isntCall
-                                  && Map.lookup @dest1.self @lhs.allUseMap == Just 0
-                               then Statement_Assignment              @dest2.self @source.trf
-                               else Statement_Assignment2 @dest1.self @dest2.self @source.trf
+                                  && Map.lookup @dest.self @lhs.allUseMap == Just 0
+                               then Statement_Assignment             @dest2.self @source.trf
+                               else Statement_Assignment2 @dest.self @dest2.self @source.trf
 
 SEM Function
   |  Function   lhs.trf    =  Function_Function @name
