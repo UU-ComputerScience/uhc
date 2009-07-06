@@ -74,8 +74,9 @@ tcCheck opts env cmod
 initEnv :: Env
 initEnv
   = envUnions
-      [ envFromGam G.tkgiKi         metaLevTy  [ (n,x) | (T.TyKiKey_Name n,x) <- G.gamToAssocL G.initTyKiGam]
-      , envFromGam (const T.kiStar) metaLevKi  (G.gamToAssocL G.initKiGam)
+      [ envFromGam  G.tkgiKi         metaLevTy  [ (n,x) | (T.TyKiKey_Name n,x) <- G.gamToAssocL G.initTyKiGam]
+      , envFromGam 	(const T.kiStar) metaLevKi  (G.gamToAssocL G.initKiGam)
+      , envFromGam 	(const T.kiStar) metaLevSo  (G.gamToAssocL G.initSoGam)
       -- , envFromGam G.vgiTy          metaLevVal G.initValGam
       ]
 %%]
@@ -221,9 +222,13 @@ tyMatch' min ty1 ty2
             | minAllowAlphaRename min                                               =   let mout' = m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
                                                                                         in  mout' {moutEnv = envSingleton n1 (minMetaLev min) (Expr_Var n2) `envUnion` moutEnv mout' }
             | otherwise                                                             =   err' mout (pp n1) (pp n2)
-        ms1 min mout    s1@(ExprSeq1_L1Val t1)          s2@(ExprSeq1_L1Val t2)      =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L1Val t1)          s2@(ExprSeq1_L1Val t2)      =   m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L1Bind v1 k1)      s2@(ExprSeq1_L1Bind v2 k2)
             | v1 == v2                                                              =   m (min {minMetaLev = minMetaLev min + 2}) mout k1 k2
+            | otherwise                                                             =   err' mout (pp v1) (pp v2)
+        ms1 min mout    s1@(ExprSeq1_L2Val t1)          s2@(ExprSeq1_L2Val t2)      =   m (min {minMetaLev = minMetaLev min + 2}) mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L2Bind v1 k1)      s2@(ExprSeq1_L2Bind v2 k2)
+            | v1 == v2                                                              =   m (min {minMetaLev = minMetaLev min + 3}) mout k1 k2
             | otherwise                                                             =   err' mout (pp v1) (pp v2)
         ms1 min mout    s1                              s2                          =   err' mout (pp s1) (pp s2)
 
@@ -265,6 +270,7 @@ SEM ValBind
 SEM ExprSeq1
   | L0Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l1.t
   | L1Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l2.t
+  | L2Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l3.t
 
 SEM Expr
   | * - Seq Seq1
@@ -330,7 +336,10 @@ SEM ExprSeq1
                 l1          .   mlev                =   @mlevHere + 1
   | L1Bind      loc         .   mlevHere            =   @lhs.mlev + 1
                 l2          .   mlev                =   @mlevHere + 1
+  | L2Bind      loc         .   mlevHere            =   @lhs.mlev + 2
+                l3          .   mlev                =   @mlevHere + 1
   | L1Val       l1          .   mlev                =   @lhs.mlev + 1
+  | L2Val       l2          .   mlev                =   @lhs.mlev + 2
 
 SEM FldBind
   | Fld         loc         .   mlevHere            =   @lhs.mlev
@@ -404,7 +413,9 @@ SEM ExprSeq1
   | L0LblVal    loc         .   tySeq1              =   ExprSeq1_L0LblVal @nm @l0.ty
   | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
   | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind @nm Nothing @l2.t
+  | L2Bind      loc         .   tySeq1              =   ExprSeq1_L1Bind @nm @l3.t				-- TBD, lifting
   | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
+  | L2Val       loc         .   tySeq1              =   ExprSeq1_L1Val @l2.t 					-- TBD, lifting
 %%]
 
 %%[(8 codegen)
@@ -442,18 +453,6 @@ SEM Expr
   | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch @lhs.mlev t @fromTy.t)
   | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)                                -- TBD: the rest
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Possible name for binding
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-%%]
-ATTR ExprSeq1 [ | | mbL1Nm: {Maybe HsName} ]
-
-SEM ExprSeq1
-  | L1Bind      lhs         .   mbL1Nm              =   Just @nm
-  | * - L1Bind  lhs         .   mbL1Nm              =   Nothing
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lists of XX

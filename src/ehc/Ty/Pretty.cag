@@ -93,7 +93,7 @@ instance PP InstTo where
 %%[[4
   pp (InstTo_Qu q v t  ) = t >|< "/" >|< v
 %%][6
-  pp (InstTo_Qu q v t k) = t >|< "/" >|< v
+  pp (InstTo_Qu q v t k) = t >|< "/" >|< v >|< "@" >|< tyquMetaLev q
 %%]]
 %%]
 

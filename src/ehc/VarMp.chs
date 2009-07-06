@@ -380,7 +380,7 @@ varmpinfoMkVar v i
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% VarMp singleton
+%%% VarMp construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(2 hmtyinfer || hmtyast).VarMp.varmpTyUnit export(varmpTyUnit)
@@ -435,6 +435,12 @@ varmpPredSeqUnit :: TyVarId -> PredSeq -> VarMp
 varmpPredSeqUnit v l = mkVarMp (Map.fromList [(v,VMIPredSeq l)])
 %%]
 
+%%[(6 hmtyinfer || hmtyast) export(tyRestrictKiVarMp)
+-- restrict the kinds of tvars bound to value identifiers to kind *
+tyRestrictKiVarMp :: [Ty] -> VarMp
+tyRestrictKiVarMp ts = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | t <- ts, v <- maybeToList $ tyMbVar t ]
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% VarMp lookup
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -487,8 +493,10 @@ varmpPredSeqLookup = varlookupMap vmiMbPredSeq
 
 %%[(6 hmtyinfer || hmtyast)
 instance Ord k => VarLookup (VarMp' k v) k v where
-  varlookupWithMetaLev l k    (VarMp vmlev []) = Nothing
-  varlookupWithMetaLev l k    (VarMp vmlev ms) = Map.lookup k $ ms !! (l - vmlev)
+  varlookupWithMetaLev l k    (VarMp vmlev ms) = lkup (l-vmlev) ms
+                                               where lkup _ []     = Nothing
+                                                     lkup 0 (m:_)  = Map.lookup k m
+                                                     lkup l (_:ms) = lkup (l-1) ms
   varlookup              k vm@(VarMp vmlev _ ) = varlookupWithMetaLev vmlev k vm
   
   -- combine by taking the lowest level, adapting the lists with maps accordingly

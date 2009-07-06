@@ -111,7 +111,7 @@ ATTR AllDataConstr [ | patValGam: ValGam | ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy           =   @fields.tyL `mkArrow` @lhs.dataTy
-                            .	dataConTyFv			=	ftv @lhs.dataTy
+                            .   dataConTyFv         =   ftv @lhs.dataTy
                             .   dataConProdTy       =   mkProdApp @fields.tyL
                             .   dataConProdTyFv     =   ftv @dataConProdTy
                 loc         .   dataQuUnConTy       =   let fvD = @dataConTyFv
@@ -122,14 +122,20 @@ SEM DataConstr
                                                             mkk tvs = [ (v,tvarKi @lhs.finTyKiGam @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
 %%]]
                                                         in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
-
+                loc         .   dataConTyVar        =   @lUniq_con
+                            .   dataConTyAsVar      =   mkNewTyVar @lUniq_con
+                            .   dataUnConTyVar      =   @lUniq_uncon
+                            .   dataUnConTyAsVar    =   mkNewTyVar @lUniq_uncon
                 lhs         .   patValGam           =   gamUnions
                                                           [ assocLToGam
-                                                              [ (@conNm, ValGamInfo @dataConTy)
-                                                              , (hsnUn @conNm, ValGamInfo @dataQuUnConTy)
+                                                              [ (@conNm, ValGamInfo @dataConTyAsVar)
+                                                              , (hsnUn @conNm, ValGamInfo @dataUnConTyAsVar)
                                                               ]
                                                           , @lhs.patValGam
                                                           ]
+                            .   patTyVarMp          =   assocTyLToVarMp [(@dataConTyVar,@dataConTy),(@dataUnConTyVar,@dataQuUnConTy)] |=> @lhs.patTyVarMp
+                loc         .   lUniq_con           :   UNIQUEREF gUniq
+                loc         .   lUniq_uncon         :   UNIQUEREF gUniq
 %%]
 
 %%[(5 hmtyinfer)
@@ -155,8 +161,8 @@ SEM DataConstr
                 loc         .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
                                                         in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL) 
 
-                loc         .   dataConTy           :=  @loc.dataConTy1
-                loc         .   dataConProdTy       :=  @loc.dataConProdTy1
+                loc         .   dataConTy           :=  @dataConTy1
+                loc         .   dataConProdTy       :=  @dataConProdTy1
 
                 loc         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
@@ -169,14 +175,13 @@ SEM Decl
 ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
 
 SEM DataConstr
-  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @fields.fldTyL		-- should be only one
+  | Constr      loc         .   dataAltForNewType   =   maybeHd Ty_Any snd @fields.fldTyL       -- should be only one
 %%]
 
 %%[(7 hmtyinfer).dataConXTy
 SEM DataConstr
-  | Constr
-      loc.dataConTy1     = @loc.dataConTy2
-      loc.dataConProdTy1 = @loc.dataConProdTy2
+  | Constr      loc         .   dataConTy1          =   @loc.dataConTy2
+                            .   dataConProdTy1      =   @loc.dataConProdTy2
 %%]
 
 %%[(16 hmtyinfer).dataConXTy -7.dataConXTy

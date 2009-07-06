@@ -36,9 +36,6 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[4 hs export(TyQu(..)) 
 %%]
 
-%%[(4 hmtyinfer || hmtyast) hs
-%%]
-
 %%[(4 hmtyinfer || hmtyast) hs export(tyConNm) 
 %%]
 

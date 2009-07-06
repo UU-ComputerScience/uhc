@@ -20,8 +20,10 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
--- import Ty only qualified
+-- import Ty (and others) only qualified
 %%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%]
+%%[(8888 codegen) hs import(qualified {%{EH}Gam} as G)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -328,9 +330,22 @@ mkExprLamMeta :: [(HsName,MetaVal,Ty)] -> Expr -> Expr
 mkExprLamMeta as e = foldr (\(n,m,t) e -> mkExprLam1Meta n m t e) e as
 %%]
 
+%%[(8 codegen) hs
+mkExprLam1MetaLev' :: (HsName -> Ty -> ExprSeq1) -> (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
+mkExprLam1MetaLev' mkb mka a t e = Expr_Lam (mka $ Expr_Seq [mkb a t]) e
+%%]
+
+%%[(8 codegen) hs
+mkExprLam1Ki' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
+mkExprLam1Ki' = mkExprLam1MetaLev' ExprSeq1_L2Bind
+%%]
+
 %%[(8 codegen) hs export(mkExprLamTy,mkExprLam1Ty)
+mkExprLam1Ty' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
+mkExprLam1Ty' = mkExprLam1MetaLev' ExprSeq1_L1Bind
+
 mkExprLam1Ty :: HsName -> Ty -> Expr -> Expr
-mkExprLam1Ty a t e = Expr_Lam (Expr_Seq [ExprSeq1_L1Bind a t]) e
+mkExprLam1Ty = mkExprLam1Ty' id
 
 mkExprLamTy :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLamTy as e = foldr (\(n,t) e -> mkExprLam1Ty n t e) e as
@@ -738,9 +753,11 @@ Assumption: singleton argument sequences in the type
 tcMergeArgTypeSeqAndCode' :: (Ty -> TySeq) -> [TySeq1L] -> [(HsName,Expr->Expr)] -> (Expr->Expr,[TySeq])
 tcMergeArgTypeSeqAndCode' mka ts as
   = merge ts as
-  where merge ((ExprSeq1_L0Val  t   _:ts):tss) ((argNm,mkBody):as) = (mkExprLam1' mka argNm t . mkBody . body, mka t : args)
+  where merge ((ExprSeq1_L0Val  t   _:ts):tss) ((argNm,mkBody):as) = (mkExprLam1'   mka argNm t . mkBody . body, mka t : args)
                                                                    where (body,args) = merge (ts:tss) as
-        merge ((ExprSeq1_L0Bind v _ k:ts):tss)                 as  = (mkExprLam1Ty v        k          . body,         args)
+        merge ((ExprSeq1_L0Bind v _ k:ts):tss)                 as  = (mkExprLam1Ty' mka v     k          . body,         args)
+                                                                   where (body,args) = merge (ts:tss) as
+        merge ((ExprSeq1_L1Bind v   k:ts):tss)                 as  = (mkExprLam1Ki' mka v     k          . body,         args)
                                                                    where (body,args) = merge (ts:tss) as
         merge (_                         :tss)                 as  =                   merge     tss  as
         merge _                                                _   = (id,[])
@@ -802,8 +819,8 @@ envSingleton n ml t = Map.singleton n (Map.singleton ml t)
 %%]
 
 %%[(8 codegen) hs export(envFromGam)
-envFromGam :: (v -> T.Ty) -> MetaLev -> AssocL HsName v -> Env
-envFromGam getTy ml g
-  = envUnions [ envSingleton n ml (tyToTyCore $ getTy x) | (n,x) <- g ]
+envFromGam :: {- G.TyKiGam -> -} (v -> T.Ty) -> MetaLev -> AssocL HsName v -> Env
+envFromGam {- tkg -} getTy ml g
+  = envUnions [ envSingleton n ml (tyToTyCoreBase {- fitsInForToTyCore (G.tyKiGamLookupKi tkg) -} $ getTy x) | (n,x) <- g ]
 %%]
 

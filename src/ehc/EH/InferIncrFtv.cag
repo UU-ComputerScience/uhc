@@ -115,15 +115,15 @@ SEM AGItf
 SEM Expr
   | Let         loc         .   tyKiUpdFreeTvarS    =   setSubst @decls.kiVarMp @lhs.tyKiGlobFreeTvarS
                 decls       .   tyKiGlobFreeTvarS   =   ftvSet @tyKiGam_l_ `Set.union` @lhs.tyKiGlobFreeTvarS
-                body        .   tyKiGlobFreeTvarS   =   ftvSet @lQuTyKiGam `Set.union` @tyKiUpdFreeTvarS
-  | Lam			body		.	tyKiGlobFreeTvarS   =   ftvSet (gamTop @arg.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+                body        .   tyKiGlobFreeTvarS   =   ftvSet @lQuTyKiGam_ex_subst `Set.union` setSubst @bodyTyKiVarMp2 @tyKiUpdFreeTvarS
+  | Lam			body		.	tyKiGlobFreeTvarS   =   ftvSet (@arg.kiVarMp |=> gamTop @arg.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
 --  | TypeAs      loc         .   tyKiUpdFreeTvarS    =   setSubst @lhs.kiVarMp @lhs.tyKiGlobFreeTvarS
 
 SEM CaseAlt
-  | Pat			expr		.	tyKiGlobFreeTvarS   =   ftvSet (gamTop @patExpr.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+  | Pat			expr		.	tyKiGlobFreeTvarS   =   ftvSet (@patExpr.kiVarMp |=> gamTop @patExpr.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
 
 SEM Decl
   | Instance
-  				decls		.	tyKiGlobFreeTvarS   =   ftvSet (gamTop @decls.patTyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+  				decls		.	tyKiGlobFreeTvarS   =   ftvSet ({- @decls.kiVarMp |=> -} gamTop @decls.patTyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
 %%]
 

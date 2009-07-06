@@ -42,11 +42,11 @@ SEM AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-ctyLookup :: HsName -> ValGam -> C.Ty
-ctyLookup nm g = C.tyToTyCore $ fst $ valGamLookupTy nm g
+ctyLookup :: TyKiGam -> HsName -> ValGam -> C.Ty
+ctyLookup tkg nm g = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) $ fst $ valGamLookupTy nm g
 
-ctyFromTy :: VarMp -> Ty -> C.Ty
-ctyFromTy m t = C.tyToTyCore (m |=> t)
+ctyFromTy :: TyKiGam -> VarMp -> Ty -> C.Ty
+ctyFromTy tkg m t = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) (m |=> t)
 
 ctyBareFromTy :: VarMp -> Ty -> C.Ty
 ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
@@ -56,7 +56,7 @@ ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
 %%% TyCore's Ty: redo all fitting, but now against complete(d) types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 hmtyinfer noHmTyRuler codegen)
+%%[(8 hmtyinfer codegen)
 SEM Expr
   | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
   | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
@@ -68,10 +68,15 @@ SEM Expr
 %%]]
 %%]
 
-%%[(8 hmtyinfer noHmTyRuler codegen)
+%%[(8 hmtyinfer codegen)
 SEM Decl
   | Val         loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @expr.ty @exprKnTy
                             .   fo_fin      =   @doFit (@exprFiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+                loc         .   lUniq_fo    :   UNIQUEREF gUniq
+
+SEM DataConstr
+  | Constr		loc			.   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @dataConTy @dataConTyAsVar
+                            .   fo_fin      =   @doFit (strongFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
                 loc         .   lUniq_fo    :   UNIQUEREF gUniq
 %%]
 
@@ -88,7 +93,7 @@ SEM AGItf
 
 SEM Expr
   | IConst      loc         .   cty         =   C.mkTySeq C.tyInt
-  | Var Con     loc         .   cty         =   ctyFromTy @lhs.finTyVarMp @ty_g_
+  | Var Con     loc         .   cty         =   ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @ty_g_
   | Lam         
 %%[[12
     LamImpl
@@ -102,7 +107,7 @@ SEM Expr
     AppImpl
 %%]]
                 arg         .   ctyTopDown  =   C.cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyAppArg
-                loc         .   cty         =   @ctyAppRes
+                loc         .   cty         =   @ctyTyAppRes -- @ctyAppRes
   | * - Var Con IConst App AppImpred
 %%[[12
     AppImpl
@@ -111,17 +116,17 @@ SEM Expr
 
 SEM PatExpr
   | Var         loc         .   cty         =   @lhs.ctyTopDown
-  | AppTop Rec  loc         .   ctyPat      =   C.mkTySeq $ ctyFromTy @lhs.finTyVarMp @knPatTy
-  | App         arg         .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyVarMp @knArgTy
+  | AppTop Rec  loc         .   ctyPat      =   C.mkTySeq $ ctyFromTy @lhs.finTyKiGam emptyVarMp @finKnPatTy -- @lhs.finTyVarMp @knPatTy
+  | App         arg         .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @knArgTy
 
 SEM RecPatExpr
-  | Ext         patExpr     .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyVarMp @patTy
+  | Ext         patExpr     .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @patTy
 
 SEM Decl
-  | Val         loc         .   cty         =   ctyLookup @patExpr.topNm @lhs.finValGam
+  | Val         loc         .   cty         =   ctyLookup @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
                             .   ctyBind     =   if @lhs.isStrict then @cty else C.mkTyThunk @cty
                             .   ctyTopDown  =   C.tyUnThunkTySeq @ctyBind
-  | Data        loc         .   cki         =   C.tyToTyCoreKi $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+  | Data        loc         .   cki         =   C.tyToTyCoreKi $ @lhs.finKiVarMp |=> tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
 
 SEM CaseAlt
   | Pat         patExpr     .   ctyTopDown  =   @lhs.ctyPatTopDown
@@ -182,16 +187,14 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   (ctyAppArg,ctyAppRes)
-                                            =   C.tyArrowArgRes @func.ctyBotUp
-                            .   (ctyTyAppArgL,ctyTyAppRes)
-                                            =   C.tyArrowInstQuArgsRes @appInstToLHere @ctyAppRes
+                loc         .   (ctyTyAppArgL,ctyAppArg,ctyTyAppRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_ArgBefore @appInstToLHere @func.ctyBotUp
   | * - App AppImpred
 %%[[12
     AppImpl
 %%]]
-                loc         .   (ctyTyAppArgL,ctyTyAppRes)
-                                            =   C.tyArrowInstQuArgsRes @appInstToLHere @cty
+                loc         .   (ctyTyAppArgL,_,ctyTyAppRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_InstOnly @appInstToLHere @cty
 %%]
 
 %%[(8 codegen)
@@ -243,18 +246,16 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   (ctyTyLamArgL,ctyTyLamRes)
-                                            =   C.tyArrowInstQuArgsRes @lamInstToLHere @lhs.ctyTopDown
-                            .   (ctyLamArg,ctyLamRes)
-                                            =   C.tyArrowArgRes @ctyTyLamRes
+                loc         .   (ctyTyLamArgL,ctyLamArg,ctyLamRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_ArgAfter @lamInstToLHere @lhs.ctyTopDown
                             .   ctyLamArgHere
                             				=   @tcSubstLamSpine `C.cSubstApp` C.unTySeq @ctyLamArg
   | * - Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   (ctyTyLamArgL,ctyTyLamRes)
-                                            =   C.tyArrowInstQuArgsRes @lamInstToLHere @lhs.ctyTopDown
+                loc         .   (ctyTyLamArgL,_,ctyTyLamRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_InstOnly @lamInstToLHere @lhs.ctyTopDown
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -793,14 +794,11 @@ SEM Expr
 
 %%[(8 codegen)
 SEM DataConstr
-  | Constr      lhs         .   valBindL    =   let len = length @fields.fldTyL
+  | Constr      loc         .   ctyDataCon  =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @finDataConTy
+                lhs         .   valBindL    =   let len = length @fields.fldTyL
                                                     nms = map (\i -> hsnFromString ("x" ++ show i)) [1..len]
-                                                    tps = [ C.tyToTyCore t | (_,t) <- @fields.fldTyL ]
-                                                    tvsKis = zip @dataConTyFv [ C.tyToTyCore $ @lhs.finKiVarMp |=> mkTyVar tv | tv <- @dataConTyFv ]
-                                                    dataTy = C.tyToTyCore @lhs.dataTy
-                                                    conTy = C.mkTyVarKiArrowNTy tvsKis $ C.mkTyArrowNTy (map C.mkTyThunk tps) dataTy
-                                                in  [ C.mkValThunkBind1 @conNm conTy
-                                                         (let (mk,(args,res)) = C.tcMergeLamTySeqAndArgNms conTy nms
+                                                in  [ C.mkValThunkBind1 @conNm @ctyDataCon
+                                                         (let (mk,(args,res)) = C.tcMergeLamTySeqAndArgNms @ctyDataCon nms
                                                           in  mk (if @lhs.isNewtype
                                                                   then C.mkCast (C.tyUnThunkTySeq $ head args) res
                                                                        $ C.mkExprUnThunk $ C.Expr_Var $ head nms
@@ -810,7 +808,7 @@ SEM DataConstr
                                                          )       )
                                                     ]
 %%]
-
+                
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Data field selector
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -820,7 +818,7 @@ SEM Decl
   | Data        loc         .   fldSelValBindL
                                             =   let (xn1:xn2:_) = hsnLclSupply
                                                     tgSels f i = [ (t,[(f,o)],Nothing,C.Expr_Var f) | (t,o) <- Map.toList $ dficInTagMp i ]
-                                                    dataTy = C.tyToTyCore @dataTy
+                                                    dataTy = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) @dataTy
                                                 in  if @isNewtype
                                                     then [ [ C.mkValThunkBind1 f (C.Expr_Var $ ehbnId $ ehcOptBuiltinNames @lhs.opts)
                                                            | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
@@ -850,10 +848,12 @@ SEM Decl
 
 %%[(8 codegen)
 SEM Decl
-  | Data        lhs         .   tyBindL     =   let nms = @tyVars.nmL
+  | Data        loc         .   ctyData     =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) $ @tyNm `mkConApp` map semCon @tyVars.nmL
+                lhs         .   tyBindL     =   let nms = @tyVars.nmL
                                                     (mk,_) = C.tcMergeLamTySeq1AndArgNms @cki nms
                                                 in  [ C.mkValBind1 @tyNm @cki
-                                                       (mk (C.mkTyApp (C.Expr_Var @tyNm) (map C.Expr_Var nms)))
+                                                       -- (mk (C.mkTyApp (C.Expr_Var @tyNm) (map C.Expr_Var nms)))
+                                                       (mk @ctyData)
                                                     ]
 %%]
 
@@ -924,7 +924,7 @@ SEM PatExpr
 
 %%[(8888 codegen)
 SEM PatExpr
-  | AppTop Con  loc         .   tag         =   let  (c,_)  = tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
+  | AppTop Con  loc         .   tag         =   let  (c,_)  = tyAppFunArgs @finKnPatTy -- tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
                                                      dgi    = panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show (tyConNm c))
                                                               $ dataGamLookup (tyConNm c) $ @lhs.dataGam
                                                 in   dtiCTag

@@ -201,7 +201,7 @@ SET AllTyAndFlds
 
 %%[(1 hmtyinfer || hmtyast)
 SET AllTyAGItf
-  = TyAGItf AllButTyAGItf
+  = TyAGItf
 %%[[10
     LabelAGItf
 %%]]

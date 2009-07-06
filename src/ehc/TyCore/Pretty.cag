@@ -251,7 +251,7 @@ SEM Expr
 													>-< indent 1 (ppCurlysSemisBlock (@alts.ppL ++ dflt))
   | Tup         loc         .   pp          =   ppKeyw "tag" >#< ppTag @tag
   | Node        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "tag" >#< ppTag @tag) (ppSeq' @lhs.ppHow @flds.ppL)
-  | Seq1		loc			.	pp			= 	ppParens @seq1.pp
+  | Seq1		loc			.	pp			= 	"<" >|< @seq1.pp >|< ">" -- ppParens @seq1.pp
   | Seq 		loc			.	pp			=	ppSeq @seq.ppL
   | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
@@ -365,6 +365,8 @@ SEM ExprSeq1
                                                   _      -> ppNm @nm >#<               "::" >#< @l1.pp
   | L1Val       loc         .   pp          =   "@" >#< @l1.pp
   | L1Bind      loc         .   pp          =   "@" >#< ppNm @nm >#< "::" >#< @l2.pp
+  | L2Val       loc         .   pp          =   "@@" >#< @l2.pp
+  | L2Bind      loc         .   pp          =   "@@" >#< ppNm @nm >#< "::" >#< @l3.pp
 %%]
 
 %%[(8 codegen)
