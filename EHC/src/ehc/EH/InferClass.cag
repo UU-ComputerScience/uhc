@@ -115,10 +115,11 @@ SEM Decl
                                                             where (cx,hd@(Ty_Pred (Pred_Class predTy))) = tyArrowArgsRes @prTyFix       -- encoding of pred
                                                                   (predTyCon,[dataTy]) = tyAppFunArgs predTy                            -- data ty for which we derive (only 1)
                                                                   (dataTyCon,dataTyArgs) = tyAppFunArgs dataTy                          -- extract tycon + args
-                                                                  tyNm = tyConNm dataTyCon
+                                                                  tyNm          = tyConNm dataTyCon
                                                                   (tgi,errs1a)  = tyGamLookupErr            tyNm @lhs.tyGam                 -- lookup for kind signature
                                                                   (tkgi,errs1b) = tyKiGamLookupByNameErr    tyNm @lhs.tyKiGam               -- lookup for kind signature
                                                                   (dgi,errs2)   = dataGamLookupErr          tyNm @lhs.dataGam               -- lookup for structure info
+                                                                  tyKi          = @decls.kiVarMp |=> tkgiKi tkgi
                                                                   ki2pr ki uniq tv                                                      -- make pred from kind and tvar
                                                                     = mk r tv
                                                                     where (a,r) = tyArrowArgsRes ki
@@ -126,14 +127,14 @@ SEM Decl
                                                                             = case ki of
                                                                                 Ty_Con n | n == hsnKindStar
                                                                                   -> (mkTyPr $ Pred_Class $ predTyCon `mk1App` tv,uniq,[])
-                                                                                _ -> (Ty_Any,uniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" (tkgiKi tkgi)])
+                                                                                _ -> (Ty_Any,uniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" tyKi])
                                                                   (cxDt,_,errs3)                                                        -- for each type arg a context pred is made
                                                                     = foldr (\(k,t) (cx,u,e)
                                                                               -> let (cx',u',e') = ki2pr k u t
                                                                                  in  (cx' : cx, u', e' ++ e)
                                                                             )
                                                                             ([],@lUniq,[])
-                                                                            (zip (tyArrowArgs $ tkgiKi tkgi) dataTyArgs)
+                                                                            (zip (tyArrowArgs tyKi) dataTyArgs)
                                                           _ -> (cx,hd,Ty_Any,Ty_Any,emtpyTGI,emptyDGI,[])
                                                             where (cx,hd) = tyArrowArgsRes @prTyFix
 %%]]

@@ -191,6 +191,7 @@ tyL0BindToL1Val :: Ty -> Ty
 tyL0BindToL1Val t
   = to t
   where tosq (ExprSeq1_L0Bind n _ _) = ExprSeq1_L1Val (Expr_Var n)
+        tosq (ExprSeq1_L1Bind n   _) = ExprSeq1_L2Val (Expr_Var n)
         tosq s                       = s
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
@@ -203,6 +204,7 @@ tyL0BindToL1Bind :: Ty -> Ty
 tyL0BindToL1Bind t
   = to t
   where tosq (ExprSeq1_L0Bind n _ t) = ExprSeq1_L1Bind n t
+        tosq (ExprSeq1_L1Bind n   t) = ExprSeq1_L2Bind n t
         tosq s                       = s
         to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
         to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
@@ -272,12 +274,28 @@ tyArrowArgsRes t
         extr t                = ([],t)
 %%]
 
-%%[(8 codegen) hs export(tyArrowInstQuArgsRes)
--- split type + instantation into multiple type args (>=0) + 1 res:
+%%[(8 codegen) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+data ArrowHowDecompose
+ = ArrowDecompose_InstOnly		-- only ty instantiation
+ | ArrowDecompose_ArgBefore		-- split off arg before
+ | ArrowDecompose_ArgAfter		-- split off arg after
+ 
+-- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
 -- in other words, peel of type application(s) for Sys F, driven by InstTo
-tyArrowInstQuArgsRes :: [T.InstTo] -> Ty -> ([Ty],Ty)
-tyArrowInstQuArgsRes instToL t
-  = extr instToL t
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [T.InstTo] -> Ty -> ([Ty],Ty,Ty)
+tyArrowInstQuArgsRes how instToL t
+  = case how of
+      ArrowDecompose_InstOnly
+        -> (taL,tyErr "TyCore.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        where (taL,r) = extr instToL t
+      ArrowDecompose_ArgBefore
+        -> (taL,a,r')
+        where (a,r) = tyArrowArgRes t
+              (taL,r') = extr instToL r
+      ArrowDecompose_ArgAfter
+        -> (taL,a,r')
+        where (taL,r) = extr instToL t
+              (a,r') = tyArrowArgRes r
   where extr (T.InstTo_Qu _ _ _ _ : is) (Expr_Arrow a r) = let (a',r') = extr is r in (a:a',r')
         extr _                          t                = ([],t)
 %%]

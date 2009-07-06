@@ -43,7 +43,7 @@ SEM Expr
 %%[[5
                                                         in  (valGamQuantify @gTyTvS g,cycMp)
 %%][6
-                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS g,cycMp)
+                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
@@ -62,28 +62,31 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.gathTyKiGam]
+  | Let         loc         .   valQuTyKiGam		=	gamUnions [@finTyKiGam,@decls.intlTyKiGam]
 %%]
+                decls       .   tyVarMp             :=  valGamRestrictKiVarMp @valGam_l_ |=> @decls.patTyVarMp
 
 %%[(8 hmtyinfer)
 SEM Expr
-  | Let         loc         .   (gathTySigGam_l_,exVarMp1)
+  | Let         loc         .   (gathTySigGam_l_,exTyVarMp1)
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
-                decls       .   patTyVarMp          :=  @exVarMp1 |=> @lhs.tyVarMp
-                loc         .   (quValGam_qu_,quVarMp, cycTyVarMp_l)
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS @valGam_l_
-                            .   bodyVarMp1          =   @quVarMp |=> @tyVarMpDeclsL0
-                            .   (quValGam_ex_,exVarMp2)
-                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quVarMp |=> @quValGam_qu_), emptyVarMp)
-                            .   bodyVarMp2          =   @exVarMp2 |=> @bodyVarMp1
+                decls       .   patTyVarMp          :=  @exTyVarMp1 |=> @lhs.tyVarMp
+                loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS @valGam_l_
+                            .   bodyVarMp1          =   @quTyVarMp |=> @tyVarMpDeclsL0
+                            .   (quValGam_ex_,exTyVarMp2)
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
+                            .   bodyVarMp2          =   @exTyVarMp2 |=> @bodyVarMp1
                             .   quValGam_ex_subst   :=  @bodyVarMp2 |=> @quValGam_ex_
                 body        .   tyVarMp             =   @bodyVarMp2
 %%]
+                                                    :=  valGamInst1ExistsWithVarMp @bodyVarMp1 @lUniq2 @quValGam_qu_
+                                                    :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   (quValGam_qu_,quVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL0 @gTyTvS @quantPrOccL @valGam_l_
+  | Let         loc         .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS @quantPrOccL @valGam_l_
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
@@ -91,19 +94,38 @@ SEM Expr
 %%% Restriction of @decls.tyVarMp to meta level 0
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(5 hmtyinfer)
+%%[(4 hmtyinfer)
 SEM Expr
   | Let         loc         .   tyVarMpDeclsL0      =   @decls.tyVarMp
 %%]
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc         .   tyVarMpDeclsL0      :=  varmpSelectMetaLev [0] @decls.tyVarMp
+  | Let         loc         .   tyVarMpDeclsL0      :=  {- varmpIncMetaLev @quTvKiVarMp |=> -} varmpSelectMetaLev [0] @decls.tyVarMp
 %%]
 
 %%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] @decls.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Combination meta level 0 restricted @decls.tyVarMp with meta level 1
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL01     =   @tyVarMpDeclsL0
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsL01     :=  varmpIncMetaLev @quTvKiVarMp |=> @tyVarMpDeclsL0
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   tyVarMpDeclsL01     =   @tyVarMpDeclsL0
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -224,6 +246,7 @@ ATTR AllPatExpr [ | patTyVarMp: VarMp | ]
 
 %%[(5 hmtyinfer)
 ATTR AllCase [ | tyVarMp: VarMp   patTyVarMp: VarMp | ]
+ATTR AllDataConstr AllData [ | patTyVarMp: VarMp | ]
 %%]
 
 %%[(97 hmtyinfer)
@@ -329,8 +352,11 @@ SEM Expr
                             .   gSubsTyKiGam        =   @tyKiGam_g_
                             .   gKiTvS              =   @tyKiUpdFreeTvarS
 %%]]
-                            .   lQuTyGam            =   {- @decls.tyVarMp |=> -} @tyGam_l_
-                            .   lQuTyKiGam          =   tyKiGamInst1Exists @lUniq3 $ tyKiGamQuantify @gKiTvS $ @lSubsTyKiGam
+                            .   lQuTyGam            =   @tyGam_l_
+                            .   lQuTyKiGam_qu       =   tyKiGamQuantify @gKiTvS @lSubsTyKiGam
+                            .   lQuTyKiGam_ex       =   tyKiGamInst1Exists @lUniq3 @lQuTyKiGam_qu
+                            .   lQuTyKiGam          =   @lQuTyKiGam_ex
+                            .   lQuTyKiGam_ex_subst =   @lQuTyKiGam_ex
                 body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
                 loc         .   lUniq3              :   UNIQUEREF gUniq
@@ -350,6 +376,20 @@ SEM Expr
   | TypeAs      tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
 %%]
+
+%%[(8 hmtyinfer)
+SEM Expr
+  | Let         loc         .   (lQuTyKiGam_qu,quTyKiVarMp, cycTyKiVarMp_l)
+                                                    :=  tyKiGamQuantifyWithVarMp @decls.kiVarMp @gKiTvS @tyKiGam_l_
+                            .   bodyTyKiVarMp1      =   @quTyKiVarMp |=> @decls.kiVarMp
+                            .   (lQuTyKiGam_ex,exTyKiVarMp2)
+                                                    :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
+                            .   bodyTyKiVarMp2      =   @exTyKiVarMp2 |=> @bodyTyKiVarMp1
+                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 |=> @lQuTyKiGam_ex
+                body        .   kiVarMp             =   @bodyTyKiVarMp2
+%%]
+                                                    :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
+                                                    :=  (tyKiGamInst1Exists {- WithVarMp @bodyTyKiVarMp1 -} @lUniq3 (@bodyTyKiVarMp1 |=> @lQuTyKiGam_qu), emptyVarMp)
 
 %%[(11 hmtyinfer)
 ATTR AllDecl [ | tyTyVarMp: VarMp | ]
@@ -552,8 +592,6 @@ SEM Decl
   | TySig       loc         .   gamSigTy            =   @tyExpr.ty
                             .   gathTySigGam        =   @nm `gamSingleton` ValGamInfo @gamSigTy
 %%]
-SEM Expr
-  | Let         decls       .   gathTySigGam        =   emptyGam
 
 %%[(1 hmtyinfer).tySigGam
 ATTR AllDecl AllPatExpr [ tySigGam: ValGam | | ]
@@ -601,16 +639,16 @@ SEM Decl
 %%[(6 hmtyinfer)
 SEM Decl
   | TySig       loc         .   gTyTvS              =   ftvSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
-                            .   ty_sig_             :=  let fv = Set.fromList @tyExpr.tyVarWildL `Set.union` @gTyTvS
-                                                        in  tyQuantifyOuter (`Set.member` fv) @tyExpr.ty
+                            .   ty_sig_             :=  let fv  = Set.fromList @tyExpr.tyVarWildL `Set.union` @gTyTvS
+                                                            t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                                                            t2k = tvarKi emptyGam {- @tyExpr.intlTyKiGam -} @lhs.finKiVarMp emptyVarMp
+                                                        in  tyQuantifyOuter t2k (`Set.member` fv) t
 %%]
 
 %%[(99 hmtyinfer)
 SEM Decl
   | TySig       loc         .   gTyTvS              :=  @tyTyUpdFreeTvarS
 %%]
-  | TySig       loc         .   gTyTvS              :=  (\s -> tr ("TySig.gTyTvS " ++ show @lUniq) (pp (show s)) s) $ @tyTyUpdFreeTvarS
-                loc         .   lUniq               :   UNIQUEREF gUniq
 
 %%[(8 hmtyinfer)
 SEM Decl
@@ -618,7 +656,9 @@ SEM Decl
 %%[[94
     FFE
 %%]]
-                loc         .   ty_sig_             =   tyQuantifyOuter (const False) @tyExpr.ty
+                loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
+                                                            t2k = tvarKi emptyGam {- @tyExpr.intlTyKiGam -} @lhs.finKiVarMp emptyVarMp
+                                                        in  tyQuantifyOuter t2k (const False) t
 %%[[8
                             .   ty_sig_expanded     =   @ty_sig_
 %%][11
@@ -671,7 +711,7 @@ SEM Decl
 
 %%[(6 hmtyinfer)
 SEM Decl
-  | KiSig       loc         .   sigKi               =   kiQuantify (const False) @kiExpr.ki
+  | KiSig       loc         .   sigKi               =   tyKiQuantify (const False) @kiExpr.ki
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

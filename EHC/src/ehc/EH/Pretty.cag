@@ -573,7 +573,7 @@ SEM Expr
 
 %%[(6 hmtyinfer)
 SEM Expr
-  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
 %%]
 
 %%[(9 hmtyinfer)

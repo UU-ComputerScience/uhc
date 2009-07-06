@@ -432,7 +432,7 @@ SEM PatExpr
 
 %%[(8 codegen)
 SEM PatExpr
-  | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
+  | AppTop Con  loc         .   tyConNm     =   tyConNm $ fst $ tyAppFunArgs @finKnPatTy -- $ tyAppFunArgsWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @knPatTy
                             .   dgi         =   panicJust ("PatExpr.{AppTop,Con}.dgi: " ++ show @tyConNm)
                                                     $ dataGamLookup @tyConNm $ @lhs.dataGam
                             .   dti         =   panicJust ("PatExpr.{AppTop,Con}.dti: " ++ show @tyConNm ++ "." ++ show @appFunNm)

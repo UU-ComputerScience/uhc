@@ -46,6 +46,25 @@ SEM Decl
                                                             }
 %%]
 
+%%[(8 hmtyinfer)
+SEM DataConstr
+  | Constr      loc         .   fe                  :=  emptyFE
+%%[[9
+                                                            { feEHCOpts = @lhs.opts
+                                                            , fePredScope = @lhs.predScope
+%%[[11
+                                                            , feTyGam = @lhs.tyGam
+%%]]
+%%[[17
+                                                            , fePolGam = @lhs.polGam
+%%]]
+%%[[99
+                                                            , feRange = @range
+%%]]
+                                                            }
+%%]]
+%%]
+
 %%[(9 hmtyinfer)
 SEM Decl
   | Instance    loc         .   fe                  :=  emptyFE

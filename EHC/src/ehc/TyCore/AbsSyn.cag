@@ -82,6 +82,9 @@ DATA ExprSeq1
   | L1Val       l1              : Expr				-- same, but level higher
   | L1Bind      nm            	: HsName
                 l2              : Expr
+  | L2Val       l2              : Expr				-- same, but another level higher
+  | L2Bind      nm            	: HsName
+                l3              : Expr
 
 TYPE ExprSeq1L	= [ExprSeq1]
 %%]

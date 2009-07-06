@@ -202,6 +202,11 @@ SEM PatExpr
   | VarAs       patExpr     .   patTyVarMp          =   foVarMp @fo_ |=> @lhs.patTyVarMp
 %%]
 
+%%[(6 hmtyinfer)
+SEM PatExpr
+  | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] |=> foVarMp @fo_ |=> @lhs.patTyVarMp
+%%]
+
 %%[(9 hmtyinfer).Var
 SEM PatExpr
   | Var         loc         .   ty_kn_              :=  tyEnsureNonAnyImpl @lUniq @lhs.knTy

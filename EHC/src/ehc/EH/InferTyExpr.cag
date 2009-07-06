@@ -241,28 +241,28 @@ Required by abstraction, in particular kind of quantified ty var.
 Not used/intended to propagate any further.
 
 %%[(6 hmtyinfer)
-ATTR AllTyExpr AllData AllDecl AllTyVar [ | | gathTyKiGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
+ATTR AllTyExpr AllData AllDecl AllTyVar [ | | intlTyKiGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
 %%]
 
 %%[(6 hmtyinfer)
 SEM TyExpr
-  | Var VarWild lhs         .   gathTyKiGam         =   @tyKiGamNew
+  | Var VarWild lhs         .   intlTyKiGam         =   @tyKiGamNew
   | Quant
 %%[[11
     Lam
 %%]]
-                lhs         .   gathTyKiGam         =   gamUnions [@tyKiGamNew,@tyExpr.gathTyKiGam]
+                lhs         .   intlTyKiGam         =   gamUnions [@tyKiGamNew,@tyExpr.intlTyKiGam]
 
 SEM TyVar
-  | Var         lhs         .   gathTyKiGam         =   @tyKiGamNew
+  | Var         lhs         .   intlTyKiGam         =   @tyKiGamNew
 %%]
 
 %%[(9 hmtyinfer)
 SEM PrExpr
-  | Forall      lhs         .   gathTyKiGam         =   gamUnions [@tyKiGamNew,@prExpr.gathTyKiGam]
+  | Forall      lhs         .   intlTyKiGam         =   gamUnions [@tyKiGamNew,@prExpr.intlTyKiGam]
 
 SEM RowTyExpr
-  | Var         lhs         .   gathTyKiGam         =   @tyKiGamNew
+  | Var         lhs         .   intlTyKiGam         =   @tyKiGamNew
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -384,7 +384,7 @@ SEM TyExpr
 SEM TyExpr
   | Quant       loc         .   ty                  =   Ty_Quant @qu @tv
 %%[[6
-                                                                 kiStar         -- TBD: user specified kind
+                                                                 (tkgiKi @tkgi_)         -- TBD: user specified kind
 %%]]
                                                                  @tyExpr.ty
 %%]

@@ -33,9 +33,9 @@ SEM DataConstr
   | Constr      lhs         .   dataTy              <   lhs.kiVarMp
 %%]
 
-%%[(7 hmtyinfer)
 SEM CaseAlts
   | Cons        hd          .   gathDataGam         <   hd.kiVarMp
+%%[(7 hmtyinfer)
 
 SEM DataFieldPatExpr
   | Ext         dataFieldPatExpr
@@ -54,6 +54,11 @@ SEM TyExprs
 %%]
 SEM AGItf
   | AGItf       expr        .   lexLev          	<   expr.predScope
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Data		constrs		.	intlTyKiGam			<	constrs.clGam
+%%]
 
 %%[(17 hmtyinfer)
 SEM DataConstr

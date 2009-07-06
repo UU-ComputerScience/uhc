@@ -313,7 +313,7 @@ gamKeys :: Ord k => Gam k v -> [k]
 gamKeys = assocLKeys . gamToAssocL
 %%]
 
-%%[9 export(gamElts)
+%%[6 export(gamElts)
 gamElts :: Ord k => Gam k v -> [v]
 gamElts = assocLElts . gamToAssocL
 %%]
@@ -396,6 +396,10 @@ data ValGamInfo
 type ValGam = Gam HsName ValGamInfo
 %%]
 
+%%[8
+vgiGetSet = (vgiTy,(\x i -> i {vgiTy = x}))
+%%]
+
 %%[1.valGamLookup export(valGamLookup)
 valGamLookup :: HsName -> ValGam -> Maybe ValGamInfo
 valGamLookup = gamLookup
@@ -447,17 +451,29 @@ valGamQuantify tyKiGam tvKiVarMp gamVarMp globTvS
   = valGamMapTy (\t -> valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t)
 %%]
 
-%%[(8 hmtyinfer || hmtyast).valGamDoWithVarMp
--- Do something with each ty in a ValGam.
+%%[(8 hmtyinfer || hmtyast)
+-- Do something with each Ty in a Gam.
 -- The global VarMp is kept separately so a new tyvar binding can be computed, which is threaded separatedly and also returned.
--- This allows the retainment of the original tyvar in the ValGam, which is required when used twice with different VarMp's.
-valGamDoWithVarMp :: (HsName -> (Ty,VarMp) -> VarMp -> thr -> (Ty,VarMp,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp,thr)
-valGamDoWithVarMp f gamVarMp thr gam
+-- This allows the retainment of the original tyvar in the Gam, which is required when used twice with different VarMp's.
+gamDoTyWithVarMp
+  :: Ord key =>
+     (info -> Ty,Ty -> info -> info)									-- get/set from/into info in Gam
+     																	-- do whatever must be done given
+     -> (key															-- 	 name in gam
+         -> (Ty,VarMp)													--   Ty + cycles
+         -> VarMp														--   new subst
+         -> thr															--   thread
+         -> (Ty,VarMp,thr))												--   result: new Ty, new subst, thread
+     -> VarMp															-- subst for Gam entries
+     -> thr																-- initial value for thread
+     -> Gam key info													-- the Gam (env)
+     -> (Gam key info,VarMp,thr)										-- result: new gam, new subst, thread
+gamDoTyWithVarMp (get,set) f gamVarMp thr gam
   = (g,c,thr')
   where (g,(thr',c))
            = gamMapThr
-               (\(n,vgi) (thr,c)
-                   -> let t = vgiTy vgi
+               (\(n,gi) (thr,c)
+                   -> let t = get gi
                           (t',c',thr') = f n (gamVarMp |==> t) c thr
                           (tg,cg)      = case (t,t') of
                                            (Ty_Var v1 _  ,Ty_Var v2 _) | v1 == v2
@@ -466,15 +482,23 @@ valGamDoWithVarMp f gamVarMp thr gam
                                              -> (t ,v `varmpTyUnit` t')
                                            _ -> dflt
                                        where dflt = (t',emptyVarMp)
-                      in  ((n,vgi {vgiTy = tg}),(thr',cg `varmpPlus` c'))
+                      in  ((n,set tg gi),(thr',cg `varmpPlus` c'))
                )
                (thr,emptyVarMp) gam
+%%]
+
+%%[(8 hmtyinfer || hmtyast).valGamDoWithVarMp
+-- Do something with each ty in a ValGam.
+valGamDoWithVarMp :: (HsName -> (Ty,VarMp) -> VarMp -> thr -> (Ty,VarMp,thr)) -> VarMp -> thr -> ValGam -> (ValGam,VarMp,thr)
+valGamDoWithVarMp = gamDoTyWithVarMp vgiGetSet
 %%]
 
 %%[(8 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -6.valGamQuantify export(valGamQuantifyWithVarMp)
 valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> ValGam -> (ValGam,VarMp,VarMp)
 valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
-  = valGamDoWithVarMp (\_ (t,tyCycMp) m cycMp -> (valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t,m,tyCycMp |=> cycMp)) gamVarMp emptyVarMp gam
+  = valGamDoWithVarMp
+      (\_ (t,tyCycMp) m cycMp -> (valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) t,m,tyCycMp |=> cycMp))
+      gamVarMp emptyVarMp gam
 %%]
 
 %%[6.gamUnzip
@@ -526,16 +550,22 @@ valGamCloseExists :: ValGam -> ValGam
 valGamCloseExists = valGamMapTy (\t -> tyQuantify (not . tvIsEx (tyFtvMp t)) t)
 %%]
 
-%%[(8 hmtyinfer).valGamInst1ExistsWithVarMp export(valGamInst1ExistsWithVarMp)
-valGamInst1ExistsWithVarMp :: VarMp -> UID -> ValGam -> (ValGam,VarMp)
-valGamInst1ExistsWithVarMp gamVarMp u g
+%%[(8 hmtyinfer)
+gamInst1ExistsWithVarMp :: Ord key => (info -> Ty,Ty -> info -> info) -> VarMp -> UID -> Gam key info -> (Gam key info,VarMp)
+gamInst1ExistsWithVarMp getset gamVarMp u g
   = (g',m)
   where (g',m,_)
-          = valGamDoWithVarMp
+          = gamDoTyWithVarMp
+              getset
               (\_ (t,_) m u -> let (u',ue) = mkNewLevUID u
                            in  (tyInst1Exists ue t,m,u')
               )
               gamVarMp u g
+%%]
+
+%%[(8 hmtyinfer).valGamInst1ExistsWithVarMp export(valGamInst1ExistsWithVarMp)
+valGamInst1ExistsWithVarMp :: VarMp -> UID -> ValGam -> (ValGam,VarMp)
+valGamInst1ExistsWithVarMp = gamInst1ExistsWithVarMp vgiGetSet
 %%]
 
 %%[(7 hmtyinfer || hmtyast) export(valGamTyOfDataCon)
@@ -554,6 +584,12 @@ valGamTyOfDataFld fldNm g
   where (t,e) = valGamLookupTy fldNm g
         ((rt:_),_) = tyArrowArgsRes t
 %%]
+
+%%[(6 hmtyinfer || hmtyast)
+%%]
+-- restrict the kinds of tvars bound to value identifiers to kind *
+valGamRestrictKiVarMp :: ValGam -> VarMp
+valGamRestrictKiVarMp g = varmpIncMetaLev $ assocTyLToVarMp [ (v,kiStar) | vgi <- gamElts g, v <- maybeToList $ tyMbVar $ vgiTy vgi ]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% "Type of type" and "Kind of type" gam
@@ -656,6 +692,15 @@ emptyTKGI
 type TyKiGam = Gam TyKiKey TyKiGamInfo
 %%]
 
+%%[8
+tkgiGetSet = (tkgiKi,(\x i -> i {tkgiKi = x}))
+%%]
+
+%%[6 export(tyKiGamLookupByTyVar)
+tyKiGamLookupByTyVar :: TyVarId -> TyKiGam -> Maybe TyKiGamInfo
+tyKiGamLookupByTyVar v g = gamLookup (TyKiKey_TyVar v) g
+%%]
+
 %%[6 export(tyKiGamLookupByName)
 tyKiGamLookupByName :: HsName -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookupByName n g
@@ -674,19 +719,22 @@ tyKiGamLookupByName n g
 tyKiGamLookup :: Ty -> TyKiGam -> Maybe TyKiGamInfo
 tyKiGamLookup t g
   = case tyMbVar t of
-      Just v  -> gamLookup (TyKiKey_TyVar v) g
+      Just v  -> tyKiGamLookupByTyVar v g
       Nothing ->
                  case tyMbCon t of
                    Just n -> tyKiGamLookupByName n g
                    _      -> Nothing
 %%]
 
-%%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupErr)
+%%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupErr,tyKiGamLookupKi)
 tyKiGamLookupErr :: Ty -> TyKiGam -> (TyKiGamInfo,ErrL)
 tyKiGamLookupErr t g
   = case tyKiGamLookup t g of
       Nothing -> (emptyTKGI,[rngLift emptyRange mkErr_NamesNotIntrod "kind" [mkHNm $ show t]])
       Just i  -> (i,[])
+
+tyKiGamLookupKi :: TyKiGam -> Ty -> Ty
+tyKiGamLookupKi g t = tkgiKi $ fst $ tyKiGamLookupErr t g
 %%]
 
 %%[(6 hmtyinfer || hmtyast) export(tyKiGamLookupByNameErr)
@@ -714,15 +762,34 @@ tyKiGamSingleton t k
                    _      -> panic "Gam.tyKiGamSingleton"
 %%]
 
-%%[(6 hmtyinfer || hmtyast) export(tyKiGamQuantify)
+%%[(6 hmtyinfer || hmtyast).tyKiGamQuantify export(tyKiGamQuantify)
 tyKiGamQuantify :: TyVarIdS -> TyKiGam -> TyKiGam
 tyKiGamQuantify globTvS
-  = gamMap (\(n,k) -> (n,k {tkgiKi = kiQuantify (`Set.member` globTvS) (tkgiKi k)}))
+  = gamMap (\(n,k) -> (n,k {tkgiKi = tyKiQuantify (`Set.member` globTvS) (tkgiKi k)}))
 %%]
 
 %%[(6 hmtyinfer) export(tyKiGamInst1Exists)
 tyKiGamInst1Exists :: UID -> TyKiGam -> TyKiGam
 tyKiGamInst1Exists = gamInst1Exists (tkgiKi,(\i k -> i {tkgiKi=k}))
+%%]
+
+%%[(8 hmtyinfer || hmtyast)
+-- Do something with each kind in a TyKiGam.
+tyKiGamDoWithVarMp :: (TyKiKey -> (Ty,VarMp) -> VarMp -> thr -> (Ty,VarMp,thr)) -> VarMp -> thr -> TyKiGam -> (TyKiGam,VarMp,thr)
+tyKiGamDoWithVarMp = gamDoTyWithVarMp tkgiGetSet
+%%]
+
+%%[(8 hmtyinfer || hmtyast).tyKiGamQuantifyWithVarMp -6.tyKiGamQuantify export(tyKiGamQuantifyWithVarMp)
+tyKiGamQuantifyWithVarMp :: {- TyKiGam -> VarMp -> -} VarMp -> TyVarIdS -> TyKiGam -> (TyKiGam,VarMp,VarMp)
+tyKiGamQuantifyWithVarMp {- tyKiGam tvKiVarMp -} gamVarMp globTvS gam
+  = tyKiGamDoWithVarMp
+      (\_ (t,tyCycMp) m cycMp -> (tyKiQuantify {- (tvarKi tyKiGam tvKiVarMp gamVarMp) -} (`Set.member` globTvS) t,m,tyCycMp |=> cycMp))
+      gamVarMp emptyVarMp gam
+%%]
+
+%%[(8 hmtyinfer).valGamInst1ExistsWithVarMp export(tyKiGamInst1ExistsWithVarMp)
+tyKiGamInst1ExistsWithVarMp :: VarMp -> UID -> TyKiGam -> (TyKiGam,VarMp)
+tyKiGamInst1ExistsWithVarMp = gamInst1ExistsWithVarMp tkgiGetSet
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -740,8 +807,7 @@ tvarKi :: TyKiGam -> VarMp -> VarMp -> TyVarId -> Ty
 tvarKi tyKiGam tvKiVarMp _ tv
   = case tyKiGamLookup tv' tyKiGam of
       Just tkgi -> tvKiVarMp |=> tkgiKi tkgi
-      _         -> maybe k (const k) $ tyMbVar k
-                where k = tvKiVarMp |=> tv'
+      _         -> tvKiVarMp |=> tv'
   where tv' = {- tyVarMp |=> -} mkTyVar tv
 %%]
 
@@ -996,6 +1062,19 @@ data KiGamInfo
       deriving Show
 
 type KiGam = Gam HsName KiGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% "XX of sort" gam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(SoGam, SoGamInfo(..))
+data SoGamInfo
+  = SoGamInfo
+      { sgiSo :: Ty }
+      deriving Show
+
+type SoGam = Gam HsName SoGamInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1396,6 +1475,18 @@ initKiGam
 %%][7
       , (hsnKindRow ,   KiGamInfo)
 %%]]
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of soGam, only used by TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(initSoGam)
+initSoGam :: SoGam
+initSoGam
+  = assocLToGam
+      [ (hsnKindStar,   SoGamInfo kiStar)
       ]
 %%]
 

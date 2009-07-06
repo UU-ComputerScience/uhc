@@ -288,8 +288,8 @@ SEM Expr
                             .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @resTy @lhs.knTy
                             .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
                             .   knTy                :=  @knTopTy
-                            .   furtherTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
-                expr        .   tyVarMp             =   @furtherTyVarMp
+                            .   forExprTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
+                expr        .   tyVarMp             =   @forExprTyVarMp
                 loc         .   ty                  =   [@imTy] `mkArrow` @expr.ty
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -330,8 +330,8 @@ SEM Expr
   | Lam         loc         .   lamKnTyVarMp        =   @lhs.tyVarMp
                             .   doFit               =   \o m -> fitsIn o @fe @lUniq2 m @funTy @lhs.knTy
                             .   fo_fitF_            :=  @doFit @knFunFIOpts @lamKnTyVarMp
-                            .   furtherTyVarMp      =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
-                arg         .   patTyVarMp          :=  @furtherTyVarMp
+                            .   forArgTyVarMp       =   foVarMp @fo_fitF_ |=> @lhs.tyVarMp
+                arg         .   patTyVarMp          :=  @forArgTyVarMp
                 loc         .   ty                  :=  [@arg.ty] `mkArrow` @body.ty
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -349,7 +349,7 @@ SEM Expr
                                                              a = mkTyVar av
                                                              r = mkTyVar rv
                                                         in   (i,a,r,[i,a] `mkArrow` r)
-                loc         .   (knImpls,_,_)       =   tyArrowImplsArgResWithLkup (varmpTyLookupCyc2 @furtherTyVarMp) @funTy
+                loc         .   (knImpls,_,_)       =   tyArrowImplsArgResWithLkup (varmpTyLookupCyc2 @forArgTyVarMp) @funTy
                             .   ty                  :=  (@knImpls ++ [@arg.ty]) `mkArrow` @body.ty
 %%]
 
@@ -364,9 +364,9 @@ SEM Expr
                             .   (knArgImpl,knResImpls)
                                                     =   hdAndTl @knImpls
                             .   foPr                =   fitPredToEvid @lUniq4 @knImplsVarMp @knArgImpl @lhs.clGam
-                            .   furtherTyVarMp      =   foVarMp @foPr |=> @knImplsVarMp
+                            .   forArgTyVarMp       =   foVarMp @foPr |=> @knImplsVarMp
                 arg         .   knTy                =   foTy @foPr
-                            .   patTyVarMp          =   @furtherTyVarMp
+                            .   patTyVarMp          =   @forArgTyVarMp
                 body        .   knTy                =   @knResImpls `mkArrow` @ty_
                             .   tyVarMp             =   @arg.patTyVarMp
                 loc         .   ty                  =   [@knArgImpl] `mkArrow` @body.ty
@@ -434,7 +434,7 @@ SEM Expr
                             .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
 %%]]
                             .   tyVarWildS          =   Set.fromList @tyExpr.tyVarWildL
-                            .   ty_q_               :=  tyQuantifyOuter (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
+                            .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
                             .   knTyDown            =   mkTyVar @lUniq3

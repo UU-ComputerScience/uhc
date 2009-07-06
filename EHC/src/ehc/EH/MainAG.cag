@@ -234,7 +234,7 @@ SEM Expr
 ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
 
 SEM Expr
-  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam 
+  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam_ex_subst -- @lQuTyKiGam 
   | * - Let     lhs         .   gathTyKiGam         =   emptyGam
 %%]
 

@@ -242,6 +242,12 @@ SEM ExprSeq1
                                                        Just (CSITy (Expr_Var n)) -> (ExprSeq1_L1Bind n @l2.cRepl,True)
                                                        _                         -> (@cRepl,False)
                                                 else (@cRepl,False)
+  | L2Bind      loc         .   csKey       =   CSKey_Nm @nm
+                (loc.replv,loc.isRepl)      =   if csoptsDoSubstBind @lhs.opts
+                                                then case Map.lookup @csKey @lhs.cSubst of
+                                                       Just (CSITy (Expr_Var n)) -> (ExprSeq1_L2Bind n @l3.cRepl,True)
+                                                       _                         -> (@cRepl,False)
+                                                else (@cRepl,False)
 %%]
 
 %%[(8 codegen)
@@ -250,7 +256,8 @@ SEM Expr
                 inst        .   repl'       =   @replv
 
 SEM ExprSeq1
-  | L1Bind      inst        .   repl'       :   ExprSeq1
+  | L1Bind L2Bind
+  				inst        .   repl'       :   ExprSeq1
                 inst        .   repl'       =   @replv
 
 %%]
@@ -260,7 +267,8 @@ SEM Expr
   | Var         repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
 
 SEM ExprSeq1
-  | L1Bind      repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
+  | L1Bind L2Bind
+  		        repl'       .   cSubst      =   Map.delete @csKey @lhs.cSubst
 %%]
 
 %%[(9 codegen)
@@ -315,7 +323,8 @@ SEM Expr
   | Var         lhs         .   cRepl       =   if {- csoptsDoDeepSubst @lhs.opts && -} @isRepl then @repl'.cRepl else @replv
 
 SEM ExprSeq1
-  | L1Bind      lhs         .   cRepl       =   if {- csoptsDoDeepSubst @lhs.opts && -} @isRepl then @repl'.cRepl else @replv
+  | L1Bind L2Bind
+  				lhs         .   cRepl       =   if {- csoptsDoDeepSubst @lhs.opts && -} @isRepl then @repl'.cRepl else @replv
 %%]
 
 %%[(9 codegen)
