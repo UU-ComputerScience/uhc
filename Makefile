@@ -86,6 +86,7 @@ include $(SRC_PREFIX)ehc/files2.mk
 -include www/files.mk
 include ehclib/files.mk
 include test/files.mk
+include test/benchmark/files.mk
 
 -include $(MK_PREFIX)dist.mk
 
@@ -140,6 +141,7 @@ explanation:
 	echo  "                           restrict to versions <v> by specifying 'TEST_VARIANTS=<v>' (default '${TEST_VARIANTS}')," ; \
 	echo  "                           requires corresponding $(EHC_EXEC_NAME)/$(GRINI_EXEC_NAME)/$(EHCLIB_EHCLIB) already built" ; \
 	echo  "make test-expect         : make expected output (for later comparison with test-regress), see test-regress for remarks" ; \
+	echo  "make benchmark           : run 16 nofib programs with 3 compilers on 3 inputs each"; \
 	echo  "" ; \
     echo  "Cleaning up" ; \
 	echo  "===========" ; \
