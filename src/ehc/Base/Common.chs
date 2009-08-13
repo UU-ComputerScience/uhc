@@ -70,7 +70,7 @@
 %%[7_2 export(threadMap,Belowness(..), groupAllBy, mergeListMap)
 %%]
 
-%%[7 export(uidHNm)
+%%[7 export(uidHNm, uidQualHNm)
 %%]
 
 %%[8888 -(1.exp.hdAndTl 1.Misc.hdAndTl) import (EH.Util.Utils hiding (tr,trp)) export(module EH.Util.Utils)
@@ -274,6 +274,17 @@ ppUID' uid = ppCurlysCommas $ uidInts uid
 uidHNm :: UID -> HsName
 uidHNm = hsnFromString . show
 %%]
+
+%%[7
+uidQualHNm :: HsName -> UID -> HsName
+uidQualHNm modnm uid = 
+%%[[20                  
+                        hsnPrefixQual modnm $
+%%]]
+                        uidHNm uid
+%%]
+
+
 
 %%[7
 mkInfNewLevUIDL :: UID -> [UID]
@@ -1065,7 +1076,7 @@ instance HSNM Token where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name supply, with/without uniqueness required
+%%% Name supply, without uniqueness required
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1 hs export(hsnLclSupply,hsnLclSupplyWith)
@@ -1074,11 +1085,6 @@ hsnLclSupplyWith n = map (\i -> hsnSuffix n $ "_" ++ show i) [1..]
 
 hsnLclSupply :: [HsName]
 hsnLclSupply = hsnLclSupplyWith (hsnFromString "")
-%%]
-
-%%[8 hs export(hsnUniqSupply)
-hsnUniqSupply :: UID -> [HsName]
-hsnUniqSupply = map uidHNm . iterate uidNext
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
