@@ -43,7 +43,7 @@ Hence the Maybe return signalling a replacement requiring recursive canonicaliza
 
 %%[(94 hmtyinfer) hs import(EH.Util.Utils)
 %%]
-%%[(94 hmtyinfer) hs import({%{EH}Gam})
+%%[(94 hmtyinfer) hs import({%{EH}Gam.Full})
 %%]
 %%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
 %%]

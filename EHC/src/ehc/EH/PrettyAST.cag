@@ -656,7 +656,9 @@ SEM AGItf
                                         ]
 
 SEM Decl
-  | Val         loc     .  info_8   :=  [ mkInfo1 "moutErrL moutExpr" (ppErrL $ C.moutErrL @moutExpr)
+  | Val         loc     .  info_8   :=  [ mkInfo1 "ctyExprKnTy" (C.ppTy @ctyExprKnTy)
+                                        , mkInfo1 "ctyExprTy" (C.ppTy @ctyExprTy)
+                                        , mkInfo1 "moutErrL moutExpr" (ppErrL $ C.moutErrL @moutExpr)
                                         , mkInfo1 "tcSubstLamSpine" (ppAssocLV . Map.toList $ @tcSubstLamSpine)
                                         ]
 

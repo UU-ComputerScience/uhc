@@ -74,6 +74,30 @@ SEM AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq's for Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Expr
+  | IConst CConst SConst Var Con
+    App AppImpred AppTop TypeAs
+    Lam
+%%[[12
+    AppImpl
+    LamImpl
+%%]]
+%%[[97
+    IIConst
+%%]]
+                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+%%]
+
+%%[(97 codegen)
+SEM PatExpr
+  | Expr        loc         .   lUniq_cexpr :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -90,7 +114,7 @@ SEM Expr
   | Let         loc         .   frontCBindL =   [(CBindings_FFI,@decls.ffiCBindL)]
 %%[[94
                             .   backCBindL  =   [(CBindings_FFE,@decls.ffeCBindL)]
-%%]
+%%]]
                             .   howToBind   =   if @isStrict then CBindings_Strict else CBindings_Rec
                             .   letCBindL   =   [(@howToBind,@decls.cbindL)]
                             .   letCBindOtherL
@@ -149,7 +173,6 @@ SEM Expr
 %%][9
                 loc         .   (cexpr,cexprCSubst)
                                             =   foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.cSubst @cexprBase
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @lhs.cSubst @cexprCSubst
 %%]]
 %%]
@@ -168,7 +191,6 @@ SEM Expr
                                                     (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
                                                     (f ,s2)   = coeEvalOnAsSubst u2 ww @func.cexpr
                                                 in  (mkCExprApp1 f @arg.cexpr, s1 `cSubstApp` s2)
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
   | Lam
 %%[[12
@@ -179,21 +201,18 @@ SEM Expr
                                                     (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @body.cSubst @lamBodyCoeL @lamArgCoeL
                                                     (b ,s2)   = coeEvalOnAsSubst u2 ww @body.appFunCExpr
                                                 in  (b, s1 `cSubstApp` s2)
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprlamCSubst
   | AppTop      loc         .   (cexpr,cexprapptopCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @expr.cSubst [] @lamArgCoeL
                                                     (e ,s2)   = coeEvalOnAsSubst u2 ww @expr.cexpr
                                                 in  (e, s1 `cSubstApp` s2)
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
   | TypeAs      loc         .   (cexpr,cexprtypeasCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (e1,s1)   = foAppLRCoeAsSubst @lhs.opts u1 @fo_fitDown @lhs.finTyVarMp @expr.cSubst @expr.cexpr
                                                     (e2,s2)   = foAppLRCoeAsSubst @lhs.opts u2 @fo_        @lhs.finTyVarMp @expr.cSubst e1
                                                 in  (e2, s1 `cSubstApp` s2)
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprtypeasCSubst
 %%]
     AppImpl
@@ -219,7 +238,6 @@ SEM PatExpr
                             .   (cexpr,cexprpatCSubst)
                                             =   let (e,s) = foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @expr.cSubst @cexprBaseEq
                                                 in  (mkCExprApp e [@expr.cexpr], s)
-                loc         .   lUniq_cexpr :   UNIQUEREF gUniq
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprpatCSubst
 %%]
 

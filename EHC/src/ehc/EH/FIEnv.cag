@@ -13,7 +13,7 @@ environments (gamma's), options, location info (for error messages), etc.
 
 %%[(98 hmtyinfer)
 SEM AGItf
-  | AGItf       loc         .   fe                  =   emptyFE
+  | AGItf       loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
                                                             , feTyGam = @expr.gathTyGam
@@ -26,12 +26,12 @@ SEM AGItf
 
 %%[(4 hmtyinfer).Decl.fe
 SEM Decl
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%]
 
 %%[(11 hmtyinfer) -4.Decl.fe
 SEM Decl
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
                                                             { feTyGam = @lhs.tyGam
 %%[[98
                                                             , feEHCOpts = @lhs.opts
@@ -48,7 +48,7 @@ SEM Decl
 
 %%[(8 hmtyinfer)
 SEM DataConstr
-  | Constr      loc         .   fe                  :=  emptyFE
+  | Constr      loc         .   fe                  :=  defaultFIEnv
 %%[[9
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
@@ -67,7 +67,7 @@ SEM DataConstr
 
 %%[(9 hmtyinfer)
 SEM Decl
-  | Instance    loc         .   fe                  :=  emptyFE
+  | Instance    loc         .   fe                  :=  defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
@@ -80,7 +80,7 @@ SEM Decl
                                                             , feRange = @range
 %%]]
                                                             }
-                            .   fe2                 =   emptyFE
+                            .   fe2                 =   defaultFIEnv
 %%[[11
                                                             { feTyGam = @lhs.tyGam
 %%[[17
@@ -95,20 +95,20 @@ SEM Decl
 
 %%[(4 hmtyinfer).FIEnv
 SEM Expr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%]
 
 %%[(7 hmtyinfer).FIEnv
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 
 SEM DataFieldExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%]
 
 %%[(9 hmtyinfer).FIEnv -(4.FIEnv 7.FIEnv)
 SEM Expr
-  | Let         loc         .   fe                  =   emptyFE
+  | Let         loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
@@ -125,7 +125,7 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   fe                  =   emptyFE
+                loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @predScope
 %%[[11
@@ -142,7 +142,7 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   fe                  =   emptyFE
+                loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
@@ -157,7 +157,7 @@ SEM Expr
                                                             }
 
 SEM RecExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
@@ -172,7 +172,7 @@ SEM RecExpr
                                                             }
 
 SEM DataFieldExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
 %%[[11
@@ -189,7 +189,7 @@ SEM DataFieldExpr
 
 %%[(4 hmtyinfer)
 SEM PatExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%[[9
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
@@ -208,7 +208,7 @@ SEM PatExpr
 
 %%[(7 hmtyinfer)
 SEM RecPatExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%[[9
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
@@ -227,7 +227,7 @@ SEM RecPatExpr
 
 %%[(7 hmtyinfer)
 SEM DataFieldPatExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%[[9
                                                             { feEHCOpts = @lhs.opts
                                                             , fePredScope = @lhs.predScope
@@ -246,12 +246,12 @@ SEM DataFieldPatExpr
 
 %%[(4 hmtyinfer)
 SEM TyExpr
-  | *           loc         .   fe                  =   emptyFE
+  | *           loc         .   fe                  =   defaultFIEnv
 %%]
 
 %%[(9 hmtyinfer)
 SEM PrExpr
-  | *           loc         .   fe2                 =   emptyFE
+  | *           loc         .   fe2                 =   defaultFIEnv
 %%[[11
                                                             { feTyGam = @lhs.tyGam
 %%[[17

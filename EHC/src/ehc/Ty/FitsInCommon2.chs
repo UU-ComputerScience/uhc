@@ -10,16 +10,15 @@
 This should be in FitsInCommon, but to avoid cycles is placed in this additional file with common
 structures for fitsIn and related functions.
 
-%%[(4 hmtyinfer) module {%{EH}Ty.FitsInCommon2} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Ty.Utils}, {%{EH}Substitutable})
+%%[(4 hmtyinfer) module {%{EH}Ty.FitsInCommon2} import({%{EH}Base.Common}, {%{EH}Ty.FitsInCommon}, {%{EH}Ty}, {%{EH}Ty.Utils1}, {%{EH}Substitutable})
 %%]
 
 %%[(4 hmtyinfer) import({%{EH}Base.Opts}, {%{EH}VarMp})
 %%]
-
-%%[(4 hmtyinfer) import(qualified Data.Set as Set)
+%%[(4 hmtyinfer) import({%{EH}Ty.FIEnv}) export(module {%{EH}Ty.FIEnv})
 %%]
 
-%%[(11 hmtyinfer) import({%{EH}Gam})
+%%[(4 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
 For debug/trace:
@@ -51,7 +50,7 @@ data FIIn   =  FIIn     {  fiFIOpts          ::  !FIOpts				-- options to fitsIn
                         ,  fiExpRTvS         ::  !(Set.Set TyVarId)		-- and rhs
                         ,  fiRank            ::  !Int					-- rank
                         ,  fiMbInstRank      ::  !(Maybe Int)			-- rank where possible deep instantation did start
-%%[[9
+%%[[8
                         ,  fiEnv             ::  !FIEnv					-- environment (Gam's,...)
 %%]]
                         ,  fiTrace           ::  [PP_Doc]       -- ???? 20080110, must be strict otherwise ghc 6.8.1 generates crashing program ????
@@ -67,7 +66,7 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
                         ,  fiExpRTvS         =   Set.empty
                         ,  fiRank            =   1
                         ,  fiMbInstRank      =   Nothing
-%%[[9
+%%[[8
                         ,  fiEnv             =   emptyFE
 %%]]
                         ,  fiTrace           =   []
@@ -116,70 +115,5 @@ fiSetVarMp  c fi = fi {fiVarMpLoc = c}
 
 fiBindTyVar :: TyVarId -> Ty -> FIIn -> FIIn
 fiBindTyVar v t = fiPlusVarMp (v `varmpTyUnit` t)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% FitsIn Environment
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(4 hmtyinfer).FIEnv export(FIEnv(..))
-data FIEnv
-  =   FIEnv
-%%[[9
-        {   feEHCOpts       :: !EHCOpts
-        ,   feDontBind      :: !TyVarIdS
-        ,   fePredScope     :: !PredScope
-%%[[11
-        ,   feTyGam         :: !TyGam
-%%]]
-%%[[17
-        ,   fePolGam        :: !PolGam
-%%]]
-%%[[98
-        ,   feDataGam       :: !DataGam
-%%]]
-%%[[99
-        ,   feRange         :: !Range
-%%]]
-        }
-%%]]
-%%]
-
-%%[(4 hmtyinfer) export(emptyFE)
-emptyFE
-  =   FIEnv
-%%[[9
-        {   feEHCOpts       =   defaultEHCOpts
-        ,   feDontBind      =   Set.empty
-        ,   fePredScope     =   initPredScope
-%%[[11
-        ,   feTyGam         =   emptyGam
-%%]]
-%%[[17
-        ,   fePolGam        =   emptyGam
-%%]]
-%%[[98
-        ,   feDataGam       =   emptyGam
-%%]]
-%%[[99
-        ,   feRange         =   emptyRange
-%%]]
-        }
-%%]]
-%%]
-
-%%[(4 hmtyinfer)
-instance Show FIEnv where
-  show _ = "FIEnv"
-%%]
-
-%%[(9 hmtyinfer)
-instance PP FIEnv where
-  pp e = "FIEnv"
-         >#< (empty
-%%[[11
-             >-< pp (feTyGam e)
-%%]]
-             )
 %%]
 

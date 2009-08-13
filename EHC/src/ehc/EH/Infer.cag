@@ -366,7 +366,7 @@ SEM Expr
 SEM Decl
   | TySig       tyExpr      .   tyGam               =   gamPushNew @lhs.tyGam
                             .   tyKiGam             =   gamPushNew @lhs.tyKiGam
-                loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
+                loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp @tyExpr.ki kiStar
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
@@ -641,7 +641,8 @@ SEM Decl
   | TySig       loc         .   gTyTvS              =   ftvSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
                             .   ty_sig_             :=  let fv  = Set.fromList @tyExpr.tyVarWildL `Set.union` @gTyTvS
                                                             t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
-                                                            t2k = tvarKi emptyGam {- @tyExpr.intlTyKiGam -} @lhs.finKiVarMp emptyVarMp
+                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (`Set.member` fv) t
 %%]
 
@@ -657,7 +658,8 @@ SEM Decl
     FFE
 %%]]
                 loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
-                                                            t2k = tvarKi emptyGam {- @tyExpr.intlTyKiGam -} @lhs.finKiVarMp emptyVarMp
+                                                            tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
+                                                            t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
                                                         in  tyQuantifyOuter t2k (const False) t
 %%[[8
                             .   ty_sig_expanded     =   @ty_sig_

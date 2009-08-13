@@ -22,7 +22,7 @@ SEM Decl
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
                             .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
-                loc         .   fo_                 =   fitsIn  strongFIOpts emptyFE @lUniq2 @lhs.patKiVarMp
+                loc         .   fo_                 =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @lhs.patKiVarMp
                                                                 (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
                             .   dataKi              =   foTy @fo_
                 lhs         .   patKiVarMp          =   foVarMp @fo_ |=> @lhs.patKiVarMp
@@ -40,7 +40,7 @@ SEM Decl
 %%[(6 hmtyinfer)
 SEM DataConstr
   | Constr      loc         .   fldsKiVarMp         =   @fields.kiVarMp
-                            .   (_,fo_)             =   fitsInL  weakFIOpts emptyFE @lUniq @fldsKiVarMp
+                            .   (_,fo_)             =   fitsInL  weakFIOpts defaultFIEnv @lUniq @fldsKiVarMp
                                                                  @fields.kiL (repeat kiStar)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @fldsKiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -119,7 +119,8 @@ SEM DataConstr
 %%[[5
                                                             mkk = id
 %%][6
-                                                            mkk tvs = [ (v,tvarKi @lhs.finTyKiGam @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
+                                                            tkg = gamUnion @lhs.finTyKiGam @fields.intlTyKiGam
+                                                            mkk tvs = [ (v,tvarKi tkg @lhs.tvKiVarMp emptyVarMp v) | v <- tvs ] -- zip tvs (repeat kiStar) -- TBD
 %%]]
                                                         in  ({- mkTyQu tyQu_Forall (mkk fvD) -} ([@lhs.dataTy] `mkArrow` mkTyQu tyQu_Exists (mkk (fvU \\ fvD)) @dataConProdTy))
                 loc         .   dataConTyVar        =   @lUniq_con
@@ -158,13 +159,13 @@ ATTR AllDataConstr [ | | dataAltTyL USE {++} {[]}: {AssocL HsName Ty} ]
 
 SEM DataConstr
   | Constr      loc         .   dataConTy2          =   assocLElts @fields.fldTyL `mkArrow` @lhs.dataTy 
-                loc         .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
+                            .   dataConProdTy2      =   let  lbls = zipWith (\p (ml,_) -> maybe p id ml) positionalFldNames @fields.fldTyL
                                                         in   mkTyRec (zipWith (\l (_,t) -> (l,t)) lbls @fields.fldTyL) 
 
-                loc         .   dataConTy           :=  @dataConTy1
-                loc         .   dataConProdTy       :=  @dataConProdTy1
+                            .   dataConTy           :=  @dataConTy1
+                            .   dataConProdTy       :=  @dataConProdTy1
 
-                loc         .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
+                            .   dataAltTyL          =   [(@conNm,@dataConProdTy)]
 
 SEM Decl
   | Data        loc         .   dataAltTy           =   mkTySum @constrs.dataAltTyL
@@ -416,7 +417,7 @@ Kind of LHS of the DataConstrEq should match the kind of the RHS.
 
 %%[(16 hmtyinfer)
 SEM DataConstrEq
-  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
+  | Eq          loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyVar.ki @tyExpr.ki
                 lhs         .   kiVarMp             =   foVarMp @loc.fo_ |=> @tyExpr.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
 
@@ -444,7 +445,7 @@ SEM DataConstr
 SEM DataConstrEq
   | Eq          loc         .   tv                  =   tyVar @tyVar.ty
                 loc         .   knRhsTy             =   maybe Ty_Any id $ varmpTyLookup @loc.tv @lhs.eqVarMp
-                loc         .   foRhsTy             =   fitsIn strongFIOpts emptyFE @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
+                loc         .   foRhsTy             =   fitsIn strongFIOpts defaultFIEnv @lUniq2 @lhs.eqVarMp @loc.knRhsTy @tyExpr.ty
                 loc         .   unitVarMp           =   @loc.tv `varmpTyUnit` foTy @loc.foRhsTy
                 lhs         .   eqVarMp             =   @loc.unitVarMp |=> foVarMp @loc.foRhsTy |=> @lhs.eqVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq

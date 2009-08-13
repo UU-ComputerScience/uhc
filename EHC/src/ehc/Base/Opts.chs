@@ -10,6 +10,12 @@
 %%[1 module {%{EH}Base.Opts} import(System.Console.GetOpt,{%{EH}Base.Common}) export(EHCOpts(..), ehcCmdLineOpts)
 %%]
 
+%%[1 import(EH.Util.Utils)
+%%]
+
+%%[1 import(Data.Maybe,qualified Data.Map as Map)
+%%]
+
 %%[4 import(EH.Util.Pretty)
 %%]
 
@@ -19,7 +25,7 @@
 %%[7 import(qualified Data.Set as Set)
 %%]
 
-%%[8 import(Data.List,Data.Char,qualified Data.Map as Map,{%{EH}Base.Builtin})
+%%[8 import(Data.List,Data.Char,{%{EH}Base.Builtin})
 %%]
 
 %%[8 import(EH.Util.FPath)
@@ -28,9 +34,6 @@
 %%]
 
 %%[(8 codegen) import({%{EH}Base.Target})
-%%]
-
-%%[8 import(EH.Util.Utils)
 %%]
 
 %%[50 import({%{EH}Ty.Trf.Instantiate})
@@ -190,6 +193,40 @@ mkFileLocPath = map mkDirFileLoc . wordsBy (`elem` ";,")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Option specific options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(optOptsIsYes)
+optOpts :: Map.Map String opt -> String -> [opt]
+optOpts m s = catMaybes $ map (\os -> Map.lookup os m) $ wordsBy (==',') s
+
+optOptsIsYes :: Eq opt => Maybe [opt] -> opt -> Bool
+optOptsIsYes mos o = maybe False (o `elem`) mos
+%%]
+
+%%[(8 codegen) export(TyCoreOpt(..))
+data TyCoreOpt
+  = TyCoreOpt_Sugar			-- produce/accept sugared version
+  | TyCoreOpt_Unicode		-- produce/accept unicode, implies sugar
+  deriving Eq
+
+instance Show TyCoreOpt where
+  show TyCoreOpt_Sugar		= "sugar"		-- first letters of alternatives must be unique
+  show TyCoreOpt_Unicode	= "unicode"
+
+tycoreOpts :: [TyCoreOpt]
+tycoreOpts = [TyCoreOpt_Sugar, TyCoreOpt_Unicode]
+
+tycoreOptMp :: Map.Map String TyCoreOpt
+tycoreOptMp
+  = Map.fromList $ concat
+    $ [ [ (s, o), ([head s], o) ]
+      | o <- tycoreOpts
+      , let s = show o
+      ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compiler options
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -222,7 +259,7 @@ data EHCOpts
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTrf            ::  [TrfOpt]
       ,  ehcOptTarget         ::  Target            -- code generation target
-      ,  ehcOptUseTyCore      ::  Bool              -- use TyCore instead of Core (temporary option until Core is obsolete)
+      ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile    ::  Bool
@@ -396,7 +433,7 @@ defaultEHCOpts
       ,  ehcOptOptimise         =   OptimiseNormal
       ,  ehcOptTrf              =   []
       ,  ehcOptTarget           =   defaultTarget
-      ,  ehcOptUseTyCore        =   False
+      ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
@@ -592,7 +629,7 @@ ehcCmdLineOpts
      ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")            "pkg: where to put the lib part of a package"
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["tycore"]           (NoArg oUseTyCore)                   "temporary/development: use typed core"
+     ,  Option ""   ["tycore"]           (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
      ]
 %%]
@@ -639,7 +676,11 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
          oTimeCompile    o =  o { ehcOptTimeCompile       = True    }
-         oUseTyCore      o =  o { ehcOptUseTyCore         = True    }
+         oUseTyCore ms   o =  case ms of
+                                Just s -> o { ehcOptUseTyCore = Just opts2 }
+                                       where opts1 = optOpts tycoreOptMp s
+                                             opts2 = if TyCoreOpt_Unicode `elem` opts1 then ([TyCoreOpt_Sugar] ++ opts1) else opts1
+                                _      -> o { ehcOptUseTyCore = Just [] }
 %%]]
 %%[[1
          oTarget     _   o =  o

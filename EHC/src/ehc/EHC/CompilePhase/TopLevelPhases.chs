@@ -808,7 +808,7 @@ cpProcessTyCoreBasic modNm
                      )
                  -}
                -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
-                 when (ehcOptEmitTyCore opts || ehcOptUseTyCore opts)
+                 when (ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts))
                       (do { cpOutputTyCore "tycore" modNm
                           ; check modNm
                           })

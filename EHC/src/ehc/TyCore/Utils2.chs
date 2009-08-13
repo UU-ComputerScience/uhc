@@ -7,9 +7,12 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}TyCore.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam}) 
+%%[(8 codegen) module {%{EH}TyCore.Utils2} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common}) 
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Base})
+%%]
+
+%%[(8 codegen) import({%{EH}Gam},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
 %%]
 
 %%[(8 codegen) import({%{EH}TyCore.SubstCaseAltFail})
@@ -246,8 +249,9 @@ mkExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
   = mkExprSatSelsCaseMeta env mbNm meta e ct nmLblOffL mbRest sel
   where ns = take arity hsnLclSupply
         nmLblOffL = zip ns [0..] -- zip3 ns ns [0..]
-        sel = mkExprTuple' ct
-                $ map (fst.snd) $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL
+        sel = mkExprTuple' ct (tyErr "TyCore.Utils.mkExprSatSelsCaseUpdMeta")
+                $ map (fst.snd)
+                $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL
 %%]
         sel = mkExprAppMeta
                 (Expr_Tup ct)
@@ -271,8 +275,8 @@ mkListComprehenseGenerator env patOk mkOk fail e
 %%]
 
 %%[(99 codegen) hs export(mkListComprehenseTrue)
-mkListComprehenseTrue :: RCEEnv -> Expr -> Expr
-mkListComprehenseTrue env e = mkListSingleton (rceEHCOpts env) e
+mkListComprehenseTrue :: RCEEnv -> Ty -> Expr -> Expr
+mkListComprehenseTrue env ty e = mkListSingleton (rceEHCOpts env) ty e
 %%]
 
 %%[(99 codegen) hs export(mkMatchString)

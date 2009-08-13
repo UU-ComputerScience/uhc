@@ -52,6 +52,15 @@ ctyBareFromTy :: VarMp -> Ty -> C.Ty
 ctyBareFromTy m t = C.tyToTyCoreBare (m |=> t)
 %%]
 
+%%[(8 codegen) hs
+ctyCloseExists :: C.Ty -> (C.Ty,C.Expr -> C.Expr)
+ctyCloseExists t
+  = case C.unTySeq t of
+      (C.Expr_Exists s te) -> (te,C.Expr_CloseExists (C.tyL0BindToL1Bind s) (C.tyErr "ctyCloseExists.tyClosed") t)
+      _                    -> (t ,id)
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% TyCore's Ty: redo all fitting, but now against complete(d) types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -61,7 +70,7 @@ SEM Expr
   | Var Con     loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
   | Lam         loc         .   fo_fin      =   @doFit (@knFunFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
 %%[[9
-  | AppTop      loc         .   fo_fin     	=   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
+  | AppTop      loc         .   fo_fin      =   @doFit (@lhs.fiOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
 %%]]
 %%[[12
   | LamImpl     loc         .   fo_fin      =   @doFit (implFIOpts {fioBindRFirst=True, fioExpandEqTyVar=True}) @lhs.finTyVarMp
@@ -75,7 +84,7 @@ SEM Decl
                 loc         .   lUniq_fo    :   UNIQUEREF gUniq
 
 SEM DataConstr
-  | Constr		loc			.   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @dataConTy @dataConTyAsVar
+  | Constr      loc         .   doFit       =   \o m -> fitsIn o @fe @lUniq_fo m @dataConTy @dataConTyAsVar
                             .   fo_fin      =   @doFit (strongFIOpts {fioExpandEqTyVar=True}) @lhs.finTyVarMp
                 loc         .   lUniq_fo    :   UNIQUEREF gUniq
 %%]
@@ -88,9 +97,6 @@ SEM DataConstr
 ATTR AllExpr AllPatExpr AllCase [ ctyTopDown: {C.Ty} | | ]
 ATTR AllCase [ ctyPatTopDown: {C.Ty} | | ]
 
-SEM AGItf
-  | AGItf       expr        .   ctyTopDown  =   C.tyErr "AGItf.AGItf.ctyTopDown"
-
 SEM Expr
   | IConst      loc         .   cty         =   C.mkTySeq C.tyInt
   | Var Con     loc         .   cty         =   ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @ty_g_
@@ -98,16 +104,17 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                arg         .   ctyTopDown  =   C.cSubstApp @tcSubstLamSpine @ctyLamArg
-                body        .   ctyTopDown  =   C.cSubstApp @tcSubstLamSpine @ctyLamRes
-  | Case        alts        .   ctyPatTopDown
-                                            =   @expr.ctyBotUp
+                loc         .   ctyTopDownArgBase
+                                            =   C.cSubstApp @tcSubstLamSpine @ctyLamArg
+                            .   ctyTopDownResBase
+                                            =   C.cSubstApp @tcSubstLamSpine @ctyLamRes
   | App AppImpred
 %%[[12
     AppImpl
 %%]]
-                arg         .   ctyTopDown  =   C.cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyAppArg
-                loc         .   cty         =   @ctyTyAppRes -- @ctyAppRes
+                loc         .   ctyTopDownArgBase
+                                            =   C.cSubstApp @func.tcSubstAppSpine $ C.tyUnThunkTySeq $ C.unTySeq @ctyAppArg
+                loc         .   cty         =   @ctyTyAppRes
   | * - Var Con IConst App AppImpred
 %%[[12
     AppImpl
@@ -115,18 +122,46 @@ SEM Expr
                 loc         .   cty         =   @lhs.ctyTopDown
 
 SEM PatExpr
-  | Var         loc         .   cty         =   @lhs.ctyTopDown
   | AppTop Rec  loc         .   ctyPat      =   C.mkTySeq $ ctyFromTy @lhs.finTyKiGam emptyVarMp @finKnPatTy -- @lhs.finTyVarMp @knPatTy
-  | App         arg         .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @knArgTy
 
-SEM RecPatExpr
-  | Ext         patExpr     .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @patTy
+SEM PatExpr
+  | Var         loc         .   cty         =   @lhs.ctyTopDown
+  | AppTop      loc         .   cty         =   C.mkTyThunk @ctyPat
 
 SEM Decl
   | Val         loc         .   cty         =   ctyLookup @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
                             .   ctyBind     =   if @lhs.isStrict then @cty else C.mkTyThunk @cty
-                            .   ctyTopDown  =   C.tyUnThunkTySeq @ctyBind
   | Data        loc         .   cki         =   C.tyToTyCoreKi $ @lhs.finKiVarMp |=> tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
+%%]
+
+%%[(8 codegen)
+SEM AGItf
+  | AGItf       expr        .   ctyTopDown  =   C.tyErr "AGItf.AGItf.ctyTopDown"
+
+SEM Expr
+  | Lam         
+%%[[12
+    LamImpl
+%%]]
+                arg         .   ctyTopDown  =   @ctyTopDownArgBase
+                (body.ctyTopDown,loc.closeExistsWrap)
+                                            =   ctyCloseExists @ctyTopDownResBase
+  | Case        alts        .   ctyPatTopDown
+                                            =   @expr.ctyBotUp
+  | App AppImpred
+%%[[12
+    AppImpl
+%%]]
+                arg         .   ctyTopDown  =   @ctyTopDownArgBase
+
+SEM Decl
+  | Val         loc         .   ctyTopDown  =   C.tyUnThunkTySeq @ctyBind
+
+SEM PatExpr
+  | App         arg         .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @knArgTy
+
+SEM RecPatExpr
+  | Ext         patExpr     .   ctyTopDown  =   C.cSubstApp @lhs.tcSubstPatSpine $ C.mkTyThunk $ ctyFromTy @lhs.finTyKiGam @lhs.finTyVarMp @patTy
 
 SEM CaseAlt
   | Pat         patExpr     .   ctyTopDown  =   @lhs.ctyPatTopDown
@@ -161,7 +196,7 @@ SEM Expr
 %%[[9
     AppTop
 %%]]
-  				loc         .   (appInstToLHere,appInstToL)
+                loc         .   (appInstToLHere,appInstToL)
                                             =   instToSplitQu (foLInstToL @fo_fin)
   | App AppImpred
 %%[[12
@@ -230,7 +265,7 @@ SEM Expr
                 loc         .   (lamInstToLHere,lamInstToL)
                                             =   let lamInstToL = if @lhs.isTopLam then foRInstToL @fo_fin else @lhs.lamInstToL
                                                 in  instToSplitQu lamInstToL
-				body		.	lamInstToL	=	drop 1 @lamInstToL
+                body        .   lamInstToL  =   drop 1 @lamInstToL
                             
   | * - Lam
 %%[[12
@@ -249,7 +284,7 @@ SEM Expr
                 loc         .   (ctyTyLamArgL,ctyLamArg,ctyLamRes)
                                             =   C.tyArrowInstQuArgsRes C.ArrowDecompose_ArgAfter @lamInstToLHere @lhs.ctyTopDown
                             .   ctyLamArgHere
-                            				=   @tcSubstLamSpine `C.cSubstApp` C.unTySeq @ctyLamArg
+                                            =   @tcSubstLamSpine `C.cSubstApp` C.unTySeq @ctyLamArg
   | * - Lam
 %%[[12
     LamImpl
@@ -298,8 +333,9 @@ ATTR Expr [ tcSubstLamSpine: {C.CSubst} | | ]
 
 %%[(8 codegen)
 SEM Decl
-  | Val         loc         .   ctyForMatch =   ctyBareFromTy @lhs.finTyVarMp @exprKnTy
-                            .   moutExpr    =   C.tyMatchBind @ctyForMatch $ ctyBareFromTy @lhs.finTyVarMp @expr.ty
+  | Val         loc         .   ctyExprKnTy =   ctyBareFromTy @lhs.finTyVarMp @exprKnTy
+                            .   ctyExprTy   =   ctyBareFromTy @lhs.finTyVarMp @expr.ty
+                            .   moutExpr    =   C.tyMatchBind @ctyExprKnTy @ctyExprTy
                             .   tcSubstLamSpine
                                             =   C.moutCSubst @moutExpr
 %%]
@@ -407,6 +443,17 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen hmtyinfer)
+ATTR NTCode [ | tcSubst: {C.CSubst} | ]
+
+SEM AGItf
+  | AGItf       loc         .   tcSubst             =   C.emptyCSubst
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generation of core
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -420,13 +467,12 @@ For now:
 SEM AGItf
   | AGItf       lhs         .   tcmodule    =   let -- b = if @insertMainUse then Expr_Var hsnMain else @expr.letTCBody
                                                     -- d = if @insertMainDef then mkExprLet C.ValBindCateg_Plain [C.mkValBind1 hsnMain @expr.letTCBody] else id
+                                                    tyBindL = concatMap snd $ @expr.letTyBindL
                                                 in  C.Module_Mod @lhs.moduleNm
-                                                      (concatMap snd $ @expr.letTyBindL) -- [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
-                                                      (   
-%%[[9
+                                                      [] -- [ (tn,Map.toList m) | (tn,dgi) <- gamToAssocL @expr.gathDataGam, not (dgiIsNewtype dgi), let m = Map.map dtiCTag $ dgiConstrTagMp dgi ]
+                                                      ( tyBindL ++
                                                         map
                                                           (C.cSubstAppValBind True @expr.tcSubst)
-%%]]
                                                           (concatMap snd $
                                                              (@extraValBindL ++ @expr.frontValBindL ++ @expr.letValBindL
 %%[[94
@@ -469,23 +515,9 @@ SEM Expr
 %%[[97
     IIConst
 %%]]
-                loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @tcexprBase
-%%]
-
-%%[(9 codegen noHmTyRuler)
-SEM Expr
-  | IConst CConst SConst Var Con
-%%[[97
-    IIConst
-%%]]
                 loc         .   (tcexpr,tcexprCSubst)
-                                            :=  foAppLRTCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.tcSubst $ @tcTyArgLamWrap $ @tcTyArgAppWrap @tcexprBase
+                                            =   foAppLRTCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @lhs.tcSubst $ @tcTyArgLamWrap $ @tcTyArgAppWrap @tcexprBase
                 lhs         .   tcSubst     =   C.cSubstApp @lhs.tcSubst @tcexprCSubst
-%%]
-
-%%[(8 codegen noHmTyRuler)
-SEM Expr
-  | Ann         loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @expr.tcexpr
   | Let         loc         .   frontValBindL
                                             =   [(C.ValBindCateg_FFI,@decls.ffiValBindL)]
 %%[[94
@@ -500,48 +532,21 @@ SEM Expr
 %%[[12
     AppImpl
 %%]]
-                loc         .   tcexprapp   =   @tcTyArgLamWrap $ @tcTyArgAppWrap $ C.mkExprApp1 @func.tcexpr (C.mkExprThunk @arg.tcexpr)
-                            .   tcexpr      =   if @func.isNewtype then @arg.tcexpr else @tcexprapp
-  | Lam         
-%%[[12
-    LamImpl
-%%]]
-  				loc         .   tcArgWrap   =   \e -> C.rceMatch @rceEnvTC [(@arg.topNm,@ctyLamArgHere)] [C.RAlt_Alt [@arg.rpatTC] e Set.empty] -- @body.caseFailS]
-  | Lam         loc         .   tcexpr      =   @tcTyArgLamWrap $ C.mkExprLam1 @arg.topNm @ctyLamArgHere (@tcArgWrap @body.tcexpr)
-  | Case        loc         .   tcexpr      =   let (ns,bs,as)
-                                                      = if @isTupOfArg
-                                                        then let ns = [ (n, ty "1" n) | (C.Expr_Var n) <- C.fuL2ExprL (reverse @expr.tcfuExprL) ]
-                                                             in  (ns,[],@alts.raltTCL')
-                                                        else let n = uidHNm @lUniq2
-                                                             in  ([(n, ty "2" n)],[C.mkValBind1 n (ty "3" n) @expr.tcexpr],@alts.raltTCL)
-                                                    ty m n = C.tyErr ("Expr.Case.tcexpr." ++ m ++ ": " ++ show n)
-                                                in  C.mkExprLet C.ValBindCateg_Plain bs (C.rceMatch @rceEnvTC ns as)
-  | Undefined   loc         .   tcexpr      =   C.tcUndefined @lhs.opts
-  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail @caseId (C.tcError @lhs.opts ("FAIL " ++ show @caseId))
-  | AppTop Parens TypeAs
-                loc         .   tcexpr      =   @expr.tcexpr
-%%]
-
-%%[(9 codegen)
-SEM Expr
-  | Let         loc         .   letValBindOtherL
-                                            :=  [ (C.ValBindCateg_Rec,@chrScopeBindLTC) ]
-  | App AppImpred
-%%[[12
-    AppImpl
-%%]]
-                loc         .   (tcexprapp,tcexprappCSubst)
+                loc         .   tcexprArg   =   @arg.tcexpr
+                            .   tcexprThArg =   C.mkExprThunk @tcexprArg
+                            .   (tcexprapp,tcexprappCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    -- ww    = coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.tcSubst @appImplsCoeLTC []
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.tcSubst @appImplsCoeLTC []
                                                     (f ,s2)   = C.coeEvalOnAsSubst u2 ww @func.tcexpr
-                                                in  (@tcTyArgLamWrap $ @tcTyArgAppWrap $ C.mkExprApp1 f (C.mkExprThunk @arg.tcexpr), s1 `C.cSubstApp` s2)
+                                                in  (@tcTyArgLamWrap $ @tcTyArgAppWrap $ C.mkExprApp1 f @tcexprThArg, s1 `C.cSubstApp` s2)
+                            .   tcexpr      =   if @func.isNewtype then @tcexprArg else @tcexprapp
                 lhs         .   tcSubst     =   C.cSubstApp @arg.tcSubst @tcexprappCSubst
   | Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   (tcexpr,tcexprlamCSubst)
+                loc         .   tcArgWrap   =   \e -> C.rceMatch @rceEnvTC [(@arg.topNm,@ctyLamArgHere)] [C.RAlt_Alt [@arg.rpatTC] e Set.empty] -- @body.caseFailS]
+                            .   (tcexpr,tcexprlamCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @body.tcSubst @lamBodyCoeLTC @lamArgCoeLTC
                                                     (b ,s2)   = C.coeEvalOnAsSubst u2 ww @body.appFunExprTC
@@ -553,12 +558,30 @@ SEM Expr
                                                     (e ,s2)   = C.coeEvalOnAsSubst u2 ww @expr.tcexpr
                                                 in  (e, s1 `C.cSubstApp` s2)
                 lhs         .   tcSubst     =   C.cSubstApp @expr.tcSubst @tcexprapptopCSubst
+  | Ann         loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @expr.tcexpr
   | TypeAs      loc         .   (tcexpr,tcexprtypeasCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (e1,s1)   = foAppLRTCoeAsSubst @lhs.opts u1 @fo_fitDown @lhs.finTyVarMp @expr.tcSubst @expr.tcexpr
                                                     (e2,s2)   = foAppLRTCoeAsSubst @lhs.opts u2 @fo_        @lhs.finTyVarMp @expr.tcSubst e1
                                                 in  (e2, s1 `C.cSubstApp` s2)
                 lhs         .   tcSubst     =   C.cSubstApp @expr.tcSubst @tcexprtypeasCSubst
+  | Case        loc         .   tcexpr      =   let (ns,bs,as)
+                                                      = if @isTupOfArg
+                                                        then let ns = [ (n, ty "1" n) | (C.Expr_Var n) <- C.fuL2ExprL (reverse @expr.tcfuExprL) ]
+                                                             in  (ns,[],@alts.raltTCL')
+                                                        else let n = uidHNm @lUniq2
+                                                             in  ([(n, ty "2" n)],[C.mkValBind1 n (ty "3" n) @expr.tcexpr],@alts.raltTCL)
+                                                    ty m n = C.tyErr ("Expr.Case.tcexpr." ++ m ++ ": " ++ show n)
+                                                in  C.mkExprLet C.ValBindCateg_Plain bs (C.rceMatch @rceEnvTC ns as)
+  | CaseAltFail loc         .   tcexpr      =   C.Expr_CaseAltFail @caseId (C.tcError @lhs.opts ("FAIL " ++ show @caseId))
+  | Undefined   loc         .   tcexpr      =   C.tcUndefined @lhs.opts
+  | Parens      loc         .   tcexpr      =   @expr.tcexpr
+%%]
+
+%%[(9 codegen)
+SEM Expr
+  | Let         loc         .   letValBindOtherL
+                                            :=  [ (C.ValBindCateg_Rec,@chrScopeBindLTC) ]
 %%]
 
 %%[(10 codegen)
@@ -661,7 +684,7 @@ SEM Expr
                                                     then  C.fuMkExpr @lhs.opts @lUniq3 (reverse @recExpr.tcfuExprL) @recExpr.tcrecExpr
                                                     else
 %%]]                                                    
-                                                          C.Expr_Node CTagRec $ C.fuL2ExprNodeFldL True Just $ tyRowCanonOrder @recExpr.tcfuExprL
+                                                          C.Expr_Node {- CTagRec -} $ C.fuL2ExprNodeFldL True Just $ tyRowCanonOrder @recExpr.tcfuExprL
                             .   tcexpr          =   @rtcexpr
 %%]
                                                           foldl C.mkExprApp1 (C.Expr_Tup CTagRec)
@@ -721,7 +744,7 @@ SEM RecExpr
 %%[(8 codegen)
 SEM Expr
   | DataFields  loc         .   tcdfexpr    =   let mkTup dti mkDflt con
-                                                      = C.Expr_Node (dtiCTag dti)
+                                                      = C.Expr_Node {- (dtiCTag dti) -}
                                                         . C.fuL2ExprNodeFldL True (const Nothing)
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
                                                         . C.fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
@@ -741,7 +764,7 @@ SEM Expr
                                                              where alts = [ ( dtiCTag dti
                                                                             , [ (f,{-f,-}dfiOffset i) | (f,i) <- Map.toList $ dtiFldMp dti ]
                                                                             , Nothing
-                                                                            , mkTup dti C.Expr_Var (C.mkExprTuple' $ dtiCTag dti) @dataFieldExpr.tcfuExprL
+                                                                            , mkTup dti C.Expr_Var (C.mkExprTuple' (dtiCTag dti) (C.tyErr "Expr.DataFields.mkExprTuple")) @dataFieldExpr.tcfuExprL
                                                                             )
                                                                           | dti <- @dtiInFldL
                                                                           ]
@@ -802,8 +825,9 @@ SEM DataConstr
                                                           in  mk (if @lhs.isNewtype
                                                                   then C.mkCast (C.tyUnThunkTySeq $ head args) res
                                                                        $ C.mkExprUnThunk $ C.Expr_Var $ head nms
-                                                                  else C.mkCast (C.mkTySeq $ C.Expr_Node @ctag [ C.ExprSeq1_L0Val a Nothing | a <- args ] ) res
-                                                                       $ C.Expr_Node @ctag $ C.fuL2ExprNodeFldL False (const Nothing) [ (n,(C.Expr_Var n,Nothing)) | n <- nms ]
+                                                                  else -- C.mkCast (C.mkTySeq $ C.Expr_Node @ctag [ C.ExprSeq1_L0Val a Nothing | a <- args ] ) res
+                                                                       C.mkInject @ctag res
+                                                                       $ C.Expr_Node {- @ctag -} $ C.fuL2ExprNodeFldL False (const Nothing) [ (n,(C.Expr_Var n,Nothing)) | n <- nms ]
                                                                    -- C.mkExprApp (C.Expr_Tup @ctag) (map C.Expr_Var nms)
                                                          )       )
                                                     ]
@@ -848,12 +872,15 @@ SEM Decl
 
 %%[(8 codegen)
 SEM Decl
-  | Data        loc         .   ctyData     =   C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam) $ @tyNm `mkConApp` map semCon @tyVars.nmL
+  | Data        loc         .   ctyData     =   let t = if @isNewtype
+                                                        then snd (snd (tyRecExts2 @dataAltTy !! 0) !! 0)
+                                                        else @dataAltTy
+                                                in  C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi @lhs.finTyKiGam)
+                                                    $ ((assocTyLToVarMp $ zipWith (\t n -> (tyVar t, semCon n)) @tyVars.tyL @tyVars.nmL) |=>)
+                                                    $ t
                 lhs         .   tyBindL     =   let nms = @tyVars.nmL
                                                     (mk,_) = C.tcMergeLamTySeq1AndArgNms @cki nms
-                                                in  [ C.mkValBind1 @tyNm @cki
-                                                       -- (mk (C.mkTyApp (C.Expr_Var @tyNm) (map C.Expr_Var nms)))
-                                                       (mk @ctyData)
+                                                in  [ C.mkTyBind1 @tyNm @cki (mk @ctyData)
                                                     ]
 %%]
 
@@ -871,7 +898,7 @@ SEM PatExpr
   | Var         loc         .   rpatTC      =   C.RPat_Var @tcpNm @cty
   | VarAs       loc         .   rpatTC      =   @patExpr.rpatTC {C.rcpPNm = @tcpNm}
   | Con         loc         .   rpatTC      =   C.RPat_Con @tcpNm (C.tyErr "PatExpr.Con.rpatTC") @tag (C.RPatConBind_One C.PatRest_Empty [])
-  | AppTop      loc         .   rpatTC      =   C.RPat_Con @tcpNm (C.tyErr "PatExpr.AppTop.rpatTC") @tag (C.RPatConBind_One @tcrest (map fst @rpatValBinds))
+  | AppTop      loc         .   rpatTC      =   C.RPat_Con @tcpNm @cty {- (C.tyErr "PatExpr.AppTop.rpatTC") -} @tag (C.RPatConBind_One @tcrest (map fst @rpatValBinds))
   | Rec         loc         .   rpatTC      =   case @tcrest of
                                                     C.PatRest_Empty
                                                       ->  C.RPat_Con @tcpNm (C.tyErr "PatExpr.Rec.Empty.rpatTC") @tag (C.RPatConBind_One @tcrest (map fst @rpatValBinds))
@@ -1073,49 +1100,60 @@ SEM Expr
 %%% Coercions resulting from pred usage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(8 codegen)
 SEM Expr
   | App AppImpred
+%%[[8
+                loc         .   appImplsCoeLTC      =   []
+%%][9
                 loc         .   appImplsCoeLTC      =   (C.mkPoisAppCoe @lhs.opts $ map poPoi @prOccL) ++ [C.Coe_ImplApp $ ipoId @imPrvOcc]
+%%]]
 %%]
-                            .   appImplsLRTCoe      =   C.lrcoeLFromList @appImplsCoeLTC
 
 %%[(12 codegen)
 SEM Expr
   | AppImpl     loc         .   appImplsCoeLTC      =   []
 %%]
-                            .   appImplsLRTCoe      =   C.lrcoeLFromList @appImplsCoeLTC
 
-%%[(9 codegen)
+%%[(8 codegen)
 SEM Expr
   | Lam
 %%[[12
     LamImpl
 %%]]
-                loc         .   lamBodyCoeLTC       =   C.mkLamBodyCoe (C.mkCoe @tcArgWrap) @body.appArgCoeLTC
+                loc         .   lamBodyCoeLTC       =   C.mkLamBodyCoe (C.mkCoe (@tcArgWrap . @closeExistsWrap)) @body.appArgCoeLTC
 %%]
 
-%%[(9 codegen)
+%%[(8 codegen)
 SEM Expr
-  | Lam         loc         .   lamArgCoeLTC        =   C.mkPoiLLamCoe
+  | Lam         loc         .   lamArgCoeLTC        =
+%%[[9
+                                                        C.mkPoiLLamCoe
                                                             (C.mkLetRecCoe @poiBindLTC)
                                                             (zip @poiL (repeat (C.tyErr "Expr.Lam.mkPoiLLamCoe")))
-                                                        ++ [C.mkLamCoe1 @arg.topNm (C.tyErr "Expr.Lam.mkLamCoe1")]
-  | AppTop      loc         .   lamArgCoeLTC        =   C.mkPoiLLamCoe
+                                                        ++
+%%]]
+                                                        [C.mkLamCoe1 @arg.topNm @ctyLamArgHere]
+  | AppTop
+%%[[8
+                loc         .   lamArgCoeLTC        =   []
+%%][9
+                loc         .   lamArgCoeLTC        =   C.mkPoiLLamCoe
                                                             (C.mkLetRecCoe @poiBindLTC)
                                                             (zip @poiL (repeat (C.tyErr "Expr.AppTop.mkPoiLLamCoe")))
+%%]]
 %%]
 
 %%[(12 codegen)
 SEM Expr
-  | LamImpl     loc         .   lamArgCoeLTC        =   [C.mkLamCoe1 @arg.topNm (C.tyErr "Expr.LamImpl.mkLamCoe1") `C.coeCompose` C.mkLetRecCoe @poiBindLTC]
+  | LamImpl     loc         .   lamArgCoeLTC        =   [C.mkLamCoe1 @arg.topNm @ctyLamArgHere `C.coeCompose` C.mkLetRecCoe @poiBindLTC]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gathering coercions/cexpr for app args for optimization by weaving above apptop
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen)
+%%[(8 codegen)
 ATTR Expr [ | | appArgCoeLTC: {[C.Coe]}  appFunExprTC: {C.Expr} ]
 
 SEM Expr
@@ -1125,8 +1163,8 @@ SEM Expr
 %%]]
                 lhs         .   (appArgCoeLTC,appFunExprTC)
                                                 =   if @func.isNewtype
-                                                    then ([],@arg.tcexpr)
-                                                    else (@func.appArgCoeLTC ++ @appImplsCoeLTC ++ [C.mkAppCoe1 @arg.tcexpr],@func.appFunExprTC)
+                                                    then ([],@tcexprArg)
+                                                    else (@func.appArgCoeLTC ++ @appImplsCoeLTC ++ [C.mkAppCoe1 @tcexprThArg],@func.appFunExprTC)
   | AppTop      lhs         .   (appArgCoeLTC,appFunExprTC)
                                                 =   if null @lamArgCoeLTC
                                                     then (@expr.appArgCoeLTC,@expr.appFunExprTC)

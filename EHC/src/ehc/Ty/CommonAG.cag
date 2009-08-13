@@ -52,8 +52,10 @@ SEM Ty
 
 %%[(7 hmtyinfer || hmtyast)
 SEM Ty
-  | App         loc         .   appIsRecOrSum   =   hsnIsSum @func.appFunNm || hsnIsRec @func.appFunNm
-                            .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || hsnIsRec @func.appFunNm
+  | App         loc         .   appIsRec        =   hsnIsRec @func.appFunNm
+                            .   appIsSum        =   hsnIsSum @func.appFunNm
+                            .   appIsRecOrSum   =   @appIsRec || @appIsSum
+                            .   appIsLikeProd   :=  hsnIsProd @func.appFunNm || @appIsRec
 %%]
 
 %%[(9 hmtyinfer || hmtyast)

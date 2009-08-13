@@ -22,6 +22,9 @@
 %%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
 %%]
 
+%%[(8 codegen hmtyinfer) hs import(qualified {%{EH}TyCore.Full0} as C)
+%%]
+
 %%[(4_2 hmtyinfer || hmtyast) hs export(instPlain,instFixed,instMeet)
 %%]
 

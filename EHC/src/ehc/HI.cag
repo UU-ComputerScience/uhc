@@ -7,7 +7,7 @@
 %%% Haskell importable interface to HI/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Gam},{%{EH}NameAspect})
+%%[20 hs module {%{EH}HI} import({%{EH}Base.Common},{%{EH}Gam.Full},{%{EH}NameAspect})
 %%]
 
 %%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty})

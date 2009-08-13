@@ -128,7 +128,7 @@ ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
 
 SEM ValBind
   | Val         loc         .   nmLam       =   mkFvNm @lUniq1 @nm
-                            .   cTrfVar     =   mkValBind1Metas @nm @bindMeta.cTrf
+                            .   cTrfVar     =   mkValBind1LevMetas @nm 0 @bindMeta.cTrf
                                                 $ mkExprAppMeta (Expr_Var @nmLam)
                                                 $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,vintroMeta cvi)) @argOldL
                             .   cTrfLam     =   mkValBind1 @nmLam

@@ -282,14 +282,14 @@ SEM TyExpr
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knResKi             =   mkNewTyVar @lUniq
                             .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp @func.ki @knFunKi
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp @func.ki @knFunKi
                             .   fKi                 =   foTy @fo_
                             .   ki                  =   @knResKi
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
 
 %%[(6 hmtyinfer)
 SEM TyExprs
@@ -309,7 +309,7 @@ SEM TyExpr
   | Row         loc         .   ki                  =   kiRow
 
 SEM RowTyExpr
-  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
+  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -327,7 +327,7 @@ SEM TyExpr
                             .   ki                  =   tkgiKi @tkgi_
 
 SEM RowTyExpr
-  | Var         loc         .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
+  | Var         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
                             .   ki                  =   foTy @fo_
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
                 loc         .   lUniq2              :   UNIQUEREF gUniq
@@ -345,7 +345,7 @@ ATTR PrExpr [ | | ki: Ty ]
 SEM PrExpr
   | *           lhs         .   ki                  =   kiStar
   | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
-                            .   fo_                 =   fitsIn weakFIOpts emptyFE @lUniq @tyExprs.kiVarMp
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
                                                           (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
                 lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -500,7 +500,7 @@ SEM Decl
   | Type        loc         .   typeVar             =   mkTyVar @lUniq
                             .   typeTgi             =   mkTGI @typeVar
                 lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
-                loc         .   foTy_               =   fitsIn  weakFIOpts emptyFE @lUniq2 @lhs.tyTyVarMp
+                loc         .   foTy_               =   fitsIn  weakFIOpts defaultFIEnv @lUniq2 @lhs.tyTyVarMp
                                                                 @tyExpr.ty (tgiTy @typeTgi)
                 lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
                 loc         .   lUniq               :   UNIQUEREF gUniq
@@ -519,7 +519,7 @@ Kind
 SEM Decl
   | Type        loc         .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
                 lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
-                loc         .   foKi_               =   fitsIn  strongFIOpts emptyFE @lUniq2 @tyExpr.kiVarMp
+                loc         .   foKi_               =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp
                                                                 @tyExpr.ki (tkgiKi @typeTkgi)
                 lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp
 %%]

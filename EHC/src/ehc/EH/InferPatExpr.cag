@@ -205,6 +205,7 @@ SEM PatExpr
 %%[(6 hmtyinfer)
 SEM PatExpr
   | Var         lhs         .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] |=> foVarMp @fo_ |=> @lhs.patTyVarMp
+  | VarAs       patExpr     .   patTyVarMp          :=  tyRestrictKiVarMp [@ty] |=> foVarMp @fo_ |=> @lhs.patTyVarMp
 %%]
 
 %%[(9 hmtyinfer).Var

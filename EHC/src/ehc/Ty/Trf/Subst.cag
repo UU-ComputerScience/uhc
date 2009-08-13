@@ -124,7 +124,7 @@ PRAGMA novisit
 type Lkup = MetaLev -> TyVarId -> Maybe Ty
 
 mkLkup :: VarMp -> Lkup
-mkLkup = \_ -> flip varmpTyLookup
+mkLkup m = \mlev v -> varmpTyLookup v m
 %%]
 
 %%[(6 hmtyinfer || hmtyast).Lkup -2.Lkup hs

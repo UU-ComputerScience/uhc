@@ -1,5 +1,4 @@
 EH/MainAG.cag
-EH/ConstrInferTy.cag
 Foreign/Extract.cag
 Foreign/Pretty.cag
 HS/MainAG.cag
@@ -9,13 +8,7 @@ Ty/Ftv.cag
 Ty/ToTyCore.cag
 Ty/TrieKey.cag
 Ty/Pretty.cag
-Ty/AnnInferKind.cag
-Ty/InferExposedAnns.cag
-Ty/AnnSubst.cag
-Ty/Expand.cag
-Ty/InfuseDataTruncs.cag
 Ty/PrettyHTML.cag
-Ty/AnnCommon.cag
 Ty/Trf/Canonic.cag
 Ty/Trf/Instantiate.cag
 Ty/Trf/Quantify.cag
@@ -25,11 +18,9 @@ Ty/Trf/ElimBoth.cag
 Ty/Trf/FreshVar.cag
 Ty/Trf/ElimAlts.cag
 Ty/Trf/ElimEqual.cag
-Ty/Trf/InfuseAnn.cag
-Ty/Trf/InfuseExp.cag
 Ty/Trf/ForceEval.cag
 TyCore/Pretty.cag
-TyCore/Subst.cag
+TyCore/SubstApply.cag
 TyCore/Check.cag
 TyCore/SubstCaseAltFail.cag
 JVMClass/ToBinary.cag

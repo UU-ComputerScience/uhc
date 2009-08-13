@@ -341,7 +341,7 @@ SEM TyExpr
 %%[(17 hmtyinfer) ag
 SEM TyExpr
   | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
-                            .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
                 lhs         .   pol                 =   foTy @foPol
                             .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
                 loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
@@ -354,7 +354,7 @@ SEM TyExpr
 SEM TyExpr
   | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
                             .   polResVar           =   mkPolVar @lUniq_17_polRes
-                            .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
                 tyExpr      .   knPolCtx            =   @polResVar
                             .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
                             .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
@@ -437,7 +437,7 @@ SEM Decl
 
 -- inferencing
 SEM Decl
-  | Type        loc         .   foPol               =   fitsIn weakFIOpts emptyFE @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
+  | Type        loc         .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
                 lhs         .   polVarMp            =   foVarMp @foPol |=> @tyExpr.polVarMp
                 loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
 %%]

@@ -2,7 +2,7 @@
 %%% Utilities for Ty which cannot be placed elsewhere (e.g. because of module cycles)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(2 hmtyinfer || hmtyast) module {%{EH}Ty.Utils} import({%{EH}Base.Common}, {%{EH}Substitutable}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.Pretty}) 
+%%[(2 hmtyinfer || hmtyast) module {%{EH}Ty.Utils1} import({%{EH}Base.Common}, {%{EH}Substitutable}, {%{EH}VarMp}, {%{EH}Ty}, {%{EH}Ty.Pretty}) 
 %%]
 
 %%[(2 hmtyinfer || hmtyast) import(EH.Util.Pretty) 
