@@ -1062,7 +1062,7 @@ tyMbRecExts :: Ty -> Maybe (Ty,AssocL HsName Ty)
 tyMbRecExts = fmap tyRowExts . tyMbRecRow
 %%]
 
-%%[(95 hmtyinfer || hmtyast) hs export(tyRecExts2)
+%%[(8 hmtyinfer || hmtyast) hs export(tyRecExts2)
 tyRecExts2 :: Ty -> AssocL HsName (AssocL HsName Ty)
 tyRecExts2
   = assocLMapElt (snd . tyRecExts) . snd . tyRecExts

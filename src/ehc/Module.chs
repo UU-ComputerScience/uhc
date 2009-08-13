@@ -27,7 +27,7 @@
 %%[20 export(emptyMod)
 %%]
 
-%%[20 import ({%{EH}Gam}) export(modBuiltin,modImpBuiltin)
+%%[20 import ({%{EH}Gam.Full}) export(modBuiltin,modImpBuiltin)
 %%]
 
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))

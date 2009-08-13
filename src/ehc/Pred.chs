@@ -7,7 +7,7 @@
 %%% Pred
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9 module {%{EH}Pred} import({%{EH}Base.Builtin},Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Gam},{%{EH}Base.Common})
+%%[9 module {%{EH}Pred} import({%{EH}Base.Builtin},Data.Maybe,Data.List,qualified Data.Map as Map,qualified Data.Set as Set,EH.Util.Pretty,{%{EH}Gam.Full},{%{EH}Base.Common})
 %%]
 
 %%[(9 hmtyinfer) import({%{EH}Base.CfgPP},{%{EH}Base.Opts})

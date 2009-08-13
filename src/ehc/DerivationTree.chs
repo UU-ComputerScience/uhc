@@ -10,7 +10,7 @@
 %%[(99 hmtyinfer) hs module {%{EH}DerivationTree} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty.FitsInCommon})
 %%]
 
-%%[(99 hmtyinfer) hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam})
+%%[(99 hmtyinfer) hs import({%{EH}Ty},{%{EH}Ty.Ftv},{%{EH}VarMp},{%{EH}Base.LaTeX},{%{EH}Substitutable},{%{EH}Gam.Full})
 %%]
 
 %%[(99 hmtyinfer) hs import(EH.Util.Pretty,{%{EH}Ty.Pretty})

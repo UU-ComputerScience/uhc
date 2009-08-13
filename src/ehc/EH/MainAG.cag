@@ -7,7 +7,7 @@
 %%% Haskell interface to AG generated code for compiler
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
@@ -25,7 +25,7 @@
 %%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
-%%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils})
+%%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
 %%]
 
 %%[(99 hmtyinfer).LaTeX hs import({%{EH}Base.LaTeX})
@@ -42,7 +42,8 @@
 
 %%[(4 hmtyinfer) hs import({%{EH}Ty.FitsInCommon2})
 %%]
-
+%%[(4 hmtyinfer) hs import({%{EH}Ty.FIEnv2})
+%%]
 %%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Set(Set), Data.Map(Map))
 %%]
 
@@ -52,8 +53,8 @@
 %%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
 %%]
 
-%%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
-%%]
+ %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
+ %%]
 
 %%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
 %%]
@@ -64,6 +65,8 @@
 %%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 %%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
+%%]
+%%[(8 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
@@ -90,9 +93,6 @@
 %%]
 
 %%[(95 codegen) hs import({%{EH}Deriving})
-%%]
-
-%%[(98 hmtyinfer) hs import({%{EH}Ty.Utils})
 %%]
 
 %%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
@@ -162,8 +162,8 @@ WRAPPER AGItf
 %%[(6 hmtyinfer) ag import({EH/InferKiExpr})
 %%]
 
-%%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
-%%]
+ %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
+ %%]
 
 %%[(8 codegen) ag import({EH/ToCore})
 %%]

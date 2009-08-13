@@ -22,6 +22,9 @@
 %%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
 %%]
 
+%%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
+%%]
+
 %%[(9 hmtyinfer) import(qualified Data.Set as Set)
 %%]
 
@@ -29,8 +32,6 @@
 %%]
 
 %%[(9 codegen hmtyinfer) import({%{EH}Core},{%{EH}Core.Coercion},{%{EH}Core.Subst})
-%%]
-%%[(9 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full} as C)
 %%]
 
 For debug/trace:
@@ -83,14 +84,13 @@ data FIOut
        ,  foTrace           :: [PP_Doc]					-- trace
        ,  foLInstToL        :: [InstTo]					-- instantiation over arrow '->' of left ty
        ,  foRInstToL        :: [InstTo]					-- instantiation over arrow '->' of right ty
-%%[[6
-       -- ,  foTvKiVarMp       :: !VarMp					-- tvar -> kind
+%%[[(8 codegen)
+       ,  foTCSubst         :: !(C.CSubst)				-- subst for holes in the Core
+       ,  foLRTCoe          :: !(C.LRCoe)				-- coercion over arrow structure
 %%]]
 %%[[(9 codegen)
        ,  foCSubst          :: !CSubst					-- subst for holes in the Core
        ,  foLRCoe           :: !LRCoe					-- coercion over arrow structure
-       ,  foTCSubst         :: !(C.CSubst)				-- 
-       ,  foLRTCoe          :: !(C.LRCoe)				-- 
 %%]]
 %%[[9
        ,  foPredOccL        :: ![PredOcc]				-- arisen predicates (to be obsolete)
@@ -126,11 +126,13 @@ emptyFO
 %%[[6
        -- ,  foTvKiVarMp       =   emptyVarMp
 %%]]
+%%[[(8 codegen)
+       ,  foTCSubst         =   C.emptyCSubst
+       ,  foLRTCoe          =   C.emptyLRCoe
+%%]]
 %%[[(9 codegen)
        ,  foCSubst          =   emptyCSubst
        ,  foLRCoe           =   emptyLRCoe
-       ,  foTCSubst         =   C.emptyCSubst
-       ,  foLRTCoe          =   C.emptyLRCoe
 %%]]
 %%[[9
        ,  foPredOccL        =   []
@@ -179,17 +181,17 @@ foBindTyVar v t = foPlusVarMp (v `varmpTyUnit` t)
 %%% "Ty app spine" gam, to be merged with tyGam in the future
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(AppSpineFOUpdCoe)
+%%[(8 hmtyinfer) export(AppSpineFOUpdCoe)
 type AppSpineFOUpdCoe = EHCOpts -> [FIOut] -> FIOut
 %%]
 
-%%[(4 hmtyinfer).AppSpine export(AppSpineVertebraeInfo(..), unknownAppSpineVertebraeInfoL, arrowAppSpineVertebraeInfoL, prodAppSpineVertebraeInfoL)
+%%[(4 hmtyinfer).AppSpine export(AppSpineVertebraeInfo(..))
 data AppSpineVertebraeInfo
   =  AppSpineVertebraeInfo
        { asPolarity     :: Polarity						-- the polarity on this spine position
        , asFIO          :: FIOpts -> FIOpts				-- how to update the context (swap ...)
        , asFO			:: FIOut -> FIOut -> FIOut		-- \ffo afo -> afo, update app function arg FIOut with app function FIOut
-%%[[(9 codegen)
+%%[[(8 codegen)
        , asMbFOUpdCoe   :: Maybe AppSpineFOUpdCoe		-- possibly update coercion
 %%]]
        }
@@ -209,7 +211,7 @@ unknownAppSpineVertebraeInfo
   = AppSpineVertebraeInfo
       polInvariant fioMkUnify
       asFODflt
-%%[[(9 codegen)
+%%[[(8 codegen)
       Nothing
 %%]]
 %%]
@@ -219,80 +221,9 @@ asFODflt :: FIOut -> FIOut -> FIOut
 asFODflt _ afo = afo
 %%]
 
-%%[(8 codegen hmtyinfer)
-asFOArrow :: FIOut -> FIOut -> FIOut
-asFOArrow _ afo = afo {foLInstToL = InstTo_Plain : foLInstToL afo, foRInstToL = InstTo_Plain : foRInstToL afo}
-%%]
-
-%%[(9 codegen hmtyinfer) export(asFOUpdCoe)
-dfltFOUpdCoe :: AppSpineFOUpdCoe
-dfltFOUpdCoe _ x = last x
-
-asFOUpdCoe :: AppSpineVertebraeInfo -> AppSpineFOUpdCoe
-asFOUpdCoe = maybe dfltFOUpdCoe id . asMbFOUpdCoe
-%%]
-
-%%[(4 hmtyinfer)
+%%[(4 hmtyinfer) export(unknownAppSpineVertebraeInfoL)
 unknownAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
 unknownAppSpineVertebraeInfoL = repeat unknownAppSpineVertebraeInfo
-%%]
-
-%%[(4 hmtyinfer).vertebraeInfoL
-arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-arrowAppSpineVertebraeInfoL
-  = [ AppSpineVertebraeInfo
-        polContravariant fioMkStrong
-        asFODflt
-    , AppSpineVertebraeInfo
-        polCovariant id
-%%[[4
-        asFODflt
-%%][(8 codegen)
-        asFOArrow
-%%]]
-    ]
-
-prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL
-  = repeat
-    $ AppSpineVertebraeInfo
-        polCovariant id
-        asFODflt
-%%]
-
-%%[(9 hmtyinfer).vertebraeInfoL -4.vertebraeInfoL
-arrowAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-arrowAppSpineVertebraeInfoL
-  = [ AppSpineVertebraeInfo polContravariant fioMkStrong
-          asFODflt
-%%[[(9 codegen)
-          (Just dfltFOUpdCoe)
-%%]]
-    , AppSpineVertebraeInfo polCovariant id
-          asFOArrow
-%%[[(9 codegen)
-          (Just (\opts [ffo,afo]
-                  -> let (u',u1) = mkNewUID (foUniq afo)
-                         -- c = lrcoeForLamTyApp opts u1 (foCSubst afo) (foLRCoe ffo) (foLRCoe afo)
-                         (c,s) = lrcoeForLamTyAppAsSubst opts u1 (foLRCoe ffo) (foLRCoe afo)
-                         (tc,ts) = C.lrcoeForLamTyAppAsSubst opts u1 (C.tyErr ("arrowAppSpineVertebraeInfoL: " ++ show u1)) (foLRTCoe ffo) (foLRTCoe afo)
-                     in  afo { foUniq = u'
-                             , foLRCoe = c
-                             , foLRTCoe = tc
-                             , foCSubst = foCSubst afo `cSubstApp` s
-                             , foTCSubst = foTCSubst afo `C.cSubstApp` ts
-                             }
-          )     )
-%%]]
-    ]
-
-prodAppSpineVertebraeInfoL :: [AppSpineVertebraeInfo]
-prodAppSpineVertebraeInfoL
-  = repeat
-    $ AppSpineVertebraeInfo polCovariant id asFODflt
-%%[[(9 codegen)
-          (Just dfltFOUpdCoe)
-%%]]
 %%]
 
 %%[(17 hmtyinfer) export(asUpdateByPolarity)

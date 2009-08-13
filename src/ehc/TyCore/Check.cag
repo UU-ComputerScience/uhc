@@ -26,13 +26,13 @@ Matching of types to
 %%[(8 codegen) hs import({%{EH}Error})
 %%]
 
-%%[(8 codegen) hs import({%{EH}TyCore.Full})
+%%[(8 codegen) hs import({%{EH}TyCore.Full1})
 %%]
 
 -- import Ty + Gam only qualified
 %%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
 %%]
-%%[(8 codegen) hs import(qualified {%{EH}Gam} as G)
+%%[(8 codegen) hs import(qualified {%{EH}Gam.Full} as G)
 %%]
 
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
@@ -75,8 +75,8 @@ initEnv :: Env
 initEnv
   = envUnions
       [ envFromGam  G.tkgiKi         metaLevTy  [ (n,x) | (T.TyKiKey_Name n,x) <- G.gamToAssocL G.initTyKiGam]
-      , envFromGam 	(const T.kiStar) metaLevKi  (G.gamToAssocL G.initKiGam)
-      , envFromGam 	(const T.kiStar) metaLevSo  (G.gamToAssocL G.initSoGam)
+      , envFromGam  (const T.kiStar) metaLevKi  (G.gamToAssocL G.initKiGam)
+      , envFromGam  (const T.kiStar) metaLevSo  (G.gamToAssocL G.initSoGam)
       -- , envFromGam G.vgiTy          metaLevVal G.initValGam
       ]
 %%]
@@ -196,9 +196,12 @@ tyMatch' min ty1 ty2
 %%]]
         m min mout      t1@(Expr_Seq1   s1)             t2@(Expr_Seq1   s2)     =   ms1 min mout s1 s2
         m min mout      t1@(Expr_Seq    s1)             t2@(Expr_Seq    s2)     =   mm ms1 min mout (zip s1 s2)
+        m min mout      t1@(Expr_Prod   s1)             t2@(Expr_Prod   s2)     =   mm ms1 min mout (zip s1 s2)
+        m min mout      t1@(Expr_Sum    s1)             t2@(Expr_Sum    s2)     =   mm ms1 min mout (zip s1 s2)
+        m min mout      t1@(Expr_Node   s1)             t2@(Expr_Node   s2)     =   mm ms1 min mout (zip s1 s2)
+{-
         m min mout      t1@(Expr_Node tg1 s1)           t2@(Expr_Node tg2 s2)  
             | tg1 == tg2                                                        =   mm ms1 min mout (zip s1 s2)
-{-
         m min mout      t1@(Ty_Rec    f1)               t2@(Ty_Rec    f2)       =   mm mf1 mout (zip f1 f2)
 -}
 
@@ -217,6 +220,7 @@ tyMatch' min ty1 ty2
             | minAllowRL0BindBind min                                               =   m (min {minAllowLBind=True}) mout (Expr_Var n2) t1
         ms1 min mout    s1@(ExprSeq1_L0Val t1 _)        s2@(ExprSeq1_L0Val t2 _)    =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0LblVal _ t1)     s2@(ExprSeq1_L0LblVal _ t2) =   m min mout t1 t2
+        ms1 min mout    s1@(ExprSeq1_L0TagVal _ t1)     s2@(ExprSeq1_L0TagVal _ t2) =   m min mout t1 t2
         ms1 min mout    s1@(ExprSeq1_L0Bind n1 _ t1)    s2@(ExprSeq1_L0Bind n2 _ t2)
             | n1 == n2                                                              =   m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
             | minAllowAlphaRename min                                               =   let mout' = m (min {minMetaLev = minMetaLev min + 1}) mout t1 t2
@@ -289,7 +293,9 @@ Bind:
 %%[(8 codegen)
 SEM Expr
   | Let         loc         .   env                 =   @vbinds.gathEnv `envUnion` @lhs.env
-  | Arrow Lam   loc         .   env                 =   @arg.gathEnv `envUnion` @lhs.env
+  | Arrow Lam Exists
+                loc         .   env                 =   @arg.gathEnv `envUnion` @lhs.env
+  | CloseExists loc         .   env                 =   @bind.gathEnv `envUnion` @lhs.env
 
 SEM Alt
   | Alt         loc         .   env                 =   @pat.gathEnv `envUnion` @lhs.env
@@ -320,7 +326,8 @@ SEM Module
   | Mod         tbinds      .   mlev                =   @lhs.mlev + 1
 
 SEM ValBind
-  | Val         loc         .   mlevHere            =   @lhs.mlev
+  | Val         loc         .   mlevHere            =   @lhs.mlev + @mlev
+                l0          .   mlev                =   @mlevHere
                 l1          .   mlev                =   @mlevHere + 1
 
 SEM Pat
@@ -328,8 +335,11 @@ SEM Pat
                 ty          .   mlev                =   @mlevHere + 1
 
 SEM Expr
-  | Cast Int Char String
-                ty          .   mlev                =   @lhs.mlev + 1
+  | Cast Inject Int Char String CloseExists OpenExists
+                loc         .   mlevPlus1           =   @lhs.mlev + 1
+                ty          .   mlev                =   @mlevPlus1
+  | CloseExists tyClosed    .   mlev                =   @mlevPlus1
+  | OpenExists  tyOpened    .   mlev                =   @mlevPlus1
 
 SEM ExprSeq1
   | L0Bind      loc         .   mlevHere            =   @lhs.mlev
@@ -384,18 +394,20 @@ SEM Expr
   | App         loc         .   (argTy,resTy)       =   tyArrowArgRes @func.ty
                             .   ty                  =   moutCSubst @mout `cSubstApp` @resTy
   | Lam         loc         .   ty                  =   Expr_Arrow @arg.ty @res.ty
+  | Exists      loc         .   ty                  =   Expr_Exists @arg.ty @expr.ty
   | Int Char String
                 loc         .   ty                  =   @ty.t
   | Seq         loc         .   ty                  =   Expr_Seq @seq.tySeq1L
   | Seq1        loc         .   ty                  =   Expr_Seq1 @seq1.tySeq1
   | Err         loc         .   ty                  =   tyErr @msg
   | Cast        loc         .   (ty,castErrs)       =   @ty.doCast @expr.ty
+  | Inject      loc         .   ty                  =   @ty.t
+  | CloseExists loc         .   ty                  =   @ty.t
+  | OpenExists  loc         .   ty                  =   @ty.t
   | Tup         loc         .   ty                  =   tyStripL1Args $ tyUnThunkTy @tyTup
-  | Node        loc         .   ty                  =   mkTySeq $ Expr_Node @tag @flds.tySeq1L
-%%[[9
+  | Node        loc         .   ty                  =   mkTySeq $ Expr_Prod      @flds.tySeq1L -- mkTySeq $ Expr_Node @tag @flds.tySeq1L
   | CoeArg      loc         .   ty                  =   tyErr "CoeArg"
   | Hole        loc         .   ty                  =   tyErr "Hole"
-%%]]
 
 SEM ExprSeq1
   | L1Val       loc         .   ty                  =   @l1.t
@@ -405,17 +417,26 @@ SEM Alt
   | Alt         loc         .   ty                  =   @expr.ty
 %%]
 
+TBD:
+
+%%[(8 codegen)
+SEM Expr
+  | Sum         loc         .   ty                  =   kiStar -- mkTySeq $ Expr_Sum       @flds.tySeq1L
+  | Prod        loc         .   ty                  =   kiStar -- mkTySeq $ Expr_Prod      @flds.tySeq1L
+%%]
+
 %%[(8 codegen)
 ATTR ExprSeq1 [ | | tySeq1: ExprSeq1 ]
 
 SEM ExprSeq1
-  | L0Val       loc         .   tySeq1              =   ExprSeq1_L0Val @l0.ty Nothing
-  | L0LblVal    loc         .   tySeq1              =   ExprSeq1_L0LblVal @nm @l0.ty
-  | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
-  | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind @nm Nothing @l2.t
-  | L2Bind      loc         .   tySeq1              =   ExprSeq1_L1Bind @nm @l3.t				-- TBD, lifting
-  | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val @l1.t Nothing
-  | L2Val       loc         .   tySeq1              =   ExprSeq1_L1Val @l2.t 					-- TBD, lifting
+  | L0Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l0.ty Nothing
+  | L0LblVal    loc         .   tySeq1              =   ExprSeq1_L0LblVal @nm  @l0.ty
+  | L0TagVal    loc         .   tySeq1              =   ExprSeq1_L0TagVal @tag @l0.ty
+  | L0Bind      loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t Nothing
+  | L1Bind      loc         .   tySeq1              =   ExprSeq1_L0Bind   @nm  Nothing @l2.t
+  | L2Bind      loc         .   tySeq1              =   ExprSeq1_L1Bind   @nm  @l3.t                    -- TBD, lifting
+  | L1Val       loc         .   tySeq1              =   ExprSeq1_L0Val         @l1.t Nothing
+  | L2Val       loc         .   tySeq1              =   ExprSeq1_L1Val         @l2.t                    -- TBD, lifting
 %%]
 
 %%[(8 codegen)
@@ -433,7 +454,7 @@ SEM Expr
                                                               (ts@(t:_),_     ) -> (t,match ts)
   
 SEM ValBind
-  | Val         loc         .   mout                =   tyMatch @lhs.mlev @l0.ty @l1.t
+  | Val         loc         .   mout                =   tyMatch @mlevHere @l0.ty @l1.t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -478,15 +499,6 @@ SEM ExprSeq1L
   | Cons        lhs         .   tySeq1L             =   @hd.tySeq1 : @tl.tySeq1L
 %%]
 
-%%[(8 codegen)
-%%]
-ATTR ExprSeq1L [ | | mbL1NmL: {[Maybe HsName]} ]
-
-%%[(8 codegen)
-%%]
-SEM ExprSeq1L
-  | Nil         lhs         .   mbL1NmL             =   []
-  | Cons        lhs         .   mbL1NmL             =   @hd.mbL1Nm : @tl.mbL1NmL
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type checking: maybe of ty

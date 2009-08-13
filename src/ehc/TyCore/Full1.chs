@@ -7,15 +7,11 @@
 %%% TyCore wrapper around all available base modules
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}TyCore.Full}
+%%[(8 codegen) hs module {%{EH}TyCore.Full1}
 %%]
-%%[(8 codegen) hs import ({%{EH}TyCore.Base}) export(module {%{EH}TyCore.Base})
+%%[(8 codegen) hs import ({%{EH}TyCore.Full0}) export(module {%{EH}TyCore.Full0})
 %%]
-%%[(8 codegen) hs import ({%{EH}TyCore.Subst}) export(module {%{EH}TyCore.Subst})
-%%]
-%%[(8 codegen) hs import ({%{EH}TyCore.Pretty}) export(module {%{EH}TyCore.Pretty})
-%%]
-%%[(9 codegen) hs import ({%{EH}TyCore.Coercion}) export(module {%{EH}TyCore.Coercion})
+%%[(8 codegen) hs import ({%{EH}TyCore.SubstApply}) export(module {%{EH}TyCore.SubstApply})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

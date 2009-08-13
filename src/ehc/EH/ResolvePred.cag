@@ -85,11 +85,6 @@ SEM Expr
 TyCore version/clone:
 
 %%[(9 codegen hmtyinfer)
-ATTR NTCode [ | tcSubst: {C.CSubst} | ]
-
-SEM AGItf
-  | AGItf       loc         .   tcSubst             =   C.emptyCSubst
-
 SEM Decl
   | Instance    decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
                                                         $ E2C.evidKeyBindMpToSubst @chrEvidBindMpTC

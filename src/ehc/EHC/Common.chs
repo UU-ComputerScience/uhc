@@ -19,7 +19,7 @@ Used by all compiler driver code
 %%[1 import({%{EH}Error},{%{EH}Error.Pretty}) export(module {%{EH}Error},module {%{EH}Error.Pretty})
 %%]
 
-%%[8 import({%{EH}Gam}) export(module {%{EH}Gam})
+%%[8 import({%{EH}Gam.Full}) export(module {%{EH}Gam.Full})
 %%]
 
 %%[20 import(System.Time, System.Directory) export(module System.Time, module System.Directory)

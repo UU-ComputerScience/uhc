@@ -145,6 +145,8 @@ DATA Err
                         ty2        : {PP_Doc}
                         ty1detail  : {PP_Doc}
                         ty2detail  : {PP_Doc}
+  | NoCoerceDerivation  func       : {Ty}
+                        arg        : {Ty}
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -171,8 +173,6 @@ DATA Err
   | NoMostSpecificPred  pred1      : {Pred}
                         pred2      : {Pred}
   | EvidenceAltsLeft
-  | NoCoerceDerivation  func       : {Ty}
-                        arg        : {Ty}
 %%]
 
 %%[9

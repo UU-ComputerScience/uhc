@@ -19,7 +19,9 @@ Differences:
 %%[(8 codegen) hs module {%{EH}TyCore.Pretty} import(EH.Util.Pretty,{%{EH}Base.Builtin},{%{EH}Base.CfgPP},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}TyCore},{%{EH}Scanner.Common(tycoreScanOpts)})
 %%]
 
-%%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%[(8 codegen) hs import(Data.Bits,Data.Maybe)
+%%]
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
 %%[(94 codegen) hs import({%{EH}Foreign.Pretty})
@@ -44,7 +46,10 @@ ppModule opts cmod
   where t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod))
                        (Inh_AGItf
                          { opts_Inh_AGItf = opts
+  					  	 , symMp_Inh_AGItf = m
                          })
+        m | ehcOptUseTyCore opts `optOptsIsYes` TyCoreOpt_Unicode = symMpUnicode
+          | otherwise                                             = symMpPlain
 
 ppExpr :: Expr -> PP_Doc
 ppExpr ce
@@ -53,6 +58,7 @@ ppExpr ce
   					  (Inh_Expr
   					  	{ ppHow_Inh_Expr = howVert
   					  	, opts_Inh_Expr = defaultPPEHCOpts
+  					  	, symMp_Inh_Expr = symMpPlain
   					  	})
 
 ppExprSeq1 :: ExprSeq1 -> PP_Doc
@@ -62,6 +68,7 @@ ppExprSeq1 ce
   					  (Inh_ExprSeq1
   					  	{ ppHow_Inh_ExprSeq1 = howHor
   					  	, opts_Inh_ExprSeq1 = defaultPPEHCOpts
+  					  	, symMp_Inh_ExprSeq1 = symMpPlain
   					  	})
 
 ppValBind :: ValBind -> PP_Doc
@@ -71,6 +78,7 @@ ppValBind ce
   					  (Inh_ValBind
   					  	{ ppHow_Inh_ValBind = howVert
   					  	, opts_Inh_ValBind = defaultPPEHCOpts
+  					  	, symMp_Inh_ValBind = symMpPlain
   					  	})
 
 ppTy :: Ty -> PP_Doc
@@ -80,6 +88,7 @@ ppTy ce
   					  (Inh_Expr
   					  	{ ppHow_Inh_Expr = howHor
   					  	, opts_Inh_Expr = defaultPPEHCOpts
+  					  	, symMp_Inh_Expr = symMpPlain
   					  	})
 
 
@@ -100,6 +109,19 @@ ppOptMetas :: Metas -> PP_Doc
 ppOptMetas x
   =  let  t = wrap_Metas (sem_Metas x) Inh_Metas
      in   (pp_Syn_Metas t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unicode experiments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+uniEnc :: Int -> String
+uniEnc x
+  = map toEnum [0xe0 .|. b0, 0x80 .|. b1, 0x80 .|. b2]
+  where b2 = x .&. 0x3f
+        b1 = (x `shiftR` 6) .&. 0x3f
+        b0 = (x `shiftR` 12)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,12 +163,25 @@ ppMbNm :: Maybe HsName -> PP_Doc
 ppMbNm = maybe (ppNm (hsnFromString "_")) ppNm
 %%]
 
-%%[(8 codegen) hs export(ppSeq)
-ppSeq' :: HowPP -> [PP_Doc] -> PP_Doc
-ppSeq' h = howSep h "[" "]" ", "
+ppUnic :: EHCOpts -> String -> String -> String -> String -> PP_Doc -> PP_Doc
+ppUnic symMp unio unic o c | ehcOptUseTyCore symMp `optOptsIsYes` TyCoreOpt_Unicode = ppPacked unio unic
+                          | otherwise                                             = ppPacked    o    c
 
-ppSeq :: [PP_Doc] -> PP_Doc
-ppSeq = ppSeq' howHor
+%%[(8 codegen) hs export(ppSeq)
+ppToThnk :: SymMp -> PP_Doc -> PP_Doc
+ppToThnk symMp = ppPacked (sym symMp Sym_O_Th) (sym symMp Sym_C_Th)
+
+ppFrThnk :: SymMp -> PP_Doc -> PP_Doc
+ppFrThnk symMp = ppPacked (sym symMp Sym_O_UnTh) (sym symMp Sym_C_UnTh)
+
+ppSeq1 :: SymMp -> PP_Doc -> PP_Doc
+ppSeq1 symMp = ppPacked (sym symMp Sym_O_Seq1) (sym symMp Sym_C_Seq1)
+
+ppSeq' :: SymMp -> HowPP -> [PP_Doc] -> PP_Doc
+ppSeq' symMp h = howSep h (sym symMp Sym_O_Seq) (sym symMp Sym_C_Seq) (pp ", ")
+
+ppSeq :: SymMp -> [PP_Doc] -> PP_Doc
+ppSeq symMp = ppSeq' symMp howHor
 %%]
 
 %%[(8 codegen) hs
@@ -154,7 +189,7 @@ ppLit :: String -> String -> PP_Doc
 ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
-ppTag t = ppCTag' CfgPP_TyCore t
+ppTag t = ppKeyw "tag" >#< ppCTag' CfgPP_TyCore t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +202,7 @@ data HowPP
       { howDef 		:: CmbPP
       , howAside 	:: CmbPP 
       , howList 	:: [PP_Doc] -> PP_Doc 
-      , howSep	 	:: String -> String -> String -> [PP_Doc] -> PP_Doc
+      , howSep	 	:: PP_Doc -> PP_Doc -> PP_Doc -> [PP_Doc] -> PP_Doc
       }
 
 howVert = HowPP  ppDef  (>-<)  vlist     ppBlock
@@ -181,11 +216,12 @@ SEM AGItf
   | AGItf		loc			.	ppHow		= 	howVert
 
 SEM ExprSeq1
-  | * - L0Val L0LblVal
+  | * - L0Val L0LblVal L0TagVal
                 loc         .   ppHow       =   howHor
 
 SEM Expr
-  | Cast		ty			.	ppHow		= 	howHor
+  | Cast Inject
+  				ty			.	ppHow		= 	howHor
 
 SEM Pat
   | *			loc			.	ppHow		= 	howHor
@@ -201,6 +237,69 @@ SEM ValBind
 
 %%[(8 codegen)
 ATTR AGItf AllNT - AllMeta [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Symbol tables for various styles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+data Sym
+  = Sym_O_Seq1      -- open  Seq1
+  | Sym_C_Seq1      -- close Seq1
+  | Sym_O_Seq       -- open  Seq
+  | Sym_C_Seq       -- close Seq
+  | Sym_O_Th        -- open  thunking
+  | Sym_C_Th        -- close thunking
+  | Sym_O_UnTh      -- open  unthunking
+  | Sym_C_UnTh      -- close unthunking
+  | Sym_Exists      -- exists
+  | Sym_RArrow		-- right arrow for Lam, Arrow
+  deriving (Eq,Ord)
+
+type SymMp = Map.Map Sym PP_Doc
+
+symMpPlain :: SymMp
+symMpPlain
+  = Map.fromList
+      (assocLMapElt pp
+         [ (Sym_O_Seq1, "<" )
+         , (Sym_C_Seq1, ">" )
+         , (Sym_O_Seq , "[" )
+         , (Sym_C_Seq , "]" )
+         , (Sym_O_Th  , "{" )
+         , (Sym_C_Th  , "}" )
+         , (Sym_O_UnTh, "{" )
+         , (Sym_C_UnTh, "}" )
+         , (Sym_RArrow, "->")
+         ]
+      ++ [ (Sym_Exists, ppKeyw "exists")
+         ]
+      )
+
+symMpUnicode :: SymMp
+symMpUnicode
+  = Map.fromList
+      (assocLMapElt (pp . uniEnc)
+         [ (Sym_O_Seq1, 0x276c)
+         , (Sym_C_Seq1, 0x276d)
+         , (Sym_O_Seq , 0x276e)
+         , (Sym_C_Seq , 0x276f)
+         , (Sym_O_Th  , 0x23be)
+         , (Sym_C_Th  , 0x23cb)
+         , (Sym_O_UnTh, 0x23bf)
+         , (Sym_C_UnTh, 0x23cc)
+         , (Sym_Exists, 0x2203)
+         , (Sym_RArrow, 0x2192)
+         ]
+      )
+
+sym :: SymMp -> Sym -> PP_Doc
+sym m s = Map.findWithDefault (pp "??") s m 
+%%]
+
+%%[(8 codegen)
+ATTR AGItf AllNT - AllMeta [ symMp: SymMp | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -223,20 +322,21 @@ SEM Expr
   | Char        loc         .   pp          =   ppParens (show @char >#< "::" >#< @ty.pp)
   | String      loc         .   pp          =   ppParens (show @str  >#< "::" >#< @ty.pp)
   | Var         loc         .   pp          =   ppNm @nm
-  | App         loc         .   pp          =   let ppApp argL | null argL = @appFunPP
-                                                               | otherwise = howDef @lhs.ppHow (ppParens @appFunPP) (howList @lhs.ppHow argL)
-                                                    args = reverse @appArgPPL
-                                                in  if @isUnThunk
-                                                    then ppKeyw "eval" >#< ppParens (ppApp (tail args))
-                                                    else ppApp args
-  | Lam         loc         .   pp          =   let ppLam argL | null argL = @lamBodyPP
-                                                               | otherwise = howDef @lhs.ppHow ("\\" >|< ppSpaces argL >#< "->") (@lamBodyPP)
-                                                in  if @isThunk
-                                                    then ppCurlys (ppLam (tail @lamArgPPL))
+  | App         loc         .   pp          =   let isUnThunk (Nothing:_) = True
+                                                    isUnThunk _           = False
+                                                    args2 = reverse @appArgPPMbL
+                                                    (fun,args3) = if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && isUnThunk args2
+                                                                  then (ppFrThnk @lhs.symMp @appFunPP,tail args2)
+                                                                  else (ppParens @appFunPP,args2)
+                                                in  howDef @lhs.ppHow fun (howList @lhs.ppHow $ map (maybe (ppSeq @lhs.symMp []) id) args3)
+  | Lam         loc         .   pp          =   let ppLam []   = @lamBodyPP
+                                                    ppLam argL = howDef @lhs.ppHow ("\\" >|< ppSpaces argL >#< sym @lhs.symMp Sym_RArrow) (@lamBodyPP)
+                                                in  if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && @isThunk
+                                                    then ppToThnk @lhs.symMp (ppLam (tail @lamArgPPL))
                                                     else ppLam @lamArgPPL
-  | Arrow       loc         .   pp          =   if @isThunk
-                                                then ppCurlys @res.pp
-                                                else @arg.pp >#< "->" >#< @res.pp
+  | Arrow       loc         .   pp          =   if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && @isThunk
+                                                then ppToThnk @lhs.symMp @res.pp
+                                                else @arg.pp >#< sym @lhs.symMp Sym_RArrow >#< @res.pp
   | Let         loc         .   ppCateg     =   case @categ of
                                                   ValBindCateg_Rec     -> pp " rec"
                                                   ValBindCateg_Strict  -> pp " !"
@@ -246,13 +346,18 @@ SEM Expr
 %%]]
                                                   _                 -> empty
                             .   pp          =   ppDef (ppKeyw "let" >|< @ppCateg) (ppCurlysSemisBlock @vbinds.ppL) >#< ppKeyw "in" >-< @body.pp
-  | Case        loc         .   pp          =   let dflt = maybe [] (\d -> [ppDef (ppKeyw "_") ("->" >#< d)]) @dflt.ppMb
+  | Case        loc         .   pp          =   let dflt = maybe [] (\d -> [ppDef (ppKeyw "_") (sym @lhs.symMp Sym_RArrow >#< d)]) @dflt.ppMb
                                                 in  ppKeyw "case" >#< @expr.pp >#< ppKeyw "of"
 													>-< indent 1 (ppCurlysSemisBlock (@alts.ppL ++ dflt))
-  | Tup         loc         .   pp          =   ppKeyw "tag" >#< ppTag @tag
-  | Node        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "tag" >#< ppTag @tag) (ppSeq' @lhs.ppHow @flds.ppL)
-  | Seq1		loc			.	pp			= 	"<" >|< @seq1.pp >|< ">" -- ppParens @seq1.pp
-  | Seq 		loc			.	pp			=	ppSeq @seq.ppL
+  | Tup         loc         .   pp          =   ppTag @tag
+  | Node        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "node" {- >#< ppTag @tag -}) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
+  | Sum         loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "sum" ) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
+  | Prod        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "prod") (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
+  | Exists      loc         .   pp          =   sym @lhs.symMp Sym_Exists >#< @arg.pp >#< "." >#< @expr.pp
+  | CloseExists loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "closeexists" >#< @bind.pp >#< "=" >#< @tyClosed.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | OpenExists  loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "openexists"  >#< @bind.pp >#< "=" >#< @tyOpened.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
+  | Seq 		loc			.	pp			=	ppSeq  @lhs.symMp @seq.ppL
   | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8
@@ -266,15 +371,18 @@ SEM Expr
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm])
   | TupIns      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef ("+=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
-  | Box			loc			.	pp			=	ppDef (ppKeyw "box" >#< ppParens (@fromTy.pp >#< "->" >#< @toTy.pp)) @expr.pp
-  | Unbox		loc			.	pp			=	ppDef (ppKeyw "unbox" >#< ppParens (@fromTy.pp >#< "->" >#< @toTy.pp)) @expr.pp
+  | Box			loc			.	pp			=	ppDef (ppKeyw "box" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
+  | Unbox		loc			.	pp			=	ppDef (ppKeyw "unbox" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
   | Ann			loc			.	pp			=	@expr.pp {- annot ... -}
+  | CoeArg      loc         .   pp          =   ppKeyw "hole" >#< ppKeyw "_"
+  | Hole        loc         .   pp          =   ppKeyw "hole" >#< @uid
   | Err			loc			.	pp			=	ppKeyw "ERR" >#< show @msg
 %%]
 
 %%[(8 codegen)
 SEM Expr
   | Cast		loc			.	pp			=	ppDef (ppKeyw "cast") (ppParens @expr.pp >-< ppParens @ty.pp)
+  | Inject		loc			.	pp			=	ppDef (ppKeyw "inj") (ppParens @expr.pp >-< ppParens (ppTag @tag) >-< ppParens @ty.pp)
 %%]
 
 %%[(8 codegen)
@@ -289,17 +397,20 @@ SEM Expr
 
 %%[(8 codegen)
 SEM ValBind
-  | Val         lhs         .   pp          =   ppDef (ppNm @nm >|< (maybe empty (\m -> " :" >#< m) @bindMeta.ppMb))
+  | Val         lhs         .   pp          =   ppDef (   ppNm @nm
+                                                      >|< (if @mlev == 0 then empty else " @" >|< @mlev)
+                                                      >|< (maybe empty (\m -> " :" >#< m) @bindMeta.ppMb)
+                                                      )
                                                       ("::" >#< @l1.pp >-< "=" >#< @l0.pp)
 
 SEM Alt
-  | Alt         lhs         .   pp          =   ppDef (@pat.pp) ("->" >#< @expr.pp)
+  | Alt         lhs         .   pp          =   ppDef (@pat.pp) (sym @lhs.symMp Sym_RArrow >#< @expr.pp)
 
 SEM Pat
   | Var         lhs         .   pp          =   ppNm @nm   >#< "::" >#< @ty.pp
   | Int         lhs         .   pp          =   show @int  >#< "::" >#< @ty.pp
   | Char        lhs         .   pp          =   show @char >#< "::" >#< @ty.pp
-  | Con         lhs         .   pp          =   ppDef (ppKeyw "tag" >#< ppTag @tag)
+  | Con         lhs         .   pp          =   ppDef (ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @flds.ppL))
 
 SEM FldBind
@@ -315,7 +426,7 @@ SEM PatRest
 SEM Ty
   | Var			loc			.	pp			=	ppTVar @tv
   | Con			loc			.	pp			=	ppNm @nm
-  | Arrow		loc			.	pp			= 	@args.pp >#< "->" >#< @res.pp
+  | Arrow		loc			.	pp			= 	@args.pp >#< sym @lhs.symMp Sym_RArrow >#< @res.pp
   | Rec			loc			.	pp			=	ppParensCommas' @flds.ppL
 %%[[10
   | ExtRec		loc			.	pp			=	ppParens (@extee.pp >#< "|" >#< @extby.pp)
@@ -323,7 +434,7 @@ SEM Ty
   | App         loc         .   pp          =   let args = reverse $ map ppParens $ @appArgPPL
                                                     fun  = ppParens @appFunPP
                                                 in  fun >#< ppSpaces args
-  | Seq 		loc			.	pp			=	ppSeq @seq.ppL
+  | Seq 		loc			.	pp			=	ppSeq @lhs.symMp @seq.ppL
   | Ann			loc			.	pp			=	@ty.pp {- annot ... -}
   | Err			loc			.	pp			=	ppKeyw "ERR" >#< show @msg
 %%]
@@ -331,7 +442,7 @@ SEM Ty
 %%[(8 codegen)
 %%]
 SEM TySeq
-  | Seq 		loc			.	pp			=	ppSeq @seq.ppL
+  | Seq 		loc			.	pp			=	ppSeq @lhs.symMp @seq.ppL
 
 %%[(8888 codegen)
 SEM TyFld
@@ -359,7 +470,8 @@ SEM ExprSeq1
   | L0Val       loc         .   pp          =   case @meta.ppMb of
                                                   Just m -> @l0.pp >#< ":" >#< m
                                                   _      -> @l0.pp
-  | L0LblVal    loc         .   pp          =   ppKeyw "lbl" >#< ppNm @nm >#< "=" >#< @l0.pp
+  | L0LblVal    loc         .   pp          =   ppKeyw "lbl" >#< ppNm  @nm  >#< "=" >#< @l0.pp
+  | L0TagVal    loc         .   pp          =   ppTag @tag >#< "=" >#< @l0.pp
   | L0Bind      loc         .   pp          =   case @meta.ppMb of
                                                   Just m -> ppNm @nm >#< ":" >#< m >#< "::" >#< @l1.pp
                                                   _      -> ppNm @nm >#<               "::" >#< @l1.pp
@@ -390,11 +502,9 @@ SEM MetaVal
 
 %%[(9 codegen)
 SEM Expr
-  | Hole        loc         .   pp          =   ppKeyw "hole" >#< @uid
   | HoleLet     loc         .   pp          =   ppKeyw "let" >#< "--" >#< ppKeyw "hole" >#< @bindsUid >#< ppKeyw "in" >-< @body.pp
-  | CoeArg      loc         .   pp          =   ppKeyw "hole" >#< ppKeyw "_"
   | ImplsApp    loc         .   pp          =   ppDef (@func.pp >#< "-- Impl") (ppKeyw "hole" >#< @uid)
-  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppKeyw "hole" >#< @uid >#< "-- Impl") ("->" >#< @body.pp)
+  | ImplsLam    loc         .   pp          =   ppDef ("\\" >|< ppKeyw "hole" >#< @uid >#< "-- Impl") (sym @lhs.symMp Sym_RArrow >#< @body.pp)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -497,15 +607,15 @@ SEM Expr
 %%]
 
 %%[(8 codegen)
-ATTR Expr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
+ATTR Expr [ | | appFunPP : PP_Doc  appArgPPMbL: {[Maybe PP_Doc]} ]
 %%]
 
 %%[(8 codegen)
 SEM Expr
   | App         loc         .   appFunPP    =   @func.appFunPP
-                            .   appArgPPL   =   @arg.pp : @func.appArgPPL
+                            .   appArgPPMbL =   maybe Nothing (\l -> if null l then Nothing else Just @arg.pp) @arg.mbSeq : @func.appArgPPMbL
   | * - App     lhs         .   appFunPP    =   @pp
-                            .   appArgPPL   =   []
+                            .   appArgPPMbL =   []
 %%]
 
 %%[(8888 codegen)

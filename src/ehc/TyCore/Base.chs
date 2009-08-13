@@ -198,7 +198,7 @@ exprIsLam _                = False
 
 %%[(8 codegen) hs export(valBindNm)
 valBindNm :: ValBind -> HsName
-valBindNm (ValBind_Val       n _ _ _) = n
+valBindNm (ValBind_Val       n _ _ _ _) = n
 -- valBindNm (ValBind_FFI _ _ _ n _  ) = n
 %%]
 
@@ -246,17 +246,20 @@ metaLiftDict = metaLift' (MetaVal_Dict Nothing)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction: val binding
+%%% Construction: val/ty binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(mkValBind1Metas)
-mkValBind1Metas :: HsName -> Metas -> Ty -> Expr -> ValBind
-mkValBind1Metas n m t e = ValBind_Val n (if metasIsDflt m then Nothing else Just m) t e
+%%[(8 codegen) hs export(mkValBind1LevMetas)
+mkValBind1LevMetas :: HsName -> MetaLev -> Metas -> Ty -> Expr -> ValBind
+mkValBind1LevMetas n l m t e = ValBind_Val n (if metasIsDflt m then Nothing else Just m) l t e
 %%]
 
 %%[(8 codegen) hs export(mkValBind1Meta)
+mkValBind1LevMeta :: HsName -> MetaLev -> MetaVal -> Ty -> Expr -> ValBind
+mkValBind1LevMeta n l m t e = mkValBind1LevMetas n l (MetaBind_Plain,m) t e
+
 mkValBind1Meta :: HsName -> MetaVal -> Ty -> Expr -> ValBind
-mkValBind1Meta n m t e = mkValBind1Metas n (MetaBind_Plain,m) t e
+mkValBind1Meta n m t e = mkValBind1LevMeta n 0 m t e
 %%]
 
 %%[(8 codegen) hs export(mkValBind1,mkValThunkBind1)
@@ -267,14 +270,25 @@ mkValThunkBind1 :: HsName -> Ty -> Expr -> ValBind
 mkValThunkBind1 n t e = mkValBind1 n (mkTyThunk t) (mkExprThunk e)
 %%]
 
+%%[(8 codegen) hs export(mkTyBind1)
+mkTyBind1 :: HsName -> Ty -> Expr -> ValBind
+mkTyBind1 n t e = mkValBind1LevMeta n 1 MetaVal_Val t e
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Construction: cast
+%%% Construction: cast and alike
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(mkCast)
 mkCast :: Ty -> Ty -> Expr -> Expr
 mkCast frTy toTy e
   = Expr_Cast e (Expr_Unsafe frTy toTy)
+%%]
+
+%%[(8 codegen) hs export(mkInject)
+mkInject :: CTag -> Ty -> Expr -> Expr
+mkInject tag toTy e
+  = Expr_Inject e tag toTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,11 +377,20 @@ mkExprLam as e = mkExprLamMeta [ (n,MetaVal_Val,t) | (n,t) <- as ] e
 %%]
 
 %%[(8 codegen) hs export(mkExprTuple,mkExprTuple')
-mkExprTuple' :: CTag -> [Expr] -> Expr
-mkExprTuple' t = Expr_Node t . map (flip ExprSeq1_L0Val Nothing)
+mkExprTuple'' :: CTag -> Ty -> AssocL (Maybe HsName) Expr -> Expr
+mkExprTuple'' t ty
+  = case t of
+      CTagRec -> mkprod
+      _       -> mkInject t ty . mkprod
+  where mkprod = Expr_Node . zipWith mkseq1 positionalFldNames
+        mkseq1 _ ((Just n),e) = ExprSeq1_L0LblVal n e
+        mkseq1 n (_       ,e) = ExprSeq1_L0LblVal n e
+
+mkExprTuple' :: CTag -> Ty -> [Expr] -> Expr
+mkExprTuple' t ty fs = mkExprTuple'' t ty (zip (repeat Nothing) fs) -- Expr_Node {- t -} . map (flip ExprSeq1_L0Val Nothing)
 
 mkExprTuple :: [Expr] -> Expr
-mkExprTuple = mkExprTuple' CTagRec
+mkExprTuple = mkExprTuple' CTagRec (tyErr "TyCore.Base.mkExprTuple")
 %%]
 
 %%[(8 codegen) hs export(mkExprStrictInMeta)
@@ -567,10 +590,17 @@ ctagCons opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltCo
 ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNil  $ ehcOptBuiltinNames opts) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 %%]
 
+%%[(9999 codegen) hs export(mkListTy)
+mkListTy :: EHCOpts -> T.Ty -> Ty
+mkListTy opts ty = $ (ehbnDataList $ ehcOptBuiltinNames opts) `mkConApp` [ty]
+%%]
+
+                                                    -- @tyNm `mkConApp` map semCon @tyVars.nmL
+
 %%[(99 codegen) hs export(mkListSingleton)
-mkListSingleton :: EHCOpts -> Expr -> Expr
-mkListSingleton opts e
-  = mkExprTuple' (ctagCons opts) [e, mkExprTuple' (ctagNil opts) []]
+mkListSingleton :: EHCOpts -> Ty -> Expr -> Expr
+mkListSingleton opts _ e
+  = mkExprTuple' (ctagCons opts) (tyErr "TyCore.Base.mkListSingleton.Cons") [e, mkExprTuple' (ctagNil opts) (tyErr "TyCore.Base.mkListSingleton.Nil") []]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -23,13 +23,6 @@ SEM Decl
   | TySig       loc         .   finalTy             =   vgiTy $ fromJust
                                                         $ valGamLookup @nm $ @lhs.finValGam
 
-SEM PatExpr
-  | AppTop Con
-%%[[7
-    Rec
-%%]]
-  				loc         .   finKnPatTy          =   @lhs.finTyVarMp |=> @knPatTy
-
 SEM AGItf
   | AGItf       expr        .   finTyVarMp          =   @expr.tyVarMp
 %%]
@@ -47,6 +40,13 @@ SEM Expr
 %%[(5 hmtyinfer)
 SEM DataConstr
   | Constr      loc         .   finDataConTy        =   @lhs.finTyVarMp |=> @dataConTyAsVar
+
+SEM PatExpr
+  | AppTop Con
+%%[[7
+    Rec
+%%]]
+  				loc         .   finKnPatTy          =   @lhs.finTyVarMp |=> @knPatTy
 %%]
 
 %%[(9 hmtyinfer)

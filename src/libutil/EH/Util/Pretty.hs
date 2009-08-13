@@ -64,12 +64,12 @@ ppListSep o c s pps
 ppListSepWith :: (PP s, PP c, PP o) => o -> c -> s -> (a->PP_Doc) -> [a] -> PP_Doc
 ppListSepWith o c s ppa pps = o >|< hlist (intersperse (pp s) (map ppa pps)) >|< c
 
-ppBlock' :: PP a => String -> String -> String -> [a] -> [PP_Doc]
+ppBlock' :: (PP ocs,PP a) => ocs -> ocs -> ocs -> [a] -> [PP_Doc]
 ppBlock' o c s []     = [o >|< c]
 ppBlock' o c s [a]    = [o >|< a >|< c]
 ppBlock' o c s (a:as) = [o >|< a] ++ map (s >|<) as ++ [pp c]
 
-ppBlock :: PP a => String -> String -> String -> [a] -> PP_Doc
+ppBlock :: (PP ocs,PP a) => ocs -> ocs -> ocs -> [a] -> PP_Doc
 ppBlock o c s = vlist . ppBlock' o c s
 
 ppCommas :: PP a => [a] -> PP_Doc

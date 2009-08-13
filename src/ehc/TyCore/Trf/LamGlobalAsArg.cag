@@ -179,7 +179,7 @@ SEM CBind
 %%[[8
   | Bind        lhs			.	cTrf        =   mkValBind1 @nm $ mkExprLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs			.	cTrf        =   mkValBind1Metas @nm @bindMeta.cTrf $ mkExprLamMeta [(n,vintroMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+  | Bind        lhs			.	cTrf        =   mkValBind1LevMetas @nm 0 @bindMeta.cTrf $ mkExprLamMeta [(n,vintroMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
 %%]]
 
 SEM Expr
