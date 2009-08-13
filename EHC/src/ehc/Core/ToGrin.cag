@@ -221,6 +221,15 @@ SEM CModule
                                                              )
 %%]
 
+%%[(8 codegen grin)
+ATTR AllExpr [ modNm: HsName | | ]
+
+SEM CModule
+  | Mod         expr . gUniq < expr . modNm
+                expr . modNm = @moduleNm
+
+%%]
+
 
 %%[(8 codegen grin) hs
 
@@ -249,13 +258,13 @@ grV2HNm v = case v of {GrVal_Var n -> Just n; _ -> Nothing}
 
 emptyGrExpr = GrExpr_Unit GrVal_Empty
 
-mbMkStrict :: UID -> Bool -> GrVal -> GrExpr
-mbMkStrict u isStrict v
+mbMkStrict :: HsName -> UID -> Bool -> GrVal -> GrExpr
+mbMkStrict modNm u isStrict v
   = case v of
       GrVal_Node _ _ -> dflt
       _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v) (GrPatLam_Var n) (GrExpr_Eval n)
         | otherwise  -> dflt
-        where n = uidHNm u
+        where n = uidQualHNm modNm u
   where dflt = GrExpr_Unit v
 
 retStrict :: Bool -> GrVal -> GrExpr
@@ -274,9 +283,9 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
 %%[(8 codegen grin) hs
-simplArgL :: UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
-simplArgL uniq arityMp vL
-  =  let  nL = map uidHNm . mkNewUIDL (length vL) $ uniq
+simplArgL :: HsName -> UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
+simplArgL modNm uniq arityMp vL
+  =  let  nL = map (uidQualHNm modNm) . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
                     ->  case a of
                             GrVal_Var v | isJust mbArity
@@ -300,19 +309,19 @@ saturateAltL uniq dflt altL
 %%]
 
 %%[(10 codegen grin) hs
-unboxArg :: UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
-unboxArg uniq tyNm v
+unboxArg :: HsName -> UID -> HsName -> GrVal -> (GrVal,GrExpr->GrExpr)
+unboxArg modNm uniq tyNm v
   =  case v of
        GrVal_LitInt _
            -> (v,id)
        _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox tyNm n))
-  where n = uidHNm uniq
+  where n = uidQualHNm modNm uniq
 
-unboxArgL :: UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
-unboxArgL uniq tyNm vL
+unboxArgL :: HsName -> UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
+unboxArgL modNm uniq tyNm vL
   =  let  uL = mkNewUIDL (length vL) $ uniq
      in   foldr  (\(u,a) (aL,wG)
-                    ->  let (a',w) = unboxArg u tyNm a
+                    ->  let (a',w) = unboxArg modNm u tyNm a
                         in  (a' : aL, w . wG)
                  )
                  ([],id)
@@ -370,8 +379,8 @@ SEM CExpr
   | App         loc         .   grExpr      =   let  argL = reverse @grAppArgL
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
-                                                     n = uidHNm @lUniq
-                                                     (argL',wrapGr) = simplArgL @lUniq2 @lhs.arityMp argL
+                                                     n = uidQualHNm @lhs.modNm @lUniq
+                                                     (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.arityMp argL
                                                 in   case @func.mbTupApp of
                                                        Just t
                                                          -> let v  =  case t of
@@ -398,7 +407,7 @@ SEM CExpr
                                                                           | otherwise
                                                                               -> GrExpr_Store (mkNdApp funNm argL')
                                                             in  wrapGr ap
-  | Var         loc         .   grExpr      =   mbMkStrict @lUniq @lhs.isStrict @grVal
+  | Var         loc         .   grExpr      =   mbMkStrict @lhs.modNm @lUniq @lhs.isStrict @grVal
   | Tup Int Char
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
 %%[[9
@@ -407,7 +416,7 @@ SEM CExpr
 %%[[10
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
-                                                then  mkGrAdapt @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
+                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty
 %%]]
   | * - Let Case App Var Tup Int Char
@@ -423,12 +432,12 @@ SEM CExpr
 %%[(10 codegen grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
-mkGrAdapt :: UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
-mkGrAdapt u arityMp isStrict tupFldL tupRecNm
+mkGrAdapt :: HsName -> UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
+mkGrAdapt modNm u arityMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
-          (oL',wrO) = unboxArgL u1 hsnInt oL
-          (vL',wrV) = simplArgL u2 arityMp vL
+          (oL',wrO) = unboxArgL modNm u1 hsnInt oL
+          (vL',wrV) = simplArgL modNm u2 arityMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
@@ -543,7 +552,7 @@ SEM CBind
                                                   Just iores
                                                     -> (iores,[tyState],[nmState],wrapRes)
                                                     where tyState = Ty_Con $ ehbnRealWorld (ehcOptBuiltinNames @lhs.opts)
-                                                          [nmState,nmRes,nmIgnoreRes] = take 3 (hsnUniqSupply @lUniq2)
+                                                          [nmState,nmRes,nmIgnoreRes] = take 3 (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq2))
                                                           wrapRes = mkRes . dealWithUnitRes
                                                                   where mkRes r = GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit $ mkGrRecNode $ map GrVal_Var [nmState,nmRes])
                                                                         dealWithUnitRes
@@ -613,7 +622,7 @@ tyNmMayLiveAsTaggedPtr opts
 %%[(8 codegen grin)
 SEM CBind
   | FFI         loc         .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
-                                            =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (hsnUniqSupply @lUniq)
+                                            =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq))
                                                      nmArgPatL = map (hsnPrefix "_") nmArgL
                                                 in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  isOpaque tn   = maybe True null (dataGamTagsOfTy tn @lhs.dataGam)
@@ -759,7 +768,7 @@ SEM CPat
 %%[[10
                                                    CPatRest_Var r
                                                      ->  let  (oL,mkSL) = unzip @binds.grTupFldL
-                                                              (oL',wrO) = unboxArgL @lUniq hsnInt oL
+                                                              (oL',wrO) = unboxArgL @lhs.modNm @lUniq hsnInt oL
                                                          in   (ctag mkGrPatRecSplit (\_ l t a ma -> mkGrPatConSplit (mkGrTagAnn a ma) t l) @tag r . zipWith ($) mkSL $ oL',wrO)
 %%]]                                                         
 
@@ -791,7 +800,7 @@ ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -
 
 SEM CPat
   | Int Char    lhs         .   grWrapCaseSel
-                                            =   let n = uidHNm @lUniq
+                                            =   let n = uidQualHNm @lhs.modNm @lUniq
                                                 in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnInt n))
 %%]
 
