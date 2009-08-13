@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[doesWhat doclatex
-Exposes some convenient functions for dealing with language-cil from the EHC.
+Exposes some convenient functions for dealing with language-cil from UHC.
 
 Contains some implicit rules of how to generate fancy names. For example:
 \begin{verbatim}
