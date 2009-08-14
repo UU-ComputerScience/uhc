@@ -1167,6 +1167,7 @@ ATTR AllPatExpr [ ceParentNm: HsName | | ]
 
 SEM PatExpr
   | App         arg         .   ceParentNm  =   rpatNmNm @arg.cpNm
+--  | Irrefutable patExpr		.	ceParentNm	=	tr "PatExpr.Irrefutable" (@cpNm >#< @lhs.ceParentNm >#< @patExpr.topNm) @lhs.ceParentNm
 
 SEM RecPatExpr
   | Ext         patExpr     .   ceParentNm  =   rpatNmNm @patExpr.cpNm

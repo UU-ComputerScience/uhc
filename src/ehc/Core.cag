@@ -19,9 +19,6 @@
 %%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMetaVal(..), CMetaBind(..), CMetas, CBindL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[(8 codegen) hs export(RPatNm(..))
-%%]
-
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty})
 %%]
 
@@ -279,7 +276,7 @@ cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 %%% Name of a pattern var/con
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(RPatNm(..))
 data RPatNm
   = RPatNmOrig {rpatNmNm :: !HsName}
   | RPatNmUniq {rpatNmNm :: !HsName}
@@ -290,6 +287,15 @@ instance Ord RPatNm where
 
 instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)
+
+instance PP RPatNm where
+  pp pnm = pp (rpatNmNm pnm)
+%%]
+
+%%[(8 codegen) hs export(rpatNmIsOrig)
+rpatNmIsOrig :: RPatNm -> Bool
+rpatNmIsOrig (RPatNmOrig _) = True
+rpatNmIsOrig _              = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

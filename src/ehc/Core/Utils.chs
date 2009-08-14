@@ -485,24 +485,28 @@ rceSplit f (x:xs@(x':_))
 %%]
 
 %%[(8 codegen) hs
+rceRebinds :: Bool -> HsName -> RCEAltL -> CBindL
+rceRebinds origOnly nm alts
+  = [ mkCBind1 n (CExpr_Var nm) | pn <- raltLPatNms alts, alsoUniq || rpatNmIsOrig pn, let n = rpatNmNm pn, n /= nm ]
+  where alsoUniq = not origOnly
+%%]
 rceRebinds :: HsName -> RCEAltL -> CBindL
 rceRebinds nm alts = [ mkCBind1 n (CExpr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
-%%]
 
 %%[(8 codegen) hs
 rceMatchVar :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
 rceMatchVar env (arg:args') alts
-  = mkCExprLet CBindings_Plain (rceRebinds arg alts) remMatch
+  = mkCExprLet CBindings_Plain (rceRebinds True arg alts) remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f | (RAlt_Alt (RPat_Var _ : remPats) e f) <- alts]
 
 rceMatchIrrefutable :: RCEEnv ->  [HsName] -> RCEAltL -> CExpr
-rceMatchIrrefutable env (arg:args') [RAlt_Alt (RPat_Irrefutable n b : remPats) e f]
-  = mkCExprLet CBindings_Plain b remMatch
+rceMatchIrrefutable env (arg:args') alts@[RAlt_Alt (RPat_Irrefutable n b : remPats) e f]
+  = mkCExprLet CBindings_Plain (rceRebinds False arg alts) $ mkCExprLet CBindings_Plain b remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
 rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
 rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
-  = CAlt_Alt altPat (mkCExprLet CBindings_Plain (rceRebinds arg alts) subMatch)
+  = CAlt_Alt altPat (mkCExprLet CBindings_Plain (rceRebinds True arg alts) subMatch)
   where (subAlts,subAltSubNms)
           =  unzip
                [ (RAlt_Alt (pats ++ ps) e f, map (rpatNmNm . rcpPNm) pats)
@@ -537,7 +541,7 @@ rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : p
 
 rceMatchConst :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConst env (arg:args) alts
-  = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindings_Plain (rceRebinds arg alts) (CExpr_Case n alts' (rceCaseCont env)))
+  = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindings_Plain (rceRebinds True arg alts) (CExpr_Case n alts' (rceCaseCont env)))
   where arg' = hsnSuffix arg "!"
         alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
 %%]
