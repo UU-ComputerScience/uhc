@@ -228,6 +228,12 @@ instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)
 %%]
 
+%%[(8 codegen) hs export(rpatNmIsOrig)
+rpatNmIsOrig :: RPatNm -> Bool
+rpatNmIsOrig (RPatNmOrig _) = True
+rpatNmIsOrig _              = False
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lifting to MetaVal tupled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

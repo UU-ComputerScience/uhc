@@ -562,24 +562,28 @@ rceSplit f (x:xs@(x':_))
 %%]
 
 %%[(8 codegen) hs
+rceRebinds :: Bool -> (HsName,Ty) -> RCEAltL -> ValBindL
+rceRebinds origOnly (nm,ty) alts
+  = [ mkValBind1 n ty (Expr_Var nm) | pn <- raltLPatNms alts, alsoUniq || rpatNmIsOrig pn, let n = rpatNmNm pn, n /= nm ]
+  where alsoUniq = not origOnly
+%%]
 rceRebinds :: (HsName,Ty) -> RCEAltL -> ValBindL
 rceRebinds (nm,ty) alts = [ mkValBind1 n ty (Expr_Var nm) | (RPatNmOrig n) <- raltLPatNms alts, n /= nm ]
-%%]
 
 %%[(8 codegen) hs
 rceMatchVar :: RCEEnv ->  [(HsName,Ty)] -> RCEAltL -> Expr
 rceMatchVar env ((arg,ty):args') alts
-  = mkExprLet ValBindCateg_Plain (rceRebinds (arg,ty) alts) remMatch
+  = mkExprLet ValBindCateg_Plain (rceRebinds True (arg,ty) alts) remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f | (RAlt_Alt (RPat_Var _ _ : remPats) e f) <- alts]
 
 rceMatchIrrefutable :: RCEEnv ->  [(HsName,Ty)] -> RCEAltL -> Expr
-rceMatchIrrefutable env ((arg,ty):args') [RAlt_Alt (RPat_Irrefutable n _ b : remPats) e f]
-  = mkExprLet ValBindCateg_Plain b remMatch
+rceMatchIrrefutable env (argty@(arg,ty):args') alts@[RAlt_Alt (RPat_Irrefutable n _ b : remPats) e f]
+  = mkExprLet ValBindCateg_Plain (rceRebinds False argty alts) $ mkExprLet ValBindCateg_Plain b remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
 rceMkAltAndSubAlts :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Alt
 rceMkAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
-  = Alt_Alt altPat (mkExprLet ValBindCateg_Plain (rceRebinds (arg,ty) alts) subMatch)
+  = Alt_Alt altPat (mkExprLet ValBindCateg_Plain (rceRebinds True (arg,ty) alts) subMatch)
   where (subAlts,subAltSubs)
           =  unzip
                [ (RAlt_Alt (pats ++ ps) e f, map (\p -> let n = rpatNmNm (rcpPNm p) in (n,rcpTy p)) pats)
@@ -615,7 +619,7 @@ rceMatchConMany env ((arg,ty):args) [RAlt_Alt (RPat_Con n _ t (RPatConBind_Many 
 
 rceMatchConst :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
 rceMatchConst env ((arg,ty):args) alts
-  = mkExprStrictIn arg' ty (Expr_Var arg) (\n -> mkExprLet ValBindCateg_Plain (rceRebinds (arg,ty) alts) (Expr_Case n alts' Nothing {-(rceCaseCont env)-}))
+  = mkExprStrictIn arg' ty (Expr_Var arg) (\n -> mkExprLet ValBindCateg_Plain (rceRebinds True (arg,ty) alts) (Expr_Case n alts' Nothing {-(rceCaseCont env)-}))
   where arg' = hsnSuffix arg "!"
         alts' = [ Alt_Alt (rpat2Pat p) (tcSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
 %%]
