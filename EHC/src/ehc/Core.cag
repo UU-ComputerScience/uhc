@@ -289,7 +289,8 @@ instance Show RPatNm where
   show pnm = show (rpatNmNm pnm)
 
 instance PP RPatNm where
-  pp pnm = pp (rpatNmNm pnm)
+  pp (RPatNmOrig n) = n >|< "(O)"
+  pp (RPatNmUniq n) = n >|< "(U)"
 %%]
 
 %%[(8 codegen) hs export(rpatNmIsOrig)
@@ -386,8 +387,10 @@ mkCExprLet' merge c bs e
     then e
     else case e of
            CExpr_Let c' bs' e' | merge && c' == c
-             -> CExpr_Let c (bs++bs') e'
-           _ -> CExpr_Let c bs e
+             -> mk c (bs++bs') e'
+           _ -> mk c bs e
+  where mk CBindings_Rec bs e = CExpr_Let CBindings_Rec bs e
+        mk c             bs e = foldr (\b e -> CExpr_Let c [b] e) e bs
 
 mkCExprLet :: CBindingsCateg -> CBindL -> CExpr -> CExpr
 mkCExprLet c bs e = mkCExprLet' False c bs e

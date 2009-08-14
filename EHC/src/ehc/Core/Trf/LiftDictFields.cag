@@ -232,6 +232,6 @@ mkLam :: (HsName,[Int]) -> CExpr -> CExpr
 mkLam (nm,p) body = CExpr_Lam nm (CMetaVal_Dict (Just p)) body
 
 mkLet :: CBind -> CExpr -> CExpr
-mkLet bind body = CExpr_Let CBindings_Rec [bind] body
+mkLet bind body = mkCExprLet CBindings_Rec [bind] body
 
 %%]
