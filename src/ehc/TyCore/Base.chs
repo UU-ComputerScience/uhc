@@ -411,8 +411,10 @@ mkExprLet' merge c bs e
     then e
     else case e of
            Expr_Let c' bs' e' | merge && c' == c
-             -> Expr_Let c (bs++bs') e'
-           _ -> Expr_Let c bs e
+             -> mk c (bs++bs') e'
+           _ -> mk c bs e
+  where mk ValBindCateg_Rec bs e = Expr_Let ValBindCateg_Rec bs e
+        mk c                bs e = foldr (\b e -> Expr_Let c [b] e) e bs
 
 mkExprLet :: ValBindCateg -> ValBindL -> Expr -> Expr
 mkExprLet c bs e = mkExprLet' False c bs e
