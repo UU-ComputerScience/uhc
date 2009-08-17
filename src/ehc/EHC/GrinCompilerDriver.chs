@@ -206,6 +206,7 @@ doCompileGrin input opts
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
+                                                                       ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
@@ -214,6 +215,7 @@ doCompileGrin input opts
 
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
          ; transformCodeChgHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
+                                                                       ; caWriteHptMap "-172-hpt"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
                                                                        ; caWriteHptMap "-180-hpt"
@@ -223,7 +225,10 @@ doCompileGrin input opts
                 ; transformSilly inlineExpr         "InlineExpr"       ; caWriteSilly "-202" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly elimUnused         "ElimUnused"       ; caWriteSilly "-203" "sil" pretty ehcOptDumpGrinStages
                 ; transformSilly embedVars          "EmbedVars"        ; caWriteSilly "-204" "sil" pretty ehcOptDumpGrinStages
-                ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
+                
+                -- the GroupAllocs transformation is not compatible with the new EmbedVars tactique of sharing locations.
+                -- GroupAllocs is a bad idea anyway.
+--              ; transformSilly groupAllocs        "GroupAllocs"      ; caWriteSilly "-205" "sil" pretty ehcOptDumpGrinStages
                 ; when (ehcOptEmitLLVM options) 
                   (do { caSilly2LLVM
                       ; caWriteLLVM

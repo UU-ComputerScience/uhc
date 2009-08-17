@@ -289,7 +289,7 @@ SEM GrExpr
                                   then let number      =  getNr @nm
                                            newname     =  Map.findWithDefault @nm number @lhs.renameMap
                                            mbKnownTag  =  checkSingleTag @lhs.hptMap @nm
-                                           ( start, size, node)  =  maybe ( {- 0 -}  error ("SplitFetch: TODO: arity dependend on target type " ++ show @nm) , @lhs.targetArity, GrVal_VarNode (map GrVal_Var names))
+                                           ( start, size, node)  =  maybe ( {- 0 -} error ("SplitFetch: TODO: arity dependend on target type " ++ show @nm) , @lhs.targetArity, GrVal_VarNode (map GrVal_Var names))
                                                                           (\t -> (1, tagArity t @lhs.arityMap, GrVal_Node t  (map GrVal_Var names)) )
                                                                           mbKnownTag
                                            fetches     =  take size $ map (\i -> GrExpr_FetchField newname i mbKnownTag) [start..]

@@ -269,6 +269,7 @@ data EHCOpts
       ,  ehcOptGenCmt         ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
+      ,  ehcOptGenTrace2      ::  Bool
 
       ,  ehcOptGenRTSInfo     ::  Int               -- flags to tell rts to dump internal info, currently: 1=on
       ,  ehcOptDumpGrinStages ::  Bool              -- dump intermediate Grin transformation stages
@@ -442,6 +443,7 @@ defaultEHCOpts
       ,  ehcOptOwn              =   3
       ,  ehcOptGenDebug         =   True
       ,  ehcOptGenTrace         =   False
+      ,  ehcOptGenTrace2        =   False
       ,  ehcOptGenRTSInfo       =   0
 
       ,  ehcOptDumpGrinStages   =   False
@@ -571,6 +573,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
+     ,  Option ""   ["gen-trace-assign"] (boolArg optSetGenTrace2)            "trace assignments in C (no)"
      ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
      ,  Option ""   ["early-mod-merge"]  (boolArg optEarlyModMerge)           "merge modules early, at Core stage (no)"
@@ -881,6 +884,7 @@ optDumpCoreStages    o b = o { ehcOptDumpCoreStages = b }
 
 %%[(8 codegen grin)
 optSetGenTrace       o b = o { ehcOptGenTrace       = b }
+optSetGenTrace2      o b = o { ehcOptGenTrace2      = b }
 optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
