@@ -305,15 +305,15 @@ SEM Expr
                                                                     (ass,prvs,coeArgIds)
                                                                       = unzip3 [ ( rngLift @range mkAssumeConstraint pr (poId po) assSc
                                                                                  , zipWith (\u i -> rngLift @range mkProveConstraint pr u (ipoScope i)) ups ipos
-                                                                                 , zipWith (\i u -> (ipoId i,u)) ipos ups
+                                                                                 , zipWith (\u i -> (ipoId i,u)) ups ipos
                                                                                  )
                                                                                | ((po,ipos),u') <- zip impls $ mkNewLevUIDL (length impls) u
                                                                                , let ups = mkNewLevUIDL (length ipos) u'
                                                                                      pr  = poPr po -- @bodyVarMp2 |=> poPr po
                                                                                ]
-                                                                      where impls = tmpoImplsPrvReq tmpo
+                                                                    impls = tmpoImplsPrvReq tmpo
                                                             tmpos = gamToAssocL @tqoGam
-                                                            (quantCnstrMps, coeArgIds) = unzip $ zipWith (\(nm,tmpo) u -> mk u nm tmpo) tmpos (mkNewLevUIDL (length tmpos) @lUniq6)
+                                                            (quantCnstrMps, coeArgIds) = unzip $ zipWith (\(nm,tmpo) u -> mk u nm tmpo) tmpos $ mkNewLevUIDL (length tmpos) @lUniq6
                                                         in  ( cnstrMpUnions quantCnstrMps
                                                             , foldr (\(occ,arg) m -> Map.insertWith (++) occ [arg] m) Map.empty $ concat coeArgIds
                                                             )

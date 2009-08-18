@@ -352,11 +352,16 @@ SEM Ty
   							.	cycVarMp	=	varmpIncMetaLev @l1'.cycVarMp `varmpPlus` @ty.cycVarMp
 %%]
 
+Occurrences of call site context passing, identified by proveOccs, needs to be combined, so we gather all locations.
+
 %%[(9 hmtyinfer || hmtyast)
 SEM Impls
   | Tail            lhs     .   (repl,cycVarMp)
                                             :=  if @isRepl
-                                                then tvRepl3 @iv @tvUse varmpImplsUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                then let replrepl = case @repl'.repl of
+                                                                      Impls_Tail i occs -> Impls_Tail i (occs ++ @proveOccs)
+                                                                      r                 -> r
+                                                     in  tvRepl3 @iv @tvUse varmpImplsUnit @repl @replv replrepl @repl'.cycVarMp
                                                 else (@repl,emptyVarMp)
 
 SEM Pred
