@@ -2,10 +2,22 @@
 %%% Merge preds into positions indicated by Impls
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 MergePreds gets a set of predicates and places those predicates
-- at places indicated by Impls, where implicit parameters are (still) expected,
-- as deeply nested as possible w.r.t. '->', i.e. function structure,
-- and just before the location where all tyvars of the predicate occur.
+\begin{itemize}
+\item at places indicated by Impls, where implicit parameters are (still) expected,
+\item as deeply nested as possible w.r.t. '->', i.e. function structure,
+\item and just before the location where all tyvars of the predicate occur.
+\end{itemize}
+
+After merging predicates we need to know the new type, returned in a TyMergePredOut.
+This info is also returned in the form of a VarMp, the substitution required to get that type out of the original type.
+
+Merging predicates is necessary because of type inference, where we find out required context to be received by and passed to a function.
+This is in particular is tricky if it involves a function without signature, recursively used. At call sites we then do not know
+what the context to be passed will be. To solve this, each possible location for context passing at a call site gets an identifier
+(the @proveOccs attribute of Impls_Tail), which is later on used to patch with the tmpoImplsPrvReq result returned in TyMergePredOut.
+%%]
 
 %%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.MergePreds} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
@@ -58,7 +70,7 @@ instance Show TyMergePredOut where
   show _ = ""
 
 instance PP TyMergePredOut where
-  pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (tmpoImplsPrvReq tmpo)
+  pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (assocLMapElt ppBracketsCommas $ tmpoImplsPrvReq tmpo)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

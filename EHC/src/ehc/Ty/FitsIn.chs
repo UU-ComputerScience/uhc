@@ -1063,6 +1063,13 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                        prfPredScope     = fePredScope (fiEnv fi)
                        mbfp             = fVarPred2 fP (fi {fiUniq = u'}) tpr1 tpr2
                        mberr            = Just (errClash fi t1 t2)
+                       {-
+                       fSub fi prv tr1 tr2
+                            = 
+                            where prn = poiHNm prv
+                                  fi2 = fiAddPr prn prv tpr2 fi
+                                  fo  = fVar ff fi2 tr1 tr2
+                       -}
                        fP fi tpr1@(Ty_Pred _)              tpr2@(Ty_Pred _)
                             =  if foHasErrs pfo
                                then Nothing
@@ -1120,7 +1127,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                       (C.mkLRCoe (C.Coe_ImplApp iv2) (C.Coe_ImplLam iv2))
 %%]]
                                                       (fVar ff fi tr1 tr2))
-                            where im2' = Impls_Tail iv2 (ipo1 ++ ipo2)
+                            where im2' = Impls_Tail iv2 ({- [ipo] ++ -} ipo1 ++ ipo2)
+                                  -- ipo  = mkImplsProveOcc u1 (fePredScope (fiEnv fi))
                        fP fi (Ty_Impls Impls_Nil)          (Ty_Impls Impls_Nil)
                             =  Just (fVar ff fi tr1 tr2)
                        fP fi (Ty_Impls Impls_Nil)          (Ty_Impls _)
