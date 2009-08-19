@@ -820,7 +820,7 @@ tyAppFunArgsWithLkup lookup
   =  extr []
   where  extr as t
            =  case t of
-                Ty_Quant _ _ _ t  -> tyAppFunArgsWithLkup lookup t
+                Ty_Quant _ qv _ t -> tyAppFunArgsWithLkup (\v -> if qv == v then Nothing else lookup v) t
                 Ty_App f a        -> extr (a:as) f
                 _                 -> tyVarLift lookup (extr as) (flip (,) as) t
 

@@ -368,7 +368,7 @@ gamDoTyWithVarMp (get,set) f gamVarMp thr gam
                                              -> (t ,v `varmpTyUnit` t')
                                            _ -> dflt
                                        where dflt = (t',emptyVarMp)
-                      in  ((n,set tg gi),(thr',cg `varmpPlus` c'))
+                      in  ((n,set ({- tr "gamDoTyWithVarMp.set" (ppTy tg) $ -} tg) gi),(thr',{- (\v -> tr "gamDoTyWithVarMp" (pp v) v) $ -} cg `varmpPlus` c'))
                )
                (thr,emptyVarMp) gam
 %%]
