@@ -172,6 +172,7 @@ SEM Expr
   | Var         loc     .  info_1   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "ty_g_" (ppTyS @lhs.tyVarMp @ty_g_)
                                         , mkInfo1 "ty" (ppTyS (foVarMp @fo_ |=> @lhs.tyVarMp) @ty)
+                                        -- , mkInfo1 "lhs.tyVarMp" (ppVarMpV @lhs.tyVarMp)
 %%]]
                                         ]
 %%[[1
