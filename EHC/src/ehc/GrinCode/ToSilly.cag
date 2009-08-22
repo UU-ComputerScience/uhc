@@ -1,0 +1,688 @@
+%%[doesWhat doclatex
+
+Transforms a Grin program to a Silly program.
+
+%%]
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.ToSilly} export(grin2silly)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
+%%]
+
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
+%%]
+%%[(8 codegen grin) hs import( {%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
+%%]
+
+%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
+grin2silly hptmap gr opts
+ = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
+                        (Inh_GrAGItf { opts_Inh_GrAGItf = if ehcOptEmitLLVM opts
+                                                          then opts{ ehcOptOwn = 0 }
+                                                          else opts
+                                     , hptMap_Inh_GrAGItf = hptmap
+                                     }
+                        )
+   in silModule_Syn_GrAGItf t 
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+ATTR GrAGItf GrModule GrGlobalL GrGlobal GrBindL GrBind GrExpr GrAlt GrAltL [ hptMap : {HptMap} | | ]
+
+ATTR GrAGItf GrModule   [ | | silModule                  : {SilModule}    ]
+ATTR GrBindL GrBind     [ | | functions    USE {++} {[]} : {Functions}    ]
+ATTR GrExpr             [ | | stats        USE {++} {[]} : {Statements}   ]
+ATTR GrAltL             [ | | alternatives               : {Alternatives}
+                              reenteralts                : {Alternatives} ]
+ATTR GrAlt              [ | | alternative                : {Alternative}  
+                              isReenter                  : {Bool}         ]
+ATTR GrVal 
+     GrPatAlt 
+     GrTag              [ | | value                      : {Value}        ]
+ATTR GrPatAlt GrTag     [ | | constant                   : {Constant}     ]
+ATTR GrValL GrVal       [ | | values                     : {Values}       ]
+ATTR GrGlobal GrGlobalL [ | | initStats1   USE {++} {[]} : {Statements}
+                              initStats2   USE {++} {[]} : {Statements}
+                              names        USE {++} {[]} : {[HsName]}     ]
+
+ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
+                         |
+                         | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName}
+                           tailJumps USE {&&} {True} : {Bool}
+                         ]
+
+ATTR AllBind AllGrExpr AllGlobal [ maxConstrParameters : {Int} | | ]
+
+ATTR GrValL [ | | length : {Int} ]
+
+SEM GrValL
+  | Nil lhs.length = 0
+  | Cons lhs.length = 1 + @tl.length
+
+
+ATTR GrBind GrBindL GrExpr GrAlt GrAltL [  |  retNr : {Int} |  ]
+
+%%]
+
+%%[(8 codegen grin)
+
+ATTR GrExpr GrVal [ | | hasEmptyBody : {Bool} ]
+
+SEM GrExpr
+  | Unit    lhs.hasEmptyBody = @val.hasEmptyBody
+  | *-Unit  lhs.hasEmptyBody = False
+
+SEM GrVal
+  | Empty   lhs.hasEmptyBody = True
+  | *-Empty lhs.hasEmptyBody = False
+
+
+ATTR GrVal [ | | valueName : HsName ]
+ATTR AllAlt [ scrutineeName : HsName | | ]
+
+SEM GrExpr
+  | Case    altL . scrutineeName = @val.valueName
+
+
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = @lhs.hasNext
+
+SEM GrAlt
+  | Alt      ( lhs  . isReenter
+             , expr . hasNext
+             , expr . targets    ) = case @ann of
+                                      GrAltAnnReenter -> (True,  True        , [ @lhs.scrutineeName ] )
+                                      _               -> (False, @lhs.hasNext, @lhs.targets           )
+
+
+
+
+
+ATTR AllGrExpr [ functionName : HsName | | ]
+
+SEM GrBind
+  | Bind    expr.functionName = @nm
+
+
+SEM GrModule
+  | Mod lhs.silModule    =   SilModule_SilModule
+                                (tagAliases @lhs.opts) -- aliases
+                                (tagConstants @lhs.opts (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
+                                @globalL.names              -- variables
+                                ( Function_Function (hsnFromString "initialize") False [] []
+                                                    (  @globalL.initStats1
+                                                    ++ @globalL.initStats2
+                                                    ++ (if @lhs.optOwn>=1
+                                                         then [ Statement_Assignment Variable_SP (Value_Offset Variable_BP (0+2)) ]
+                                                         else []
+                                                       )
+                                                    ++ [ Statement_Return 1 ]
+                                                    )
+                                : @bindL.functions            -- functions
+                                )
+
+        loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
+        bindL . retNr   = 3
+
+
+
+SEM GrBind
+  | Bind   lhs.functions =  if False && @expr.hasEmptyBody
+                            then []
+                            else   [ Function_Function
+                                   -- name
+                                   @nm
+                                   @expr.tailJumps
+                                   -- parameters
+                                   @argNmL
+                                   -- locals
+                                   @loc.locals
+                                   -- body
+                                   (@expr.stats ++ [@loc.return])   
+                                 ]
+
+          expr . numberParameters = length @argNmL
+          loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)
+          loc  . nParams      = if @lhs.optOwn>=1 then length @argNmL else 0
+          -- We add an explicit return if no tailjumps are done in the function
+          loc  . return = if @lhs.optOwn >= 1 && @expr.tailJumps 
+                          then Statement_Comment ["Tailjump, no explicit return"]
+                          else Statement_Return 0 
+          
+
+SEM GrExpr
+ | Seq     lhs.stats  = @expr.stats
+                        ++ @body.stats
+
+ | UpdateUnit
+           loc.name   = mkVar @nm
+           lhs.stats   = if not @lhs.hasNext
+                          then assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
+                               ++ yielding "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
+                          else maybe (assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values)
+                                     (\t -> Statement_Comment ["Updateunit to PtrNode"] : store2 (mkVar t) (length @val.values) (length @val.values) (map (arrayVariab @loc.name) [0..]) @val.values)
+                                     @lhs.mbPtrTarget
+
+ | Unit    lhs.stats  = if not @lhs.hasNext
+                         then yielding  "Unit" (@lhs.optOwn>=1) @val.values @lhs.numberParameters
+                         else maybe  (assignments "Unit" [] (map mkVar @lhs.targets) @val.values)
+                                     (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
+                                     @lhs.mbPtrTarget
+           lhs.localsSet = Set.fromList @lhs.targets
+
+ | FFI     lhs.stats  = if not @lhs.hasNext
+                         then yielding  "FFI" (@lhs.optOwn>=1) [@loc.callres] @lhs.numberParameters
+                         else case @lhs.targets
+                              of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
+                                  _             -> assignments "FFI" [] (map mkVar @lhs.targets) [@loc.callres]
+           lhs.localsSet = Set.fromList @lhs.targets
+           loc.callres   = Value_Call @impEntNm @argL.values   -- TODO: check that argL contains Var's or singleton Node's only
+
+
+ | Store   lhs.stats  = let ph = case @lhs.targets of
+                                   [] -> error ("ToSilly: Store has no target in " ++ show @lhs.functionName)
+                                   (x:_) -> x
+                            vs = @val.values
+                            n  = length vs
+                            absval = absFetch @lhs.hptMap ph
+                            -- n2 = @lhs.maxConstrParameters   -- always a safe approximation
+                            -- n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))  -- wrong, because H-tags can be overwritten with non-final tags
+                            n2 = 1 +  maximum0 (map (length . snd) (getNodes absval))
+                        in Statement_Comment ["Store"]
+                           : store (mkVar ph) n n2 vs
+
+           lhs.localsSet = Set.fromList @lhs.targets
+
+ | FetchUpdate 
+           lhs.stats  = let -- use hptMap to determine size, because hptMap can now be used even after changing numbered variables back to names
+                            n = 1+ maximum0 (map (length . snd) (getNodes (absFetch @lhs.hptMap @src)))
+                         in Statement_Comment ["FetchUpdate"]
+                            : zipWith Statement_Assignment
+                                     (map (arrayVariab (mkVar @dst)) [0..n-1])
+                                     (map (arrayValue  (mkVar @src)) [0..n-1])
+
+ | FetchNode
+           lhs.stats  = error "FetchNode found while generating Silly"
+           lhs.localsSet= error "FetchNode found while generating Silly"
+           
+ | FetchField
+           lhs.stats  = let ph = case @lhs.targets of
+                                   [] -> error ("ToSilly: FetchField has no target in " ++ show @lhs.functionName)
+                                   (x:_) -> x
+                        in    
+                        [ Statement_Comment ["Fetch"]
+                        , Statement_Assignment (mkVar ph)
+                                               (arrayValue (mkVar @nm) @offset)
+                        ]
+           lhs.localsSet = Set.fromList @lhs.targets
+
+ | Case    lhs.stats  = let comm     = Statement_Comment ["Case"]
+                            reenters = if  null @altL.reenteralts
+                                       then []
+                                       else [ ifstat ]
+                            condition   = Value_CompareGT @val.value (Constant_Alias "HOLE")
+                            ifstat      = Statement_IfThenElse condition switch1 []
+                            switch1     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.reenteralts
+                            switch2     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.alternatives
+                        in  if   null @altL.alternatives
+                            then assignments "Empty Case" [] (map mkVar @lhs.targets) (replicate (length @lhs.targets)(Value_Con (Constant_LiteralInt 0)))
+                            else comm : reenters ++ switch2
+                        
+           lhs.localsSet = Set.union (Set.fromList @lhs.targets) @altL.localsSet
+
+ | Call    lhs.stats  = if    @nm==evaluateNr && isJust @lhs.mbPtrTarget
+                        then  [ Statement_Comment ["Evaluate to ptrNode"]
+                              , Statement_Assignment (Variable_Unembedded (fromJust @lhs.mbPtrTarget)) (head @argL.values)
+                              ]
+                        else if not @lhs.hasNext && @lhs.optOwn>=1
+                        then ( 
+                                 [ Statement_Comment ["Call (Own controlled tail) "]
+                                 , Statement_Smart (reverse @argL.values ++ map (Value_Var . Variable_Subs Variable_BP) [1, 0] )
+                                 , Statement_Assignment  Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2- @loc.nMyParams-2))
+                                 , Statement_Jump @nm
+                                 ]
+                              )
+                         else (   Statement_Comment ["Call (Normal or Tail)"]
+                              :   (if @lhs.optOwn>=1
+                                   then (  zipWith Statement_Assignment
+                                                   (map (arrayVariab Variable_SP) [-1,-2..])
+                                                   (  reverse @argL.values
+                                                   ++ [ if @lhs.optOwn>=3 
+                                                         then Value_Label @loc.label
+                                                         else Value_Con (Constant_LiteralInt 0)
+                                                      , Value_Cast (Value_Offset Variable_BP 0) True
+                                                      ]
+                                                   )
+                                        ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
+                                           , Statement_Call @nm (not @lhs.hasNext) [] 
+                                           ]
+                                        ++ if @lhs.optOwn>=3
+                                            then [ Statement_Label @loc.label ]
+                                            else []
+                                        )
+                                   else [Statement_Call @nm (not @lhs.hasNext) @argL.values]
+                                  )
+                              ++  assignments "Result" 
+                                              []
+                                              (map mkVar @lhs.targets) 
+                                              ( let n = length @lhs.targets
+                                                in  if @lhs.optOwn>=1
+                                                     then map (arrayValue Variable_SP) [-1,-2..(0-n)]
+                                                     else map (arrayValue Variable_RP) [0..n-1]
+                                              )
+                              )
+           loc.nMyParams = @argL.length
+           lhs.localsSet = Set.fromList @lhs.targets
+           lhs.retNr     = @lhs.retNr + 1
+           loc.label     = "retlab"++show @lhs.retNr
+
+ | App     lhs.stats  = [Statement_Comment ["App: SHOULDNT"]]
+ | Eval    lhs.stats  = [Statement_Comment ["Eval: SHOULDNT"]]
+ | Throw   lhs.stats  = [Statement_Comment ["Throw: TODO"]]
+ | Catch   lhs.stats  = [Statement_Comment ["Catch: TODO"]]
+
+
+SEM GrAltL
+  | Nil    (lhs.reenteralts, lhs.alternatives) = ([], [])
+  | Cons   (lhs.reenteralts, lhs.alternatives) = if   @hd.isReenter
+                                                 then (@hd.alternative : @tl.reenteralts,                   @tl.alternatives)
+                                                 else (                  @tl.reenteralts, @hd.alternative : @tl.alternatives)
+
+SEM GrAlt
+ | Alt     lhs.alternative = Alternative_Alternative @pat.constant
+                                                     @expr.stats
+
+SEM GrGlobal
+ | Global  loc.globNm      = @nm
+ 		   lhs.names       = [@globNm]
+           lhs.initStats1  = let vs = @val.values
+                                 n  = length vs
+                                 n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
+                             in  [ storeAlloc NotManaged (Variable_Global @globNm) n n2 vs ]
+           lhs.initStats2  = let vs = @val.values
+                                 n  = length vs
+                                 n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
+                             in  storePopulate (Variable_Global @globNm) vs
+
+
+
+SEM GrVal
+ | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
+ | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
+ | Var
+   EnumNode loc.value = Value_Var (mkVar @nm)
+           lhs.value  = @loc.value
+           lhs.values = [@loc.value]
+ | Tag     lhs.value  = @tag.value
+ | Node    lhs.values = @tag.value : @fldL.values
+ | VarNode lhs.values =              @fldL.values
+ | Node    lhs.value  = if null @fldL.values
+                        then @tag.value
+                        else error ("cannot generate value code for non-singleton Node " ++ show @tag.value ++ show @fldL.values)
+ | VarNode lhs.value  = let vs = @fldL.values
+                        in  if length vs==1
+                            then head vs
+                            else error ("cannot generate value code for non-singleton VarNode " ++ show vs)
+                            
+ | BasicNode  lhs.values = [@tag.value, Value_Var (mkVar @nm)]
+ | OpaqueNode lhs.values = [Value_Con (Constant_Alias "UNBOXED"), Value_Var (mkVar @nm)]
+-- | EnumNode   lhs.values = [Value_Var (mkVar @nm)]
+ | Tag        lhs.values = [@tag.value]
+
+-- | PtrNode    lhs.values = [Value_Var (mkVar @nm)]    -- TODO: this treats a ptr as an enum, which is not right
+ | PtrNode    lhs.values = []    -- TODO: do something useful with a pointernode. It is now discarded, because it can only occur after returning from error, which won't happen
+ 
+ -- | PtrNode    lhs.values = error "ToSilly: PtrNode values"
+ | Empty      lhs.values = take 10 (repeat (Value_Con (Constant_LiteralInt 0))) -- error "ToSilly: Empty values"
+ | LitInt     lhs.values = error ("ToSilly: LitInt values" ++ show @int)
+ | LitStr     lhs.values = error ("ToSilly: LitStr values" ++ show @str)
+ -- | Tag        lhs.values = error ("ToSilly: Tag values" ++ show @tag.value)
+
+ | BasicNode  lhs.value  = error "ToSilly: BasicNode value"
+-- | EnumNode   lhs.value  = error "ToSilly: EnumNode value"
+ | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
+ | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
+-- | Empty      lhs.value  = error "ToSilly: Empty value"
+ | Empty      lhs.value  = Value_Label ""
+%%[[10
+ | NodeAdapt  lhs.value  = error "ToSilly: NodeAdapt value"
+              lhs.values = error "ToSilly: NodeAdapt values"
+%%]]
+
+ | Var        lhs.valueName = @nm
+ | *-Var      lhs.valueName = error "ToSilly: valueName taken of non-Var"          
+
+SEM GrValL
+ | Nil    lhs.values = []
+ | Cons   lhs.values = @hd.value : @tl.values
+
+SEM GrTag
+ | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumericShort @nm)
+ | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumericShort @nm)
+ | App     loc.constant = Constant_Alias ("A" ++ hsnShowAlphanumeric @nm)
+ | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumericShort @nm)
+ | Hole    loc.constant = Constant_Alias ("HOLE")
+ | Con Fun App PApp Hole
+           lhs.constant = @loc.constant
+           lhs.value    = Value_Con (@loc.constant)
+
+ | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
+ | Unboxed lhs.constant = Constant_Alias "UNBOXED"
+
+ | * - Con Fun App PApp Hole Unboxed
+           lhs.constant = error "GrTag:other constant"
+           lhs.value    = error "GrTag:other value"
+
+SEM GrPatAlt
+ | Tag     lhs.value    = @tag.value
+           lhs.constant = @tag.constant
+ | * - Tag lhs.value    = error "GrPatAlt:other value"
+           lhs.constant = error "GrPatAlt:other constant"
+-- TODO: | LitInt = ...
+
+
+
+SEM GrExpr
+ | Seq     lhs.tailJumps = @body.tailJumps
+ | Call    lhs.tailJumps = not @lhs.hasNext
+ | Case    lhs.tailJumps = @altL.tailJumps
+ | * - Seq Call Case
+           lhs.tailJumps = False
+
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determining the target
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+ATTR AllGrExpr [ targets : {[HsName]} mbPtrTarget: {Maybe HsName} | | ]
+ATTR GrPatLam GrVarL [ | |  patternNames: {[HsName]}  ]
+ATTR GrPatLam        [ | |  mbPtrName: {Maybe HsName} ]
+ATTR GrVar [ | |  patternName: {HsName} ]
+
+SEM GrBind
+  | Bind     expr . targets = []
+             expr . mbPtrTarget = Nothing
+
+SEM GrExpr
+  | Seq      expr . targets = @pat.patternNames
+             body . targets = @lhs.targets
+             
+             expr . mbPtrTarget = @pat.mbPtrName
+             body . mbPtrTarget = @lhs.mbPtrTarget
+             
+
+SEM GrPatLam
+  | Empty       lhs  .  patternNames = []
+  | Var         lhs  .  patternNames = [@nm]
+  | VarNode     lhs  .  patternNames = @fldL.patternNames
+  | BasicNode   lhs  .  patternNames = [wildcardNr, @nm]
+  | EnumNode    lhs  .  patternNames = [@nm]
+  | OpaqueNode  lhs  .  patternNames = [wildcardNr, @nm]
+  | PtrNode     lhs  .  patternNames = [@nm]
+  
+  | BasicAnnot  lhs  .  patternNames = [@nm]
+  | EnumAnnot   lhs  .  patternNames = [@nm]
+  | OpaqueAnnot lhs  .  patternNames = [@nm]
+  | PtrAnnot    lhs  .  patternNames = [@nm]
+  
+SEM GrPatLam
+  | PtrNode     lhs  .  mbPtrName    = Just @nm
+  | * - PtrNode lhs  .  mbPtrName    = Nothing
+  
+
+SEM GrVarL
+  | Nil   lhs.patternNames = []
+  | Cons  lhs.patternNames = @hd.patternName : @tl.patternNames
+  
+SEM GrVar
+  | Var      lhs.patternName = @nm
+  | KnownTag lhs.patternName = wildcardNr
+  | Ignore   lhs.patternName = wildcardNr
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+
+ATTR GrAGItf
+  [ opts : {EHCOpts} | | ]
+
+ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
+  [ optOwn : {Int} 
+    opts   : {EHCOpts}  | | ]
+
+SEM GrAGItf
+  | AGItf loc.optOwn  = ehcOptOwn @lhs.opts
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Collect all tags
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set GrTag} ]
+
+ATTR GrTag [ | | self : SELF ]
+
+SEM GrTag
+  | *     lhs.genAllTags = Set.singleton @loc.self
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Auxiliary Haskell
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+
+tagArity (GrTag_Con ann _ _) = gtannArity ann
+
+
+yielding what own values numberParameters
+  =  let nMyRes  = length values
+         moveRet = nMyRes > numberParameters
+     in  Statement_Comment [what ++ " (Yielding)"]
+         : if own
+            then [ Statement_Smart (values ++ [Value_Var (Variable_Subs Variable_BP 1) | moveRet])
+                 , Statement_Assignment Variable_SP (Value_Offset Variable_BP (numberParameters+2))
+                 , Statement_Return (max nMyRes numberParameters + 1)
+                 ]
+            else [ Statement_Assignment v e
+                 | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
+                               values
+                 ]
+
+
+assignments :: String -> [Variable] -> [Variable] -> [Value] -> [Statement]
+assignments what vars1 vars2 values
+  = Statement_Comment [what] 
+    :
+    [ if isRealVar v1
+       then (if isRealVar v2
+              then Statement_Assignment2 v2 v1 e
+              else Statement_Assignment v1 e
+            )
+       else Statement_Assignment v2 e
+    | (v1,v2,e) <-zip3 (vars1 ++ repeat Variable_None)
+                       (vars2 ++ repeat Variable_None)
+                       values
+    , (isRealVar v1 || isRealVar v2) && isRealVal e
+    ]
+
+
+
+switchStatement :: Bool -> Value -> Alternatives -> Statements
+switchStatement False scrut [Alternative_Alternative when body]
+  = body
+switchStatement gendef scrut alts
+  = [ Statement_Switch scrut alts ]
+
+
+
+
+
+
+isRealVal (Value_Label []) = False
+isRealVal _                = True
+
+
+
+isRealVar Variable_None = False
+isRealVar (Variable_Unembedded (HNmNr 0 _)) = False
+isRealVar _             = True
+
+maximum0 [] = 0
+maximum0 xs = maximum xs
+
+-- n1 is the number of parameters of the tag
+-- n2 is the maximum number of parameters of all constructorfunctions
+-- F-tags and A-tags may be overwritten later with a C-tag or a P-tag, which might have more parameters.
+-- We anticipate here for the maximum number of parameters.
+-- Obvious improvement: do not take the global maximum, but only the maximum over the constructors
+-- that are actually possible for this function.
+-- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
+
+allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
+allocate 'C' tp n1 _  = Value_Alloc      n1     tp
+allocate _   tp n1 n2 = Value_Alloc (max n1 n2) tp
+       
+-- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
+tagcat :: [Value] -> Char
+tagcat (Value_Con (Constant_Alias (c:_)):_) = c
+tagcat _ = ' '
+
+storeAlloc :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statement
+storeAlloc tp v n1 n2 vs
+       =  Statement_Assignment v (allocate (tagcat vs) tp n1 n2)
+
+storePopulate :: Variable -> [Value] -> Statements
+storePopulate v vs
+       =  zipWith Statement_Assignment
+                  (map (arrayVariab v) [0..])
+                  vs
+
+store :: Variable -> Int -> Int -> [Value] -> Statements
+store v n1 n2 vs
+       =  storeAlloc GCManaged v n1 n2 vs : storePopulate v vs
+
+storePopulate2 :: Variable -> [Variable] -> [Value] -> Statements
+storePopulate2 v xs vs
+       =  zipWith3 Statement_Assignment2
+                   xs
+                   (map (arrayVariab v) [0..])
+                   vs
+
+store2 :: Variable -> Int -> Int -> [Variable] -> [Value] -> Statements
+store2 v n1 n2 xs vs
+       =  storeAlloc GCManaged v n1 n2 vs : storePopulate2 v xs vs
+
+
+
+mkVar :: HsName -> Variable
+mkVar = Variable_Unembedded
+
+
+arrayValue :: Variable -> Int -> Value
+arrayValue a i = Value_Var (Variable_Subs a i)
+
+arrayVariab :: Variable -> Int -> Variable
+arrayVariab a i = Variable_Subs a i
+
+
+
+neededTags opts 
+  =  let nameSupplier = ehcOptBuiltinNames opts
+     in  [ (ehbnBoolFalse          nameSupplier, "False")
+         , (ehbnBoolTrue           nameSupplier, "True" )
+         , (ehbnDataListAltCons    nameSupplier, "Cons" )
+         , (ehbnDataListAltNil     nameSupplier, "Nil"  )
+         , (ehbnDataOrderingAltEQ  nameSupplier, "EQ"   )
+         , (ehbnDataOrderingAltGT  nameSupplier, "GT"   )
+         , (ehbnDataOrderingAltLT  nameSupplier, "LT"   )
+         ]
+
+tagAliases :: EHCOpts -> [(String,String)]
+tagAliases opts
+  =  ( "Ccomma0", "RTS_Unit" )
+     : [ ("C" ++ hsnShowAlphanumericShort x, "RTS_"++y)
+       | (x,y) <- neededTags opts
+       ]
+
+
+tagConstants :: EHCOpts -> Set.Set GrTag -> [(String,Int)]
+tagConstants opts tagset
+ = let f ((t,_),_) = showGrTag t
+       predef = -- Make sure these are the same as in src/rts/C/prim-const.ch
+                [ "Ccomma0"
+                ]
+                ++
+                [ "C" ++ hsnShowAlphanumericShort x
+                | (x,y) <- neededTags opts
+                ]
+%%[[98
+                ++
+                [ "CUHC_IOBase_AppendBinaryMode"
+                , "CUHC_IOBase_AppendMode"                
+                , "CUHC_IOBase_ReadBinaryMode"                
+                , "CUHC_IOBase_ReadMode"                
+                , "CUHC_IOBase_ReadWriteBinaryMode"                
+                , "CUHC_IOBase_ReadWriteMode"                
+                , "CUHC_IOBase_WriteBinaryMode"                
+                , "CUHC_IOBase_WriteMode"
+                ]
+%%]]
+       inprog = map showGrTag (Set.toAscList (Set.insert GrTag_Hole tagset))
+   in  zip (inprog \\ predef) [length predef..]
+
+showGrTag :: GrTag -> String
+showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
+showGrTag (GrTag_Rec) = "GrTag:Rec"
+showGrTag (GrTag_Hole) = "HOLE"
+showGrTag (GrTag_Unboxed) = "UNBOXED"
+
+%%]

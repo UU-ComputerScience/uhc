@@ -1,0 +1,90 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to JVM class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs module {%{EH}JVMClass} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%]
+
+%%[(8 java) hs import(Data.Maybe,Data.Char,Data.List)
+%%]
+%%[(8 java) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+%%[(8 java) hs import(Data.Word,Data.Int)
+%%]
+%%[(8 java) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[(8 java) hs export(AGItf(..), PoolConstAGItf(..)) 
+%%]
+%%[(8 java) hs export(Class(..), Classes)
+%%]
+%%[(8 java) hs export(Field(..), Fields, Flag(..), Flags, Method(..), Methods, Type(..), Types, MbType, Const(..), MbConst, Consts, UserData(..), UserDatas, UserDataAssoc, UserDataAssocs) 
+%%]
+%%[(8 java) hs export(PoolConst(..), MbPoolConst, PoolConsts) 
+%%]
+%%[(8 java) hs export(Code(..), MbCode, Instr(..), Instrs, Note(..), ArithOp(..), CmpMode(..), MbCmpMode, InvokeMode(..), Case(..), Cases, SwitchType(..), Test(..)) 
+%%]
+
+%%[(8 java) ag import({JVMClass/AbsSyn})
+-- DERIVING *     : Show, Eq
+%%]
+
+%%[(8 java) ag
+DERIVING PoolConst Type: Eq, Ord
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Basic types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs export(U4,U2,U1)
+type U4 = Word32
+type U2 = Word16
+type U1 = Word8
+%%]
+
+%%[(8 java) hs export(JByte,JShort,JChar,JInt,JLong)
+type JByte = Int8
+type JShort = Int16
+type JChar = Word16
+type JInt = Int32
+type JLong = Int64
+%%]
+
+%%[(8 java) hs export(JFloat,JDouble)
+type JFloat = Int32
+type JDouble = Int64
+%%]
+
+%%[(8 java) hs export(ClassRef,MethodRef,FieldRef)
+type ClassRef = HsName
+type MethodRef = String
+type FieldRef = String
+%%]
+
+%%[(8 java) hs export(Local)
+type Local = Int
+%%]
+
+%%[(8 java) hs export(Label)
+type Label = Int
+%%]
+
+%%[(8 java) hs export(showClassRef)
+showClassRef :: ClassRef -> String
+showClassRef r = hsnShow "/" r
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instruction wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java) hs export(JInstr,jinstrUnions)
+type JInstr = Seq.Seq Instr
+
+jinstrUnions :: [JInstr] -> JInstr
+jinstrUnions = Seq.unions
+%%]
+
+

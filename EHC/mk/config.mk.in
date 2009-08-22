@@ -1,0 +1,71 @@
+###########################################################################################
+# this file
+###########################################################################################
+
+MK_PREFIX									:= $(TOP_PREFIX)mk/
+MK_CONFIG_MKF								:= $(MK_PREFIX)config.mk
+
+###########################################################################################
+# the overall version of EH
+###########################################################################################
+
+EH_VERSION_MAJOR		:= @EH_VERSION_MAJOR@
+EH_VERSION_MINOR		:= @EH_VERSION_MINOR@
+EH_VERSION_MINORMINOR	:= @EH_VERSION_MINORMINOR@
+EH_VERSION_STABILITY	:= @EH_VERSION_STABILITY@
+EH_VERSION_SHORT		:= @EH_VERSION_SHORT@
+EH_VERSION_FULL			:= @EH_VERSION_FULL@
+
+###########################################################################################
+# platform config, currently changed to config by autoconf
+###########################################################################################
+
+# EXEC_SUFFIX	: suffix for executables
+# PATH_SEP		: separator in file paths
+# PATHS_SEP		: separator in sequences of file paths, as in environments
+# PATHS_SEP_COL	: separator in sequences of file paths, as in environments which do not use absolute paths
+# STRIP_CMD		: strip cmd
+# TOPABS_PREFIX	: absolute prefix/pathname to top dir
+
+### Unix
+EXEC_SUFFIX			:= @SUFFIX_EXEC@
+LIB_SUFFIX			:= @SUFFIX_LIB@
+PATH_SEP			:= /
+PATHS_SEP			:= @PATHS_SEP@
+PATHS_SEP_COL		:= :
+STRIP_CMD			:= strip
+TOPABS_PREFIX		:= @TOP_ABS@/
+TOPABS2_PREFIX		:= @TOP_ABS2@/
+
+### WinXX
+#EXEC_SUFFIX			:= .exe
+#PATH_SEP			:= /
+#PATHS_SEP			:= ;
+#PATHS_SEP_COL		:= :
+#STRIP_CMD				:= strip
+#TOPABS_PREFIX		:= c:/whatever/
+
+### remaining config
+# which version (usually v1 = current, v2 == under development)
+#RULER2_OPTS_VERSION	:= --v1
+#RULER2_OPTS_VERSION	:= --v2
+RULER2_OPTS_VERSION	:=
+
+### names of packages assumed by the compiler driver
+RTS_PKG_NAME				:= @RTS_PKG_NAME@
+EXTLIBS_BGC_PKG_NAME		:= @EXTLIBS_BGC_PKG_NAME@
+EXTLIBS_GMP_PKG_NAME		:= @EXTLIBS_GMP_PKG_NAME@
+
+###########################################################################################
+# inclusion of features
+###########################################################################################
+
+# include java code generation
+ifeq (@ENABLE_JAVA@,yes)
+ENABLE_JAVA					:= yes
+endif
+
+ifeq (@ENABLE_CLR@,yes)
+ENABLE_CLR					:= yes
+endif
+

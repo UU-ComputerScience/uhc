@@ -1,0 +1,96 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common stuff related to name substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllExpr [ nmAliasMp: NmAliasMp | | ]
+
+SEM GrBind
+  | Bind        expr        .   nmAliasMp       =   Map.empty
+
+SEM GrGlobal
+  | Global      val         .   nmAliasMp       =   Map.empty
+
+SEM GrExpr
+  | Seq         loc         .   patAliasMp      =   mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+
+SEM GrAlt
+  | Alt         loc         .   patAliasMp      =   mkNmAliasMp [(n,@lhs.mkNewNm n) | n <- @pat.introNmL]
+                            .   nmAliasMp       =   @patAliasMp `Map.union` @lhs.nmAliasMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name renaming for locally introduced names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllNT [ mkNewNm: {HsName -> HsName} | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: renaming
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Call        lhs         .   trf             =   GrExpr_Call (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
+  | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
+%%[[8
+  | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf
+%%][94
+  | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @argL.trf
+%%][99
+  | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @ffiAnnot @argL.trf
+%%]]
+  | Eval        lhs         .   trf             =   GrExpr_Eval $ nmAliasRepl @lhs.nmAliasMp @nm
+  | FetchNode   lhs         .   trf             =   GrExpr_FetchNode  (nmAliasRepl @lhs.nmAliasMp @nm)
+  | FetchField  lhs         .   trf             =   GrExpr_FetchField (nmAliasRepl @lhs.nmAliasMp @nm) @offset @mbTag
+  | UpdateUnit  lhs         .   trf             =   GrExpr_UpdateUnit (nmAliasRepl @lhs.nmAliasMp @nm) @val.trf
+  | FetchUpdate lhs         .   trf             =   GrExpr_FetchUpdate (nmAliasRepl @lhs.nmAliasMp @src) (nmAliasRepl @lhs.nmAliasMp @dst)
+  | Throw       lhs         .   trf             =   GrExpr_Throw (nmAliasRepl @lhs.nmAliasMp @nm)
+  | Catch       lhs         .   trf             =   GrExpr_Catch @body.trf (nmAliasRepl @lhs.nmAliasMp @arg) @handler.trf
+
+SEM GrPatAlt
+  | Node        lhs         .   trf             =   GrPatAlt_Node @tag.trf (map (nmAliasRepl @lhs.nmAliasMp) @fldL)
+%%[[10
+  | NodeSplit   lhs         .   trf             =   GrPatAlt_NodeSplit @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+%%]]
+
+SEM GrPatLam
+  | Var         lhs         .   trf             =   GrPatLam_Var (nmAliasRepl @lhs.nmAliasMp @nm)
+  | BasicNode	lhs			.	trf				=	GrPatLam_BasicNode @annot (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumNode	lhs			.	trf				=	GrPatLam_EnumNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | OpaqueNode	lhs			.	trf				=	GrPatLam_OpaqueNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | PtrNode  	lhs			.	trf				=	GrPatLam_PtrNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | BasicAnnot	lhs			.	trf				=	GrPatLam_BasicAnnot @annot (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumAnnot	lhs			.	trf				=	GrPatLam_EnumAnnot (nmAliasRepl @lhs.nmAliasMp @tycon) (nmAliasRepl @lhs.nmAliasMp @nm)
+  | OpaqueAnnot	lhs			.	trf				=	GrPatLam_OpaqueAnnot (nmAliasRepl @lhs.nmAliasMp @nm)
+  | PtrAnnot	lhs			.	trf				=	GrPatLam_PtrAnnot (nmAliasRepl @lhs.nmAliasMp @tycon) (nmAliasRepl @lhs.nmAliasMp @nm)
+
+SEM GrVar
+  | Var         lhs         .   trf             =   GrVar_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+
+SEM GrVal
+  | Var         lhs         .   trf             =   GrVal_Var $ nmAliasRepl @lhs.nmAliasMp @nm
+  | BasicNode	lhs			.	trf				=	GrVal_BasicNode @tag.trf (nmAliasRepl @lhs.nmAliasMp @nm)
+  | EnumNode	lhs			.	trf				=	GrVal_EnumNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | PtrNode	    lhs			.	trf				=	GrVal_PtrNode (nmAliasRepl @lhs.nmAliasMp @nm)
+  | OpaqueNode	lhs			.	trf				=	GrVal_OpaqueNode (nmAliasRepl @lhs.nmAliasMp @nm)
+%%[[10
+  | NodeAdapt   lhs         .   trf             =   GrVal_NodeAdapt (nmAliasRepl @lhs.nmAliasMp @nm) @fldL.trf
+%%]]
+%%]
+
+%%[(10 codegen grin)
+SEM GrSplit
+  | Sel         lhs         .   trf             =   GrSplit_Sel (nmAliasRepl @lhs.nmAliasMp @nm) @off.trf
+%%]
+

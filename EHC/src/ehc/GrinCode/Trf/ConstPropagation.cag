@@ -1,0 +1,87 @@
+%%[doesWhat doclatex
+
+Eliminate name aliases, to avoid unnecessary variable introductions, hence runtime loads.
+Propagate constants.
+
+%%]
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ConstPropagation}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,Data.Maybe)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
+%%]
+
+%%[(8 codegen grin) hs export(grConstPropagation)
+grConstPropagation :: GrModule -> GrModule
+grConstPropagation grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defaults for imported code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrAGItf
+  | AGItf		loc			.	mkNewNm			=	id
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         body        .   nmAliasMp       =   @newNmAliasMp `Map.union` @lhs.nmAliasMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: inline references to constants where possible
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | trf: GrModule ]
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         loc         .   (seqTrf,newNmAliasMp)
+                                                =   case (@expr.nmAlias,@pat.nmAlias,@body.nmAlias) of
+                                                      (c@(NmAlias_Const _ _),pp@(NmAlias_Nm p),_)					-- allow reference to constant instead
+                                                        -> (@trf,Map.singleton p (c {naliNm = p}))
+                                                      (NmAlias_Nm e,_,_) | isJust mbAli								-- use of name mapping to other value, may be replaced by orig value
+                                                        -> case mbAli of
+                                                             Just (NmAlias_Const _ c)
+                                                               -> (GrExpr_Seq (GrExpr_Unit c) @pat.trf @body.trf,Map.empty)
+                                                             _ -> (@trf,Map.empty)
+                                                        where mbAli = Map.lookup e @lhs.nmAliasMp
+                                                      _ -> (@trf,Map.empty)
+                lhs         .   trf             =   @seqTrf
+%%]

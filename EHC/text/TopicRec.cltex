@@ -1,0 +1,213 @@
+%%[scratch
+\subsection{Current implementation examples}
+
+\begin{code}
+%%@[file:test/regress/7/all-ok.eh%%]
+\end{code}
+
+with output
+
+\begin{TT}
+%%7ppfile(test/regress/7/all-ok.eh%%)
+\end{TT}
+
+\subsection{Choices already made}
+
+\Paragraph{Syntax: delimiters}
+The notation for tuples with parentheses |(...)| is reused, no curly braces are used |{...}|.
+\begin{Itemize}
+\item
+Curly braces are used for an alternative way of specifying list usually speficied via the layout rule (declarations, case alternatives).
+Especially the case alternative would lead to parsing problems with the matching of records.
+\item
+Tuples now automatically are records with a numerical selection as field selection
+\begin{code}
+%%@[file:test/regress/7/tup-sel.eh%%]
+\end{code}
+\end{Itemize}
+
+Rows themselves are delimited by |(||...||)|, variants by |(<...>)|.
+
+A row/record is always based on (or an extension of) an empty row/record.
+For a following version allowing extensible records this restriction (obviously) is removed.
+
+\Paragraph{Case expression, punning}
+Pattern matching a record is done via case:
+
+\begin{code}
+%%@[file:test/regress/7/pun.eh%%]
+\end{code}
+
+In these examples, the matching for |v1| is done on the basis of field names at the left of |=|.
+The corresponding field value is made available via the name at the right of |=|.
+If the latter name is omitted, so called punning takes place where both names are base on the single identifier
+occurring on a field position.
+The second example |v2| demonstrates this feature.
+
+However, for tuples we run into a problem if we try to pun because the names for fields of a tuple
+default to |[1..]|.
+Tuples now would require explicit field name matching whereas (for compatibility/convenience reasons) the
+use as with |v3| is desirable.
+To fix this a somewhat arguable choice has been made:
+\begin{Itemize}
+\item
+If at least one field is matched via explicit field matching (as in |v2|) punning is done for the fields not
+matched via an explicit field match.
+\item
+If no field is matched explicitly, all fields are implicitly matched on their positional label, that is |[1..]|.
+\end{Itemize}
+
+This design decision causes |v4| and |v5| to produce error messages:
+
+\begin{TT}
+%%7ppfile(test/regress/7/pun.eh%%)
+\end{TT}
+
+\Paragraph{Relation with other proposals}
+For the rest the proposal by Jones \cite{jones99lightweight-ext-rec} is followed.
+
+This proposal also deviates from TRex (by extending from left to right) and is incompatible
+with Haskell because of the use of @'.'@ as the builtin selection operator.
+
+\subsection{Issues, partly resolved or previous}
+
+Merge with tuples, merge with data (which is tagged record).
+
+Follow \cite{jones99lightweight-ext-rec}.
+
+But what about tuple notation? Take theirs or Haskell98/EH(untilnow)?
+Or different notation for rows, swap @()@ and @{}@?
+
+@{}@ is also used for decls and case alternatives, so conflicts with rec match
+\begin{code}
+let v :: {a :: Int, b :: Char, c :: a -> a}
+    vc = case v of
+           {a = aa, b = bb, c = cc} -> aa
+...
+\end{code}
+The @{@ is parsed as the beginning of an alternative.
+
+Punning
+\begin{code}
+let (x,y) =
+\end{code}
+means matching on field label, not just position.
+
+Default names, when absent (not for patterns): "fld001" and further,
+but this limits range to 1000 fields.
+Otherwise, "fld1" and further breaks canonical sorting order, that is
+|"fld11" < "fld2"| instead of other way around.
+Order is needed later on for extensible records.
+
+Doaitse:
+Parsing of
+\begin{code}
+    vc =  case v of
+            {{a = aa, b = bb,cc} -> aa}
+\end{code}
+creates a bit of a problem with |cc|, which is 
+a pattern with an optional prefix |pVarid <* pKey "="|.
+The optionality cannot be expressed with |`opt`| but must be done
+with |pSucceed|, probably because of greediness.
+
+Allowing field labels to be absent and having default names is ok
+for values and patterns because only a @{}@ notation is used.
+For rows however:
+\begin{code}
+v1 :: (Int,Char)
+\end{code}
+it is ambiguous. Is |v1| a tuple or a row?
+Solutions:
+\begin{Itemize}
+\item
+Forbid absent labels in a row.
+\item
+Different syntax, but which, taking into account the need to notate 
+implicit arguments in a type with e.g. @<>@.
+\end{Itemize}
+
+Problem: open/close pairs of symbols:
+
+\begin{center}
+\begin{tabular}{lllll}
+Open & Close & Expr & PatExpr & TyExpr \\
+\hline
+@[@ & @]@ & list & list & list \\
+@(@ & @)@ & tuple & tuple & tuple, row \\
+@{@ & @}@ & record, layout & record & record \\
+@<@ & @>@ & operator & & implicit parameter \\
+ &  & variant & variant & variant \\
+ &  & implicit parameter & & \\
+\end{tabular}
+\end{center}
+
+The braces @{}@ are used ambiguously, variants and implicit parameters cannot be expressed.
+Alternative scheme, merging tuples with records:
+
+\begin{center}
+\begin{tabular}{lllll}
+Open & Close & |Expr| & |PatExpr| & |TyExpr| \\
+\hline
+@[@ & @]@ & list & list & list \\
+@(@ & @)@ & record/tuple & record (field match) & record/tuple \\
+@{(@ & @)}@ &  & tuple (position match) & row \\
+@{[@ & @]}@ & variant & variant & variant \\
+@{<@ & @>}@ & implicit parameter & & implicit parameter \\
+@<@ & @>@ & operator & & \\
+\end{tabular}
+\end{center}
+
+Consequence: scanner requires adaptation, @{(@ and @)}@ are used inconsistently in
+|PatExpr| and |TyExpr|, keeping backwards compatibility for tuple alike (i.e. positional) match.
+
+\subsection{Rules}
+
+\rulerCmdUse{rules.expr9.rec}
+
+
+\subsection<article>{Literature}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

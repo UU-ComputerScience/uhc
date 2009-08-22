@@ -1,0 +1,147 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+Some bindings are floated to the module level:
+* lambdas
+* CAFs that are "closurable"
+We assume that the moved bindings have no free variables.
+This is ensured by previous transformations:
+* LamGlobalAsArg (for lambdas)
+* CAFGlobalAsArg (for closurable CAFs)
+
+Lambda bindings always float up all the way to the module level.
+CAF bindings may be intercepted on their way up if they encounter a *strict* Let.
+The meaning of a "closurable" CAF binding is defined in CommonFloat.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float lambda's to global level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
+%%]
+
+
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map)
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfFloatToGlobal :: CModule -> CModule
+cmodTrfFloatToGlobal cmod
+  =  let  t = wrap_AGItf  (sem_AGItf (AGItf_AGItf cmod))
+                              (Inh_AGItf)
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Expr
+  | Let         binds . lev  =  @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The bindings in a binding list are partitioned into three sequences:
+* lambda bindings
+* CAF bindings that are "closurable"
+* other bindings
+
+In a Let-expression, some of these are consumed as the bindings to be Let,
+others grouped together, labelled with the @categ of the Let, and passed upwards.
+What is passed upwards, and what is consumed, depends on the situation:
+
+  IN CASE OF:               PASSED UPWARDS:                                        CONSUMED HERE:
+* Let at the module-level:  nothing                                                everything
+* in a strict Let:          the lambda bindings                                    the "others" and the CAF bindings
+* in other Let bindings:    the lambda bindings and the closurable CAF bindings    the "others"             
+
+
+%%[(8 codegen)
+ATTR AllBind   [ | | cLamBinds, 
+                     cCAFBinds, 
+                     cOtherBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
+ATTR AllCodeNT [ | | cFloatedBinds USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (ValBindCateg,Seq.FastSeq CBind)} ]
+
+SEM ValBind
+  | Val         lhs . ( cLamBinds
+                      , cCAFBinds
+                      , cOtherBinds
+                      )             =   if @expr.isLam
+                                        then ( Seq.singleton @cTrf
+                                             , Seq.empty
+                                             , Seq.empty
+                                             )
+                                        else if @loc.isClosurableBind
+                                        then ( Seq.empty
+                                             , Seq.singleton @cTrf
+                                             , Seq.empty
+                                             )
+                                        else ( Seq.empty
+                                             , Seq.empty
+                                             , Seq.singleton @cTrf
+                                             )
+  | FFI
+%%[[94
+    FFE
+%%]]
+                lhs . cOtherBinds   =   Seq.singleton @cTrf
+
+SEM Expr
+  | Let         lhs .( cTrf
+                     , cFloatedBinds
+                     )              =   if @lhs.lev == cLevModule
+                                        then ( foldr (\(c,b) e -> mkExprLet c (Seq.toList b) e) @body.cTrf                                  -- consumed: everything
+                                               $ Seq.toList
+                                               $ @binds.cFloatedBinds 
+                                                 `Seq.union` Seq.singleton (@categ,Seq.unions [ @binds.cLamBinds
+                                                                                              , @binds.cCAFBinds
+                                                                                              , @binds.cOtherBinds
+                                                                                              ])
+                                             , Seq.empty                                                                                     -- passed upwards: nothing
+                                             )
+                                        else if @categ == ValBindCateg_Strict 
+                                        then ( mkExprLet @categ (Seq.toList (@binds.cCAFBinds `Seq.union` @binds.cOtherBinds)) @body.cTrf   -- consumed: CAFs and others
+                                             , Seq.unions [ Seq.singleton (@categ,@binds.cLamBinds)                                          -- passed upwards: lambdas
+                                                          , @binds.cFloatedBinds
+                                                          , @body.cFloatedBinds
+                                                          ]
+                                             )
+                                        else ( mkExprLet @categ (Seq.toList @binds.cOtherBinds) @body.cTrf                                  -- consumed: others
+                                             , Seq.unions [ Seq.singleton (@categ, @binds.cLamBinds `Seq.union` @binds.cCAFBinds)            -- passed upwards: lambdas and CAFs
+                                                          , @binds.cFloatedBinds
+                                                          , @body.cFloatedBinds
+                                                          ]
+                                             )
+%%]

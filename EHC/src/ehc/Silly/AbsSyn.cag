@@ -1,0 +1,97 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Silly (Simple Imperative Language)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin)
+
+TYPE Functions  = [Function]
+TYPE Statements = [Statement]
+TYPE Alternatives = [Alternative]
+TYPE Values       = [Value]
+
+DATA SilModule
+  |  SilModule   aliases    : {[(String,String)]}
+                 constants  : {[(String,Int)]}
+                 variables  : {[HsName]}
+                 functions  : Functions
+
+DATA Function
+  |  Function    name       : {HsName}
+                 tailJumps  : {Bool}
+                 parameters : {[HsName]}
+                 locals     : {[HsName]}
+                 body       : Statements
+
+DATA Statement
+  |  Assignment  dest       : Variable
+                 source     : Value
+  |  Assignment2 dest       : Variable
+                 dest2      : Variable
+                 source     : Value
+  |  IfThenElse  condition  : Value
+                 thenpart   : Statements
+                 elsepart   : Statements
+  |  Switch      scrutinee  : Value
+                 body       : Alternatives
+  |  Call        name       : {HsName}
+                 tailJumps  : {Bool}
+                 args       : Values
+  |  Jump        name       : {HsName}
+  |  Return      retdiff    : {Int}
+  |  Label       name       : {String}
+  |  Comment     comment    : {[String]}
+  |  Smart       vals       : Values
+  |  Voiden      val        : Value
+
+DATA Alternative
+  |  Alternative when       : Constant
+                 body       : Statements
+
+DATA Constant
+  |  LiteralInt  value      : {Int}
+  |  LiteralStr  value      : {String}
+  |  Alias       name       : {String}
+
+DATA Variable
+  |  Unembedded  name       : {HsName}
+  |  Local       pos        : {Int}
+                 name       : {HsName}
+  |  Param       pos        : {Int}
+                 name       : {HsName}
+  |  Global      name       : {HsName}
+  |  Subs        array      : Variable
+                 index      : {Int}
+  |  SP
+  |  RP
+  |  BP
+  |  Aux
+  |  Ptr
+  |  None
+
+DATA Value
+  |  Con         con        : Constant
+  |  Var         var        : Variable
+  |  Offset      var        : Variable
+                 off        : {Int}
+  |  Cast        val        : Value
+                 word       : {Bool}
+  |  Alloc       size       : {Int}
+                 gcManaged  : {SillyAllocManageType}
+  |  Label       name       : {String}
+  |  Call        name       : String
+                 args       : Values
+  |  CompareGT   val        : Value
+                 con        : Constant
+
+
+SET AllNT       =   SilModule Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value
+
+
+DERIVING * : Show, Ord
+%%]

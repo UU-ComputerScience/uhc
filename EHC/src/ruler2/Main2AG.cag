@@ -1,0 +1,44 @@
+-------------------------------------------------------------------------
+-- Main for AG, pass 2
+-------------------------------------------------------------------------
+%%[1 hs module (Main2AG)
+%%]
+
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Pretty, EH.Util.PrettyUtils)
+%%]
+
+%%[1 hs import (EH.Util.Utils, Opts, Common, LaTeXFmtUtils, Expr.Utils, Ty.Utils, ARule.Utils, ViewSel.Utils)
+%%]
+
+%%[1 hs import (Config( cfgStrSel ), FmGam, RwExprGam, ECnstrGam, AbsSyn.AbsSyn2)
+%%]
+
+-------------------------------------------------------------------------
+-- Inclusion of split off parts
+-------------------------------------------------------------------------
+
+%%[1 ag import ({AbsSyn/AbsSyn2AG}, {AbsSyn/CommonAG}, {FmGamAG}, {AS2/Opts}, {AS2/Pretty})
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG}, {Expr/PrettyPrintAG}, {Expr/SelfAG}, {Expr/FmGamAG})
+%%]
+
+%%[1 ag import ({ARule/AbsSynAG}, {ARule/PrettyPrintAG}, {ARule/SelfAG}, {ARule/FmGamAG})
+%%]
+
+-------------------------------------------------------------------------
+-- Interfacing to AST
+-------------------------------------------------------------------------
+
+%%[1 ag
+WRAPPER AGItf
+%%]
+
+%%[1 hs
+ppAS2 :: Opts -> FmGam Expr -> Decls -> PP_Doc
+ppAS2 o g r
+  = pp_Syn_AGItf r2
+  where r1 = sem_AGItf (AGItf_AGItf r)
+        r2 = wrap_AGItf r1
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = g})
+%%]

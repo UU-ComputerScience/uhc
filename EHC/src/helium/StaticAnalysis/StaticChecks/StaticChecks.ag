@@ -1,0 +1,112 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- A static analyzer. The checks are defined in the included ag-modules.
+--
+-----------------------------------------------------------------------------
+{
+module Helium.StaticAnalysis.StaticChecks.StaticChecks
+where
+}
+{
+import Helium.Utils.Similarity ( similar )
+import Helium.Compiler.Args
+import Helium.Syntax.UHA
+import Helium.Syntax.UHA_Utils
+import Helium.Syntax.UHA_Range
+import Top.Types
+import Helium.StaticAnalysis.Messages.StaticErrors
+import Helium.StaticAnalysis.Messages.Warnings
+import Helium.StaticAnalysis.Messages.Messages
+import List
+import Helium.Utils.Utils ( internalError, fst3, minInt, maxInt )
+import Helium.StaticAnalysis.Miscellaneous.TypeConversion
+import Helium.CodeGeneration.DerivingShow
+import Helium.StaticAnalysis.Miscellaneous.TypeConstraints
+import qualified Data.Map as M
+import Helium.ModuleSystem.ImportEnvironment
+import Helium.Parser.OperatorTable
+import Char ( isUpper )
+}
+
+ATTR *
+   [ | | self : SELF ]
+
+
+ATTR Module
+   [ baseName              : String
+     importEnvironments    : ImportEnvironments
+     options               : {[Option]}
+   |
+   | collectEnvironment    : ImportEnvironment  
+     errors                : Errors
+     typeSignatures        : {[(Name,TpScheme)]}
+     warnings              : Warnings
+   ]
+
+ATTR Module -> Type [ options : {[Option]} || ]
+
+INCLUDE "Collect.ag"
+INCLUDE "../../Syntax/UHA_Syntax.ag"
+INCLUDE "Scope.ag"
+INCLUDE "KindChecking.ag"
+INCLUDE "Warnings.ag"
+INCLUDE "TopLevelErrors.ag"
+INCLUDE "MiscErrors.ag"
+INCLUDE "ExportErrors.ag"
+INCLUDE "HeliumPartialSyntax.ag"
+INCLUDE "ScopeErrors.ag"
+
+
+-- combine all the collected errors, then filter out the "entity is undefined" 
+-- errors that are caused by the removal of "duplicated entities"
+SEM Module
+  | Module   lhs . errors = filter (\err -> filterRemovedNames @removedEntities err 
+                                         && filterDerivedNames @derivedRanges err) @allErrors
+                 . warnings  = @scopeWarnings ++ @warnings                                        
+             loc . allErrors = concat [ @exportErrors
+                                      , @scopeErrors
+                                      , @miscerrors
+                                      , if KindInferencing `elem` @lhs.options then [] else @kindErrors
+                                      , @topLevelErrors
+                                      ] 
+                 . removedEntities = [ (name,TypeConstructor) | name:_ <- @duplicatedTypeConstructors  ] ++   
+                                     [ (name,Constructor    ) | name:_ <- @duplicatedValueConstructors ]
+                 . derivedRanges   = map getNameRange (map fst @derivedFunctions)
+                 . initialScope    = map fst @derivedFunctions ++ 
+                                     concatMap (M.keys . typeEnvironment) @lhs.importEnvironments                 
+{
+-- filter undefined errors that are caused by the removal of a duplicate definition
+filterRemovedNames :: [(Name,Entity)] -> Error -> Bool
+filterRemovedNames list err = 
+   case err of  
+      Undefined entity name _ _ -> (name,entity) `notElem` list
+      _                         -> True
+      
+filterDerivedNames :: [Range] -> Error -> Bool
+filterDerivedNames ranges err = 
+   case err of
+      Duplicated Definition names -> any (`notElem` ranges) (map getNameRange names) 
+      _                           -> True
+}
+
+ATTR FunctionBinding FunctionBindings LeftHandSide [ | | name:Name ]
+ATTR Patterns LeftHandSide [ | | numberOfPatterns : Int ]
+
+SEM FunctionBindings 
+  | Cons  lhs . name = @hd.name
+  | Nil   lhs . name = internalError "StaticChecks.ag" "n/a" "empty FunctionBindings"
+
+SEM LeftHandSide
+  | Function  lhs . name = @name.self
+  | Infix     lhs . name = @operator.self
+                  . numberOfPatterns = 2
+  | Parenthesized lhs . numberOfPatterns = @lefthandside.numberOfPatterns + @patterns.numberOfPatterns
+
+SEM Patterns
+  | Cons  lhs . numberOfPatterns = 1 + @tl.numberOfPatterns
+  | Nil   lhs . numberOfPatterns = 0

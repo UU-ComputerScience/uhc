@@ -1,0 +1,85 @@
+%%[main
+
+\chapter{Separate compilation}
+\label{chapt.BeyondEH}
+
+The type system we discussed is tailored to several languages of the EH family. At the time of writing, the languages of the
+EH family are not ready for industrial use. To make the EH language industry ready, some
+problems will need to be dealt with, which also influences uniqueness typing. Among these problems are a
+module system and separate compilation. We discuss how to deal with these problems in this chapter.
+
+A module system and separate compilation are similar problems, except that they occur in different places within the
+compiler. Separate compilation is mainly a code generation issue, whereas a module system is a type system issue. Separate
+compilation requires a module system to split up a program in different compilation units. The uniqueness type system
+complicates these problems.
+
+
+\section{Module system}
+
+  We take the module system of Haskell as example. A program is partitioned in modules, where a module can import toplevel
+  bindings from another module, and export toplevel bindings. Importing a module does not complicate the uniqueness
+  type system much: put the constraints of the importing module into a new binding group, and bring the identifiers into
+  scope. In case of mutually recursive modules, the constraints should be put into the same scope as the toplevel
+  scope of the current module. So, for importing a module, the existing infrastructure suffices. It is the exporting of
+  modules that causes problems.
+
+  The problem is: how often is an exported binding used? That depends on the importer of the module, but the idea of a
+  module is that they can be examined in isolation. That is why we make the conservative assumption that all exported
+  bindings are used in an arbitrary way.
+
+  Annotations that occur on argument or result values do not have to be made arbitrary, since they are determined by
+  the use-sites of the exported binding. Generating a |(Dot(tau)(any)(Card(*)(*))) <= (Sub(utau)(binding))| constraint is
+  sufficient to make the conservative assumption.
+
+  The consequences of this assumption are relatively low. Exported top-level bindings are typically functions, not
+  values. Exported functions are intended to be shared, otherwise there would be not much use to put the function
+  in another module. Arguments and results are not affected, which is important, otherwise almost no value can
+  be made unique when using such an exported function.
+
+  Depending on the code generator, additional restrictions need to be specified. In case of separate compilation
+  with a code generator, the type system can require that an exported binding has a monovariant cardinality
+  annotation on the type. However, this leads to language design issues: is the programmer forced to
+  specify a monovariant type, or should the compiler choose one. The first case puts a burden on the programmer,
+  the second case leads to yet another choice: should the compiler pick a monovariant type that is valid for
+  all uses, or a more restricted type, with the consequence that some legal programs will not be accepted?
+
+  The above mentioned problems do not have satisfactory solutions. The problems---perhaps \emph{limitations} is
+  a better word for them---originate from design choices in both the language and the code generator of the compiler.
+  A solution to these kind of problems can perhaps be found in allowing the programmer to choose certain features
+  of the module system and the compilation process, and accept the limitations as a result from these choices.
+
+
+\section{Separate compilation}
+
+  Separate compilation is difficult for a code generator that works with a specialiser. The specialiser only knows
+  which variants of a binding are in use within the same module. The variants of a binding that are used by another
+  module are not known by the specialiser, as these are discovered during a future compilation. So, which variants
+  of a binding should the specialiser put into the code module? The specialiser cannot produce all combinations,
+  since there are exponentially many variations in the number of cardinality annotations, and there are already a
+  lot of cardinality annotations.
+
+  The other extreme is not to generate any variants for a module, but to put a description in the module of how a
+  variant can be obtained. This description is a representation of the abstract syntax tree of the module decorated
+  with some information needed for the specialization process. This process can hardly be called separate compilation,
+  as the code generation process itself is effectively performed on a whole program at a time, although it depends
+  on how short the description can be made, although it is not obvious how such a description would look like, other
+  than just a representation of the abstract syntax tree of a function.
+
+  A way in between is to only allow variants for exported bindings within the same module, and for other modules,
+  only allow one variant. That is, the binding of an exported identifier is polyvariant in the same module, but
+  monovariant from other modules. The selection of a monovariant uniqueness type from the allowed types given its
+  polyvariant type, is a problem. Choose the type too restrictive, then it's more difficult to use the binding
+  from other modules, but choose it too general, and opportunities for optimisations are lost.
+
+  There is no problem if the code generator works with code specialisation by dictionary insertion.
+  The dictionaries represent the variability, and the code for a module itself can stay the same. But this approach
+  has as problems the overhead of dictionary passing (especially since dictionaries for cardinalities are likely
+  inserted at the root of the program only), and does not support all code generation optimisations that
+  are possible. The overhead of dictionary passing can be eliminated by specialisation of dictionaries by means of
+  partial evaluation techniques~\cite{jones94dictionaryfree}, but such an approach leads to similar problems with
+  separate compilation.
+
+  Since this is a common problem for an optimising compiler, perhaps that separate code generation is too much to
+  ask for in the presence of code optimisations.
+
+%%]

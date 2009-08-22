@@ -1,0 +1,121 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Give all variables the name names as 'e' ++ uniqNr
+% Specialized for LLVM thesis generation. Worthless in
+% other cases.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8_2 codegen) hs module {%{EH}Core.Trf.PrettyVarNames}
+%%]
+
+%%[(8_2 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
+%%]
+%%[(8_2 codegen) hs import(qualified Data.Maybe as Maybe)
+%%]
+%%[(8_2 codegen) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8_2 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(8_2 codegen) hs export(cmodTrfPrettyNames)
+cmodTrfPrettyNames :: CModule -> CModule
+cmodTrfPrettyNames cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) 
+                             (Inh_CodeAGItf {})
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(8_2 codegen)
+ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF ]
+
+SEM CExpr
+  | Lam         lhs         .cTrf      = CExpr_Lam @loc.name @argMeta.cTrf @body.cTrf
+                loc         .(name,mapping,uniqNr) 
+                                       = getPrettyName @lhs.mapping @arg @lhs.uniqNr
+
+  | Var         lhs         .cTrf      = CExpr_Var @loc.name 
+                loc         .(name,mapping,uniqNr) 
+                                       = getPrettyName @lhs.mapping @nm @lhs.uniqNr
+
+SEM CBind
+  | Bind        lhs         .cTrf      = CBind_Bind @loc.name @bindMeta.cTrf @expr.cTrf 
+                loc         .(name,mapping,uniqNr) 
+                                       = if @lhs.isTopLvl
+                                         then (@nm,Map.insert @nm @nm @lhs.mapping,@lhs.uniqNr) 
+                                         else getPrettyName @lhs.mapping @nm @lhs.uniqNr
+
+  | FFI         lhs         .cTrf      = CBind_FFI @callconv @safety @impEnt @loc.name @ty
+                loc         .(name,mapping,uniqNr)
+                                       = if @lhs.isTopLvl
+                                         then (@nm,Map.insert @nm @nm @lhs.mapping,@lhs.uniqNr) 
+                                         else getPrettyName @lhs.mapping @nm @lhs.uniqNr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Attribute for CBind non terminals to know if they are a top level binding
+%% or not.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen)
+ATTR CExpr     [  isTopLvl : {Bool} | | ]
+ATTR CBind     
+     CBindL    [  isTopLvl : {Bool} | | ]
+
+SEM CModule
+  | Mod         expr        .isTopLvl  = True
+
+SEM CExpr
+  | Let         binds       .isTopLvl  = @lhs.isTopLvl
+
+SEM CBindL
+  | Cons        hd          .isTopLvl  = @lhs.isTopLvl
+                tl          .isTopLvl  = @lhs.isTopLvl
+
+SEM CBind
+  | Bind        expr        .isTopLvl  = False
+
+SEM CAlt
+  | Alt         expr        .isTopLvl  = False 
+
+SEM CPatBind
+  | Bind        offset      .isTopLvl  = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Variable name re-mapping 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen)
+ATTR AllCodeNT [ | mapping : {Map.Map HsName HsName} | ]
+
+SEM CodeAGItf
+  | AGItf       module      .mapping   = Map.empty 
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Unique Number for unique names 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8_2 codegen)
+ATTR AllCodeNT [ | uniqNr : {Int} | ]
+
+SEM CodeAGItf
+  | AGItf       module      .uniqNr    = 0
+%%]
+
+%%[(8_2 codegen)
+{
+getPrettyName :: Map.Map HsName HsName -> HsName -> Int -> (HsName, Map.Map HsName HsName, Int)
+getPrettyName mapping origName uniqNr =
+  if Map.member origName mapping
+  then (Maybe.fromJust $ Map.lookup origName mapping, mapping, uniqNr)
+  else let newName = hsnFromString $ "e" ++ show uniqNr
+        in (newName, Map.insert origName newName mapping, uniqNr + 1)
+
+}
+%%]

@@ -1,0 +1,66 @@
+\begin{tikzpicture}[auto]
+\tikzstyle{astnode}     = [ rectangle, draw, text width=8em
+                          , minimum height=2em, text centered
+                          ]
+\tikzstyle{attribute}   = [ circle, draw, xshift=4em 
+                          , minimum height=1.5em
+                          , black!70,thick ]
+\tikzstyle{synth}       = [ -triangle 60, black!70 ]
+\tikzstyle{level 1}     = [ sibling distance=50mm ]
+\tikzstyle{attrlab}     = [ near start, left, yshift=0.5em
+                          , black!70 ]
+\node [astnode] (Statement-Assign) {:=}
+  child 
+  {
+    node [astnode] (Variable-Local-i4) {Local i4}
+  }
+  child 
+  {
+    node [astnode] (Call-primSubInt) {Call primSubInt}
+      child 
+      {
+        node [astnode] (Variable-Value-1) {Variable Value}
+          child
+          {
+            node [astnode] (Variable-Local-x78) {Local x78}
+          }
+      }
+      child 
+      {
+        node [astnode] (Variable-Value-2) {Variable Value}
+          child
+          {
+            node [astnode] (Subs) {[1]}
+              child
+              {
+                node [astnode] (Param-p1) {Param p1}
+              }
+          }
+      }
+  };
+
+\node [circle, xshift=4em, right of=Statement-Assign] (Statement-Assign-attr) {};
+
+%Left subtree
+\node [attribute, right of=Variable-Local-i4] (Variable-Local-i4-attr) {$\tau$};
+\draw [synth] (Variable-Local-i4-attr) -- node [attrlab] {$GrWord^*$} (Statement-Assign-attr.south);
+
+\node [attribute, right of=Call-primSubInt] (Call-primSubInt-attr) {$\tau$};
+\draw [synth] (Call-primSubInt-attr) -- node [attrlab, xshift=-2em] {$GrWord$} (Statement-Assign-attr.south);
+
+\node [attribute, right of=Variable-Value-1] (Variable-Value-1-attr) {$\tau$};
+\draw [synth] (Variable-Value-1-attr) -- node [attrlab] {$GrWord$} (Call-primSubInt-attr.south);
+
+\node [attribute, right of=Variable-Local-x78] (Variable-Local-attr) {$\tau$};
+\draw [synth] (Variable-Local-attr) -- node [attrlab] {$GrWord^*$} (Variable-Value-1-attr.south);
+
+\node [attribute, right of=Variable-Value-2] (Variable-Value-2-attr) {$\tau$};
+\draw [synth] (Variable-Value-2-attr) -- node [attrlab, xshift=-2em] {$GrWord$} (Call-primSubInt-attr.south);
+
+\node [attribute, right of=Subs] (Subs-attr) {$\tau$};
+\draw [synth] (Subs-attr) -- node [attrlab] {$GrWord^*$} (Variable-Value-2-attr.south);
+
+\node [attribute, right of=Param-p1] (Param-p1-attr) {$\tau$};
+\draw [synth] (Param-p1-attr) -- node [attrlab] {$GrWord$} (Subs-attr.south);
+%\node [astnode, below of=Subs-1] (Param-p1) {Param p1};
+\end{tikzpicture}

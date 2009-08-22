@@ -1,0 +1,154 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+import uu.jazy.gui.* ;
+
+/**
+ * Runtime environment for ehc, using EHC target jazy
+ */
+public class RTS
+{
+%%]
+
+%%[(98 jazy)
+	// for now:
+	public static Object Unit = "Unit" ;
+%%]
+
+%%[(98 jazy)
+	public static Handle stdin = new Handle( System.in ) ;
+	public static Handle stdout = new Handle( System.out ) ;
+	public static Handle stderr = new Handle( System.err ) ;
+%%]
+
+%%[(98 jazy)
+	public static Data Nil ;
+	public static Eval Cons ;
+	
+    /**
+     * Set Nil & Cons
+     */    
+    public static void setListConstructors( Object n, Object c ) {
+        Nil = (Data)n ;
+        Cons = (Eval)c ;
+    }
+	
+    public static boolean isNil( Object l ) {
+    	return ((Data)l).tag == Nil.tag ;
+    }
+	
+%%]
+
+%%[(8 jazy)
+	public static Object True ;
+	public static Object False ;
+	
+    /**
+     * Set True & False
+     */    
+    public static void setBoolConstructors( Object t, Object f ) {
+        True = t ;
+        False = f ;
+    }
+	
+    /**
+     * Conversion
+     */    
+    public static Object mkBool( boolean b ) {
+        return ( b ? True : False ) ;
+    }
+	
+%%]
+
+%%[(8 jazy)
+	public static Object EQ ;
+	public static Object LT ;
+	public static Object GT ;
+	
+    /**
+     * Set EQ, LT, and GT
+     */    
+    public static void setOrderingConstructors( Object e, Object l, Object g ) {
+        EQ = e ;
+        LT = l ;
+        GT = g ;
+    }
+    
+    /**
+     * Conversion
+     */    
+    public static Object mkOrdering( int c ) {
+    	if (c < 0) {
+    		return RTS.LT ;
+    	} else if (c > 0) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+	
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: just run
+     */    
+    public static Object run( Object v ) {
+%%[[8
+        return Eval.eval( v ) ;
+%%][99
+        return Eval.eval( Eval.apply1( (Eval)v, "IOWorld: cannot be touched" ) ) ;
+%%]]
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: visual eval
+     */    
+    public static void runVisuallyTraced( Object v ) {
+%%[[8
+        Eval.resetNrEvaluations() ;
+        EvalFollower.setupVisualTrace() ;
+%%][100
+%%]]
+        run( v ) ;
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Entry point into RTS: plain eval with timing
+     */    
+    public static void runTimed( Object v ) {
+%%[[8
+        Eval.resetNrEvaluations() ;
+        long tm1 = System.currentTimeMillis() ;
+        // showln( v ) ;
+        System.out.println( run( v ) ) ;
+        long tm2 = System.currentTimeMillis() ;
+        System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;
+%%][100
+        run( v ) ;
+%%]]
+    }
+%%]
+
+%%[(8 jazy)
+}
+
+%%]

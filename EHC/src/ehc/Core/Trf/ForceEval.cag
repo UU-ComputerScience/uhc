@@ -1,0 +1,145 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to forceEval on Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen) hs module {%{EH}Core.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Ty},{%{EH}Core})
+%%]
+
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CModule CExpr
+
+%%]
+PRAGMA strictcase
+
+%%[(99 codegen) hs
+instance ForceEval CModule where
+  forceEval x | trf_Syn_CModule t `seq` True = x
+    where t = wrap_CModule (sem_CModule x) Inh_CModule
+%%[[102
+  fevCount x = cm_Syn_CModule t
+    where t = wrap_CModule (sem_CModule x) Inh_CModule
+%%]]
+
+instance ForceEval CExpr where
+  forceEval x | trf_Syn_CExpr t `seq` True = x
+    where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
+%%[[102
+  fevCount x = cm_Syn_CExpr t
+    where t = wrap_CExpr (sem_CExpr x) Inh_CExpr
+%%]]
+
+instance ForceEval CBindingsCateg
+%%[[102
+  where
+    fevCount x | x `seq` True = cm1 "CBindingsCateg"
+%%]]
+%%]
+
+This prevents empty export list, exporting all sem_ functions, causing name clashes
+
+%%[(99 codegen) hs export(dummy)
+dummy = "dummy"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval over structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR AllCodeNT [ | | trf USE {`seq`} {()}: {()} ]
+
+SEM CModule
+  | Mod				lhs		.	trf 		=	forceEval @ctagsMp `seq` forceEval @moduleNm `seq` @expr.trf
+
+SEM CExpr
+  | Let				lhs		.	trf 		=	forceEval  @categ `seq` @binds.trf `seq` @body.trf
+  | Lam				lhs		.	trf 		=	forceEval  @arg `seq` @argMeta.trf `seq` @body.trf
+  | Var				lhs		.	trf 		=	forceEval' @nm
+  | Int				lhs		.	trf 		=	forceEval' @int
+  | Char			lhs		.	trf 		=	forceEval' @char
+  | Integer			lhs		.	trf 		=	forceEval' @integer
+  | String			lhs		.	trf 		=	forceEval' @str
+  | Tup				lhs		.	trf 		=	forceEval' @tag
+  | TupDel			lhs		.	trf 		=	forceEval  @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf
+  | TupIns TupUpd	lhs		.	trf 		=	forceEval  @tag `seq` forceEval @nm `seq` @offset.trf `seq` @expr.trf `seq` @fldExpr.trf
+  | CaseAltFail		lhs		.	trf 		=	forceEval' @caseId
+  | Hole			lhs		.	trf 		=	forceEval' @uid
+  | HoleLet			lhs		.	trf 		=	forceEval  @bindsUid `seq` @body.trf
+  | ImplsLam		lhs		.	trf 		=	forceEval  @uid `seq` @body.trf
+  | ImplsApp		lhs		.	trf 		=	forceEval  @uid `seq` @func.trf
+
+SEM CBind
+  | Bind			lhs		.	trf 		=	forceEval @nm `seq` @expr.trf
+  | FFI				lhs		.	trf 		=	forceEval @callconv `seq` forceEval @safety `seq` forceEval @impEnt
+  												`seq` forceEval @nm `seq` forceEval' @ty
+  | FFE				lhs		.	trf 		=	forceEval @nm `seq` @callconv {- `seq` forceEval @expEnt -}
+  												`seq` forceEval @expNm `seq` forceEval' @ty
+
+SEM CPat
+  | Var				lhs		.	trf 		=	forceEval' @pnm
+  | Con				lhs		.	trf 		=	forceEval  @tag `seq` forceEval @pnm `seq` @rest.trf
+  | Int				lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @int
+  | Char			lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @char
+  | BoolExpr		lhs		.	trf 		=	forceEval  @pnm `seq` forceEval' @cexpr
+
+SEM CPatRest
+  | Var				lhs		.	trf 		=	forceEval' @nm
+
+SEM CPatBind
+  | Bind			lhs		.	trf 		=	forceEval @lbl `seq` forceEval @nm `seq` @offset.trf `seq` @pat.trf
+
+%%]
+
+%%[(102 codegen)
+ATTR AllCodeNT [ | | cm USE {`cmUnion`} {emptyCM}: {CountMp} ]
+
+SEM CModule
+  | Mod			lhs			.	cm	 		=	cmUnions [cm1 "CModule_Mod",fevCount @ctagsMp,fevCount @moduleNm, @expr.cm]
+
+SEM CExpr
+  | Let         lhs         .   cm          =   cmUnions [cm1 "CExpr_Let",fevCount @categ,@binds.cm,@body.cm]
+  | App         lhs         .   cm          =   cmUnions [cm1 "CExpr_App",@func.cm,@arg.cm,@argMeta.cm]
+  | Lam         lhs         .   cm          =   cmUnions [cm1 "CExpr_Lam",fevCount @arg,@argMeta.cm,@body.cm]
+  | Var         lhs         .   cm          =   cmUnions [cm1 "CExpr_Var",fevCount @nm]
+  | Case        lhs         .   cm          =   cmUnions [cm1 "CExpr_Case",@alts.cm,@dflt.cm]
+  | Int         lhs         .   cm          =   cmUnions [cm1 "CExpr_Int",fevCount @int]
+  | Char        lhs         .   cm          =   cmUnions [cm1 "CExpr_Char",fevCount @char]
+  | Integer     lhs         .   cm          =   cmUnions [cm1 "CExpr_Integer",fevCount @integer]
+  | String      lhs         .   cm          =   cmUnions [cm1 "CExpr_String",fevCount @str]
+  | Tup         lhs         .   cm          =   cmUnions [cm1 "CExpr_Tup",fevCount @tag]
+  | TupDel      lhs         .   cm          =   cmUnions [cm1 "CExpr_TupDel",@expr.cm,@offset.cm,fevCount @tag,fevCount @nm]
+  | TupIns      lhs         .   cm          =   cmUnions [cm1 "CExpr_TupIns",@expr.cm,@offset.cm,@fldExpr.cm,fevCount @tag,fevCount @nm]
+  | TupUpd      lhs         .   cm          =   cmUnions [cm1 "CExpr_TupUpd",@expr.cm,@offset.cm,@fldExpr.cm,fevCount @tag,fevCount @nm]
+  | CaseAltFail lhs         .   cm          =   cmUnions [cm1 "CExpr_CaseAltFail",@errorExpr.cm,fevCount @caseId]
+  | Hole        lhs         .   cm          =   cmUnions [cm1 "CExpr_Hole",fevCount @uid]
+  | HoleLet     lhs         .   cm          =   cmUnions [cm1 "CExpr_HoleLet",@body.cm,fevCount @bindsUid]
+  | CoeArg      lhs         .   cm          =   cmUnions [cm1 "CExpr_CoeArg"]
+  | ImplsApp    lhs         .   cm          =   cmUnions [cm1 "CExpr_ImplsApp",@func.cm,fevCount @uid]
+  | ImplsLam    lhs         .   cm          =   cmUnions [cm1 "CExpr_ImplsLam",@body.cm,fevCount @uid]
+
+SEM CBind
+  | Bind        lhs         .   cm          =   cmUnions [cm1 "CBind_Bind",@expr.cm,@bindMeta.cm,fevCount @nm]
+  | FFI         lhs         .   cm          =   cmUnions [cm1 "CBind_FFI",fevCount @nm,fevCount @callconv,fevCount @safety,fevCount @impEnt,fevCount @ty]
+  | FFE         lhs         .   cm          =   cmUnions [cm1 "CBind_FFE",fevCount @nm,fevCount @callconv,{- fevCount @expEnt, -}fevCount @expNm,fevCount @ty]
+
+SEM CPat
+  | Var         lhs         .   cm          =   cmUnions [cm1 "CPat_Var",fevCount @pnm]
+  | Int         lhs         .   cm          =   cmUnions [cm1 "CPat_Int",fevCount @pnm]
+  | Char        lhs         .   cm          =   cmUnions [cm1 "CPat_Char",fevCount @pnm]
+  | Con         lhs         .   cm          =   cmUnions [cm1 "CPat_Con",@rest.cm,@binds.cm,fevCount @pnm,fevCount @tag]
+  | BoolExpr	lhs			.	cm			=	cmUnions [cm1 "CPat_BoolExpr",fevCount @pnm,fevCount @cexpr]
+
+SEM CPatRest
+  | Var         lhs         .   cm          =   cmUnions [cm1 "CPatRest_Var",fevCount @nm]
+  | Empty       lhs         .   cm          =   cmUnions [cm1 "CPatRest_Empty"]
+
+SEM CAltL CPatL CBindL CPatBindL
+  | Cons		lhs			.	cm			=	cmUnions [cm1 ":",@hd.cm,@tl.cm]
+  | Nil			lhs			.	cm			=	cmUnions [cm1 "[]"]
+%%]
+

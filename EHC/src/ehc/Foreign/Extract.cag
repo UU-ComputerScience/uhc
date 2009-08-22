@@ -1,0 +1,68 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Foreign extraction info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Extract various info out of the FFI declaration:
+\begin{itemize}
+\item files to include, whatever that means for a calling convention.
+\item entity name itself.
+\item options: is it a pointer to something (instead of something to call), is it static.
+\end{itemize}
+%%]
+
+%%[94 hs module {%{EH}Foreign.Extract} import({%{EH}Base.Common},{%{EH}Foreign}) 
+%%]
+
+%%[94 hs import(Data.Maybe) 
+%%]
+
+%%[94.WRAPPER ag import({Foreign/AbsSyn})
+WRAPPER ForeignAGItf
+%%]
+
+%%[94 hs export(ForeignExtraction(..))
+data ForeignExtraction
+  = ForeignExtraction
+      {	forextractIncludes		:: [String]
+      ,	forextractEnt			:: String
+      ,	forextractOptIsStatic	:: Bool
+      ,	forextractOptIsPtr		:: Bool
+      }
+
+emptyForeignExtraction = ForeignExtraction [] "??" False False
+%%]
+
+%%[94 hs export(foreignEntExtract)
+foreignEntExtract :: ForeignEnt -> ForeignExtraction
+foreignEntExtract ty
+  =  let  t =  wrap_ForeignAGItf
+                 (sem_ForeignAGItf (ForeignAGItf_AGItf ty))
+                 Inh_ForeignAGItf
+     in   extr_Syn_ForeignAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Foreign entity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+ATTR ForeignAGItf AllForeign [ | | extr: ForeignExtraction ]
+
+SEM PlainCall
+  | Id          lhs     .   extr    =   emptyForeignExtraction {forextractEnt = @nm}
+
+SEM CCall
+  | Id          lhs     .   extr    =   ForeignExtraction
+  											(maybeToList @mbInclude)
+  											@nm
+  											@isStatic
+  											@asPointer
+  | * - Id      lhs     .   extr    =   emptyForeignExtraction
+%%]
+

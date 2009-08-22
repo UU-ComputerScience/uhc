@@ -1,0 +1,95 @@
+-------------------------------------------------------------------------
+-- Chunk files AST
+-------------------------------------------------------------------------
+
+-- Outside itf
+DATA AGItf
+  | AGItf               dumLines    	: Lines
+                        chunks      	: Chunks
+
+-- Chunk
+DATA Chunk
+  | Ver                 variantOffer	: {VariantOffer}
+                        subNm       	: {Nm}
+                        minusL      	: {[ChunkRef]}
+                        chOptions		: ChunkOptions
+                        compRestrict 	: {CompilerRestriction}
+                        mbModNm     	: MbStrExpr -- {Maybe String}
+                        imports     	: StrExprs
+                        exports     	: StrExprs
+                        lines       	: Lines
+                        dumLines    	: Lines
+  | Named               cref        	: {CRef}
+                        chKind          : {ChKind}
+                        lines       	: Lines
+                        dumLines    	: Lines
+
+TYPE Chunks     = [Chunk]
+
+SET AllChunk    = Chunk Chunks
+
+-- Expr (describing a string)
+DATA StrExpr
+  | Str					str			: {String}
+  | Var					nm			: {String}
+  | Concat				e1			: StrExpr
+  						e2			: StrExpr
+  | White				e1			: StrExpr
+  						e2			: StrExpr
+  | Group				e 			: StrExpr
+  | Seq				    es			: StrExprs
+
+TYPE StrExprs = [StrExpr]
+TYPE MbStrExpr = MAYBE StrExpr
+
+SET AllStrExpr = StrExpr MbStrExpr StrExprs
+
+-- ChunkOption
+DATA ChunkOption
+  | Kind				chKind      : {ChKind}
+  | Dest				chDest      : {ChDest}
+  | Wrap				chWrap      : {ChWrap}
+
+TYPE ChunkOptions     	= [ChunkOption]
+
+SET AllChunkOption		= ChunkOption ChunkOptions
+
+-- Single line
+DATA Line
+  | AsIs                words       	: Words
+  | Named               cref        	: {CRef}
+                        mbVariantReqm   : {Maybe VariantReqm}
+  | Groups              extraLine   	: Int
+                        groups      	: Groups
+
+TYPE Lines      = [Line]
+
+SET AllLine     = Line Lines
+
+-- Single group of lines
+DATA Group
+  | Group               variantOffer    : {VariantOffer}
+                        chOptions		: ChunkOptions
+                        userRef     	: {Maybe (Nm,Maybe String)}
+                        lines       	: Lines
+
+TYPE Groups     = [Group]
+
+SET AllGroup    = Group Groups
+
+-- Single word
+DATA Word
+  | White               chars       : {String}
+  | Black               chars       : {String}
+  | Inline              inl         : Inline
+  | Expand              exp         : StrExpr
+
+DATA Inline
+  | URI                 str         : {String}
+
+TYPE Words      = [Word]
+
+SET AllWord     = Word Words Inline
+
+-- Sets
+SET AllNT       = AllWord AllLine AllGroup AllChunk AllStrExpr

@@ -1,0 +1,299 @@
+%%[0 hs
+{
+{-| 
+  This module supplies bindings to generate LLVM IR from Haskell 
+  (<http://www.llvm.org/docs/LangRef.html>). 
+   
+  Note: this module is developed in a demand driven way. It is no complete
+       LLVM binding library in Haskell, but enough to generate code for EHC.
+-}
+}
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}LLVM}
+%%]
+
+%%[(8 codegen grin) hs export( LLVMModule(..), LLVMFunction(..), LLVMFunctionDecl(..), LLVMStatement(..) )
+%%]
+%%[(8 codegen grin) hs export( LLVMExpression(..), LLVMFunctions, LLVMFunctionDecls , LLVMStatements )
+%%]
+%%[(8 codegen grin) ag import({LLVM/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs export( LLVMCmpOp(..) )
+{-| 
+  LLVM compare functions, parameter of the 'Expression_Compare' constructor 
+  of type 'Expression'
+-}
+data LLVMCmpOp
+  -- | Equality
+  = CMPEQ
+  -- | Non equality
+  | CMPNE
+  -- | Unsigned greater then
+  | CMPUGT
+  -- | Unsigned greater then or equal
+  | CMPUGE
+  -- | Unsigned less then
+  | CMPULT
+  -- | Unsigned less then or equal
+  | CMPULE
+  -- | Signed greater then
+  | CMPSGT
+  -- | Signed greater then or equal
+  | CMPSGE
+  -- | Signed less then
+  | CMPSLT
+  -- | Signed less then or equal
+  | CMPSLE
+  deriving (Eq)
+
+instance Show LLVMCmpOp where
+  show CMPEQ  = "eq"
+  show CMPNE  = "ne"
+  show CMPUGT = "ugt"
+  show CMPUGE = "uge"
+  show CMPULT = "ult"
+  show CMPULE = "ule"
+  show CMPSGT = "sgt"
+  show CMPSGE = "sge"
+  show CMPSLT = "slt"
+  show CMPSLE = "sle"
+%%]
+
+%%[(8 codegen grin) hs export( LLVMBinOp(..) )
+{-| 
+  LLVM binary operators, parameter of the 'Expression_BinOp' constructor of type
+  'Expression'
+-}
+data LLVMBinOp
+  -- | Add two integer of floating point values.
+  = ADD
+  -- | Left shift the left operand a number of bits as dictated by the right
+  --   operand. If the right operand is equal or greater then the amount of
+  --   bits in the left operand, the result is undefined.
+  | SHL
+  -- | Right shift the left operand a number of bits as dictated by the right
+  --   operand. The most significant bits of the result will be equal to the
+  --   sign bit of the left operand. If the right operand is equal or greater 
+  --   then the amount of bits in the left operand, the result is undefined. 
+  | SHR
+  -- | Bitwise logical and operation.
+  | AND
+  -- | Bitwise logical or operation.
+  | OR
+  deriving (Eq)
+
+instance Show LLVMBinOp where
+  show ADD = "add"
+  show SHL = "shl"
+  show SHR = "ashr"
+  show AND = "and"
+  show OR  = "or"
+%%]
+
+%%[(8 codegen grin) hs export( LLVMVar(..), isGlobal, getName, getPlainName, getType )
+{-|
+  LLVM variables
+-}
+data LLVMVar
+  -- | references to variables with a global scope.
+  = GlobalVar   String LLVMType
+  -- | references to variables local for a function or parameters.
+  | LocalVar    String LLVMType
+  -- | refers to an integer constant as (i64 42).
+  | Constant    Int    LLVMType
+  -- | defines a string as global constant.
+  | StrConstant String LLVMType
+  deriving (Eq)
+  
+instance Show LLVMVar where
+  show x                = show (getType x) ++ " " ++ getName x
+  
+{-|
+  Test if a 'LLVMVar' is global.
+-}  
+isGlobal :: LLVMVar -> Bool
+isGlobal (GlobalVar _ _) = True
+isGlobal _               = False  
+  
+{-|
+  Return the variable name or value of the 'LLVMVar'
+  in LLVM IR textual representation (e.g. @\@x@, @%y@ or @42@).
+-}
+getName :: LLVMVar -> String
+getName (GlobalVar x _)    = "@" ++ x
+getName (LocalVar  x _)    = "%" ++ x
+getName (Constant  x _)    = show x
+getName (StrConstant  x _) = x 
+
+{-|
+  Return the variable name or value of the 'LLVMVar'
+  in a plain textual representation (e.g. @x@, @y@ or @42@).
+-}
+getPlainName :: LLVMVar -> String
+getPlainName (GlobalVar x _)    = x
+getPlainName (LocalVar  x _)    = x
+getPlainName (Constant  x _)    = show x
+getPlainName (StrConstant  x _) = x   
+
+{-|
+  Return the 'LLVMType' of the 'LLVMVar'
+-}
+getType :: LLVMVar -> LLVMType
+getType (GlobalVar _ y)    = y
+getType (LocalVar _ y)     = y
+getType (Constant _ y)     = y  
+getType (StrConstant _ y)  = y  
+%%]
+
+%%[(8 codegen grin) hs export( LLVMType(..), i64, i32, i8, i1, pLift, pLower, isInt, isPointer)
+{-|
+  LLVM types.
+-}
+data LLVMType
+  -- | An integer with a given width in bits.
+  = LLVMInt Int
+  -- | A pointer to a 'LLVMType'
+  | Pointer LLVMType
+  -- | An array of 'LLVMType'
+  | Array Int LLVMType
+  -- | A 'LLVMVar' can represent a label (address) 
+  | Label
+  -- | Void
+  | Void
+  deriving (Eq)
+ 
+-- | Shortcut for 64 bit integer 
+i64 :: LLVMType
+i64 = LLVMInt 64
+
+-- | Shortcut for 32 bit integer
+i32 :: LLVMType
+i32 = LLVMInt 32
+
+-- | Shortcut for 8 bit integer (byte)
+i8 :: LLVMType
+i8  = LLVMInt 8
+
+-- | Shortcut for 1 bit integer (boolean)
+i1 :: LLVMType
+i1  = LLVMInt 1
+   
+instance Show LLVMType where
+  show (LLVMInt size)       = "i" ++ show size
+  show (Pointer x)        = show x ++ "*"
+  show (Array nr tp)      = "[ " ++ show nr ++ " x " ++ show tp ++ "]"       
+  show Label              = "label"
+  show Void               = "void"
+  
+{-| 
+  Add a pointer indirection to the supplied type. 'Label' and 'Void'
+  cannot be lifted.
+-}   
+pLift :: LLVMType -> LLVMType
+pLift (Label) = error "Labels are unliftable"
+pLift (Void)  = error "Voids are unliftable"
+pLift x       = Pointer x
+
+{-|
+  Remove the pointer indirection of the supplied type. Only 'Pointer' 
+  constructors can be lowered.
+-}
+pLower :: LLVMType -> LLVMType
+pLower (Pointer x) = x
+pLower x           = error $ show x ++ " is a unlowerable type, need a pointer"
+
+{-|
+  Test if the given 'LLVMType' is an integer
+-}
+isInt :: LLVMType -> Bool
+isInt (LLVMInt _) = True
+isInt _         = False
+
+{-|
+  Test if the given 'LLVMType' is a 'Pointer'
+-}
+isPointer :: LLVMType -> Bool
+isPointer (Pointer _) = True
+isPointer _           = False
+%%]
+
+%%[(8 codegen grin) hs export( LLVMCallType(..) )
+{-|
+  Different types to call a function.
+-}
+data LLVMCallType
+  -- | Normal call, allocate a new stack frame.
+  = StdCall
+  -- | Tail call, perform the call in the current stack frame.
+  | TailCall
+  deriving (Eq,Show)
+%%]
+
+%%[(8 codegen grin) hs export( LLVMParameterListType(..) )
+{-|
+  Functions can have a fixed amount of parameters, or a variable amount.
+-}
+data LLVMParameterListType
+  -- | Fixed amount of arguments.
+  = FixedArgs
+  -- | Variable amount of arguments.
+  | VarArgs
+  deriving (Eq,Show)
+%%]
+
+%%[(8 codegen grin) hs export( LLVMLinkageType(..) )
+{-|
+  Linkage type of a symbol. The description of the constructors is copied from
+  the LLVM Assembly Language Reference Manual 
+  <http://www.llvm.org/docs/LangRef.html#linkage>, because they correspond to 
+  the LLVM linkage types.
+-}
+data LLVMLinkageType
+  -- | Global values with internal linkage are only directly accessible by 
+  --   objects in the current module. In particular, linking code into a module
+  --   with an internal global value may cause the internal to be renamed as 
+  --   necessary to avoid collisions. Because the symbol is internal to the 
+  --   module, all references can be updated. This corresponds to the notion 
+  --   of the @static@ keyword in C.
+  = Internal
+  -- | Globals with @linkonce@ linkage are merged with other globals of the 
+  --   same name when linkage occurs. This is typically used to implement 
+  --   inline functions, templates, or other code which must be generated 
+  --   in each translation unit that uses it. Unreferenced linkonce globals are
+  --   allowed to be discarded.
+  | LinkOnce
+  -- | @weak@ linkage is exactly the same as linkonce linkage, except that 
+  --   unreferenced weak globals may not be discarded. This is used for globals
+  --   that may be emitted in multiple translation units, but that are not 
+  --   guaranteed to be emitted into every translation unit that uses them. One
+  --   example of this are common globals in C, such as @int X;@ at global 
+  --   scope.
+  | Weak
+  -- | @appending@ linkage may only be applied to global variables of pointer 
+  --   to array type. When two global variables with appending linkage are 
+  --   linked together, the two global arrays are appended together. This is 
+  --   the LLVM, typesafe, equivalent of having the system linker append 
+  --   together @sections@ with identical names when .o files are linked.
+  | Appending
+  -- | The semantics of this linkage follow the ELF model: the symbol is weak 
+  --   until linked, if not linked, the symbol becomes null instead of being an
+  --   undefined reference.
+  | ExternWeak
+  -- | The symbol participates in linkage and can be used to resolve external 
+  --   symbol references.
+  | ExternallyVisible
+  deriving (Eq)
+  
+instance Show LLVMLinkageType where
+  show Internal          = "internal"
+  show LinkOnce          = "linkonce"
+  show Weak              = "weak"       
+  show Appending         = "appending"
+  show ExternWeak        = "extern_weak"
+  -- ExternallyVisible does not have a textual representation, it is 
+  -- the linkage type a function resolves to if no other is specified
+  -- in LLVM.  
+  show ExternallyVisible = ""
+%%]

@@ -1,0 +1,383 @@
+%%[abstract
+Attribute Grammars have since long been considered a convenient tool for programming over treelike datastructures.
+Nevertheless 
+%%]
+
+%%[introduction
+%%]
+
+%%[agtut
+%%]
+
+%%[XX
+%%]
+
+
+
+
+\PGFPatComposition
+
+\begin{itemize}
+\item Similar to |fold|
+\item Here: a = pp, combine = pretty print combinators
+\item (instances of AG patterns are indicated like |AGPat(Compose All)|)
+\item Supported by AG's copy rule and |USE| construct
+\item |AGPat(DeCompose)|: reader monad (class |MonadReader|)
+\end{itemize}
+
+%%[agPatComposeAll
+\paragraph{Description:} Globally define the value of a synthesized attribute |a|
+of internal nodes as the composition of attributes |a| defined on their children,
+by means of the binary operator |combine|.
+
+\PGFPatComposition
+
+It is assumed that all leafs have  this attribute |a|. It is often the case that
+some leafs do not constribute to the result. For these leafs, it is desirable
+that there is a value |empty| which is an identity with respect to combine (i.e.
+forall values |x|, it holds that |x `combine` empty == x|, and vice versa).
+
+\paragraph{Code:}
+The following code demonstrates the pattern given a synthesized attribute |a|
+of the type |Vals| (plural), with a tree with binary and tenary internal nodes,
+and leafs containing values |x| of type |Val| (singular).
+
+%%[[wrap=safecode
+^^^
+%%@TopicAGIdiom.agPatComposeAbstractExample
+%%]
+
+
+\paragraph{Examples:}
+\begin{itemize}
+\item Obtain all values stored in the leafs of a binary tree: use |combine = (++)|, and
+      for the leafs, wrap the value in a singleton list.
+\item Count the occurrences of words in a cons-list of words: use |combine = Map.unionWith (+)|,
+      |Map.empty| as identity element (for the |Nil| node of the list), and |Map.singleton word 1| for the words.
+\item Determine free variables of a type: |combine = Set.union|, |Set.empty| as identity element
+      for all leafs that are not variables, and |Set.singleton var| for those leafs that are variables.
+\end{itemize}
+
+\paragraph{Discussion:}
+This pattern is applicable when defining a
+synthesized attribute that represents a global flow of information from the
+bottom of the tree to the root. It is comparable with a catamorphism where
+|combine| and the semantics of the leafs together form the algebra. The notable
+difference is that catamorphisms are difficult to combine in general, whereas
+this is trivial in case of AGs.
+
+It is important to identify this pattern, because it makes explicit what the
+global flow of information is, which is not directly visible from the
+(locally-specified) attribute definitions that implement this pattern.
+
+For some applications, this pattern may not be applicable to all
+internal nodes. For some internal nodes, an exception may need to be made, for
+example, to exclude some subtrees or to perform extra post-processing. For these
+applications, the identification of this global information flow is even more
+important, since this makes the deviations more clearly visible.
+%%]
+
+
+%%[agPatComposeAbstractExample
+DATA Tree  | Node2  ^^^  left : Tree  ^^^  right : Tree
+           | Node3  ^^^  left : Tree  ^^^  middle : Tree  ^^^  right : Tree
+           | Leaf   ^^^  v : Val
+
+ATTR Tree SYN a : Vals
+
+SEM Tree  | Node2  ^^^  lhs.a = @left.a  `compose` @right.a
+          | Node3  ^^^  lhs.a = @left.a  `compose` @middle.a
+                   ^^^                   `compose` @right.a
+          | Leaf   ^^^  lhs.a = @v
+%%]
+
+
+%%[agPatComposeConcreteExample
+DATA Doc  | Section  ^^^  title : String  left : Doc  right : Doc
+          | Par      ^^^  text : String
+
+ATTR Doc SYN titles : {[String]}
+
+SEM Doc  | Section  ^^^  loc.titles = singleton @title
+                    ^^^  lhs.titles = @loc.titles `compose` @left.titles `compose` @right.titles
+         | Par      ^^^  lhs.titles = empty
+
+{
+singleton x = [x]
+empty = []
+compose = (++)
+}
+%%]
+
+
+
+\PGFPatDeComposition
+
+\begin{itemize}
+\item |knTy| follows pattern, similar to |unfold|
+\item where decomposition follows tree structure
+% %%[[wrap=safecode
+% decombine1 :: A -> (A,A,A)
+% decombine2 :: A -> (A,A)
+% %%]
+\item if decomposition fails: pass ``will do'' value
+\begin{itemize}
+\item here: |Ty_Any|
+\end{itemize}
+\item |AGPat(Compose)|: writer monad (class |MonadWriter|)
+\end{itemize}
+
+note: distributing unique numbers is also a form of the decompose pattern
+
+%%[agPatDeCompose
+\paragraph{Description:} Match the value of an inherited attribute a against the
+structure of the tree, splitting it up in smaller pieces for the subtrees, using
+a specific decomposition function for each type of node in the tree.
+
+\PGFPatDeComposition
+
+The decomposition function must always be able to succeed. Either by demanding
+that the input value is isomorphic to the tree, or by transforming the value
+such that this is the case. 
+
+\paragraph{Code:}
+The following code demonstrates the pattern given an inherited attribute |a|
+of the type |A|, with a tree with binary and tenary internal nodes, and
+decomposition functions |decompose1 :: A -> (A,A,A)| and |decompose2 :: A -> (A,A)|.
+The structure of the leafs is left unspecified.
+
+%%[[wrap=safecode
+^^^
+%%@TopicAGIdiom.agPatDeComposeAbstractExample
+%%]
+
+
+\paragraph{Examples:}
+There are two typical situations where this pattern arises.
+
+\begin{itemize}
+\item When dealing with a tree that represents an pattern match, and where some
+      piece of information has to be matched against this pattern representation.
+      For example, matching a known type against the structure of an expression:\\
+%%[[wrap=safecode
+^^^
+%%@TopicAGIdiom.agPatDeComposeKnTyExample
+%%]
+\item Injecting external information in the tree. For example, after spellchecking
+      the paragraphs in a structured document, the result is returned as an isomorphic
+      tree, of which the errors have to be brought to the paragraph nodes:\\
+%%[[wrap=safecode
+^^^
+%%@TopicAGIdiom.agPatDeComposeSpellcheckExample
+%%]
+  In case there are no erros, for a particular part of the structured document,
+  the always fitting value |NoErrors| is passed.
+\end{itemize}
+
+\paragraph{Discussion:}
+This pattern applies when information has to be laid over a particular area of
+the tree.
+
+Orthogonal to this pattern is how to deal with invalid decompositions. For example,
+if the known type is an integer, but required to be a tuple by the AST, then typically
+some error message needs to be generated. This can be described using the gather
+pattern.
+%%]
+
+%%[agPatDeComposeAbstractExample
+DATA Tree  | Node2  ^^^  left : Tree  ^^^  right : Tree
+           | Node3  ^^^  left : Tree  ^^^  middle : Tree  ^^^  right : Tree
+
+ATTR Tree INH a : A
+
+SEM Tree  | Node3  ^^^  (left.a, middle.a, right.a)  = decompose1 @lhs.a
+          | Node2  ^^^  (left.a, right.a)            = decompose2 @lhs.a
+%%]
+
+%%[agPatDeComposeConcreteExample
+DATA List
+  | Cons hd : Elem tl : List
+  | Nil
+  
+DATA Elem
+  | Elem
+
+ATTR List INH infos : {[Info]}
+ATTR Elem INH info : {Info}
+
+SEM List
+  | Cons  ^^^  (hd.info, tl.infos) = decompose @lhs.infos
+  | Nil
+
+{
+decompose inp = (head inp, tail inp)
+}
+%%]
+
+%%[agPatDeComposeKnTyExample
+SEM Expr  |  Tuple  ^^^  (left.knTp, right.knTp)  = decompose @lhs.knTp
+
+decomposeTup  (Tp_Tuple a b)  = (a, b)
+%%]
+
+%%[agPatDeComposeSpellcheckExample
+DATA Doc  | Sequence   ^^^  left : Doc  ^^^ right : Doc
+          | Paragraph  ^^^  text : String
+
+DATA Res  | Sequence   ^^^  left : Res  ^^^ right : Res
+          | Error      ^^^  message : String
+          | NoErrors
+
+ATTR Doc INH res : Res
+
+SEM Doc | Sequence  ^^^  (left.res, right.res) = decompose @lhs.res
+
+decompose  (Res_Sequence l r)  = (l, r)
+decompose  _                   = (Res_NoErrors, Res_NoErrors)
+%%]
+
+
+
+\begin{itemize}
+\item |valGam| is distributed
+\item Special case of |AGPat(DeCompose)| pattern.
+\item Passing unmodified, done by AG's copy rules
+\item Distribution ``as is'', tree structure is not used for steering the decomposition
+\end{itemize}
+
+%%[agPatDistribute
+\paragraph{Description:} Distribute the value of an inherited attribute |a|
+throughout the tree, from top to bottom. At each branching-point, the value is
+replicated, unmodified.
+
+\PGFPatDistribute
+
+The essence of this pattern is that the value for attribute |a| for some sibling,
+does not depend on the attribute |a| of another sibling. The information flow is
+from parent to children, not from child to child.
+
+\paragraph{Code:}
+%%[[wrap=safecode
+^^^
+%%@TopicAGIdiom.agPatDistributeAbstractExample
+%%]
+
+\paragraph{Example:}
+A typical example is an attribute representing an environment with bindings. At
+each branching point the environment is shared; although, on the way down,
+information may be added (new bindings for example).
+
+\paragraph{Discussion:}
+This pattern is actually a special case of the aforementioned DeCompose pattern,
+with decomposition functions of the form |decompose x = (x, x, ... )|. However,
+it occurs so often, that a separate name is justified.
+%%]
+
+%%[agPatDistributeAbstractExample
+DATA Tree  | Node2  ^^^  left : Tree  ^^^  right : Tree
+           | Node3  ^^^  left : Tree  ^^^  middle : Tree  ^^^  right : Tree
+
+ATTR Tree INH a : Val
+
+SEM Tree
+  | Node2  ^^^  left.a    = @lhs.a
+           ^^^  right.a   = @lhs.a
+  | Node3  ^^^  left.a    = @lhs.a
+           ^^^  middle.a  = @lhs.a
+           ^^^  right.a   = @lhs.a
+%%]
+
+
+
+%%[agPatState
+\PGFPatThread
+
+\begin{itemize}
+\item Simulation of global variable via threading
+\item Generated by AG's copy rules if |a| is
+both inherited and synthesized
+\item Update by intervening definition
+\begin{itemize}
+\item here: |AGPat(State Gather)| gathers set of values in |gathTySigGam|, |upd=| addition to |Gamma|
+\end{itemize}
+\item |AGPat(State)|: state monad (class |MonadState|)
+\end{itemize}
+%%]
+
+%%[agPatMultipass
+\PGFPatMultipass
+
+\begin{itemize}
+\item Iteration over structure
+\item Fixed number of times
+\item Each pass via different attribute, possibly different role
+\item Here:
+\begin{itemize}
+\item |a1 = gathTySigGam| gathers type signatures
+\item |a2 = tySigGam| distributes type signatures of identifiers
+\end{itemize}
+\end{itemize}
+%%]
+
+%%[agPatListSpine
+\PGFPatListSpine
+
+\begin{itemize}
+\item Extracting info from left/right balanced list like structure
+\item |2 x ^ AGPat(Compose All)| over |X|, for a value related to the
+\begin{itemize}
+\item last (|Nil|) element: |n|
+\item spine (|Cons|) + elements: |c|
+\end{itemize}
+\end{itemize}
+%%]
+
+%%[agPatComposeGather
+\begin{itemize}
+\item Gathering errors follows special case of |AGPat(Compose All)| where
+\begin{itemize}
+\item |combine = union| (of lists/sets)
+\item Leafs of tree: empty list/set
+\item Supported by AG's |USE| construct
+\end{itemize}
+\item Difference with |AGPat(State Gather)|
+\begin{itemize}
+\item |AGPat(State Gather)| corresponds to tree walk, individual children's contribution cannot be differentiated
+\item |AGPat(Compose Gather)| corresponds to postfix tree walk, individual children's contribution accessible
+\end{itemize}
+\end{itemize}
+%%]
+
+%%[agPatUniq
+\begin{itemize}
+\item<+-> Special case of |AGPat(Global Var)|
+\item Threaded counter solution
+%%[[wrap=safecode
+ATTR AllNT [ | gUniq: Int | ]
+SEM Expr
+  | App  loc    .  lUniq    = @lhs.gUniq
+         func   .  gUniq    = @lhs.gUniq + 1
+%%]
+\begin{itemize}
+\item Must be threaded through all functions needing unique value
+\item Additional input counter and tupled output counter
+\item Clutters code
+\item Creates attribute dependencies which can easily cause cycles if used
+together with |AGPat(Multipass)|
+\item Unless each pass has own counter
+\end{itemize}
+\end{itemize}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

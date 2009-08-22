@@ -1,0 +1,195 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+Pass all free variables of the following let bound expressions explicitly:
+- lambda expressions
+- other non function application, except the strictly evaluated ones
+
+Later, these expressions (lambda or CAF) can then be lifted globally.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globals as args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.LamGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLamGlobalAsArg)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Core.Utils})
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
+WRAPPER AGItf
+%%]
+
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute levMp
+            and synthesized attribute levOfMp of nonterminal ValBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           Expr.Let, inherited attribute binds.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 9, column 35))
+           ValBindL.Cons, inherited attribute lhs.levMp
+           ValBindL.Cons, inherited attribute hd.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CBind.Bind, inherited attribute lhs.levMp
+           CBind.Bind, inherited attribute expr.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.App, inherited attribute lhs.levMp
+           Expr.App, inherited attribute arg.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.Case, inherited attribute lhs.levMp
+           Expr.Case, inherited attribute dflt.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.HoleLet, inherited attribute lhs.levMp
+           Expr.HoleLet, inherited attribute body.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.ImplsApp, inherited attribute lhs.levMp
+           Expr.ImplsApp, inherited attribute func.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.ImplsLam, inherited attribute lhs.levMp
+           Expr.ImplsLam, inherited attribute body.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 1, column 18))
+           Expr.Lam, inherited attribute lhs.levMp
+           Expr.Lam, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 45, column 33))
+           Expr.Lam, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           Expr.ImplsLam, synthesized attribute body.levOf
+           Expr.ImplsLam, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           Expr.ImplsApp, synthesized attribute func.levOf
+           Expr.ImplsApp, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           Expr.HoleLet, synthesized attribute body.levOf
+           Expr.HoleLet, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           Expr.Case, synthesized attribute dflt.levOf
+           Expr.Case, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 41, column 33))
+           Expr.Case, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           Expr.App, synthesized attribute arg.levOf
+           Expr.App, local attribute levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 40, column 33))
+           Expr.App, synthesized attribute lhs.levOf ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CBind.Bind, synthesized attribute expr.levOf
+           CBind.Bind, synthesized attribute lhs.levOfMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 54, column 33))
+           ValBindL.Cons, synthesized attribute hd.levOfMp
+           ValBindL.Cons, synthesized attribute lhs.levOfMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 51, column 20))
+           Expr.Let, synthesized attribute binds.levOfMp
+           Expr.Let, inherited attribute binds.levMp ("build/9/lib-ehc/EH9//Core/Trf/CommonLev.ag"(line 9, column 35))
+
+%%[(9 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfLamGlobalAsArg :: CModule -> CModule
+cmodTrfLamGlobalAsArg cmod
+  =  let  t = wrap_AGItf  (sem_AGItf (AGItf_AGItf cmod))
+                              (Inh_AGItf)
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | gUniq: Int | ]
+
+SEM AGItf
+  | AGItf       module      .   gUniq       =   0
+
+SEM ValBind
+  | Val         expr		.	gUniq		=	@lhs.gUniq + Map.size @argMpNew
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var of lam's for which arg lifting is done
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
+
+SEM AGItf
+  | AGItf       module      .   fvSLamMp    =   Map.empty
+
+SEM Expr
+  | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
+                                                 in   case @categ of
+                                                        ValBindCateg_Rec
+                                                          ->  fvsTransClosure lm m
+                                                          where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _ ->  m
+                                                          where (m,_)   = start @lhs.varS
+                                                )
+                                                `Map.union` @lhs.fvSLamMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of argument names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ argMp: VarReplNmMp | | ]
+
+SEM AGItf
+  | AGItf       module      .   argMp       =   Map.empty
+
+SEM ValBind
+  | Val         expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Adding parameters to lam call sites
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type LamArgMp = Map.Map HsName VarIntroL
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
+ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
+
+SEM AGItf
+  | AGItf       module      .   lamArgMp    =   Map.empty
+
+SEM Expr
+  | Let         loc         .   lamArgMp    =   @binds.bindLamArgMp `Map.union` @lhs.lamArgMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AGItf [ | | cTrf: CModule ]
+
+SEM ValBind
+  | Val         loc			.	(argNewL,argMpNew,bindLamArgMp)
+                                            =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
+                                                then  let  argLevL = fvLAsArg @lhs.introVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                                           (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
+                                                      in   (argNL, argONMp, @nm `Map.singleton` argOL)
+                                                else  ([],Map.empty, Map.empty)
+%%]
+
+%%[(8 codegen)
+SEM CBind
+%%[[8
+  | Bind        lhs			.	cTrf        =   mkValBind1 @nm $ mkExprLam (assocLKeys @argNewL) @expr.cTrf
+%%][9
+  | Bind        lhs			.	cTrf        =   mkValBind1LevMetas @nm 0 @bindMeta.cTrf $ mkExprLamMeta [(n,vintroMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+%%]]
+
+SEM Expr
+  | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
+                                                     v1 = r @nm
+%%[[8
+                                                     mk as = mkExprApp v1 $ [r a | (a,_) <- as]
+%%][9
+                                                     mk as = mkExprAppMeta v1 $ [(r a,vintroMeta cvi) | (a,cvi) <- as]
+%%]]
+                                                     v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
+                                                in   v2
+%%]

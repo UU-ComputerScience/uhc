@@ -1,0 +1,298 @@
+\def\PGFPatSizes{%
+ \def\ui{1}
+ \def\uii{2}
+ \def\uiii{3}
+ \def\uiv{4}
+ \def\uv{5}
+ \def\uvi{6}
+ \def\uvii{7}
+ \def\ao{.5}
+ \def\ai{1.5}
+ \def\aii{2.5}
+ \def\aiii{3.5}
+ \def\aiv{4.5}
+ \def\av{5.5}
+ \def\avi{6.5}
+ \def\avii{7.5}
+ \def\qpo{.25}
+ \def\qpi{1.25}
+ \def\qpii{2.25}
+ \def\qpiii{3.25}
+ \def\qpiv{4.25}
+ \def\qpv{5.25}
+ \def\qpvi{6.25}
+ \def\qpvii{7.25}
+}
+\def\PGFPatCmds{%
+ \def\c##1(##2,##3){% colored circle for node
+  \color{green}\pgfnodecircle{##1}[fill]{\pgfxy(##2,##3)}{0.2cm}
+ }
+ \def\cToC(##1,##2){% colored connected between nodes
+  \color{green}\pgfnodeconnline{##1}{##2}
+ }
+ \def\a##1,##2(##3,##4){% attribute box
+  \color{black}\pgfnodebox{##1}[stroke]{\pgfxy(##3,##4)}{##2}{2pt}{2pt}
+ }
+ \def\l##1,##2,##3(##4,##5){% label
+  \color{##3}\pgfnodebox{##1}[virtual]{\pgfxy(##4,##5)}{##2}{2pt}{2pt}
+ }
+ \def\nl##1,##2(##3,##4){% node label
+  \l##1,##2,blue(##3,##4)
+ }
+ \def\aca##1,##2(##3,##4){% compositional function
+  \l##1,##2,black(##3,##4)
+ }
+ \def\aToA(##1,##2){% arrowed connection between attr/function/...
+  \color{black}\pgfsetendarrow{\pgfarrowtriangle{3pt}}
+  \pgfnodesetsepstart{1pt}
+  \pgfnodesetsepend{1pt}
+  \pgfnodeconnline{##1}{##2}
+  \pgfclearendarrow
+ }
+ \def\aToATop(##1,##2){% arrowed curved connection on top
+  \color{black}\pgfsetendarrow{\pgfarrowtriangle{3pt}}
+  \pgfnodesetsepstart{1pt}
+  \pgfnodesetsepend{1pt}
+  \pgfnodeconncurve{##1}{##2}{45}{135}{.25cm}{.25cm}
+  \pgfclearendarrow
+ }
+ \def\aToATopBack(##1,##2){% arrowed curved connection on top, backwards
+  \color{black}\pgfsetendarrow{\pgfarrowtriangle{3pt}}
+  \pgfnodesetsepstart{1pt}
+  \pgfnodesetsepend{1pt}
+  \pgfnodeconncurve{##1}{##2}{135}{45}{.25cm}{.25cm}
+  \pgfclearendarrow
+ }
+ \def\aToABot(##1,##2){% arrowed curved connection on bot
+  \color{black}\pgfsetendarrow{\pgfarrowtriangle{3pt}}
+  \pgfsetdash{{0.05cm}{0.05cm}}{0cm}
+  \pgfnodesetsepstart{1pt}
+  \pgfnodesetsepend{1pt}
+  \pgfnodeconncurve{##1}{##2}{-45}{-135}{.25cm}{.25cm}
+  \pgfclearendarrow
+  \pgfsetdash{}{0cm}
+ }
+ \def\ac##1(##2,##3,##4){% attr + ctxt
+  \color{black}\pgfnodebox{##1}[stroke]{\pgfxy(##2,##3)}{##1}{2pt}{2pt}
+  \color{black}\pgfnodebox{##1Ctxt}[virtual]{\pgfxy(##2,##4)}{...}{2pt}{2pt}
+  \aToA(##1Ctxt,##1)
+ }
+}
+\def\PGFPatListNodes{%
+ \c N1(\uv,\uv)
+ \c N2(\uiii,\uiii)
+ \c N3(\uvi,\uiii)
+ \c N4(\ui,\ui)
+ \c N5(\uiv,\ui)
+ \cToC(N1,N2)
+ \cToC(N1,N3)
+ \cToC(N2,N4)
+ \cToC(N2,N5)
+}
+\def\PGFPatTreeNodes{%
+ \c N1(\uiii,\uv)
+ \c N2(\ui,\uiii)
+ \c N3(\uiii,\uiii)
+ \c N4(\uv,\uiii)
+ \c N5(\uiv,\ui)
+ \c N6(\uvi,\ui)
+ \cToC(N1,N2)
+ \cToC(N1,N3)
+ \cToC(N1,N4)
+ \cToC(N4,N5)
+ \cToC(N4,N6)
+}
+\def\PGFPatTreeLabel{%
+ \nl NL1,n1:N1(\uiii,\av)
+ \nl NL2,n2:N2(\ui,\aiii)
+ \nl NL3,n3:N3(\uiii,\aiii)
+ \nl NL4,n4:N4(\uv,\aiii)
+ \nl NL5,n5:N5(\uiv,\ai)
+ \nl NL6,n6:N6(\uvi,\ai)
+}
+\def\PGFPatListLabel{%
+ \nl NL1,:X\_Cons(\uv,\av)
+ \nl NL2,:X\_Cons(\uiii,\aiii)
+ \nl NL3,:X(\uvi,\aiii)
+ \nl NL4,:X\_Nil(\ui,\ai)
+ \nl NL5,:X(\uiv,\ai)
+}
+\def\PGFPatListNCSyn{%
+ \a nS1,n(\av,\uv)
+ \a nS2,n(\aiii,\uiii)
+ \a nS4,...(\ai,\ui)
+ \a cS1,c(\uvi,\uv)
+ \a cS2,c(\uiv,\uiii)
+ \a cS3,...(\avi,\uiii)
+ \a cS4,c(\uii,\ui)
+ \a cS5,...(\aiv,\ui)
+ \aca C23to1,combine(\uvi,\uiv)
+ \aca C45to2,combine(\uiv,\uii)
+ \aToA(nS4,nS2)
+ \aToA(nS2,nS1)
+ \aToA(cS4,C45to2)
+ \aToA(cS5,C45to2)
+ \aToA(C45to2,cS2)
+ \aToA(cS2,C23to1)
+ \aToA(cS3,C23to1)
+ \aToA(C23to1,cS1)
+}
+\def\PGFPatTreeAttrASyn{%
+ \a A1S,a(\aiii,\uv)
+ \a A2S,a(\ai,\uiii)
+ \a A3S,a(\aiii,\uiii)
+ \a A4S,a(\av,\uiii)
+ \a A5S,a(\aiv,\ui)
+ \a A6S,a(\avi,\ui)
+}
+\def\PGFPatTreeAttrAInh{%
+ \a A1I,a(\aii,\uv)
+ \a A2I,a(\ao,\uiii)
+ \a A3I,a(\aii,\uiii)
+ \a A4I,a(\aiv,\uiii)
+ \a A5I,a(\aiii,\ui)
+ \a A6I,a(\av,\ui)
+}
+\def\PGFPatTreeAttrATypedInh{%
+ \a A1I,a:A(\qpii,\uv)
+ \a A2I,a:A(\qpo,\uiii)
+ \a A3I,a:A(\qpii,\uiii)
+ \a A4I,a:A(\qpiv,\uiii)
+ \a A5I,a:A(\qpiii,\ui)
+ \a A6I,a:A(\qpv,\ui)
+}
+\def\PGFPatTreeAttrASynConnComposition{%
+ \aca C234to1,combine(\av,\uiv)
+ \aca C56to4,combine(\avi,\uii)
+ \aToA(A2S,C234to1)
+ \aToA(A3S,C234to1)
+ \aToA(A4S,C234to1)
+ \aToA(C234to1,A1S)
+ \aToA(A5S,C56to4)
+ \aToA(A6S,C56to4)
+ \aToA(C56to4,A4S)
+}
+\newcommand{\PGFPatTree}[1]{%
+ \begin{center}
+  \PGFPatSizes
+  \PGFPatCmds
+  \begin{pgfpicture}{-0.5cm}{0.5cm}{7.5cm}{5.5cm}
+   \PGFPatTreeNodes
+   #1
+  \end{pgfpicture}
+ \end{center}
+}
+\newcommand{\PGFPatList}[1]{%
+ \begin{center}
+  \PGFPatSizes
+  \PGFPatCmds
+  \begin{pgfpicture}{0.5cm}{0.5cm}{7cm}{6cm}
+   \PGFPatListNodes
+   #1
+  \end{pgfpicture}
+ \end{center}
+}
+\newcommand{\PGFPatComposition}{%
+ \PGFPatTree{%
+   \PGFPatTreeAttrASyn
+   \PGFPatTreeAttrASynConnComposition
+ }
+}
+
+\def\PGFExprOneB{%
+ \c N0(\uiv,\uii)
+ \nl e,e:Expr(\uiv,\aii)
+ \ac tyGam(\ui,\uii,\uiii)
+ \ac knTy(\uiii,\uii,\uiii)
+ \ac ty(\uv,\uii,\ui)
+}
+\newcommand{\PGFExprIBScheme}{%
+ \begin{center}
+  \PGFPatSizes
+  \PGFPatCmds
+  \begin{pgfpicture}{0cm}{0.7cm}{5.5cm}{3.3cm}
+   \PGFExprOneB
+  \end{pgfpicture}
+ \end{center}
+}
+\def\PGFPatTreeAttrAInhConnDeComposition{%
+ \aca C234to1,{decombine1}(\ao,\uiv)
+ \aca C56to4,{decombine2}(\aiii,\uii)
+ \aToA(C234to1,A2I)
+ \aToA(C234to1,A3I)
+ \aToA(C234to1,A4I)
+ \aToA(A1I,C234to1)
+ \aToA(C56to4,A5I)
+ \aToA(C56to4,A6I)
+ \aToA(A4I,C56to4)
+}
+\newcommand{\PGFPatDeComposition}{%
+ \PGFPatTree{%
+   %\PGFPatTreeLabel
+   \PGFPatTreeAttrATypedInh
+   \PGFPatTreeAttrAInhConnDeComposition
+ }
+}
+
+\def\PGFPatTreeAttrAInhConnCopyDown{%
+ \aToA(A1I,A2I)
+ \aToA(A1I,A3I)
+ \aToA(A1I,A4I)
+ \aToA(A4I,A5I)
+ \aToA(A4I,A6I)
+}
+\newcommand{\PGFPatDistribute}{%
+ \PGFPatTree{%
+   \PGFPatTreeAttrAInh
+   \PGFPatTreeAttrAInhConnCopyDown
+ }
+}
+
+\def\PGFPatTreeAttrAInhSynCopyThread{%
+ \aToA(A1I,A2I)
+ \aToA(A4S,A1S)
+ \aToA(A4I,A5I)
+ \aToA(A6S,A4S)
+ \aToATop(A2S,A3I)
+ %\aToATop(A3S,A4I)
+ \aToATop(A5S,A6I)
+ \aToABot(A2I,A2S)
+ \aToABot(A3I,A3S)
+ \aToABot(A5I,A5S)
+ \aToABot(A6I,A6S)
+ \aca C3to4,upd(\aiii,\uiv)
+ \aToA(A3S,C3to4)
+ \aToA(C3to4,A4I)
+}
+\newcommand{\PGFPatThread}{%
+ \PGFPatTree{%
+   \PGFPatTreeAttrAInh
+   \PGFPatTreeAttrASyn
+   \PGFPatTreeAttrAInhSynCopyThread
+ }
+}
+
+\def\PGFMultipass{%
+ \c N0(\uiii,\ui)
+ \a a1I,a1(\ui,\ui)
+ \a a2I,a2(\uii,\ui)
+ \a a1S,a1(\uiv,\ui)
+ \aToATopBack(a1S,a2I)
+ \aToABot(a1I,a1S)
+}
+\newcommand{\PGFPatMultipass}{%
+ \begin{center}
+  \PGFPatSizes
+  \PGFPatCmds
+  \begin{pgfpicture}{0cm}{0cm}{4.5cm}{2cm}
+   \PGFMultipass
+  \end{pgfpicture}
+ \end{center}
+}
+
+\newcommand{\PGFPatListSpine}{%
+ \PGFPatList{%
+  \PGFPatListLabel
+  \PGFPatListNCSyn
+ }
+}

@@ -1,0 +1,70 @@
+%%[doesWhat doclatex
+
+If the body of a function contains a case-expression with zero alternatives
+we know that the function can never be called.
+Replace the binding of the function with the arity placeholder.
+
+%%]
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EmptyAlts} export(emptyAlts)
+emptyAlts :: GrModule -> GrModule
+emptyAlts grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                       (Inh_GrAGItf)
+                  in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+%%[(8 codegen grin)
+-- An expression is valid if it doesn't contain Case expressions with empty or all-invalid list of alternatives
+
+ATTR GrExpr
+     GrAlt  [ | | valid : {Bool} ]
+ATTR GrAltL [ | | isNull : {Bool}  someValid: {Bool}  ]
+
+SEM GrAltL
+  | Nil   lhs.isNull = True
+  | Cons  lhs.isNull = False
+  
+SEM GrAltL
+  | Nil   lhs.someValid = False
+  | Cons  lhs.someValid = @hd.valid || @tl.someValid  
+  
+
+SEM GrExpr
+  | Case          lhs.valid  =  @altL.someValid
+  | Seq           lhs.valid  =  @expr.valid && @body.valid
+  | * - Case Seq  lhs.valid  =  True
+
+-- Binding bodies that are not valid are replaced by an arity placeholder
+
+SEM GrBind
+  | Bind          lhs.grTrf  =  if @expr.valid
+                                then @loc.grTrf
+                                -- else GrBind_Arity @nm (length @argNmL)
+                                else GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
+                                
+-- Invalid alternatives are removed from the list
+
+SEM GrAltL
+  | Nil           lhs.grTrf = []
+  | Cons          lhs.grTrf = if @hd.valid                                
+                              then @hd.grTrf : @tl.grTrf
+                              else             @tl.grTrf
+                                
+                                
+%%]

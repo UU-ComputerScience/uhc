@@ -1,0 +1,91 @@
+\appendix
+\chapter{Exception example in \cmm{}}
+\label{exexample}
+
+Below the \cmm{} code of the GRIN example shown in Section
+\ref{exceptions:compiling2grin} on page \pageref{exceptions:compiling2grin}.
+
+\begin{code}
+target memsize 8 byteorder little pointersize 32 wordsize 32;
+typedef bits32 grWord;
+
+grWord eh;
+
+import  "GC_malloc"  as  alloc;
+export  grin_main    as  "grin_main";
+const grWord Fmain         = 5;
+const grWord Fthr          = 4;
+const grWord COutOfBounds  = 3;
+const grWord CDivByZero    = 2;
+const grWord CInt          = 1;
+const grWord Frethrow      = 0;
+section "data"  {  GlobalNodes:
+                   main_caf: grWord[5] { Fmain, 0, 0, 0, 0 };
+                   GlobalNodesEnd:
+                }
+grin_main() {
+  grWord _, result;
+  _, result = main();
+  return (result);
+}
+main() {
+  grWord _;
+  grWord r.57, r.58;
+  stackdata { prev.eh.e: grWord; }
+  grWord [prev.eh.e], eh = eh, handler.e;            //push catch(e)
+  grWord e1;
+  e1 = foreign "C" alloc(20);
+  grWord[e1] = CDivByZero;
+  grWord e2;
+  e2 = foreign "C" alloc(20);
+  grWord[e2] = COutOfBounds;
+  grWord f1;
+  f1 = foreign "C" alloc(20);
+  grWord[f1], grWord[%add(f1,4)] = Fthr, e1;
+  grWord f2;
+  f2 = foreign "C" alloc(20);
+  grWord[f2], grWord[%add(f2,4)] = Fthr, e2;
+  r.57, r.58 = add(f1, f2) also cuts to handler.e;
+  eh = grWord[prev.eh.e];                            //pop catch(e)
+  goto after.e;
+  grWord e;
+  continuation handler.e(e):
+  eh = grWord [prev.eh.e],;
+  r.57, r.58 = CInt, 1;
+  after.e:
+  return (r.57, r.58);
+}
+add(grWord a, grWord b) {
+  grWord _;
+  grWord a.26.38;
+  a.26.38 = grWord[a];
+  switch a.26.38 {
+    case Frethrow: {
+      grWord a.26.40.50;
+      a.26.40.50 = grWord[%add(a,8)];
+      cut to eh(a.26.40.50);
+    }
+    case Fthr: {
+      grWord a.26.40.52;
+      a.26.40.52 = grWord[%add(a,8)];
+      grWord x54, x55;
+      stackdata { prev.eh.a.29: grWord; }
+      grWord[prev.eh.a.29], eh = eh, handler.a.29;   //push catch(a.29)
+      thr(a.26.40.52) also cuts to handler.a.29;
+      eh = grWord [prev.eh.a.29];                    //pop catch(a.29)
+      goto after.a.29;
+      grWord a.29;
+      continuation handler.a.29(a.29):
+      eh = grWord[prev.eh.a.29];
+      grWord[a], grWord[%add(a,4)] = Frethrow, a.29;
+      cut to eh(a.29);
+      after.a.29:
+      return (x54, x55);
+    }
+  }
+}
+thr(grWord x) {
+  grWord _;
+  cut to eh(x);
+}
+\end{code}

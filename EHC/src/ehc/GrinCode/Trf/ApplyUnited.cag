@@ -1,0 +1,102 @@
+%%[doesWhat doclatex
+
+do not do \textit{APPLY} on variables that bind the result of a previous \textit{UNIT} of a P-node.
+Instead, do a \textit{CALL} of the function if it is now saturated, or build a new P-node if it is undersaturated.
+
+%%]
+
+
+For each pattern
+   UNIT (#P/needs/f x y) ;\r ->
+   ...
+   APPLY r a b
+replace the APPLY expression by
+   CALL f x y a b           if n==needs
+   UNIT (#P/m/f x y a b)    if n< needs
+where n = |a b|
+      m = needs - n
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ApplyUnited} export(applyUnited)
+
+applyUnited :: GrModule -> GrModule
+applyUnited grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                         (Inh_GrAGItf)
+                    in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin)
+
+-- Environment passes information about variables that hold a P-node.
+
+ATTR AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
+
+ATTR GrExpr [  | | mbUnitPNode : {Maybe GrVal} ]
+                   
+ATTR GrPatLam [ | | getName : {HsName} ]
+
+ATTR GrVal [ | | hasPAppTag : {Bool} ]
+
+SEM GrPatLam
+  | Var       lhs.getName  =  @nm
+  | * - Var   lhs.getName  =  error "ApplyUnited: getName from non-variable"
+
+SEM GrVal
+  | Node      lhs.hasPAppTag  =  isPAppTag @tag.grTrf
+  | * - Node  lhs.hasPAppTag  =  False
+
+
+SEM GrBind
+  | Bind      expr.env     =  Map.empty
+
+SEM GrExpr
+  | Seq       body.env  =  maybe @lhs.env
+                                 (\val -> Map.insert @pat.getName val @lhs.env)
+                                 @expr.mbUnitPNode
+                                 
+  | Unit            lhs.mbUnitPNode    =  if @val.hasPAppTag
+                                          then Just @val.grTrf
+                                          else Nothing
+  | * - Unit        lhs.mbUnitPNode    =  Nothing
+ 
+  | App             lhs.grTrf          =  maybe @loc.grTrf
+                                                (applyNode @nm @argL.grTrf)
+                                                (Map.lookup @nm @lhs.env)
+
+%%]
+
+%%[(8 codegen grin) hs
+
+
+applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
+  =  let n = length flds2
+     in  if n<needs
+         then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2))
+         else if n==needs
+              then GrExpr_Call  nm  (flds1++flds2)
+              else let newname = hsnFromString "hallo"
+                       flds2a  = take needs flds2
+                       flds2b  = drop needs flds2
+                   in  GrExpr_Seq (GrExpr_Call  nm  (flds1++flds2a))
+                                  (GrPatLam_Var newname)
+                                  (GrExpr_App  newname flds2b)
+
+%%]

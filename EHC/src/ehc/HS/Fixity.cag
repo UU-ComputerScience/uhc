@@ -1,0 +1,155 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fixity binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR
+  AllDeclaration
+%%[[5
+  Qualifier
+%%]
+%%[[9
+  Statement
+%%]
+%%[[20
+  AllModule AGItf
+%%]
+    [ | | gathFixityGam USE {`gamAddGam`} {emptyGam}: FixityGam ]
+%%]
+
+%%[1
+ATTR
+  AllDeclaration AllExpression
+%%[[20
+  AGItf AllModule
+%%]]
+%%[[95
+  AllConstructor
+%%]]
+    [ fixityGam: FixityGam | | ]
+%%]
+
+%%[1
+SEM Declaration
+    | Fixity
+        lhs         .   gathFixityGam   =   let p = maybe (fgiPrio defaultFixityGamInfo) id @priority
+                                                mk n = (n,FixityGamInfo p @fixity)
+                                            in  assocLToGam $ map mk $ @oprefnames
+%%]
+
+%%[1.initFixityGam
+SEM Body
+    | Body
+        declarations    .   fixityGam   =   @declarations.gathFixityGam
+%%]
+
+%%[20 -1.initFixityGam
+SEM Body
+    | Body
+        declarations    .   fixityGam   =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[1
+SEM Expression
+	| Let
+		loc			.	fixityGam		=	@declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[1
+SEM RightHandSide
+	| Expression
+%%[[5
+	  Guarded
+%%]
+		loc			.	fixityGam		=	@where.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[5
+SEM Qualifiers
+	| Cons
+		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%[9
+SEM Statements
+	| Cons
+		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Use in Expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Expression [ | | operatorName: MaybeName ]
+
+SEM Expression
+    | Variable Constructor
+        lhs         .   operatorName    =   Just @refname
+    | * - Variable Constructor
+        lhs         .   operatorName    =   Nothing
+
+SEM Expression
+    | InfixApplication
+        loc         .   fgi             =   case @operator.operatorName of
+                                              Just n
+                                                -> fixityGamLookup n @lhs.fixityGam
+                                              _ -> defaultFixityGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Chain of infix expressions (right balanced)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+data OpChain leaf
+  = OpChain_Op   leaf PP_Doc Fixity Int Range (OpChain leaf) (OpChain leaf)
+  | OpChain_Leaf leaf
+
+opChainReArrange :: OpChain e -> (OpChain e,[Err])
+opChainReArrange opChain
+  = case opChain of
+      OpChain_Op op1 pp1 f1 p1 pos1 l1 r1
+        -> case opChainReArrange r1 of
+             (OpChain_Op op2 pp2 f2 p2 pos2 l2 r2,rerr)
+               | p1  > p2 -> (lvariant,lerr)
+               | p1  < p2 -> (rvariant,rerr)
+               | p1 == p2 -> case (f1,f2,lvariant,rvariant) of
+                               (Fixity_Infixr,Fixity_Infixr,_,r) -> (r,rerr)
+                               (Fixity_Infixl,Fixity_Infixl,l,_) -> (l,lerr)
+                               (Fixity_Infix ,_            ,l,_) -> (l,[rngLift pos2 Err_Fixity pp1 pp2] ++ lerr)
+               where (lrearr,lerr) = opChainReArrange (OpChain_Op op1 pp1 f1 p1 pos1 l1 l2)
+                     lvariant = OpChain_Op op2 pp2 f2 p2 pos2 lrearr r2
+                     rvariant = OpChain_Op op1 pp1 f1 p1 pos1 l1 (OpChain_Op op2 pp2 f2 p2 pos2 l2 r2)
+             (r1l@(OpChain_Leaf _),rerr) -> (OpChain_Op op1 pp1 f1 p1 pos1 l1 r1l,rerr)
+      _ -> (opChain,[])
+
+unOpChain :: SemApp e => OpChain e -> e
+unOpChain opChain
+  = un opChain
+  where un ch
+          = case ch of
+              OpChain_Op op _ _ _ rng l r
+                -> mkRngParApp rng [op,un l,un r]
+              OpChain_Leaf leaf
+                -> leaf
+%%]
+
+%%[1
+SEM Expression [ | | opChain: {OpChain EH.Expr} ]
+    | InfixApplication
+        lhs         .   opChain         =   OpChain_Op @operator.eh @operator.pp (fgiFixity @fgi) (fgiPrio @fgi) @range @leftExpression.opChain @rightExpression.opChain
+    | * - InfixApplication
+        lhs         .   opChain         =   OpChain_Leaf @eh
+
+SEM Expression
+    | InfixApplicationChainTop
+        loc         .   (ehRearrOpChain,errRearr)
+                                        =   opChainReArrange @expression.opChain
+                    .   ehFromOpChain   =   unOpChain @ehRearrOpChain
+%%]

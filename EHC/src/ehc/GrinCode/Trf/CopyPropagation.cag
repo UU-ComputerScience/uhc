@@ -1,0 +1,241 @@
+%%[doesWhat doclatex
+
+Try to shortcut two sorts of copying:
+`Left unit law':  Transform   \verb"unit v ; \p -> e"   into   \verb"e [v/p]" .
+`Right unit law': Transform   \verb"e ; \p -> unit p"   into   \verb"e"           (but not if e is FetchNode).  
+Left transformation is not possible if v is a single variable and p is a node.
+Use the left law if both are applicable.
+
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CopyPropagation} export(copyPropagation)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+copyPropagation :: GrModule -> (GrModule, Bool)
+copyPropagation grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in (grTrf_Syn_GrAGItf t, changed_Syn_GrAGItf t)
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+ATTR GrPatLam
+     GrVarL
+     GrVar
+     GrTagL
+     GrTag   [ | | self: SELF ]
+ATTR GrAGItf GrModule AllBind GrExpr AllAlt [ | | changed USE {||} {False}: Bool ]
+
+SEM GrExpr
+  | Seq loc   .  mbLeft   =  testLeft @pat.self @expr.mbUnitValue     -- test if left-law is applicable, and determine the substitution to be used
+        loc   .  isLeft   =  isJust @loc.mbLeft
+        loc   .  isRight  =  testRight @pat.self @body.mbUnitValue   -- test if right-law is applicable
+                             && not @expr.isFetchNode
+        lhs   .  changed  =  @expr.changed || @body.changed || @loc.isLeft || @loc.isRight
+        loc   .  (st1,st2) = maybe (id,id) id @loc.mbLeft
+        loc   .  newsubst =  @loc.st1 @lhs.subst             -- merge substitution neccessary for left-law with inherited substitution
+        loc   .  newpatsubst = @loc.st2 @body.patsubst
+        body  .  subst    =  @loc.newsubst
+        pat   .  subst    =  @loc.newpatsubst
+        lhs   .  patsubst =  @loc.newpatsubst
+        lhs   .  grTrf    =  if @loc.isLeft            -- first try left-law
+                              then @body.grTrf         -- if it is possible, @expr can be ignored because it contains the copied unit
+                              else if @loc.isRight     -- otherwise try right-law
+                                    then @expr.grTrf   -- if it is possible, @body can be ignored because it contains the copied unit
+                                    else @loc.grTrf    -- no transformations possible
+      
+--        lhs   .  grTrf    =  if @loc.isRight           -- first try right-law
+--                              then @expr.grTrf         -- if it is possible, @body can be ignored because it contains the copied unit
+--                              else if @loc.isLeft      -- otherwise try left-law
+--                                    then @body.grTrf   -- if it is possible, @expr can be ignored because it contains the copied unit
+--                                    else @loc.grTrf    -- no transformations possible
+
+  | *-Seq  lhs . patsubst  =  Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%
+%%% Right Unit law %%%
+%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin).rightUnit hs
+
+testRight :: GrPatLam -> Maybe GrVal -> Bool
+testRight pat mbVal
+   =  maybe False (testR pat) mbVal
+
+testR :: GrPatLam -> GrVal -> Bool
+testR pat val
+   =  case pat of
+       GrPatLam_Empty      -> case val of
+                               GrVal_Empty      -> True
+                               _                -> False
+       GrPatLam_Var     v  -> case val of
+                               GrVal_Var x      -> v==x
+                               _                -> False
+       GrPatLam_VarNode vs -> case val of
+                               GrVal_Node t  xs -> equalNodes vs (GrVal_Tag t:xs)
+                               GrVal_VarNode xs -> equalNodes vs              xs
+                               _                -> False
+       _ -> False
+                               
+
+equalNodes :: [GrVar] -> [GrVal] -> Bool
+equalNodes []     []      =  True
+equalNodes []     xs      =  False
+equalNodes ps     []      =  False
+equalNodes (p:ps) (x:xs)  =  equalVars p x && equalNodes ps xs
+
+equalVars :: GrVar -> GrVal -> Bool
+equalVars (GrVar_KnownTag t1) (GrVal_Tag t2) =  t1==t2
+equalVars (GrVar_Var v1)      (GrVal_Var v2) =  v1==v2
+equalVars _                   _              =  False
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%
+%%% Left Unit law %%%
+%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).leftUnit hs
+testLeft :: GrPatLam -> Maybe GrVal -> Maybe SubstTrafoPair
+testLeft pat mbVal
+  =  do { val <- mbVal
+        ; testL pat val
+        }
+
+testL :: GrPatLam -> GrVal -> Maybe SubstTrafoPair
+testL pat val
+  = case pat of
+      GrPatLam_Empty      -> case val of
+                              GrVal_Empty         -> Just (id,id)
+                              _                   -> Nothing -- error "CopyProp: left: empty-pattern does not match"
+      GrPatLam_Var     v  ->                         Just (Map.insert v val, id)
+      GrPatLam_VarNode vs -> case val of
+                              GrVal_Var      _    -> Nothing
+                              GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
+                              GrVal_VarNode    xs -> Just (unifyNodes vs              xs )
+                              GrVal_EnumNode    n -> Nothing
+                              GrVal_BasicNode t n -> Nothing -- error $ "CopyProp: left: node-pattern does not match BasicNode" ++ show n
+                              GrVal_OpaqueNode  n -> Nothing -- error $ "CopyProp: left: node-pattern does not match OpaqueNode" ++ show n
+                              GrVal_PtrNode     n -> Nothing -- error $ "CopyProp: left: node-pattern does not match PtrNode" ++ show n
+                              _                   -> Nothing -- error ("CopyProp: left: node-pattern does not match pat=" ++ show pat ++ " val=" ++ show val)
+      _  -> Nothing
+                              
+
+unifyNodes :: [GrVar] -> [GrVal] -> SubstTrafoPair
+unifyNodes []     []      =  (id,id)
+unifyNodes []     xs      =  (id,id)  -- ignore superfluous values
+--unifyNodes ps     []      =  error ("CopyProp: unify: too many patterns: " ++ show ps)
+unifyNodes (p:ps) []      =  let (a1,a2) = unifyNodes ps []
+                                 (b1,b2) = unifyVars p GrVal_Empty   -- (GrVal_Var wildcardNr) 
+                             in  (a1 . b1, a2 . b2)
+unifyNodes (p:ps) (x:xs)  =  let (a1,a2) = unifyNodes ps xs 
+                                 (b1,b2) = unifyVars p x
+                             in  (a1 . b1, a2 . b2)
+                              
+unifyVars :: GrVar -> GrVal -> SubstTrafoPair
+unifyVars GrVar_Ignore        _                            =  (id, id)
+unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2)  | t1==t2     =  (id, id)
+                                              | otherwise  =  error $ "CopyProp: unify: tags do not match: " ++ show t1 ++ " and " ++ show t2
+unifyVars (GrVar_KnownTag t1) (GrVal_Var v2)               =  (id, Map.insert v2 (GrVal_Tag t1))
+unifyVars (GrVar_KnownTag _ ) _                            =  (id,id)
+unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, id)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Value Information %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).valueInfo
+ATTR GrExpr [ | | mbUnitValue : {Maybe GrVal} ]
+
+SEM GrExpr
+  | Unit       loc  .  mbUnitValue = Just @val.grTrf
+  | * - Unit   loc  .  mbUnitValue = Nothing
+%%]
+
+%%[(8 codegen grin)
+ATTR GrExpr [ | | isFetchNode : {Bool} ]
+
+SEM GrExpr
+  | FetchNode    lhs  .  isFetchNode = True
+  | * - FetchNode lhs .  isFetchNode = False
+%%]
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitutions
+%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+type Substitution = Map.Map HsName GrVal
+type SubstTrafo = Substitution -> Substitution
+type SubstTrafoPair = (SubstTrafo, SubstTrafo)
+
+getHsName nm subst 
+  =  case Map.lookup nm subst of
+      Nothing    -> nm
+      Just repl  -> case repl of
+                      GrVal_Var v -> v
+                      _           -> error ("CopyPropagation cannot substitute " ++ show repl)
+
+mbSubstTag nm subst 
+  =  case Map.lookup nm subst of
+      Nothing    -> Nothing
+      Just repl  -> case repl of
+                      GrVal_Tag t -> Just t
+                      _           -> Nothing
+
+%%]
+%%[(8 codegen grin).applySubstitutions
+
+ATTR AllExpr [ subst: Substitution | | ]
+ATTR GrExpr  [ | | patsubst : Substitution ]
+
+
+SEM GrVal
+  | Var      lhs  .  grTrf  =  Map.findWithDefault   @grTrf @nm @lhs.subst
+  | Node     lhs  .  grTrf  =  GrVal_Node @tag.grTrf @fldL.grTrf
+  | VarNode  lhs  .  grTrf  =  GrVal_VarNode         @fldL.grTrf
+
+SEM GrExpr
+  | FetchNode  lhs  .  grTrf  = GrExpr_FetchNode  (getHsName @nm @lhs.subst)
+  | FetchField lhs  .  grTrf  = GrExpr_FetchField (getHsName @nm @lhs.subst) @offset @mbTag
+  | UpdateUnit lhs  .  grTrf  = GrExpr_UpdateUnit (getHsName @nm @lhs.subst) @val.grTrf
+  | Eval       lhs  .  grTrf  = GrExpr_Eval       (getHsName @nm @lhs.subst)
+  | App        lhs  .  grTrf  = GrExpr_App        (getHsName @nm @lhs.subst) @argL.grTrf
+
+SEM GrVar
+  | Var        lhs  .  grTrf  = maybe (GrVar_Var @nm) (\t -> GrVar_KnownTag t) (mbSubstTag @nm @lhs.subst)
+
+
+SEM GrValL
+  | Cons       lhs  .  grTrf  = let x = @hd.grTrf
+                                in  if x == GrVal_Empty
+                                    then @tl.grTrf
+                                    else x : @tl.grTrf
+
+
+
+SEM GrBind
+  | Bind  expr . subst     = Map.empty
+SEM GrGlobal
+  | *     loc  . subst     = Map.empty
+%%[[10
+SEM GrAdapt
+  | *     loc  . subst     = Map.empty
+SEM GrSplit
+  | *     loc  . subst     = Map.empty
+%%]]
+%%]

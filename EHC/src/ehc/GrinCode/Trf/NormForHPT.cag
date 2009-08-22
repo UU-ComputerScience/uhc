@@ -1,0 +1,177 @@
+NormForHPT
+This transformation is obolete.
+
+It was once used to bring the program in a form acceptable to HPT analysis.
+This is not necessary any more, since
+ - HPT analysis covers more cases than earlier
+ - Some of the offending code is not generated anymore by Core2Grin
+ - Some of the transformations are related to try/catch, which is currently not used anyway
+
+----------------------------------------------------------------------------------------
+
+Normalisation for the Heap-points-to analysis
+
+- A case alternative or the last statment of a catch block (body or handler) must end with a simple unit (e.g. "unit var")
+
+- The scrutinized expression must be a variable, not a complete node.
+
+- The following locations in the code must contain a simple pattern (e.g \var)
+    - After an eval or apply
+    - After a case statement
+    - After a catch statement
+
+- do we need it after an FFI?
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NormForHPT} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(normForHPT)
+normForHPT :: (GrModule,Int) -> (GrModule,Int)
+normForHPT (grmod,unique) = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
+                                                 (Inh_GrAGItf { unique_Inh_GrAGItf = unique })
+                            in (grTrf_Syn_GrAGItf t, unique_Syn_GrAGItf t)
+
+newVar :: Int -> (HsName, Int)
+newVar u = (HNmNr u OrigNone, u+1)
+
+newVarIf :: Bool -> Int -> (HsName, Int)
+newVarIf b u = if b then newVar u else (undefined, u)
+
+newGrIdent :: HsName -> (GrVal, GrPatLam)
+newGrIdent n = (GrVal_Var n, GrPatLam_Var n)
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | unique: Int | grTrf: GrModule ]
+ATTR AllNT [ | unique: Int | grTrf: SELF ]
+%%]
+
+Change last expression of binding to last of alternative (or of catch body or handler)
+
+%%[(8 codegen grin).lastOfAlt
+
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = @lhs.hasNext
+  | Case     altL . hasNext = False
+  | Catch    loc  . hasNext = False
+
+%%]
+
+Keep track if we are inside an alternative
+
+%%[(8 codegen grin).inAlt
+ATTR AllGrExpr [ isInAlt: Bool | | ]
+
+SEM GrBind
+  |  Bind   expr  .  isInAlt  =  False
+
+SEM GrExpr
+  |  Case   altL  .  isInAlt  =  True
+%%]
+
+keep track if we are inside an catch
+
+%%[(8 codegen grin).inAlt
+ATTR AllGrExpr [ isInCatch: Bool | | ]
+
+SEM GrBind
+  |  Bind   expr  .  isInCatch  =  False
+
+SEM GrExpr
+  |  Catch  loc   .  isInCatch  =  True
+%%]
+
+Is the statement a simple unit
+
+%%[(8 codegen grin).simpleUnit
+SEM GrExpr
+  | Unit      loc  .  simpleUnit  =  case @val.grTrf of
+                                        GrVal_Var _ -> True
+                                        otherwise   -> False
+  | * - Unit  loc  .  simpleUnit  =  False
+%%]
+
+Transform the last statement of an alternative which is no simple unit
+
+%%[(8 codegen grin).lastUnit
+SEM GrExpr
+  | * - Seq Case Catch  loc  .  doUnitTrans    = (@lhs.isInAlt || @lhs.isInCatch) && not @lhs.hasNext && not @simpleUnit
+                             .  (var, unique)  = newVarIf @doUnitTrans @lhs.unique
+                             .  (val2, pat2)   = newGrIdent @var
+                        lhs  .  grTrf          = if @doUnitTrans 
+                                                 then GrExpr_Seq @grTrf @pat2 (GrExpr_Unit @val2)
+                                                 else @grTrf
+                             .  unique         = @unique -- note: we break the normal unique sequence (but it is 'safe')
+%%]
+
+The scrutinizer must be a variable
+
+%%[(8 codegen grin).scrutinizer
+SEM GrExpr
+  | Case  loc  .  doCaseTrans       = case @val.grTrf of
+                                          GrVal_Var _ -> False
+                                          otherwise   -> True
+          loc  .  (var, newUnique)  = newVarIf @doCaseTrans @lhs.unique
+               .  (val', pat')      = newGrIdent @var
+          lhs  .  grTrf             = if @doCaseTrans
+                                      then GrExpr_Seq (GrExpr_Unit @val.grTrf) @pat'
+                                                      (GrExpr_Case @val' @altL.grTrf)
+                                      else @grTrf
+          altL . unique             = @newUnique
+%%]
+
+Which expressions need a simple pattern after the statement
+
+%%[(8 codegen grin).needSimplePattern
+SEM GrExpr [ | |  needsSimplePattern : Bool ]
+  | Case Eval App Catch      lhs  .  needsSimplePattern  =  True
+  | * - Case Eval App Catch  lhs  .  needsSimplePattern  =  False
+%%]
+
+%%[(8 codegen grin).isSimplePattern
+SEM GrPatLam [ | | isSimplePattern: Bool ]
+  | Var      loc . isSimplePattern  =  True
+  | * - Var  loc . isSimplePattern  =  False
+%%]
+
+All patterns which do not contain a simple pattern after these expressions
+are rewritten into a copy
+
+%%[(8 codegen grin).simplePattern
+SEM GrExpr
+  | Seq  loc  .  doPatternTrans    = @expr.needsSimplePattern && not @pat.isSimplePattern
+              .  (var, newUnique)  = newVarIf @doPatternTrans @expr.unique
+              .  (val2, pat2)      = newGrIdent @var
+         lhs  .  grTrf             = if @doPatternTrans
+                                     then GrExpr_Seq @expr.grTrf @pat2
+                                                     (GrExpr_Seq (GrExpr_Unit @val2) @pat.grTrf @body.grTrf)
+                                     else @grTrf
+         body  .  unique           = @newUnique
+%%]
+
+
+A catch statement should not occur at the return spine...
+This is actually something for the code generator, but it is easier to prepare this early
+
+%%[(8 codegen grin).catch
+SEM GrExpr
+  | Catch   loc  .  var         =  HNmNr @handler.unique OrigNone
+                 .  appendUnit  =  GrExpr_Seq @grTrf (GrPatLam_Var @var) (GrExpr_Unit (GrVal_Var @var))
+            lhs  .  grTrf       =  if @lhs.hasNext then @grTrf else @appendUnit
+                 .  unique      =  if @lhs.hasNext then @handler.unique else @handler.unique + 1
+%%]

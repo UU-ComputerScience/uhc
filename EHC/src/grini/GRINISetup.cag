@@ -1,0 +1,87 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs import(GRINIRun,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}GrinCode}) export(grGriSetup)
+%%]
+
+%%[8 hs import(qualified Data.Map as Map,Data.Array,Data.Array.IO,EH.Util.Utils)
+%%]
+
+%%[8.WRAPPER import({GrinCode/AbsSyn})
+WRAPPER GrAGItf
+%%]
+
+%%[8 hs
+grGriSetup :: GrModule -> IO RunState
+grGriSetup cmod
+  =  let  t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf cmod)) Inh_GrAGItf
+     in   (rs_Syn_GrAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initial run state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs
+mkLamGlob :: Int -> AssocL HsName RunVal -> (AssocL HsName RunVal,AssocL Int RunVal)
+mkLamGlob st = unzip . zipWith (\p (n,v) -> ((n,RVPtr p),(p,v))) [st..]
+
+mkCafGlob :: Int -> AssocL HsName RunVal -> (AssocL Int RunVal,AssocL HsName RunVal,AssocL Int RunVal)
+mkCafGlob st g
+  =  let  (p2vCode,binds)
+            = unzip
+            . zipWith (\p (n,v)
+                         ->  ((p,v)
+                             ,((n,RVPtr (p+1)),(p+1,mkRN [RVCat NdFun,RVPtr p]))
+                             )
+                      ) [st,st+2..]
+            $ g
+          (n2pCaf,p2vCaf)
+            = unzip binds
+     in   (p2vCode,n2pCaf,p2vCaf)
+%%]
+
+%%[8
+ATTR GrAGItf GrModule [ | | rs: {IO RunState} ]
+
+SEM GrModule
+  | Mod         lhs         .   rs          =   let  (n2pLam,p2vLam)
+                                                                 = mkLamGlob 0 @bindL.lamGlobL
+                                                     (p2vCode,n2pCaf,p2vCaf)
+                                                                 = mkCafGlob (length n2pLam) @bindL.cafGlobL
+                                                     n2p'        = Map.fromList n2pLam `Map.union` Map.fromList n2pCaf
+                                                     p2v         = p2vLam ++ p2vCaf ++ p2vCode
+                                                     sz          = length p2v
+                                                     szAll       = sz + sz `div` 2
+                                                     initGrExpr  = GrExpr_Eval hsnMain
+                                                in   do  {  m <- newListArray (0,szAll-1) ((assocLElts . sortOn fst $ p2v) ++ replicate (szAll-sz) RVNil)
+                                                         ;  let  h = RunHeap { rhMem = m, rhSize = sz, rhFree = sz }
+                                                         ;  return
+                                                                (RunState
+                                                                    { rsNext = Just initGrExpr
+                                                                    , rsStack = [], rsHeap = h
+                                                                    , rsEnv = n2p', rsGlobEnv = n2p'
+                                                                    , rsHalted = Nothing, rsNrSteps = 0
+                                                                    })
+                                                         }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Clone
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[8
+ATTR AllBind [ | | lamGlobL, cafGlobL USE {++} {[]}: {AssocL HsName RunVal} ]
+ATTR AllExpr [ | | self: SELF ]
+
+SEM GrBind
+  | Bind        lhs         .   (lamGlobL,cafGlobL)
+                                            =   let g = [(@nm,RVGlob @nm @argNmL @expr.self)]
+                                                in  if null @argNmL then ([],g) else (g,[])
+%%]
+

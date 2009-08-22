@@ -1,0 +1,129 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}Error} import({%{EH}Base.Common}) export(Err(..), ErrL)
+%%]
+
+%%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty})
+%%]
+
+%%[1 hs import(EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[1 ag import({Error/AbsSyn})
+%%]
+
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Core})
+%%]
+
+%%[99 hs import({%{EH}Base.ForceEval})
+%%]
+
+%%[9
+DERIVING *     : Show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abbreviations for AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs export(ThingAndRange)
+type ThingAndRange x = (x,Maybe [(Range,Maybe PP_Doc)])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Derived types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs export(ErrSq)
+type ErrSq = Seq.FastSeq Err
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fatality of error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 hs export(errLIsFatal)
+errIsFatal :: Err -> Bool
+%%[[8
+errIsFatal (Err_MissingDataFields   _ _) = False
+%%][99
+errIsFatal (Err_MissingDataFields _ _ _) = False
+%%]]
+errIsFatal _                             = True
+%%]
+
+%%[8 hs export(errIsFatal)
+errLIsFatal :: [Err] -> Bool
+errLIsFatal es = not (null es) && any errIsFatal es
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Nested error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkNestErr hs export(mkNestErr,mkNestErr')
+mkNestErr' :: PP_Doc -> [ErrSq] -> ErrSq
+mkNestErr' wher errs = Seq.fromList $ mkNestErr wher $ Seq.toList $ Seq.unions errs
+
+mkNestErr :: PP_Doc -> ErrL -> ErrL
+mkNestErr wher errL | null errL = []
+                    | otherwise = [Err_NestedIn wher errL]
+%%]
+%%[99 -1.mkNestErr hs export(mkNestErr,mkNestErr')
+mkNestErr' :: Range -> PP_Doc -> [ErrSq] -> ErrSq
+mkNestErr' r wher errs = Seq.fromList $ mkNestErr r wher $ Seq.toList $ Seq.unions errs
+
+mkNestErr :: Range -> PP_Doc -> ErrL -> ErrL
+mkNestErr r wher errL | null (forceEval errL) = []
+                      | otherwise             = [Err_NestedIn r wher errL]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ThingAndRange construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs export(mkThingAnd1Range)
+mkThingAnd1Range :: Range -> x -> ThingAndRange x
+mkThingAnd1Range r x = (x,Just [(r,Nothing)])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Err construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
+mkErr_NamesNotIntrod' :: PP n => String -> [ThingAndRange n] -> Err
+mkErr_NamesNotIntrod' m ns = Err_NamesNotIntrod m (assocLMapKey pp ns)
+
+mkErr_NamesNotIntrod :: String -> [HsName] -> Err
+mkErr_NamesNotIntrod m ns = mkErr_NamesNotIntrod' m (zip (map pp ns) (repeat Nothing))
+%%]
+%%[99 -1.mkErr_NamesNotIntrod hs export(mkErr_NamesNotIntrod, mkErr_NamesNotIntrod')
+mkErr_NamesNotIntrod' :: PP n => Range -> String -> [ThingAndRange n] -> Err
+mkErr_NamesNotIntrod' r m ns = Err_NamesNotIntrod r m (assocLMapKey pp ns)
+
+mkErr_NamesNotIntrod :: Range -> String -> [HsName] -> Err
+mkErr_NamesNotIntrod r m ns = mkErr_NamesNotIntrod' r m (zip (map pp ns) (repeat Nothing))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Force eval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+instance ForceEval Err
+%%[[102
+  where
+    fevCount x | x `seq` True = cm1 "Err_*"
+%%]]
+%%]

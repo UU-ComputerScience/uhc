@@ -1,0 +1,467 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Silly program as C
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs module {%{EH}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyC)
+%%]
+%%[(8 codegen grin) hs import(Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs
+prettyC :: EHCOpts -> SilModule -> PP_Doc
+prettyC opts silmod
+  = let t = wrap_SilModule (sem_SilModule silmod)
+                           (Inh_SilModule { opts_Inh_SilModule = opts
+                                          }
+                           )
+     in  prettyC_Syn_SilModule t
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+WRAPPER SilModule
+
+ATTR SilModule
+  [ opts : {EHCOpts} | | ]
+
+ATTR Functions Function Statements Statement Alternatives Alternative
+  [ optTraceCall     : {Bool} -- when True, function entrance/exit is logged
+    optTraceAssign   : {Bool} -- when True, every assignement is logged
+    optCaseDefault   : {Bool} -- when True, error messages are given as default case for each switch
+    optOwn           : {Int}
+  | | ]
+
+SEM SilModule
+  | SilModule  loc.optTraceCall   = ehcOptGenTrace       @lhs.opts
+               loc.optTraceAssign = ehcOptGenTrace2      @lhs.opts
+               loc.optCaseDefault = ehcOptGenCaseDefault @lhs.opts
+               loc.optOwn         = ehcOptOwn            @lhs.opts
+
+%%]
+
+
+%%[(8 codegen grin)
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
+         [ | | prettyC USE {>-<} {empty} : PP_Doc ]
+
+ATTR Value Constant [ | | prettyTXT USE {>-<} {empty} : PP_Doc ]
+
+
+ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
+
+ATTR Values [ | | prettyCs : {[PP_Doc]} ]
+ATTR Values [ | | prettyTXTs : {[PP_Doc]} ]
+
+ATTR Variable
+     Value  [ | | prettyPtr : {PP_Doc}  ]
+
+ATTR Variable [ | | isSP : {Bool} ]
+  
+
+ATTR Statements Statement Alternatives Alternative
+         [ functionname : String | | ]
+
+
+SEM SilModule
+  | SilModule   lhs.prettyC   = preambule
+                                >-< comment ["Tag aliases"]
+                                >-< ppVertically (map aliasDefinition @aliases)
+                                >-< text ""
+                                >-< comment ["Tag constants"]
+                                >-< ppVertically (map constantDefinition @constants)
+                                >-< text ""
+                                >-< comment ["Global variables"]
+                                >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
+                                >-< text ""
+                                >-< comment ["Auxiliary variables"]
+                                >-< text "Word auxVar;"
+                                >-< text "Word auxPtr;"
+                                >-< text ""
+                                >-< comment ["Function definitions"]
+                                >-< (if @loc.optOwn>=3
+                                     then  (   @loc.silMain1
+                                           >-< text ""
+                                           >-< @functions.prettyC
+                                           >-< @loc.silMain2
+                                           )
+                                     else  (   @functions.protoC
+                                           >-< text ""
+                                           >-< @loc.silMain1
+                                           >-< @loc.silMain2
+                                           >-< text ""
+                                           >-< @functions.prettyC
+                                           )
+                                    )
+                                >-< text ""
+                                >-< @loc.mainFun
+                                >-< text ""
+
+                loc.silMain1 =  text "int silly_main()"
+                                >-< text "{"
+                                >-< ppWhen (@loc.optOwn>=4) (text "register WPtr SP asm (\"%esp\");")
+                                -- >-< ppWhen (@loc.optOwn>=4) (text "register Word  auxPtr asm (\"%ecx\");")
+                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 1 "initialize"
+%%[[8
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 2 "fun_fun0tildemain"
+%%][99
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 2 "fun_mainFullProg"
+%%]]                                             
+                                             >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
+                                             >-<  "return 0;"
+                                             )
+
+                loc.silMain2 =  text "}"
+
+                loc.mainFun  =  text "int main(int argc, char** argv)"
+                                >-< text "{"
+                                >-< text "    main_Sil_Init1(argc, argv);"
+                                >-< text "    main_Sil_Run(argc, argv, &silly_main);"
+                                >-< text "    return main_Sil_Exit(argc, argv);"
+                                >-< text "}"
+
+
+SEM Function
+  | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
+                                >-< indent 4 (   ppWhen @tailJumps jumpPrepare
+                                             >-< methodLocals (map hsnShowAlphanumeric @locals)
+                                             >-< @body.prettyC
+                                             )
+                                >-< methodFooter @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name)
+
+                lhs.protoC    = methodHead (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters) >|< ";"
+                body.functionname = hsnShowAlphanumeric @name
+
+SEM Statement
+  | Comment     lhs.prettyC   = comment @comment
+  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
+  | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
+  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
+  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optTraceAssign @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @retdiff @lhs.optOwn
+  | Label       lhs.prettyC   = label @lhs.optTraceAssign @name
+  | Smart       lhs.prettyC   = error "Silly.PrettyC: Statement_Smart"
+  | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
+  | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
+                                           @thenpart.prettyC 
+                                           (if @elsepart.isEmpty then Nothing else Just @elsepart.prettyC)
+
+SEM Alternative
+  | Alternative lhs.prettyC   = alternative @when.prettyC @body.prettyC
+
+ATTR Statements [ | | isEmpty : Bool ]
+
+SEM Statements
+  | Nil         lhs.isEmpty = True
+  | Cons        lhs.isEmpty = False
+ 
+
+SEM Values
+  | Nil         lhs.prettyCs  = []
+  | Cons        lhs.prettyCs  = @hd.prettyC : @tl.prettyCs
+
+SEM Values
+  | Nil         lhs.prettyTXTs  = []
+  | Cons        lhs.prettyTXTs  = @hd.prettyTXT : @tl.prettyTXTs
+
+SEM Value
+  | Con         lhs.prettyC   = @con.prettyC
+  | Var         lhs.prettyC   = @var.prettyC
+  | Offset      lhs.prettyC   = "(Word)(" >|< @var.prettyPtr >|< "+" ++ show @off ++ ")"
+  | Cast        lhs.prettyC   = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyC >|< "))"
+  | Call        lhs.prettyC   = ( maybe (callCfunction @name)
+                                        fromSillyPrim
+                                        (lookupPrim BackendSilly @name)  ) @args.prettyCs
+  | Alloc       lhs.prettyC   =  case @gcManaged of
+                                   NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
+                                   GCManaged  -> "heapalloc("               >|< show @size >|< ")"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< "))"
+  | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
+
+  | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
+  | *-Offset    lhs.prettyPtr = error "prettyC: called prettyPtr from non-Offset Value"
+
+
+SEM Value
+  | Con         lhs.prettyTXT = @con.prettyTXT
+  | Var         lhs.prettyTXT = @var.prettyC
+  | Offset      lhs.prettyTXT = @var.prettyPtr >|< "+" ++ show @off
+  | Cast        lhs.prettyTXT = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyTXT >|< "))"
+  | Call        lhs.prettyTXT = ( maybe (callCfunction @name)
+                                        fromSillyPrim
+                                        (lookupPrim BackendSilly @name)  ) @args.prettyTXTs
+  | Alloc       lhs.prettyTXT =  case @gcManaged of
+                                   NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
+                                   GCManaged  -> "heapalloc("               >|< show @size >|< ")"
+  | Label       lhs.prettyTXT = "((Word)(&&" >|< @name >|< "))"
+  | CompareGT   lhs.prettyTXT = @val.prettyC >#< ">" >#< @con.prettyC
+
+
+SEM Constant
+  | LiteralInt  lhs.prettyC   = text (show @value)
+  | LiteralStr  lhs.prettyC   = "((Word)" >|< text (show @value) >|< ")"
+  | Alias       lhs.prettyC   = text @name
+
+SEM Constant
+  | LiteralInt  lhs.prettyTXT = text (show @value)
+  | LiteralStr  lhs.prettyTXT = text (show 99999)   --  "((Word)" >|< text @value >|< ")"
+  | Alias       lhs.prettyTXT = text @name
+
+SEM Variable
+  | Global
+    Local
+    Param       lhs.prettyC   = case @name of 
+                                  HNmNr _ OrigNone -> text "0"
+                                  _                -> text (hsnShowAlphanumeric @name)
+                lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+  | SP          lhs.prettyC   = text "SP"
+                lhs.prettyPtr = text "SP"
+  | BP          lhs.prettyC   = text "BP"
+                lhs.prettyPtr = text "BP"
+  | RP          lhs.prettyC   = text "RP"
+                lhs.prettyPtr = text "RP"
+  | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
+                lhs.prettyPtr = "((WPtr)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
+  | Aux         lhs.prettyC   = text "auxVar"
+                lhs.prettyPtr = text "((WPtr)auxVar)"
+  | Ptr         lhs.prettyC   = text "auxPtr"
+                lhs.prettyPtr = text "((WPtr)auxPtr)"
+  | None        lhs.prettyC   = error "attempt to use Variable_None as value"
+                lhs.prettyPtr = error "attempt to use Variable_None as pointer"
+  | Unembedded  lhs.prettyC   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
+                lhs.prettyPtr = error "attempt to use Variable_Unembedded as pointer"
+
+SEM Variable
+  | SP          lhs.isSP = True
+  | *-SP        lhs.isSP = False
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building a C program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+
+
+label :: Bool -> String -> PP_Doc
+label tras nm 
+ = nm >|< ":"
+   >|< ppWhen tras
+              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< "); fflush(stdout);")
+
+commaSeparated :: [String] -> String
+commaSeparated = concat . intersperse ", "
+
+macroDefinition :: PP_Doc -> PP_Doc -> PP_Doc
+macroDefinition nm body
+ = "#define" >#< nm >#< body
+
+declareNames :: String -> [String] -> PP_Doc
+declareNames tp ns
+ = tp >#< commaSeparated ns >|< ";"
+
+declareName :: String -> String -> String
+declareName tp nm
+ = tp ++ (' ' : nm)
+
+trace :: String -> PP_Doc
+trace s
+-- = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
+   = text ("printf(\"" ++ s ++            "\\n\"              ); fflush(stdout);")
+
+caseDefault :: PP_Doc -> String -> PP_Doc
+caseDefault x funname
+ =  "default: printf(\"line %d: in function" >#< funname >#< "undefined case for " >|< x >|< " : %d\\n\", __LINE__ , " >|< x >|< "); exit(1);"
+
+comment :: [String] -> PP_Doc
+comment []  = text ""
+comment [s] = text ("// " ++ s)
+comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
+
+callCfunction ::  String -> [PP_Doc] -> PP_Doc
+callCfunction f ps
+ = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
+
+callSillyFunctionFromC :: Bool -> Int -> Int -> String -> PP_Doc
+callSillyFunctionFromC tras optOwn n nm
+ | optOwn<=2 = nm >|< "();"
+ | optOwn>=3 = let lab = "mainlab" ++ show n
+               in  "*--SP = (Word)(&&" >|< lab >|< ");"   -- return address
+                   >-< ppWhen tras
+                              (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
+                   >-< "*--SP = (Word)0;"                 -- link
+                   >-< "goto" >#< nm >|< ";"              -- do the call
+                   >-< label tras lab                     -- return here
+ 
+ 
+callSillyFunctionFromSilly ::  Int -> String -> [PP_Doc] -> PP_Doc
+callSillyFunctionFromSilly optOwn nm pars
+ | optOwn<=2 = callCfunction nm pars >|< ";"
+ | optOwn>=3 = "goto" >#< nm >|< ";"
+
+
+quoted :: String -> String
+quoted s = "\"" ++ s ++ "\""
+
+returnFromSillyFunction tras retdiff optOwn
+ | optOwn>=5   = "asm ( " >|< (  --  quoted ("movl -" ++ show (4*retdiff) ++ "(%esp),%eax\\n\\t")
+                                 --  >-<  quoted "jmp *%eax"
+                                 quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)")
+                              )
+                          >|< ");"
+                 >-< "goto *(SP[-" >|< show retdiff >|< "]);"                          
+ | optOwn>=3   = ppWhen tras
+                      (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
+ 	             >-< "goto *(SP[-" >|< show retdiff >|< "]);"
+ | optOwn<=2   = text ""
+
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Semantic functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+preambule :: PP_Doc
+preambule
+ = text "#include \"rts.h\""
+   >-< text ""
+
+constantDefinition :: (String,Int) -> PP_Doc
+constantDefinition (x,n)
+ = macroDefinition (text x) (text (show n))
+
+aliasDefinition :: (String,String) -> PP_Doc
+aliasDefinition (x,y)
+ = macroDefinition (text x) (text y)
+
+variableDeclaration :: String -> PP_Doc
+variableDeclaration x
+ = "Word" >#< text x >|< ";"
+
+methodHead :: String -> [String] -> PP_Doc
+methodHead nm params
+ =  let parameters = if null params
+                      then "void"
+                      else commaSeparated (map (declareName "Word") params)
+    in  "void" >#< nm >|< "(" >|< parameters >|< ")"
+
+
+paramTrace :: String -> PP_Doc
+paramTrace x = text ("printf(\"    " ++  x ++            " = %d\\n\" , " ++ x ++ "); fflush(stdout);")
+
+methodHeader :: Bool -> Int -> Bool -> String -> [String] -> PP_Doc
+methodHeader tras optOwn optTrace nm params
+ | optOwn<=2 =  methodHead nm params
+                >#< "{"
+                >-< ppWhen optTrace (foldr (>-<) (trace ("enter " ++ init (tail (show nm)))) (map paramTrace params) )
+ | optOwn>=3 = label tras nm
+                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+
+methodFooter :: Int -> Bool -> String -> PP_Doc
+methodFooter optOwn optTrace nm
+ | optOwn<=2 =  ppWhen (False && optTrace) (trace ("leave "++init (tail (show nm))))
+                >-< text "}"
+                >-< text ""
+ | optOwn>=3 = text ""
+
+methodLocals :: [String] -> PP_Doc
+methodLocals ns
+ = ppUnless (null ns)
+            (   comment ["Local names"]
+            >-< declareNames "Word" ns
+            )
+
+
+jumpPrepare :: PP_Doc
+jumpPrepare
+ =  pp machDepCForTailcallEnter
+
+jumpSillyFunctionFromSilly :: Bool -> Int -> String -> Bool -> String -> PP_Doc
+jumpSillyFunctionFromSilly tras optOwn nm optTraceCall functionname
+ | optOwn<=2 = ppWhen tras
+                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
+ 	           >-< machDepCForTailcallLeave1
+               >#< "{ register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
+               >#< machDepCForTailcallLeave2
+               >-< "goto *_tail_call_dest; }"
+ | optOwn>=3 = ppWhen tras
+                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
+ 	           >-< "goto" >#< nm >|< ";"
+
+
+assignment2 :: Bool -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment2 tras v1 v2 e et
+ = v1
+   >#< "="
+   >#< v2
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen tras
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              --(" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
+
+assignment :: Bool -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment tras v e et
+ = v
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen tras
+              (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
+
+
+ifthenelse ::  PP_Doc -> PP_Doc -> Maybe PP_Doc -> PP_Doc
+ifthenelse cond s1 mbs2
+ = "if ("
+   >|< cond
+   >|< ")"
+   >#< "{"
+   >-< indent 4 s1
+   >|< "}"
+   >-< ppWhen (isJust mbs2)
+              ( "else {"
+              >|< indent 4 (fromJust mbs2)
+              >|< "}"
+              ) 
+
+switch :: Bool -> Bool -> String -> PP_Doc -> PP_Doc -> PP_Doc
+switch tras optDef funname scrutinee body
+ = 
+    ppWhen tras
+              (" printf(\"switch" >#< show scrutinee >#< " : %d\\n\", " >#< show scrutinee >#<  "); fflush(stdout);")
+   >-< "switch ("
+   >|< scrutinee
+   >|< ")"
+   >#< "{"
+   >-< indent 4 body
+   >-< ppWhen optDef (indent 4 (caseDefault scrutinee funname))
+   >-< "}"
+
+alternative :: PP_Doc -> PP_Doc -> PP_Doc
+alternative when body
+ = "case"
+   >#< when
+   >|< ":"
+   >-< indent 4 (body >-< "break;")
+
+%%]

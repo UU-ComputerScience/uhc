@@ -1,0 +1,279 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- Make (local) information about the current node available   
+-- as a local attribute
+
+---------------------------------------------------------------------------------------
+-- FunctionBinding
+
+SEM FunctionBinding 
+  | FunctionBinding 
+       loc . localInfo  = LocalInfo { self = UHA_FB @self
+                                    , assignedType = Nothing
+                                    , monos = @lhs.monos
+                                    }
+
+---------------------------------------------------------------------------------------
+-- Right-hand side expression
+
+
+SEM RightHandSide 
+  | Expression
+       loc . localInfo  = LocalInfo { self = UHA_RHS @self
+                                    , assignedType = Nothing
+                                    , monos = @lhs.monos
+                                    }
+  | Guarded
+       loc . localInfo  = LocalInfo { self = UHA_RHS @self
+                                    , assignedType = Nothing
+                                    , monos = @lhs.monos
+                                    }
+				    
+---------------------------------------------------------------------------------------
+-- Declaration
+
+SEM Declaration 
+  | FunctionBindings  
+       loc . localInfo  = LocalInfo { self = UHA_Decl @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | PatternBinding    
+       loc . localInfo  = LocalInfo { self = UHA_Decl @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+
+---------------------------------------------------------------------------------------
+-- Expression
+
+SEM Expression
+  | Literal             
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Variable            
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta
+                                    , monos = @lhs.monos
+                                    }
+  | Constructor         
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | NormalApplication   
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | InfixApplication    
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta
+                                    , monos = @lhs.monos
+                                    }
+  | If                  
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Lambda              
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Case                
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Let                 
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }                                           
+  | Do                  
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta
+                                    , monos = @lhs.monos
+                                    }
+  | List                
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Tuple               
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Comprehension       
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Typed               
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Enum                
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Negate              
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | NegateFloat         
+       loc . localInfo  = LocalInfo { self = UHA_Expr @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+                                           
+---------------------------------------------------------------------------------------
+-- Pattern
+
+SEM Pattern
+  | Literal           
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Variable          
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Constructor       
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | InfixConstructor  
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | List              
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | Tuple             
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta
+                                    , monos = @lhs.monos
+                                    }
+  | Negate            
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | As                
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta
+                                    , monos = @lhs.monos 
+                                    }
+  | Wildcard          
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+  | NegateFloat       
+       loc . localInfo  = LocalInfo { self = UHA_Pat @self
+                                    , assignedType = Just @beta 
+                                    , monos = @lhs.monos
+                                    }
+
+---------------------------------------------------------------------------------------
+-- Statement
+
+SEM Statement
+  | Expression   
+       loc . localInfo  = LocalInfo { self = UHA_Stat @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | Let          
+       loc . localInfo  = LocalInfo { self = UHA_Stat @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | Generator    
+       loc . localInfo  = LocalInfo { self = UHA_Stat @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | Empty        
+       loc . localInfo  = LocalInfo { self = UHA_Stat @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+
+---------------------------------------------------------------------------------------
+-- Qualifier
+
+SEM Qualifier 
+  | Guard        
+       loc . localInfo  = LocalInfo { self = UHA_Qual @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | Let          
+       loc . localInfo  = LocalInfo { self = UHA_Qual @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+  | Generator    
+       loc . localInfo  = LocalInfo { self = UHA_Qual @self
+                                    , assignedType = Nothing
+                                    , monos = @lhs.monos
+                                    }
+  | Empty        
+       loc . localInfo  = LocalInfo { self = UHA_Qual @self
+                                    , assignedType = Nothing 
+                                    , monos = @lhs.monos
+                                    }
+
+---------------------------------------------------------------------------------------
+-- (Non-terminals above) Declarations                                          
+                                                                                                                        
+SEM Body
+  | Body  
+       loc . declInfo = LocalInfo { self = UHA_Decls @declarations.self
+                                  , assignedType = Nothing 
+                                  , monos = @lhs.monos
+                                  }
+SEM MaybeDeclarations 
+  | Just  
+       loc . declInfo = LocalInfo { self = UHA_Decls @declarations.self
+                                  , assignedType = Nothing 
+                                  , monos = @lhs.monos
+                                  }  
+SEM Expression 
+  | Let   
+       loc . declInfo = LocalInfo { self = UHA_Decls @declarations.self
+                                  , assignedType = Nothing 
+                                  , monos = @lhs.monos
+                                  }  
+SEM Statement
+  | Let   
+       loc . declInfo = LocalInfo { self = UHA_Decls @declarations.self
+                                  , assignedType = Nothing 
+                                  , monos = @lhs.monos
+                                  }   
+SEM Qualifier 
+  | Let   
+       loc . declInfo = LocalInfo { self = UHA_Decls @declarations.self
+                                  , assignedType = Nothing 
+                                  , monos = @lhs.monos
+                                  }

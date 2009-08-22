@@ -1,0 +1,416 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Ty.ToTyCore} import(EH.Util.Utils,{%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%]
+%%[(8 codegen) hs import({%{EH}Ty}(TyVarCateg(..),TyQu(..),TyAGItf(..),Ty(..),TyVarId,TyAnn(..)))
+%%]
+%%[(8 codegen) hs import({%{EH}Ty}(TyVarIdS))
+%%]
+%%[(9 codegen) hs import({%{EH}Ty}(Pred(..),Impls(..),ImplsProveOcc,ImplsVarId))
+%%]
+%%[(10 codegen) hs import({%{EH}Ty}(Label(..),LabelAGItf(..),LabelVarId))
+%%]
+%%[(13 codegen) hs import({%{EH}Ty}(PredSeq(..)))
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%]
+%%[(8 codegen) hs import (qualified {%{EH}TyCore} as C)
+%%]
+
+%%[(8 codegen) hs import (qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty -> TyCore transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(Ty2Ki,KiFitsIn)
+type Ty2Ki = Ty -> Ty
+type KiFitsIn = UID -> Ty -> Ty -> [T.InstTo]
+%%]
+
+%%[(8 codegen) hs
+-- how to wrap an argument of Lam/Arrow, a bit hackish
+data T2THowArg
+  = T2TArg_AsIs         -- no wrap, reflects directly the original type, used for matching
+  | T2TArg_Seq1         -- wrap as singleton sequence, for type/kind/... Lam/Arrow
+  | T2TArg_Seq          -- wrap as sequence, for value Lam/Arrow
+  | T2TArg_Seq1'        -- same as T2TArg_Seq1, but only wraps if not done already, and not an arrow
+  | T2TArg_Seq'         -- same as T2TArg_Seq, but only wraps if not done already, and not an arrow
+
+argWrap' :: T2THowArg -> (C.Ty -> C.TySeq1) -> C.Ty -> C.Ty
+argWrap' T2TArg_AsIs  _  x = x
+argWrap' T2TArg_Seq1  sq x = C.Expr_Seq1 $ sq x
+argWrap' T2TArg_Seq   sq x = C.Expr_Seq   [sq x]
+argWrap' T2TArg_Seq1' sq x = case x of {C.Expr_Seq1 _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq1  sq x}
+argWrap' T2TArg_Seq'  sq x = case x of {C.Expr_Seq  _ -> x ; C.Expr_Arrow _ _ -> x ; _ -> argWrap' T2TArg_Seq   sq x}
+
+argWrap :: T2THowArg -> C.Ty -> C.Ty
+argWrap how t = argWrap' how (flip C.ExprSeq1_L0Val Nothing) t
+%%]
+
+%%[(8 codegen) hs
+data T2TCOpts
+  = T2TCOpts
+      { t2tcOptQuantvarKi       ::  Bool            -- introduce tyvar bindings for quantified tyvars
+      , t2tcOptMkThunk          ::  Bool            -- thunkify value arguments
+      , t2tcOptHowArrowArg      ::  T2THowArg       -- how to wrap arrow argument (is on the value level)
+      , t2tcOptHowArrowRes      ::  T2THowArg       -- how to wrap arrow result (is on the value level)
+      , t2tcOptHowAppArg        ::  T2THowArg       -- how to wrap app argument (is on the type level)
+      , t2tcOptTy2Ki            ::  Ty2Ki	       	-- mapping from type to their corresponding 1 meta level higher type (i.e. kind)
+      , t2tcOptKiFitsIn         ::  KiFitsIn	    -- fitting 2 kinds
+      }
+
+defaultT2TCOpts
+  = T2TCOpts
+      True True
+      T2TArg_Seq T2TArg_Seq' T2TArg_Seq1
+      (const Ty_Any)
+      (\_ _ _ -> [])
+%%]
+
+%%[(8 codegen) hs
+tyToTyCore' :: T2TCOpts -> Ty -> C.Ty
+tyToTyCore' opts ty
+  = ct_Syn_TyAGItf t
+  where  t  =  wrap_TyAGItf
+                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (Inh_TyAGItf
+                     { opts_Inh_TyAGItf = opts
+                     })
+%%]
+
+%%[(8 codegen) hs export(tyToTyCore, tyToTyCoreBare, tyToTyCoreBase, tyToTyCoreKi)
+-- with all additional annotation
+tyToTyCore :: KiFitsIn -> Ty2Ki -> Ty -> C.Ty
+tyToTyCore fit t2k
+  = tyToTyCore'
+      (defaultT2TCOpts
+         { t2tcOptTy2Ki         = t2k
+         , t2tcOptKiFitsIn      = fit
+         })
+
+-- with all additional annotation, no meta level info
+tyToTyCoreBase :: Ty -> C.Ty
+tyToTyCoreBase = tyToTyCore' defaultT2TCOpts
+
+-- without TyCore specifics
+tyToTyCoreBare :: Ty -> C.Ty
+tyToTyCoreBare
+  = tyToTyCore'
+      (defaultT2TCOpts
+         { t2tcOptMkThunk       = False
+         , t2tcOptQuantvarKi    = False
+         , t2tcOptHowArrowArg   = T2TArg_AsIs
+         , t2tcOptHowArrowRes   = T2TArg_AsIs
+         })
+
+-- for kinds
+tyToTyCoreKi :: Ty -> C.Ty
+tyToTyCoreKi
+  = tyToTyCore'
+      (defaultT2TCOpts
+         { t2tcOptMkThunk       = False
+         , t2tcOptHowArrowArg   = T2TArg_Seq1
+         , t2tcOptHowArrowRes   = T2TArg_AsIs -- T2TArg_Seq1'
+         })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Base/builtin defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyChar,tyInt)
+tyInt  = tyToTyCoreBase T.tyInt
+tyChar = tyToTyCoreBase T.tyChar
+%%]
+
+%%[(8 codegen) hs export(kiStar)
+kiStar = tyToTyCoreBase T.kiStar
+%%]
+
+%%[(8 codegen) hs export(tyBuiltinCon)
+tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> C.Ty
+tyBuiltinCon opts bnmOf = C.Expr_Var (bnmOf $ ehcOptBuiltinNames opts)
+%%]
+
+%%[(8 codegen).tyString hs export(tyString)
+tyString opts = tyToTyCoreBase T.tyString
+%%]
+
+%%[(11 codegen).tyString -8.tyString hs export(tyString)
+tyString opts = tyBuiltinCon opts ehbnPrelString
+%%]
+
+%%[(97 codegen) hs export(tyBool)
+tyBool opts = tyBuiltinCon opts ehbnDataBool
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllTy TyAGItf [ opts: T2TCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environment
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllTy [ ty2ki: {Ty2Ki} | | ]
+
+SEM TyAGItf
+  | AGItf       loc         .   ty2ki       =   t2tcOptTy2Ki @lhs.opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore variant of Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Ty TyAGItf [ | | ct: {C.Ty} ]
+
+SEM Ty
+  | Var         loc         .   ctBase      =   C.Expr_Var $ mkHNm @tv
+  | Con         loc         .   ctBase      =   C.Expr_Var @nm
+  | App         loc         .   ct          =   let dflt = @tcKiArgAppWrap $ C.Expr_App @func.ct (argWrap (t2tcOptHowAppArg @lhs.opts) @arg.ct)
+                                                    th = if t2tcOptMkThunk @lhs.opts then C.mkTyThunk else id
+                                                    wra = argWrap (t2tcOptHowArrowArg @lhs.opts)
+                                                    wrr = argWrap (t2tcOptHowArrowRes @lhs.opts)
+                                                in  if @isSpineRoot
+                                                    then if @appIsArrow
+                                                         then C.Expr_Arrow
+                                                                (wra $ th $ @appRevArgL !! 1)
+                                                                (wrr      $ @appRevArgL !! 0)
+                                                         else if @appIsLikeProd
+                                                         then let flds = C.mkTySeqNmVals $ assocLMapElt th $ T.tyRowCanonOrder @recFldL
+                                                              in  case @recMbExt of
+%%[[8
+                                                                    Just _ -> C.tyErr "EXTREC"
+%%][1010
+                                                                    Just v -> C.Ty_ExtRec (C.Expr_Var v) (C.Expr_Rec flds)
+%%]]
+                                                                    _      -> C.Expr_Prod flds -- C.Expr_Node CTagRec flds
+                                                         else if @appIsSum
+                                                         then let flds = C.mkTySeqNmVals $ T.tyRowCanonOrder @recFldL
+                                                              in  C.Expr_Sum flds
+                                                         else dflt
+                                                    else dflt
+  | Quant       loc         .   ctBase      =   let dflt = @ty.ct
+                                                in  if t2tcOptQuantvarKi @lhs.opts && T.tyquIsForall @qu.self
+                                                    then let a   = case T.tyquMetaLev @qu.self of
+                                                                     0 -> C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                                     1 -> C.ExprSeq1_L1Bind (mkHNm @tv)
+                                                             wra = argWrap' (t2tcOptHowArrowArg @lhs.opts) a
+                                                             wrr = argWrap  (t2tcOptHowArrowRes @lhs.opts)
+                                                         in  C.Expr_Arrow
+                                                               (wra $ tyToTyCoreKi @l1   )
+                                                               (wrr                @ty.ct)
+                                                    {- else if T.tyquIsExists @qu.self
+                                                         then let a = C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                                  wra = argWrap' T2TArg_Seq1 a
+                                                              in  C.Expr_Exists 
+                                                                    (wra $ tyToTyCoreKi @l1   )
+                                                                    (                   @ty.ct)
+                                                         else dflt -}
+                                                    else if T.tyquIsExists @qu.self
+                                                    then let a = C.ExprSeq1_L0Bind (mkHNm @tv) Nothing
+                                                             wra = argWrap' T2TArg_Seq1 a
+                                                         in  C.Expr_Exists 
+                                                               (wra $ tyToTyCoreKi @l1   )
+                                                               (                   @ty.ct)
+                                                    else dflt -- for now
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Any         loc         .   ctBase      =   C.tyErr "ANY"
+  | Ext         loc         .   ctBase      =   C.tyErr "EXT"
+%%]
+
+%%[(9 codegen)
+SEM Ty
+  | Impls       loc         .   ctBase      =   C.tyErr "IMPLS"
+  | Pred        loc         .   ctBase      =   C.tyErr "PRED"
+%%]
+
+%%[(11 codegen)
+SEM Ty
+  | Lam         loc         .   ctBase      =   C.tyErr "LAM"
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | * - App Ann
+                loc         .   ct          =   @tcKiArgAppWrap @ctBase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique seed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllTy [ | gUniq: UID | ]
+
+SEM AllTyAGItf
+  | AGItf       loc         .   gUniq       =   uidStart
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Do a bit of meta level inference (i.e. kind of ty reconstruction)
+%%% to get bindings and instantiation stucture,
+%%% unfortunately just a replica of ToTyCore for EH.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Environment:
+
+%%[(8 codegen)
+SEM Ty
+  | Quant       ty          .   ty2ki       =   let m (Ty_Var v _) | v == @tv = @l1
+                                                    m t                       = @lhs.ty2ki t
+  												in	m
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Con         loc         .   ki          =   @lhs.ty2ki (semCon @nm)
+  | Var         loc         .   ki          =   @lhs.ty2ki (T.mkTyVar @tv)
+%%]
+
+Top down ki:
+
+%%[(8 codegen)
+ATTR Ty [ kiTopDown: {T.Ty} | | ]
+
+SEM TyAGItf
+  | AGItf       loc         .   kiTopDown   =   T.kiStar
+
+SEM Ty
+  | App         loc         .   kiArg       =   T.mkNewTyVar @lUniq_arg
+                            .   kiFunc      =   [@kiArg] `mkArrow` @lhs.kiTopDown
+                func        .   kiTopDown   =   @kiFunc
+                arg         .   kiTopDown   =   @kiArg
+                loc         .   lUniq_arg   :   UNIQUEREF gUniq
+%%]
+
+%%[(9 codegen)
+SEM Pred
+  | Class Pred
+%%[[10
+    Lacks
+%%]]
+                loc         .   kiTopDown   =   Ty_Any
+%%]
+
+Local cki:
+
+%%[(8 codegen)
+SEM Ty
+  | Var Con     loc         .   cki         =   tyToTyCoreKi @ki
+  | Quant       loc         .   cki         =   @ty.ckiBotUp
+  | * - Var Con Quant
+                loc         .   cki         =   C.tyErr "cki"
+%%]
+
+Bottom up cki:
+
+%%[(8 codegen)
+ATTR Ty [ | | ckiBotUp: {C.Ty} ]
+
+SEM Ty
+  | *           lhs         .   ckiBotUp    =   @ckiKiAppRes
+%%]
+
+Instantiation structure for App:
+
+%%[(8 codegen)
+ATTR Ty [ | | appInstToL: {[T.InstTo]} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Var Con     loc         .   (appInstToLHere,appInstToL)
+                                            =   T.instToSplitQu ( @fo_fin)
+  | App         loc         .   (appInstToLHere,appInstToL)
+                                            =   T.instToSplitQu $ drop 1 @func.appInstToL
+  | * - Var Con App
+                loc         .   appInstToLHere
+                                            =   []
+                            .   appInstToL  =   []
+%%]
+
+Fitting, to extract bindings and instantiation stucture:
+
+%%[(8 hmtyinfer codegen)
+SEM Ty
+  | Var Con     loc         .   fo_fin      =   t2tcOptKiFitsIn @lhs.opts @lUniq_fo @ki @lhs.kiTopDown
+                loc         .   lUniq_fo    :   UNIQUEREF gUniq
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | App         loc         .   (ckiKiAppArgL,ckiAppArg,ckiKiAppRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_ArgBefore @appInstToLHere @func.ckiBotUp
+  | * - App     loc         .   (ckiKiAppArgL,_,ckiKiAppRes)
+                                            =   C.tyArrowInstQuArgsRes C.ArrowDecompose_InstOnly @appInstToLHere @cki
+%%]
+
+Additional kind arg wrapping
+
+%%[(8 codegen)
+SEM Ty
+  | *           loc         .   tcKiArgAppWrap
+                                            =   \e -> foldr (flip C.Expr_App) e $ {- @tcSubstAppSpine `C.cSubstApp` -} map C.tyL0BindToL1Val @ckiKiAppArgL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Reverse App spine
+
+%%[(8 codegen)
+ATTR Ty [ | | appRevArgL: {[C.Ty]} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | App         loc         .   appRevArgL  =   @arg.ct : @func.appRevArgL
+  | * - App     loc         .   appRevArgL  =   []
+%%]
+
+Extensible record fields + maybe the extended type
+
+%%[(8 codegen)
+ATTR Ty [ | | recFldL: {AssocL HsName C.Ty} ]
+ATTR Ty [ | | recMbExt: {Maybe TyVarId} ]
+%%]
+
+%%[(8 codegen)
+SEM Ty
+  | Ext         loc         .   recFldL     =   (@nm,@extTy.ct) : @ty.recFldL
+  | App         loc         .   recFldL     =   @arg.recFldL
+  | * - Ext App loc         .   recFldL     =   []
+
+SEM Ty
+  | Ext         loc         .   recMbExt    =   @ty.recMbExt
+  | App         loc         .   recMbExt    =   @arg.recMbExt
+  | Var         loc         .   recMbExt    =   Just @tv
+  | * - Ext Var App
+                loc         .   recMbExt    =   Nothing
+%%]
+
+

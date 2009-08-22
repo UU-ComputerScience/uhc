@@ -1,0 +1,107 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Utils(scc))
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfLetUnrec :: CModule -> CModule
+cmodTrfLetUnrec cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Usage (assumption: unique names)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type UseMp = Map.Map HsName [HsName]
+
+useMpComb :: UseMp -> UseMp -> UseMp
+useMpComb = Map.unionWith (++)
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ inNmL: {[HsName]} | | useMp USE {`useMpComb`} {Map.empty}: UseMp ]
+
+SEM CodeAGItf
+  | AGItf       module      .   inNmL       =   []
+
+SEM CExpr
+  | Var         lhs         .   useMp       =   Map.fromList (zip @lhs.inNmL (repeat [@nm]))
+  | Let         lhs         .   useMp       =   @remUseMp `useMpComb` @body.useMp
+
+SEM CBind
+  | Bind        expr        .   inNmL       =   @nm : @lhs.inNmL
+                lhs         .   useMp       =   (@nm `Map.singleton` []) `useMpComb` @expr.useMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bound id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type BindMp = Map.Map HsName (CExpr,CMetas)
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindMp USE {`Map.union`} {Map.empty}: BindMp ]
+
+SEM CBind
+  | Bind        lhs         .   bindMp      =   @nm `Map.singleton` (@expr.cTrf,@bindMeta.cTrf)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finding SCC's, constructing transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         loc         .   (remUseMp,cTrf)
+                                            =   if @categ == CBindings_Rec
+                                                then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
+                                                           o = scc . Map.toList $ h
+                                                           mk c ns b = mkCExprLet c [ mkCBind1Metas n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
+                                                           t = foldr (\bs b
+                                                                         -> case bs of
+                                                                               [n] | n `elem` Map.findWithDefault [] n h
+                                                                                                -> mk CBindings_Rec bs b
+                                                                                   | otherwise  -> mk CBindings_Plain bs b
+                                                                               _                -> mk CBindings_Rec bs b
+                                                                     )
+                                                                     @body.cTrf o
+                                                      in   (@binds.useMp `Map.difference` h,t)
+                                                else  (@binds.useMp,CExpr_Let @categ @binds.cTrf @body.cTrf)
+%%]
+

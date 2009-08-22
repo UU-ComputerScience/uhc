@@ -1,0 +1,426 @@
+%%[main doclatex
+
+%%@InternalDocEhcTechnical.Core
+%%@InternalDocEhcTechnical.GrinCode
+%%@InternalDocEhcTechnical.Silly
+%%@InternalDocEhcTechnical.EH
+%%@InternalDocEhcTechnical.Ty
+%%@InternalDocEhcTechnical.Foreign
+%%@InternalDocEhcTechnical.JVMClass
+%%@InternalDocEhcTechnical.CLR
+%%]
+
+
+
+%%[Core
+\section{Core}
+
+\subsection{Transformations per module}
+
+The following transformations are performed on each separate module:
+
+\begin{enumerate}
+\item EtaRed:
+
+\item RenUniq:
+
+\item LetUnrec:
+
+\item InlineLetAlias:
+
+\item ElimTrivApp:
+
+\item ConstProp:
+
+\item InlineLetAlias (again):
+
+\item ElimTrivApp (again):
+
+\item FullLazy:
+%%@EHCoreTrfFullLazy.doesWhat
+
+\item LamGlobalAsArg:
+
+\item CAFGlobalAsArg:
+
+\item LetUnrec (again):
+
+\item FullLazy (again):
+
+\item FloatToGlobal:
+
+\end{enumerate}
+
+\subsection{Full program transformations}
+
+The following transformations are performed on the full program:
+
+\begin{enumerate}
+\item LiftDictFields:
+
+\end{enumerate}
+%%]
+
+
+
+%%[GrinCode
+
+\section{GrinCode}
+
+
+\subsection{Transformations per module}
+
+The following transformations are performed on each separate module:
+
+\begin{enumerate}
+
+\item (only when compiling to bytecode) UnusedMetaInfoElim:
+%%@EHGrinCodeTrfUnusedMetaInfoElim.doesWhat
+
+\item (only when compiling to bytecode) MayLiveUnboxed:
+%%@EHGrinCodeTrfMayLiveUnboxed.doesWhat
+
+\item (only when optimizing flag is on) FlattenSeq: (seems not useful here)
+
+\item (only when optimizing flag is on) AliasElim:
+%%@EHGrinCodeTrfAliasElim.doesWhat
+
+\item (only if specifically requested) PrettyVarNames:
+%%@EHGrinCodeTrfPrettyVarNames.doesWhat
+
+\item (only when optimizing flag is on) EvalElim:
+%%@EHGrinCodeTrfEvalElim.doesWhat
+
+\item (only when optimizing flag is on) AliasElim (again)
+
+\item (only when compiling to bytecode, and optimizing flag is on) Inline:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item (only when compiling to bytecode, and optimizing flag is on) FlattenSeq, AliasElim, EvalElim, AliasElim (again)
+
+\item (only when compiling to bytecode, and optimizing flag is on) ConstPropagation:
+%%@EHGrinCodeTrfConstPropagation.doesWhat
+
+\item (only when optimizing flag is on) UnusedNameElim:
+%%@EHGrinCodeTrfUnusedNameElim.doesWhat
+
+\end{enumerate}
+
+
+
+\subsection{Full program transformations}
+
+The following transformations are performed on the full program,
+when compiling to optimized code:
+
+\begin{enumerate}
+
+\item DropUnreachableBindings:
+%%@EHGrinCodeTrfDropUnreachableBindings.doesWhat
+
+\item CleanupPass:
+%%@EHGrinCodeTrfCleanupPass.doesWhat
+
+\item BuildAppBindings:
+%%@EHGrinCodeTrfBuildAppBindings.doesWhat
+
+\item GlobalConstants:
+%%@EHGrinCodeTrfGlobalConstants.doesWhat
+
+\item Inline:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item FlattenSeq:
+%%@EHGrinCodeTrfInline.doesWhat
+
+\item SetGrinInvariant:
+%%@EHGrinCodeTrfSetGrinInvariant.doesWhat
+
+\item CheckGrinInvariant:
+%%@EHGrinCodeTrfCheckGrinInvariant.doesWhat
+
+\item EvalStored:
+%%@EHGrinCodeTrfEvalStored.doesWhat
+
+\item DropUnusedExpr:
+%%@EHGrinCodeTrfDropUnusedExpr.doesWhat
+
+\item NumberIdents:
+%%@EHGrinCodeTrfNumberIdents.doesWhat
+
+\item PointsToAnalysis:
+%%@EHGrinCodePointsToAnalysis.doesWhat
+
+\item InlineEA:
+%%@EHGrinCodeTrfInlineEA.doesWhat
+
+\item FlattenSeq (again)
+
+\item DropDeadBindings:
+%%@EHGrinCodeTrfDropDeadBindings.doesWhat
+
+\item EmptyAlts:
+%%@EHGrinCodeTrfEmptyAlts.doesWhat
+
+\item DropUnreachableBindings (again)
+
+\item LateInline:
+%%@EHGrinCodeTrfLateInline.doesWhat
+
+\item FlattenSeq (again)
+
+\item ImpossibleCase:
+%%@EHGrinCodeTrfImpossibleCase.doesWhat
+
+\item SingleCase:
+%%@EHGrinCodeTrfSingleCase.doesWhat
+
+\item FlattenSeq (again)
+
+\item DropUnusedExpr (again)
+
+\item MergeCase:
+%%@EHGrinCodeTrfMergeCase.doesWhat
+
+\item LowerGrin:
+%%@EHGrinCodeTrfLowerGrin.doesWhat
+
+\item CopyPropagation (again)
+
+\item DropUnusedExpr (again)
+
+\item SplitFetch:
+%%@EHGrinCodeTrfSplitFetch.doesWhat
+
+\item DropUnusedExpr (again)
+
+\item CopyPropagation (again)
+
+\item ToSilly:
+%%@EHGrinCodeToSilly.doesWhat
+
+
+
+\end{enumerate}
+
+
+\subsection{Obsolete transformations}
+
+The following transformations seem to be obsolete:
+
+\begin{enumerate}
+
+\item AliasRename
+\item ForceEval
+\item NormForHPT
+\item MergeInstance
+
+\end{enumerate}
+
+
+
+%%]
+
+
+
+%%[Ty
+
+\section{Ty}
+Type structure.
+
+\subsection{Type}
+
+\begin{enumerate}
+\item Ftv:
+%%@EHTyFtv.doesWhat
+
+\end{enumerate}
+
+\subsection{Fitting (aka unification)}
+
+\subsection{Transformations}
+
+\begin{enumerate}
+\item Subst:
+%%@EHTyTrfSubst.doesWhat
+
+\item Canonic:
+%%@EHTyTrfCanonic.doesWhat
+
+\item BetaReduce:
+%%@EHTyTrfBetaReduce.doesWhat
+
+\end{enumerate}
+
+%%]
+
+
+
+%%[Foreign
+
+\section{Foreign}
+Representation of FFI entities
+
+\subsection{Foreign}
+
+\begin{enumerate}
+\item Parser:
+%%@EHForeignParser.doesWhat
+
+\end{enumerate}
+
+%%]
+
+
+
+%%[EH
+
+\section{EH}
+
+Simplified (essential) Haskell.
+
+\subsection{Type inference}
+
+More entries appear here everytime a module undergoes major changes, and documentation is added as part of such an overhaul.
+
+\begin{enumerate}
+\item InferIncrFtv:
+%%@EHInferIncrFtv.doesWhat
+
+\item FIEnv:
+%%@EHFIEnv.doesWhat
+
+\end{enumerate}
+
+\subsection{Kind inference}
+
+%%]
+
+
+
+%%[JVMClass
+
+\section{JVMClass}
+JVM class structure
+
+\subsection{Class}
+%%@EHJVMClassAbsSyn.doesWhat
+
+%%]
+
+
+
+%%[Silly
+
+\section{Silly}
+
+\subsection{Full program transformations}
+
+The following transformations are performed on the Silly program:
+
+\begin{enumerate}
+
+\item Shortcut
+
+\item EmbedVars
+
+\item Shortcut (again)
+
+\item GroupAllocs
+
+\item PrettyC or ToLLVM
+
+\end{enumerate}
+
+%%]
+
+
+%%[CLR
+
+\section{CLR backend}
+
+The CLR backend is a highly experimental backend for the EHC developed during the Advanced Compiler Construction seminar in early 2009.
+
+\subsection{Overview}
+
+\subsubsection{Common Language Runtime}
+
+The Common Language Runtime (CLR) is a runtime system, developed by Microsoft as .NET, that runs managed code. It exposes facilities such as a common type system, memory management and just in time compilation. Currently the three most promiment implementations are:
+
+\begin{itemize}
+  \item .NET on the Windows desktop
+  \item Mono under Linux/OS~X machines
+  \item Silverlight for running in the browser on Windows and OS~X
+\end{itemize}
+
+The code generated by the EHC backend has been tested on both .NET for Windows and Mono (OS~X, Linux).
+
+\subsubsection{EHC backend}
+The experimental backend adds a new target to generate assembly files for the CLR. Using the flag \verb"-tclr", the compiler can be directed to generate \verb".il" files that contain Common Intermediate Langauge (aka MSIL) assembly code.
+
+These \verb".il" files can be assembled into \verb".exe" files using \verb"ilasm.exe" under Windows (available in \verb"%WINDOWS%\Microsoft.NET\Framework\v2.0.50727\") and \verb"ilasm2" under Linux/OSX (available through Mono).
+
+Here is a running scenario:
+\begin{verbatim}
+$ cat > Test.hs
+const x y = x
+main = const 8 15
+^C
+$ EHC/install/8/bin/ehc -tclr Test.hs
+$ ilasm2 Test.il
+$ mono Test.exe
+Int 8
+\end{verbatim}
+
+\paragraph{Note:} This chapter describes some technical aspects of the implementation, but it doesn't describe the underlying ideas.
+
+Ideally, a new separate document will be written detailing the underlining concepts of the CLR backend. However, such a document doesn't yet exist, for now there are just the slides and a video from the authors from the \href{http://tom.lokhorst.eu/ehc/clr/}{final presentation} of the Advanced Compiler Construction seminar.
+
+
+\subsection{Architecture}
+
+Currently, the CLR backend only works in variant 8 of the EHC. Work is being done to get variant 100 to comipile.
+
+\subsubsection{language-cil}
+The CLR backend makes use of an external library called language-cil. This library exposes an AST, build functions and pretty printers for the Common Intermediate Language (CIL).
+
+This library will need to be installed before compiling the EHC.
+
+At some point in the future language-cil will be uploaded to Hackage, however currently it lives just in source control: \href{https://svn.cs.uu.nl:12443/repos/language-cil/tags/0.1.0/}{https://svn.cs.uu.nl:12443/repos/language-cil/tags/0.1.0/}
+
+\subsubsection{/src/ehc/Cil/Common.chs}
+%%%%@EHCilCommon.doesWhat
+
+\subsubsection{/src/ehc/Cil/TyTag.chs}
+%%%%@EHCilTyTag.doesWhat
+
+\subsubsection{/src/ehc/GrinCode/ToCil.chs}
+%%%%@EHGrinCodeToCil.doesWhat
+
+\subsection{Tests}
+
+In the directory \verb"/test/clr" are some CLR test cases, some of which don't compile anymore, see open issues.
+
+\subsection{Open issues}
+
+Some open bugs which haven't been resolved yet:
+
+\begin{itemize}
+  \item \verb"/tests/5-tailcalls" Fails due to the fact that one tail call to many is generated.
+  \item \verb"/tests/8-fibs" Fails. App TyTag isn't implemented yet (Con, Fun and PApp are).
+\end{itemize}
+
+\subsection{Todo}
+
+\begin{itemize}
+  \item Document conceptual ideas behind architectural choices.
+  \item Remove \verb"ReferenceObject" indirection.
+  \item Better support for primitive types, \verb"GrPatLam.EnumAnnot" is hardcoded to booleans.
+  \item Become more stack-oriented (move to Silly?).
+  \item Make use of stack allocated objects (Value types).
+  \item Use more unboxed types, adding two integers shouldn't have to create 6 heap objects.
+  \item Use generic types instead of using container types for primitives.
+\end{itemize}
+
+%%]
+

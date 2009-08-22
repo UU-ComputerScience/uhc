@@ -1,0 +1,17 @@
+% split of kscode into sty and fmt (this one)
+
+%subst code a = "\begin{hscode}\SaveRestoreHook'n" a "\ColumnHook'n\end{hscode}\resethooks'n"
+
+% the following two are not needed, because the {} are
+% already in %subst fromto ...
+
+%%%subst left a     = "@{}>{{}}l<{{}}@{}"
+%%%subst centered a = ">{{}}c<{{}}"
+
+% the following is an ugly hack:
+% we choose to represent keywords and some other things as math
+% operators, which get more space surrounding them, but that also
+% implies that they will not be aligned correctly.
+% To prevent that, we make the first column special.
+
+%subst fromto b e x = "\fromto{" b "}{" e "}{\BF " b "\relax{" x "}}"

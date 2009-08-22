@@ -1,0 +1,420 @@
+%%[doesWhat doclatex
+
+The basic idea is that
+\begin{verbatim}
+   fetchnode n; \(x y z) ->
+\end{verbatim}
+is replaced by
+\begin{verbatim}
+   fetchfield n 0; \x ->
+   fetchfield n 1; \y ->
+   fetchfield n 2; \z ->
+\end{verbatim}
+This is done if the tag is statically known, because either
+x is a constant tag, or
+HPT analysis reveals that the list of possible tags for n is singleton.
+
+Otherwise, all but the first fetchfield operations are 'floated' to the alternative of a case expression
+where the tag \textit{is} known.
+If such a case expression does not follow, the transformation fails.
+
+Inspects the HPT table and updates it.
+
+%%]
+
+
+Thus,
+   fetchnode n; \(x y z) ->
+   case x of
+    C1 -> ...y...z...
+    C2 -> ...y...
+is replaced by
+   fetchfield n 0; \x ->
+   case x of
+    C1 -> fetchfield n 1; \y1 ->
+          fetchfield n 2; \z1 ->
+          ...y1...z1...
+    C2 -> fetchfield n 1; \y2 ->
+          ...y2...
+Note that y and z are renamed in the respective branches to ensure global unique names.
+Also note that in the C2 branch, less fetchfield expressions are generated because C2
+has lower arity than C1.
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set, Data.Monoid)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(splitFetch)
+
+splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
+splitFetch (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+
+type HptItems       = [ (Int,AbstractValue) ]
+
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR AllNT     [ | | grTrf: SELF     ]
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+
+ATTR GrAGItf
+     GrModule
+     AllBind
+     AllGrExpr [  hptMap: HptMap | |  ]
+
+ATTR AllGrExpr
+     AllBind
+     GrModule  [  | | newItems USE {++} {[]} : HptItems ]
+ATTR GrAGItf   [  | | hptMap: HptMap ]
+
+
+ATTR GrModule
+     AllBind
+     AllGrExpr
+     AllGrVal 
+     AllGrPat  [  | uniq : Int |  ]
+-- strange: uniq is not really needed in AllGrVal and AllGrPat, but if they are omitted we get a induced mutal dependency problem with renameMap
+
+ATTR AllGrExpr
+     AllGrVal
+     AllGrPat  [ renameMap: RenMap  | | ]
+
+SEM GrAGItf
+  | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
+              lhs    . hptMap  =  addEnvElems @lhs.hptMap (map snd (sort @module.newItems))
+
+SEM GrGlobal
+  | Global  val  . renameMap = Map.empty
+            val  . uniq      = 0
+
+SEM GrBind  
+  | Bind    expr . renameMap = Map.empty  
+%%]
+
+%%%%%%%%%%%%%%%%%%
+%%% SplitFetch %%%
+%%%%%%%%%%%%%%%%%%
+
+Assumption: if the tag is not statically known, the fetchnode expression
+is followed by a case expression which scrutinizes the tag
+
+%%[(8 codegen grin)
+
+ATTR GrPatLam GrVarL GrVar [ | | mbTag : {Maybe GrTag} ]
+
+SEM GrPatLam
+ | VarNode   lhs . mbTag = @fldL.mbTag
+ | Var 
+   Empty
+   BasicNode
+   EnumNode
+   OpaqueNode
+   PtrNode
+   BasicAnnot
+   EnumAnnot
+   OpaqueAnnot
+   PtrAnnot 
+             lhs . mbTag = Nothing
+ 
+SEM GrVarL
+ | Cons   lhs . mbTag = @hd.mbTag
+ | Nil    lhs . mbTag = Nothing
+
+SEM GrVar
+ | KnownTag   lhs . mbTag = Just @tag.self
+ | Ignore Var lhs. mbTag  = Nothing
+
+
+ATTR AllGrTag GrVarL GrVar [ | | self:SELF ]
+
+SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
+  | FetchNode     lhs  .  fetchPointer  =  Just @nm  -- Just (Map.findWithDefault @nm (getNr @nm) @lhs.renameMap)
+  | * - FetchNode lhs  .  fetchPointer  =  Nothing
+
+
+SEM GrPatAlt [ | | mbTag: {Maybe GrTag} ]
+  |     Tag Node         lhs  .  mbTag  =  Just @tag.grTrf
+  | * - Tag Node         lhs  .  mbTag  =  Nothing
+
+
+SEM GrPatLam [ | |  names: {GrVarL} ]
+  | VarNode              lhs  .  names  =  @fldL.self
+  | * - VarNode          lhs  .  names  =  error "SplitFetch.ag: attempt to get names from a non-VarNode"
+
+
+ATTR GrVal [ | | mbValName : {Maybe HsName} ]
+
+SEM GrVal
+  | Var      lhs.mbValName = Just @nm
+  | *-Var    lhs.mbValName = Nothing
+
+
+ATTR GrExpr [ | | hasCase : {Maybe HsName} ]
+
+SEM GrExpr
+  | Case         lhs.hasCase = @val.mbValName
+  | Seq          lhs.hasCase = let mbExpr = @expr.hasCase
+                               in  maybe @body.hasCase Just @expr.hasCase
+  | * - Case Seq lhs.hasCase = Nothing
+
+
+ATTR AllGrExpr [ targetArity : Int | | ]
+ATTR GrPatLam  [ | | arity : Int ]
+ATTR GrVarL    [ | | length : Int ]
+
+
+SEM GrBind
+  | Bind      expr.targetArity     = let  absVal = getEnvVar @lhs.hptMap (getNr @nm)
+                                          nodes = getNodes absVal
+                                          argss = map snd nodes
+                                          ls    = map length argss
+                                     in   maximum ls
+  
+SEM GrExpr
+  | Seq       expr.targetArity     = @pat.arity
+
+SEM GrPatLam
+  | Empty     lhs.arity = 0
+  | Var       lhs.arity = 1
+  | VarNode   lhs.arity = @fldL.length
+  | BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot  lhs.arity = error "SplitFetch: arity of special node requested"
+
+SEM GrVarL
+  | Nil       lhs.length = 0
+  | Cons      lhs.length = 1 + @tl.length
+
+
+ATTR AllGrExpr [ floatingFetches : FetchEnv | | ]
+
+SEM GrBind
+  | Bind  expr  .  floatingFetches = Map.empty
+
+SEM GrExpr
+  | Seq  loc  .  fetchesInfo   = do { oldName <- @expr.fetchPointer
+                                    ; let buildFetchInfo (GrVar_Var v) r n  =  (v, n) : r (n+1)
+                                          buildFetchInfo _             r n  =           r (n+1)
+                                          fetches@(fetch0:fetch1n) = foldr buildFetchInfo (const []) @pat.names 0
+                                          newName   = Map.findWithDefault oldName (getNr oldName) @lhs.renameMap
+                                    ; let mbTag     = checkSingleTag @lhs.hptMap oldName
+                                          f (v,o)   = (v, GrExpr_FetchField newName o @pat.mbTag)
+                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
+                                          g (v,o)   = (v, GrExpr_FetchField newName o mbTag)
+                                    ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
+                                                else if isJust mbTag      then (map g fetches, Nothing                          )
+                                                else if maybe True (/=fst fetch0) @body.hasCase then (map f fetches, Nothing    )
+                                                else                           ([f fetch0]   , Just (fst fetch0, map f fetch1n) )
+                                    ; return $ -- trace ("fetch " ++ show oldName ++ " / " ++ show newName ++ " patmbtag=" ++ show @pat.mbTag ++ " mbtag=" ++ show mbTag) 
+                                               res
+                                    }
+         lhs   .  grTrf             = maybe @grTrf 
+                                            (buildSeqs @body.grTrf . fst)        -- build FetchFields for the known fetches
+                                            @loc.fetchesInfo
+         body  .  floatingFetches   = maybe @lhs.floatingFetches 
+                                            (addFetchInfo @lhs.floatingFetches . snd)   -- add (tag,unknowns) to the floating fetches
+                                            @loc.fetchesInfo
+                                            
+  | Case  loc  .  (mbRes, newMap)   = Map.updateLookupWithKey (\k v -> Nothing) 
+                                                              (getTagName @val.grTrf) 
+                                                              @lhs.floatingFetches
+               .  mbFetches         = @mbRes
+               .  floatingFetches   = @newMap
+
+ATTR AllAlt [ mbFetches: {Maybe [(HsName, GrExpr)]} | | ]
+
+SEM GrAlt
+  | Alt  loc  .  mbExprInfo  =  do { fetches <- @lhs.mbFetches
+                                   ; tag     <- @pat.mbTag
+                                   ; return (foldr (specializeFetch tag)
+                                                   (@lhs.uniq, [], [])
+                                                   (take (tagArity tag @lhs.arityMap) fetches)
+                                            )
+                                   }
+         (expr.uniq, loc.renameList, loc.newExprInfo) = maybe (@lhs.uniq, [], []) id @mbExprInfo
+         expr  .  renameMap  =  Map.union (Map.fromList @loc.renameList) @lhs.renameMap
+         -- lhs   .  newItems   =  [ (getNr newvar, getEnvVar @lhs.hptMap oldnr) 
+         lhs   .  newItems   =  [ (getNr newvar, absSpecialize @pat.mbTag (getEnvVar @lhs.hptMap oldnr) )
+                                | (oldnr,newvar) <- @loc.renameList
+                                ]
+                                ++ @expr.newItems
+         
+         lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
+%%]
+
+%%[(8 codegen grin).lastFetch
+
+
+ATTR AllGrExpr [ hasNext: {Bool} | | ]
+
+SEM GrBind
+  | Bind     expr . hasNext = False
+
+SEM GrAlt
+  | Alt      expr . hasNext = False
+
+SEM GrExpr
+  | Seq      expr . hasNext = True
+             body . hasNext = False
+
+SEM GrExpr
+  | Catch  loc  . hasNext      =  False
+  | FetchNode FetchField
+           (loc.uniq
+           ,lhs.newItems
+           ,lhs.grTrf)         =  if not @lhs.hasNext
+                                  then let number      =  getNr @nm
+                                           newname     =  Map.findWithDefault @nm number @lhs.renameMap
+                                           mbKnownTag  =  checkSingleTag @lhs.hptMap @nm
+                                           ( start, size, node)  =  maybe ( {- 0 -} error ("SplitFetch: TODO: arity dependend on target type " ++ show @nm) , @lhs.targetArity, GrVal_VarNode (map GrVal_Var names))
+                                                                          (\t -> (1, tagArity t @lhs.arityMap, GrVal_Node t  (map GrVal_Var names)) )
+                                                                          mbKnownTag
+                                           fetches     =  take size $ map (\i -> GrExpr_FetchField newname i mbKnownTag) [start..]
+                                           newuniq     =  @lhs.uniq + size
+                                           numbers     =  [@lhs.uniq .. newuniq  - 1]
+                                           names       =  map (\n->HNmNr n OrigNone) numbers
+                                       in  ( newuniq
+                                           , zip numbers (map (absFetchField @lhs.hptMap @nm) [start..])
+                                           , buildSeqs (GrExpr_Unit node) (zip names fetches) 
+                                           )
+                                  else (@lhs.uniq, [], @loc.grTrf)
+%%]
+
+%%[(8 codegen grin).applySubst
+SEM GrVal
+  | Var        lhs . grTrf       = maybe @grTrf GrVal_Var (Map.lookup (getNr @nm) @lhs.renameMap)
+
+SEM GrExpr
+  | FetchNode FetchField Eval Throw UpdateUnit
+               loc  . newName    = Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
+  | FetchNode  loc  . grTrf      = GrExpr_FetchNode  @newName
+  | FetchField loc  . grTrf      = GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit loc  . grTrf      = GrExpr_UpdateUnit @newName @val.grTrf
+  | Eval       loc  . grTrf      = GrExpr_Eval  @newName
+  | Throw      loc  . grTrf      = GrExpr_Throw @newName
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
+
+type FetchEnv = Map.Map HsName [(HsName, GrExpr)]
+type RenMap = Map.Map Int HsName
+type RenList = [(Int,HsName)]
+
+getTagName (GrVal_Var v) =  v
+getTagName (GrVal_EnumNode v) =  v
+getTagName v             = error $ "getName: value not a variable or EnumNode: '" ++ show v ++ "'"
+
+addFetchInfo ffm Nothing                    = ffm
+addFetchInfo ffm (Just (v, unknownFetches)) = Map.insert v unknownFetches ffm
+
+buildSeqs body = foldr buildSeq body
+    where
+    buildSeq (v, e) b = GrExpr_Seq e (GrPatLam_Var v) b
+
+checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
+                          let absVal = absFetch hptMap p
+                              nodes = getNodes absVal
+                          in  if   isLocs hptMap p && isNode absVal && singleton nodes
+                              then Just (fst $ head nodes)
+                              else Nothing
+    
+
+isLocs hptMap p = case p of 
+                    (HNmNr i _) -> case getEnvVar hptMap i of
+                                     (AbsPtr _ _ _) -> True
+                                     _ -> False
+                    _ -> False
+
+
+isNode (AbsNodes _) = True
+isNode _            = False
+
+singleton [a] = True
+singleton _   = False
+
+specializeFetch :: GrTag -> (HsName, GrExpr) -> (Int, RenList, [(HsName, GrExpr)]) -> (Int, RenList, [(HsName, GrExpr)])
+specializeFetch tag (var, GrExpr_FetchField nm offset _) (u, renL, fetchesL)
+  = let newVar = HNmNr u OrigNone
+    in ( u+1
+       , (getNr var, newVar) : renL
+       , (newVar, GrExpr_FetchField nm offset (Just tag)) : fetchesL
+       )
+
+
+vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
+vsetLookup hptMap vset
+  =  let vs = Set.toList vset
+         zs = map (getEnvVar hptMap) vs
+     in if Set.null vset then AbsBasic else mconcat zs
+
+absSpecialize (Just t) u@(AbsUnion m) = maybe u id (Map.lookup t m)
+absSpecialize _        u              = u
+
+absFetchField :: HptMap -> HsName -> Int -> AbstractValue
+absFetchField hptmap nm 0 = let absVal = absFetch hptmap nm
+                                nodes = getNodes absVal
+                                tags  = map fst nodes
+                            in  AbsTags (Set.fromList tags)
+absFetchField hptmap nm i = let j = i-1
+                                absVal = absFetch hptmap nm
+                                (tags,fields) = unzip (getNodes absVal)
+                                fields2 = map (map (vsetLookup hptmap)) fields
+                                argss = filter ((j<) . length) fields2
+                                fields5 = map (!!j) argss
+                            in  head fields5  -- TODO: is it safe to assume that fields5 is a singleton? Or do we need to unify all elements of the list? Or select one of them based on tag?
+
+
+%%]
+
+
+%%[(8 codegen grin) hs
+
+tagArity :: GrTag -> Map.Map Int Int -> Int
+tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+tagArity  GrTag_Unboxed       _        = 1
+tagArity  GrTag_Hole          _        = 0
+tagArity t                    _        = error ("SplitFetch: tagArity " ++ show t)
+
+%%]
+
+%%[(8 codegen grin)
+
+ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
+ATTR AllBind AllGrExpr [ arityMap : {Map.Map Int Int} | | ]
+
+SEM GrBind
+  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
+  | Arity  lhs.genArities = Map.singleton (getNr @nm) @arity
+
+SEM GrModule
+  | Mod  bindL.arityMap = @bindL.genArities
+
+%%]
+
+

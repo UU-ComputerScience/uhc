@@ -1,0 +1,52 @@
+-------------------------------------------------------------------------
+-- Interfacing to ViewSel: pretty print
+-------------------------------------------------------------------------
+
+%%[1 hs module (ViewSel.PrettyPrint)
+%%]
+
+%%[1 hs export (ppViewSel, ppViewSels)
+%%]
+
+%%[1 hs import (EH.Util.Pretty, EH.Util.Nm, ViewSel.ViewSel)
+%%]
+
+%%[1 ag import ({ViewSel/AbsSynAG})
+%%]
+
+%%[1 ag
+WRAPPER AGViewSelItf AGViewSelsItf
+%%]
+
+%%[1 hs
+ppViewSel :: ViewSel -> PP_Doc
+ppViewSel vs
+  = pp_Syn_AGViewSelItf r2
+  where r1 = sem_AGViewSelItf (AGViewSelItf_AGItf vs)
+        r2 = wrap_AGViewSelItf r1 (Inh_AGViewSelItf)
+
+ppViewSels :: ViewSels -> PP_Doc
+ppViewSels vs
+  = pp_Syn_AGViewSelsItf r2
+  where r1 = sem_AGViewSelsItf (AGViewSelsItf_AGItf vs)
+        r2 = wrap_AGViewSelsItf r1 (Inh_AGViewSelsItf)
+
+instance PP ViewSel where
+  pp = ppViewSel
+%%]
+
+-------------------------------------------------------------------------
+-- Pretty print
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllViewSel AGViewSelItf AGViewSelsItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM ViewSel
+  | All             lhs     .   pp          =   pp "*"
+  | View            lhs     .   pp          =   pp @nm
+  | Range           lhs     .   pp          =   @vwFr.pp >#< ".." >#< @vwTo.pp
+
+SEM ViewSels
+  | Cons            lhs     .   pp          =   @hd.pp >|< "," >#< @tl.pp
+%%]

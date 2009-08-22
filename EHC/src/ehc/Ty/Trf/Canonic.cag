@@ -1,0 +1,288 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to making canonical type structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Compute canonic form of type so e.g. syntactic equality can be used.
+This is necessary for:
+\begin{itemize}
+\item Context reduction, i.e. Eq and Ord instances can be used on Ty to compare.
+\item Foreign function interface (FFI).
+\end{itemize}
+In both cases the ground form of a type is required, type synonyms expanded, and in the case of newtype also the type level wrapper removed.
+
+Canonicalization is done at
+\begin{itemize}
+\item rows, where fields may be in arbitrary order.
+\item types where type synonym expansion may occur, because 2 comparands may be differently partially expanded.
+\item (FFI only) types which are newtypes because at the value level the type level wrappers (and corresponding constructors) are erased.
+This is only done when FFI types are propagated to Core.
+\end{itemize}
+
+Tricky implementation point:
+After type synonym expansion, the replacement probably is structurally different and must be canonicalized as well!
+Hence the Maybe return signalling a replacement requiring recursive canonicalization of inner components, type level beta reduction and canonicalization alternately done.
+%%]
+
+%%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Ty.FitsInCommon2})
+%%]
+
+%%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
+%%]
+
+%%[(11 hmtyinfer) hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
+%%]
+
+%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
+%%]
+
+%%[(94 hmtyinfer) hs import(EH.Util.Utils)
+%%]
+%%[(94 hmtyinfer) hs import({%{EH}Gam.Full})
+%%]
+%%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
+%%]
+
+-- for debug
+%%[(94 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
+%%]
+
+%%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%[(99 hmtyinfer)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to making canonical type structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) hs export(TyCanonicOpts(..),emptyTyCanonicOpts)
+data TyCanonicOpts
+  = TyCanonicOpts
+%%[[11
+      { tcoTyBetaRedFullMb  :: Ty -> Maybe Ty
+      }
+%%]]
+
+emptyTyCanonicOpts :: TyCanonicOpts
+emptyTyCanonicOpts
+  = TyCanonicOpts
+%%[[11
+      { tcoTyBetaRedFullMb  = \t -> Nothing
+      }
+%%]]
+%%]
+
+%%[(11 hmtyinfer) hs
+tcoTyBetaRedFull :: TyCanonicOpts -> Ty -> Ty
+tcoTyBetaRedFull tco ty = maybe ty id $ tcoTyBetaRedFullMb tco ty
+%%]
+
+%%[(9 hmtyinfer).tyCanonicPrime hs export(tyCanonic')
+tyCanonic' :: TyCanonicOpts -> Ty -> Ty
+tyCanonic' opts ty
+  =  let  t =  wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) Inh_TyAGItf
+     in   repl_Syn_TyAGItf t
+%%]
+
+%%[(11 hmtyinfer) -9.tyCanonicPrime hs export(tyCanonic')
+tyCanonicMb' :: TyCanonicOpts -> Ty -> Maybe Ty
+tyCanonicMb' opts ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf
+                   { opts_Inh_TyAGItf = opts
+                   }
+                 )
+     in   if isReplaced_Syn_TyAGItf t then Just (repl_Syn_TyAGItf t) else Nothing
+
+tyCanonic' :: TyCanonicOpts -> Ty -> Ty
+tyCanonic' opts ty = maybe ty id $ tyCanonicMb' opts ty
+%%]
+
+%%[(9 hmtyinfer).predCanonicPrime hs export(predCanonic')
+predCanonic' :: TyCanonicOpts -> Pred -> Pred
+predCanonic' opts pr
+  = case tyCanonic' opts $ Ty_Pred pr of
+      Ty_Pred pr' -> pr'
+%%]
+
+%%[(11 hmtyinfer) -9.predCanonicPrime hs export(predCanonic')
+predCanonic' :: TyCanonicOpts -> Pred -> Pred
+%%[[16
+predCanonic' opts (Pred_Eq t1 t2)
+  = Pred_Eq (tmpoTy $ tyMergePreds [] t1') (tmpoTy $ tyMergePreds [] t2')
+    where
+      t1' = tyCanonic' opts t1
+      t2' = tyCanonic' opts t2
+%%]]
+predCanonic' opts pr
+  = case tyCanonicMb' opts $ Ty_Pred pr of
+      Just (Ty_Pred pr') -> pr'
+      _                  -> pr
+%%]
+
+%%[(9 hmtyinfer) hs export(tyCanonic)
+tyCanonic :: FIIn -> Ty -> Ty
+tyCanonic fi
+  = tyCanonic' opts
+  where opts = emptyTyCanonicOpts
+%%[[11
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
+%%]]
+%%]
+
+%%[(9 hmtyinfer) hs export(tyCanonicFFI)
+tyCanonicFFI :: FIIn -> Ty -> Ty
+tyCanonicFFI fi
+  = tyCanonic' opts
+  where opts = emptyTyCanonicOpts
+%%[[11
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy' (tyCanonicMb' opts)}
+%%]]
+%%[[11
+        canonLkupTy' = canonLkupTy
+%%][98
+        canonLkupTy' fi nm = newtypeLamLkup `orMb` canonLkupTy fi nm
+                     where newtypeLamLkup | ehbnIO (ehcOptBuiltinNames ehcopts) == nm
+                                                      = Nothing
+                                          | otherwise = dgiMbNewtype $? dataGamLookup nm $ feDataGam fe 
+        fe      = fiEnv fi
+        ehcopts = feEHCOpts fe
+%%]]
+%%]
+
+%%[(9 hmtyinfer) hs export(predCanonic)
+predCanonic :: FIIn -> Pred -> Pred
+predCanonic fi
+  = predCanonic' opts
+  where opts = emptyTyCanonicOpts
+%%[[11
+                  {tcoTyBetaRedFullMb = tyBetaRedFullMb fi canonLkupTy (tyCanonicMb' opts)}
+%%]]
+%%]
+
+%%[(11 hmtyinfer) hs
+canonLkupTy :: TyBetaRedLkup
+canonLkupTy = betaRedTyLookup
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(11 hmtyinfer)
+ATTR TyAGItf AllTy [ opts: TyCanonicOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Possible preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) hs
+type MbPredL = Maybe [Pred]
+
+mbPredLCmb :: MbPredL -> MbPredL -> MbPredL
+mbPredLCmb Nothing Nothing = Nothing
+mbPredLCmb m1      m2      = Just $ concat $ maybeToList m1 ++ maybeToList m2
+%%]
+
+%%[(9 hmtyinfer)
+ATTR Ty Impls Pred [ | | mbPredL USE {`mbPredLCmb`} {Nothing}: MbPredL ]
+
+SEM Impls
+  | Tail            lhs     .   mbPredL         =   Just []
+
+SEM Pred
+  | *               lhs     .   mbPredL         =   Just [@repl]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has replaced
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(11 hmtyinfer)
+ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
+
+SEM Ty
+  | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
+  | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
+
+SEM Ty
+  | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
+  | Ext             lhs     .   isReplaced      =   @isReplaced || @ty.isReplaced || @extTy.isReplaced
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicate removal replacement, preds are not supposed to be in the type. Has to be looked into later!!!!!!!!!!!!!!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Ty
+  | App             loc     .   mbReplNoImplNil =   case @func.mbPredL of
+                                                      Nothing | @func.isPred
+                                                        -> Just @arg.repl
+                                                      _ -> Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Labeled extension fields reordering replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(10 hmtyinfer)
+SEM Ty
+  | Ext             loc     .   mbRepl          =   if @isSpineRoot
+                                                    then let (row,exts) = tyRowExts @repl
+                                                         in  if tyRowIsCanonOrdered exts
+                                                             then Nothing
+                                                             else Just $ mkTyRow row $ tyRowCanonOrder exts
+                                                    else Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type synonym replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(11 hmtyinfer)
+SEM Ty
+  | App             loc     .   mbRepl          =   if @isSpineRoot
+                                                    then tcoTyBetaRedFullMb @lhs.opts @replNoImplNil
+                                                    else Nothing
+  | Con             loc     .   mbRepl          =   tcoTyBetaRedFullMb @lhs.opts @repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR AllTyAndFlds [ | | repl: SELF ]
+ATTR TyAGItf  [ | | repl: Ty ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Ty
+  | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
+                    lhs     .   repl            =   @replNoImplNil
+%%]
+
+%%[(10 hmtyinfer)
+SEM Ty
+  | Ext             lhs     .   repl            =   maybe @repl id @mbRepl
+%%]
+
+%%[(11 hmtyinfer)
+SEM Ty
+  | App             lhs     .   repl            :=  maybe @replNoImplNil id @mbRepl
+  | Con             lhs     .   repl            =   maybe @repl id @mbRepl
+%%]
+
+

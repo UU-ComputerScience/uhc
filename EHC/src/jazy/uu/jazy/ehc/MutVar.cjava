@@ -1,0 +1,40 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+
+/**
+ * MutVar: mutable variables.
+ * A MutVar is just an object holding a modifiable value.
+ */
+public class MutVar
+{
+%%]
+
+%%[(99 jazy)
+    public Object value ;
+    
+    public MutVar( Object v ) {
+    	value = v ;
+    }
+    
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

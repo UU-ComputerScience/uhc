@@ -1,0 +1,124 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT [ nmLev: NmLev | | ]
+ATTR LeftHandSide [ nmLevFun: NmLev | | ]
+%%]
+
+%%[5
+ATTR
+  Qualifier
+%%[[9
+  Statement
+%%]
+  [ | | nmLev: NmLev ]
+%%]
+
+%%[1
+SEM AGItf
+    | AGItf
+        loc             .   nmLev       =   nmLevModule
+%%]
+
+%%[1
+SEM Declaration
+    | TypeSignature
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%[[5
+    | Data Newtype
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+%%]]
+%%[[6
+    | KindSignature
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]]
+%%[[9
+    | Class InstanceUseImplicitly Default
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+    | Instance
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+        -- where           .   nmLev       =   @lhs.nmLev + 1
+%%]]
+%%[[11
+    | Type
+        loc             .   nmLev       =   @lhs.nmLev -- + 1
+%%]]
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[5
+SEM Constructor
+    | Constructor Infix
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[7
+SEM FieldDeclaration
+    | FieldDeclaration
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[13
+SEM ContextItem
+    | Forall
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM Expression
+    | Lambda Let
+        loc             .   nmLev       =   @lhs.nmLev + 1
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[4
+SEM Pattern
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[4
+SEM LeftHandSide
+    | Typed
+        type            .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   nmLev       =   @lhs.nmLev + 1
+                        .   nmLevFun    =   @lhs.nmLev
+%%]
+
+%%[1
+SEM RightHandSide
+    | *
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[5
+SEM Qualifier
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+
+%%[9
+SEM Statement
+    | Let Generator
+        loc             .   nmLev       =   @lhs.nmLev + 1
+%%]
+

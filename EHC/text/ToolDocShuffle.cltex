@@ -1,0 +1,862 @@
+%%[abstract
+|Shuffle| takes as input files containing versions of chunks of (sourcecode) text, producing
+a merged piece of text for a particular version.
+%%]
+
+%%[doc
+
+%{
+
+%format versionId	= "\texttt{<versionId>}"
+%format nameId		= "\texttt{<nameId>}"
+%format chunkName	= "\texttt{<chunkName>}"
+%format chunkId		= "\texttt{<chunkId>}"
+%format id			= "\texttt{<id>}"
+
+
+
+\subsection{Overview and command line invocation}
+
+When invoked by \verb'shuffle --help', |Shuffle| will answer with
+
+\begin{TTfootnotesize}
+%%1exec(bin/shuffle --help%%)
+\end{TTfootnotesize}
+
+\subsection{Version generation}
+
+|Shuffle| takess a chunked source file and produces on stdout the version specified by
+\verb'--gen=version'.
+Output can be generated in 3 different variants, for further processing by
+Haskell compilers (\verb'--hs'), for the AG system (\verb'--ag') and LaTeX (\verb'--latex').
+The produced output is assumed to be processed by |lhs2tex| [cite] first, unless the option
+\verb'--lhs2tex=no' is specified.
+
+For example the input
+
+\begin{TT}
+%%@[file:src/shuffle/test/tst2%%]
+\end{TT}
+
+gives the following variants when invoked with different parameters.
+
+\begin{Itemize}
+
+\item
+\verb'shuffle --gen=2 --ag src/shuffle/test/tst2'.
+Generate for version 2, AG system, to be processed first by |lhs2tex|.
+\begin{TT}
+%%1exec(bin/shuffle --gen=2 --ag src/shuffle/test/tst2%%)
+\end{TT}
+
+
+\item
+\verb'shuffle --gen=1 --hs --lhs2tex=no --base=Main src/shuffle/test/tst2'.
+Generate for version 1, Haskell, with name of module specified (instead of derived from the filename),
+not to be processed by |lhs2tex|.
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no --base=Main src/shuffle/test/tst2%%)
+\end{TT}
+
+\item
+\verb'shuffle --gen=2 --latex src/shuffle/test/tst2'.
+Generate for version 2, LaTeX, to be processed first by |lhs2tex|.
+Text is wrapped inside macros for definition (\verb'\chunkCmdDef') and use (\verb'\chunkCmdUse')
+of a chunk, to be defined by the user.
+\begin{TT}
+%%1exec(bin/shuffle --gen=2 --latex src/shuffle/test/tst2%%)
+\end{TT}
+
+\end{Itemize}
+
+For now combinations of output nor multiple files are allowed.
+
+\subsubsection{Remaining options}
+
+\begin{Itemize}
+\item
+Generation of index entries is turned on by the option @--index@.
+An index entry complying to @makeindex@ syntax is passed to the \LaTeX\ command @\chunkIndex@.
+Words to be indexed are guessed based on AG and Haskell semantics but is crude in its approximation.
+A file with a blank separated list of strings not to be indexed can be passed via the option @--xref-except@.
+In the future all of this may be changed to allow for more fine-grained control or be removed because too
+many useless entries are created.
+\end{Itemize}
+
+\subsection{Input format}
+Chunks are defined by text of the following structure
+\begin{TT}
+ %%[<chunkName> <parameters>
+ <text>
+ %%]
+\end{TT}
+The delimiters \verb'%%[' and \verb'%%]' must start at the beginning of a new line.
+Chunk definitions may
+not be nested.
+Text between chunk definitions is ignored.
+The \verb'<text>' of a chunk may be empty.
+
+A |chunkName| can either be an integer for versioned chunks or an alphanumerical identifier for
+named chunks.
+
+\subsubsection{Named chunks}
+A named chunk is defined by
+\begin{TT}
+ %%[<alphaNumId>
+ <text>
+ %%]
+\end{TT}
+and can be referred to from inside a chunk by
+\begin{TT}
+ %%@<alphaNumId>
+\end{TT}
+A reference is replaced in the output by its corresponding definition.
+For example, the following input
+\begin{TT}
+%%1exec(cat src/shuffle/test/tst3%%)
+\end{TT}
+will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst3')
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst3%%)
+\end{TT}
+Named chunks on their own do not produce output, only when referred to from a versioned chunk.
+
+
+\subsubsection{Versioned chunks}
+A versioned chunk is defined by the following. The lines after @%%[@ and @<text>@ should be on one line
+but are not because of the limited amount of space on each line.
+\begin{TT}
+ %%[<versionId> [.<nameId>] [-(<chunkId>*)] [hs]
+                [module <id>] [import(<id>*)] [export(<id>*)]
+ <text>
+ %%]
+\end{TT}
+
+An |versionId| can be $0$ or a nonempty sequence of positive integers separated
+by an underscore character '@_@'.
+From within \LaTeX\ a dot '.' instead is used
+(because underscore would be inconvenient as it
+is already special for \LaTeX).
+The underscore specifies a nested version.
+The ordering between integers is used to provide for a default
+ordering of versions, for nesting the usual lexical ordering
+is used.
+
+Version $0$ is special in that it defines text to be always inserted in the output
+without any additional treatment.
+For example, this can be used to incorporate a |lhs2tex| preamble.
+
+The combination of |versionId| and |nameId| is called a |chunkId|, syntactically composed of
+the two components by a dot \verb|'.'| in between.
+For a chunk it is not necessary to specify a full |chunkId|, a |versionId| suffices to make it be
+included in the output for the version.
+If a full |chunkId| is specified
+\begin{Itemize}
+\item
+its content can be referred to from within \LaTeX\ by
+\begin{TT}
+\chunkCmdUse{<filename>.<chunkId>}
+\end{TT}
+\item
+it can be removed by a later version referring to it by |- chunkId|.
+\end{Itemize}
+
+The order in which chunks appear in the input file is preserved, except for \LaTeX\ generation
+(with option @--latex@) for which this is not guaranteed.
+
+\subsubsection{Chunk removal}
+A versioned chunk can be inhibited to produce output by a later version
+from within that later version by |- chunkId|.
+For example
+\begin{TT}
+%%@[file:src/shuffle/test/tst4%%]
+\end{TT}
+will give (for \verb'shuffle --gen=3 --ag --lhs2tex=no src/shuffle/test/tst4')
+\begin{TT}
+%%1exec(bin/shuffle --gen=3 --ag --lhs2tex=no src/shuffle/test/tst4%%)
+\end{TT}
+Note that only the chunk referred to is not included.
+Multiple chunks can be removed this way by specifying a (parenthesized, white separated) list of |chunkId|'s.
+
+\subsubsection{Chunk ordering}
+When combined and printed to output an ordering is used.
+The default ordering on versions is used to define which chunks should be printed
+on output.
+For example, if chunk |3| is requested and |1,2,3,4| are available only the
+chunks for |1,2,3| will produce output in that order.
+Nested chunks do not produce output.
+
+A more specific ordering, including nested versions, can be specified with the
+option @--order@. An ordering consists of a comma separated list
+of orders, where each order is a @'<'@ separated list of versions.
+The ordering specifies a graph which is used to determine which versions have a path
+(defined by the @'<'@)
+to the version for which output generation takes place.
+For example,
+\begin{TT}
+1 < 2 < 3, 2 < 2_1
+\end{TT}
+specifies the usual order for non-nested versions and an additional branch @2_1@ which
+is based upon version @2@. When generation is asked for @3@, text for |1, 2, 3| is included
+but not for @2_1@ and vice-versa
+if generation is requested for @2_1@.
+If instead
+\begin{TT}
+1 < 2 < 3, 2 < 2_1 < 3
+\end{TT}
+would have been specified all available chunks, including @2_1@ and @3@ would be included for
+both @--gen=3@ and @--gen=2_1@.
+Chunks with versions not included in the ordering are non-existent as far as generation of output
+is concerned.
+
+\subsubsection{Output specific behavior}
+The remaining optional parameters of a chunk definition only have meaning dependent on
+the output format chosen.
+For example
+\begin{TT}
+%%@[file:src/shuffle/test/tst5%%]
+\end{TT}
+will give 
+\begin{Itemize}
+\item for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst5'
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst5%%)
+\end{TT}
+
+\item for \verb'shuffle --gen=1 --hs --lhs2tex=no src/shuffle/test/tst5'
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --hs --lhs2tex=no src/shuffle/test/tst5%%)
+\end{TT}
+\end{Itemize}
+
+To allow for incorporating Haskell inside AG the parameter \verb'hs' is specified, for example in
+\begin{TT}
+%%@[file:src/shuffle/test/tst6%%]
+\end{TT}
+will give (for \verb'shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst6')
+\begin{TT}
+%%1exec(bin/shuffle --gen=1 --ag --lhs2tex=no src/shuffle/test/tst6%%)
+\end{TT}
+
+Currently, none of this specific behavior is implemented for \LaTeX\ output.
+Generation for \LaTeX\ also ignores the @--gen@ flag by
+behaving as if @--gen=all@ were specified.
+
+\subsubsection{Interaction with \LaTeX}
+
+\begin{Itemize}
+\item
+Required macro's:
+\begin{TT}
+\newcommand{\chunkCmdDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\chunkMetaDef}[1]{\expandafter\def\csname #1\endcsname}
+\newcommand{\chunkCmdUse}[1]{\csname #1\endcsname}
+\newcommand{\chunkIndex}[1]{\index{#1}}
+\end{TT}
+
+\item
+Each chunk has also a label defined, with the same name as the chunk name.
+\end{Itemize}
+
+%}
+%%]
+
+%%[docNew
+Tables / diagrams:
+
+\begin{itemize}
+\item \lref{GrammarChunk}{chunk definition grammar}
+\item \lref{GrammarChunkcontent}{syntax diagram for chunk content}
+\item \lref{CommandLine}{commandline invocation and arguments}
+\end{itemize}
+%%]
+
+%%[introduction doclatex
+\section{Introduction and tutorial}
+
+Shuffle takes files with chunks of text defined in shuffle notation, and filters these chunks according to a requested selection of variant and aspects. This allows for the following typical use:
+
+\begin{itemize}
+\item Transform a chunked source file to a compilation unit (for ghc, C, etc). One file then is transformed one-to-one to the corresponding output without inclusion of chunks from other files. All variants and aspects are defined in the same file. The convention is to let a chunked file producing a file with suffix .X have the suffix .cX
+\item Transform a set of chunked source files to a single file for further processing. This is typically done for LaTeX files where various topics are spread over multiple files. On the commandline the set of files is specified, the first file being the root, other chunks are referred to by a naming mechanism.
+\end{itemize}
+
+\subsection{Basics}
+
+A minimal input to shuffle looks like the following:
+\begin{pre}
+%%%[1
+some text
+%%%]
+\end{pre}
+
+The two percent symbols \verb=%%= at the beginning of a line start shuffle commands. \verb=%%[1 .. %%]= delimits a chunk for variant 1. With this content placed in file \verb=doc-ex1=, the following invocation of shuffle produces the content of the chunk:
+
+\begin{pre}
+shuffle --gen-reqm=1 --variant-order=1 --plain --lhs2tex=no doc-ex1
+\end{pre}
+
+With \verb=--gen-reqm= the required variant is specified, where variants are ordered according to the ordering passed via \verb=--variant-order= (here just a single variant), \verb=--plain= means that no further interpretation of chunks should be done, and \verb+--lhs2tex=no+ that no chunk delimiting for lhs2tex should be done. Although shuffle is invoked by \verb=shuffle= in the above, shuffle is not installed globally as part of the ehc install. It can be found in \verb=EHC/bin=, where \verb=EHC= is the ehc directory. Text outside chunks is considered shuffle comment and not copied to output. If there are no lines between chunks then no lines are generated; if there are >= 1 lines between chunks one line of space is printed between generated individual chunks. The original order of chunks as it appears in the chunked source file is maintained. None of the commandline parameters currently can be omitted; in future versions of shuffle it is likely that default values will be assumed.
+
+A variant order allows for a hierarchical ordering of variants, where later variants build on top of earlier variants, possibly overriding earlier definitions:
+
+\begin{pre}
+%%%[1
+some text
+%%%]
+
+%%%[2
+more text
+%%%]
+\end{pre}
+
+With the following commandline we get both text fragments, where variant 2 builds on top of variant 1.
+
+\begin{pre}
+shuffle --gen-reqm=2 --variant-order="1 < 2" --plain --lhs2tex=no doc-ex1
+\end{pre}
+
+Variant 1 can still be extracted by \verb+--gen-reqm=1+.
+
+Chunks can be explicitly overridden, say a new variant 3 wants to replace the text for variant 1. We then have to give a name to the overridden chunk so we can refer to it when overriding the chunk:
+
+\begin{pre}
+%%%[1.sometext
+some text
+%%%]
+
+%%%[2
+more text
+%%%]
+
+%%%[3 -1.sometext
+other text
+%%%]
+\end{pre}
+
+With the following commandline:
+
+\begin{pre}
+shuffle --gen-reqm=3 --variant-order="1 < 2 < 3" --plain --lhs2tex=no doc-ex1
+\end{pre}
+
+this will give:
+
+\begin{pre}
+more text
+
+other text
+\end{pre}
+
+Again, previous variants can still be retrieved via the \verb=--gen-reqm= option.
+
+\subsection{Output specific configuration}
+
+The output of shuffle can be tailored to more specific targets, for example haskell source code. Chunks then contain haskell source text with optional meta information about name of the module, the imports, and the exports:
+
+\begin{pre}
+%%%[1 module Some import(SomeImport)
+%%%]
+
+%%%[1 export(someFunction)
+someFunction :: Int -> Int
+someFunction x = x
+%%%]
+\end{pre}
+
+On the commandline we then need to specify that we want Haskell source text to be generated; the \verb=--hs= option is used for that purpose:
+
+\begin{pre}
+shuffle --gen-reqm=1 --variant-order="1" --hs --lhs2tex=no doc-ex1
+\end{pre}
+
+The corresponding output then is:
+
+\begin{pre}
+module Some
+( someFunction )
+where
+import SomeImport
+
+someFunction :: Int -> Int
+someFunction x = x
+\end{pre}
+
+Similarly we can specifically can generate for the AG system. The input then looks like the following:
+
+\begin{pre}
+%%%[1 ag module Some import(SomeAGImport)
+%%%]
+
+%%%[1 hs import(SomeHaskellImport)
+%%%]
+
+%%%[1 ag
+DATA SomeData
+  | SomeAlt1
+
+ATTR SomeData [ | | someAttr: Int ]
+
+SEM SomeData
+  | SomeAlt1  lhs.someAttr = 1
+%%%]
+
+%%%[1 hs export(someFunction)
+someFunction :: Int -> Int
+someFunction x = x
+%%%]
+\end{pre}
+
+Because the AG system process both AG notation and escaped+copied Haskell code, it is necessary to tag each chunk with its source code type. It then ends up in the appropriate part.
+We now get wiith the following commandline:
+
+\begin{pre}
+shuffle --gen-reqm=1 --variant-order="1" --ag --lhs2tex=no doc-ex1
+\end{pre}
+
+
+we now get:
+
+\begin{pre}
+{
+module doc-ex1
+( someFunction )
+where
+import SomeHaskellImport
+
+}
+INCLUDE "SomeAGImport.ag"
+{
+}
+DATA SomeData
+  | SomeAlt1
+
+ATTR SomeData [ | | someAttr: Int ]
+
+SEM SomeData
+  | SomeAlt1  lhs.someAttr = 1
+
+{
+someFunction :: Int -> Int
+someFunction x = x
+}
+\end{pre}
+
+
+\subsection{Reusing and including chunks in other files}
+
+Chunks can be included at arbitrary places by referring to them by name. For example, given the content of the files \verb=doc1= and \verb=doc2=.
+In \verb=doc2= the content of the chunk is defined.
+
+\begin{pre}
+%%%[1.someText2
+some text2
+%%%]
+\end{pre}
+
+In \verb=doc1= we refer to the chunk in \verb=doc2= by \verb=%%%@doc2.1.someText2=:
+
+\begin{pre}
+%%%[1
+some text
+%%%@doc2.1.someText2
+%%%]
+\end{pre}
+
+The reference must start at the beginning of the line and follows the syntax \verb=file.variant.name=.
+The corresponding output then is:
+
+\begin{pre}
+some text
+some text2
+\end{pre}
+
+when shuffle is invoked with:
+
+\begin{pre}
+shuffle --gen-reqm=1 --variant-order=1 --plain --lhs2tex=no doc1 doc2
+\end{pre}
+
+The first file given to \verb=shuffle= acts as the root file. The remaining files (and the root file) act as a repository of chunks, for which output is only generated when included within the root file.
+%%]
+
+%%[variantsAndAspects doclatex
+\section{Variants and Aspects}
+
+A chunk contains content to be used for specific variants and aspects. A variant is denoted by a number, an aspect by an alphanumeric identifier. Variants and aspects are used and specified independently and represent the two dimensions over which variation can be specified. Variants and aspects though are used in a different way and with a different purpose. Variants are used to describe stepwise increments thus forming a hierarchy. Aspects are used to isolate such groups of variants. A variant is to be used for adding language features; an aspect is to be used for a global property valid for all language features. For example, in EHC, codegeneration and the type system are considered seperate aspects.
+
+Variants and aspects are offered by chunks. When shuffle is invoked a specific combination of variants and aspects is required/requested. For example, the following respectively specifies a general chunk, 2 chunks for 2 different aspects, and a chunk to be used when both aspects are requested for:
+
+\begin{pre}
+%%%[1
+some general text
+%%%]
+
+%%%[(2 asp1)
+some asp1 text
+%%%]
+
+%%%[(1 asp2)
+some asp2 text
+%%%]
+
+%%%[(1 asp1 asp2)
+some asp1 && asp2 text
+%%%]
+\end{pre}
+
+\subsection{Specifying required chunks}
+
+When we ask for all aspects with:
+
+\begin{pre}
+shuffle --gen-reqm="(2 asp1 asp2)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{pre}
+
+we indeed get the content for all aspects:
+
+\begin{pre}
+some general text
+some asp1 text
+some asp2 text
+some asp1 && asp2 text
+\end{pre}
+
+Via option \verb+--gen-reqm="(2 asp1 asp2)"+ we specified the required variant and aspects. The syntax of the required variant and aspects is \verb=variant | '(' variant aspect* ')'=, where the absence of aspects means all aspects. Variant and aspects are defined independently and have the effect that only chunks offering both variant and all required aspects are generated on output. For example, the following shuffle invocation only produces the general text:
+
+\begin{pre}
+shuffle --gen-reqm="(1 asp1)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{pre}
+
+The invocation
+
+\begin{pre}
+shuffle --gen-reqm="(2 asp2)" --variant-order="1 < 2" --plain --lhs2tex=no doc1
+\end{pre}
+
+produces both the general text and asp2 only text:
+
+\begin{pre}
+some general text
+some asp2 text
+\end{pre}
+
+\subsection{Specifying offered chunks}
+
+The specification of chunk offerings follows a richer language for specifying aspects, including conjunction \verb=&&= and disjunction \verb=||=. The specification \verb=(1 asp1 asp2)= of the example is a shorthand notation for \verb=(1 asp1 && asp2)=, which means that the chunk only is generated when both aspects are asked for simultaneously. When disjunction \verb=||= is used, as in \verb=(1 asp1 || asp2)=, only at least one of the aspects must be asked for. The syntax of such an 'offering' specification then is \verb=variant | '(' variant aspectexpr? ')'=, where the absence of the aspect expression means 'any aspect'. An aspect expression follows the usual notation and priority rules as used in (say) Haskell.
+%%]
+
+%%[chunks doclatex
+\section{Chunks}
+
+\subsection{Overriding and alternatives}
+
+Chunks can be introduced, overridden completely or partially. Chunk introduction and overriding has been discussed, for example a chunk is introduced by:
+
+\begin{pre}
+%%%[1.sometext
+some text
+%%%]
+\end{pre}
+
+and is overridden completely in variant 2 by:
+
+\begin{pre}
+%%%[2 -1.sometext
+some text
+%%%]
+\end{pre}
+
+Completely overriding a chunk can be too much if only a part of a chunk has been modified. There are three ways to deal with this, using already introduced notation and notation for conditional nested chunks (for the third way). First, a large chunk can be split into smaller, so we have finer grain control for overriding:
+
+\begin{pre}
+%%%[1
+some part 1
+%%%]
+%%%[1.somepart2
+some part 2
+%%%]
+%%%[1
+some part 3
+%%%]
+\end{pre}
+
+If we want to override \verb=some part 2= we can now do this as usual:
+
+\begin{pre}
+%%%[2 -1.somepart2
+some part 2 new
+%%%]
+\end{pre}
+
+However, the partitioned chunk now has a lot of chunk related clutter. A second solution is to name all parts, include those in a new overall chunk and override the latter:
+
+\begin{pre}
+%%%[somepart1
+some part 1
+%%%]
+%%%[somepart2
+some part 2
+%%%]
+%%%[somepart3
+some part 3
+%%%]
+
+%%%[1.all
+%%%@somepart1
+%%%@somepart2
+%%%@somepart3
+%%%]
+\end{pre}
+
+Chunks without a variant number are never included automatically but only when referred to by name from another chunk which is included. We override by:
+
+\begin{pre}
+%%%[somepart2new
+some part 2 new
+%%%]
+
+%%%[2 -1.all
+%%%@somepart1
+%%%@somepart2new
+%%%@somepart3
+%%%]
+\end{pre}
+
+Again, a lot of clutter, so usually the best solution is to inline the choice using conditional nested groups of chunks. The original text structure and ordering is then maintained, although we still require shuffle notation:
+
+\begin{pre}
+%%%[1
+some part 1
+%%%[[1
+some part 2
+%%%][2
+some part 2 new
+%%%]]
+some part 3
+%%%]
+\end{pre}
+
+A nested chunk is denoted by \verb=%%[[ ... %%]]= instead of \verb=%%[ ... %%]=. Conditional nested groups of chunks are denoted by \verb=%%[[ ... %%][ ... %%]]=
+A nested chunk always is for a particular variant; a name without a variant is not allowed.
+
+We can also use this mechanism to specify defaults for aspects:
+
+\begin{pre}
+%%%[1
+some part 1
+%%%[[1
+some part 2
+%%%][(2 asp)
+some part 2 new asp
+%%%][2
+some part 2 new
+%%%]]
+some part 3
+%%%]
+\end{pre}
+
+If for variant 2 aspect \verb=asp= is requested the text \verb=some part 2 new asp= is generated, otherwise the default \verb=some part 2 new= for variant 2. If more than one nested chunk can be chosen from, \verb=shuffle= chooses arbitrarily.
+
+\subsection{Metadata: type, wrapping, module + import/export, ..}
+
+A chunk may have data associated other than textual content. The use of this information depends on the context it is used in. For example, when asking for AG output (option \verb=--ag=), the type of a chunk influences how its content ends up in the generated output:
+
+\begin{pre}
+%%%[1 hs
+haskell
+%%%]
+
+%%%[1 ag
+AG
+%%%]
+\end{pre}
+
+The type \verb=ag= specifies that the chunk content is AG text, \verb=hs= specifies it is Haskell. However, when asking for Haskell output (option \verb=--hs=) this difference is ignored. The metadata defined for a chunk textually starts right after the \verb=%%[= and ends at the end of the line. See the \lref{GrammarChunk}{syntax diagram for chunks} below for the exact placement and values of metadata:
+
+\begin{itemize}
+\item \verb=chunktype=, as discussed above. Additionally \href{http://www.haskell.org/haddock/}{haddock} comment (wrapped in \verb={-| ... -}= can be included. However, when AG is generated its position in the output is not deterministic as the AG compiler also shuffles around with Haskell code.
+\item \verb=chunkref=, as discussed earlier, used to override a particular chunk or include it.
+\item \verb=chunkwrap=, additional wrapping of a chunk, currently only used for output latex. \verb=code= wraps as a \href{http://people.cs.uu.nl/andres/lhs2tex/}{lhs2tex} code block, \verb=safecode= puts this in a parbox as well (used within [[http://latex-beamer.sourceforge.net/][beamer]]), \verb=verbatim= wraps inside a verbatim environment, normal size or small, \verb=tt= is similar to \verb=verbatim= but will become obsolete.
+\item \verb=module=, adds a Haskell for type \verb=hs= module definition when Haskell or AG is generated.
+\item \verb=import= and \verb=export=, take import/export lists and generate according to Haskell or AG and type \verb=hs= or \verb=ag=.
+\end{itemize}
+
+Inside and entity or module name special syntax allows the use of key/value pairs. Key/value pairs are defined on the commandline by option \verb+--def=key:value+ and the value is used by referring to the key by \verb=%{key}=. In EHC this is used for externally specifying the toplevel module name of the library constructed for a particular variant. Overlapping Haskell namespaces are thus avoided and libraries for different variants can be used simultaneously. Also, grouping of name elements is done by \verb={ ... }=, guaranteeing whitespace free output generation for its content.
+
+\label{GrammarChunk}
+Syntax for chunk definitions:
+
+\begin{pre}
+<chunk>             ::= '%%[' (<chunkvariantdef> | <chunknameddef>) <chunkcontent> '%%]'
+<chunkvariantdef>   ::= <variantoffer>
+                        ('.' <nm>)?
+                        ('-' (<chunkref> | '(' <chunkref>* ')'))?
+                        <chunkoptions>
+                        <module>? <imports>? <exports>?
+<chunknameddef>     ::= <nm>
+<chunkcontent>      ::= <textline>*
+<variantoffer>      ::= <variantnr> | '(' <variantnr> <aspectexpr>? ')'
+<variantnr>         ::= <int>
+<aspectexpr>        ::= <aspectand1> ('||' <aspectand1>)*
+<aspectand1>        ::= <aspectand2> ('&&' <aspectand2>)*
+<aspectand2>        ::= <aspect>+
+<aspect>            ::= <ident>
+<chunkref>          ::= (<fileref> '.')? (<variantnr> '.')? <nm>
+<nm>                ::= <ident> ('.' <ident>)*
+<chunkoptions>      ::= (<chunkwrap> | <chunktype>)*
+<chunkwrap>         ::= 'wrap' '=' ( 'code' | 'safecode'
+                                   | 'tt' | 'tttiny'
+                                   | 'verbatim' | 'verbatimsmall'
+                                   | 'beamerblockcode' <str1>
+                                   | 'boxcode' ('{' <frac> '}')?
+                                   )
+<chunktype>         ::= 'hs' | 'ag' | 'haddock' | 'plain'
+<module>            ::= 'module' <str2>
+<imports>           ::= 'import' '(' <entities> ')'
+<exports>           ::= 'export' '(' <entities> ')'
+<entities>          ::= <entity> (',' <entity>)*
+<entity>            ::= <str2>
+<str2>              ::= <str1> | <ident> | <int> | '{' <str2>+ '}' | '%' '{' <ident> '}"
+<str1>              ::= '"' <non-">* '"'
+<frac>              ::= <int> ('.' <int>)?
+\end{pre}
+
+\subsection{Content}
+
+Content of a chunk consists of a mixture of plain text and shuffle
+interpreted parts. See the \lref{GrammarChunkcontent}{syntax diagram for
+chunk content} below. Each piece of content either is a line not
+starting with \verb=%%%@= or \verb=%%[[= or a reference to another chunk
+or a nested conditional group. A plain line consists of characters. The
+only escape to shuffle not starting at the beginning of a line consists
+of \verb=%%%@{ ... %%%}= and \verb=%%%@[ ... %%%]=:
+\begin{itemize}
+\item
+The \verb=%%%@{= form allows the value of key/value pairs to be
+substituted.
+\item
+The \verb=%%%@[= form allows inlining of file content and output of shell commandline invocation.
+If the type of inlining is \verb=file= the full text between \verb=%%%@[= end \verb=%%%]= is opened as an url,
+and its content inlined.
+For inlining type \verb=exec= the remainder after the colon is executed as a shell command and its output is inlined.
+For example, the commandline invocation of \verb=shuffle= itself is inlined in this document by means of
+
+\begin{pre}
+%%%@[exec:bin/shuffle --help%%]
+\end{pre}
+
+\end{itemize}
+
+\label{GrammarChunkcontent}
+Syntax for chunk content:
+
+\begin{pre}
+<chunkcontent>      ::= <content>*
+<content>           ::= <textcontent>
+                     |  '%%%@' <chunkref> ('@' <variantreqm>)? <chunkoptions>
+                     |  '%%[[' <variantoffer> <chunkoptions> <chunkcontent>
+                        ('%%][' <variantoffer> <chunkoptions> <chunkcontent>)*
+                        '%%]]'
+<textcontent>       ::= <char>*
+                     |  '%%%@{' <str2> '%%%}'
+                     |  '%%%@[' <inlinetype> ':' <char>* '%%%]'
+<inlinetype >       ::= 'file' | 'exec'
+<variantreqm>       ::= <variantnr> | '(' <variantnr> <aspect>? ')'
+\end{pre}
+
+\subsection{References}
+%%]
+
+%%[output doclatex
+
+\section{Output}
+
+\subsection{Haskell}
+
+\subsection{AG}
+
+\subsection{LaTeX / Lhs2TeX}
+
+\subsection{Plain}
+%%]
+
+
+%%[makefileGeneration doclatex
+\section{Makefile generation}
+
+Dependencies between AG files are explicitly encoded in makefiles. These dependencies can be
+generated from the AG imports in a chunked AG file using \verb=shuffle=. We demonstrate this
+by means of an example from the \verb=ruler= project.
+
+There are typically two ways to compile an AG file: as a module with semantic functions, or
+as a module with data type definitions. In order to compile the AG files, the makefile
+infrastructure requires the following lists:
+
+\begin{tabular}{ll}
+\verb=RULER3_AG_D_MAIN_SRC_AG= & AG modules with data type definitions \\
+\verb=RULER3_AG_D_DPDS_SRC_AG= & Dependencies of the above AG modules \\
+\verb=RULER3_AG_S_MAIN_SRC_AG= & AG modules with semantic functions \\
+\verb=RULER3_AG_S_DPDS_SRC_AG= & Dependencies of the above AG modules \\
+\end{tabular}
+
+Aside from these lists, there needs to be a rule for each AG source file and its dependencies,
+to the derived AG module:
+
+\begin{pre}
+RULER3_EXPR_EXPR_MAIN_SRC_AG := $(patsubst %, \
+  $(SRC_RULER3_PREFIX)%.cag, Expr/Expr)
+RULER3_EXPR_EXPR_DPDS_SRC_AG := $(patsubst %, \
+  $(RULER3_BLD_PREFIX)%.ag, Expr/AbsSynAG)
+$(patsubst $(SRC_RULER3_PREFIX)%.ag,$(RULER3_BLD_PREFIX)%.hs, \
+  $(RULER3_EXPR_EXPR_MAIN_SRC_AG)) : $(RULER3_EXPR_EXPR_DPDS_SRC_AG)
+\end{pre}
+
+These lists and rules are generated by \verb=shuffle= on a file with paths to AG modules, using the \verb=--dep= option and several
+parameters to choose names for these makefile variables. For example, the file \verb=files-ag-d.dep= contains the following
+lines:
+\begin{pre}
+Expr/Expr.cag
+Ty/Ty.cag
+AbsSyn/AbsSyn1.cag
+\end{pre}
+The invocation of \verb=shuffle=:
+\begin{pre}
+shuffle files-ag-d.dep --dep \
+  --depnameprefix=RULER3_ \
+  --depsrcvar=SRC_RULER3_PREFIX \
+  --depdstvar=RULER3_BLD_PREFIX \
+  --depmainvar=RULER3_AG_D_MAIN_SRC_AG \
+  --depdpdsvar=RULER3_AG_D_DPDS_SRC_AG \
+  > files-ag-d-dep.mk
+\end{pre}
+results in a makefile containing the required rules and the lists \verb=RULER3_AG_D_MAIN_SRC_AG= and \verb=RULER3_AG_D_DPDS_SRC_AG=.
+
+Note that \verb=shuffle --dep= takes only and all chunk-imports tagged with an \verb=ag=-kind into consideration.
+%%]
+
+%%[commandline doclatex
+\section{Shuffle commandline invocation}
+
+\subsection{Commandline usage}
+
+\label{CommandLine}
+As printed by \verb=shuffle --help=:
+
+\begin{pre}
+%%@[exec:bin/shuffle --help%%]
+\end{pre}
+
+\subsection{Commandline options}
+
+\begin{itemize}
+\item \verb+--gen-reqm=variant | '(' variant aspect* ')'+
+\item \verb=--plain=
+\item \verb=--ag=
+\item \verb=--hs=
+\item \verb+--lhs2tex=no|yes+
+\end{itemize}
+
+
+%%]
+

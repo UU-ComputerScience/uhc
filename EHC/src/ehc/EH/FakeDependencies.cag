@@ -1,0 +1,95 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fake AG dependencies to avoid INDUCED cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Dependencies are declared for the first variant where both dependencees are available.
+
+%%[1
+SEM Expr
+  | Parens      lhs			.	opts				<	lhs.gUniq
+%%]
+
+%%[(1 hmtyinfer)
+SEM Decls
+  | Cons        lhs         .   opts                <   lhs.gathTySigGam
+%%]
+
+%%[(2 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   gUniq               <   loc.tyGam
+%%]
+
+%%[(6 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   gUniq               <   loc.tyKiGam
+                expr        .   gUniq               <   loc.kiGam
+
+SEM Expr
+  | Case        alts        .   kiVarMp             <   alts.patTyVarMp
+%%]
+
+%%[(6 hmtyinfer)
+SEM DataConstr
+  | Constr      lhs         .   dataTy              <   lhs.kiVarMp
+%%]
+
+SEM CaseAlts
+  | Cons        hd          .   gathDataGam         <   hd.kiVarMp
+%%[(7 hmtyinfer)
+
+SEM DataFieldPatExpr
+  | Ext         dataFieldPatExpr
+                            .   tyGam               <   dataFieldPatExpr.kiVarMp
+
+SEM Decl
+  | Data        loc         .   dataAltTy           <   loc.dataTy
+%%]
+
+%%[(9 hmtyinfer)
+SEM TyExprs
+  | Cons        hd          .   tyVarWildL          <   hd.clGam
+%%]
+
+%%[(9 hmtyinfer)
+%%]
+SEM AGItf
+  | AGItf       expr        .   lexLev          	<   expr.predScope
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Data		constrs		.	intlTyKiGam			<	constrs.clGam
+%%]
+
+%%[(17 hmtyinfer)
+SEM DataConstr
+  | Constr      lhs         .   polGam              <   loc.dataAltTyL
+                lhs         .   knPolCtx            <   loc.dataAltTyL
+                lhs         .   polVarMp            <   loc.dataAltTyL
+  
+SEM TyExpr
+  | Pred		lhs			.	knPolCtx			< 	prExpr.tyGam
+
+SEM AGItf
+  | AGItf       expr        .   gathPolGam          <   expr.valGam
+                expr        .   range               <   expr.gUniq
+                expr        .   gUniq               <   loc.polGam
+                expr        .   polVarMp            <   expr.tyVarMp
+                expr        .   polVarMp            <   loc.clGam
+%%]
+
+SEM DataFieldExpr
+  | *           lhs         .   lexLev              <   lhs.polVarMp
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   range               <   expr.kiGam
+%%]
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf		expr		.	predSameScopeCounter	<	expr.predScope
+       			expr		.	predSameScopeCounter	<	expr.tyGam
+                expr        .   gUniq              		<   expr.predSameScopeCounter
+SEM Expr
+  | Let			decls       .   predSameScopeCounter    <   decls.gathKiSigGam
+%%]

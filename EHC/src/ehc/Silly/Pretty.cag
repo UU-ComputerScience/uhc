@@ -1,0 +1,140 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Silly program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs module {%{EH}Silly.Pretty} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(pretty)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+%%[(8 codegen grin) hs
+pretty :: EHCOpts -> SilModule -> PP_Doc
+pretty opts silmod
+  = let t = wrap_SilModule (sem_SilModule silmod)
+                           (Inh_SilModule { opts_Inh_SilModule = opts
+                                          }
+                           )
+     in  pretty_Syn_SilModule t
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+WRAPPER SilModule
+%%]
+
+
+%%[(8 codegen grin)
+ATTR SilModule [ opts : {EHCOpts} | | ]
+
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
+         [ | | pretty USE {>-<} {empty} : PP_Doc ]
+
+
+
+SEM SilModule
+  | SilModule  lhs.pretty = @functions.pretty
+  
+  
+%%[[8
+SEM Function
+  | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
+                            >-< "{"
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 (@body.pretty)
+                            >-< "}"
+%%][8_2
+SEM Function
+  | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
+                            >#< (if @tailJumps then text "{ TailJump }" else text "{ NoTailJump }")
+                            >-< "{"
+                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >|< ";")
+                            >-< indent 4 (@body.pretty)
+                            >-< "}"
+%%]]
+
+SEM Statement
+  | Assignment  lhs.pretty = @dest.pretty >#< ":=" >#< @source.pretty >|< ";"
+  | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
+  | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
+  | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
+  | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
+  | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
+  | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+  | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
+%%[[8
+  | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
+  | Comment     lhs.pretty = comment @comment
+%%][8_2
+  | Call        lhs.pretty = hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
+  | Comment     lhs.pretty = empty
+%%]]    
+  
+%%[[8
+SEM Alternative
+  | Alternative lhs.pretty = "WHEN" >#< @when.pretty >-< indent 4 (@body.pretty)
+%%][8_2
+SEM Alternative
+  | Alternative lhs.pretty = "case" >#< @when.pretty >-< indent 4 (@body.pretty)
+%%]]
+
+SEM Constant
+  | LiteralInt  lhs.pretty = text (show @value)
+  | LiteralStr  lhs.pretty = text (show @value)
+  | Alias       lhs.pretty = text @name
+
+SEM Variable
+  | Unembedded     lhs.pretty = text ("U" ++ hsnShowAlphanumeric @name)
+%%[[8
+  | Local          lhs.pretty = text ("L" ++ hsnShowAlphanumeric @name)
+  | Param          lhs.pretty = text ("P" ++ hsnShowAlphanumeric @name)
+  | Global         lhs.pretty = text ("G" ++ hsnShowAlphanumeric @name)
+%%][8_2
+  | Local          lhs.pretty = text (hsnShowAlphanumeric @name)
+  | Param          lhs.pretty = text (hsnShowAlphanumeric @name)
+  | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
+%%]]
+  | SP             lhs.pretty = text "SP"  
+  | BP             lhs.pretty = text "BP"  
+  | RP             lhs.pretty = text "RP"  
+  | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
+  | Aux            lhs.pretty = text "AUX"
+  | Ptr            lhs.pretty = text "PTR"
+  | None           lhs.pretty = text "NONE"
+
+SEM Value
+%%[[8
+  | Con            lhs.pretty = text "CON" >#< @con.pretty
+  | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
+  | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+%%][8_2
+  | Con            lhs.pretty = @con.pretty
+  | Alloc          lhs.pretty = text "allocate(" >|< show @size >|< ") {" >#< show @gcManaged >#< "}"
+  | Call           lhs.pretty = "foreign"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+%%]]
+  | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
+  | Label          lhs.pretty = text "LABEL" >#< show @name
+  | CompareGT      lhs.pretty = @val.pretty >#< ">" >#< @con.pretty
+
+SEM Values
+  | Nil            lhs.pretty = empty
+  | Cons           lhs.pretty = @hd.pretty >|< ", " >|< @tl.pretty
+
+%%]
+%%[(8 codegen grin) hs
+comment :: [String] -> PP_Doc
+comment []  = text ""
+comment [s] = text ("// " ++ s)
+comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
+%%]

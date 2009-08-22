@@ -1,0 +1,142 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to HS/AbsSyn (was: UHA_Syntax)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}HS} import({%{EH}Base.Common}, UU.Scanner.Position, EH.Util.ScanUtils) export(module UU.Scanner.Position)
+%%]
+
+%%[1 hs export(AGItf(..), Module(..), Body(..), Declaration(..), Declarations, MaybeDeclarations, Type(..), Types, MaybeType, Expression(..), Expressions, MaybeExpression, FunctionBinding(..), FunctionBindings, LeftHandSide(..), RightHandSide(..), Pattern(..), Patterns, Literal(..), Name, Names, MaybeName, MaybeNames, Strings, Range(..), Fixity(..))
+%%]
+%%[1 hs export(TypeAnnotation(..), ExpressionAnnotation(..), PatternAnnotation(..))
+%%]
+
+%%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
+%%]
+
+%%[5 hs export(Constructor(..), Constructors)
+%%]
+
+%%[5 hs export(GuardedExpression(..), GuardedExpressions, Alternative(..), Alternatives, Qualifier(..), Qualifiers)
+%%]
+
+%%[5 hs export(SimpleType(..), AnnotatedType(..), AnnotatedTypes)
+%%]
+
+%%[6 hs export(Kind(..), Kinds, KindAnnotation(..))
+%%]
+
+%%[7 hs export(FieldDeclaration(..), FieldDeclarations)
+%%]
+
+%%[77 hs export(RowExtension(..), RowExtensions, RowType(..))
+%%]
+
+%%[7 hs export(RecordPatternBinding(..), RecordPatternBindings)
+%%]
+
+%%[7 hs export(RecordExpressionBinding(..), RecordExpressionBindings)
+%%]
+
+%%[7 hs export(RowRecordExpressionUpdate(..), RowRecordExpressionUpdates, RowRecordPatternBinding(..), RowRecordPatternBindings, RowTypeUpdate(..), RowTypeUpdates)
+%%]
+
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
+%%[9 hs export(ContextItem(..), ContextItems)
+%%]
+
+%%[9 hs export(Statement(..), Statements)
+%%]
+
+%%[12 hs export(ContextedExpression(..), ContextedExpressions, ContextedPattern(..), ContextedPatterns)
+%%]
+
+%%[15 hs export(FunctionalDependency(..), FunctionalDependencies)
+%%]
+
+%%[20 hs export(Export(..), Exports, MaybeExports, ImportDeclaration(..), ImportDeclarations, ImportSpecification(..), MaybeImportSpecification, Import(..), Imports)
+%%]
+
+%%[95 hs export(Deriving(..), Derivings)
+%%]
+
+%%[1.Token hs import(UU.Scanner.Token)
+%%]
+
+%%[5 -1.Token hs import({%{EH}Scanner.Token})
+%%]
+
+%%[1 ag import({HS/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional defs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+type Name = HsName
+type Names = [Name]
+type MaybeName = Maybe Name
+type MaybeNames = Maybe Names
+%%]
+
+%%[1 hs
+%%]
+
+%%[1 hs
+mkRngNm' :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> (r,Range)
+mkRngNm' ast t
+  = (ast r (mkHNm t),r)
+  where r = mkRange1 t
+
+mkRngNm :: (Position t,HSNM t) => (Range -> HsName -> r) -> t -> r
+mkRngNm ast t = fst (mkRngNm' ast t)
+
+mkRngStr :: (Range -> String -> r) -> Token -> r
+mkRngStr ast t = ast (mkRange1 t) (tokMkStr t)
+%%]
+
+%%[1 hs
+%%]
+instance Show Range where
+  show (Range_Range p _) = show p
+  show Range_Unknown     = "??"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SemApp instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+instance SemApp Type where
+  semApp        = \e1 e2 -> Type_NormalApplication emptyRange e1 [e2]
+  semAppTop     = id
+  semCon        = mkRngNm Type_Constructor
+  semParens     = Type_Parenthesized emptyRange
+  mkApp (a:as)  = if null as then a else Type_NormalApplication emptyRange a as
+  semRngCon r n = Type_Constructor r (mkHNm n)
+%%]
+%%[1.semRngVar hs
+  semRngVar     = semRngCon
+%%]
+%%[3 -1.semRngVar hs
+  semRngVar r n = Type_Variable r (mkHNm n)
+%%]
+
+%%[1 hs
+instance SemApp Expression where
+  semApp            = \e1 e2 -> Expression_NormalApplication emptyRange e1 [e2]
+  semAppTop         = id
+  semCon            = mkRngNm Expression_Constructor
+  semParens         = Expression_Parenthesized emptyRange
+  mkApp (a:as)      = if null as then a else Expression_NormalApplication emptyRange a as
+  semRngCon r n     = Expression_Constructor r (mkHNm n)
+  semRngVar r n     = Expression_Variable r (mkHNm n)
+%%]
+
+

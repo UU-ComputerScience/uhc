@@ -1,0 +1,214 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional checks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Duplicate value identifier introductions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This check has been turned off, because it generates error messages for combinations like these:
+
+_ltImin :: Int
+( _ltImax,_ltImin,_ltItree) =
+  (3,4,5 )
+
+The check in the HS pass is correct, here it would check EH input, which currently is not used much.
+The problem lies in that @decls.patValGam also contains the type signature, and a type for the value in the pattern is added without checking if it already is present.
+
+20090404: put back, but wrapped in option
+
+%%[(1 hmtyinfer).dupErrs
+SEM Expr
+  | Let         loc         .   dupErrs             =   if ehcOptHsChecksInEH @lhs.opts
+                                                        then let nms = assocLKeys $ gamToOnlyDups $ gamTop @decls.patValGam
+                                                             in  if null nms
+                                                                 then []
+                                                                 else [rngLift @range Err_NamesDupIntrod "value" (zip nms (repeat Nothing))]
+                                                        else []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Obligatory type signature
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).sigMissErrs
+SEM Decl
+  | Val         loc         .   sigMissErrs         =   @nmErrs
+%%]
+SEM Decl
+  | Val         loc         .   sigMissErrs         =   if @hasTySig then [] else [rngLift @range Err_MissingSig @patExpr.pp]
+
+%%[(2 hmtyinfer) -1.sigMissErrs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data type, field labels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+SEM Decl
+  | Data        loc         .   inconsistFldErrs    =   let  ft = gamToOnlyDups @constrs.fldSelGam
+                                                             wrong tl = foHasErrs fo
+                                                                      where fo = fitsInFold opts @fe uidStart @lhs.finTyVarMp $ map (tyArrowRes . vgiTy) $ tl
+                                                                            (tlvars,tl') = unzip [ (ftvSet t', t') | t <- tl, let t' = tyArrowRes (vgiTy t) ]
+                                                                            opts = unifyFIOpts { fioDontBind = Set.unions tlvars }
+                                                             nms = [ f | (f,tl) <- ft, wrong tl ]
+                                                        in   if null nms then [] else [rngLift @range Err_InconsistentIntros "data field" nms]
+
+SEM DataConstr
+  | Constr      loc         .   dupErrs             =   let  nms = assocLKeys $ gamToOnlyDups @fields.fldSelGam
+                                                        in   if null nms then [] else [rngLift @range Err_NamesDupIntrod "data field" (zip nms (repeat Nothing))]
+%%]
+
+%%[(7 hmtyinfer)
+SEM Expr
+  | DataFields  loc         .   fldMissErrs         =   case @dataFieldExpr.mbDti of
+                                                          Just dti | not (Set.null m)
+                                                            -> [rngLift @range Err_MissingDataFields (Set.toList m) (dtiConNm dti)]
+                                                            where m = Map.keysSet (dtiFldMp dti) `Set.difference` Set.fromList @fldL
+                                                          _ | null @dtiInFldL -> [rngLift @range Err_MissingAnyDataField @fldL (dgiTyNm @dgi)]
+                                                            | otherwise       -> []
+                            .   fldDupErrs          =   let fs = [ f | (f:_:_) <- group @fldL ]
+                                                        in  if null fs then [] else [rngLift @range Err_DuplicateDataFields fs]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Occur cycles
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer)
+SEM Expr
+  | Let  		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @tyVarMpDeclsL0 $ @cycTyVarMp_l {- `varmpUnion` @cycTyVarMp_g -}
+%%]
+
+%%[(5 hmtyinfer).Expr.TypeAs.cycVarMp
+SEM Expr
+  | TypeAs		loc			.	occCycTyErrs		=	rngLift @range varmpOccurErr @lhs.tyVarMp @cycVarMp
+%%]
+
+%%[(99 hmtyinfer) -5.Expr.TypeAs.cycVarMp
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let  		loc			.	occCycTyKiErrs		=	rngLift @range varmpOccurErr @decls.kiVarMp $ @cycTyKiVarMp_l {- `varmpUnion` @cycTyKiVarMp_g -}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer).checkClNms hs
+checkClNms :: HsNameS -> [Err]
+checkClNms s = if Set.null s then [] else [mkErr_NamesNotIntrod "class" (Set.toList s)]
+%%]
+%%[(99 hmtyinfer) -9.checkClNms hs
+checkClNms :: Range -> HsNameS -> [Err]
+checkClNms r s = if Set.null s then [] else [mkErr_NamesNotIntrod r "class" (Set.toList s)]
+%%]
+
+%%[(99 hmtyinfer) hs
+mkRangedPred :: RangeMp -> Pred -> (Pred,[Range])
+mkRangedPred rm pr = (pr,Map.findWithDefault [] pr rm)
+%%]
+
+%%[(9 hmtyinfer).mkPrvErr hs
+mkPrvErr :: CHRPredOccCnstrMp -> [Err]
+mkPrvErr m
+  = if Map.null m
+    then []
+    else [Err_NotProvenPreds $ map (cpoPr . cnstrPred) $ Map.keys m]
+%%]
+%%[(99 hmtyinfer) -9.mkPrvErr hs
+mkPrvErr :: RangeMp -> Range -> CHRPredOccCnstrMp -> [Err]
+mkPrvErr rm r m
+  = if Map.null m
+    then []
+    else [Err_NotProvenPreds r [ mkRangedPred rm pr | (c,_) <- Map.toList m, let pr = cpoPr (cnstrPred c) ]]
+%%]
+
+%%[(9 hmtyinfer)
+SEM AGItf
+%%[[9
+  | AGItf       loc         .   predNotPrfErrs      =   mkPrvErr @cannotProveCnstrMp
+%%][99
+  | AGItf       loc         .   predNotPrfErrs      =   mkPrvErr @rangeMp emptyRange @cannotProveCnstrMp
+%%]]
+
+SEM Decl
+  | Instance    loc         .   valNoSigErrs        =   let ns = gamKeys (gamTop @decls.patValGam) \\ gamKeys @tySigGam
+                                                        in  if null ns
+                                                            then []
+                                                            else [rngLift @range Err_ValWithoutSig ns]
+%%[[9
+                loc         .   predNotPrfErrs      =   rngLift @range mkPrvErr @cannotProveCnstrMp
+%%][99
+                loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
+%%]]
+  | InstanceIntro
+                loc         .   predErrs            =   if Set.null (ftvSet @prExpr.ty) then [] else [rngLift @range Err_TyHasFreeTVars @prExpr.ty]
+
+SEM PrExpr
+  | Class       loc         .   nmErrs              =   if ehcOptHsChecksInEH @lhs.opts
+                                                        then rngLift @range checkClNms @clMissNmS
+                                                        else []
+
+SEM Expr
+%%[[9
+  | Let         loc         .   predNotPrfErrs      =   rngLift @range mkPrvErr @cannotProveCnstrMp
+%%][99
+  | Let         loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
+%%]]
+                            .   predAmbigErrs       =   let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts @tqoGam
+                                                            amb = [ poPr o | o <- @quantPrOccL, not (poPoi o `Set.member` assumedByQuant) ]
+                                                            mkg = assocLMapElt (ppTy . vgiTy) . gamToAssocL
+                                                        in  if null amb
+                                                            then []
+                                                            else [rngLift @range Err_AmbigPreds
+%%[[9
+                                                                    amb
+%%][99
+                                                                    (map (mkRangedPred @lhs.rangeMp) amb)
+%%]]
+                                                                    (mkg @quValGam_ex_subst) (mkg $ @tyVarMpDeclsL0 |=> @valGam_l_)
+                                                                 ]
+%%]
+
+%%[(12 hmtyinfer)
+SEM Expr
+  | AppImpl LamImpl
+                loc         .   nmErrs              =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(95 hmtyinfer codegen)
+SEM Decl
+  | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
+                                                            hasFlds = any (\t -> ctagArity t > 0)
+                                                        in  case ( Map.lookup @instClsNm @derivMp
+                                                                 , @instVariant
+                                                                 , panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
+                                                                 )
+                                                            of
+                                                              (Nothing,InstDeriving,_)
+                                                                -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
+                                                              (_,InstDeriving,[])
+                                                                -> mke "has no constructors"
+                                                              (_,InstDeriving,ctags)
+                                                                | @instClsNm == ehbnClassEnum (ehcOptBuiltinNames @lhs.opts)
+                                                                  && hasFlds ctags
+                                                                  -> mke "has a constructor with >0 fields"
+                                                              (_,InstDeriving,ctags@(_:_:_))
+                                                                | @instClsNm == ehbnClassBounded (ehcOptBuiltinNames @lhs.opts)
+                                                                  && hasFlds ctags
+                                                                  -> mke "has >1 constructors, of which >0 with fields"
+                                                              _ -> []
+%%]

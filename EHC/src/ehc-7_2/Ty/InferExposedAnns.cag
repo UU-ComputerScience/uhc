@@ -1,0 +1,104 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Infers exposed annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}Ty.InferExposedAnns}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(inferExposedAnns, ExposedAnnEnv, ExposedAnnMap, instantiateAnns, initExposedAnnEnv)
+%%]
+
+
+Infers the set of exposed annotations for each type constructor and collects these
+all in both a map from annotation to such a set, and a set that contains all of the
+annotations that are inferred.
+
+%%[7_2.interface hs
+
+inferExposedAnns :: Set HsName -> Set AnnDtMonoRestrict -> ExposedAnnEnv -> ExposedAnnEnv -> HsName -> Ty -> UID -> (ExposedAnnMap, Annotations Ty, UID)
+inferExposedAnns datasInBndg monos exposedEnvPass1 exposedEnvPass2 nmFrom ty uid
+  = let inh = Inh_TyAGItf { datasInBindingGroup_Inh_TyAGItf = datasInBndg
+                          , monos_Inh_TyAGItf               = monos
+                          , exposedEnvPass1_Inh_TyAGItf     = exposedEnvPass1
+                          , exposedEnvPass2_Inh_TyAGItf     = exposedEnvPass2
+                          , nmFrom_Inh_TyAGItf              = nmFrom
+                          , annUID_Inh_TyAGItf              = uid
+                          }
+        syn = wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) inh
+     in (annMap_Syn_TyAGItf syn, allAnns_Syn_TyAGItf syn, annUID_Syn_TyAGItf syn)
+%%]
+
+
+%%[7_2.util hs
+
+type ExposedAnnEnv = Map HsName (Annotations Ty)
+type ExposedAnnMap = Map (Annotation Ty) (Annotations Ty)
+
+instantiateAnns :: UID -> Annotations Ty -> (Annotations Ty, UID)
+instantiateAnns annUID anns
+  = let (anns2, annUID2) = threadMap inst annUID (Set.toList anns)
+        inst a annUID = let (annUID', annId) = mkNewUID annUID in (Annotation annId (Just a) Nothing, annUID')
+     in (Set.fromList anns2, annUID2)
+
+initExposedAnnEnv :: ExposedAnnEnv
+initExposedAnnEnv
+  = Map.fromList $ map (\n -> (n, Set.empty))
+                 $ [ hsnArrow, hsnInt, hsnChar, hsnUnknown, hsnRow, hsnRec, hsnSum, hsnRowEmpty ]
+
+isAnnDtMonoRestricted :: HsName -> HsName -> Set AnnDtMonoRestrict -> Bool
+isAnnDtMonoRestricted nmTo nmFrom s
+  = AnnDtMonoRestrict_Global nmTo `Set.member` s || AnnDtMonoRestrict_Local nmFrom nmTo `Set.member` s
+
+%%]
+
+
+All we in essence do here is fetch the annotations for the type constructor from the environment, if the
+type constructor is supposed to be monomorphic (either because an restriction or because it's in the same
+binding-group), we take the total set of annotations of the entire binding-group (from environment pass 2),
+otherwise we create a fresh copy of the annotations and return those.
+
+Of course, we have to add the current annotations on the data type as well, and keep the administration
+up to date, as in: associating which set belongs to which annotation on a type constructor.
+
+%%[7_2
+
+WRAPPER TyAGItf
+
+ATTR TyAGItf TyAGItf -> Ty [ datasInBindingGroup : {Set HsName} monos : {Set AnnDtMonoRestrict}
+                             exposedEnvPass1, exposedEnvPass2 : ExposedAnnEnv nmFrom : HsName                             
+                           | annUID : UID
+                           | annMap USE {`Map.union`} {Map.empty} : ExposedAnnMap anns, allAnns USE {`Set.union`} {Set.empty} : {Annotations Ty}
+                           ]
+
+SEM Ty
+  | Ann  loc.conExposedAnns = Set.map (\a -> a { annOnRefTp = Just @ann }) @ty.anns
+         lhs.allAnns = if @ty.isConDirectlyBelow && not (@ty.isConMono)
+                       then Set.insert @ann @ty.allAnns
+                       else @ty.allAnns
+         lhs.anns    = Set.empty
+         lhs.annMap  = Map.insert @ann @loc.conExposedAnns @ty.annMap
+  | Con  loc.isMono  = @nm `Set.member` @lhs.datasInBindingGroup || isAnnDtMonoRestricted @lhs.nmFrom @nm @lhs.monos
+         (loc.anns, lhs.annUID) = if @loc.isMono
+                                  then (Map.findWithDefault (error ("inferExposedAnns: Not in environment (pass 2): " ++ show @nm)) @nm @lhs.exposedEnvPass2, @lhs.annUID)
+                                  else instantiateAnns @lhs.annUID (Map.findWithDefault (error ("inferExposedAnns: Not in environment (pass 1): " ++ show @nm)) @nm @lhs.exposedEnvPass1)
+         lhs.allAnns = if @loc.isMono 
+                       then Set.empty
+                       else @loc.anns
+
+ATTR Ty [|| isConDirectlyBelow USE {&&} {False} : Bool ]
+SEM Ty
+  | Con  lhs.isConDirectlyBelow = True
+
+ATTR Ty [|| isConMono : Bool ]
+SEM Ty
+  | Con      lhs.isConMono = @loc.isMono
+  | Any Var  lhs.isConMono = False
+  | App      lhs.isConMono = False
+
+%%]

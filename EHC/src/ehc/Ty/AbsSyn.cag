@@ -1,0 +1,209 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+The AST for types is split over two files:
+\begin{itemize}
+\item AbsSynCore contains the core,
+\item AbsSynInfer contains the additional part required for type inference.
+\end{itemize}
+%%]
+
+%%[(9 hmtyinfer || hmtyast) haddock
+There are some conventions/restrictions on the structure of types that are not enforced
+by the abstract syntax:
+
+Encoding of prove-constraints:
+  concrete syntax:
+    {! impls !} -> ty
+  abstract syntax:
+    Ty_App (Ty_App (Ty_Con "->") (Ty_Impls impls)) ty
+
+Encoding of assume-constraints:
+  concrete syntax:
+    (ty, {! pred1 !}, ..., {! predn !})
+  abstract syntax:
+    Ty_Ext (... (Ty_Ext ty (prod m+1) (Ty_Pred pred_1) ) ...) (prod m+n) (Ty_Pred pred_n)
+  
+  In other words: the predicates are at the outset of a product, pred_n "more outermost"
+  than pred_{n-1}.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast).TyAGItf
+DATA TyAGItf
+  | AGItf       ty              : Ty
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+DATA LabelAGItf
+  | AGItf       lab            	: Label
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast) ag import({Ty/AbsSynCore},{Ty/AbsSynInfer})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Experimental stuff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4_2 hmtyinfer || hmtyast).TyBoth
+DATA Ty
+  | Both        tv              : {TyVarId}
+                tyL             : TyL
+
+TYPE TyL        =   [Ty]
+%%]
+
+%%[(4_2 hmtyinfer || hmtyast).TyAlts
+DATA Ty
+  | Alts        tv              : {TyVarId}
+                tyL             : TyPlusL
+%%]
+
+%%[(6_4 hmtyinfer || hmtyast)
+DATA TyVarCateg
+  | Exist
+%%]
+
+Adds an annotation to the type expression. The annotation can be added at any
+place, though typical places of an annotation are just above a type variable
+and type constructor.
+
+Normal type inference doesn't add these annotations. We infuse these annotations
+to a Ty, after type inference has been performed. We've added the annotations
+in such a way that a computation on a Ty that does not need annotations, can
+just behave as if they do not exist and let copy-rules do the remainder.
+
+%%[(7_2 hmtyinfer || hmtyast).annotation
+DATA Ty
+  | Ann         ann             : {Annotation Ty}
+                ty              : Ty
+%%]
+
+Type constructors are special in our case. It is either an expanded type
+constructor, exposing the contents of the data type it represents, or a
+truncated one, hiding the contents. Expansions means that a data type is
+unfolded given it's type arguments. Expansion should be tightly controlled,
+because it could lead easily to enourmous types, or not terminate.
+
+Note: We will not expand a data type without constructors. It is useless
+      since basic annotation works already for that.
+
+%%[(7_2 hmtyinfer || hmtyast).annotationExp
+DATA Ty
+  | ExpTyCon    constrs         : TyExpConstrs
+                args            : {[TyVarId]}
+                ty              : Ty
+    
+  | TruncTyCon  anns            : {Annotations Ty}
+                ty              : Ty
+
+TYPE TyExpConstrs = [TyExpConstr]
+
+DATA TyExpConstr
+  | Constr      nm              : {HsName}
+                fields          : TyExpFields
+
+TYPE TyExpFields = [TyExpField]
+
+DATA TyExpField
+  | Field       ty              : Ty
+%%]
+
+%%[(50 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Equal       tv              : {TyVarId}
+                ty              : Ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type plus additional info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4_2 hmtyinfer || hmtyast).TyPlus
+DATA TyPlus
+  | Ty          ty              : Ty
+                hardness        : {TyHardness}
+                offering        : {TyNeed}
+%%]
+
+%%[(9_1 hmtyinfer || hmtyast).TyPlus -4_1.TyPlus
+DATA TyPlus
+  | Ty          ty              : Ty
+                plv             : {TyPlusId}
+%%]
+
+%%[(4_2 hmtyinfer || hmtyast).TyPlusL
+TYPE TyPlusL    =   [TyPlus]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SET's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast)
+SET AllTyTy
+  = Ty
+%%[[4_2
+    TyL TyPlus TyPlusL
+%%]]
+%%[[7_2
+    TyExpConstrs TyExpConstr TyExpFields TyExpField
+%%]]
+%%]
+
+%%[(1 hmtyinfer || hmtyast)
+SET AllTy
+  = AllTyTy
+%%[[9
+    Pred Impls
+%%]]
+%%[[10
+%%]]
+%%[[13
+    PredSeq
+%%]]
+%%]
+    RowExts
+
+%%[(1 hmtyinfer || hmtyast)
+SET AllTyAndFlds
+  = AllTy
+    TyAnn
+%%[[3
+    TyVarCateg
+%%]]
+%%[[4
+    TyQu
+%%]]
+%%[[10
+    Label
+%%]]
+%%]
+
+%%[(1 hmtyinfer || hmtyast)
+SET AllTyAGItf
+  = TyAGItf
+%%[[10
+    LabelAGItf
+%%]]
+%%]
+

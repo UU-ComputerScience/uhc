@@ -1,0 +1,38 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Silly
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin) hs module {%{EH}Silly} import ({%{EH}GrinCode.Common} hiding (Variable(..)))
+%%]
+%%[(8 codegen grin) hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Values )
+%%]
+%%[(8 codegen grin) hs export(SillyAllocManageType(..))
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+
+%%[(8 codegen grin) ag import({Silly/AbsSyn})
+DERIVING * : Show , Eq
+%%]
+
+%%[(8 codegen grin) hs
+
+instance Show (Int -> [Value])
+ where show x = "(Function)"
+
+instance Eq (Int -> [Value])
+ where  x==y = False
+%%]
+
+%%[(8 codegen grin) hs
+data SillyAllocManageType
+  = NotManaged
+  | GCManaged
+  deriving( Eq, Show, Ord )  
+%%]

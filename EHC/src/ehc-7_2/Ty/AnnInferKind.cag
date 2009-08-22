@@ -1,0 +1,92 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Perform kind inference on an annotated reference type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}Ty.AnnInferKind}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 hs import({%{EH}VarMp}, {%{EH}Ty.Trf.Subst}, {%{EH}Substitutable}, {%{EH}Ty.FitsIn}, {%{EH}Ty.FitsInCommon}, {%{EH}Base.Opts}, {%{EH}Gam})
+%%]
+
+%%[7_2 hs import(Debug.Trace)
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(inferAnnKindMap, AnnKindMap)
+%%]
+
+Performs kind inference on a Ty. We assume that the type inference process provided
+Ty's with a valid kind such that no fitting errors can occur. The kind of a type
+constructor or type variable can be obtained by taking the attached annotation
+and use it as key in the map.
+
+Requires that kind inference on data type has already taken place. Any quantified
+kind variable and the end of kind inference is defaulted to kind star.
+
+
+%%[7_2.interface hs
+
+type AnnKindMap = Map (Annotation Ty) Ty  -- values are kinds
+
+inferAnnKindMap :: TyGam -> Map TyVarId Ty -> Ty -> UID -> (AnnKindMap, UID)
+inferAnnKindMap kindEnv kindOverruleMap ty uid
+  = let itf = TyAGItf_AGItf ty
+        inh = Inh_TyAGItf { kindEnv_Inh_TyAGItf = kindEnv, kindOverruleMap_Inh_TyAGItf = kindOverruleMap, uid_Inh_TyAGItf = uid }
+        syn = wrap_TyAGItf (sem_TyAGItf itf) inh
+     in (annKindMap_Syn_TyAGItf syn, uid_Syn_TyAGItf syn)
+
+%%]
+
+
+Performs kind inference using the standard instantiation/fitting as is als used
+when performing kind inference on tyExprs.
+
+%%[7_2
+
+WRAPPER TyAGItf
+
+ATTR TyAGItf Ty Ty -> Ty [ kindEnv : TyGam kindOverruleMap : {Map TyVarId Ty} | uid : UID | annKindMap USE {`Map.union`} {Map.empty} : AnnKindMap ]
+
+ATTR Ty Ty -> Ty [ cnstrFinal : VarMp | cnstr : VarMp | kind USE {`const`} {error "EHTyAnnInferKind: asked kind of unsupported nonterminal"} : Ty ]
+SEM TyAGItf
+  | AGItf  ty.cnstr      = emptyVarMp
+           ty.cnstrFinal = @ty.cnstr
+
+SEM Ty
+  | Con    loc.kind = tgiKi (maybe (error ("annInferKind: No kind recorded in tyGam environment for type constructor: " ++ show @nm ++ " | " ++ show @lhs.kindEnv))
+                                   id (tyGamLookup @nm @lhs.kindEnv))
+  | Var    loc.kind = Map.findWithDefault kiStar @tv @lhs.kindOverruleMap
+
+  | Any    (lhs.uid, loc.uid) = mkNewUID @lhs.uid
+           loc.kind           = mkTyVar @loc.uid
+           
+  | App    (func.uid, loc.uid1) = mkNewUID @lhs.uid
+           loc.resKind          = mkTyVar @loc.uid1
+           loc.funKind          = @arg.kind `mk1Arrow` @loc.resKind
+           loc.fo               = fitsIn weakFIOpts emptyFE @arg.uid @loc.funKind @func.kind
+           loc.cnstr1           = @arg.cnstr `varmpPlus` foVarMp @loc.fo
+           lhs.cnstr            = @loc.cnstr1
+           lhs.kind             = @loc.cnstr1 |=> @loc.resKind
+           lhs.uid              = foUniq @loc.fo
+  
+  | Ext    lhs.kind             = @ty.kind
+
+ATTR Ty Ty -> Ty [ ann : {Annotation Ty} ||]
+SEM TyAGItf
+  | AGItf  ty.ann = error "Not annotated."
+SEM Ty
+  | Ann    ty.ann = @ann
+
+SEM Ty
+  | Con Any
+           loc.kFnl       = @lhs.cnstrFinal |=> @loc.kind
+           lhs.annKindMap = Map.singleton @lhs.ann @loc.kFnl
+
+  | Var    lhs.annKindMap = Map.singleton @lhs.ann @loc.kind
+
+%%]

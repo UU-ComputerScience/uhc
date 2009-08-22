@@ -1,0 +1,86 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Strip
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Strip, meant for debugging only, replaces references to retained values
+(from previous passes) with dummy values
+
+%%[(102 codegen) hs module {%{EH}Core.Trf.Strip} 
+%%]
+
+%%[(102 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfStrip)
+%%]
+
+%%[(102 codegen) hs import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval},{%{EH}Core.Trf.ForceEval})
+%%]
+
+%%[(102 codegen).WRAPPER ag import({Core/AbsSyn})
+WRAPPER CodeAGItf
+%%]
+
+%%[(102 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(102 codegen) hs
+cmodTrfStrip :: CModule -> CModule
+cmodTrfStrip cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(102 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CModule
+  | Mod			lhs			.	cTrf		=	CModule_Mod hsnUnknown @expr.cTrf []
+
+SEM CExpr
+  | Lam			lhs			.	cTrf		=	CExpr_Lam hsnUnknown @argMeta.cTrf @body.cTrf
+  | Var			lhs			.	cTrf		=	CExpr_Var hsnUnknown
+  | Int			lhs			.	cTrf		=	CExpr_Int 1
+  | Integer		lhs			.	cTrf		=	CExpr_Integer 1
+  | Char		lhs			.	cTrf		=	CExpr_Char 'c'
+  | String		lhs			.	cTrf		=	CExpr_String ""
+  | TupDel		lhs			.	cTrf		=	CExpr_TupDel @expr.cTrf emptyCTag hsnUnknown @offset.cTrf
+  | TupIns		lhs			.	cTrf		=	CExpr_TupIns @expr.cTrf emptyCTag hsnUnknown @offset.cTrf @fldExpr.cTrf
+  | TupUpd		lhs			.	cTrf		=	CExpr_TupUpd @expr.cTrf emptyCTag hsnUnknown @offset.cTrf @fldExpr.cTrf
+  | CaseAltFail	lhs			.	cTrf		=	CExpr_CaseAltFail uidStart @errorExpr.cTrf
+  | Hole		lhs			.	cTrf		=	CExpr_Hole uidStart
+  | HoleLet		lhs			.	cTrf		=	CExpr_HoleLet uidStart @body.cTrf
+  | ImplsLam	lhs			.	cTrf		=	CExpr_ImplsLam uidStart @body.cTrf
+  | ImplsApp	lhs			.	cTrf		=	CExpr_ImplsApp @func.cTrf uidStart
+
+SEM CPatRest
+  | Var			lhs			.	cTrf		=	CPatRest_Var hsnUnknown
+
+SEM CPat
+  | Var			lhs			.	cTrf		=	CPat_Var hsnUnknown
+  | Con			lhs			.	cTrf		=	CPat_Con hsnUnknown emptyCTag @rest.cTrf @binds.cTrf
+  | Int			lhs			.	cTrf		=	CPat_Int hsnUnknown 1
+  | Char		lhs			.	cTrf		=	CPat_Char hsnUnknown 'c'
+  | BoolExpr	lhs			.	cTrf		=	CPat_BoolExpr hsnUnknown (CExpr_Int 1)
+
+SEM CPatBind
+  | Bind		lhs			.	cTrf		=	CPatBind_Bind hsnUnknown @offset.cTrf hsnUnknown @pat.cTrf
+
+SEM CBind
+  | Bind		lhs			.	cTrf		=	CBind_Bind hsnUnknown @bindMeta.cTrf @expr.cTrf
+  | FFI 		lhs			.	cTrf		=	CBind_FFI "" "" "" hsnUnknown Ty_Any
+  | FFE 		lhs			.	cTrf		=	CBind_FFE hsnUnknown "" @expEnt hsnUnknown Ty_Any
+%%]
+

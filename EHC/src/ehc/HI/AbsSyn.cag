@@ -1,0 +1,91 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AST for HI (Haskell Interface) of modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+DATA AGItf
+    | AGItf
+        module                  : Module
+%%]
+
+%%[20
+DATA Module
+    | Module
+        nm                      : HsName
+        bindings                : Bindings
+%%]
+
+%%[20
+DATA Binding
+    | Settings
+        hasMain					: Bool
+    | Stamp
+        srcTimestamp            : String
+        srcSig                  : String
+        srcVersionMajor         : String
+        srcVersionMinor         : String
+        srcVersionMinorMinor    : String
+        srcVersionSvn           : String
+        compileFlags            : String
+        hash                    : Integer
+    | ImportModules
+        asDeclared              : {[HsName]}
+        asUsed                  : {[HsName]}
+    | Export
+        visible                 : {Visible}
+        exports                 : ModEntRel
+    | Fixity
+        nm                      : HsName
+        prio                    : Int
+        fixity                  : Fixity
+    | Ids
+        idOccs                  : {[(IdOcc,IdOcc)]}
+%%[[(20 hmtyinfer)
+    | Val
+        nm                      : HsName
+        ty                      : Ty
+    | DataCon
+        nm                      : HsName
+        ty                      : Ty
+        tags                    : {[(HsName,(CTag,[(HsName,Int)]))]}
+%%[[20
+        isNewtype               : Bool
+%%][94
+        mbNewtype               : {Maybe Ty}
+%%]]
+    | Ty
+        nm                      : HsName
+        ty                      : Ty
+    | TyKinds
+        tyKinds                 : {AssocL TyKiKey Ty}
+    | TyPolarities
+        tyPolarities            : {AssocL HsName Ty}
+    | Class
+        nm                      : HsName
+        prToEvidTy              : Ty
+        ruleTy                  : Ty
+        nmEvid                  : HsName
+    | CHRStore
+        chrs					: {[ScopedPredCHR]}
+%%]]
+%%[[(20 codegen)
+    | Arities
+        idArities               : {AssocL HsName Int}
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        inlMp                   : {AssocL HsName ([HsName],GrExpr)}
+%%]]
+%%]
+
+%%[20
+TYPE Bindings                   = [ Binding ]
+
+SET AllBinding
+  = Binding Bindings
+%%]
+
+%%[20
+SET AllNT
+  = AllBinding Module
+%%]

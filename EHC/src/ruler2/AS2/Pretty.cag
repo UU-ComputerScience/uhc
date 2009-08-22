@@ -1,0 +1,217 @@
+-------------------------------------------------------------------------
+-- Pretty printing of ruler AST2
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAS2 AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM Decls
+  | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
+
+SEM RlDecls
+  | Cons            lhs     .   pp          =   @hd.pp >-< "" >-< @tl.pp
+%%]
+
+-------------------------------------------------------------------------
+-- Configuration
+-------------------------------------------------------------------------
+
+%%[1 hs
+data PPCfg
+  = PPCfg
+      { pcDef       ::  Nm
+      , pcUse       ::  Nm
+      , pcFigEnv    ::  Nm
+      , pcRule      ::  Nm
+      }
+
+mkPPCfg :: Opts -> FmGam Expr -> PPCfg
+mkPPCfg o g
+  = PPCfg
+      { pcDef       =   c "rulerCmdDef"
+      , pcUse       =   c "rulerCmdUse"
+      , pcFigEnv    =   c "rulerRulesetFigureEnv"
+      , pcRule      =   c "rulerRuleCmd"
+      }
+  where c = fmNmFmtCmd o g . Nm
+%%]
+
+%%[1 ag
+ATTR AllAS2 [ ppCfg: PPCfg | | ]
+
+SEM AGItf
+  | AGItf           decls   .   ppCfg       =   mkPPCfg @lhs.opts @lhs.fmGam
+%%]
+
+-------------------------------------------------------------------------
+-- Chunks
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @rl.pp
+
+SEM Decl
+  | Chunk           lhs     .   pp          =   ppWrapShuffle @nm @decl.pp
+%%]
+
+-------------------------------------------------------------------------
+-- General: ruleset
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | Rl              lhs     .   pp          =   @nm >#< ppBracketsCommas [pp @pos,pp @agStr]
+                                                >-< indent 2 (@preJds.pp >-< "---" >-< @postJds.pp)
+
+SEM Jd
+  | Ats             lhs     .   pp          =   @nm >#< ppParens (pp @scNm) >|< ":" >#< @ats.pp
+
+SEM JdAt
+  | At              lhs     .   pp          =   @nm >#< "=" >#< @expr.pp
+%%]
+
+-------------------------------------------------------------------------
+-- AG specific: ATTR decls
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM AttrAGDecl
+  | Attr            lhs     .   pp          =   let mka g = ppListSep "" "" "  " [ n >|< ":" >#< t | (n,t) <- g ]
+                                                in  "ATTR" >#< @ndNm
+                                                    >#< ppBrackets (mka @inhAts >#< "|" >#< mka @inhsynAts >#< "|" >#< mka @synAts)
+%%]
+
+-------------------------------------------------------------------------
+-- AG/HS specific: DATA decls
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM DataAGDecl
+  | Data            lhs     .   pp          =   case optGenFM @lhs.opts of
+                                                  FmAG -> "DATA" >#< @nmStr >-< indent 2 @alts.pp
+                                                  FmHS -> "data" >#< @nmStr >-< indent 2 @alts.ppHS
+                                                  _    -> empty
+
+SEM DataAGAlt
+  | Alt             lhs     .   pp          =   "|" >#< strPad @nmStr @lhs.mxAltWd >|< @flds.pp
+
+SEM DataAGFld
+  | Fld             lhs     .   pp          =   strPad @nmStr @lhs.mxFldWd >|< ":" >#< (if @tyIsData then id else ppCurlys) (pp @ty)
+
+ATTR AllDtAlt AllDtFld [ mxFldWd: Int | | gathMxFldWd USE {`max`} {0} : Int ] 
+ATTR AllDtAlt  [ mxAltWd: Int | | gathMxAltWd USE {`max`} {0} : Int ]
+
+SEM DataAGDecl
+  | Data            alts    .   mxAltWd     =   @alts.gathMxAltWd + atLhs2texDist
+                            .   mxFldWd     =   @alts.gathMxFldWd + atLhs2texDist
+
+SEM DataAGDecl
+  | Data            loc     .   nmStr       =   show @ndNm
+
+SEM DataAGAlt
+  | Alt             loc     .   nmStr       =   @lhs.mkAltStr $ show $ @nm
+                    lhs     .   gathMxAltWd =   length @nmStr
+
+SEM DataAGFld
+  | Fld             loc     .   nmStr       =   @lhs.mkFldStr $ show $ @nm
+                    lhs     .   gathMxFldWd =   length @nmStr
+
+ATTR AllDtAlt [ mkAltStr: {String -> String} | | ] 
+ATTR AllDtFld [ mkFldStr: {String -> String} | | ] 
+
+SEM DataAGDecl
+  | Data            loc     .   mkAltStr    =   case optGenFM @lhs.opts of
+                                                  FmAG -> id
+                                                  FmHS -> \n -> @nmStr ++ "_" ++ n
+
+SEM DataAGAlt
+  | Alt             loc     .   mkFldStr    =   case optGenFM @lhs.opts of
+                                                  FmAG -> id
+                                                  FmHS -> \n -> n ++ "_" ++ @nmStr
+%%]
+
+-------------------------------------------------------------------------
+-- HS specific: DATA decls, building on AG info
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM DataAGAlt
+  | Alt             lhs     .   ppHS        =   (if @lhs.isFirstAlt then "=" else "|") >#< strPad @nmStr @lhs.mxAltWd >|< (@flds.ppHS >-< "}")
+
+SEM DataAGFld
+  | Fld             lhs     .   ppHS        =   (if @lhs.isFirstFld then "{" else ",") >#< strPad @nmStr @lhs.mxFldWd >|< "::" >#< pp @ty
+
+ATTR AllDtAlt AllDtFld [ | | ppHS USE {>-<} {empty}: PP_Doc ]
+ATTR AllDtAlt [ isFirstAlt: Bool | | ]
+ATTR AllDtFld [ isFirstFld: Bool | | ]
+
+SEM DataAGDecl
+  | Data            alts    .   isFirstAlt  =   True
+
+SEM DataAGAlts
+  | Cons            tl      .   isFirstAlt  =   False
+
+SEM DataAGAlt
+  | Alt             flds    .   isFirstFld  =   True
+
+SEM DataAGFlds
+  | Cons            tl      .   isFirstFld  =   False
+%%]
+
+-------------------------------------------------------------------------
+-- LaTeX specific: ruleset
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | LTX             lhs     .   pp          =   let r = "\\" >|< (pcRule @lhs.ppCfg) >|< ppCurly @rlNm >|< ppCurly @vwNm
+                                                        >-< ppListSepVV "{%" "}" "\\\\" @preJds.ppL
+                                                        >-< ppListSepVV "{%" "}" "\\\\" @postJds.ppL
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @nm r
+  | LTXAlias        lhs     .   pp          =   mkTexCmdDef (pcDef @lhs.ppCfg) @fullAliasNm (mkTexCmdUse (pcUse @lhs.ppCfg) @fullNm)
+
+SEM VwDecl
+  | LTX             lhs     .   pp          =   let meta = ensureTeXMath $ switchLaTeXLhs $ exprFmtTeX @lhs.opts @lhs.fmGam @scmExpr.self
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @scMetaNm meta >-< @rlDecls.pp
+  | LTXFig          lhs     .   pp          =   let fig = "\\begin" >|< ppCurly (pcFigEnv @lhs.ppCfg) >|< ppCurly (mkTexCmdUse (pcUse @lhs.ppCfg) @scMetaNm) >|< ppCurly (pp @descr) >|< ppCurly @fullNm >|< (ppCurly @nm)
+                                                          >-< vlist (intersperse (pp "\\hspace{1ex}") . map (mkTexCmdUse (pcUse @lhs.ppCfg)) $ @rlFullNmL)
+                                                          >-< "\\end" >|< ppCurly (pcFigEnv @lhs.ppCfg)
+                                                in  mkTexCmdDef (pcDef @lhs.ppCfg) @fullNm fig
+
+SEM Jd
+  | LTX             lhs     .   pp          =   switchLaTeXLhs (exprFmtTeX @lhs.opts @lhs.fmGam @expr.self)
+
+ATTR Jds [ | | ppL: {[PP_Doc]} ]
+
+SEM Jds
+  | Nil             lhs     .   ppL         =   []
+  | Cons            lhs     .   ppL         =   if @hd.isSmall && not (null @tl.ppL)
+                                                then (@hd.pp >#< "\\hspace{2ex}" >#< head @tl.ppL) : (tail @tl.ppL)
+                                                else @hd.pp : @tl.ppL
+  
+ATTR Jd [ | | isSmall : Bool ]
+SEM Jd
+  | Expr LTX  lhs.isSmall = @isSmall
+  | Ats       lhs.isSmall = False
+
+%%]
+
+-------------------------------------------------------------------------
+-- Preamble
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM Decl
+  | Preamble        lhs     .   pp          =   pp @preamble
+%%]
+
+-------------------------------------------------------------------------
+-- Explain
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM Decl
+  | ScVwExplain     lhs     .   pp          =   exprFmtTeX @lhs.opts @lhs.fmGam @exExpr
+  | ScVwAtExplain   lhs     .   pp          =   vlist $ map (\(n,e) -> exprFmtTeX @lhs.opts @lhs.fmGam n >#< "&" >#< exprFmtTeX @lhs.opts @lhs.fmGam e >#< "\\\\") $ @atExprs
+%%]

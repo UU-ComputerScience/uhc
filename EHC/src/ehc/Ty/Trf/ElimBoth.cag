@@ -1,0 +1,67 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to eliminate 'Both' types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2 hs module {%{EH}Ty.Trf.ElimBoth} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyElimBoth)
+%%]
+
+%%[4_2.WRAPPER ag import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[4_2 hs
+tyElimBoth :: TyVarIdL -> Ty -> (Ty,VarMp)
+tyElimBoth elimTvL ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {elimTvL_Inh_TyAGItf = elimTvL})
+     in   (repl_Syn_TyAGItf t,cnstr_Syn_TyAGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tvars to eliminate
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTyAndFlds TyAGItf [ elimTvL: TyVarIdL | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+
+SEM Ty
+  | Both            loc     .   replTv      =   mkTyVar @tv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unification of all binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTyAndFlds [ | | replExpose: SELF  ]
+ATTR AllTy [ | cnstr: VarMp | ]
+ATTR TyAGItf  [ | | cnstr: VarMp ]
+
+SEM Ty
+  | Both            lhs     .   (replExpose,cnstr)
+                                            =   if @tv `elem` @lhs.elimTvL
+                                                then  case @tyL.replExpose of
+                                                        []      ->  (@replTv,@lhs.cnstr)
+                                                        (r:_)   ->  let  (r',c) = @tv `varmpTyRevUnit` r
+                                                                    in   (r',c |=> @tyL.cnstr)
+                                                else  (Ty_Both @tv @tyL.replExpose,@tyL.cnstr)
+                            .   repl        =   if @tv `elem` @lhs.elimTvL then @replTv else @repl
+
+SEM TyAGItf
+  | AGItf           ty      .   cnstr       =   emptyVarMp
+%%]

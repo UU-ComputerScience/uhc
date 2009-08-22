@@ -1,0 +1,328 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to GRIN code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin},{%{EH}Base.Builtin2}, {%{EH}Base.BasicAnnot}) export(module {%{EH}Base.BasicAnnot})
+%%]
+
+%%[(8 codegen grin) hs export(GrExpr(..), GrBind(..), GrBindL, GrGlobal(..), GrGlobalL)
+%%]
+
+%%[(8 codegen grin) hs export(GrAGItf(..), GrModule(..))
+%%]
+
+%%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
+%%]
+
+%%[(10 codegen grin) hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
+%%]
+
+%%[(10 codegen grin) hs export(GrNodeAdapt(..))
+%%]
+
+%%[(8 codegen grin) hs export(mkGrBox,mkGrRecNode,mkGrConNode)
+%%]
+
+%%[(8 codegen grin) hs export(mkGrPatRecNode,mkGrPatConNode,mkGrUnbox,mkGrUnboxFFI)
+%%]
+
+%%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
+%%]
+
+%%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
+%%]
+
+%%[(99 codegen grin) hs export(GrFFIAnnot(..))
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+DERIVING * - GrTag    : Show, Eq
+DERIVING GrTag        : Show
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Special names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(grBuiltinTyNmL)
+grBuiltinTyNmL :: EHCOpts -> [HsName]
+grBuiltinTyNmL opts = builtinKnownGrinBoxedTyNmL opts ++ builtinKnownRecTyNmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tag categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Tag annotation
+
+%%[(8 codegen grin) hs export(GrTagAnn(..),mkGrTagAnn,emptyGrTagAnn)
+data GrTagAnn
+  = GrTagAnn
+      { gtannArity 		:: !Int
+      , gtannMaxArity 	:: !Int
+      }
+
+instance Eq GrTag where
+  GrTag_Con _ _ x1 == GrTag_Con _ _ x2 = x1==x2
+  GrTag_Fun     x1 == GrTag_Fun     x2 = x1==x2
+  GrTag_App     x1 == GrTag_App     x2 = x1==x2
+  GrTag_PApp n1 x1 == GrTag_PApp n2 x2 = n1==n2 && x1==x2
+  GrTag_Unboxed    == GrTag_Unboxed    = True
+  GrTag_Hole       == GrTag_Hole       = True
+  GrTag_Rec        == GrTag_Rec        = True
+  _                == _                = False
+  
+
+
+instance Eq GrTagAnn where
+  x == y = True
+
+instance Ord GrTagAnn where
+  x `compare` y = EQ
+
+instance Show GrTagAnn where
+  show (GrTagAnn a ma) = "{" ++ show a ++ "," ++ show ma ++ "}"
+
+mkGrTagAnn :: Int -> Int -> GrTagAnn
+mkGrTagAnn = GrTagAnn
+
+emptyGrTagAnn = mkGrTagAnn 0 0
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin) hs export(GrBindAnn(..))
+
+-- Annotation for Grin Bindings
+--   Normal:  normal binding
+--   Class:    binds a dictionary with default definitions for al class
+--      The list entries correspond 1-to-1 with the class members
+--      They contain "Just" the name of the default implementation, or "Nothing" if there is none.
+--      Note that the dictionary may also contain superclass pointers, but they are not recorded in the annotation.
+--   Instance: binds a dictionary with definitions form an instance declaration
+--      The first element of the list is Just the name of the dictionary constructor.
+--      The second element of the list is Just the name of the dictionary containing the default definitions.
+--      The remaining list entries correspond 1-to-1 with the class members
+--      They contain "Just" the name of the instance implementation, or "Nothing" if it relies on the default implementation.
+--   Overloaded: binds a function with dictionary parameters
+--      The numbers specify which dictionaries are needed:
+--            [-1] if the dictionary of which the function is a member is needed
+--            [0]  if the first superclass is needed (for example, the Eq dictionary for a member of Ord)
+--            [1]  if the second superclass is needed, etc.
+--            [2,1] if the third superclass of the second superclass is needed
+
+data GrBindAnn
+  = GrBindAnnNormal
+  | GrBindAnnClass    [Maybe HsName]
+  | GrBindAnnInstance [Maybe HsName]
+  | GrBindAnnOverloaded [[Int]]
+  | GrBindAnnSpecialized HsName Int [Maybe HsName]
+  deriving (Eq,Ord,Show)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alternative categories
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin) hs export(GrAltAnn(..))
+
+-- Annotation for Grin Alternatives
+--   Normal:  this alternative has classic semantics
+--   Ident:   this alternative just returns the scrutinee, but has classic semantics
+--   Calling: the alternative calls a function
+--   Reenter: this alternative returns a value which has to be scrutinized again against the other alternatives
+
+data GrAltAnn
+  = GrAltAnnNormal
+  | GrAltAnnIdent
+  | GrAltAnnCalling Int HsName
+  | GrAltAnnReenter
+  deriving (Eq,Ord,Show)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen grin) hs export(grFFIAnnotIsResEvaluated)
+grFFIAnnotIsResEvaluated :: GrFFIAnnot -> Bool
+grFFIAnnotIsResEvaluated (GrFFIAnnot_IsResEval b) = b
+-- comment away when GrFFIAnnot is extended, for this avoid ghc warnings
+-- grFFIAnnotIsResEvaluated _                        = True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var info used for (e.g.) inlining for GrinByteCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(FvInfo(..),FvUse(..),FvInfoMp)
+data FvUse
+  = FvUse_Call | FvUse_Val | FvUse_Other
+  deriving (Eq,Ord,Show)
+
+data FvInfo
+  = FvInfo
+      { fviUseCount		:: !Int
+      , fviUseAs 		:: !(Set.Set FvUse)
+      }
+  deriving (Show)
+
+type FvInfoMp = Map.Map HsName FvInfo
+%%]
+
+%%[(8 codegen grin) hs export(fviMpUnion,fviMpSingleton,fviMpSingleton',fviMpUnions,fviMpFromList,fviMpFromList',fviMpDifference)
+fviMpDifference :: FvInfoMp -> FvInfoMp -> FvInfoMp
+fviMpDifference = Map.difference
+
+fviMpUnion :: FvInfoMp -> FvInfoMp -> FvInfoMp
+fviMpUnion = Map.unionWith (\i1 i2 -> i1 {fviUseCount = fviUseCount i1 + fviUseCount i2, fviUseAs = Set.unions [fviUseAs i1,fviUseAs i2]})
+
+fviMpUnions :: [FvInfoMp] -> FvInfoMp
+fviMpUnions = foldr fviMpUnion Map.empty
+
+fviMpSingleton' :: FvUse -> HsName -> FvInfoMp
+fviMpSingleton' u n = Map.singleton n (FvInfo 1 (Set.singleton u))
+
+fviMpSingleton :: HsName -> FvInfoMp
+fviMpSingleton = fviMpSingleton' FvUse_Other
+
+fviMpFromList' :: FvUse -> [HsName] -> FvInfoMp
+fviMpFromList' u = fviMpUnions . map (fviMpSingleton' u)
+
+fviMpFromList :: [HsName] -> FvInfoMp
+fviMpFromList = fviMpFromList' FvUse_Other
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name alias info used for alias removal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
+data NmAlias
+ = NmAlias_Nm       !HsName                                                 -- name to name
+ | NmAlias_Eval     !HsName                                                 -- name to evaluated name
+ | NmAlias_Const    {naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
+ | NmAlias_Grp      {naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
+ | NmAlias_Basic    {naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
+                                                                            -- name to basic value, i.e. node element used for FFI
+ | NmAlias_None
+
+type NmAliasMp = Map.Map HsName NmAlias
+
+mkNmAliasMp :: AssocL HsName HsName -> NmAliasMp
+mkNmAliasMp = Map.fromList . assocLMapElt NmAlias_Nm
+%%]
+
+Assume only mappings to NmAlias_Nm, others are not replaced.
+
+%%[(8 codegen grin) hs export(nmAliasRepl,nmAliasRepl')
+nmAliasRepl' :: NmAliasMp -> HsName -> NmAlias
+nmAliasRepl' m n
+  = case Map.lookup n m of
+      Just a -> a
+      _      -> NmAlias_Nm n
+
+nmAliasRepl :: NmAliasMp -> HsName -> HsName
+nmAliasRepl m n
+  = case Map.lookup n m of
+      Just (NmAlias_Nm    n'  ) -> n'
+      Just (NmAlias_Grp   n' _) -> n'
+      Just (NmAlias_Const n' _) -> n'
+      _                         -> n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inline optimisation map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(GrInl(..),GrInlMp)
+data GrInl
+  = GrInl_Call
+      { inlArgNmL   :: ![HsName]
+      , inlGrExpr   :: !GrExpr
+      }
+  | GrInl_CAF
+      { inlGrExpr   :: !GrExpr
+      }
+
+type GrInlMp = Map.Map HsName GrInl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Row/record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(10 codegen grin) hs
+data GrNodeAdapt = GrNodeUpd | GrNodeExt deriving (Show,Eq)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Node construction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+-- partial parametrizations of the GrVal_Node etc.
+
+mkGrConNode :: GrTagAnn -> Int -> HsName -> GrValL -> GrVal
+mkGrConNode ann i nm = GrVal_Node (GrTag_Con ann i nm)
+
+mkGrRecNode ::  GrValL -> GrVal
+mkGrRecNode xs
+  = GrVal_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  where a = length xs
+
+mkGrPatConNode :: GrTagAnn -> Int -> HsName -> [HsName] -> GrPatAlt
+mkGrPatConNode ann i nm = GrPatAlt_Node (GrTag_Con ann i nm)
+
+mkGrPatRecNode :: [HsName] -> GrPatAlt
+mkGrPatRecNode xs
+  = GrPatAlt_Node (GrTag_Con (mkGrTagAnn a a) 0 (hsnProd a)) xs
+  where a = length xs
+
+mkGrBox :: HsName -> GrVal -> GrVal
+mkGrBox tyNm v = mkGrConNode (mkGrTagAnn 1 1) 0 tyNm [v]
+
+mkGrUnbox :: HsName -> HsName -> GrPatLam
+mkGrUnbox tyNm n = let tag = GrTag_Con (mkGrTagAnn 1 1) 0 tyNm
+                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
+
+mkGrUnboxFFI :: HsName -> GrPatLam
+mkGrUnboxFFI   n = let tag = GrTag_Unboxed
+                   in  GrPatLam_VarNode [ GrVar_KnownTag tag, GrVar_Var n ]
+
+%%]
+
+%%[(10 codegen grin) hs
+mkGrPatConSplit :: GrTagAnn -> Int -> HsName -> HsName -> GrSplitL -> GrPatAlt
+mkGrPatConSplit ann i nm = GrPatAlt_NodeSplit (GrTag_Con ann i nm)
+
+mkGrPatRecSplit :: HsName -> GrSplitL -> GrPatAlt
+mkGrPatRecSplit  = GrPatAlt_NodeSplit GrTag_Rec
+%%]
+
+%%[(20 codegen grin) hs export(grModMerge)
+grModMerge :: [GrModule] -> GrModule
+grModMerge mL
+  = foldr1 cmb mL
+  where cmb (GrModule_Mod m1 g1 b1 t1) (GrModule_Mod m2 g2 b2 t2)
+          = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (Map.union t1 t2)
+%%]
+

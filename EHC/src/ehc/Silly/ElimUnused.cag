@@ -1,0 +1,105 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER SilModule
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}Silly.ElimUnused} export(elimUnused)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Silly})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%]
+
+
+%%[(8 codegen grin) hs
+elimUnused :: EHCOpts -> SilModule -> SilModule
+elimUnused options input   
+  = let t = wrap_SilModule (sem_SilModule input)
+                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
+                                                                then options{ ehcOptOwn = 0 }
+                                                                else options
+                                          } 
+                           )
+    in trf_Syn_SilModule t
+%%]
+
+%%[(8 codegen grin)
+
+ATTR SilModule   [ opts : {EHCOpts} | | ]
+
+-- Result of the AG transformation.
+--
+ATTR AllNT [ | | trf: SELF     ]
+
+-- The non terminal self, for creating Sets containing it.
+--
+ATTR AllNT [ | | self: SELF ]
+
+
+ATTR Variable [ multi : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [  | useMap : {Map.Map Variable Int} | ]
+ATTR Statement Statements Alternative Alternatives [ allUseMap : {Map.Map Variable Int} | | ]
+
+ATTR Value          [ | | isntCall : {Bool} ]
+
+
+SEM Function
+  | Function  body.useMap    =  @loc.startMap
+              body.allUseMap =  @body.useMap
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+
+-- the "multi" attribute is a bit of a hack:
+-- it makes variables in a Subs context count as a "use"
+
+SEM Value
+  | Var         var.multi = 1
+  | Offset      var.multi = 1
+
+SEM Variable
+  | Subs        array.multi = 1
+
+SEM Statement
+  | Assignment  dest.multi = 0
+  | Assignment2 dest.multi = 0
+                dest2.multi = 0
+
+
+SEM Variable
+  | Unembedded  lhs.useMap  =  Map.adjust (+ @lhs.multi) (@loc.self) @lhs.useMap
+
+SEM Statement
+  | Assignment  lhs.trf     =  if @source.isntCall
+                                  && Map.lookup @dest.self @lhs.allUseMap == Just 0
+                               then Statement_Comment [" (inlined)" ++ show @dest.self ++ " = " ++ show @source.trf ]
+                               else Statement_Assignment @dest.self @source.trf
+  | Assignment2 lhs.trf     =  if @source.isntCall
+                                  && Map.lookup @dest.self @lhs.allUseMap == Just 0
+                               then Statement_Assignment             @dest2.self @source.trf
+                               else Statement_Assignment2 @dest.self @dest2.self @source.trf
+
+SEM Function
+  |  Function   lhs.trf    =  Function_Function @name
+                                                @tailJumps 
+                                                @parameters 
+                                                [ nm | nm <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
+                                                @body.trf
+  
+
+SEM Value
+  | Call         lhs.isntCall  =  False
+  | * - Call     lhs.isntCall  =  True
+
+%%]

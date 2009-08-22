@@ -1,0 +1,77 @@
+%%[doesWhat doclatex
+
+If a Case-expression has only a single alternative, replace it by the body of that alternative.
+
+Requires FlattenSeq to be the next transformation.
+
+%%]
+
+Why: saves out a test
+
+How: replace CASE s OF {p -> e} 
+     by      UNIT s ;  \q -> e
+     where q is the PatLam equivalent to the PatAlt p
+     
+When: after ImpossibleCase has reduced the number of alternatives
+before LowerGrin, because we assume patterns are Nodes, not Tags.
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SingleCase} export(singleCase)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs 
+singleCase :: GrModule -> GrModule
+singleCase grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+
+-- Find out wheter there is only a single alternative in a list:
+ATTR AllAlt [ | | onlyAlt : {Maybe (Maybe GrPatLam,GrExpr)} ]
+
+SEM GrAlt
+  | Alt     lhs.onlyAlt  =  Just (@pat.lamPat, @expr.grTrf)
+
+SEM GrAltL
+  | Nil     lhs.onlyAlt  =  Nothing
+  | Cons    lhs.onlyAlt  =  if   @tl.isEmpty
+                            then @hd.onlyAlt
+                            else Nothing
+
+-- Auxiliary: is a list empty?
+ATTR GrAltL [ | | isEmpty : Bool ]
+
+SEM GrAltL
+  | Nil     lhs.isEmpty  =  True
+  | Cons    lhs.isEmpty  =  False  
+
+-- Auxiliary: translate a PatAlt to a PatLam
+ATTR GrPatAlt [ | | lamPat : {Maybe GrPatLam} ]
+
+SEM GrPatAlt
+  | Node         lhs . lamPat    = Just (GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL))
+  | Tag          lhs . lamPat    = Nothing
+  | * - Node Tag lhs . lamPat    = error ("SingleCase: lamPat of non-Node " ++ show @loc.grTrf)
+
+-- Do the replacement if possible
+SEM GrExpr
+  | Case  lhs.grTrf      =  maybe @loc.grTrf
+                                  (\(p,e) -> case p of
+                                               Nothing   -> e
+                                               Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e)
+                                  @altL.onlyAlt
+%%]

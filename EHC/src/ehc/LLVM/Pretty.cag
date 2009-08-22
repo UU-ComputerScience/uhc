@@ -1,0 +1,240 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}LLVM.Pretty}
+%%]
+%%[(8 codegen grin) hs import(qualified Data.List)
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Pretty)
+%%]
+%%[(8 codegen grin) hs import({%{EH}LLVM})
+%%]
+%%[(8 codegen grin) import({LLVM/AbsSyn})
+%%]
+
+%%[(8 codegen grin)
+WRAPPER LLVMModule
+%%]
+
+%%[(8 codegen grin) hs export( prettyLLVMModule )
+prettyLLVMModule :: LLVMModule -> PP_Doc
+prettyLLVMModule llvmmod
+  = let t = wrap_LLVMModule (sem_LLVMModule llvmmod)
+                            (Inh_LLVMModule { }
+                            )
+     in  pretty_Syn_LLVMModule t
+
+%%]
+
+%%[(8 codegen grin)
+--------------------------------------------------------------------------------
+-- Prettyprint a LLVM Module
+--------------------------------------------------------------------------------
+ATTR LLVMModule
+     LLVMFunction
+     LLVMStatements LLVMStatement
+     LLVMExpression
+     [ | | pretty USE {>-<} {empty}: {PP_Doc} ]
+   
+ATTR LLVMFunctions
+     [ | | pretty: {[PP_Doc]} ]   
+     
+ATTR LLVMFunctionDecls
+     [ | | prettySigs : {[PP_Doc]} ]     
+     
+ATTR LLVMFunctionDecl
+     [ | | prettyCall : {[LLVMVar] -> PP_Doc}
+           prettySig  : {PP_Doc} ]
+          
+     
+SEM LLVMModule
+  | LLVMModule  lhs.pretty = ppPrependList ";" @comments
+                             >-< ""
+                             >-< vlist (
+                                 map (\(dst,src) ->
+                                       ppAssignment dst ("internal constant" >#< show src)
+                                     ) @constants
+                                 )
+                             >-< ppGlobalList @globals
+                             >-< ""
+                             >-< ppPrependList "declare" @fwdDecls.prettySigs
+                             >-< ""
+                             >-< vlist @funcs.pretty
+ 
+SEM LLVMFunctions       
+  | Cons        lhs.pretty = @hd.pretty : (text "") : @tl.pretty
+  | Nil         lhs.pretty = []
+ 
+  
+SEM LLVMFunction
+  | Func        lhs.pretty = "define" >#< show @linkage >#< @funcDecl.prettySig
+                             >#< "nounwind"
+                             >-< "{"
+                             >-< indent 4 @body.pretty
+                             >-< "}"
+  
+SEM LLVMFunctionDecls   
+  | Cons        lhs.prettySigs = 
+                             @hd.prettySig : @tl.prettySigs                           
+  | Nil         lhs.prettySigs =
+                             []
+             
+  
+SEM LLVMFunctionDecl
+  | LLVMFunctionDecl    lhs.prettySig  = case @varargs of
+                                            VarArgs   -> ppVarargsFunctionSignature @name @returnType @params   
+                                            FixedArgs -> ppFunctionSignature @name @returnType @params
+                        lhs.prettyCall = case @varargs of
+                                            VarArgs   -> ppVarargsFunctionCall @name @returnType @params
+                                            FixedArgs -> ppFunctionSignature @name @returnType
+                             
+SEM LLVMStatement
+  | Assignment  lhs.pretty = ppAssignment @dest @source.pretty
+  | Branch      lhs.pretty = ppBranch @target
+  | BranchIf    lhs.pretty = ppBranchIf @cond @targetTrue @targetFalse
+  | Call        lhs.pretty = ppCall @tailJumps (@func.prettyCall @args)
+  | Comment     lhs.pretty = ppPrependList ";" @comment
+  | Label       lhs.pretty = getPlainName @name >|< ":"
+  | Store       lhs.pretty = ppStore @value @ptr
+  | Switch      lhs.pretty = ppSwitch @scrutinee @default @targets
+  | Return      lhs.pretty = ppReturn @result
+  | Unreachable lhs.pretty = text "unreachable"
+  | * - Assignment Branch BranchIf Comment Call Label Store Switch Return Unreachable
+                lhs.pretty = error "Undefined Stmt"
+                
+SEM LLVMExpression
+  | Alloca      lhs.pretty = ppAlloca @tp @amount
+  | BinOp       lhs.pretty = ppBinOp @op @left @right
+  | Call        lhs.pretty = ppCall @tailJumps (@func.prettyCall @args)
+  | Cast        lhs.pretty = ppCast @from @to
+  | Compare     lhs.pretty = ppCmpOp @op @left @right  
+  | GetElemPtr  lhs.pretty = ppGetElementPtr @ptr @indexes
+  | Load        lhs.pretty = ppLoad @ptr
+  | Malloc      lhs.pretty = ppMalloc @tp @amount
+  | Phi         lhs.pretty = ppPhi @tp @precessors
+  | * - Alloca BinOp Call Cast Compare GetElemPtr Load Malloc Phi
+                lhs.pretty = error "Undefined LLVMExpression"                                        
+%%]
+
+%%[(8 codegen grin) hs
+--------------------------------------------------------------------------------
+-- Print functions
+--------------------------------------------------------------------------------
+ppGlobal :: LLVMVar -> PP_Doc
+ppGlobal var =
+  getName var >#< "= internal global" 
+              >#< show (pLower $ getType var) >#< "zeroinitializer"
+
+ppGlobalList :: [LLVMVar] -> PP_Doc
+ppGlobalList = 
+  vlist.(map ppGlobal)
+
+ppFunctionSignature :: String -> LLVMType -> [LLVMVar] -> PP_Doc
+ppFunctionSignature fnName returnType params =
+  let ppParams = hlist $
+                 Data.List.intersperse (text ", ") $ map (text.show) params 
+   in show returnType >#< "@" >|< fnName >|< "(" >#< ppParams >#< ")"
+ 
+ppVarargsFunctionSignature :: String -> LLVMType -> [LLVMVar] -> PP_Doc
+ppVarargsFunctionSignature fnName returnType params =
+  let ppParams = hlist $
+                 ( ++ [ text ", ..." ] ) $
+                 Data.List.intersperse (text ", ") $ map (text.show) params
+   in show returnType >#< "@" >|< fnName >|< "(" >#< ppParams >#< ")"    
+   
+ppVarargsFunctionCall :: String -> LLVMType -> [LLVMVar] -> [LLVMVar] -> PP_Doc
+ppVarargsFunctionCall fnName returnType varArgParams params =
+  let ppParams = hlist $
+                 Data.List.intersperse (text ", ") $ map (text.show) params
+      ppTpList = hlist $
+                 ( ++ [ text ", ..." ] ) $
+                 Data.List.intersperse (text ", ") $ map (text.show.getType) varArgParams
+   in show returnType >#< "(" >#< ppTpList >#< ")*" 
+      >#< "@" >|< fnName >|< "(" >#< ppParams >#< ")"                 
+   
+ppCall :: LLVMCallType -> PP_Doc -> PP_Doc
+ppCall tailCall ppFuncSig =
+  let tailAnot (StdCall)  = ""
+      tailAnot (TailCall) = "tail "
+   in tailAnot tailCall >|< "call" >#< ppFuncSig   
+   
+ppBinOp :: LLVMBinOp -> LLVMVar -> LLVMVar -> PP_Doc
+ppBinOp op left right =
+  show op >#< show (getType left) >#< getName left 
+  >|< "," >#< getName right
+
+ppCmpOp :: LLVMCmpOp -> LLVMVar -> LLVMVar -> PP_Doc
+ppCmpOp op left right =
+  "icmp" >#< show op >#< show (getType left) >#< getName left
+  >|< "," >#< getName right
+   
+ppAssignment :: LLVMVar -> PP_Doc -> PP_Doc
+ppAssignment var expr =
+  getName var >#< "=" >#< expr
+  
+ppLoad :: LLVMVar -> PP_Doc
+ppLoad var =
+  "load" >#< show var   
+  
+ppStore :: LLVMVar -> LLVMVar -> PP_Doc
+ppStore rhs lhs =
+  "store" >#< show rhs >|< "," >#< show lhs  
+  
+ppCast :: LLVMVar -> LLVMType -> PP_Doc
+ppCast from to 
+  | isInt to && (isPointer $ getType from) 
+      = "ptrtoint" >#< show from >#< "to" >#< show to
+  | (isPointer to) && (isInt $ getType from)
+      = "inttoptr" >#< show from >#< "to" >#< show to
+  | otherwise 
+      = "bitcast" >#< show from >#< "to" >#< show to
+      
+ppMalloc :: LLVMType -> Int -> PP_Doc
+ppMalloc tp amount = 
+  "malloc" >#< show tp >|< ", i32" >#< show amount     
+
+ppAlloca :: LLVMType -> Int -> PP_Doc
+ppAlloca tp amount = 
+  "alloca" >#< show tp >|< ", i32" >#< show amount 
+  
+ppGetElementPtr :: LLVMVar -> [Int] -> PP_Doc
+ppGetElementPtr ptr idx =
+  let indexes = hlist $ map ((", i32" >#<) . show) idx
+  in "getelementptr" >#< show ptr >|< indexes  
+  
+ppReturn :: LLVMVar -> PP_Doc
+ppReturn var 
+  | getType var == Void    = "ret" >#< show (getType var)
+  | otherwise              = "ret" >#< show var  
+  
+ppBranch :: LLVMVar -> PP_Doc
+ppBranch var =
+  "br" >#< show var
+  
+ppBranchIf :: LLVMVar -> LLVMVar -> LLVMVar -> PP_Doc
+ppBranchIf cond trueT falseT =
+  "br" >#< show cond >|< "," >#< show trueT >|< "," >#< show falseT  
+  
+ppPhi :: LLVMType -> [(LLVMVar,LLVMVar)] -> PP_Doc
+ppPhi tp preds =
+  let ppPreds (val,label) = "[" >#< getName val >|< "," >#< getName label >#< "]"  
+   in "phi" >#< show tp 
+       >#< (hlist $ Data.List.intersperse (text ",") (map ppPreds preds)) 
+       
+ppSwitch :: LLVMVar -> LLVMVar -> [(LLVMVar,LLVMVar)] -> PP_Doc
+ppSwitch scrut dflt targets =
+  let ppTarget  (val,lab) = show val >|< "," >#< show lab
+      ppTargets  xs       = "[" >#< vlist (map ppTarget xs) >#< "]"
+   in "switch" >#< show scrut >|< "," >#< show dflt >#< ppTargets targets        
+%%]
+
+%%[(8 codegen grin) hs
+--------------------------------------------------------------------------------
+-- Misc functions
+--------------------------------------------------------------------------------
+ppPrependList :: (PP a) => String -> [a] -> PP_Doc
+ppPrependList x = 
+  vlist . (map (x >#<))
+%%]

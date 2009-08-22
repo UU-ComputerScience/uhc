@@ -1,0 +1,61 @@
+%%[doesWhat doclatex
+
+Nullary functions that immediately return a value or call another function,
+can be encoded directly in the global variable that applies them.
+
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SimpleNullary} import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
+
+simpleNullary :: GrModule -> GrModule
+simpleNullary code
+  = let inh = Inh_GrAGItf
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR AllBind  [ | | info   USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+              
+ATTR AllGlobal [ info   : {Map.Map HsName GrVal} | | ]
+
+SEM GrModule
+  | Mod    globalL.info   = @bindL.info
+           
+SEM GrBind
+  | Bind    lhs.info   =   if null @argNmL
+                           then case @expr.grTrf of
+                                  GrExpr_Unit val      -> Map.singleton @nm val
+                                  GrExpr_Call nm2 args -> Map.singleton @nm (GrVal_Node (GrTag_Fun nm2) args)
+                                  _                    -> Map.empty
+                           else Map.empty
+
+
+SEM GrGlobal
+  | Global   lhs.grTrf  =  case @val.grTrf of
+                             (GrVal_Node (GrTag_Fun nm2) []) -> maybe @loc.grTrf
+                                                                      (\node -> GrGlobal_Global @nm node)
+                                                                      (Map.lookup nm2 @lhs.info)
+                             _                               -> @loc.grTrf
+
+%%]

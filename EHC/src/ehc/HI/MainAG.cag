@@ -1,0 +1,159 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to AG generated code for hi files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[20 hs module {%{EH}HI.MainAG} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Gam.Full},{%{EH}HI})
+%%]
+
+%%[20 hs import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq)
+%%]
+
+%%[20 hs import({%{EH}Config},{%{EH}NameAspect},{%{EH}Module},{%{EH}Base.CfgPP})
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}Ty.Pretty})
+%%]
+
+%%[(20 codegen) hs import({%{EH}Core})
+%%]
+%%[(20 codegen) hs import(qualified {%{EH}TyCore} as C)
+%%]
+
+%%[(20 codegen grin) hs import({%{EH}GrinCode},{%{EH}GrinCode.Pretty})
+%%]
+
+%%[(20 hmtyinfer) hs import(qualified {%{EH}Pred} as Pr,{%{EH}Pred.ToCHR},{%{EH}CHR.Solve})
+%%]
+
+-- debug
+%%[20 hs import({%{EH}Base.Debug},EH.Util.Utils)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 ag import({HI/AbsSyn},{HI/Pretty})
+WRAPPER AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%[99
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reconstruction of original info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR
+  AllNT AGItf
+    [ | |
+      exportRel         USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- explicit exports
+      exportHideRel     USE {`Rel.union`}       {Rel.empty}         : ModEntRel					-- implicit exports (instances)
+      fixityGam         USE {`gamUnion`}        {emptyGam}          : FixityGam					-- fixity info for identifiers
+      idGam             USE {`gamUnion`}        {emptyGam}          : IdDefOccGam				-- all identifiers which can be used, both explicit or implicit (including instances)
+      asDeclImpModL     USE {++}                {[]}                : {[HsName]}				-- declared imports
+      asUsedImpModL     USE {++}                {[]}                : {[HsName]}				-- (implicitly) used imports
+      settings          USE {`orMb`}            {Nothing}           : {Maybe HiSettings}		-- various settings: has main def
+%%[[(20 hmtyinfer)
+      valGam            USE {`gamUnion`}        {emptyGam}          : ValGam					-- all values with types, only those which explicitly can be used (name -> type)
+      tyGam             USE {`gamUnion`}        {emptyGam}          : TyGam						-- all types with types (name -> type)
+      tyKiGam           USE {`gamUnion`}        {emptyGam}          : TyKiGam					-- all types with kinds (type -> kind)
+      polGam            USE {`gamUnion`}        {emptyGam}          : PolGam					-- all types with polarities (name -> polarity)
+      dataGam           USE {`gamUnion`}        {emptyGam}          : DataGam					-- additional structural info for datatypes
+      clGam             USE {`gamUnion`}        {emptyGam}          : {Pr.ClGam}    			-- classes
+      chrStore          USE {`chrStoreUnion`}   {emptyCHRStore}     : ScopedPredStore			-- CHR
+%%]]
+%%[[(20 codegen)
+      arityMp           USE {`Map.union`}       {Map.empty}         : CArityMp					-- arities of identifiers, used for GRIN
+%%]]
+%%[[(20 codegen grin)
+      inlMp             USE {`Map.union`}       {Map.empty}         : GrInlMp					-- inline info, used by GrinByteCode
+%%]]
+   ]
+
+SEM Binding
+    | Settings
+        lhs             .   settings	=	Just $ HiSettings @hasMain
+    | ImportModules
+        lhs             .   asDeclImpModL
+                                        =   @asDeclared
+                        .   asUsedImpModL
+                                        =   @asUsed
+    | Export
+        lhs             .   (exportRel,exportHideRel)
+                                        =   case @visible of
+                                              VisibleNo  -> (Rel.empty,@exports)
+                                              VisibleYes -> (@exports,Rel.empty)
+    | Ids
+        lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
+    | Fixity
+        lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
+%%[[(20 hmtyinfer)
+    | Val
+        lhs             .   valGam      =   gamSingleton @nm (ValGamInfo @ty)
+    | Ty
+        lhs             .   tyGam       =   gamSingleton @nm (mkTGI @ty)
+    | TyKinds
+        lhs             .   tyKiGam     =   gamFromAssocL [(t,TyKiGamInfo k) | (t,k) <- @tyKinds]
+    | TyPolarities
+        lhs             .   polGam      =   gamFromAssocL [(n,mkPGI p) | (n,p) <- @tyPolarities]
+    | DataCon
+        lhs             .   dataGam     =   gamSingleton @nm (mkDGI
+                                                                @nm
+                                                                @ty (assocLKeys @tags)
+                                                                (Map.map (\(t,fm) -> emptyDataTagInfo { dtiCTag = t
+                                                                                                      , dtiFldMp = Map.fromList [ (f,emptyDataFldInfo {dfiOffset = o}) | (f,o) <- fm ]
+                                                                                                      }
+                                                                         )
+                                                                 $ Map.fromList $ @tags
+                                                                )
+%%[[20
+                                                                @isNewtype
+%%][94
+                                                                @mbNewtype
+%%]]
+                                                             )
+    | Class
+        lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)
+    | CHRStore
+        lhs             .   chrStore    =   chrStoreFromElems @chrs
+%%]]
+%%[[(20 codegen)
+    | Arities
+        lhs             .   arityMp     =   Map.fromList @idArities
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Valid version?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AllNT AGItf [ | | isValidVersion USE {||} {False}: Bool ]
+
+SEM Binding
+    | Stamp
+        lhs             .   isValidVersion
+                                        =   @srcSig == verSig version && optsDiscrRecompileRepr @lhs.opts == @compileFlags
+%%]
+

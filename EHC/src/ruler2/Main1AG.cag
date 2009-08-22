@@ -1,0 +1,485 @@
+-------------------------------------------------------------------------
+-- Main for AG, pass 1
+-------------------------------------------------------------------------
+
+%%[1 hs module (Main1AG)
+%%]
+
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Pretty)
+%%]
+
+%%[1 hs import (EH.Util.FPath, EH.Util.Utils, Err, Common, Opts, LaTeXFmtUtils, Expr.Utils)
+%%]
+
+%%[1 hs import (ARule.Utils, ViewSel.Utils, Config( cfgStrSel, cfgFmFmtCmdAsc ), FmGam, RwExprGam, ECnstrGam)
+%%]
+
+%%[1 hs import (AbsSyn.AbsSyn1, qualified AbsSyn.AbsSyn2 as AS2, qualified Main2AG as M2)
+%%]
+
+%%[1 hs import (Utils, Admin, MkAdmin)
+%%]
+
+-------------------------------------------------------------------------
+-- Inclusion of split off parts
+-------------------------------------------------------------------------
+
+%%[1 ag import ({AbsSyn/AbsSyn1AG}, {AbsSyn/CommonAG}, {FmGamAG}, {AS1/Misc}, {AS1/ViewDpd}, {AS1/SchemeDpd}, {AS1/Pretty}, {AS1/RlSel})
+%%]
+
+%%[1 ag import ({AS1/GenAS2})
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG}, {Expr/IsRwAG}, {Expr/NmSAG}, {Expr/FmGamAG}, {Expr/PrettyPrintAG}, {Expr/SelfAG}, {Ty/AbsSynAG}, {Ty/SelfAG})
+%%]
+
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Interfacing to AST
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+-------------------------------------------------------------------------
+-- Error
+-------------------------------------------------------------------------
+
+ATTR AllAS1 AGItf [ | | errL USE {++} {[]}: {[Err]} ]
+
+SEM AGItf
+  | AGItf           lhs     .   errL        =   @errDupSc ++ @errMutSc ++ @errBldDt ++ @errBldSc ++ @errDupRs ++ @errBldRs ++ @decls.errL
+
+SEM RExpr
+  | Judge           lhs     .   errL        =   errFirst [@errSc,@errVwSc,@errJd,@eqns.errL]
+
+SEM RExprEqn
+  | Expr            lhs     .   errL        =   errFirst [@errMt,@errJd]
+
+SEM Decl
+  | ShpJudge        lhs     .   errL        =   errFirst [@errVwSc,@errUndefs]
+  | Scheme          lhs     .   errL        =   @errDupVw ++ @decls.errL
+  | Rule            lhs     .   errL        =   @errDupVw ++ @decls.errL
+
+-------------------------------------------------------------------------
+-- Data/AST
+-------------------------------------------------------------------------
+
+ATTR AllFldIntro [ seqNr: Int | | dtFldGam USE {`gamUnion`} {emptyGam}: DtFldGam ]
+
+SEM FldIntros
+  | Cons            tl      .   seqNr       =   @lhs.seqNr + 1
+
+SEM Decl
+  | DataASTAlt      loc     .   seqNr       =   1
+
+SEM FldIntro
+  | Intro           lhs     .   dtFldGam    =   gamSingleton @nm (DtFldInfo @nm @ty.self @lhs.seqNr)
+
+ATTR AllDecl [ | | dtAltGam USE {`gamUnion`} {emptyGam}: DtAltGam ]
+
+SEM Decl
+  | DataASTAlt      lhs     .   dtAltGam    =   gamSingleton @nm (DtAltInfo @nm @ruleNm @mbBasedOnNm @fldIntros.dtFldGam)
+
+ATTR AllDecl [ | | vwDtGam USE {`gamUnion`} {emptyGam}: DtVwGam ]
+
+SEM Decl
+  | DataASTView     lhs     .   vwDtGam     =   gamSingleton @nm (DtVwInfo @nm @decls.dtAltGam emptyGam)
+
+ATTR AllDecl [ | | gathDtGam USE {`gamUnion`} {emptyGam}: DtGam ]
+ATTR AGItf [ | | dtInvGam: DtInvGam ]
+
+SEM Decl
+  | DataAST         lhs     .   gathDtGam   =   gamSingleton @nm (DtInfo @nm @schemeNms @decls.vwDtGam)
+
+SEM AGItf
+  | AGItf           loc     .   (dtGam,errBldDt)
+                                            =   gamFoldWithKey
+                                                  (\n i (g,e)
+                                                    -> let (i',e') = bldDtInfo @vwDpdGr i
+                                                       in  (gamInsertShadow n i' g,e'++e)
+                                                  )
+                                                  (@decls.gathDtGam,[])
+                                                  @decls.gathDtGam
+                            .   dtInvGam    =   dtGamInv @dtGam
+
+-------------------------------------------------------------------------
+-- Attr
+-------------------------------------------------------------------------
+
+{
+atGamUpdDirs :: ([AtDir] -> Bool) -> [AtDir] -> AtGam -> AtGam
+atGamUpdDirs f d = gamMap (\i -> if f (atDirs i) then i {atDirs = d} else i)
+}
+
+ATTR AllAttrIntroDecl AllDecl [ | | atGam USE {`gamUnion`} {emptyGam}: AtGam ]
+ATTR AllAttrIntroDecl AllDecl [ | | atBldL USE {++} {[]}: {[ScAtBld]} ]
+-- ATTR AllAttrIntro [ atDirs: {[AtDir]} | | ]
+
+SEM AttrIntro
+  | Intro           loc     .   atGam       =   let (pd,pr) = partition (`Set.member` propsDir) @props
+                                                in  gamSingleton @nm (AtInfo @nm pd pr @ty)
+
+SEM AttrIntroDecl
+  | Attrs           loc     .   atGam       =   let t = const True
+                                                in  atGamUpdDirs t [AtInh] @inhs.atGam `gamUnion` atGamUpdDirs t [AtInh,AtSyn] @inhsyns.atGam `gamUnion` atGamUpdDirs t [AtSyn] @syns.atGam
+  | AttrsProp       loc     .   atGam       =   atGamUpdDirs null [AtInh,AtSyn] @intros.atGam
+  | AttrsProp Attrs lhs     .   atBldL      =   [ScAtBldDirect @atGam]
+  | Scheme          lhs     .   atBldL      =   [ScAtBldScheme @nm @pos @renames.atRnmL]
+
+ATTR AllAttrRename [ | | atRnmL USE {++} {[]}: {[ScAtBldRename]} ]
+
+SEM AttrRename
+  | Rename          lhs     .   atRnmL      =   [ScAtBldRename @nmNew @nmOld]
+  | EqualTo         lhs     .   atRnmL      =   [ScAtBldEqualTo @nmLeft @nmRight]
+
+-------------------------------------------------------------------------
+-- Externally declared identifiers
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | gathExtNmS USE {`Set.union`} {Set.empty}: {Set.Set Nm} ]
+
+SEM AGItf
+  | AGItf           loc     .   extNmS      =   @decls.gathExtNmS
+
+SEM Decl
+  | Extern          lhs     .   gathExtNmS  =   Set.fromList @nms
+
+-------------------------------------------------------------------------
+-- View (related to scheme)
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | vwScGam USE {`gamUnion`} {emptyGam}: {VwScGam Expr} ]
+ATTR AllDecl [ | | vwJdShpGam USE {`gamUnion`} {emptyGam}: {JdShpGam Expr} ]
+
+SEM Decl
+  | ScmView         lhs     .   vwScGam     =   gamSingleton @nm (VwScInfo @nm @decls.vwJdShpGam @decls.atBldL [] emptyGam emptyGam @decls.explGam)
+  | ShpJudge        lhs     .   vwJdShpGam  =   gamSingleton @fmKind (JdShpInfo @expr.self)
+                    loc     .   cxStr       =   "judgement for view '" ++ show @lhs.viewNm ++ "' for scheme '" ++ show @lhs.scmNm ++ "'"
+                            .   (vwScInfo,errVwSc)
+                                            =   case scVwGamLookup @lhs.scmNm @lhs.viewNm @lhs.scGam of
+                                                    Just (_,i) -> (i,[])
+                                                    Nothing    -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
+                            .   errUndefs   =   let nms = gamKeys (vwscFullAtGam @vwScInfo) \\ Set.toList @expr.nmS
+                                                in  [] -- if null nms then [] else [Err_UndefNm @pos @cxStr "hole" nms]
+  | ShpDel          lhs     .   vwJdShpGam  =   gamFromAssocs [ (k,JdShpDel) | k <- @fmKinds ]
+
+%%]
+
+-------------------------------------------------------------------------
+-- Scheme, derived ones are expresses in terms of non-derived ones
+-------------------------------------------------------------------------
+
+%%[1 hs
+type MkDerivScInfo = (ScInfo Expr -> ScInfo Expr,ScGam Expr -> RsInfo Expr)
+type DrvGam = Gam Nm [MkDerivScInfo]
+
+drvGamUnion :: DrvGam -> DrvGam -> DrvGam
+drvGamUnion = gamUnionWith (++)
+%%]
+
+%%[1 ag
+
+ATTR AllDecl [ drvGam: DrvGam | | gathDrvGam USE {`drvGamUnion`} {emptyGam}: DrvGam ]
+
+SEM Decl
+  | SchemeDeriv     lhs     .   gathDrvGam  =   let mkListSc si
+                                                      = siNw
+                                                      where siNw = ScInfo @pos @nm @mbAGNm @scKind vGm
+                                                            vGm
+                                                              = gamMapWithKey
+                                                                  (\nVw vi
+                                                                    -> let mbNdNm = atGamNode (vwscAtGam vi)
+                                                                           (aGm,ndRenmG)
+                                                                             = case mbNdNm of
+                                                                                 Just n -> (n `Map.delete` vwscAtGam vi,fmGamFromList [(n,Expr_Var @nm)])
+                                                                                 _      -> (vwscAtGam vi,emptyGam)
+                                                                           aNdGamNw
+                                                                             = if @firstVwNm == nVw
+                                                                               then gamSingleton @nm (AtInfo @nm [AtInh] [AtNode] (nmCapitalize @nm))
+                                                                               else emptyGam
+                                                                           jdG = gamMap (\i -> i {jdshExpr = exprSubst @lhs.opts ndRenmG (jdshExpr i)}) (vwscJdShpGam vi)
+                                                                       in  vi {vwscAtBldL = [ScAtBldDirect (aNdGamNw `gamUnion` aGm)], vwscJdShpGam = jdG}
+                                                                  )
+                                                                  (scVwGam si)
+                                                            mkNm n = n `nmStrApd` Nm "s"
+                                                    vwSels = dgVertices @lhs.vwDpdGr
+                                                    mkg mkn l = gamFromAssocs [ (mkn i,i) | i <- l ]
+                                                    mkRsInfo nl scGam
+                                                      = RsInfo (@nm `nmApd` Nm "base") @pos @nm vwSels ("Rules for " ++ show @nm) (mkg rlNm [rl1])
+                                                      where rl1
+                                                              = RlInfo (@nm `nmApd` Nm "cons") emptySPos Nothing (Just "Cons") 0 (Just vwSels) (mkg vwrlNm [vw])
+                                                              where nHd = Nm "hd"
+                                                                    ndHd = @nm `nmApd` nHd
+                                                                    nTl = Nm "tl"
+                                                                    ndTl = @nm `nmApd` nTl
+                                                                    vw = mkVwRlInfo @firstVwNm emptySPos [RlJdBldDirect Set.empty (mkg reNm [j1,j2]) (mkg reNm [j3])] []
+                                                                    j3 = REInfoJudge @nm @nm Set.empty Set.empty (mkg jaNm [a3]) False
+                                                                    a3 = mkJAInfo @nm e3
+                                                                    e3 = mkExprApp (Expr_ChildOrder 0 (Expr_Var ndHd))
+                                                                                   [Expr_ChildOrder 1 (Expr_Var ndTl)]
+                                                                    n2 = maybe nl id $ scVwGamNodeAt nl @firstVwNm scGam
+                                                                    j2 = REInfoJudge nHd nl Set.empty Set.empty (mkg jaNm [a2]) False
+                                                                    a2 = mkJAInfo n2 e2
+                                                                    e2 = Expr_Var ndHd
+                                                                    j1 = REInfoJudge nTl @nm Set.empty Set.empty (mkg jaNm [a1]) False
+                                                                    a1 = mkJAInfo @nm e1
+                                                                    e1 = Expr_Var ndTl
+                                                in  case @scDeriv of
+                                                      ScList nl -> (gamSingleton nl [(mkListSc,mkRsInfo nl)])
+
+SEM AGItf
+  | AGItf           loc     .   drvGam      =   @decls.gathDrvGam
+
+-------------------------------------------------------------------------
+-- Scheme
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | gathScGam USE {`gamUnion`} {emptyGam}: {ScGam Expr} ]
+ATTR AllDecl AllRExpr AllRuleJudgeIntroDecl [ scGam: {ScGam Expr} | | ]
+ATTR AGItf [ | | scGam: {ScGam Expr} ]
+
+SEM AGItf
+  | AGItf           loc     .   (scGam,errBldSc)
+                                            =   let r = foldr
+                                                          (\sNm (scGam,scErrs)
+                                                            -> let scInfo = gamLookupJust sNm scGam
+                                                                   drvScInfoL = maybe [] (\l -> map (($ scInfo) . fst) l) $ gamLookup sNm @drvGam
+                                                                   (ascL,errLL) = unzip [ ((scNm i',i'),e) | i <- (scInfo : drvScInfoL), let (i',e) = bldScInfo @vwDpdGr scGam i ]
+                                                               in  (gamFromAssocs ascL `gamUnionShadow` scGam,concat errLL ++ scErrs)
+                                                          )
+                                                          (@decls.gathScGam,[])
+                                                          (dgTopSort @scDpdGr)
+                                                in  r
+
+SEM Decl
+  | Scheme          lhs     .   gathScGam   =   gamSingleton @nm (ScInfo @pos @nm @mbAGNm @scKind @decls.vwScGam)
+
+-------------------------------------------------------------------------
+-- Rule
+-------------------------------------------------------------------------
+
+ATTR AllAttrEqn [ | | jaGam USE {`gamUnion`} {emptyGam}: {JAGam Expr} ]
+
+SEM AttrEqn
+  | Eqn             lhs     .   jaGam       =   gamSingleton @nm (mkJAInfo @nm @expr.self)
+  | Del             lhs     .   jaGam       =   gamSingleton @nm (JAInfoDel @nm)
+
+ATTR RExprEqn [ vwScInfo: {VwScInfo Expr}  pos: SPos  cxStr: String  schemeNm: Nm | | ]
+
+SEM RExprEqn
+  | Expr            loc     .   (jdshExpr,errJd)
+                                            =   gamTryLookups (Expr_Empty,[Err_NoJdSpec @lhs.pos @lhs.cxStr [@lhs.schemeNm]])
+                                                              (\i -> (jdshExpr i,[]))
+                                                              [FmSpec,FmTeX,FmAll] (vwscJdShpGam @lhs.vwScInfo)
+                            .   mt          =   exprMatch (@lhs.opts {optMatchROpOpnd = False}) emptyGam @expr.self @jdshExpr
+                            .   errMt       =   if mtMatches @mt then [] else [Err_Match @lhs.pos @lhs.cxStr (pp @expr.self) (pp @jdshExpr)]
+                    lhs     .   jaGam       =   fmGamToJaGam FmAll (mtFmGam @mt) `gamIntersection` vwscFullAtGam @lhs.vwScInfo
+
+ATTR AllRExpr [ | | reGam USE {`gamUnion`} {emptyGam}: {REGam Expr} ]
+
+SEM RExpr
+  | Judge           eqns    .   pos         =   @pos
+                            .   schemeNm    =   @schemeNm
+                    loc     .   nm          =   maybe (Nm (strUnd ++ show @lUniq)) id @mbRNm
+                            .   cxStr       =   "judgement for view '" ++ show @lhs.viewNm ++ "' for rule '" ++ show @lhs.ruleNm ++ "'"
+                            .   cxStr2      =   @cxStr ++ " for scheme '" ++ show @schemeNm ++ "'"
+                            .   (scInfo,errSc)
+                                            =   case gamLookup @schemeNm @lhs.scGam of
+                                                    Just i -> (i,[])
+                                                    Nothing -> (emptyScInfo,[Err_UndefNm @pos @cxStr "scheme" [@schemeNm]])
+                            .   (vwScInfo,errVwSc)
+                                            =   case gamLookup @lhs.viewNm (scVwGam @scInfo) of
+                                                    Just i -> (i,[])
+                                                    Nothing -> (emptyVwScInfo,[Err_UndefNm @pos @cxStr "view" [@lhs.viewNm]])
+                            .   reInfo      =   REInfoJudge @nm @schemeNm Set.empty Set.empty @eqns.jaGam @isSmallExpr
+                            .   errJd       =   case gamKeys (@eqns.jaGam `gamDifference` vwscFullAtGam @vwScInfo) of
+                                                  [] -> []
+                                                  ks -> [Err_NoXXFor @pos @cxStr2 "scheme hole definition" ks]
+                    lhs     .   reGam       =   gamSingleton @nm @reInfo
+  | Del             lhs     .   reGam       =   gamSingleton (head @nms) (REInfoDel @nms)
+
+-------------------------------------------------------------------------
+-- Rules, names
+-------------------------------------------------------------------------
+
+ATTR AllRExpr AllDecl AllRuleJudgeIntroDecl [ viewNm: Nm | | ]
+ATTR AllRExpr AllDecl AllRuleJudgeIntroDecl [ ruleNm: Nm | | ]
+ATTR AllDecl AllAttrIntroDecl AllRuleJudgeIntroDecl [ scmNm: Nm | | ]
+
+SEM Decl
+  | Rule            loc     .   ruleNm      =   @nm
+
+SEM Decl
+  | Scheme          loc     .   scmNm       =   @nm
+
+SEM Decl
+  | RulView ScmView loc     .   viewNm      =   @nm
+
+SEM AGItf
+  | AGItf           decls   .   ruleNm      =   nmNone
+                            .   scmNm       =   nmNone
+                            .   viewNm      =   nmNone
+
+-------------------------------------------------------------------------
+-- Rules, views for rule
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | vwRlGam USE {`gamUnion`} {emptyGam}: {VwRlGam Expr} ]
+
+SEM Decl
+  | RulView         lhs     .   vwRlGam     =   gamSingleton @nm (mkVwRlInfo @nm @pos @jdIntros.jdBldL @group)
+
+ATTR AllDecl AllRuleJudgeIntroDecl [ | | jdBldL USE {++} {[]}: {[RlJdBld Expr]} ]
+
+SEM RuleJudgeIntro
+  | PrePost         lhs     .   jdBldL      =   [RlJdBldDirect (Set.fromList @extNms) @pre.reGam @post.reGam]
+  | RulesetRule     lhs     .   jdBldL      =   [RlJdBldFromRuleset @pos @rsNm @rlNm @schemeRnmL]
+
+-------------------------------------------------------------------------
+-- Rules, individual rules for rule set
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | rlGam USE {`gamUnion`} {emptyGam}: {RlGam Expr} ]
+
+SEM Decl
+  | Rule            lhs     .   rlGam       =   gamSingleton @nm (RlInfo @nm @pos @mbBasedOnNm @mbAGNm @lhs.rlSeqNr (fmap (viewSelNmS @lhs.vwDpdGr) @viewSel) @decls.vwRlGam)
+
+-------------------------------------------------------------------------
+-- Rules, all rule sets
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ rsGam: {RsGam Expr} | | gathRsGam USE {`gamUnion`} {emptyGam}: {RsGam Expr} ]
+
+SEM AGItf
+  | AGItf           loc     .   (rsGam,errBldRs)
+                                            =   let r = foldr
+                                                          (\sNm (rsGam,rsErrs)
+                                                            -> let (rsGamBldL,errLL)
+                                                                     = unzip
+                                                                       $ map
+                                                                           (\rsInfo
+                                                                             -> let drvRsInfoL = maybe [] (\l -> map (($ @scGam) . snd) l) $ gamLookup sNm @drvGam
+                                                                                    (blds,errs)
+                                                                                      = unzip [ ((rsNm i',i'),e) | i <- (rsInfo : drvRsInfoL)
+                                                                                              , let (i',e) = bldRsInfo @vwDpdGr @extNmS @lhs.opts @dtInvGam @scGam rsGam i
+                                                                                              ]
+                                                                                in  (gamFromAssocs blds,concat errs)
+                                                                           )
+                                                                       $ [ i | i <- gamElems rsGam, rsInfoIsPlain i, rsScNm i == sNm ]
+                                                               in  (gamUnionsShadow rsGamBldL `gamUnionShadow` rsGam,concat errLL ++ rsErrs)
+                                                          )
+                                                          (@decls.gathRsGam,[])
+                                                          (dgTopSort @scDpdGr)
+                                                in  r
+
+SEM Decl
+  | Rules           lhs     .   gathRsGam   =   gamSingleton @nm (RsInfo @nm @pos @schemeNm (viewSelNmS @lhs.vwDpdGr @viewSel) @info @decls.rlGam)
+  | RulesGroup      lhs     .   gathRsGam   =   gamSingleton @nm (RsInfoGroup @nm @pos @schemeNm (viewSelNmS @lhs.vwDpdGr @viewSel) @info @rlNms)
+
+-------------------------------------------------------------------------
+-- Formats, rewrites
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | gathFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
+ATTR AGItf [ | | fmGam: {FmGam Expr} ]
+
+ATTR AllDecl [ | | gathRwGam USE {`rwGamUnion`} {emptyGam}: RwExprGam ]
+ATTR AllDecl [ rwGam: RwExprGam | | ]
+ATTR AGItf [ | | rwGam: RwExprGam ]
+
+SEM AGItf
+  | AGItf           loc     .   fmGam       =   @decls.gathFmGam
+                                                `gamUnionShadow`
+                                                @lhs.fmGam
+                                                `gamUnionShadow`
+                                                fmGamFromList' FmFmtCmd [ (Nm f,Expr_Var (Nm t)) | (f,t) <- cfgFmFmtCmdAsc ]
+                            .   rwGam       =   @decls.gathRwGam
+
+SEM Decl
+  | Fmt             lhs     .   (gathFmGam,gathRwGam)
+                                            =   case @matchExpr.exprIsRw of
+                                                  ExprIsRw  n  -> (emptyGam,rwSingleton n @fmKind @atIO (@matchExpr.self,@expr.self))
+                                                  ExprIsVar n  -> (fmSingleton n @fmKind @expr.self,emptyGam)
+                                                  ExprIsOther  -> (emptyGam,emptyGam)
+
+SEM RExprEqn
+  | Expr            loc     .   fmGam       =   emptyGam
+                            .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
+
+SEM AttrEqn
+  | Eqn             loc     .   fmGam       =   emptyGam
+                            .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
+
+SEM Decl
+  | Fmt ShpJudge Explain
+                    loc     .   fmGam       =   emptyGam
+                            .   rwGam       =   emptyGam
+                            .   ecGam       =   emptyGam
+
+-------------------------------------------------------------------------
+-- Explanations
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | explGam USE {`gamUnion`} {emptyGam}: {ExplGam Expr} ]
+
+SEM Decl
+  | Explain         lhs     .   explGam     =   gamSingleton (maybe nmNone id @mbNm) (ExplInfo @expr.self)
+
+-------------------------------------------------------------------------
+-- Preambles
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ | | paGam USE {`gamUnion`} {emptyGam}: {FmKdGam String} ]
+
+SEM Decl
+  | Preamble        lhs     .   paGam       =   gamSingleton @fmKind @preamble
+
+-------------------------------------------------------------------------
+-- Error checks for duplicate names
+-------------------------------------------------------------------------
+
+SEM AGItf
+  | AGItf           loc     .   errDupRs    =   gamCheckDups emptySPos "toplevel" "ruleset/rulegroup" @decls.gathRsGam
+                            .   errDupSc    =   gamCheckDups emptySPos "toplevel" "scheme" @decls.gathScGam
+
+SEM Decl
+  | Rule            loc     .   errDupVw    =   gamCheckDups @pos "rule" "view" @decls.vwRlGam
+  | Scheme          loc     .   errDupVw    =   gamCheckDups @pos "scheme" "view" @decls.vwScGam
+
+-------------------------------------------------------------------------
+-- Wrapping context (stack)
+-------------------------------------------------------------------------
+
+{-
+ATTR AllExpr [ wrKindStk: {[WrKind]} | | ]
+
+SEM Expr
+  | Wrap            expr    .   wrKindStk   =   @wrKind : @lhs.wrKindStk
+
+SEM AGExprItf
+  | AGItf           expr    .   wrKindStk   =   [WrNone]
+
+SEM Decl
+  | Fmt             loc     .   wrKindStk   =   [WrNone]
+
+SEM RExprEqn
+  | Expr            loc     .   wrKindStk   =   [WrNone]
+
+SEM AttrEqn
+  | Eqn             loc     .   wrKindStk   =   [WrNone]
+
+SEM AExpr
+  | Expr            loc     .   wrKindStk   =   [WrNone]
+
+SEM AEqn
+  | Err             loc     .   wrKindStk   =   [WrNone]
+
+SEM Decl
+  | Fmt ShpJudge Explain
+                    expr    .   wrKindStk   =   [WrNone]
+-}
+
+%%]

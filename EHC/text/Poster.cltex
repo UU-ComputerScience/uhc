@@ -1,0 +1,240 @@
+%%[poster
+\small\sf
+\def\ColNodeBg{yellow}
+\def\ColNodeFg{black}
+%%[[exportedTikZMacros
+%%]]
+\newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{#4}}}
+\newcommand{\PCNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+%%[[exportedMacros
+\newcommand{\NTitle}[2]{{\Large\textbf{#1} \Large\textit{#2}}}
+\newcommand{\Dots}{\NTitle{...}{}}
+%%]]
+\let\NL=\\
+\noindent
+\begin{tikzpicture}
+
+% grid & reserve the space
+\draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+%\draw[step=1cm,red,very thin] (0,0) grid (21,29.6);
+
+% title
+\draw (10.5,29.5) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\FigScaledPDF{0.45}{2a_NWO_LogoBasis_PMSb}
+\PTitle{%
+ \parbox{.6\linewidth}{\centering \LARGE Coping with Compiler Complexity\\
+                      {\Large The structure of the Essential Haskell Compiler}}
+}
+\FigScaledPDF{0.45}{UULogoSolRight}
+}
+};
+
+\draw (10.5,27.1) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\begin{tabular}{p{.52\linewidth}p{.42\linewidth}}
+\NTitle{Observations:}{}
+&
+\NTitle{Resulting problem:}{}
+\\
+\emph{Programmers} want programming languages to do as much as possible of their programming job
+&
+\emph{Programming language + compiler} become more complex
+\\
+\emph{Users} want guarantees of resulting programs, e.g. no errors
+&
+\\
+\end{tabular}
+}
+};
+
+% transformations
+\draw (5.95,24) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
+{%\large
+\NTitle{Coping with implementation complexity:\\}{transform, transform and transform}\\[0.2cm]
+\hspace*{-20mm}\raisebox{-53mm}[27mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
+\begin{itemize}
+\item From complex to simple representations
+\end{itemize}
+}};
+
+% growing example
+% background
+\draw (5.95,18.5) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
+\NTitle{Coping with design complexity:\\}{stepwise grow a language}
+\vspace{14.5cm}\ 
+};
+\begin{scope}[shift={(1.35,2.4)},xscale=0.5,yscale=0.89]
+%%@TopicEHCStructure.langSeriesShadowedDefs
+
+%% Titles (copy paste modified)
+\draw (-1,15.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Simply typed |lambda| calculus (EH1)}};
+\draw (1.5,15.5) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Polymorphic type inference (EH3)}};
+\draw (4,16.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Higher ranked types (EH4)}};
+
+\draw (-2,5.75) node[anchor=west,color=blue] {\textbf{Implementation}};
+\draw (-2,5.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+\draw (-2,10.25) node[anchor=west,color=blue] {\textbf{Semantics}};
+\draw (-2,9.75) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+\draw (-2,13.75) node[anchor=west,color=blue] {\textbf{Example}};
+\draw (-2,13.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+
+%%@TopicEHCStructure.langSeriesShadowed
+\end{scope}
+
+% toolchain
+\draw (16.4,24) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Coping with maintenance complexity:\\}{generate, generate and generate}\\[0.2cm]
+{\large from common source: guarantees consistency of generated artefacts}\\
+%\FigScaledPDF{0.3}{toolchain2f}
+\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}
+\raggedright
+\begin{itemize}
+\item Chunks (.chs, .cag): for program, documentation (etc) combination
+\item Attribute Grammar (.ag): for tree based computation
+\item Ruler (.rul): for type rules
+\end{itemize}
+}};
+
+% dsl's
+\draw (16.4,13.7) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Coping with formalisation complexity:\\}{domain specific languages}
+\[\rulerCmdUse{rules3.I2.expr.base.e.app}\]
+\begin{itemize}
+\item Specification of type rules
+\item Implementation of type rules, different strategies
+\item Pretty printing type rules
+\end{itemize}
+}};
+
+% future plans
+\draw (16.4,6.1) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Future plans}{}\\
+\begin{Itemize}
+\item Incremental evaluation
+\item Parallel compilers
+\item Use of visual environments (Proxima)
+\item Efficient analysis
+\item ...
+\end{Itemize}
+}};
+
+% participants
+\draw (10.5,2) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large 
+\begin{tabular}{p{.39\linewidth}||p{.33\linewidth}||p{.27\linewidth}}
+\mbox{NWO `Hefboom' project 641.000.412,} 
+\mbox{NWO project 612.063.410,}
+\mbox{Microsoft Research Scholarship}
+& \mbox{Prof.~Dr.~S.~Doaitse~Swierstra,} Dr.~Atze~Dijkstra, Drs.~Jeroen~Fokker, Drs.~Arie~Middelkoop
+& \texttt{http://www.cs.uu.nl/\NL wiki/Ehc/WebHome}
+\\
+\end{tabular}
+}};
+
+\end{tikzpicture}
+%%]
+
+May still be used elsewhere:
+
+%%[langSeriesObsoleteHere
+\renewcommand{\arraystretch}{1.5}
+\newcommand{\Nw}{\hspace{\tabcolsep}}
+\def\Line{}
+\def\Impl{Implementation}
+\def\Sem{Semantics}
+\def\Doc{Documentation}
+\begin{tabular}{l@@{}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l@@{\Nw|->|\Nw}l}
+\multicolumn{5}{c}{\NTitle{Coping with design complexity: stepwise grow a language (Haskell in particular)}}
+\\
+%%[[langSeries
+\textbf{Feature:}
+&
+Simply typed |lambda| calculus
+&
+Polymorphic type inference
+&
+Higher ranked types
+&
+\Dots
+\\ \Line
+\textbf{Example:}
+&
+%%[[wrap=boxcode{.12} langSeriesEx1
+%%@[file:test/regress/1/demo2.eh%%]
+%%]]
+&
+%%[[wrap=boxcode{.12} langSeriesEx2
+let  id = \x -> x
+in   let  (a,b) = (id 3,id 'x')
+     in   a
+%%]]
+%yields
+%|id :: %%3(let id = \x -> x in id%%)|
+&
+%%[[wrap=boxcode{.15} langSeriesEx3
+%%@[file:test/regress/4/demo2.eh%%]
+%%]]
+&
+\Dots
+\\
+\textbf{\Sem:}
+&
+%%[[langSeriesSem1
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+%%]]
+&
+%%[[langSeriesSem2
+\(
+%%[[langSeriesSem2Rule
+\rulerCmdUse{rules3.HM.expr.base.e.app}
+%%]]
+\)
+%%]]
+&
+%%[[langSeriesSem3
+\(\rulerCmdUse{rules3.I1.expr.base.e.app}\)
+%%]]
+&
+\Dots
+\\
+\textbf{\Impl:}
+&
+%%[[langSeriesImpl1Tiny
+{\tiny
+%%[[langSeriesImpl1
+%%@EHRulerRules.1.expr.e.app wrap=boxcode{.12}
+%%]]
+}
+%%]]
+&
+%%[[langSeriesImpl2Tiny
+{\tiny
+%%[[langSeriesImpl2
+%%@EHRulerRules.3.expr.e.app wrap=boxcode{.12}
+%%]]
+}
+%%]]
+&
+%%[[langSeriesImpl3Tiny
+{\tiny
+%%[[langSeriesImpl3
+%%@EHRulerRules.4.expr.e.app wrap=boxcode{.12}
+%%]]
+}
+%%]]
+&
+\Dots
+\\
+\textbf{\Doc:}
+&
+\multicolumn{4}{l}{\Dots}
+\\
+%%]]
+\end{tabular}
+%%]
+

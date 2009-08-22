@@ -1,0 +1,4 @@
+let  f   ::  (Int -> Int) -> ...
+         =   \h ->  let  y   = g h
+                    in   y
+in   f id

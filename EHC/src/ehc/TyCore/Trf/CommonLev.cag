@@ -1,0 +1,120 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core transformations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Copy/Self
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllMeta [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarIntro's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Expr
+  | Lam         loc         .   cvi                 =   VarIntro
+                                                          { vintroLev  = @lev
+                                                          , vintroMeta = @argMeta.self
+                                                          }
+
+SEM ValBind
+  | Val         loc         .   cmetaVal            =   metasVal @bindMeta.self
+                            .   cvi                 =   emptyVarIntro { vintroLev  = @lhs.lev   , vintroMeta = @cmetaVal }
+                            .   cviExpr             =   emptyVarIntro { vintroLev  = @expr.levOf, vintroMeta = @cmetaVal }
+
+SEM Alt
+  | Alt         loc         .   cvi                 =   emptyVarIntro { vintroLev  = @lev }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ cvarIntroMp: VarIntroMp | | ]
+
+SEM AGItf
+  | AGItf       module      .   cvarIntroMp =   Map.empty
+
+SEM Expr
+  | Lam         body        .   cvarIntroMp =   Map.insert @arg @cvi @lhs.cvarIntroMp
+  | Let         loc         .   maxBindLev  =   fvsLev @lhs.cvarIntroMp cLevModule @binds.fvS
+                (loc.strLev,binds.cvarIntroMp)
+                                            =   case @categ of
+                                                    ValBindCateg_Strict -> (const @lhs.lev,@lhs.cvarIntroMp)
+                                                    ValBindCateg_Rec   -> ( const @maxBindLev
+                                                                       , Map.map (\cvi -> cvi {vintroLev = @maxBindLev}) @binds.cvarIntroExprMp
+                                                                           `Map.union` @lhs.cvarIntroMp
+                                                                       )
+                                                    _               -> (id,@lhs.cvarIntroMp)
+                body        .   cvarIntroMp =   Map.map (\cvi -> cvi {vintroLev = @strLev $ vintroLev cvi}) @binds.cvarIntroExprMp `Map.union` @lhs.cvarIntroMp
+
+SEM Alt
+  | Alt         expr        .   cvarIntroMp =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.cvarIntroMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Intro level of id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ introVarIntroMp: VarIntroMp | | ]
+
+SEM AGItf
+  | AGItf       module      .   introVarIntroMp    =   Map.empty
+
+SEM Expr
+  | Lam         body        .   introVarIntroMp    =   Map.insert @arg @cvi @lhs.introVarIntroMp
+  | Let         loc         .   introVarIntroMp    =   Map.map (\cvi -> cvi {vintroLev = @lhs.lev}) @binds.bindsIntroVarIntroMp `Map.union` @lhs.introVarIntroMp
+
+SEM Alt
+  | Alt         expr        .   introVarIntroMp    =   Map.fromList (zip @pat.nmL (repeat @cvi)) `Map.union` @lhs.introVarIntroMp
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindsIntroVarIntroMp USE {`Map.union`} {Map.empty}: VarIntroMp ]
+
+SEM ValBind
+  | Val         lhs         .   bindsIntroVarIntroMp
+                                                    =   Map.singleton @nm @cvi
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level of expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | levOf USE {`max`} {cLevModule}: Int ]
+
+SEM Expr
+  | Var         lhs         .   levOf       =   fvLev @nm @lhs.cvarIntroMp
+  | App         loc         .   levOf       =   @func.levOf `max` @arg.levOf
+  | Case        loc         .   levOf       =   @expr.levOf `max` @alts.levOf `max` @dflt.levOf
+  | TupDel      loc         .   levOf       =   @expr.levOf `max` @offset.levOf
+  | TupIns TupUpd
+                loc         .   levOf       =   @expr.levOf `max` @offset.levOf `max` @fldExpr.levOf
+  | Lam         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @body.fvS
+  | Let         loc         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @fvS
+%%[[20
+  | String      loc         .   levOf       =   cLevIntern
+%%]]
+
+SEM Alt
+  | Alt         lhs         .   levOf       =   fvsLev @lhs.cvarIntroMp cLevModule @expr.fvS
+
+ATTR AllBind [ | | cvarIntroExprMp USE {`Map.union`} {Map.empty}: VarIntroMp ]
+
+SEM ValBind
+  | Val         lhs         .   cvarIntroExprMp
+                                            =   Map.singleton @nm @cviExpr
+%%]
+

@@ -1,0 +1,179 @@
+%%[titlePHD
+\begin{titlepage}
+\pagenumbering{roman}
+%\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushright}
+Stepping through Haskell
+
+\vspace*{2ex}
+
+\Large 
+Stapsgewijs door Haskell\\
+(met een samenvatting in het Nederlands)
+
+%if asDraft
+\vspace*{2ex}
+Draft: \today \\
+{\footnotesize
+@$Id$@
+}
+%endif
+
+\end{flushright}
+\vfill\vfill
+
+\noindent
+\normalsize Proefschrift ter verkrijging van de graad van doctor aan de
+Universiteit Utrecht op gezag van de Rector Magnificus, 
+Prof.~dr.~W.~H.~Gispen, ingevolge het besluit van het College voor
+Promoties in het openbaar te verdedigen op maandag 14~november 2005
+des middags te 14.30 uur
+
+\vspace*{1ex}
+
+\noindent
+door
+
+\vspace*{1ex}
+
+\begin{flushright}
+\LARGE Atze Dijkstra
+\par
+\bigskip
+\par\noindent\normalsize
+geboren op 19 januari 1960 te Kerensheide (Beek), Nederland
+\end{flushright}
+
+\vfill
+\newpage
+\thispagestyle{empty}%
+\noindent
+\begin{tabular}{@@{}ll}
+promotor: & Prof.~dr.~S.~Doaitse Swierstra, Universiteit Utrecht
+\end{tabular}
+
+\medskip
+
+\noindent
+Department of Information and Computing Sciences, Universiteit Utrecht
+
+\vfill
+
+\noindent
+\includegraphics{ipalogo}\par\noindent
+The work in this thesis has been carried out under the auspices of the
+research school \textsc{IPA} (Institute for Programming research and Algorithmics).
+%if False
+,
+and has been financed by the \textsc{NWO} (Nederlandse Organisatie voor 
+Wetenschappelijk Onderzoek).
+%endif
+
+\medskip
+
+\noindent
+Printed by Ridderprint offsetdrukkerij BV, Ridderkerk.
+\\
+Cover illustration \emph{``|lambda| strolling on the beach''} by Atze Dijkstra.
+
+\medskip
+
+\noindent
+ISBN 90-393-4070-6
+
+\medskip
+
+\noindent
+Copyright \copyright\ Atze Dijkstra, 2005
+\end{titlepage}
+%%]
+
+%%[titleEhcBook
+\begin{titlepage}
+\pagenumbering{roman}
+%\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushright}
+Essential Haskell
+
+\vspace*{2ex}
+
+\Large 
+\ \\
+
+%if asDraft
+\vspace*{2ex}
+Draft: \today \\
+{\footnotesize
+@$Id$@
+}
+%endif
+
+\end{flushright}
+\vfill\vfill
+
+\begin{flushright}
+\LARGE Atze Dijkstra
+\par
+\end{flushright}
+
+\vfill
+\end{titlepage}
+%%]
+
+%%[titleRulerDoc
+\begin{titlepage}
+\pagenumbering{roman}
+%\setcounter{page}{1}%
+\noindent
+\rule{\linewidth}{0pt}
+\vfill
+\Huge
+\begin{flushleft}
+Ruler Manual
+
+%if asDraft
+\vspace*{2ex}
+{\huge
+(Under construction) \\
+\today
+}
+%endif
+
+\vspace*{2ex}
+
+{\huge
+Atze Dijkstra
+}
+
+\end{flushleft}
+
+\begin{flushright}
+
+%if asDraft
+\vspace*{2ex}
+
+{\small
+Manual version: \\
+%%@ToolDocRuler.svnId
+
+\vspace*{1.5ex}
+
+Ruler version: \\
+%%@ToolDocRuler.rulerVersionFromRulerExec
+}
+%endif
+
+\end{flushright}
+\vfill\vfill
+
+\end{titlepage}
+%%]
+

@@ -1,0 +1,10 @@
+-------------------------------------------------------------------------
+-- Split out parts
+-------------------------------------------------------------------------
+
+include EhcRulesCommon
+include EhcRulesAST
+include EhcRulesRelations
+include EhcRulesCommonSchemes
+include EhcRulesSchemes
+

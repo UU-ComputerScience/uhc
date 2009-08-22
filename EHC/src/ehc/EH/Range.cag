@@ -1,0 +1,107 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Range definition, useful only when leafs of AST are provided with range info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.range
+SEM AllNT
+  | *           loc         .   range               =   emptyRange
+%%]
+
+%%[99 -1.range
+ATTR AllNT [ | | range USE {`rangeUnion`} {emptyRange} : Range ]
+
+SEM Decl
+  | *           loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM TyExpr
+  | Con Var VarWild Impls NoImpls Wild
+  				loc         .   range          		=   @hsrange
+  | * - Con Var VarWild Impls NoImpls Wild
+  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM KiExpr
+  | Con Var		loc         .   range          		=   @hsrange
+  | * - Con Var	loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM TyVar
+  | Var			loc         .   range          		=   @hsrange
+  | * - Var		loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM RowTyExpr
+  | Var	Empty	loc         .   range          		=   @hsrange
+  | * - Var	Empty
+  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM DataFieldExpr DataFieldPatExpr
+  | Con			loc         .   range          		=   @hsrange
+  | * - Con		loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM RecExpr RecPatExpr
+  | Empty		loc         .   range          		=   @hsrange
+  | * - Empty	loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM PrExpr CaseAlt DataConstr DataField FuncDep
+  | *			loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM Expr
+  | Con Var IConst CConst SConst Undefined CaseAltFail DynVar IIConst
+  				loc         .   range          		=   @hsrange
+  | * - Con Var IConst CConst SConst Undefined CaseAltFail DynVar IIConst
+  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+SEM PatExpr
+  | Con Var IConst CConst SConst
+  				loc         .   range          		=   @hsrange
+  | * - Con Var IConst CConst SConst
+  				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
+
+%%]
+ATTR AllNTList [ | | range USE {emptyRange} {`rangeUnion`}: Range ]
+ATTR AllNTWithoutList [ | | range USE {emptyRange} {`rangeUnion`} {@fldrange}: Range ]
+
+SEM AllNT
+  | *           loc         .   childRange          =   @range `rangeUnion` @children.childRange
+
+ATTR AllNTList [ | | range USELOC {@fldrange} {`rangeUnion`}: Range ]
+ATTR AllNTList [ | | range USE VIALOC WITH {@fldrange} {emptyRange} {`rangeUnion`}: Range ]
+
+children: lhs.r = c1.r + c2.r
+leaf    : lhs.r = emptyRange
+
+children: loc.r = c1.r + c2.r + @fld
+leaf    : loc.r = emptyRange  + @fld
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather + distribute ranges for predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Source file location cannot always be easily propagated,
+in particular through the predicate proving machinery.
+All predicate occurrences are uniquely labeled, so this can be used to provide a mapping
+to the source location where such a predicate did arise.
+
+%%[(99 hmtyinfer) hs
+type RangeMp = Map.Map Pred [Range]
+
+cnstrMpToRangeMp :: CHRPredOccCnstrMp -> RangeMp
+cnstrMpToRangeMp m = Map.unionsWith (++) [ Map.singleton (cpoPr p) [cpoRange p] | (Prove p) <- Map.keys m ]
+%%]
+
+%%[(99 hmtyinfer)
+ATTR NTPrf [ | | gathRangeMp USE {`Map.union`} {Map.empty}: RangeMp ]
+ATTR NTPrf [ rangeMp: RangeMp | | ]
+
+SEM AGItf
+  | AGItf       loc         .   rangeMp             =   Map.unionsWith (++)
+                                                        $ map (\(c,r) -> Map.singleton (@expr.tyVarMp |=> c) r)
+                                                        $ Map.toList
+                                                        $ @expr.gathRangeMp
+                                                          `Map.union` cnstrMpToRangeMp @expr.gathCnstrMp
+
+SEM Expr
+  | Let         lhs         .   gathRangeMp         =   @decls.gathRangeMp
+                                                        `Map.union` cnstrMpToRangeMp @decls.gathCnstrMp
+                                                        `Map.union` @body.gathRangeMp
+%%]
+
+

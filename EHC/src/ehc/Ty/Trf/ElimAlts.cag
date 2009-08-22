@@ -1,0 +1,316 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to check/elimination for/of inconsistent/ binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2 hs module {%{EH}Ty.Trf.ElimAlts} import(qualified Data.Set as Set,Data.List,EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Error},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.Full},{%{EH}Ty.FitsInCommon}) export(tyElimAlts,tyElimAltsCleanup)
+%%]
+
+%%[4_2 hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}Error.Pretty})
+%%]
+
+%%[44_2 hs export(tyElimForgetAlts,cnstrElimForgetAlts)
+%%]
+ 
+%%[4_2.WRAPPER ag import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[4_2.tyElimAlts hs
+tyElimAlts :: FitsIn' -> FIOpts -> TyVarIdL -> UID -> VarMp -> Ty -> FIOut
+tyElimAlts fitsIn fio globTvL uniq varmp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = fitsIn, fio_Inh_TyAGItf = fio {fioBindToTyAlts = True}
+                              , gUniq_Inh_TyAGItf = uniq, globTvL_Inh_TyAGItf = globTvL
+                              , globVarMp_Inh_TyAGItf = varmp
+                              })
+     in   emptyFO { foTy = repl_Syn_TyAGItf t, foVarMp = tyVarMp_Syn_TyAGItf t, foErrL = errL_Syn_TyAGItf t }
+
+tyElimAltsCleanup :: VarMp -> VarMp -> VarMp
+tyElimAltsCleanup gVarMp newVarMp
+  =  let  c2 = varmpDelAlphaRename newVarMp
+          c3 = varmpKeys c2 `varmpDel` varmpFilterAlphaRename gVarMp
+     in   c2 |=> c3
+
+%%]
+tyElimForgetAlts :: Ty -> (Ty,Set.Set TyVarId)
+tyElimForgetAlts ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {fitsIn_Inh_TyAGItf = undefined, fio_Inh_TyAGItf = undefined, gUniq_Inh_TyAGItf = undefined, globTvL_Inh_TyAGItf = []})
+     in   (replNoAlt_Syn_TyAGItf t,ambTvS_Syn_TyAGItf t)
+
+cnstrElimForgetAlts :: VarMp -> (VarMp,Set.Set TyVarId)
+cnstrElimForgetAlts c
+  = (c'',s)
+  where  (c',s) = varmpMapThrTy  (\_ _ t s -> let (t',s') = tyElimForgetAlts t in (t',s `Set.union` s')) Set.empty c
+         c'' = varmpDelAlphaRename c'
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% fitsIn, parameterized with env+opts, passed as param to avoid mutual module recursion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllTyAndFlds [ fitsIn: FitsIn' | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global VarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllTyAndFlds [ globVarMp: VarMp | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global tvars (no elim allowed)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllTyAndFlds [ globTvL: TyVarIdL | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Other flags: is it a meet?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllTyAndFlds [ fio: FIOpts | | ]
+
+SEM Ty
+  | Quant           ty      .   fio         =   @lhs.fio {fioDontBind = @tv : fioDontBind @lhs.fio}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf [ gUniq: UID | | ]
+ATTR AllTyAndFlds [ | gUniq: UID | ]
+
+SEM TyPlusL
+  | Cons            (hd.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
+
+SEM Ty
+  | Alts            (tyL.gUniq,loc.lUniq,loc.lUniq2,loc.lUniq3,loc.lUniq4)
+                                            =   mkNewLevUID4 @lhs.gUniq
+  | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has quantifier inside
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTy [ | | hasHardTy USE {||} {False}: Bool ]
+
+SEM Ty
+  | Quant           lhs     .   hasHardTy   =   True
+
+SEM TyPlus
+  | Ty              lhs     .   hasHardTy   =   @hardness == TyHard || @ty.hasHardTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Offering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2.offering
+ATTR TyPlus [ | | offering: TyNeed ]
+
+SEM TyPlus
+  | Ty              lhs     .   offering    =   @offering
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check/elim
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2.repl
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf  [ | | repl: Ty    ]
+%%]
+
+%%[4_2 hs
+fitAlts :: FitsIn' -> FIOpts -> UID -> VarMp -> Ty -> TyL -> FIOut
+fitAlts elimFits fio u gVarMp startTy tL
+  =  let  (fo,_)
+            =  foldr  (\t1 (fo2,u2)
+                          ->  let  (u',u1) = mkNewLevUID u2
+                                   fo = elimFits fio u1 gVarMp (foTy fo2) t1
+                                   rfo = if null (foErrL fo) && null (foErrL fo2)
+                                         then (fo {foVarMp = foVarMp fo |=> foVarMp fo2},u')
+                                         else (emptyFO {foErrL = if null (foErrL fo) then foErrL fo2 else foErrL fo},u)
+                              in   rfo
+                      )
+                      (emptyFO {foTy = startTy},u) tL
+     in   fo
+%%]
+                              in   tr "XX" (pp (foTy fo2) >-< pp (fioMode fio) >-< pp t1 >-< pp (foTy fo) >-< ppVarMpV (foVarMp fo) >-< ppErrL (foErrL fo)) rfo
+                              in   tr "XX" (pp t2 >#< fioMode fio >#< pp t1 >-< "res=" >#< pp t >-< "cnstr=" >#< ppVarMpV c >-< ppErrL e)
+                                     (if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
+                                     )
+                              in   if null e && null e2 then (t,c |=> c2,[],u') else (Ty_Any,emptyVarMp,if null e then e2 else e,u)
+
+%%[4_2.Alts
+SEM Ty
+  | Alts            loc     .   (repl,quTyVarMp,errL)
+                                            =   case varmpTyLookup @tv @lhs.tyVarMp of
+                                                    Nothing | @tv `notElem` @lhs.globTvL
+                                                        ->  if null @tyL.hardTyL
+                                                            then  (mkTyVar @tv,@tv `varmpTyUnit` mkTyVar @tv,[])
+                                                            else  let  foh = fitAlts @lhs.fitsIn @lhs.fio @lUniq @lhs.globVarMp Ty_Any (@tyL.hardTyL)
+                                                                  in   if null (foErrL foh)
+                                                                       then  let  fos = fitAlts @lhs.fitsIn @lhs.fio @lUniq2 (foVarMp foh |=> @lhs.globVarMp) (foTy foh) (foVarMp foh |=> @tyL.softTyL)
+                                                                                  eat = if null (foErrL fos) then foTy fos else foTy foh
+                                                                                  fo = tyElimAlts @lhs.fitsIn @lhs.fio @lhs.globTvL @lUniq3 (foVarMp foh |=> @lhs.globVarMp) eat
+                                                                                  eaVarMp = @tv `varmpTyUnit` foTy fo
+                                                                                  (_,foOtherL)
+                                                                                     = fitsInLWith (\_ _ -> emptyFO) @lhs.fitsIn fio @lUniq4 (@lhs.tyVarMp |=> @lhs.globVarMp) @tyL.otherTyL (repeat eat)
+                                                                                     where fio = @lhs.fio {fioMode = if fioMode @lhs.fio == FitMeet then FitSubLR else FitSubRL} 
+                                                                             in   (foTy fo,eaVarMp |=> foVarMp fo,if null (foErrL fo) then concat (map foErrL foOtherL) else foErrL fo)
+                                                                       else  (mkTyVar @tv
+                                                                             ,@tv `varmpTyUnit` Ty_Any
+                                                                             ,[Err_InconsistentAlts @lhs.selfRepl @tv @tyL.hardTyL (fioMode @lhs.fio)]
+                                                                             )
+                                                    Just t
+                                                        ->  (t,emptyVarMp,[])
+                                                    _   ->  (@self,emptyVarMp,[])
+  | Quant           lhs     .   repl        =   mkTyQu @qu.self ([@tv] `intersect` ftv @ty.repl) @ty.repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyAGItf AllTyAndFlds [ | | errL USE {++} {[]}: ErrL ]
+
+SEM Ty
+  | Alts            lhs     .   errL        =   @errL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering of yes/not quant types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR TyPlusL [ | | hardTyL: TyL  softTyL: TyL  otherTyL: TyL ]
+
+SEM TyPlusL
+  | Cons            loc     .   hdTy        =   tyPlusTy @hd.self
+                            .   (hardTyL,softTyL,otherTyL)
+                                            =   case (@hd.hasHardTy,@hd.offering) of
+                                                  (True ,TyRequired)
+                                                      | fioMode @lhs.fio == FitMeet
+                                                            -> ([@hdTy], [], [])
+                                                  (True ,TyOffered )
+                                                      | fioMode @lhs.fio == FitJoin
+                                                            -> ([@hdTy], [], [])
+                                                  (False,TyRequired)
+                                                      | fioMode @lhs.fio == FitMeet
+                                                            -> ([], [@hdTy], [])
+                                                  (False,TyOffered )
+                                                      | fioMode @lhs.fio == FitJoin
+                                                            -> ([], [@hdTy], [])
+                                                  (_    ,_) -> ([], [], [@hdTy])
+                    lhs     .   hardTyL     =   @hardTyL  ++ @tl.hardTyL
+                            .   softTyL     =   @softTyL  ++ @tl.softTyL
+                            .   otherTyL    =   @otherTyL ++ @tl.otherTyL
+  | Nil             lhs     .   hardTyL     =   []
+                            .   softTyL     =   []
+                            .   otherTyL    =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unification of all binds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTyAndFlds [ | tyVarMp: VarMp | ]
+ATTR TyAGItf  [ | | tyVarMp: VarMp ]
+
+SEM TyAGItf
+  | AGItf           ty      .   tyVarMp     =   emptyVarMp
+
+SEM Ty
+  | Alts            loc     .   tyVarMp     =   @quTyVarMp `varmpPlus` @lhs.tyVarMp
+                    lhs     .   tyVarMp     =   @tyVarMp
+%%]
+                    lhs     .   tyVarMp     =   @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "l.cnstr=" >#< ppVarMpV @lhs.tyVarMp >-< "cnstr=" >#< ppVarMpV @quTyVarMp >-< "err=" >#< ppErrL @errL) @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppVarMpV @tyVarMp >-< "err=" >#< ppErrL @errL) @tyVarMp
+                    lhs     .   tyVarMp     =   tr "YY" ("ty=" >#< pp @self >-< "cnstr=" >#< ppVarMpV @tyVarMp >-< "err=" >#< ppErrL @errL >-< "ierr=" >#< ppErrL @internErrL) @tyVarMp
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Orig type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTyAndFlds [ | | self: SELF ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement type passed back inside
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR AllTy [ selfRepl: Ty | | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   selfRepl    =   @ty.repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% App spine info, polarity variance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+ATTR Ty [ | | appSpineInfoL: {[AppSpineVertebraeInfo]} ]
+
+SEM Ty
+  | Con             lhs     .   appSpineInfoL       =   asgiSpine $ panicJust "ElimAlts.Ty.Con.asGamLookup: not dealt with nonpresence" $ asGamLookup @nm appSpineGam
+  | App             (loc.asi,lhs.appSpineInfoL)     =   hdAndTl @func.appSpineInfoL
+  | * - Con App     lhs     .   appSpineInfoL       =   unknownAppSpineVertebraeInfoL
+
+SEM Ty
+  | App             arg     .   fio                 =   fioSwapPolarity (asPolarity @asi) @lhs.fio
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Full alts removal
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+%%]
+ATTR TyAGItf [ | | replNoAlt: Ty ]
+ATTR AllTyAndFlds [ | | replNoAlt: SELF ]
+
+SEM Ty
+  | Alts            lhs     .   replNoAlt   =   mkTyVar @tv
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tvars which arise from alts with >1 (i.e. ambiguous) bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4_2
+%%]
+ATTR AllTy TyAGItf [ | | ambTvS USE {`Set.union`} {Set.empty}: {Set.Set TyVarId} ]
+
+SEM Ty
+  | Alts            lhs     .   ambTvS      =   if length @tyL.hardTyL + length @tyL.softTyL > 1
+                                                then Set.singleton @tv
+                                                else @tyL.ambTvS
+SEM Ty
+  | Alts            lhs     .   ambTvS      =   @tyL.ambTvS `Set.union`
+                                                    (if length @tyL.hardTyL + length @tyL.softTyL > 1
+                                                     then Set.singleton @tv
+                                                     else Set.empty
+                                                    )
+

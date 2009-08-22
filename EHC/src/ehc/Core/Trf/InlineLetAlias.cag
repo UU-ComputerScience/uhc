@@ -1,0 +1,294 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inline let bindings for variables and constants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+WRAPPER CodeAGItf
+%%]
+
+%%[(9 codegen) hs import(qualified Data.Set as Set)
+%%]
+
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute nmMp
+            and synthesized attribute bindNmMp of nonterminal CBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           CExpr.Let, inherited attribute binds.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CBindL.Cons, inherited attribute lhs.nmMp
+           CBindL.Cons, inherited attribute hd.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CBind.Bind, inherited attribute lhs.nmMp
+           CBind.Bind, inherited attribute expr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.App, inherited attribute lhs.nmMp
+           CExpr.App, inherited attribute arg.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Case, inherited attribute lhs.nmMp
+           CExpr.Case, inherited attribute dflt.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Lam, inherited attribute lhs.nmMp
+           CExpr.Lam, inherited attribute body.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Let, inherited attribute lhs.nmMp
+           CExpr.Let, local attribute nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 56, column 33))
+           CExpr.Let, inherited attribute body.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupDel, inherited attribute lhs.nmMp
+           CExpr.TupDel, inherited attribute offset.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupIns, inherited attribute lhs.nmMp
+           CExpr.TupIns, inherited attribute fldExpr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.TupUpd, inherited attribute lhs.nmMp
+           CExpr.TupUpd, inherited attribute fldExpr.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+           CExpr.Var, inherited attribute lhs.nmMp
+           CExpr.Var, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 83, column 33))
+           CExpr.TupUpd, synthesized attribute fldExpr.cTrf
+           CExpr.TupUpd, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupUpd, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupIns, synthesized attribute fldExpr.cTrf
+           CExpr.TupIns, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupIns, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupDel, synthesized attribute offset.cTrf
+           CExpr.TupDel, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.TupDel, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Let, synthesized attribute body.cTrf
+           CExpr.Let, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Let, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 80, column 33))
+           CExpr.Lam, synthesized attribute body.cTrf
+           CExpr.Lam, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Lam, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Case, synthesized attribute dflt.cTrf
+           CExpr.Case, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.Case, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.App, synthesized attribute arg.cTrf
+           CExpr.App, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CExpr.App, synthesized attribute lhs.cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CBind.Bind, synthesized attribute expr.cTrf
+           CBind.Bind, local attribute cTrf ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 76, column 22))
+           CBind.Bind, synthesized attribute lhs.bindNmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 70, column 34))
+           CBindL.Cons, synthesized attribute hd.bindNmMp
+           CBindL.Cons, synthesized attribute lhs.bindNmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 66, column 20))
+           CExpr.Let, synthesized attribute binds.bindNmMp
+           CExpr.Let, local attribute nmMpNew ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 38, column 33))
+           CExpr.Let, local attribute nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 56, column 33))
+           CExpr.Let, inherited attribute binds.nmMp ("build/8/lib-ehc/EH8/Core/Trf/InlineLetAlias.ag"(line 30, column 18))
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).cmodTrfInlineLetAlias hs
+cmodTrfInlineLetAlias :: CModule -> CModule
+cmodTrfInlineLetAlias cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(20 codegen) -8.cmodTrfInlineLetAlias hs
+cmodTrfInlineLetAlias :: HsNameS -> CModule -> CModule
+cmodTrfInlineLetAlias globNmS cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf {noTrfNmS_Inh_CodeAGItf = globNmS})
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globally used vars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
+
+SEM CAlt
+  | Alt         loc         .   noTrfNmS    =   Set.empty
+
+SEM CPatBind
+  | Bind        loc         .   noTrfNmS    =   Set.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let bindings for just names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type NmMp = Map.Map HsName CExpr
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ nmMp: NmMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   nmMp        =   Map.empty
+
+SEM CExpr
+  | Let         loc         .   allowTrf    =   @categ /= CBindings_Strict
+                                                && @categ /= CBindings_FFI
+%%[[94
+                                                && @categ /= CBindings_FFE
+%%]]
+                            .   allowStrTrf =   @categ /= CBindings_FFI
+%%[[94
+                                                && @categ /= CBindings_FFE
+%%]]
+                            .   nmMpNew     =   Map.foldWithKey
+                                                  (\n r m
+                                                    -> case r of
+                                                         CExpr_Var nm
+                                                           | nm `Map.member` @binds.bindNmMp
+                                                             -> m
+                                                           | @allowTrf || (@allowStrTrf && cexprIsEvaluated r')
+                                                             -> Map.insert n r' m
+                                                           where r' = maybe r id . Map.lookup nm $ @lhs.nmMp
+                                                         _ | @allowTrf
+                                                             -> Map.insert n r m
+                                                         CExpr_Int i
+                                                           | @allowStrTrf
+                                                             -> Map.insert n r m
+                                                         _   -> m
+                                                  )
+                                                  Map.empty
+                                                  @binds.bindNmMp
+                            .   nmMp        =   @nmMpNew `Map.union` @lhs.nmMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a substitutable value?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+
+ATTR CExpr [ | | mbRepl: {Maybe CExpr} ]
+
+SEM CExpr
+  | Var         lhs         .   mbRepl      =   Just @cTrf
+  | Int 
+    Char        lhs         .   mbRepl      =   if @lhs.allowTrfToCon
+                                                then Just @cTrf
+                                                else Nothing
+  | * - Var 
+        Int 
+        Char    lhs         .   mbRepl      =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather additional names for which the def may not be eliminated: FFE
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(94 codegen)
+ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bound id's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
+ATTR AllBind [ | | bindL USE {++} {[]}: {[(HsName,CBind)]} ]
+
+
+SEM CBind
+  | Bind        lhs         .   (bindNmMp,bindL)
+                                            =   case @expr.mbRepl of
+                                                  Just r | @nm /= hsnMain
+%%[[20
+                                                           && not (@nm `Set.member` @lhs.noTrfNmS)
+%%]]
+                                                    -> (@nm `Map.singleton` r,[(@nm,@cTrf)])
+                                                  _ -> (Map.empty,[(@nm,@cTrf)])
+%%]
+
+%%[(8 codegen)
+
+ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
+
+SEM CModule
+  | Mod   expr.allowTrfToCon  =  True
+
+SEM CPatBind
+  | Bind  offset.allowTrfToCon  =  True
+
+%%]
+
+%%[(9 codegen)
+  
+ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
+
+SEM CModule
+  | Mod   expr.noTrfToConNmS  =  Set.empty
+
+SEM CPatBind
+  | Bind  offset.noTrfToConNmS  =  Set.empty
+
+  
+SEM CBind
+  | Bind  expr.allowTrfToCon  =  not (@nm `Set.member` @lhs.noTrfToConNmS)
+          expr.noTrfToConNmS  =  @lhs.noTrfToConNmS `Set.union` @bindMeta.nameS
+  
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         lhs         .   cTrf        =   if Map.null @nmMpNew
+                                                then @cTrf
+                                                else mkCExprLet @categ
+                                                       [ b | (n,b) <- @binds.bindL
+                                                           , not (n `Map.member` @nmMpNew)
+%%[[94
+                                                             || n `Set.member` @binds.bindsNoTrfNmS
+%%]]
+                                                       ] @body.cTrf
+  | Var         lhs         .   cTrf        =   maybe @cTrf id $ Map.lookup @nm $ @lhs.nmMp
+%%]
+
+%%[(94 codegen)
+SEM CBind
+  | FFE         loc         .   (replNm,bindsNoTrfNmS)
+                                            =   case Map.lookup @expNm @lhs.nmMp of
+                                                    Just e | isJust mbNm
+                                                      -> (fromJust mbNm,Set.empty)
+                                                      where mbNm = cexprMbVar e
+                                                    _ -> (@expNm,Set.singleton @expNm)
+                lhs         .   cTrf        =   CBind_FFE @nm @callconv @expEnt @replNm @ty
+
+%%]
+
+
+%%[(9 codegen)
+
+ATTR CExpr   [ | | bindNmMp USE {`Map.union`} {Map.empty}: NmMp ]
+ATTR AllMetaVal   [ bindNmMp: NmMp | | nameS: HsNameS ]
+
+SEM CBind
+  | Bind  bindMeta.bindNmMp  =  @expr.bindNmMp
+
+SEM CExpr
+  | Lam   argMeta.bindNmMp  =  Map.empty
+  
+SEM CMetaVal
+  | Dict
+    Val             lhs.nameS = Set.empty
+  | DictClass
+    DictInstance    loc.subst =  maybe Nothing (\nm->Just (maybe nm (fromJust . cexprMbVar) (Map.lookup nm @lhs.bindNmMp)))
+                    lhs.nameS =  Set.fromList [ nm | Just nm <- @names ]
+  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map @loc.subst @names)
+  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map @loc.subst @names)
+
+%%]

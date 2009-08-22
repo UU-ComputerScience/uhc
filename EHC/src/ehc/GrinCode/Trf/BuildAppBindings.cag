@@ -1,0 +1,168 @@
+%%[doesWhat doclatex
+
+Replace generic A/ tags by A/app1, A/app2, A/app3 etc.
+Also build new functions app1, app2, app3 etc.
+
+%%]
+
+
+
+The input contains nodes with an A/_ tags and a variable number of fields. 
+The first field always represents the function to be applied, the other fields are arguments for this function.
+This transformation replaces the tag with a tag that also encodes the number of arguments.
+Examples:
+  (A/_ f a1 a2 a3)  ==>  (A/app3 f a1 a2 a3)
+  (A/_ f a1 a2)     ==>  (A/app2 f a1 a2)
+  (A/_ f a1)        ==>  (A/app1 f a1)
+The transformation also builds new functions app1, app2, app3 ...
+for all number of arguments for which A tags exist.
+
+New: these functions are specialized for each occurence of A/
+Examples:
+  (A/_ f a1 a2)     ==>  (A/app2_1 f a1 a2)
+  (A/_ g b1 b2)     ==>  (A/app2_2 g b1 b2)
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.BuildAppBindings} import(qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(buildAppBindings)
+
+specialize = True
+
+buildAppBindings :: GrModule -> GrModule
+buildAppBindings code
+  = let inh = Inh_GrAGItf
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF     ]
+%%]
+
+%%[(8 codegen grin)
+ATTR AllBind AllGrExpr [ | applyNodeSizes: {Set.Set (Int,Int)} | ]
+
+SEM GrModule
+  | Mod           bindL  .  applyNodeSizes  = Set.empty
+
+SEM GrExpr
+  | Store  lhs . applyNodeSizes = maybe @lhs.applyNodeSizes 
+                                        (\e -> Set.insert (e, if specialize then @val.atagId else 0) @lhs.applyNodeSizes) 
+                                        @val.applyNodeSize
+
+SEM GrVal [ | | applyNodeSize: {Maybe Int} ]
+  | Node          lhs  .  applyNodeSize         =  if @tag.isGenApplyTag
+                                                   then Just @fldL.fieldCount
+                                                   else Nothing
+  | * - Node      lhs  .  applyNodeSize         =  Nothing
+
+SEM GrValL [ | | fieldCount: Int ]
+  | Cons  lhs  .  fieldCount  =  1 + @tl.fieldCount
+  | Nil   lhs  .  fieldCount  =  0
+
+SEM GrTag [ | | isGenApplyTag : Bool ]
+  | App      lhs  .  isGenApplyTag  =  @nm == hsnWild
+  | * - App  lhs  .  isGenApplyTag  =  False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replace A/_ by A/appN      %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin)
+
+ATTR AllGrExpr AllGrVal AllBind AllGlobal [ | atagId : Int | ]
+
+%%]
+
+
+
+%%[(8 codegen grin).replaceApplyTags
+SEM GrVal
+  | Node      loc  . newTag      = if   @tag.isGenApplyTag 
+                                   then applyFunctionTag @fldL.fieldCount (@lhs.atagId+1)
+                                   else @tag.grTrf
+  | Node      lhs  . grTrf       = GrVal_Node @newTag @fldL.grTrf
+  
+  
+  | Node      lhs  . atagId     =  if   @tag.isGenApplyTag 
+                                   then @lhs.atagId + 1
+                                   else @lhs.atagId
+
+SEM GrModule
+  | Mod       globalL . atagId   = 0
+  
+%%]
+
+%%[(10 codegen grin)
+SEM GrSplit
+  | Sel       off  . atagId     =  error "BuildAppBindings: GrpSplit.Sel.atagId"
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Building the appN bindings %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).buildAppBinding hs
+
+applyFunctionName size specnr
+  =  hsnFromString $ "app" ++ show size ++ (if specialize then "_" ++ show specnr else "")
+  
+applyFunctionTag size specnr
+  =  GrTag_App (applyFunctionName size specnr)
+
+
+buildAppBinding (size,specnr)
+  = let funcName    = applyFunctionName size specnr
+        args@(partialApp:appArgs) = map (\n -> hsnSuffix funcName ("x"++show n)) [0..size-1]
+        evalPartialApp            =            hsnSuffix funcName "f"
+        body = GrExpr_Seq (GrExpr_Eval partialApp)
+                          (GrPatLam_Var evalPartialApp)
+                          (GrExpr_App evalPartialApp $ map GrVal_Var appArgs)
+    in GrBind_Bind funcName GrBindAnnNormal args body
+
+%%]
+
+%%[(8 codegen grin).addAppBindings
+SEM GrModule
+  | Mod  lhs  . grTrf  = GrModule_Mod @moduleNm 
+                                      @globalL.grTrf 
+                                      (@loc.mainFullProg ++ map buildAppBinding (Set.toList @bindL.applyNodeSizes) ++ @bindL.grTrf)
+                                      @tagsMp 
+                                      
+%%[[8
+         loc . mainFullProg = []
+%%][99
+         loc . mainFullProg = let worldNode = GrVal_Node GrTag_Hole []   
+                                  worldName = hsnFromString "world"
+                                  ioName    = hsnFromString "theio"
+                              in  [ GrBind_Bind hsnMainFullProg 
+                                                GrBindAnnNormal [] (GrExpr_Seq  (GrExpr_Store worldNode)
+                                                                                (GrPatLam_Var worldName)
+                                                                                (GrExpr_Seq (GrExpr_Eval hsnMain)
+                                                                                            (GrPatLam_Var ioName)
+                                                                                            (GrExpr_App ioName [GrVal_Var worldName])
+                                                                                )
+                                                                   ) 
+                                  ]
+%%]]
+                                      
+%%]

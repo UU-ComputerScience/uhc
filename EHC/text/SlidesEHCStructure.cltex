@@ -1,0 +1,932 @@
+%%[title
+\begin{frame}
+\titlepage
+\end{frame}
+
+%%]
+
+%%[intro
+
+\raggedbottom
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{The context of the Essential Haskell Compiler\dots}
+
+{\large We are writing a Haskell compiler}
+
+{\large but not just that}
+
+\vspace*{2mm}
+
+\visible<2->{%
+{\large Embedded in Software Technology group}\\
+\uncover<3->{{\large \color{uured} Better software by better languages}}
+
+\begin{itemize}
+\item {\large functional programming \& language design}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}combinator libraries (e.g. parsing)}}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}applications (e.g. Webserver)}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}generic programming}}
+
+\item {\large compilers for functional programming languages}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}EHC: extendibility + experiments}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Helium: good error reporting, used in classroom}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Generic Haskell: type indexed programming}}
+
+\end{itemize}
+}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{The context of the Essential Haskell Compiler\dots}
+
+{\large but also }
+
+\begin{itemize}
+\item {\large tools for compiler construction}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Attribute Grammar system: tree oriented computation}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Ruler: programming type rules}}
+
+\item {\large systems programming \& applications}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Proxima: generic presentation-oriented structure aware editor}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}WebFunctions: web applications}}
+
+\item {\large program analysis}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}TOP: library for aiding analyses}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Analyses: strictness, uniqueness, ...}}
+
+\end{itemize}
+
+\end{frame}
+%endif
+
+
+\begin{frame}
+\frametitle{The structure of the Essential Haskell Compiler\dots}
+
+{\large We are writing a Haskell compiler}
+
+{\large that by design {\em evolves}}
+
+{\large
+\begin{itemize}
+\item from {\em lambda calculus} to {\em full Haskell}
+\item from {\em essential} to {\em syntactically sugared}
+\item from {\em common constructs} to {\em extensions}
+\end{itemize}
+}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{\dots\ or: Coping with Compiler Complexity}
+
+
+{\large When writing a compiler we face}
+
+\begin{itemize}
+\item {\large Implementation complexity}\\
+      \uncover<2->{\hspace*{5mm}a compiler is a {\em large program}}
+
+\item {\large Description/Coding complexity}\\
+      \uncover<2->{\hspace*{5mm}translation involves {\em complicated abstract syntax trees}}
+
+\item {\large Design complexity}\\
+      \uncover<2->{\hspace*{5mm}a language has {\em many features}}
+
+\item {\large Maintenance complexity}\\
+      \uncover<2->{\hspace*{5mm}evolving projects must {\em remain consistent}}
+
+\end{itemize}
+
+\end{frame}
+
+%%]
+
+%%[coping
+
+
+\begin{frame}
+\frametitle{Coping with \emph{Implementation} Complexity}
+
+\begin{center}
+{\Large\bf Transform!}
+\end{center}
+
+\temporal<3>{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2a}}
+}{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2b}}
+}{%
+\hspace*{-10mm}\raisebox{-55mm}[16mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
+}
+
+Many intermediate languages\uncover<1->{, {\em 7 transformations}}
+\begin{itemize}
+\item \makebox[30mm][l]{Haskell          }
+\item \makebox[30mm][l]{Essential Haskell}  \uncover<2-2>{\makebox[9mm][l]{(desugared)}}
+\item \makebox[30mm][l]{Core             }  \uncover<2-2>{\makebox[9mm][l]{(type erased)}}  \uncover<3-4>{{\em 12 transformations}}
+\item \makebox[30mm][l]{Grin             }  \uncover<2-2>{\makebox[9mm][l]{(sequential)}}   \uncover<3-4>{{\em 17 transformations}}
+\item \makebox[30mm][l]{Silly            }  \uncover<2-2>{\makebox[9mm][l]{(imperative)}}   \uncover<3-4>{{\em 3 transformations}}
+\item \makebox[30mm][l]{C                }
+\end{itemize}
+\end{frame}
+
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{\emph{Implementation} Complexity: example stages}
+
+\definecolor{uuyellowlight}{rgb}{0.93,0.87,0}
+
+\begin{tikzpicture}
+
+%\draw[step=1cm,blue,very thin] (0,0) grid (8,8);
+
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+{\small
+%%[[wrap=safecode
+module Main where
+
+len :: [a] -> Int
+len [] = 0
+len (x:xs) = 1 + len xs
+
+main = putStr (show (len (replicate 4 'x')))
+%%]]
+}
+};
+
+\uncover<2->{
+\draw (3.5,7.2) node[fill=uuyellow!20,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{8cm}{
+{\small
+%%[[wrap=code
+blueOn -- EH
+redOn^ let blackOn  vb1.len :: [a] -> Int
+                    vb1.len
+                      =  redOn ^ \x1 ->  redOn ^case x1 of blackOn
+                             EHC.Prelude.[]
+                               -> EHC.Prelude.redOn ^fromInteger blackOn 0
+                             (EHC.Prelude.redOn^ : x xs blackOn)
+                               -> ...
+redOn ^ in blackOn
+let  vb1.main = redOn EHC.Prelude.blackOn ^putStr ...
+ in
+let  redOn ^ main :: blackOn EHC.Prelude.redOn ^IO ... blackOn
+     main = EHC.Prelude.redOn ^ehcRunMain blackOn vb1.main
+ in
+main
+%%]]
+}
+}
+};
+}
+
+\uncover<3->{
+\draw (1,8.0) node[fill=uuyellow!40,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%%[[wrap=code
+blueOn -- Core
+module ^^ doll ^ vb1 =
+let redOn^ rec blackOn
+  { ^ doll ^ vb1 ^ doll ^ .len =
+      \ ^ doll ^ vb1 ^ doll ^ .x1 ^ under ^ under ^ 1 ->
+        redOn ^ let ^ redOn excl ^  blackOn
+          { ^ doll ^ vb1 ^ doll ^ .4 ^ under ^ 42 ^ under ^ 0 ^ doll ^  ^ excl ^  ^ under ^ under ^ 3 ^ under ^ 0 =
+              ^ doll ^ vb1 ^ doll ^ .x1 ^ under ^ under ^ 1} in
+        case ^^ doll ^ vb1 ^ doll ^ .4 ^ under ^ 42 ^ under ^ 0 ^ doll ^  ^ excl ^  ^ under ^ under ^ 3 ^ under ^ 0 of
+         {  { redOn 0, 2, 2 blackOn} { ..., ... } ->
+             ...
+         ;  { redOn 1, 0, 2 blackOn} {  } ->
+             let
+               { ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14 =
+                   redOn ( ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .packedStringToInteger) blackOn
+                     redOn (#String"0")} blackOn in
+             let
+               { ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 =
+                   ( ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .fromInteger)
+                     (redOn ^ doll ^ EHC ^ doll ^ .Prelude ^ doll ^ .3 ^ under ^ 237 ^ under ^ 0 ^ under ^ instance ^ under ^ Num : DICT blackOn)
+                     ( ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14)} in
+             ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12
+         }
+in ...
+%%]]
+%}
+}
+}
+};
+}
+
+
+\uncover<4->{
+\draw (0.2,6.8) node[fill=uuyellow!60,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{11cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%format slash = "/"
+%%[[wrap=code
+blueOn -- GRIN
+module ^^ doll ^ vb1
+{ rec
+    { doll ^ vb1.len ^^ doll ^ vb1.x1 ^ under ^ under ^ 1
+        = {  redOn ^ eval ^^ doll ^ vb1.x1 ^ under ^ under ^ 1 ; \ ^ doll ^ vb1.4 ^ under ^ 42 ^ under ^ 0 ^ excl ^ under ^ under ^ 3 ^ under ^ 0 -> ^ blackOn
+				case ^^ doll ^ vb1.4 ^ under ^ 42 ^ under ^ 0 ^ excl ^ under ^ under ^ 3 ^ under ^ 0 of
+                  { (#0 ^ slash ^ C{2,2} )
+                      -> {  ... } 
+                  ; (#1 ^ slash ^ C{0,2} )
+                      -> {  redOn ^ store ^ blackOn (#0 ^ slash ^ redOn ^ C{1,1} ^ blackOn ^ slash ^ doll ^ EHC.Prelude.PackedString "0") ; \ ^ doll ^ 19 ^ under ^ 31 ^ under ^ 0 ->
+                            store (#0 ^ slash ^ redOn ^ F ^ blackOn ^ slash ^ doll ^ EHC.Prelude.packedStringToInteger ^^ doll ^ 19 ^ under ^ 31 ^ under ^ 0) ; \ ^ doll ^ 13 ^ under ^ 0 ^ under ^ 14 ->
+                            store (#0 ^ slash ^ redOn ^ P ^ slash ^ 0 ^ blackOn ^ slash ^ doll ^ EHC.Prelude.fromInteger ^ doll ^^ EHC.Prelude.3 ^ under ^ 237 ^ under ^ 0 ^ under ^ under ^ Num) ; \ ^ doll ^ 19 ^ under ^ 33 ^ under ^ 0 ->
+                            store (#0 ^ slash ^ redOn ^ A ^ blackOn ^ slash ^ doll ^ under ^^ doll ^ 19 ^ under ^ 33 ^ under ^ 0 ^^ doll ^ 13 ^ under ^ 0 ^ under ^ 14) ; \ ^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 ->
+                            redOn ^ eval ^^ doll ^ 13 ^ under ^ 0 ^ under ^ 12 blackOn}
+                  } } } 
+%%]]
+%}
+}
+}
+};
+}
+
+
+\uncover<5->{
+\draw (0.5,5.5) node[fill=uuyellow!80,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{11cm}{
+{\tiny
+%{
+%format doll = "\$"
+%format under = "\_"
+%format excl = "!"
+%format slash = "/"
+%%[[wrap=code
+blueOn -- bytecode
+static GB_Byte vb1_bytecode[] =
+{ /* 0: redOn ^ l1ts08 0^x08 ^blackOn */                      /* lbldef [ .cod 0 ] */
+                                                              /* funstart [ vb1.len ] */
+                                                              /* iduse [ vb1.x1__1 4 word LoadSrc_TOS_Rel {ldsrcOff = 2, ldsrcNrWords = 1} ] */
+                                                              /*  [ LoadSrc_TOS_Rel {ldsrcOff = 2, ldsrcNrWords = 1} ] */
+     redOn ^ 0^x20,0^x08 ^blackOn
+, /* 2: evalt */                                        
+     0^xe0,0^x00,0^x00,0^x00,0^x00
+, /* 7: l1ts08 0^x00 */                                       /* stackoff [ 1 ] */
+                                                              /* iduse [ vb1.4_42_0!__3_0 annotdflt LoadSrc_TOS ] */
+     0^x20,0^x00
+, /* 9: lnt */                                        
+     0^xfc
+, /* 10: casecall */                                        
+     0^xf6
+%%]]
+%}
+}
+}
+};
+}
+
+
+\end{tikzpicture}
+
+\end{frame}
+%endif
+
+
+\begin{frame}
+\frametitle{Coping with \emph{Description} Complexity}
+
+
+\begin{center}
+{\Large\bf Use tools!}
+\end{center}
+
+\mbox{%
+\parbox[b]{40mm}{%
+\begin{itemize}
+\item<6-> Ruler\\\mbox{ }
+\item<5-> Shuffle\\\mbox{ }
+\item<4-> {\em Utrecht University}\\
+          Attribute Grammar Compiler
+\item<2-> {\em Glasgow}\\
+          Haskell Compiler
+\end{itemize}
+}
+\hspace*{-10mm}%
+\only<1>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2a}}}%
+\only<2>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2b}}}%
+\only<3>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2c}}}%
+\only<4>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2d}}}%
+\only<5>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2e}}}%
+\only<6>{\raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}}
+}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Coping with \emph{Design} Complexity}
+
+\begin{center}
+{\Large\bf Grow stepwise!}
+\end{center}
+
+\begin{enumerate}
+\item[~]<2-> \makebox[50mm][l]{{\color{uured}plain Haskell}}                  {\color{uured}experiments}
+\item<1-> \makebox[50mm][l]{$\lambda$-calculus, type checking}
+\item<1-> \makebox[50mm][l]{type inference}
+\item<1-> \makebox[50mm][l]{polymorphism}
+\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types, existentials}
+\item<1-> \makebox[50mm][l]{data types}
+\item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
+\item<3-> \makebox[50mm][l]{records}                           tuples as records
+\item<3-> \makebox[50mm][l]{code generation}                   full program analysis
+\item<3-> \makebox[50mm][l]{classes, type-synonyms}            extensible records
+\setcounter{enumi}{19}
+\item<4-> \makebox[50mm][l]{modules}
+\setcounter{enumi}{94}
+\item<4-> \makebox[50mm][l]{`deriving'}                      exceptions
+\setcounter{enumi}{98}
+\item<4-> \makebox[50mm][l]{prelude, I/O}
+\end{enumerate}
+
+\end{frame}
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{Growing stepwise}
+
+\begin{center}
+{\Large\bf Example: increasingly powerful typing}
+\end{center}
+
+\begin{itemize}
+\item variant {\color{uured}1}: simply typed |lambda|-calculus
+
+%%[[wrap=safecode
+i  ::  Int
+i  =   5
+%%]]
+
+\item<2-> variant {\color{uured}3}: polymorphic type inference
+\visible<2->{
+
+%%[[wrap=safecode
+id x  =   x
+%%]]
+
+infers |id :: forall ^ a . a -> a|
+}
+
+\item<3-> variant {\color{uured}4}: higher ranked types
+\visible<3->{
+
+%%[[wrap=safecode
+f :: (forall ^ a . a -> a) -> (Char,Int)
+f i = (i 'x', i 5)
+
+v = f id
+%%]]
+
+allows polymorphic use of argument |i| inside |f|
+}
+
+
+\end{itemize}
+
+\end{frame}
+%endif
+
+\begin{frame}
+\frametitle{Coping with \emph{Maintenance} Complexity}
+\begin{center}
+{\Large\bf Generate, generate, generate\dots}
+\end{center}
+
+{\large
+Domain specific languages\\
+and tools to transform them:
+\begin{itemize}
+\item Attribute Grammar Compiler
+\item Ruler
+\item Shuffle
+\end{itemize}
+}
+
+\end{frame}
+
+
+%%]
+
+%%[toolsAG
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+{\large\visible<2->{{\color{uured}\bf Do not }}
+write recursive functions}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+concat   []      = []
+concat   (x:xs)  = x ++ concat xs
+%%]]
+\vspace*{2mm}
+
+\visible<2->{{\large but generalize\dots}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+foldr op e []      = e
+foldr op e (x:xs)  = x `op` foldr op e xs
+%%]]
+}
+
+\visible<3->{{\large \dots and specialize}
+\vspace*{2mm}
+
+%%[[wrap=safecode
+sum        =  foldr (+)  0
+concat     =  foldr (++) []
+sort       =  foldr insert []
+%%]]
+}
+
+\visible<4->{
+\hspace*{5mm}{\em\color{uured}catamorphism} = {\em foldr${}_T$} {\em\color{uured}algebra${}_T$}
+}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+{\large If {\em programming by writing algebras} is a Good Thing\\
+why does nobody do it when processing parse trees?}
+
+\begin{itemize}
+\item<2-> we need a custom {\em fold}-function for each datatype\\
+          \visible<7->{{\color{uured}automatically generated}}
+
+\item<3-> algebras contain {\em many} functions which\dots\\
+          \visible<8->{{\color{uured}distributedly definable}}
+
+\item<4-> \dots all return a tuple\\
+          \visible<9->{{\color{uured}{\em synthesized} attributes}}
+
+\item<4-> \dots take extra parameters\\
+          \visible<9->{{\color{uured}{\em inherited} attributes}}
+      
+\item<5-> \dots and mostly just pass values up or down\\  
+          \visible<10->{{\color{uured}defaulting mechanism}}
+
+\end{itemize}
+
+\visible<6->{{\large our {\color{uured}\em Attribute Grammar Compiler} makes this easy}
+             \makebox[0mm][l]{\raisebox{-10mm}[0mm][0mm]{\FigScaledPDF{0.20}{uuagc-logo}}}
+            }
+\end{frame}
+
+
+\newcommand{\Node}[2]{node[fill=white,text=black,anchor=south west,shape=rectangle,rounded corners,draw] {#2}}
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: sum}
+\end{center}
+
+%%[[wrap=safecode
+DATA List
+  | Cons    hd  : Int
+            tl  : List
+  | Nil
+
+ATTR List [ | | sum: Int ]
+
+SEM List
+  | Cons    lhs  . sum  =  @hd + @tl.sum
+  | Nil     lhs  . sum  =  0
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: product}
+\end{center}
+
+%%[[wrap=safecode
+ATTR List [ | | prod: Int ]
+
+SEM List
+  | Cons    lhs     .   prod    =   @hd * @tl.prod
+  | Nil     lhs     .   prod    =   1
+%%]]
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Attribute Grammar Compiler}
+
+\begin{center}
+{\Large\bf Example: generated Haskell for sum and product}
+\end{center}
+
+%%[[wrap=safecode
+data List  =  List_Cons  Int List
+           |  List_Nil 
+
+sem_List :: List -> (Int,Int) 
+sem_List (List_Cons _hd _tl  )  = (sem_List_Cons _hd (sem_List _tl ) )
+sem_List (List_Nil           )  = (sem_List_Nil )
+
+sem_List_Cons :: Int -> (Int,Int) -> (Int,Int) 
+sem_List_Cons hd_ tl_  = ( hd_ * _tlIprod,hd_ + _tlIsum)
+    where  ( _tlIprod,_tlIsum) = tl_ 
+
+sem_List_Nil :: (Int,Int) 
+sem_List_Nil  = ( 1,0)
+%%]]
+
+\end{frame}
+%endif
+
+%%]
+
+%%[toolsRuler
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+
+\definecolor{uuyellowlight}{rgb}{0.93,0.87,0}
+
+\begin{tikzpicture}
+
+%\draw[step=1cm,blue,very thin] (0,0) grid (8,8);
+
+\draw (0,8) node[fill=white,text=black,anchor=north west] {
+{\tiny
+%%[[wrap=safecode
+sem_Expr_App func_ arg_ =
+    (\ _lhsIknTy
+       _lhsIopts
+       _lhsItyGam
+       _lhsIvalGam ->
+         (case (_lhsIvalGam) of
+          { _argOvalGam ->
+          (case (_lhsItyGam) of
+           { _argOtyGam ->
+           (case (_lhsIopts) of
+            { _argOopts ->
+            (case (_lhsIvalGam) of
+             { _funcOvalGam ->
+             (case (_lhsItyGam) of
+              { _funcOtyGam ->
+              (case (_lhsIopts) of
+               { _funcOopts ->
+               (case ([ Ty_Any ] `mkArrow` _lhsIknTy) of
+                { _funcOknTy ->
+                (case ((func_ _funcOknTy _funcOopts _funcOtyGam _funcOvalGam)) of
+                 { ( _funcIappArgPPL,_funcIappFunNm,_funcIappFunPP,_funcIerrSq,_funcIpp,_funcIppAST,_funcIty) ->
+                 (case (tyArrowArgRes _funcIty) of
+                  { __tup2 ->
+                  (case (__tup2) of
+                   { (_ty_a_,_) ->
+                   (case (_ty_a_) of
+                    { _argOknTy ->
+                    (case ((arg_ _argOknTy _argOopts _argOtyGam _argOvalGam)) of
+                     { ( _argIappArgPPL,_argIappFunNm,_argIappFunPP,_argIerrSq,_argIpp,_argIppAST,_argIty) ->
+                     (case (_funcIappArgPPL ++ [_argIpp]) of
+                      { _lhsOappArgPPL ->
+                      (case (_funcIappFunNm) of
+                       { _lhsOappFunNm ->
+                       (case (_funcIappFunPP) of
+                        { _lhsOappFunPP -> 
+%%]]
+}
+};
+
+\uncover<2->{
+\draw (1.0,5) node[fill=uuyellow!50,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
+{\small
+%%[[wrap=safecode
+DATA Expr
+  | App  func : Expr
+         arg  : Expr
+ATTR AllExpr [ knTy: Ty | | ty: Ty ]
+SEM Expr
+  | App  func  .  knTy        =  [ Ty_Any ] `mkArrow` @lhs.knTy
+         (loc.ty_a_,loc.ty_)  =  tyArrowArgRes @func.ty
+         arg   .  knTy        =  @ty_a_
+         loc   .  ty          =  @ty_
+%%]]
+}
+}
+};
+}
+
+\uncover<3->{
+\draw (4.5,7.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+}
+};
+}
+
+\end{tikzpicture}
+
+\end{frame}
+
+
+
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+{\Large {\bf Example: specification of \ruleRef{e.app}}}
+\vspace*{2mm}
+
+%{
+%include ruler.fmt
+
+%%[[wrap=safecode
+scheme expr "Expr" =
+  view K =
+    holes [ node e: Expr, valGam: ValGam, knTy: Ty | | ty: Ty ]
+    judgespec valGam; knTy :- e : ty
+    judgeuse tex valGam; knTy :-.."e" e : ty
+
+rule e.app "App" =
+  view K =
+    judge F : expr = valGam ; (ANY -> knTy) :- e1 : (ty.a -> ty)
+    judge A : expr = valGam ; ty.a :- e2 : _
+    rulerPrePostSep
+    judge R : expr = valGam ; knTy :- (e1 ^^ e2) : ty
+%%]]
+%}
+\end{frame}
+%endif
+
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Ruler}
+
+\begin{tikzpicture}
+
+\draw[step=1cm,white,very thin] (0,0) grid (12,8);
+
+\uncover<1->{
+\draw (0,7) node[fill=white,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{4cm}{
+{\large
+Now that things are\\acceptably simple\dots
+}
+}
+};
+}
+
+\uncover<1->{
+\draw (4.5,7.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
+\(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+}
+};
+}
+
+
+
+\uncover<2->{
+\draw (0,5.2) node[fill=white,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{7cm}{
+{\large
+\dots we can start to introduce new ideas:
+}
+}
+};
+}
+
+
+\uncover<2->{
+\draw (3.5,4.5) node[fill=uuyellow,text=black,anchor=north west,shape=rectangle,rounded corners] {
+{\large
+\(\rulerCmdUse{rules3.HM.expr.base.e.app}\)
+}
+};
+}
+
+\uncover<3->{
+\draw (0,4.5) node[fill=uuyellow!50,text=black,anchor=north west,shape=rectangle,rounded corners] {
+\parbox{10cm}{
+{\raisebox{0mm}[30mm][5mm]{
+\(\rulerCmdUse{rules3.I2.expr.base.e.app}\)
+}
+}
+}
+};
+}
+
+\end{tikzpicture}
+
+\end{frame}
+
+
+
+%%]
+
+%%[toolsShuffle
+
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
+
+How to ensure consistency in:
+\begin{itemize}
+\item 20 language variants of increasing complexity
+\item code, documentation, test sets, publications, presentations
+\end{itemize}
+
+\uncover<2->{
+\begin{center}
+{\Large\bf Shuffle}
+\end{center}
+
+\begin{itemize}
+\item source files divided in {\em chunks}
+\item each chunk is tagged with
+      \begin{itemize}
+      \item variant number
+      \item name
+      \end{itemize}
+\end{itemize}
+}
+
+\uncover<3->{
+{\bf Shuffle} shuffles the chunks,\\
+to extract the input for the compiler and text formatter
+}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
+
+{\large {\bf Shuffle} combines the best of:}
+
+\begin{itemize}
+\item {\em \#define} / {\em \#ifdef}\\
+       \visible<2->{{\color{uured}Shuffle has {\em hierarchical} variants}}
+
+\item {\em \#include}\\
+       \visible<3->{{\color{uured}Shuffle can include {\em parts of} a file}}
+
+\item Literate programming\\
+       \visible<4->{{\color{uured}Shuffle can combine {\em multiple sources} and {\em re-use} code}}
+
+\item Version management\\
+       \visible<5->{{\color{uured}Shuffle does {\em variant} management\\
+                      versions are historically grown\\variants are {\em didactically chosen}}}
+
+\end{itemize}
+
+\end{frame}
+
+
+%if shortStory
+%else
+\begin{frame}
+\frametitle{{\em Tools:} Shuffle}
+
+{\large {\bf Example: subsequent variants}}
+
+\begin{itemize}
+\item Variants
+\begin{itemize}
+\item variant {\color{uured}2} (Haskell code for construction of type variable):
+%%@EHTy.2.mkTyVar wrap=safecode
+\item variant {\color{uured}3}:
+%%@EHTy.3.mkTyVar wrap=safecode
+\end{itemize}
+\item<2-> Shuffle input: {\color{uured}two variants, in file @EHTy.chs@}
+%%[[wrap=verbatimsmall
+%%%[2.mkTyVar
+%%@EHTy.2.mkTyVar
+%%%]
+
+%%%[3.mkTyVar -2.mkTyVar
+%%@EHTy.3.mkTyVar
+%%%]
+%%]]
+\end{itemize}
+
+\end{frame}
+%endif
+
+
+%%]
+
+%%[summary
+
+
+\begin{frame}
+\frametitle{Project status}
+
+Status of the Essential Haskell Compiler
+\begin{itemize}
+\item<1-> Available on
+      {\tt www.cs.uu.nl/wiki/Ehc}
+
+\item<2-> 85000 lines of code,\\
+           half of which in AG
+\hspace*{0mm}\makebox[0mm][l]{\raisebox{-35mm}[0mm][0mm]{\FigScaledPDF{0.4}{codesize}}}
+
+
+\item<3-> Working towards\\
+          full Haskell\\
+          with full prelude
+
+\item<3-> Simple programs\\
+          compile and run
+          \begin{itemize}
+          \item as interpreted bytecode
+          \item as compiled code
+          \end{itemize}
+     
+\end{itemize}
+
+
+
+
+
+\end{frame}
+
+
+
+
+\begin{frame}
+\frametitle{Summary}
+
+
+{\large Coping with Compiler Complexity}
+
+\uncover<2->{
+\begin{itemize}
+\item Implementation complexity\\
+      \uncover<3->{{\large\bf Transform!}
+                   \hspace*{20mm}
+                   \makebox[0mm][l]{\raisebox{-30mm}[0mm][0mm]{\FigScaledPDF{0.25}{ehc-dataflow2b}}}
+                  }
+
+\item Description complexity\\
+      \uncover<4->{{\large\bf Use tools!}
+                   \hspace*{20mm}
+                   \makebox[0mm][l]{\raisebox{-20mm}[0mm][0mm]{\FigScaledPDF{0.12}{uuagc-logo}}}
+                  }
+
+\item Design complexity\\
+      \uncover<5->{{\large\bf Grow stepwise!}
+                  }
+
+\item Maintenance complexity\\
+      \uncover<6->{{\large\bf Generate, generate, generate!}
+                   \makebox[0mm][l]{\raisebox{-15mm}[0mm][0mm]{\FigScaledPDF{0.20}{toolchain2f}}}
+                  }
+
+\end{itemize}
+}
+in the Essential Haskell Compiler\\
+\uncover<7->{{\tt www.cs.uu.nl/wiki/Ehc}}
+\end{frame}
+
+%%]
+

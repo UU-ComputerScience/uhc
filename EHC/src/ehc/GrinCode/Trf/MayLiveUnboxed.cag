@@ -1,0 +1,88 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unbox which are known to end up unboxed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+
+Values are all represented by nodes, boxed thus.
+This transformation removes the boxing for unboxable values,
+allowing direct manipulation.
+
+Although designed with use by GrinByteCode in mind, the transformation is
+parameterised with a function telling whether a node represents an unboxed value.
+
+%%]
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MayLiveUnboxed}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin) hs export(grMayLiveUnboxed)
+grMayLiveUnboxed :: (GrTag -> Unbox) -> GrModule -> GrModule
+grMayLiveUnboxed tagAllowsUnboxedLife grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+                { tagAllowsUnboxedLife_Inh_GrAGItf = tagAllowsUnboxedLife
+                }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unbox check
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf AllNT [ tagAllowsUnboxedLife: {GrTag -> Unbox} | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: replace by unboxed equivalents
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[(8 codegen grin)
+SEM GrPatLam
+  | VarNode     lhs . trf   =   case @fldL.trf of
+                                  [GrVar_KnownTag t, GrVar_Var v]  -> case @lhs.tagAllowsUnboxedLife t of
+                                                                        Unbox_FirstField -> GrPatLam_Var v
+                                                                        _                -> @trf                                  
+                                  _ -> @trf
+
+SEM GrVal
+  | Node        lhs . trf   =   case (@fldL.trf,@lhs.tagAllowsUnboxedLife @tag.trf) of
+                                  ([f],Unbox_FirstField)
+                                    -> f
+                                  ([],Unbox_Tag t)
+                                    -> GrVal_LitInt t
+                                  _ -> @trf
+
+SEM GrExpr
+  | Store       lhs . trf   =   case @val.trf of
+                                  GrVal_Node _ _        -> @trf
+%%[[10
+                                  GrVal_NodeAdapt _ _   -> @trf
+%%]]
+                                  v                     -> GrExpr_Unit v
+%%]

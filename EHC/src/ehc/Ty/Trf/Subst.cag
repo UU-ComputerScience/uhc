@@ -1,0 +1,406 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Apply a mapping of type variables to types (or other elements of a type) to a type,
+as a substitution, replacing found bindings for type variables.
+On the fly a check is done for circularities in the type variable bindings;
+this acts as a replacement for the occur check usually done during unification.
+The check is returned as a map of type variables for which a circularity did occur,
+to be used for generating error messages elsewhere.
+
+Substitution over a meta level higher is the same as over the current level, except for a shift in the level:
+- decrement the level of the VarMp used to represent the substitution, lkup
+- increment the level of 
+
+%%]
+
+%%[(2 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.Subst} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp})
+%%]
+
+%%[(2 hmtyinfer || hmtyast) hs import(EH.Util.Utils)
+%%]
+
+%%[(3 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
+%%]
+
+-- debug
+%%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}Ty.Pretty})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[(2 hmtyinfer || hmtyast).tyAppVarLookup hs export(tyAppVarLookup)
+tyAppVarLookup :: VarMp -> Ty -> Ty
+tyAppVarLookup varmp ty
+  = repl_Syn_TyAGItf t
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf {lkup_Inh_TyAGItf = mkLkup varmp})
+%%]
+
+%%[(4 hmtyinfer || hmtyast) -2.tyAppVarLookup hs export(tyAppVarLookup,tyAppVarLookup2)
+%%[[4
+tyAppVarLookup' :: SubstOpts -> VarMp -> TVUseMp -> Ty -> (Ty,VarMp)
+%%][6
+tyAppVarLookup' :: VarLookup m TyVarId VarMpInfo => SubstOpts -> m -> TVUseMp -> Ty -> (Ty,VarMp)
+%%]]
+tyAppVarLookup' opts m usemp ty
+  = (repl_Syn_TyAGItf t,cycVarMp_Syn_TyAGItf t)
+  where t = wrap_TyAGItf
+              (sem_TyAGItf (TyAGItf_AGItf ty))
+              (Inh_TyAGItf
+                 { substOpts_Inh_TyAGItf 	= opts
+                 , tvUseMp_Inh_TyAGItf 		= usemp
+                 , lkup_Inh_TyAGItf 		= mkLkup m
+                 })
+
+%%[[4
+tyAppVarLookup :: VarMp -> Ty -> Ty
+%%][6
+tyAppVarLookup :: VarLookup m TyVarId VarMpInfo => m -> Ty -> Ty
+%%]]
+tyAppVarLookup m ty
+  = ty'
+  where (ty',_) = tyAppVarLookup' defaultOpts m Map.empty ty
+
+%%[[4
+tyAppVarLookup2 :: VarMp -> Ty -> (Ty,VarMp)
+%%][6
+tyAppVarLookup2 :: VarLookup m TyVarId VarMpInfo => m -> Ty -> (Ty,VarMp)
+%%]]
+tyAppVarLookup2 m ty
+  = tyAppVarLookup' defaultOpts m Map.empty ty
+%%]
+
+%%[(4 hmtyinfer || hmtyast).substOpts hs
+data SubstOpts
+  = SubstOpts
+
+defaultOpts :: SubstOpts
+defaultOpts = SubstOpts
+%%]
+
+%%[(16 hmtyinfer || hmtyast).substOpts -4.substOpts hs
+data SubstOpts
+  = SubstOpts
+      { onlySubstRHSOfEq :: Bool
+      }
+
+defaultOpts :: SubstOpts
+defaultOpts = SubstOpts { onlySubstRHSOfEq = False }
+%%]
+
+%%[(16 hmtyinfer || hmtyast) hs export (tyAppVarLookup2_RhsOfEqOnly)
+tyAppVarLookup2_RhsOfEqOnly :: VarMp -> Ty -> (Ty, VarMp)
+tyAppVarLookup2_RhsOfEqOnly varmp ty
+  = tyAppVarLookup' (SubstOpts { onlySubstRHSOfEq = True }) varmp Map.empty ty
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+PRAGMA novisit
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyVar looking up
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer || hmtyast).Lkup hs
+type Lkup = MetaLev -> TyVarId -> Maybe Ty
+
+mkLkup :: VarMp -> Lkup
+mkLkup m = \mlev v -> varmpTyLookup v m
+%%]
+
+%%[(6 hmtyinfer || hmtyast).Lkup -2.Lkup hs
+type Lkup = MetaLev -> TyVarId -> Maybe VarMpInfo
+
+mkLkup :: VarLookup m TyVarId VarMpInfo => m -> Lkup
+mkLkup m = \mlev v -> {- trm "Subst.lkup" (\r -> mlev >#< v >#< r) $ -} varlookupWithMetaLev mlev v m
+%%]
+
+%%[(2 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ lkup: Lkup | | ]
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant			l1'		.	lkup		=	\mlev v -> @lhs.lkup (mlev+1) v
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+ATTR LabelAGItf Label [ lkup: Lkup | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyVar usage kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast) hs
+data TVUse
+  = TVFree      -- is still free
+  | TVBound     -- is already bound
+%%[[4
+  | TVSubst     -- is being substituted (for occur check implementation)
+%%]]
+
+type TVUseMp = Map.Map TyVarId TVUse
+
+tvUse :: TyVarId -> TVUseMp -> TVUse
+tvUse tv = maybe TVFree id . Map.lookup tv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast) hs
+type IsBound = TyVarId -> Bool
+%%]
+
+%%[(3 hmtyinfer || hmtyast).tvRepl hs
+tvRepl :: TyVarId -> Lkup -> TVUseMp -> Ty -> Ty
+tvRepl tv lkup ump repl
+  = case (lkup 0 tv) of
+       Just t | not (tv `Map.member` ump)  -> t
+       _                                   -> repl
+%%]
+
+%%[(4 hmtyinfer || hmtyast).tvRepl -3.tvRepl hs
+tvRepl3 :: TyVarId -> TVUse -> (TyVarId -> x -> VarMp) -> x -> x -> x -> VarMp -> (x,VarMp)
+tvRepl3 tv tvuse mk repl replv replho cycmpho
+  = case tvuse of
+      TVFree  -> (replho,cycmpho)
+      TVBound -> (repl,emptyVarMp)
+      TVSubst -> (repl,mk tv replv)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             inst    .   repl'       :   Ty
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbTy $? @lhs.lkup 0 @tv
+                    inst    .   repl'       =   @replv
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Impls
+  | Tail            inst    .   repl'       :   Impls
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbImpls $? @lhs.lkup 0 @iv
+                    inst    .   repl'       =   @replv
+
+SEM Pred
+  | Var             inst    .   repl'       :   Pred
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPred $? @lhs.lkup 0 @pv
+                    inst    .   repl'       =   @replv
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Label
+  | Var             inst    .   repl'       :   Label
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbLabel $? @lhs.lkup 0 @lv
+                    inst    .   repl'       =   @replv
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Var             inst    .   repl'       :   PredSeq
+                    (loc.replv,loc.isRepl)  =   maybe (@repl,False) (\t -> (t,True)) $ vmiMbPredSeq $? @lhs.lkup 0 @av
+                    inst    .   repl'       =   @replv
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Replacement: meta level higher
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant			inst	.	l1'			: 	Ty
+                    inst    .   l1'	       	=   @l1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyVar usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(3 hmtyinfer || hmtyast)
+ATTR
+  AllTyAndFlds
+%%[[4
+  TyAGItf
+%%]]
+%%[[10
+  LabelAGItf
+%%]]
+    [ tvUseMp: TVUseMp | | ]
+%%]
+
+%%[(3 hmtyinfer || hmtyast).AGItf.tvUseMp
+SEM TyAGItf
+  | AGItf           loc     .   tvUseMp     =   Map.empty
+%%]
+
+%%[(4 hmtyinfer || hmtyast) -3.AGItf.tvUseMp
+%%]
+
+%%[(3 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant
+%%[[11
+    Lam
+%%]]
+                    ty      .   tvUseMp     =   Map.insert @tv TVBound @lhs.tvUseMp
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             repl'   .   tvUseMp     =   Map.insert @tv TVSubst @lhs.tvUseMp
+                    loc     .   tvUse       =   tvUse @tv @lhs.tvUseMp
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant			l1'     .   tvUseMp     =   Map.empty
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Pred
+  | Var             repl'   .   tvUseMp     =   Map.insert @pv TVSubst @lhs.tvUseMp
+                    loc     .   tvUse       =   tvUse @pv @lhs.tvUseMp
+
+SEM Impls
+  | Tail            repl'   .   tvUseMp     =   Map.insert @iv TVSubst @lhs.tvUseMp
+                    loc     .   tvUse       =   tvUse @iv @lhs.tvUseMp
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Label
+  | Var             repl'   .   tvUseMp     =   Map.insert @lv TVSubst @lhs.tvUseMp
+                    loc     .   tvUse       =   tvUse @lv @lhs.tvUseMp
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Var             repl'   .   tvUseMp     =   Map.insert @av TVSubst @lhs.tvUseMp
+                    loc     .   tvUse       =   tvUse @av @lhs.tvUseMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cycle detection, delayed occur check
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTyAndFlds  [ | | cycVarMp USE {`varmpPlus`} {emptyVarMp}: VarMp ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer || hmtyast).TySubst
+ATTR AllTyAndFlds   [               | | repl: SELF  ]
+ATTR TyAGItf        [               | | repl: Ty    ]
+%%]
+
+%%[(4 hmtyinfer || hmtyast) ag
+ATTR TyAGItf AllTy [ substOpts: SubstOpts | | ]
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+ATTR LabelAGItf        [               | | repl: Label    ]
+%%]
+
+%%[(2 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             lhs     .   repl        =   maybe @repl id (@lhs.lkup 0 @tv)
+%%]
+
+%%[(3 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.lkup @lhs.tvUseMp @repl
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             lhs     .   (repl,cycVarMp)
+                                            :=  if @isRepl
+                                                then tvRepl3 @tv @tvUse varmpTyUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                else (@repl,emptyVarMp)
+%%]
+
+%%[(6 hmtyinfer || hmtyast)
+SEM Ty
+  | Quant			lhs		.	repl 		=	Ty_Quant @qu.repl @tv @l1'.repl @ty.repl
+  							.	cycVarMp	=	varmpIncMetaLev @l1'.cycVarMp `varmpPlus` @ty.cycVarMp
+%%]
+
+Occurrences of call site context passing, identified by proveOccs, needs to be combined, so we gather all locations.
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Impls
+  | Tail            lhs     .   (repl,cycVarMp)
+                                            :=  if @isRepl
+                                                then let replrepl = case @repl'.repl of
+                                                                      Impls_Tail i occs -> Impls_Tail i (occs ++ @proveOccs)
+                                                                      r                 -> r
+                                                     in  tvRepl3 @iv @tvUse varmpImplsUnit @repl @replv replrepl @repl'.cycVarMp
+                                                else (@repl,emptyVarMp)
+
+SEM Pred
+  | Var             lhs     .   (repl,cycVarMp)
+                                            :=  if @isRepl
+                                                then tvRepl3 @pv @tvUse varmpPredUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                else (@repl,emptyVarMp)
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Label
+  | Var             lhs     .   (repl,cycVarMp)
+                                            :=  if @isRepl
+                                                then tvRepl3 @lv @tvUse varmpLabelUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                else (@repl,emptyVarMp)
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Var             lhs     .   (repl,cycVarMp)
+                                            :=  if @isRepl
+                                                then tvRepl3 @av @tvUse varmpPredSeqUnit @repl @replv @repl'.repl @repl'.cycVarMp
+                                                else (@repl,emptyVarMp)
+%%]
+
+%%[(16 hmtyinfer || hmtyast)
+
+-- if "onlySubstRHSOfEq" is True, then tyL is either a Var or a Con and the orig attribute is used and defined.
+-- The orig attribute is not used if "onlySubstRHSOfEq" is False. This setting is almost always False.
+
+ATTR Ty [ | | orig: Ty ]
+SEM Ty
+  | Var Con      loc.orig = @loc.repl
+  | * - Var Con  loc.orig = undefined
+
+SEM Pred
+  | Eq
+      lhs.repl = if onlySubstRHSOfEq @lhs.substOpts
+                 then Pred_Eq @tyL.orig @tyR.repl
+                 else @loc.repl
+%%]
+

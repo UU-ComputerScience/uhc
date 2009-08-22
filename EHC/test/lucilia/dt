@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# Compile generated (via ehc option -cdt) derivation tree (.lhs) to pdf
+
+LHS2TEX=".:../../lhs2TeX/:" lhs2TeX --poly --set=omitlag2TeX $1.lhs > $1.tex
+TEXINPUTS=".:../../latex/:" pdflatex $1

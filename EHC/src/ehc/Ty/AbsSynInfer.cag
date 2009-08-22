@@ -1,0 +1,185 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type structure: part used by type inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inference specific variant of quantification and tyvar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Any
+%%]
+
+%%[(2 hmtyinfer || hmtyast).TyVar
+DATA Ty
+  | Var         tv              : {TyVarId}
+%%]
+
+%%[(3 hmtyinfer || hmtyast).TyVar -2.TyVar
+DATA Ty
+  | Var         tv              : {TyVarId}
+                categ           : TyVarCateg
+
+DATA TyVarCateg
+  | Plain
+  | Fixed
+%%]
+
+%%[(3 hmtyinfer || hmtyast).Quant
+DATA Ty
+  | Quant
+%%[[4
+				qu              : TyQu
+%%]]
+  				tv              : {TyVarId}
+%%[[6
+				l1              : {Ty}	-- 1 (or more, if MetaLev > 0) meta level higher, and its kind/sort/...
+%%]]
+                ty              : Ty
+%%]
+
+%%[(4444 hmtyinfer || hmtyast).Quant -3.Quant
+DATA Ty
+  | Quant       qu              : TyQu
+                tv              : {TyVarId}
+                ty              : Ty
+%%]
+
+%%[(7 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Ext         ty              : Ty
+                nm              : {HsName}
+                extTy           : Ty
+%%]
+
+%%[(9 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Pred        pr              : Pred
+%%]
+
+%%[(11 hmtyinfer || hmtyast)
+DATA Ty
+  | Lam         tv              : {TyVarId}
+                ty              : Ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Quantifiers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhatTyQu doclatex
+Quantifiers: forall & exists
+
+A mlev == 0 means: quantify over the immediate meta of ...,
+e.g.
+\begin{itemize}
+\item
+0: quantify over a type in a type for a value.
+\item
+1: quantify over a kind in a type for a value.
+\end{itemize}
+%%]
+
+%%[4
+DATA TyQu
+  | Forall		mlev			: MetaLev
+  | Exists		mlev			: MetaLev
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+DATA Pred
+  | Class       ty              : Ty
+  | Pred        ty              : Ty
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+DATA Label
+  | Lab			nm              : HsName
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+DATA Pred
+  | Lacks       ty              : Ty
+                lab             : Label
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+DATA Pred
+  | Arrow       args            : PredSeq
+                res             : Pred
+
+DATA PredSeq
+  | Cons        hd              : Pred
+                tl              : PredSeq
+  | Nil
+%%]
+
+%%[(16 hmtyinfer || hmtyast)
+DATA Pred
+  | Eq          tyL : Ty
+                tyR : Ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates: implicit parameters
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Impls       impls           : Impls
+
+DATA Impls
+  | Tail        iv              : {ImplsVarId}
+                proveOccs		: {[ImplsProveOcc]}
+  | Cons        iv              : {ImplsVarId}
+                pr              : Pred
+                pv              : {PredOccId}
+%%[[99
+                prange          : {Range}
+%%]]
+                proveOccs		: {[ImplsProveOcc]}
+                tl              : Impls
+  | Nil
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR specific
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+DATA Pred
+  | Var         pv              : TyVarId
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+DATA Label
+  | Var			lv              : LabelVarId		
+%%]
+
+%%[(13 hmtyinfer || hmtyast)
+DATA PredSeq
+  | Var         av              : TyVarId
+
+DATA Pred
+  | Preds       seq             : PredSeq
+%%]
+
+RowSplit is not used, but left in for now:
+
+%%[(10 hmtyinfer || hmtyast)
+%%]
+DATA Pred
+  | RowSplit	ty				: Ty				
+  				exts			: RowExts
+
+%%[(10 hmtyinfer || hmtyast)
+%%]
+DATA RowExts										
+  | Exts		exts			: {AssocL HsName Ty}
+  | Var			ev              : UID
+

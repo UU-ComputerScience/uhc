@@ -1,0 +1,75 @@
+#!/bin/sh
+
+# Compute ag dependencies in the form of a makefile fragment
+
+#set -xv
+
+baseprefix=""
+searchpath=""
+
+while test "$1" != ""
+do
+  #echo arg: $1
+  case $1 in
+    --baseprefix=*) 
+        baseprefix=`echo $1 | sed -e 's/--baseprefix=//'`
+        shift
+        ;;
+    --searchdir=*) 
+        searchpath="$searchpath `echo $1 | sed -e 's/--searchdir=//'`"
+        shift
+        ;;
+    --agc=*) 
+        agc="`echo $1 | sed -e 's/--agc=//'`"
+        shift
+        ;;
+    *) 
+        break
+        ;;
+  esac
+done
+
+#echo $baseprefix
+#echo agc: $agc
+
+for i in $*
+do
+  if test -s "$i"
+  then
+    ibase=`basename $i .ag`
+    idir=`dirname $i`
+    todofiles="$i"
+    files="$i"
+    while test "$todofiles" != ""
+    do
+      newtodofiles=""
+      for f in $todofiles
+      do
+        newbases=`sed -n -e "s+INCLUDE \"\([^\"]*\)\"+\1+p" $f`
+        newfiles=""
+        for nb in $newbases
+        do
+          for path in $baseprefix $searchpath
+          do
+            if test -r "$path/$nb"
+            then
+              newfiles="$newfiles $path/$nb"
+              break
+            fi
+          done
+        done
+        newtodofiles="$newtodofiles $newfiles"
+        files="$files $newfiles"
+      done
+      #echo newtodofiles: $newtodofiles
+      todofiles="$newtodofiles"
+    done
+    #echo files: $files
+    echo "${idir}/${ibase}.hs:" ${files}
+    if test "$agc" != ""
+    then
+      echo "	$agc ${idir}/${ibase}.ag"
+    fi
+    echo
+  fi
+done

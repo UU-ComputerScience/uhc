@@ -1,0 +1,433 @@
+-------------------------------------------------------------------------
+-- Generate ARule's from attr bindings
+-------------------------------------------------------------------------
+
+%%[1 hs module (TrfAS2.GenARule)
+%%]
+
+%%[1 hs export (as2ARule)
+%%]
+
+%%[1 hs import (Data.Maybe, Data.Char, Data.List, qualified Data.Set as Set, qualified Data.Map as Map, EH.Util.Utils)
+%%]
+
+%%[1 hs import (Opts, Err, Common, KeywParser( propsSynInhMp ), Expr.Utils, ARule.Utils, FmGam, RwExprGam)
+%%]
+
+%%[1 hs import (ECnstrGam, AbsSyn.AbsSyn2, Admin, Utils( sc2DATA ))
+%%]
+
+%%[1 hs import (EH.Util.Pretty)
+%%]
+
+-------------------------------------------------------------------------
+-- Inclusion of split off parts
+-------------------------------------------------------------------------
+
+%%[1 ag import ({AbsSyn/AbsSyn2AG}, {AbsSyn/CommonAG}, {AS2/Opts}, {TrfAS2/CommonAG})
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG}, {Expr/SelfAG})
+%%]
+
+%%[1 ag import ({ARule/AbsSynAG}, {ARule/SelfAG})
+%%]
+
+-------------------------------------------------------------------------
+-- Interfacing to AST
+-------------------------------------------------------------------------
+
+%%[1 ag
+WRAPPER AGItf
+%%]
+
+%%[1 hs
+as2ARule :: Opts -> DtInvGam -> ScGam Expr -> FmGam Expr -> RwExprGam -> Decls -> (Decls,PP_Doc,[Err])
+as2ARule o dig scg fmg rwg r
+  = (self_Syn_AGItf r2,ppDbg_Syn_AGItf r2,errL_Syn_AGItf r2)
+  where r1 = sem_AGItf (AGItf_AGItf r)
+        r2 = wrap_AGItf r1
+                (Inh_AGItf {opts_Inh_AGItf = o, fmGam_Inh_AGItf = fmg, rwGam_Inh_AGItf = rwg, scGam_Inh_AGItf = scg, dtInvGam_Inh_AGItf = dig})
+%%]
+
+-------------------------------------------------------------------------
+-- Context: dtInvGam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAS2 AGItf [ dtInvGam: DtInvGam | | ]
+%%]
+
+-------------------------------------------------------------------------
+-- Context: options, position, etc
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ pos: SPos | | ]
+
+SEM RlDecl
+  | Rl LTX          loc     .   pos         =   @pos
+%%]
+
+-------------------------------------------------------------------------
+-- Context: substitution
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM JdAt
+  | At              loc     .   sbse        =   exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+                            .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+
+SEM Jd
+  | Ats             loc     .   sbse        =   exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+                            .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+
+SEM RlDecl
+  | Rl              loc     .   sbse        =   exprSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+                            .   sbsn        =   nmSubst (@lhs.opts {optSubstFullNm=False}) @lhs.fmGam
+%%]
+
+-------------------------------------------------------------------------
+-- Context: scInfo, ... + dtInfo, ...
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | Rl              loc     .   rsScInfo    =   maybe (panic "RlDecl_Rl: rsScInfo") id $ gamLookup @lhs.rsScNm @lhs.scGam
+                            .   (_,_,daInvInfo)
+                                            =   maybe (undefined,undefined,emptyDtAltInvInfo) id
+                                                $ dtVwRlInvGamLookup @lhs.rsScNm @lhs.vwNm @rlNm @lhs.dtInvGam
+
+SEM Jd
+  | Ats             loc     .   (scInfo,vwScInfo)
+                                            =   maybe (panic "Jd_Ats: scInfo") id
+                                                $ scVwGamLookup @scNm @lhs.vwNm @lhs.scGam
+%%]
+
+-------------------------------------------------------------------------
+-- Context: is a judgement (and not a relation)?
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAt [ isJd: Bool | | ]
+
+SEM Jd
+  | Ats             loc     .   isJd        =   scKind @scInfo == ScJudge
+%%]
+
+-------------------------------------------------------------------------
+-- Context: is in premise?
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ isPre: Bool | | ]
+
+SEM RlDecl
+  | Rl LTX          preJds  .   isPre       =   True
+                    postJds .   isPre       =   False
+%%]
+
+-------------------------------------------------------------------------
+-- Context: name info from higher up
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd [ agStr: Nm | | ]
+
+SEM RlDecl
+  | Rl              loc     .   agStr       =   @agStr
+  | * - Rl          loc     .   agStr       =   nmNone
+%%]
+
+-------------------------------------------------------------------------
+-- Context: scAtGam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAt [ scAtGam: AtGam | | ]
+
+SEM Jd
+  | Ats             ats     .   scAtGam     =   vwscFullAtGam @vwScInfo
+
+SEM JdAt
+  | At              loc     .   atInfo      =   maybe emptyAtInfo id $ gamLookup @nm @lhs.scAtGam
+                            .   propRetain  =   [AtRetain] `atFilterProps` @atInfo
+%%]
+
+-------------------------------------------------------------------------
+-- Local properties for attr
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM JdAt
+  | At              loc     .   dir         =   atDefUse @lhs.isPre @atInfo
+                            .   isBi        =   Map.elems propsSynInhMp `atHasProps` @atInfo
+                            .   isExtern    =   AtExtern `atHasProp` @atInfo
+
+SEM JdAt
+  | At              loc     .   atTy        =   atTy @atInfo
+                            .   atCnstr     =   ECnstr_Ty [@atTy]
+%%]
+
+-------------------------------------------------------------------------
+-- Context: node name
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR JdAt [ | | mbNmNd: {Maybe Nm} ]
+ATTR JdAts [ | | gathNmNd: Nm ]
+
+ATTR AllAt [ | | gathExNd: Expr ]
+
+SEM JdAt
+  | At              lhs     .   mbNmNd      =   if @dir == ADNode then Just @nm else Nothing
+                            .   gathExNd    =   @expr.self
+
+SEM JdAts
+  | Nil             lhs     .   gathNmNd    =   nmUnk
+                            .   gathExNd    =   exprUnk
+  | Cons            lhs     .   (gathNmNd,gathExNd)
+                                            =   maybe (@tl.gathNmNd,@tl.gathExNd) (\n -> (n,@hd.gathExNd)) @hd.mbNmNd
+
+ATTR AllAt [ nmNd: Nm | | ]
+
+SEM Jd
+  | Ats             loc     .   nmNd        =   if @lhs.isPre then exprAsNm $ @sbse $ @ats.gathExNd else nmLhs
+%%]
+
+-------------------------------------------------------------------------
+-- Scheme of children node map/gam
+-------------------------------------------------------------------------
+
+ATTR AllJd [ | | ndToScGam USE {`gamUnion`} {Map.empty}: {Gam Nm Nm} ]
+
+SEM Jd
+  | Ats             lhs     .   ndToScGam   =   gamSingleton @nmNd @scNm
+
+-------------------------------------------------------------------------
+-- Node order gam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd [ | | coGam USE {`gamUnion`} {emptyGam}: ChOrdGam ]
+
+SEM Jd
+  | Ats             loc     .   exNdNmS     =   exprNmS @ats.gathExNd
+                            .   exNdFmGam   =   fmGamFromList' @lhs.fm [ (n,mkAFld . @sbsn $ n) | n <- Set.toList @exNdNmS ]
+                    lhs     .   coGam       =   let sbse = exprSubst (@lhs.opts {optSubstFullNm=False}) @exNdFmGam
+                                                    cg1 = exprCoGam . sbse $ @ats.gathExNd
+                                                in  cg1
+
+SEM RlDecl
+  | Rl              loc     .   coNmL       =   let cg1 = @postJds.coGam
+                                                    cg2 = gamMapKeys @sbsn $ daiChOrdGam @daInvInfo 
+                                                in  coGamNmL (if gamIsEmpty cg1 then cg2 else cg1)
+%%]
+
+-------------------------------------------------------------------------
+-- Attr bindings as FmGam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAt [ | | atFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam (Expr,ECnstr)} ]
+
+SEM JdAt
+  | At              lhs     .   atFmGam     =   if False -- exprAsNm @expr.self == nmWild
+                                                then emptyGam
+                                                else fmSingleton @nm @lhs.fm (@expr.self,@atCnstr)
+%%]
+
+-------------------------------------------------------------------------
+-- Building blocks for transforming
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM JdAt
+  | At              loc     .   nmAdapt     =   if @isBi then nmInit else id
+                            .   nmSbs       =   Nm . nmShowAG . @sbsn . @nmAdapt $ @nm
+                            .   defLhs      =   if @lhs.isPre then mkANd @lhs.nmNd @nmSbs else mkALhs' @propRetain @nmSbs
+                            .   defRhs      =   @expr.self
+                            .   useLhs      =   @expr.self
+                            .   useRhs      =   if @lhs.isPre then mkANd @lhs.nmNd @nmSbs else mkALhs @nmSbs
+%%]
+
+-------------------------------------------------------------------------
+-- Introduced names, mapped to AG equivalent
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ | | introFmGam USE {`fmGamUnion`} {emptyGam}: {FmGam Expr} ]
+
+SEM JdAt
+  | At              loc     .   introFmGam  =   case @dir of
+                                                  ADUse -> fmGamFromList' @lhs.fm [ (n,mkALoc' n') | (n,n') <- nmRefAscL ]
+                                                        where nmRefAscL = [ (n,Nm . nmShowAG . @sbsn {- . nmAdapt -} $ n) | n <- Set.toList (exprNmS @useLhs), n /= nmWild ]
+                                                  _     -> emptyGam
+
+SEM Jd
+  | Ats             lhs     .   introFmGam  =   case scKind @scInfo of
+                                                  ScJudge | not @lhs.isPre -> @exNdFmGam `fmGamUnion` @ats.introFmGam
+                                                  _                        -> @ats.introFmGam
+
+SEM RlDecl
+  | Rl              loc     .   introFmGam  =   @preJds.introFmGam `fmGamUnion` @postJds.introFmGam
+%%]
+
+-------------------------------------------------------------------------
+-- Full fmGam
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | Rl              loc     .   fullFmGam   =   @introFmGam `fmGamUnion` @lhs.fmGam
+%%]
+
+-------------------------------------------------------------------------
+-- Constraint gam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ | | introECGam USE {`gamUnion`} {emptyGam}: ECnstrGam ]
+
+SEM JdAt
+  | At              lhs     .   introECGam  =   @introECGam
+
+SEM Jd
+  | Ats             lhs     .   introECGam  =   @introECGam
+
+SEM RlDecl
+  | Rl              loc     .   introECGam  =   gamMapKeys
+                                                    (exprSubst (@lhs.opts {optSubstFullNm=False}) @fullFmGam)
+                                                    (@preJds.introECGam `gamUnion` @postJds.introECGam)
+%%]
+
+-------------------------------------------------------------------------
+-- 'Attr defined' gam
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ | | introADGam USE {`gamUnion`} {emptyGam}: AtDefdGam ]
+
+SEM JdAt
+  | At              lhs     .   introADGam  =   case @dir of
+                                                  ADDef -> gamFromAssocs [(@nmSbs,@isBi)]
+                                                  _     -> emptyGam
+
+SEM RlDecl
+  | Rl              loc     .   adGam       =   @preJds.introADGam `gamUnion` @postJds.introADGam
+%%]
+
+-------------------------------------------------------------------------
+-- 'Attr defined' gam, new version
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllJd AllAt [ | | introAD2Gam USE {`adGamUnion`} {emptyGam}: {AtDefdGam'} ]
+
+SEM JdAt
+  | At              lhs     .   introAD2Gam =   case @dir of
+                                                  ADUse | @lhs.isJd
+                                                    -> gamFromAssocs [(@nmSbs,Set.singleton @lhs.nmNd)]
+                                                  _ -> emptyGam
+
+SEM RlDecl
+  | Rl              loc     .   ad2Gam      =   @preJds.introAD2Gam `adGamUnion` @postJds.introAD2Gam
+%%]
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllAt AllJd [ | | exprEqnL USE {++} {[]}: {[Expr]} ]
+
+SEM JdAt
+  | At              loc     .   (exprEqnL,introECGam)
+                                            =   let mk l r = ([eqn2],ecGam `gamUnion` ecGamFromList [ (l,@atCnstr), (r,@atCnstr) ])
+                                                           where eqn1         = mkExprEqn l r
+                                                                 (eqn2,ecGam) = exprElimCnstr eqn1
+                                                in  case @dir of
+                                                      ADUse | not (fmNull @introFmGam)
+                                                          -> mk @useLhs @useRhs
+                                                      ADDef | not @isExtern
+                                                          -> mk @defLhs @defRhs
+                                                      _   -> ([],emptyGam)
+
+SEM Jd
+  | Ats             loc     .   (exprEqnL,introECGam,eqnErrs)
+                                            =   case scKind @scInfo of
+                                                  ScJudge
+                                                    -> (@ats.exprEqnL,@ats.introECGam,[])
+                                                  ScRelation
+                                                    -> (exprLines jd2,introECGam2,concat jd1ErrLL)
+                                                    where jd1      = fkGamLookup exprUnk jdshExpr [@lhs.fm] . vwscJdShpGam $ @vwScInfo
+                                                          (jd1EqlL,jd1ErrLL)
+                                                                   = unzip
+                                                                       [ maybe (Map.empty,[Err_NotAEqnForm @lhs.pos (pp l)]) (\e -> (e,[])) (exprCheckAEqnForm l)
+                                                                       | l <- exprLines jd1
+                                                                       ]
+                                                          jd2      = exprSubst (@lhs.opts {optSubstOnce=True}) (fmGamMap (const fst) @ats.atFmGam) jd1
+                                                          mkG eqm gn
+                                                                   = if null n1 then [] else n1 ++ mkG (foldr (\(e,_) m -> Map.delete e m) eqm n1) n1
+                                                                   where n1 = [ (exprEnsureAppTop e',c) | (e,c) <- gn, e' <- maybeToList (Map.lookup e eqm) ]
+                                                          (introECL,introECGL)
+                                                                   = unzip [ ((e,c),eg) | (_,(e,c)) <- fmGamToList' @lhs.fm @ats.atFmGam, let (e',eg) = exprElimCnstr e ]
+                                                          introECGam2
+                                                                   = (ecGamFromList $ introECL ++ mkG (Map.unions jd1EqlL) introECL)
+                                                                     `gamUnion` gamUnions introECGL
+
+SEM RlDecl
+  | Rl              (lhs.self,loc.selfNonOptim1,loc.selfNonOptim2)
+                                            =   let (eqnLL,eqnGamL)
+                                                      = unzip
+                                                          [ (es,g)
+                                                          | e <- @preJds.exprEqnL ++ @postJds.exprEqnL
+                                                          , let (_,es,g) = exprRewrite' (@lhs.opts {optSubstFullNm=False}) @fullFmGam @lhs.rwGam @introECGam e
+                                                          ]
+                                                    aRule1
+                                                      = ARule_Rule
+                                                          [sc2DATA @rsScInfo @lhs.dtInvGam]
+                                                          @agStr
+                                                          ["rule " ++ show @rlNm,"view " ++ show @lhs.vwNm]
+                                                          (concat eqnLL)
+                                                    aRule2
+                                                      = arlUniq @lhs.fmGam @coNmL
+                                                        $ arlSubst (fmGamUnions eqnGamL)
+                                                        $ aRule1
+                                                    aRule3
+                                                      = arlElimAlphaRename
+                                                        $ aRule2
+                                                    aRule4
+                                                      = arlElimWild
+                                                        $ (if optAGCopyElim @lhs.opts then arlElimCopyRule @coNmL @adGam @ad2Gam else id)
+                                                        $ aRule3
+                                                in  (RlDecl_AG @nm @pos aRule4,aRule2,aRule3)
+%%]
+
+-------------------------------------------------------------------------
+-- Debug pretty printing of ruler AST2
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM RlDecl
+  | Rl              lhs     .   ppDbg       =   "-- debug info"
+                                                >-< @nm >#< ppBracketsCommas [pp @pos,pp @agStr]
+                                                >-< "introFmGam" >#< ppGam @introFmGam
+                                                >-< "introECGam" >#< ppECGam @introECGam
+                                                >-< "lhs.rwGam" >#< ppGam @lhs.rwGam
+                                                >-< "adGam" >#< ppGam @adGam
+                                                >-< "ad2Gam" >#< ppADGam @ad2Gam
+                                                >-< "lhs.opts" >#< text (show @lhs.opts)
+                                                >-< "coNmL" >#< ppListSep "[" "]" "," @coNmL
+                                                >-< "non optim1" >#< pp @selfNonOptim1
+                                                >-< "non optim2" >#< pp @selfNonOptim2
+%%]
+
+-------------------------------------------------------------------------
+-- Error
+-------------------------------------------------------------------------
+
+%%[1 ag
+SEM Jd
+  | Ats             lhs     .   errL        =   @eqnErrs
+%%]

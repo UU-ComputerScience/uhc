@@ -1,0 +1,245 @@
+%%[doesWhat doclatex
+
+Each HsName in the program is numbered.
+This is done by replacing them with a HsName with constructor HNmNr.
+In a HNmNr, also the original name is retained, which can be useful later for prettyprinting.
+
+After numbering a toplevel function binding, the unique number is incremented by 2,
+to reserve a variable number which can be used for analysing the type of an Exception
+which may be thrown by the function.
+The parameters of a function are numbered consecutively after that.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.NumberIdents}  export(numberIdents)
+%%]
+
+%%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+numberIdents :: GrModule -> GrModule
+numberIdents code
+  = let inh = Inh_GrAGItf {}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+%%]
+
+
+
+Haskell datatype NameMapping and utility functions for it
+
+%%[(8 codegen grin) hs
+type NameMapping = Map.Map HsName HsName
+
+findNewVar fm e  = Map.findWithDefault (trace ("NumberIdents.findNewVar: " ++ show e ++ " not found in " ++ show fm) e) e fm
+
+
+-- numbers the non-wildcard variables in xs, counting from left-to-right (because that is needed when numbering argument lists)
+
+addList :: Int -> [HsName] -> (NameMapping, [HsName], Int)
+addList u xs = foldl addName (Map.empty, [], u) xs
+    where
+    addName (mapping, names, u) e | e == wildcardNm  = (mapping, names++[wildcardNr] , u  )
+                                  | otherwise        = let newname = HNmNr u (OrigLocal e)
+                                                       in (Map.insert e newname mapping, names++[newname], u+1)
+                                              
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule  ]
+ATTR AllNT   [ | | grTrf: SELF      ]
+ATTR AllNT   [ | unique: Int | ]
+
+SEM GrAGItf
+  | AGItf  module  . unique       =  6   -- 0,1,2,3,4,5 are reserved for wildcard, main, mainexcept, eval, evalexcept, evalarg
+                   
+%%]
+
+
+
+%%[(8 codegen grin)
+
+ATTR AllBind  [ 
+              | 
+              | genBindMap USE {`Map.union`} {Map.empty} : NameMapping
+              ]
+
+ATTR AllGlobal
+     GrPatAlt
+     GrPatLam [ 
+              |
+              | genVarMap  USE {`Map.union`} {Map.empty} : NameMapping
+              ]
+
+ATTR AllGlobal
+     AllBind
+     AllExpr  [ varMap : NameMapping
+                bindMap: NameMapping  | | ]
+
+
+SEM GrModule
+  | Mod       loc     . bindMap  =  Map.insert hsnMainFullProg mainNr @bindL.genBindMap
+              globalL . bindMap  =  @loc.bindMap
+              bindL   . bindMap  =  @loc.bindMap
+              globalL . varMap   =  @globalL.genVarMap
+              bindL   . varMap   =  @globalL.genVarMap
+
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR GrVarL GrVar  [ | | names USE {++} {[]} : {[HsName]} ]
+SEM GrVar
+  | Var  lhs. names = [ @nm ]
+
+
+SEM GrGlobal
+  | Global     loc   .  newName  : HsName
+               loc   .  newName  = HNmNr @lhs.unique (OrigGlobal @nm)
+               lhs   .  genVarMap  = Map.singleton @nm @newName
+               lhs   .  unique   = @lhs.unique + 1
+
+SEM GrPatAlt
+  | Node       (lhs.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL
+  			   loc  .  newNames                   :  {[HsName]}
+
+SEM GrPatLam
+  | VarNode    (loc.genVarMap, loc.newNames, lhs.unique) = addList @lhs.unique @fldL.names
+  			   loc  .  newNames                   :  {[HsName]}
+  			   loc  .  genVarMap                  :  {NameMapping}
+
+  | Var
+    BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot   lhs.genVarMap    = Map.singleton @nm @newName
+               lhs.unique       = @lhs.unique + 1
+               loc  .  newName  : HsName
+               loc  .  newName  = HNmNr @lhs.unique (OrigLocal @nm)
+               
+
+SEM GrExpr
+  | Catch      handler  .  varMap   = Map.insert @arg @newName @lhs.varMap
+               handler  .  unique   = @body.unique + 1
+               loc      .  newName  : HsName
+               loc      .  newName  = HNmNr @body.unique (OrigLocal @arg)
+
+  | Seq        body     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
+
+SEM GrAlt
+  | Alt        expr     .  varMap   = @lhs.varMap `Map.union` @pat.genVarMap
+  
+
+
+
+SEM GrBind
+  | Bind  lhs.genBindMap =  Map.singleton @nm (HNmNr @lhs.unique (OrigFunc @nm))
+                              
+          ( loc.parameterMap
+          , loc.newNames
+          , expr.unique
+          )                         =  addList (@lhs.unique + 2) @argNmL    -- arguments must be numbered left-to-right (addList indeed does so)
+          
+          expr  .  varMap           =  @lhs.varMap `Map.union` @loc.parameterMap
+          
+          loc   .  parameterMap     :  {NameMapping}
+          loc   .  newNames         :  {[HsName]}
+          lhs   .  unique           =  @expr.unique
+
+%%]
+
+
+
+
+replacing every identifier with a number
+
+%%[(8 codegen grin)
+SEM GrGlobal
+  | Global      lhs  .  grTrf  =  GrGlobal_Global @newName @val.grTrf
+
+SEM GrPatAlt
+  | Node        lhs  .  grTrf  =  GrPatAlt_Node @tag.grTrf @newNames
+  
+SEM GrPatLam
+  | Var         lhs  .  grTrf  =  GrPatLam_Var  @newName
+  | VarNode     fldL .  varMap = @loc.genVarMap
+  -- | VarNode     lhs  .  grTrf  =  GrPatLam_VarNode @fldL.grTrf
+  | BasicNode   lhs  .  grTrf  =  GrPatLam_BasicNode @annot @newName
+  | EnumNode    lhs  .  grTrf  =  GrPatLam_EnumNode @newName
+  | OpaqueNode  lhs  .  grTrf  =  GrPatLam_OpaqueNode @newName
+  | PtrNode     lhs  .  grTrf  =  GrPatLam_PtrNode @newName
+  | BasicAnnot  lhs  .  grTrf  =  GrPatLam_BasicAnnot @annot @newName
+  | EnumAnnot   lhs  .  grTrf  =  GrPatLam_EnumAnnot @tycon @newName
+  | OpaqueAnnot lhs  .  grTrf  =  GrPatLam_OpaqueAnnot @newName
+  | PtrAnnot    lhs  .  grTrf  =  GrPatLam_PtrAnnot @tycon @newName
+
+SEM GrBind
+  | Bind        lhs  .  grTrf  =  GrBind_Bind (findNewVar @lhs.bindMap @nm) @annot @newNames @expr.grTrf
+
+SEM GrVal
+  | Var         lhs  .  grTrf  =  GrVal_Var                  (findNewVar @lhs.varMap @nm)
+  | BasicNode   lhs  .  grTrf  =  GrVal_BasicNode @tag.grTrf (findNewVar @lhs.varMap @nm)
+  | EnumNode    lhs  .  grTrf  =  GrVal_EnumNode             (findNewVar @lhs.varMap @nm)
+  | OpaqueNode  lhs  .  grTrf  =  GrVal_OpaqueNode           (findNewVar @lhs.varMap @nm)
+  | PtrNode     lhs  .  grTrf  =  GrVal_PtrNode              (findNewVar @lhs.varMap @nm)
+
+SEM GrVar
+  | Var         lhs  .  grTrf  =  GrVar_Var (findNewVar @lhs.varMap @nm)
+
+SEM GrExpr
+  | App
+    Eval
+    FetchNode
+    FetchField
+    Throw
+    UpdateUnit  loc  .  newName  =  findNewVar  @lhs.varMap  @nm
+  | Call        loc  .  newName  =  findNewVar  @lhs.bindMap @nm
+  | App         lhs  .  grTrf    =  GrExpr_App        @newName @argL.grTrf
+  | Eval        lhs  .  grTrf    =  GrExpr_Eval       @newName
+  | Call        lhs  .  grTrf    =  GrExpr_Call       @newName @argL.grTrf
+  | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
+  | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
+  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.varMap @src) (findNewVar @lhs.varMap @dst)
+  | Throw       lhs  .  grTrf    =  GrExpr_Throw      @newName
+  | Catch       lhs  .  grTrf    =  GrExpr_Catch      @body.grTrf @newName @handler.grTrf
+%%[[8
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @nm @argL.grTrf
+%%][94
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @argL.grTrf
+%%][99
+  | FFI         lhs  .  grTrf    =  GrExpr_FFI  @callconv @impEnt @ffiAnnot @argL.grTrf
+%%]]
+
+SEM GrTag
+  | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @nm
+  | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bindMap @nm)
+  | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bindMap @nm)
+  | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bindMap @nm)
+
+%%]

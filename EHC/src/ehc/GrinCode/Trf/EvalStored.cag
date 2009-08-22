@@ -1,0 +1,239 @@
+%%[doesWhat doclatex
+
+do not do \textit{EVAL} on pointers that bind the result of a previous \textit{STORE}.
+Instead, do a \textit{CALL} if the stored node has an F-tag or an A-tag,
+or do a \textit{UNIT} of the stored node for other tags.
+
+%%]
+
+
+Replace
+   STORE (#F/f x y) ;\r ->
+   ...
+   EVAL r
+by
+   STORE (#F/f x y) ;\r ->
+   ...
+   CALL f x y
+The STORE expression is not removed, but will be by a subsequent DropUnusedExpr transformation
+if r is not used elsewhere
+Similar for #A.
+
+For other tags, e.g. #C, we replace
+   STORE (#C/c x y) ;\r ->
+   ...
+   EVAL r
+by
+   STORE (#C/c x y) ;\r ->
+   ...
+   UNIT (#C/c x y)
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalStored} export(evalStored)
+
+evalStored :: GrModule -> GrModule
+evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                        (Inh_GrAGItf)
+                   in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin)
+
+-- Environment passes information about stored values.
+-- * Global variables with final tag
+-- * Local variables that store a node
+--   - with final tag
+--   - with nonfinal tag, which has not been updated in the meanwhile
+
+ATTR AllBind AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
+
+ATTR GrExpr [  | | mbStoredValue : {Maybe GrVal}
+                   mbUpdatedVar  : {Maybe HsName} ]
+                   
+ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+
+ATTR GrPatLam [ | | getName : {HsName} ]
+
+ATTR GrVal [ | | hasFinalTag : {Bool} ]
+
+SEM GrPatLam
+  | Var       lhs.getName  =  @nm
+  | * - Var   lhs.getName  =  error "EvalStored: getName from non-variable"
+
+SEM GrGlobal
+  | Global    lhs.initialEnv  =  if @val.hasFinalTag
+                                 then Map.singleton @nm @val.grTrf
+                                 else Map.empty
+
+SEM GrVal
+  | Node      lhs.hasFinalTag  =  isFinalTag @tag.grTrf
+  | * - Node  lhs.hasFinalTag  =  False
+
+
+SEM GrModule
+  | Mod       bindL.env    =  @globalL.initialEnv
+
+SEM GrExpr
+  | Seq       loc.env2  =  maybe @lhs.env
+                                 (\val -> Map.insert @pat.getName val @lhs.env)
+                                 @expr.mbStoredValue
+              body.env  =  maybe @loc.env2
+                                 (\var -> Map.delete var @loc.env2)
+                                 @expr.mbUpdatedVar
+                                 
+  | Store           lhs.mbStoredValue  =  Just @val.grTrf
+  | * - Store       lhs.mbStoredValue  =  Nothing
+  
+  | UpdateUnit      lhs.mbUpdatedVar  =  Just @nm
+  | FetchUpdate     lhs.mbUpdatedVar  =  Just @dst
+  | * - UpdateUnit
+        FetchUpdate lhs.mbUpdatedVar  =  Nothing
+
+  | Eval            lhs.grTrf         =  if Map.findWithDefault 0 @nm @lhs.localFreq >= 2    -- defined, and used since then
+                                         then @loc.grTrf
+                                         else maybe @loc.grTrf
+                                                    evaluateNode
+                                                    (Map.lookup @nm @lhs.env)
+
+%%]
+
+%%[(8 codegen grin) hs
+
+evaluateNode node@(GrVal_Node tag flds) 
+  =  case tag of
+       GrTag_Fun nm -> GrExpr_Call nm flds
+       GrTag_App nm -> GrExpr_Call nm flds
+       _            -> GrExpr_Unit node
+
+%%]
+
+
+
+
+
+%%[(8 codegen grin)
+
+-- We collect bottom-up the use frequency of all free variables in an Expression, Value, and Tag.
+-- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
+-- In patterns we collect the variables that are bound.
+-- We distribute top-down the use frequency of all local variables in an Expression.
+
+ATTR AllGrExpr
+     AllGrVal
+     AllGrTag    [ | | freeFreq : {Map.Map HsName Int} ]
+
+ATTR AllGrPat    [ | | defined  USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]   
+
+ATTR GrExpr
+     AllAlt      [ localFreq : {Map.Map HsName Int} | | ]
+
+
+-- At defining positions, we "bend down" the use counts:
+-- the bound variables are looked up in the freeFreq map, and added to the localFreq map we get from above.
+
+SEM GrBind
+  | Bind          expr.localFreq     = foldr    (\x m -> Map.insert x    (Map.findWithDefault 0 x    @expr.freeFreq) m) Map.empty      @argNmL
+
+SEM GrExpr
+  | Seq           body.localFreq     = Set.fold (\x m -> Map.insert x    (Map.findWithDefault 0 x    @body.freeFreq) m) @lhs.localFreq @pat.defined 
+  | Catch         handler.localFreq  =                   Map.insert @arg (Map.findWithDefault 0 @arg @handler.freeFreq) @lhs.localFreq
+
+SEM GrAlt
+  | Alt           expr.localFreq     = Set.fold (\x m -> Map.insert x    (Map.findWithDefault 0 x    @expr.freeFreq) m) @lhs.localFreq @pat.defined 
+
+-- At defining positions, the bound variables are removed from the freeFreq map:
+
+SEM GrExpr
+  | Seq           lhs.freeFreq  =  Map.unionWith (+) @expr.freeFreq (Set.fold Map.delete @body.freeFreq @pat.defined)
+  | Catch         lhs.freeFreq  =  Map.unionWith (+) @body.freeFreq (Map.delete @arg @handler.freeFreq)
+
+SEM GrAlt
+  | Alt           lhs.freeFreq  =  Set.fold Map.delete @expr.freeFreq @pat.defined
+
+
+-- At using positions, the freeFreq map is initialized or updated
+
+SEM GrExpr
+  | UpdateUnit    lhs.freeFreq  =  @val.freeFreq               -- Note:  @nm is not a "use", it is a (re-)defining position
+  | FetchNode     lhs.freeFreq  =  Map.singleton      @nm  1
+  | FetchUpdate   lhs.freeFreq  =  Map.singleton      @src 1   -- Note: @dst is not a "use", it is a (re-)defining position
+  | FetchField    lhs.freeFreq  =  Map.singleton      @nm  1
+  | Call          lhs.freeFreq  =  Map.insertWith (+) @nm  1 @argL.freeFreq
+  | Eval          lhs.freeFreq  =  Map.singleton      @nm  1
+  | App           lhs.freeFreq  =  Map.insertWith (+) @nm  1 @argL.freeFreq
+  | Throw         lhs.freeFreq  =  Map.singleton      @nm  1
+
+SEM GrVal
+  | Var
+    BasicNode
+    EnumNode
+    PtrNode
+    OpaqueNode    lhs.freeFreq  =  Map.singleton @nm 1
+  | Empty
+    LitInt
+    LitStr        lhs.freeFreq  =  Map.empty
+
+SEM GrTag
+  | Fun
+    PApp
+    App           lhs.freeFreq  =  Map.singleton @nm 1
+  | Con
+    Unboxed
+    Hole
+    Rec           lhs.freeFreq  =  Map.empty
+
+-- In lists, the freeFreq maps are merged.
+-- The merge is normally done by adding, but in Alternative lists we take the maximum.
+-- This way, not the total number of uses in the body, but the maximum number of uses in any path through the body is determined.
+
+SEM GrValL GrTagL
+  | Nil           lhs.freeFreq  =  Map.empty
+  | Cons          lhs.freeFreq  =  Map.unionWith (+) @hd.freeFreq @tl.freeFreq
+
+SEM GrAltL
+  | Nil           lhs.freeFreq  =  Map.empty
+  | Cons          lhs.freeFreq  =  Map.unionWith max @hd.freeFreq @tl.freeFreq
+
+-- In patterns we collect the variables that are bound
+
+SEM GrPatAlt
+  | Node          lhs.defined   =  Set.fromList @fldL
+
+SEM GrPatLam
+  | Var
+    BasicNode
+    EnumNode
+    PtrNode
+    OpaqueNode
+    BasicAnnot
+    EnumAnnot
+    PtrAnnot
+    OpaqueAnnot   lhs.defined   =  Set.singleton @nm
+
+SEM GrVar
+  | Var           lhs.defined   =  Set.singleton @nm
+
+%%]
+
+%%[(10 codegen grin)
+SEM GrSplit
+  | Sel           lhs.defined   =  Set.singleton @nm
+%%]

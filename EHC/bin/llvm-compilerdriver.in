@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# Compiler driver for generating LLVM Binaries
+# 
+
+###############################################################################
+# Config options
+###############################################################################
+
+# Program to assemble .ll files
+#
+LLVM_AS="@LLVM_AS_CMD@"
+
+# Program to optimize .bc files
+#
+LLVM_OPT="@LLVM_OPT_CMD@ -std-compile-opts -dce -globalsmodref-aa -internalize -ipsccp"
+
+# Binary to compile .bc files to .s files
+#
+LLC="@LLVM_LLC_CMD@ -mtriple=@TARGET_TRIPLE@"
+
+# Native linker
+#
+NATIVE_LD="@GCC_CMD@"
+
+# Strip the symbol table
+#
+STRIP="strip"
+
+###############################################################################
+# End of config options
+###############################################################################
+TMP_TEMPLATE="llvm-driver.XXXXXXXX"
+
+LIBS=""
+OUTPUT=""
+# process command-line options
+#
+while getopts "l:o:" opt; do
+    case $opt in 
+        l )    LIBS="$LIBS $OPTARG" ;;
+        o )    OUTPUT="$OPTARG" ;;
+        \? )   echo 'usage: llvm-compilerdriver [-l lib] [-o file] file'
+               exit 1 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+INPUT_LL=$1
+OUTPUT_BASE=${OUTPUT%.*}
+INPUT_BASE=${OUTPUT%.*}
+
+$LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
+$LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
+$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
+$STRIP $OUTPUT

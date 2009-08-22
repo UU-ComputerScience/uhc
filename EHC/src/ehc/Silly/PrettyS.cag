@@ -1,0 +1,578 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Prettyprint Silly program as Assembly (not finished)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs module {%{EH}Silly.PrettyS} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyS)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+%%[(8 codegen grin) hs
+prettyS :: EHCOpts -> SilModule -> PP_Doc
+prettyS opts silmod
+  = let t = wrap_SilModule (sem_SilModule silmod)
+                           (Inh_SilModule { opts_Inh_SilModule = opts
+                                          }
+                           )
+     in  prettyS_Syn_SilModule t
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options to adapt the structure of the generated code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+WRAPPER SilModule
+
+ATTR SilModule
+  [ opts : {EHCOpts} | | ]
+
+ATTR Functions Function Statements Statement Alternatives Alternative
+  [ optTraceCall     : {Bool} -- when True, function entrance/exit is logged
+    optCaseDefault   : {Bool} -- when True, error messages are given as default case for each switch
+    optOwn           : {Int}
+  | | ]
+
+SEM SilModule
+  | SilModule  loc.optTraceCall   = ehcOptGenTrace       @lhs.opts
+               loc.optCaseDefault = ehcOptGenCaseDefault @lhs.opts
+               loc.optOwn         = ehcOptOwn            @lhs.opts
+
+{
+optTraceAssign = False
+}
+%%]
+
+
+%%[(8 codegen grin)
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
+         [ | | prettyS USE {>-<} {empty} : PP_Doc ]
+         
+ATTR Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
+         [ constantMap : {Map.Map String Int} | | ]
+
+ATTR Alternatives [ | | prettyTE : PP_Doc   prettyE : PP_Doc ]
+ATTR Alternative  [ | | prettyTE : PP_Doc ]
+
+ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
+
+ATTR Values [ | | prettySs : {[PP_Doc]} ]
+
+ATTR Variable [ | | prettyPtr : {PP_Doc}  ]
+
+ATTR Variable [ | | storeFromA : {PP_Doc} 
+                    loadInA    : {PP_Doc} 
+                    addrInD    : {PP_Doc} 
+                    register   : {PP_Doc} 
+                    isRegister : {Bool}
+                    self       : SELF
+              ]
+
+ATTR Value [ | | loadInA : {PP_Doc} 
+                 isSPOffset : {Bool}
+                 offsetVal  : {Int}
+           ]
+
+ATTR Constant  [ | | loadInA : {PP_Doc} 
+                     value : {Int}
+               ]
+
+ATTR Functions Function Statements Statement Alternatives Alternative [ | nextCaseLab : {Int} | ]
+          
+ATTR Alternatives [ totalEndLab : {Int} | myEndLab : {Int} | length : {Int} ]
+
+ATTR Alternative  [ totalEndLab : {Int} myEndLab : {Int} | | ]
+
+
+SEM Alternatives
+  | Nil   lhs.length   = 0
+  | Cons  lhs.length   = 1 + @tl.length
+          tl.myEndLab  = @lhs.myEndLab + 1
+
+SEM SilModule   
+  | SilModule   functions.nextCaseLab = 1
+
+SEM Statement
+  | Switch      loc.totalEndLab  = @lhs.nextCaseLab + @body.length - 1
+                body.myEndLab    = @lhs.nextCaseLab
+                body.nextCaseLab = @loc.totalEndLab + 1
+                body.totalEndLab = @loc.totalEndLab
+
+SEM SilModule
+  | SilModule   loc.prettyS   = preambule
+                                >-< comment ["Global table"]
+                                >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
+                                >-< text ""
+                                >-< comment ["Function definitions"]
+                                >-< @loc.silMain1
+
+                                    >-< text ""
+                                    >-< @functions.prettyS
+                                >-< text ""
+                loc.silMain1 =  ".globl _silly_main"  
+                                >-< ".def _silly_main; .scl 2; .type 32; .endef"
+                                >-< label "_silly_main"
+                                >-< instruction1 "pushl" ebp
+                                >-< instruction2 "movl" esp ebp
+                                >-< instruction2 "subl" (immediate (16::Int)) esp
+                                
+                                >-< callSillyFunctionFromC 1 "initialize"
+
+                                >-< callSillyFunctionFromC 2 "fun_main"
+                                
+                                >-< instruction2 "movl" (indirectOffset (-4::Int) esp) eax
+                                >-< instruction2 "movl" "_RP" edx
+                                >-< instruction2 "movl" eax (indirect edx)
+                                
+                                >-< instruction2 "movl" (indirectOffset (-8::Int) esp) eax
+                                >-< instruction2 "movl" "_RP" edx
+                                >-< instruction2 "addl" (immediate (4::Int)) edx
+                                >-< instruction2 "movl" eax (indirect edx)
+                                
+                                >-< instruction2 "movl" (immediate (0::Int)) eax
+                                >-< instruction0 "leave"
+                                >-< instruction0 "ret"
+                                
+
+                                
+                loc.constantMap = Map.fromList (("UNBOXED",1) : ("ANY",0) : @constants)
+
+
+
+SEM Function
+  | Function    loc.prettyS   = label (hsnShowAlphanumeric @name)
+                                >-< @body.prettyS
+
+                lhs.protoC    = methodHead (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters) >|< ";"
+
+SEM Statement
+  | Comment     loc.prettyS   = comment @comment
+  | Assignment  loc.prettyS   = ";" >#< @loc.pretty >-<
+                                 if @source.isSPOffset && @dest.self==Variable_SP
+                                 then let n = @source.offsetVal * 4
+                                      in  if   n<0
+                                          then instruction2 "subl" (immediate (-n)) (text esp)
+                                          else if n==0
+                                               then text ""
+                                               else instruction2 "addl" (immediate   n ) (text esp)
+                                 else @source.loadInA >-< @dest.storeFromA
+  | Assignment2 loc.prettyS   = ";" >#< @loc.pretty >-<
+                                @source.loadInA >-< @dest.storeFromA >-< @dest2.storeFromA
+  | Switch      loc.prettyS   = ";" >#< "SWITCH" >#< @scrutinee.pretty >-<
+                                @scrutinee.loadInA >-< @body.prettyS
+  | IfThenElse  loc.prettyS   = ";" >#< "IF" >#< @condition.pretty >-<
+                                @condition.loadInA >-< @thenpart.prettyS >-< @elsepart.prettyS
+  | Call Jump   loc.prettyS   = ";" >#< @loc.pretty >-<
+                                instruction1 "jmp" (hsnShowAlphanumeric @name)
+  | Return      loc.prettyS   = ";" >#< @loc.pretty >-<
+                                instruction1 "jmp" (dereference (indirectOffset (@retdiff *(-4)) esp))
+  | Label       loc.prettyS   = label @name
+  | Smart       loc.prettyS   = error "Silly.PrettyS: Statement_Smart found"
+
+
+
+SEM Alternative
+  | Alternative loc.prettyS   = (if @lhs.totalEndLab == @lhs.myEndLab
+                                 then @body.prettyS
+                                 else instruction2 "cmpl" (immediate @when.value) eax
+                                      >-< instruction1 "jne" ("case" ++ show @lhs.myEndLab)
+                                      >-< @body.prettyS
+                                      >-< instruction1 "jmp" ("case" ++ show @lhs.totalEndLab)
+                                )
+                                >-< label ("case" ++ show @lhs.myEndLab)
+                loc.prettyTE  = (text "{" >|< indent 4 @body.prettyS) >-< text "}"
+
+SEM Alternatives
+  | Nil         loc.prettyTE  = error "nil case in prettyTE"
+  | Cons        loc.prettyTE  = @hd.prettyTE >-< text "else" >-< @tl.prettyE
+  | Nil         loc.prettyE   = error "nil case in prettyE"
+  | Cons        loc.prettyE   = @hd.prettyTE
+    
+
+
+
+SEM Values
+  | Nil         loc.prettySs  = []
+  | Cons        loc.prettySs  = @hd.prettyS : @tl.prettySs
+
+SEM Value
+  | Con         loc.prettyS   = @con.prettyS
+  | Var         loc.prettyS   = @var.prettyS
+  | Offset      loc.prettyS   = @var.prettyS >|< "+" ++ show @off
+  | Cast        loc.prettyS   = ("((" ++ (if @word then "GrWord" else "Pointer") ++ ")(") >|< @val.prettyS >|< "))"
+  | Call        loc.prettyS   = ( maybe (callCfunction @name)
+                                        fromSillyPrim
+                                        (lookupPrim BackendSilly @name)  ) @args.prettySs
+  | Alloc       loc.prettyS   = "heapalloc(" >|< show @size >|< ")"
+  | Label       loc.prettyS   = "((GrWord)(&&" >|< @name >|< "))"
+
+SEM Constant
+  | LiteralInt  loc.prettyS   = text (show @value)
+  | LiteralStr  loc.prettyS   = "((GrWord)" >|< text (show @value) >|< ")"
+  | Alias       loc.prettyS   = text @name
+
+SEM Variable
+  | Global
+    Local
+    Param       loc.prettyS   = text (hsnShowAlphanumeric @name)
+                loc.prettyPtr = "((Pointer)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+  | SP          loc.prettyS   = text "SP"
+                loc.prettyPtr = text "SP"
+  | BP          loc.prettyS   = text "BP"
+                loc.prettyPtr = text "BP"
+  | RP          loc.prettyS   = text "RP"
+                loc.prettyPtr = text "RP"
+  | Subs        loc.prettyS   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
+                loc.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
+  | Aux         loc.prettyS   = text "auxVar"
+                loc.prettyPtr = text "auxVar"
+  | Ptr         loc.prettyS   = text "auxPtr"
+                loc.prettyPtr = text "((Pointer)auxPtr)"
+  | None        loc.prettyS   = text "attempt to use Variable_None as value"
+                loc.prettyPtr = error "attempt to use Variable_None as pointer"
+  | Unembedded  loc.prettyS   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
+                loc.prettyPtr = error "attempt to use Variable_Unembedded as pointer"
+
+
+SEM Value
+  | Var         lhs.loadInA    =  @var.loadInA
+  | Con         lhs.loadInA    =  @con.loadInA
+  | Alloc       lhs.loadInA    =  let n = @size * 4
+                                  in  instruction2 "movl" (immediate n) (indirect esp)
+                                      >-< instruction1 "call" "_GC_malloc"
+  | Label       lhs.loadInA    =  instruction2 "movl" (immediate @name) eax
+  | Offset      lhs.loadInA    =  instruction2 "leal" (indirectOffset (@off*4) @var.register) eax
+  | Cast        lhs.loadInA    =  @val.loadInA
+  | Call        lhs.loadInA    =  text "loadInA of a FFI Call"
+  
+  | Offset      lhs.isSPOffset =  @var.self==Variable_SP
+                lhs.offsetVal  =  @off
+  | * - Offset  lhs.isSPOffset =  False
+                lhs.offsetVal  =  error "offset of non-Offset"
+
+
+SEM Variable
+  | Subs        lhs.storeFromA =   if @array.isRegister
+                                    then instruction2 "movl" (text eax) (indirectOffset (@index*4) @array.register)
+                                    else @array.addrInD
+                                         >-< let n = @index * 4
+                                             in  (if   n<0
+                                                  then instruction2 "subl" (immediate (-n)) (text edx)
+                                                  else if n==0
+                                                       then text ""
+                                                       else instruction2 "addl" (immediate   n ) (text edx)
+                                                 )
+                                         >-< instruction2 "movl" eax (indirect edx)
+  | Global      lhs.storeFromA =   instruction2 "movl" (text eax) (text  $ "_" ++ hsnShowAlphanumeric @name)
+  | * - Subs Global
+                lhs.storeFromA =   (text "storeFromA") >#< @loc.prettyS
+  
+  | Subs        lhs.loadInA    =   if @array.isRegister
+                                    then instruction2 "movl" (indirectOffset (@index*4) @array.register) (text eax)
+                                    else @array.addrInD
+                                         >-< instruction2 "addl" (immediate (@index*4)) edx
+                                         >-< instruction2 "movl" (indirect edx) eax
+  | Global      lhs.loadInA    =   instruction2 "movl" (text  $ "_" ++ hsnShowAlphanumeric @name) (text eax)
+  | * - Subs Global
+                lhs.loadInA    =   (text "loadInA") >#< @loc.prettyS
+  
+  | Subs        lhs.addrInD    =   instruction2 "movl" (indirectOffset (@index*4) @array.register) (text edx)
+  | Global      lhs.addrInD    =   instruction2 "movl" (text  $ "_" ++ hsnShowAlphanumeric @name) (text edx)
+  | * - Subs Global
+                lhs.addrInD    =   @loc.prettyS
+  
+  
+SEM Constant
+  | LiteralInt  lhs.loadInA    =   instruction2 "movl" (immediate @value) (text eax)
+                lhs.value      =   @value
+  | Alias       lhs.loadInA    =   instruction2 "movl" (immediate @loc.value) (text eax)
+                loc.value      =   Map.findWithDefault 9999 @name @lhs.constantMap
+  | LiteralStr  lhs.loadInA    =   instruction2 "movl" (immediate @value) (text eax)  -- TODO: generate EQU for literal string
+                lhs.value      =   error "value of LiteralString"
+
+SEM Variable
+  | SP          lhs.isRegister = True
+  | * - SP      lhs.isRegister = False
+  | SP          lhs.register   = text esp
+  | * - SP      lhs.register   = @loc.prettyS
+
+
+%%]
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Adapted form Pretty, to be able to generate Silly statements as comments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
+         [ | | pretty USE {>-<} {empty} : PP_Doc ]
+
+SEM SilModule
+  | SilModule  loc.pretty = @functions.pretty
+    
+SEM Function
+  | Function   loc.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
+                            >-< "{"
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 (@body.pretty)
+                            >-< "}"
+
+SEM Statement
+  | Assignment  loc.pretty = @dest.pretty >#< ":=" >#< @source.pretty >#< ";"
+  | Assignment2 loc.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >#< ";"
+  | Switch      loc.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
+  | IfThenElse  loc.pretty = "IF"     >#< @condition.pretty >-< "{" >-< @thenpart.pretty >-< "}" >-< "{" >-< @elsepart.pretty >-< "}"
+  | Call        loc.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
+  | Jump        loc.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
+  | Return      loc.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
+  | Label       loc.pretty = "LABEL"  >#< text @name >|< ";"
+  | Smart       loc.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+  | Comment     loc.pretty = comment @comment
+    
+  
+SEM Alternative
+  | Alternative loc.pretty = "WHEN" >#< @when.pretty >-< indent 4 (@body.pretty)
+ 
+SEM Constant
+  | LiteralInt  loc.pretty = text (show @value)
+  | LiteralStr  loc.pretty = text (show @value)
+  | Alias       loc.pretty = text @name
+
+SEM Variable
+  | Unembedded     loc.pretty = text ("U" ++ hsnShowAlphanumeric @name)
+  | Local          loc.pretty = text ("L" ++ hsnShowAlphanumeric @name)
+  | Param          loc.pretty = text ("P" ++ hsnShowAlphanumeric @name)
+  | Global         loc.pretty = text ("G" ++ hsnShowAlphanumeric @name)
+  | SP             loc.pretty = text "SP"  
+  | BP             loc.pretty = text "BP"  
+  | RP             loc.pretty = text "RP"  
+  | Subs           loc.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
+  | Aux            loc.pretty = text "AUX"
+  | Ptr            loc.pretty = text "PTR"
+  | None           loc.pretty = text "NONE"
+
+SEM Value
+  | Con            loc.pretty = text "CON" >#< @con.pretty
+  | Offset         loc.pretty = @var.pretty >#< "+" >#< show @off
+  | Alloc          loc.pretty = text "ALLOC" >#< show @size
+  | Call           loc.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
+  | Label          loc.pretty = text "LABEL" >#< show @name
+
+SEM Values
+  | Nil            loc.pretty = empty
+  | Cons           loc.pretty = @hd.pretty >|< ", " >|< @tl.pretty
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Building a C program
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+
+
+eax = "%eax"
+edx = "%edx"
+esp = "%esp"
+ebp = "%ebp"
+
+immediate n = "$" >|< n
+
+indirectOffset offset register = offset >|< indirect register
+
+indirect register = "(" >|< register >|< ")"
+
+dereference x = "*" >|< x
+
+instruction2 m x y = "\t" >|< m >#< x >|< "," >#< y
+instruction1 m x   = "\t" >|< m >#< x
+instruction0 m     = "\t" >|< m 
+
+label :: String -> PP_Doc
+label nm 
+ = nm >|< ":"
+
+
+variableDeclaration :: String -> PP_Doc
+variableDeclaration x
+ = instruction2 ".comm" ('_':x) (16::Int)
+
+
+
+commaSeparated :: [String] -> String
+commaSeparated = concat . intersperse ", "
+
+macroDefinition :: PP_Doc -> PP_Doc -> PP_Doc
+macroDefinition nm body
+ = "#define" >#< nm >#< body
+
+declareNames :: String -> [String] -> PP_Doc
+declareNames tp ns
+ = tp >#< commaSeparated ns >|< ";"
+
+declareName :: String -> String -> String
+declareName tp nm
+ = tp ++ (' ' : nm)
+
+trace :: String -> PP_Doc
+trace s
+ = text ("printf(\"" ++ s ++ " SP=%d\\n\", SP-Stack); fflush(stdout);")
+
+caseDefault :: PP_Doc -> PP_Doc
+caseDefault x
+ =  "default: printf(\"undefined case for " >|< x >|< " : %d\\n\", " >|< x >|< "); exit(1);"
+
+comment :: [String] -> PP_Doc
+comment [] = text ""
+comment xs = foldr1 (>-<) (map (text . (";\t"++)) xs)
+
+callCfunction ::  String -> [PP_Doc] -> PP_Doc
+callCfunction f ps
+ = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
+
+callSillyFunctionFromC :: Int -> String -> PP_Doc
+callSillyFunctionFromC n nm
+ = let lab = "mainlab" ++ show n
+   in  instruction2 "subl" (immediate (4::Int)) esp
+       >-< instruction2 "movl" (immediate lab) (indirect esp)
+       >-< instruction2 "subl" (immediate (4::Int)) esp
+       >-< instruction2 "movl" (immediate (0::Int)) (indirect esp)
+       >-< instruction1 "jmp" nm
+       >-< label lab
+ 
+ 
+callSillyFunctionFromSilly ::  Int -> String -> [PP_Doc] -> PP_Doc
+callSillyFunctionFromSilly optOwn nm pars
+ | optOwn<=2 = callCfunction nm pars >|< ";"
+ | optOwn>=3 = "goto" >#< nm >|< ";"
+
+
+quoted :: String -> String
+quoted s = "\"" ++ s ++ "\""
+
+returnFromSillyFunction retdiff optOwn
+ | optOwn>=5   = "asm ( " >|< (  --  quoted ("movl -" ++ show (4*retdiff) ++ "(%esp),%eax\\n\\t")
+                                 --  >-<  quoted "jmp *%eax"
+                                 quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)")
+                              )
+                          >|< ");"
+                 >-< "goto *(SP[-" >|< show retdiff >|< "]);"                          
+ | optOwn>=3   = "goto *(SP[-" >|< show retdiff >|< "]);"
+ | optOwn<=2   = text ""
+
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Semantic functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+preambule :: PP_Doc
+preambule
+ = comment ["Generated Assembly code from Silly"]
+   >-< ".def _GC_malloc; .scl 3; .type 32; .endef"
+
+constantDefinition :: (String,Int) -> PP_Doc
+constantDefinition (x,n)
+ = macroDefinition (text x) (text (show n))
+
+
+methodHead :: String -> [String] -> PP_Doc
+methodHead nm params
+ =  let parameters = if null params
+                      then "void"
+                      else commaSeparated (map (declareName "GrWord") params)
+    in  "void" >#< nm >|< "(" >|< parameters >|< ")"
+
+methodHeader :: Int -> Bool -> String -> [String] -> PP_Doc
+methodHeader optOwn optTrace nm params
+ | optOwn<=2 =  methodHead nm params
+                >#< "{"
+                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+ | optOwn>=3 = label nm
+                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+
+methodFooter :: Int -> Bool -> String -> PP_Doc
+methodFooter optOwn optTrace nm
+ | optOwn<=2 =  ppWhen optTrace (trace ("leave "++init (tail (show nm))))
+                >-< text "}"
+                >-< text ""
+ | optOwn>=3 = text ""
+
+methodLocals :: [String] -> PP_Doc
+methodLocals ns
+ = ppUnless (null ns)
+            (   comment ["Local names"]
+            >-< declareNames "GrWord" ns
+            )
+
+
+jumpPrepare :: PP_Doc
+jumpPrepare
+ =  pp machDepCForTailcallEnter
+
+jumpSillyFunctionFromSilly :: Int -> String -> PP_Doc
+jumpSillyFunctionFromSilly optOwn nm
+ | optOwn<=2 = ppWhen optTraceAssign
+                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
+ 	           >-< machDepCForTailcallLeave1
+               >#< "{ register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
+               >#< machDepCForTailcallLeave2
+               >-< "goto *_tail_call_dest; }"
+ | optOwn>=3 = "goto" >#< nm >|< ";"
+
+
+assignment2 :: PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+assignment2 v1 v2 e
+ = v1
+   >#< "="
+   >#< v2
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< e >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+
+assignment :: PP_Doc -> PP_Doc -> PP_Doc
+assignment v e
+ = v
+   >#< "="
+   >#< e
+   >|< ";"
+   >|< ppWhen optTraceAssign
+              (" printf(\"assignment" >#< show v >#< "=" >#< e >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+
+switch :: Bool -> PP_Doc -> PP_Doc -> PP_Doc
+switch optDef scrutinee body
+ = "switch ("
+   >|< scrutinee
+   >|< ")"
+   >#< "{"
+   >-< indent 4 body
+   >-< ppWhen optDef (indent 4 (caseDefault scrutinee))
+   >-< "}"
+
+alternative :: PP_Doc -> PP_Doc -> PP_Doc
+alternative when body
+ = "case"
+   >#< when
+   >|< ":"
+   >-< indent 4 (body >-< "break;")
+
+
+%%]

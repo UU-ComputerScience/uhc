@@ -1,0 +1,1622 @@
+%%[titlepage
+\frame<presentation>{\titlepage}
+%%]
+
+%%[topics
+\frame<presentation>{
+\frametitle{Topics}
+\tableofcontents[hidesubsections]
+}
+%%]
+
+%%[topicsSub
+\frame<presentation>{\tableofcontents[current,hidesubsections]}
+%%]
+
+%%[EHAbsSynExpr
+\frame<presentation>[t]
+{
+\frametitle{Abstract syntax for expressions}
+\begin{itemize}
+\item Expression abstract syntax:
+\begin{columns}[onlytextwidth,t]
+ \begin{column}{.75\textwidth}
+  \chunkCmdFrameUse{EHAbsSyn.1.Expr}
+ \end{column}
+ \begin{column}{.2\textwidth}
+%%[[wrap=safecode
+  3
+  'x'
+  (...,...)
+  v
+  f a
+  let ... in ...
+  \... -> ...
+%%]
+ \end{column}
+\end{columns}
+\item
+|AppTop| has no concrete counterpart
+\item
+|HsName = String|
+\end{itemize}
+}
+%%]
+
+%%[EHExprs
+\newcommand{\PGFAppAA}[3]{%
+ \begin{center}
+  \begin{pgfpicture}{0cm}{0cm}{4cm}{2.5cm}
+   \pgfnodebox{App1}[virtual]{\pgfxy(2.5,2)}{App}{2pt}{2pt}
+   \pgfnodebox{App2}[virtual]{\pgfxy(1.75,1.25)}{App}{2pt}{2pt}
+   \pgfnodebox{Fun}[virtual]{\pgfxy(1,0.5)}{#1}{2pt}{2pt}
+   \pgfnodebox{Arg1}[virtual]{\pgfxy(2.5,0.5)}{#2}{2pt}{2pt}
+   \pgfnodebox{Arg2}[virtual]{\pgfxy(3.25,1.25)}{#3}{2pt}{2pt}
+   \pgfnodeconnline{Fun}{App2}
+   \pgfnodeconnline{Arg1}{App2}
+   \pgfnodeconnline{App2}{App1}
+   \pgfnodeconnline{Arg2}{App1}
+  \end{pgfpicture}
+ \end{center}
+}
+
+\frame<presentation>
+{
+\frametitle{Expressions}
+\begin{itemize}
+\item Basic values
+\begin{itemize}
+\item Constants: |IConst|, |CConst|
+\item Identifiers: |Var|, |Con| (constructors)
+\item Only constructor is tuple constructor: |Con ",<arity>"|
+\end{itemize}
+\item Applications: |App|, left-associative
+\item |f a b| \\
+   \PGFAppAA{Var "f"}{Var "a"}{Var "b"}
+\item |(5,'x')| \\
+   \PGFAppAA{Con ",2"}{IConst 5}{CConst 'x'}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Expressions varieties}
+\begin{itemize}
+\item Applications of values, patterns and types share same basic structure
+\item Pattern |(i,c)|
+   \PGFAppAA{Con ",2"}{Var "i"}{Var "c"}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Pattern expression}
+\begin{itemize}
+\item Pattern expression abstract syntax:
+\chunkCmdFrameUse{EHAbsSyn.1.PatExpr}
+\item Similar to expressions (and type expressions)
+\end{itemize}
+}
+
+\frame<presentation>[t,containsverbatim]
+{
+\frametitle{Abstract syntax example}
+\begin{columns}[onlytextwidth,t]
+ \begin{column}{.5\textwidth}
+%%[[wrap=safecode
+%%@[file:text/afp-eh/02.eh%%]
+%%]
+ \end{column}
+ \begin{column}{.5\textwidth}
+\begin{TTtiny}
+%%1astfile(text/afp-eh/02.eh%%)
+\end{TTtiny}
+ \end{column}
+\end{columns}
+}
+
+\frame<presentation>
+{
+\frametitle{Type expression}
+\begin{itemize}
+\item Type |(Int,Int)|
+   \PGFAppAA{Con ",2"}{Con "Int"}{Con "Int"}
+\item Type |Int -> Char|
+   \PGFAppAA{Con "|->|"}{Con "Int"}{Con "Char"}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type expression}
+\begin{itemize}
+\item Type expression abstract syntax:
+\chunkCmdFrameUse{EHAbsSyn.1.TyExpr}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Declarations}
+\begin{itemize}
+\item Declaration abstract syntax:
+\chunkCmdFrameUse{EHAbsSyn.1.Decl}
+\item Restriction on combination of signature and corresponding value declaration
+\begin{itemize}
+\item Type signature may only define signature for top level identifier in pattern
+\item Ok
+%%[[wrap=safecode
+let  x        ::  ...
+     x@(...)  =   ...
+%%]
+\item Not ok
+%%[[wrap=safecode
+let  x          ::  ...
+     (..,x,..)  =   ...
+%%]
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Program}
+\begin{itemize}
+\item Additional node for top expression:
+\chunkCmdFrameUse{EHAbsSyn.1.AGItf}
+\item
+Used for (e.g.) attribute initialization
+\item
+Node in tree used as interface to Haskell world (via AG |WRAPPER| construct)
+\item
+Groups of attributes
+\savecolumns
+\chunkCmdFrameUse{EHAbsSyn.1.AllExpr}
+\restorecolumns
+\chunkCmdFrameUse{EHAbsSyn.1.AllPatExpr}
+\restorecolumns
+\chunkCmdFrameUse{EHAbsSyn.1.AllTyExpr}
+\restorecolumns
+\chunkCmdFrameUse{EHAbsSyn.1.AllNT}
+\item
+Used for defining attributes for group
+of nodes/nonterminals
+\end{itemize}
+}
+%%]
+
+%%[ParseToSem
+\frame<presentation>
+{
+\frametitle{Parsing expressions}
+\begin{itemize}
+\item Basic expressions
+\chunkCmdFrameUse{EHParser.1.pExprBase}
+\chunkCmdFrameUse{EHParser.1.pExprBaseParenProd}
+\item |pInt| (etc.): parsers for lexical tokens
+\item |sem_XXX|: AG generated functions
+ \begin{itemize}
+ \item taking abstract syntax tree children as arguments
+ \item yielding functions for attribute computations
+ \end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Semantic functions}
+\begin{itemize}
+\item An (edited) example of an AG generated semantic function
+%%[[wrap=safecode
+data Expr    = Expr_IConst (Int)
+             | ...
+type T_Expr  =  ... -> ... -> ... ->
+                ... -> ... -> ... ->
+                (  ..,..,..,..
+                ,  (PP_Doc),..,..,..)
+sem_Expr     :: (Expr) -> (T_Expr)
+sem_Expr ((Expr_IConst (_int))) =
+    (sem_Expr_IConst (_int))
+sem_Expr_IConst :: (Int) -> (T_Expr)
+sem_Expr_IConst (int_) =
+    \ ... ... ... ... ... ... ->
+       let  (_pp@_) = text (show int_)
+       in   ( ..,..,..,..,_pp@_,..,..,.. )
+%%]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Parsing combinators}
+\begin{itemize}
+\item Basic parser combinators
+\begin{center}
+\begin{tabular}{llp{.3\textwidth}}
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableA
+\end{tabular}
+\end{center}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Parsing expressions}
+\begin{itemize}
+\item Composite expressions
+\chunkCmdFrameUse{EHParser.1.pExpr}
+\end{itemize}
+}
+%%]
+
+%%[AppAlg
+\frame<presentation>[plain]
+{
+\frametitle{Exploiting |App| similarities}
+\begin{itemize}
+\item Abstraction for parsing |App| structures
+\chunkCmdFrameUse{EHParser.1.pApp}
+\item |App| building functions:
+\chunkCmdFrameUse{EHCommon.1.MkConApp}
+\chunkCmdFrameUse{EHCommon.1.SemApp}
+\chunkCmdFrameUse{EHCommon.1.mkApp.Base}
+\item Parameterized with ``what to build'' (as an algebra)
+\end{itemize}
+}
+
+%{
+%format Top = "Top"
+\frame<presentation>[plain]
+{
+\frametitle{Sidetrack: algebra example}
+\begin{itemize}
+\item |Expr| variation to show usual use of algebra's
+%%[[wrap=safecode
+data Expr  = Con String | App Expr Expr | Top Expr | Int Int
+
+type MkConApp t = (String -> t,t -> t -> t,t -> t,Int -> t)
+
+eCata  :: MkConApp t -> Expr -> t
+eCata  alg@(  con  ,  _    ,  _    ,  _    )   (Con     s       )  = con  s
+eCata  alg@(  _    ,  app  ,  _    ,  _    )   (App     e1  e2  )  = app  (eCata alg e1)
+                                                                          (eCata alg e2)
+eCata  alg@(  _    ,  _    ,  top  ,  _    )   (Top     e       )  = top  (eCata alg e)
+eCata  alg@(  _    ,  _    ,  _    ,  int  )   (Int     i       )  = int  i
+
+e1 = Top (App (App (Con "+") (Int 2)) (Int 3))
+c1 = eCata  (  id                      ,  \v1 v2 -> v1 ++ " " ++ v2
+            ,  \v -> "(" ++ v ++ ")"   ,  show
+            )
+            e1
+%%]
+\item |c1| gives @"(+ 2 3)"@
+\end{itemize}
+}
+%}
+%%]
+
+%%[ParseParen
+\frame<presentation>[plain]
+{
+\frametitle{Parsing parenthesized/product expressions}
+\begin{itemize}
+\item Abstraction for expressions inside @'('@ and @')'@
+\chunkCmdFrameUse{EHParser.1.pParenProd}
+\chunkCmdFrameUse{EHCommon.1.mkApp.mkConApp}
+\chunkCmdFrameUse{EHCommon.1.mkApp.mkProdApp}
+\item E.g.
+\begin{itemize}
+\item |()| gives |Con ",0"|, unit
+\item |(e)| gives e, expression itself
+\item |(e1,e2)| gives |AppTop (App (App (Con ",2") e1) e2)|, a 2-tuple
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Parsing combinators}
+\begin{itemize}
+\item Derived parser combinators
+\begin{center}
+\begin{tabular}{llp{.3\textwidth}}
+%%@AppxNotation.parserCombTableHead
+%%@AppxNotation.parserCombTableB
+\end{tabular}
+\end{center}
+\end{itemize}
+}
+%%]
+
+%%[ParsePat
+\frame<presentation>[plain]
+{
+\frametitle{Parsing type/pattern expressions}
+\begin{itemize}
+\item Similar to normal expressions
+\item Type expressions (for example)
+\chunkCmdFrameUse{EHParser.1.tyExprAlg}
+\chunkCmdFrameUse{EHParser.1.pTyExprBase}
+\chunkCmdFrameUse{EHParser.1.pTyExpr}
+\end{itemize}
+}
+%%]
+
+%%[prettyPrintAG
+\frame<presentation>[t,containsverbatim]
+{
+\frametitle{A first AG attribution: Pretty printing}
+\begin{columns}[onlytextwidth,t]
+\begin{column}{.4\textwidth}
+\begin{itemize}
+\item Input
+%%[[wrap=safecode
+%%@[file:test/regress/1/all-fail2.eh%%]
+%%]
+\end{itemize}
+\end{column}
+\begin{column}{.6\textwidth}
+\begin{itemize}
+\item Abstract syntax
+\begin{TT}
+%%1astfile(test/1/all-fail2.eh%%)
+\end{TT}
+\end{itemize}
+\end{column}
+\end{columns}
+}
+
+\frame<presentation>[t,containsverbatim]
+{
+\frametitle{Pretty printing}
+\begin{itemize}
+\item Output
+\begin{TT}
+%%1ppfile(test/regress/1/all-fail2.eh%%)
+\end{TT}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Compose All}
+\begin{itemize}
+\item Similar to |fold|
+\PGFPatComposition
+\item Here: a = pp, combine = pretty print combinators
+\item (instances of AG patterns are indicated like |AGPat(Compose All)|)
+\item Supported by AG's copy rule and |USE| construct
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Pretty printing}
+\begin{itemize}
+\item AG attribution and attribute definitions
+\chunkCmdFrameUse{EHPretty.1.Base.ExprSimple}
+\chunkCmdFrameUse{EHPretty.1.ExprExtra}
+\item (and more, but left out)
+\end{itemize}
+}
+%%]
+
+%%[typeSysIntro
+\frame<presentation>
+{
+\frametitle{Type system}
+\begin{itemize}
+\item Type: description of the interpretation of a bitpattern
+\item Type system: types + rules how types may be combined/used
+\item Compiler uses a type system to guarantee proper flow of bitpatterns
+\begin{itemize}
+\item proper: not leading to crash
+\end{itemize}
+\item Compiler uses 
+\begin{itemize}
+\item type information explicitly specified by programmer
+\item type information implicitly inferred/reconstructed from
+(non type related) program text
+\end{itemize}
+\item Types are described by type language
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeLangB
+\frame<presentation>
+{
+\frametitle{Type language}
+\begin{itemize}
+\item .. or more general, alike the implementation
+%%[[wrap=safecode
+\EHCOneTyLangB
+%%]
+\item AG type representation
+\chunkCmdFrameUse{EHTyAbsSyn.1}
+\item |Any| (also denoted by |ANY|) encodes ``don't know'' type
+\end{itemize}
+}
+%%]
+
+%%[eh1typeLangAG
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Type language}
+\begin{itemize}
+\item Haskell data type generated by AG compiler
+\begin{TT}
+-- Ty ----------------------------
+data Ty = Ty_Any 
+        | Ty_App (Ty) (Ty)
+        | Ty_Con (String)
+        deriving ( Eq,Show)
+-- TyAGItf -----------------------
+data TyAGItf = TyAGItf_AGItf (Ty)
+             deriving ( Eq,Show)
+\end{TT}
+\item
+Allows manipulation as Haskell datastructures
+\item
+AG computations via semantic functions
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeCheck
+\frame<presentation>
+{
+\frametitle{Checking types}
+\begin{itemize}
+\item Proper use of values is described by type rules
+\item E.g. type rule for function application:
+\[
+\rulerCmdUse{rules3.E.expr.baseForEH1.e.app}
+\]
+\item Expected function argument and given argument are constrained to be equal
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rules and judgements}
+\begin{itemize}
+\item Form of a rule:
+\[
+\rulerRule{ast.rulename}{view}{prerequisite_1 \\ prerequisite_2 \\ ...}{consequence}
+\]
+\item where |prerequisite| and |consequence| can be
+\begin{itemize}
+\item any predicate
+\item or a more specific predicate called |judgement|:
+\[
+|context |\stackrel{|judgetype|}{|:-|}| construct : property ~> more ^^ results |
+\]
+\end{itemize}
+\item Rules are used in logic(s) to reason about properties described by judgements
+\item Here
+\begin{itemize}
+\item rules are used to describe what proper use of values means
+\item by constraining types of values
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rules and judgements implementation}
+\begin{itemize}
+\item Rules partially describe an implementation
+\begin{itemize}
+\item Haskell:
+%%[[wrap=safecode
+judgetype =  \construct ->
+             \context -> ... (property,more_results)
+%%]
+\item AG:
+%%[[wrap=safecode
+ATTR judgetype [  context: ... | |
+                  property: ...  more_results: ... ]
+
+SEM judgetype
+  |  construct
+       lhs.(property,more_results) = ... @lhs.context ...
+%%]
+\end{itemize}
+\item Implementation in addition describes order in which constraints are to be enforced
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rules and judgements implementation}
+\begin{itemize}
+\item Rule structure correspond almost 1-1 to AG structure
+\item For example, rule for application of expression:
+\[
+\rulerCmdUse{rules3.E.expr.baseForEH1.e.app}
+\]
+\item corresponding AG structure:
+%%[[wrap=safecode
+DATA Expr
+  | App           func          : Expr
+                  arg           : Expr
+%%]
+\item where |e1 = func, e2 = arg|
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Rules and judgements implementation}
+\begin{itemize}
+\item Rule has
+\begin{itemize}
+\item<1-> prerequisite judgements about properties for each child in abstract syntax tree
+\item<2-> and consequence judgement about properties for composition of children
+\item<3-> \alert<3>{constraints} for properties
+\end{itemize}
+\item AG implementation has
+\begin{itemize}
+\item<1-> attributes for properties for each child in abstract syntax tree
+\item<2-> attributes for properties for composition of children
+\item<3-> attribute definitions specifying how these attributes are \alert<3>{computed}
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Rules and judgements implementation}
+\begin{itemize}
+\item Rule:
+\[
+\rulerCmdUse{rules3.E.expr.baseForEH1.e.app}
+\]
+\item AG:
+\chunkCmdFrameUse{EHInferExpr.1.App}
+\item (ignoring details, for now)
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeCheckExprA
+\frame<presentation>
+{
+\frametitle{Type checking for expressions}
+\begin{itemize}
+\item Structure of judgements
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.scheme}
+\]
+\item Structure/attribution of AG
+\PGFExprIBScheme
+\begin{itemize}
+\item Environment |Gamma =@= valGam| holds assumptions (types) about value identifiers
+\item Expected/known/top-down type |sigmak =@= knTy| together with bottom-up type |sigma =@= ty| from child expression
+compute type of expression,
+\item but: here mostly known type is used: all types are explicitly specified
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: DeCompose}
+\begin{itemize}
+\item |knTy| follows pattern, similar to |unfold|
+\PGFPatDeComposition
+\item where decomposition follows tree structure
+%%[[wrap=safecode
+decombine1 :: A -> (A,A,A)
+decombine2 :: A -> (A,A)
+%%]
+\item if decomposition fails: pass ``will do'' value
+\begin{itemize}
+\item here: |Ty_Any|
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Fitting known type and type}
+\begin{itemize}
+\item According to rule
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.int}
+\]
+\item |ty|
+\chunkCmdFrameUse{EHInferExpr.1.Const}
+\item must fit in |knTy|
+\chunkCmdFrameUse{EHInferExpr.1.knTy}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Fitting}
+\begin{itemize}
+\item Fitting constraint |`fitsIn`| is specified by rules of the form
+\[
+\rulerCmdUse{rules3.K.fit.scheme}
+\]
+\item And implemented by |fitsIn| which returns
+\chunkCmdFrameUse{EHTyFitsInCommon.1.FIOut}
+\begin{itemize}
+\item a type to continue checking with
+\item errors (if any) to incorporate in pretty printed program
+\end{itemize}
+\item Result |sigma|
+\begin{itemize}
+\item Is in principle unnecessary (we are just checking)
+\item But need to know the `maximal' type for |sigmal <= ANY| to continue type checking with
+\item Is already a bit of type inferencing
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeCheckExprB
+\frame<presentation>
+{
+\frametitle{fitsIn}
+\begin{itemize}
+\item (E.g.) rule
+\[
+\rulerCmdUse{rules3.K.match.onlyK.m.con}
+\]
+\item Where |I| denotes a constructor identifier
+\item Is implemented by
+\chunkCmdFrameUse{EHTyFitsIn.1.fitsIn.Base}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{fitsIn}
+\begin{itemize}
+\item Product type
+\[
+\rulerCmdUse{rules3.K.match.onlyK.m.prod}
+\]
+\item Function type
+\[
+\rulerCmdUse{rules3.K.match.onlyK.m.arrow}
+\]
+\item Function arguments are fitted other way around
+\begin{itemize}
+\item known as |contravariance|
+\item here: irrelevant (|<=| is symmetric)
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{fitsIn}
+\begin{itemize}
+\item ... and its implementation
+\chunkCmdFrameUse{EHTyFitsIn.1.fitsIn.AppRest}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Known type and type: identifiers}
+\begin{itemize}
+\item Type of identifier is retrieved from |Gamma|
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.var}
+\]
+\item AG:
+\chunkCmdFrameUse{EHInferExpr.1.Var}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Distribution}
+\begin{itemize}
+\item |valGam| is distributed
+\item Special case of |AGPat(DeCompose)| pattern.
+\PGFPatDistribute
+\item Passing unmodified, done by AG's copy rules
+\item Distribution ``as is'', tree structure is not used for steering the decomposition
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Known type and type: products}
+\begin{itemize}
+\item Rule
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.prod}
+\]
+\item Constructor for tuple is function
+\chunkCmdFrameUse{EHInferExpr.1.Con}
+\item Extracted from |knTy|
+\item For example
+\begin{itemize}
+\item |@lhs.knTy = ANY -> ANY -> (t1,t2)|
+\item |resTy = (t1,t2)|
+\item |@loc.ty = t1 -> t2 -> (t1,t2)|
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type decomposing utilities}
+\begin{itemize}
+\item Decompose into constituents
+\chunkCmdFrameUse{EHTy.1.unMkTy.sigs.tyArrow}
+\item In case of failure, return ``will do'' values:
+\begin{itemize}
+\item |Ty_Any| (for |Ty|)
+\item |[]| (for |TyL|)
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeCheckApp
+\frame<presentation>
+{
+\frametitle{Known type and type: function (application)}
+\begin{itemize}
+\item Application
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.app}
+\]
+\item Function, |lambda|-expression
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.lam}
+\]
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Known type and type: function application}
+\begin{itemize}
+\item Rule:
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.app}
+\]
+\item Application, AG:
+\chunkCmdFrameUse{EHInferExpr.1.App}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Known type and type: function}
+\begin{itemize}
+\item Rule:
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.lam}
+\]
+\item Function, |lambda|-expression, AG:
+\chunkCmdFrameUse{EHInferExpr.1.Lam}
+\item |->| structure is enforced via |funTy| and |fitsIn|
+\end{itemize}
+}
+%%]
+
+%%[eh1TypeCheckLetNAGPatterns
+\frame<presentation>
+{
+\frametitle{Declarations}
+\begin{itemize}
+\item Rule for |let|-expression
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.let}
+\]
+\item is more complicated in the implementation
+\begin{itemize}
+\item Patterns allow introduction of |>1| identifier
+%%[[wrap=safecode
+let ab@(a,b) = ...
+%%]
+\item Definitions may be used mutually recursive
+%%[[wrap=safecode
+let  f = ... g ...
+     g = ... f ...
+%%]
+\end{itemize}
+\item Solution:
+\begin{itemize}
+\item Gather and distribute in multiple passes
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Gathering and distribution for let}
+\begin{itemize}
+\item
+\chunkCmdFrameUse{EHInfer.1.gathTySigGam}
+\chunkCmdFrameUse{EHInfer.1.gamSigTyGath}
+\chunkCmdFrameUse{EHInfer.1.tySigGam}
+\chunkCmdFrameUse{EHInfer.1.tySigGam.TysigLet}
+\item Gather in |gathTySigGam|, distribute in |tySigGam|
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Environment |Gamma|}
+\begin{itemize}
+\item Holding assumptions |v| about |k|
+\chunkCmdFrameUse{EHCommon.1.AssocL}
+\chunkCmdFrameUse{EHGam.1.Base.sigs}
+\item Stack like structure
+\begin{itemize}
+\item To match scope introduced by |let| and |\| expressions
+\item So duplicate identifiers can be detected
+\end{itemize}
+\item Variant specialized for (type) information about values
+\chunkCmdFrameUse{EHGam.1.ValGam.Base}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: State, State Gather}
+\begin{itemize}
+\item Simulation of global variable via threading
+\PGFPatThread
+\item Generated by AG's copy rules if |a| is
+both inherited and synthesized
+\item Update by intervening definition
+\begin{itemize}
+\item here: |AGPat(State Gather)| gathers set of values in |gathTySigGam|, |upd=| addition to |Gamma|
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG patterns and monads}
+\begin{itemize}
+\item |AGPat(DeCompose)|: reader monad (class |MonadReader|)
+\item |AGPat(Compose)|: writer monad (class |MonadWriter|)
+\item |AGPat(State)|: state monad (class |MonadState|)
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Multipass}
+\begin{itemize}
+\item Iteration over structure
+\PGFPatMultipass
+\item Fixed number of times
+\item Each pass via different attribute, possibly different role
+\item Here:
+\begin{itemize}
+\item |a1 = gathTySigGam| gathers type signatures
+\item |a2 = tySigGam| distributes type signatures of identifiers
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Let}
+\begin{itemize}
+\item Pattern in |let|-expression
+\[
+\rulerCmdUse{rules3.K.expr.baseForEH1.e.let}
+\]
+\item also requires |AGPat(State Gather)| to gather identifiers introduced in a pattern, e.g. for |a,b|:
+
+%%[[wrap=safecode
+let  v         ::  Int
+     v         =   a
+     ab        ::  (Int,Int)
+     ab@(a,b)  =   ...
+%%]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Patterns}
+\begin{itemize}
+\item Rules for patterns describe the gathering if given a known type
+\[
+\rulerCmdUse{rules.pat1.p-var1}
+\]
+\item |sigmak =@= knTy| is decomposed via |AGPat(DeCompose)| pattern
+\[
+\rulerCmdUse{rules.pat1.p-prod1}
+\]
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Patterns: Var}
+\begin{itemize}
+\item |valGam| is used for |AGPat(State Gather)| of identifier bindings
+\chunkCmdFrameUse{EHInferPatExpr.1.valGam}
+\item |inclVarBind| inhibits double occurrences of type of complete pattern
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Patterns: Product}
+\begin{itemize}
+\item |knTy| used in |AGPat(DeCompose)|
+\chunkCmdFrameUse{EHInferPatExpr.1.knTy}
+\chunkCmdFrameUse{EHInferPatExpr.1.knTy.App}
+\item Uses also |AGPat(DeCompose)| for |knTyL|
+\item For |AGPat(DeCompose)| of product |knTy| the arity of the product expression is required
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Listlike Spine}
+\begin{itemize}
+\item Extracting info from left/right balanced list like structure
+\PGFPatListSpine
+\item |2 x ^ AGPat(Compose All)| over |X|, for a value related to the
+\begin{itemize}
+\item last (|Nil|) element: |n|
+\item spine (|Cons|) + elements: |c|
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Patterns: Product arity}
+\begin{itemize}
+\item Here:
+\begin{itemize}
+\item |App| structure is left balanced
+\item |X = PatExpr|,\\ |Cons = App|, |Nil = ...|,\\ |c = arity| (i.e. length),\\ |combine = \c _ -> c+1|
+\end{itemize}
+\item AG:
+\chunkCmdFrameUse{EHInferPatExpr.1.arity}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Declarations}
+\begin{itemize}
+\item Mutual recursiveness of value definitions necessitates gathering
+bindings for identifiers (|AGPat(State Gather)| via |patValGam|) first, passing the bindings back for type checking
+(|AGPat(Multipass)| into |valGam|)
+\item AG:
+\chunkCmdFrameUse{EHInfer.1.patValGam}
+\chunkCmdFrameUse{EHInfer.1.patValGam.Val}
+\chunkCmdFrameUse{EHInfer.1.Let}
+\end{itemize}
+}
+%%]
+
+%%[eh1ErrHandle
+\frame<presentation>
+{
+\frametitle{Errors}
+\begin{itemize}
+\item Errors are described by AG too:
+\chunkCmdFrameUse{EHErrorAbsSyn.1.UnifyClash}
+\chunkCmdFrameUse{EHErrorAbsSyn.1.NamesNotIntrod}
+\chunkCmdFrameUse{EHErrorAbsSyn.1.Rest}
+\chunkCmdFrameUse{EHErrorAbsSyn.1.MissingSig}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Gathering errors}
+\begin{itemize}
+\item Errors are collected into set of errors
+\item Annotated with context in which error occurred (|NestedIn|):
+\chunkCmdFrameUse{EHGatherError.1.GatherExpr}
+\item With pretty printing and use as annotation of pretty printed output
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Compose Gather}
+\begin{itemize}
+\item Gathering errors follows special case of |AGPat(Compose All)| where
+\begin{itemize}
+\item |combine = union| (of lists/sets)
+\item Leafs of tree: empty list/set
+\item Supported by AG's |USE| construct
+\end{itemize}
+\item Difference with |AGPat(State Gather)|
+\begin{itemize}
+\item |AGPat(State Gather)| corresponds to tree walk, individual children's contribution cannot be differentiated
+\item |AGPat(Compose Gather)| corresponds to postfix tree walk, individual children's contribution accessible
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[eh1TieTogether
+\frame<presentation>
+{
+\frametitle{Tying things together}
+\begin{itemize}
+\item For example the use of pretty printing a type as defined by an AG
+\item Define the AG
+%%[[wrap=safecode
+...
+%%]
+\item Tell AG to create a Haskell wrapper function
+\chunkCmdFrameUse{EHTyPretty.1.WRAPPER}
+\begin{itemize}
+\item takes care of mapping attribute names to/from argument/result tuple positions in
+generated functions
+\end{itemize} 
+\item Use wrapping function to define Haskell function
+\chunkCmdFrameUse{EHTyPretty.1.ppTy}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Making it work}
+\begin{itemize}
+\item Involves many remaining other (logistical) details
+\item At the code level
+\begin{itemize}
+\item Compiler driver
+\item Options to compiler
+\item Connecting AG generated Haskell and remaining Haskell
+\end{itemize}
+\item At the tool/compilation level
+\begin{itemize}
+\item Make system
+\item etc. etc.
+\end{itemize}
+\item Not shown here
+\begin{itemize}
+\item See WWW site
+\end{itemize}
+\end{itemize}
+}
+%%]
+
+%%[eh2IntroDemo
+\frame<presentation>[containsverbatim]
+{
+\frametitle{EH 2: monomorphic type inferencing}
+\begin{itemize}
+\item Type signature may be omitted
+\item For example
+%%[[wrap=safecode
+%%@[file:test/regress/1/sig-fail.eh%%]
+%%]
+\item gives
+\begin{TT}
+%%2ppfile(test/regress/1/sig-fail.eh%%)
+\end{TT}
+\item Type is inferred/reconstructed
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Monomorphism}
+\begin{itemize}
+\item Functions can only be used for one type, not many (polymorphism)
+\item For example
+%%[[wrap=safecode
+%%@[file:test/regress/2/demo1.eh%%]
+%%]
+\item infers
+\begin{TT}
+%%2ppfile(test/regress/2/demo1.eh%%)
+\end{TT}
+\end{itemize}
+}
+
+\frame<presentation>[containsverbatim]
+{
+\frametitle{Monomorphism}
+\begin{itemize}
+\item Polymorphic use leads to errors
+\item For example
+%%[[wrap=safecode
+%%@[file:test/regress/2/id-intchar.eh%%]
+%%]
+\item gives
+\begin{TT}
+%%2ppfile(test/regress/2/id-intchar.eh%%)
+\end{TT}
+\end{itemize}
+}
+%%]
+
+%%[eh2TyVars
+\frame<presentation>
+{
+\frametitle{Type language: type variables}
+\begin{itemize}
+\item Type language
+%%[[wrap=safecode
+%%@SharedTypeLang.ehc2
+%%]
+\item Type variable |tvarv| represents yet unknown type
+\item AG extension of type structure:
+\chunkCmdFrameUse{EHTyAbsSyn.2}
+\chunkCmdFrameUse{EHCommon.2.UID.Base}
+\chunkCmdFrameUse{EHTy.2.TyVarId.Base}
+\item (more about |UID|'s later)
+\end{itemize}
+}
+%%]
+
+%%[eh2TyInference
+\frame<presentation>
+{
+\frametitle{Type inference}
+\begin{itemize}
+\item The idea (employed by most type inferencers)
+\begin{itemize}
+\item If no type is known for identifier, bind it to a fresh type variable
+\item Look at how this type variable is used
+\item In particular if an assumption about it is made
+\item That constrains the possible types for the type variable
+\item Leading to a more specific type for the type variable
+\item So all occurrences of the type variable must be replaced by this more specific type
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Constraints}
+\begin{itemize}
+\item New constraint for type variable
+%%[[wrap=safecode
+Cnstr                       =  [tvarv :-> sigma]
+%%]
+\begin{itemize}
+\item Set of bindings/mappings for type variables
+\item Usually called |Substitution|
+\end{itemize}
+\item Implemented (here) as association list
+\chunkCmdFrameUse{EHCommon.1.AssocL}
+\chunkCmdFrameUse{EHCnstr.2.Cnstr.Base}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Applying constraints}
+\begin{itemize}
+\item Replacement of type variables in a type
+\begin{itemize}
+\item Denoted
+%%[[wrap=safecode
+Cnstr |=> sigma
+%%]
+\item or even shorter as function application
+%%[[wrap=safecode
+Cnstr sigma
+%%]
+\end{itemize}
+\item Constraints/substitution can be applied to |Substitutable|
+\chunkCmdFrameUse{EHSubstitutable.2.Substitutable}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Type substitution}
+\begin{itemize}
+\item Replacing type variables in a |Ty|:
+\chunkCmdFrameUse{EHSubstitutable.2.SubstitutableTy}
+\chunkCmdFrameUse{EHTyTrfSubst.2.TySubst}
+\chunkCmdFrameUse{EHTyFtv.2.TyFtv}
+\item Other datatypes (like |Cnstr|) are instances of |Substitutable| too
+\end{itemize}
+}
+%%]
+
+%%[eh2ComputeCnstr
+\frame<presentation>[plain]
+{
+\frametitle{Computing constraints}
+\begin{itemize}
+\item Types are constrained (e.g. to be equal) in type rules
+\item Enforced by |fitsIn| in the implementation 
+\item Idea: if (at least) one of two compared types is a type variable |v|,
+|fitsIn| returns a |Cnstr| mapping |v| to the other type 
+\item Additional cases in |fitsIn|
+\chunkCmdFrameUse{EHTyFitsIn.2.fitsIn.Var}
+\item |fitsIn| returns the more specific resulting type
+\begin{itemize}
+\item Usually called |unified| type
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Binding type variables}
+\begin{itemize}
+\item |fitsIn| binds a type variable |v| by returning
+a |Cnstr = [v :-> ...]| for it.
+\item Result of |fitsIn| has an additional |foCnstr :: Cnstr|
+\chunkCmdFrameUse{EHTyFitsInCommon.2.FIOut}
+\item Binding
+\chunkCmdFrameUse{EHTyFitsIn.2.fitsIn.Bind}
+\begin{itemize}
+\item prevents recursive types as in |v1 `fitsIn` v1 -> v1|
+\item checks if to be bound type variable occurs in the other type
+\item called \emph{occur check}
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Applying constraints/substitutions}
+\begin{itemize}
+\item Strategy/invariant: all already known constraints are applied
+to a type variable |v| when |v| is used
+\begin{itemize}
+\item If not: contradictory constraints may arise
+\end{itemize}
+\item For example in fitting two |Ty_App|'s
+\chunkCmdFrameUse{EHTyFitsIn.2.fitsIn.app}
+\item Forgetting to apply constraints is a generous source of (mysterious :-)) errors
+\end{itemize}
+}
+
+%%]
+
+%%[eh2TyInferExprNPatterns
+\frame<presentation>
+{
+\frametitle{Type inferencing expressions}
+\begin{itemize}
+\item Rules assume constraints are `magically' applied, e.g. for
+application
+\[
+\rulerCmdUse{rules3.E.expr.baseForEH1.e.app}
+\]
+\item but implementation has to manipulate constraints explicitly
+\[
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.app}
+\]
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type inferencing expressions}
+\begin{itemize}
+\item<+-> Here: walk a middle way to avoid cluttered rules
+\begin{itemize}
+\item Rules are kept relatively simple to help understanding
+\item AG code incorporates the implementation 'magic'
+\end{itemize}
+\onslide<+-> 
+\item So
+\begin{itemize}
+\item In rules constraints are computed bottom-up a la |AGPat(Compose Gather)|
+\item But in the AG implementation a |AGPat(State Gather)| is used
+\onslide<+-> 
+\item In rules constraints are magically applied to context |Gamma|, |sigmak|
+\item But in the AG implementation constraints are applied just before using context
+\item Which can be done as all constraints are available via threading
+\onslide<+-> 
+\item In both rules and implementation the resulting type |sigma| has all constraints already applied to
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Type inferencing expressions}
+\begin{itemize}
+\item Previous |App|'s AG:
+\chunkCmdUsePrevLit{EHInferExpr.1.App}
+\item Additional |App|'s AG:
+\chunkCmdFrameUse{EHInferExpr.2.tyCnstr}
+\chunkCmdFrameUse{EHInferExpr.2.App}
+\chunkCmdFrameUse{EHTy.2.NewTyVar}
+\item Uses AG's @:=@ to redefine/override (textually) previous definition
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type inferencing expressions}
+\begin{itemize}
+\item |App|'s rule:
+\[
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.app}
+\]
+\item |v| fresh
+\begin{itemize}
+\item means |v| must be unique, different from any other type variable
+\item often alternatively specified by |v `notElem` ftv(Gamma)|
+\end{itemize}
+\item Here: how do we obtain a unique value
+\begin{itemize}
+\item avoiding Haskell's |STRef| hidden state constructs
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{AG pattern: Uniq}
+\begin{itemize}
+\item<+-> Special case of |AGPat(Global Var)|
+\item Threaded counter solution
+%%[[wrap=safecode
+ATTR AllNT [ | gUniq: Int | ]
+SEM Expr
+  | App  loc    .  lUniq    = @lhs.gUniq
+         func   .  gUniq    = @lhs.gUniq + 1
+%%]
+\begin{itemize}
+\item Must be threaded through all functions needing unique value
+\item Additional input counter and tupled output counter
+\onslide<+-> 
+\item Clutters code
+\onslide<+-> 
+\item Creates attribute dependencies which can easily cause cycles if used
+together with |AGPat(Multipass)|
+\item Unless each pass has own counter
+\end{itemize}
+\end{itemize}
+}
+
+%if not dist
+\frame<presentation>[plain]
+{
+\frametitle{Cyclic AG}
+\begin{itemize}
+\item<1-> Alternatives of a case expression (from version 5)
+\item<2-> |u|: unique counter
+\item<3-> |cp|: constraints found in patterns (attribute |patTyCnstr|)
+\item<4-> |ce|: constraints found in expressions (attribute |tyCnstr|)
+\end{itemize}
+
+\begin{overprint}
+\onslide<1>
+\includegraphics[height=20cm]{cycle-case1.pdf}
+\onslide<2>
+\includegraphics[height=20cm]{cycle-case2.pdf}
+\onslide<3>
+\includegraphics[height=20cm]{cycle-case3.pdf}
+\onslide<4>
+\includegraphics[height=20cm]{cycle-case4.pdf}
+\onslide<5>
+\includegraphics[height=20cm]{cycle-case4b.pdf}
+\onslide<6>
+\includegraphics[height=20cm]{cycle-case5.pdf}
+\onslide<7>
+\includegraphics[height=20cm]{cycle-case6.pdf}
+\onslide<8>
+\includegraphics[height=20cm]{cycle-case7.pdf}
+\end{overprint}
+}
+%endif
+
+\frame<presentation>
+{
+\frametitle{Cycles}
+\begin{itemize}
+\item Cycles need not be problem
+\begin{itemize}
+\item If value in cycle is never used
+\item If cycle goes through intermediate constructor
+\end{itemize}
+\item AG can detect cycles
+\item AG can also be fooled into detecting cycles
+%%[[wrap=safecode
+ATTR AllNT [ | u1: Int ^^^ u2: Int| ]
+SEM Expr
+  | App         lhs     .   (u1,u2)     = id (@func.u1,@func.u2)
+  | AppTop      expr    .   u2          = @expr.u1
+%%]
+\begin{itemize}
+\item |u1| depends on |u2| and vice versa
+\item AG compiler does not analyse Haskell part of attribute definitions
+\item Makes cycle checker less useful
+\end{itemize}
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{AG pattern: Uniq}
+\begin{itemize}
+\item Threaded seed solution
+\begin{itemize}
+\item Threads seed instead of counter
+\item Each seed has subcounter for a private `infinite' sequence of unique UID's
+\item Each node takes as many seeds as required
+\end{itemize}
+\item E.g. for expressions
+\chunkCmdFrameUse{EHMainAG.2.gUniq}
+\chunkCmdFrameUse{EHUniq.2.Expr.AppTop}
+\item UID
+\chunkCmdFrameUse{EHCommon.2.UID.Base}
+\chunkCmdFrameUse{EHCommon.2.UID.mkNewLevUID}
+\end{itemize}
+}
+%%]
+
+%%[eh2Decls
+\frame<presentation>
+{
+\frametitle{Declarations}
+\begin{itemize}
+\item Parallel |AGPat(Multipass)| to |valGam| and |patValGam| for
+constraints |tyCnstr| and |patTyCnstr|
+\chunkCmdFrameUse{EHInfer.2.Let}
+\chunkCmdFrameUse{EHInfer.2.Rest}
+\item Patterns are also used to extract type information (omitted)
+\end{itemize}
+}
+%%]
+
+%%[eh3
+\frame<presentation>
+{
+\frametitle{Polymorphism}
+\begin{itemize}
+\item Function may be applied to arguments of different types
+\item E.g.
+%%[[wrap=safecode
+%%@[file:text/afp-eh/04.eh%%]
+%%]
+\item |a -> a| means |forall a . a -> a|
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Polymorphism}
+\begin{itemize}
+\item Arguments may not be polymorphic
+\item Incorrect:
+%%[[wrap=safecode
+%%@[file:test/regress/3/mono-arg.eh%%]
+%%]
+\item Incorrect:
+%%[[wrap=safecode
+%%@[file:test/regress/3/mono-arg3.eh%%]
+%%]
+\item Only identifiers bound by |let|
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Polymorphism and inferencing}
+\begin{itemize}
+\item<+-> Type inferencer deduces polymorphism at |let| bindings only
+\item Bindings can only be polymorphically used in body of |let|:
+%%[[wrap=safecode
+%%@[file:test/regress/3/mono-arg2.eh%%]
+%%]
+\item Type of \alert<+>{|f :: %%3file(test/3/mono-arg2.eh%%)|}
+\onslide<+->
+\item If used in same group of bindings:
+%%[[wrap=safecode
+%%@[file:test/regress/3/mono-arg4.eh%%]
+%%]
+\item Type of \alert<+>{|f :: %%3file(test/3/mono-arg4.eh%%)|}
+\item<+-> Analysis per \emph{binding group}
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type language}
+\begin{itemize}
+\item Additional variant for |forall|
+%%[[wrap=safecode
+%%@SharedTypeLang.ehc4
+%%]
+\onslide
+\item AG:
+\chunkCmdFrameUse{EHTyAbsSyn.3}
+\item (more about |tvarf =@= Fixed| later)
+\end{itemize}
+}
+
+\frame<presentation>
+{
+\frametitle{Type inference}
+\begin{itemize}
+\item Type inferencing still only infers monomorphic types
+\item For which polymorphism may be concluded at |let| bindings
+\begin{itemize}
+\item Stored as quantified type (aka \emph{type scheme}) in |Gamma|
+\item When retrieved from |Gamma| immediately unquantified/instantiated:
+\[
+\rulerCmdUse{rules3.C.expr.baseForEH1.e.var}
+\]
+\end{itemize}
+\item Standard Hindley/Milner type inferencing
+\item (other rules and code omitted)
+\end{itemize}
+}
+
+\frame<presentation>[plain]
+{
+\frametitle{Declarations (example of incremental AG)}
+\chunkCmdUsePrevLit{EHInfer.1.Let}
+\chunkCmdUsePrevLit{EHInfer.2.Let}
+\chunkCmdFrameUse{EHInfer.3.Let}
+}
+
+%%]
+
+%%[eh7IntroDemo
+\frame<presentation>
+{
+\frametitle{Records}
+\begin{itemize}
+\item
+%%[[wrap=safecode
+%%@[file:test/regress/7/all-ok.eh%%]
+%%]
+\end{itemize}
+}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

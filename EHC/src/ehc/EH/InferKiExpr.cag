@@ -1,0 +1,36 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ki var gathering, as simplified version of sort inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+ATTR KiExpr [ | kiGam: KiGam | ]
+
+SEM KiExpr
+  | Var         (loc.kgi,lhs.kiGam)                 =   case gamLookup @nm @lhs.kiGam of
+                                                          Nothing    ->  let  t    =  mkNewTyVar @lUniq
+                                                                              kgi  =  KiGamInfo t
+                                                                         in   (kgi,gamAdd @nm kgi @lhs.kiGam)
+                                                          Just kgi   ->  (kgi,@lhs.kiGam)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | Con         loc         .  (kgi,nmErrs)         =   case gamLookup @nm @lhs.kiGam of
+                                                          Nothing    ->  (KiGamInfo Ty_Any,[rngLift @range mkErr_NamesNotIntrod "kind" [@nm]])
+                                                          Just kgi   ->  (kgi,[])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind of KiExpr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+ATTR KiExpr [ | | ki: Ty ]
+
+SEM KiExpr
+  | Con         lhs         .  ki                   =   kgiKi @kgi
+  | App         lhs         .  ki                   =   Ty_App @func.ki @arg.ki
+  | Var         lhs         .  ki                   =   kgiKi @kgi
+%%]

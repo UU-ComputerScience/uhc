@@ -1,0 +1,104 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to module import/export info extraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[20 hs module {%{EH}HS.ModImpExp} import({%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}HS}, {%{EH}Gam.Full}, {%{EH}NameAspect})
+%%]
+
+%%[20 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[20 hs import(qualified Data.Set as Set)
+%%]
+
+%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 ag import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
+WRAPPER AGItf
+%%]
+
+%%[99
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AGItf Module [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level instance names, to be propagated to next phase -- a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+
+SEM AGItf
+    | AGItf
+        loc             .   topInstanceNmL
+                                        =   []
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        lhs             .   topInstanceNmL
+                                        =   @instancename : @lhs.topInstanceNmL
+%%]
+
+%%[20
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        loc             .   mbPrevInstancename
+                                        =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Does 'main' exists? -- also a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR
+  AGItf AllTopLevel AllDeclarationPlain AllFunctionBinding LeftHandSide Pattern Patterns
+    [ | | mainValExists USE {||} {False}: Bool ]
+%%]
+
+%%[20
+SEM LeftHandSide
+    | Function
+        loc             .   mainValExists
+        								=   @name == hsnMain
+
+
+SEM Pattern
+    | Variable
+        loc             .   mainValExists
+        								=   @name == hsnMain
+%%]
+

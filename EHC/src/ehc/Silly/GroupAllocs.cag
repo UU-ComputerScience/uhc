@@ -1,0 +1,131 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Group together the allocations in a list of statements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%
+%% In silly, often trees of closures are created. This results in code as
+%% follows:
+%%
+%% x := heapalloc(2)
+%% x[0] := CInt
+%% x[1] := 20
+%% y := heapalloc(3)
+%% y[0] := FprimSubInt
+%% y[1] := z
+%% y[2] := x
+%%
+%% But an call to heapalloc is slow (esp. in Boehm), so if we transform to
+%%
+%% x := heapalloc(5)
+%% x[0] := CInt
+%% x[1] := 20
+%% y := x + 2 
+%% y[0] := FprimSubInt
+%% y[1] := z
+%% y[2] := x
+%%
+%% we only call the expensive heapalloc once.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% ASSUMPTION:
+%% The implementation groups all allocations of a block of statements
+%% in one allocation. This also means that all the garbage collection an-
+%% notations are grouped together.
+%% The implementation ignores the different GC annotations and retains the
+%% annotation of the first found allocations. This assumes that all allocations
+%% in one block are of the same GC-type, and currently this is the case.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER SilModule
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}Silly.GroupAllocs} export(groupAllocs)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Silly})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen grin) hs
+groupAllocs :: EHCOpts -> SilModule -> SilModule
+groupAllocs options input   
+  = let t = wrap_SilModule (sem_SilModule input)
+                           (Inh_SilModule {}) 
+    in trf_Syn_SilModule t
+%%]
+
+
+%%[(8 codegen grin)
+-- Result of the AG transformation.
+ATTR AllNT [ | | trf: SELF ]
+
+-- Test if this is the first allocation of a serie of statements
+-- (allocWordCount == 0). If so allocate for all statements. If not
+-- use the offset expression to get to the correct memory location
+SEM Value
+  | Alloc       lhs .trf            = if @lhs.allocWordCount == 0
+                                      then Value_Alloc @lhs.allocSize @gcManaged
+                                      else Value_Offset 
+                                             (fromJust @lhs.ptrToAlloc) 
+                                             @lhs.allocWordCount
+%%]
+
+%%[(8 codegen grin)
+-- Counter for the total amount of allocations in a list of
+-- statements. We reset the count with Alternatives, because
+-- we do not know if we follow that path.
+ATTR Statement Statements
+     Value Values            [ | allocWordCount : {Int} | ]
+
+SEM Function
+  | Function    body.allocWordCount = 0
+
+SEM Alternative
+  | Alternative body.allocWordCount = 0
+
+SEM Value
+  | Alloc       lhs .allocWordCount = @lhs.allocWordCount + @size  
+%%]
+
+%%[(8 codegen grin)
+-- Pass down the total amount of words that must be allocated
+-- for this block.
+ATTR Statement Statements
+     Value Values            [ allocSize : {Int} | | ]
+
+SEM Function
+  | Function    body.allocSize      = @body.allocWordCount
+
+SEM Alternative
+  | Alternative body.allocSize      = @body.allocWordCount
+%%]
+
+%%[(8 codegen grin)
+-- Attribute to determine to which local variable holds the pointer
+-- that points to the start of the allocated block.
+ATTR Statement Statements
+     Value Values            [ | ptrToAlloc : {Maybe Variable} | ]
+
+SEM Function
+  | Function    body.ptrToAlloc     = Nothing
+
+SEM Alternative
+  | Alternative body.ptrToAlloc     = Nothing
+
+-- We check if this is the first allocation (@lhs.allocWordCount == 0)
+-- and if so if the RHS of the assignment is an allocation
+-- (@lhs.allocWordCount /= @source.allocWordCount). If both hold, we
+-- know that @dest is the variable that points to the allocated block.
+SEM Statement
+  | Assignment  lhs .ptrToAlloc     = if    @lhs.allocWordCount == 0
+                                         && @lhs.allocWordCount /= 
+                                            @source.allocWordCount
+                                      then Just @dest.trf
+                                      else @lhs.ptrToAlloc
+%%]

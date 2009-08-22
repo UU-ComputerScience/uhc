@@ -1,0 +1,59 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty subst
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs import(Common,Ty,Cnstr) export(tyAppCnstr)
+%%]
+
+%%[1.WRAPPER import(TyAbsSyn)
+WRAPPER TyAGItf
+%%]
+
+%%[1.tyAppCnstr hs
+tyAppCnstr :: Cnstr -> Ty -> Ty
+tyAppCnstr cnstr ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {cnstr_Inh_TyAGItf = cnstr})
+     in   repl_Syn_TyAGItf t
+%%]
+
+%%[1 hs
+type IsBound = TyVarId -> Bool
+
+tvRepl :: TyVarId -> Cnstr -> IsBound -> Ty -> Ty
+tvRepl tv c isBound repl
+  =  case (cnstrTyLookup tv c) of
+		Just t | not (isBound tv)  -> t
+		_                          -> repl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Apply substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.TySubst
+ATTR TyAGItf AllTy  [ cnstr: Cnstr  | |             ]
+ATTR AllTyAndFlds   [               | | repl: SELF  ]
+ATTR TyAGItf        [               | | repl: Ty    ]
+
+SEM Ty
+  | Var             lhs     .   repl        =   maybe @repl id (cnstrTyLookup @tv @lhs.cnstr)
+%%]
+
+%%[1
+ATTR AllTy [ isBound: IsBound | | ]
+
+SEM TyAGItf
+  | AGItf           ty      .   isBound     =   const False
+
+SEM Ty
+  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+  | All             ty      .   isBound     =   (\v -> v == @tv || @lhs.isBound v)
+%%]
+
+%%[3
+SEM Ty
+  | Alts Both       lhs     .   repl        =   tvRepl @tv @lhs.cnstr @lhs.isBound @repl
+%%]
+

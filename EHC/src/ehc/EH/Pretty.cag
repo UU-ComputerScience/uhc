@@ -1,0 +1,687 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+PP aside or vertically with indentation to allow for less horizontal screen estate usage.
+
+%%[1 hs
+infixr 2 >###<      -- same as >-<
+
+(>###<) :: PP_Doc -> PP_Doc -> PP_Doc
+%%[[1
+l >###< r = l >#< r
+%%][99
+l >###< r = l >-< indent 2 r
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Base.ExprSimple
+ATTR AllNT AllAnn AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+SEM Expr
+  | IConst      loc     .   pp      =   pp (show @int)
+  | CConst      loc     .   pp      =   pp (show @char)
+  | Var         loc     .   pp      =   pp @nm
+  | Con         loc     .   pp      =   ppCon @nm
+%%[[1
+  | Let         loc     .   pp      =   
+%%][100
+  | Let         loc     .   pp      =   if ehcOptShowEH @lhs.opts || ehcOptEmitEH @lhs.opts
+                                        then
+%%]]
+                                             "let"
+%%[[8
+                                             >|< (if @isStrict then pp "!" else empty)
+%%]]
+                                             >#< (@decls.pp >-< @extraPP)
+%%[[1
+                                             >-< @errLetPP
+%%][102
+%%]]
+%%[[1
+                                             >-< "in" >#< @body.pp
+%%][99
+                                             >#< "in" >-< @body.pp
+%%]]
+%%[[1
+                                             >-< @errBodyPP
+%%][100
+                                        else empty
+%%]]
+  | App         loc     .   pp      =   @func.pp >#< @arg.pp
+  | Parens      loc     .   pp      =   ppParens @expr.pp
+  | TypeAs      loc     .   pp      =   ppParens @expr.pp >#< "::" >#< @tyExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @expr.pp
+%%]
+
+%%[1.Base.ExprComplex
+  | AppTop      loc     .   pp      =   ppAppTop  (@expr.appFunNm,@expr.appFunPP)
+                                                  @expr.appArgPPL @expr.pp
+  | Lam         loc     .   argPP   =   @arg.pp
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   pp      =   if @lhs.isTopLam
+                                        then let sep = case @lamArgPPL of
+                                                         [_] -> (>#<)
+                                                         _   -> (>###<)
+                                             in  ("\\" >|< ppSpaces @lamArgPPL) `sep` ("->" >#< @body.lamBodyPP)
+                                        else "\\" >|< @argPP >#< "->" >#< @body.pp
+%%]
+
+%%[1.Base.Rest
+SEM Decl
+  | Val         loc     .   pp      =   @patExpr.pp >###< "=" >#< @expr.pp
+  | TySig       loc     .   tyPP    =   @tyExpr.pp
+                        .   pp      =   @nm >#< "::" >#< @tyPP
+
+SEM PatExpr
+  | IConst      loc     .   pp      =   pp (show @int)
+  | CConst      loc     .   pp      =   pp (show @char)
+  | Var         loc     .   pp      =   pp @nm
+  | VarAs       loc     .   pp      =   pp @nm >|< "@" >|< @patExpr.pp
+  | Con         loc     .   pp      =   ppCon @nm
+  | App         loc     .   pp      =   @func.pp >#< @arg.pp
+  | AppTop      loc     .   pp      =   ppAppTop  (@patExpr.appFunNm,@patExpr.appFunPP)
+                                                  @patExpr.appArgPPL @patExpr.pp
+  | Parens      loc     .   pp      =   ppParens @patExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @patExpr.pp
+
+SEM TyExpr
+  | Con         loc     .   pp      =   ppCon @nm
+  | App         loc     .   pp      =   @func.pp >#< @arg.pp
+  | AppTop      loc     .   pp      =   ppAppTop  (@tyExpr.appFunNm,@tyExpr.appFunPP)
+                                                  @tyExpr.appArgPPL @tyExpr.pp
+  | Parens      loc     .   pp      =   ppParens @tyExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @tyExpr.pp
+
+SEM Decls
+  | Cons        lhs     .   pp      =   @hd.pp
+%%[[1
+                                        >-< @errPP
+%%][102
+%%]]
+                                        >-< @tl.pp
+
+SEM AGItf
+  | AGItf       lhs     .   pp      =   @extraPP >-< @expr.pp
+%%[[1
+                                        >-< @errTopPP
+%%][102
+%%]]
+                loc     .   extraPP =   empty
+%%]
+
+%%[1
+ATTR Expr [ | | lamArgPPL: {[PP_Doc]}  lamBodyPP: PP_Doc ]
+
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   lamArgPPL   =   @argPP : @body.lamArgPPL
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc     .   lamBodyPP   =   @pp
+                        .   lamArgPPL   =   []
+%%]
+
+%%[2.Wild.pp
+SEM TyExpr
+  | Wild        loc     .   pp      =   pp "..."
+%%]
+
+%%[3
+SEM TyExpr
+  | Var         loc     .   pp      =   pp @nm
+  | VarWild     loc     .   pp      =   "%" >|< pp @nm
+%%]
+
+%%[(3 hmtyinfer)
+SEM Decl
+  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
+%%]
+
+%%[(5 hmtyinfer).Wild.pp
+SEM Decl
+  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
+%%]
+
+%%[(100 hmtyinfer)
+SEM Decl
+  | TySig       loc     .   tyPP    :=  @tyExpr.pp
+%%]
+
+%%[4
+SEM Expr
+  | AppImpred   loc     .   argPP   =   "~" >|< @arg.pp
+                        .   pp      =   @func.pp >#< @argPP
+
+SEM PatExpr
+  | TypeAs      loc     .   pp      =   @patExpr.pp >#< "::" >#< @tyExpr.pp
+
+SEM TyExpr
+  | Quant       loc     .   pp      =   showTyQu @qu >#< @tyVar >#< "." >#< @tyExpr.pp
+%%]
+
+%%[5
+ATTR TyVars CaseAlts [ | | ppL: {[PP_Doc]} ]
+ATTR TyExprs [ | | ppL: {[PP_Doc]} ]
+
+SEM Expr
+  | SConst      loc     .   pp      =   pp (show @str)
+  | Case        loc     .   pp      =   "case"  >#< @expr.pp >#< "of"
+                                                >-< indent 2 (vlist @alts.ppL)
+                                                >-< @extraPP
+%%[[5
+                        .   extraPP =   empty
+%%][8
+                        .   extraPP =   maybe empty (ppCmt . ppCommas' . Set.toList) @mbCaseIds
+%%]]
+
+SEM PatExpr
+  | SConst      loc     .   pp      =   pp (show @str)
+
+SEM CaseAlt
+  | Pat         loc     .   pp      =   @patExpr.pp >|< @extraPP >###< "->" >#< @expr.pp
+                        .   extraPP =   empty
+
+SEM CaseAlts
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   (@hd.pp >|< @extraPP) : @tl.ppL
+                loc     .   extraPP =   empty
+
+SEM TyExprs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM TyVar
+  | Var         lhs     .   pp      =   pp @nm
+
+SEM TyVars
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[6
+SEM KiExpr
+  | Con Var     loc     .   pp      =   pp @nm
+  | App         loc     .   pp      =   @func.pp >#< @arg.pp
+  | AppTop      loc     .   pp      =   ppAppTop  (@kiExpr.appFunNm,@kiExpr.appFunPP)
+                                                  @kiExpr.appArgPPL @kiExpr.pp
+  | Parens      loc     .   pp      =   ppParens @kiExpr.pp
+  | Ann         loc     .   pp      =   {- @ann.pp >#< -} @kiExpr.pp
+
+SEM Decl
+  | KiSig       loc     .   pp      =   @nm >#< "::" >#< @kiExpr.pp
+%%]
+
+%%[7
+ATTR RecExpr RowTyExpr RecPatExpr DataFields DataFieldExpr DataFieldPatExpr [ | | ppL: {[PP_Doc]} ]
+
+SEM Expr
+  | DataFields  loc     .   pp      =   @dataFieldExpr.pp >#< ppCurlysCommas' (reverse @dataFieldExpr.ppL)
+  | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recExpr.pp)
+                                                  (reverse @recExpr.ppL) @recExpr.pp
+  | Sel         loc     .   pp      =   @expr.pp >|< "." >|< @lbl
+
+SEM RecExpr
+  | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
+                lhs     .   ppL     =   []
+  | Ext         loc     .   pp      =   ppFld "=" (Just @positionalNm) @nm (pp @nm) @expr.pp
+  | Upd         loc     .   pp      =   ppFld ":=" Nothing @nm (pp @nm) @expr.pp
+  | Ext Upd     lhs     .   ppL     =   @pp : @recExpr.ppL
+                        .   pp      =   @recExpr.pp
+  | Expr        loc     .   pp      =   @expr.pp
+                lhs     .   ppL     =   []
+
+SEM PatExpr
+  | DataFields  loc     .   pp      =   @dataFieldPatExpr.pp >#< ppCurlysCommas' (reverse @dataFieldPatExpr.ppL)
+  | Rec         loc     .   pp      =   ppAppTop  (hsnRec,mkPPAppFun @appFunNm @recPatExpr.pp)
+                                                  (reverse @recPatExpr.ppL) @recPatExpr.pp
+
+SEM RecPatExpr
+  | Empty       loc     .   pp      =   hsnORec >|< hsnCRec
+                lhs     .   ppL     =   []
+  | Ext         loc     .   pp      =   @recPatExpr.pp
+                lhs     .   ppL     =   ppFld "=" (Just @positionalNm) @nm (pp @nm) @patExpr.pp : @recPatExpr.ppL
+  | Expr        loc     .   pp      =   @patExpr.pp
+                lhs     .   ppL     =   []
+
+SEM TyExpr
+  | Row         loc     .   pp      =   ppAppTop  (hsnRow,mkPPAppFun hsnRow @rowTyExpr.pp)
+                                                  (reverse @rowTyExpr.ppL) @rowTyExpr.pp
+
+SEM RowTyExpr
+  | Empty       lhs     .   ppL     =   []
+  | Ext         lhs     .   pp      =   @rowTyExpr.pp
+                        .   ppL     =   ppFld "::" (Just @positionalNm) @nm (pp @nm) @tyExpr.pp : @rowTyExpr.ppL
+
+SEM DataFieldExpr
+  | Upd         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @expr.pp
+                lhs     .   ppL     =   @pp : @dataFieldExpr.ppL
+                        .   pp      =   @dataFieldExpr.pp
+  | Con         loc     .   pp      =   pp @nm
+  | Expr        loc     .   pp      =   @expr.pp
+  | Con Expr    lhs     .   ppL     =   []
+
+
+SEM DataFieldPatExpr
+  | Ext         loc     .   pp      =   ppFld "=" Nothing @nm (pp @nm) @patExpr.pp
+                lhs     .   ppL     =   @pp : @dataFieldPatExpr.ppL
+                        .   pp      =   @dataFieldPatExpr.pp
+  | Con         loc     .   pp      =   pp @nm
+                lhs     .   ppL     =   []
+%%]
+
+%%[8
+SEM Expr
+  | Undefined   loc     .   pp      =   pp "..."
+  | CaseAltFail loc     .   pp      =   pp "FAIL" >#< @caseId
+
+SEM Decl
+  | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
+%%[[94
+  | FFE         loc     .   pp      =   "foreign export" >#< @nm >#< @callconv >#< ppForeignEnt @expEnt >#< @expr.pp >#< "::" >#< @tyExpr.pp
+%%]]
+
+SEM PatExpr
+  | Irrefutable loc     .   pp      =   "~" >|< @patExpr.pp
+%%]
+
+%%[9
+ATTR PrExprs [ | | ppL: {[PP_Doc]} ]
+
+SEM RowTyExpr
+  | Var         loc     .   pp      =   pp @nm
+                lhs     .   ppL     =   []
+
+SEM TyExpr
+  | Pred        loc     .   pp      =   hsnOImpl >#< @prExpr.pp >#< hsnCImpl
+  | Impls       loc     .   pp      =   hsnOImpl >#< "..." >#< hsnCImpl
+  | NoImpls     loc     .   pp      =   hsnOImpl >#< "_" >#< hsnCImpl
+
+SEM PrExpr
+  | Class       loc     .   pp      =   ppSpaced (pp @nm : @tyExprs.ppL)
+  | Arrow       loc     .   pp      =   @arg.pp >#< hsnPrArrow >#< @res.pp
+  | Forall      loc     .   pp      =   "forall" >#< @tyVar >#< "." >#< @prExpr.pp
+
+SEM PrExprs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM Decl
+  | Class       loc     .   pp      =   "class"     >#< @tyPrExpr.pp
+%%[[15
+                                                    >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
+%%]]
+                                                    >#< "where" >-< indent 2 @decls.pp
+  | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
+                                                    >#< @tyPrExpr.pp
+                                                    >#< "where"
+%%[[95
+                                                    >#< ppCmt (pp $ show @instVariant)
+%%]]
+                                                    >-< indent 2 @decls.pp
+%%[[9
+                                                    >-< @errInstPP
+                                                    >-< @errDeclsPP
+%%][102
+%%]]
+  | InstanceIntro
+                loc     .   pp      =   "instance"  >#< @expr.pp >#< "<:" >#< @prExpr.pp
+%%[[9
+                                                    >-< @errInstPP
+%%][102
+%%]]
+%%]
+
+%%[10
+SEM PrExpr
+  | Lacks       loc     .   pp      =   @rowTyExpr.pp >|< "\\" >|< pp @nm
+  | DynVar      loc     .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyExpr.pp
+
+SEM Expr
+  | DynVar      loc     .   pp      =   hsnDynVar >|< pp @nm
+%%]
+
+%%[1010
+SEM Decl
+  | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
+  | DynTySig    loc     .   tyPP    =   if null @tyExpr.tyVarWildL
+                                        then  @tyExpr.pp
+                                        else  ppTy @finalTy
+                        .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP
+%%]
+
+%%[11
+SEM Decl
+  | Type        loc     .   pp      =   "type" >#< @tyNm >#< "=" >#< @tyExpr.pp
+
+SEM TyExpr
+  | Lam         loc     .   pp      =   "\\" >|< @tyVar >#< "->" >#< @tyExpr.pp
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     loc     .   argPP   =   @arg.pp >#< "<:" >#< @argPr.pp
+                        .   pp      =   @func.pp >#< hsnOImpl >#< @argPP >#< hsnCImpl
+  | LamImpl     loc     .   argPP   =   hsnOImpl >#< @arg.pp >#< "<:" >#< @argPr.pp >#< hsnCImpl
+%%]
+
+%%[15
+ATTR FuncDeps [ | | ppL: {[PP_Doc]} ]
+
+SEM FuncDep
+  | Dep         lhs     .   pp      =   @fromTvs.pp >#< "->" >#< @toTvs.pp
+
+SEM FuncDeps
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[97
+SEM Expr
+  | IIConst     loc     .   pp      =   pp (show @integer)
+%%]
+
+%%[97
+SEM PatExpr
+  | Expr        loc     .   pp      =   "`" >|< @expr.pp >|< "`"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM ExprAnn
+  | Empty		loc		.	pp		=	empty
+
+SEM PatExprAnn
+  | Empty		loc		.	pp		=	empty
+
+SEM TyExprAnn
+  | Empty		loc		.	pp		=	empty
+%%]
+
+%%[6
+SEM KiExprAnn
+  | Empty		loc		.	pp		=	empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+ATTR DataConstrs [ | | ppL: {[PP_Doc]} ]
+
+SEM Decl
+  | Data        loc     .   pp      =   (if @isNewtype then "newtype" else "data")
+                                        >#< @tyNm >#< ppSpaced @tyVars.ppL
+                                        >#< "=" >#< ppListSepFill "" "" " | " @constrs.ppL
+
+SEM DataConstr
+  | Constr      loc     .   pp      =   pp @conNm >#< ppSpaced @fields.ppL
+
+SEM DataConstrs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%[7
+SEM DataFields
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+
+SEM DataField
+  | Field       lhs     .   pp      =   case @mbLabels of
+                                          Just l  -> ppCommas' l >#< "::" >#< @tyExpr.pp
+                                          Nothing -> @tyExpr.pp
+
+SEM DataConstr
+  | Constr      loc     .   pp      :=  pp @conNm
+%%[[(7 hmtyinfer)
+                                        >#<  (if null $ catMaybes $ assocLKeys $ @fields.fldTyL
+                                              then ppSpaced @fields.ppL
+                                              else ppCurlysCommas' @fields.ppL
+                                             )
+%%][7
+                                        >#<  ppCurlysCommas' @fields.ppL
+%%]]
+                                        >|<  @extraPP
+                        .   extraPP =   empty
+%%]
+%%[16
+SEM DataConstr
+  | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
+%%]
+%%[50
+SEM DataConstr
+  | Constr      loc     .   extraPP :=  hlist . map ("," >#<) $ @eqs.ppL
+%%]
+
+%%[16
+ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
+
+SEM DataConstrEq
+  | Eq          loc     .   pp      =   @tyVar.pp >|< "=" >|< @tyExpr.pp
+
+SEM DataConstrEqs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+%%[50
+ATTR DataConstrEqs [ | | ppL: {[PP_Doc]} ]
+
+SEM DataConstrEq
+  | Eq          loc     .   pp      =   @tyVar.pp >|< "=" >|< @tyExpr.pp
+
+SEM DataConstrEqs
+  | Nil         lhs     .   ppL     =   []
+  | Cons        lhs     .   ppL     =   @hd.pp : @tl.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty constr name of app + args, see also {%{EH}Ty.Pretty}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.TyExpr.ConNm
+ATTR TyExpr [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
+
+SEM TyExpr
+  | App         lhs     .   appArgPPL   =   @func.appArgPPL ++ [@arg.pp]
+                        .   appFunPP    =   @func.appFunPP
+  | * - App
+                lhs     .   appArgPPL   =   []
+                lhs     .   appFunPP    =   @pp
+%%]
+
+%%[7
+SEM TyExpr
+  | App         lhs     .   (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Row         lhs     .   appArgPPL   :=  reverse @rowTyExpr.ppL
+                        .   appFunPP    :=  @rowTyExpr.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ki constr name of app + args, see also {%{EH}Ty.Pretty}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+ATTR KiExpr [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
+
+SEM KiExpr
+  | App         lhs     .   appArgPPL   =   @func.appArgPPL ++ [@arg.pp]
+                        .   appFunPP    =   @func.appFunPP
+  | * - App     lhs     .   appArgPPL   =   []
+                lhs     .   appFunPP    =   @pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra info for pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.ExprExtra
+SEM Expr
+  | Let         loc     .   extraPP     =   empty
+%%]
+
+%%[(1 hmtyinfer).ExprExtra
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (gamTop @decls.patValGam))
+%%]
+
+%%[(2 hmtyinfer)
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> (gamTop @decls.patValGam)))
+%%]
+
+%%[(3 hmtyinfer)
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_))
+%%]
+
+%%[(4 hmtyinfer)
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc     .   extraPP     :=  ppCmt (ppGam $ fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst) >-< ppCmt (ppGam (@lhs.finTyVarMp |=> @quValGam_ex_))
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
+                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
+                                                       >-<  ppGam (@lhs.finTyVarMp |=> @quValGam_ex_)
+                                                       >-<  ppGam @lClGamNoDups
+%%[[17
+                                                       >-<  ppGam @loc.finGathPolGam
+%%]]
+                                                       )
+                                            else empty
+%%]
+
+%%[100100
+SEM Expr
+  | Let         loc     .   extraPP     :=  empty
+%%]
+
+%%[9
+%%]
+SEM AGItf
+  | AGItf       loc     .   extraPP     :=  ppVarMpV @expr.tyVarMp
+
+%%[(20 hmtyinfer)
+SEM AGItf
+  | AGItf       loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
+                                            then ppCmt (ppGam @lhs.valGam)
+                                            else empty
+%%]
+
+%%[100
+SEM AGItf
+  | AGItf       loc     .   extraPP     :=  empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expr constr name of app + args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Expr.ConNm
+ATTR Expr [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
+
+SEM Expr
+  | App         lhs     .   appArgPPL   =   @func.appArgPPL ++ [@arg.pp]
+                        .   appFunPP    =   @func.appFunPP
+  | * - App     lhs     .   appArgPPL   =   []
+                        .   appFunPP    =   @pp
+%%]
+
+%%[4
+SEM Expr
+  | AppImpred   lhs     .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]
+                        .   appFunPP    :=  @func.appFunPP
+%%]
+
+%%[7
+SEM Expr
+  | App         lhs     .   (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Rec         lhs     .   appArgPPL   :=  reverse @recExpr.ppL
+                        .   appFunPP    :=  @recExpr.pp
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs     .   appArgPPL   :=  @func.appArgPPL ++ [@argPP]
+                        .   appFunPP    :=  @func.appFunPP
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PatExpr constr name of app + args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.PatExpr
+ATTR PatExpr [ | | appFunPP: PP_Doc  appArgPPL: {[PP_Doc]} ]
+
+SEM PatExpr
+  | App         lhs     .   appArgPPL   =   @func.appArgPPL ++ [@arg.pp]
+                        .   appFunPP    =   @func.appFunPP
+  | * - App     lhs     .   appArgPPL   =   []
+                        .   appFunPP    =   @pp
+%%]
+
+%%[7
+SEM PatExpr
+  | App         lhs     .   (appFunPP,appArgPPL)
+                                        :=  mkExtAppPP  (@func.appFunNm,@func.appFunPP,@func.appArgPPL)
+                                                        (@arg.appFunNm,@arg.appFunPP,@arg.appArgPPL,@arg.pp)
+  | Rec         lhs     .   appArgPPL   :=  reverse @recPatExpr.ppL
+                        .   appFunPP    :=  @recPatExpr.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Show top type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).AGItf.topTyPP
+ATTR AGItf [ | | topTyPP: PP_Doc ]
+
+SEM AGItf
+  | AGItf       lhs     .   topTyPP     =   ppTy @expr.ty
+%%]
+
+%%[(3 hmtyinfer).AGItf.topTyPP
+SEM AGItf
+  | AGItf       lhs     .   topTyPP     :=  ppTy (tyQuantifyClosed @expr.ty)
+%%]
+

@@ -1,0 +1,96 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to refresh tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Replace type variables with fresh ones.
+Module is currently not used.
+
+%%[(4 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.FreshVar} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable}) export(tyFreshVar)
+%%]
+
+%%[(4 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
+WRAPPER TyAGItf
+%%]
+
+%%[(4 hmtyinfer || hmtyast).tyFreshVar hs
+tyFreshVar' :: (TyVarId -> Bool) -> UID -> VarMp -> Ty -> (Ty,VarMp)
+tyFreshVar' allowFresh uniq tvVarMp ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf {tvVarMp_Inh_TyAGItf = tvVarMp, allowFresh_Inh_TyAGItf = allowFresh, gUniq_Inh_TyAGItf = uniq})
+     in   (repl_Syn_TyAGItf t,tvVarMp_Syn_TyAGItf t)
+
+tyFreshVar :: (TyVarId -> Bool) -> UID -> Ty -> Ty
+tyFreshVar allowFresh uniq ty =  fst $ tyFreshVar' allowFresh uniq emptyVarMp ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Check if allowed
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTyAndFlds [ allowFresh: {TyVarId -> Bool} | | ]
+
+SEM Ty
+  | Quant           ty      .   allowFresh  =   \v -> v /= @tv && @lhs.allowFresh v
+%%]
+
+Arbitrary:
+
+%%[(10 hmtyinfer || hmtyast)
+SEM LabelAGItf
+  | AGItf           loc     .   allowFresh  =   const False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Uniq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR TyAGItf [ gUniq: UID | | ]
+ATTR AllTy [ | gUniq: UID | ]
+
+SEM Ty
+  | Var             (lhs.gUniq,loc.lUniq)   =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% New tvar map as VarMp, replacement
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTyAndFlds [ | | repl: SELF  ]
+ATTR TyAGItf      [ | | repl: Ty    ]
+%%]
+
+%%[(4 hmtyinfer || hmtyast)
+ATTR AllTy TyAGItf [ | tvVarMp: VarMp | ]
+
+SEM Ty
+  | Var             lhs     .   (repl,tvVarMp)
+                                            =   if @lhs.allowFresh @tv
+                                                then  case varmpTyLookup @tv @lhs.tvVarMp of
+                                                        Just t   -> (t,@lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
+                                                                 where t = Ty_Var @lUniq @categ.repl
+                                                else  (@repl,@lhs.tvVarMp)
+%%]
+SEM TyAGItf
+  | AGItf           ty      .   tvVarMp     =   emptyVarMp
+
+SEM Ty
+  | Var             lhs     .   repl        =   if @lhs.allowFresh @tv then Ty_Var @lUniq @categ.repl else @repl
+SEM Ty
+  | Var             lhs     .   (repl,tvVarMp)
+                                            =   if @lhs.allowFresh @tv
+                                                then  case varmpTyLookup @tv @lhs.tvVarMp of
+                                                        Just t   -> (t,@lhs.tvVarMp)
+                                                        Nothing  -> (t,(@tv `varmpTyUnit` t) |=> @lhs.tvVarMp)
+                                                                 where t = Ty_Var @lUniq @categ.repl
+                                                else  (@repl,@lhs.tvVarMp)
+

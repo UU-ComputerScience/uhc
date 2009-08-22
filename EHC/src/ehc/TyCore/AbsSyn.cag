@@ -1,0 +1,388 @@
+%%[(0 codegen)
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Typed Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA AGItf
+  | AGItf       module          : Module
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Module
+  | Mod         moduleNm        : {HsName}
+                tbinds          : ValBindL
+                vbinds          : ValBindL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression: basics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Some expressions may only occur (or have meaning only on) a certain level.
+This is then indicated with e.g. l0, l1, etc.
+
+%%[(8 codegen)
+DATA Expr
+  | Let         categ           : {ValBindCateg}
+                vbinds          : ValBindL
+                body            : Expr
+  | App         func            : Expr
+                arg             : Expr
+  | Lam         arg             : Expr			-- computation from something to something
+                res             : Expr
+  | Arrow       arg             : Expr			-- type of a Lam
+                res             : Expr
+  | Var         nm              : {HsName}		-- used for any value on any level, for constants as well
+  | Case        expr            : Expr
+                alts            : AltL
+                dflt            : MbExpr
+  | Int         int             : {Integer}		-- int constant
+                ty              : Expr
+  | Char        char            : {Char}		-- char constant
+                ty              : Expr
+  | String      str             : {String}		-- string constant
+                ty              : Expr
+  | Tup         tag             : {CTag}		-- tuple/data constructor, must be used with saturated App, will be obsolete, repl by Node
+
+  -- sequences are specifically used for argument/result of Lam/Arrow
+  | Seq         seq             : ExprSeq1L		-- sequence as passed from/to function calls
+  | Seq1        seq1            : ExprSeq1		-- singleton sequence (i.e. no sequence), just one
+
+TYPE MbExpr		= MAYBE Expr
+%%]
+
+L0 only
+
+%%[(8 codegen)
+DATA Expr
+  -- related to actual node, tuples, data
+  | Node        -- tag             : {CTag}
+                flds            : ExprSeq1L
+                -- ty              : Expr
+
+  -- existentials
+  | CloseExists	bind			: Expr
+  				tyClosed		: Expr
+  				ty				: Expr
+  				body			: Expr
+  | OpenExists	bind			: Expr
+  				tyOpened		: Expr
+  				ty				: Expr
+  				body			: Expr
+%%]
+
+L1 only
+
+%%[(8 codegen)
+DATA Expr
+  -- related to actual node, tuples, data
+  | Sum         flds            : ExprSeq1L	
+  | Prod        flds            : ExprSeq1L	
+
+  -- related to existentials
+  | Exists    	arg 			: Expr
+  				expr			: Expr
+%%]
+
+Value, possibly bound as well
+
+%%[(8 codegen)
+DATA ExprSeq1
+  | L0Val       l0              : Expr				-- value on the same level
+                meta			: MbMetaVal			-- for backwards compatibility, will be obsolete some day
+  | L0LblVal    nm            	: HsName			-- value on the same level, but also labeled
+                l0              : Expr
+  | L0TagVal    tag           	: CTag				-- value on the same level, but also tagged
+                l0              : Expr
+  | L0Bind      nm            	: HsName			-- binding on same level, with type 1 level higher
+                meta			: MbMetaVal			-- for backwards compatibility, will be obsolete some day
+                l1              : Expr
+  | L1Val       l1              : Expr				-- same, but level higher
+  | L1Bind      nm            	: HsName
+                l2              : Expr
+  | L2Val       l2              : Expr				-- same, but another level higher
+  | L2Bind      nm            	: HsName
+                l3              : Expr
+
+TYPE ExprSeq1L	= [ExprSeq1]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Dealing with errors, only to be used internally to avoid use of Haskell 'error'
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | Err			msg				: {String}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Coercions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+-- use of coercion
+DATA Expr
+  | Cast        expr            : Expr
+                ty              : Expr
+  | Inject      expr            : Expr		-- l0 only: special case of cast/coerce which injects a tuple into a datatype for a specific tag, expr must be of a node (of prod type)
+                tag             : CTag
+                ty              : Expr
+%%]
+
+%%[(8 codegen)
+-- coercion
+DATA Expr
+  | Trans       fromTy          : Expr		-- transitive coercion
+                toTy            : Expr
+  | Unsafe      fromTy          : Expr		-- unsafe coercion
+                toTy            : Expr
+  | Inst        fromTy          : Expr		-- instantiation coercion
+                toTy            : Expr
+  | Sym         ty              : Expr		-- symmetric coercion
+  | Left        ty              : Expr		-- left coercion
+  | Right       ty              : Expr		-- right coercion
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | Ann         ann             : ExprAnn
+                expr            : Expr
+%%]
+
+%%[(8 codegen)
+DATA ExprAnn
+  | Empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression: (Un)boxing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | Box         expr        	: Expr
+                fromTy          : Expr
+                toTy          	: Expr
+  | Unbox       expr        	: Expr
+                fromTy          : Expr
+                toTy          	: Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression: FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | FFI         callconv        : {FFIWay}
+                safety          : {String}
+%%[[8
+                impEnt          : {String}
+%%][94
+                impEnt          : {ForeignEnt}
+%%]]
+                ty              : Expr
+%%[[94
+  | FFE         callconv        : {FFIWay}
+                expEnt          : {ForeignEnt}
+                expNm           : {HsName}
+                ty              : Expr
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression: support for (extensible) records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | TupDel      expr            : Expr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : Expr
+  | TupIns      expr            : Expr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : Expr
+                fldExpr         : Expr
+  | TupUpd      expr            : Expr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : Expr
+                fldExpr         : Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression: only used for generating core, dealing with yet absent parts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Expr
+  | CaseAltFail caseId          : {UID}
+                errorExpr       : Expr
+  | CoeArg
+  | Hole        uid             : {UID}
+%%]
+
+%%[(9 codegen)
+DATA Expr
+  | HoleLet     bindsUid        : {UID}
+                body            : Expr
+  | ImplsApp    func            : Expr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta information, probably becomes obsolete
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+TYPE Metas 	= (MetaBind,MetaVal)
+
+DATA MetaBind
+  | Plain		-- by default a binding is Plain
+  | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
+  | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
+  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
+
+DATA MetaVal
+  | Val
+%%[[9
+  | Dict          mbPos:  {Maybe Int}
+  | DictClass     names:  {[Maybe HsName]}
+  | DictInstance  names:  {[Maybe HsName]}
+%%]]
+
+TYPE MbMetaVal	= MAYBE MetaVal
+TYPE MbMetas	= MAYBE Metas
+%%]
+
+%%[(8 codegen)
+SET AllMetaVal	= MbMetaVal MetaVal Metas MbMetas
+SET AllMetaBind = MetaBind Metas MbMetas
+SET AllMeta		= MetaVal MbMetaVal MetaBind Metas MbMetas
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding variants: toplevel, let, lam arg
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA ValBind
+  | Val         nm              : {HsName}
+                bindMeta        : MbMetas
+                mlev			: MetaLev		-- the meta level of this def
+                l1              : Expr			-- its meta info/def/type 1 level higher
+                l0              : Expr			-- the def on mlev level
+
+TYPE ValBindL   =   [ValBind]
+%%]
+
+%%[(8 codegen)
+DATA TyBind
+  | Data        nm              : {HsName}
+
+TYPE TyBindL    =   [TyBind]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case alternative + pattern + pattern binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA Alt
+  | Alt         pat             : Pat
+                expr            : Expr
+
+TYPE AltL       =   [Alt]
+%%]
+
+%%[(8 codegen)
+DATA Pat
+  | Var         nm              : {HsName}
+                ty              : Expr
+  | Con         tag             : {CTag}
+                rest            : PatRest
+                flds            : FldBindL
+  | Int         int             : {Integer}
+                ty              : Expr
+  | Char        char            : {Char}
+                ty              : Expr
+
+TYPE PatL       =   [Pat]
+%%]
+
+%%[(8 codegen)
+DATA PatRest
+  | Var         nm              : {HsName}
+  | Empty
+
+DATA FldBind
+  | Fld         nm              : {HsName}
+                ty              : Expr
+                offset          : Expr
+  | Ty          nm              : {HsName}
+                ki              : Expr
+
+TYPE FldBindL   =   [FldBind]
+%%]
+
+%%[(97 codegen)
+DATA Pat
+  | BoolExpr    expr            : Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of NT's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SET AllAlt      =   Alt AltL
+SET AllValBind  =   ValBind ValBindL
+SET AllTyBind   =   TyBind TyBindL
+SET AllFldBind  =   FldBind FldBindL
+SET AllExprSeq1 =   ExprSeq1 ExprSeq1L
+SET AllPat      =   PatRest Pat PatL AllFldBind
+
+SET AllExprBase
+  = Expr MbExpr ExprAnn
+    AllExprSeq1
+    AllAlt AllPat
+    AllMeta
+
+SET AllExpr
+  = AllExprBase
+    AllValBind AllTyBind
+
+SET AllCodeNT
+  = Module AllExpr
+
+SET AllNT
+  = AllCodeNT
+%%]
+  = AllCodeNT AllTyCore
+

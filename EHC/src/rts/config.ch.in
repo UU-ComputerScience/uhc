@@ -1,0 +1,47 @@
+
+%%[8
+/* use Boehm's GC */
+#undef USE_BOEHM_GC
+
+/* size of Pointer/GrWord/... */
+#undef SIZEOF_INTPTR_T
+
+/* size of Pointer */
+#define SIZEOF_POINTER	SIZEOF_INTPTR_T
+
+/* size of GrWord */
+#define SIZEOF_GRWORD	SIZEOF_INTPTR_T
+
+%%]
+
+%%[97
+/* use GMP */
+#ifdef __UHC_BUILDS_RTS__
+#undef USE_GMP
+#endif
+%%]
+
+%%[8
+#if SIZEOF_INTPTR_T == 8
+#define USE_64_BITS 1
+#define USE_32_BITS 0
+#else
+#define USE_64_BITS 0
+#define USE_32_BITS 1
+#endif
+%%]
+
+%%[8
+/* endianness */
+
+#undef BIGENDIAN
+#undef LITTLEENDIAN
+
+%%]
+
+%%[8
+/* Timing of GC */
+#define GC_TIMING 0
+%%]
+
+

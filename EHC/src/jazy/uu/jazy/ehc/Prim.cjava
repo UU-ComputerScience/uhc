@@ -1,0 +1,813 @@
+%%[(8 jazy)
+package uu.jazy.ehc ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ *
+ * $Header:     $
+ * $Archive:    $
+ * $NoKeywords: $
+ */
+
+import java.util.* ;
+import java.io.* ;
+
+import uu.jazy.core.* ;
+%%[[97
+import java.math.* ;
+%%]]
+
+/**
+ * Primitives
+ */
+public class Prim
+{
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 jazy)
+    public static Object primUnsafeId( Object v1 ) { return v1 ; }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Conversion
+     */
+    public static int primCharToInt( char v1 ) { return (int)v1 ; }
+    public static char primIntToChar( int v1 ) { return (char)v1 ; }
+
+    public static float primIntToFloat( int v1 ) { return (float)v1 ; }
+    public static double primIntToDouble( int v1 ) { return (double)v1 ; }
+    public static BigInteger primIntToInteger( int v1 ) { return BigInteger.valueOf(v1) ; }
+    
+    public static float primDoubleToFloat( double v1 ) { return (float)v1 ; }
+    public static BigInteger primDoubleToInteger( double v1 ) { return BigInteger.valueOf((long)v1) ; }
+    
+    public static double primFloatToDouble( float v1 ) { return (double)v1 ; }
+    public static BigInteger primFloatToInteger( float v1 ) { return BigInteger.valueOf((long)v1) ; }
+    
+    public static int primIntegerToInt( BigInteger v1 ) { return v1.intValue() ; }
+    public static float primIntegerToFloat( BigInteger v1 ) { return v1.floatValue() ; }
+    public static double primIntegerToDouble( BigInteger v1 ) { return v1.doubleValue() ; }
+    
+    public static BigInteger primCStringToInteger( String v1 ) { return new BigInteger(v1) ; }
+    
+    public static double primRationalToDouble( Object v1 ) {
+    	Object rat[] = ((Data)v1).toTuple() ;
+    	BigInteger num = (BigInteger)(Eval.eval(rat[0])) ;
+    	BigInteger div = (BigInteger)(Eval.eval(rat[1])) ;
+    	return num.doubleValue() / div.doubleValue() ;
+    }
+    
+    public static float primRationalToFloat( Object v1 ) {
+    	Object rat[] = ((Data)v1).toTuple() ;
+    	BigInteger num = (BigInteger)(Eval.eval(rat[0])) ;
+    	BigInteger div = (BigInteger)(Eval.eval(rat[1])) ;
+    	return num.floatValue() / div.floatValue() ;
+    }
+    // todo: Rational
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Int
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+    /**
+     * Int: arithmetic
+     */
+    public static int primAddInt( int v1, int v2 ) { return v1 + v2 ; }
+    public static int primSubInt( int v1, int v2 ) { return v1 - v2 ; }
+    public static int primMulInt( int v1, int v2 ) { return v1 * v2 ; }
+    public static int primQuotInt( int v1, int v2 ) { return v1 / v2 ; }
+    public static int primRemInt( int v1, int v2 ) { return v1 % v2 ; }
+    public static int primDivInt( int v1, int v2 ) {
+    	int r = v1 / v2 ;
+    	if ( r < 0 )
+    		r -= 1 ;
+    	return r ;
+    }
+    public static int primModInt( int v1, int divisor ) {
+    	int mod = v1 % divisor ;
+		if ( mod > 0 && divisor < 0 || mod < 0 && divisor > 0 ) {
+			mod += divisor ;
+		}    	
+    	return mod ;
+    }
+    
+    public static int primNegInt( int v1 ) { return -v1 ; }
+    
+%%]
+    
+%%[(8 jazy)
+    public static Object primQuotRemInt( int v1, int v2 ) {
+    	return new Integer[] {new Integer(v1 / v2), new Integer(v1 % v2)} ;
+    }
+    public static Object primDivModInt( int v1, int v2 ) {
+    	return new Integer[] {new Integer(primDivInt(v1,v2)), new Integer(primModInt(v1,v2))} ;
+    }
+%%]
+
+%%[(8 jazy)
+    /**
+     * Int: comparison
+     */
+    public static Object primEqInt( int v1, int v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primLtInt( int v1, int v2 ) { return RTS.mkBool(v1 < v2) ; }
+    public static Object primGtInt( int v1, int v2 ) { return RTS.mkBool(v1 > v2) ; }
+    
+    public static Object primCmpInt( int v1, int v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(95 jazy)
+    /**
+     * Int: min/max value
+     */
+    public static int primMaxInt() { return Integer.MAX_VALUE ; }
+    public static int primMinInt() { return Integer.MIN_VALUE ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Long
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Long: arithmetic
+     */
+    public static long primAddLong( long v1, long v2 ) { return v1 + v2 ; }
+    public static long primSubLong( long v1, long v2 ) { return v1 - v2 ; }
+    public static long primMulLong( long v1, long v2 ) { return v1 * v2 ; }
+    public static long primQuotLong( long v1, long v2 ) { return v1 / v2 ; }
+    public static long primRemLong( long v1, long v2 ) { return v1 % v2 ; }
+    public static long primDivLong( long v1, long v2 ) {
+    	long r = v1 / v2 ;
+    	if ( r < 0 )
+    		r -= 1 ;
+    	return r ;
+    }
+    public static long primModLong( long v1, long divisor ) {
+		long mod = v1 % divisor ;
+		if ( mod > 0 && divisor < 0 || mod < 0 && divisor > 0 ) {
+			mod += divisor ;
+		}    	
+    	return mod ;
+	}
+    
+    public static long primNegLong( long v1 ) { return -v1 ; }
+    
+%%]
+    
+%%[(97 jazy)
+    public static Long[] primQuotRemLong( long v1, long v2 ) {
+    	return new Long[] {new Long(v1 / v2), new Long(v1 % v2)} ;
+    }
+    public static Long[] primDivModLong( long v1, long v2 ) {
+    	return new Long[] {new Long(primDivLong(v1,v2)), new Long(primModLong(v1,v2))} ;
+    }
+%%]
+
+%%[(97 jazy)
+    /**
+     * Long: comparison
+     */
+    public static Object primEqLong( long v1, long v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primLtLong( long v1, long v2 ) { return RTS.mkBool(v1 < v2) ; }
+    public static Object primGtLong( long v1, long v2 ) { return RTS.mkBool(v1 > v2) ; }
+    
+    public static Object primCmpLong( long v1, long v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Long: min/max value
+     */
+    public static long primMaxLong() { return Long.MAX_VALUE ; }
+    public static long primMinLong() { return Long.MIN_VALUE ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Integer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Integer: arithmetic
+     */
+    public static BigInteger primAddInteger( BigInteger v1, BigInteger v2 ) { return v1.add(v2) ; }
+    public static BigInteger primSubInteger( BigInteger v1, BigInteger v2 ) { return v1.subtract(v2) ; }
+    public static BigInteger primMulInteger( BigInteger v1, BigInteger v2 ) { return v1.multiply(v2) ; }
+    public static BigInteger primQuotInteger( BigInteger v1, BigInteger v2 ) { return v1.divide(v2) ; }
+    public static BigInteger primRemInteger( BigInteger v1, BigInteger v2 ) { return v1.remainder(v2) ; }
+    public static BigInteger primDivInteger( BigInteger v1, BigInteger v2 ) {
+    	BigInteger r = v1.divide(v2) ;
+    	if ( r.signum() < 0 )
+    		return r.subtract( BigInteger.ONE ) ;
+    	return r ;
+    }
+    public static BigInteger primModInteger( BigInteger v1, BigInteger v2 ) {
+    	return ( v2.signum() < 0 ? v1.mod(v2.negate()).add(v2) : v1.mod(v2) ) ;
+    }
+    
+    public static BigInteger primNegInteger( BigInteger v1 ) { return v1.negate() ; }
+    
+%%]
+    
+%%[(97 jazy)
+    public static Object primQuotRemInteger( BigInteger v1, BigInteger v2 ) {
+    	return v1.divideAndRemainder(v2) ;
+    }
+    public static Object primDivModInteger( BigInteger v1, BigInteger v2 ) {
+    	return new BigInteger[] {primDivInteger(v1,v2), primModInteger(v1,v2)} ;
+    }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Int: comparison
+     */
+    public static Object primEqInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.equals(v2)) ; }
+    public static Object primLtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) < 0) ; }
+    public static Object primGtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) > 0) ; }
+    
+    public static Object primCmpInteger( BigInteger v1, BigInteger v2 ) {
+    	return RTS.mkOrdering( v1.compareTo(v2) ) ;
+    }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Double & Float both
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Java by definition uses IEEE floating points
+     */
+    public static Object primIsIEEE() { return RTS.True ; }
+    
+    /**
+     * Radix of float/double: assume 2
+     */
+    public static int primRadixDoubleFloat() { return 2 ; }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Decoding of float & double.
+     * Defs are kept together as they are the same except for constants.
+     * See also: http://java.sun.com/j2se/1.4.2/docs/api/java/lang/Double.html
+     *           http://babbage.cs.qc.cuny.edu/IEEE-754/Decimal.html
+     *           http://babbage.cs.qc.cuny.edu/IEEE-754/References.xhtml
+     * Format: sign, exponent (with bias 2^(bits-1)-1), mantissa (with implicit leading 1)
+     * 				sign	exp		mant
+     * Float		1		8		23
+     * Double		1		11		52
+     */
+    private final static int szMantFloat = 23 ;
+    private final static int szMantDouble = 52 ;
+
+    private final static int biasExpFloat = 127 ;
+    private final static int biasExpDouble = 1023 ;
+    
+    private final static int expMaskFloat = 0x7f800000 ;
+    private final static long expMaskDouble = 0x7ff0000000000000L ;
+
+    private final static int mantMaskFloat = 0x007fffff ;
+    private final static long mantMaskDouble = 0x000fffffffffffffL ;
+
+    private final static int signMaskFloat = 0x80000000 ;
+    private final static long signMaskDouble = 0x8000000000000000L ;
+
+    public static Object primDecodeDouble( double v ) {
+    	int szmant = szMantDouble ;
+    	long l = Double.doubleToLongBits( v ) ;
+    	int  sign = (int)(l >>> 63) ;
+    	int  exp  = (int)((l & expMaskDouble) >>> szmant) ;
+    	long mant = (l & mantMaskDouble) ;
+    	if ( l != 0 ) {
+    		mant |= 1L << szmant ;
+    		for ( ; (mant & 1) == 0 ; mant >>>= 1, szmant-- ) {}
+    		exp -= biasExpDouble + szmant ;
+    	}
+    	if ( sign > 0 ) { mant = -mant ; }
+    	System.out.println("primDecodeDouble " + v + "=" + mant + "^" + exp) ;
+    	return new Object[] {BigInteger.valueOf(mant), new Integer(exp)} ;
+    }
+    
+    public static Object primDecodeFloat( float v ) {
+    	int szmant = szMantFloat ;
+    	int  l = Float.floatToIntBits( v ) ;
+    	int  sign = (int)(l >>> 31) ;
+    	int  exp  = (int)((l & expMaskFloat) >>> szmant) ;
+    	int  mant = (l & mantMaskFloat) ;
+    	if ( l != 0 ) {
+    		mant |= 1 << szmant ;
+    		for ( ; (mant & 1) == 0 ; mant >>>= 1, szmant-- ) {}
+    		exp -= biasExpFloat + szmant ;
+    	}
+    	if ( sign > 0 ) { mant = -mant ; }
+    	System.out.println("primDecodeFloat " + v + "=" + mant + "^" + exp) ;
+    	return new Object[] {BigInteger.valueOf(mant), new Integer(exp)} ;
+    }
+    
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Inverse of decoding
+     */
+    public static double primEncodeDouble( BigInteger mant, int exp ) {
+    	long l = Double.doubleToLongBits( mant.doubleValue() ) ;
+    	long expl  = (l & expMaskDouble) >>> szMantDouble ;
+    	double res = Double.longBitsToDouble( (l & (~expMaskDouble)) | (((expl + exp) & 0x7ff) << szMantDouble) ) ;
+    	// System.out.println("primEncodeDouble " + res + "=" + mant + "^" + exp) ;
+    	return res ;
+    }
+
+    public static float primEncodeFloat( BigInteger mant, int exp ) {
+    	int l = Float.floatToIntBits( mant.floatValue() ) ;
+    	int expl  = (l & expMaskFloat) >>> szMantFloat ;
+    	float res = Float.intBitsToFloat( (l & (~expMaskFloat)) | (((expl + exp) & 0xff) << szMantFloat) ) ;
+    	// System.out.println("primEncodeFloat " + res + "=" + mant + "^" + exp) ;
+    	return res ;
+    }
+%%]
+    
+%%[(97 jazy)
+    public static Object primIsDenormalizedDouble( double v ) {
+    	long l = Double.doubleToLongBits( v ) ;
+    	return RTS.mkBool( (l & expMaskDouble) == 0L ) ;
+    }
+
+    public static Object primIsDenormalizedFloat( float v ) {
+    	int l = Float.floatToIntBits( v ) ;
+    	return RTS.mkBool( (l & expMaskFloat) == 0 ) ;
+    }
+%%]
+    
+%%[(97 jazy)
+    public static Object primIsNegativeZeroFloat( float v ) {
+    	return RTS.mkBool( Float.floatToIntBits( v ) == signMaskFloat ) ;
+    }
+
+    public static Object primIsNegativeZeroDouble( double v ) {
+    	return RTS.mkBool( Double.doubleToLongBits( v ) == signMaskDouble ) ;
+    }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * The various constants for sizes
+     */
+    public static int primDigitsDouble( ) { return szMantDouble + 1 ; } ;
+    public static int primMinExpDouble( ) { return 2 - biasExpDouble ; } ;
+    public static int primMaxExpDouble( ) { return biasExpDouble + 1 ; } ;
+
+    public static int primDigitsFloat( ) { return szMantFloat + 1 ; } ;
+    public static int primMinExpFloat( ) { return 2 - biasExpFloat ; } ;
+    public static int primMaxExpFloat( ) { return biasExpFloat + 1 ; } ;
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Float: arithmetic
+     */
+    public static float primAddFloat( float v1, float v2 ) { return v1 + v2 ; }
+    public static float primSubFloat( float v1, float v2 ) { return v1 - v2 ; }
+    public static float primMulFloat( float v1, float v2 ) { return v1 * v2 ; }
+    public static float primDivFloat( float v1, float v2 ) { return v1 / v2 ; }
+    
+    public static float primNegFloat( float v1 ) { return -v1 ; }
+    
+    // todo: NaN, IEEE, max exp, encode, decode, etc
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Float: comparison
+     */
+    public static Object primEqFloat( float v1, float v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primLtFloat( float v1, float v2 ) { return RTS.mkBool(v1 < v2) ; }
+    public static Object primGtFloat( float v1, float v2 ) { return RTS.mkBool(v1 > v2) ; }
+    
+    public static Object primCmpFloat( float v1, float v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Various properties
+     */
+    public static Object primIsNaNFloat( float v1 ) { return RTS.mkBool( Float.isNaN( v1 ) ) ; }
+    public static Object primIsInfiniteFloat( float v1 ) { return RTS.mkBool( Float.isInfinite( v1 ) ) ; }
+    // public static float primDigitsFloat() { return RTS.False ; }
+    
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Float: sin, etc
+     */
+    public static float primSinFloat ( float v1 ) { return (float)Math.sin ((double)v1) ; }
+    public static float primCosFloat ( float v1 ) { return (float)Math.cos ((double)v1) ; }
+    public static float primTanFloat ( float v1 ) { return (float)Math.tan ((double)v1) ; }
+    public static float primAsinFloat( float v1 ) { return (float)Math.asin((double)v1) ; }
+    public static float primAcosFloat( float v1 ) { return (float)Math.acos((double)v1) ; }
+    public static float primAtanFloat( float v1 ) { return (float)Math.atan((double)v1) ; }
+    public static float primExpFloat ( float v1 ) { return (float)Math.exp ((double)v1) ; }
+    public static float primLogFloat ( float v1 ) { return (float)Math.log ((double)v1) ; }
+    public static float primSqrtFloat( float v1 ) { return (float)Math.sqrt((double)v1) ; }
+
+    public static float primAtan2Float( float v1, float v2 ) { return (float)Math.atan2((double)v1, (double)v2) ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Double
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 jazy)
+    /**
+     * Double: arithmetic
+     */
+    public static double primAddDouble( double v1, double v2 ) { return v1 + v2 ; }
+    public static double primSubDouble( double v1, double v2 ) { return v1 - v2 ; }
+    public static double primMulDouble( double v1, double v2 ) { return v1 * v2 ; }
+    public static double primDivDouble( double v1, double v2 ) { return v1 / v2 ; }
+    
+    public static double primNegDouble( double v1 ) { return -v1 ; }
+    
+    // todo: NaN, IEEE, max exp, encode, decode, etc
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Double: comparison
+     */
+    public static Object primEqDouble( double v1, double v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primLtDouble( double v1, double v2 ) { return RTS.mkBool(v1 < v2) ; }
+    public static Object primGtDouble( double v1, double v2 ) { return RTS.mkBool(v1 > v2) ; }
+    
+    public static Object primCmpDouble( double v1, double v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Various properties
+     */
+    public static Object primIsNaNDouble( double v1 ) { return RTS.mkBool( Double.isNaN( v1 ) ) ; }
+    public static Object primIsInfiniteDouble( double v1 ) { return RTS.mkBool( Double.isInfinite( v1 ) ) ; }
+    
+%%]
+
+%%[(97 jazy)
+    /**
+     * Double: sin, etc
+     */
+    public static double primSinDouble ( double v1 ) { return Math.sin (v1) ; }
+    public static double primCosDouble ( double v1 ) { return Math.cos (v1) ; }
+    public static double primTanDouble ( double v1 ) { return Math.tan (v1) ; }
+    public static double primAsinDouble( double v1 ) { return Math.asin(v1) ; }
+    public static double primAcosDouble( double v1 ) { return Math.acos(v1) ; }
+    public static double primAtanDouble( double v1 ) { return Math.atan(v1) ; }
+    public static double primExpDouble ( double v1 ) { return Math.exp (v1) ; }
+    public static double primLogDouble ( double v1 ) { return Math.log (v1) ; }
+    public static double primSqrtDouble( double v1 ) { return Math.sqrt(v1) ; }
+
+    public static double primAtan2Double( double v1, double v2 ) { return Math.atan2(v1, v2) ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Char
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+    /**
+     * Char: comparison
+     */
+    public static Object primEqChar( char v1, char v2 ) { return RTS.mkBool(v1 == v2) ; }
+    public static Object primLtChar( char v1, char v2 ) { return RTS.mkBool(v1 < v2) ; }
+    public static Object primGtChar( char v1, char v2 ) { return RTS.mkBool(v1 > v2) ; }
+    
+    public static Object primCmpChar( char v1, char v2 ) {
+    	if (v1 < v2) {
+    		return RTS.LT ;
+    	} else if (v1 > v2) {
+    		return RTS.GT ;
+    	} else {
+    		return RTS.EQ ;
+    	}
+    }
+%%]
+    
+%%[(95 jazy)
+    /**
+     * Char: min/max value
+     */
+    public static char primMaxChar() { return 0 ; }
+    public static char primMinChar() { return 255 ; }
+%%]
+    
+%%[(95 jazy)
+    /**
+     * Char: predicates
+     */
+    public static Object primCharIsUpper( char v1 ) { return RTS.mkBool( Character.isUpperCase(v1) ) ; }
+    public static Object primCharIsLower( char v1 ) { return RTS.mkBool( Character.isLowerCase(v1) ) ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% String
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 jazy)
+    /**
+     * String unpacking
+     */
+    public static Object primPackedStringNull( String s ) { return RTS.mkBool( s.length() == 0 ) ; }
+    public static char primPackedStringHead( String s ) { return s.charAt(0) ; }
+    public static String primPackedStringTail( String s ) { return s.substring(1) ; }
+%%]
+    
+%%[(97 jazy)
+    /**
+     * Direct use of String (to construct other values)
+     */
+    public static Object packedStringToInteger( String s ) { return new BigInteger(s) ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Byte array
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(95 jazy)
+    public static int primByteArrayLength( byte[] a ) { return a.length ; }
+    // public static String primByteArrayToString( byte[] a ) { return new String(a) ; }
+    public static byte[] primStringToByteArray( Object s, int len ) {
+    	Object s2 = s ;
+    	int len2 = 0 ;
+    	for ( ; len2 < len ; len2++ ) {
+    		Data l = (Data)(Eval.eval(s2)) ;
+    		if ( RTS.isNil(l) )
+    			break ;
+    		s2 = l.toTuple()[1] ;
+    	}
+    	
+    	byte[] res = new byte[len2] ;
+    	s2 = s ;
+    	for ( int i = 0 ; i < len2 ; i++ ) {
+    		Data l = (Data)(Eval.eval(s2)) ;	// maybe still some indirections
+    		Object[] t = l.toTuple() ;
+    		res[i] = (byte)((Character)(Eval.eval(t[0]))).charValue() ;
+    		s2 = t[1] ;
+    	}
+    	
+    	return res ;
+    }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Show
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(95 jazy)
+    public static String primShowIntegerToPackedString( BigInteger v1 ) {
+    	return v1.toString() ;
+    }
+%%]
+    
+%%[(95 jazy)
+    public static String primShowFloatToPackedString( float v1 ) {
+    	return Float.toString(v1) ;
+    }
+
+    public static String primShowDoubleToPackedString( double v1 ) {
+    	return Double.toString(v1) ;
+    }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exiting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(96 jazy)
+    public static int primExitWith( int code ) { System.exit(code) ; return code ; }
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Exception handling
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(96 jazy)
+    // todo
+%%]
+    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% IO
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(98 jazy)
+    // TBD: deal with exceptions
+    public static Handle primStdin() { return RTS.stdin ; }
+    public static Handle primStdout() { return RTS.stdout ; }
+    public static Handle primStderr() { return RTS.stderr ; }
+
+    public static Object primHPutByteArray( Handle h, byte[] b ) {
+    	try {
+    		h.out.write( b ) ;
+		} catch (IOException e) {
+		}
+    	return RTS.Unit ;
+    }
+
+    public static Object primHPutChar( Handle h, char c ) {
+    	try {
+    		h.out.write( c ) ;
+		} catch (IOException e) {
+		}
+    	return RTS.Unit ;
+    }
+%%]
+
+// not a nice solution the get to know something about file nr, but Java does not let you know this nr.
+%%[(98 jazy)
+    public static Object primHEqFileno( Handle h, int fileno ) {
+    	switch ( fileno ) {
+    		case 0 : return RTS.mkBool( System.in.equals( h.in ) ) ; 
+    		case 1 : return RTS.mkBool( System.out.equals( h.out ) ) ;
+    		case 2 : return RTS.mkBool( System.err.equals( h.out ) ) ;
+    		default : return RTS.False ;
+    	}
+    }
+%%]
+
+foreign import prim primOpenFileOrStd :: String -> IOMode -> Maybe Int -> Handle
+
+PRIM GB_NodePtr gb_primOpenFileOrStd( GB_NodePtr nmNd, GB_Word modeEnum, GB_NodePtr mbHandleNr )   
+{
+    /* mbHandleNr to be used only for std{in,out,err}, ignoring the opening mode. */
+	int nmSz = 0 ;
+	GB_Word mbHandleNrFromJust = 0 ;
+	GB_GC_SafeEnter ;
+	GB_GC_Safe4(mbHandleNrFromJust,nmNd,modeEnum,mbHandleNr) ;
+	GB_PassExc_GCSafe( gb_listForceEval( &nmNd, &nmSz ) ) ;
+	char* nm = alloca( nmSz + 1 ) ;
+	GB_PassExc_GCSafe( gb_copyCStringFromEvalString( nm, nmNd, nmSz ) ) ;	
+	nm[ nmSz ] = 0 ;
+
+	GB_PassExc_GCSafe( mbHandleNr = Cast( GB_NodePtr, gb_eval( Cast(GB_Word,mbHandleNr) ) ) ) ;
+	Bool mbHandleNrIsJust = False ;
+	if ( GB_NH_Fld_Tag(mbHandleNr->header) == GB_Tag_Maybe_Just ) {
+		mbHandleNrIsJust = True ;
+		GB_PassExc_GCSafe( mbHandleNrFromJust = gb_eval( mbHandleNr->content.fields[0] ) ) ;
+	}
+	
+	char *mode ;
+	Bool isText = True ;
+	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) ) {
+		mode = "r" ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadBinaryMode ) ) {
+		mode = "rb" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) ) {
+		mode = "w" ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteBinaryMode ) ) {
+		mode = "wb" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) ) {
+		mode = "r+" ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteBinaryMode ) ) {
+		mode = "r+b" ;
+		isText = False ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) ) {
+		mode = "a" ;
+	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendBinaryMode ) ) {
+		mode = "ab" ;
+		isText = False ;
+	}
+	
+	FILE *f = NULL ;
+	if ( mbHandleNrIsJust ) {
+		switch( GB_GBInt2Int( mbHandleNrFromJust ) ) {
+			case 0: f = stdin  ; break ;
+			case 1: f = stdout ; break ;
+			case 2: f = stderr ; break ;
+		}
+	} else {
+		f = fopen( nm, mode ) ;
+	}
+	if ( f == NULL )
+	{
+		GB_NodePtr ioe_handle ;
+		GB_Word    ioe_type ;
+		GB_NodePtr ioe_filename ;
+		GB_GC_Safe2_Zeroed(ioe_handle,ioe_filename) ;
+
+		GB_MkMaybeNothing( ioe_handle ) ;
+		GB_MkMaybeJust( ioe_filename, nmNd ) ;
+		
+		switch ( errno ) {
+			case ENODEV :
+			case ENOENT :
+				ioe_type = gb_DoesNotExist ;
+				break ;
+			case EPERM   :
+			case EACCES  :
+			case ENOTDIR :
+			case EMFILE :
+				ioe_type = gb_PermissionDenied ;
+				break ;
+			case EBUSY :
+				ioe_type = gb_AlreadyInUse ;
+				break ;
+			default :
+				ioe_type = gb_PermissionDenied ;
+				break ;
+		}
+
+		GB_GC_SafeLeave ;
+		return gb_intl_throwIOExceptionFromPrim( ioe_handle, ioe_type, ioe_filename, strerror( errno ) ) ;
+	}
+	
+	GB_NodePtr chan ;
+	GB_NodeAlloc_Chan_In(chan) ;
+	chan->content.chan.file = f ;
+	chan->content.chan.name = nmNd ;
+	chan->content.chan.isText = isText ;
+	
+	GB_GC_SafeLeave ;
+	return chan ;
+}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% MutVar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 jazy)
+	/*
+	 * Creation and modification of MutVar
+	 */
+	public static Object primNewMutVar  ( Object init, Object state ) { return new Object[] {state, new MutVar(init)} ; }
+	public static Object primReadMutVar ( Object mutVar, Object state ) { return new Object[] {state, ((MutVar)mutVar).value} ; }
+	public static Object primWriteMutVar( Object mutVar, Object newVal, Object state ) { ((MutVar)mutVar).value = newVal ; return state ; }
+	public static Object primSameMutVar ( Object v1, Object v2 ) { return RTS.mkBool( v1 == v2 ) ; }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% System
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 jazy)
+    // todo
+%%]
+    
+
+%%[(8 jazy)
+}
+
+%%]

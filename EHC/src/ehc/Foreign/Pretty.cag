@@ -1,0 +1,48 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Foreign pretty print
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94 hs module {%{EH}Foreign.Pretty} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Foreign}) 
+%%]
+
+%%[94.WRAPPER ag import({Foreign/AbsSyn})
+WRAPPER ForeignAGItf
+%%]
+
+%%[94 hs export(ppForeignEnt)
+ppForeignEnt :: ForeignEnt -> PP_Doc
+ppForeignEnt ent
+  =  let  t =  wrap_ForeignAGItf
+                 (sem_ForeignAGItf (ForeignAGItf_AGItf ent))
+                 Inh_ForeignAGItf
+     in   pp_Syn_ForeignAGItf t
+
+instance PP ForeignEnt where
+  pp t = ppForeignEnt t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Foreign entity
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+ATTR ForeignAGItf AllForeign [ | | pp: PP_Doc ]
+
+SEM PlainCall
+  | Id          lhs     .   pp      =   pp @nm
+
+SEM CCall
+  | Id          lhs     .   pp      =   (if @isStatic then pp "static" else empty)
+                                        >#< (maybe empty pp @mbInclude)
+                                        >#< (if @asPointer then pp "&" else empty)
+                                        >#< @nm
+  | Wrapper     lhs     .   pp      =   pp "wrapper"
+  | Dynamic     lhs     .   pp      =   pp "dynamic"
+  | Empty       lhs     .   pp      =   empty
+%%]
+

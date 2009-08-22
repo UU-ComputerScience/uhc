@@ -1,0 +1,4 @@
+let id :: forall a . a -> a = \x -> x
+  ; v1 = id 3
+  ; v2 = id 'c'
+in  v2

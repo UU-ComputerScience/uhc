@@ -1,0 +1,103 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to forceEval on GrinCode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen grin) hs module {%{EH}GrinCode.Trf.ForceEval} import(qualified Data.Map as Map, {%{EH}Base.Common},{%{EH}Base.ForceEval},{%{EH}GrinCode})
+%%]
+
+%%[(99 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
+WRAPPER GrModule GrExpr GrTag
+
+PRAGMA strictcase
+%%]
+
+%%[(99 codegen grin) hs
+grmodForceEval :: GrModule -> GrModule
+grmodForceEval grmod | trf_Syn_GrModule t `seq` True = grmod
+  where t = wrap_GrModule (sem_GrModule grmod)
+            $ Inh_GrModule
+
+%%]
+
+%%[(99 codegen grin) hs
+instance ForceEval GrModule where
+  forceEval x | trf_Syn_GrModule t `seq` True = x
+              where t = wrap_GrModule (sem_GrModule x)
+                        $ Inh_GrModule
+
+instance ForceEval GrExpr where
+  forceEval x | trf_Syn_GrExpr t `seq` True = x
+              where t = wrap_GrExpr (sem_GrExpr x)
+                        $ Inh_GrExpr
+
+instance ForceEval GrTag where
+  forceEval x | trf_Syn_GrTag t `seq` True = x
+              where t = wrap_GrTag (sem_GrTag x)
+                        $ Inh_GrTag
+%%]
+
+%%[(99 codegen grin) hs
+instance ForceEval GrInl where
+  forceEval i@(GrInl_Call a e) | forceEval a `seq` forceEval e `seq` True = i
+  forceEval i@(GrInl_CAF    e) | forceEval e `seq` True = i
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ForceEval over structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen grin)
+ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
+
+SEM GrModule
+  | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @tagsMp `seq` @globalL.trf `seq` @bindL.trf
+
+SEM GrGlobal
+  | Global			lhs		.	trf			=	forceEval @nm `seq` @val.trf
+
+SEM GrBind
+  | Bind			lhs		.	trf			=	forceEval @nm `seq` forceEval @argNmL `seq` @expr.trf
+
+SEM GrExpr
+  | UpdateUnit		lhs		.	trf			=	forceEval @nm `seq` @val.trf
+  | FetchNode Eval Throw
+  					lhs		.	trf			=	forceEval' @nm
+  | FetchUpdate		lhs		.	trf			=	forceEval @src `seq` forceEval' @dst
+  | FetchField		lhs		.	trf			=	forceEval @nm `seq` forceEval @offset `seq` forceEval' @mbTag
+  | Call			lhs		.	trf			=	forceEval @nm `seq` @argL.trf
+%%[[8
+  | FFI				lhs		.	trf			=	forceEval @nm `seq` @argL.trf
+%%][94
+  | FFI				lhs		.	trf			=	forceEval @callconv `seq` forceEval @impEnt `seq` @argL.trf
+%%]]
+  | App				lhs		.	trf			=	forceEval @nm `seq` @argL.trf
+  | Catch			lhs		.	trf			=	forceEval @arg `seq` @body.trf `seq` @handler.trf
+
+SEM GrVal
+  | LitInt			lhs		.	trf			=	forceEval' @int
+  | LitStr			lhs		.	trf			=	forceEval' @str
+  | Var				lhs		.	trf			=	forceEval' @nm
+  | NodeAdapt		lhs		.	trf			=	forceEval @nm `seq` @fldL.trf
+
+SEM GrVar
+  | Var				lhs		.	trf			=	forceEval' @nm
+
+SEM GrPatAlt
+  | LitInt			lhs		.	trf			=	forceEval' @int
+  | Node			lhs		.	trf			=	forceEval @fldL `seq` @tag.trf
+  | NodeSplit		lhs		.	trf			=	forceEval @nm `seq` @tag.trf `seq` @fldL.trf
+
+SEM GrPatLam
+  | Var				lhs		.	trf			=	forceEval' @nm
+
+SEM GrSplit
+  | Sel				lhs		.	trf			=	forceEval @nm `seq` @off.trf
+
+%%]
+

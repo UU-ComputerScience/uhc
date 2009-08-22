@@ -1,0 +1,306 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER SilModule
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}Silly.EmbedVars} export(embedVars)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Silly})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin) hs
+embedVars :: EHCOpts -> SilModule -> SilModule
+embedVars options input   
+  = let t = wrap_SilModule (sem_SilModule input)
+                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
+                                                                then options{ ehcOptOwn = 0 }
+                                                                else options
+                                          } 
+                           )
+    in trf_Syn_SilModule t
+%%]
+
+%%[(8 codegen grin)
+
+ATTR SilModule   [ opts : {EHCOpts} | | ]
+ATTR AllNT [ | | trf: SELF ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
+ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
+ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
+ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
+ATTR Function Functions 
+     Statement Statements Alternative Alternatives Value Values Variable [ optOwn  : {Int}  | | ]
+
+SEM SilModule
+  | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
+
+
+%%]
+
+%%[(8 codegen grin)
+SEM Statements
+  | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
+
+SEM Statement
+  | Smart     lhs . trf      = Statement_Comment ["Smart"]
+  | Smart     lhs . trfStats = let dp = @lhs.distance+ @lhs.numberParameters
+                                   smartTups = zip [dp+1,dp ..] @vals.trf
+                                in smartAssignment smartTups
+  | * - Smart lhs . trfStats = [@loc.trf]
+  
+
+
+SEM Function
+  | Function  lhs . trf    =  Function_Function @name
+                                                @tailJumps
+                                                -- parameters
+                                                (if @lhs.optOwn>=1 then [] else @parameters)
+                                                -- locals
+                                                (if @lhs.optOwn>=2
+                                                 then [] 
+                                                 else if @lhs.optOwn>=1 then @loc.newlocals ++ @parameters else @loc.newlocals
+                                                )
+                                                -- body
+                                                (  (if   @lhs.optOwn==1 && not (null @parameters)
+                                                    then Statement_Comment ["Parameters"]
+                                                         : zipWith Statement_Assignment
+                                                                   (map (Variable_Param undefined) @parameters)
+                                                                   (map (Value_Var . Variable_Subs Variable_SP) [2..])
+                                                    else []
+                                                   )
+                                                ++ (if   @lhs.optOwn>=1
+                                                    then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.distance))
+                                                         ]
+                                                    else []
+                                                   )
+                                                ++ @body.trf
+                                                )
+                                                
+SEM Function
+  | Function  body . numberParameters = length @parameters
+              loc  . distance = maxNeededLocal @body.localsSet @body.embedMap + @loc.roomForCcalls
+              loc  . roomForCcalls= 2
+              loc  . newlocals  =  Set.toList (Set.difference @body.localsSet (Set.fromList @parameters))
+              body . embedMap = Map.fromList (zipWith (makeEmbedTupel Variable_Param) [1..] @parameters)
+
+
+ATTR Variable [ | | unembeddedName : {Maybe HsName} ]
+SEM Variable
+  | Unembedded   lhs.unembeddedName = Just @name
+  | *-Unembedded lhs.unembeddedName = Nothing
+
+SEM Statement
+  | Assignment
+    Assignment2 loc . embedMap : EmbedMap
+                loc . embedMap = maybe @lhs.embedMap
+                                       (\name@(HNmNr nr _) -> if    Map.member nr @lhs.embedMap
+                                                              then  @lhs.embedMap
+                                                              else  let newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
+                                                                        newvar = Variable_Local newint name
+                                                                    in  -- trace ("new local: " ++ show newvar ) $
+                                                                        Map.insert nr newvar @lhs.embedMap
+                                       )
+                                       @dest.unembeddedName
+  
+{
+maxNeededLocal :: Set.Set HsName -> EmbedMap -> Int
+maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m , Set.member v s ]
+                     in  if null ns then 0 else maximum ns
+}
+
+
+
+SEM Function
+  | Function       body . neededSet = Set.empty
+  
+SEM Statements
+  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+SEM Alternatives
+  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+
+SEM Variable
+  | Unembedded      lhs . localsSet = case @name of
+                                       HNmNr _ (OrigGlobal _) -> Set.empty
+                                       _                      -> Set.singleton @name
+  | *-Unembedded    lhs . localsSet = Set.empty
+
+SEM Variable
+  | Unembedded      lhs . usedSet = Set.singleton @name
+
+
+SEM Variable
+  | Unembedded   lhs.trf = (if @lhs.optOwn>=2 then (embed2 @lhs.distance) else embed) @lhs.embedMap @name
+
+SEM Variable
+  | Subs         lhs.trf = if @array.trf==Variable_BP
+                            then Variable_Subs Variable_SP (@index + @lhs.distance)
+                            else Variable_Subs @array.trf @index
+
+SEM Value
+  | Offset       lhs.trf = if @var.trf==Variable_BP
+                            then Value_Offset Variable_SP (@off + @lhs.distance)
+                            else Value_Offset @var.trf @off
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Embedding of parameters and local variables on the stack
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+type EmbedMap = Map.Map Int Variable
+type EmbedFunction = HsName->Variable
+
+makeEmbedTupel :: (Int->HsName->Variable) -> Int -> HsName -> (Int,Variable)
+makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k x)
+
+embed :: EmbedMap -> EmbedFunction
+embed m x@(HNmNr n _) = if n==0
+                         then Variable_None
+                         else maybe (Variable_Global x)
+                                    id
+                                    (Map.lookup n m)
+
+embed2 :: Int -> EmbedMap -> EmbedFunction
+embed2 d m x@(HNmNr n _) = if n==0
+                            then Variable_None
+                            else maybe (Variable_Global x)
+                                       (\v -> case v of
+                                                Variable_Local n _ -> Variable_Subs Variable_SP (d+0-n)
+                                                Variable_Param n _ -> Variable_Subs Variable_SP (d+1+n)
+                                       )
+                                       (Map.lookup n m)
+
+--showEmbedPair :: Int -> HptMap -> (Int,Variable) -> String
+--showEmbedPair d h (i, Variable_Param n name) = "Param " ++ show n ++ " \t" ++ postPad 12 (hsnShowAlphanumeric name) ++ "\tSP[" ++ show (d+1+n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"
+--showEmbedPair d h (i, Variable_Local n name) = "Local " ++ show n ++ " \t" ++ postPad 12 (hsnShowAlphanumeric name) ++ "\tSP[" ++ show (d+0-n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"
+
+postPad n s = let w = length s
+              in  if w>=n then s else s ++ replicate (n-w) ' '
+                  
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The Smart Assignation strategy (probably reinvented a topological sort algorithm here)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+type EIV = Either Int Value
+data SmartTree = SmartTree EIV [(SmartTree,Maybe Int)]
+       deriving Show
+
+smartAssignment :: [(Int,Value)] -> [Statement]
+smartAssignment = concat . map smartAss . foldr smartAdd [] . convertTups
+{-
+smartAssignment tups = let convs  = trace ("smart tups=" ++ show tups)  $ convertTups tups
+                           trees  = trace ("smart convs="++ show convs) $ foldr smartAdd [] convs
+                           statss = trace ("smart trees="++ show trees) $ map smartAss trees
+                           res    = trace ("smart stats="++ show statss)$ concat statss
+                       in  res
+-}
+
+isJust Nothing = False
+isJust (Just _)= True
+
+convertTups :: [(Int,Value)] -> [(EIV,Maybe Int,Int)]
+convertTups tups = [ (dependency, mbindex, destination) 
+                   | (destination, value) <- tups
+                   , let (dependency,mbindex) = smartDep value
+                   , either (\dep->dep/=destination || isJust mbindex) (\v->True) dependency
+                   ]
+
+smartDep :: Value -> (EIV,Maybe Int)
+smartDep (Value_Var (Variable_Subs Variable_SP n)) = (Left n,Nothing)
+smartDep (Value_Var (Variable_Subs (Variable_Subs Variable_SP n) k)) = (Left n,Just k)
+smartDep v = (Right v,Nothing)
+
+-- single out the tree that has n as its root, or make a new tree
+smartFind :: EIV -> [SmartTree] -> (SmartTree, [SmartTree])
+smartFind n [] =  (SmartTree n [], [])
+smartFind n (t@(SmartTree r ks):ts)
+  | n==r       =  (t, ts)
+  | otherwise  =  let (t2,ts2) = smartFind n ts
+                  in (t2, t:ts2)
+
+smartAdd :: (EIV,Maybe Int,Int) -> [SmartTree] -> [SmartTree]
+smartAdd p@(dep,mbi,dest) ts = let (found,ts2) = smartFind (Left dest) ts
+                                   (rs,b) = smartIns (dep,found,mbi) ts2
+                               in  if b
+                                   then rs
+                                   else (SmartTree dep [(found,mbi)]) : ts2
+                           
+                           
+smartInsert :: (EIV,SmartTree,Maybe Int) -> SmartTree -> (SmartTree,Bool)
+smartInsert p@(dep,found,mbi) t@(SmartTree root kids)
+ | dep==root  =  (SmartTree root ((found,mbi):kids), True)
+ | otherwise  =  let (kids2,mbis2) = unzip kids
+                     (rs,b) = smartIns p kids2
+                 in  if b
+                     then (SmartTree root (zip rs mbis2), True)
+                     else (t                            , False)
+                    
+smartIns :: (EIV,SmartTree,Maybe Int) -> [SmartTree] -> ([SmartTree],Bool)
+smartIns p ts = foldr f ([],False) ts
+  where f t (rs,True) = (t:rs, True)
+        f t (rs,False) = let (r,b) = smartInsert p t
+                         in  (r:rs, b)
+       
+smartElems :: SmartTree -> [Int]
+smartElems (SmartTree (Left n) [])   = [n]
+smartElems (SmartTree (Left n) kids) = n : concat (map smartElems (map fst kids))
+
+
+auxVar = Variable_Aux
+auxVal = Value_Var auxVar
+
+smartAss :: SmartTree -> [Statement]
+smartAss t@(SmartTree root kids) 
+  =  either
+     (\n -> if  n `elem` concat (map smartElems (map fst kids))
+            then Statement_Assignment auxVar (Value_Var (Variable_Subs Variable_SP n))
+                 : concat (map (smartChain (mbsubs auxVar)) kids)
+            else concat (map (smartChain (mbsubs (Variable_Subs Variable_SP n))) kids)
+     )
+     (\v -> concat (map (smartChain (const v)) kids)
+     )
+     root
+  
+mbsubs :: Variable -> (Maybe Int -> Value)
+mbsubs var Nothing  = Value_Var var
+mbsubs var (Just i) = Value_Var (Variable_Subs var i)
+  
+smartChain :: (Maybe Int -> Value) -> (SmartTree,Maybe Int) -> [Statement]
+smartChain v (SmartTree (Left root) kids, mbindex) 
+   = concat (map (smartChain (mbsubs (Variable_Subs Variable_SP root))) kids) 
+     ++ [ Statement_Assignment (Variable_Subs Variable_SP root) 
+                               (v mbindex) 
+        ]
+
+       
+%%]

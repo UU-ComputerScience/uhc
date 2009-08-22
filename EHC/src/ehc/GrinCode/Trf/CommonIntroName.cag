@@ -1,0 +1,28 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common stuff related to name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllGrPat [ | | introNmL USE {++} {[]}: {[HsName]} ]
+
+SEM GrPatAlt
+  | Node        lhs         .   introNmL        =   @fldL
+%%[[10
+  | NodeSplit   lhs         .   introNmL        =   @nm : @fldL.introNmL
+%%]
+
+SEM GrPatLam
+  | Var         lhs         .   introNmL        =   [@nm]
+  | VarNode     lhs         .   introNmL        =   tail @fldL.introNmL
+  | BasicNode EnumNode BasicAnnot EnumAnnot PtrAnnot PtrNode OpaqueNode OpaqueAnnot
+                lhs         .   introNmL        =   [@nm]
+
+SEM GrVar
+  | Var         lhs         .   introNmL        =   [@nm]
+  | * - Var     lhs         .   introNmL        =   [ error "introNmL non-Var" ]
+%%]
+
+%%[(10 codegen grin)
+SEM GrSplit
+  | Sel         lhs         .   introNmL        =   [@nm]
+%%]

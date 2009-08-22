@@ -1,0 +1,56 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Adds annotations to a Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Adds an Ann node just above all type variables and type constructors.
+
+If the Ty is already annotated, it replaces the annotations with fresh
+ones, but the "ref" field set to the original annotation. Stacked
+annotations are reduced with preference for the lower one.
+
+%%[7_2 hs module {%{EH}Ty.Trf.InfuseAnn}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, Data.Map(Map), qualified Data.Map as Map)
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(infuseAnn)
+%%]
+
+
+%%[7_2 hs
+infuseAnn :: Map HsName (Annotation Ty) -> Ty -> UID -> (Ty, UID)
+infuseAnn tyConOverrule ty uid
+  = let inh = Inh_TyAGItf { tyConOverrule_Inh_TyAGItf = tyConOverrule, annUID_Inh_TyAGItf = uid }
+        syn = wrap_TyAGItf (sem_TyAGItf (TyAGItf_AGItf ty)) inh
+     in (annTy_Syn_TyAGItf syn, annUID_Syn_TyAGItf syn)
+%%]
+
+
+%%[7_2
+
+WRAPPER TyAGItf
+
+ATTR * - TyAGItf [|| annTy : SELF ]
+ATTR TyAGItf [|| annTy : Ty ]
+ATTR TyAGItf TyAGItf -> Ty [| annUID : UID |]
+ATTR TyAGItf TyAGItf -> Ty [ tyConOverrule : {Map HsName (Annotation Ty)} ||]
+ATTR Ty Ty->Ty [ maybeRefAnn : {Maybe (Annotation Ty)} ||]
+
+SEM TyAGItf
+  | AGItf        ty.maybeRefAnn = Nothing
+SEM Ty
+  | Ann          ty.maybeRefAnn = Just @ann
+
+SEM Ty
+  | Ann          lhs.annTy = @ty.annTy
+  | Con Var Any  (lhs.annUID, loc.annId) = mkNewUID @lhs.annUID
+                 loc.annNew = (Annotation @loc.annId Nothing @lhs.maybeRefAnn :: Annotation Ty)
+                 lhs.annTy  = Ty_Ann @loc.ann @loc.annTy
+  | Var Any      loc.ann    = @loc.annNew
+  | Con          loc.ann    = maybe @loc.annNew id (Map.lookup @nm @lhs.tyConOverrule)
+
+%%]

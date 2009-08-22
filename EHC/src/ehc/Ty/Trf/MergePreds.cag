@@ -1,0 +1,256 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Merge preds into positions indicated by Impls
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+MergePreds gets a set of predicates and places those predicates
+\begin{itemize}
+\item at places indicated by Impls, where implicit parameters are (still) expected,
+\item as deeply nested as possible w.r.t. '->', i.e. function structure,
+\item and just before the location where all tyvars of the predicate occur.
+\end{itemize}
+
+After merging predicates we need to know the new type, returned in a TyMergePredOut.
+This info is also returned in the form of a VarMp, the substitution required to get that type out of the original type.
+
+Merging predicates is necessary because of type inference, where we find out required context to be received by and passed to a function.
+This is in particular is tricky if it involves a function without signature, recursively used. At call sites we then do not know
+what the context to be passed will be. To solve this, each possible location for context passing at a call site gets an identifier
+(the @proveOccs attribute of Impls_Tail), which is later on used to patch with the tmpoImplsPrvReq result returned in TyMergePredOut.
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.MergePreds} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import(EH.Util.Pretty)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG},{Ty/TyVarCommon})
+WRAPPER TyAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Ty merge preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs export(tyMergePreds)
+tyMergePreds :: [PredOcc] -> Ty -> TyMergePredOut
+tyMergePreds prL ty
+  = let  t  =  wrap_TyAGItf
+                  (sem_TyAGItf  (TyAGItf_AGItf ty))
+                  (Inh_TyAGItf  { prLL_Inh_TyAGItf          = [prL]
+                                })
+    in   TyMergePredOut
+            { tmpoTy                 = prTy_Syn_TyAGItf t
+            , tmpoInsPrIdSet         = insPrIdSet_Syn_TyAGItf t
+            , tmpoImplsVarMp         = assocImplsLToVarMp (prImpls_Syn_TyAGItf t)
+            , tmpoImplsPrvReq        = prvReqs_Syn_TyAGItf t
+            }
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs export(TyMergePredOut(..))
+type InsPrPrvOcc = Assoc PredOcc [ImplsProveOcc]
+type PrvReqs = [InsPrPrvOcc]
+
+data TyMergePredOut
+  = TyMergePredOut
+      { tmpoTy               ::  Ty
+      , tmpoInsPrIdSet       ::  Set.Set PredOccId
+      , tmpoImplsVarMp       ::  VarMp
+      , tmpoImplsPrvReq      ::  PrvReqs
+      }
+
+instance Show TyMergePredOut where
+  show _ = ""
+
+instance PP TyMergePredOut where
+  pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (assocLMapElt ppBracketsCommas $ tmpoImplsPrvReq tmpo)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Define hook, see Ty/TyVarCommon.ag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | *           loc         .   isQuLocExtraHook
+  											=   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of pol
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+SEM TyAGItf
+  | AGItf       ty          .   pol         =   polCovariant
+  				ty			.	frTvSL		<	ty.pol
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The implicit preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR Ty [ | | mbImpls: {Maybe Impls} ]
+
+SEM Ty
+  | Impls       lhs         .   mbImpls                 =   Just @impls.prTy
+  | App         lhs         .   mbImpls                 =   if @isArrowArg then @arg.mbImpls else Nothing
+  | * - App Impls
+                lhs         .   mbImpls                 =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Can predicates be inserted at location in ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR AllTy [ mbPrLoc: {Maybe Impls} | | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   mbPrLoc                 =   Nothing
+
+SEM Ty
+  | App         loc         .   (implsPrL,mbTail)       =   maybe ([],Nothing) implsPredsMbTail @func.mbImpls
+                arg         .   mbPrLoc                 =   @mbTail
+                func        .   mbPrLoc                 =   Nothing
+  | Var         loc         .   implsPrL                =   []
+  | * - App Var Con Any
+                loc         .   mbPrLoc                 =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Determine insertable preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+prLLArrowSplit :: TyVarIdS -> [[PredOcc]] -> ([PredOcc],[[PredOcc]])
+prLLArrowSplit frTvS prLL
+  =  let  (h,r) = partition (all (`Set.member` frTvS) . ftv) . concat $ prLL
+     in   (h,[r])
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ prLL: {[[PredOcc]]} | | ]
+
+SEM Ty
+  | Var         loc         .   (herePrL,_)             =   prLLArrowSplit @qSurrTvS @lhs.prLL
+  | App         (loc.herePrL,func.prLL,arg.prLL)        =   if @isSpineRoot
+                                                            then  if @appIsArrow
+                                                                  then  let  (h,r) = prLLArrowSplit (@frTvSL !! 1 `Set.union` @lhs.qSurrTvS) @lhs.prLL
+                                                                        in   (h,[],r)
+                                                                  else  let  (h,_) = prLLArrowSplit (@frTvS `Set.union` @lhs.qSurrTvS) @lhs.prLL
+                                                                        in   (h,[],[])
+                                                            else  ([],[],[])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pass preds up to pred insertable location
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+toInsPrPrvOcc :: [PredOcc] -> [ImplsProveOcc] -> [InsPrPrvOcc]
+toInsPrPrvOcc ps ipos = [ (p,ipos) | p <- ps ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR AllTy [ | | insPrL USE {++} {[]} : {[PredOcc]} ]
+
+SEM Ty
+  | App         loc         .   candPrL         =   @herePrL ++ @func.insPrL ++ @arg.insPrL
+  | Var         loc         .   candPrL         =   @herePrL
+  | App Var     (loc.insHerePrL,lhs.insPrL)     =   case @lhs.mbPrLoc of
+                                                      Just (Impls_Tail _ ipos)
+                                                        -> (toInsPrPrvOcc @candPrL ipos,[])
+                                                      _ -> ([],@candPrL) 
+                loc         .   forPrTyOccL     =   @implsPrL ++ @insHerePrL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Preds which have been inserted (from the given ones)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ | | insPrIdSet USE {`Set.union`} {Set.empty} : {Set.Set PredOccId} ]
+
+SEM Ty
+  | App Var     loc         .   insPrIdSet      =   Set.fromList (map (poPoi . fst) @insHerePrL)
+  | App         lhs         .   insPrIdSet      =   @insPrIdSet `Set.union` @func.insPrIdSet `Set.union` @arg.insPrIdSet
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional bindings for implicits variables
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+prOccLImpls :: Maybe Impls -> [InsPrPrvOcc] -> AssocL ImplsVarId Impls
+prOccLImpls mbI prL
+  = case mbI of
+      Just i -> [( implsTailVar i
+                 , foldr (\(p,_) im
+                             -> Impls_Cons (poId p) (poPr p) (poPoi p)
+%%[[99
+                                           (poRange p)
+%%]]
+                                           [] im
+                         ) Impls_Nil prL)]
+      _      -> []
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR TyAGItf [ | | prImpls: {AssocL ImplsVarId Impls} ]
+ATTR AllTy [ | prImpls: {AssocL ImplsVarId Impls} | ]
+
+SEM TyAGItf
+  | AGItf       ty          .   prImpls         =   []
+
+SEM Ty
+  | App         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls
+  | Var         lhs         .   prImpls         =   prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
+%%]
+  | App         lhs         .   prImpls         =   (if @isArrowRoot then prOccLImpls @lhs.mbPrLoc @insHerePrL else []) ++ @arg.prImpls
+  | App         lhs         .   prImpls         =   if @isSpineRoot
+                                                    then if @isArrowRoot
+                                                         then prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @arg.prImpls
+                                                         else prOccLImpls @lhs.mbPrLoc @insHerePrL ++ @lhs.prImpls
+                                                    else @arg.prImpls
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional prove requirements
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+prOccLPrvReqs :: Maybe Impls -> [InsPrPrvOcc] -> PrvReqs
+prOccLPrvReqs mbI prL = maybe [] (const prL) mbI
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ | | prvReqs USE {++} {[]}: PrvReqs ]
+
+SEM Ty
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL ++ @func.prvReqs ++ @arg.prvReqs
+  | Var         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc @insHerePrL
+%%]
+  | App         lhs         .   prvReqs         =   prOccLPrvReqs @lhs.mbPrLoc (if @isArrowRoot then @insHerePrL else []) ++ @arg.prvReqs
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicated type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR TyAGItf [ | | prTy: Ty ]
+ATTR AllTyAndFlds [ | | prTy: SELF ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | Var         lhs         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ Ty_Var @tv @categ.prTy
+  | App         loc         .   prTy            =   mkTyImpls (map (poPr . fst) @forPrTyOccL) $ maybe (Ty_App @func.prTy @arg.prTy) (const @arg.prTy) @func.mbImpls
+%%]

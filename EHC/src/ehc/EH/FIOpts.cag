@@ -1,0 +1,190 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Setup options to fitsIn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Setup the options fiOpts passed to fitsIn.
+This provides (amongst others) subsumption with the way subsumption should instantiate, bind, etc.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How to do subsumption
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer).fiOpts.init
+ATTR AllExpr AllPatExpr [ fiOpts: FIOpts | | ]
+
+SEM AGItf
+  | AGItf       expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was/from 4.fiOpts.init
+%%[(5 hmtyinfer).fiOpts.init
+SEM Expr
+  | AppImpred   func        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                loc         .  argFIOpts            =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                arg         .  fiOpts               =   @argFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]                
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.App
+%%[(5 hmtyinfer).fiOpts.init
+SEM Decl
+  | Val
+%%[[94
+    FFE
+%%]]
+                loc         .  exprFiOpts           =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                expr        .  fiOpts               =   @exprFiOpts
+  | Val         patExpr     .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.App
+%%[(5 hmtyinfer).fiOpts.init
+SEM Expr
+  | Lam         loc         .  knFunFIOpts          =   (@lhs.fiOpts { fioBindRFirst=True }) 
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+  | App         func        .  fiOpts               =   @lhs.fiOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                loc         .  argFIOpts            =   instLFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                arg         .  fiOpts               =   @argFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+  | TypeAs      loc         .   knTyFIOpts          =   strongFIOpts
+                            .   downFIOpts          =   strongFIOpts {fioBindLFirst = False}
+%%]
+
+-- 20070205 - AD, should be generated from ruler rules, but not yet is
+%%[(5 hmtyinfer)
+SEM Expr
+  | TypeAs      loc         .  asFiOpts             =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                expr        .  fiOpts               =   @asFiOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+%%[(5 hmtyinfer)
+ATTR AllCase [ fiOpts: FIOpts | | ]
+
+SEM Decl
+  | Val         expr        .  fiOpts               :=  (if @hasTySig then strongFIOpts else weakFIOpts)
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM CaseAlt
+  | Pat         patExpr     .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM Expr
+  | Case        expr        .  fiOpts               =   weakFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                loc         .  altsFiOpts           =   @lhs.fiOpts
+                                                          -- { fioBindRFirst = False }
+                alts        .  fiOpts               =   @altsFiOpts
+%%]
+
+%%[(7 hmtyinfer)
+ATTR DataFieldExpr [ fldFIOpts: FIOpts | | ]
+
+SEM RecExpr
+  | Ext         loc         .  knFIOpts             =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+                recExpr     .  fiOpts               =   @lhs.fiOpts {fioNoRLabElimFor = @nm : fioNoRLabElimFor @lhs.fiOpts}
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+  | Upd         loc         .  knFIOpts             =   strongFIOpts -- {fioNoRLabElimFor = [@nm]}
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+  | Ext Upd     expr        .  fiOpts               =   @lhs.fiOpts -- strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM Expr
+  | DataFields  loc         .  fldFIOpts            =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM DataFieldExpr
+  | Upd         expr        .  fiOpts               =   @lhs.fldFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM Expr
+  | Rec         loc         .  recFiOpts            =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | App         func        .  fiOpts               :=  implFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+
+SEM Decl
+  | InstanceIntro
+                expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+%%[(12 hmtyinfer)
+SEM Expr
+  | AppImpl     arg         .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+
+%%[(1010 hmtyinfer)
+SEM Decl
+  | DynVal      expr        .  fiOpts               =   strongFIOpts
+%%[[16
+                                                          { fioFitVarFailureToProveObl = True }
+%%]]
+%%]
+

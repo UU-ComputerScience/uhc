@@ -1,0 +1,146 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty print a type to HTML
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}Ty.PrettyHTML}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common},{%{EH}Base.Builtin}, {%{EH}Ty}, {%{EH}EH}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set), EH.Util.Pretty)
+%%]
+
+%%[7_2 hs import({%{EH}Base.HtmlCommon})
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(ppTyHTML)
+%%]
+
+%%[7_2 hs
+
+ppTyHTML :: (Annotation Ty -> PP_Doc) -> Ty -> PP_Doc
+ppTyHTML annPPF ty
+  = let itf = TyAGItf_AGItf ty
+        inh = Inh_TyAGItf { annPPF_Inh_TyAGItf = annPPF }
+        syn = wrap_TyAGItf (sem_TyAGItf itf) inh
+     in ppHTML_Syn_TyAGItf syn
+
+%%]
+
+
+%%[7_2
+
+WRAPPER TyAGItf
+
+ATTR TyAGItf AllTyTy [ annPPF : {Annotation Ty -> PP_Doc} || ppHTML USE {>#<} {empty} : {PP_Doc} ]
+
+SEM Ty
+  | Con    lhs.ppHTML = ppConHTML @lhs.annPPF @nm @lhs.ann @lhs.anns
+  | Any    lhs.ppHTML = pp "??"
+  | Var    lhs.ppHTML = ppVarHTML (Map.findWithDefault (if @categ.isFixed then "c_" ++ show @tv else "v_" ++ show @tv) @tv @lhs.tvarMap) (@lhs.annPPF @lhs.ann)
+  | Quant  lhs.ppHTML = ppQuantHTML (Map.findWithDefault (if @qu.isForall then "v_" ++ show @tv else "c_" ++ show @tv) @tv @lhs.tvarMap) @qu.isForall @ty.ppHTML
+  | App    loc.whatToPP = if @func.isOnArrSpine
+                          then if @func.isArrCon
+                               then @arg.ppHTML
+                               else ppArrowHTML (@lhs.annPPF @func.arrAnn) @func.ppHTML @arg.ppHTML
+                          else @loc.ppHTML
+           lhs.ppHTML = if @lhs.noParens
+                        then @loc.whatToPP
+                        else ppSymbolHTML "(" >|< @loc.whatToPP >|< ppSymbolHTML ")"
+           loc.ppHTML = @func.ppHTML >#< @arg.ppHTML
+  | Ext    lhs.ppHTML = if @lhs.isExtRoot
+                        then ppExtHTML @loc.extPPL
+                        else empty
+  | ExpTyCon
+           lhs.ppHTML = pp "[exp-tycon]"
+
+ATTR AllTyTy [|| isArrCon USE {||} {False} : Bool ]
+SEM Ty
+  | Con  lhs.isArrCon = @nm == hsnArrow
+  | App  lhs.isArrCon = False
+  | Ext  lhs.isArrCon = False
+
+ATTR AllTyTy [|| arrAnn USE {`const`} {error "EHTyPrettyHTML::none"} : {Annotation Ty} ]
+SEM Ty
+  | Ann  lhs.arrAnn = @ann
+
+ATTR AllTyTy [|| appPPL USE {++} {[]} : {[PP_Doc]} ]
+SEM Ty
+  | App  lhs.appPPL = if @loc.isAppRoot then [] else @loc.appPPL
+         loc.appPPL = @arg.ppHTML : @func.appPPL
+
+ATTR AllTyTy [|| extPPL USE {++} {[]} : {[(HsName, PP_Doc)]} ]
+SEM Ty
+  | Ext  lhs.extPPL = if @lhs.isExtRoot then [] else @loc.extPPL
+         loc.extPPL = (@nm, @extTy.ppHTML) : @ty.extPPL
+      
+ATTR AllTyTy [ noParens : Bool ||]
+SEM TyAGItf
+  | AGItf  loc.noParens = True
+SEM Ty
+  | App   func.noParens = False
+          arg.noParens = @func.isOnArrSpine
+  | Ext   loc.noParens = True
+  | Quant ty.noParens  = True
+
+ATTR AllTyTy [ isRHSOfApp : Bool ||]
+SEM TyAGItf
+  | AGItf  loc.isRHSOfApp = True
+SEM Ty
+  | App  func.isRHSOfApp = False
+         arg.isRHSOfApp  = True
+
+ATTR AllTyTy [|| isOnArrSpine USE {&&} {False} : Bool ]
+SEM TyAGItf
+  | AGItf  loc.isOnArrSpine = False
+SEM Ty
+  | App  lhs.isOnArrSpine = @func.isOnArrSpine
+  | Ext Var Any ExpTyCon
+      lhs.isOnArrSpine = False
+  | Con
+      lhs.isOnArrSpine = @nm == hsnArrow
+
+ATTR AllTyTy [ isAppRight : Bool  ||]
+SEM TyAGItf
+  | AGItf  loc.isAppRight = True
+SEM Ty
+  | App    func.isAppRight = False
+           arg.isAppRight  = True
+           loc.isAppRoot   = @lhs.isAppRight
+
+ATTR AllTyTy [ isExtRoot : Bool ||]
+SEM TyAGItf
+  | AGItf  loc.isExtRoot = True
+SEM Ty
+  | Ext  extTy.isExtRoot = True
+         ty.isExtRoot    = False
+
+ATTR AllTyTy [ ann : {Annotation Ty} anns : {Annotations Ty} ||]
+SEM TyAGItf
+  | AGItf  loc.ann  = error "EHTyPrettyHTML: No such annotation on root of program"
+           loc.anns = Set.empty
+SEM Ty
+  | Ann         loc.ann = @ann
+  | TruncTyCon  loc.anns = @anns
+
+ATTR TyQu [|| isForall : Bool ]
+SEM TyQu
+  | Forall      lhs.isForall = True
+  | * - Forall  lhs.isForall = False
+
+ATTR TyVarCateg [|| isFixed : Bool ]
+SEM TyVarCateg
+  | Plain  lhs.isFixed = False
+  | Fixed  lhs.isFixed = True
+
+ATTR AllTyTy [|| tvars USE {`Set.union`} {Set.empty} : {Set TyVarId} ]
+SEM Ty
+  | Quant  lhs.tvars = Set.insert @tv @ty.tvars
+
+ATTR AllTyTy [ tvarMap : {Map TyVarId String} ||]
+SEM TyAGItf
+  | AGItf
+      loc.tvarMap = Map.fromList (zip (Set.toList @ty.tvars) (map return ['a'..'z'] ++ [ "v" ++ show n | n <- [1..]]))
+
+%%]

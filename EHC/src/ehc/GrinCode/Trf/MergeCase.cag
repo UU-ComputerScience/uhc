@@ -1,0 +1,111 @@
+%%[doesWhat doclatex
+
+Merge two adjacent Case-expressions into one.
+The `identity' alternatives of the first are replaced by corresponding alternatives from the second.
+The `calling' alternatives of the first are kept, but now flagged as `reentrant' alternatives.
+
+%%]
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.SubstExpr})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MergeCase} export(mergeCase)
+
+mergeCase :: GrModule -> GrModule
+mergeCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                       (Inh_GrAGItf)
+                  in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR GrExpr [ | | mbIsCase : {Maybe GrExpr} mbStartsWithCase : {Maybe (GrExpr,GrPatLam,GrExpr)} ]
+
+SEM GrExpr
+  | Case       lhs.mbIsCase   =   Just @loc.grTrf
+  | * - Case   lhs.mbIsCase   =   Nothing
+  
+  | Seq        lhs.mbStartsWithCase  =  maybe Nothing
+                                              (\c -> Just (c, @pat.grTrf, @body.grTrf))  
+                                              @expr.mbIsCase
+  | * - Seq    lhs.mbStartsWithCase  =  Nothing
+                                    
+
+SEM GrExpr
+  | Seq        lhs.grTrf   =  maybe @loc.grTrf
+                                    (\(GrExpr_Case val1 alts1)
+                                         -> maybe (maybe @loc.grTrf
+                                                         (\(GrExpr_Case val2 alts2)
+                                                              -> if   patIsVal @pat.grTrf val2  &&  noNormalCases alts1
+                                                                 then combineCase val1 val2 alts1 alts2
+                                                                 else @loc.grTrf
+                                                         )
+                                                         @body.mbIsCase
+                                                  )
+                                                  (\(GrExpr_Case val2 alts2,pat2,rest2) 
+                                                       -> if   patIsVal @pat.grTrf val2  &&  noNormalCases alts1
+                                                          then let newcase = combineCase val1 val2 alts1 alts2
+                                                               in  GrExpr_Seq newcase pat2 rest2
+                                                          else @loc.grTrf
+                                                  )
+                                                  @body.mbStartsWithCase
+                                    )
+                                    @expr.mbIsCase
+                      
+
+%%]
+
+%%[(8 codegen grin) hs
+
+
+noNormalCases  :: [GrAlt] -> Bool
+noNormalCases alts
+ = null [ ()
+        | GrAlt_Alt GrAltAnnNormal  (GrPatAlt_Node tag _) _ <- alts
+        ]
+
+normalCasesAreNonfinal :: [GrAlt] -> Bool
+normalCasesAreNonfinal alts
+  =  and [ not (isFinalTag tag)
+         | GrAlt_Alt GrAltAnnNormal  (GrPatAlt_Node tag _) _ <- alts
+         ]
+
+combineCase :: GrVal -> GrVal -> [GrAlt] -> [GrAlt] -> GrExpr
+combineCase scrut@(GrVal_Var nm1) (GrVal_Var nm2) alts1 alts2 
+   = let -- remove Ident alternatives, and relabel Normal alternatives as Reenter
+         newalts1 = [ GrAlt_Alt (GrAltAnnReenter     ) pat (if a>0 then (unitUpdate expr nm) else expr)
+                    | GrAlt_Alt (GrAltAnnCalling a nm) pat expr <- alts1 
+                    ]
+         env = Map.singleton nm2 nm1
+     in  substExpr env (GrExpr_Case scrut (newalts1++alts2))
+
+patIsVal :: GrPatLam -> GrVal -> Bool
+patIsVal (GrPatLam_Var nm1) (GrVal_Var nm2) = nm1==nm2
+patIsVal _ _ = False
+
+unitUpdate :: GrExpr -> HsName -> GrExpr
+unitUpdate (GrExpr_Seq e p b) nm = GrExpr_Seq e p (unitUpdate b nm)
+unitUpdate (GrExpr_Unit v)    nm = GrExpr_UpdateUnit nm v
+unitUpdate e                  nm = e
+
+
+%%]

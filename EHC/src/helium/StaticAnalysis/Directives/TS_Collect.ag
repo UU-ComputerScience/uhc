@@ -1,0 +1,95 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+--
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- Collects information
+--
+-- (directives based on "Scripting the Type Inference Process", ICFP 2003)
+-----------------------------------------------------------------------------
+
+-- Collect all type variables 
+
+ATTR UserStatement UserStatements TypeRule Judgement SimpleJudgement SimpleJudgements 
+     Type Types [ | | typevariables USE { ++ } { [] } : Names ]
+
+SEM Type
+  | Variable  lhs . typevariables = [ @name.self ]
+
+SEM TypingStrategy
+  | TypingStrategy
+       loc . uniqueTypevariables = nub (@typerule.typevariables ++ @statements.typevariables)
+  
+ATTR UserStatement UserStatements TypeRule Judgement SimpleJudgement SimpleJudgements 
+     [ nameMap : {[(Name,Tp)]} | | ]
+     
+-- Construct type constraints from the constraint-set     
+
+ATTR UserStatement UserStatements [ | userConstraints : {TypeConstraints ConstraintInfo} 
+                                      userPredicates  : Predicates | ]
+
+SEM TypingStrategy 
+  | TypingStrategy
+       statements . userConstraints = []
+                  . userPredicates  = []
+       
+SEM UserStatement
+  | Equal 
+       lhs . userConstraints = @newConstraint : @lhs.userConstraints
+       loc . newConstraint   = (makeTpFromType @lhs.nameMap @leftType.self .==. makeTpFromType @lhs.nameMap @rightType.self) @lhs.standardConstraintInfo
+  | Pred
+       lhs . userPredicates = @newPredicate : @lhs.userPredicates
+       loc . newPredicate   = Predicate (show @predClass.self) (makeTpFromType @lhs.nameMap @predType.self)
+       
+-- Collect judgements in typerule
+
+ATTR SimpleJudgement SimpleJudgements TypeRule [ | simpleJudgements:{[(String,Tp)]} | ]
+
+SEM TypingStrategy
+  | TypingStrategy
+       typerule . simpleJudgements = []
+       
+SEM SimpleJudgement
+  | SimpleJudgement   
+       lhs . simpleJudgements = @newJudgement : @lhs.simpleJudgements       
+       loc . newJudgement  = (show @name.self, makeTpFromType @lhs.nameMap @type.self)
+                
+ATTR Judgement TypeRule [ | | conclusionType : Tp ]
+
+SEM Judgement
+  | Judgement   lhs . conclusionType = makeTpFromType @lhs.nameMap @type.self
+
+-- Collecting MetaVariableConstraints
+
+ATTR UserStatements UserStatement [ | metaVariableConstraintNames : Names | ]
+
+SEM TypingStrategy
+  | TypingStrategy
+       statements . metaVariableConstraintNames = []
+       
+SEM UserStatement    
+  | MetaVariableConstraints
+       lhs . metaVariableConstraintNames = @name.self : @lhs.metaVariableConstraintNames
+       
+SEM TypingStrategy 
+  | TypingStrategy  
+       loc . allMetaVariables     = map fst @typerule.simpleJudgements 
+           . constraintsNotExplicit = filter (`notElem` (map show @statements.metaVariableConstraintNames)) @allMetaVariables       
+
+ATTR UserStatements UserStatement [ standardConstraintInfo : ConstraintInfo
+                                    attributeTable : {[((String, Maybe String), MessageBlock)]} | | ]
+
+SEM TypingStrategy
+  | TypingStrategy
+       loc . standardConstraintInfo = standardConstraintInfo
+           . attributeTable         = [] 
+   
+--
+
+ATTR TypeRule  [ | | conclusionExpression:Expression ]
+ATTR Judgement [ | | theExpression:Expression ]
+           
+SEM TypeRule  | TypeRule   lhs . conclusionExpression = @conclusion.theExpression           
+SEM Judgement | Judgement  lhs . theExpression = @expression.self

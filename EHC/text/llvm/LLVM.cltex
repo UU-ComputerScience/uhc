@@ -1,0 +1,18 @@
+%%[title
+Compiling Haskell To LLVM
+%%]
+
+%%[main
+%%@LLVMChapterAbstract.chapter
+\tableofcontents
+%%@LLVMChapterIntroduction.chapter
+%%@LLVMChapterEHCPipeline.chapter
+%%@LLVMChapterLLVM.chapter
+%%@LLVMChapterNaive.chapter
+%%@LLVMChapterResults.chapter
+%%@LLVMChapterFutureWork.chapter
+%%@LLVMChapterConclusion.chapter
+\bibliography{main}
+\bibliographystyle{plain}
+\addcontentsline{toc}{chapter}{Bibliography}
+%%]

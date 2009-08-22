@@ -1,0 +1,160 @@
+-- ------------------------------------------------------------------------
+-- -- Modules                                                            --
+-- ------------------------------------------------------------------------
+
+
+{
+makeCoreModule name decls =
+    Module.Module
+        { Module.moduleName   =
+            case name of
+                Nothing -> idFromString "Main"
+                Just n -> n
+        , Module.moduleMajorVer = 0
+        , Module.moduleMinorVer = 0
+        , Module.moduleDecls    = decls
+        }
+
+interpreterMain = "interpreter_main"
+
+-- Unfortunately we need a hack for the interpreter
+-- The interpreter_main has te be wrapped inside unsafePerformIO etcetera, too
+-- We can't just call it main because we'll get import clashes.  Sigh!
+
+insertedMain :: TypeEnvironment -> CoreDecl
+insertedMain toplevelTypes =
+    let maybeWrapMainAndType = 
+            case M.lookup (Name_Identifier noRange [] "main") toplevelTypes of -- !!!Name
+                Just t -> Just ("main", t)
+                Nothing ->
+                    case M.lookup (Name_Identifier noRange [] interpreterMain) toplevelTypes of -- !!!Name
+                        Just t -> Just (interpreterMain, t)
+                        Nothing -> Nothing
+    in
+    decl False "main$" $
+        app_ unsafePIO $
+            case maybeWrapMainAndType of 
+                Nothing -> 
+                    var "$primPutStrLn" `app_` 
+                        (var "$primPackedToString" `app_`
+                            packedString "No 'main' function defined in this module")
+                Just (name, tpScheme)
+                    | not (null qs) ->
+                        var "$primPutStrLn" `app_` 
+                            (var "$primPackedToString" `app_`
+                                packedString "<<overloaded function>>")
+                    | isIOType tp -> 
+                        var name
+                    | otherwise ->
+                        var "$primPutStrLn" `app_` 
+                            (showFunctionOfType True (makeTypeFromTp tp) `app_` 
+                                var name)
+                    where                        
+                        (qs, tp) = split (snd (instantiate 123456789 tpScheme))
+    where
+        unsafePIO = var "$primUnsafePerformIO"    
+                
+}
+
+SEM Module
+    | Module    -- insert "insertedMain" after modulePublic so that it remains private
+                lhs.core = @module_ { Module.moduleDecls = 
+                                insertedMain @lhs.toplevelTypes : Module.moduleDecls @module_ }
+                loc.module_ = 
+
+                    everythingPublicButPrelude
+                        (makeCoreModule (fmap idFromName @name.name)
+                            ( @body.decls ++ @lhs.extraDecls
+                            ))
+
+{
+-- set the public bit of all declarations except those that are imported from
+-- Prelude or HeliumLang. I.e. export everything everywhere
+everythingPublicButPrelude :: Core.CoreModule -> Core.CoreModule
+everythingPublicButPrelude mod = mod { Core.moduleDecls = map setPublic (Core.moduleDecls mod) }
+  where
+    setPublic decl = 
+        let accessRecord = Core.declAccess decl
+            public = case Core.declAccess decl of 
+                    Core.Defined _ -> True
+                    Core.Imported { Core.importModule = m } -> 
+                        stringFromId m `notElem` ["Prelude", "HeliumLang"] 
+        in 
+        decl{ Core.declAccess = 
+                  (Core.declAccess decl){ Core.accessPublic = public } }
+}
+
+{-
+{
+-- Return all local value definitions that start with a '$' in the name
+localValuePrims :: [CoreDecl] -> IdSet
+localValuePrims cdecls
+  = setFromList [declName decl  | decl <- cdecls
+                                , isDeclValue decl
+                                , let name = stringFromId (declName decl)
+                                , not (null name)
+                                , head name == '$'
+                                ]
+                      
+}
+-}
+    --  range                    : Range
+    --  name                     : MaybeName
+    --  exports                  : MaybeExports
+    --  body                     : Body
+-- Since the parser cannot distinguish between types or constructors,
+-- or between types and type classes, we do not have different cases (yet?).
+
+ATTR Declarations Declaration
+    [   isTopLevel : Bool
+    |
+    |
+    ]   
+    
+
+ATTR MaybeExports Export Exports
+    [
+    |
+    | values, types, cons, mods USE { `unionSet` } { emptySet } : {IdSet}
+    ]
+
+SEM Export
+    | Variable               lhs.values = singleSet (idFromName @name.self)
+                                .types  = emptySet
+                                .cons   = emptySet
+                                .mods   = emptySet
+    --  range                    : Range
+    --  name                     : Name
+    | TypeOrClass            lhs.values = emptySet
+                                .types  = singleSet (idFromName @name.self)
+                                .cons   = setFromList (maybe [] (map idFromName) @names.names)
+                                .mods   = emptySet
+    --  range                    : Range
+    --  name                     : Name
+    --  names                    : MaybeNames  -- constructors or field names or class methods
+    | TypeOrClassComplete    lhs.values = internalError "ToCoreModule" "exports.tocc" "Unsupported export declaration"
+                                .types  = internalError "ToCoreModule" "exports.tocc" "Unsupported export declaration"
+                                .cons   = internalError "ToCoreModule" "exports.tocc" "Unsupported export declaration"
+                                .mods   = internalError "ToCoreModule" "exports.tocc" "Unsupported export declaration"
+    --  range                    : Range
+    --  name                     : Name
+    | Module                 lhs.values = emptySet
+                                .types  = emptySet
+                                .cons   = emptySet
+                                .mods   = singleSet (idFromName @name.self)
+    --  range                    : Range
+    --  name                     : Name   -- this is a module name
+
+ATTR Body Declarations Declaration
+    [ 
+    | 
+    |   decls USE { ++ } { [] } : { [CoreDecl] }
+    ]
+
+SEM Body
+    | Body             lhs.decls    = @declarations.decls
+                       declarations.patBindNr = 0
+                       declarations.isTopLevel = True
+    --  range                    : Range
+    --  importdeclarations       : ImportDeclarations
+    --  declarations             : Declarations

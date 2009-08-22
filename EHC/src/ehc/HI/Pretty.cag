@@ -1,0 +1,111 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 hs
+type PPSeq = Seq.Seq PP_Doc
+
+hiNVSq' :: String -> HsName -> PPSeq -> PPSeq
+hiNVSq' k n v = Seq.fromList [ pp k, ppForHI n, pp "=" ] `Seq.union` v
+
+hiNV' :: String -> HsName -> PP_Doc -> PPSeq
+hiNV' k n v = Seq.fromList [ pp k, ppForHI n, pp "=", v]
+
+hiNVSq :: String -> HsName -> [PPSeq] -> PPSeq
+hiNVSq k n v = hiNVSq' k n (Seq.singleton (pp "{") `Seq.union` (Seq.unions $ intersperse (Seq.singleton $ pp ";") $ v) `Seq.union` Seq.singleton (pp "}"))
+
+hiNV :: String -> HsName -> [PP_Doc] -> PPSeq
+hiNV k n v = hiNV' k n (ppCurlysSemisBlock v)
+%%]
+
+%%[20
+ATTR AGItf [ | | pp: PP_Doc ]
+ATTR AllNT [ | | ppSq USE {`Seq.union`} {Seq.empty} : PPSeq ]
+%%]
+
+%%[20
+SEM AGItf
+    | AGItf
+        lhs         .   pp          =   vlist $ Seq.toList @module.ppSq
+
+SEM Module
+    | Module
+        lhs         .   ppSq        =   hiNVSq "module" @nm @bindings.ppSqL
+
+SEM Binding
+    | Settings
+        lhs         .   ppSq        =   hiNV "settings" hsnUnknown [pp @hasMain]
+    | Stamp
+        lhs         .   ppSq        =   let ps :: Show a => a -> PP_Doc
+                                            ps = pp . show
+                                            pc :: PP a => a -> PP_Doc
+                                            pc = const empty -- ("--" >#<)
+                                        in  hiNV "stamp" hsnUnknown
+                                              [ ps @srcTimestamp        >#< pc "time of compiler build"
+                                              , ps @srcSig              >#< pc "cryptographic hash of compiler sources"
+                                              , ps @srcVersionMajor     >#< pc "version major"
+                                              , ps @srcVersionMinor     >#< pc "version minor"
+                                              , ps @srcVersionMinorMinor>#< pc "version minorminor"
+                                              , ps @srcVersionSvn       >#< pc "svn of compiler build"
+                                              , ps @compileFlags        >#< pc "compile flags of which difference implies recompile"
+                                              , ps @hash                >#< pc "hash for faster equality check of this info, not yet used"
+                                              ]
+    | Fixity
+        lhs         .   ppSq        =   hiNV "fixity" @nm [pp @prio,pp @fixity]
+    | ImportModules
+        lhs         .   ppSq        =   hiNV "importmodules" hsnUnknown [ppCurlysSemisBlock $ map (ppForHI) @asDeclared,ppCurlysSemisBlock $ map (ppForHI) @asUsed]
+    | Export
+        lhs         .   ppSq        =   hiNV "export" hsnUnknown [pp (show @visible),ppForHI @exports]
+    | Ids
+        lhs         .   ppSq        =   hiNV "iddef" hsnUnknown (map (\(o,d) -> ppCurlysSemisBlock [ppForHI o,ppForHI d]) @idOccs)
+%%[[(20 hmtyinfer)
+    | Val
+        lhs         .   ppSq        =   hiNV "value" @nm [ppForHI @ty]
+    | DataCon
+        lhs         .   ppSq        =   let ppCTag t = ppCommas [pp (ctagTag' t),pp (ctagArity t),pp (ctagMaxArity t)]
+                                            ppFldMp fm = [ ppForHI f >#< "=" >#< pp o | (f,o) <- fm ]
+                                        in  hiNV "data" @nm
+                                              [ ppForHI @ty
+                                              , ppCurlysSemisBlock
+                                                $ map (\(n,(t,fm)) -> ppForHI n >#< "=" >#< ppCurlysSemisBlock (ppCTag t : ppFldMp fm))
+                                                $ @tags
+%%[[20
+                                              , pp @isNewtype
+%%][94
+                                              , maybe empty ppForHI @mbNewtype
+%%]]
+                                              ]
+    | Ty
+        lhs         .   ppSq        =   hiNV "type" @nm [ppForHI @ty]
+    | TyKinds
+        lhs         .   ppSq        =   hiNV "tykind" hsnUnknown [ppCurlysSemisBlock [ppForHI t,ppForHI k] | (t,k) <- @tyKinds]
+    | TyPolarities
+        lhs         .   ppSq        =   hiNV "typolarity" hsnUnknown [ppCurlysSemisBlock [ppForHI n,ppForHI p] | (n,p) <- @tyPolarities]
+    | Class
+        lhs         .   ppSq        =   hiNV "class" @nm [ppForHI @prToEvidTy,ppForHI @ruleTy,ppForHI @nmEvid]
+    | CHRStore
+        lhs         .   ppSq        =   hiNV' "chrstore" hsnUnknown $ ppCurlysSemisBlock $ map ppForHI @chrs
+%%]]
+%%[[(20 codegen)
+    | Arities
+        lhs         .   ppSq        =   hiNV "arity" hsnUnknown (map (\(n,a) -> ppCurlysSemisBlock [ppForHI n,pp a]) @idArities)
+%%]]
+%%[[(20 codegen grin)
+    | GrInlines
+        lhs         .   ppSq        =   hiNV "grInline" hsnUnknown (map (\(n,(a,g)) -> ppCurlysSemisBlock [ppForHI n,ppCurlysSemisBlock $ map (ppForHI) a,ppCurly (ppForHI g)]) @inlMp)
+%%]]
+%%]
+    | Instance
+        lhs         .   ppSq        =   hiNV "instance" @nm @rules.ppL
+
+%%[20
+ATTR
+  Bindings
+    [ | | ppSqL: {[PPSeq]} ]
+
+SEM Bindings
+    | Cons
+        lhs         .   ppSqL       =   @hd.ppSq : @tl.ppSqL
+    | Nil
+        lhs         .   ppSqL       =   []
+%%]

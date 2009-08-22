@@ -1,0 +1,88 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate dead/unused name introductions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+
+Creation of values that are not needed further downstream the code are eliminated.
+
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.UnusedNameElim}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar})
+%%]
+
+%%[(8 codegen grin) hs export(grUnusedNameElim)
+grUnusedNameElim :: GrModule -> GrModule
+grUnusedNameElim grmod
+  = trf_Syn_GrAGItf t
+  where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
+            $ Inh_GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+%%]
+ATTR GrExpr [ | | fviSeqBodyMp: FvInfoMp ]
+
+SEM GrExpr
+  | * - Seq     lhs         .   fviSeqBodyMp    =   @gathFviMp
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: remove 'unit n1 : \n2 -> ...' combi
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | trf: GrModule ]
+ATTR AllNT [ | | trf: SELF ]
+%%]
+
+%%[(8 codegen grin) hs
+grExprIsElimable :: GrExpr -> Bool
+grExprIsElimable (GrExpr_Unit  _) = True
+grExprIsElimable (GrExpr_Store _) = True
+grExprIsElimable (GrExpr_App _ _) = True
+grExprIsElimable _                = False
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         lhs         .   trf             =   case (@pat.nmAlias, @trf, @body.trf) of
+                                                      (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (p `Map.member` @body.gathFviMp)
+                                                        -> b
+                                                      _ -> @trf
+%%]
+SEM GrExpr
+  | Seq         lhs         .   (trf,fviSeqBodyMp)
+                                                =   case (@pat.nmAlias, @trf, @body.trf) of
+                                                      (NmAlias_Nm n1,GrExpr_Seq e (GrPatLam_Var p) b,_) | grExprIsElimable e && not (p `Map.member` @body.gathFviMp)
+                                                        -> (b, @body.fviSeqBodyMp)
+                                                      _ -> (@trf, @body.gathFviMp)
+                                                      (NmAlias_Nm n1,_,GrExpr_Seq (GrExpr_Unit (GrVal_Var n2)) p e) | n1 == n2 && not (n1 `Map.member` @body.fviSeqBodyMp)
+                                                        -> (GrExpr_Seq @expr.trf p e, @body.fviSeqBodyMp)
+

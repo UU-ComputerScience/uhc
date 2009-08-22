@@ -1,0 +1,98 @@
+\documentclass{article}
+\usepackage{a4}
+\usepackage[dutch]{babel}
+\topmargin=-10mm
+\textwidth=150mm
+\textheight=250mm
+\oddsidemargin=6mm
+\evensidemargin=6mm
+\parindent=0pt
+\parskip=3pt
+\pagestyle{empty}
+
+\begin{document}
+
+\paragraph{De functionele programmeertaal Haskell}
+
+Functioneel programmeren is een aantrekkelijk programmeerparadigma:
+doordat functies geen neveneffecten hebben op globale variabelen,
+is hun gedrag geheel bepaald door hun parameters.
+Dit maakt functionele programma's bij uitstek geschikt voor het formuleren
+van eigenschappen en het (al dan niet automatisch) uitvoeren van correctheidsbehoudende
+transformaties.
+
+De feitelijke standaard functionele programmeertaal is Haskell. Deze taal is
+statisch getypeerd (in tegenstelling tot het oudere Lisp),
+kent hogere-orde functies (dus functies kunnen zelf ook worden meegegeven als parameter
+of worden opgeleverd door andere functies), en 
+heeft een lazy semantiek (het evalueren van parameters wordt uitgesteld totdat
+het zeker is dat ze voor het eindresultaat nodig zijn).
+
+Hogere-orde functies maken het mogelijk om generieke algoritmen te formuleren voor
+het doorlopen van boomachtige datastructuren. In feite kunnen de meeste algoritmen op
+bomen worden geformuleerd door voor elk soort knooppunt aan te geven hoe het resultaat
+afhangt van de resultaten van recursieve toepassing van het algoritme op de deelbomen.
+Van de eigenlijke boom-traversie, en het daadwerkelijk doen van recursieve aanroepen,
+kan voor eens en altijd worden geabstraheerd door deze onder te brengen in een
+hogere-orde functie, geparametriseerd met de op elk knooppunt uit te voeren functies.
+
+De lazy semantiek maakt het mogelijk om oneindige datastructuren te manipuleren -- zolang
+tenminste slechts een eindig deel daarvan geobserveerd wordt.
+Sommige op het eerste gezicht circulaire functiedefinities kunnen daardoor verrassenderwijs toch
+tot een zinvol resultaat leiden.
+
+Generieke boom-traversal algoritmen in combinatie met lazy semantiek maken het ooit door Knuth
+voorgestelde principe van een `attributen-grammatica' tot een in de praktijk zeer
+hanteerbaar programmerconcept.
+
+\paragraph{Compilers voor Haskell}
+
+Voor de verwerking van Haskell-programma's is natuurlijk een compiler nodig.
+De meest gebruikte, en in feite enige beschikbare compiler is de `Glasgow Haskell Compiler' (GHC).
+Deze is zelf ook in Haskell geschreven en is daarmee een duidelijk voorbeeld van
+de toepasbaarheid van Haskell in complexe situaties.
+Helaas heeft GHC een dermate lange onstaansgeschiedenis dat het erg lastig is geworden
+om er nog uitbreidingen aan toe te voegen.
+
+Daarom hebben we een nieuwe compiler gemaakt: de `Utrecht Haskell Compiler' (UHC).
+Dit is, net als GHC, een zelf in Haskell geschreven compiler voor Haskell.
+Nieuw is echter de architectuur van UHC. 
+Het compileerproces in UHC is opgedeeld in vele kleine, onderling zo veel mogelijk onafhankelijke,
+transformatie-stappen.
+Dit maakt het mogelijk om te experimenteren met eigenschappen van de compiler,
+door het anders rangschikken, weglaten of toevoegen van stappen.
+Bovendien is elke transformatie consequent opgezet in attributen-grammatica stijl,
+wat de opzet van de transformaties helderder en de beschrijving compacter maakt.
+
+\paragraph{Gehele-programma analyse}
+
+Veelal worden compilers ingezet om afzonderlijke modulen van een programma te compileren.
+De separaat gecompileerde modulen worden daarna door een linker samengevoegd tot \'e\'en geheel.
+Daarmee verliest men echter de mogelijkheid tot programma-optimalisaties waarbij
+ook de inter-modulaire aspecten van belang zijn.
+
+Dit project heeft een bijdrage geleverd aan de ontwikkeling van een back-end voor UHC
+waarbij zogeheten `gehele-programma analyse' (d.w.z.\ de analyse van inter-modulaire aspecten)
+wordt ingezet.
+Dit heeft geleid tot nieuwe technieken voor onder andere:
+\begin{itemize}
+\item De implementie van lazy evaluatie:
+   op de plaatsen in het programma waar uitgestelde berekeningen toch
+   worden afgedwonen is de aanroep van een evaluatie-functie nodig.
+   Door een inter-modulaire analyse van functie-aanroepen
+   en een abstracte interpretatie van heap-knopen kan deze functie
+   in veel gevallen worden ge-`inlined', waarmee weer nieuwe 
+   optimalisatie-kansen aan het licht komen.
+\item De implementatie van overloading van functies:
+   de gangbare benadering is het meegeven van extra `dictionary' parameters
+   aan overloaded functies. 
+   Door een gegeneraliseerde vorm van propagatie van constanten kunnen
+   deze extra parameters in een inter-modulaire analyse worden weggewerkt,
+   met een effici\"enter programma als resultaat.
+\end{itemize}
+Deze resultaten, alsmede de rol van de architectuur van UHC, zijn gepresenteerd
+in een drietal congresbijdragen. Ze zullen bovendien deel uitmaken van een
+medio 2011 te verschijnen proefschrift.
+
+
+\end{document}

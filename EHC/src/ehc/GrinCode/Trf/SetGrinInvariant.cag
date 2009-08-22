@@ -1,0 +1,109 @@
+%%[doesWhat doclatex
+
+Establish the `Grin Invariant': 
+all variables in every GrValL always denotes a pointer, not an (evaluated) node;
+the name in Eval is always a pointer.
+
+%%]
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SetGrinInvariant} import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen grin) hs import(Data.Maybe(fromJust), {%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(setGrinInvariant)
+
+setGrinInvariant :: GrModule -> GrModule
+setGrinInvariant code
+  = let inh = Inh_GrAGItf
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+%%[(8 codegen grin)
+
+{
+type Env = Map.Map HsName HsName
+}
+
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+
+ATTR AllBind
+     AllGrExpr
+     AllGrVal
+     AllGrPat  [ env : {Env} | | ]
+
+ATTR GrExpr    [ | | mbEvalVar : {Maybe HsName} ]
+     
+ATTR GrVal     [ | | mbVar : {Maybe HsName} ]
+
+ATTR GrPatLam  [ | | mbPatVar : {Maybe HsName} ]
+
+SEM GrExpr
+  | Seq       expr.env = @lhs.env
+              body.env = maybe @lhs.env
+                               (\u -> maybe @lhs.env
+                                            (\p -> Map.insert p u @lhs.env)
+                                            @pat.mbPatVar
+                               )
+                               @expr.mbEvalVar
+                               
+SEM GrExpr
+  | Eval      lhs.mbEvalVar = Just @nm
+  | Unit      lhs.mbEvalVar = maybe Nothing
+                                    (\v -> Map.lookup v @lhs.env)
+                                    @val.mbVar
+  | * - Eval
+        Unit  lhs.mbEvalVar = Nothing
+
+SEM GrVal
+  | Var       lhs.mbVar = Just @nm
+  | * - Var   lhs.mbVar = Nothing                               
+
+SEM GrModule
+  | Mod       bindL.env = Map.empty
+                               
+SEM GrGlobal
+  | Global    val.env   = Map.empty
+
+SEM GrPatLam
+  | Var       lhs.mbPatVar = Just @nm
+  | * - Var   lhs.mbPatVar = Nothing
+
+
+SEM GrExpr
+  | Eval      lhs.grTrf = maybe @loc.grTrf
+                                (\_ -> GrExpr_Unit (GrVal_Var @nm))
+                                (Map.lookup @nm @lhs.env)
+
+
+ATTR AllGrVal
+     GrTag    [ | | ptrOnly : SELF ]
+
+SEM GrVal
+  | Var       lhs.ptrOnly  =  maybe (GrVal_Var @nm)
+                                    GrVal_Var
+                                    (Map.lookup @nm @lhs.env)  
+
+SEM GrVal
+  | Node      lhs.grTrf  = GrVal_Node @tag.ptrOnly @fldL.ptrOnly
+
+SEM GrExpr
+  | App       lhs.grTrf  = GrExpr_App @nm @argL.ptrOnly
+
+%%]
+

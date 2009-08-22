@@ -1,0 +1,371 @@
+%%[abstract
+|Ruler| translates type rules into a \LaTeX\ (|lhs2TeX|) rendering or a (partial) Attribute Grammar implementation.
+Type rules are described by a the |Ruler| language which allows the specification of the structure of judgements in a type rule,
+and a hierarchy of views on type rules supporting incremental development.
+%%]
+
+%%[svnId
+\verb!$Id$!
+%%]
+
+%%[rulerVersionFromRulerExec
+\verb!%%@[exec:bin/ruler --version --svn-version%%]!
+%%]
+
+%%[intro
+Ruler is a system for specifying type rules in such a way that a pretty printed representation and an implementation can be generated from
+a type rule specification.
+This document provides a manual for Ruler, providing `how to's for typical uses of Ruler,
+and reference material.
+It is assumed that the reader already is familiar with the ideas of Ruler
+\cite{dijkstra06ruler,dijkstra05phd}.
+We also note that Ruler is still under development, and as a consequence,
+this document lags behind.
+
+The first part of this manual, \secRef{ruler-doc-tut},
+describes how to accomplish basic tasks such as simply creating a pretty printed of type rules.
+We also discuss how to manage views (the ordered sequence of subsequent versions) and aspects (separate parts within a view).
+Finally we show what needs to be done to generate an implementation.
+
+The second part of this manual, \secRef{ruler-doc-ref}, describes syntax, commandline invocation, options and
+partially specifies the semantics of Ruler by means of type rules for Ruler.
+In particular, the translation to the AG system \cite{baars04ag-www} is specified.
+%%]
+
+%%[tutMinimalSetup
+\label{ruler-doc-tutMinimalSetup}
+We start with all that is required to produce \figRef{RulerExamples.expr}.
+We need to specify the following:
+\begin{Itemize}
+\item
+A |scheme| definition for expressions.
+\item
+A |ruleset| definition for expressions,
+specifying a set of rules which all have as their conclusion a judgement for an expression.
+In this case there is only one rule, with one conclusion jugement, without premises.
+\end{Itemize}
+
+\rulerCmdUse{RulerExamples.expr}
+
+\figRef{RulerExamples.expr} is specified by the following scheme and ruleset definition:
+%%[[wrap=code
+%%@RulerExamples.1.expr.scheme.minimal
+
+%%@RulerExamples.1.expr.rs.minimal
+%%]
+
+\subsubsection{Defining values for holes directly}
+
+Alternatively, \ruleRef{e.int} could have been defined by explicitly binding hole names to judgement expressions as follows:
+
+%%@RulerExamples.2.expr.rs.holes.directly wrap=code
+
+No binding for |g| need to be given as its value defaults to the corresponding hole name.
+\Ix{hole default}
+
+\subsubsection{Referring to generated material}
+
+The proper commandline invocation (\secRef{ruler-doc-referenceCommandLineInvocation}) for these definitions yields a file with
+\LaTeX\ definitions for \figRef{RulerExamples.expr} and its elements:
+
+%%@AppxNotation.rulerLaTeXCmdTableNoView
+
+For example, the basename\Ix{basename} for \figRef{RulerExamples.expr} is `RulerExamples'.
+The figure itself is included by means of the following \LaTeX\ command in a text like this document:
+
+%%[[wrap=tt
+\rulerCmdUse{RulerExamples.expr}
+%%]
+
+\LaTeX\ commands like @rulerCmdUse@,
+used in the generated file,
+are assumed to be defined (see \secRef{ruler-doc-referenceRuntimeEnvironment}).
+
+The \ruleRef{e.int} itself can be included by
+
+%%[[wrap=tt
+\[
+\rulerCmdUse{RulerExamples.expr.e.int}
+\]
+%%]
+
+This appears inline in the text as follows:
+
+\[
+\rulerCmdUse{RulerExamples.expr.e.int}
+\]
+
+|Ruler| assumes that the generated text can use \LaTeX\ macro's like @\rulerCmdUse{...}@.
+The names of these \LaTeX\ commands can be configured, see
+\secRef{ruler-doc-ref-customisation}.
+
+\subsubsection{Lexical matters}
+
+\Paragraph{Reserved symbols}
+Judgement specifications use identifiers and operators.
+We have used the same convention as Haskell \cite{peytonjones03has98-rev-rep}
+for identifiers and operators, with a few exceptions:
+
+\begin{Itemize}
+\item
+The following operators have special meaning in the context of expressions used in judgements:
+%%[[wrap=code
+%%@RulerConfig.1.cfgKeywordsOpsExplainEsc.val
+%%@RulerConfig.1.cfgStrSel.val
+%%]
+
+Both the single dash and triple dash can be used to separate the premise judgements from the conclusion.
+A double dash `@--@' is used as the start of a newline terminated comment.
+The dot is used for superscripts and subscripts\footnote{This probably will be changed to an underscore.}
+(see \secRef{ruler-doc-superSubScripts}).
+
+These operators can be escaped with a backquote notation, for example |`=`|.
+By design the number of operators which need to be backquoted has been kept to a minimum as to allow
+as much as possible operators available for use in judgement expressions.
+
+\item
+The following operators have special meaning outside the context of expressions used in judgements,
+and can be freely used in such expressions:
+%%[[wrap=code
+%%@RulerConfig.1.cfgKeywordsOpsEsc.val
+%%]
+
+\end{Itemize}
+
+%%]
+
+%%[tutPrettyPrinting
+\subsubsection{Interaction with |LaTeX| and Lhs2TeX}
+
+\subsubsection{Formatting}
+
+\subsubsection{Superscripts and subscripts}
+\label{ruler-doc-superSubScripts}
+\Ix{superscript}
+\Ix{subscript}
+%%@TopicRuler.selNotation
+
+\subsubsection{Per rule inheritance}
+
+%%]
+
+%%[tutToAG
+\subsubsection{Attribute Grammar generation}
+
+\subsubsection{Mapping rules to abstract syntax}
+
+\subsubsection{Mapping holes to attributes}
+
+\subsubsection{Threading}
+
+\subsubsection{External functionality: relations}
+
+%%]
+
+%%[tutViews
+\subsubsection{View hierarchy}
+
+\subsubsection{Inheritance order}
+
+\subsubsection{Judgement specifications}
+
+\subsubsection{Holes}
+
+%%]
+
+%%[tutAspects
+This feature is still under development.
+
+\subsubsection{Aspect definition}
+
+\subsubsection{Aspect combination}
+
+\subsubsection{Inheritance order revisited}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[referenceInstallation
+\subsubsection{EHC}
+
+\subsubsection{Ruler demo}
+
+%%]
+
+%%[referenceCommandLineInvocation
+\label{ruler-doc-referenceCommandLineInvocation}
+\subsubsection{Commandline help}
+%%[[wrap=tt
+%%@[exec:bin/ruler --help%%]
+%%]
+
+\subsubsection{Commandline options}
+Options which are not discussed are meant for internal use only.
+These options are the ones which are most likely to disappear or changed without notice.
+
+\begin{description}
+\item @-a, --ag@ \\
+to be done ...
+\Ix{ag}
+\Ix{--ag}
+
+\item @--ATTR@ \\
+to be done ...
+\Ix{ATTR}
+\Ix{--ATTR}
+
+\item @-b <name>, --base=<name>@ \\
+to be done ...
+\Ix{base}
+\Ix{--base}
+\Ix{basename}
+
+\item @-c[<spec>], --markchanges[=<spec>]@, where |<spec> = * || <view name> || <view name> - <view name> | \\
+to be done ...
+
+\item @--copyelim[=yes|no]@ \\
+to be done ...
+
+\item @--DATA@ \\
+to be done ...
+
+\item @--explain@ \\
+to be done ...
+
+\item @--help@ \\
+to be done ...
+
+\item @-h, --hs@ \\
+to be done ...
+
+\item @-l, --lhs2tex@ \\
+to be done ...
+
+\item @-P <path>, --path=<path>@ \\
+to be done ...
+
+\item @--preamble[=yes|no]@ \\
+to be done ...
+
+\item @-s[<spec>], --selrule[=<spec>]@, where |<spec> = ( * || <view name> || <view name> - <view name> ) . ( * | |<ruleset names> ) . ( * || <rule names> ) | \\
+to be done ...
+
+\item @--svn-version@ \\
+to be done ...
+
+\item @--version@ \\
+to be done ...
+
+\item @-w, --wrapshuffle@ \\
+to be done ...
+
+\end{description}
+
+\subsubsection{Example commandline invocations}
+
+The examples from \secRef{ruler-doc-tutMinimalSetup} were generated by:
+%%[[wrap=tt
+bin/ruler  --lhs2tex --base=RulerExamples build/ruler-doc/RulerExamples.rul > build/ruler-doc/RulerExamples.ltex
+%%]
+
+%%]
+
+%%[referenceRuntimeEnvironment
+\label{ruler-doc-referenceRuntimeEnvironment}
+\subsubsection{Interaction with Lhs2TeX}
+
+\subsubsection{Interaction with |LaTeX|}
+
+Naming conventions for generated material:
+
+%%@AppxNotation.rulerLaTeXCmdTableYesView
+
+Predefined commands:
+
+rulerCmdUse
+rulerCmdDef
+
+\subsubsection{Interaction with AG}
+
+%%]
+
+%%[referenceCustomisation
+\label{ruler-doc-ref-customisation}
+\Ix{Customisation}
+%%[[wrap=code
+%%@RulerConfig.1.cfgFmFmtCmdAsc.val
+%%]
+
+The example commands in the remaining sections are the ones used for this documentation.
+
+\subsubsection{Interaction with Lhs2TeX}
+
+\subsubsection{Interaction with |LaTeX|}
+
+\Paragraph{Ruleset figure}
+The following is the \LaTeX\ code used to render a ruleset figure.
+\Ix{rulerRulesetFigure}
+%%@mainsty.1.rulerRulesetFigure wrap=tt
+
+\Paragraph{Rule}
+The following is the \LaTeX\ code used to render a single rule.
+\Ix{rulerRule}
+%%@mainsty.1.rulerRule wrap=tt
+
+\Paragraph{Ruler commands for rules \& figures}
+The following is the \LaTeX\ code used to define a ruler command.
+\Ix{rulerCmdDef}
+%%@mainsty.1.rulerCmdDef wrap=tt
+
+The following is the \LaTeX\ code used to use a ruler command.
+\Ix{rulerCmdUse}
+%%@mainsty.1.rulerCmdUse wrap=tt
+
+\subsubsection{Interaction with AG}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

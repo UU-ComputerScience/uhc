@@ -1,0 +1,168 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) import({Silly/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER SilModule
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}Silly.InlineExpr} export(inlineExpr)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Silly})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Opts})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen grin) hs
+inlineExpr :: EHCOpts -> SilModule -> SilModule
+inlineExpr options input   
+  = let t = wrap_SilModule (sem_SilModule input)
+                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
+                                                                then options{ ehcOptOwn = 0 }
+                                                                else options
+                                          } 
+                           )
+    in trf_Syn_SilModule t
+%%]
+
+%%[(8 codegen grin)
+
+ATTR SilModule   [ opts : {EHCOpts} | | ]
+
+-- Result of the AG transformation.
+--
+ATTR AllNT [ | | trf: SELF     ]
+
+-- The non terminal self, for creating Sets containing it.
+--
+ATTR AllNT [ | | self: SELF ]
+
+
+ATTR Variable [ multi : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives [  | defMap : {Map.Map Variable Int} | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [  | useMap : {Map.Map Variable Int} | ]
+ATTR Statement Statements Alternative Alternatives [ allDefMap : {Map.Map Variable Int}  allUseMap : {Map.Map Variable Int} | | ]
+ATTR Statement Statements Alternative Alternatives [ | env : {Map.Map Variable Value} | ]
+ATTR Value Values [ env : {Map.Map Variable Value} | | ]
+
+ATTR Value          [ | | isntCall : {Bool} ]
+
+
+SEM Function
+  | Function  body.useMap    =  @loc.startMap
+              body.defMap    =  @loc.startMap   
+              body.env       =  Map.empty
+              body.allUseMap =  @body.useMap
+              body.allDefMap =  @body.defMap
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+
+-- For each local variable, count
+--  * how often it is assigned to
+--      (you might think that this would be <=1 because of the SSA property,
+--      but variables can be assigned to in >1 alternatives)
+--  * how often it is used
+--      (a use in the context of a Subs counts as 2.
+--	    This is a bit of a hack: a use-count of 2 makes it non-inlinable for non-simple values)
+
+SEM Statement
+  | Assignment  lhs.defMap  =  Map.adjust (+1) @dest.self @lhs.defMap
+  | Assignment2 lhs.defMap  =  Map.adjust (+1) @dest.self (Map.adjust (+1) @dest2.self @lhs.defMap)
+
+SEM Variable
+  | Unembedded  lhs.useMap  =  Map.adjust (+ @lhs.multi) (@loc.self) @lhs.useMap
+
+
+-- the "multi" attribute is a bit of a hack:
+-- it makes uses in a Subs context count as 2, thus making it non-virtualizable for non-simple values
+
+SEM Value
+  | Var         var.multi = 1
+  | Offset      var.multi = 2
+
+SEM Variable
+  | Subs        array.multi = 2
+
+SEM Statement
+  | Assignment  dest.multi = 1
+  | Assignment2 dest.multi = 1
+                dest2.multi = 1
+
+-- In each assignment, insert the RHS in the environment for possible later inlining
+-- but remove environment-entries of which the RHS is isomorphic to the current LHS
+
+SEM Statement
+  | Assignment  lhs.env   =  let env2 = Map.filter (notSame @dest.trf) @lhs.env
+                             in  if @source.isntCall
+                                    && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
+                                                     (Map.lookup @dest.self @lhs.allUseMap)
+                                                     (isSimpleValue @source.trf)
+                                 then Map.insert @dest.self @source.trf env2 
+                                 else env2
+  | Assignment2 lhs.env   =  let env2 = Map.filter (notSame @dest.trf) (Map.filter (notSame @dest2.trf) @lhs.env)  -- not really needed to check against dest, because it is currently always simple variable, that was thus not assigned to elsewhere. But let's be safe.
+                             in  if @source.isntCall
+                                    && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
+                                                     (Map.lookup @dest.self @lhs.allUseMap)
+                                                     (isSimpleValue @source.trf)
+                                 then Map.insert @dest.self @source.trf env2
+                                 else env2
+  
+-- In each Call-statement, remove the environment-entries of which the RHS uses the RP-register or a negative offset from SP
+
+SEM Statement
+  | Call        lhs.env   =  Map.filter (not . isRPValue) @lhs.env
+
+-- For variables, do the substitution
+                                             
+SEM Value
+  | Var          lhs.trf  =  Map.findWithDefault (@loc.self) @var.self @lhs.env
+  | Call         lhs.isntCall  =  False
+  | * - Call     lhs.isntCall  =  True
+
+%%]
+
+%%[(8 codegen grin) hs
+
+isSP :: Variable -> Bool
+isSP (Variable_SP)          = True
+isSP (Variable_Subs var n)  = isSP var
+isSP _                      = False 
+
+isRP :: Variable -> Bool
+isRP (Variable_RP)          = True
+isRP (Variable_Subs var n)  = isRP var || (isSP var && n<0)
+isRP _                      = False 
+
+isRPValue :: Value -> Bool
+isRPValue (Value_Var var)   = isRP var
+isRPValue _                 = False
+
+isSimpleVariable :: Variable -> Bool
+isSimpleVariable (Variable_Subs Variable_SP _) = True
+isSimpleVariable (Variable_Subs _           _) = False
+isSimpleVariable _                             = True
+
+isSimpleValue :: Value -> Bool
+isSimpleValue (Value_Alloc _ _) = False
+isSimpleValue (Value_Offset _ _)= False
+isSimpleValue (Value_Var v)     = isSimpleVariable v
+isSimpleValue _                 = True
+
+virtualizable (Just def) (Just use) simpleVal = def==1 && ( use==2 || simpleVal )
+virtualizable _ _ _ = False
+
+notSame :: Variable -> Value -> Bool
+notSame v1 (Value_Var v2) = v1 /= v2
+notSame _ _ = True
+
+
+
+%%]

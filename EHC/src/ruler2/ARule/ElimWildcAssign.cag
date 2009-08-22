@@ -1,0 +1,51 @@
+-- $Id: Ruler.ag 231 2005-06-07 14:39:41Z atze $
+
+-------------------------------------------------------------------------
+-- Optimisation: Elimination of assignments to wildcard
+-------------------------------------------------------------------------
+
+%%[1 hs module (ARule.ElimWildcAssign)
+%%]
+
+%%[1 hs export (arlElimWild)
+%%]
+
+%%[1 hs import (qualified Data.Map as Map, Common, Expr.Expr, ARule.ARule)
+%%]
+
+%%[1 ag import ({Expr/AbsSynAG}, {ARule/AbsSynAG})
+%%]
+
+%%[1 ag
+WRAPPER  AGARuleItf
+%%]
+
+%%[1 hs
+
+arlElimWild :: ARule -> ARule
+arlElimWild rl
+  = replEw_Syn_AGARuleItf r2
+  where r1 = sem_AGARuleItf (AGARuleItf_AGItf rl)
+        r2 = wrap_AGARuleItf r1
+                (Inh_AGARuleItf)
+%%]
+
+-------------------------------------------------------------------------
+-- Replica
+-------------------------------------------------------------------------
+
+%%[1 ag
+ATTR AllARule AllExpr [ | | replEw: SELF ]
+ATTR AGARuleItf [ | | replEw: ARule ]
+ATTR AEqns AEqn [ | | replEwEqns USE {++} {[]}: {[AEqn]} ]
+
+SEM AEqn
+  | Eqn             lhs     .   replEwEqns  =   case @dest.replEw of
+                                                  AEqnDest_One ANm_Wild -> []
+                                                  _                     -> [@replEw]
+  | * - Eqn         lhs     .   replEwEqns  =   [@replEw]
+
+SEM ARule
+  | Rule            lhs     .   replEw      =   ARule_Rule @ndNmL @rlNm @info @eqns.replEwEqns
+
+%%]
