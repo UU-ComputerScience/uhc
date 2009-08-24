@@ -30,6 +30,18 @@ For debug/trace:
 %%% Beta reduction for type, only saturated applications are expanded
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(11 hmtyinfer) export(TyBetaRedOut,mkDfltTyBetaRedOut,TyBetaRedOut')
+type TyBetaRedOut' x = (x,VarMp)
+type TyBetaRedOut    = TyBetaRedOut' Ty
+
+mkDfltTyBetaRedOut :: x -> TyBetaRedOut' x
+mkDfltTyBetaRedOut x = (x,emptyVarMp)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Beta reduction for type, only saturated applications are expanded
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(11 hmtyinfer) export(TyBetaRedLkup,betaRedTyLookup)
 type TyBetaRedLkup = FIIn -> HsName -> Maybe Ty
 
@@ -86,15 +98,19 @@ tyBetaRed fi lkup ty
 Reduce fully (upto expansion limit) an outer layer of type synonyms,
 expanding the inner layer with redSub, only if the outer layer has been
 replaced.
+Additional substitutions found are assumed to be non-contradictory, so threading is not done.
 
 %%[(11 hmtyinfer) export(tyBetaRedFullMb)
-tyBetaRedFullMb :: FIIn -> TyBetaRedLkup -> (Ty -> Maybe Ty) -> Ty -> Maybe Ty
+tyBetaRedFullMb :: FIIn -> TyBetaRedLkup -> (Ty -> Maybe TyBetaRedOut) -> Ty -> Maybe TyBetaRedOut
 tyBetaRedFullMb fi lkup redSub ty
   = fmap reda $ choose ty $ redl ty
   where env = fiEnv fi
         lim     = ehcOptTyBetaRedCutOffAt $ feEHCOpts env
         redl ty = take lim $ map fst $ tyBetaRed fi lkup ty
-        reda ty = if null (catMaybes as') then ty else mk f (zipWith (\t mt -> maybe t id mt) as as')
+        reda ty = if null (catMaybes as')
+                  then mkDfltTyBetaRedOut ty
+                  else let (as'',ms) = unzip $ zipWith (\t mt -> maybe (mkDfltTyBetaRedOut t) id mt) as as'
+                       in  (mk f as'', varmpUnions ms)
                 where (f,as,mk) = tyDecomposeMk ty
                       as' = map redSub as
         choose a [] = Nothing

@@ -585,6 +585,7 @@ SEM Expr
                                         , mkInfo1 "ty" (ppTyS @recExpr.tyVarMp @ty)
                                         , mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         , mkInfo1 "recFiOpts" (pp @recFiOpts)
+                                        , mkInfo1 "foTrace fo" (vlist $ foTrace @fo_)
                                         ]
   | Sel         loc     .  info_7   :=  [ mkInfo1 "lhs.knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         , mkInfo1 "knExprTy" (ppTyS @expr.tyVarMp @knExprTy)
@@ -827,6 +828,7 @@ SEM Expr
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imSubsTy" (ppTyS @expr.tyVarMp @imSubsTy)
+                                        , mkInfo1 "knPrL" (ppBracketsCommas @knPrL)
                                         ]
 %%]
 

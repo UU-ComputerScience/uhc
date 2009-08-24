@@ -51,13 +51,14 @@ SEM AGItf
   | AGItf       loc         .   predScope           =   initPredScope
 
 SEM Expr
-  | Lam AppTop  loc         .   (_,predScope)       =   if @implsIsEmpty
+  | Lam AppTop Rec
+                loc         .   (_,predScope)       =   if @implsIsEmpty
                                                         then (0,@lhs.predScope)
                                                         else pscpEnter 0 @lhs.predScope
 %%[[12
   | LamImpl     loc         .   (_,predScope)       =   pscpEnter 0 @lhs.predScope
 %%]]
-  | * - Lam AppTop  Let {- -}
+  | * - Lam AppTop Rec Let {- -}
 %%[[12
     LamImpl
 %%]]
@@ -67,7 +68,7 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Lam         loc         .   implsIsEmpty        =   False -- otherwise AG depends on @lhs.knTy, creating a cycle
-  | AppTop      loc         .   implsIsEmpty        =   True -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | AppTop Rec  loc         .   implsIsEmpty        =   True -- otherwise AG depends on @lhs.knTy, creating a cycle
 %%]
 
 %%[(16 hmtyinfer)

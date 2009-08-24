@@ -749,14 +749,17 @@ fi
 if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
+  gmpABI="32"
 fi
 
 if test "x$use64bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m64"
+  gmpABI="64"
 fi
 
 AC_SUBST(GCC_EXTLIBS_OPTIONS,$gccExtlibsOptions)
+AC_SUBST(GMP_ABI,$gmpABI)
 
 ### general configuration
 

@@ -12,6 +12,8 @@ SEM *
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
 		loc.tyVarMpDeclsL01				: {VarMp}
+		loc.tyVarMpDeclsQuant			: {VarMp}
+		loc.chrSolve1SimpTyVarMp		: {VarMp}
 		loc.exTyKiVarMp2				: {VarMp}
 		loc.quTyKiVarMp					: {VarMp}
 		loc.doFit	 					: DoFit
@@ -195,7 +197,7 @@ SEM *
 		loc.topNm  						: HsName
 		loc.toProveElsewhereCnstrMp		: CHRPredOccCnstrMp
 		loc.toProveHereCnstrMp 			: CHRPredOccCnstrMp
-		loc.toProveHereCnstrMpCanon 	: {Map.Map (Constraint CHRPredOcc RedHowAnnotation) [RedHowAnnotation]}
+		loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
 		loc.tqoGam  					: {Gam HsName TyMergePredOut}
 		loc.tv   						: UID
 		loc.tvarv1_  					: Ty

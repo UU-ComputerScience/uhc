@@ -20,6 +20,8 @@ SEM Expr
   | LamImpl     loc         .   hereCnstrMp         =   gathPredLToAssumeCnstrMp @knPrL
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@arg.gathCnstrMp,@body.gathCnstrMp]
 %%]]
+  | Rec         loc         .   hereCnstrMp         =   gathPredLToAssumeCnstrMp @knPrL
+                lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@recExpr.gathCnstrMp]
   | AppTop      loc         .   hereCnstrMp         =   gathPredLToAssumeCnstrMp @knPrL
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@expr.gathCnstrMp]
 %%]
@@ -28,8 +30,7 @@ SEM Expr
 SEM Expr
   | Sel         loc         .   hereCnstrMp         =   gathPredLToProveCnstrMp @prOccL
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @expr.gathCnstrMp]
-  | Rec         loc         .   hereCnstrMp         =   foGathCnstrMp @fo_
-                lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @recExpr.gathCnstrMp]
+  | Rec         loc         .   hereCnstrMp         :=  cnstrMpUnions [foGathCnstrMp @fo_, gathPredLToAssumeCnstrMp @knPrL]
 
 SEM RecExpr
   | Ext Upd     loc         .   hereCnstrMp         =   gathPredLToProveCnstrMp @prOccL
@@ -121,19 +122,33 @@ SEM Decl
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) hs
-%%[[9999
-simplify _ _ _ m1 m2 _ | Map.null m1 && Map.null m2
-  = ( Map.empty, Map.empty
-    , Map.empty
-    , []
-    , emptySimplifyResult
-    , Map.empty
-    , Map.empty, Map.empty, Map.empty
-    )
+simplify
+  :: FIIn
+     -> ScopedPredStore												-- available CHR rules
+     -> Heuristic CHRPredOcc RedHowAnnotation						-- graph reduction heuristic
+     -> CHRPredOccCnstrMp											-- constraints already proven a previous call
+     -> CHRPredOccCnstrMp											-- constraints to prove
+     -> SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp		-- simplification work done at a previous call
+     -> ( CHRPredOccCnstrMp											-- canonicalized to be proven constraints
+        , CHRPredOccCnstrMp											-- remaining to be proven
+        , CHRPredOccCnstrMp											-- cannot be proven
+        , VarMp														-- additional substitution found during proving & simplification
+        , [Err]														-- errors
+        , SimplifyResult CHRPredOcc RedHowAnnotation Guard VarMp	-- simplification work, for a next call
+        , CHRPredOccEvidMp											-- map from constraint/pred occurrence to evidence
+%%[[(9 codegen)
+        , EvidKeyToCBindMap											-- map from occurrence to binding, globally
+        , PredScopeToCBindMap										-- map from predscope to binding, per predscope opening/intro
+        , EvidKeyToCExprMap											-- map from occurrence to expr + additional nesting info
+        , E2C.EvidKeyToValBindMap									-- TyCore variants from the above 3 results
+        , E2C.PredScopeToValBindMap
+        , E2C.EvidKeyToExprMap
 %%]]
+        )
 simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
   = ( toProveHereCnstrMpCanon, chrSolveRemCnstrMp2
     , cannotResCnstrMp
+    , canonVarMp
     , firstNotEmpty
         [ chrSolveErrs
 %%[[(9 codegen)
@@ -150,9 +165,15 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
     )
   where (_,u1,u2,u3) = mkNewLevUID3 $ fiUniq env
         -- toProveHereCnstrMpCanon = Map.mapKeys mk toProveHereCnstrMp
-        toProveHereCnstrMpCanon = Map.foldWithKey (\p c m -> Map.insertWith (++) (mk p) c m) Map.empty toProveHereCnstrMp 
-          where mk (Prove p) = Prove $ p {cpoPr = predCanonic env $ cpoPr p}
-                mk c         = c
+        (toProveHereCnstrMpCanon,canonVarMp)
+          = Map.foldWithKey (\p c (cm,m)
+                               -> let (p',m') = mk p
+                                  in  (Map.insertWith (++) p' c cm, m' |=> m)
+                            )
+                            (Map.empty,emptyVarMp :: VarMp) toProveHereCnstrMp 
+          where mk (Prove p) = (Prove $ p {cpoPr = p'}, m)
+                             where (p',m) = predCanonic env $ cpoPr p
+                mk c         = (c, emptyVarMp)
         env' = env {fiFIOpts = (fiFIOpts env) {fioDontBind = fixedFtv toProveHereCnstrMpCanon}}
         dbgp = ppParensCommas $ Map.keys toProveHereCnstrMpCanon
         dbg m= id -- Debug.tr m dbgp
@@ -195,7 +216,7 @@ SEM AGItf
   | AGItf       loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @expr.tyVarMp}
                             .   toProveCnstrMp      =   @expr.tyVarMp `chrAppSubst` @expr.gathCnstrMp
                             .   toProveHereCnstrMp  =   @toProveCnstrMp
-                            .   (_,chrSolveMainRemCnstrMp,_,chrSolveMainErrs,chrSimplifyResult,_
+                            .   (_,chrSolveMainRemCnstrMp,_,chrSolveSimpTyVarMp,chrSolveMainErrs,chrSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveMainEvidBindMp,chrSolveMainScopeBindMp,chrSolveMainEvidCoreMp
                                 ,chrSolveMainEvidBindMpTC,chrSolveMainScopeBindMpTC,chrSolveMainEvidCoreMpTC
@@ -214,7 +235,7 @@ SEM Expr
                             .   toProveCnstrMp      =   @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
                                                     =   Map.partitionWithKey (\k _ -> isLetProveCandidate @gTyTvS $ cnstrPred k) @toProveCnstrMp
-                            .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
+                            .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1SimpTyVarMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
                                 ,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1EvidCoreMp
                                 ,chrSolve1EvidBindMpTC,chrSolve1ScopeBindMpTC,chrSolve1EvidCoreMpTC
@@ -228,7 +249,7 @@ SEM Expr
                                                     =   Map.partitionWithKey (\k _ -> isLetProveFailure @gTyTvS $ cnstrPred k) @chrSolve1RemCnstrMp
                             .   cannotProveCnstrMp  =   cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
-                            .   (_,chrSolve2RemCnstrMp,_,chrSolve2Errs,chrSimplifyResult2,_
+                            .   (_,chrSolve2RemCnstrMp,_,chrSolve2SimpTyVarMp,chrSolve2Errs,chrSimplifyResult2,_
 %%[[(9 codegen)
                                 ,chrSolve2EvidBindMp,chrSolve2ScopeBindMp,chrSolve2EvidCoreMp
                                 ,chrSolve2EvidBindMpTC,chrSolve2ScopeBindMpTC,chrSolve2EvidCoreMpTC
@@ -251,7 +272,7 @@ SEM Expr
 SEM Decl
   | Instance    loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @tyVarMpDeclsL0}
                             .   toProveDeclsCnstrMp =   cnstrMpUnions [@chrInstAssumeCnstrMp, @chrCtxtAssumeCnstrMp, @toProveGathCnstrMp]
-                            .   (_,chrSolveDeclsRemCnstrMp,cannotResDeclsCnstrMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_
+                            .   (_,chrSolveDeclsRemCnstrMp,cannotResDeclsCnstrMp,chrSolveSimpTyVarMp,chrSolveDeclsErrs,chrDeclsSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveDeclsEvidBindMp,chrSolveDeclsScopeBindMp,_
                                 ,chrSolveDeclsEvidBindMpTC,chrSolveDeclsScopeBindMpTC,_
@@ -262,7 +283,7 @@ SEM Decl
                                                     =   debugInfo @chrDeclsSimplifyResult
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
-                            .   (_,chrSolveSuperRemCnstrMp,cannotResSuperCnstrMp,chrSolveSuperErrs,chrSuperSimplifyResult,_
+                            .   (_,chrSolveSuperRemCnstrMp,cannotResSuperCnstrMp,chrSolveSuperSimpTyVarMp,chrSolveSuperErrs,chrSuperSimplifyResult,_
 %%[[(9 codegen)
                                 ,chrSolveSuperEvidBindMp,chrSolveSuperScopeBindMp,_
                                 ,chrSolveSuperEvidBindMpTC,chrSolveSuperScopeBindMpTC,_
@@ -398,7 +419,7 @@ SEM Decl
 SEM Expr
   | Let         loc         .   (chrScopeBindL,chrScopeBindMp)
                                                     =   mkScopeBindings True @predScope @chrLetScopeBindMp
-  | Lam AppTop
+  | AppTop Rec Lam
 %%[[12
     LamImpl
 %%]]
@@ -432,7 +453,7 @@ SEM Decl
 SEM Expr
   | Let         loc         .   (chrScopeBindLTC,chrScopeBindMpTC)
                                                     =   mkScopeValBinds True @predScope @chrLetScopeBindMpTC
-  | Lam AppTop
+  | AppTop Rec Lam
 %%[[12
     LamImpl
 %%]]
@@ -461,7 +482,7 @@ SEM Decl
                             .   chrAssumeDeclsCtxtBindL =   mkAssumeBindings @chrCtxtArgUIDL @chrEvidBindMp
 
 SEM Expr
-  | Lam AppTop
+  | AppTop Rec Lam
 %%[[12
     LamImpl
 %%]]

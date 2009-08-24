@@ -80,7 +80,7 @@ SEM AGItf
 %%[(8 codegen)
 SEM Expr
   | IConst CConst SConst Var Con
-    App AppImpred AppTop TypeAs
+    App AppImpred AppTop Rec TypeAs
     Lam
 %%[[12
     AppImpl
@@ -135,8 +135,11 @@ SEM Expr
                                                         else let n = uidHNm @lUniq2
                                                              in  ([n],[mkCBind1 n @expr.cexpr],@alts.raltL)
                                                 in  mkCExprLet CBindings_Plain bs (rceMatch @rceEnv ns as)
-  | AppTop Parens TypeAs
+  | AppTop      loc         .   cexprtop    =   @expr.cexpr
+  | Rec         loc         .   cexprtop    =   @rcexpr
+  | Parens TypeAs
                 loc         .   cexpr       =   @expr.cexpr
+  | AppTop Rec  loc         .   cexpr       =   @cexprtop
   | Undefined   loc         .   cexpr       =   cundefined @lhs.opts
   | CaseAltFail loc         .   cexpr       =   CExpr_CaseAltFail @caseId (cerror @lhs.opts ("FAIL " ++ show @caseId))
 %%]
@@ -202,12 +205,15 @@ SEM Expr
                                                     (b ,s2)   = coeEvalOnAsSubst u2 ww @body.appFunCExpr
                                                 in  (b, s1 `cSubstApp` s2)
                 lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprlamCSubst
-  | AppTop      loc         .   (cexpr,cexprapptopCSubst)
+  | AppTop      loc         .   cSubstTop   =   @expr.cSubst
+  | Rec         loc         .   cSubstTop   =   @recExpr.cSubst
+  | AppTop Rec  loc         .   (cexpr,cexprapptopCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @expr.cSubst [] @lamArgCoeL
-                                                    (e ,s2)   = coeEvalOnAsSubst u2 ww @expr.cexpr
+                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @cSubstTop [] @lamArgCoeL
+                                                    (e ,s2)   = coeEvalOnAsSubst u2 ww @cexprtop
                                                 in  (e, s1 `cSubstApp` s2)
-                lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
+  | AppTop      lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
+  | Rec         lhs         .   cSubst      =   cSubstApp @recExpr.cSubst @cexprapptopCSubst
   | TypeAs      loc         .   (cexpr,cexprtypeasCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (e1,s1)   = foAppLRCoeAsSubst @lhs.opts u1 @fo_fitDown @lhs.finTyVarMp @expr.cSubst @expr.cexpr
@@ -255,7 +261,6 @@ SEM Expr
 %%]]                                                    
                                                           foldl mkCExprApp1 (CExpr_Tup CTagRec)
                                                             $ fuL2ExprL $ tyRowCanonOrder $ @recExpr.fuCExprL
-                            .   cexpr           =   @rcexpr
 %%[[10
                 loc         .   lUniq3          :   UNIQUEREF gUniq
 %%]]
@@ -374,7 +379,7 @@ SEM DataFieldExpr
 %%[(8 codegen)
 SEM Expr
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
-                            .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
+                            .   cexpr           =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq_fresh
                                                     in   mkCExprSelCase @rceEnv (Just n1) @expr.cexpr CTagRec n2 @lbl @offset Nothing
 %%]
   | Sel         loc         .   offset          =   CExpr_Int (tyRecOffset @lbl (@lhs.finTyVarMp |=> @expr.ty))
@@ -602,7 +607,7 @@ SEM Expr
 %%[(9 codegen)
 SEM Expr
   | Lam         loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL ++ [mkLamCoe1 @arg.topNm]
-  | AppTop      loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
+  | AppTop Rec  loc         .   lamArgCoeL          =   mkPoiLLamCoe (mkLetRecCoe @poiBindL) @poiL
 %%]
 
 %%[(12 codegen)
