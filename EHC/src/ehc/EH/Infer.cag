@@ -39,11 +39,11 @@ SEM Expr
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
                             .   (quValGam_qu_,cycTyVarMp_l)
-                                                    =   let (g,cycMp) = @tyVarMpDeclsL0 |==> @valGam_l_
+                                                    =   let (g,cycMp) = @tyVarMpDeclsQuant |==> @valGam_l_
 %%[[5
                                                         in  (valGamQuantify @gTyTvS g,cycMp)
 %%][6
-                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS g,cycMp)
+                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
@@ -72,7 +72,7 @@ SEM Expr
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
                 decls       .   patTyVarMp          :=  @exTyVarMp1 |=> @lhs.tyVarMp
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS @valGam_l_
                             .   bodyVarMp1          =   @quTyVarMp |=> @tyVarMpDeclsL0
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
@@ -86,7 +86,7 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsL01 @gTyTvS @quantPrOccL @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS @quantPrOccL @valGam_l_
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
@@ -116,12 +116,18 @@ SEM Decl
 %%[(4 hmtyinfer)
 SEM Expr
   | Let         loc         .   tyVarMpDeclsL01     =   @tyVarMpDeclsL0
+                            .   tyVarMpDeclsQuant   =   @tyVarMpDeclsL01
 %%]
 
 %%[(6 hmtyinfer)
 SEM Expr
   | Let         loc         .   tyVarMpDeclsL01     :=  varmpIncMetaLev @quTvKiVarMp |=> @tyVarMpDeclsL0
 %%]
+
+%%[(9 hmtyinfer)
+%%]
+SEM Expr
+  | Let         loc         .   tyVarMpDeclsQuant   :=  @chrSolve1SimpTyVarMp |=> @tyVarMpDeclsL01
 
 %%[(9 hmtyinfer)
 SEM Decl

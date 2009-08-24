@@ -121,7 +121,7 @@ SEM Expr
                                                             , feRange = @range
 %%]]
                                                             }
-  | Lam AppTop
+  | Lam AppTop Rec
 %%[[12
     LamImpl
 %%]]
@@ -138,7 +138,7 @@ SEM Expr
                                                             , feRange = @range
 %%]]
                                                             }
-  | * - Lam AppTop Let
+  | * - Lam AppTop Rec Let
 %%[[12
     LamImpl
 %%]]

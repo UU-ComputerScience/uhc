@@ -363,6 +363,32 @@ pscpLeave :: PredScope -> PredScope
 pscpLeave (PredScope_Lev s) = PredScope_Lev $ fst $ fromJust $ rllInitLast s
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs export(pscpEnter',pscpLeave',pscpMk')
+-- enter yes/no scope, give back the threaded counter to outside the new scope and inside
+-- use in conjunction with pscpLeave'
+pscpEnter' :: Bool -> Int -> (Int,Int)
+pscpEnter' yesEnter x
+  = if yesEnter
+    then (fst $ pscpEnter x initPredScope,0)
+    else (x,x)
+
+-- leave scope, on previous entering yes/no scope, give back the threaded counter to outside the new scope and inside
+-- use in conjunction with pscpEnter'
+pscpLeave' :: Bool -> Int -> Int -> Int
+pscpLeave' yesEnter newScopeCounter innerScopeCounter
+  = if yesEnter
+    then newScopeCounter
+    else innerScopeCounter
+
+-- make scope, depending on yes/no entering
+-- use in conjunction with pscpEnter'
+pscpMk' :: Bool -> Int -> PredScope -> PredScope
+pscpMk' yesEnter x s
+  = if yesEnter
+    then snd $ pscpEnter x s
+    else s
+%%]
+
 %%[(9 hmtyinfer || hmtyast) hs export(pscpIsVisibleIn,pscpCommon)
 pscpIsVisibleIn :: PredScope -> PredScope -> Bool
 pscpIsVisibleIn (PredScope_Lev sOuter) (PredScope_Lev sInner) = sOuter `rllIsPrefixOf` sInner
