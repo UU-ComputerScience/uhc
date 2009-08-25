@@ -439,6 +439,10 @@
 \usepackage{tikz}
 %%]
 
+%%[53
+\usepackage{tikz}
+%%]
+
 %%[77
 \usepackage{tikz}
 %%]
@@ -912,6 +916,12 @@ WWW home page:
 \date[IFL, September 27--29, 2007]{IFL, September 27--29, 2007}
 %endif
 % \pagenrtrue
+%%]
+
+%%[53
+\title{The Architecture  of the Utrecht Haskell Compiler}
+\author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
+\date{HS09, September 3, 2009}
 %%]
 
 %%[12
@@ -3421,6 +3431,31 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[28
+%%@SlidesEHCStructure.title
+%%@SlidesEHCStructure.intro
+
+\section{Coping with complexity}
+%%@SlidesEHCStructure.coping
+
+\section{Tools}
+\subsection{Attribute Grammar Compiler}
+%%@SlidesEHCStructure.toolsAG
+\subsection{Ruler}
+%%@SlidesEHCStructure.toolsRuler
+\subsection{Shuffle}
+%%@SlidesEHCStructure.toolsShuffle
+
+\section{}
+%%@SlidesEHCStructure.summary
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Slides for UHC Structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[53
 %%@SlidesEHCStructure.title
 %%@SlidesEHCStructure.intro
 

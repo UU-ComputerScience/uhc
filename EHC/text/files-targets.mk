@@ -260,6 +260,13 @@ text-variant-slides-ehcstruct-ufmg:
 	  TEXT_SHUFFLE_VARIANT=28 \
 	  text-variant-dflt-once
 
+text-variant-slides-hs09-uhcarch:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC=yes \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyStructure --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF --set=shortStory" \
+	  TEXT_SHUFFLE_VARIANT=53 \
+	  text-variant-dflt-once
+
 text-variant-gbm:
 	$(MAKE) \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=asArticle --set=useHyperref --set=refToPDF --set=wide --set=blockstyle" \

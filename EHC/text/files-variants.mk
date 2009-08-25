@@ -16,7 +16,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								poster posterLDL posterTrOrPr \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
-								slides-ehcstruct slides-ehcstruct-ufmg \
+								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \
@@ -109,6 +109,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 50: doc: build system
 # 51: paper "UHC Architecture" to be submitted to Haskell Symposium 2009
 # 52: doc: roadmap
+# 53: slides "UHC Architecture", Haskell Symposium 2009
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -140,6 +141,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		18 < 21, \
 		18 < 23, \
 		18 < 28, \
+		18 < 53, \
 		26 < 24, \
 		26 < 25, \
 		26 < 36, \
