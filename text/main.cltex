@@ -3456,22 +3456,14 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[53
-%%@SlidesEHCStructure.title
-%%@SlidesEHCStructure.intro
+%%@SlidesUHCStructure.title
+%%@SlidesUHCStructure.intro
 
-\section{Coping with complexity}
-%%@SlidesEHCStructure.coping
+%%@SlidesUHCStructure.pipeline
+%%@SlidesUHCStructure.toolsAG
+%%@SlidesUHCStructure.aspectsAndVariants
 
-\section{Tools}
-\subsection{Attribute Grammar Compiler}
-%%@SlidesEHCStructure.toolsAG
-\subsection{Ruler}
-%%@SlidesEHCStructure.toolsRuler
-\subsection{Shuffle}
-%%@SlidesEHCStructure.toolsShuffle
-
-\section{}
-%%@SlidesEHCStructure.summary
+%%@SlidesUHCStructure.conclusions
 
 %%]
 
