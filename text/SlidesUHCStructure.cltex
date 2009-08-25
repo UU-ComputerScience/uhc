@@ -15,9 +15,147 @@
 %%]
 
 %%[aspectsAndVariants
+\begin{frame}
+\frametitle{Variants and aspects}
+
+Variant: a step in the stepwise growth in language features
+
+Aspect: a set of attributes and its resulting computation
+
+E.g. aspect \textit{typing} for the first variants of UHC:
+
+\begin{itemize}
+\item variant {\color{uured}1}: simply typed |lambda|-calculus
+
+%%[[wrap=safecode
+i  ::  Int
+i  =   5
+%%]]
+
+\item<2-> variant {\color{uured}3}: polymorphic type inference
+\visible<2->{
+
+%%[[wrap=safecode
+id x  =   x
+%%]]
+
+infers |id :: forall ^ a . a -> a|
+}
+
+\item<3-> variant {\color{uured}4}: higher ranked types
+\visible<3->{
+
+%%[[wrap=safecode
+f :: (forall ^ a . a -> a) -> (Char,Int)
+f i = (i 'x', i 5)
+
+v = f id
+%%]]
+
+allows polymorphic use of argument |i| inside |f|
+}
+
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Variants}
+
+In UHC
+
+\begin{enumerate}
+\item[~]<2-> \makebox[50mm][l]{{\color{uured}plain Haskell}}                  {\color{uured}experiments}
+\item<1-> \makebox[50mm][l]{$\lambda$-calculus, type checking}
+\item<1-> \makebox[50mm][l]{type inference}
+\item<1-> \makebox[50mm][l]{polymorphism}
+\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types, existentials}
+\item<1-> \makebox[50mm][l]{data types}
+\item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
+\item<3-> \makebox[50mm][l]{records}                           tuples as records
+\item<3-> \makebox[50mm][l]{code generation}                   full program analysis
+\item<3-> \makebox[50mm][l]{classes, type-synonyms}            extensible records
+\setcounter{enumi}{19}
+\item<4-> \makebox[50mm][l]{modules}
+\setcounter{enumi}{94}
+\item<4-> \makebox[50mm][l]{`deriving'}                      exceptions
+\setcounter{enumi}{98}
+\item<4-> \makebox[50mm][l]{prelude, I/O}
+\end{enumerate}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Variants and aspects}
+
+\begin{itemize}
+\item Two dimensions for partitioning the description of UHC
+\item Particulate combination of variant and aspects can be build as a compiler
+ \begin{itemize}
+ \item Isolation of language feature and aspect
+ \item For debugging, experimentation, explanation
+ \end{itemize}
+\item Code is partitioned in small chunks
+ \begin{itemize}
+ \item Tagged with variant number and aspect name
+ \item Processed by tool (Shuffle) to generate AG and/or Haskell input
+ \end{itemize}
+\item Last variant + all aspects = UHC
+\end{itemize}
+
+\end{frame}
+
+
+
 %%]
 
 %%[conclusions
+\begin{frame}
+\frametitle{Conclusions}
+
+Use of Attribute Grammar is essential for dealing with description \& coding complexity:
+
+\begin{itemize}
+\item Much boilerplate code for treewalks is avoided
+\item Aspects can be described separately
+\item Separately described aspects are combined by the AG compiler
+\item AG compiler takes care of plumbing all code as one fold and ordering of attribute computations
+\item Scales up in the number of combined aspects
+\end{itemize}
+
+But
+
+\begin{itemize}
+\item You have to learn it, and other used domain specific languages as well
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Conclusions}
+
+Use of variants and aspects is essential for dealing with design complexity:
+
+\begin{itemize}
+\item Language features are isolated in a variant
+\end{itemize}
+
+But
+
+\begin{itemize}
+\item Inherent language \& implementation complexity is not decreased, only made more manageable
+\item Chosen partitioning into variants is difficult to adapt
+\end{itemize}
+
+\end{frame}
+
+
+
 %%]
 
 %%[XX
