@@ -355,8 +355,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHC_CFG_TARGET_IS_bc_C)
-	@echo 
+	@echo $(FIGS_ASIS_SRC_PDF)
+	@echo $(FIGS_SRC_SUBDIRS_PREFIX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

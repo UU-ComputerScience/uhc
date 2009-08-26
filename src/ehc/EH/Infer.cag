@@ -125,9 +125,9 @@ SEM Expr
 %%]
 
 %%[(9 hmtyinfer)
-%%]
 SEM Expr
   | Let         loc         .   tyVarMpDeclsQuant   :=  @chrSolve1SimpTyVarMp |=> @tyVarMpDeclsL01
+%%]
 
 %%[(9 hmtyinfer)
 SEM Decl

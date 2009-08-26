@@ -67,6 +67,20 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+### svn revision
+AC_PATH_PROG(svnVersionCmd,svnversion)
+if test -x "$svnVersionCmd"
+then
+  svnVersionExists="yes"
+  $svnVersionCmd > SVNREVISION
+else
+  svnVersionExists="no"
+fi
+svnRevision=`cat SVNREVISION`
+AC_SUBST(SVN_VERSION_EXISTS,$svnVersionExists)
+AC_SUBST(SVN_VERSION_CMD,$svnVersionCmd)
+AC_SUBST(SVN_REVISION,$svnRevision)
+
 ### enable options
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
 AC_SUBST(ENABLE_JAVA,$enableJava)

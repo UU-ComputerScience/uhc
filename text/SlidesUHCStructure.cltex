@@ -94,7 +94,7 @@ In UHC
 
 \begin{itemize}
 \item Two dimensions for partitioning the description of UHC
-\item Particulate combination of variant and aspects can be build as a compiler
+\item Combination of variant and aspects can be build as a compiler
  \begin{itemize}
  \item Isolation of language feature and aspect
  \item For debugging, experimentation, explanation
@@ -111,13 +111,172 @@ In UHC
 
 
 
+\begin{frame}
+\frametitle{Variants and aspects}
+
+\begin{center}
+\begin{tikzpicture}
+  [minimum height=1.5em,
+   column 1/.style={anchor=east},
+   column 2/.style={anchor=east},
+   row 9/.style={anchor=north east},
+   row 10/.style={anchor=east},
+   block/.style={anchor=east,rectangle, draw=blue, thick, fill=blue!20, minimum width=3em, text centered, minimum height=1em},
+  ]
+\matrix[ampersand replacement=\&]
+{
+
+    \& \node[red]{\textit{variants}} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+\node{99:} ;
+    \& \node(topleft){libraries} ;
+    \& 
+    \&
+    \& \node<2->[block]{UHC} ;
+    \&
+\\
+%% \node{\(\cdots\)} ;
+    \& \node{\(\cdots\)} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+\node{20:} ;
+    \& \node{modules} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+%% \node{\(\cdots\)} ;
+    \& \node{\(\cdots\)} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+\node{8:} ;
+    \& \node{codegen} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+%% \node{\(\cdots\)} ;
+    \& \node{\(\cdots\)} ;
+    \& 
+    \&
+    \&
+    \&
+\\
+\node{1:} ;
+    \& \node{|lambda|-calculus} ; 
+    \& 
+    \&
+    \&
+    \&
+\\
+
+    \& \node(botleft){} ;
+    \& \node{parsing} ;
+    \& \node{typing} ;
+    \& \node{codegen} ;
+    \& \node(botright){experiments} ;
+\\
+
+    \& 
+    \& 
+    \& 
+    \&
+    \& \node[red]{\textit{aspects}} ;
+\\
+};
+\draw [thick]
+  (botleft.north east) -- (topleft.north east)
+  (botleft.north east) -- (botright.north east);
+\end{tikzpicture}
+\end{center}
+
+%% \begin{tikzpicture}[every node/.style={draw}]
+%% \matrix [draw=red]
+%% {
+%% \node[left] {Hallo}; \fill[blue] (0,0) circle (2pt); \\
+%% \node {X}; \fill[blue] (0,0) circle (2pt); \\
+%% \node[right] {g}; \fill[blue] (0,0) circle (2pt); \\
+%% };
+%% \end{tikzpicture}
+%% 
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Variants and aspects}
+
+{%% \small
+\begin{tabular}{rp{0.2\linewidth}||p{0.2\linewidth}p{0.2\linewidth}p{0.2\linewidth}}
+99: & libraries
+    & 
+    &
+    &
+\\
+\ldots
+    & \ldots
+    & 
+    &
+    &
+\\
+20: & modules
+    & 
+    &
+    &
+\\
+\ldots
+    & \ldots
+    & 
+    &
+    &
+\\
+8:  & codegen
+    & 
+    &
+    &
+\\
+\ldots
+    & \ldots
+    & 
+    &
+    &
+\\
+1:  & simply typed |lambda|-calculus 
+    & 
+    &
+    &
+\\ \hline
+    &
+    & parsing, pretty printing
+    & typing
+    & codegen
+\\
+\end{tabular}
+}
+
+\end{frame}
+
+
+
 %%]
 
 %%[conclusions
 \begin{frame}
 \frametitle{Conclusions}
 
-Use of Attribute Grammar is essential for dealing with description \& coding complexity:
+Use of {\color{uured} Attribute Grammar} is essential for dealing with description \& coding complexity:
 
 \begin{itemize}
 \item Much boilerplate code for treewalks is avoided
@@ -130,7 +289,7 @@ Use of Attribute Grammar is essential for dealing with description \& coding com
 But
 
 \begin{itemize}
-\item You have to learn it, and other used domain specific languages as well
+\item You have to learn it  %%%, and other used domain specific languages as well
 \end{itemize}
 
 \end{frame}
@@ -139,7 +298,7 @@ But
 \begin{frame}
 \frametitle{Conclusions}
 
-Use of variants and aspects is essential for dealing with design complexity:
+Use of {\color{uured} variants and aspects} is essential for dealing with design complexity:
 
 \begin{itemize}
 \item Language features are isolated in a variant
@@ -150,6 +309,27 @@ But
 \begin{itemize}
 \item Inherent language \& implementation complexity is not decreased, only made more manageable
 \item Chosen partitioning into variants is difficult to adapt
+\end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Conclusions}
+
+{\color{uured} include this????}
+
+Use of {\color{uured} domain specific languages} and {\color{uured} generation} is essential for dealing with maintenance complexity:
+
+\begin{itemize}
+\item Avoids duplicates consistency pitfall by generating from shared description
+\end{itemize}
+
+But
+
+\begin{itemize}
+\item More complex build system
 \end{itemize}
 
 \end{frame}

@@ -817,7 +817,7 @@ tyArrowArgRes t
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowArgResWithLkup)
 tyArrowArgResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,Ty)
-tyArrowArgResWithLkup lookup = tyVarLift lookup tyArrowArgRes tyArrowArgRes
+tyArrowArgResWithLkup lookup = tyVarChkVisitLift lookup tyArrowArgRes tyArrowArgRes
 %%]
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyArrowArgsRes hs
@@ -836,11 +836,20 @@ tyAppFunArgs
   =  extr []
   where  extr as t
            =  case t of
-                Ty_App f a  -> extr (a:as) f
-                _           -> (t,as)
+%%[[6
+                Ty_Quant _ qv _ t -> extr as t
+%%]]
+                Ty_App f a        -> extr (a:as) f
+                _                 -> (t,as)
 %%]
 
-%%[(6 hmtyinfer || hmtyast).unMkTy.tyAppFunArgs -1.unMkTy.tyAppFunArgs hs export(tyAppFunArgsWithLkup)
+%%[(6 hmtyinfer || hmtyast) hs export(tyAppFunArgsWithLkup)
+-- Substitution aware
+tyAppFunArgsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,TyL)
+tyAppFunArgsWithLkup lookup = tyVarChkVisitLift lookup tyAppFunArgs tyAppFunArgs
+%%]
+
+%%[(6666 hmtyinfer || hmtyast).unMkTy.tyAppFunArgs -1.unMkTy.tyAppFunArgs hs export(tyAppFunArgsWithLkup)
 -- Substitution aware
 tyAppFunArgsWithLkup lookup
   =  extr []
@@ -1008,13 +1017,19 @@ mkTySum al = hsnSum `mkConApp` [tyRowEmpty `mkTyRow` al]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast) hs
+tyVarChkVisitLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
+tyVarChkVisitLift
+  = withLkupChkVisitLift tyMbVar noVisit
+  where noVisit (Ty_Quant _ qv _ _) = Set.singleton qv
+        noVisit _                   = Set.empty
+
 tyVarLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarLift = withLkupLift tyMbVar
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs
 implsTailVarLiftCyc :: (TyVarId -> Maybe Impls) -> (TyVarIdS -> Impls -> x) -> (Impls -> x) -> TyVarIdS -> Impls -> x
-implsTailVarLiftCyc = withLkupLiftCyc1 implsMbVar
+implsTailVarLiftCyc = withLkupLiftCyc1 implsMbVar (const Set.empty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
