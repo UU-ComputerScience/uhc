@@ -119,10 +119,21 @@ In UHC
   [minimum height=1.5em,
    column 1/.style={anchor=east},
    column 2/.style={anchor=east},
-   row 9/.style={anchor=north east},
-   row 10/.style={anchor=east},
-   block/.style={anchor=east,rectangle, draw=blue, thick, fill=blue!20, minimum width=3em, text centered, minimum height=1em},
+   column 3/.style={minimum width=4em},
+   column 4/.style={minimum width=4em},
+   column 5/.style={minimum width=4em},
+   column 6/.style={minimum width=7em},
+   row 10/.style={anchor=north},
+   row 11/.style={anchor=north},
+   row 12/.style={anchor=north},
+   block/.style={rectangle,  fill=uured!20, text centered},
+   valida/.style={rectangle,  fill=uured!20, text centered},
+   validb/.style={rectangle,  fill=uured!40, text centered},
   ]
+
+\def\valid{\node<4->[valida]{\(\checkmark\)}}
+\def\valida{\node<4>[valida]{\(\checkmark\)}}
+\def\validb####1{\node<5>(####1)[validb]{\(\checkmark\)}}
 \matrix[ampersand replacement=\&]
 {
 
@@ -130,63 +141,70 @@ In UHC
     \& 
     \&
     \&
-    \&
+    \& \node(topright){} ;
 \\
 \node{99:} ;
     \& \node(topleft){libraries} ;
-    \& 
-    \&
-    \& \node<2->[block]{UHC} ;
+    \& \valid ;
+    \& \valid ;
+    \& \node<2->[block](uhc){UHC} ;
     \&
 \\
 %% \node{\(\cdots\)} ;
     \& \node{\(\cdots\)} ;
-    \& 
-    \&
-    \&
+    \& \valid ;
+    \& \valid ;
+    \& \valid ;
     \&
 \\
 \node{20:} ;
     \& \node{modules} ;
-    \& 
-    \&
-    \&
-    \&
-\\
-%% \node{\(\cdots\)} ;
-    \& \node{\(\cdots\)} ;
-    \& 
-    \&
-    \&
-    \&
-\\
-\node{8:} ;
-    \& \node{codegen} ;
-    \& 
-    \&
-    \&
+    \& \valid ;
+    \& \valid ;
+    \& \valid ;
     \&
 \\
 %% \node{\(\cdots\)} ;
     \& \node{\(\cdots\)} ;
-    \& 
+    \& \valid ;
+    \& \valid ;
+    \& \valid ;
     \&
+\\
+\node{9:} ;
+    \& \node{classes} ;
+    \& \valid ;
+    \& \valid ;
+    \& \valid ;
+    \& \node<3->[block]{Ext Recs} ;
+\\
+\node(variantx){8:} ;
+    \& \node{primitives} ;
+    \& \valid ;
+    \& \valid ;
+    \& \valida ; \validb{calloutaloc} ; % node<5>(calloutaloc)[validb]{\(\checkmark\)} ;
+    \&
+\\
+%% \node{\(\cdots\)} ;
+    \& \node{\(\cdots\)} ;
+    \& \valid ;
+    \& \valid ;
     \&
     \&
 \\
 \node{1:} ;
     \& \node{|lambda|-calculus} ; 
+    \& \valid ;
     \& 
-    \&
     \&
     \&
 \\
 
-    \& \node(botleft){} ;
+    \& \node(botleft)[anchor=north east]{} ;
     \& \node{parsing} ;
     \& \node{typing} ;
-    \& \node{codegen} ;
-    \& \node(botright){experiments} ;
+    \& \node(aspectx){codegen} ;
+    \& \node(botright){experiment} ;
 \\
 
     \& 
@@ -195,78 +213,35 @@ In UHC
     \&
     \& \node[red]{\textit{aspects}} ;
 \\
+
+    \& 
+    \& 
+    \& 
+    \&
+    \& \node[red]{\textit{(accumulative)}} ;
+\\
 };
 \draw [thick]
   (botleft.north east) -- (topleft.north east)
   (botleft.north east) -- (botright.north east);
+%% \node<2->[anchor=south] at (uhc.north) {bla} ;
+
+\node<5>(callouta)[anchor=north east,rectangle callout, drop shadow, fill=black!15, callout absolute pointer={(calloutaloc)}] at (topright.north east) {\parbox{.235\linewidth}{
+\begin{verbatim}
+%%%[(8 typing codegen)
+...
+%%%]
+\end{verbatim}
+}} ;
+%\draw<5>[->] (callouta) -- (variantx) ;
+%\draw<5>[->] (callouta) -- (aspectx) ;
+
 \end{tikzpicture}
 \end{center}
 
-%% \begin{tikzpicture}[every node/.style={draw}]
-%% \matrix [draw=red]
-%% {
-%% \node[left] {Hallo}; \fill[blue] (0,0) circle (2pt); \\
-%% \node {X}; \fill[blue] (0,0) circle (2pt); \\
-%% \node[right] {g}; \fill[blue] (0,0) circle (2pt); \\
-%% };
-%% \end{tikzpicture}
-%% 
 \end{frame}
 
 
-
-\begin{frame}
-\frametitle{Variants and aspects}
-
-{%% \small
-\begin{tabular}{rp{0.2\linewidth}||p{0.2\linewidth}p{0.2\linewidth}p{0.2\linewidth}}
-99: & libraries
-    & 
-    &
-    &
-\\
-\ldots
-    & \ldots
-    & 
-    &
-    &
-\\
-20: & modules
-    & 
-    &
-    &
-\\
-\ldots
-    & \ldots
-    & 
-    &
-    &
-\\
-8:  & codegen
-    & 
-    &
-    &
-\\
-\ldots
-    & \ldots
-    & 
-    &
-    &
-\\
-1:  & simply typed |lambda|-calculus 
-    & 
-    &
-    &
-\\ \hline
-    &
-    & parsing, pretty printing
-    & typing
-    & codegen
-\\
-\end{tabular}
-}
-
-\end{frame}
 
 
 
