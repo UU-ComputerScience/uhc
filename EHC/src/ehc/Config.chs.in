@@ -69,7 +69,7 @@ verDist :: Version -> String
 verDist v = verFull v
 
 verInfo :: Version -> String
-verInfo v = verProg v ++ "-" ++ verDist v ++ ", " ++ verSvnRevision v
+verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

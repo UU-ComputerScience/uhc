@@ -413,7 +413,13 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "cppOpts = \"$(CPP_OPTS_WHEN_EHC)\"" ; \
 	  echo "" ; \
-	  echo "ehcSvnRevision = \"`svn info | grep Revision`\"" ; \
+	  if test x$(SVN_VERSION_EXISTS) = xyes ; \
+	  then \
+	    svnRevision=`$(SVN_VERSION_CMD)` ; \
+	  else \
+	    svnRevision=`$(SVN_REVISION)` ; \
+	  fi ; \
+	  echo "ehcSvnRevision = \"$$svnRevision\"" ; \
 	  echo "" ; \
 	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
 	  echo "" ; \

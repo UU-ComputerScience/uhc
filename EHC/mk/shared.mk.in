@@ -112,6 +112,14 @@ DEVELOPMENT_PLATFORM				:= @DEVELOPMENT_PLATFORM@
 TOPLEVEL_SYSTEM_ABSPATH_PREFIX		:= @TOPLEVEL_SYSTEM_ABSPATH_PREFIX@
 
 ###########################################################################################
+# SVN revision nr, and cmd to extract, if present
+###########################################################################################
+
+SVN_VERSION_EXISTS		:= @SVN_VERSION_EXISTS@
+SVN_VERSION_CMD			:= @SVN_VERSION_CMD@
+SVN_REVISION			:= @SVN_REVISION@
+
+###########################################################################################
 # WinXX specific file name conversions
 ###########################################################################################
 

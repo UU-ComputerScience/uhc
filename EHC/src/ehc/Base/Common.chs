@@ -1232,30 +1232,34 @@ instance PP VarUIDHsName where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[2 hs
-withLkupLiftCyc2 :: (t -> Maybe UID) -> (UID -> Maybe t) -> x -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> UID -> x
-withLkupLiftCyc2 get lookup dflt yes no vsVisited v
+withLkupLiftCyc2 :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> x -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> UID -> x
+withLkupLiftCyc2 get noVisit lookup dflt yes no vsVisited v
   = case lookup v of
       Just t | not (v `Set.member` vsVisited)
-        -> yes (Set.insert v vsVisited) t
+        -> yes (Set.insert v $ Set.union (noVisit t) vsVisited) t
       _ -> dflt
 %%]
 
-%%[2 hs export(withLkupLiftCyc1,withLkupLift)
-withLkupLiftCyc1 :: (t -> Maybe UID) -> (UID -> Maybe t) -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> t -> x
-withLkupLiftCyc1 get lookup yes no vsVisited t
-  = maybe dflt (withLkupLiftCyc2 get lookup dflt yes no vsVisited) $ get t
+%%[2 hs export(withLkupLiftCyc1,withLkupChkVisitLift,withLkupLift)
+withLkupLiftCyc1 :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> (UIDS -> t -> x) -> (t -> x) -> UIDS -> t -> x
+withLkupLiftCyc1 get noVisit lookup yes no vsVisited t
+  = maybe dflt (withLkupLiftCyc2 get noVisit lookup dflt yes no vsVisited) $ get t
   where dflt = no t
 
+withLkupChkVisitLift :: (t -> Maybe UID) -> (t -> UIDS) -> (UID -> Maybe t) -> (t -> x) -> (t -> x) -> t -> x
+withLkupChkVisitLift get noVisit lookup yes no t
+  = withLkupLiftCyc1 get noVisit lookup (\_ t -> yes t) no Set.empty t
+
 withLkupLift :: (t -> Maybe UID) -> (UID -> Maybe t) -> (t -> x) -> (t -> x) -> t -> x
-withLkupLift get lookup yes no t
-  = withLkupLiftCyc1 get lookup (\_ t -> yes t) no Set.empty t
+withLkupLift get
+  = withLkupChkVisitLift get (const Set.empty)
 %%]
 
 %%[2 hs
 lookupLiftCyc1 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> x -> x'
 lookupLiftCyc1 get lookup dflt found x
   = lk Set.empty dflt found x
-  where lk s dflt found x = withLkupLiftCyc1 get lookup (\s t -> lk s (found t) found t) (const dflt) s x
+  where lk s dflt found x = withLkupLiftCyc1 get (const Set.empty) lookup (\s t -> lk s (found t) found t) (const dflt) s x
 
 lookupLiftCyc2 :: (x -> Maybe UID) -> (UID -> Maybe x) -> x' -> (x->x') -> UID -> x'
 lookupLiftCyc2 get lookup dflt found x
