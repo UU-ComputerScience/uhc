@@ -441,6 +441,9 @@
 
 %%[53
 \usepackage{tikz}
+%\usepgflibrary{shapes.callout}
+\usetikzlibrary{shadows}
+\usetikzlibrary{shapes.callouts}
 %%]
 
 %%[77
