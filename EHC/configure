@@ -28851,6 +28851,8 @@ EXIT_IF_ABSENT_LIB_OR_TOOL=$exitIfAbsentLibOrTool
 ### file generation
 ac_config_files="$ac_config_files mk/config.mk mk/shared.mk"
 
+ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
+
 ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
 
 ac_config_files="$ac_config_files bin/llvm-compilerdriver"
@@ -29411,6 +29413,7 @@ do
   case $ac_config_target in
     "mk/config.mk") CONFIG_FILES="$CONFIG_FILES mk/config.mk" ;;
     "mk/shared.mk") CONFIG_FILES="$CONFIG_FILES mk/shared.mk" ;;
+    "test/benchmark/runbenchmark.pl") CONFIG_FILES="$CONFIG_FILES test/benchmark/runbenchmark.pl" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
     "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
     "bin/llvm-compilerdriver") CONFIG_FILES="$CONFIG_FILES bin/llvm-compilerdriver" ;;

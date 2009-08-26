@@ -17,7 +17,7 @@ for $dir (@dirs) {
     
         printf("%-24s %-10s", $dir, $compilernames[$j]);
     
-        system ("rm $dir/Main.exe $dir/Main 2>/dev/null");
+        system ("rm $dir/Main@SUFFIX_EXEC@ 2>/dev/null");
         
         $tc0 = [gettimeofday];
         system ("$compiler $dir/Main.hs 1>comp-output 2>comp-errors");
@@ -27,7 +27,7 @@ for $dir (@dirs) {
         printf("Compile %-8g  ", $tc);
     
     
-        if (-e "$dir/Main.exe" || -e "$dir/Main") {
+        if (-e "$dir/Main@SUFFIX_EXEC@") {
     
             for $n (1, 2, 3) {
             
@@ -42,7 +42,7 @@ for $dir (@dirs) {
                 system ("rm run-output run-errors 2>/dev/null");
 
                 $tr0 = [gettimeofday];
-                system ("$dir/Main.exe $args  1> run-output 2> run-errors");
+                system ("$dir/Main@SUFFIX_EXEC@ $args  1> run-output 2> run-errors");
                 $tr1 = [gettimeofday];
             
                 my $tr = tv_interval $tr0, $tr1;
