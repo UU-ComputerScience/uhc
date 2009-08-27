@@ -176,6 +176,120 @@
 %%[toolsAG
 %%]
 
+%%[agInUHC
+
+\begin{frame}
+\frametitle{AG applied in UHC}
+Desired Core transformation:
+
+\begin{center}
+\begin{tikzpicture}
+\matrix[ampersand replacement=\&,column sep=1em]
+{ \node(from){
+   \begin{minipage}{.25\linewidth}
+%%[[wrap=safecode
+let  y  =  z  in
+let  x  =  y  in
+     x + y
+%%]]
+   \end{minipage}
+  } ; \&
+  \node(to){
+   \begin{minipage}{.25\linewidth}
+%%[[wrap=safecode
+let  y  =  z  in
+let  x  =  y  in
+     redOn ^ z ^ blackOn ^ + redOn ^ z ^ blackOn
+%%]]
+   \end{minipage}
+  } ; \\
+} ;
+\draw [->,thick] (from.east) -- (to.west) ;
+\end{tikzpicture}
+\end{center}
+
+Eliminate name aliases
+
+\uncover<2->{
+\begin{itemize}
+\item Gather introduced bindings bottom up
+\item Distribute gathered bindings top down
+\item Compute transformed tree bottom up, \\variable occurrences possibly replaced
+\end{itemize}
+}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{AG applied in UHC}
+\begin{itemize}
+\item
+AG tree structure for Core:
+
+%%[[wrap=safecode
+DATA Expr
+  | Let         binds           :  BindL            ^^ ^^ body            : Expr
+  | Var         nm              :  String
+  | App         func            :  Expr             ^^ ^^ arg             : Expr
+  ...
+
+DATA Bind
+  | Bind        nm              :  String           ^^ ^^ expr            : Expr
+
+TYPE BindL      =   [Bind]
+%%]]
+
+\item<2>
+Auxiliary Haskell types for gathering and distributing bindings:
+
+%%[[wrap=safecode
+type N2E = Map String Expr
+%%]]
+\end{itemize}
+\end{frame}
+
+\begin{frame}
+\frametitle{AG applied in UHC}
+%%[[wrap=safecode
+ATTR Bind BindL [ | | n2eG USE {`union`} {empty}: N2E ]
+
+SEM Bind
+  | Bind        lhs         .   n2eG        =   maybe empty (@nm ^^ `singleton`) @expr.mvTrf
+%%]]
+
+\uncover<2->{
+%%[[wrap=safecode
+ATTR Expr [ | | mvTrf: {Maybe Expr} ]
+
+SEM Expr
+  | Var         lhs         .   mvTrf       =   Just @trf
+  | * - Var     lhs         .   mvTrf       =   Nothing
+%%]]
+}
+
+\uncover<3->{
+%%[[wrap=safecode
+ATTR Expr Bind BindL [ n2e: N2E | | ]
+
+SEM Expr
+  | Let         loc         .   n2e'        =   map  (\t@(Expr_Var n)
+                                                       -> findWithDefault t n @lhs.n2e)
+                                                     @binds.n2eG
+                            .   n2e         =   @n2e' `union` @lhs.n2e
+%%]]
+}
+
+\uncover<4->{
+%%[[wrap=safecode
+ATTR Expr Bind BindL [ | | trf: SELF ]
+
+SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm @lhs.n2e
+%%]]
+}
+\end{frame}
+
+%%]
+
 %%[aspectsAndVariants
 \begin{frame}
 \frametitle{Variants and aspects}
