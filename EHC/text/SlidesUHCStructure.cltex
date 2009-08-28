@@ -142,6 +142,45 @@
 
 %%[agInUHC
 
+%% \begin{frame}
+%% \frametitle{Test}
+%% 
+%% \begin{tikzpicture}[node distance=5mm,
+%% every node/.style=draw,every join/.style=->]
+%% \draw [help lines] (0,0) grid (3,2);
+%% \node[red] (existing) at (0,2) {existing};
+%% { [start chain]
+%% \node [draw,on chain,join] {Hello};
+%% \node [draw,on chain,join] {World};
+%% \chainin (existing) [join];
+%% \node [draw,on chain,join] {this};
+%% \node [draw,on chain,join] {is};
+%% }
+%% \end{tikzpicture}
+%% 
+%% 
+%% \begin{tikzpicture}
+%%   [tree/.style={uured},
+%%    attr/.style={draw=green!50}]
+%% \node[anchor=north west,tree] (top) {|Expr_Let|}
+%%   child{ node[tree](bindl){|BindL|}
+%%     child{ node[tree](bind){|Bind|}
+%%       child{
+%%         node[tree](lbot){|String|}
+%%       }
+%%       child{
+%%         node[tree](rbot){|Expr|}
+%%       }
+%%     }
+%%   };
+%% {
+%% [start chain,every on chain/.style={join=by ->}]
+%%  \node[anchor=west,attr,on chain,join] (bindenvG)  {|envG|};
+%%  \node[anchor=west,attr,on chain,join] (bindlenvG)  at (bindenvG.south) {|envG|};
+%% }
+%% \end{tikzpicture}
+%% \end{frame}
+%% 
 \begin{frame}
 \frametitle{AG applied in UHC}
 Desired Core transformation:
@@ -186,9 +225,16 @@ Eliminate name aliases
 
 \begin{frame}
 \frametitle{AG applied in UHC}
-\begin{itemize}
-\item
-AG tree structure for Core:
+\begin{tikzpicture}
+\matrix
+  [ampersand replacement=\&,
+   tree/.style={uured},
+  ]
+{
+\node[anchor=north]
+{
+\begin{minipage}{.6\linewidth}
+{\color{uured}Core}:
 
 %%[[wrap=safecode
 DATA Expr
@@ -202,55 +248,167 @@ DATA Bind
 
 TYPE BindL      =   [Bind]
 %%]]
+\\[1ex]
 
-\item<2>
-Auxiliary Haskell types for gathering and distributing bindings:
+\uncover<2->{
+{\color{uured}Auxiliary Haskell}:
 
 %%[[wrap=safecode
-type N2E = Map String Expr
+type Env = Map String Expr
 %%]]
-\end{itemize}
+}
+\end{minipage}
+};
+\&
+\uncover<3->{
+\node[anchor=north west,tree] (top) {|Expr_Let|}
+  child[thick,uured]{ node[tree](bindl){|BindL|}
+    child{ node[tree](bind){|Bind|}
+      child{
+        node[tree](lbot){|String|}
+      }
+      child{ node[tree](app){|Expr_App|}
+        child{
+          node[tree]{|Expr|}
+        }
+        child{
+          node[tree](var){|Expr_Var|}
+        }
+      }
+    }
+  };
+}
+\\
+};
+%\draw[fill=uuyellow!50,semitransparent] (top.south) -- (lbot.south west) -- (rbot.south east) -- cycle ;
+\end{tikzpicture}
 \end{frame}
 
 \begin{frame}
 \frametitle{AG applied in UHC}
-%%[[wrap=safecode
-ATTR Bind BindL [ | | n2eG USE {`union`} {empty}: N2E ]
+\begin{center}
+\begin{tikzpicture}
+  [scale=.8,
+   level 3/.style={sibling distance=12em},
+   start chain=envG,
+   start chain=expenv,
+   start chain=env,
+   start chain=exptrf,
+   start chain=trf,
+   tree/.style={uured},
+   attr/.style={draw=green!50},
+   every on chain/.style={join=by {green,->}}]
+\node[anchor=north west,tree] (top) {|Expr_Let|}
+  child[thick,uured]{ node[tree](bindl){|BindL|}
+    child{ node[tree](bind){|Bind|}
+      child{
+        node[tree](lbot){|String|}
+      }
+      child{ node[tree](app){|Expr_App|}
+        child{
+          node[tree](exp){|Expr|}
+        }
+        child{
+          node[tree](var){|Expr_Var|}
+        }
+      }
+    }
+  };
+\uncover<2->{
+ \node[anchor=west,attr] (bindenvG) at (bind.east) {|envG|};
+ \node[anchor=west,attr] (bindlenvG) at (bindl.east) {|envG|};
+ \chainin(bindenvG)[on chain=envG,join];
+ \chainin(bindlenvG)[on chain=envG,join];
+}
+\uncover<3->{
+ \node[anchor=east,attr] (topenv) at (top.west) {|env|};
+ \node[anchor=east,attr] (bindlenv) at (bindl.west) {|env|};
+ \node[anchor=east,attr] (bindenv) at (bind.west) {|env|};
+ \node[anchor=east,attr] (appenv) at (app.west) {|env|};
+ \node[anchor=east,attr] (varenv) at (var.west) {|env|};
+ \node[anchor=east,attr] (expenv) at (exp.west) {|env|};
+ \chainin(bindlenvG)[on chain=env,join];
+ \chainin(topenv)[on chain=env,join];
+ \chainin(bindlenv)[on chain=env,join];
+ \chainin(bindenv)[on chain=env,join];
+ \chainin(appenv)[on chain=env,join];
+ \chainin(varenv)[on chain=env,join];
+ \chainin(appenv)[on chain=expenv,join];
+ \chainin(expenv)[on chain=expenv,join];
+}
+\uncover<4->{
+ \node[anchor=west,attr] (exptrf) at (exp.east) {|trf|};
+ \node[anchor=west,attr] (vartrf) at (var.east) {|trf|};
+ \node[anchor=west,attr] (apptrf) at (app.east) {|trf|};
+ \node[anchor=west,attr] (bindtrf) at (bindenvG.east) {|trf|};
+ \node[anchor=west,attr] (bindltrf) at (bindlenvG.east) {|trf|};
+ \node[anchor=west,attr] (toptrf) at (top.east) {|trf|};
+ \chainin(vartrf)[on chain=trf,join];
+ \chainin(apptrf)[on chain=trf,join];
+ \chainin(bindtrf)[on chain=trf,join];
+ \chainin(bindltrf)[on chain=trf,join];
+ \chainin(toptrf)[on chain=trf,join];
+ \chainin(exptrf)[on chain=exptrf,join];
+ \chainin(apptrf)[on chain=exptrf,join];
+}
+\end{tikzpicture}
+\end{center}
+\end{frame}
 
-SEM Bind
-  | Bind        lhs         .   n2eG        =   maybe empty (@nm ^^ `singleton`) @expr.mvTrf
+
+
+% \node<3->[shape border rotate=90,fit=(top) (lbot) (rbot),fill=uuyellow!50,semitransparent] {};
+% isosceles triangle,
+
+%{
+%format empty = "\epsilon"
+\begin{frame}
+\frametitle{AG applied in UHC}
+%%[[wrap=safecode
+ATTR Bind BindL SYN envG USE {`union`} {empty}: Env
 %%]]
 
 \uncover<2->{
 %%[[wrap=safecode
-ATTR Expr [ | | mvTrf: {Maybe Expr} ]
+SEM Bind  | Bind        lhs         .   envG        =   maybe empty (singleton @nm) @expr.alias
 
-SEM Expr
-  | Var         lhs         .   mvTrf       =   Just @trf
-  | * - Var     lhs         .   mvTrf       =   Nothing
+ATTR Expr SYN alias: {Maybe Expr}
 %%]]
 }
 
 \uncover<3->{
 %%[[wrap=safecode
-ATTR Expr Bind BindL [ n2e: N2E | | ]
-
 SEM Expr
-  | Let         loc         .   n2e'        =   map  (\t@(Expr_Var n)
-                                                       -> findWithDefault t n @lhs.n2e)
-                                                     @binds.n2eG
-                            .   n2e         =   @n2e' `union` @lhs.n2e
+  | Var         lhs         .   alias       =   Just @trf
+  | * - Var     lhs         .   alias       =   Nothing
 %%]]
 }
+
+%%[[wrap=safecode
+ATTR Expr Bind BindL INH env: Env
+%%]]
 
 \uncover<4->{
 %%[[wrap=safecode
-ATTR Expr Bind BindL [ | | trf: SELF ]
+SEM Expr
+  | Let         loc         .   env'        =   map  (\(Expr_Var n) ->  findWithDefault
+                                                                          (Expr_Var n) n @lhs.env)
+                                                     @binds.envG
+                            .   env         =   @env' `union` @lhs.env
+%%]]
+}
 
-SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm @lhs.n2e
+%%[[wrap=safecode
+ATTR Expr Bind BindL SYN trf: SELF
+%%]]
+
+\uncover<5->{
+%%[[wrap=safecode
+SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm @lhs.env
 %%]]
 }
 \end{frame}
+%}
 
 %%]
 
