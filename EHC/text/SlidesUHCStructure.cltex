@@ -130,14 +130,304 @@
 
 
 
+\begin{frame}
+\frametitle{Tools for UHC implementation}
 
+\begin{itemize}
+\item {\color{uured} Functional programming}\\
+      \uncover<2->{{\large\hspace*{5mm}GHC: Haskell compiler}}
+\item {\color{uured} Tree-oriented programming}\\
+      \uncover<2->{{\large\hspace*{5mm}UUAG: Attribute Grammar preprocessor}}
+\item {\color{uured} Rule-oriented programming}\\
+      \uncover<2->{{\large\hspace*{5mm}Ruler: Type rule preprocessor}}
+\item {\color{uured} Aspect-oriented programming}\\
+      \uncover<2->{{\large\hspace*{5mm}Shuffle: Source fragmentation preprocessor}}
+\end{itemize}
 
+\end{frame}
+
+\begin{frame}
+\frametitle{Tools for UHC implementation}
+
+\begin{itemize}
+\item {\color{black!30}Functional programming}\\
+      {\color{black!30}{\large\hspace*{5mm}GHC: Haskell compiler}}
+\item {\color{uured} Tree-oriented programming}\\
+      {\color{black}{\large\hspace*{5mm}UUAG: Attribute Grammar preprocessor}}
+\item {\color{black!30}Rule-oriented programming}\\
+      {\color{black!30}{\large\hspace*{5mm}Ruler: Type rule preprocessor}}
+\item {\color{uured} Aspect-oriented programming}\\
+      {\color{black}{\large\hspace*{5mm}Shuffle: Source fragmentation preprocessor}}
+\end{itemize}
+
+\end{frame}
 
 
 
 %%]
 
 %%[toolsAG
+
+
+\begin{frame}
+\frametitle{Tree-oriented programming}
+
+\setlength{\mathindent}{0pt}
+
+\begin{tikzpicture}
+[ codebox/.style={}]
+
+\setlength{\linewidth}{32mm}
+
+
+%% Eerste kolom
+
+\draw[help lines,white] (0,0) grid[step=5mm] (110mm,70mm);
+
+
+\draw<3-16> (34mm,70mm) -- (34mm,20mm);
+\draw<3-16> (66mm,70mm) -- (66mm,20mm);
+
+\node<16-18>[anchor=south west,minimum width=40mm, minimum height=5mm,draw,fill=yellow!50] at (68.5mm,43.5mm) {};
+\node<19->[rectangle callout,callout absolute pointer={(90mm,17mm)},anchor=south west,minimum width=40mm, minimum height=5mm,draw,fill=yellow!50] at (68.5mm,43.5mm) {};
+\node<19->[anchor=north west,minimum width=77mm, minimum height=15mm,fill=yellow!50] at (34mm,17mm) {};
+
+
+\node<1->[codebox, anchor=north west] at (0mm,70mm) {|data Expr|};
+
+\node<1-7>[codebox, anchor=north west] at(0mm,64mm) {
+%%[[wrap=safecode
+=  
+   Con  Int
+|  Add  Expr  Expr
+|  Mul  Expr  Expr
+%%]]
+};
+
+\node<8-16>[codebox, anchor=north west] at(0mm,64mm) {
+%%[[wrap=safecode
+=  
+   Con  Int
+|  Add  Expr  Expr
+|  Mul  Expr  Expr
+|  Var  Name
+%%]]
+};
+
+
+\node<17->[codebox, anchor=north west] at(0mm,64mm) {
+%%[[wrap=safecode
+=  
+   Con  con:Int
+|  Add  lef:Expr  rit:Expr
+|  Mul  lef:Expr  rit:Expr
+|  Var  name:Name
+%%]]
+};
+
+
+
+
+
+%% Tweede kolom
+
+
+\node<3-5>[codebox, anchor=north west] at (34mm,70mm) {|fold|};
+
+\node<3-5>[codebox, anchor=north west] at(34mm,64mm) {
+%%[[wrap=safecode
+::  
+    ( Int   -> b  )
+->  ( b->b  -> b  )
+->  ( b->b  -> b  )
+->  Expr    -> b
+%%]]
+};
+
+
+\node<6-16>[codebox, anchor=north west] at (34mm,70mm) {|type Sem b|};
+
+\node<6-8>[codebox, anchor=north west] at(34mm,64mm) {
+%%[[wrap=safecode
+=  
+(  ( Int   -> b  )
+,  ( b->b  -> b  )
+,  ( b->b  -> b  )
+)
+%%]]
+};
+
+\node<9-16>[codebox, anchor=north west] at(34mm,64mm) {
+%%[[wrap=safecode
+=  
+(  ( Int   -> b  )
+,  ( b->b  -> b  )
+,  ( b->b  -> b  )
+,  ( Name  -> b  )
+)
+%%]]
+};
+
+
+\node<6-16>[codebox, anchor=north west]  at(34mm,30mm) {
+%%[[wrap=safecode
+fold ::  Sem b ->
+         Expr -> b
+%%]]
+};
+
+
+
+
+%% Derde kolom
+
+
+
+\setlength{\linewidth}{45mm}
+
+\node<2-6>[codebox, anchor=north west] at (66mm,70mm) {|calc :: Expr -> Int|};
+
+\node<4-4>[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calc = fold id (+) (*)
+%%]]
+};
+
+\node<5-6>[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calc = fold
+(  \  n    ->  n     )
+(  \  x y  ->  x+y   )
+(  \  x y  ->  x*y   )
+%%]]
+};
+
+
+\node<7-11>[codebox, anchor=north west] at (66mm,70mm) {|calcsem :: Sem Int|};
+
+\node<12->[codebox, anchor=north west] at (66mm,70mm) {|calcsem :: Sem (Env->Int)|};
+
+
+
+\node<7-9>[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calcsem =
+(  \  n    ->  n
+,  \  x y  ->  x+y
+,  \  x y  ->  x*y
+)
+%%]]
+};
+
+\node<10-10>[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calcsem =
+(  \  n    ->  n
+,  \  x y  ->  x+y
+,  \  x y  ->  x*y
+,  \  s    ->  lookup s e
+)
+%%]]
+};
+
+\node<11-12>[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calcsem =
+(  \  n    ->  n
+,  \  x y  ->  x+y
+,  \  x y  ->  x*y
+,  \  s    ->  \e  ->  lookup s e
+)
+%%]]
+};
+
+\node<13->[codebox, anchor=north west] at(66mm,64mm) {
+%%[[wrap=safecode
+calcsem =
+(  \  n    ->  \e  ->  n
+,  \  x y  ->  \e  ->  x e + y e
+,  \  x y  ->  \e  ->  x e * y e
+,  \  s    ->  \e  ->  lookup s e
+)
+%%]]
+};
+
+
+
+
+
+\node<7-13>[codebox, anchor=north west] at(66mm,30mm) {
+%%[[wrap=safecode
+calc  ::  Expr -> Int
+calc  =   fold calcsem
+%%]]
+};
+
+\node<14-16>[codebox, anchor=north west] at(66mm,30mm) {
+%%[[wrap=safecode
+calc  ::  Expr -> Int
+calc  =   fold calcsem testenv
+%%]]
+};
+
+
+\node<15->[anchor=north,rectangle callout,fill=green!50,callout absolute pointer={(19mm,38mm)}] at (10mm,30mm) {Fields};
+
+\node<15->[anchor=north,rectangle callout,fill=green!50,callout absolute pointer={(98mm,65mm)}] at (78mm,62mm) {\shortstack{Inherited\\attribute}};
+
+\node<15->[anchor=north,rectangle callout,fill=green!50,callout absolute pointer={(108mm,65mm)}] at (105mm,60mm) {\shortstack{Synthesized\\attribute}};
+
+\node<17->[anchor=north,rectangle callout,fill=green!50,callout absolute pointer={(19mm,38mm)}] at (10mm,30mm) {\shortstack{Named\\fields}};
+
+\node<18->[anchor=north west,rectangle callout,fill=green!50,callout absolute pointer={(62mm,28mm)}] at (47mm,44mm) {\shortstack{Named\\attributes}};
+
+
+
+%% AG Oplossing
+
+%format THIS = "\mathbf{this}"
+
+
+\node<18->[codebox, anchor=north west]  at(34mm,30mm) {
+%%[[wrap=safecode
+ATTR Expr   INH   env : Env
+            SYN   val : Int
+%%]]
+};
+
+\node<19->[codebox, anchor=north west]  at(34mm,18mm) {
+%%[[wrap=safecode
+SEM  Expr |  Mul   THIS.val  =  @lef.val * @rit.val
+                   lef.env   =  @THIS.env
+                   rit.env   =  @THIS.env
+%%]]
+};
+
+
+
+\end{tikzpicture}
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Attribute Grammar processor}
+
+UUAG Attribute Grammar preprocessor lets you
+\begin{itemize}
+\item have named fields and attributes
+\item define semantics by defining attributes
+\end{itemize}
+and automatically
+\begin{itemize}
+\item generates the |fold|-function
+\item generates the semantic functions to instatiate it
+\end{itemize}
+\end{frame}
+
+
+
+
+
 %%]
 
 %%[agInUHC
