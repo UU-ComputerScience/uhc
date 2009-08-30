@@ -409,6 +409,11 @@ SEM  Expr |  Mul   THIS.val  =  @lef.val * @rit.val
 \end{frame}
 
 
+
+
+
+
+
 \begin{frame}
 \frametitle{Attribute Grammar processor}
 
@@ -420,9 +425,376 @@ UUAG Attribute Grammar preprocessor lets you
 and automatically
 \begin{itemize}
 \item generates the |fold|-function
-\item generates the semantic functions to instatiate it
+\item generates the semantic functions to instantiate it
 \end{itemize}
 \end{frame}
+
+
+
+
+
+
+
+
+
+
+
+
+
+%format mapsto = "\mapsto"
+%format emptymap = "\O"
+
+
+
+\begin{frame}
+\frametitle<1-7>{Example Core transformation}
+\frametitle<8>{Example Core transformation: Name alias}
+\frametitle<9->{Example Core transformation: Name alias Elimination}
+
+
+\begin{tikzpicture}
+  [ synnt/.style={rectangle,                              inner sep=1pt, minimum height=4mm, minimum width=10mm, fill=blue,    text centered, text=white, font=\small, anchor=north},
+    synco/.style={rectangle, draw=blue, line width=0.3pt, inner sep=1pt, minimum height=3mm, minimum width=10mm, fill=blue!20, text centered, text=blue,  font=\small, anchor=north},
+    attrSynth/.style={yshift=1mm,xshift=0.3mm, rectangle, draw=green, line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=green!30, text centered, text=black,  font=\small, anchor=west},
+    attrInh/.style={yshift=-1mm,xshift=-0.3mm, rectangle, draw=red,    line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=red!30,   text centered, text=black,  font=\small, anchor=east},
+    attrLoc/.style={rectangle, draw=black,  line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=black!30, text centered, text=black,  font=\small},
+    synline/.style={draw=blue, line width=1.6pt},
+    attrDep/.style={draw=black, line width=1pt, ->},
+    codebox/.style={anchor=north west}
+  ]
+
+\setlength{\linewidth}{80mm}
+\setlength{\mathindent}{0pt}
+
+
+
+\draw[help lines,white] (-2mm,-3mm) grid[step=10mm] (116mm,70mm);
+
+
+\node<8-11>[rounded corners, minimum width=32mm, minimum height=37mm, anchor=north west, fill=red!20,   draw=red,   line width=0.6pt, text centered](box1) at(-1mm,52mm) {};
+\node<8-11>[anchor=south] at (box1.south) {Name alias};
+\node<9-11>[rounded corners, minimum width=32mm, minimum height=10mm, anchor=north west, fill=green!20, draw=green, line width=0.6pt, text badly ragged](box2)   at(79mm,41mm) {};
+\node<9-11>[anchor=west] at (box2.west) {Elimination};
+
+
+
+\node<4->[synnt](nt1a) at(65mm,70mm)  {Expr};
+\node<4->[synco](co1a) at(nt1a.south) {Let};
+
+\node<4->[synnt](nt2a) at(35mm,60mm)  {[Bind]};
+\node<5->[synco](co2a) at(nt2a.south) {:};
+
+\node<3->[synnt](nt2b) at(95mm,60mm)  {Expr};
+\node<3->[synco](co2b) at(nt2b.south) {App};
+
+\node<5->[synnt](nt3a) at(15mm,50mm)  {Bind};
+\node<6->[synco](co3a) at(nt3a.south) {Bind};
+
+\node<5->[synnt](nt3b) at(55mm,50mm)  {[Bind]};
+\node<5->[synco](co3b) at(nt3b.south) {:};
+
+\node<3->[synnt](nt3c) at(85mm,50mm)  {Expr};
+\node<3->[synco](co3c) at(nt3c.south) {};
+
+\node<2->[synnt](nt3d) at(105mm,50mm) {Expr};
+\node<2->[synco](co3d) at(nt3d.south) {Var};
+
+\node<6->[synnt](nt4a) at(5mm,40mm)   {Name};
+\node<6->[synco](co4a) at(nt4a.south) {"x"};
+
+\node<6->[synnt](nt4b) at(25mm,40mm)  {Expr};
+\node<7->[synco](co4b) at(nt4b.south) {Var};
+
+\node<5->[synnt](nt4c) at(45mm,40mm)  {Bind};
+\node<6->[synco](co4c) at(nt4c.south) {};
+
+\node<5->[synnt](nt4d) at(65mm,40mm)  {[Bind]};
+\node<5->[synco](co4d) at(nt4d.south) {};
+
+\node<2->[synnt](nt4e) at(105mm,40mm) {Name};
+\node<2->[synco](co4e) at(nt4e.south) {"x"};
+\node<10-10>[synco,xshift=1mm,yshift=-1mm](co4ee) at(co4e.north) {"y"};
+
+\node<7->[synnt](nt5a) at(25mm,30mm)  {Name};
+\node<7->[synco](co5a) at(nt5a.south) {"y"};
+
+
+\path<4->[synline] (co1a.south west)  -- (nt2a.north east);
+\path<4->[synline] (co1a.south east)  -- (nt2b.north west);
+
+\path<5->[synline] (co2a.south west)  -- (nt3a.north east);
+\path<5->[synline] (co2a.south east)  -- (nt3b.north west);
+\path<3->[synline] (co2b.south west)  -- (nt3c.north);
+\path<3->[synline] (co2b.south east)  -- (nt3d.north);
+
+\path<6->[synline] (co3a.south west)  -- (nt4a.north);
+\path<6->[synline] (co3a.south east)  -- (nt4b.north);
+\path<5->[synline] (co3b.south west)  -- (nt4c.north);
+\path<5->[synline] (co3b.south east)  -- (nt4d.north);
+\path<2->[synline] (co3d.south)  -- (nt4e.north);
+\path<7->[synline] (co4b.south)  -- (nt5a.north);
+
+
+\node<12->[attrSynth](syn3a) at(nt3a.south east)   {als};
+\node<12->[attrSynth](syn4c) at(nt4c.south east)   {als};
+
+\node<13->[attrSynth](syn2a) at(nt2a.south east)   {als};
+\node<13->[attrSynth](syn3b) at(nt3b.south east)   {als};
+\node<13->[attrSynth](syn4d) at(nt4d.south east)   {als};
+
+\path<14->[attrDep] (syn4c.north)  -- (syn3b.south);
+\path<14->[attrDep] (syn4d.north)  -- (syn3b.south);
+\path<14->[attrDep] (syn3a.north)  -- (syn2a.south);
+\path<14->[attrDep] (syn3b.north)  -- (syn2a.south);
+
+\node<15->[attrInh](inh1a) at(nt1a.south west)   {env};
+\node<15->[attrInh](inh2b) at(nt2b.south west)   {env};
+\node<15->[attrInh](inh3c) at(nt3c.south west)   {env};
+\node<15->[attrInh](inh3d) at(nt3d.south west)   {env};
+\node<15->[attrInh](inh4b) at(nt4b.south west)   {env};
+
+\path<16-22>[attrDep] (inh1a.south)  -- (inh2b.north);
+\path<16->[attrDep] (inh2b.south)  -- (inh3c.north);
+\path<16->[attrDep] (inh2b.south)  -- (inh3d.north);
+
+\node<17->[attrInh](inh2a) at(nt2a.south west)   {env};
+\node<17->[attrInh](inh3b) at(nt3b.south west)   {env};
+\node<17->[attrInh](inh4d) at(nt4d.south west)   {env};
+\node<17->[attrInh](inh3a) at(nt3a.south west)   {env};
+\node<17->[attrInh](inh4c) at(nt4c.south west)   {env};
+
+\path<18-22>[attrDep] (inh1a.south)  -- (inh2a.north);
+\path<18->[attrDep] (inh2a.south)  -- (inh3a.north);
+\path<18->[attrDep] (inh2a.south)  -- (inh3b.north);
+\path<18->[attrDep] (inh3a.south)  -- (inh4b.north);
+\path<18->[attrDep] (inh3b.south)  -- (inh4c.north);
+\path<18->[attrDep] (inh3b.south)  -- (inh4d.north);
+
+\node<19->[attrSynth](syn3c) at(nt3c.south east)   {trf};
+\node<19->[attrSynth](syn3d) at(nt3d.south east)   {trf};
+\node<19->[attrSynth](syn2b) at(nt2b.south east)   {trf};
+\node<19->[attrSynth](syn1a) at(nt1a.south east)   {trf};
+
+\path<19->[attrDep] (syn3c.north)  -- (syn2b.south);
+\path<19->[attrDep] (syn3d.north)  -- (syn2b.south);
+\path<19->[attrDep] (syn2b.north)  -- (syn1a.south);
+
+\path<20->[attrDep,out=315,in=225] (inh3d.south) to (syn3d.south);
+\path<20->[attrDep]                (nt4e.north east)  -- (syn3d.south);
+
+\node<21->[attrSynth](syn4b) at(nt4b.south east)   {mbal};
+\path<21->[attrDep] (syn4b.north)  -- (syn3a.south);
+
+\path<22->[attrDep]                (nt5a.north east)  -- (syn4b.south);
+
+\node<23->[attrLoc](loc1a) at(nt1a.south)   {env};
+\path<23->[attrDep] (inh1a.east)  -- (loc1a.west);
+\path<23->[attrDep] (syn2a.north)  -- (loc1a.south);
+\path<24->[attrDep] (loc1a.south west)  -- (inh2a.north);
+\path<24->[attrDep] (loc1a.south east)  -- (inh2b.north);
+
+
+
+
+\node[fill=yellow!50, draw, line width=0.4pt, minimum width=80mm, minimum height=30mm, anchor=north west](codeback) at(35mm,30mm) {};
+
+\node<1-2>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+DATA  Expr  =  Var nm:Name
+%%]]
+};
+
+\node<3-3>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+DATA  Expr  =  Var nm:Name
+            |  App f:Expr a:Expr
+%%]]
+};
+
+\node<4-5>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+DATA  Expr  =  Var nm:Name
+            |  App f:Expr a:Expr
+            |  Let defs:[Bind] body:Expr
+%%]]
+};
+
+\node<6-10>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+DATA  Expr  =  Var nm:Name
+            |  App f:Expr a:Expr
+            |  Let defs:[Bind] body:Expr
+DATA  Bind  =  Bind Name Expr
+%%]]
+};
+
+\node<11-11>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+%%]]
+};
+
+\node<12-12>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN  als : Env
+%%]]
+};
+
+\node<13-13>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN als : Env
+ATTR  [Bind] SYN als : Env
+%%]]
+};
+
+\node<14-14>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN als : Env
+ATTR  [Bind] SYN als USE {`union`} {emptymap}: Env
+%%]]
+};
+
+\node<15-16>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN als : Env
+ATTR  [Bind] SYN als USE {`union`} {emptymap}: Env
+ATTR  Expr INH env : Env
+%%]]
+};
+
+\node<17-18>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN als : Env
+ATTR  [Bind] SYN als USE {`union`} {emptymap}: Env
+ATTR  Expr INH env : Env
+ATTR  Bind [Bind] INH env : Env
+%%]]
+};
+
+\node<19-19>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+TYPE  Env   =  Map Name Expr
+ATTR  Bind  SYN als : Env
+ATTR  [Bind] SYN als USE {`union`} {emptymap}: Env
+ATTR  Expr INH env : Env
+ATTR  Bind [Bind] INH env : Env
+ATTR  Expr Bind [Bind] SYN trf : SELF
+%%]]
+};
+
+
+\node<20-20>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+SEM  Expr | Var  
+    lhs.trf = findWithDefault  (Var @nm) 
+                               @nm 
+                               @lhs.env
+%%]]
+};
+
+
+\node<21-21>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+SEM  Bind | Bind  
+    lhs.als = maybe emptymap (@nm mapsto) @body.mbal
+%%]]
+};
+
+
+\node<22-22>[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+SEM  Bind | Bind  
+    lhs.als = maybe emptymap (@nm mapsto) @body.mbal
+ATTR  Expr SYN mbal:Maybe Expr
+SEM  Expr | Var
+    lhs.mbal  =  Just (Var @nm)
+%%]]
+};
+
+
+\node<23->[codebox] at(codeback.north west) {
+%%[[wrap=safecode
+SEM  Expr | Let
+    loc.env =  @lhs.env `union` @defs.als
+%%]]
+};
+
+%TODO: shortcut repeated aliases
+
+
+
+\end{tikzpicture}
+\end{frame}
+
+
+
+
+
+
+
+\begin{frame}
+\frametitle{Multi-pass tree traversal}
+
+
+\begin{tikzpicture}
+  [ synnt/.style={rectangle,                              inner sep=1pt, minimum height=4mm, minimum width=10mm, fill=blue,    text centered, text=white, font=\small, anchor=north},
+    synco/.style={rectangle, draw=blue, line width=0.3pt, inner sep=1pt, minimum height=3mm, minimum width=10mm, fill=blue!20, text centered, text=blue,  font=\small, anchor=north},
+    attrSynth/.style={yshift=1mm,xshift=0.3mm, rectangle, draw=green, line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=green!30, text centered, text=black,  font=\small, anchor=west},
+    attrInh/.style={yshift=-1mm,xshift=-0.3mm, rectangle, draw=red,    line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=red!30,   text centered, text=black,  font=\small, anchor=east},
+    attrLoc/.style={rectangle, draw=black,  line width=0.3pt, inner sep=1pt, minimum height=3mm, fill=black!30, text centered, text=black,  font=\small},
+    synline/.style={draw=blue, line width=1.6pt},
+    attrDep/.style={draw=black, line width=1pt, ->},
+  ]
+
+\draw[help lines,white] (0mm,-10mm) grid[step=10mm] (32mm,35mm);
+
+\node[synnt](nt1a) at(15mm,25mm)  {Expr};
+\node[synco](co1a) at(nt1a.south) {Let};
+\node[synnt](nt2a) at(15mm,5mm)  {Expr};
+\node[synco](co2a) at(nt2a.south) {Var};
+\path[synline] (co1a.south)  -- (nt2a.north);
+
+
+\node<2->[attrSynth](syn2a) at(nt2a.south east)   {als};
+\node<2->[attrSynth](syn1a) at(nt1a.south east)   {als};
+\path<2->[attrDep] (syn2a.north)  -- (syn1a.south);
+
+\node<3->[attrInh](inh1a) at(nt1a.south west)   {env};
+\path<3->[attrDep,out=100,in=80,looseness=1.8] (syn1a.north) to (inh1a.north);
+\node<3->[attrInh](inh2a) at(nt2a.south west)   {env};
+\path<3->[attrDep] (inh1a.south)  -- (inh2a.north);
+
+\node<4->[attrSynth](syn2aa) at(syn2a.east)   {trf};
+\path<4->[attrDep,out=300,in=240] (inh2a.south) to (syn2aa.south);
+\node<4->[attrSynth](syn1aa) at(syn1a.east)   {trf};
+\path<4->[attrDep] (syn2aa.north)  -- (syn1aa.south);
+
+\end{tikzpicture}%
+~%
+\raisebox{2cm}{
+\begin{minipage}{8cm}
+Name alias elimination is a two-pass traversal:
+\begin{itemize}
+\item {\color{uured} First pass}\\
+      \uncover<2->{Bottom-up gather |aliases|}
+\item {\color{uured} Second pass}\\
+      \uncover<3->{Top-down pass |environment|}\\
+      \uncover<4->{Bottom-up generate |transformed tree|}\\
+\end{itemize}
+
+\uncover<5->{Either rely on lazyness\\
+Or let UUAG schedule the passes\\
+~~~(and do cycle check)}
+\end{minipage}
+}
+
+\end{frame}
+
 
 
 
