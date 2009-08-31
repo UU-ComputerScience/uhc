@@ -6,6 +6,19 @@
 %%]
 
 %%[intro
+\begin{frame}
+\frametitle{Views on UHC}
+\begin{itemize}
+\item {\color{uured} From input to output}\\
+      \uncover<2->{{\large\hspace*{5mm}Pipeline of transformations on internal representations}}
+\item {\color{uured} Specification of ``From input to output''}\\
+      \uncover<2->{{\large\hspace*{5mm}Aspectwise organisation of code}}\\
+      \uncover<2->{{\large\hspace*{5mm}Tools}}
+\end{itemize}
+\end{frame}
+
+
+
 %%]
 
 %%[pipeline
@@ -1076,11 +1089,57 @@ SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm
 
 %%[aspectsAndVariants
 \begin{frame}
+\frametitle{AG programming in UHC}
+
+Attribute Grammar descriptions for
+\begin{itemize}
+\item {\color{uured}Transformations}: Core \textit{Name Alias Elimination},\\
+      and many others on Core, Grin, ...
+\item<2-> {\color{uured}Analyses}: EH typing, Grin whole program analysis, ...
+\item<2-> {\color{uured}Simplifications}: Core \textit{Lambda Lifting}, ...
+\item<2-> {\color{uured}Generation}: Core from EH, using results from type analysis
+\end{itemize}
+\vspace{2em}
+
+\uncover<3->{
+|DATA|s, |ATTR|s, and |SEM|s grouped as aspects
+
+\vspace{2em}
+
+\begin{flushright}
+and actually...
+\end{flushright}
+}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Aspectwise organisation}
+
+{\Large\textit{\color{uured}All code} grouped as aspects}
+
+\vspace{2em}
+
+\uncover<2->{
+Along two dimensions:
+
+\begin{itemize}
+\item {\color{uured}Variant}: a step in the stepwise growth in language features
+\item {\color{uured}Aspect}: a set of attributes and its resulting computation
+\end{itemize}
+
+\vspace{2em}
+
+On top of AG, Haskell, C, ...
+}
+
+\end{frame}
+
+
+\begin{frame}
 \frametitle{Variants and aspects}
-
-Variant: a step in the stepwise growth in language features
-
-Aspect: a set of attributes and its resulting computation
 
 E.g. aspect \textit{typing} for the first variants of UHC:
 
@@ -1149,7 +1208,6 @@ In UHC
 
 
 
-\begin{frame}
 \frametitle{Variants and aspects}
 
 \begin{itemize}
@@ -1181,8 +1239,7 @@ In UHC
    column 2/.style={anchor=east},
    column 3/.style={minimum width=4em},
    column 4/.style={minimum width=4em},
-   column 5/.style={minimum width=4em},
-   column 6/.style={minimum width=7em},
+   column 5/.style={minimum width=7em},
    row 10/.style={anchor=north},
    row 11/.style={anchor=north},
    row 12/.style={anchor=north},
@@ -1200,12 +1257,10 @@ In UHC
     \& \node[red]{\textit{variants}} ;
     \& 
     \&
-    \&
     \& \node(topright){} ;
 \\
 \node{99:} ;
     \& \node(topleft){libraries} ;
-    \& \valid ;
     \& \valid ;
     \& \node<2->[block](uhc){UHC} ;
     \&
@@ -1214,19 +1269,16 @@ In UHC
     \& \node{\(\cdots\)} ;
     \& \valid ;
     \& \valid ;
-    \& \valid ;
     \&
 \\
 \node{20:} ;
     \& \node{modules} ;
     \& \valid ;
     \& \valid ;
-    \& \valid ;
     \&
 \\
 %% \node{\(\cdots\)} ;
     \& \node{\(\cdots\)} ;
-    \& \valid ;
     \& \valid ;
     \& \valid ;
     \&
@@ -1235,12 +1287,10 @@ In UHC
     \& \node{classes} ;
     \& \valid ;
     \& \valid ;
-    \& \valid ;
     \& \node<3->[block]{Ext Recs} ;
 \\
 \node(variantx){8:} ;
     \& \node{primitives} ;
-    \& \valid ;
     \& \valid ;
     \& \valida ; \validb{calloutaloc} ; % node<5>(calloutaloc)[validb]{\(\checkmark\)} ;
     \&
@@ -1248,20 +1298,17 @@ In UHC
 %% \node{\(\cdots\)} ;
     \& \node{\(\cdots\)} ;
     \& \valid ;
-    \& \valid ;
     \&
     \&
 \\
 \node{1:} ;
     \& \node{|lambda|-calculus} ; 
     \& \valid ;
-    \& 
     \&
     \&
 \\
 
     \& \node(botleft)[anchor=north east]{} ;
-    \& \node{parsing} ;
     \& \node{typing} ;
     \& \node(aspectx){codegen} ;
     \& \node(botright){experiment} ;
@@ -1269,12 +1316,10 @@ In UHC
 
     \& 
     \& 
-    \& 
     \&
     \& \node[red]{\textit{aspects}} ;
 \\
 
-    \& 
     \& 
     \& 
     \&
@@ -1306,8 +1351,11 @@ In UHC
 %%]
 
 %%[conclusions
-
 \begin{frame}
+\frametitle{Conclusions}
+
+We use {\color{uured} Attribute Grammar}s a lot!
+
 \def\hsColor{yellow!50}
 \def\agColor{green!50}
 \def\cColor{blue!30}
@@ -1315,14 +1363,9 @@ In UHC
 \gdef\barHS(####1)(####2){\bar{\hsColor}(####1)(####2)}
 \gdef\barAG(####1)(####2){\bar{\agColor}(####1)(####2)}
 \gdef\barC(####1)(####2){\bar{\cColor}(####1)(####2)}
-\frametitle{Statistics: Lines of Code (LOC)}
-
-\global\newcounter{yyaccum}
-%\global\def\yaccum{0}
 
 \begin{center}
-\begin{tikzpicture}
-  [yscale=0.2,xscale=0.7]
+\begin{tikzpicture}[yscale=0.2,xscale=0.7]
 %\draw [help lines] grid (11,30);
 \foreach \x/\lbl/\ys in
    {0/Utility/{1.7,18.3,0},
@@ -1337,13 +1380,11 @@ In UHC
     9/Runtime/{0,0,8.1},
     10/GC/{0,0,6.0,}}
  {
-  \pgfmathsetcounter{yyaccum}{0};
   %\pgfmathsetmacro{yaccum}{0}
   \foreach \y in \ys
   {
    %\draw (\x,\y) circle (0.1cm);
    %\pgfmathsetmacro{yaccum}{\y + \yaccum}
-   %\pgfmathaddtocounter{yyaccum}{1};
   } ;
   \node[rotate=-45,anchor=north west] at (\x+0.4,0) {\lbl} ;
  } ;
@@ -1441,7 +1482,6 @@ But
 \begin{itemize}
 \item You have to learn it  %%%, and other used domain specific languages as well
 \end{itemize}
-
 \end{frame}
 
 
@@ -1468,7 +1508,7 @@ But
 \begin{frame}
 \frametitle{Conclusions}
 
-{\color{uured} include this????}
+%% {\color{uured} include this????}
 
 Use of {\color{uured} domain specific languages} and {\color{uured} generation} is essential for dealing with maintenance complexity:
 
@@ -1481,6 +1521,14 @@ But
 \begin{itemize}
 \item More complex build system
 \end{itemize}
+
+\end{frame}
+
+
+
+\begin{frame}
+\frametitle{Questions?}
+
 
 \end{frame}
 
