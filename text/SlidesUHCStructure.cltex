@@ -439,6 +439,7 @@ and automatically
 \begin{itemize}
 \item generates the |fold|-function
 \item generates the semantic functions to instantiate it
+\item inserts trivial rules
 \end{itemize}
 \end{frame}
 
@@ -447,6 +448,48 @@ and automatically
 
 
 
+
+\begin{frame}
+\frametitle{AG applied in UHC}
+Desired Core transformation:
+
+\begin{center}
+\begin{tikzpicture}
+\matrix[ampersand replacement=\&,column sep=1em]
+{ \node(from){
+   \begin{minipage}{.25\linewidth}
+%%[[wrap=safecode
+let  y  =  z  in
+let  x  =  y  in
+     x + y
+%%]]
+   \end{minipage}
+  } ; \&
+  \node(to){
+   \begin{minipage}{.25\linewidth}
+%%[[wrap=safecode
+let  y  =  z  in
+let  x  =  y  in
+     redOn ^ z ^ blackOn ^ + redOn ^ z ^ blackOn
+%%]]
+   \end{minipage}
+  } ; \\
+} ;
+\draw [->,thick] (from.east) -- (to.west) ;
+\end{tikzpicture}
+\end{center}
+
+Eliminate name aliases
+
+\uncover<2->{
+\begin{itemize}
+\item Gather introduced bindings bottom up
+\item Distribute gathered bindings top down
+\item Compute transformed tree bottom up, \\variable occurrences possibly replaced
+\end{itemize}
+}
+
+\end{frame}
 
 
 
@@ -796,7 +839,7 @@ Name alias elimination is a two-pass traversal:
 \item {\color{uured} First pass}\\
       \uncover<2->{Bottom-up gather |aliases|}
 \item {\color{uured} Second pass}\\
-      \uncover<3->{Top-down pass |environment|}\\
+      \uncover<3->{Top-down distribute |environment|}\\
       \uncover<4->{Bottom-up generate |transformed tree|}\\
 \end{itemize}
 
@@ -856,235 +899,194 @@ Or let UUAG schedule the passes\\
 %% \end{tikzpicture}
 %% \end{frame}
 %% 
-\begin{frame}
-\frametitle{AG applied in UHC}
-Desired Core transformation:
 
-\begin{center}
-\begin{tikzpicture}
-\matrix[ampersand replacement=\&,column sep=1em]
-{ \node(from){
-   \begin{minipage}{.25\linewidth}
-%%[[wrap=safecode
-let  y  =  z  in
-let  x  =  y  in
-     x + y
-%%]]
-   \end{minipage}
-  } ; \&
-  \node(to){
-   \begin{minipage}{.25\linewidth}
-%%[[wrap=safecode
-let  y  =  z  in
-let  x  =  y  in
-     redOn ^ z ^ blackOn ^ + redOn ^ z ^ blackOn
-%%]]
-   \end{minipage}
-  } ; \\
-} ;
-\draw [->,thick] (from.east) -- (to.west) ;
-\end{tikzpicture}
-\end{center}
-
-Eliminate name aliases
-
-\uncover<2->{
-\begin{itemize}
-\item Gather introduced bindings bottom up
-\item Distribute gathered bindings top down
-\item Compute transformed tree bottom up, \\variable occurrences possibly replaced
-\end{itemize}
-}
-
-\end{frame}
-
-\begin{frame}
-\frametitle{AG applied in UHC}
-\begin{tikzpicture}
-\matrix
-  [ampersand replacement=\&,
-   tree/.style={uured},
-  ]
-{
-\node[anchor=north]
-{
-\begin{minipage}{.6\linewidth}
-{\color{uured}Core}:
-
-%%[[wrap=safecode
-DATA Expr
-  | Let         binds           :  BindL            ^^ ^^ body            : Expr
-  | Var         nm              :  String
-  | App         func            :  Expr             ^^ ^^ arg             : Expr
-  ...
-
-DATA Bind
-  | Bind        nm              :  String           ^^ ^^ expr            : Expr
-
-TYPE BindL      =   [Bind]
-%%]]
-\\[1ex]
-
-\uncover<2->{
-{\color{uured}Auxiliary Haskell}:
-
-%%[[wrap=safecode
-type Env = Map String Expr
-%%]]
-}
-\end{minipage}
-};
-\&
-\uncover<3->{
-\node[anchor=north west,tree] (top) {|Expr_Let|}
-  child[thick,uured]{ node[tree](bindl){|BindL|}
-    child{ node[tree](bind){|Bind|}
-      child{
-        node[tree](lbot){|String|}
-      }
-      child{ node[tree](app){|Expr_App|}
-        child{
-          node[tree]{|Expr|}
-        }
-        child{
-          node[tree](var){|Expr_Var|}
-        }
-      }
-    }
-  };
-}
-\\
-};
-%\draw[fill=uuyellow!50,semitransparent] (top.south) -- (lbot.south west) -- (rbot.south east) -- cycle ;
-\end{tikzpicture}
-\end{frame}
-
-\begin{frame}
-\frametitle{AG applied in UHC}
-\begin{center}
-\begin{tikzpicture}
-  [scale=.8,
-   level 3/.style={sibling distance=12em},
-   start chain=envG,
-   start chain=expenv,
-   start chain=env,
-   start chain=exptrf,
-   start chain=trf,
-   tree/.style={uured},
-   attr/.style={draw=green!50},
-   every on chain/.style={join=by {green,->}}]
-\node[anchor=north west,tree] (top) {|Expr_Let|}
-  child[thick,uured]{ node[tree](bindl){|BindL|}
-    child{ node[tree](bind){|Bind|}
-      child{
-        node[tree](lbot){|String|}
-      }
-      child{ node[tree](app){|Expr_App|}
-        child{
-          node[tree](exp){|Expr|}
-        }
-        child{
-          node[tree](var){|Expr_Var|}
-        }
-      }
-    }
-  };
-\uncover<2->{
- \node[anchor=west,attr] (bindenvG) at (bind.east) {|envG|};
- \node[anchor=west,attr] (bindlenvG) at (bindl.east) {|envG|};
- \chainin(bindenvG)[on chain=envG,join];
- \chainin(bindlenvG)[on chain=envG,join];
-}
-\uncover<3->{
- \node[anchor=east,attr] (topenv) at (top.west) {|env|};
- \node[anchor=east,attr] (bindlenv) at (bindl.west) {|env|};
- \node[anchor=east,attr] (bindenv) at (bind.west) {|env|};
- \node[anchor=east,attr] (appenv) at (app.west) {|env|};
- \node[anchor=east,attr] (varenv) at (var.west) {|env|};
- \node[anchor=east,attr] (expenv) at (exp.west) {|env|};
- \chainin(bindlenvG)[on chain=env,join];
- \chainin(topenv)[on chain=env,join];
- \chainin(bindlenv)[on chain=env,join];
- \chainin(bindenv)[on chain=env,join];
- \chainin(appenv)[on chain=env,join];
- \chainin(varenv)[on chain=env,join];
- \chainin(appenv)[on chain=expenv,join];
- \chainin(expenv)[on chain=expenv,join];
-}
-\uncover<4->{
- \node[anchor=west,attr] (exptrf) at (exp.east) {|trf|};
- \node[anchor=west,attr] (vartrf) at (var.east) {|trf|};
- \node[anchor=west,attr] (apptrf) at (app.east) {|trf|};
- \node[anchor=west,attr] (bindtrf) at (bindenvG.east) {|trf|};
- \node[anchor=west,attr] (bindltrf) at (bindlenvG.east) {|trf|};
- \node[anchor=west,attr] (toptrf) at (top.east) {|trf|};
- \chainin(vartrf)[on chain=trf,join];
- \chainin(apptrf)[on chain=trf,join];
- \chainin(bindtrf)[on chain=trf,join];
- \chainin(bindltrf)[on chain=trf,join];
- \chainin(toptrf)[on chain=trf,join];
- \chainin(exptrf)[on chain=exptrf,join];
- \chainin(apptrf)[on chain=exptrf,join];
-}
-\end{tikzpicture}
-\end{center}
-\end{frame}
-
-
-
-% \node<3->[shape border rotate=90,fit=(top) (lbot) (rbot),fill=uuyellow!50,semitransparent] {};
-% isosceles triangle,
-
-%{
-%format empty = "\epsilon"
-\begin{frame}
-\frametitle{AG applied in UHC}
-%%[[wrap=safecode
-ATTR Bind BindL SYN envG USE {`union`} {empty}: Env
-%%]]
-
-\uncover<2->{
-%%[[wrap=safecode
-SEM Bind  | Bind        lhs         .   envG        =   maybe empty (singleton @nm) @expr.alias
-
-ATTR Expr SYN alias: {Maybe Expr}
-%%]]
-}
-
-\uncover<3->{
-%%[[wrap=safecode
-SEM Expr
-  | Var         lhs         .   alias       =   Just @trf
-  | * - Var     lhs         .   alias       =   Nothing
-%%]]
-}
-
-%%[[wrap=safecode
-ATTR Expr Bind BindL INH env: Env
-%%]]
-
-\uncover<4->{
-%%[[wrap=safecode
-SEM Expr
-  | Let         loc         .   env'        =   map  (\(Expr_Var n) ->  findWithDefault
-                                                                          (Expr_Var n) n @lhs.env)
-                                                     @binds.envG
-                            .   env         =   @env' `union` @lhs.env
-%%]]
-}
-
-%%[[wrap=safecode
-ATTR Expr Bind BindL SYN trf: SELF
-%%]]
-
-\uncover<5->{
-%%[[wrap=safecode
-SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm @lhs.env
-%%]]
-}
-\end{frame}
-%}
-
+%% \begin{frame}
+%% \frametitle{AG applied in UHC}
+%% \begin{tikzpicture}
+%% \matrix
+%%   [ampersand replacement=\&,
+%%    tree/.style={uured},
+%%   ]
+%% {
+%% \node[anchor=north]
+%% {
+%% \begin{minipage}{.6\linewidth}
+%% {\color{uured}Core}:
+%% 
+%% %%[[wrap=safecode
+%% DATA Expr
+%%   | Let         binds           :  BindL            ^^ ^^ body            : Expr
+%%   | Var         nm              :  String
+%%   | App         func            :  Expr             ^^ ^^ arg             : Expr
+%%   ...
+%% 
+%% DATA Bind
+%%   | Bind        nm              :  String           ^^ ^^ expr            : Expr
+%% 
+%% TYPE BindL      =   [Bind]
+%% %%]]
+%% \\[1ex]
+%% 
+%% \uncover<2->{
+%% {\color{uured}Auxiliary Haskell}:
+%% 
+%% %%[[wrap=safecode
+%% type Env = Map String Expr
+%% %%]]
+%% }
+%% \end{minipage}
+%% };
+%% \&
+%% \uncover<3->{
+%% \node[anchor=north west,tree] (top) {|Expr_Let|}
+%%   child[thick,uured]{ node[tree](bindl){|BindL|}
+%%     child{ node[tree](bind){|Bind|}
+%%       child{
+%%         node[tree](lbot){|String|}
+%%       }
+%%       child{ node[tree](app){|Expr_App|}
+%%         child{
+%%           node[tree]{|Expr|}
+%%         }
+%%         child{
+%%           node[tree](var){|Expr_Var|}
+%%         }
+%%       }
+%%     }
+%%   };
+%% }
+%% \\
+%% };
+%% %\draw[fill=uuyellow!50,semitransparent] (top.south) -- (lbot.south west) -- (rbot.south east) -- cycle ;
+%% \end{tikzpicture}
+%% \end{frame}
+%% 
+%% \begin{frame}
+%% \frametitle{AG applied in UHC}
+%% \begin{center}
+%% \begin{tikzpicture}
+%%   [scale=.8,
+%%    level 3/.style={sibling distance=12em},
+%%    start chain=envG,
+%%    start chain=expenv,
+%%    start chain=env,
+%%    start chain=exptrf,
+%%    start chain=trf,
+%%    tree/.style={uured},
+%%    attr/.style={draw=green!50},
+%%    every on chain/.style={join=by {green,->}}]
+%% \node[anchor=north west,tree] (top) {|Expr_Let|}
+%%   child[thick,uured]{ node[tree](bindl){|BindL|}
+%%     child{ node[tree](bind){|Bind|}
+%%       child{
+%%         node[tree](lbot){|String|}
+%%       }
+%%       child{ node[tree](app){|Expr_App|}
+%%         child{
+%%           node[tree](exp){|Expr|}
+%%         }
+%%         child{
+%%           node[tree](var){|Expr_Var|}
+%%         }
+%%       }
+%%     }
+%%   };
+%% \uncover<2->{
+%%  \node[anchor=west,attr] (bindenvG) at (bind.east) {|envG|};
+%%  \node[anchor=west,attr] (bindlenvG) at (bindl.east) {|envG|};
+%%  \chainin(bindenvG)[on chain=envG,join];
+%%  \chainin(bindlenvG)[on chain=envG,join];
+%% }
+%% \uncover<3->{
+%%  \node[anchor=east,attr] (topenv) at (top.west) {|env|};
+%%  \node[anchor=east,attr] (bindlenv) at (bindl.west) {|env|};
+%%  \node[anchor=east,attr] (bindenv) at (bind.west) {|env|};
+%%  \node[anchor=east,attr] (appenv) at (app.west) {|env|};
+%%  \node[anchor=east,attr] (varenv) at (var.west) {|env|};
+%%  \node[anchor=east,attr] (expenv) at (exp.west) {|env|};
+%%  \chainin(bindlenvG)[on chain=env,join];
+%%  \chainin(topenv)[on chain=env,join];
+%%  \chainin(bindlenv)[on chain=env,join];
+%%  \chainin(bindenv)[on chain=env,join];
+%%  \chainin(appenv)[on chain=env,join];
+%%  \chainin(varenv)[on chain=env,join];
+%%  \chainin(appenv)[on chain=expenv,join];
+%%  \chainin(expenv)[on chain=expenv,join];
+%% }
+%% \uncover<4->{
+%%  \node[anchor=west,attr] (exptrf) at (exp.east) {|trf|};
+%%  \node[anchor=west,attr] (vartrf) at (var.east) {|trf|};
+%%  \node[anchor=west,attr] (apptrf) at (app.east) {|trf|};
+%%  \node[anchor=west,attr] (bindtrf) at (bindenvG.east) {|trf|};
+%%  \node[anchor=west,attr] (bindltrf) at (bindlenvG.east) {|trf|};
+%%  \node[anchor=west,attr] (toptrf) at (top.east) {|trf|};
+%%  \chainin(vartrf)[on chain=trf,join];
+%%  \chainin(apptrf)[on chain=trf,join];
+%%  \chainin(bindtrf)[on chain=trf,join];
+%%  \chainin(bindltrf)[on chain=trf,join];
+%%  \chainin(toptrf)[on chain=trf,join];
+%%  \chainin(exptrf)[on chain=exptrf,join];
+%%  \chainin(apptrf)[on chain=exptrf,join];
+%% }
+%% \end{tikzpicture}
+%% \end{center}
+%% \end{frame}
+%% 
+%% 
+%% 
+%% % \node<3->[shape border rotate=90,fit=(top) (lbot) (rbot),fill=uuyellow!50,semitransparent] {};
+%% % isosceles triangle,
+%% 
+%% %{
+%% %format empty = "\epsilon"
+%% \begin{frame}
+%% \frametitle{AG applied in UHC}
+%% %%[[wrap=safecode
+%% ATTR Bind BindL SYN envG USE {`union`} {empty}: Env
+%% %%]]
+%% 
+%% \uncover<2->{
+%% %%[[wrap=safecode
+%% SEM Bind  | Bind        lhs         .   envG        =   maybe empty (singleton @nm) @expr.alias
+%% 
+%% ATTR Expr SYN alias: {Maybe Expr}
+%% %%]]
+%% }
+%% 
+%% \uncover<3->{
+%% %%[[wrap=safecode
+%% SEM Expr
+%%   | Var         lhs         .   alias       =   Just @trf
+%%   | * - Var     lhs         .   alias       =   Nothing
+%% %%]]
+%% }
+%% 
+%% %%[[wrap=safecode
+%% ATTR Expr Bind BindL INH env: Env
+%% %%]]
+%% 
+%% \uncover<4->{
+%% %%[[wrap=safecode
+%% SEM Expr
+%%   | Let         loc         .   env'        =   map  (\(Expr_Var n) ->  findWithDefault
+%%                                                                           (Expr_Var n) n @lhs.env)
+%%                                                      @binds.envG
+%%                             .   env         =   @env' `union` @lhs.env
+%% %%]]
+%% }
+%% 
+%% %%[[wrap=safecode
+%% ATTR Expr Bind BindL SYN trf: SELF
+%% %%]]
+%% 
+%% \uncover<5->{
+%% %%[[wrap=safecode
+%% SEM Expr  | Var         lhs         .   trf         =   findWithDefault @trf @nm @lhs.env
+%% %%]]
+%% }
+%% \end{frame}
+%% %}
+%% 
 %%]
 
 %%[aspectsAndVariants
@@ -1464,6 +1466,109 @@ We use {\color{uured} Attribute Grammar}s a lot!
 \end{frame}
 
 
+
+\begin{frame}
+\frametitle{Conclusions}
+
+\def\xa{0}
+\def\xb{3.5}
+\def\xc{8}
+\def\xlshft{0}
+
+\def\ya{7}
+\def\yb{6}
+\def\yc{3}
+
+\begin{center}
+\begin{tikzpicture}
+
+\setlength{\leftmargin}{0.3em}
+\setlength{\labelsep}{0.1em}
+\setlength{\labelwidth}{0.1em}
+
+\node[anchor=north west] at (\xa,\ya) {
+  \begin{minipage}{.34\linewidth}
+   Tree oriented: AG
+  \end{minipage}
+} ;
+\node[anchor=north west] at (\xb,\ya) {
+  \begin{minipage}{.34\linewidth}
+   Aspect oriented: Shuffle
+  \end{minipage}
+} ;
+\node[anchor=north west] at (\xc,\ya) {
+  \begin{minipage}{.34\linewidth}
+   General
+  \end{minipage}
+} ;
+
+\node[anchor=north west,fill=green!20,draw=green] at (\xa-\xlshft,\yb) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Concise
+   \item Specify attributes
+   \item Boilerplate generation
+    \begin{itemize}
+    \item trivial copies
+    \item fold
+    \end{itemize}
+   \end{itemize}
+  \end{minipage}
+} ;
+\node[anchor=north west,fill=green!20,draw=green] at (\xb-\xlshft,\yb) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Variant: language feature isolated
+   \item Aspect: experimentation facilitated
+   \end{itemize}
+  \end{minipage}
+} ;
+\node[anchor=north west,fill=green!20,draw=green] at (\xc-\xlshft,\yb) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Design + coding complexity management
+   \end{itemize}
+  \end{minipage}
+} ;
+
+\node[anchor=north west,fill=uured!20,draw=uured] at (\xa-\xlshft,\yc) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Learn new idiom
+   \end{itemize}
+  \end{minipage}
+} ;
+\node[anchor=north west,fill=uured!20,draw=uured] at (\xb-\xlshft,\yc) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Variant partitioning hard to adapt
+   \end{itemize}
+  \end{minipage}
+} ;
+\node[anchor=north west,fill=uured!20,draw=uured] at (\xc-\xlshft,\yc) {
+  \begin{minipage}{.34\linewidth}
+   \begin{itemize}
+   \item Complex build system
+   \end{itemize}
+  \end{minipage}
+} ;
+
+%% %% box
+%% \draw (0,0) -- (\xc+3.5,0) -- (11.5,\ya+.1) -- (0,\ya+.1) -- cycle ;
+%% %% hlines
+%% \draw (0,\yb+.1) -- (\xc+3.5,\yb+.1) ;
+%% \draw (0,\yc+.1) -- (\xc+3.5,\yc+.1) ;
+%% %% vlines
+%% \draw (\xb-.1,0) -- (\xb-.1,\ya+.1) ;
+%% \draw (\xc-.1,0) -- (\xc-.1,\ya+.1) ;
+
+\end{tikzpicture}
+\end{center}
+
+\end{frame}
+
+
+
 \begin{frame}
 \frametitle{Conclusions}
 
@@ -1505,6 +1610,7 @@ But
 
 
 
+
 \begin{frame}
 \frametitle{Conclusions}
 
@@ -1526,11 +1632,11 @@ But
 
 
 
-\begin{frame}
-\frametitle{Questions?}
-
-
-\end{frame}
+%% \begin{frame}
+%% \frametitle{Questions?}
+%% 
+%% 
+%% \end{frame}
 
 
 
