@@ -142,7 +142,7 @@ For now, switch off Boehm GC, turn on own GC
 #elif USE_EHC_MM
 #else
 
-#define HEAPSIZE 1000000
+#define HEAPSIZE 100000000
 
 extern WPtr HP;
 extern WPtr HeapAreaLow;
