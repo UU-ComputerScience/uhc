@@ -623,6 +623,8 @@ This breaks when compiled without bgc.
 #define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
 #elif USE_EHC_MM
 #define GB_Register_Finalizer(n,cd)			
+#else
+#define GB_Register_Finalizer(n,cd)			
 #endif
 %%]
 
