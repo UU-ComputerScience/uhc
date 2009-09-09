@@ -53,6 +53,10 @@ SEM Expr
 SEM Expr
   | AppTop Rec Lam
                 loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+                            .   implsIsEmpty        =   let (knpr,_)
+                                                              = implsPredsTailWithLkup (varmpImplsLookupCyc2 @lhs.tyVarMp) initPredScope
+                                                              $ tyImplsWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
+                                                        in  null knpr
 %%]
 
 %%[(12 hmtyinfer)

@@ -127,7 +127,7 @@ initScopedPredStore
         p1s2         = mkCHRPredOcc pr1 sc2
         p1s3         = mkCHRPredOcc pr1 sc3
         scopeProve   = [Prove p1s1, Prove p1s2] 
-                         ==> [Reduction p1s2 RedHow_ByScope [p1s3]]
+                         ==> [Reduction p1s2 (RedHow_ByScope (AlwaysEq "prv")) [p1s3]]
                           |> [IsStrictParentScope sc3 sc1 sc2]
 {-
         scopeAssum1  = [Prove p1s1, Assume p1s2] 
@@ -135,7 +135,7 @@ initScopedPredStore
                           |> [EqualScope sc1 sc2]
 -}
         scopeAssum2  = [Prove p1s1, Assume p1s2] 
-                         ==> [Reduction p1s1 RedHow_ByScope [p1s2]]
+                         ==> [Reduction p1s1 (RedHow_ByScope (AlwaysEq "ass")) [p1s2]]
                           |> [NotEqualScope sc1 sc2,IsVisibleInScope sc2 sc1]
 %%[[10
         l1s1         = mkCHRPredOcc (Pred_Lacks ty1 lab1) sc1
@@ -235,10 +235,10 @@ mkClassSimplChrs env rules (context, head, infos)
                 super3     = mkCHRPredOcc super sc3
                 superRule  = [Prove head1, Prove p] ==> reds'
                 scopeRule1 = [Prove head1, Prove super2] 
-                               ==> [Prove head3, Reduction head1 RedHow_ByScope [head3]]
+                               ==> [Prove head3, Reduction head1 (RedHow_ByScope (AlwaysEq "sup1")) [head3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 scopeRule2 = [Prove head2, Prove super1] 
-                               ==> [Prove super3, Reduction super1 RedHow_ByScope [super3]]
+                               ==> [Prove super3, Reduction super1 (RedHow_ByScope (AlwaysEq "sup2")) [super3]]
                                  |> [HasStrictCommonScope sc3 sc1 sc2]
                 reds'      = Reduction p info [par] : reds
                 rules      = mapTrans (Set.insert p done) reds' p (predecessors graph pr)

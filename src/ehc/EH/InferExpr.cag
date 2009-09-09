@@ -302,7 +302,7 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.AppTop
 %%[(5 hmtyinfer).AppTop
 SEM Expr
-  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq @lhs.knTy
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_fresh @lhs.knTy
                 loc         .   lUniq_fresh         :   UNIQUEREF gUniq
 %%]
 

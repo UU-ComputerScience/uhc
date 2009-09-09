@@ -140,9 +140,12 @@ instance PP PredOccId where
 instance PP PredOcc where
   pp po = pp (poPr po) >|< "/" >|< pp (poPoi po) >|< "/" >|< pp (poScope po)
 
+instance PP CHRPredOccCxt where
+  pp (CHRPredOccCxt_Scope1 sc) = pp sc
+
 instance PP CHRPredOcc where
   pp po = ppParensCommas
-            [ pp (cpoPr po), pp (cpoScope po)
+            [ pp (cpoPr po), pp (cpoCxt po)
 %%[[99
             , pp (cpoRange po)
 %%]]
@@ -183,8 +186,11 @@ instance PPForHI TyKiKey where
   ppForHI (TyKiKey_Name  n) = ppForHI n
   ppForHI (TyKiKey_TyVar v) = ppForHI v
 
+instance PPForHI CHRPredOccCxt where
+  ppForHI (CHRPredOccCxt_Scope1 sc) = {- "cxtscope1" >#< -} ppForHI sc
+
 instance PPForHI CHRPredOcc where
-  ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoScope po)]
+  ppForHI po = ppCurlysCommas [ppForHI (cpoPr po), ppForHI (cpoCxt po)]
 
 instance PPForHI PredScope where
   ppForHI (PredScope_Lev l) = "scope" >#< (ppBracketsCommas $ map pp $ rllToList l)

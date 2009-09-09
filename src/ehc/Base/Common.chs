@@ -1395,6 +1395,29 @@ instance Show a => Show (RLList a) where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AlwaysEq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+General purpose info for which comparison always yields EQ.
+This is to fool 'deriving' when info is added for debugging purposes only.
+
+%%[1 export(AlwaysEq(..))
+data AlwaysEq a = AlwaysEq a
+
+instance Eq (AlwaysEq a) where
+  _ == _ = True
+
+instance Ord (AlwaysEq a) where
+  _ `compare` _ = EQ
+
+instance Show a => Show (AlwaysEq a) where
+  show (AlwaysEq x) = show x
+
+instance PP a => PP (AlwaysEq a) where
+  pp (AlwaysEq x) = pp x
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Package name
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

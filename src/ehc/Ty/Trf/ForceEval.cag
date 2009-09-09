@@ -49,6 +49,12 @@ instance ForceEval PredScope  where
   fevCount (PredScope_Var v) = cm1 "PredScope_Var" `cmUnion` fevCount v
 %%]]
 
+instance ForceEval CHRPredOccCxt  where
+  forceEval x@(CHRPredOccCxt_Scope1 sc) | forceEval sc `seq` True = x
+%%[[102
+  fevCount (CHRPredOccCxt_Scope1 sc) = cm1 "CHRPredOccCxt_Scope1" `cmUnion` fevCount sc
+%%]]
+
 instance ForceEval LabelOffset where
   forceEval x@(LabelOffset_Off o) | forceEval o `seq` True = x
   forceEval x@(LabelOffset_Var v) | forceEval v `seq` True = x

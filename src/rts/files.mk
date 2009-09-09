@@ -85,6 +85,7 @@ RTS_SRC_CH_SHARED := \
         timing \
         priminline \
         primdecl \
+        basictypes \
         types \
         mm/mmitf \
         mm/mm \

@@ -53,8 +53,19 @@ pLabel = pKeyTk "label" *> (Label_Lab <$> pDollNm <|> Label_Var <$> pUIDHI)
 pPredScope :: HIParser PredScope
 pPredScope = pKeyTk "scope" *> ((PredScope_Lev . rllFromList) <$> pBracks_pCommas pInt <|> PredScope_Var <$> pUIDHI)
 
+pCHRPredOccCxt :: HIParser CHRPredOccCxt
+pCHRPredOccCxt
+--  =   CHRPredOccCxt_Scope1 <$ pKeyTk "cxtscope1" <*> pPredScope
+  =   CHRPredOccCxt_Scope1 <$> pPredScope
+
 pCHRPredOcc :: HIParser CHRPredOcc
-pCHRPredOcc = mkCHRPredOcc <$ pOCURLY <*> pPred <* pCOMMA <*> pPredScope <* pCCURLY
+pCHRPredOcc
+%%[[20
+  = CHRPredOcc
+%%][99
+  = (\p cx -> CHRPredOcc p cx emptyRange)
+%%]]
+    <$ pOCURLY <*> pPred <* pCOMMA <*> pCHRPredOccCxt <* pCCURLY
 
 %%]
 
@@ -116,7 +127,8 @@ pRedHowAnnotation
   <|> RedHow_Assumption   <$ pKeyTk "redhowassume" <* pOCURLY <*> pVarUIDHsName
                                                    <* pCOMMA  <*> pPredScope
                                                    <* pCCURLY
-  <|> RedHow_ByScope      <$ pKeyTk "redhowscope"
+  <|> RedHow_ByScope      <$ pKeyTk "redhowscope"  <* pOCURLY <*> (AlwaysEq <$> pString)
+                                                   <* pCCURLY
   <|> RedHow_ByLabel      <$ pKeyTk "redhowlabel"  <* pOCURLY <*> pLabel
                                                    <* pCOMMA  <*> pLabelOffset
                                                    <* pCOMMA  <*> pPredScope

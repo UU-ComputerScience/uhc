@@ -99,6 +99,24 @@ Order of imports is important because of usage dependencies between types.
 #include "plan.h"
 %%]
 
+%%[8
+#if MM_BYPASS_PLAN
+#	if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+#		include "allocator/bump.h"
+#	endif
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bypass to internals of MM
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if MM_BYPASS_PLAN
+extern MM_Allocator* mm_bypass_allocator ;
+#endif
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface to outside of MM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -107,7 +125,13 @@ Order of imports is important because of usage dependencies between types.
 // Allocate sz bytes, to be managed by GC
 // Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word)
 static inline Ptr mm_itf_alloc( size_t sz ) {
-	return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			return mm_allocator_Bump_Alloc( mm_bypass_allocator, sz ) ;
+#		endif
+#	else
+		return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
+#	endif
 }
 
 static inline Ptr mm_itf_allocResident( size_t sz ) {

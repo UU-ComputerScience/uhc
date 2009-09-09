@@ -1,3 +1,20 @@
+%%[8
+#ifndef __RTS_H__
+#define __RTS_H__
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Includes for config
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#include "config.h"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Internal config, must proceed includes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8.TRACE
 #define TRACE 					1
 
@@ -11,14 +28,31 @@
 %%[100 -8.TRACE
 %%]
 
+
+%%[8
+#ifdef __UHC_TARGET_BC__
+// For now, switch off Boehm GC, turn on own GC
+#undef USE_BOEHM_GC
+#define USE_EHC_MM				1
+// internal MM admin uses structs with functions, which will be bypassed (for speed) with MM_BYPASS_PLAN on
+#define MM_BYPASS_PLAN			1
+#endif
+%%]
+
+%%[8
+%%]
+// not used
+#define GB_IND_IN_HDR			1
+
+
+%%[8
+#define INFO_EXITSTATE			1
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Includes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#ifndef __RTS_H__
-#define __RTS_H__
-%%]
 
 %%[8
 #include <stdio.h>
@@ -26,12 +60,12 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <limits.h>
-#include "config.h"
 #include "sizes.h"
+#include "basictypes.h"
 #include "bits.h"
+#include "mm/mmitf.h"
 #include "types.h"
 #include "utils.h"
-#include "mm/mmitf.h"
 #include "mm/mm.h"
 %%]
 
@@ -92,28 +126,6 @@
 // the empty PRIM define is used to mark exported functions from prim.c, used to automatically generate prim.h
 #define PRIM
 
-%%]
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Internal config
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-For now, switch off Boehm GC, turn on own GC
-
-%%[8
-%%]
-#undef USE_BOEHM_GC
-#define USE_EHC_MM				1
-
-%%[8
-%%]
-// not used
-#define GB_IND_IN_HDR			1
-
-
-%%[8
-#define INFO_EXITSTATE			1
 %%]
 
 

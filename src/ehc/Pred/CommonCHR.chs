@@ -37,7 +37,7 @@ data RedHowAnnotation
   |  RedHow_BySuperClass  !HsName  !Int   !CTag				-- field name, offset, tag info of dict
   |  RedHow_ProveObl      !UID  !PredScope
   |  RedHow_Assumption    !VarUIDHsName  !PredScope
-  |  RedHow_ByScope
+  |  RedHow_ByScope		  (AlwaysEq String)						-- variant, for distinguishing during debugging
 %%[[10
   |  RedHow_ByLabel       !Label !LabelOffset !PredScope
 %%]]
@@ -73,7 +73,7 @@ instance PP RedHowAnnotation where
   pp (RedHow_BySuperClass s _ _ )  =    "super"  >#< s
   pp (RedHow_ProveObl     i   sc)  =    "prove"  >#< i >#< sc
   pp (RedHow_Assumption   vun sc)  =    "assume" >#< ppParensCommas [pp vun, pp sc]
-  pp (RedHow_ByScope            )  = pp "scope"
+  pp (RedHow_ByScope      v     )  =    "scope"  >|< ppParens v
 %%[[10
   pp (RedHow_ByLabel      l o sc)  =    "label"  >#< l >|< "@" >|< o >|< sc
 %%]]
@@ -98,7 +98,7 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_BySuperClass s o tg)  =    "redhowsuper"  >#< ppCurlysCommasBlock [ppForHI s, pp o, ppForHI tg]
   ppForHI (RedHow_ProveObl     i   sc)  =    "redhowprove"  >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
   ppForHI (RedHow_Assumption   vun sc)  =    "redhowassume" >#< ppCurlysCommasBlock [ppForHI vun, ppForHI sc]
-  ppForHI (RedHow_ByScope            )  = pp "redhowscope"
+  ppForHI (RedHow_ByScope      v     )  =    "redhowscope"  >#< ppCurlysCommasBlock [ppForHI v]
   ppForHI (RedHow_ByLabel      l o sc)  =    "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
   ppForHI (RedHow_Lambda       i   sc)  =    "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
 %%]
@@ -178,7 +178,7 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_BySuperClass s o tg)  = cm1 "RedHow_BySuperClass"    `cmUnion` fevCount s `cmUnion` fevCount o `cmUnion` fevCount tg
   fevCount (RedHow_ProveObl     i   sc)  = cm1 "RedHow_ProveObl"        `cmUnion` fevCount i `cmUnion` fevCount sc
   fevCount (RedHow_Assumption   vun sc)  = cm1 "RedHow_Assumption"      `cmUnion` fevCount vun `cmUnion` fevCount sc
-  fevCount (RedHow_ByScope            )  = cm1 "RedHow_ByScope"
+  fevCount (RedHow_ByScope      _     )  = cm1 "RedHow_ByScope"
 %%[[16
   fevCount (RedHow_ByEqSymmetry       )  = cm1 "RedHow_ByEqSymmetry"
   fevCount (RedHow_ByEqTrans          )  = cm1 "RedHow_ByEqTrans"

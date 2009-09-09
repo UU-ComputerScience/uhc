@@ -49,12 +49,15 @@ instance Keyable PredScope where
   toKey (PredScope_Var v) = [TK_One TKK_Partial $ Key_UID v]
   toKey (PredScope_Lev l) = [TK_One TKK_Normal  $ Key_Str $ show l]
 
+instance Keyable CHRPredOccCxt where
+  toKey (CHRPredOccCxt_Scope1 sc) = toKey sc -- for now
+
 instance Keyable PredOcc where
   toKey po = toKey (poPr po)
 
 instance Keyable CHRPredOcc where
   toKeyParentChildren po
-    = (ppr ++ toKey (cpoScope po),cpr)
+    = (ppr ++ toKey (cpoCxt po),cpr)
     where (ppr,cpr) = toKeyParentChildren $ cpoPr po
 
 %%]

@@ -346,6 +346,7 @@ hiScanOpts
                                         , "HasStrictCommonScope", "IsStrictParentScope", "IsVisibleInScope", "EqualScope", "NotEqualScope"
                                         , "redhowinst", "redhowsuper", "redhowprove", "redhowassume", "redhowscope", "redhoweqsym", "redhoweqtrans", "redhoweqcongr"
                                         , "varuidnmname", "varuidnmuid", "varuidnmvar"
+                                        , "cxtscope1"
 %%]]
 %%[[10
                                         , "label", "offset"

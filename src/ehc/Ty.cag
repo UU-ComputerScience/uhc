@@ -485,11 +485,22 @@ mkPredOccRng r p i sc = PredOcc p i sc r
 %%% CHR Pred occurrence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc(..),mkCHRPredOcc)
+%%[(9 hmtyinfer || hmtyast) hs export(CHRPredOccCxt(..))
+data CHRPredOccCxt
+  = CHRPredOccCxt_Scope1
+      { cpocxScope			:: !PredScope			-- default, only allowed value for occurring preds
+      --											-- others for solving and CHR's only
+      }
+  deriving (Show,Eq,Ord)
+
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc(..),cpoScope,mkCHRPredOcc)
 data CHRPredOcc
   =  CHRPredOcc
        { cpoPr               :: !Pred
-       , cpoScope            :: !PredScope
+       -- , cpoScope            :: !PredScope
+       , cpoCxt              :: !CHRPredOccCxt
 %%[[99
        , cpoRange            :: !Range
 %%]]
@@ -498,15 +509,18 @@ data CHRPredOcc
 
 mkCHRPredOcc :: Pred -> PredScope -> CHRPredOcc
 %%[[9
-mkCHRPredOcc p sc = CHRPredOcc p sc
+mkCHRPredOcc p sc = CHRPredOcc p (CHRPredOccCxt_Scope1 sc)
 %%][99
 mkCHRPredOcc p sc = mkCHRPredOccRng emptyRange p sc
 %%]]
+
+cpoScope :: CHRPredOcc -> PredScope
+cpoScope = cpocxScope . cpoCxt
 %%]
 
 %%[(99 hmtyinfer || hmtyast) hs export(mkCHRPredOccRng)
 mkCHRPredOccRng :: Range -> Pred -> PredScope -> CHRPredOcc
-mkCHRPredOccRng r p sc = CHRPredOcc p sc r
+mkCHRPredOccRng r p sc = CHRPredOcc p (CHRPredOccCxt_Scope1 sc) r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

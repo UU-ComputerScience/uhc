@@ -38,6 +38,9 @@ typedef struct MM_Plan_SS_Data {
 %%[8
 extern void mm_plan_SS_Init( MM_Plan* ) ;
 extern Bool mm_plan_SS_PollForGC( MM_Plan*, Bool isSpaceFull, MM_Space* space ) ;
+#if MM_BYPASS_PLAN
+extern void mm_plan_SS_InitBypass( MM_Plan* plan ) ;
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

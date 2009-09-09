@@ -167,6 +167,10 @@ instance Substitutable PredScope TyVarId VarMp where
   ftv    (PredScope_Var v)    = [v]
   ftv    _                    = []
 
+instance Substitutable CHRPredOccCxt TyVarId VarMp where
+  s |=>  (CHRPredOccCxt_Scope1 sc) = CHRPredOccCxt_Scope1 (s |=> sc)
+  ftv    (CHRPredOccCxt_Scope1 sc) = ftv sc
+
 instance Substitutable PredOcc TyVarId VarMp where
 %%[[9
   s |=>  (PredOcc pr id sc)  = PredOcc (s |=> pr) id (s |=> sc)

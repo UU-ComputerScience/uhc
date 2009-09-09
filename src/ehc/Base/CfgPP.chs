@@ -172,6 +172,12 @@ instance PPForHI HsName where
   ppForHI = cfgppHsName CfgPP_HI
 
 instance PPForHI Int
+
+instance PPForHI String where
+  ppForHI = pp . show
+
+instance PPForHI a => PPForHI (AlwaysEq a) where
+  ppForHI (AlwaysEq x) = ppForHI x
 %%]
 
 %%[20
