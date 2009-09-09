@@ -47,6 +47,9 @@ instance CHRMatchable FIIn Pred VarMp where
 %%]
 
 %%[(9 hmtyinfer)
+instance CHRMatchable FIIn CHRPredOccCxt VarMp where
+  chrMatchTo e subst (CHRPredOccCxt_Scope1 sc1) (CHRPredOccCxt_Scope1 sc2) = chrMatchTo e subst sc1 sc2
+
 instance CHRMatchable FIIn PredScope VarMp where
   chrMatchTo _ subst (PredScope_Var v1) sc2@(PredScope_Var v2) | v1 == v2    = Just emptyVarMp
   chrMatchTo e subst (PredScope_Var v1) sc2                    | isJust mbSc = chrMatchTo e subst (fromJust mbSc) sc2
@@ -70,7 +73,7 @@ instance CHRMatchable FIIn PredScope VarMp where
 instance CHRMatchable FIIn CHRPredOcc VarMp where
   chrMatchTo fi subst po1 po2
     = do { subst1 <- chrMatchTo fi subst (cpoPr po1) (cpoPr po2)
-         ; subst2 <- chrMatchTo fi subst (cpoScope po1) (cpoScope po2)
+         ; subst2 <- chrMatchTo fi subst (cpoCxt po1) (cpoCxt po2)
          ; return $ subst2 |=> subst1
          }
 

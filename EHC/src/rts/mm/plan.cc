@@ -26,11 +26,13 @@ MM_Plan mm_plan ;
 
 %%[8
 void mm_init_plan() {
-
 #	if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
 		mm_plan = mm_plan_SS ;
 #	endif
 	mm_plan.init( &mm_plan ) ;
+#if MM_BYPASS_PLAN
+	mm_plan.initBypass( &mm_plan ) ;
+#endif
 }
 %%]
 

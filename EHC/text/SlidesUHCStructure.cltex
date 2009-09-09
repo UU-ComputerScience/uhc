@@ -398,7 +398,7 @@ calc  =   fold calcsem testenv
 
 %% AG Oplossing
 
-%format THIS = "\mathbf{this}"
+%format THIS = "\mathbf{lhs}"
 
 
 \node<18->[codebox, anchor=north west]  at(34mm,30mm) {
@@ -479,7 +479,7 @@ let  x  =  y  in
 \end{tikzpicture}
 \end{center}
 
-Eliminate name aliases
+Inline name aliases
 
 \uncover<2->{
 \begin{itemize}
@@ -505,7 +505,7 @@ Eliminate name aliases
 \begin{frame}
 \frametitle<1-7>{Example Core transformation}
 \frametitle<8>{Example Core transformation: Name alias}
-\frametitle<9->{Example Core transformation: Name alias Elimination}
+\frametitle<9->{Example Core transformation: Name alias inlining}
 
 
 \begin{tikzpicture}
@@ -530,7 +530,7 @@ Eliminate name aliases
 \node<8-11>[rounded corners, minimum width=32mm, minimum height=37mm, anchor=north west, fill=red!20,   draw=red,   line width=0.6pt, text centered](box1) at(-1mm,52mm) {};
 \node<8-11>[anchor=south] at (box1.south) {Name alias};
 \node<9-11>[rounded corners, minimum width=32mm, minimum height=10mm, anchor=north west, fill=green!20, draw=green, line width=0.6pt, text badly ragged](box2)   at(79mm,41mm) {};
-\node<9-11>[anchor=west] at (box2.west) {Elimination};
+\node<9-11>[anchor=west] at (box2.west) {Inlining};
 
 
 
@@ -834,7 +834,7 @@ SEM  Expr | Let
 ~%
 \raisebox{2cm}{
 \begin{minipage}{8cm}
-Name alias elimination is a two-pass traversal:
+Name alias inlining is a two-pass traversal:
 \begin{itemize}
 \item {\color{uured} First pass}\\
       \uncover<2->{Bottom-up gather |aliases|}
@@ -1095,18 +1095,22 @@ Or let UUAG schedule the passes\\
 
 Attribute Grammar descriptions for
 \begin{itemize}
-\item {\color{uured}Transformations}: Core \textit{Name Alias Elimination},\\
-      and many others on Core, Grin, ...
-\item<2-> {\color{uured}Analyses}: EH typing, Grin whole program analysis, ...
-\item<2-> {\color{uured}Simplifications}: Core \textit{Lambda Lifting}, ...
-\item<2-> {\color{uured}Generation}: Core from EH, using results from type analysis
+\item {\color{uured}Analyses} \\
+ ~~HS: Name dependency\\
+ ~~EH: Typing\\
+ ~~Grin: Heap Points To, Call Graph
+\item {\color{uured}Transformations} \\
+ ~~Core: Lambda Lifting\\
+ ~~Grin: Drop Unreachable Bindings
+\item {\color{uured}Generation} \\
+ ~~Next language, Pretty Printing
 \end{itemize}
-\vspace{2em}
+\vspace{1.5em}
 
-\uncover<3->{
+\uncover<2->{
 |DATA|s, |ATTR|s, and |SEM|s grouped as aspects
 
-\vspace{2em}
+\vspace{1.5em}
 
 \begin{flushright}
 and actually...
@@ -1117,6 +1121,33 @@ and actually...
 
 
 
+%% \begin{frame}
+%% \frametitle{AG programming in UHC}
+%% 
+%% Attribute Grammar descriptions for
+%% \begin{itemize}
+%% \item {\color{uured}Transformations}: Core \textit{Name Alias Elimination},\\
+%%       and many others on Core, Grin, ...
+%% \item<2-> {\color{uured}Analyses}: EH typing, Grin whole program analysis, ...
+%% \item<2-> {\color{uured}Simplifications}: Core \textit{Lambda Lifting}, ...
+%% \item<2-> {\color{uured}Generation}: Core from EH, using results from type analysis
+%% \end{itemize}
+%% \vspace{2em}
+%% 
+%% \uncover<3->{
+%% |DATA|s, |ATTR|s, and |SEM|s grouped as aspects
+%% 
+%% \vspace{2em}
+%% 
+%% \begin{flushright}
+%% and actually...
+%% \end{flushright}
+%% }
+%% 
+%% \end{frame}
+
+
+
 \begin{frame}
 \frametitle{Aspectwise organisation}
 
@@ -1124,7 +1155,6 @@ and actually...
 
 \vspace{2em}
 
-\uncover<2->{
 Along two dimensions:
 
 \begin{itemize}
@@ -1134,7 +1164,9 @@ Along two dimensions:
 
 \vspace{2em}
 
-On top of AG, Haskell, C, ...
+\uncover<2->{
+{\Large\textit{Shuffle} extracts code fragments} \\
+tagged with the required variant/aspect
 }
 
 \end{frame}
@@ -1192,18 +1224,18 @@ In UHC
 \item<1-> \makebox[50mm][l]{$\lambda$-calculus, type checking}
 \item<1-> \makebox[50mm][l]{type inference}
 \item<1-> \makebox[50mm][l]{polymorphism}
-\item<1-> \makebox[50mm][l]{}                                  \visible<2->{higher ranked types, existentials}
+\item<1-> \makebox[50mm][l]{}                                  \visible<1->{higher ranked types, existentials}
 \item<1-> \makebox[50mm][l]{data types}
-\item<3-> \makebox[50mm][l]{kind inference}                    kind signatures
-\item<3-> \makebox[50mm][l]{records}                           tuples as records
-\item<3-> \makebox[50mm][l]{code generation}                   full program analysis
-\item<3-> \makebox[50mm][l]{classes, type-synonyms}            extensible records
+\item<2-> \makebox[50mm][l]{kind inference}                    kind signatures
+\item<2-> \makebox[50mm][l]{records}                           tuples as records
+\item<2-> \makebox[50mm][l]{code generation}                   full program analysis
+\item<2-> \makebox[50mm][l]{classes, type-synonyms}            extensible records
 \setcounter{enumi}{19}
-\item<4-> \makebox[50mm][l]{modules}
+\item<3-> \makebox[50mm][l]{modules}
 \setcounter{enumi}{94}
-\item<4-> \makebox[50mm][l]{`deriving'}                      exceptions
+\item<3-> \makebox[50mm][l]{`deriving'}                      exceptions
 \setcounter{enumi}{98}
-\item<4-> \makebox[50mm][l]{prelude, I/O}
+\item<3-> \makebox[50mm][l]{prelude, I/O}
 \end{enumerate}
 
 \end{frame}
@@ -1354,7 +1386,7 @@ In UHC
 
 %%[conclusions
 \begin{frame}
-\frametitle{Conclusions}
+\frametitle{Metrics}
 
 We use {\color{uured} Attribute Grammar}s a lot!
 
@@ -1468,88 +1500,86 @@ We use {\color{uured} Attribute Grammar}s a lot!
 
 
 \begin{frame}
-\frametitle{Conclusions}
+\frametitle{Summary}
 
 \def\xa{0}
-\def\xb{3.5}
+\def\xb{4}
 \def\xc{8}
 \def\xlshft{0}
+\def\boxw{.31\linewidth}
 
-\def\ya{7}
-\def\yb{6}
-\def\yc{3}
+\def\ya{6.5}
+\def\yb{5}
+\def\yc{2}
 
 \begin{center}
 \begin{tikzpicture}
 
-\setlength{\leftmargin}{0.3em}
-\setlength{\labelsep}{0.1em}
-\setlength{\labelwidth}{0.1em}
+\draw[help lines,white] (-1mm,-1mm) grid[step=5mm] (12,\ya);
 
 \node[anchor=north west] at (\xa,\ya) {
-  \begin{minipage}{.34\linewidth}
-   Tree oriented: AG
+  \begin{minipage}{\boxw}
+   \raggedright
+   Tree orientation:\\
+   Attribute Grammar
   \end{minipage}
 } ;
-\node[anchor=north west] at (\xb,\ya) {
-  \begin{minipage}{.34\linewidth}
-   Aspect oriented: Shuffle
+\node<2->[anchor=north west] at (\xb,\ya) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   Aspect orientation:\\
+   Shuffle
   \end{minipage}
 } ;
-\node[anchor=north west] at (\xc,\ya) {
-  \begin{minipage}{.34\linewidth}
+\node<3->[anchor=north west] at (\xc,\ya) {
+  \begin{minipage}{\boxw}
+   \raggedright
    General
   \end{minipage}
 } ;
 
 \node[anchor=north west,fill=green!20,draw=green] at (\xa-\xlshft,\yb) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Concise
-   \item Specify attributes
-   \item Boilerplate generation
-    \begin{itemize}
-    \item trivial copies
-    \item fold
-    \end{itemize}
-   \end{itemize}
+  \begin{minipage}{\boxw}
+   \raggedright
+   Conciseness \\
+   Attribute specification \\
+   Boilerplate generation \\
+    - trivial copies \\
+    - fold \\
   \end{minipage}
 } ;
-\node[anchor=north west,fill=green!20,draw=green] at (\xb-\xlshft,\yb) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Variant: language feature isolated
-   \item Aspect: experimentation facilitated
-   \end{itemize}
+\node<2->[anchor=north west,fill=green!20,draw=green] at (\xb-\xlshft,\yb) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   Variant:\\
+   ~~feature isolation \\
+   Aspect:\\
+   ~~experimentation \\
   \end{minipage}
 } ;
-\node[anchor=north west,fill=green!20,draw=green] at (\xc-\xlshft,\yb) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Design + coding complexity management
-   \end{itemize}
+\node<3->[anchor=north west,fill=green!20,draw=green] at (\xc-\xlshft,\yb) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   Simpler design and coding
   \end{minipage}
 } ;
 
-\node[anchor=north west,fill=uured!20,draw=uured] at (\xa-\xlshft,\yc) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Learn new idiom
-   \end{itemize}
+\node[anchor=north west,fill=uured!20,draw=uured,minimum height=1cm] at (\xa-\xlshft,\yc) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   New idiom
   \end{minipage}
 } ;
-\node[anchor=north west,fill=uured!20,draw=uured] at (\xb-\xlshft,\yc) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Variant partitioning hard to adapt
-   \end{itemize}
+\node<2->[anchor=north west,fill=uured!20,draw=uured,minimum height=1cm] at (\xb-\xlshft,\yc) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   Fixed order
   \end{minipage}
 } ;
-\node[anchor=north west,fill=uured!20,draw=uured] at (\xc-\xlshft,\yc) {
-  \begin{minipage}{.34\linewidth}
-   \begin{itemize}
-   \item Complex build system
-   \end{itemize}
+\node<3->[anchor=north west,fill=uured!20,draw=uured,minimum height=1cm] at (\xc-\xlshft,\yc) {
+  \begin{minipage}{\boxw}
+   \raggedright
+   Complex build system
   \end{minipage}
 } ;
 
@@ -1567,68 +1597,68 @@ We use {\color{uured} Attribute Grammar}s a lot!
 
 \end{frame}
 
-
-
-\begin{frame}
-\frametitle{Conclusions}
-
-Use of {\color{uured} Attribute Grammar} is essential for dealing with description \& coding complexity:
-
-\begin{itemize}
-\item Much boilerplate code for treewalks is avoided
-\item Aspects can be described separately
-\item Separately described aspects are combined by the AG compiler
-\item AG compiler takes care of plumbing all code as one fold and ordering of attribute computations
-\item Scales up in the number of combined aspects
-\end{itemize}
-
-But
-
-\begin{itemize}
-\item You have to learn it  %%%, and other used domain specific languages as well
-\end{itemize}
-\end{frame}
-
-
-\begin{frame}
-\frametitle{Conclusions}
-
-Use of {\color{uured} variants and aspects} is essential for dealing with design complexity:
-
-\begin{itemize}
-\item Language features are isolated in a variant
-\end{itemize}
-
-But
-
-\begin{itemize}
-\item Inherent language \& implementation complexity is not decreased, only made more manageable
-\item Chosen partitioning into variants is difficult to adapt
-\end{itemize}
-
-\end{frame}
-
-
-
-
-\begin{frame}
-\frametitle{Conclusions}
-
-%% {\color{uured} include this????}
-
-Use of {\color{uured} domain specific languages} and {\color{uured} generation} is essential for dealing with maintenance complexity:
-
-\begin{itemize}
-\item Avoids duplicates consistency pitfall by generating from shared description
-\end{itemize}
-
-But
-
-\begin{itemize}
-\item More complex build system
-\end{itemize}
-
-\end{frame}
+%% 
+%% 
+%% \begin{frame}
+%% \frametitle{Conclusions}
+%% 
+%% Use of {\color{uured} Attribute Grammar} is essential for dealing with description \& coding complexity:
+%% 
+%% \begin{itemize}
+%% \item Much boilerplate code for treewalks is avoided
+%% \item Aspects can be described separately
+%% \item Separately described aspects are combined by the AG compiler
+%% \item AG compiler takes care of plumbing all code as one fold and ordering of attribute computations
+%% \item Scales up in the number of combined aspects
+%% \end{itemize}
+%% 
+%% But
+%% 
+%% \begin{itemize}
+%% \item You have to learn it  %%%, and other used domain specific languages as well
+%% \end{itemize}
+%% \end{frame}
+%% 
+%% 
+%% \begin{frame}
+%% \frametitle{Conclusions}
+%% 
+%% Use of {\color{uured} variants and aspects} is essential for dealing with design complexity:
+%% 
+%% \begin{itemize}
+%% \item Language features are isolated in a variant
+%% \end{itemize}
+%% 
+%% But
+%% 
+%% \begin{itemize}
+%% \item Inherent language \& implementation complexity is not decreased, only made more manageable
+%% \item Chosen partitioning into variants is difficult to adapt
+%% \end{itemize}
+%% 
+%% \end{frame}
+%% 
+%% 
+%% 
+%% 
+%% \begin{frame}
+%% \frametitle{Conclusions}
+%% 
+%% %% {\color{uured} include this????}
+%% 
+%% Use of {\color{uured} domain specific languages} and {\color{uured} generation} is essential for dealing with maintenance complexity:
+%% 
+%% \begin{itemize}
+%% \item Avoids duplicates consistency pitfall by generating from shared description
+%% \end{itemize}
+%% 
+%% But
+%% 
+%% \begin{itemize}
+%% \item More complex build system
+%% \end{itemize}
+%% 
+%% \end{frame}
 
 
 

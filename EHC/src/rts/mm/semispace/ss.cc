@@ -99,6 +99,14 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plan->data = (MM_Plan_Data_Priv*)plss ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init C plan=%x plss=%x\n",plan,plss);}) ;
 }
+
+#if MM_BYPASS_PLAN
+void mm_plan_SS_InitBypass( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	
+	mm_bypass_allocator = &plss->ssAllocator ;	
+}
+#endif
 %%]
 
 %%[8
@@ -169,6 +177,9 @@ MM_Plan mm_plan_SS =
 	{ NULL
 	, NULL
 	, &mm_plan_SS_Init
+#if MM_BYPASS_PLAN
+	, &mm_plan_SS_InitBypass
+#endif
 	, &mm_plan_SS_PollForGC
 #ifdef TRACE
 	, &mm_plan_SS_Dump

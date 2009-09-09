@@ -166,13 +166,13 @@ evidMpToCore env evidMp
 %%]]
         ignore _ = False
 
-        strip (Evid_Proof _ RedHow_ByScope [ev]) = strip ev
-        strip (Evid_Proof p i              evs ) = Evid_Proof p i (map strip evs)
-        strip ev                                 = ev
-        splitAmbig  (Evid_Proof p i es            ) = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
-        splitAmbig  (Evid_Ambig p   ess@((i,es):_)) = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[AmbigEvid p (map fst ess)])
-        splitAmbig  ev                              = (ev,[])
-        splitAmbigs es                              = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
+        strip (Evid_Proof _ (RedHow_ByScope _) [ev]) = strip ev
+        strip (Evid_Proof p i                  evs ) = Evid_Proof p i (map strip evs)
+        strip ev                                     = ev
+        splitAmbig  (Evid_Proof p i es            )  = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
+        splitAmbig  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[AmbigEvid p (map fst ess)])
+        splitAmbig  ev                               = (ev,[])
+        splitAmbigs es                               = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
         dbg m = id -- Debug.tr m empty
 %%]
                           Just r -> trp "XX" ("ev" >#< ev >#< insk >#< "k" >#< k >#< v >#< "r" >#< tcrExpr r >#< tcrExpr (vr r)) $ (        mkk r                  st,vr r)

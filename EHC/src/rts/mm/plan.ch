@@ -23,6 +23,11 @@ typedef struct MM_Plan {
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;
   	
+#if MM_BYPASS_PLAN
+  	// setup bypass for efficiency
+  	void			 			(*initBypass)( struct MM_Plan* ) ;
+#endif
+  	
   	// poll, the point where GC can take place
   	// isSpaceFull indicates space from which is polled is full
   	// return True if collection is/was required/done

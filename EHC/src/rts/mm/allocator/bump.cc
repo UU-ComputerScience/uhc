@@ -28,6 +28,7 @@ void mm_allocator_Bump_Alloc_InitFromFragment( MM_Allocator_Bump_Data* alc, MM_S
 void mm_allocator_Bump_Alloc_NewFragment( MM_Allocator_Bump_Data* alc ) {
 	alc->curFragmentInx = alc->space->growSpaceByDefault( alc->space ) ;
 	mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
+	// printf( "mm_allocator_Bump_Alloc_NewFragment\n" ) ;
 }
 %%]
 
@@ -88,15 +89,6 @@ void mm_allocator_Bump_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* sp
 	mm_allocator_Bump_ResetWithSpace( alcr, space ) ;
 }
 
-// this function must be inlined, not yet catered for
-// assumptions:
-// (1) sz <= MM_Pages_MinSize, i.e. we do not need to cater for large objects
-// (2) sz % Word_SizeInBytes == 0, i.e. we do not need to align the size
-Ptr mm_allocator_Bump_Alloc( MM_Allocator* alcr, Word sz ) {
-	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
-	return mm_allocator_Bump_Alloc_AndCheckCursor( alc, sz ) ;
-}
-
 void mm_allocator_Bump_Dealloc( MM_Allocator* alcr, Ptr ptr ) {
 	// no effect
 }
@@ -136,6 +128,27 @@ MM_Space* mm_allocator_Bump_GetSpace( MM_Allocator* alcr ) {
 }
 
 %%]
+
+// check cursor for sufficient space + bump/alloc
+static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 1 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
+	alc->addrCursorFree -= sz ;
+	if ( alc->addrCursorFree < alc->addrFirstFree ) {
+		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
+	}
+	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
+	return (Ptr)alc->addrCursorFree ;
+}
+
+// this function must be inlined, not yet catered for
+// assumptions:
+// (1) sz <= MM_Pages_MinSize, i.e. we do not need to cater for large objects
+// (2) sz % Word_SizeInBytes == 0, i.e. we do not need to align the size
+Ptr mm_allocator_Bump_Alloc( MM_Allocator* alcr, Word sz ) {
+	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
+	return mm_allocator_Bump_Alloc_AndCheckCursor( alc, sz ) ;
+}
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Bump dump
