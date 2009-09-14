@@ -1,3 +1,8 @@
+%%[8
+#ifndef __MM_COMMON_H__
+#define __MM_COMMON_H__
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Memory management: basic/common definitions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -31,10 +36,10 @@ For Fragments as used by GC allocators
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 extern Ptr mm_malloc( size_t size ) ;
 extern Ptr mm_realloc( Ptr ptr, size_t size ) ;
 extern void mm_free( Ptr ptr ) ;
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Abstraction interface around allocation,
@@ -42,18 +47,16 @@ extern void mm_free( Ptr ptr ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-typedef struct MM_Malloc {
-	Ptr 	(*malloc)( size_t size ) ;
-	Ptr 	(*realloc)( Ptr ptr, size_t size ) ;
-	void 	(*free)( Ptr ptr ) ;
-} MM_Malloc ;
+typedef Sys_Malloc	MM_Malloc ;
 %%]
 
 %%[8
-extern MM_Malloc 	mm_malloc_Sys ;
+// really the system malloc
+extern MM_Malloc* 	mm_malloc_Sys ;
 %%]
 
 %%[8
+// either the system malloc or any other built on top of that by EHC's RTS
 extern MM_Malloc* 	mm_malloc_EHC ;
 %%]
 
@@ -67,4 +70,12 @@ extern MM_Malloc* 	mm_malloc_EHC ;
 
 %%[8
 extern void mm_undefined(void) ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __MM_COMMON_H__ */
 %%]

@@ -1,3 +1,8 @@
+%%[8
+#ifndef __PRIMINLINE_H__
+#define __PRIMINLINE_H__
+%%]
+
 Some C functions are overloaded for various numeric C types:
 - arithmetic
 - minimum and maximum values of type
@@ -359,3 +364,10 @@ PRIM Word  primWrite ## PrimTypeName ## OffAddr( PrimTypeC* ptr, Word off, PrimT
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __PRIMINLINE_H__ */
+%%]

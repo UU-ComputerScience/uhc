@@ -61,7 +61,7 @@ Bool mm_trace_GBM_CanTraceObject( MM_Trace* trace, Word obj ) {
 }
 
 Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg flg ) {
-	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject obj=%x\n",obj);}) ;
+	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject obj=%x obj->header=%x\n",obj,((GB_NodePtr)obj)->header);}) ;
 	
 	// skip indirection nodes until we are at a real node; we do not bother repeating this for other indirections as there will in general not be many
 	GB_NodeHeader h = ((GB_NodePtr)obj)->header ;
@@ -96,8 +96,9 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 				
 				// new obj, copy old into new, allocate
 				if ( doCopy ) {
+					IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject BEF COPY obj=%x, h=%x, sz(h)=%x\n", obj, h, GB_NH_Fld_Size(h));}) ;
 					objRepl = (GB_NodePtr)( alc->alloc( alc, szWords << Word_SizeInBytes_Log ) ) ;
-					IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject COPY obj=%x, objRepl=%p\n", obj, objRepl);}) ;
+					IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject AFT COPY obj=%x, objRepl=%p\n", obj, objRepl);}) ;
 					// copy header
 					objRepl->header = h ;
 

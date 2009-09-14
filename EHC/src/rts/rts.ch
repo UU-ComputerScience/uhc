@@ -60,12 +60,14 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <limits.h>
-#include "sizes.h"
-#include "basictypes.h"
-#include "bits.h"
+#include "base/sizes.h"
+#include "base/basictypes.h"
+#include "base/sysalloc.h"
+#include "event/event.h"
+#include "base/bits.h"
 #include "mm/mmitf.h"
-#include "types.h"
-#include "utils.h"
+#include "base/types.h"
+#include "base/utils.h"
 #include "mm/mm.h"
 %%]
 
@@ -81,7 +83,6 @@
 %%[98
 #include <errno.h>
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Primitives
@@ -254,7 +255,7 @@ extern int traceLevel ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Postamble
+%%% EOF
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8

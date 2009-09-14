@@ -453,18 +453,18 @@ data GrValIntroAlt
 %%]
 
 %%[(8 codegen grin) hs export(gviLd,gviLd',gviLdFold)
-gviLdFold' :: GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold' dflt optim env modNmConstInx stkDepth introL
+gviLdFold' :: EHCOpts -> GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+gviLdFold' opts dflt optim env modNmConstInx stkDepth introL
   = foldl ld dflt $ reverse $ introL
   where ld (GrValIntroAlt_OnTOS ins dep _ basicsz) intro
           = GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect (basicsz' ++ basicsz)
-          where (GrValIntroAlt_OnTOS ins' dep' _ basicsz') = gviLd optim env modNmConstInx (stkDepth+dep) intro
+          where (GrValIntroAlt_OnTOS ins' dep' _ basicsz') = gviLd opts optim env modNmConstInx (stkDepth+dep) intro
 
-gviLdFold :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold = gviLdFold' (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect [])
+gviLdFold :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+gviLdFold opts = gviLdFold' opts (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect [])
 
-gviLd' :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
-gviLd' optim env modNmConstInx stkDepth intro
+gviLd' :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
+gviLd' opts optim env modNmConstInx stkDepth intro
   = ld optim (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect []) intro
   where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _ _) intro
           = case intro of
@@ -493,8 +493,8 @@ gviLd' optim env modNmConstInx stkDepth intro
                             Left (BasicAnnot_Size bsz _)
                               -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [basicsz]
                               where (ins,inc) = vaAndLd2Ins optim nm ml
-                                    (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz')
-                                    (sins,sinc) = ndStore (allocInc + (nrByte2Word bsz') + tinc)
+                                    (tins,tinc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz')
+                                    (sins,sinc) = ndStore ((nrByte2Word bsz') + tinc)
                                     bsz' = basicSizeInBytes bsz
                             Right bSz                               -> basicSize nm ml bSz
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
@@ -505,10 +505,14 @@ gviLd' optim env modNmConstInx stkDepth intro
                 -> ld optim dflt i
 -}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [dfltBasicSize]
-                where i@(GrValIntroAlt_OnTOS ins inc _ _) = gviLdFold' dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx dep' is
-                      (tins,tinc,allocInc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag inc
-                      (sins,sinc) = ndStore (allocInc + inc + tinc)
+                -> GrValIntroAlt_OnTOS (prepins Seq.:++: ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [dfltBasicSize]
+                where (prepins,prepinc) = case (is, tag env modNmConstInx dep' gtag 0) of
+                                            ([],(_,1,_)) | Cfg.nodeNeedsForwarding opts -> (Seq.fromList [ldc 0],1)
+                                            _                                           -> (Seq.empty           ,0)
+                      i@(GrValIntroAlt_OnTOS ins inc _ _) = gviLdFold' opts dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx (dep' + prepinc) is
+                      inc' = prepinc + inc
+                      (tins,tinc,isEvaluated) = tag env modNmConstInx (dep' + inc') gtag inc'
+                      (sins,sinc) = ndStore (inc' + tinc)
               _ -> dflt
           where dep' = stkDepth + dfltInc
                 basicAnnotDflt nm
@@ -522,9 +526,9 @@ gviLd' optim env modNmConstInx stkDepth intro
                   where (ins,inc) = vaAndLd2Ins optim nm ml
                 dfltBasicSize = grinBasicAnnotSize BasicAnnot_Dflt
 
-gviLd :: OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
-gviLd optim env modNmConstInx stkDepth intro
-  = case gviLd' optim env modNmConstInx stkDepth intro of
+gviLd :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
+gviLd opts optim env modNmConstInx stkDepth intro
+  = case gviLd' opts optim env modNmConstInx stkDepth intro of
       GrValIntroAlt_Delay ins inc optimEffect mbva l basicsz
         -> GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect [basicsz]
         where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l,basicsz)
@@ -682,18 +686,33 @@ label l = Instr_Label l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Constructing: allocation
+%%% Constructing: fetching contents of a node
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(allocstore,fetch,fetchupdate,ndStore)
-allocstore :: InsOp_LocB -> Instr
-allocstore locB = Instr_AllocStore locB
-
+%%[(8 codegen grin) hs export(fetch,fetchupdate)
 fetch :: InsOp_LocB -> Instr
 fetch locB = Instr_Fetch locB
 
 fetchupdate :: Instr
 fetchupdate = Instr_FetchUpdate
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+allocstore :: InsOp_LocB -> Instr
+allocstore locB = Instr_AllocStore locB
+
+-- prepare node allocation by providing padding upto minimum size
+{-
+ndStorePrep :: EHCOpts -> Int -> (InsSeq,StackDepth)
+ndStorePrep opts sz
+  = (Seq.fromList $ replicate szExtra $ ldc 0, szExtra)
+  where szPadded = Cfg.minwordsofNode opts `max` sz
+        szExtra  = szPadded - sz
+-}
 
 ndStore :: Int -> (InsSeq,StackDepth)
 ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),meta' AnnAllocStore sz,allocstore InsOp_LocB_TOS], nrValWords)
@@ -864,23 +883,23 @@ tgNeedEval_BlH = 2
 load tag, yield stack increment and additional size to alloc
 
 %%[(8 codegen grin) hs export(tag)
-tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,StackDepth,Bool)
+tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,Bool)
 tag env modNmConstInx stkDepth gt sz
   = case gt of
-      GrTag_Unboxed -> (Seq.empty,0,0,False)
-      _
-        -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,allocInc,isEvaluated)
-        where (needEval,categ',tg',tins,tinc,allocInc)
+      GrTag_Unboxed
+        -> (Seq.empty,0,False)
+      _ -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,isEvaluated)
+        where (needEval,categ',tg',tins,tinc)
                 = case gt of
-                    GrTag_Con _ tg nm    -> (tgNeedEval_No ,0,tg,Seq.empty      ,0  ,0)
-                    GrTag_Hole           -> (tgNeedEval_BlH,0, 0,Seq.fromList [ldc 0],1  ,0)
-                    GrTag_Rec            -> (tgNeedEval_No ,0, 0,Seq.empty      ,0  ,0)
-                    GrTag_App      nm    -> (tgNeedEval_Yes,1, 0,Seq.empty      ,0  ,0)
-                    GrTag_Fun      nm    -> (tgNeedEval_Yes,0, 0,ins            ,inc,0)
+                    GrTag_Con _ tg nm    -> (tgNeedEval_No ,0,tg,Seq.empty           ,0  )
+                    GrTag_Hole           -> (tgNeedEval_BlH,0, 0,Seq.fromList [ldc 0],1  )
+                    GrTag_Rec            -> (tgNeedEval_No ,0, 0,Seq.empty           ,0  )
+                    GrTag_App      nm    -> (tgNeedEval_Yes,1, 0,Seq.empty           ,0  )
+                    GrTag_Fun      nm    -> (tgNeedEval_Yes,0, 0,ins                 ,inc)
                                          where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-                    GrTag_PApp m   nm    -> (tgNeedEval_No ,1,m ,ins            ,inc,0)
+                    GrTag_PApp m   nm    -> (tgNeedEval_No ,1,m ,ins                 ,inc)
                                          where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-              tword = (toInteger (sz+tinc+allocInc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg' `shiftL` tagShTag
+              tword = (toInteger (sz+tinc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg' `shiftL` tagShTag
               isEvaluated = needEval == tgNeedEval_No
 %%]
 

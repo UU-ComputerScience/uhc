@@ -9,7 +9,7 @@ Ideally, these tables should be merged.
 %%[(8 codegen grin).moduleHeader module {%{EH}BuiltinPrims}
 %%]
 
-%%[(8 codegen grin) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
+%%[(8 codegen grin) import({%{EH}Base.HsName},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.BasicAnnot},{%{EH}Base.Builtin},{%{EH}GrinByteCode})
 %%]
 
 %%[(8 codegen grin) import(qualified Data.Map as Map, qualified EH.Util.FastSeq as Seq, EH.Util.Pretty)
@@ -65,7 +65,7 @@ Ideally, these tables should be merged.
 data Primitive
   = GbPrim    
       { gbprimNrArgs        :: !Int
-      , gbprimMk            :: OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+      , gbprimMk            :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
       }
   | SillyPrim 
       { fromSillyPrim       :: [PP_Doc] -> PP_Doc
@@ -99,7 +99,7 @@ prims
                                     , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Quot)	)
                                     ] )
 
-      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\o env m d [a] -> gviLd o env m d a)	) ] )
+      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\opts o env m d [a] -> gviLd opts o env m d a)	) ] )
 
       , ( "primGtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">" )) ] )
       , ( "primLtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<" )) ] )
@@ -112,12 +112,12 @@ prims
 
 -- Bytecode implementation
 
-mkGbInsOp :: InsOp_TyOp -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+mkGbInsOp :: InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
 mkGbInsOp = mkGbOp InsOp_DataOp_IntWord      
 
-mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
-  = case gviLd' optim env modNmConstInx (stkDepth+inc1) a2 of
+mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+mkGbOp opndTy opTy opts optim env modNmConstInx stkDepth [a1,a2]
+  = case gviLd' opts optim env modNmConstInx (stkDepth+inc1) a2 of
       GrValIntroAlt_OnTOS ins2 inc2 optimEffect _
         -> GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) 1 optimEffect [grinBasicAnnotSize BasicAnnot_Dflt]
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
@@ -131,7 +131,7 @@ mkGbOp opndTy opTy optim env modNmConstInx stkDepth [a1,a2]
                                LoadSrc_Reg_Rel o 1 -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
                                LoadSrc_Imm     c   -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
                                LoadSrc_Imm_Int c   -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
-  where g@(GrValIntroAlt_OnTOS ins1 inc1 _ _) = gviLd optim env modNmConstInx stkDepth a1
+  where g@(GrValIntroAlt_OnTOS ins1 inc1 _ _) = gviLd opts optim env modNmConstInx stkDepth a1
           
           
 

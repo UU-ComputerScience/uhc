@@ -66,6 +66,6 @@ void mm_Spaces_Dump( ) {
 %%[8
 void mm_init_space() {
 	mm_rangeMap_New( &mm_malloc_LOF, &mm_Spaces_FrameToSpace ) ;
-	mm_space_Fragment.init( &mm_space_Fragment, &mm_malloc_Sys, &mm_pages ) ;
+	mm_space_Fragment.init( &mm_space_Fragment, mm_malloc_Sys, &mm_pages ) ;
 }
 %%]

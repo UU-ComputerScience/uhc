@@ -29,9 +29,10 @@ RTS_MKF						:= $(patsubst %,$(RTS_SRC_PREFIX)%.mk,files)
 RTS_SRC_CC_SHARED	:= \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc, \
         rts \
-        utils \
         llvm-gc \
         timing \
+        base/utils \
+        base/sysalloc \
         mm/mm \
         mm/common \
         mm/basic/flexarray \
@@ -79,14 +80,16 @@ RTS_SRC_CH_SHARED := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
         rts \
         config \
-        sizes \
-        bits \
-        utils \
         timing \
         priminline \
         primdecl \
-        basictypes \
-        types \
+        base/sizes \
+        base/bits \
+        base/utils \
+        base/sysalloc \
+        base/basictypes \
+        base/types \
+        event/event \
         mm/mmitf \
         mm/mm \
         mm/config \
