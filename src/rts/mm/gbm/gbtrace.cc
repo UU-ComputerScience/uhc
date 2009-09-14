@@ -66,6 +66,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 	// skip indirection nodes until we are at a real node; we do not bother repeating this for other indirections as there will in general not be many
 	GB_NodeHeader h = ((GB_NodePtr)obj)->header ;
 	for ( ; GB_NH_Fld_NdEv(h) == GB_NodeNdEv_Yes && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Ind ; ) {
+		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject ind obj=%x -> %x\n",obj,((GB_NodePtr)obj)->content.fields[0]);}) ;
 		obj = ((GB_NodePtr)obj)->content.fields[0] ;
 		if ( mm_trace_GBM_CanTraceObject( trace, obj ) ) {
 			h = ((GB_NodePtr)obj)->header ;
@@ -74,7 +75,6 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 		}
 	}
 
-	IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject ind obj=%x\n",obj);}) ;
 	GB_NodePtr objRepl = (GB_NodePtr)obj ;
 	
 	switch ( GB_NH_Fld_NdEv(h) ) {
