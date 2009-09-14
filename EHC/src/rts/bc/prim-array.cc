@@ -36,10 +36,11 @@ PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 	if ( igoff < mn->content.bytearray.size && c ) {
 		GB_MkCFunNode2In(n2,&primByteArrayToString1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
 		GB_MkListCons(n,GB_Int2GBInt(c),n2) ;
+		IF_GB_TR_ON(3,printf("primByteArrayToString1Char Cons n=%p h(n)=%x, n2=%p h(n2)=%x\n", n, n->header, n2, n2->header ););
 	} else {
   		GB_MkListNil(n) ;
+		IF_GB_TR_ON(3,printf("primByteArrayToString1Char Nil n=%p h(n)=%x\n", n, n->header ););
 	}
-  	IF_GB_TR_ON(3,printf("primByteArrayToString1Char n %p\n", n ););
 	GB_GC_SafeLeave ;
   	return n ;
 }

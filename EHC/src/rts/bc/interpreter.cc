@@ -1397,7 +1397,7 @@ gb_interpreter_InsApplyEntry:
 						} else { /* ( nLeftOver < 0 ) */
 							GB_NodeHeader hOld = h ;
 							h = GB_MkHeader(GB_NH_Fld_Size(h)+x,GB_NH_Fld_NdEv(h),GB_NH_Fld_TagCat(h),GB_NH_Fld_Tag(h)-x) ;
-							// IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc A sz=%x\n",GB_NH_Fld_Size(h));) ;
+							IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc A sz=%x\n",GB_NH_Fld_Size(h));) ;
 							// GC sensitive:
 							p = GB_HeapAlloc_Words( GB_NH_Fld_Size(h) ) ;				/* fresh node												*/
 							// IF_GB_TR_ON(3,printf("gb_interpreterLoop.GB_Ins_Apply alloc B sz=%x p=%x\n",GB_NH_Fld_Size(h),p);) ;

@@ -291,7 +291,11 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_MkConHeader(sz,tg)				GB_MkHeader((sz)+1, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
 #define GB_MkAppHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_App, 0)
 
-#define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
+#if USE_EHC_MM
+#	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(1,tg), 0 }	// place for forwarding pointer
+#else
+#	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
+#endif
 #define GB_MkConEnumNodeAsTag(tg)			(tg /* GB_Int2GBInt(tg) */)
 
 #define GB_FillNodeFlds1(n,x1)				{                                (n)->content.fields[0] = Cast(GB_Word,x1);}
@@ -301,18 +305,18 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_FillNodeFlds5(n,x1,x2,x3,x4,x5)	{GB_FillNodeFlds4(n,x1,x2,x3,x4);(n)->content.fields[4] = Cast(GB_Word,x5);}
 
 #define GB_FillNodeHdr(h,n)						{(n)->header = h;}
-#define GB_FillConNodeN(n,sz,tg)				{GB_NodeHeader _h = GB_MkConHeader(sz,tg); GB_FillNodeHdr(_h,n);}
-#define GB_FillConNode0(n,tg)					{GB_NodeHeader _h = GB_MkConHeader(0,tg); GB_FillNodeHdr(_h,n);}
+#define GB_FillConNodeN(n,sz,tg)				{GB_NodeHeader _h = GB_MkConHeader(GB_GC_MinAlloc_Field_Words(sz),tg); GB_FillNodeHdr(_h,n);}
+#define GB_FillConNode0(n,tg)					{GB_NodeHeader _h = GB_MkConHeader(GB_GC_MinAlloc_Field_Words(0 ),tg); GB_FillNodeHdr(_h,n);}
 #define GB_FillConNode1(n,tg,x1)				{GB_NodeHeader _h = GB_MkConHeader(1,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds1(n,x1);}
 #define GB_FillConNode2(n,tg,x1,x2)				{GB_NodeHeader _h = GB_MkConHeader(2,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds2(n,x1,x2);}
 #define GB_FillConNode3(n,tg,x1,x2,x3)			{GB_NodeHeader _h = GB_MkConHeader(3,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds3(n,x1,x2,x3);}
 #define GB_FillConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeHeader _h = GB_MkConHeader(4,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds4(n,x1,x2,x3,x4);}
 #define GB_FillConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeHeader _h = GB_MkConHeader(5,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds5(n,x1,x2,x3,x4,x5);}
 
-#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(1+(sz),n); GB_FillConNodeN(n,sz,tg); }
+#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(GB_GC_MinAlloc_Node_Words(sz),n); GB_FillConNodeN(n,sz,tg); }
 #define GB_MkConNodeN_Rooted(n,sz,tg)			{GB_MkConNodeN(n,sz,tg) ; GB_GC_RegisterRoot(n); }
-#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(1+(sz),n); GB_FillConNodeN(n,sz,tg); }
-#define GB_MkConNode0(n,tg)						{GB_NodeAlloc_In(1,n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_Node_Words(sz),n); GB_FillConNodeN(n,sz,tg); }
+#define GB_MkConNode0(n,tg)						{GB_NodeAlloc_In(GB_GC_MinAlloc_Node_Words(0),n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)					{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)				{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
 #define GB_MkConNode3(n,tg,x1,x2,x3)			{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
@@ -609,8 +613,8 @@ The 'Fixed' variants allocate non-collectable.
 
 #endif
 
-#define GB_GC_MinAlloc_Node_Words(szw)			GB_GC_MinAlloc_Field_Words((szw)+1)
-#define GB_GC_MinAlloc_Node_Bytes(szb)			GB_GC_MinAlloc_Field_Bytes((szb)+sizeof(Word))
+#define GB_GC_MinAlloc_Node_Words(szw)			(GB_GC_MinAlloc_Field_Words(szw)+1)
+#define GB_GC_MinAlloc_Node_Bytes(szb)			(GB_GC_MinAlloc_Field_Bytes(szb)+sizeof(Word))
 
 #define GB_NodeAlloc_In(nWords,n)				{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
 #define GB_NodeAlloc_In_Fixed(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Fixed(nWords)) ; }
