@@ -1,3 +1,8 @@
+%%[8
+#ifndef __BASE_TYPES_H__
+#define __BASE_TYPES_H__
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Very basic types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -337,11 +342,11 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_MkAppNode1In(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillAppNode1(n,f,x1); }
 
 #if USE_BOEHM_GC
-#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Fixed( n, GB_GC_MinAlloc_Fields(sz), 0 ) ;
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Fixed( n, GB_GC_MinAlloc_Field_Words(sz), 0 ) ;
 #elif USE_EHC_MM
-#	define GB_MkExpNodeIn(n,sz)				{ GB_MkConNodeN( n, GB_GC_MinAlloc_Fields(sz), 0 ); GB_GC_RegisterRoot(n); }
+#	define GB_MkExpNodeIn(n,sz)				{ GB_MkConNodeN( n, GB_GC_MinAlloc_Field_Words(sz), 0 ); GB_GC_RegisterRoot(n); }
 #else
-#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN( n, GB_GC_MinAlloc_Fields(sz), 0 )
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN( n, GB_GC_MinAlloc_Field_Words(sz), 0 )
 #endif
 
 %%]
@@ -503,7 +508,8 @@ The 'Fixed' variants allocate non-collectable.
 #		define GB_GC_Maintained(x)						False
 #	endif
 
-#	define GB_GC_MinAlloc_Fields(szw)					(szw)
+#	define GB_GC_MinAlloc_Field_Words(szw)				(szw)
+#	define GB_GC_MinAlloc_Field_Bytes(szb)				(szb)
 #	define GB_GC_MinAlloc_Malloc(szb)					(szb)
 
 #	define GB_GC_RegisterRoot(n)						// not necessary
@@ -544,7 +550,8 @@ The 'Fixed' variants allocate non-collectable.
 #		define GB_GC_Maintained(x)						False
 #	endif
 
-#	define GB_GC_MinAlloc_Fields(szw)					(maxWord(szw,1))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
+#	define GB_GC_MinAlloc_Field_Words(szw)				(maxWord(szw,1))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
+#	define GB_GC_MinAlloc_Field_Bytes(szb)				(maxWord(szb,sizeof(Word)))		// minimal for node: at least 1 field payload to allow for indirection/forwarding
 #	define GB_GC_MinAlloc_Malloc(szb)					(maxWord(szb,sizeof(Word)))		// minimal for malloc: at least a Word
 
 #	define GB_GC_RegisterRoot(n)						{ GB_Node_ZeroFields(n) ; mm_itf_registerGCRoot( (WPtr)(&n) ) ; }
@@ -578,7 +585,8 @@ The 'Fixed' variants allocate non-collectable.
 #		define GB_GC_Maintained(x)						False
 #	endif
 
-#	define GB_GC_MinAlloc_Fields(szw)					(szw)
+#	define GB_GC_MinAlloc_Field_Words(szw)				(szw)
+#	define GB_GC_MinAlloc_Field_Bytes(szb)				(szb)
 #	define GB_GC_MinAlloc_Malloc(szb)					(szb)
 
 #	define GB_GC_RegisterRoot(n)						// not necessary
@@ -601,6 +609,8 @@ The 'Fixed' variants allocate non-collectable.
 
 #endif
 
+#define GB_GC_MinAlloc_Node_Words(szw)			GB_GC_MinAlloc_Field_Words((szw)+1)
+#define GB_GC_MinAlloc_Node_Bytes(szb)			GB_GC_MinAlloc_Field_Bytes((szb)+sizeof(Word))
 
 #define GB_NodeAlloc_In(nWords,n)				{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
 #define GB_NodeAlloc_In_Fixed(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Fixed(nWords)) ; }
@@ -644,6 +654,14 @@ This breaks when compiled without bgc.
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __BASE_TYPES_H__ */
 %%]
 
 

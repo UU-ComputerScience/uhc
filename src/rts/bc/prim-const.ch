@@ -1,4 +1,9 @@
 %%[8
+#ifndef __BC_PRIMCONST_H__
+#define __BC_PRIMCONST_H__
+%%]
+
+%%[8
 #define RTS_Unit   gb_Unit
 #define RTS_False  gb_False
 #define RTS_True   gb_True
@@ -17,4 +22,12 @@
 #define CReadWriteMode       gb_ReadWriteMode
 #define CWriteBinaryMode     gb_WriteBinaryMode
 #define CWriteMode           gb_WriteMode
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EOF
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#endif /* __BC_PRIMCONST_H__ */
 %%]

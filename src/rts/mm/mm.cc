@@ -34,7 +34,8 @@ void mm_init() {
 	mm_init_space() ;
 	mm_init_allocator() ;
 #	if USE_EHC_MM
-		mm_malloc_EHC = &mm_malloc_LOF ;
+		mm_malloc_EHC  = &mm_malloc_LOF ;
+		sys_malloc_EHC = mm_malloc_EHC ;
 #	endif
 	mm_init_roots() ;
 	mm_init_traceSupply() ;

@@ -258,9 +258,9 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 	GB_NodePtr initCAFApp, gbWorld ;
 	
 #	if USE_BOEHM_GC
-		GB_MkConNodeN_Fixed(gbWorld,GB_GC_MinAlloc_Fields(0),0) ;
+		GB_MkConNodeN_Fixed(gbWorld,GB_GC_MinAlloc_Field_Words(0),0) ;
 #	else
-		GB_MkConNodeN_Rooted(gbWorld,GB_GC_MinAlloc_Fields(0),0) ;
+		GB_MkConNodeN_Rooted(gbWorld,GB_GC_MinAlloc_Field_Words(0),0) ;
 #	endif
 	
 	GB_MkAppNode1In( initCAFApp, gb_getTOS(), gbWorld ) ;

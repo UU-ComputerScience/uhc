@@ -1427,7 +1427,7 @@ gb_interpreter_InsApplyEntry:
 			case GB_Ins_AllocStore(GB_InsOp_LocB_TOS) :
 				GB_PopIn(x) ;
 				// GC sensitive:
-				p = GB_HeapAlloc_Bytes(x) ;
+				p = GB_HeapAlloc_Bytes(GB_GC_MinAlloc_Node_Bytes(x)) ;
 				p2 = p ;
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;

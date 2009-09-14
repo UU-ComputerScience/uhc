@@ -147,10 +147,10 @@ prefixLib = "@PREFIX_LIB@"
 %%]
 
 %%[8 export(libnamesGcc)
-libnamesGcc :: [String]
-libnamesGcc
+libnamesGcc :: EHCOpts -> [String]
+libnamesGcc opts
   = [ ]
-    ++ (if useBoehmGC
+    ++ (if useBoehmGC opts
         then [ "@EXTLIBS_BGC_PKG_NAME@" ]
         else []
        )
