@@ -866,7 +866,6 @@ instance Enum Int where
 instance Read Int where
     readsPrec p = readSigned readDec
 
---foreign import prim primShowInt :: Int -> String
 
 #ifdef __UHC_TARGET_C__
 {-
@@ -973,21 +972,42 @@ instance Enum Integer where
                                         | otherwise = (>= m)
 
 
-#ifdef __UHC_TARGET_JAZY__
-foreign import prim primShowIntegerToPackedString :: Integer -> PackedString
+
+#ifdef __UHC_TARGET_C__
+{-
+ This implementation fails for showInt minBound because in 2's complement arithmetic
+ -minBound == maxBound+1 == minBound
+-}
+
+showInteger :: Integer -> String
+showInteger x | x<0  = '-' : showInteger(-x)
+          | x==0 = "0"
+          | otherwise = (map primIntToChar . map (+48) . reverse . map primIntegerToInt . map (`rem`10) . takeWhile (/=0) . iterate (`div`10)) x
+
+instance Show Integer where
+    show   = showInteger
+    
 #else
+#ifdef __UHC_TARGET_JAZY__
+
+foreign import prim primShowIntegerToPackedString :: Integer -> PackedString
+
+instance Show Integer where
+    show   = packedStringToString . primShowIntegerToPackedString
+
+#else
+
 foreign import prim primShowInteger :: Integer -> String
+
+instance Show Integer where
+    show   = primShowInteger
+
 #endif
+#endif
+
 
 instance Read Integer where
     readsPrec p = readSigned readDec
-
-instance Show Integer where
-#ifdef __UHC_TARGET_JAZY__
-    show   = packedStringToString . primShowIntegerToPackedString
-#else
-    show   = primShowInteger
-#endif
 
 
 --------------------------------------------------------------
