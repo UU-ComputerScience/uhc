@@ -104,7 +104,6 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 %%% Binding categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-
 %%[(8 codegen grin) hs export(GrBindAnn(..))
 
 -- Annotation for Grin Bindings
@@ -114,10 +113,10 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 --      They contain "Just" the name of the default implementation, or "Nothing" if there is none.
 --      Note that the dictionary may also contain superclass pointers, but they are not recorded in the annotation.
 --   Instance: binds a dictionary with definitions form an instance declaration
---      The first element of the list is Just the name of the dictionary constructor.
---      The second element of the list is Just the name of the dictionary containing the default definitions.
+--      The first element of the list is a singleton of the name of the dictionary constructor.
+--      The second element of the list is a singleton of the name of the dictionary containing the default definitions.
 --      The remaining list entries correspond 1-to-1 with the class members
---      They contain "Just" the name of the instance implementation, or "Nothing" if it relies on the default implementation.
+--      They contain the name of the instance implementation (possibly with some arguments), or [] if it relies on the default implementation.
 --   Overloaded: binds a function with dictionary parameters
 --      The numbers specify which dictionaries are needed:
 --            [-1] if the dictionary of which the function is a member is needed
@@ -128,13 +127,12 @@ emptyGrTagAnn = mkGrTagAnn 0 0
 data GrBindAnn
   = GrBindAnnNormal
   | GrBindAnnClass    [Maybe HsName]
-  | GrBindAnnInstance [Maybe HsName]
+  | GrBindAnnInstance [[HsName]]
   | GrBindAnnOverloaded [[Int]]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
 
 %%]
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alternative categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -285,10 +285,11 @@ SEM CExpr
 SEM CMetaVal
   | Dict
     Val             lhs.nameS = Set.empty
-  | DictClass
-    DictInstance    loc.subst =  maybe Nothing (\nm->Just (maybe nm (fromJust . cexprMbVar) (Map.lookup nm @lhs.bindNmMp)))
-                    lhs.nameS =  Set.fromList [ nm | Just nm <- @names ]
-  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map @loc.subst @names)
-  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map @loc.subst @names)
+  | DictClass       loc.subst1=  maybe Nothing (\nm->Just (maybe nm (fromJust . cexprMbVar) (Map.lookup nm @lhs.bindNmMp)))
+  | DictInstance    loc.subst2=  map           (\nm->     (maybe nm (fromJust . cexprMbVar) (Map.lookup nm @lhs.bindNmMp)))
+  | DictClass       lhs.nameS =  Set.fromList [ nm | Just nm <- @names ]
+  | DictInstance    lhs.nameS =  Set.fromList (concat @names)
+  | DictClass       lhs.cTrf  =  CMetaVal_DictClass    (map @loc.subst1 @names)
+  | DictInstance    lhs.cTrf  =  CMetaVal_DictInstance (map @loc.subst2 @names)
 
 %%]

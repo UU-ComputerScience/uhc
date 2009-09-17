@@ -99,7 +99,7 @@ DATA CMetaVal
 %%[[9
   | Dict          mbPos:  {Maybe [Int]}
   | DictClass     names:  {[Maybe HsName]}
-  | DictInstance  names:  {[Maybe HsName]}
+  | DictInstance  names:  {[[HsName]]}
 %%]]
 
 SET AllMetaVal	= CMetaVal CMetas

@@ -30,7 +30,7 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 %%[(9 codegen grin) hs
 
 type ClassMap = Map.Map HsName [Maybe HsName]
-type DictMap  = Map.Map HsName [Maybe HsName]
+type DictMap  = Map.Map HsName [[HsName]]
 type ArityMap = Map.Map HsName (Int, [[Int]])
 type SynoMap  = Map.Map HsName HsName
 
@@ -103,7 +103,7 @@ SEM GrGlobalL
   | Cons     lhs.grTrf  =  case @hd.grTrf of
                              GrGlobal_Global nm1 (GrVal_Node (GrTag_Fun nm2) []) 
                                 -> maybe @loc.grTrf
-                                         (\(Just tagNm : Just classNm : funDefs)
+                                         (\([tagNm] : [classNm] : funDefs)
                                              ->                let dfltDefs = Map.findWithDefault (error "class not found") classNm @lhs.classMap
                                                                    arity  = length funDefs
                                                                    tagAnn = GrTagAnn arity arity
@@ -124,30 +124,30 @@ SEM GrGlobalL
 
 %%[(9 codegen grin) hs
 
-mergeFields :: DictMap -> ArityMap -> HsName -> [Maybe HsName] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
-mergeFields dictMap am i fundefs defltdefs =  zipWith3 (mergeField dictMap fundefs am i) [0..] fundefs defltdefs
+mergeFields :: DictMap -> ArityMap -> HsName -> [[HsName]] -> [Maybe HsName] -> [(GrVal, Maybe GrGlobal)]
+mergeFields    dictMap    am          i         fundefs       defltdefs      =  zipWith3 (mergeField dictMap fundefs am i) [0..] fundefs defltdefs
 
-mergeField :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> Maybe HsName -> Maybe HsName -> (GrVal, Maybe GrGlobal)
-mergeField dictMap fundefs am nm k (Just v) _        = makeGlobal dictMap fundefs am nm k v
-mergeField dictMap fundefs am nm k _        (Just v) = makeGlobal dictMap fundefs am nm k v
-mergeField dictMap fundefs am nm k Nothing  Nothing  = (GrVal_Var hsnUndefined, Nothing)
+mergeField :: DictMap -> [[HsName]] -> ArityMap -> HsName -> Int -> [HsName] -> Maybe HsName -> (GrVal, Maybe GrGlobal)
+mergeField dictMap fundefs am nm k (v:vs)   _        = makeGlobal dictMap fundefs am nm k (v:vs)
+mergeField dictMap fundefs am nm k _        (Just v) = makeGlobal dictMap fundefs am nm k [v]
+mergeField dictMap fundefs am nm k _        Nothing  = (GrVal_Var hsnUndefined, Nothing)
 
-makeGlobal :: DictMap -> [Maybe HsName] -> ArityMap -> HsName -> Int -> HsName -> (GrVal, Maybe GrGlobal)
-makeGlobal dictMap fundefs am nm k v 
+makeGlobal :: DictMap -> [[HsName]] -> ArityMap -> HsName -> Int -> [HsName] -> (GrVal, Maybe GrGlobal)
+makeGlobal dictMap fundefs am nm k (v:vs) 
    = case Map.lookup v am of
                         Nothing      -> (GrVal_Var v, Nothing)
-                        Just (a,dss) -> let tag  = GrTag_PApp a v
+                        Just (a,dss) -> let a2   = a - length vs
+                                            tag  = GrTag_PApp a2 v
                                             args = map f dss
                                             f ds = selectField dictMap fundefs nm ds
-                                            node = GrVal_Node tag args
+                                            node = GrVal_Node tag (map GrVal_Var vs ++ args)
                                             name = hsnSuffix nm ('~':show k)
                                         in  (GrVal_Var name, Just (GrGlobal_Global name node))
 
-selectField :: DictMap -> [Maybe HsName] -> HsName -> [Int] -> GrVal
+selectField :: DictMap -> [[HsName]] -> HsName -> [Int] -> GrVal
 selectField dictMap fundefs nm []     =  GrVal_Var nm
-selectField dictMap fundefs nm (x:xs) =  let Just a = fundefs!!x
+selectField dictMap fundefs nm (x:xs) =  let (a:_) = fundefs!!x
                                              b = Map.findWithDefault (error ("not found: " ++ show a ++ " being " ++ show x ++ " from " ++ show fundefs )) a dictMap
                                          in selectField dictMap (drop 2 b) a xs
-
 
 %%]

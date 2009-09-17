@@ -45,6 +45,9 @@ ppCNm = cfgppHsName CfgPP_Core
 
 ppMbCNm :: Maybe HsName -> PP_Doc
 ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
+
+ppManyCNm :: [HsName] -> PP_Doc
+ppManyCNm  =  ppListSep "" "" " " . map ppCNm
 %%]
 
 %%[(9 codegen) hs
@@ -251,7 +254,7 @@ SEM CMetaVal
 %%[[9
   | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
   | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
-  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppMbCNm @names
+  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppManyCNm @names
 %%]]
 
 SEM CMetaVal

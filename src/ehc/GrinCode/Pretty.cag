@@ -125,12 +125,15 @@ ppGrAltAnn GrAltAnnReenter        = pp "reenter "
 ppGrBindAnn :: PPGrNm -> GrBindAnn -> PP_Doc
 ppGrBindAnn _      GrBindAnnNormal            = pp ""
 ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
-ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList (ppMbGrNm ppGrNm) xs
+ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList (ppManyGrNm ppGrNm) xs
 ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList (ppCurlyList ppInt) xs
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlyList (ppMbGrNm ppGrNm) xs
 
 ppMbGrNm :: PPGrNm -> Maybe HsName -> PP_Doc
 ppMbGrNm ppGrNm = maybe (pp "_") ppGrNm
+
+ppManyGrNm :: PPGrNm -> [HsName] -> PP_Doc
+ppManyGrNm ppGrNm = ppListSep "" "" " " . map ppGrNm
 
 ppInt :: Int -> PP_Doc
 ppInt n = pp (show n)
