@@ -3,11 +3,24 @@
 %include afp.fmt
 %%]
 
-Pass all free variables of the following let bound expressions explicitly:
-- lambda expressions
-- other non function application, except the strictly evaluated ones
+Pass all free variables of let bound lambda expressions explicitly.
+Later, these expressions can then be lifted globally.
 
-Later, these expressions (lambda or CAF) can then be lifted globally.
+
+For example:
+f is a let-bound lambda expression that uses a (more) global variable g
+
+   let g = ...            
+in let f = \x -> ...g...  
+in ...f...
+
+The transformation introduces an additional formal parameter e to the lambda expression
+and passes the global variable g as an actual parameter to all uses of f:
+
+   let g = ...            
+in let f = \e x -> ...e...  
+in ...f g...
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals as args
@@ -103,7 +116,7 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Free var of lam's for which arg lifting is done
+%%% Free var of lams for which arg lifting is done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)

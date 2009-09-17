@@ -101,6 +101,16 @@ pMbDollNm
                       where ms = mbHNm n
           f x         = Just x
 
+pManyDollNm :: CParser [HsName]
+pManyDollNm
+  =  f <$> pList pDollNm
+    where -- for backward compatibility with libraries created before 20090917
+          f [n] | isJust ms && fromJust ms == "_"
+                      = []
+                      where ms = mbHNm n
+          f ns        = ns
+
+
 pCMetas :: CParser CMetas
 pCMetas
   =   (,) <$ pOCURLY <*> pCMetaBind <* pCOMMA <*> pCMetaVal <* pCCURLY
@@ -123,7 +133,7 @@ pCMetaVal
                                                   <|> pSucceed Nothing
                                                   )
   <|> CMetaVal_DictClass    <$ pKeyTk "DICTCLASS"    <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
-  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pListSep pCOMMA pMbDollNm <* pCCURLY
+  <|> CMetaVal_DictInstance <$ pKeyTk "DICTINSTANCE" <* pOCURLY <*> pList1Sep pCOMMA pManyDollNm <* pCCURLY
 
 pCMetaValOpt :: CParser CMetaVal
 pCMetaValOpt

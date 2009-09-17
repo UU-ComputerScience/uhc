@@ -94,7 +94,7 @@ SEM CMetaVal
                   lhs.isDict     = True
                   lhs.isDictInst = False
                   lhs.mbPos      = Nothing
-  | DictInstance  lhs.lifteeSet  = Set.fromList [ nm | Just nm <- @names ]
+  | DictInstance  lhs.lifteeSet  = Set.fromList (concat @names)
                   lhs.isDict     = True
                   lhs.isDictInst = True
                   lhs.mbPos      = Nothing

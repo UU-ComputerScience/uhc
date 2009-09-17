@@ -201,7 +201,7 @@ SEM CBind
 
 SEM CMetaVal
   | DictClass   lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
-  | DictInstance lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
+  | DictInstance lhs.protectableBindingNames   =  concat @names
   | Dict         lhs.protectableBindingNames  =   []
   | Val          lhs.protectableBindingNames   =   []
   

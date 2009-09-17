@@ -668,7 +668,7 @@ SEM Decl
 
 %%[(9 codegen)
 SEM Decl
-  | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindings_Rec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL
+  | Val         lhs         .   cbindL          :=  [mkCBind1 @patExpr.topNm $ mkCExprLet' True CBindings_Rec @chrScopeValBindL @expr.cexpr] ++ @patExpr.cbindL -- cbindInPatFlatten @patExpr.cbindInPatL    -- '
 %%]
 
 %%[(94 codegen)
@@ -919,8 +919,12 @@ SEM Decl
                                                              bind2     = mkCBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
                                                              bind3     = mkCBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
                                                              contextArguments = cmetaLiftDict @chrCtxtArgNmL
+                                                             
+                                                             mbToList Nothing = []
+                                                             mbToList (Just x) = [x]
+                                                             
                                                          in  ( mkCExprLamMeta contextArguments dict4   
-                                                             , CMetaVal_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames)
+                                                             , CMetaVal_DictInstance (map mbToList (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames))
                                                              )
 
                                                      mkDefaultD defaultBindings
