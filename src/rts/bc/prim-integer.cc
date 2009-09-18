@@ -31,24 +31,38 @@ int dummy_integer ;
 %%[97
 #if USE_GMP
 #define GB_NodeMpzSize						(EntierUpDivBy(sizeof(mpz_t),sizeof(Word)) + 1)
-#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(Word)) + 1)
-
 #define GB_MkMpzHeader						GB_MkHeader(GB_NodeMpzSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_mpz)
+
+#if ! USE_EHC_MM
+#define GB_NodeGMPSize(nBytes)				(EntierUpDivBy(nBytes,sizeof(Word)) + 1)
 #define GB_MkGMPHeader(sz)					GB_MkHeader(sz, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_GMP_intl)
+#endif
 #endif
 %%]
 
 %%[97
 #if USE_GMP
 #define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; }
+#if ! USE_EHC_MM
 #define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
+#endif
 #endif
 %%]
 
-Access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Access
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+mpz_t is defined as an array, this makes casting problematic (compiler complains),
+so a pointer based definition is used. However, __mpz_struct is an internal type which may
+undergo name changes as GMP versions progress.
 
 %%[97
-#define MPZ(n)								(__mpz_struct*)((n)->content.fields)
+#if USE_GMP
+typedef __mpz_struct*  GB_mpz ;
+
+#define MPZ(n)								(GB_mpz)((n)->content.fields)
+#endif
 %%]
 
 %%[97
@@ -63,14 +77,8 @@ Access
 %%% Integer via GMP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-mpz_t is defined as an array, this makes casting problematic (compiler complains),
-so a pointer based definition is used. However, __mpz_struct is an internal type which may
-undergo name changes as GMP versions progress.
-
 %%[97
 #if USE_GMP
-typedef __mpz_struct*  GB_mpz ;
-
 #define GB_Integer_Op1_In1(op,z,x)			{ GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x) ) ; }
 #define GB_Integer_Op2_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x), MPZ(y) ) ; }
 #define GB_Integer_Op2b_In1(op,z,x,y)		{ GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x), y ) ; }
@@ -107,29 +115,50 @@ typedef __mpz_struct*  GB_mpz ;
 %%% GMP memory allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Todo: finalizer for USE_EHC_MM
+
 %%[97
 #if USE_GMP
 void* gb_Alloc_GMP( size_t nBytes )
 {
-  GB_Node* n ;
-  GB_NodeAlloc_GMP_In(nBytes,n) ;
-  return n->content.fields ;		/* return ptr to usable area */
+#	if USE_EHC_MM
+		void *n ;
+		n = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+		return n ;
+#	else
+		GB_Node* n ;
+		GB_NodeAlloc_GMP_In(nBytes,n) ;
+		return n->content.fields ;		/* return ptr to usable area */
+#	endif
 }
 
 void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
 {
-  if ( nBytes > nBytesOld )
-  {
-	  GB_Node* nNew ;
-	  GB_NodeAlloc_GMP_In(nBytes,nNew) ;
-	  memcpy( nNew->content.fields, n, nBytesOld ) ;
-	  return nNew->content.fields ;
-  }
-  return n ;
+	if ( nBytes > nBytesOld )
+	{
+		void *nNew ;
+#		if USE_EHC_MM
+			nNew = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+			return n ;
+#		else
+			GB_NodePtr nNewNode ;
+			GB_NodeAlloc_GMP_In(nBytes,nNewNode) ;
+			nNew = nNewNode->content.fields ;
+#		endif
+		memcpy( nNew, n, nBytesOld ) ;
+#		if USE_EHC_MM
+			GB_HeapFree_Fixed( n ) ;
+#		endif
+		return nNew ;
+	}
+	return n ;
 }
 
 void gb_Free_GMP( void *n, size_t nBytesOld )
 {
+#	if USE_EHC_MM
+		GB_HeapFree_Fixed( n ) ;
+#	endif
 }
 #endif
 %%]
@@ -144,14 +173,14 @@ PRIM Float primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(nr) ;
-	GB_GC_Safe2_Zeroed(numerator, divisor) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(nr) ;
+	GB_GCSafe_2_Zeroed(numerator, divisor) ;
 	GB_PassExc_Cast_GCSafe( Word, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
 	GB_PassExc_Cast_GCSafe( Word, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	Float res ;
 	res = Cast( Float, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return res ;
 }
 
@@ -159,15 +188,15 @@ PRIM Double primRationalToDouble( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
 	GB_NodePtr numerator, divisor ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(nr) ;
-	GB_GC_Safe2_Zeroed(numerator, divisor) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(nr) ;
+	GB_GCSafe_2_Zeroed(numerator, divisor) ;
 	GB_PassExc_Dflt_GCSafe( 0.0, numerator = Cast(GB_NodePtr,gb_eval(nr->content.fields[0])) ) ;
 	GB_PassExc_Dflt_GCSafe( 0.0, divisor   = Cast(GB_NodePtr,gb_eval(nr->content.fields[1])) ) ;
 	// GB_NodeAlloc_Double_In(nf) ;
 	// nf->content.dbl = mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ;
 	// return nf ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return Cast( Double, mpz_get_d( MPZ(numerator) ) / mpz_get_d( MPZ(divisor) ) ) ;
 }
 
@@ -304,24 +333,24 @@ PRIM GB_NodePtr primRemInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(x,y) ;
-	GB_GC_Safe3_Zeroed(n,n1,n2) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(x,y) ;
+	GB_GCSafe_3_Zeroed(n,n1,n2) ;
 	GB_Integer_QuotRem_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return n ;
 }
 
 PRIM GB_NodePtr primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(x,y) ;
-	GB_GC_Safe3_Zeroed(n,n1,n2) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(x,y) ;
+	GB_GCSafe_3_Zeroed(n,n1,n2) ;
 	GB_Integer_DivMod_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return n ;
 }
 #endif
@@ -557,11 +586,11 @@ PRIM GB_NodePtr primShowInteger( GB_NodePtr integerNd )
 		exp -= mantdig ;																	\
 	}																						\
 	GB_NodePtr n, ni ;																		\
-	GB_GC_SafeEnter ;																		\
-	GB_GC_Safe2_Zeroed(n,ni) ;																\
+	GB_GCSafe_Enter ;																		\
+	GB_GCSafe_2_Zeroed(n,ni) ;																\
 	GB_NodeAlloc_Mpz_SetDbl_In( ni, ldexp( mant, mantdig ) ) ;								\
 	GB_MkTupNode2_In(n,ni,GB_Int2GBInt(exp)) ;												\
-	GB_GC_SafeLeave ;																		\
+	GB_GCSafe_Leave ;																		\
 	return n ;																				\
 }
 

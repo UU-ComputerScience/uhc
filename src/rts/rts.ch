@@ -34,6 +34,7 @@
 // For now, switch off Boehm GC, turn on own GC
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
+#define GB_DEBUG				0
 // internal MM admin uses structs with functions, which will be bypassed (for speed) with MM_BYPASS_PLAN on
 #define MM_BYPASS_PLAN			1
 #endif
@@ -66,8 +67,8 @@
 #include "event/event.h"
 #include "base/bits.h"
 #include "mm/mmitf.h"
-#include "base/types.h"
 #include "base/utils.h"
+#include "base/types.h"
 #include "mm/mm.h"
 %%]
 

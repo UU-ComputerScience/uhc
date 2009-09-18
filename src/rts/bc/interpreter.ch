@@ -212,15 +212,15 @@ Equality on nodes which are an instance of Enum, hence are encoded as GB_Int.
 #define GB_Tag_List_Nil						1
 #define GB_Tag_List_Cons					0
 
-#define GB_MkListNil(n)						{n = &gb_Nil;}
+#define GB_MkListNil(n)						{n = gb_Nil;}
 #define GB_MkListCons(n,x1,x2)				GB_MkConNode2(n,GB_Tag_List_Cons,x1,x2)
 
-#define GB_List_IsNull(n)					(GB_NH_Fld_Tag((n)->header) == GB_Tag_List_Nil)
+#define GB_List_IsNull(n)					(GB_Word_IsPtr(n) && GB_NH_Fld_Tag((n)->header) == GB_Tag_List_Nil)
 #define GB_List_Head(n)						((n)->content.fields[0])
 #define GB_List_Tail(n)						Cast( GB_NodePtr,(n)->content.fields[1] )
 #define GB_List_TailPtr(n)					Cast( GB_NodePtr*,&(n)->content.fields[1] )
 
-#define GB_List_Iterate(n,sz,body)			while ( sz-- && ! GB_List_IsNull( n ) ) { \
+#define GB_List_Iterate(n,evaln,sz,body)	while ( sz-- && gb_assert_IsNotIndirection(Cast(Word,n = evaln),"GB_List_Iterate") && ! GB_List_IsNull( n ) ) { \
 												body ; \
 												n = GB_List_Tail(n) ; \
 											}
@@ -228,10 +228,8 @@ Equality on nodes which are an instance of Enum, hence are encoded as GB_Int.
 %%]
 
 %%[8
-extern GB_NodePtr gb_listTail( GB_NodePtr n ) ;
-extern GB_Word gb_listHead( GB_NodePtr n ) ;
-extern Bool gb_listNull( GB_NodePtr n ) ;
 extern GB_NodePtr gb_listForceEval( GB_NodePtr* pn, int* psz ) ;
+extern GB_NodePtr gb_listForceEval2( GB_NodePtr n, int* psz ) ;
 %%]
 
 %%[98
@@ -246,7 +244,7 @@ extern GB_NodePtr gb_copyCStringFromEvalString( char* cString, GB_NodePtr hsStri
 #define GB_Tag_Maybe_Nothing				1
 #define GB_Tag_Maybe_Just					0
 
-#define GB_MkMaybeNothing(n)				{n = &gb_Nothing;}
+#define GB_MkMaybeNothing(n)				{n = gb_Nothing;}
 #define GB_MkMaybeJust(n,x1)				GB_MkConNode1(n,GB_Tag_Maybe_Just,x1)
 %%]
 
@@ -269,11 +267,11 @@ extern int gb_ThrownException_NrOfEvalWrappers ;
 											}
 
 #define GB_PassExc(action)					GB_PassExcWith(action,,True,return gb_ThrownException)
-#define GB_PassExc_GCSafe(action)			GB_PassExcWith(action,GB_GC_SafeLeave,True,return gb_ThrownException)
+#define GB_PassExc_GCSafe(action)			GB_PassExcWith(action,GB_GCSafe_Leave,True,return gb_ThrownException)
 #define GB_PassExc_Dflt(df,action)			GB_PassExcWith(action,,True,return df)
-#define GB_PassExc_Dflt_GCSafe(df,action)	GB_PassExcWith(action,GB_GC_SafeLeave,True,return df)
+#define GB_PassExc_Dflt_GCSafe(df,action)	GB_PassExcWith(action,GB_GCSafe_Leave,True,return df)
 #define GB_PassExc_Cast(tp,action)			GB_PassExcWith(action,,True,return Cast(tp,gb_ThrownException))
-#define GB_PassExc_Cast_GCSafe(tp,action)	GB_PassExcWith(action,GB_GC_SafeLeave,True,return Cast(tp,gb_ThrownException))
+#define GB_PassExc_Cast_GCSafe(tp,action)	GB_PassExcWith(action,GB_GCSafe_Leave,True,return Cast(tp,gb_ThrownException))
 #define GB_PassExc_CastAsWord(action)		GB_PassExc_Cast(GB_Word,action)
 
 %%]
@@ -357,6 +355,9 @@ typedef struct GB_ByteCodeModule {
 %%]
 
 %%[8
+// extern void gb_prWordAsNode( GB_NodePtr n ) ;
+extern void gb_prWord( GB_Word x ) ;
+
 #if TRACE || DUMP_INTERNALS
 extern void gb_prByteCodeInstrEntry( GB_ByteCodeInstrEntry* e ) ;
 extern void gb_prByteCodeModule( GB_ByteCodeModule* e ) ;

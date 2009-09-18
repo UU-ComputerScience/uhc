@@ -66,8 +66,13 @@ Backwards startingpoint starts after the first location (so predecrement is/can 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Max
+%%% Max, Min
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#define MAX(x,y)			((x) > (y) ? (x) : (y))
+#define MIN(x,y)			((x) < (y) ? (x) : (y))
+%%]
 
 %%[8
 static inline Word maxWord( Word x, Word y ) {

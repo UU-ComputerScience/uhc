@@ -29,8 +29,17 @@ PRIM Word gb_False
 PRIM Word gb_True
 	= GB_MkConEnumNodeAsTag( 1 ) ;
 
-PRIM GB_Node gb_Nil
+#if ! USE_EHC_MM
+GB_Node gb_Nil_Node
     = GB_MkConEnumNode( GB_Tag_List_Nil ) ;
+#endif
+
+PRIM GB_Node* gb_Nil
+#if USE_EHC_MM
+    = NULL ;
+#else
+    = &gb_Nil_Node ;
+#endif
 
 PRIM Word gb_EQ
 	= GB_MkConEnumNodeAsTag( 0 ) ;
@@ -42,8 +51,17 @@ PRIM Word gb_LT
 %%]
 
 %%[98
-PRIM GB_Node gb_Nothing
+#if ! USE_EHC_MM
+GB_Node gb_Nothing_Node
     = GB_MkConEnumNode( GB_Tag_Maybe_Nothing ) ;
+#endif
+
+PRIM GB_Node* gb_Nothing
+#if USE_EHC_MM
+    = NULL ;
+#else
+    = &gb_Nothing_Node ;
+#endif
 %%]
 
 The definition of IOErrorType must coincide with the one in Prelude.hs
@@ -123,10 +141,11 @@ PRIM Word primMakeWeakPtr( Word key, Word val, Word finalizer )
 PRIM GB_NodePtr primDeRefWeakPtr( Word wp )
 {
 	GB_NodePtr wpDeref ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1_Zeroed(wpDeref) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(wp) ;
+	// GB_GCSafe_1_Zeroed(wpDeref) ;
 	GB_MkMaybeJust( wpDeref, wp ) ;
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return wpDeref ;
 }
 
@@ -252,8 +271,8 @@ GB_NodePtr primCStringToString1Char( char* s, GB_Int goff )
 {
 	char c = s[ GB_GBInt2Int(goff) ] ;
   	GB_NodePtr n, n2 ;
-	GB_GC_SafeEnter ;
-  	GB_GC_Safe2_Zeroed(n,n2) ;
+	GB_GCSafe_Enter ;
+  	GB_GCSafe_2_Zeroed(n,n2) ;
   	IF_GB_TR_ON(3,printf("primCStringToString1Char1 %p:'%s'[%d]\n", s, s, GB_GBInt2Int(goff) ););
 	if ( c ) {
 		GB_MkCFunNode2In(n2,&primCStringToString1Char,s,GB_Int_Add(goff,GB_Int1)) ;
@@ -262,7 +281,7 @@ GB_NodePtr primCStringToString1Char( char* s, GB_Int goff )
   		GB_MkListNil(n) ;
 	}
   	IF_GB_TR_ON(3,printf("primCStringToString1Char2 n %p\n", n ););
-  	GB_GC_SafeLeave ;
+  	GB_GCSafe_Leave ;
   	return n ;
 }
 
@@ -297,20 +316,20 @@ PRIM GB_NodePtr primTraceStringExit( GB_NodePtr n )
 	char buf[100] ;
 	int bufInx = 0 ;
 	int sz = 99 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(n) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(n) ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit1 n %p\n", n ););
 %%[[8
-	gb_listForceEval( &n, &sz ) ;
+	gb_listForceEval2( n, &sz ) ;
 %%][96
-	GB_PassExc_GCSafe( gb_listForceEval( &n, &sz ) ) ;
+	GB_PassExc_GCSafe( gb_listForceEval2( n, &sz ) ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("primTraceStringExit2 n %p\n", n ););
-	GB_List_Iterate(n,sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
+	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{buf[bufInx++] = GB_GBInt2Int(GB_List_Head(n));}) ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit3 n %p\n", n ););
 	buf[bufInx] = 0 ;
   	IF_GB_TR_ON(3,printf("primTraceStringExit4 `%s'\n", buf ););
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	gb_error( buf ) ;
 	return n ;
 }
@@ -430,30 +449,30 @@ PRIM GB_NodePtr primNewMutVar( Word init, Word state )
 {
 	GB_NodePtr mutVar ;
 	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(init,state) ;
-	GB_GC_Safe1_Zeroed(mutVar) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(init,state) ;
+	GB_GCSafe_1_Zeroed(mutVar) ;
 	
 	// printf("primNewMutVar\n") ;
 
 	GB_MkTupNode1_In(mutVar,init) ;
 	GB_MkTupNode2_In(res,state,mutVar) ;
 	
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return res ;
 }
 
 PRIM GB_NodePtr primReadMutVar( GB_NodePtr mutVar, Word state )
 {
 	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe2(mutVar,state) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_2(mutVar,state) ;
 
 	// printf("primReadMutVar\n") ;
 
 	GB_MkTupNode2_In(res,state,mutVar->content.fields[0]) ;
 	
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return res ;
 }
 
@@ -479,28 +498,6 @@ PRIM Word primSameMutVar( Word v1, Word v2 )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% System
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99
-%%]
-PRIM GB_NodePtr primGetProgArgv( )
-{
-	GB_NodePtr res ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(res) ;
-	GB_MkListNil( res ) ;
-	
-	int i ;
-	for ( i = rtsArgC - 1 ; i >= 0 ; i-- ) {
-		GB_NodePtr n1, n2 ;
-		n2 = primCStringToString( rtsArgV[i] ) ;
-		GB_MkListCons(n1,n2,res) ;
-		res = n1 ;
-	}
-	
-	GB_GC_SafeLeave ;
-	return res ;
-}
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Environment

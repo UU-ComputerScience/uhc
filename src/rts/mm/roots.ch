@@ -58,7 +58,7 @@ static inline void mm_Roots_Register1( WPtr toObj ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface for local roots
+%%% Interface for local roots, which follow call nesting of C functions, to be used in C functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -66,7 +66,7 @@ static inline void mm_Roots_Register1( WPtr toObj ) {
 #define MM_LclRoot_LeaveGrp								mm_LclRoots = _mm_lclRoot_Grp.next
 
 #define MM_LclRoot_EnterOne(n,nm)						MM_LclRoot_One _##n##_MM_LclRoot_One = { mm_LclRoots->ones, (WPtr)(&(nm)) } ; mm_LclRoots->ones = &_##n##_MM_LclRoot_One
-#define MM_LclRoot_EnterOne_Zeroed(n,nm)				MM_LclRoot_EnterOne(n,nm) ; (nm) = NULL
+#define MM_LclRoot_EnterOne_Zeroed(n,nm)				MM_LclRoot_EnterOne(n,nm) ; { WPtr pnm = (WPtr)(&(nm)) ; *pnm = 0 ; }
 #define MM_LclRoot_EnterOne1(nm1)						MM_LclRoot_EnterOne(1,nm1)
 #define MM_LclRoot_EnterOne2(nm1,nm2)					MM_LclRoot_EnterOne1(nm1) ; MM_LclRoot_EnterOne(2,nm2)
 #define MM_LclRoot_EnterOne3(nm1,nm2,nm3)				MM_LclRoot_EnterOne2(nm1,nm2) ; MM_LclRoot_EnterOne(3,nm3)

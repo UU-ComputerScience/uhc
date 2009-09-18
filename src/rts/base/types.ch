@@ -96,7 +96,7 @@ typedef union GB_WordEquiv {
 
 #define GB_Int_ShiftPow2			Bits_Pow2(GB_Int,GB_Word_SizeOfWordTag)
 
-#define GB_Word_IsInt(x)			((x) & GB_Word_TagMask)
+#define GB_Word_IsInt(x)			(Cast(Word,x) & GB_Word_TagMask)
 #define GB_Word_IsPtr(x)			(! GB_Word_IsInt(x))
 %%]
 
@@ -291,9 +291,7 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_MkConHeader(sz,tg)				GB_MkHeader((sz)+1, GB_NodeNdEv_No, GB_NodeTagCat_Con, tg)
 #define GB_MkAppHeader(nArg)				GB_MkHeader((nArg)+2, GB_NodeNdEv_Yes, GB_NodeTagCat_App, 0)
 
-#if USE_EHC_MM
-#	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(1,tg), 0 }	// place for forwarding pointer
-#else
+#if ! USE_EHC_MM
 #	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 #endif
 #define GB_MkConEnumNodeAsTag(tg)			(tg /* GB_Int2GBInt(tg) */)
@@ -313,10 +311,10 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_FillConNode4(n,tg,x1,x2,x3,x4)		{GB_NodeHeader _h = GB_MkConHeader(4,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds4(n,x1,x2,x3,x4);}
 #define GB_FillConNode5(n,tg,x1,x2,x3,x4,x5)	{GB_NodeHeader _h = GB_MkConHeader(5,tg); GB_FillNodeHdr(_h,n); GB_FillNodeFlds5(n,x1,x2,x3,x4,x5);}
 
-#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_In(GB_GC_MinAlloc_Node_Words(sz),n); GB_FillConNodeN(n,sz,tg); }
+#define GB_MkConNodeN(n,sz,tg)					{GB_NodeAlloc_Fields_In_MinAlloc((sz),n); GB_FillConNodeN(n,sz,tg); }
 #define GB_MkConNodeN_Rooted(n,sz,tg)			{GB_MkConNodeN(n,sz,tg) ; GB_GC_RegisterRoot(n); }
-#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_Node_Words(sz),n); GB_FillConNodeN(n,sz,tg); }
-#define GB_MkConNode0(n,tg)						{GB_NodeAlloc_In(GB_GC_MinAlloc_Node_Words(0),n); GB_FillConNode0(n,tg); }
+#define GB_MkConNodeN_Fixed(n,sz,tg)			{GB_NodeAlloc_Fields_In_Fixed_MinAlloc((sz),n); GB_FillConNodeN(n,sz,tg); }
+#define GB_MkConNode0(n,tg)						{GB_NodeAlloc_Fields_In_MinAlloc((0),n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)					{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)				{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
 #define GB_MkConNode3(n,tg,x1,x2,x3)			{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
@@ -346,9 +344,9 @@ Node categories. Two groups, the first require evaluation, the second not.
 #define GB_MkAppNode1In(n,f,x1)				{GB_NodeAlloc_In(3,n); GB_FillAppNode1(n,f,x1); }
 
 #if USE_BOEHM_GC
-#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Fixed( n, GB_GC_MinAlloc_Field_Words(sz), 0 ) ;
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Fixed( n, GB_GC_MinAlloc_Field_Words(sz), 0 )
 #elif USE_EHC_MM
-#	define GB_MkExpNodeIn(n,sz)				{ GB_MkConNodeN( n, GB_GC_MinAlloc_Field_Words(sz), 0 ); GB_GC_RegisterRoot(n); }
+#	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN_Rooted( n, sz, 0 )
 #else
 #	define GB_MkExpNodeIn(n,sz)				GB_MkConNodeN( n, GB_GC_MinAlloc_Field_Words(sz), 0 )
 #endif
@@ -502,32 +500,33 @@ The 'Fixed' variants allocate non-collectable.
 #		define GB_HeapAlloc_Bytes(nBytes)				Cast(GB_Ptr,GC_MALLOC(nBytes))
 #	endif
 
-#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
-#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapFree_Fixed(p)							
 
 #	if TRACE
-#		define GB_GC_Maintained(x)						( Cast(GB_Ptr,x) >= gb_allocated_lowest_ptr && Cast(GB_Ptr,x) <= gb_allocated_highest_ptr )
+#		define GB_GC_Managed(x)						( Cast(GB_Ptr,x) >= gb_allocated_lowest_ptr && Cast(GB_Ptr,x) <= gb_allocated_highest_ptr )
 #	else
-#		define GB_GC_Maintained(x)						False
+#		define GB_GC_Managed(x)						False
 #	endif
 
 #	define GB_GC_MinAlloc_Field_Words(szw)				(szw)
-#	define GB_GC_MinAlloc_Field_Bytes(szb)				(szb)
+#	define GB_GC_MinAlloc_Node_Words(szw)				(szw)
 #	define GB_GC_MinAlloc_Malloc(szb)					(szb)
 
 #	define GB_GC_RegisterRoot(n)						// not necessary
 
-#	define GB_GC_SafeEnter								// not necessary
-#	define GB_GC_SafeLeave								// not necessary
-#	define GB_GC_Safe1(nm1)								// not necessary
-#	define GB_GC_Safe2(nm1,nm2)							// not necessary
-#	define GB_GC_Safe3(nm1,nm2,nm3)						// not necessary
-#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					// not necessary
-#	define GB_GC_Safe1_Zeroed(nm1)						// not necessary
-#	define GB_GC_Safe2_Zeroed(nm1,nm2)					// not necessary
-#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
-#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
+#	define GB_GCSafe_Enter								// not necessary
+#	define GB_GCSafe_Leave								// not necessary
+#	define GB_GCSafe_1(nm1)								// not necessary
+#	define GB_GCSafe_2(nm1,nm2)							// not necessary
+#	define GB_GCSafe_3(nm1,nm2,nm3)						// not necessary
+#	define GB_GCSafe_4(nm1,nm2,nm3,nm4)					// not necessary
+#	define GB_GCSafe_1_Zeroed(nm1)						// not necessary
+#	define GB_GCSafe_2_Zeroed(nm1,nm2)					// not necessary
+#	define GB_GCSafe_3_Zeroed(nm1,nm2,nm3)				// not necessary
+#	define GB_GCSafe_4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
 
 #	define GB_GC_RegisterModule(m)						// not necessary
 
@@ -541,35 +540,32 @@ The 'Fixed' variants allocate non-collectable.
 #elif USE_EHC_MM
 
 #	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes))
-#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,mm_itf_allocResident(nBytes))
-#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) * sizeof(GB_Word))
+#	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapFree_Fixed(p)							mm_itf_deallocResident(p)
 
 #	define GC_MALLOC(nBytes)							GB_HeapAlloc_Bytes(nBytes)
 #	define GC_MALLOC_UNCOLLECTABLE(nBytes)				GB_HeapAlloc_Bytes_Fixed(nBytes)
 
-#	if TRACE
-#		define GB_GC_Maintained(x)						mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, x )
-#	else
-#		define GB_GC_Maintained(x)						False
-#	endif
+#	define GB_GC_Managed(x)							mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, (Word)x )
 
-#	define GB_GC_MinAlloc_Field_Words(szw)				(maxWord(szw,1))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
-#	define GB_GC_MinAlloc_Field_Bytes(szb)				(maxWord(szb,sizeof(Word)))		// minimal for node: at least 1 field payload to allow for indirection/forwarding
-#	define GB_GC_MinAlloc_Malloc(szb)					(maxWord(szb,sizeof(Word)))		// minimal for malloc: at least a Word
+#	define GB_GC_MinAlloc_Field_Words(szw)				(MAX(szw,1))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
+#	define GB_GC_MinAlloc_Node_Words(szw)				(MAX(szw,2))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
+#	define GB_GC_MinAlloc_Malloc(szb)					(MAX(szb,sizeof(Word)))		// minimal for malloc: at least a Word
 
 #	define GB_GC_RegisterRoot(n)						{ GB_Node_ZeroFields(n) ; mm_itf_registerGCRoot( (WPtr)(&n) ) ; }
 
-#	define GB_GC_SafeEnter								MM_LclRoot_EnterGrp
-#	define GB_GC_SafeLeave								MM_LclRoot_LeaveGrp
-#	define GB_GC_Safe1(nm1)								MM_LclRoot_EnterOne1(nm1)
-#	define GB_GC_Safe2(nm1,nm2)							MM_LclRoot_EnterOne2(nm1,nm2)	
-#	define GB_GC_Safe3(nm1,nm2,nm3)						MM_LclRoot_EnterOne3(nm1,nm2,nm3)
-#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					MM_LclRoot_EnterOne4(nm1,nm2,nm3,nm4)
-#	define GB_GC_Safe1_Zeroed(nm1)						MM_LclRoot_EnterOne1_Zeroed(nm1)
-#	define GB_GC_Safe2_Zeroed(nm1,nm2)					MM_LclRoot_EnterOne2_Zeroed(nm1,nm2)	
-#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				MM_LclRoot_EnterOne3_Zeroed(nm1,nm2,nm3)
-#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			MM_LclRoot_EnterOne4_Zeroed(nm1,nm2,nm3,nm4)
+#	define GB_GCSafe_Enter								MM_LclRoot_EnterGrp
+#	define GB_GCSafe_Leave								MM_LclRoot_LeaveGrp
+#	define GB_GCSafe_1(nm1)								MM_LclRoot_EnterOne1(nm1)
+#	define GB_GCSafe_2(nm1,nm2)							MM_LclRoot_EnterOne2(nm1,nm2)	
+#	define GB_GCSafe_3(nm1,nm2,nm3)						MM_LclRoot_EnterOne3(nm1,nm2,nm3)
+#	define GB_GCSafe_4(nm1,nm2,nm3,nm4)					MM_LclRoot_EnterOne4(nm1,nm2,nm3,nm4)
+#	define GB_GCSafe_1_Zeroed(nm1)						MM_LclRoot_EnterOne1_Zeroed(nm1)
+#	define GB_GCSafe_2_Zeroed(nm1,nm2)					MM_LclRoot_EnterOne2_Zeroed(nm1,nm2)	
+#	define GB_GCSafe_3_Zeroed(nm1,nm2,nm3)				MM_LclRoot_EnterOne3_Zeroed(nm1,nm2,nm3)
+#	define GB_GCSafe_4_Zeroed(nm1,nm2,nm3,nm4)			MM_LclRoot_EnterOne4_Zeroed(nm1,nm2,nm3,nm4)
 
 #	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
 
@@ -582,29 +578,30 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes(nBytes)					GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				GB_HeapAlloc_Bytes(nBytes)	
+#	define GB_HeapFree_Fixed(p)							
 
 #	if TRACE
-#		define GB_GC_Maintained(x)						False
+#		define GB_GC_Managed(x)						False
 #	else
-#		define GB_GC_Maintained(x)						False
+#		define GB_GC_Managed(x)						False
 #	endif
 
 #	define GB_GC_MinAlloc_Field_Words(szw)				(szw)
-#	define GB_GC_MinAlloc_Field_Bytes(szb)				(szb)
+#	define GB_GC_MinAlloc_Node_Words(szw)				(szw)
 #	define GB_GC_MinAlloc_Malloc(szb)					(szb)
 
 #	define GB_GC_RegisterRoot(n)						// not necessary
 
-#	define GB_GC_SafeEnter								// not necessary
-#	define GB_GC_SafeLeave								// not necessary
-#	define GB_GC_Safe1(nm1)								// not necessary
-#	define GB_GC_Safe2(nm1,nm2)							// not necessary
-#	define GB_GC_Safe3(nm1,nm2,nm3)						// not necessary
-#	define GB_GC_Safe4(nm1,nm2,nm3,nm4)					// not necessary
-#	define GB_GC_Safe1_Zeroed(nm1)						// not necessary
-#	define GB_GC_Safe2_Zeroed(nm1,nm2)					// not necessary
-#	define GB_GC_Safe3_Zeroed(nm1,nm2,nm3)				// not necessary
-#	define GB_GC_Safe4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
+#	define GB_GCSafe_Enter								// not necessary
+#	define GB_GCSafe_Leave								// not necessary
+#	define GB_GCSafe_1(nm1)								// not necessary
+#	define GB_GCSafe_2(nm1,nm2)							// not necessary
+#	define GB_GCSafe_3(nm1,nm2,nm3)						// not necessary
+#	define GB_GCSafe_4(nm1,nm2,nm3,nm4)					// not necessary
+#	define GB_GCSafe_1_Zeroed(nm1)						// not necessary
+#	define GB_GCSafe_2_Zeroed(nm1,nm2)					// not necessary
+#	define GB_GCSafe_3_Zeroed(nm1,nm2,nm3)				// not necessary
+#	define GB_GCSafe_4_Zeroed(nm1,nm2,nm3,nm4)			// not necessary
 
 #	define GB_GC_RegisterModule(m)						// not necessary
 
@@ -613,13 +610,21 @@ The 'Fixed' variants allocate non-collectable.
 
 #endif
 
-#define GB_GC_MinAlloc_Node_Words(szw)			(GB_GC_MinAlloc_Field_Words(szw)+1)
-#define GB_GC_MinAlloc_Node_Bytes(szb)			(GB_GC_MinAlloc_Field_Bytes(szb)+sizeof(Word))
+#define GB_GC_MinAlloc_FieldAnd1_Words(szw)		(GB_GC_MinAlloc_Field_Words(szw)+1)
 
 #define GB_NodeAlloc_In(nWords,n)				{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words(nWords)) ; }
 #define GB_NodeAlloc_In_Fixed(nWords,n)			{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Fixed(nWords)) ; }
 #define GB_NodeAlloc_Hdr_In(nWords,h,n)			{ GB_NodeAlloc_In(nWords,n) ; (n)->header = (h) ; }
 #define GB_NodeAlloc_Hdr_In_Fixed(nWords,h,n)	{ GB_NodeAlloc_In_Fixed(nWords,n) ; (n)->header = (h) ; }
+
+#if USE_EHC_MM
+#	define GB_NodeAlloc_Fields_In_MinAlloc(nFlds,n)				{ GB_NodeAlloc_In(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n) ; (n)->content.fields[0]=0 ; }
+#	define GB_NodeAlloc_Fields_In_Fixed_MinAlloc(nFlds,n)		{ GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n) ; (n)->content.fields[0]=0 ; }
+#else
+#	define GB_NodeAlloc_Fields_In_MinAlloc(nFlds,n)				GB_NodeAlloc_In(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n)
+#	define GB_NodeAlloc_Fields_In_Fixed_MinAlloc(nFlds,n)		GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n)
+#endif
+
 %%]
 
 For finalizers boehm's gc is assumed!!!!
@@ -658,6 +663,61 @@ This breaks when compiled without bgc.
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Indirection following
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// is header of node an indirection?
+static inline Bool gb_NodeHeader_IsIndirection( GB_NodeHeader h ) {
+	return GB_NH_Fld_NdEv(h) == GB_NodeNdEv_Yes && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Ind ;
+}
+
+// is node an indirection?
+static inline Bool gb_IsIndirection( Word n ) {
+	return GB_Word_IsPtr(n) && gb_NodeHeader_IsIndirection( ((GB_NodePtr)n)->header ) ;
+}
+%%]
+
+%%[8
+#if __UHC_TARGET_BC__
+extern void gb_prWord( GB_Word x ) ;
+#endif
+
+// check (and panic) if indirection
+#if TRACE
+static inline Bool gb_assert_IsNotIndirection( Word n, char* msg ) {
+#	if __UHC_TARGET_BC__
+		if ( GB_GC_Managed( n ) && gb_IsIndirection(n) ) {
+			gb_prWord( n ) ; printf("\n") ;
+			rts_panic2_1( "indirection", msg, n ) ;
+		}
+#	endif
+	return True ;
+}
+#else
+#define gb_assert_IsNotIndirection(n,msg)		True
+#endif
+%%]
+
+%%[8
+// following indirection when already knowing it is an indirection
+static inline Word gb_Indirection_FollowIndirection( Word n ) {
+	do {
+		n = ((GB_NodePtr)n)->content.fields[0] ;
+	} while ( gb_IsIndirection(n) ) ;
+	return n ;
+}
+
+// following indirection when not yet knowing it is an indirection
+static inline Word gb_Indirection_FollowObject( Word n ) {
+	if ( GB_Word_IsPtr(n) && gb_NodeHeader_IsIndirection( ((GB_NodePtr)n)->header ) ) {
+		n = gb_Indirection_FollowIndirection( n ) ;
+	}
+	return n ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
