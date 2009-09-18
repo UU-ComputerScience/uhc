@@ -25,13 +25,14 @@ int dummy_array ;
 %%[95
 PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 {
+	gb_assert_IsNotIndirection(Cast(Word,mn),"primByteArrayToString1Char") ;
 	char* s = Cast(char*,mn->content.bytearray.ptr) ;
 	int   igoff = GB_GBInt2Int(goff) ;
 	char  c = s[ igoff ] ;
   	GB_NodePtr n, n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(mn) ;
-	GB_GC_Safe2_Zeroed(n,n2) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(mn) ;
+	GB_GCSafe_2_Zeroed(n,n2) ;
   	IF_GB_TR_ON(3,printf("primByteArrayToString1Char %x:'%s'[%d]\n", s, s, igoff ););
 	if ( igoff < mn->content.bytearray.size && c ) {
 		GB_MkCFunNode2In(n2,&primByteArrayToString1Char,mn,GB_Int_Add(goff,GB_Int1)) ;
@@ -41,7 +42,7 @@ PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
   		GB_MkListNil(n) ;
 		IF_GB_TR_ON(3,printf("primByteArrayToString1Char Nil n=%p h(n)=%x\n", n, n->header ););
 	}
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
   	return n ;
 }
 
@@ -77,29 +78,33 @@ PRIM Word primByteArrayLength( Word a )
 PRIM GB_NodePtr primStringToByteArray( GB_NodePtr n, GB_Int sz )
 {
 	GB_NodePtr n2 ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1(n) ;
-	GB_GC_Safe1_Zeroed(n2) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(n) ;
+	GB_GCSafe_1_Zeroed(n2) ;
   	IF_GB_TR_ON(3,printf("primStringToByteArray1 sz=%d n=%p\n", sz, n ););
 %%[[95
-	gb_listForceEval( &n, (int*) &sz ) ;
+	// gb_listForceEval( &n, (int*) &sz ) ;
+	gb_listForceEval2( n, (int*) &sz ) ;
 %%][96
-	GB_PassExc_GCSafe( gb_listForceEval( &n, (int*) &sz ) ) ;
+	// GB_PassExc_GCSafe( gb_listForceEval( &n, (int*) &sz ) ) ;
+	GB_PassExc_GCSafe( gb_listForceEval2( n, (int*) &sz ) ) ;
 %%]]
+	n = (GB_NodePtr)gb_Indirection_FollowObject( (Word)n ) ;
+	gb_assert_IsNotIndirection(Cast(Word,n),"primStringToByteArray") ;
   	IF_GB_TR_ON(3,printf("primStringToByteArray2 sz=%d n=%p\n", sz, n ););
 	GB_NodeAlloc_ByteArray_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
 	int bufInx = 0 ;
 %%[[95
-	GB_List_Iterate(n,sz,{Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
+	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%][96
-	GB_List_Iterate(n,sz,{Word xx ; GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
+	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{Word xx ; GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%]]
 	// does not work: GB_List_Iterate(n,sz,{s[bufInx++] = GB_GBInt2Int(gb_eval(GB_List_Head(n)));}) ;
   	IF_GB_TR_ON(3,printf("primStringToByteArray4 bufInx=%d, n=%p buf=", bufInx, n ););
   	IF_GB_TR_ON(3,{int i ; for (i = 0 ; i < bufInx ; i++) {printf(" %d",s[i]);};});
   	IF_GB_TR_ON(3,printf("\n"););
-	GB_GC_SafeLeave ;
+	GB_GCSafe_Leave ;
 	return n2 ;
 }
 %%]
@@ -114,10 +119,10 @@ Currently, that is using Boehm GC, a byte array is a node with size + pointer to
 PRIM GB_NodePtr primNewByteArray( Word sz )
 {
 	GB_NodePtr bytearray ;
-	GB_GC_SafeEnter ;
-	GB_GC_Safe1_Zeroed(bytearray) ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(bytearray) ;
 	GB_NodeAlloc_ByteArray_In( sz, bytearray ) ;
-	GB_GC_SafeLeave ;
+	// GB_GCSafe_Leave ;
 	return bytearray ;
 }
 

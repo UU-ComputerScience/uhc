@@ -92,7 +92,12 @@ static inline Bool mm_pages_Buddy_Dealloc_IsEmpty( MM_Pages_Buddy_FreePage* fpg 
 %%]
 
 %%[8
-#define MM_Pages_Buddy_InitialGroupSize				(1024 * 1024 * 4)	// (10 * 1024 * 4) // 
+#if GB_DEBUG
+#	define MM_Pages_Buddy_InitialGroupSize__	10
+#else
+#	define MM_Pages_Buddy_InitialGroupSize__	1024
+#endif
+#define MM_Pages_Buddy_InitialGroupSize			(MM_Pages_Buddy_InitialGroupSize__ * 1024 * 4)	// (10 * 1024 * 4) // 
 
 // the administration
 typedef struct MM_Pages_Buddy_Data {

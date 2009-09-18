@@ -14,22 +14,30 @@
 The size of a page, basic unit of contiguous mem allocation.
 
 %%[8
-#define MM_Page_Size_Log						(10 + Word_SizeInBytes_Log)
+#if GB_DEBUG
+#	define MM_Page_Size_Log__					5
+#else
+#	define MM_Page_Size_Log__					10
+#endif
+#define MM_Page_Size_Log						(MM_Page_Size_Log__ + Word_SizeInBytes_Log)
 #define MM_Page_Size							(1 << MM_Page_Size_Log)
 %%]
 
 For Fragments as used by GC allocators
 
 %%[8
-#define MM_GC_CopySpace_FragmentSize_Log		(4 + MM_Page_Size_Log)
+#if GB_DEBUG
+#	define MM_GC_CopySpace_FragmentSize_Log__	4
+#else
+#	define MM_GC_CopySpace_FragmentSize_Log__	4
+#endif
+#define MM_GC_CopySpace_FragmentSize_Log		(MM_GC_CopySpace_FragmentSize_Log__ + MM_Page_Size_Log)
 #define MM_GC_CopySpace_FragmentSize_HiMask		Bits_Size2HiMask(Word,MM_GC_CopySpace_FragmentSize_Log)
 #define MM_GC_CopySpace_FragmentSize_LoMask		Bits_Size2LoMask(Word,MM_GC_CopySpace_FragmentSize_Log)
 #define MM_GC_CopySpace_FragmentSize			(1 << MM_GC_CopySpace_FragmentSize_Log)
 
 #define MM_Allocator_GC_FragmentInitialMax		4
 %%]
-#define MM_GC_CopySpace_FragmentSize_Log		(4 + MM_Page_Size_Log)
-#define MM_Allocator_GC_FragmentInitialMax		4
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Checking wrapper around malloc etc

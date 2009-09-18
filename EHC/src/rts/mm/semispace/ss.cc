@@ -125,11 +125,11 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
 		plss->collector.collect( &plss->collector ) ;
-		// total as used previously
+		// total as used now
 		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 		Word onePercentSz = prevTotalSz / 100 ;
 		Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
-		// adapt max size of space, based on current occupancy rate, this is currently a poor estimate
+		// adapt max size of space, based on current occupancy rate, this is currently a poor and hardcoded estimate
 		IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
 		if ( percentageFree < 40 ) {
 			// less then some percentage of free space left, so beef it up

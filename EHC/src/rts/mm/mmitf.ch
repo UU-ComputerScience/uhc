@@ -142,6 +142,10 @@ static inline Ptr mm_itf_alloc( size_t sz ) {
 static inline Ptr mm_itf_allocResident( size_t sz ) {
 	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
 }
+
+static inline void mm_itf_deallocResident( Ptr p ) {
+	mm_mutator.residentAllocator->dealloc( mm_mutator.residentAllocator, p ) ;
+}
 %%]
 
 %%[8

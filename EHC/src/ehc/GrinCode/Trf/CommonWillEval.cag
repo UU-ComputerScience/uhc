@@ -11,17 +11,19 @@ ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
 
 SEM GrExpr
   | Eval App    lhs         .   willEvalNmS     =   Set.singleton @nm
-  | Seq         expr        .   willEval        =   case @pat.nmAlias of
-                                                      NmAlias_Nm nmp
-                                                        -> nmp `Set.member` @body.willEvalNmS
-                                                      _ -> False
-                lhs         .   willEvalNmS     =   Set.unions [@expr.willEvalNmS, @body.willEvalNmS]
+  | Seq         lhs         .   willEvalNmS     =   Set.unions [@expr.willEvalNmS, @body.willEvalNmS]
   | * - Eval App Seq
                 lhs         .   willEvalNmS     =   Set.empty
 %%]
 
 %%[(8 codegen grin)
 ATTR GrExpr GrVal [ willEval: Bool | | ]
+
+SEM GrExpr
+  | Seq         expr        .   willEval        =   case @pat.nmAlias of
+                                                      NmAlias_Nm nmp
+                                                        -> nmp `Set.member` @body.willEvalNmS
+                                                      _ -> False
 
 SEM GrAlt
   | Alt         expr        .   willEval        =   False

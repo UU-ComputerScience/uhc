@@ -65,6 +65,9 @@ cpTransformGrin modNm
                  forBytecode = not (ehcOptFullProgAnalysis opts)
                  optimizing  = ehcOptOptimise opts >= OptimiseNormal
          
+{- for debugging
+                 trafos  =     mk [mte,unb,flt,cpr,nme]
+-}
                  trafos  =     (if forBytecode               then mk [mte,unb]               else [])
                            ++  (if optimizing                then mk evel                    else mk [flt])
                            ++  (if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else [])
