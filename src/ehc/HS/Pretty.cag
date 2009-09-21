@@ -166,8 +166,6 @@ SEM Type
         loc         .   pp          =   ppCon @name
     | Parenthesized
         loc         .   pp          =   ppParens @type.pp
-    | Annotate
-        loc         .   pp          =   "@" >|< @annotation.pp >#< @type.pp
 %%]
 %%[2
     | Wildcard
@@ -537,20 +535,6 @@ SEM Pattern
 SEM ContextedPattern
     | Contexted
         loc         .   pp          =   @pattern.pp >#< "<:" >#< @context.pp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Annotations          
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[1
-SEM TypeAnnotation
-    | Empty
-        loc         .   pp          =   empty
-    | AnnotationName
-        loc         .   pp          =   pp @name
-    | AnnotationVar
-        loc         .   pp          =   pp @annotationName >|< ":" >|< pp @annotationVar
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

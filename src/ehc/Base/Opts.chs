@@ -412,7 +412,7 @@ defaultEHCOpts
       ,  ehcOptPriv             =   False
       ,  ehcOptHsChecksInEH     =   False
 %%[[1
-      ,  ehcOptShowEH           =   False
+      ,  ehcOptShowEH           =   True
 %%][99
       ,  ehcOptShowEH           =   False
 %%]]

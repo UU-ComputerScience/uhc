@@ -1169,11 +1169,6 @@ SET AllPattern
 %%[1
 DATA TypeAnnotation
 	| Empty
-    | AnnotationName
-        name                     : Name
-    | AnnotationVar
-        annotationName           : Name
-        annotationVar            : Name
 
 DATA ExpressionAnnotation
 	| Empty
