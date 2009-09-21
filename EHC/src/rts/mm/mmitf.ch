@@ -177,6 +177,24 @@ static inline int mm_itf_registerModule( Ptr m ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing, debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if TRACE
+// check (and panic) if n is pointing to fresh mem
+static inline void mm_assert_IsNotFreshMem( Word x, char* msg ) {
+	// printf("mm_assert_IsNotFreshMem x=%x space(x)=%p\n",x,mm_Spaces_GetSpaceForAddress( x )) ;
+	if ( mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, x ) && *((Word*)x) == MM_GC_FreshMem_Pattern_Word ) {
+		rts_panic2_1( "fresh mem", msg, x ) ;
+	}
+}
+#else
+#define mm_assert_IsNotFreshMem(n,msg)
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

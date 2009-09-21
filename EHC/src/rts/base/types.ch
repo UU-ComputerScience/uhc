@@ -377,8 +377,10 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
 %%[8
-#define GB_Node_ZeroFields(n)				{ memset( ((GB_NodePtr)n)->content.fields, 0, (GB_NH_Fld_Size(((GB_NodePtr)n)->header) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
+#define GB_Node_ZeroFieldsFrom(fr,n)		{ memset( &(((GB_NodePtr)n)->content.fields[fr]), 0, ((GB_NH_Fld_Size(((GB_NodePtr)n)->header) - fr) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
+#define GB_Node_ZeroFields(n)				GB_Node_ZeroFieldsFrom(0,n)
 %%]
+#define GB_Node_ZeroFields(n)				{ memset( ((GB_NodePtr)n)->content.fields, 0, (GB_NH_Fld_Size(((GB_NodePtr)n)->header) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
 
 %%[99
 #define GB_MkNode_Handle_GBHandle(n,chan)	GB_MkConNode1(n,2,chan)
@@ -548,7 +550,7 @@ The 'Fixed' variants allocate non-collectable.
 #	define GC_MALLOC(nBytes)							GB_HeapAlloc_Bytes(nBytes)
 #	define GC_MALLOC_UNCOLLECTABLE(nBytes)				GB_HeapAlloc_Bytes_Fixed(nBytes)
 
-#	define GB_GC_Managed(x)							mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, (Word)x )
+#	define GB_GC_Managed(x)								mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, (Word)x )
 
 #	define GB_GC_MinAlloc_Field_Words(szw)				(MAX(szw,1))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
 #	define GB_GC_MinAlloc_Node_Words(szw)				(MAX(szw,2))				// minimal for node: at least 1 field payload to allow for indirection/forwarding
@@ -666,7 +668,57 @@ This breaks when compiled without bgc.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Indirection following
+%%% Evaluation assertions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// check (and panic) if not evaluated
+static inline Bool gb_assert_IsEvaluated( Word n, char* msg ) {
+#	if TRACE && __UHC_TARGET_BC__
+		if ( GB_GC_Managed( n ) && GB_NH_Fld_NdEv( ((GB_NodePtr)n)->header ) != GB_NodeNdEv_No ) {
+			rts_panic2_1( "unevaluated", msg, n ) ;
+		}
+#	endif
+	return True ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Memory correctness
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if USE_EHC_MM
+
+#if TRACE
+static inline void gb_assert_IsNotFreshMem( Word x, char* msg ) {
+	// if ( GB_Word_IsPtr(x) ) {
+		mm_assert_IsNotFreshMem( x, msg ) ;
+	// }
+}
+#else
+#define gb_assert_IsNotFreshMem(n,m)
+#endif
+
+#if TRACE
+static inline void gb_assert_IsNotFreshMem_Node( GB_NodePtr n, char* msg ) {
+	int i ;
+	for ( i = 0 ; i < GB_NH_Fld_Size(n->header) ; i++ ) {
+		gb_assert_IsNotFreshMem( n->content.fields[i], msg ) ;
+	}
+}
+#else
+#define gb_assert_IsNotFreshMem_Node(n,m)
+#endif
+
+#else
+#define gb_assert_IsNotFreshMem(w,m)
+#define gb_assert_IsNotFreshMem_Node(n,m)
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Indirection following & assertions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -687,9 +739,8 @@ extern void gb_prWord( GB_Word x ) ;
 #endif
 
 // check (and panic) if indirection
-#if TRACE
 static inline Bool gb_assert_IsNotIndirection( Word n, char* msg ) {
-#	if __UHC_TARGET_BC__
+#	if TRACE && __UHC_TARGET_BC__
 		if ( GB_GC_Managed( n ) && gb_IsIndirection(n) ) {
 			gb_prWord( n ) ; printf("\n") ;
 			rts_panic2_1( "indirection", msg, n ) ;
@@ -697,9 +748,6 @@ static inline Bool gb_assert_IsNotIndirection( Word n, char* msg ) {
 #	endif
 	return True ;
 }
-#else
-#define gb_assert_IsNotIndirection(n,msg)		True
-#endif
 %%]
 
 %%[8
