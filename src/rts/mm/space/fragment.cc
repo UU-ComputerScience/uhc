@@ -100,7 +100,7 @@ Word mm_space_Fragment_GetGrowDefaultLog( MM_Space* fragmentSpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Fragment Space dump
+%%% Tracing: Fragment Space dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -118,6 +118,25 @@ void mm_space_Fragment_Dump( MM_Space* fragmentSpace ) {
 
 	printf( "<------------------------< MM_Space: Fragment\n" ) ;
 
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing: marking fresh
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_space_Fragment_MarkAsFresh( MM_Space* fragmentSpace ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
+	int i ;
+	
+	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
+		MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, i ) ;
+		IF_GB_TR_ON(3,{printf("mm_space_Fragment_MarkAsFresh frag=%x, sz(frag)=%x\n", frg->frag, frg->size);}) ;
+		memset( frg->frag, MM_GC_FreshMem_Pattern_Byte, frg->size ) ;
+	}
 }
 #endif
 %%]
@@ -142,6 +161,7 @@ MM_Space mm_space_Fragment =
 	, &mm_space_Fragment_GetGrowDefaultLog
 #ifdef TRACE
 	, &mm_space_Fragment_Dump
+	, &mm_space_Fragment_MarkAsFresh
 #endif
 	} ;
 %%]

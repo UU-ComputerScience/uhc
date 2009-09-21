@@ -54,7 +54,7 @@ void mm_traceSupply_Roots_Run( MM_TraceSupply* traceSupply ) {
 	MM_FlexArray_Inx i, j ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed( &mm_Roots ) ; i++ ) {
 		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
-		IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x nr=%x flg=%x\n",i,*(r->ptrToObj), r->nrObjs, r->flags);}) ;
+		// IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x nr=%x flg=%x\n",i,*(r->ptrToObj), r->nrObjs, r->flags);}) ;
 		trgr->trace->traceObjects( trgr->trace, r->ptrToObj, r->nrObjs, r->flags ) ;
 	}
 

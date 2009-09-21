@@ -66,10 +66,10 @@ void mm_traceSupply_Group_Run( MM_TraceSupply* traceSupply ) {
 void mm_traceSupply_Group_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords, Word extra ) {
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 		
-	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork\n");}) ;
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork\n");}) ;
 	MM_TraceSupply* subTraceSupply = (MM_TraceSupply*)mm_flexArray_At( &trgr->subTraceSupplies, mm_flexArray_SizeUsed( &trgr->subTraceSupplies ) - 1 ) ;
 	subTraceSupply->pushWork( subTraceSupply, work, nrWorkWords, extra ) ;
-	IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork B\n");}) ;
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Group_PushWork B\n");}) ;
 }
 
 %%]

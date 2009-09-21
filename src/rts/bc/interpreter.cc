@@ -480,6 +480,7 @@ void gb_push( GB_Word x )
 GB_Word gb_eval( GB_Word x )
 {
 	GB_Push( x ) ;
+	gb_assert_IsNotFreshMem( x, "gb_eval" ) ;
 %%[[8
 	gb_interpretLoopWith( gb_code_Eval ) ;
 %%][96
@@ -491,6 +492,8 @@ GB_Word gb_eval( GB_Word x )
 		) ;
 %%]]
 	GB_PopIn( x ) ;
+	gb_assert_IsNotFreshMem( x, "gb_eval" ) ;
+	gb_assert_IsEvaluated( x, "gb_eval" ) ;
 	return x ;
 }
 
@@ -716,7 +719,8 @@ void gb_prStack( int maxStkSz )
 void gb_prState( char* msg, int maxStkSz )
 {
 	int i ;
-	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
+	// printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
+	printf( "---------------------\n", msg ) ;
 #	if USE_64_BITS
 		printf( "[%ld]PC 0x%lx: 0x%0.2x '%s'"
 #	else
@@ -843,10 +847,10 @@ The code is split up in preamble + call + postamble, where call is only necessar
 				GB_BP_Link ;
 
 #define GB_CallC_Code_Postamble(nargs,res) \
-				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););														\
 				GB_BP_UnlinkSP ;																										\
 				GB_PopCastIn(GB_BytePtr,pc) ;																							\
 				GB_PopIn(nargs) ;											/* get nr of args									*/		\
+				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););										\
 				sp = GB_RegRel(sp,nargs) ;									/* pop args											*/		\
 				GB_Push(res) ;
 %%]
@@ -959,7 +963,7 @@ void gb_interpretLoop()
 
 	while( 1 )
 	{
-		IF_GB_TR_ON(1,gb_prState( "interpreter step", 2 ) ;)
+		IF_GB_TR_ON(1,gb_prState( "interpreter step", 1 ) ;)
 		switch( *(pc++) )
 		{
 			/* load immediate constant on stack */
@@ -1263,6 +1267,7 @@ gb_interpreter_InsCallEntry:
 				x = GB_TOS ;
 gb_interpreter_InsEvalEntry:
 				if ( GB_Word_IsPtr(x) ) {
+					gb_assert_IsNotFreshMem( x, "GB_Ins_Eval" ) ;
 					n = Cast(GB_NodePtr,x) ;
 					h = n->header ;
 					switch( GB_NH_Fld_NdEv(h) )
@@ -1272,6 +1277,7 @@ gb_interpreter_InsEvalEntry:
 								case GB_NodeTagCat_Fun :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
 									GB_BP_Link ;													/* and bp							*/
+									// n->content.fields[0] = gb_Indirection_FollowObject( n->content.fields[0] ) ;
 									gb_assert_IsNotIndirection( n->content.fields[0], "GB_Ins_Eval.GB_NodeTagCat_Fun" ) ;
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
 									p2 = &(n->content.fields[GB_NH_NrFlds(h)]) ;					/* after last arg 					*/
@@ -1283,13 +1289,18 @@ gb_interpreter_InsEvalEntry:
 									break ;
 								case GB_NodeTagCat_CFun :
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
-									x2 = x ;                                                        /* remember val + pc 				*/
-									retSave = Cast(GB_Word,pc) ;
+									x2 = x ;                                                        /* remember val, for gb_interpreter_InsEvalUpdContEntry */
+									retSave = Cast(GB_Word,pc) ;									/* remember pc, for gb_interpreter_InsEvalUpdContEntry */
 									gb_assert_IsNotIndirection( n->content.fields[0], "GB_Ins_Eval.GB_NodeTagCat_CFun" ) ;
 									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
-									// no preamble, C call is done directly with args from node, without nr of args pushed
-									// GC sensitive/unsafe, gcsafe'd:
-									GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+									{
+										// GC sensitive/unsafe, gcsafe'd: x2
+										GB_GCSafe_Enter ;
+										GB_GCSafe_1( x2 ) ;
+										// no preamble, C call is done directly with args from node, without nr of args pushed
+										GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+										GB_GCSafe_Leave ;
+									}
 %%[[8
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 %%][96
@@ -1297,7 +1308,7 @@ gb_interpreter_InsEvalEntry:
 									GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 									if ( gb_ThrownException ) {
 										// postamble only because we now know we end up in a handler, which uses the default convention
-										GB_CallC_Code_Postamble(x2,x) ;
+										GB_CallC_Code_Postamble(x2,x) ;								/* now x2 as scratch 				*/
 									} else {
 										goto gb_interpreter_InsEvalUpdContEntry ;					/* update with result				*/
 									}
@@ -1312,12 +1323,13 @@ gb_interpreter_InsEvalEntry:
 									break ;
 								case GB_NodeTagCat_Ind :
 									x = gb_Indirection_FollowIndirection( x ) ;
-									GB_SetTOS( x ) ;							/* just follow the indirection		*/
+									GB_SetTOS( x ) ;												/* just follow the indirection		*/
 									goto gb_interpreter_InsEvalEntry ;								/* and re-evaluate					*/
 									break ;
 							}
 							break ;
 						case GB_NodeNdEv_BlH :
+							gb_prWord( x ) ; printf("\n") ;
 							gb_panic1_1( "black hole", x ) ;										/* black hole means cycle			*/
 							break ;
 					}
@@ -1335,9 +1347,10 @@ gb_interpreter_InsEvalEntry:
 				x2 = GB_TOS ;													/* node which was to be evaluated 			*/
 gb_interpreter_InsEvalUpdContEntry:
 				IF_GB_TR_ON(3,printf("GB_Ins_EvalUpdCont toupd=%p, with=%x isInt %d isPtr %d\n",x2,x,GB_Word_IsInt(x),GB_Word_IsPtr(x));) ;
+				gb_assert_IsNotFreshMem( x, "GB_Ins_EvalUpdCont" ) ;
 				GB_NodePtr nOld = Cast(GB_NodePtr,x2) ;
-				GB_UpdWithIndirection_Code1(nOld,x,n,h,p,p2,p3,GB_SetTOS( x )) ;
-				// GB_UpdWithIndirection_Code_Ind(nOld,x,h,GB_SetTOS( x )) ;
+				// GB_UpdWithIndirection_Code1(nOld,x,n,h,p,p2,p3,GB_SetTOS( x )) ;
+				GB_UpdWithIndirection_Code_Ind(nOld,x,h,GB_SetTOS( x )) ;
 				pc = Cast(GB_BytePtr,retSave) ;									/* jump to saved ret address				*/
 				break ;
 
@@ -1345,6 +1358,7 @@ gb_interpreter_InsEvalUpdContEntry:
 			case GB_Ins_EvalApplyCont :
 				GB_Skip_CallInfoPtr ;
 				GB_PopIn(x) ;													/* evaluated function						*/
+				gb_assert_IsNotFreshMem( x, "GB_Ins_EvalApplyCont" ) ;
 				gb_assert_IsNotIndirection( x, "GB_Ins_EvalApplyCont" ) ;
 				n = Cast(GB_NodePtr,GB_SPRelx(2)) ;								/* the apply node							*/
 				h = n->header ;
@@ -1357,6 +1371,7 @@ gb_interpreter_InsEvalUpdContEntry:
 			/* papplycont */
 			case GB_Ins_PApplyCont :
 				GB_PopIn(x) ;													/* result value								*/
+				gb_assert_IsNotFreshMem( x, "GB_Ins_PApplyCont" ) ;
 				gb_assert_IsNotIndirection( x, "GB_Ins_PApplyCont" ) ;
 				pc = Cast(GB_BytePtr,GB_TOS) ;									/* continuation								*/
 				GB_SetTOS( x ) ;												/* result is slided down					*/
@@ -1367,6 +1382,7 @@ gb_interpreter_InsEvalUpdContEntry:
 				GB_Skip_CallInfoPtr ;
 gb_interpreter_InsApplyEntry:
 				n = Cast(GB_NodePtr,GB_TOS) ;										/* function										*/
+				gb_assert_IsNotFreshMem( x, "GB_Ins_Apply" ) ;
 				gb_assert_IsNotIndirection((Word)n,"GB_Ins_Apply") ;
 				x = GB_SPRelx(1) ;													/* nArgs, in words 								*/
 				h = n->header ;
@@ -1438,6 +1454,10 @@ gb_interpreter_InsApplyEntry:
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
 				IF_GB_TR_ON(3,{printf( "alloc sz=%d p=%p: ", x, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+#				if USE_EHC_MM
+					IF_GB_TR_ON(3,{printf( "alloc space=%p\n", mm_Spaces_GetSpaceForAddress( (Word)p2 ) );}) ;
+#				endif
+				gb_assert_IsNotFreshMem_Node( (GB_NodePtr)p2, "GB_Ins_AllocStore" ) ;
 				break ;
 
 			/* allocstorer */
@@ -1445,6 +1465,7 @@ gb_interpreter_InsApplyEntry:
 			/* fetcht */
 			case GB_Ins_Fetch(GB_InsOp_LocB_TOS) :
 				GB_PopCastIn(GB_NodePtr,n) ;
+				gb_assert_IsNotFreshMem( (Word)n, "GB_Ins_Fetch" ) ;
 				gb_assert_IsNotIndirection( (Word)n, "GB_Ins_Fetch" ) ;
 				p = Cast(GB_Ptr,&(n->content.fields[GB_Node_NrFlds(n)])) ;
 				p2 = n->content.fields ;
@@ -1463,13 +1484,16 @@ gb_interpreter_InsApplyEntry:
 				h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,GB_NH_Fld_Tag(h)) ;
 				n->header = h ;
 				*/
+				gb_assert_IsNotFreshMem( x, "GB_Ins_FetchUpdate1" ) ;
 				x = gb_Indirection_FollowObject(x) ;
+				gb_assert_IsNotFreshMem( x, "GB_Ins_FetchUpdate2" ) ;
 				GB_UpdWithIndirection_Code_Ind(n,x,h,;) ;
 				break ;
 
 			/* lnt */
 			case GB_Ins_LdNodeTag :
 				GB_TOSCastedIn(GB_NodePtr,n) ;
+				gb_assert_IsNotFreshMem( (Word)n, "GB_Ins_LdNodeTag" ) ;
 				gb_assert_IsNotIndirection( (Word)n, "GB_Ins_LdNodeTag" ) ;
 				GB_Push(GB_Int2GBInt(GB_NH_Fld_Tag(n->header))) ;
 				break ;
@@ -1757,6 +1781,10 @@ void gb_Initialize()
 %%]]
 #	endif
 
+%%[[97
+	prim_integer_Initialize() ;
+%%]]
+
 }
 
 %%]
@@ -1995,6 +2023,60 @@ int gb_lookupInfoForPC
 	}
 	return False ;
 }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GMP memory allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Todo: finalizer for USE_EHC_MM
+
+%%[97
+#if USE_GMP
+void* gb_Alloc_GMP( size_t nBytes )
+{
+#	if USE_EHC_MM
+		void *n ;
+		n = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+		IF_GB_TR_ON(3,{printf("gb_Alloc_GMP n=%p\n",n);}) ;
+		return n ;
+#	else
+		GB_Node* n ;
+		GB_NodeAlloc_GMP_In(nBytes,n) ;
+		IF_GB_TR_ON(3,{printf("gb_Alloc_GMP B n=%p\n",n);}) ;
+		return n->content.fields ;		/* return ptr to usable area */
+#	endif
+}
+
+void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
+{
+	if ( nBytes > nBytesOld )
+	{
+		void *nNew ;
+#		if USE_EHC_MM
+			nNew = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+			IF_GB_TR_ON(3,{printf("gb_ReAlloc_GMP nNew=%p\n",nNew);}) ;
+#		else
+			GB_NodePtr nNewNode ;
+			GB_NodeAlloc_GMP_In(nBytes,nNewNode) ;
+			nNew = nNewNode->content.fields ;
+#		endif
+		memcpy( nNew, n, nBytesOld ) ;
+#		if USE_EHC_MM
+			GB_HeapFree_Fixed( n ) ;
+#		endif
+		return nNew ;
+	}
+	return n ;
+}
+
+void gb_Free_GMP( void *n, size_t nBytesOld )
+{
+#	if USE_EHC_MM
+		GB_HeapFree_Fixed( n ) ;
+#	endif
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

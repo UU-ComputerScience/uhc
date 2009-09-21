@@ -66,6 +66,7 @@
 #include "base/sysalloc.h"
 #include "event/event.h"
 #include "base/bits.h"
+#include "base/panic.h"
 #include "mm/mmitf.h"
 #include "base/utils.h"
 #include "base/types.h"
@@ -178,7 +179,7 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 800000
+#define STACKSIZE 1000000
 #define RETURNSIZE 100
 extern WPtr SP, RP;
 extern WPtr Stack, ReturnArea;

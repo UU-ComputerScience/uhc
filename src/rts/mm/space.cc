@@ -24,8 +24,12 @@ void mm_Spaces_UnregisterSpace( MM_Space* space ) {
 
 void mm_Spaces_RegisterSpaceFrame( MM_Space* space, MM_Space_Fragment* frag ) {
 	MM_RangeMap_Inx fragInx = (Word)(frag->frag) >> MM_GC_CopySpace_FragmentSize_Log ;
+	// mm_Spaces_Dump() ;
 	mm_rangeMap_Realloc( &mm_Spaces_FrameToSpace, NULL, fragInx, fragInx+1 ) ;
+	// mm_Spaces_Dump() ;
 	*(mm_rangeMap_At( &mm_Spaces_FrameToSpace, fragInx )) = (Word)space ;
+	// IF_GB_TR_ON(3,{printf("mm_Spaces_RegisterSpaceFrame frag=%p, space=%p\n",frag->frag,space);}) ;
+	// mm_Spaces_Dump() ;
 }
 
 void mm_Spaces_UnregisterSpaceFrame( MM_Space* space, MM_Space_Fragment* frag ) {

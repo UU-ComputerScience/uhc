@@ -15,7 +15,7 @@ The size of a page, basic unit of contiguous mem allocation.
 
 %%[8
 #if GB_DEBUG
-#	define MM_Page_Size_Log__					5
+#	define MM_Page_Size_Log__					9
 #else
 #	define MM_Page_Size_Log__					10
 #endif
@@ -37,6 +37,21 @@ For Fragments as used by GC allocators
 #define MM_GC_CopySpace_FragmentSize			(1 << MM_GC_CopySpace_FragmentSize_Log)
 
 #define MM_Allocator_GC_FragmentInitialMax		4
+%%]
+
+Magic byte for marking fresh mem
+
+%%[8
+#if TRACE
+#define MM_GC_FreshMem_Pattern_Byte				0xaa		// will correspond to an address in upper 2GB of mem
+#define MM_GC_FreshMem_Pattern_Word32			(MM_GC_FreshMem_Pattern_Byte | (MM_GC_FreshMem_Pattern_Byte << 8) | (MM_GC_FreshMem_Pattern_Byte << 16) | (MM_GC_FreshMem_Pattern_Byte << 24))
+#define MM_GC_FreshMem_Pattern_Word64			(MM_GC_FreshMem_Pattern_Word32 | (MM_GC_FreshMem_Pattern_Word32 << 32))
+#if USE_64_BITS
+#	define MM_GC_FreshMem_Pattern_Word			MM_GC_FreshMem_Pattern_Word64
+#else
+#	define MM_GC_FreshMem_Pattern_Word			MM_GC_FreshMem_Pattern_Word32
+#endif
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

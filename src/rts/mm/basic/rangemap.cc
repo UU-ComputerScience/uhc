@@ -39,7 +39,7 @@ void mm_rangeMap_Free( MM_RangeMap* a ) {
 // assume this does not happen too often, so allocate exactly what is asked for
 // assume it only grows
 void mm_rangeMap_Realloc( MM_RangeMap* a, WPtr ptr, MM_RangeMap_Inx firstInx, MM_RangeMap_Inx aftLastInx ) {
-	// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc a=%p firstInx=%x aftLastInx=%x a->firstInx=%x a->size=%x\n", a, firstInx, aftLastInx, a->firstInx, a->size);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc a=%p p=%p firstInx=%x aftLastInx=%x a->firstInx=%x a->size=%x\n", a, a->ptr, firstInx, aftLastInx, a->firstInx, a->size);}) ;
 	if ( a->firstInx == 0 ) {
 		a->firstInx = firstInx ;
 	} else {
@@ -84,6 +84,8 @@ void mm_rangeMap_Realloc( MM_RangeMap* a, WPtr ptr, MM_RangeMap_Inx firstInx, MM
 		// set new size & first inx
 		a->firstInx = firstInx ;
 		a->size = szNew ;
+		// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc a=%p p=%p firstInx=%x aftLastInx=%x a->firstInx=%x a->size=%x\n", a, a->ptr, firstInx, aftLastInx, a->firstInx, a->size);}) ;
+		// IF_GB_TR_ON(3,{printf("mm_rangeMap_Realloc szNew=%x szNewBytes=%x\n", szNew, szNewBytes);}) ;
 	}
 }
 

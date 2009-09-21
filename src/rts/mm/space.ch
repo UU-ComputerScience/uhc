@@ -67,6 +67,8 @@ typedef struct MM_Space {
 #ifdef TRACE
   	// dumping info
   	void 					(*dump)( struct MM_Space* ) ;
+  	// mark memory as fresh, i.e. unused so we can detect whether we illegally point to it
+  	void 					(*markAsFresh)( struct MM_Space* ) ;
 #endif
 } MM_Space ;
 %%]
