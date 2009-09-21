@@ -20,7 +20,7 @@
 %%]
 
 -- debugging
-%%[1 import(EH.Util.Utils, EH.Util.Pretty)
+%%[1 import(EH.Util.Utils, EH.Util.Pretty, Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -583,6 +583,12 @@ pTypeBase
         (    pExtFlds Type_RowSumEmpty Type_RowSumUpdate
         <|> (\fs r -> Type_RowSumUpdate r (Type_RowSumEmpty r) fs) <$> pFlds
         )
+%%]]
+%%[[8
+  <|> ((Type_Annotate . mkRange1) <$> pAT)
+     <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
+         <|> ((\n v -> TypeAnnotation_AnnotationVar (tokMkQName n) (tokMkQName v)) <$> tyvar <* pCOLON <*> tyvar) )
+     <*> pTypeBase
 %%]]
   where pInParens :: HSParser (Range -> Type)
         pInParens
