@@ -1178,7 +1178,7 @@ SEM Body
 ATTR TypeAnnotation [ | | eh: {EH.TyExprAnn} ]
 
 SEM TypeAnnotation
-	| Empty
+	| *
 		loc			.	eh			=	EH.TyExprAnn_Empty
 %%]
 
