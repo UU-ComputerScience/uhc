@@ -24,7 +24,7 @@
 %%[5 hs export(GuardedExpression(..), GuardedExpressions, Alternative(..), Alternatives, Qualifier(..), Qualifiers)
 %%]
 
-%%[5 hs export(SimpleType(..), AnnotatedType(..), AnnotatedTypes)
+%%[5 hs export(SimpleType(..))
 %%]
 
 %%[6 hs export(Kind(..), Kinds, KindAnnotation(..))

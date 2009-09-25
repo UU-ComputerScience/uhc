@@ -408,16 +408,14 @@ pDeriving
 pConstructor :: HSParser Constructor
 pConstructor
   =   con
-      <**> (   (\ts c -> mkRngNm Constructor_Constructor c ts) <$> pList pTB
+      <**> (   (\ts c -> mkRngNm Constructor_Constructor c ts) <$> pList pTypeBase
 %%]
 %%[7
            <|> pCurlys' ((\fs r c -> mkRngNm Constructor_Record c fs) <$> pList1Sep pCOMMA pFieldDeclaration)
 %%]
 %%[5
            )
-  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pT <*> conop <*> pT
-  where pT  = pAnnotatedType pType
-        pTB = pAnnotatedType pTypeBase
+  <|> (\l o r -> Constructor_Infix (mkRange1 o) l (tokMkQName o) r) <$> pType <*> conop <*> pType
 %%]
 
 %%[9
@@ -431,7 +429,7 @@ pContextedConstructor
 pFieldDeclaration :: HSParser FieldDeclaration
 pFieldDeclaration
   = (\vs@(v:_) -> FieldDeclaration_FieldDeclaration (mkRange1 v) (tokMkQNames vs))
-    <$> pList1Sep pCOMMA var <* pDCOLON <*> pAnnotatedType pType
+    <$> pList1Sep pCOMMA var <* pDCOLON <*> pType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -584,6 +582,9 @@ pTypeBase
         <|> (\fs r -> Type_RowSumUpdate r (Type_RowSumEmpty r) fs) <$> pFlds
         )
 %%]]
+%%[[5
+  <|> (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pTypeBase
+%%]]
 %%[[8
   <|> ((Type_Annotate . mkRange1) <$> pAT)
      <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
@@ -708,14 +709,6 @@ pTyVarBinds =  pList1 pTyVarBind
 pSimpleType :: HSParser SimpleType
 pSimpleType
   = mkRngNm SimpleType_SimpleType <$> gtycon <*> (tokMkQNames <$> pList tyvar)
-%%]
-
-%%[5
-pAnnotatedType :: HSParser Type -> HSParser AnnotatedType
-pAnnotatedType pT
-  =   (\(r,s) t -> AnnotatedType_Type r s t)
-      <$> ((\t -> (mkRange1 t,True)) <$> pBANG <|> pSucceed (emptyRange,False))
-      <*> pT
 %%]
 
 %%[9.pTypeContextPrefix

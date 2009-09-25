@@ -198,10 +198,6 @@ SEM Type
     | NormalApplication
         arguments   .   isAsPred    =   False
 
-SEM AnnotatedType
-    | *
-        loc         .   isAsPred    =   False
-
 SEM Declaration
     | *
         loc         .   isAsPred    =   False
@@ -253,11 +249,6 @@ SEM Expression
 
 SEM Declaration
     | *
-        loc         .   doGenVarWild=   False
-%%]
-%%[5
-SEM AnnotatedType
-    | Type
         loc         .   doGenVarWild=   False
 %%]
 

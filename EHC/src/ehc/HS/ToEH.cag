@@ -502,16 +502,6 @@ SEM FieldDeclaration
         lhs         .   eh          =   rngLift @range EH.DataField_Field (Just @fldrefnames) @type.eh
 %%]
 
-%%[5
-ATTR AnnotatedTypes [ | | eh USE {:} {[]}: {[EH.TyExpr]} ]
-
-ATTR AnnotatedType [ | | eh: {EH.TyExpr} ]
-
-SEM AnnotatedType
-    | Type -- ToDo: or _Type?
-        lhs         .   eh          =   @type.eh
-%%]
-
 %%[9
 ATTR Type [ | | ehMbAsPr: {Maybe EH.PrExpr} ]
 

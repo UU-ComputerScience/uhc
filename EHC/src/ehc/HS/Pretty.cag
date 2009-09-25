@@ -9,6 +9,8 @@
 
 %%[1
 ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+
+ATTR AllNT AGItf [ | | ppWrap USE {.} {const empty} : {PP_Doc -> PP_Doc} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +169,7 @@ SEM Type
     | Parenthesized
         loc         .   pp          =   ppParens @type.pp
     | Annotate
-        loc         .   pp          =   "@" >|< @annotation.pp >#< @type.pp
+        loc         .   pp          =   @annotation.ppWrap @type.pp -- "@" >|< @annotation.pp >#< @type.pp
 %%]
 %%[2
     | Wildcard
@@ -269,12 +271,6 @@ SEM Constructor
 SEM FieldDeclaration
     | FieldDeclaration
         loc         .   pp          =   ppCommas' @names >#< "::" >#< @type.pp
-%%]
-
-%%[5
-SEM AnnotatedType
-    | Type -- ToDo: or _Type?
-        loc         .   pp          =   (if @strict then pp "!" else empty) >|< @type.pp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -545,12 +541,21 @@ SEM ContextedPattern
 
 %%[1
 SEM TypeAnnotation
+%%[[1
     | Empty
         loc         .   pp          =   empty
+%%][5
+    | Strict
+        loc         .   ppWrap      =   \t -> "!" >|< t
+%%[[8
+    | * - Strict
+        loc         .   ppWrap      =   \t -> "@" >|< @loc.pp >#< t
     | AnnotationName
         loc         .   pp          =   pp @name
     | AnnotationVar
         loc         .   pp          =   pp @annotationName >|< ":" >|< pp @annotationVar
+%%]]
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -622,13 +627,7 @@ SEM Patterns
 %%]
 
 %%[5
-ATTR Qualifiers AnnotatedTypes [ | | ppL: {[PP_Doc]} ]
-
-SEM AnnotatedTypes
-    | Cons
-        lhs         .   ppL         =   @hd.pp : @tl.ppL
-    | Nil
-        lhs         .   ppL         =   []
+ATTR Qualifiers [ | | ppL: {[PP_Doc]} ]
 
 SEM Qualifiers
     | Cons
