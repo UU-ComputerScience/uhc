@@ -128,19 +128,20 @@ extern MM_Allocator* mm_bypass_allocator ;
 
 %%[8
 // Allocate sz bytes, to be managed by GC
-// Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word)
-static inline Ptr mm_itf_alloc( size_t sz ) {
+// Pre: sz >= size required to admin forwarding pointers. This depends on the node encoding. For GBM: sz >= sizeof(header) + sizeof(word).
+// If gcInfo == 0 means no gcInfo
+static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo ) {
 #	if MM_BYPASS_PLAN
 #		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
-			return mm_allocator_Bump_Alloc( mm_bypass_allocator, sz ) ;
+			return mm_allocator_Bump_Alloc( mm_bypass_allocator, sz, gcInfo ) ;
 #		endif
 #	else
-		return mm_mutator.allocator->alloc( mm_mutator.allocator, sz ) ;
+		return mm_mutator.allocator->alloc( mm_mutator.allocator, sz, gcInfo ) ;
 #	endif
 }
 
 static inline Ptr mm_itf_allocResident( size_t sz ) {
-	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz ) ;
+	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz, 0 ) ;
 }
 
 static inline void mm_itf_deallocResident( Ptr p ) {
@@ -182,15 +183,15 @@ static inline int mm_itf_registerModule( Ptr m ) {
 
 %%[8
 #if TRACE
-// check (and panic) if n is pointing to fresh mem
-static inline void mm_assert_IsNotFreshMem( Word x, char* msg ) {
-	// printf("mm_assert_IsNotFreshMem x=%x space(x)=%p\n",x,mm_Spaces_GetSpaceForAddress( x )) ;
+// check (and panic) if n is pointing (dangling) to fresh mem
+static inline void mm_assert_IsNotDangling( Word x, char* msg ) {
+	// printf("mm_assert_IsNotDangling x=%x space(x)=%p\n",x,mm_Spaces_GetSpaceForAddress( x )) ;
 	if ( mm_plan.mutator->isMaintainedByGC( mm_plan.mutator, x ) && *((Word*)x) == MM_GC_FreshMem_Pattern_Word ) {
-		rts_panic2_1( "fresh mem", msg, x ) ;
+		rts_panic2_1( "dangling pointer", msg, x ) ;
 	}
 }
 #else
-#define mm_assert_IsNotFreshMem(n,msg)
+#define mm_assert_IsNotDangling(n,msg)
 #endif
 %%]
 

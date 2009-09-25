@@ -133,7 +133,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 	// new obj, copy old into new, allocate
 	if ( doCopy ) {
 		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject BEF COPY obj=%x, h=%x, sz(h)=%x, space=%p\n", obj, h, GB_NH_Fld_Size(h),mm_Spaces_GetSpaceForAddress( obj ));}) ;
-		objRepl = (GB_NodePtr)( alc->alloc( alc, szWords << Word_SizeInBytes_Log ) ) ;
+		objRepl = (GB_NodePtr)( alc->alloc( alc, szWords << Word_SizeInBytes_Log, 0 ) ) ;
 		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject AFT COPY obj=%x, objRepl=%p, space=%p\n", obj, objRepl, mm_Spaces_GetSpaceForAddress( (Word)objRepl ));}) ;
 		// copy header
 		objRepl->header = h ;
@@ -152,9 +152,11 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 		// ((GB_NodePtr)obj)->header = GB_NH_SetFld_NdEv((Word)objRepl,GB_NodeNdEv_Fwd) ;
 	}
 	
+	
 	if ( doTrace ) {
 %%[[95
 		// schedule for tracing, depending on type of node
+		/*
 		if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
 			switch( GB_NH_Fld_Tag(h) ) {
 				case GB_NodeTag_Intl_Malloc :
@@ -176,9 +178,13 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 				default :
 					break ;
 			}
-		} 
+		}
+		*/
+		doTrace = gb_NH_HasTraceableFields( h ) ;
 %%]]
+		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject TRACE obj=%x, objRepl=%x, doTrace=%x, ", obj, objRepl, doTrace); gb_prWord( (Word)objRepl ) ; printf("\n") ;}) ;
 		if ( doTrace ) {
+			gb_assert_IsNotDangling_Node( objRepl, "mm_trace_GBM_TraceKnownToBeObject" ) ;
 			if ( doCopy ) {
 				tr->traceSupply->pushWork( tr->traceSupply, (Word*)objRepl, szWords, alc->lastAllocFragment(alc) ) ;
 			} else {

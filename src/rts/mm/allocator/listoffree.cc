@@ -54,7 +54,7 @@ void mm_allocator_LOF_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* spa
 #	endif
 }
 
-Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
+Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz, Word gcInfo ) {
 	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
 	MM_Pages* pages = alc->space->getPages(alc->space) ;
 	Ptr res = NULL ;
@@ -236,7 +236,7 @@ MM_Allocator mm_allocator_LOF =
 
 %%[8
 Ptr mm_allocator_LOF_Malloc( size_t size ) {
-	void* p = mm_allocator_LOF_Alloc( &mm_allocator_LOF, size ) ;
+	void* p = mm_allocator_LOF_Alloc( &mm_allocator_LOF, size, 0 ) ;
 	return (Ptr)p ;
 }
 
@@ -276,10 +276,10 @@ MM_Malloc mm_malloc_LOF =
 void mm_allocator_LOF_Test() {
 	int i ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
-	Ptr pg1 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1 ) ;
+	Ptr pg1 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1, 0 ) ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
-	Ptr pg2 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 100000 ) ;
-	Ptr pg3 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1 ) ;
+	Ptr pg2 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 100000, 0 ) ;
+	Ptr pg3 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1, 0 ) ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
 	// return ;
 	mm_allocator_LOF.dealloc( &mm_allocator_LOF, pg1 ) ;
@@ -292,7 +292,7 @@ void mm_allocator_LOF_Test() {
 		int ii = i % II ;
 		Word sz = random() % 18000 + 1 ;
 		if ( ptrs[ii] ) { mm_allocator_LOF.dealloc( &mm_allocator_LOF, ptrs[ii] ) ; }
-		ptrs[ii] = mm_allocator_LOF.alloc( &mm_allocator_LOF, sz ) ;
+		ptrs[ii] = mm_allocator_LOF.alloc( &mm_allocator_LOF, sz, 0 ) ;
 		// memset( ptrs[ii], 0, sz ) ;
 	}
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;

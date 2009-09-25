@@ -34,14 +34,14 @@ typedef struct MM_Allocator_Bump_Data {
 
 %%[8
 // this may trigger GC
-extern Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz ) ;
+extern Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz, Word gcInfo ) ;
 %%]
 
 %%[8
 // check cursor for sufficient space
-static inline void mm_allocator_Bump_Alloc_CheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
+static inline void mm_allocator_Bump_Alloc_CheckCursor( MM_Allocator_Bump_Data* alc, Word sz, Word gcInfo ) {
 	if ( alc->addrCursorFree - sz < alc->addrFirstFree ) {
-		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
+		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz, gcInfo ) ;
 	}
 }
 
@@ -51,11 +51,11 @@ static inline Ptr mm_allocator_Bump_Alloc_FromCursor( MM_Allocator_Bump_Data* al
 }
 
 // check cursor for sufficient space + bump/alloc
-static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz ) {
+static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data* alc, Word sz, Word gcInfo ) {
 	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 1 sz=%x cursor=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
 	alc->addrCursorFree -= sz ;
 	if ( alc->addrCursorFree < alc->addrFirstFree ) {
-		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz ) ;
+		mm_allocator_Bump_Alloc_AndEnsureSpace( alc, sz, gcInfo ) ;
 	}
 	// printf("mm_allocator_Bump_Alloc_AndCheckCursor 2 sz=%x cursor(alloced)=%x free=%x space=%x\n", sz, alc->addrCursorFree, alc->addrFirstFree, alc->space);
 	return (Ptr)alc->addrCursorFree ;
@@ -65,9 +65,9 @@ static inline Ptr mm_allocator_Bump_Alloc_AndCheckCursor( MM_Allocator_Bump_Data
 // assumptions:
 // (1) sz <= MM_Pages_MinSize, i.e. we do not need to cater for large objects
 // (2) sz % Word_SizeInBytes == 0, i.e. we do not need to align the size
-static inline Ptr mm_allocator_Bump_Alloc( MM_Allocator* alcr, Word sz ) {
+static inline Ptr mm_allocator_Bump_Alloc( MM_Allocator* alcr, Word sz, Word gcInfo ) {
 	MM_Allocator_Bump_Data* alc = (MM_Allocator_Bump_Data*)alcr->data ;	
-	return mm_allocator_Bump_Alloc_AndCheckCursor( alc, sz ) ;
+	return mm_allocator_Bump_Alloc_AndCheckCursor( alc, sz, gcInfo ) ;
 }
 
 %%]
@@ -78,9 +78,6 @@ static inline Ptr mm_allocator_Bump_Alloc( MM_Allocator* alcr, Word sz ) {
 
 %%[8
 %%]
-extern void mm_allocator_Bump_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
-extern Ptr mm_allocator_Bump_Alloc( MM_Allocator*, Word sz ) ;
-extern void mm_allocator_Bump_Dealloc( MM_Allocator*, Ptr ptr ) ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface object

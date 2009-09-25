@@ -27,8 +27,9 @@ typedef struct MM_Allocator {
   	void			 			(*init)( struct MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
   	void			 			(*resetWithSpace)( struct MM_Allocator*, MM_Space* space ) ;
   	
-  	// allocation
-  	Ptr 						(*alloc)( struct MM_Allocator*, Word sz ) ;
+  	// allocation, with additional GC info, gcInfo==0 means no info
+  	Ptr 						(*alloc)( struct MM_Allocator*, Word sz, Word gcInfo ) ;
+  	// deallocation
   	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
   	
   	// last allocated location, or NULL if cannot determine

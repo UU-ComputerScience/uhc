@@ -170,7 +170,7 @@ extern WPtr HeapAreaHigh;
 #	define heapalloc(sz)                Cast(Word,GC_MALLOC(sz*sizeof(Word)))
 #	define heapalloc_uncollectable(sz)  Cast(Word,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(Word)))
 #elif USE_EHC_MM
-#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word)))
+#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word),0))
 #	define heapalloc_uncollectable(sz)  Cast(Word,mm_itf_allocResident(sz*sizeof(Word)))
 #else
 	Word heapalloc(int);

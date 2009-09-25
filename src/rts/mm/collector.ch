@@ -25,7 +25,7 @@ typedef struct MM_Collector {
   	void			 			(*init)( struct MM_Collector*, MM_Malloc* memmgt ) ;
   	
   	// collect
-  	void						(*collect)( struct MM_Collector* ) ;
+  	void						(*collect)( struct MM_Collector*, Word gcInfo ) ;
   	
   	// tracing live pointers
   	

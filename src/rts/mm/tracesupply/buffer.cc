@@ -35,7 +35,7 @@ void mm_traceSupply_Buffer_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt,
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-void mm_traceSupply_Buffer_Reset( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Buffer_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
 	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
 	mm_deque_Reset( &trgr->deque ) ;
 }

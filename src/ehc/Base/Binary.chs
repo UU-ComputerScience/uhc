@@ -30,7 +30,7 @@ entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
+%%[(8 codegen) export(pow2)
 pow2 :: Int -> Integer
 pow2 x = 1 `shiftL` x
 

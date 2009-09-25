@@ -149,15 +149,6 @@ typedef struct GB_NodeHeader {
 
 typedef GB_Word GB_NodeHeader ;
 
-/*
-#define GB_NH_Tag_Shift					0			
-#define GB_NH_GC_Shift					(GB_NH_Tag_Shift + GB_NodeHeader_Tag_BitSz)
-#define GB_NH_TagCat_Shift				(GB_NH_GC_Shift + GB_NodeHeader_GC_BitSz)
-#define GB_NH_NdEv_Shift				(GB_NH_TagCat_Shift + GB_NodeHeader_TagCat_BitSz)
-#define GB_NH_Size_Shift				(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)
-#define GB_NH_Full_Shift				(GB_NH_Size_Shift + GB_NodeHeader_Size_BitSz)
-*/
-
 // NdEv must be in the 2 least significant bits, as the rest will be interpreted as a 4 byte aligned forwarding pointer during GC (when USE_EHC_MM is defined)
 #define GB_NH_NdEv_Shift				0
 #define GB_NH_Tag_Shift					(GB_NH_NdEv_Shift + GB_NodeHeader_NdEv_BitSz)		
@@ -177,14 +168,6 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NH_FldMask(f,t)				Bits_MaskFromTo(GB_Word,f,t)
 #define GB_NH_FldMaskFr(f)				Bits_MaskFrom(GB_Word,f)
 
-/*
-#define GB_NH_Mask_Size					GB_NH_FldMaskFr(GB_NH_Size_Shift)
-#define GB_NH_Mask_NdEv					GB_NH_FldMask(GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
-#define GB_NH_Mask_TagCat				GB_NH_FldMask(GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
-#define GB_NH_Mask_GC					GB_NH_FldMask(GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
-#define GB_NH_Mask_Tag					GB_NH_FldMask(GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
-*/
-
 #define GB_NH_Mask_Size					GB_NH_FldMaskFr(GB_NH_Size_Shift)
 #define GB_NH_Mask_TagCat				GB_NH_FldMask(GB_NH_TagCat_Shift,GB_NH_Size_Shift-1)
 #define GB_NH_Mask_GC					GB_NH_FldMask(GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
@@ -197,14 +180,6 @@ typedef GB_Word GB_NodeHeader ;
 #define GB_NH_SetFld_TagCat(h,x)		GB_NH_SetFld(h,GB_NH_Mask_TagCat,GB_NH_MkFld_TagCat(x))
 #define GB_NH_SetFld_GC(h,x)			GB_NH_SetFld(h,GB_NH_Mask_GC,GB_NH_MkFld_GC(x))
 #define GB_NH_SetFld_Tag(h,x)			GB_NH_SetFld(h,GB_NH_Mask_Tag,GB_NH_MkFld_Tag(x))
-
-/*
-#define GB_NH_Fld_Size(x)				GB_NH_FldBitsFr(x,GB_NH_Size_Shift)
-#define GB_NH_Fld_NdEv(x)				GB_NH_FldBits(x,GB_NH_NdEv_Shift,GB_NH_Size_Shift-1)
-#define GB_NH_Fld_TagCat(x)				GB_NH_FldBits(x,GB_NH_TagCat_Shift,GB_NH_NdEv_Shift-1)
-#define GB_NH_Fld_GC(x)					GB_NH_FldBits(x,GB_NH_GC_Shift,GB_NH_TagCat_Shift-1)
-#define GB_NH_Fld_Tag(x)				GB_NH_FldBits(x,GB_NH_Tag_Shift,GB_NH_GC_Shift-1)
-*/
 
 #define GB_NH_Fld_Size(x)				GB_NH_FldBitsFr(x,GB_NH_Size_Shift)
 #define GB_NH_Fld_TagCat(x)				GB_NH_FldBits(x,GB_NH_TagCat_Shift,GB_NH_Size_Shift-1)
@@ -228,6 +203,7 @@ Evaluation need: Yes, No, or blackhole (no evaluation, but when requested indica
 %%]
 
 Node categories. Two groups, the first require evaluation, the second not.
+These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.tag
 
 %%[8
 #define GB_NodeTagCat_Fun				0			/* saturated function call closure 		*/
@@ -272,6 +248,43 @@ Node categories. Two groups, the first require evaluation, the second not.
 #endif
 
 #define GB_Node_NrFlds(n)				GB_NH_NrFlds((n)->header)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interaction with GC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#if USE_EHC_MM
+// has node traceable content?
+static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
+	Bool doTrace = True ;
+%%[[95
+	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
+		switch( GB_NH_Fld_Tag(h) ) {
+			case GB_NodeTag_Intl_Malloc :
+			case GB_NodeTag_Intl_Malloc2 :
+%%[[97
+			case GB_NodeTag_Intl_Float :
+			case GB_NodeTag_Intl_Double :
+#		if USE_GMP
+			case GB_NodeTag_Intl_GMP_intl :
+			case GB_NodeTag_Intl_GMP_mpz :
+#		endif
+%%]]
+%%[[98
+			case GB_NodeTag_Intl_Chan :
+%%]]
+				doTrace = False ;
+				break ;
+			default :
+				break ;
+		}
+	}
+%%]]
+	return doTrace ;
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -363,13 +376,13 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
 %%[97
+%%]
 #define GB_NodeFloatSize					(EntierUpDivBy(sizeof(float),sizeof(GB_Word)) + 1)
 #define GB_MkFloatHeader					GB_MkHeader(GB_NodeFloatSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Float)
 
-#define GB_NodeDoubleSize					(EntierUpDivBy(sizeof(float),sizeof(GB_Word)) + 1)
+#define GB_NodeDoubleSize					(EntierUpDivBy(sizeof(double),sizeof(GB_Word)) + 1)
 #define GB_MkDoubleHeader					GB_MkHeader(GB_NodeDoubleSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_Double)
 
-%%]
 
 %%[98
 #define GB_NodeChanSize						(EntierUpDivBy(sizeof(GB_Chan),sizeof(GB_Word)) + 1)
@@ -501,6 +514,7 @@ The 'Fixed' variants allocate non-collectable.
 #	else
 #		define GB_HeapAlloc_Bytes(nBytes)				Cast(GB_Ptr,GC_MALLOC(nBytes))
 #	endif
+#	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
 
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
@@ -508,9 +522,9 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_HeapFree_Fixed(p)							
 
 #	if TRACE
-#		define GB_GC_Managed(x)						( Cast(GB_Ptr,x) >= gb_allocated_lowest_ptr && Cast(GB_Ptr,x) <= gb_allocated_highest_ptr )
+#		define GB_GC_Managed(x)							( Cast(GB_Ptr,x) >= gb_allocated_lowest_ptr && Cast(GB_Ptr,x) <= gb_allocated_highest_ptr )
 #	else
-#		define GB_GC_Managed(x)						False
+#		define GB_GC_Managed(x)							False
 #	endif
 
 #	define GB_GC_MinAlloc_Field_Words(szw)				(szw)
@@ -541,7 +555,8 @@ The 'Fixed' variants allocate non-collectable.
 
 #elif USE_EHC_MM
 
-#	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes))
+#	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes,0))
+#	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		Cast(GB_Ptr,mm_itf_alloc(nBytes,gcInfo))
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,mm_itf_allocResident(nBytes))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
@@ -579,6 +594,7 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes(nBytes)					GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
+#	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				GB_HeapAlloc_Bytes(nBytes)	
 #	define GB_HeapFree_Fixed(p)							
 
@@ -655,9 +671,9 @@ This breaks when compiled without bgc.
 %%]
 
 %%[97
+%%]
 #define GB_NodeAlloc_Float_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeFloatSize, GB_MkFloatHeader, n) ; }
 #define GB_NodeAlloc_Double_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeDoubleSize,GB_MkDoubleHeader,n) ; }
-%%]
 
 
 %%[98
@@ -665,6 +681,43 @@ This breaks when compiled without bgc.
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GC specific information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Descriptor of what can and cannot be traced during GC, only known to the interpreter or other execution machine
+
+%%[8
+typedef struct GB_GCInfo {
+	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
+} __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Link Chain kinds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/GrinByteCode
+
+%%[8
+#define GB_LinkChainKind_None				0
+#define GB_LinkChainKind_GCInfo				1
+%%]
+
+%%[8
+#if USE_64_BITS
+#define GB_LinkChainKind_Inx_Shift			32
+#else
+#define GB_LinkChainKind_Inx_Shift			16
+#endif
+#define GB_LinkChainKind_Off_Shift			4
+#define GB_LinkChainKind_Kind_Shift			0
+
+#define GB_LinkChainKind_Fld_Inx(x)			Bits_ExtrFromSh(Word,x,GB_LinkChainKind_Inx_Shift)
+#define GB_LinkChainKind_Fld_Off(x)			Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Off_Shift,GB_LinkChainKind_Inx_Shift-1)
+#define GB_LinkChainKind_Fld_Kind(x)		Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Kind_Shift,GB_LinkChainKind_Off_Shift-1)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -684,36 +737,38 @@ static inline Bool gb_assert_IsEvaluated( Word n, char* msg ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory correctness
+%%% GC Memory correctness
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 #if USE_EHC_MM
 
 #if TRACE
-static inline void gb_assert_IsNotFreshMem( Word x, char* msg ) {
+static inline void gb_assert_IsNotDangling( Word x, char* msg ) {
 	// if ( GB_Word_IsPtr(x) ) {
-		mm_assert_IsNotFreshMem( x, msg ) ;
+		mm_assert_IsNotDangling( x, msg ) ;
 	// }
 }
 #else
-#define gb_assert_IsNotFreshMem(n,m)
+#define gb_assert_IsNotDangling(n,m)
 #endif
 
 #if TRACE
-static inline void gb_assert_IsNotFreshMem_Node( GB_NodePtr n, char* msg ) {
+static inline void gb_assert_IsNotDangling_Node( GB_NodePtr n, char* msg ) {
 	int i ;
-	for ( i = 0 ; i < GB_NH_Fld_Size(n->header) ; i++ ) {
-		gb_assert_IsNotFreshMem( n->content.fields[i], msg ) ;
+	if ( gb_NH_HasTraceableFields( n->header ) ) {
+		for ( i = 0 ; i < GB_NH_Fld_Size(n->header) ; i++ ) {
+			gb_assert_IsNotDangling( n->content.fields[i], msg ) ;
+		}
 	}
 }
 #else
-#define gb_assert_IsNotFreshMem_Node(n,m)
+#define gb_assert_IsNotDangling_Node(n,m)
 #endif
 
 #else
-#define gb_assert_IsNotFreshMem(w,m)
-#define gb_assert_IsNotFreshMem_Node(n,m)
+#define gb_assert_IsNotDangling(w,m)
+#define gb_assert_IsNotDangling_Node(n,m)
 #endif
 %%]
 

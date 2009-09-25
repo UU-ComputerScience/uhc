@@ -33,7 +33,7 @@ void mm_collector_SS_Init( MM_Collector* collector, MM_Malloc* memmgt ) {
 	// collector->data = (MM_Collector_Data_Priv*)colss ;
 }
 
-void mm_collector_SS_collect( MM_Collector* collector ) {
+void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 	// MM_Collector_SS_Data* colss = (MM_Collector_SS_Data*)collector->data ;
 	
 	// we know we are part of an ss plan
@@ -53,7 +53,7 @@ void mm_collector_SS_collect( MM_Collector* collector ) {
 		mm_Spaces_Dump() ;
 #	endif
 	// run the tracing of objects
-	plss->allTraceSupply.reset( &plss->allTraceSupply ) ;
+	plss->allTraceSupply.reset( &plss->allTraceSupply, gcInfo ) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect D\n");}) ;
 	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect E\n");}) ;

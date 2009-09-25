@@ -34,7 +34,7 @@ void mm_traceSupply_Roots_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, 
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-void mm_traceSupply_Roots_Reset( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Roots_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
 	// nothing to be done
 }
 

@@ -57,6 +57,41 @@ nrCallRetWords = 2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code location
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(CodeAbsLoc,CodeRelOff)
+type CodeAbsLoc = Int		-- absolute location
+type CodeRelOff = Int		-- relative location
+%%]
+codeLocNil :: CodeAbsLoc
+codeLocNil = -1
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Labels
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(LabelId,newLabelId)
+type LabelId = Int
+
+newLabelId :: GBState -> (GBState,LabelId)
+newLabelId st = (st {gbstateLbl = l+1},l)
+  where l = gbstateLbl st
+%%]
+
+%%[(8 codegen grin) hs export(LabelLocMp,labelLocAdd,labelLocNew)
+type LabelLocMp = Map.Map LabelId CodeAbsLoc
+
+labelLocAdd :: LabelId -> CodeAbsLoc -> LabelLocMp -> LabelLocMp
+labelLocAdd lbl loc m = Map.insert lbl loc m
+
+labelLocNew :: GBState -> CodeAbsLoc -> LabelLocMp -> (GBState,LabelId,LabelLocMp)
+labelLocNew lbl loc m
+  = (next,lbl',Map.insert lbl' loc m)
+  where (next,lbl') = newLabelId lbl
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Additional datastructures, not incorporated as AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -122,12 +157,7 @@ linkImpEntry m = Link LinkTbl_ImpEntry m
 
 Reference to defining location in code
 
-%%[(8 codegen grin) hs export(LocRef(..),LabelId,newLabelId,lrefIsLabel)
-type LabelId = Int
-
-newLabelId :: LabelId -> (LabelId,LabelId)
-newLabelId l = (l+1,l)
-
+%%[(8 codegen grin) hs export(LocRef(..),lrefIsLabel)
 lrefIsLabel :: LocRef -> Bool
 lrefIsLabel (LocRef_Label _) = True
 lrefIsLabel _                = False
@@ -214,6 +244,153 @@ data EntryInfo
       }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Link Chain
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+GC info, corresponds to src/rts/base/types/GB_GCInfo
+
+%%[(8 codegen grin) hs export(GCInfo(..))
+data GCInfo
+  = GCInfo_None														-- dummy place holder, not to be used
+  | GCInfo
+      { gci_nrOfTOS_No_GCTrace			:: !Int						-- Nr of TOS values which may not be traced, like double & float
+      }
+%%]
+
+%%[(8 codegen grin) hs export(GCInfoInx)
+type GCInfoInx = Int
+%%]
+
+%%[(8 codegen grin) hs export(basicGCInfoL)
+-- both table and its indices below should correspond
+basicGCInfoL :: [GCInfo]
+basicGCInfoL
+  = [ GCInfo_None
+    , GCInfo 1 												-- 1, only for header
+%%[[97
+    , GCInfo (basicSizeInWords BasicSize_Float  + 1)		-- 1 extra for header
+    , GCInfo (basicSizeInWords BasicSize_Double + 1)
+%%]]
+    ]
+%%]
+
+%%[(8 codegen grin) hs export(gcInfoInx_None)
+gcInfoInx_None, gcInfoInx_NdHeaderOnly :: Int
+gcInfoInx_None         = 0
+gcInfoInx_NdHeaderOnly = 1
+%%]
+
+%%[(97 codegen grin).gcInfo -8.gcInfo hs
+gcInfoInx_Float, gcInfoInx_Double :: Int
+gcInfoInx_Float  = 2
+gcInfoInx_Double = 3
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Link Chain
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+20090923. New representation of linking info. Instead of separate tables
+pointing to locations in the code, this variant uses a linked list of
+entries inside the code. This is much more C code space efficient,
+because no separate tables are required and the list can be overwritten
+with the actual entries. For now, the design will be for the newly added
+GCInfo.
+
+Each entry in the code consists of one word only, which both encodes the
+next entry and the payload.
+
+Each entry is keyed by a kind and location (label), later to be translated
+to a separate list for each kind, each ordered by code location of the labels,
+where the next entry is encoded by an offset relative to the current.
+
+The definition of LinkChainKind must corespond with the defines
+GB_LinkChainKind_XXX in src/rts/base/types.
+
+%%[(8 codegen grin) hs export(LinkChainKind(..),LinkChainKey(..),LinkChainKeyInfo)
+data LinkChainKind
+  = LinkChainKind_None
+  | LinkChainKind_GCInfo
+  deriving (Eq,Ord,Enum)
+
+data LinkChainKey
+  = LinkChainKey
+      { lckeyKind		:: !LinkChainKind
+      , lckeyLbl		:: !LabelId
+      }
+  deriving (Eq,Ord)
+
+type LinkChainKeyInfo = Int													-- info must be representable by Int
+%%]
+
+%%[(8 codegen grin) hs export(LinkChainResolvedInfo(..),linkChainResolvedInfoEncoding)
+data LinkChainResolvedInfo = LinkChainResolvedInfo LinkChainKind LinkChainKeyInfo CodeRelOff		-- when resolved we have the original info & relative offset to next entry
+
+linkChainResolvedInfoEncoding :: LinkChainResolvedInfo -> Integer
+linkChainResolvedInfoEncoding 
+  = \i -> case i of
+            LinkChainResolvedInfo kind info off
+              | info' < p1 && off' < p2 -> info' `shiftL` b1 .|. off' `shiftL` b2 .|. kind'
+              | otherwise               -> panic ("linkChainResolvedInfoEncoding (known partially implemented): " ++ "kind=" ++ show kind' ++ " info=" ++ show info' ++ " off=" ++ show off')
+              where kind' = toInteger $ fromEnum kind
+                    info' = toInteger info
+                    off'  = toInteger off
+  where b1 = Cfg.sizeofWordInBits `div` 2
+        b2 = 4
+        p1 = pow2 (Cfg.sizeofWordInBits - b1)
+        p2 = pow2 (b1 - b2)
+%%]
+
+%%[(8 codegen grin) hs export(LinkChainEntry(..),LinkChainKeyMp,LinkChainResolvedMp)
+data LinkChainEntry				-- as it appears in GB code
+  = LinkChainEntry
+       { lcentryKey		:: !LinkChainKey
+       , lcentryInfo	:: !LinkChainKeyInfo
+       }
+
+type LinkChainKeyMp      = Map.Map LinkChainKey LinkChainKeyInfo
+type LinkChainResolvedMp = Map.Map LinkChainKey LinkChainResolvedInfo
+%%]
+type LinkChainResolvedMp = Map.Map LinkChainKind (Map.Map LabelId LinkChainResolvedInfo,CodeRelOff)
+
+%%[(8 codegen grin) hs export(linkChainResolvedLookup)
+linkChainResolvedLookup :: LinkChainKey -> LinkChainResolvedMp -> Maybe LinkChainResolvedInfo
+linkChainResolvedLookup k m = Map.lookup k m
+%%]
+  = do (m2,_) <- Map.lookup (lckeyKind k) m
+       Map.lookup (lckeyLbl k) m2
+
+%%[(8 codegen grin) hs export(linkChainMpResolve)
+linkChainMpResolve :: LabelLocMp -> LinkChainKeyMp -> (LinkChainResolvedMp,Maybe CodeRelOff)
+linkChainMpResolve labelLocMp keyMp
+  = foldr (\(k,(info,mbabsloc)) (m,mbnextabsloc) ->
+              let diff = case (mbnextabsloc,mbabsloc) of
+                           (Just n, Just l) -> n - l
+                           _                -> 0
+              in  (Map.insert k (LinkChainResolvedInfo (lckeyKind k) info diff) m, mbabsloc)
+          )
+          (Map.empty,Nothing)
+  $ sortOn (snd.snd)
+  $ [ (k, (i, Map.lookup (lckeyLbl k) labelLocMp))
+    | (k,i) <- Map.toList keyMp
+    ]
+%%]
+linkChainMpResolve labelLocMp keyMp
+  = m2
+  where m1 = Map.unionsWith (++)
+                     [ Map.singleton (lckeyKind k) [(lckeyLbl k, (i, Map.findWithDefault codeLocNil (lckeyLbl k) labelLocMp))]
+                     | (k,i) <- Map.toList keyMp
+                     ]
+        m2 = Map.mapWithKey
+                     (\k l ->
+                         foldr (\(lbl,(info,absloc)) (m,nextabsloc) ->
+                                   (Map.insert lbl (LinkChainResolvedInfo k info (nextabsloc - absloc)) m, absloc)
+                               )
+                               (Map.empty,codeLocNil)
+                         $ sortOn (snd.snd) l
+                     ) m1
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Optimisation info
@@ -446,6 +623,13 @@ data GrValIntro
   | GrValIntro_None
 %%]
 
+%%[(8 codegen grin) hs export(GBState(..))
+data GBState
+  = GBState
+      { gbstateLbl			:: !LabelId
+      }
+%%]
+
 %%[(8 codegen grin) hs export(GrValIntroAlt(..))
 data GrValIntroAlt
   = GrValIntroAlt_OnTOS     InsSeq StackDepth OptimEffect [BasicSize]
@@ -453,28 +637,28 @@ data GrValIntroAlt
 %%]
 
 %%[(8 codegen grin) hs export(gviLd,gviLd',gviLdFold)
-gviLdFold' :: EHCOpts -> GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
-gviLdFold' opts dflt optim env modNmConstInx stkDepth introL
-  = foldl ld dflt $ reverse $ introL
-  where ld (GrValIntroAlt_OnTOS ins dep _ basicsz) intro
-          = GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect (basicsz' ++ basicsz)
-          where (GrValIntroAlt_OnTOS ins' dep' _ basicsz') = gviLd opts optim env modNmConstInx (stkDepth+dep) intro
+gviLdFold' :: EHCOpts -> GrValIntroAlt -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
+gviLdFold' opts dflt optim env modNmConstInx stkDepth gbState introL
+  = foldl ld (dflt, gbState) $ reverse $ introL
+  where ld (GrValIntroAlt_OnTOS ins dep _ basicsz, gbState) intro
+          = (GrValIntroAlt_OnTOS (ins Seq.:++: ins') (dep+dep') defaultOptimEffect (basicsz' ++ basicsz), gbState2)
+          where (GrValIntroAlt_OnTOS ins' dep' _ basicsz', gbState2) = gviLd opts optim env modNmConstInx (stkDepth+dep) gbState intro
 
-gviLdFold :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> [GrValIntro] -> GrValIntroAlt
+gviLdFold :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GBState -> [GrValIntro] -> (GrValIntroAlt,GBState)
 gviLdFold opts = gviLdFold' opts (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect [])
 
-gviLd' :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
-gviLd' opts optim env modNmConstInx stkDepth intro
+gviLd' :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
+gviLd' opts optim env modNmConstInx stkDepth gbState intro
   = ld optim (GrValIntroAlt_OnTOS Seq.empty 0 defaultOptimEffect []) intro
   where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _ _) intro
           = case intro of
               GrValIntro_Nm nm
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l basicsz
+                -> (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l basicsz, gbState)
                 where (mbva,l,basicsz) = nmLd' optim env modNmConstInx stkDepth nm
               GrValIntro_Str s l
-                -> GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect [dfltBasicSize]
+                -> (GrValIntroAlt_OnTOS (ins Seq.::+: (instrann (show l) $ ldg InsOp_LocB_TOS l)) (dfltInc+nrValWords) defaultOptimEffect [dfltBasicSize], gbState)
               GrValIntro_Int i
-                -> GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i) dfltBasicSize
+                -> (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect Nothing (loadFrom $ LoadSrc_Imm_Int i) dfltBasicSize, gbState)
               GrValIntro_Enum nm
                 -> case mbva of
                      Just va | vaHasAnnot va
@@ -490,47 +674,49 @@ gviLd' opts optim env modNmConstInx stkDepth intro
                        -> case vaAnnot va of
                             Left BasicAnnot_Dflt                    -> basicAnnotDflt nm
                             Left (a@(BasicAnnot_ToTaggedPtr sgn _)) -> basicAnnotTaggedPtr sgn nm ml (grinBasicAnnotSize a)
-                            Left (BasicAnnot_Size bsz _)
-                              -> GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [basicsz]
+                            Left (BasicAnnot_Size bsz bty)
+                              -> ( GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [basicsz]
+                                 , gbState2
+                                 )
                               where (ins,inc) = vaAndLd2Ins optim nm ml
-                                    (tins,tinc,isEvaluated) = tag env modNmConstInx (dep'+inc) gtag (nrByte2Word bsz')
-                                    (sins,sinc) = ndStore ((nrByte2Word bsz') + tinc)
+                                    (tins,tinc,isEvaluated,gcInfoInx) = tag env modNmConstInx (dep'+inc) gtag (Just bty) (nrByte2Word bsz')
+                                    (gbState2,allocLbl) = newLabelId gbState
+                                    (sins,sinc) = ndStore ((nrByte2Word bsz') + tinc) allocLbl gcInfoInx
                                     bsz' = basicSizeInBytes bsz
                             Right bSz                               -> basicSize nm ml bSz
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
                 where ml@(mbva,l,basicsz) = nmLd' optim env modNmConstInx stkDepth nm
-{-
-              GrValIntro_Grp gtag [i] | tagIsUnboxed gtag
-                -> ld optim dflt i
--}
               GrValIntro_Grp gtag is
-                -> GrValIntroAlt_OnTOS (prepins Seq.:++: ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [dfltBasicSize]
-                where (prepins,prepinc) = case (is, tag env modNmConstInx dep' gtag 0) of
-                                            ([],(_,1,_)) | Cfg.nodeNeedsForwarding opts -> (Seq.fromList [ldc 0],1)
+                -> ( GrValIntroAlt_OnTOS (prepins Seq.:++: ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins) sinc defaultOptimEffect [dfltBasicSize]
+                   , gbState3
+                   )
+                where (prepins,prepinc) = case (is, tag env modNmConstInx dep' gtag Nothing 0) of
+                                            ([],(_,1,_,_)) | Cfg.nodeNeedsForwarding opts -> (Seq.fromList [ldc 0],1)
                                             _                                           -> (Seq.empty           ,0)
-                      i@(GrValIntroAlt_OnTOS ins inc _ _) = gviLdFold' opts dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx (dep' + prepinc) is
+                      i@(GrValIntroAlt_OnTOS ins inc _ _, gbState2) = gviLdFold' opts dflt (optim {ocxOmitTOSLd = False}) env modNmConstInx (dep' + prepinc) gbState is
                       inc' = prepinc + inc
-                      (tins,tinc,isEvaluated) = tag env modNmConstInx (dep' + inc') gtag inc'
-                      (sins,sinc) = ndStore (inc' + tinc)
-              _ -> dflt
+                      (tins,tinc,isEvaluated,gcInfoInx) = tag env modNmConstInx (dep' + inc') gtag Nothing inc'
+                      (gbState3,allocLbl) = newLabelId gbState2
+                      (sins,sinc) = ndStore (inc' + tinc) allocLbl gcInfoInx
+              _ -> (dflt, gbState)
           where dep' = stkDepth + dfltInc
                 basicAnnotDflt nm
-                  = GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l basicsz
+                  = (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect mbva l basicsz, gbState)
                   where (mbva,l,basicsz) = nmLd' optim env modNmConstInx stkDepth nm
                 basicAnnotTaggedPtr sgn nm ml bSz
-                  = GrValIntroAlt_OnTOS (ins Seq.::+: tag2 sgn) inc defaultOptimEffect [bSz]
+                  = (GrValIntroAlt_OnTOS (ins Seq.::+: tag2 sgn) inc defaultOptimEffect [bSz], gbState)
                   where (ins,inc) = vaAndLd2Ins optim nm ml
                 basicSize nm ml bSz
-                  = GrValIntroAlt_OnTOS (ins) inc defaultOptimEffect [bSz]
+                  = (GrValIntroAlt_OnTOS (ins) inc defaultOptimEffect [bSz], gbState)
                   where (ins,inc) = vaAndLd2Ins optim nm ml
                 dfltBasicSize = grinBasicAnnotSize BasicAnnot_Dflt
 
-gviLd :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GrValIntro -> GrValIntroAlt
-gviLd opts optim env modNmConstInx stkDepth intro
-  = case gviLd' opts optim env modNmConstInx stkDepth intro of
-      GrValIntroAlt_Delay ins inc optimEffect mbva l basicsz
-        -> GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect [basicsz]
+gviLd :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackDepth -> GBState -> GrValIntro -> (GrValIntroAlt,GBState)
+gviLd opts optim env modNmConstInx stkDepth gbState intro
+  = case gviLd' opts optim env modNmConstInx stkDepth gbState intro of
+      (GrValIntroAlt_Delay ins inc optimEffect mbva l basicsz, gbState')
+        -> (GrValIntroAlt_OnTOS (ins Seq.:++: sins) (inc + sinc) optimEffect [basicsz], gbState')
         where (sins,sinc) = vaAndLd2Ins optim hsnUnknown (mbva,l,basicsz)
       a -> a
 %%]
@@ -702,8 +888,8 @@ fetchupdate = Instr_FetchUpdate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-allocstore :: InsOp_LocB -> Instr
-allocstore locB = Instr_AllocStore locB
+allocstore :: InsOp_LocB -> LabelId -> GCInfoInx -> Instr
+allocstore locB lbl gcinx = Instr_AllocStore locB (LinkChainEntry (LinkChainKey LinkChainKind_GCInfo lbl) gcinx)
 
 -- prepare node allocation by providing padding upto minimum size
 {-
@@ -714,8 +900,8 @@ ndStorePrep opts sz
         szExtra  = szPadded - sz
 -}
 
-ndStore :: Int -> (InsSeq,StackDepth)
-ndStore sz = (Seq.fromList [ldc (nrWord2Byte sz),meta' AnnAllocStore sz,allocstore InsOp_LocB_TOS], nrValWords)
+ndStore :: Int -> LabelId -> GCInfoInx -> (InsSeq,StackDepth)
+ndStore sz lbl gcinx = (Seq.fromList [ldc (nrWord2Byte sz),meta' AnnAllocStore sz,allocstore InsOp_LocB_TOS lbl gcinx], nrValWords)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -866,7 +1052,7 @@ metaprop = metaprop' AnnComment
 %%% Constructing: tag
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Offsets should coincide with def of GB_NodeHeader, src/rts/grinbc/grinbc
+Offsets should coincide with def of GB_NodeHeader, src/rts/base/types
 
 %%[(8 codegen grin) hs
 [tgShSize,tgShCateg,tagShGC,tagShTag,tgShNdEv]
@@ -876,29 +1062,59 @@ tgNeedEval_No, tgNeedEval_Yes, tgNeedEval_BlH :: Integer
 tgNeedEval_No  = 0
 tgNeedEval_Yes = 1
 tgNeedEval_BlH = 2
+
+tgCat_GB_NodeTagCat_Con
+  , tgCat_GB_NodeTagCat_PAp
+  , tgCat_GB_NodeTagCat_Fun
+  , tgCat_GB_NodeTagCat_App
+%%[[97
+  , tgCat_GB_NodeTagCat_Intl
+%%]]
+      :: Integer
+
+-- not requiring evaluation
+tgCat_GB_NodeTagCat_Con  = 0
+tgCat_GB_NodeTagCat_PAp  = 1
+%%[[97
+tgCat_GB_NodeTagCat_Intl = 3
+%%]]
+-- requiring evaluation
+tgCat_GB_NodeTagCat_Fun  = 0
+tgCat_GB_NodeTagCat_App  = 1
+
+%%[[97
+tgIntl_GB_NodeTag_Intl_Float
+  , tgIntl_GB_NodeTag_Intl_Double
+      :: Int
+tgIntl_GB_NodeTag_Intl_Float  = 2
+tgIntl_GB_NodeTag_Intl_Double = 3
+%%]]
 %%]
-[tgShSize,tgShNdEv,tgShCateg,tagShGC,tagShTag]
-  = if Cfg.use32Bits then [16,14,12,10,0::Int] else [32,30,28,26,0]
 
 load tag, yield stack increment and additional size to alloc
 
 %%[(8 codegen grin) hs export(tag)
-tag :: NmEnv -> Int -> StackDepth -> GrTag -> Int -> (InsSeq,StackDepth,Bool)
-tag env modNmConstInx stkDepth gt sz
+tag :: NmEnv -> Int -> StackDepth -> GrTag -> Maybe BasicTy -> Int -> (InsSeq,StackDepth,Bool,GCInfoInx)
+tag env modNmConstInx stkDepth gt bty sz
   = case gt of
       GrTag_Unboxed
-        -> (Seq.empty,0,False)
-      _ -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,isEvaluated)
-        where (needEval,categ',tg',tins,tinc)
-                = case gt of
-                    GrTag_Con _ tg nm    -> (tgNeedEval_No ,0,tg,Seq.empty           ,0  )
-                    GrTag_Hole           -> (tgNeedEval_BlH,0, 0,Seq.fromList [ldc 0],1  )
-                    GrTag_Rec            -> (tgNeedEval_No ,0, 0,Seq.empty           ,0  )
-                    GrTag_App      nm    -> (tgNeedEval_Yes,1, 0,Seq.empty           ,0  )
-                    GrTag_Fun      nm    -> (tgNeedEval_Yes,0, 0,ins                 ,inc)
-                                         where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
-                    GrTag_PApp m   nm    -> (tgNeedEval_No ,1,m ,ins                 ,inc)
-                                         where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
+        -> (Seq.empty,0,False,gcInfoInx_None)
+      _ -> (tins Seq.:++: Seq.fromList [ldc tword],tinc+1,isEvaluated,gcInfo)
+        where (needEval,categ',tg',tins,tinc,gcInfo)
+                = case bty of
+%%[[97
+                    Just BasicTy_Double         -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Double,Seq.empty           ,0  ,gcInfoInx_Double      )
+                    Just BasicTy_Float          -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Intl,tgIntl_GB_NodeTag_Intl_Float ,Seq.empty           ,0  ,gcInfoInx_Float       )
+%%]]
+                    _ -> case gt of
+                           GrTag_Con _ tg nm    -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,tg                           ,Seq.empty           ,0  ,gcInfoInx_NdHeaderOnly)
+                           GrTag_Hole           -> (tgNeedEval_BlH,0                       ,0                            ,Seq.fromList [ldc 0],1  ,gcInfoInx_NdHeaderOnly)
+                           GrTag_Rec            -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_Con ,0                            ,Seq.empty           ,0  ,gcInfoInx_NdHeaderOnly)
+                           GrTag_App      nm    -> (tgNeedEval_Yes,tgCat_GB_NodeTagCat_App ,0                            ,Seq.empty           ,0  ,gcInfoInx_NdHeaderOnly)
+                           GrTag_Fun      nm    -> (tgNeedEval_Yes,tgCat_GB_NodeTagCat_Fun ,0                            ,ins                 ,inc,gcInfoInx_NdHeaderOnly)
+                                                where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
+                           GrTag_PApp m   nm    -> (tgNeedEval_No ,tgCat_GB_NodeTagCat_PAp ,m                            ,ins                 ,inc,gcInfoInx_NdHeaderOnly)
+                                                where (ins,inc) = nmLd defaultOptimCtxt env modNmConstInx stkDepth nm
               tword = (toInteger (sz+tinc+1) `shiftL` tgShSize) .|. needEval `shiftL` tgShNdEv .|. categ' `shiftL` tgShCateg .|. toInteger tg' `shiftL` tagShTag
               isEvaluated = needEval == tgNeedEval_No
 %%]

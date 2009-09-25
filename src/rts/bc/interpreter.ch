@@ -351,6 +351,8 @@ typedef struct GB_ByteCodeModule {
   GB_Word					bcEntrySize ;
   GB_BytePtr				bcLoc ;
   GB_Word				 	bcSize ;
+  GB_GCInfo*				bcGCInfo ;
+  Word32				 	bcGCInfoSize ;
 } GB_ByteCodeModule ;
 %%]
 
@@ -723,6 +725,8 @@ extern void gb_InitTables
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
+	, GB_GCInfo* gcInfos
+	, Word linkChainOffset
 %%[[20
 	// , GB_NodePtr *impNode
 	, GB_ImpModEntry* impModules, int impModulesSz
