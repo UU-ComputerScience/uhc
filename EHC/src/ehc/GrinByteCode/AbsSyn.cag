@@ -31,6 +31,7 @@ DATA Module
                 constL			: {[Const]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
+                gcInfoL			: {[GCInfo]}				-- GC info
 %%[[94
                 includeL		: {[String]}				-- C includes
 %%]]
@@ -55,6 +56,7 @@ DATA Instr
   | LdNodeTag
   | Link		link			: Link
   | AllocStore  locSrc			: InsOp_LocB
+  				linkChainEntry	: LinkChainEntry
   | Fetch       locSrc			: InsOp_LocB
   | FetchUpdate	
   | Call        locSrc			: InsOp_LocB

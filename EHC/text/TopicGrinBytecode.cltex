@@ -385,7 +385,7 @@ Node construction:
 \begin{GrinCS}
 |CSOne(unit (C ^^ Sub(v)(1..n)))(Sub(CSDep)(1))(Sub(CSDep)(n+1))(CSEnv)|
 &=&
-|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore|
+|Vecr(CSVar(Sub(v)(i))(Sub(CSDep)(i))(Sub(CSDep)(i+1))(CSEnv)) : ldc C : ldc n : allocstore gcinfo|
 \end{GrinCS}
 
 Note:
@@ -1805,17 +1805,20 @@ where |n' = m+k|.
 \begin{GrinEncoding}{|iallocstore(rs)|}
  &
 |1110 ^^ 110 ^ ixx1(rs)(0)| &
- &
- &
+gcinfo &
+... &
 \\
 \end{GrinEncoding}
+
+|gcinfo| is a word sized value, patched by linking during initialisation, passed to the garbage collector.
+It is used to point to info about what can and cannot be collected.
 
 Size in bytes, including tag.
 
 \GriniStep{%
  \GriniStateBefore{%
  }{%
-  |allocstore : gcode|
+  |allocstore gcinfo: gcode|
  }{%
   |s : t : f1 : .. : Sub(f)(s-1) : gstack|
  }{%
@@ -2097,7 +2100,7 @@ The variable is used to indicate exception handling throughout C primitive calls
             ldc         5
             ldc         #0/C/$Int       ^
             ldc         2
-            allocstore                  CSEnv ^ [$10_0_42_1 :-> offset ...]
+            allocstore  gcinfo          CSEnv ^ [$10_0_42_1 :-> offset ...]
           $$+ $x1 $10_0_42_1
             ldl         $10_0_42_1
             ldg         $x1
@@ -2154,7 +2157,7 @@ The variable is used to indicate exception handling throughout C primitive calls
                                                     ldi             4
                                                     ldc             #0/C/$Int
                                                     ldc             2
-                                                    allocstore
+                                                    allocstore      gcinfo
                                                     retcall         1 1 1
               } 
                                                 l3:

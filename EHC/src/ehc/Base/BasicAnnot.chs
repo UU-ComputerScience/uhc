@@ -11,7 +11,7 @@
 %%[(8 codegen) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg)
+%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Binary})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -83,6 +83,11 @@ basicSizeInBytes BasicSize_Word64  = 8
 basicSizeInBytes BasicSize_Float   = Cfg.sizeofFloat
 basicSizeInBytes BasicSize_Double  = Cfg.sizeofDouble
 %%]]
+%%]
+
+%%[(8 codegen) hs export(basicSizeInWords)
+basicSizeInWords :: BasicSize -> Int
+basicSizeInWords sz = entierLogUpShrBy Cfg.sizeofWordInLog (basicSizeInBytes sz)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

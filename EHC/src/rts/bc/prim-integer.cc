@@ -119,7 +119,7 @@ typedef __mpz_struct*  GB_mpz ;
 PRIM Float primRationalToFloat( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
-	gb_assert_IsNotFreshMem( (Word)nr, "primRationalToFloat" ) ;
+	gb_assert_IsNotDangling( (Word)nr, "primRationalToFloat" ) ;
 	GB_NodePtr numerator, divisor ;
 	GB_GCSafe_Enter ;
 	GB_GCSafe_1(nr) ;
@@ -135,7 +135,7 @@ PRIM Float primRationalToFloat( GB_NodePtr nr )
 PRIM Double primRationalToDouble( GB_NodePtr nr )
 {
 	// GB_NodePtr nf ;
-	gb_assert_IsNotFreshMem( (Word)nr, "primRationalToDouble" ) ;
+	gb_assert_IsNotDangling( (Word)nr, "primRationalToDouble" ) ;
 	GB_NodePtr numerator, divisor ;
 	GB_GCSafe_Enter ;
 	GB_GCSafe_1(nr) ;
@@ -155,7 +155,7 @@ PRIM Float primIntegerToFloat( GB_NodePtr n )
 	// GB_NodeAlloc_Float_In(nf) ;
 	// nf->content.flt = mpz_get_d( MPZ(n) ) ;		// not sure whether this works without explicit truncation or something like that...
 	// return nf ;
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToFloat" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToFloat" ) ;
 	return Cast( Float, mpz_get_d( MPZ(n) ) ) ;
 }
 
@@ -165,14 +165,14 @@ PRIM Double primIntegerToDouble( GB_NodePtr n )
 	// GB_NodeAlloc_Double_In(nf) ;
 	// nf->content.dbl = mpz_get_d( MPZ(n) ) ;
 	// return nf ;
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToDouble" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToDouble" ) ;
 	return Cast( Double, mpz_get_d( MPZ(n) ) ) ;
 }
 
 PRIM Word primIntegerToInt( GB_NodePtr n )
 {
 	// return GB_Int2GBInt( mpz_get_si( MPZ(n) ) ) ;
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToInt" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToInt" ) ;
 	return ( mpz_get_si( MPZ(n) ) ) ;
 }
 
@@ -218,8 +218,8 @@ PRIM GB_NodePtr primDoubleToInteger( Double x )
 #if USE_GMP
 PRIM Word primEqInteger( GB_NodePtr x, GB_NodePtr y )
 {
-	gb_assert_IsNotFreshMem( (Word)x, "primEqInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primEqInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primEqInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primEqInteger y" ) ;
 	if ( GB_Integer_Cmp(x,y) == 0 )
 		return gb_True ;
   	return gb_False ;
@@ -227,8 +227,8 @@ PRIM Word primEqInteger( GB_NodePtr x, GB_NodePtr y )
 
 PRIM Word primCmpInteger( GB_NodePtr x, GB_NodePtr y )
 {
-	gb_assert_IsNotFreshMem( (Word)x, "primCmpInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primCmpInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primCmpInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primCmpInteger y" ) ;
 	int c = GB_Integer_Cmp(x,y) ;
 	if ( c < 0 )
 		return gb_LT ;
@@ -240,8 +240,8 @@ PRIM Word primCmpInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primAddInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primAddInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primAddInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primAddInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primAddInteger y" ) ;
 	GB_Integer_Add_In(n,x,y) ;
 	return n ;
 }
@@ -249,8 +249,8 @@ PRIM GB_NodePtr primAddInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primSubInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primSubInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primSubInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primSubInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primSubInteger y" ) ;
 	GB_Integer_Sub_In(n,x,y) ;
 	return n ;
 }
@@ -258,8 +258,8 @@ PRIM GB_NodePtr primSubInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primMulInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primMulInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primMulInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primMulInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primMulInteger y" ) ;
 	GB_Integer_Mul_In(n,x,y) ;
 	return n ;
 }
@@ -267,8 +267,8 @@ PRIM GB_NodePtr primMulInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primDivInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primDivInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primDivInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primDivInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primDivInteger y" ) ;
 	GB_Integer_Div_In(n,x,y) ;
 	return n ;
 }
@@ -276,8 +276,8 @@ PRIM GB_NodePtr primDivInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primModInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primModInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primModInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primModInteger y" ) ;
 	GB_Integer_Mod_In(n,x,y) ;
 	return n ;
 }
@@ -285,8 +285,8 @@ PRIM GB_NodePtr primModInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primQuotInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primQuotInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primQuotInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primQuotInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primQuotInteger y" ) ;
 	GB_Integer_Quot_In(n,x,y) ;
 	return n ;
 }
@@ -294,8 +294,8 @@ PRIM GB_NodePtr primQuotInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primRemInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primRemInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primRemInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primRemInteger y" ) ;
 	GB_Integer_Rem_In(n,x,y) ;
 	return n ;
 }
@@ -303,10 +303,9 @@ PRIM GB_NodePtr primRemInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
-	gb_assert_IsNotFreshMem( (Word)x, "primQuotRemInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primQuotRemInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primQuotRemInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primQuotRemInteger y" ) ;
 	GB_GCSafe_Enter ;
-	GB_GCSafe_2(x,y) ;
 	GB_GCSafe_3_Zeroed(n,n1,n2) ;
 	GB_Integer_QuotRem_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
@@ -317,10 +316,9 @@ PRIM GB_NodePtr primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n, n1, n2 ;
-	gb_assert_IsNotFreshMem( (Word)x, "primDivModInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primDivModInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primDivModInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primDivModInteger y" ) ;
 	GB_GCSafe_Enter ;
-	GB_GCSafe_2(x,y) ;
 	GB_GCSafe_3_Zeroed(n,n1,n2) ;
 	GB_Integer_DivMod_In(n1,n2,x,y) ;
 	GB_MkTupNode2_In(n,n1,n2) ;
@@ -335,7 +333,7 @@ PRIM GB_NodePtr primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primNegInteger( GB_NodePtr x )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primNegInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primNegInteger x" ) ;
 	GB_Integer_Neg_In(n,x) ;
 	return n ;
 }
@@ -346,8 +344,8 @@ PRIM GB_NodePtr primNegInteger( GB_NodePtr x )
 PRIM GB_NodePtr primAndInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primAndInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primAndInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primAndInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primAndInteger y" ) ;
 	GB_Integer_And_In(n,x,y) ;
 	return n ;
 }
@@ -355,8 +353,8 @@ PRIM GB_NodePtr primAndInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primOrInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primOrInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primOrInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primOrInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primOrInteger y" ) ;
 	GB_Integer_Or_In(n,x,y) ;
 	return n ;
 }
@@ -364,8 +362,8 @@ PRIM GB_NodePtr primOrInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primXorInteger( GB_NodePtr x, GB_NodePtr y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primXorInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primXorInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primXorInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primXorInteger y" ) ;
 	GB_Integer_Xor_In(n,x,y) ;
 	return n ;
 }
@@ -373,7 +371,7 @@ PRIM GB_NodePtr primXorInteger( GB_NodePtr x, GB_NodePtr y )
 PRIM GB_NodePtr primComplementInteger( GB_NodePtr x )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primComplementInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primComplementInteger x" ) ;
 	GB_Integer_Complement_In(n,x) ;
 	return n ;
 }
@@ -381,8 +379,8 @@ PRIM GB_NodePtr primComplementInteger( GB_NodePtr x )
 PRIM GB_NodePtr primShiftLeftInteger( GB_NodePtr x, Word y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primShiftLeftInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primShiftLeftInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primShiftLeftInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primShiftLeftInteger y" ) ;
 	GB_Integer_ShiftLeft_In(n,x,y) ;
 	return n ;
 }
@@ -390,8 +388,8 @@ PRIM GB_NodePtr primShiftLeftInteger( GB_NodePtr x, Word y )
 PRIM GB_NodePtr primShiftRightInteger( GB_NodePtr x, Word y )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)x, "primShiftRightInteger x" ) ;
-	gb_assert_IsNotFreshMem( (Word)y, "primShiftRightInteger y" ) ;
+	gb_assert_IsNotDangling( (Word)x, "primShiftRightInteger x" ) ;
+	gb_assert_IsNotDangling( (Word)y, "primShiftRightInteger y" ) ;
 	GB_Integer_ShiftRight_In(n,x,y) ;	// with sign extend
 	return n ;
 }
@@ -445,7 +443,7 @@ PRIM GB_NodePtr primInt64ToInteger( Int64 x )
 PRIM Int64 primIntegerToInt64( GB_NodePtr n )
 {
 	Int64 x ;
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToInt64" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToInt64" ) ;
 	if ( sizeof(Int64) <= sizeof(unsigned long int) ) {
 		x = mpz_get_si( MPZ(n) ) ;
 	} else { // sizeof(Int32) == sizeof(unsigned long int)
@@ -474,7 +472,7 @@ PRIM Int64 primIntegerToInt64( GB_NodePtr n )
 %%[97
 PRIM Word primIntegerToWord( GB_NodePtr n )
 {
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToWord" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToWord" ) ;
 	return ( mpz_get_ui( MPZ(n) ) ) ;
 }
 
@@ -503,7 +501,7 @@ PRIM GB_NodePtr primWord32ToInteger( Word32 x )
 
 PRIM Word32 primIntegerToWord32( GB_NodePtr n )
 {
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToWord32" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToWord32" ) ;
 	Word32 x = mpz_get_ui( MPZ(n) ) ;
 	return ( x ) ;
 }
@@ -522,7 +520,7 @@ PRIM GB_NodePtr primWord64ToInteger( Word64 x )
 PRIM Word64 primIntegerToWord64( GB_NodePtr n )
 {
 	Word64 x ;
-	gb_assert_IsNotFreshMem( (Word)n, "primIntegerToWord64" ) ;
+	gb_assert_IsNotDangling( (Word)n, "primIntegerToWord64" ) ;
 	if ( sizeof(Word64) <= sizeof(unsigned long int) ) {
 		x = mpz_get_ui( MPZ(n) ) ;
 	} else { // sizeof(Word32) == sizeof(unsigned long int)
@@ -546,7 +544,7 @@ PRIM Word64 primIntegerToWord64( GB_NodePtr n )
 PRIM GB_NodePtr primShowInteger( GB_NodePtr integerNd )
 {
 	GB_NodePtr n ;
-	gb_assert_IsNotFreshMem( (Word)integerNd, "primShowInteger" ) ;
+	gb_assert_IsNotDangling( (Word)integerNd, "primShowInteger" ) ;
 	int sz = mpz_sizeinbase( MPZ(integerNd), 10 ) + 2 ;
 	char* buf = alloca( sz ) ;
 
@@ -594,7 +592,7 @@ PRIM GB_NodePtr primShowInteger( GB_NodePtr integerNd )
 %%[97
 PRIM Float primEncodeFloat( GB_NodePtr frac, Word exp )
 {
-	gb_assert_IsNotFreshMem( (Word)frac, "primEncodeFloat" ) ;
+	gb_assert_IsNotDangling( (Word)frac, "primEncodeFloat" ) ;
 	Float d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }
@@ -611,7 +609,7 @@ PRIM GB_NodePtr primDecodeFloat( Float x )
 %%[97
 PRIM Double primEncodeDouble( GB_NodePtr frac, Word exp )
 {
-	gb_assert_IsNotFreshMem( (Word)frac, "primEncodeDouble" ) ;
+	gb_assert_IsNotDangling( (Word)frac, "primEncodeDouble" ) ;
 	Double d = ldexp( mpz_get_d( MPZ(frac) ), exp ) ;
 	return d ;
 }

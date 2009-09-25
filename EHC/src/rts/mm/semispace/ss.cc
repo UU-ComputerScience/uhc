@@ -110,7 +110,7 @@ void mm_plan_SS_InitBypass( MM_Plan* plan ) {
 %%]
 
 %%[8
-Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
+Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space, Word gcInfo ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	Bool res ;
 
@@ -124,7 +124,7 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
-		plss->collector.collect( &plss->collector ) ;
+		plss->collector.collect( &plss->collector, gcInfo ) ;
 		// total as used now
 		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 		Word onePercentSz = prevTotalSz / 100 ;

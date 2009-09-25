@@ -107,7 +107,7 @@ typedef struct MM_Allocator_LOF_Data {
 
 %%[8
 extern void mm_allocator_LOF_Init( MM_Allocator*, MM_Malloc* memmgt, MM_Space* space ) ;
-extern Ptr mm_allocator_LOF_Alloc( MM_Allocator*, Word sz ) ;
+extern Ptr mm_allocator_LOF_Alloc( MM_Allocator*, Word sz, Word gcInfo ) ;
 extern void mm_allocator_LOF_Dealloc( MM_Allocator*, Ptr ptr ) ;
 %%]
 

@@ -35,16 +35,18 @@ void mm_traceSupply_GBStack_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
 }
 
-void mm_traceSupply_GBStack_Reset( MM_TraceSupply* traceSupply ) {
-	// nothing to be done
+void mm_traceSupply_GBStack_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
+	MM_TraceSupply_GBStack_Data* trgr = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
+	trgr->gcInfo = (GB_GCInfo*)gcInfo ;
 }
 
 void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBStack_Data* trgr = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
 	
-	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A\n");}) ;
-	WPtr s ;
-	for ( s = sp ; s < (WPtr)StackAreaHigh ; s++ ) {
+	Word off = (trgr->gcInfo ? trgr->gcInfo->nrOfTOS_No_GCTrace : 0) ;
+	WPtr s = GB_RegRelCast(Word,sp,off) ;
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A nrOfTOS_No_GCTrace=%d (gcInfo=%p) sp=%p s=%p\n",off,trgr->gcInfo,sp,s);}) ;
+	for ( ; s < (WPtr)StackAreaHigh ; s++ ) {
 		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%p\n",s);}) ;
 		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
 	}

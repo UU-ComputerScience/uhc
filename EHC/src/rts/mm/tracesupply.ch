@@ -21,7 +21,7 @@ typedef struct MM_TraceSupply {
   	void			 			(*initWithSub)( struct MM_TraceSupply*, MM_Malloc* memmgt, struct MM_Trace*, MM_FlexArray* subTraceSupplies ) ;
   	
   	// reset to initial state for tracing another time
-  	void			 			(*reset)( struct MM_TraceSupply* ) ;
+  	void			 			(*reset)( struct MM_TraceSupply*, Word gcInfo ) ;
   	
   	// run trace to completion
   	void			 			(*run)( struct MM_TraceSupply* ) ;

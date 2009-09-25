@@ -40,13 +40,13 @@ void mm_traceSupply_Group_InitWithSub( MM_TraceSupply* traceSupply, MM_Malloc* m
 	trgr->subTraceSupplies = *subTraceSupplies ;
 }
 
-void mm_traceSupply_Group_Reset( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Group_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
 	MM_TraceSupply_Group_Data* trgr = (MM_TraceSupply_Group_Data*)traceSupply->data ;
 	
 	MM_FlexArray_Inx i ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed( &trgr->subTraceSupplies ) ; i++ ) {
 		MM_TraceSupply* subTraceSupply = (MM_TraceSupply*)mm_flexArray_At( &trgr->subTraceSupplies, i ) ;
-		subTraceSupply->reset( subTraceSupply ) ;
+		subTraceSupply->reset( subTraceSupply, gcInfo ) ;
 	}
 }
 

@@ -32,7 +32,7 @@ static inline WPtr* mm_traceSupply_Bump_LastPushAddress( MM_TraceSupply_Bump_Dat
 
 
 %%[8
-void mm_traceSupply_Bump_Reset( MM_TraceSupply* traceSupply ) {
+void mm_traceSupply_Bump_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
 	MM_TraceSupply_Bump_Data* trgr = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
 	MM_Space* spc = trgr->trace->allocator->getSpace( trgr->trace->allocator ) ;
 

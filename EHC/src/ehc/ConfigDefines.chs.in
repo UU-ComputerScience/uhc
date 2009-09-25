@@ -58,9 +58,15 @@ useGMP = mkB USE_GMP
 #undef SIZEOF_INTPTR_T
 %%]
 
-%%[8 export(sizeofWord,sizeofWordAsInteger)
+%%[8 export(sizeofWord,sizeofWordInBits,sizeofWordAsInteger,sizeofWordInLog)
 sizeofWord :: Int
 sizeofWord = SIZEOF_INTPTR_T
+
+sizeofWordInBits :: Int
+sizeofWordInBits = sizeofWord * 8
+
+sizeofWordInLog :: Int
+sizeofWordInLog = if sizeofWord == 8 then 3 else 2
 
 sizeofWordAsInteger :: Integer
 sizeofWordAsInteger = toInteger sizeofWord
@@ -94,6 +100,14 @@ sizeofFloat = SIZEOF_FLOAT
 sizeofDouble :: Int
 sizeofDouble = SIZEOF_DOUBLE
 %%]
+
+%%[97
+%%]
+sizeofFloatInLog :: Int
+sizeofFloatInLog = log2 sizeofFloat
+
+sizeofDoubleInLog :: Int
+sizeofDoubleInLog = log2 sizeofDouble
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sizes
