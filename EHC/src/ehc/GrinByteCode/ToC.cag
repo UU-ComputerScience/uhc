@@ -84,40 +84,35 @@ SEM Imm
   | Int         lhs         .   cLoc        =   @lhs.cLoc + @sz
 
 SEM Instr
-  | Link        loc         .   linkCLoc    :   CodeAbsLoc
-                loc         .   linkCLoc    =   @lhs.cLoc
-  | LdGlobal    loc         .   linkCLoc    :   CodeAbsLoc
-                loc         .   linkCLoc    =   @lhs.cLoc + 1
   | Label       loc         .   labelCLoc   :   CodeAbsLoc
                 loc         .   labelCLoc   =   @lhs.cLoc
   | LabelRef    loc         .   labelCLocAft:   CodeAbsLoc
                 loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
-  | Call Eval Apply
+  | LinkChain   loc         .   linkCLoc    :   CodeAbsLoc
+                loc         .   linkCLoc    =   @lhs.cLoc
+  | Call Eval Apply AllocStore CaseCall LdGlobal
                 loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @lhs.cLoc + 1
   | CallC       loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @callEnc.cLoc
-  | AllocStore  loc         .   labelCLoc   :   CodeAbsLoc
-                loc         .   labelCLoc   =   @lhs.cLoc + 1
+  | RetCase     loc         .   linkCLoc    :   CodeAbsLoc
+                loc         .   linkCLoc    =   @retOffSurr.cLoc
 
 SEM Instr
   | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1
   | Op          imm         .   cLoc        =   @lhs.cLoc + 2
-  | LdGlobal Call Eval Apply
+  | Call CallC Eval Apply AllocStore CaseCall LdGlobal RetCase LinkChain
                 lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofWord
-  | LabelRef
-                lhs         .   cLoc        =   @labelCLocAft
+  | LabelRef    lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
-  | CaseCall FetchUpdate LdNodeTag
+  | FetchUpdate LdNodeTag
                 lhs         .   cLoc        =   @lhs.cLoc + 1
   | CallC       nArg        .   cLoc        =   @lhs.cLoc + 2
-                lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofWord
   | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
   | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
   | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   cLoc        =   @lhs.cLoc + 2
-  | AllocStore  lhs         .   cLoc        =   @labelCLoc + Cfg.sizeofWord
   | Fetch       lhs         .   cLoc        =   @lhs.cLoc + 1
 %%]
 
@@ -150,8 +145,9 @@ ATTR AllInstr [ | | gathLabelLocMp USE {`Map.union`} {Map.empty}: LabelLocMp ]
 SEM Instr
   | Label       lhs         .   gathLabelLocMp
   											=   if lrefIsLabel @locRef then Map.singleton (lrefId @locRef) @labelCLoc else Map.empty
-  | AllocStore  lhs         .   gathLabelLocMp
-  											=   Map.singleton (lckeyLbl $ lcentryKey @linkChainEntry) @labelCLoc
+  | AllocStore LdGlobal CaseCall RetCase LinkChain
+  				lhs         .   gathLabelLocMp
+  											=   maybe Map.empty (\l -> Map.singleton l @linkCLoc) $ lckeyMbLbl $ lcentryKey @linkChainEntry
 %%]
 
 %%[(8 codegen grin)
@@ -163,25 +159,21 @@ SEM Module
 
 %%[(8 codegen grin)
 SEM Instr
-  | LabelRef    loc         .   refOff      =   (panicJust "Instr.{LabelRef}.refOff"
-                                                 $ Map.lookup (lrefId @locRef) @lhs.labelLocMp) - @labelCLocAft
+  | LabelRef    loc         .   refOff      =   (panicJust "Instr.LabelRef.refOff" $ Map.lookup (lrefId @locRef) @lhs.labelLocMp)
+                                                    - @labelCLocAft
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Link entries
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-These must be in sorted order w.r.t. the @linkCLoc location
-
 %%[(8 codegen grin)
-ATTR AllInstr [ | | links USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq (Link,CodeAbsLoc)} ]
-
 SEM Instr
-  | LdGlobal Link
-                lhs         .   links       =   Seq.singleton (@link,@linkCLoc)
   | Call CallC Eval Apply
-  				loc			.	link		=	Link LinkTbl_CallInfo @ciInx
-  				lhs			.	links		=	Seq.singleton (@link,@linkCLoc)
+  				loc			.	linkChainEntry
+  				  							=	LinkChainEntry (LinkChainKey LinkChainKind_CallInfo (LinkChainId_Loc @linkCLoc)) @ciInx
+				loc			.	linkChainEntry
+											:	LinkChainEntry
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,7 +184,8 @@ SEM Instr
 ATTR AllInstr [ | | gathLinkChainKeyMp USE {`Map.union`} {Map.empty}: LinkChainKeyMp ]
 
 SEM Instr
-  | AllocStore  lhs         .   gathLinkChainKeyMp
+  | AllocStore LdGlobal Call CallC Eval Apply CaseCall RetCase LinkChain
+  				lhs         .   gathLinkChainKeyMp
   											=   Map.singleton (lcentryKey @linkChainEntry) (lcentryInfo @linkChainEntry)
 %%]
 
@@ -213,9 +206,19 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
+ATTR AllInstr [ | linkChainResolvedIndInfoSet: LinkChainResolvedIndInfoSet | ]
+
+SEM Module
+  | Mod         instrs      .   linkChainResolvedIndInfoSet
+                                            =   emptyLinkChainResolvedIndInfoSet
+%%]
+
+%%[(8 codegen grin)
 SEM Instr
-  | AllocStore
-  				loc			.	linkChain	=	maybe 0 (linkChainResolvedInfoEncoding) $ linkChainResolvedLookup (lcentryKey @linkChainEntry) @lhs.linkChainResolvedMp
+  | AllocStore LdGlobal Call CallC Eval Apply CaseCall RetCase LinkChain
+                (loc.linkChain,lhs.linkChainResolvedIndInfoSet)
+                                            =   maybe (0,@lhs.linkChainResolvedIndInfoSet) (linkChainResolvedInfoEncoding @lhs.linkChainResolvedIndInfoSet)
+                                                $ linkChainResolvedLookup (lcentryKey @linkChainEntry) @lhs.linkChainResolvedMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -223,9 +226,9 @@ SEM Instr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type CallInfoMp = Map.Map CallInfo CodeAbsLoc
+type CallInfoMp = Map.Map CallInfo Int
 
-ciMpAdd :: CallInfo -> CallInfoMp -> (CallInfoMp,CodeAbsLoc)
+ciMpAdd :: CallInfo -> CallInfoMp -> (CallInfoMp,Int)
 ciMpAdd ci m
   = case ci `Map.lookup` m of
       Just i -> (m,i)
@@ -315,19 +318,15 @@ ATTR Module AGItf [ | | ppMain: PP_Doc ]
 SEM Module
   | Mod         loc         .   moduleNmPre             =   mkPre @moduleNm
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
-                            .   strNmcallInfo           =   "callinfo"
                             .   strNmByteCodeModule     =   "bytecodeModule"
                             .   strNmByteCodeEntry   	=   "bytecodeEntries"
                             .   ppNmAString             =   \i -> @ppNm "string" >|< i
-                            -- .   ppNmAGCInfo             =   \i -> @ppNm "gcInfo" >|< i
-                            .   ppNmACallInfo           =   @ppNm @strNmcallInfo
                             .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
                             .   ppNmByteCodeTraceTbl    =   @ppNm "bytecodeInstrEntries"
                             .   ppNmByteCodeModule      =   @ppNm @strNmByteCodeModule
                             .   ppNmByteCodeEntry       =   @ppNm @strNmByteCodeEntry
                             .   ppNmConstTbl            =   @ppNm "constants"
-                            .   ppNmLinkEntriesTbl      =   @ppNm "linkEntries"
                             .   ppNmGlobEntriesTbl      =   @ppNm "globalEntries"
                             .   ppNmCafEntriesTbl       =   @ppNm "cafEntries"
                             .   ppNmCafGlEntryIndicesTbl=   @ppNm "cafGlEntryIndices"
@@ -337,11 +336,12 @@ SEM Module
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
                             .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
                             .   ppNmGCInfosTbl          =   @ppNm "gcInfos"
+                            .   ppNmLinkChainIndTbl     =   @ppNm "linkChainIndirections"
+                            .   ppNmCallInfoTbl         =   @ppNm "callinfos"
 %%[[20
                             .   strNmImpTbl             =   "impMods"
                             .   strNmExpNode            =   "expNode"
                             .   strNmExpNodeSz          =   @strNmExpNode ++ "_size"
-                            -- .   ppNmImpNode             =   @ppNm @strNmImpNode
                             .   ppImpModTbl             =   @ppNm @strNmImpTbl
                             .   ppNmExpNode             =   @ppNm @strNmExpNode
                             .   ppNmExpNodeOffs         =   @ppNm (@strNmExpNode ++ "_offs")
@@ -360,22 +360,20 @@ SEM Module
                                                                                         ++ @includeL
 %%]]
                                                                                  ]
-                                                    strNmL  = [ (@ppNmAString i,ppStringAsHex s >#< ppCmtC @lhs.opts (take 15 s)) | (i,s) <- zip [(0::Int)..] @stringL ]
+                                                    strNmL  = [ (@ppNmAString i,ppCmtC @lhs.opts (take 15 s) >-< ppStringAsHex s) | (i,s) <- zip [(0::Int)..] @stringL ]
                                                     strings = nl : [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
-                                                    callinfoNmL = [ ( @strNmcallInfo ++ show i
-                                                                    , "GB_MkCallInfoWith"
-                                                                      >|< ppParensCommasBlock
-                                                                            [ pp $ fromEnum $ ciKind ci
-                                                                            , maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci
-                                                                            , pp (ciExtra ci)                                                                                
-                                                                            ]
-                                                                      >#< ppCmtC @lhs.opts (show ci)
-                                                                    )
-                                                                  | (ci,i) <- sortOn snd $ Map.toList @instrs.callInfoMp
-                                                                  ]
-                                                    callinfos   = nl : [ "GB_CallInfo" >#< @ppNm n >#< "=" >#< def >#< ";" | (n,def) <- callinfoNmL ]
-                                                    extraConstL = [ Const_CallInfo (@moduleNmPre ++ n) | (n,_) <- callinfoNmL ]
-                                                    consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts @ppNmAString) (@constL ++ extraConstL))
+                                                    callinfos
+                                                            = ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
+                                                                [ "GB_MkCallInfoWith"
+                                                                  >|< ppParensCommas
+                                                                        [ pp $ fromEnum $ ciKind ci
+                                                                        , maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci
+                                                                        , pp (ciExtra ci)                                                                                
+                                                                        ]
+                                                                  >#< ppCmtC @lhs.opts (show ci)
+                                                                | (ci,i) <- sortOn snd $ Map.toList @instrs.callInfoMp
+                                                                ]
+                                                    consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts @ppNmAString) @constL )
                                                     bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
                                                     bcodetrace
@@ -398,28 +396,24 @@ SEM Module
                                                             = "GB_ByteCodeModule" >#< @ppNmByteCodeModule >#< "="
                                                                >-< indent 2
                                                                      (ppCurlysCommasBlock
-                                                                        [ ppStr @moduleNm
-                                                                        , @ppNmByteCodeEntry
-                                                                        , pp $ length @allEntryL
-                                                                        , @ppNmByteCodeTbl
-                                                                        , pp @instrs.cLoc
-                                                                        , @ppNmGCInfosTbl
-                                                                        , pp (length @gcInfoL)
-                                                                        ] >#< ";")
-                                                    linkL   = Seq.toList @instrs.links
-                                                    links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
-                                                                (map (\(l,c)
-                                                                       -> let (kind,loc,val) = kv l c
-                                                                          in  ppCurlysCommasBlock [ pp $ fromEnum $ kind, ppCast "GB_Ptr" loc, ppCast "GB_Word" val ]
-                                                                     )
-                                                                 $ linkL
+                                                                        (  [ ppStr @moduleNm ]
+                                                                        ++ (if ehcOptGenTrace @lhs.opts
+                                                                            then [ @ppNmByteCodeEntry, pp $ length @allEntryL ]
+                                                                            else [ pp "NULL", pp "0" ]
+                                                                           )
+                                                                        ++ [ @ppNmByteCodeTbl
+                                                                           , pp @instrs.cLoc
+                                                                           , @ppNmGCInfosTbl
+                                                                           , pp (length @gcInfoL)
+                                                                           ]
+                                                                        )
+                                                                      >#< ";"
+                                                                      )
+                                                    linkChainInds
+                                                            = ppTbl' "GB_LinkChainResolvedInfo" @ppNmLinkChainIndTbl
+                                                                (map (\(LinkChainResolvedInfo kind info off) -> ppCurlysCommasBlock $ map pp [info, off, fromEnum kind]) $ reverse inds
                                                                 )
-                                                            where constTblSz = length @constL
-                                                                  kv l c = case linkTbl l of
-                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
-                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmGlobEntriesTbl $ linkVal l             )
-                                                                             LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz)
-                                                                             k                 -> (k,ppAddrArrAt @ppNmByteCodeTbl c, pp $ linkVal l)
+                                                            where (_,inds) = @instrs.linkChainResolvedIndInfoSet
                                                     glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
                                                     cafGlEntryIndices = ppTbl' "HalfWord" @ppNmCafGlEntryIndicesTbl [ pp i | i <- @cafEntryL ]
                                                     nrCafs = length @cafEntryL
@@ -441,14 +435,14 @@ SEM Module
                                                                                  )
                                                                                  ("gb_InitTables" >|< ppParensCommasBlock args >#< ";")
                                                             where args = [ @ppNmByteCodeTbl, pp @instrs.cLoc
-                                                                         , @ppNmLinkEntriesTbl, pp (length linkL)
                                                                          , @ppNmCafGlEntryIndicesTbl, pp nrCafs
                                                                          , @ppNmGlobEntriesTbl, pp (Map.size glEntryMp)
                                                                          , @ppNmConstTbl
                                                                          , @ppNmGCInfosTbl
+                                                                         , @ppNmLinkChainIndTbl
+                                                                         , @ppNmCallInfoTbl
                                                                          , pp $ maybe 0 id @mbLinkChainCodeLoc
 %%[[20
-                                                                         -- , ppAddrOf @ppNmImpNode
                                                                          , @ppImpModTbl, pp (length @impModNmL)
                                                                          , ppAddrOf @ppNmExpNode
                                                                          , @ppNmExpNodeSz, @ppNmExpNodeOffs
@@ -517,11 +511,11 @@ SEM Module
                                                       ++ strings
                                                       -- ++ gcInfos
                                                       ++ gcInfosTbl
-                                                      ++ bcode
-                                                      ++ (if ehcOptGenTrace @lhs.opts then bcodetrace else [])
-                                                      ++ bcodeentries
-                                                      ++ [bcodemodtrace]
+                                                      ++ linkChainInds
                                                       ++ callinfos
+                                                      ++ bcode
+                                                      ++ (if ehcOptGenTrace @lhs.opts then bcodetrace ++ bcodeentries else [])
+                                                      ++ [bcodemodtrace]
                                                       ++ consts
                                                       ++ cafGlEntryIndices
                                                       ++ glEntries
@@ -530,7 +524,6 @@ SEM Module
                                                          , impmods
                                                          ]
 %%]]
-                                                      ++ links
                                                       ++ [ initf
 %%[[8
                                                          , mods
@@ -551,78 +544,40 @@ SEM Module
                                                     )
 %%]
 
-                                                    links   = ppTbl' "GB_LinkEntry" @ppNmLinkEntriesTbl
-                                                                (map (\(l,c)
-                                                                       -> let (kind,loc,val) = kv l c
-                                                                          in  ppCurlysCommasBlock [ pp $ fromEnum $ kind, ppCast "GB_Ptr" loc, ppCast "GB_Word" val ]
-                                                                     )
-                                                                 $ linkL
-                                                                )
-                                                            where constTblSz = length @constL
-                                                                  kv l c = case linkTbl l of
-                                                                             LinkTbl_Const     -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l             )
-                                                                             LinkTbl_CodeEntry -> (LinkTbl_PatchCode_Deref0, ppAddrArrAt @ppNmByteCodeTbl c, addr                            $ linkVal l             )
-                                                                                               where addr e = maybe (ppAddrArrAt @ppNmGlobEntriesTbl e) ppAddrOf $ Map.lookup e cafMp
-                                                                             LinkTbl_CallInfo  -> (LinkTbl_PatchCode_Deref1, ppAddrArrAt @ppNmByteCodeTbl c, ppAddrArrAt @ppNmConstTbl       $ linkVal l + constTblSz)
-                                                                             k                 -> (k,ppAddrArrAt @ppNmByteCodeTbl c, pp $ linkVal l)
-                                                    glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
-                                                    cafEntries= ppTbl' "GB_NodePtr" @ppNmCafEntriesTbl [ mk e | e <- @cafEntryL ]
-                                                             where mk e = ppCast "GB_NodePtr" $ ppAddrArrAt @ppNmByteCodeTbl $ panicJust "GrinByteCode.ToC.cafs" $ Map.lookup e glEntryMp
-                                                    cafMp   = Map.fromList [ (i,ppArrAt @ppNmCafEntriesTbl n) | (i,n) <- zip [(0::Int)..] @cafEntryL ]
-                                                    -- cafMp   = Map.fromList [ (i,n) | (i,n,_) <- cafL ]
-                                                    glEntries= ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ e i c | (i,c) <- Map.assocs glEntryMp ]
-                                                             where e i c = case Map.lookup i cafMp of
-                                                                             Just  n -> ppCast "GB_BytePtr" $ ppAddrOf n
-                                                                             Nothing -> ppAddrArrAt @ppNmByteCodeTbl c
-                                                    cafL    = zipWith3 (\b nr i -> ( i
-                                                                                   , b >|< nr
-                                                                                   , ppArr [ pp "GB_MkCAFHeader"
-                                                                                           , pp
-                                                                                             $ ppCast "GB_Word"
-                                                                                             $ ppAddrArrAt @ppNmByteCodeTbl
-                                                                                             $ panicJust "GrinByteCode.ToC.cafs"
-                                                                                             $ Map.lookup i glEntryMp
-                                                                                           ]
-                                                                       )           )
-                                                                       (repeat @ppNmACAF) [(0::Int)..] @cafEntryL
-
-
 %%[(8 codegen grin) hs
 ppStringAsHex :: String -> PP_Doc
-ppStringAsHex s = ppCurlysCommasBlock [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
+ppStringAsHex s = ppCurlysCommas [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
 
 ppStr :: String -> PP_Doc
 ppStr s = pp $ show s
 
-ppLink :: (Integral c) => Int -> c -> PP_Doc
-ppLink sz = ppHexL . ppHex' (Just 2) (sz * 2)
+ppWord :: (Integral c) => c -> PP_Doc
+ppWord = ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
 
 ppLinkChain :: Integer -> PP_Doc
-ppLinkChain = ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
+ppLinkChain = ppWord
 %%]
 
 %%[(8 codegen grin)
 SEM Instr
   | Ld St       lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
-  | AllocStore  lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
   | Fetch       lhs         .   pp          =   ppCommas [ppHex 2 @enc]
-  | Call Eval Apply
-                lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (Cfg.sizeofWord) $ linkVal @link]
+  | Call Eval Apply AllocStore CaseCall LdGlobal
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
   | TailCall RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp]
   | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp]
-  | CaseCall FetchUpdate LdNodeTag
+  | FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
-  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, @callEnc.pp, ppLink (Cfg.sizeofWord) $ linkVal @link]
-  | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp]
+  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, @callEnc.pp, ppLinkChain @linkChain]
+  | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp, ppLinkChain @linkChain]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp -- >#< ppCmtC @lhs.opts @ann
   | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
-  | LdGlobal    lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLink (Cfg.sizeofWord) $ linkVal @link]
-  | LabelRef    lhs         .   pp          =   ppCommas [ppLink Cfg.gbLabelOffsetSize @refOff]
+  | LabelRef    lhs         .   pp          =   ppCommas [ppWord @refOff]
+  | LinkChain   lhs         .   pp          =   ppCommas [ppLinkChain @linkChain]
 %%]
-  | CaseCall    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nCases.pp]
 
 %%[(8 codegen grin)
 SEM Imm
@@ -676,9 +631,9 @@ SEM Instrs
 ATTR Instr [ | | hasCode: Bool ]
 
 SEM Instr
-  | Meta Label Link
+  | Meta Label
                 lhs         .   hasCode     =   False
-  | * - Meta Label Link
+  | * - Meta Label
                 lhs         .   hasCode     =   True
 %%]
 
@@ -766,9 +721,10 @@ SEM Instr
                 lhs         .   mn          =   pp "tagw2w"
   | UntagWord2Word
                 lhs         .   mn          =   pp "untagw2w"
-  | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
+  | LdGlobal	lhs         .   mn          =   "ldg"           >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
+  | LinkChain   lhs         .   mn          =   pp ".lnk"
 
 SEM Imm
   | Int         lhs         .   mn          =   case @lhs.immSz of
@@ -840,7 +796,7 @@ SEM Instr
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
   | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
-  | LdGlobal    loc         .   enc         =   0xE6 .|. (@locDst.enc)
+  | LdGlobal	loc         .   enc         =   0xE6 .|. (@locDst.enc)
   -- call/control group
   | Call        loc         .   enc         =   0xF0 .|. (@locSrc.enc)
   | TailCall    loc         .   enc         =   0xF2 .|. (@locSrc.enc)
@@ -945,7 +901,6 @@ SEM Instr
   | RetCase     nRes        .   immSz       =   @nResSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
 %%]
-  | CaseCall    nCases      .   immSz       =   @nCasesSz.self
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Replica's, SELF

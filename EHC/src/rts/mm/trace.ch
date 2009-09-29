@@ -51,6 +51,8 @@ typedef struct MM_Trace {
   	
   	// size of an object in words
   	Word			 			(*objectNrWords)( struct MM_Trace*, Word obj ) ;
+  	// object has words which can be traced (this should be made more precise than a single boolean when yes/no traceable are mixed)
+  	Bool			 			(*objectHasTraceableWords)( struct MM_Trace*, Word obj ) ;
   	
 } MM_Trace ;
 %%]

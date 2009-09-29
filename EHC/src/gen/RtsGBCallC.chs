@@ -78,7 +78,9 @@ mkC maxCCallArgs
                         resgbty = basicGBTy res
                         restyStck = gbtyOnStack resgbty
                         restyAsIs = gbtyAsIs    resgbty
-                    in  [ assign (r' res) cl
+                    in  [ {- stat (call "GB_Push" [call "GB_Word_MkGC" [nargs >|< "+3 /* nargs, PC, MP */"]])
+                        , -}
+                          assign (r' res) cl
 %%[[96
                         , stat (call "GB_PassExcWith" [empty,empty,op ">" "gb_ThrownException_NrOfEvalWrappers" "0",pp "return"])
 %%]]

@@ -88,20 +88,25 @@ typedef union GB_WordEquiv {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Word_SizeOfWordTag 		1
-#define GB_Word_TagMask 			1
+#define GB_Word_SizeOfWordTag 		2
+#define GB_Word_TagMask 			Bits_Size2LoMask(GB_Word,GB_Word_SizeOfWordTag)
 #define GB_Word_IntMask 			(~ GB_Word_TagMask)
-#define GB_Word_TagInt 				1
 #define GB_Word_TagPtr 				0
+#define GB_Word_TagInt 				1
+#define GB_Word_TagGC 				2	// GC info
 
 #define GB_Int_ShiftPow2			Bits_Pow2(GB_Int,GB_Word_SizeOfWordTag)
 
-#define GB_Word_IsInt(x)			(Cast(Word,x) & GB_Word_TagMask)
-#define GB_Word_IsPtr(x)			(! GB_Word_IsInt(x))
+#define GB_Word_Tag(x)				(Cast(Word,x) & GB_Word_TagMask)
+#define GB_Word_IsInt(x)			(GB_Word_Tag(x) == GB_Word_TagInt)
+#define GB_Word_IsGC(x)				(GB_Word_Tag(x) == GB_Word_TagGC)
+#define GB_Word_IsPtr(x)			(! GB_Word_Tag(x))
 %%]
 
-
-
+%%[8
+#define GB_Word_UnTag(x)			((x) >> GB_Word_SizeOfWordTag)
+#define GB_Word_MkGC(x)				(((x) << GB_Word_SizeOfWordTag) | GB_Word_TagGC)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Node structure
@@ -702,22 +707,52 @@ typedef struct GB_GCInfo {
 Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/GrinByteCode
 
 %%[8
+#define GB_LinkChainEncoding_Ind			0
+#define GB_LinkChainEncoding_16_12			1
+%%]
+
+%%[8
 #define GB_LinkChainKind_None				0
 #define GB_LinkChainKind_GCInfo				1
+#define GB_LinkChainKind_Const				2
+#define GB_LinkChainKind_Code				3
+#define GB_LinkChainKind_Offset				4
+#define GB_LinkChainKind_Offsets			5
+#define GB_LinkChainKind_CallInfo			6
+%%[[20
+#define GB_LinkChainKind_ImpEntry			7
+%%]]
 %%]
 
 %%[8
 #if USE_64_BITS
-#define GB_LinkChainKind_Inx_Shift			32
+#define GB_LinkChainKind_Info_Shift			32
 #else
-#define GB_LinkChainKind_Inx_Shift			16
+#define GB_LinkChainKind_Info_Shift			16
 #endif
-#define GB_LinkChainKind_Off_Shift			4
-#define GB_LinkChainKind_Kind_Shift			0
+#define GB_LinkChainKind_Off_Shift			6
+#define GB_LinkChainKind_Kind_Shift			2
+#define GB_LinkChainKind_Enc_Shift			0
 
-#define GB_LinkChainKind_Fld_Inx(x)			Bits_ExtrFromSh(Word,x,GB_LinkChainKind_Inx_Shift)
-#define GB_LinkChainKind_Fld_Off(x)			Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Off_Shift,GB_LinkChainKind_Inx_Shift-1)
+#define GB_LinkChainKind_Ind_Inx_Shift		GB_LinkChainKind_Kind_Shift
+
+#define GB_LinkChainKind_Fld_Info(x)		Bits_ExtrFromSh(Word,x,GB_LinkChainKind_Info_Shift)
+#define GB_LinkChainKind_Fld_Off(x)			Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Off_Shift,GB_LinkChainKind_Info_Shift-1)
 #define GB_LinkChainKind_Fld_Kind(x)		Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Kind_Shift,GB_LinkChainKind_Off_Shift-1)
+#define GB_LinkChainKind_Fld_Enc(x)			Bits_ExtrFromToSh(Word,x,GB_LinkChainKind_Enc_Shift,GB_LinkChainKind_Kind_Shift-1)
+
+#define GB_LinkChainKind_Ind_Fld_Inx(x)		Bits_ExtrFromSh(Word,x,GB_LinkChainKind_Ind_Inx_Shift)
+%%]
+
+This encoding of a LinkChain entry is used when too large, the entry inlined in the code refers to an external entry as described by
+the following:
+
+%%[8
+typedef struct GB_LinkChainResolvedInfo {
+	Word32		info ;
+	Word16		off ;
+	Word16		kind ;
+} __attribute__ ((__packed__)) GB_LinkChainResolvedInfo ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

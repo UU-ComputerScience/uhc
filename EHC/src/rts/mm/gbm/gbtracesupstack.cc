@@ -44,11 +44,36 @@ void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBStack_Data* trgr = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
 	
 	Word off = (trgr->gcInfo ? trgr->gcInfo->nrOfTOS_No_GCTrace : 0) ;
+	// stackpointer
 	WPtr s = GB_RegRelCast(Word,sp,off) ;
-	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A nrOfTOS_No_GCTrace=%d (gcInfo=%p) sp=%p s=%p\n",off,trgr->gcInfo,sp,s);}) ;
+	// basepointer
+	WPtr b = bp ;
+	// how many to skip
+	int skip = 0 ;
+	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run A nrOfTOS_No_GCTrace=%d (gcInfo=%p) sp=%p s=%p *s=%x\n",off,trgr->gcInfo,sp,s,*s);}) ;
 	for ( ; s < (WPtr)StackAreaHigh ; s++ ) {
-		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%p\n",s);}) ;
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		/*
+		if ( skip <= 0 && GB_Word_IsGC(*s) ) {
+			skip = GB_Word_UnTag(*s) ;
+			s++ ;
+		}
+		*/
+		if ( b == s ) {
+			// meta info of stackframe needs to be skipped
+			b = (WPtr)*b ;
+			s += 2 ;
+			// skip -= 2 ;
+		}
+		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%p *s=%x skip=%d\n",s,*s,skip);}) ;
+		/*
+		if ( skip > 0 ) {
+			skip-- ;
+		} else {
+		*/
+			*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		/*
+		}
+		*/
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run C\n");}) ;
 }
