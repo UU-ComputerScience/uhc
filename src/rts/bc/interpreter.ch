@@ -380,35 +380,24 @@ extern void gb_prByteCodeModule( GB_ByteCodeModule* e ) ;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+%%]
 #define GB_LinkTbl_EntryKind_Const					0			/* obsolete (now via PatchCode_Deref1): constant */
 #define GB_LinkTbl_EntryKind_CodeEntry				1			/* obsolete (now via Patch...): code entry */
 #define GB_LinkTbl_EntryKind_PatchCode_Deref0		2			/* patch code with value */
 #define GB_LinkTbl_EntryKind_PatchCode_Deref1		3			/* patch code with *value */
 #define GB_LinkTbl_EntryKind_PatchCode_Deref2		4			/* patch code with **value */
 #define GB_LinkTbl_EntryKind_PatchOffsets			5			/* patch code containing offsets with abolute address */
-#define GB_LinkTbl_EntryKind_CallInfo  				6			/* obsolete, same as Const, used internally */
-%%[[20
-#define GB_LinkTbl_EntryKind_ImpEntry				7			/* import entry */
-%%]]
-%%]
+#define GB_LinkTbl_EntryKind_ImpEntry				6			/* import entry */
 
 Link commands for global references
 
 %%[8
+%%]
 typedef struct GB_LinkEntry {
   HalfWord		tblKind ;
   GB_Ptr		linkLoc ;
   GB_Word		linkVal ;
 } GB_LinkEntry ;
-%%]
-
-%%[8
-typedef struct GB_LinkEntry_Off {
-  QuartWord		tblKind ;
-  HalfWord		off2Prev ;
-  GB_Word		linkVal ;
-} __attribute__ ((__packed__)) GB_LinkEntry_Off ;
-%%]
 
 Module info
 
@@ -463,19 +452,22 @@ typedef struct GB_CallInfo_CCall {
 } GB_CallInfo_CCall ;
 
 typedef struct GB_CallInfo {
-  uint8_t kind ;
-  char*   name ;
-  union {
-    GB_CallInfo_CCall	ccall ;
-    void*				dflt ;
-  } extra ;
+	uint8_t 			kind ;
+	char*   			name ;
+#if TRACE
+	GB_CallInfo_CCall	ccall ;
+#endif
 } GB_CallInfo ;
 
 typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
+#if TRACE
 #define GB_MkCallInfoWith(k,n,w)		{k,n,w}		// make CallInfo
+#else
+#define GB_MkCallInfoWith(k,n,w)		{k,n}		// make CallInfo
+#endif
 #define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL)
 
 #define GB_CallInfo_Fld_Kind(i)    		i
@@ -721,14 +713,14 @@ extern void gb_Initialize() ;
 
 extern void gb_InitTables
 	( GB_BytePtr byteCodes, int byteCodesSz
-	, GB_LinkEntry* linkEntries, int linkEntriesSz
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	, GB_GCInfo* gcInfos
+	, GB_LinkChainResolvedInfo* linkChainInds
+	, GB_CallInfo* callinfos
 	, Word linkChainOffset
 %%[[20
-	// , GB_NodePtr *impNode
 	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
 	, GB_ModEntry* modTbl

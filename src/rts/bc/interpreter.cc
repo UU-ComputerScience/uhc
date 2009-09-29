@@ -761,7 +761,7 @@ void gb_prState( char* msg, int maxStkSz )
 Calling C:
 The interpreter has two entry points to C code:
 - plain/directly
-- via closure
+- via closure, only constructed from within C itself; we assume no unboxed values (like float/double) are passed around.
 Both have a different stack setup, which is not ideal for understanding, so may well change.
 The tricky point is exception handling which makes assumptions about the stack setup.
 The code is split up in preamble + call + postamble, where call is only necessary for the closure based call, plus postamble when an exception did occur.
@@ -1170,6 +1170,7 @@ gb_interpreter_InsCallEntry:
 
 			/* casecall */
 			case GB_Ins_CaseCall :
+				GB_PCImmIn(Word,x2) ;										// nr of alternatives, not used further, but required by linking for following table
 				p = Cast(GB_Ptr,pc) ;										// start of table after instr						
 				GB_PopIn(x) ;												// tag of scrutinee is on TOS
 				dst = Cast(GB_BytePtr,p[GB_GBInt2Int(x)]) ;					// destination from following table, indexed by tag
@@ -1185,7 +1186,7 @@ gb_interpreter_InsCallEntry:
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x\n", callenc) ;}) ;
 				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->extra.ccall.type) ;}) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->ccall.type) ;}) ;
 				// p = GB_SPRel(1) ;											/* args												*/
 				// x = GB_TOS ;												/* function											*/
 				// GB_CallC_Code_Preamble(x2) ;
@@ -1766,11 +1767,13 @@ void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
 %%[8
 void gb_InitTables
 	( GB_BytePtr byteCodes, int byteCodesSz
-	, GB_LinkEntry* linkEntries, int linkEntriesSz
+	// , GB_LinkEntry* linkEntries, int linkEntriesSz
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	, GB_GCInfo* gcInfos
+	, GB_LinkChainResolvedInfo* linkChainInds
+	, GB_CallInfo* callinfos
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
@@ -1809,21 +1812,67 @@ void gb_InitTables
 	for ( ; linkChainOffset > 0 ; ) {
 		WPtr loc = (WPtr)(&byteCodes[ linkChainOffset ]) ;
 		Word link = *loc ;
-		Word inx  = GB_LinkChainKind_Fld_Inx(link) ;
-		IF_GB_TR_ON(3,{printf("gb_InitTables linkChainOffset=%x, loc=%p, link=%x, inx=%x, off=%x\n", linkChainOffset, loc, link, inx, GB_LinkChainKind_Fld_Off( link )) ; }) ;
-		switch ( GB_LinkChainKind_Fld_Kind( link ) ) {
+		Word info, kind, off ;
+		if ( GB_LinkChainKind_Fld_Enc( link ) == GB_LinkChainEncoding_Ind ) {
+			GB_LinkChainResolvedInfo* ind = &linkChainInds[ GB_LinkChainKind_Ind_Fld_Inx(link) ] ;
+			kind = ind->kind ;
+			info = ind->info ;
+			off  = ind->off ;
+		} else {
+			kind = GB_LinkChainKind_Fld_Kind(link) ;
+			info = GB_LinkChainKind_Fld_Info(link) ;
+			off  = GB_LinkChainKind_Fld_Off(link) ;
+		}
+		IF_GB_TR_ON(3,{printf("gb_InitTables A linkChainOffset=%x, loc=%p, link=%x, enc=%x, kind=%d, info=%x, off=%x\n", linkChainOffset, loc, link, GB_LinkChainKind_Fld_Enc( link ), kind, info, GB_LinkChainKind_Fld_Off( link )) ; }) ;
+		switch ( kind ) {
 			case GB_LinkChainKind_GCInfo :
-				IF_GB_TR_ON(3,{printf("gb_InitTables gcInfo=%x %p\n", gcInfos[ inx ].nrOfTOS_No_GCTrace, &gcInfos[ inx ]) ; }) ;
-				*loc = (Word)(&gcInfos[ inx ]) ;
+				IF_GB_TR_ON(3,{printf("gb_InitTables gcInfo=%x %p\n", gcInfos[ info ].nrOfTOS_No_GCTrace, &gcInfos[ info ]) ; }) ;
+				*loc = (Word)(&gcInfos[ info ]) ;
 				break ;
+
+			case GB_LinkChainKind_Const :
+				*loc = (Word)(&consts[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_Code :
+				*loc = (Word)(&globalEntries[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_CallInfo :
+				*loc = (Word)(&callinfos[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_Offset :
+				*loc = Cast(Word,loc+1) + info ;
+				break ;
+
+			case GB_LinkChainKind_Offsets :
+				*loc = info ;
+/*
+*/
+				{
+					WPtr p ;
+					Word j ;
+					for ( j = 0, p = loc+1 ; j < info ; j++ ) {
+						p[j] = Cast(Word,&p[j+1]) + p[j] ;
+					}
+				}
+				break ;
+
+%%[[20
+			case GB_LinkChainKind_ImpEntry :
+				*loc = (Word)(modTbl[ impModules[ info ].globModInx ].expNode) ;
+				break ;
+%%]]
 
 			default :
 				break ;
 		}
-		Word off = GB_LinkChainKind_Fld_Off( link ) ;
 		linkChainOffset = ( off > 0 ? linkChainOffset + off : 0 ) ;
+		IF_GB_TR_ON(3,{printf("gb_InitTables B linkChainOffset=%x off=%x\n", linkChainOffset, off) ; }) ;
 	}
 
+	/*
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
 	{
 		p = Cast(GB_Ptr,linkEntries[i].linkLoc) ;
@@ -1873,6 +1922,7 @@ void gb_InitTables
 
 		}
 	}
+	*/
 	
 %%[[20
 	for ( i = 0 ; i < expNodeSz ; i++ )
@@ -1993,7 +2043,7 @@ int gb_lookupInfoForPC
 	{
 		*m = gb_AllMod[mc].bcModule ;
 		// printf("*m=%x\n", *m) ;
-		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize && (*m)->bcEntry[0].bcInstr != NULL )
+		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize && (*m)->bcEntry != NULL && (*m)->bcEntry[0].bcInstr != NULL )
 		{
 			*e = Cast( GB_ByteCodeEntryPoint*, bsearch( pc, (*m)->bcEntry, (*m)->bcEntrySize, sizeof(GB_ByteCodeEntryPoint), gb_CmpEntryPoint ) ) ;
 			// printf("*m=%x *e=%x\n", *m, *e) ;

@@ -50,8 +50,7 @@ SEM Module
   												`seq` @instrs.trf
 
 SEM Instr
-  | LdGlobal		lhs		.	trf			=	forceEval @link `seq` @locDst.trf
-  | Link 			lhs		.	trf			=	forceEval' @link
+  | LdGlobal		lhs		.	trf			=	forceEval @linkChainEntry `seq` @locDst.trf
   | Call Eval Apply	lhs		.	trf			=	forceEval @callInfo `seq` @locSrc.trf
   | CallC			lhs		.	trf			=	forceEval @callInfo `seq` @nArgSz.trf `seq` @nArg.trf
   | Label LabelRef 	lhs		.	trf			=	forceEval' @locRef

@@ -1280,7 +1280,7 @@ where |n, r:: angle(is)|
 \begin{GrinEncoding}{|icasecall|}
  &
 |1111 ^^ 0110| &
-|n| locations &
+|n|, |n| locations &
 ... &
 \\
 \end{GrinEncoding}

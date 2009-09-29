@@ -225,6 +225,7 @@ MM_Trace mm_trace_GBM =
 	, &mm_trace_GBM_TraceKnownToBeObject
 	, &mm_trace_GBM_TraceObjects
 	, &mm_trace_GBM_ObjectSize
+	, &mm_trace_GBM_HasTraceableWords
 	} ;
 %%]
 

@@ -78,17 +78,8 @@
 %%@main.articleDocumentClass
 %%]
 
-%%[13
+%%[54
 %\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
-\documentclass[10pt,headexclude,footexclude]{article}
-%%]
-
-%%[27
-%\documentclass[a4paper,headexclude,footexclude,mpexclude,10pt,DIV15,BCOR0mm]{scrartcl}
-\documentclass[10pt,headexclude,footexclude]{article}
-%%]
-
-%%[31
 \documentclass[10pt,headexclude,footexclude]{article}
 %%]
 
@@ -129,17 +120,7 @@
 \setlength{\paperwidth}{170mm}
 \setlength{\paperheight}{240mm}
 
-%%[13
-\setlength{\paperwidth}{210mm}
-\setlength{\paperheight}{297mm}
-%%]
-
-%%[27
-\setlength{\paperwidth}{210mm}
-\setlength{\paperheight}{297mm}
-%%]
-
-%%[31
+%%[54
 \setlength{\paperwidth}{210mm}
 \setlength{\paperheight}{297mm}
 %%]
@@ -356,17 +337,7 @@
 \usepackage{multicol}
 %%]
 
-%%[13
-\setlength\parindent{0pt}
-\pagestyle{empty}
-%%]
-
-%%[27
-\setlength\parindent{0pt}
-\pagestyle{empty}
-%%]
-
-%%[31
+%%[54
 \setlength\parindent{0pt}
 \pagestyle{empty}
 %%]
@@ -419,19 +390,14 @@
 \usepackage{tikz}
 %%]
 
-%%[13
+%%[54
 \usepackage{tikz}
+\usetikzlibrary{shadows}
+\usetikzlibrary{shapes.callouts}
+\usetikzlibrary{calc}
 %%]
 
 %%[25
-\usepackage{tikz}
-%%]
-
-%%[27
-\usepackage{tikz}
-%%]
-
-%%[31
 \usepackage{tikz}
 %%]
 
@@ -1134,15 +1100,7 @@ WWW home page:
 \tolerance=400
 %%]
 
-%%[13
-\tolerance=400
-%%]
-
-%%[27
-\tolerance=400
-%%]
-
-%%[31
+%%[54
 \tolerance=400
 %%]
 
@@ -2738,6 +2696,10 @@ To be done ...
 %%@PosterTrOrPr.posterTrOrPr
 %%]
 
+%%[55
+%%@PosterUHCArch.posterUHCArch
+%%]
+
 
 \TPGrid[10mm,10mm]{100}{100}
 \TPMargin{.5ex}
@@ -3883,7 +3845,7 @@ and the included documentation only describes |Shuffle|'s basic features.
 %endif
 %%]
 
-%%[55
+%%[77
 \appendix
 %%@TopicImpred.appendix
 %%]

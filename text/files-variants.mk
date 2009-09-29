@@ -13,7 +13,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								phd-paper phd-draft phd-tst phd \
 								ehc-book-tst \
 								scratch scratch2 \
-								poster posterLDL posterTrOrPr \
+								poster posterLDL posterTrOrPr poster-uhcarch \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
 								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch \
@@ -42,7 +42,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								TopicSubst \
 								TopicAGIdiom \
 								AppxNotation FrontMatter OldText \
-								Poster PosterLDL PosterTrOrPr \
+								Poster PosterLDL PosterTrOrPr PosterUHCArch \
 								Uniqueness uniqueness/TopicIntroduction uniqueness/TopicEHC \
 								uniqueness/TopicNoBindings uniqueness/TopicPolyvariant uniqueness/TopicRecursion uniqueness/TopicPolymorphic uniqueness/TopicParallel uniqueness/TopicDataTypes uniqueness/TopicOverloading \
 								uniqueness/TopicBeyondEHC uniqueness/TopicCodeGeneration uniqueness/TopicInspecting \
@@ -64,6 +64,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 32: llncs paper: base (share) - not yet available
 # 37: entcs paper: base (share)
 # 39: documentation using simplified latex/...: base (share)
+# 54: poster: base (share)
 
 # ALL PRODUCTS
 # 2	: ehc book (previously phd)
@@ -110,6 +111,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 51: paper "UHC Architecture" to be submitted to Haskell Symposium 2009
 # 52: doc: roadmap
 # 53: slides "UHC Architecture", Haskell Symposium 2009
+# 55: poster UHC Architecture (Siren 2009)
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -121,17 +123,15 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 8, \
 		1 < 10, \
 		1 < 11, \
-		1 < 13, \
 		1 < 18, \
 		1 < 19, \
 		1 < 20, \
 		1 < 22, \
 		1 < 26, \
-		1 < 27, \
 		1 < 30, \
-		1 < 31, \
 		1 < 77, \
 		1 < 37, \
+		1 < 54, \
 		35, \
 		9 < 15, \
 		9 < 16, \
@@ -161,5 +161,9 @@ TEXT_SHUFFLE_ORDER	+= \
 		39 < 48, \
 		39 < 49, \
 		39 < 50, \
-		39 < 52
+		39 < 52, \
+		54 < 13, \
+		54 < 27, \
+		54 < 31, \
+		54 < 55
 		
