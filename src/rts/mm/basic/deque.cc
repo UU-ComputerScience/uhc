@@ -83,7 +83,7 @@ void mm_deque_TailPush( MM_DEQue* deque, Word* words, Word nrWords ) {
 	Word i ;
 	for ( ; nrWords > 0 ; ) {
 		Word avail = mm_deque_TailAvailWrite( deque ) ;
-		// IF_GB_TR_ON(3,{printf("mm_deque_TailPush nrWords=%x avail=%x\n", nrWords, avail);}) ;
+		IF_GB_TR_ON(3,{printf("mm_deque_TailPush nrWords=%x avail=%x\n", nrWords, avail);}) ;
 		Word* tail = mm_deque_Tail( deque ) ;
 		Word nrWrite = minWord( nrWords, avail ) ;
 		for ( i = 0 ; i < nrWrite ; i++ ) {
@@ -100,8 +100,8 @@ void mm_deque_TailPush( MM_DEQue* deque, Word* words, Word nrWords ) {
 Word mm_deque_HeadPop( MM_DEQue* deque, Word* words, Word nrWords ) {
 	Word i ;
 	Word nrReadAccum = 0 ;
+	Word avail = mm_deque_HeadAvailRead( deque ) ;
 	for ( ; nrWords > 0 ; ) {
-		Word avail = mm_deque_HeadAvailRead( deque ) ;
 		Word* head = mm_deque_Head( deque ) ;
 		Word nrRead = minWord( nrWords, avail ) ;
 		for ( i = 0 ; i < nrRead ; i++ ) {
@@ -112,6 +112,9 @@ Word mm_deque_HeadPop( MM_DEQue* deque, Word* words, Word nrWords ) {
 		mm_deque_IncHeadOff( deque, nrRead ) ;
 		if ( avail - nrRead == 0 ) {
 			mm_deque_HeadShrink( deque ) ;
+			avail = mm_deque_HeadAvailRead( deque ) ;
+			if ( avail == 0 )
+				break ;
 		}
 	}
 	return nrReadAccum ;

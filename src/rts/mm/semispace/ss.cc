@@ -79,7 +79,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 #endif
 
-	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
+	*queTraceSupply = mm_traceSupply_Buffer ; // mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
 	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	plss->queTraceSupply = queTraceSupply ;
 	

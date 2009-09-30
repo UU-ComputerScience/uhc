@@ -141,7 +141,8 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 		// copy fields
 		Word* fieldTo = objRepl->content.fields ;
 		Word* fieldFr = ((GB_NodePtr)obj)->content.fields ;
-		for ( szWords-- ; szWords > 0 ; szWords-- ) {
+		Word sz = szWords ;
+		for ( sz-- ; sz > 0 ; sz-- ) {
 			*(fieldTo++) = *(fieldFr++) ;
 		}
 
