@@ -20,7 +20,7 @@ static inline Bool mm_trace_GBM_CanTrace( Word obj, MM_Collector* collector ) {
 	Bool res = GB_Word_IsPtr( obj ) && mm_Spaces_AddressIsGCManagedBySpace( obj, collector->collectedSpace ) ;
 #	if TRACE
 		if ( ! res ) {
-			IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace NOT: x=%x, space(x)=%p, collspace=%p\n", obj, mm_Spaces_GetSpaceForAddress( obj ), collector->collectedSpace );}) ;
+			// IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace NOT: x=%x, space(x)=%p, collspace=%p\n", obj, mm_Spaces_GetSpaceForAddress( obj ), collector->collectedSpace );}) ;
 		}
 #	endif
 	// IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace B\n");}) ;
@@ -132,9 +132,9 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 	
 	// new obj, copy old into new, allocate
 	if ( doCopy ) {
-		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject BEF COPY obj=%x, h=%x, sz(h)=%x, space=%p\n", obj, h, GB_NH_Fld_Size(h),mm_Spaces_GetSpaceForAddress( obj ));}) ;
+		// IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject BEF COPY obj=%x, h=%x, sz(h)=%x, space=%p\n", obj, h, GB_NH_Fld_Size(h),mm_Spaces_GetSpaceForAddress( obj ));}) ;
 		objRepl = (GB_NodePtr)( alc->alloc( alc, szWords << Word_SizeInBytes_Log, 0 ) ) ;
-		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject AFT COPY obj=%x, objRepl=%p, space=%p\n", obj, objRepl, mm_Spaces_GetSpaceForAddress( (Word)objRepl ));}) ;
+		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject AFT COPY obj=%x, h=%x, sz(h)=%x, objRepl=%p, space=%p\n", obj, h, GB_NH_Fld_Size(h),objRepl, mm_Spaces_GetSpaceForAddress( (Word)objRepl ));}) ;
 		// copy header
 		objRepl->header = h ;
 
@@ -183,7 +183,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj, MM_Trace_Flg 
 		*/
 		doTrace = gb_NH_HasTraceableFields( h ) ;
 %%]]
-		IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject TRACE obj=%x, objRepl=%x, doTrace=%x, ", obj, objRepl, doTrace); gb_prWord( (Word)objRepl ) ; printf("\n") ;}) ;
+		// IF_GB_TR_ON(3,{printf("mm_trace_GBM_TraceKnownToBeObject TRACE obj=%x, objRepl=%x, doTrace=%x, ", obj, objRepl, doTrace); gb_prWord( (Word)objRepl ) ; printf("\n") ;}) ;
 		if ( doTrace ) {
 			gb_assert_IsNotDangling_Node( objRepl, "mm_trace_GBM_TraceKnownToBeObject" ) ;
 			if ( doCopy ) {

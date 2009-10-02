@@ -15,7 +15,7 @@ The size of a page, basic unit of contiguous mem allocation.
 
 %%[8
 #if GB_DEBUG
-#	define MM_Page_Size_Log__					9
+#	define MM_Page_Size_Log__					6
 #else
 #	define MM_Page_Size_Log__					10
 #endif

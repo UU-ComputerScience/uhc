@@ -134,7 +134,7 @@ void mm_space_Fragment_MarkAsFresh( MM_Space* fragmentSpace ) {
 	
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&spc->fragments) ; i++ ) {
 		MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, i ) ;
-		IF_GB_TR_ON(3,{printf("mm_space_Fragment_MarkAsFresh frag=%x, sz(frag)=%x\n", frg->frag, frg->size);}) ;
+		// IF_GB_TR_ON(3,{printf("mm_space_Fragment_MarkAsFresh frag=%x, sz(frag)=%x\n", frg->frag, frg->size);}) ;
 		memset( frg->frag, MM_GC_FreshMem_Pattern_Byte, frg->size ) ;
 	}
 }

@@ -321,6 +321,7 @@ SEM Module
                             .   strNmByteCodeModule     =   "bytecodeModule"
                             .   strNmByteCodeEntry   	=   "bytecodeEntries"
                             .   ppNmAString             =   \i -> @ppNm "string" >|< i
+                            .   ppNmAGCStackInfo        =   \i -> @ppNm "gcStackInfo" >|< i
                             .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
                             .   ppNmByteCodeTraceTbl    =   @ppNm "bytecodeInstrEntries"
@@ -353,7 +354,8 @@ SEM Module
 %%][20
                 lhs         .   (pp,ppMain)
 %%]]
-                                            =   let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm)
+                                            =   -- 20091002, the below expr is growing too large, need to reorg someday
+                                                let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm)
                                                                        >-< vlist [ "#include" >#< pp (show i)
                                                                                  | i <- ["rts.h", "bc/interpreter.h"]
 %%[[94
@@ -361,18 +363,34 @@ SEM Module
 %%]]
                                                                                  ]
                                                     strNmL  = [ (@ppNmAString i,ppCmtC @lhs.opts (take 15 s) >-< ppStringAsHex s) | (i,s) <- zip [(0::Int)..] @stringL ]
-                                                    strings = nl : [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
-                                                    callinfos
-                                                            = ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
-                                                                [ "GB_MkCallInfoWith"
-                                                                  >|< ppParensCommas
-                                                                        [ pp $ fromEnum $ ciKind ci
-                                                                        , maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci
-                                                                        , pp (ciExtra ci)                                                                                
+                                                    -- strings = nl : [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
+                                                    strings = nl : [ ppStaticDef "char" n "[]" s | (n,s) <- strNmL ]
+                                                    (callinfos,gcStackInfos)
+                                                            = ( ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
+                                                                  [ "GB_MkCallInfoWith"
+                                                                    >|< ppParensCommas
+                                                                          [ pp $ fromEnum $ ciKind ci
+                                                                          , maybe (pp "NULL") (\i -> @ppNmAString i) $ ciMbNmStrInx ci
+                                                                          , gcref
+                                                                          , pp (ciExtra ci)                                                                                
+                                                                          ]
+                                                                    >#< ppCmtC @lhs.opts (show ci)
+                                                                  -- | (inx,(ci,i)) <- cis
+                                                                  | ((_,gcref),ci,i) <- cis
+                                                                  ]
+                                                              , [ ppStaticDef "GB_GCStackInfo" nm "" (ppCurlysCommas def) | ((Just (nm,def),_),_,_) <- cis ]
+                                                              )
+                                                            where -- cis = zip [0..] $ sortOn snd $ Map.toList @instrs.callInfoMp
+                                                                  cis = [ (mk (ciGCStackInfo ci) inx, ci, i)
+                                                                        | (inx,(ci,i)) <- zip [(0::Int) .. ] $ sortOn snd $ Map.toList @instrs.callInfoMp
                                                                         ]
-                                                                  >#< ppCmtC @lhs.opts (show ci)
-                                                                | (ci,i) <- sortOn snd $ Map.toList @instrs.callInfoMp
-                                                                ]
+                                                                      where mk (GCStackInfo sz ps) inx | sz > 0
+                                                                              = ( Just (@ppNmAGCStackInfo inx,[pp sz, pp lenps, ppIntsAsHex ps])
+                                                                                , ppAddrOf $ @ppNmAGCStackInfo inx
+                                                                                )
+                                                                              where lenps = length ps
+                                                                            mk _                   _
+                                                                              = (Nothing, pp "NULL")
                                                     consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts @ppNmAString) @constL )
                                                     bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
@@ -512,6 +530,7 @@ SEM Module
                                                       -- ++ gcInfos
                                                       ++ gcInfosTbl
                                                       ++ linkChainInds
+                                                      ++ gcStackInfos
                                                       ++ callinfos
                                                       ++ bcode
                                                       ++ (if ehcOptGenTrace @lhs.opts then bcodetrace ++ bcodeentries else [])
@@ -545,8 +564,12 @@ SEM Module
 %%]
 
 %%[(8 codegen grin) hs
+ppIntsAsHex :: [Int] -> PP_Doc
+ppIntsAsHex xx = ppCurlysCommas [ ppHex' (Just 2) 2 x | x <- xx ]
+
 ppStringAsHex :: String -> PP_Doc
-ppStringAsHex s = ppCurlysCommas [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
+ppStringAsHex s = ppIntsAsHex [ ord c | c <- s ++ [chr 0] ]
+-- ppStringAsHex s = ppCurlysCommas [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
 
 ppStr :: String -> PP_Doc
 ppStr s = pp $ show s
@@ -556,6 +579,9 @@ ppWord = ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
 
 ppLinkChain :: Integer -> PP_Doc
 ppLinkChain = ppWord
+
+ppStaticDef :: String -> PP_Doc -> String -> PP_Doc -> PP_Doc
+ppStaticDef ty nm modf def = "static" >#< ty >#< nm >|< modf >#< "=" >-< indent 2 (def >#< ";")
 %%]
 
 %%[(8 codegen grin)

@@ -451,9 +451,16 @@ typedef struct GB_CallInfo_CCall {
   char*		type ;
 } GB_CallInfo_CCall ;
 
+typedef struct GB_GCStackInfo {
+  Word16	sz ;	// size of stack fragment described by this info, in words
+  Word8		nrDescrs ; 
+  Word8		descrs[] ; 
+} __attribute__ ((__packed__)) GB_GCStackInfo ;
+
 typedef struct GB_CallInfo {
-	uint8_t 			kind ;
+	Word8	 			kind ;
 	char*   			name ;
+	GB_GCStackInfo*		gcStackInfo ;
 #if TRACE
 	GB_CallInfo_CCall	ccall ;
 #endif
@@ -464,11 +471,11 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
 #if TRACE
-#define GB_MkCallInfoWith(k,n,w)		{k,n,w}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,gc,w)		{k,n,gc,w}		// make CallInfo
 #else
-#define GB_MkCallInfoWith(k,n,w)		{k,n}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,gc,w)		{k,n,gc}		// make CallInfo
 #endif
-#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL)
+#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL,NULL)
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
