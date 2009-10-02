@@ -83,7 +83,7 @@ void mm_deque_TailPush( MM_DEQue* deque, Word* words, Word nrWords ) {
 	Word i ;
 	for ( ; nrWords > 0 ; ) {
 		Word avail = mm_deque_TailAvailWrite( deque ) ;
-		IF_GB_TR_ON(3,{printf("mm_deque_TailPush nrWords=%x avail=%x\n", nrWords, avail);}) ;
+		// IF_GB_TR_ON(3,{printf("mm_deque_TailPush nrWords=%x avail=%x\n", nrWords, avail);}) ;
 		Word* tail = mm_deque_Tail( deque ) ;
 		Word nrWrite = minWord( nrWords, avail ) ;
 		for ( i = 0 ; i < nrWrite ; i++ ) {

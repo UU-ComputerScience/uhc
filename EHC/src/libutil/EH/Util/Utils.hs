@@ -164,6 +164,15 @@ groupSortByOn cmp sel = groupByOn (\e1 e2 -> cmp e1 e2 == EQ) sel . sortByOn cmp
 nubOn :: Eq b => (a->b) -> [a] -> [a]
 nubOn sel = nubBy (\a1 a2 -> sel a1 == sel a2)
 
+-- | The 'consecutiveBy' function groups like groupBy, but based on a function which says whether 2 elements are consecutive
+consecutiveBy                  :: (a -> a -> Bool) -> [a] -> [[a]]
+consecutiveBy _        []      =  []
+consecutiveBy isConsec (x:xs)  =  ys : consecutiveBy isConsec zs
+  where (ys,zs) = consec x xs
+        consec x []                        = ([x],[])
+        consec x yys@(y:ys) | isConsec x y = let (yys',zs) = consec y ys in (x:yys',zs)
+                            | otherwise    = ([x],yys)
+
 -------------------------------------------------------------------------
 -- Ordering
 -------------------------------------------------------------------------

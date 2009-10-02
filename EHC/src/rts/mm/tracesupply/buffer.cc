@@ -53,7 +53,7 @@ void mm_traceSupply_Buffer_Run( MM_TraceSupply* traceSupply ) {
 		// IF_GB_TR_ON(3,{mm_deque_Dump(&trgr->deque);}) ;
 		Word workPos ;
 		for ( workPos = 0 ; workPos < nrPopped ; workPos += 2 ) {
-			IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_Run pop work=%x sz=%x\n",workBuffer[workPos+0],workBuffer[workPos+1]);}) ;
+			// IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_Run pop work=%x sz=%x\n",workBuffer[workPos+0],workBuffer[workPos+1]);}) ;
 			Word hdrSz = trgr->trace->objectHeaderNrWords ;
 			trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[workPos+0]) + hdrSz, workBuffer[workPos+1] - hdrSz, MM_Trace_Flg_All ) ;
 		}
@@ -66,8 +66,8 @@ void mm_traceSupply_Buffer_PushWork( MM_TraceSupply* traceSupply, Word* work, Wo
 	MM_TraceSupply_Buffer_Data* trgr = (MM_TraceSupply_Buffer_Data*)traceSupply->data ;
 	Word workBuffer[2] = {(Word)work, nrWorkWords} ;
 	mm_deque_TailPush( &trgr->deque, workBuffer, 2 ) ;
-	IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_PushWork work=%x(%p) sz=%x(%x)\n",workBuffer[0],work,workBuffer[1],nrWorkWords);}) ;
-	IF_GB_TR_ON(3,{mm_deque_Dump(&trgr->deque);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_PushWork work=%x(%p) sz=%x(%x)\n",workBuffer[0],work,workBuffer[1],nrWorkWords);}) ;
+	// IF_GB_TR_ON(3,{mm_deque_Dump(&trgr->deque);}) ;
 }
 %%]
 

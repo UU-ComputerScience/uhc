@@ -31,7 +31,7 @@ entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(pow2)
-pow2 :: Int -> Integer
+pow2 :: Bits x => Int -> x
 pow2 x = 1 `shiftL` x
 
 pow2' :: Int -> (Integer,Integer,Integer)
@@ -61,7 +61,7 @@ pow2' x
 %%]
 
 %%[(8 codegen)
-mask2 :: Int -> Integer
+mask2 :: Bits x => Int -> x
 mask2 x = pow2 x - 1
 %%]
 

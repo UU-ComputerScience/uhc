@@ -225,12 +225,12 @@ SEM GrModule
   | Mod         loc         .   gbState         =   GB.GBState 0
 
 SEM GrExpr
-  | Case		altL		.	gbState			=	@aftLblGBState
-  | Seq			body		.	gbState			=	@aftLdGBState
+  | Case        altL        .   gbState         =   @aftLblGBState
+  | Seq         body        .   gbState         =   @aftLdGBState
   | FetchField FetchNode Throw UpdateUnit
-                loc			.	aftLdGBState	=   @aftLblGBState
+                loc         .   aftLdGBState    =   @aftLblGBState
   | * - Case Catch Seq
-  				lhs			.	gbState			=	@aftLdGBState
+                lhs         .   gbState         =   @aftLdGBState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -243,13 +243,13 @@ SEM GrAlt
 
 SEM GrExpr
   | Case        (loc.aftLblGBState,loc.aftCaseLabel,loc.atNrAltsLabel,loc.at1stOffLabel)
-                								=   let (s1,l1) = GB.newLabelId @lhs.gbState
-                								        (s2,l2) = GB.newLabelId s1
-                								        (s3,l3) = GB.newLabelId s2
-                								    in  (s3,l1,l2,l3)
+                                                =   let (s1,l1) = GB.newLabelId @lhs.gbState
+                                                        (s2,l2) = GB.newLabelId s1
+                                                        (s3,l3) = GB.newLabelId s2
+                                                    in  (s3,l1,l2,l3)
   | * - Case Catch Seq
                 (loc.aftLblGBState,loc.retLocLabel)
-                								=   mkRetLabel @lhs.returnCtxt @lhs.gbState
+                                                =   mkRetLabel @lhs.returnCtxt @lhs.gbState
 %%]
 
 %%[(8 codegen grin)
@@ -297,30 +297,61 @@ SEM GrAlt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Stack depth simulation
+%%% Stack state simulation: depth, ...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllGrExpr [ | stkDepth: {GB.StackDepth} | ]
+ATTR AllGrExpr [ | stState: {GB.StackState} | ]
 
 SEM GrBind
-  | Bind        loc         .   stkDepth        =   0
+  | Bind        loc         .   stState         =   GB.emptyStackState
 
 SEM GrExpr
   | Unit Store Call Eval App FFI FetchUpdate
-                loc         .   valDepth        =   @lhs.stkDepth + @valStkInc
+                loc         .   valStState      =   @lhs.stState `GB.ststInc` @valStInc
   | FetchUpdate Case
-                lhs         .   stkDepth        =   @valDepth
+                lhs         .   stState         =   @valStState
   | Unit Store Call Eval App FFI
-                lhs         .   stkDepth        =   @retStkDepth
-  | Seq         loc         .   bodyStkDepth    =   @expr.stkDepth + @seqStkInc
-                body        .   stkDepth        =   @bodyStkDepth
-  | Case        altL        .   stkDepth        =   @lhs.stkDepth + @scrutineeStkInc
-                loc         .   enumStkInc      =   if @altL.isAllEnum then - GB.nrValWords else 0
-                            .   valDepth        =   case @returnCtxt of
-                                                      ReturnCtxt_CaseReturns _ dep
-                                                        -> dep + GB.nrValWords
-                                                      _ -> @altL.stkDepth
+                lhs         .   stState         =   @lhs.stState `GB.ststInc`@retStInc
+  | Seq         loc         .   bodyStState     =   @expr.stState `GB.ststInc` @seqStInc
+                body        .   stState         =   @bodyStState
+  | Case        altL        .   stState         =   @lhs.stState `GB.ststInc` @scrutineeStInc
+                loc         .   valStState      =   case @returnCtxt of
+                                                      ReturnCtxt_CaseReturns _ st
+                                                        -> st `GB.ststIncDep` GB.nrValWords
+                                                      _ -> @altL.stState
+%%]
+
+%%[(8 codegen grin)
+SEM GrAlt
+  | Alt         loc         .   fetchStState    =   GB.ststFromDep @fetchDepth
+                            .   exprStState     =   @lhs.stState `GB.ststInc` @fetchStState
+                expr        .   stState         =   @exprStState
+                loc         .   bodyStState     =   case @lhs.returnCtxt of
+                                                      ReturnCtxt_CaseFallThrough
+                                                        -> @expr.stState           -- scrutinee remains on stack
+                                                      _ -> @lhs.stState            -- scrutinee is replaced with value of same size
+                lhs         .   stState         =   @bodyStState
+%%]
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Unit Store Call FFI FetchUpdate Eval App Case
+                loc         .   ldStState       =   @lhs.stState
+  | Seq         loc         .   ldStState       =   @expr.stState
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Stack depth, derived from state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Unit Store Call Eval App FFI FetchUpdate
+                loc         .   valDepth        =   GB.ststDepth @valStState
+  | Seq         loc         .   bodyStkDepth    =   GB.ststDepth @bodyStState
+  | Case        loc         .   enumStkInc      =   if @altL.isAllEnum then - GB.nrValWords else 0
+                            .   valDepth        =   GB.ststDepth @valStState
 %%]
 
 %%[(8 codegen grin)
@@ -329,22 +360,9 @@ SEM GrAlt
                                                       AltFetch_Many ns   -> (length ns - 1) * GB.nrValWords
                                                       AltFetch_One  _ _  -> GB.nrValWords
                                                       AltFetch_Zero      -> 0
-                            .   exprStkDepth    =   @lhs.stkDepth + @fetchDepth
-                expr        .   stkDepth        =   @exprStkDepth
-                loc         .   bodyStkDepth    =   case @lhs.returnCtxt of
-                                                      ReturnCtxt_CaseFallThrough
-                                                        -> @expr.stkDepth           -- scrutinee remains on stack
-                                                      _ -> @lhs.stkDepth            -- scrutinee is replaced with value of same size
-                lhs         .   stkDepth        =   @bodyStkDepth
+                            .   exprStkDepth    =   GB.ststDepth @exprStState
+                loc         .   bodyStkDepth    =   GB.ststDepth @bodyStState
 %%]
-
-%%[(8 codegen grin)
-%%]
-ATTR GrPatLam [ | | patStkInc: {GB.StackDepth} ]
-
-SEM GrPatLam
-  | * - BasicNode
-                lhs         .   patStkInc       =   0
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tail call info
@@ -354,7 +372,7 @@ SEM GrPatLam
 data ReturnCtxt
   = ReturnCtxt_Returns      Int                         -- return from function (nr of arguments)
   | ReturnCtxt_Continues                                -- don't return, leave result on stack
-  | ReturnCtxt_CaseReturns  GB.LabelId GB.StackDepth    -- return from case alt (return destination, return stack depth)
+  | ReturnCtxt_CaseReturns  GB.LabelId GB.StackState    -- return from case alt (return destination, return stack depth)
   | ReturnCtxt_CaseFallThrough                          -- return from case with only 1 alt, so don't clean up stack
 %%]
 
@@ -369,10 +387,10 @@ SEM GrExpr
   | Case        loc         .   returnCtxt      =   case @lhs.returnCtxt of
                                                       ReturnCtxt_Continues
                                                         | @altL.nrAlts == 1 -> ReturnCtxt_CaseFallThrough
-                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
+                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
                                                       ReturnCtxt_CaseFallThrough
                                                         | @altL.nrAlts == 1 -> @lhs.returnCtxt
-                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stkDepth
+                                                        | otherwise         -> ReturnCtxt_CaseReturns @aftCaseLabel @lhs.stState
                                                       _                     -> @lhs.returnCtxt
 %%]
 
@@ -425,7 +443,7 @@ nmIntroBasicAnnot _                      = BasicAnnot_Dflt
 ATTR GrPatLam [ | | nmIntro: NmIntro ]
 
 SEM GrPatLam
-  | Var 		lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
+  | Var         lhs         .   nmIntro         =   NmIntro_Single @nm BasicAnnot_Dflt
   | VarNode     lhs         .   nmIntro         =   NmIntro_Grp (panic "GrPatLam.VarNode.grpHead") (tail @fldL.introNmL)
   | BasicNode   lhs         .   nmIntro         =   NmIntro_GrpBasic @nm @annot
   | EnumNode    lhs         .   nmIntro         =   NmIntro_GrpTag @nm
@@ -457,10 +475,10 @@ SEM GrExpr
   | Seq         expr        .   patBasicAnnot   =   nmIntroBasicAnnot @pat.nmIntro
 
 SEM GrAlt
-  | Alt			expr        .   patBasicAnnot   =   BasicAnnot_Dflt
+  | Alt         expr        .   patBasicAnnot   =   BasicAnnot_Dflt
 
 SEM GrBind
-  | Bind		expr        .   patBasicAnnot   =   BasicAnnot_Dflt
+  | Bind        expr        .   patBasicAnnot   =   BasicAnnot_Dflt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -491,7 +509,7 @@ SEM GrExpr
   | Seq         body        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrBind
-  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (@stkDepth-o) (Left defaultGrinBasicAnnot)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
+  | Bind        loc         .   newVaGam        =   Map.fromList [ (n,GB.Val_Local (GB.ststDepth @stState - o) (Left defaultGrinBasicAnnot)) | (n,o) <- zip @argNmL [GB.nrCallRetWords ..] ]
                 expr        .   vaGam           =   @newVaGam `Map.union` @lhs.vaGam
 
 SEM GrAlt
@@ -659,114 +677,112 @@ SEM GrExpr
 
 %%[(8 codegen grin)
 SEM GrExpr
-  | Unit        loc         .   (valIns,valStkInc,retIsDone,mbUnitIntro,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @val.grvalIntro of
+  | Unit        loc         .   (valIns,valStInc,retIsDone,mbUnitIntro,aftLdGBState)
+                                                =   case GB.gviLd @lhs.opts (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState) | not @lhs.isSeqArgCtxt
                                                         -> (ins,inc,False,Nothing, gbState)
-                                                      _ -> (Seq.empty,0,True,Just (UnitIntro @val.grvalIntro), @aftLblGBState)
-  | Store       loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @val.grvalIntro of
+                                                      _ -> (Seq.empty,GB.ststFromDep 0,True,Just (UnitIntro @val.grvalIntro), @aftLblGBState)
+  | Store       loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins, inc, False, gbState)
-  | Call        loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @argL.grvalIntroL of
+  | Call        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @argL.grvalIntroL of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> case @lhs.returnCtxt of
                                                              ReturnCtxt_Returns nrArgsOuter
                                                                -> ( ins Seq.:++: fins Seq.:++: Seq.fromList [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter {- retOffSurr -}]
-                                                                  , 0, True, gbState2
+                                                                  , GB.ststFromDep 0, True, gbState2
                                                                   )
-                                                               where (fins,fdep,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc) gbState @nm
+                                                               where (fins,fdep,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@ldStState `GB.ststInc` inc) gbState @nm
                                                                      nArgMine    = length @argL.grvalIntroL
-                                                                     -- retOffSurr  = @lhs.stkDepth + inc + fdep
                                                              _ -> (ins', inc', False, gbState2)
-                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStrInx @nmEnv @lhs.modNmConstInx ins inc @lhs.stkDepth gbState @nm
-  | FFI         loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
+                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStrInx @nmEnv @lhs.modNmConstInx ins inc @ldStState gbState @nm
+  | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
                                                 =   if @optimForIntlPrim
-                                                    then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @argL.grvalIntroL of
+                                                    then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                              -> (ins, inc, False, gbState)
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
-                                                    else case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @argL.grvalIntroL of
+                                                    else case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ basicsz, gbState)
                                                              -> ( ins Seq.:++: fins Seq.:++:
-                                                                  Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< inc >#< "basicsz=" >|< basicszStr)] ++ call)
-                                                                , GB.nrValWords, False, gbState2
+                                                                  Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< GB.ststDepth inc >#< "basicsz=" >|< basicszStr)] ++ call)
+                                                                , GB.ststFromDep GB.nrValWords, False, gbState2
                                                                 )
                                                              where (gbState2,constLbl) = GB.newLabelId gbState
                                                                    fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl @constInx]
                                                                    basicszStr = map basicGrinSizeCharEncoding basicszs
                                                                    basicszs = (grinBasicAnnotSize @lhs.patBasicAnnot : basicsz)
 %%[[8
-                                                                   call  = [GB.callc @mbDebugStrInx basicszs inc]
+                                                                   call  = cl
 %%][94
-                                                                   call  = if forextractOptIsPtr @foreignEntInfo then [] else [GB.callc @mbDebugStrInx basicszs inc]
+                                                                   call  = if forextractOptIsPtr @foreignEntInfo then [] else cl
 %%]]
-  | FetchUpdate loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState $ map GB.GrValIntro_Nm $ [@src,@dst] of
+                                                                         where cl = [GB.callc @mbDebugStrInx basicszs (@ldStState `GB.ststInc` inc) (GB.ststDepth inc)]
+  | FetchUpdate loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
-                                                        -> (ins Seq.:++: Seq.fromList [GB.fetchupdate], 0, False, gbState)
-  | Eval        loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
-                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @nm
+                                                        -> (ins Seq.:++: Seq.fromList [GB.fetchupdate], GB.ststFromDep 0, False, gbState)
+  | Eval        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @nm
                                                     in  case @lhs.returnCtxt of
                                                           ReturnCtxt_Returns nrArgsOuter
-                                                            -> (ins Seq.:++: eins, 0, True, gbState)
+                                                            -> (ins Seq.:++: eins, GB.ststFromDep 0, True, gbState)
                                                             where eins       = Seq.fromList [GB.taileval GB.InsOp_LocB_TOS nrArgsOuter {- retOffSurr -}]
-                                                                  -- retOffSurr = @lhs.stkDepth + inc
                                                           _ -> (ins Seq.:++: eins, inc, False, gbState)
                                                             where eins = Seq.fromList [GB.eval @mbDebugStrInx GB.InsOp_LocB_TOS]
-  | App         loc         .   (valIns,valStkInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @aftLblGBState @argL.grvalIntroL of
+  | App         loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @aftLblGBState @argL.grvalIntroL of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins Seq.:++: Seq.fromList [GB.ldc (length @argL.grvalIntroL)] Seq.:++: fins Seq.:++: Seq.fromList [GB.apply @mbDebugStrInx GB.InsOp_LocB_TOS]
-                                                           , GB.nrValWords, False, gbState2
+                                                           , GB.ststFromDep GB.nrValWords, False, gbState2
                                                            )
-                                                        where (fins,_,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@lhs.stkDepth + inc + GB.nrValWords) gbState @nm
-  | Case        loc         .   (valIns,valStkInc,retIsDone,scrutineeStkInc,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @lhs.stkDepth @altL.gbState @val.grvalIntro of
+                                                        where (fins,_,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx (@ldStState `GB.ststInc` inc `GB.ststIncDep` GB.nrValWords) gbState @nm
+  | Case        loc         .   (valIns,valStInc,retIsDone,scrutineeStInc,aftLdGBState)
+                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @altL.gbState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         | @altL.nrAlts == 1
-                                                          -> ( ins Seq.:++: @altL.i, GB.nrValWords, True, inc, gbState )
+                                                          -> ( ins Seq.:++: @altL.i, GB.ststFromDep GB.nrValWords, True, inc, gbState )
                                                         | otherwise
-                                                          -> ( ins Seq.:++: insc Seq.:++: ins', GB.nrValWords, True, @enumStkInc+inc, gbState2 )
+                                                          -> ( ins Seq.:++: insc Seq.:++: ins', GB.ststFromDep GB.nrValWords, True, inc `GB.ststIncDep` @enumStkInc, gbState2 )
                                                           where ins' = Seq.fromList [GB.casecall (GB.linkChainOffsets @atNrAltsLabel @nrOfAlts),GB.label (GB.LocRef_Label @at1stOffLabel)]
                                                                         Seq.:++: Seq.fromList {- inslblrefs -- -} [ GB.labelref l | l <- @altL.altLocRefs ]
                                                                         Seq.:++: @altL.i
                                                                         Seq.:++: Seq.fromList [GB.label @aftCaseLocRef]
                                                                 insc = if @altL.isAllEnum then Seq.empty else Seq.fromList [GB.ldnt]
                                                                 (inslblrefs,gbState2) = GB.labelref2 (map GB.lrefId @altL.altLocRefs) gbState
-  | Seq         loc         .   (seqIns,seqStkInc,newVaGam,aftLdGBState)
-                                                =   let nm ins inc gbState nmIntro
+  | Seq         loc         .   (seqIns,seqStInc,newVaGam,aftLdGBState)
+                                                =   let nm ins incSt gbState nmIntro
                                                           = case nmIntro of
                                                               (NmIntro_Single nm annot)
-                                                                -> (ins,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth+inc) (Left annot))],gbState)
+                                                                -> (ins,incSt,Map.fromList [(nm,GB.Val_Local (GB.ststDepth @ldStState + inc) (Left annot))],gbState)
                                                               (NmIntro_GrpTag nm)
-                                                                -> (ins Seq.:++: pati,inc,Map.fromList [(nm,GB.Val_Local (@expr.stkDepth + inc) (Left BasicAnnot_Dflt))],gbState)
-                                                                where patinc = {- @pat.patStkInc + -} inc
-                                                                      pati   = maybe Seq.empty fst @pat.mbi
+                                                                -> (ins Seq.:++: pati,incSt,Map.fromList [(nm,GB.Val_Local (GB.ststDepth @ldStState + inc) (Left BasicAnnot_Dflt))],gbState)
+                                                                where pati = maybe Seq.empty fst @pat.mbi
                                                               (NmIntro_GrpBasic nm annot)
-                                                                -> (ins Seq.:++: pati,inc,Map.fromList [(nm,val)],gbState)
+                                                                -> (ins Seq.:++: pati,incSt,Map.fromList [(nm,val)],gbState)
                                                                 where (pati,val)
                                                                         = case (annot,@pat.mbi) of
-                                                                            (BasicAnnot_FromTaggedPtr _ _, Just (i,bSz)) -> (i        ,GB.Val_Local (@expr.stkDepth + inc)        (Right bSz)           )
-                                                                            (BasicAnnot_FromTaggedPtr _ _, _           ) -> (Seq.empty,GB.Val_Local (@expr.stkDepth + inc)        (Left BasicAnnot_Dflt))
-                                                                            (_                           , Just (i,bSz)) -> (i        ,GB.Val_NodeFldLocal (@expr.stkDepth + inc) (Right bSz)           )	-- does this happen?
-                                                                            (_                           , _           ) -> (Seq.empty,GB.Val_NodeFldLocal (@expr.stkDepth + inc) (Left annot)          )
+                                                                            (BasicAnnot_FromTaggedPtr _ _, Just (i,bSz)) -> (i        ,GB.Val_Local (GB.ststDepth @ldStState + inc)        (Right bSz)           )
+                                                                            (BasicAnnot_FromTaggedPtr _ _, _           ) -> (Seq.empty,GB.Val_Local (GB.ststDepth @ldStState + inc)        (Left BasicAnnot_Dflt))
+                                                                            (_                           , Just (i,bSz)) -> (i        ,GB.Val_NodeFldLocal (GB.ststDepth @ldStState + inc) (Right bSz)           )   -- does this happen?
+                                                                            (_                           , _           ) -> (Seq.empty,GB.Val_NodeFldLocal (GB.ststDepth @ldStState + inc) (Left annot)          )
                                                               (NmIntro_Grp _ nmL) | not (null nmL)
-                                                                -> (ins Seq.:++: fins, inc' + length nmL * GB.nrValWords,g,gbState)
+                                                                -> (ins Seq.:++: fins, incSt `GB.ststIncDep` ((length nmL - 1) * GB.nrValWords),g,gbState)
                                                                 where fins = Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
-                                                                      inc' = inc - GB.nrValWords
-                                                                      g = patNmL2VAGam (@expr.stkDepth+inc) nmL
-                                                              _ -> (ins,inc,Map.empty,gbState)
+                                                                      g = patNmL2VAGam (GB.ststDepth @ldStState + inc) nmL
+                                                              _ -> (ins,incSt,Map.empty,gbState)
+                                                          where inc = GB.ststDepth incSt 
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
                                                             | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz <= Cfg.sizeofGrWord
-                                                              -> (Seq.empty,0,Map.singleton nmp (GB.Val_Int i),@expr.gbState)
+                                                              -> (Seq.empty,GB.ststFromDep 0,Map.singleton nmp (GB.Val_Int i),@expr.gbState)
                                                               where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
                                                               -> nm ins inc gbState nmi
-                                                              where (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState) = GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @expr.stkDepth @expr.gbState gvi
-                                                          _   -> nm Seq.empty 0 @expr.gbState @pat.nmIntro
+                                                              where (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState) = GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @lhs.modNmConstInx @ldStState @expr.gbState gvi
+                                                          _   -> nm Seq.empty (GB.ststFromDep 0) @expr.gbState @pat.nmIntro
 %%]
 
 %%[(8 codegen grin) hs
@@ -777,32 +793,35 @@ mkRetLabel returnCtxt st
         -> GB.newLabelId st
       _ -> (st,GB.gbstateLbl st)
 
-mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackDepth -> GB.StackDepth -> (GB.InsSeq,GB.StackDepth)
-mkRet returnCtxt retLocLbl stkDepth inc
+mkRet :: ReturnCtxt -> GB.LabelId -> GB.StackState -> GB.StackState -> (GB.InsSeq,GB.StackState)
+mkRet returnCtxt retLocLbl stState incSt
   = case returnCtxt of
       ReturnCtxt_Returns nrArgsOuter
-        -> (Seq.fromList [GB.retcall GB.nrValWords nrArgsOuter],dfltDepth)
-      ReturnCtxt_CaseReturns labelId dep
+        -> (Seq.fromList [GB.retcall GB.nrValWords nrArgsOuter],dfltState)
+      ReturnCtxt_CaseReturns labelId st
         -> ( Seq.fromList
                [ GB.meta' GB.AnnStackDepth stkDepth
                , GB.retcase GB.nrValWords (stkDepth + inc - dep) (GB.linkChainOffset retLocLbl labelId)
-               , GB.meta' GB.AnnStackDepth retDepth
+               , GB.meta' GB.AnnStackDepth (dep + incret)
                ]
-           , retDepth
+           , GB.ststFromDep incret
            )
-        where retDepth = dep + GB.nrValWords
+        where incret = GB.nrValWords
+              dep = GB.ststDepth st
       ReturnCtxt_CaseFallThrough
-        -> (Seq.empty,dfltDepth)
-      _ -> (Seq.empty,dfltDepth)
-  where dfltDepth = stkDepth + inc
+        -> (Seq.empty,dfltState)
+      _ -> (Seq.empty,dfltState)
+  where dfltState = GB.ststFromDep inc
+        stkDepth  = GB.ststDepth stState
+        inc       = GB.ststDepth incSt
 %%]
 
 %%[(8 codegen grin)
 SEM GrExpr
   | Unit Store Call Eval App FFI
-                (loc.retIns,loc.retStkDepth)    =   if @retIsDone
-                                                    then (Seq.empty,@lhs.stkDepth + @valStkInc)
-                                                    else mkRet @lhs.returnCtxt @retLocLabel @lhs.stkDepth @valStkInc
+                (loc.retIns,loc.retStInc)       =   if @retIsDone
+                                                    then (Seq.empty,@valStInc)
+                                                    else mkRet @lhs.returnCtxt @retLocLabel @lhs.stState @valStInc
   | * - Unit Store Call Eval App FFI
                 loc         .   retIns          =   Seq.empty
                             .   retFixOffs      =   Seq.empty
@@ -846,7 +865,7 @@ SEM GrModule
 ATTR AllBind AllGrExpr [ | | includeS USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 
 SEM GrExpr
-  | FFI         lhs         .   includeS      	=   Set.fromList $ forextractIncludes @foreignEntInfo
+  | FFI         lhs         .   includeS        =   Set.fromList $ forextractIncludes @foreignEntInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -890,7 +909,7 @@ SEM GrBind
 SEM GrExpr
   | Unit Store Call Eval App Case FFI FetchUpdate
                 lhs         .   i               =   @valIns Seq.:++: @retIns
-  | Seq         lhs         .   i               =   @expr.i Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @expr.stkDepth]
+  | Seq         lhs         .   i               =   @expr.i Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth (GB.ststDepth @ldStState)]
                                                             Seq.:++: @seqIns Seq.:++: @body.i
                                                             Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @bodyStkDepth]
                                                             Seq.:++: @retIns
@@ -900,7 +919,7 @@ SEM GrAlt
                                                                   AltFetch_Many _  -> Seq.fromList [GB.fetch GB.InsOp_LocB_TOS]
                                                                   AltFetch_One _ o -> Seq.fromList [GB.l2ts (o + GB.nrNodeHdrWords)]
                                                                   AltFetch_Zero    -> Seq.empty
-                                                    in           Seq.fromList [GB.meta' GB.AnnStackDepth @lhs.stkDepth,GB.label @altLocRef]
+                                                    in           Seq.fromList [GB.meta' GB.AnnStackDepth (GB.ststDepth @lhs.stState),GB.label @altLocRef]
                                                         Seq.:++: fetch
                                                         Seq.:++: Seq.fromList [GB.meta' GB.AnnStackDepth @exprStkDepth]
                                                         Seq.:++: @expr.i

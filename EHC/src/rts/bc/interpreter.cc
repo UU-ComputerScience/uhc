@@ -57,7 +57,7 @@ typedef GB_Word GB_CFun();
 #define GB_PushNodeArgs(nd,hdr,pfr,pto)	/* push args of `fun + args' node fields */ 				\
 								pfr = Cast(GB_Ptr,&((nd)->content.fields[GB_NH_NrFlds(hdr)])) ;	\
 								pto = Cast(GB_Ptr,&((nd)->content.fields[1])) ;								\
-								IF_GB_TR_ON(3,printf("pfr %p pto %p sp %p\n",pfr,pto,sp);) ;			\
+								IF_GB_TR_ON(3,printf("GB_PushNodeArgs:MemCopyBackward pfr %p pto %p sp %p\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
 %%]

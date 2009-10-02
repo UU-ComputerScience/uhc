@@ -41,13 +41,16 @@ Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz
 	MM_Space_FragmentInx nrFrags = alc->space->getNrFragments( alc->space ) ;
 	if ( alc->curFragmentInx + 1 < nrFrags ) {
 		// still enough pre-allocated fragments
+		IF_GB_TR_ON(3,printf("mm_allocator_Bump_Alloc_AndEnsureSpace use prealloc frag\n");) ;
 		alc->curFragmentInx++ ;
 		mm_allocator_Bump_Alloc_InitFromFragment( alc, alc->curFragmentInx ) ;
 	} else if ( nrFrags >= alc->maxFragments ) {
 		// max nr of fragments consumed, trigger GC, this will (amongst other things) reset this allocator
+		IF_GB_TR_ON(3,printf("mm_allocator_Bump_Alloc_AndEnsureSpace kick GC\n");) ;
 		mm_plan.pollForGC( &mm_plan, True, alc->space, gcInfo ) ;
 	} else {
 		// get a new fragment
+		IF_GB_TR_ON(3,printf("mm_allocator_Bump_Alloc_AndEnsureSpace new frag\n");) ;
 		mm_allocator_Bump_Alloc_NewFragment( alc ) ;
 	}
 	// retry allocation again, should (cannot) not fail!!!

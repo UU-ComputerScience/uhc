@@ -792,7 +792,7 @@ static inline void gb_assert_IsNotDangling( Word x, char* msg ) {
 static inline void gb_assert_IsNotDangling_Node( GB_NodePtr n, char* msg ) {
 	int i ;
 	if ( gb_NH_HasTraceableFields( n->header ) ) {
-		for ( i = 0 ; i < GB_NH_Fld_Size(n->header) ; i++ ) {
+		for ( i = 0 ; i < GB_NH_NrFlds(n->header) ; i++ ) {
 			gb_assert_IsNotDangling( n->content.fields[i], msg ) ;
 		}
 	}
