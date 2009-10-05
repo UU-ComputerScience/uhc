@@ -553,7 +553,7 @@ SEM TypeAnnotation
     | AnnotationName
         loc         .   pp          =   pp @name
     | AnnotationVar
-        loc         .   pp          =   pp @annotationName >|< ":" >|< pp @annotationVar
+        loc         .   pp          =   pp @name >|< ":" >|< pp @var
 %%]]
 %%]]
 %%]
@@ -564,7 +564,17 @@ SEM TypeAnnotation
 
 %%[1
 SEM Literal
-    | *
+    | Int
+        loc         .   pp          =   pp @value
+    | Char
+        loc         .   pp          =   pp ("'" ++ @value ++ "'")
+%%]
+%%[[5
+    | String
+        loc         .   pp          =   pp (show @value)
+%%]
+%%[97
+    | Float
         loc         .   pp          =   pp @value
 %%]
 

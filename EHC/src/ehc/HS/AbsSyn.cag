@@ -1162,8 +1162,8 @@ DATA TypeAnnotation
     | AnnotationName
         name                     : Name
     | AnnotationVar
-        annotationName           : Name
-        annotationVar            : Name
+        name                     : Name
+        var                      : Name
 %%]]
 %%]]
 

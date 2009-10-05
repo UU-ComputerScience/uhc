@@ -566,6 +566,9 @@ DATA ExprAnn
 
 DATA TyExprAnn
   | Empty
+%%[[5
+  | Strictness      s               : Strictness
+%%]]
 
 DATA PatExprAnn
   | Empty

@@ -72,6 +72,9 @@
 %%[5 -1.Token hs import({%{EH}Scanner.Token})
 %%]
 
+%%[5 hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[1 ag import({HS/AbsSyn})
 %%]
 

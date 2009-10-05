@@ -1168,8 +1168,24 @@ SEM Body
 ATTR TypeAnnotation [ | | eh: {EH.TyExprAnn} ]
 
 SEM TypeAnnotation
-	| *
+%%[[1
+    | Empty
 		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][5
+    | Strict
+        loc         .   eh          =   EH.TyExprAnn_Strictness (Strict)
+%%[[8
+    | AnnotationName
+        loc         .   eh          =   case show @name of
+                                          "strict"    ->  EH.TyExprAnn_Strictness (Strict)
+                                          "nonStrict" ->  EH.TyExprAnn_Strictness (NonStrict)
+                                          _           -> EH.TyExprAnn_Empty
+    | AnnotationVar
+        loc         .   eh          =   case show @name of
+                                          "strictness" -> EH.TyExprAnn_Strictness (Var @var)
+                                          _            -> EH.TyExprAnn_Empty
+%%]]
+%%]]
 %%]
 
 %%[1

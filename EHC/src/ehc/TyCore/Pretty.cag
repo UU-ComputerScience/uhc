@@ -334,7 +334,7 @@ SEM Expr
                                                 in  if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && @isThunk
                                                     then ppToThnk @lhs.symMp (ppLam (tail @lamArgPPL))
                                                     else ppLam @lamArgPPL
-  | Arrow       loc         .   pp          =   if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && @isThunk
+  | Arrow       loc         .   pp          =   pp "Hello!" >#< if (ehcOptUseTyCore @lhs.opts `optOptsIsYes` TyCoreOpt_Sugar) && @isThunk
                                                 then ppToThnk @lhs.symMp @res.pp
                                                 else @arg.pp >#< sym @lhs.symMp Sym_RArrow >#< @res.pp
   | Let         loc         .   ppCateg     =   case @categ of
