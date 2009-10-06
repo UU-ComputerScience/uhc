@@ -12,7 +12,8 @@ TraceSupply which runs over the GBM stack
 // the administration
 typedef struct MM_TraceSupply_GBStack_Data {
 	MM_Trace*			trace ;
-	GB_GCInfo*			gcInfo ;
+	// GB_GCInfo*			gcInfo ;
+	GB_GCStackInfo*		gcStackInfo ;
 } MM_TraceSupply_GBStack_Data ;
 %%]
 

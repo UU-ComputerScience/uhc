@@ -34,7 +34,11 @@
 // For now, switch off Boehm GC, turn on own GC
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
-#define GB_DEBUG				1
+%%[[8
+#define GB_DEBUG				0	// 0 or 1 for debugging settings
+%%][100
+#define GB_DEBUG				0	// always 0
+%%]]
 // internal MM admin uses structs with functions, which will be bypassed (for speed) with MM_BYPASS_PLAN on
 #define MM_BYPASS_PLAN			1
 #endif

@@ -22,6 +22,14 @@ entierLogUpBy :: Bits x => Int -> x -> x
 entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%]
 
+%%[(8 codegen) export(entierUpShrBy,entierUpBy)
+entierUpShrBy :: Integral x => x -> x -> x
+entierUpShrBy by x = ((x - 1) `div` by) + 1
+
+entierUpBy :: Integral x => x -> x -> x
+entierUpBy by x = entierUpShrBy by x * by
+%%]
+
 #define EntierLogUpShrBy(x,m)			((((x)-1)>>(m))+1)
 #define EntierLogUpBy(x,m)				(EntierLogUpShrBy(x,m)<<(m))
 

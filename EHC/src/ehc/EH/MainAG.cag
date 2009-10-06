@@ -185,7 +185,7 @@ PRAGMA strictcase
 %%]
 PRAGMA gencostcentres
 
-%%[100
+%%[99
 PRAGMA sepsemmods
 %%]
 

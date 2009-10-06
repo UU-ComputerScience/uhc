@@ -521,7 +521,7 @@ mkExtAppPP :: (HsName,PP_Doc,[PP_Doc]) -> (HsName,PP_Doc,[PP_Doc],PP_Doc) -> (PP
 mkExtAppPP = mkExtAppPP' "|"
 %%]
 
-%%[9
+%%[8
 instance (PP a, PP b) => PP (a,b) where
   pp (a,b) = ppParensCommas' [pp a,pp b]
 %%]

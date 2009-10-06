@@ -121,14 +121,14 @@ mkGbOp opndTy opTy opts optim env modNmConstInx stState gbState [a1,a2]
       (GrValIntroAlt_OnTOS ins2 inc2 optimEffect _, gbState3)
         -> (GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) one optimEffect [grinBasicAnnotSize BasicAnnot_Dflt], gbState3)
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
-      (GrValIntroAlt_Delay ins2 inc2 optimEffect _ (Load pins pinc ldsrc postins) _, gbState3)
+      (GrValIntroAlt_Delay ins2 inc2 optimEffect (_,Load pins pinc ldsrc postins,_,_), gbState3)
         -> (GrValIntroAlt_OnTOS (ins1 Seq.:++: pins Seq.:++: oins Seq.:++: postins) one optimEffect [grinBasicAnnotSize BasicAnnot_Dflt], gbState3)
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS deref src imm]
                    where (deref,src,imm)
                            = case ldsrc of
                                LoadSrc_TOS            -> (InsOp_Deref_One , InsOp_LocOSrc_TOS, 0)
                                LoadSrc_TOS_Rel o 1    -> (InsOp_Deref_One , InsOp_LocOSrc_SP , toInteger $ nrWord2Byte o)
-                               LoadSrc_Reg_Rel o 1 _  -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
+                               LoadSrc_Reg_Rel o 1    -> (InsOp_Deref_One , InsOp_LocOSrc_Reg, toInteger $ nrWord2Byte o)
                                LoadSrc_Imm     c      -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
                                LoadSrc_Imm_Int c      -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
                                _                      -> panic "BuiltinPrims.mkGbOp"
