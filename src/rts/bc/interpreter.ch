@@ -451,12 +451,6 @@ typedef struct GB_CallInfo_CCall {
   char*		type ;
 } GB_CallInfo_CCall ;
 
-typedef struct GB_GCStackInfo {
-  Word16	sz ;	// size of stack fragment described by this info, in words
-  Word8		nrDescrs ; 
-  Word8		descrs[] ; 
-} __attribute__ ((__packed__)) GB_GCStackInfo ;
-
 typedef struct GB_CallInfo {
 	Word8	 			kind ;
 	char*   			name ;
@@ -724,8 +718,10 @@ extern void gb_InitTables
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	, GB_GCInfo* gcInfos
+	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
 	, GB_CallInfo* callinfos
+	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz

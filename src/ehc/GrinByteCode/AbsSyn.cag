@@ -56,7 +56,8 @@ DATA Instr
                 linkChainEntry	: LinkChainEntry
   | LdNodeTag
   | AllocStore  locSrc			: InsOp_LocB
-  				linkChainEntry	: LinkChainEntry
+  				linkChainEntry2	: LinkChainEntry
+  				gcStackInfo		: GCStackInfo
   | Fetch       locSrc			: InsOp_LocB
   | FetchUpdate	
   | Call        locSrc			: InsOp_LocB

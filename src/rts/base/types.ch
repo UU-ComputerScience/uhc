@@ -698,6 +698,13 @@ Descriptor of what can and cannot be traced during GC, only known to the interpr
 typedef struct GB_GCInfo {
 	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
 } __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
+
+typedef struct GB_GCStackInfo {
+  Word16	sz ;	// size of stack fragment described by this info, in words
+  Word8		nrDescrs ; 
+  Word8*	descrs ; 
+} __attribute__ ((__packed__)) GB_GCStackInfo ;
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

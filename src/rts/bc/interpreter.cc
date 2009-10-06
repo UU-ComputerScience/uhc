@@ -1055,6 +1055,7 @@ void gb_interpretLoop()
 			/* l1tr08 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_08) :
 				GB_PCImmIn(int8_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
@@ -1062,18 +1063,21 @@ void gb_interpretLoop()
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_16) :
 				GB_PCImmIn(int16_t,x) ;
 				// printf( "rr=%x off=%x res=%x\n", rr, x, GB_RegByteRel(GB_Word,rr,x) ) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
 			/* l1tr32 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_32) :
 				GB_PCImmIn(int32_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
 			/* l1tr64 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_64) :
 				GB_PCImmIn(int64_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
@@ -1420,7 +1424,8 @@ gb_interpreter_InsApplyEntry:
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
-				IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCInfo*,x2)->nrOfTOS_No_GCTrace, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				// IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCInfo*,x2)->nrOfTOS_No_GCTrace, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCStackInfo*,x2)->sz, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
 #				if USE_EHC_MM
 					IF_GB_TR_ON(3,{printf( "alloc space=%p\n", mm_Spaces_GetSpaceForAddress( (Word)p2 ) );}) ;
 #				endif
@@ -1772,8 +1777,10 @@ void gb_InitTables
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	, GB_GCInfo* gcInfos
+	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
 	, GB_CallInfo* callinfos
+	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
@@ -1826,8 +1833,10 @@ void gb_InitTables
 		IF_GB_TR_ON(3,{printf("gb_InitTables A linkChainOffset=%x, loc=%p, link=%x, enc=%x, kind=%d, info=%x, off=%x\n", linkChainOffset, loc, link, GB_LinkChainKind_Fld_Enc( link ), kind, info, GB_LinkChainKind_Fld_Off( link )) ; }) ;
 		switch ( kind ) {
 			case GB_LinkChainKind_GCInfo :
-				IF_GB_TR_ON(3,{printf("gb_InitTables gcInfo=%x %p\n", gcInfos[ info ].nrOfTOS_No_GCTrace, &gcInfos[ info ]) ; }) ;
-				*loc = (Word)(&gcInfos[ info ]) ;
+				// IF_GB_TR_ON(3,{printf("gb_InitTables gcInfo=%x %p\n", gcInfos[ info ].nrOfTOS_No_GCTrace, &gcInfos[ info ]) ; }) ;
+				IF_GB_TR_ON(3,{printf("gb_InitTables gcStackInfo=%p->%x\n", ( info > 0 ? (&gcStackInfos[ info-1 ]) : NULL ), ( info > 0 ? (gcStackInfos[ info-1 ].sz) : 0 )) ; }) ;
+				// *loc = (Word)(&gcInfos[ info ]) ;
+				*loc = (Word)( info > 0 ? (&gcStackInfos[ info-1 ]) : NULL ) ;				
 				break ;
 
 			case GB_LinkChainKind_Const :
