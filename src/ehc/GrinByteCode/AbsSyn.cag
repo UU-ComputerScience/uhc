@@ -27,11 +27,11 @@ DATA Module
 %%]]
                 allEntryL		: {[EntryInfo]}
                 instrs          : Instrs
-                stringL			: {[String]}
+                -- stringL			: {[String]}
                 constL			: {[Const]}
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
-                gcInfoL			: {[GCInfo]}				-- GC info
+                -- gcInfoL			: {[GCInfo]}				-- GC info
 %%[[94
                 includeL		: {[String]}				-- C includes
 %%]]
@@ -54,9 +54,10 @@ DATA Instr
   | LinkChain   linkChainEntry	: LinkChainEntry
   | LdGlobal	locDst			: InsOp_LocB
                 linkChainEntry	: LinkChainEntry
+  | LdString	locDst			: InsOp_LocB			-- expands to a plain Ld
+                stringConst		: StringConst
   | LdNodeTag
   | AllocStore  locSrc			: InsOp_LocB
-  				linkChainEntry2	: LinkChainEntry
   				gcStackInfo		: GCStackInfo
   | Fetch       locSrc			: InsOp_LocB
   | FetchUpdate	

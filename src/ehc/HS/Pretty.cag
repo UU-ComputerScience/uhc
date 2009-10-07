@@ -543,7 +543,17 @@ SEM ContextedPattern
 
 %%[1
 SEM Literal
-    | *
+    | Int
+        loc         .   pp          =   pp @value
+    | Char
+        loc         .   pp          =   pp ("'" ++ @value ++ "'")
+%%]
+%%[5
+    | String
+        loc         .   pp          =   pp (show @value)
+%%]
+%%[97
+    | Float
         loc         .   pp          =   pp @value
 %%]
 

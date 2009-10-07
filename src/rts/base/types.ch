@@ -695,10 +695,6 @@ This breaks when compiled without bgc.
 Descriptor of what can and cannot be traced during GC, only known to the interpreter or other execution machine
 
 %%[8
-typedef struct GB_GCInfo {
-	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
-} __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
-
 typedef struct GB_GCStackInfo {
   Word16	sz ;	// size of stack fragment described by this info, in words
   Word8		nrDescrs ; 
@@ -706,6 +702,9 @@ typedef struct GB_GCStackInfo {
 } __attribute__ ((__packed__)) GB_GCStackInfo ;
 
 %%]
+typedef struct GB_GCInfo {
+	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
+} __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Link Chain kinds
@@ -715,7 +714,7 @@ Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/Gr
 
 %%[8
 #define GB_LinkChainEncoding_Ind			0
-#define GB_LinkChainEncoding_16_12			1
+#define GB_LinkChainEncoding_16_10			1	// 16(32) bits info, 10(26) bits offset to next entry
 %%]
 
 %%[8
@@ -726,8 +725,9 @@ Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/Gr
 #define GB_LinkChainKind_Offset				4
 #define GB_LinkChainKind_Offsets			5
 #define GB_LinkChainKind_CallInfo			6
+#define GB_LinkChainKind_StringConst		7
 %%[[20
-#define GB_LinkChainKind_ImpEntry			7
+#define GB_LinkChainKind_ImpEntry			8
 %%]]
 %%]
 

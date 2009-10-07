@@ -65,7 +65,7 @@ Ideally, these tables should be merged.
 data Primitive
   = GbPrim    
       { gbprimNrArgs        :: !Int
-      , gbprimMk            :: EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+      , gbprimMk            :: EHCOpts -> OptimCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
       }
   | SillyPrim 
       { fromSillyPrim       :: [PP_Doc] -> PP_Doc
@@ -99,7 +99,7 @@ prims
                                     , (BackendGrinByteCode	, GbPrim 2 (mkGbInsOp InsOp_TyOp_Quot)	)
                                     ] )
 
-      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\opts o env m d st [a] -> gviLd opts o env m d st a)	) ] )
+      , ( "primUnsafeId", Map.fromList[ (BackendGrinByteCode, GbPrim 1 (\opts o env d st [a] -> gviLd opts o env d st a)	) ] )
 
       , ( "primGtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator ">" )) ] )
       , ( "primLtInt",  Map.fromList[ (BackendSilly,SillyPrim (compareOperator "<" )) ] )
@@ -112,12 +112,12 @@ prims
 
 -- Bytecode implementation
 
-mkGbInsOp :: InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+mkGbInsOp :: InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
 mkGbInsOp = mkGbOp InsOp_DataOp_IntWord      
 
-mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> Int -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
-mkGbOp opndTy opTy opts optim env modNmConstInx stState gbState [a1,a2]
-  = case gviLd' opts optim env modNmConstInx (stState `ststInc` inc1) gbState2 a2 of
+mkGbOp :: InsOp_DataOp -> InsOp_TyOp -> EHCOpts -> OptimCtxt -> NmEnv -> StackState -> GBState -> [GrValIntro] -> (GrValIntroAlt, GBState)
+mkGbOp opndTy opTy opts optim env stState gbState [a1,a2]
+  = case gviLd' opts optim env (stState `ststInc` inc1) gbState2 a2 of
       (GrValIntroAlt_OnTOS ins2 inc2 optimEffect _, gbState3)
         -> (GrValIntroAlt_OnTOS (ins1 Seq.:++: ins2 Seq.:++: oins) one optimEffect [grinBasicAnnotSize BasicAnnot_Dflt], gbState3)
         where oins = Seq.fromList [op opTy opndTy InsOp_LocODst_TOS InsOp_Deref_One InsOp_LocOSrc_TOS 0]
@@ -132,7 +132,7 @@ mkGbOp opndTy opTy opts optim env modNmConstInx stState gbState [a1,a2]
                                LoadSrc_Imm     c      -> (InsOp_Deref_Zero, InsOp_LocOSrc_Imm, c)
                                LoadSrc_Imm_Int c      -> (InsOp_Deref_Int , InsOp_LocOSrc_Imm, c)
                                _                      -> panic "BuiltinPrims.mkGbOp"
-  where (g@(GrValIntroAlt_OnTOS ins1 inc1 _ _), gbState2) = gviLd opts optim env modNmConstInx stState gbState a1
+  where (g@(GrValIntroAlt_OnTOS ins1 inc1 _ _), gbState2) = gviLd opts optim env stState gbState a1
         one = ststFromDep 1
           
           
