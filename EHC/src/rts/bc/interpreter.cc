@@ -527,7 +527,7 @@ void gb_prByteCodeModule( GB_ByteCodeModule* m )
 	for ( e = 0 ; e < m->bcEntrySize ; e++ )
 	{
 		GB_ByteCodeEntryPoint* ep = &m->bcEntry[e] ;
-		printf("  *** entry %s\n", ep->nm);
+		printf("  *** entry %s\n", ( ep->nm ? ep->nm : "--" ) );
 		if ( ep->bcInstr != NULL )
 		{
 			for ( i = 0 ; i < ep->bcInstrSize ; i++ )
@@ -725,7 +725,7 @@ void gb_prState( char* msg, int maxStkSz )
 %%][20
 			( "%s + %p/%p: %s\n"
 %%]]
-			, bce->nm
+			, ( bce->nm ? bce->nm : "--" ) 
 			, bci - bce->bcInstr, pc - bce->bcInstr->bcLoc
 			, bci->bc
 			) ;
@@ -1776,7 +1776,7 @@ void gb_InitTables
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
-	, GB_GCInfo* gcInfos
+	// , GB_GCInfo* gcInfos
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
 	, GB_CallInfo* callinfos
@@ -1849,6 +1849,10 @@ void gb_InitTables
 
 			case GB_LinkChainKind_CallInfo :
 				*loc = (Word)(&callinfos[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_StringConst :
+				*loc = (Word)(&bytePool[ info ]) ;
 				break ;
 
 			case GB_LinkChainKind_Offset :

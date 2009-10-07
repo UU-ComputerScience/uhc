@@ -93,7 +93,7 @@ SEM Instr
                 loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
   | LinkChain   loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @lhs.cLoc
-  | Call Eval Apply AllocStore CaseCall LdGlobal
+  | Call Eval Apply AllocStore CaseCall LdGlobal LdString
                 loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @lhs.cLoc + 1
   | CallC       loc         .   linkCLoc    :   CodeAbsLoc
@@ -104,7 +104,7 @@ SEM Instr
 SEM Instr
   | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1
   | Op          imm         .   cLoc        =   @lhs.cLoc + 2
-  | Call CallC Eval Apply AllocStore CaseCall LdGlobal RetCase LinkChain
+  | Call CallC Eval Apply AllocStore CaseCall LdGlobal LdString RetCase LinkChain
                 lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofWord
   | LabelRef    lhs         .   cLoc        =   @labelCLocAft
   | TailCall RetCall
@@ -175,10 +175,11 @@ SEM Instr
   | Call CallC Eval Apply
   				loc			.	linkChainEntry
   				  							=	LinkChainEntry (LinkChainKey LinkChainKind_CallInfo (LinkChainId_Loc @linkCLoc)) @ciInx
-  | AllocStore
-  				loc			.	linkChainEntry
+  | AllocStore	loc			.	linkChainEntry
   				  							=	LinkChainEntry (LinkChainKey LinkChainKind_GCInfo (LinkChainId_Loc @linkCLoc)) (maybe 0 (+1) @gcStackInfoInx)
-  | Call CallC Eval Apply AllocStore
+  | LdString	loc			.	linkChainEntry
+  				  							=	LinkChainEntry (LinkChainKey LinkChainKind_StringConst (LinkChainId_Loc @linkCLoc)) (maybe 0 id @stringConstInx)
+  | Call CallC Eval Apply AllocStore LdString
 				loc			.	linkChainEntry
 											:	LinkChainEntry
 %%]
@@ -191,7 +192,7 @@ SEM Instr
 ATTR AllInstr [ | | gathLinkChainKeyMp USE {`Map.union`} {Map.empty}: LinkChainKeyMp ]
 
 SEM Instr
-  | AllocStore LdGlobal Call CallC Eval Apply CaseCall RetCase LinkChain
+  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain
   				lhs         .   gathLinkChainKeyMp
   											=   Map.singleton (lcentryKey @linkChainEntry) (lcentryInfo @linkChainEntry)
 %%]
@@ -222,7 +223,7 @@ SEM Module
 
 %%[(8 codegen grin)
 SEM Instr
-  | AllocStore LdGlobal Call CallC Eval Apply CaseCall RetCase LinkChain
+  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain
                 (loc.linkChain,lhs.linkChainResolvedIndInfoSet)
                                             =   maybe (0,@lhs.linkChainResolvedIndInfoSet) (linkChainResolvedInfoEncoding @lhs.linkChainResolvedIndInfoSet)
                                                 $ linkChainResolvedLookup (lcentryKey @linkChainEntry) @lhs.linkChainResolvedMp
@@ -243,8 +244,12 @@ bytePoolEntrySize (BytePool_Bytes  b) = length b
 bytePoolEntrySize (BytePool_String s) = length s + 1
 
 bytePoolEntryEncoding :: BytePoolEntry -> PP_Doc
-bytePoolEntryEncoding (BytePool_Bytes  b) = ppCommas $ ppIntsAsHex' b
 bytePoolEntryEncoding (BytePool_String s) = ppCommas $ ppStringAsHex' s
+bytePoolEntryEncoding (BytePool_Bytes  b) = ppCommas $ ppIntsAsHex' b
+
+bytePoolEntryComment :: BytePoolEntry -> PP_Doc
+bytePoolEntryComment (BytePool_String s) = pp s
+bytePoolEntryComment (BytePool_Bytes  b) = empty
 
 type BytePoolLoc = (Int,Int)	-- mp key, bytepool offset
 
@@ -264,42 +269,54 @@ bytePoolMpAdd e mp@((sz,bpoff),m)
              where e' = (sz,bpoff)
 %%]
 
+%%[(8 codegen grin) hs
+type BPEBasedMp mkinfo extra = (Int,Map.Map (mkinfo (extra, BytePoolLoc)) Int)
+
+emptyBPEBasedMp :: BPEBasedMp mkinfo extra
+emptyBPEBasedMp = (0,Map.empty)
+
+bpeBasedMpAdd
+  :: Ord (mkinfo (extra, BytePoolLoc))
+     => (mkinfo orig -> Bool)
+     -> (mkinfo orig -> BytePoolEntry)
+     -> (BytePoolLoc -> mkinfo orig -> mkinfo (extra, BytePoolLoc))
+     -> (Int -> BytePoolLoc -> res)
+     -> mkinfo orig -> BPEBasedMp mkinfo extra -> BytePoolMp -> (BPEBasedMp mkinfo extra,BytePoolMp,Maybe res)
+bpeBasedMpAdd validInfo getBytes updInfo mkRes info mp@(szm,m) bpmp
+  = if validInfo info
+    then case Map.lookup info' m of
+           x@(Just inx)
+               -> (mp,bpmp,Just (mkRes inx loc))
+           _   -> ((szm+1,Map.insert info' szm m),bpmp',Just (mkRes szm loc))
+    else (mp,bpmp,Nothing)
+  where bytes = getBytes info
+        (bpmp',loc) = bytePoolMpAdd bytes bpmp
+        info' = updInfo loc info
+%%]
+
 %%[(8 codegen grin)
 ATTR AllInstr [ | bytePoolMp: BytePoolMp | ]
 
 SEM Module
   | Mod         instrs      .   bytePoolMp	=   emptyBytePoolMp
 %%]
-SEM Instr
-  | Call CallC Eval Apply AllocStore
-  				(lhs.bytePoolMp,loc.bytePoolLoc)
-  											=	bytePoolMpAdd (BytePool_Bytes $ gcstinfoPerms @gcStackInfo) @lhs.bytePoolMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GCStackInfo's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type GCStackInfoMp = (Int,Map.Map (GCStackInfo' (Int,BytePoolLoc)) Int)
-
-emptyGCStackInfoMp :: GCStackInfoMp
-emptyGCStackInfoMp = (0,Map.empty)
+-- type GCStackInfoRepl x = (Int,x)
+type GCStackInfoMp = BPEBasedMp GCStackInfo' Int
 
 gcStackInfoMpAdd :: GCStackInfo -> GCStackInfoMp -> BytePoolMp -> (GCStackInfoMp,BytePoolMp,Maybe Int)
-gcStackInfoMpAdd gcStackInfo mp@(szm,m) bpmp
-  = case (Map.lookup gcStackInfo' m,gcStackInfo) of
-      (_,GCStackInfo_None)
-          -> dflt
-      (x@(Just _),_)
-          -> (mp,bpmp,x)
-      _ | gcstinfoSz gcStackInfo > 0
-          -> ((szm+1,Map.insert gcStackInfo' szm m),bpmp',Just szm)
-        | otherwise
-          -> dflt
-  where dflt = (mp,bpmp,Nothing)
-        perms = gcstinfoPerms gcStackInfo
-        (bpmp',loc) = bytePoolMpAdd (BytePool_Bytes perms) bpmp
-        gcStackInfo' = gcStackInfo {gcstinfoPerms = (length perms, loc)}
+gcStackInfoMpAdd
+  = bpeBasedMpAdd valid
+                  (\i -> BytePool_Bytes $ gcstinfoPerms i)
+                  (\loc i -> i {gcstinfoPerms = (length $ gcstinfoPerms i, loc)})
+                  (\inx _ -> inx)
+  where valid (GCStackInfo_None) = False
+        valid i                  = gcstinfoSz i > 0
 %%]
 
 %%[(8 codegen grin)
@@ -312,25 +329,91 @@ SEM Instr
 
 SEM Instr
   | Call CallC Eval Apply AllocStore
-  				(lhs.gcStackInfoMp,lhs.bytePoolMp,loc.gcStackInfoInx)
+  				(lhs.gcStackInfoMp,loc.bytePoolMp,loc.gcStackInfoInx)
   											=	gcStackInfoMpAdd @gcStackInfo @lhs.gcStackInfoMp @lhs.bytePoolMp
 
 SEM Module
   | Mod         instrs      .   gcStackInfoMp
-  											=   emptyGCStackInfoMp
+  											=   emptyBPEBasedMp
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% StringConst's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+-- type StringConstRepl x = x
+type StringConstMp = BPEBasedMp StringConst' ()
+
+stringConstMpAdd :: StringConst -> StringConstMp -> BytePoolMp -> (StringConstMp,BytePoolMp,Maybe Int)
+stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> BytePool_String s) (\loc _ -> StringConst ((),loc)) (\_ loc -> bytePoolLocOff loc)
+%%]
+
+%%[(8 codegen grin)
+ATTR AllInstr [ | stringConstMp: StringConstMp | ]
+
+SEM Instr
+  | LdString
+  				(lhs.stringConstMp,lhs.bytePoolMp,loc.stringConstInx)
+  											=	stringConstMpAdd @stringConst @lhs.stringConstMp @lhs.bytePoolMp
+SEM Instr
+  | Call CallC Eval Apply
+  				(lhs.stringConstMp,lhs.bytePoolMp,loc.stringConstInx)
+  											=	maybe
+  													(@lhs.stringConstMp,@bytePoolMp,Nothing)
+  													(\s -> stringConstMpAdd s @lhs.stringConstMp @bytePoolMp)
+  													(ciMbNmStrInx @callInfo)
+
+SEM Module
+  | Mod         instrs      .   stringConstMp
+                                            =   emptyBPEBasedMp
+                loc         .   (_,bytePoolMp,allEntryBPedL)
+                                            =   foldr (\(e) (sm,bm,es)
+                                                        -> let (sm',bm',inx) = maybe (sm,bm,Nothing) (\s -> stringConstMpAdd s sm bm) (eiMbNmStr e)
+                                                           in  (sm',bm',(e {eiMbNmStr = inx}) : es)
+                                                      )
+                                                      (@instrs.stringConstMp,@instrs.bytePoolMp,[]) @allEntryL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bug in GHC w.r.t previous
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Bug in GHC, following barfs on stringConstMpAdd:
+
+type BPEBasedMp mkinfo mkrepl = (Int,Map.Map (mkinfo (mkrepl BytePoolLoc)) Int)
+bpeBasedMpAdd
+  :: Ord (mkinfo (mkrepl BytePoolLoc))
+     => (mkinfo orig -> Bool)
+     -> (mkinfo orig -> BytePoolEntry)
+     -> (BytePoolLoc -> mkinfo orig -> mkinfo (mkrepl BytePoolLoc))
+     -> (Int -> BytePoolLoc -> res)
+     -> mkinfo orig -> BPEBasedMp mkinfo mkrepl -> BytePoolMp -> (BPEBasedMp mkinfo mkrepl,BytePoolMp,Maybe res)
+type StringConstRepl x = x
+type StringConstMp = BPEBasedMp StringConst' StringConstRepl
+
+stringConstMpAdd :: StringConst -> StringConstMp -> BytePoolMp -> (StringConstMp,BytePoolMp,Maybe Int)
+stringConstMpAdd = bpeBasedMpAdd (const True) (\(StringConst s) -> BytePool_String s) (\loc _ -> StringConst loc) (\_ loc -> bytePoolLocOff loc)
+
+EH100/GrinByteCode/ToC.hs:149:107:
+    Couldn't match expected type `(Int, Int)'
+           against inferred type `Int'
+      Expected type: (Int, BytePoolLoc)
+      Inferred type: BytePoolLoc
+    In the first argument of `StringConst', namely `l'
+    In the expression: StringConst l
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CallInfo's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type CallInfoMp = (Int,Map.Map (CallInfo' (Maybe Int)) Int)
+type CallInfoMp = (Int,Map.Map (CallInfo' (Maybe Int) Int) Int)
 
 emptyCallInfoMp :: CallInfoMp
 emptyCallInfoMp = (0,Map.empty)
 
-ciMpAdd :: CallInfo' (Maybe Int) -> CallInfoMp -> (CallInfoMp,Int)
+ciMpAdd :: CallInfo' (Maybe Int) Int -> CallInfoMp -> (CallInfoMp,Int)
 ciMpAdd ci mp@(sz,m)
   = case Map.lookup ci m of
       Just i -> (mp,i)
@@ -342,7 +425,7 @@ ATTR AllInstr [ | callInfoMp: CallInfoMp | ]
 
 SEM Instr
   | Call CallC Eval Apply
-                (lhs.callInfoMp,loc.ciInx)  =   ciMpAdd (@callInfo {ciGCStackInfo = @gcStackInfoInx}) @lhs.callInfoMp
+                (lhs.callInfoMp,loc.ciInx)  =   ciMpAdd (@callInfo {ciGCStackInfo = @gcStackInfoInx, ciMbNmStrInx = @stringConstInx}) @lhs.callInfoMp
 
 SEM Module
   | Mod         instrs      .   callInfoMp  =   emptyCallInfoMp
@@ -376,11 +459,9 @@ ppNodeFlds n = n >|< ".content.fields"
 ppNodeFld :: (PP n,PP o) => n -> o -> PP_Doc
 ppNodeFld n o = ppArrAt (ppNodeFlds n) o
 
-ppCnst :: EHCOpts -> (Int -> PP_Doc) -> Const -> PP_Doc
-ppCnst _    mk (Const_Str       i) = ppCast "GB_Word" $ mk i
-ppCnst opts _  (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf (pref ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
-                                   where pref = ""  -- if take 4 n == "prim" then "gb_" else ""
-ppCnst _    _  (Const_CallInfo  n) = ppCast "GB_Word" $ ppAddrOf n
+ppCnst :: EHCOpts -> Const -> PP_Doc
+ppCnst opts (Const_CFunction n) = ppCast "GB_Word" $ ppAddrOf (pref ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
+                                where pref = ""  -- if take 4 n == "prim" then "gb_" else ""
 
 ppLine :: PP_Doc -> PP_Doc
 ppLine p = p >-< text ""
@@ -421,7 +502,7 @@ SEM Module
                             .   ppNm                    =   \n -> @moduleNmPre >|< n
                             .   strNmByteCodeModule     =   "bytecodeModule"
                             .   strNmByteCodeEntry   	=   "bytecodeEntries"
-                            .   ppNmAString             =   \i -> @ppNm "string" >|< i
+                            -- .   ppNmAString             =   \i -> @ppNm "string" >|< i
                             .   ppNmACAF                =   @ppNm "caf"
                             .   ppNmByteCodeTbl         =   @ppNm "bytecode"
                             .   ppNmByteCodeTraceTbl    =   @ppNm "bytecodeInstrEntries"
@@ -436,7 +517,7 @@ SEM Module
                             .   ppNmInitF               =   @ppNm @strNmInitF
                             .   ppNmMainCAFEntry        =   @ppNm "mainEntryPtr"
                             .   ppNmModEntriesTbl       =   @ppNm "moduleEntries"
-                            .   ppNmGCInfosTbl          =   @ppNm "gcInfos"
+                            -- .   ppNmGCInfosTbl          =   @ppNm "gcInfos"
                             .   ppNmGCStackInfosTbl     =   @ppNm "gcStackInfos"
                             .   ppNmLinkChainIndTbl     =   @ppNm "linkChainIndirections"
                             .   ppNmCallInfoTbl         =   @ppNm "callinfos"
@@ -464,15 +545,15 @@ SEM Module
                                                                                         ++ @includeL
 %%]]
                                                                                  ]
-                                                    strNmL  = [ (@ppNmAString i,ppCmtC @lhs.opts (take 15 s) >-< ppStringAsHex s) | (i,s) <- zip [(0::Int)..] @stringL ]
+                                                    -- strNmL  = [ (@ppNmAString i,ppCmtC @lhs.opts (take 15 s) >-< ppStringAsHex s) | (i,s) <- zip [(0::Int)..] @stringL ]
                                                     -- strings = nl : [ "static char" >#< n >|< "[] =" >-< indent 2 (s >#< ";") | (n,s) <- strNmL ]
-                                                    strings = nl : [ ppStaticDef "char" n "[]" s | (n,s) <- strNmL ]
+                                                    -- strings = nl : [ ppStaticDef "char" n "[]" s | (n,s) <- strNmL ]
                                                     callinfos
                                                             = ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
                                                                 [ "GB_MkCallInfoWith"
                                                                   >|< ppParensCommas
                                                                         [ pp $ fromEnum $ ciKind ci
-                                                                        , maybe (pp "NULL") @ppNmAString $ ciMbNmStrInx ci
+                                                                        , maybe (pp "NULL") (ppAddrArrAt @ppNmBytePool) $ ciMbNmStrInx ci
                                                                         , gcref
                                                                         , pp (ciExtra ci)                                                                                
                                                                         ]
@@ -482,10 +563,10 @@ SEM Module
                                                             where cis = [ (maybe (pp "NULL") (ppAddrArrAt @ppNmGCStackInfosTbl) $ ciGCStackInfo ci, ci, i)
                                                                         | (ci,i) <- sortOn snd $ Map.toList $ snd @instrs.callInfoMp
                                                                         ]
-                                                    consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts @ppNmAString) @constL )
+                                                    consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts) @constL )
                                                     bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
-                                                    bytePool= ppTbl' "Word8" @ppNmBytePool [ ppCmtC @lhs.opts  loc >-< bytePoolEntryEncoding e | (e,loc) <- sortOn (fst.snd) $ Map.toList $ snd @instrs.bytePoolMp ]
+                                                    bytePool= ppTbl' "Word8" @ppNmBytePool [ ppCmtC @lhs.opts (loc >#< bytePoolEntryComment e) >-< bytePoolEntryEncoding e | (e,loc) <- sortOn (fst.snd) $ Map.toList $ snd @bytePoolMp ]
                                                     bcodetrace
                                                             = ppTbl' "GB_ByteCodeInstrEntry" @ppNmByteCodeTraceTbl
                                                                 (map (\(l,sz,c) -> ppCurlysCommasBlock [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
@@ -496,10 +577,11 @@ SEM Module
                                                                 (zipWith3 (\i l e
                                                                             -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, l) else (pp "NULL",0)
                                                                                in  ppCurlysCommasBlock
-                                                                                     [ (@ppNmAString $ constInx $ eiNmStrConst e) >#< ppCmtC @lhs.opts (eiNm e)
+                                                                                     -- [ (@ppNmAString $ constInx $ eiNmStrConst e) >#< ppCmtC @lhs.opts (eiNm e)
+                                                                                     [ (maybe (pp "NULL") (ppAddrArrAt @ppNmBytePool) (eiMbNmStr e)) >#< ppCmtC @lhs.opts (eiNm e)
                                                                                      , bc, pp bcs
                                                                                      ]
-                                                                          ) (scanl (+) 0 bcTrLengthL) bcTrLengthL @allEntryL
+                                                                          ) (scanl (+) 0 bcTrLengthL) bcTrLengthL @allEntryBPedL
                                                                 )
                                                             where bcTrLengthL = map length bcTrL
                                                     bcodemodtrace
@@ -513,8 +595,8 @@ SEM Module
                                                                            )
                                                                         ++ [ @ppNmByteCodeTbl
                                                                            , pp @instrs.cLoc
-                                                                           , @ppNmGCInfosTbl
-                                                                           , pp (length @gcInfoL)
+                                                                           -- , @ppNmGCInfosTbl
+                                                                           -- , pp (length @gcInfoL)
                                                                            ]
                                                                         )
                                                                       >#< ";"
@@ -531,13 +613,14 @@ SEM Module
                                                     gcStackInfoL = sortOn snd $ Map.toList $ snd @instrs.gcStackInfoMp
                                                     gcStackInfosTbl = ppTbl' "GB_GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
                                                               where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [pp sz, pp len, ppAddrArrAt @ppNmBytePool (bytePoolLocOff loc)]
+                                                    {-
                                                     gcInfosTbl = ppTbl' "GB_GCInfo" @ppNmGCInfosTbl [ ppCurlysCommasBlock $ mk i | i <- @gcInfoL ]
                                                               where mk i = case i of
 %%[[97
                                                                              GCInfo sz -> [pp sz]
 %%]]
                                                                              _         -> [pp (0::Int)]
-                                                                             
+                                                    -}                 
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
 %%[[8
@@ -551,7 +634,7 @@ SEM Module
                                                                          , @ppNmCafGlEntryIndicesTbl, pp nrCafs
                                                                          , @ppNmGlobEntriesTbl, pp (Map.size glEntryMp)
                                                                          , @ppNmConstTbl
-                                                                         , @ppNmGCInfosTbl
+                                                                         -- , @ppNmGCInfosTbl
                                                                          , @ppNmGCStackInfosTbl
                                                                          , @ppNmLinkChainIndTbl
                                                                          , @ppNmCallInfoTbl
@@ -623,10 +706,10 @@ SEM Module
 %%]]
                                                 in  ( vlist
                                                       $  [ top ]
-                                                      ++ strings
+                                                      -- ++ strings
                                                       ++ bytePool
                                                       -- ++ gcInfos
-                                                      ++ gcInfosTbl
+                                                      -- ++ gcInfosTbl
                                                       ++ linkChainInds
                                                       ++ gcStackInfosTbl
                                                       ++ callinfos
@@ -695,6 +778,8 @@ ppStaticDef ty nm modf def = "static" >#< ty >#< nm >|< modf >#< "=" >-< indent 
 SEM Instr
   | Ld St       lhs         .   pp          =   ppCommas [ppHex 2 @enc,@imm.pp]
   | Fetch       lhs         .   pp          =   ppCommas [ppHex 2 @enc]
+  | LdString
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
   | Call Eval Apply AllocStore CaseCall LdGlobal
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
   | TailCall RetCall
@@ -855,6 +940,7 @@ SEM Instr
   | UntagWord2Word
                 lhs         .   mn          =   pp "untagw2w"
   | LdGlobal	lhs         .   mn          =   "ldg"           >|< @locDst.mn
+  | LdString	lhs         .   mn          =   "ldstr"         >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
   | LinkChain   lhs         .   mn          =   pp ".lnk"
@@ -915,12 +1001,32 @@ SEM InsOp_Deref
 %%% Encodings, must be same as rts/src/grinbc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen grin) hs
+enc_InsOp_Deref_Zero   = 0
+enc_InsOp_LocE_Imm     = 2
+enc_InsOp_ImmSz_Bits32 = 2
+enc_InsOp_ImmSz_Bits64 = 3
+
+encInsOpImmSz :: Int -> Int
+encInsOpImmSz 4 = enc_InsOp_ImmSz_Bits32
+encInsOpImmSz 8 = enc_InsOp_ImmSz_Bits64
+encInsOpImmSz x = panic ("ToC.encInsOpImmSz:" ++ show x)
+%%]
+
 %%[(8 codegen grin)
 ATTR AllInsOp Meta [ | | enc: Int ]
 
 SEM Instr
   -- load group
-  | Ld          loc         .   enc         =   0x00 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
+  | Ld          loc         .   indEnc      =   @ind.enc
+                            .   locDstEnc   =   @locDst.enc 
+                            .   locSrcEnc   =   @locSrc.enc
+                            .   immSzEnc    =   @immSz.enc
+  | LdString    loc         .   indEnc      =   enc_InsOp_Deref_Zero
+                            .   locDstEnc   =   @locDst.enc 
+                            .   locSrcEnc   =   enc_InsOp_LocE_Imm
+                            .   immSzEnc    =   encInsOpImmSz Cfg.sizeofWord
+  | Ld LdString loc         .   enc         =   0x00 .|. (@indEnc `shiftL` 5) .|. (@locDstEnc `shiftL` 4) .|. (@locSrcEnc `shiftL` 2) .|. (@immSzEnc)
   -- store group
   | St          loc         .   enc         =   0x80 .|. (@ind.enc `shiftL` 5) .|. (@locDst.enc `shiftL` 3) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   -- arithmetic group
@@ -970,7 +1076,7 @@ SEM Meta
 SEM InsOp_LocE
   | SP          lhs         .   enc         =   0
   | Reg         lhs         .   enc         =   1
-  | Imm         lhs         .   enc         =   2
+  | Imm         lhs         .   enc         =   enc_InsOp_LocE_Imm
   | PC          lhs         .   enc         =   3
 
 SEM InsOp_LocB
@@ -1001,11 +1107,11 @@ SEM InsOp_DataOp
 SEM InsOp_ImmSz
   | Bits08      lhs         .   enc         =   0
   | Bits16      lhs         .   enc         =   1
-  | Bits32      lhs         .   enc         =   2
-  | Bits64      lhs         .   enc         =   3
+  | Bits32      lhs         .   enc         =   enc_InsOp_ImmSz_Bits32
+  | Bits64      lhs         .   enc         =   enc_InsOp_ImmSz_Bits64
 
 SEM InsOp_Deref
-  | Zero        lhs         .   enc         =   0
+  | Zero        lhs         .   enc         =   enc_InsOp_Deref_Zero
   | One         lhs         .   enc         =   1
   | Two         lhs         .   enc         =   2
   | Int         lhs         .   enc         =   3

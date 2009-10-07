@@ -46,7 +46,7 @@ ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM Module
   | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @allImpModNmL `seq` forceEval @impModNmL `seq` forceEval @expEntryL `seq` forceEval @allEntryL
-  												`seq` forceEval @stringL `seq` forceEval @constL `seq` forceEval @cafEntryL
+  												`seq` forceEval @constL `seq` forceEval @cafEntryL
   												`seq` @instrs.trf
 
 SEM Instr

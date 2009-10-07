@@ -340,7 +340,7 @@ typedef struct GB_ByteCodeInstrEntry {
 } GB_ByteCodeInstrEntry ;
 
 typedef struct GB_ByteCodeEntryPoint {
-  char*						nm ;
+  Word8*					nm ;
   GB_ByteCodeInstrEntry*	bcInstr ;
   GB_Word					bcInstrSize ;
 } GB_ByteCodeEntryPoint ;
@@ -351,8 +351,8 @@ typedef struct GB_ByteCodeModule {
   GB_Word					bcEntrySize ;
   GB_BytePtr				bcLoc ;
   GB_Word				 	bcSize ;
-  GB_GCInfo*				bcGCInfo ;
-  Word32				 	bcGCInfoSize ;
+  // GB_GCInfo*				bcGCInfo ;
+  // Word32				 	bcGCInfoSize ;
 } GB_ByteCodeModule ;
 %%]
 
@@ -453,7 +453,7 @@ typedef struct GB_CallInfo_CCall {
 
 typedef struct GB_CallInfo {
 	Word8	 			kind ;
-	char*   			name ;
+	Word8*   			name ;
 	GB_GCStackInfo*		gcStackInfo ;
 #if TRACE
 	GB_CallInfo_CCall	ccall ;
@@ -465,9 +465,9 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
 #if TRACE
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,n,gc,w}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc,w}		// make CallInfo
 #else
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,n,gc}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc}		// make CallInfo
 #endif
 #define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL,NULL)
 
@@ -717,7 +717,7 @@ extern void gb_InitTables
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
-	, GB_GCInfo* gcInfos
+	// , GB_GCInfo* gcInfos
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
 	, GB_CallInfo* callinfos
