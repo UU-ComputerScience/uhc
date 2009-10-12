@@ -274,8 +274,9 @@ metaExtend mp self (nm:nms) = let r = Map.lookup nm mp
   
 }
 
+%%[[9
 SEM CMetaVal
   |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtend @lhs.bindLamArgMp  @lhs.mbBodyVar) @names)
-
+%%]]
 %%]
 
