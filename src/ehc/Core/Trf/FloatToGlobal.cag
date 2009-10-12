@@ -101,7 +101,7 @@ ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
 SEM CMetaVal
   | DictInstance   lhs.isInstance = True
   | *-DictInstance lhs.isInstance = False
-%%]
+%%]]
 
 SEM CBind
   | Bind   expr . isLocalInInstance = -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
