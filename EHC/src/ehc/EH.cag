@@ -72,7 +72,7 @@
 %%[94 hs import({%{EH}Foreign})
 %%]
 
-%%[5 hs import({%{EH}TauPhi.Common})
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%[1 ag import({EH/AbsSyn})

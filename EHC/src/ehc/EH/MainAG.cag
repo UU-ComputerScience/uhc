@@ -101,7 +101,7 @@
 %%[(100 hmtyinfer) -99.DerivationTree
 %%]
 
-%%[5 hs import({%{EH}TauPhi.Common})
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

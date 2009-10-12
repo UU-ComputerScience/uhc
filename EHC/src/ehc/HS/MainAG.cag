@@ -38,7 +38,7 @@
 %%[9 hs import({%{EH}Pred})
 %%]
 
-%%[5 hs import({%{EH}TauPhi.Common})
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})

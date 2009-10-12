@@ -7,13 +7,13 @@
 %%% TauPhi Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5 module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
+%%[(8 tauphi) module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
 %%]
 
-%%[5 hs export(Strictness(..))
+%%[(8 tauphi) hs export(Strictness(..))
 %%]
 
-%%[5
+%%[(8 tauphi)
 data Strictness
   = Strict
   | NonStrict

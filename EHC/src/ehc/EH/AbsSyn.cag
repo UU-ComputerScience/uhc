@@ -566,7 +566,7 @@ DATA ExprAnn
 
 DATA TyExprAnn
   | Empty
-%%[[5
+%%[[(8 tauphi)
   | Strictness      s               : Strictness
 %%]]
 

@@ -1173,8 +1173,10 @@ SEM TypeAnnotation
 		loc			.	eh			=	EH.TyExprAnn_Empty
 %%][5
     | Strict
+		loc			.	eh			=	EH.TyExprAnn_Empty
+%%][(8 tauphi)
+    | Strict
         loc         .   eh          =   EH.TyExprAnn_Strictness (Strict)
-%%[[8
     | AnnotationName
         loc         .   eh          =   case show @name of
                                           "strict"    ->  EH.TyExprAnn_Strictness (Strict)
@@ -1184,7 +1186,6 @@ SEM TypeAnnotation
         loc         .   eh          =   case show @name of
                                           "strictness" -> EH.TyExprAnn_Strictness (Var @var)
                                           _            -> EH.TyExprAnn_Empty
-%%]]
 %%]]
 %%]
 

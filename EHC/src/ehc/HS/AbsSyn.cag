@@ -1158,7 +1158,7 @@ DATA TypeAnnotation
     | Empty
 %%][5
 	| Strict
-%%[[8
+%%[[(8 tauphi)
     | AnnotationName
         name                     : Name
     | AnnotationVar

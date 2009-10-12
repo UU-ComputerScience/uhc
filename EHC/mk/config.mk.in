@@ -69,3 +69,7 @@ ifeq (@ENABLE_CLR@,yes)
 ENABLE_CLR					:= yes
 endif
 
+ifeq (@ENABLE_TAUPHI@,yes)
+ENABLE_TAUPHI				:= yes
+endif
+

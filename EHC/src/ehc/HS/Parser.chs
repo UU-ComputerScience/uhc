@@ -585,7 +585,7 @@ pTypeBase
 %%[[5
   <|> (\x -> Type_Annotate (mkRange1 x) TypeAnnotation_Strict) <$> pBANG <*> pTypeBase
 %%]]
-%%[[8
+%%[[(8 tauphi)
   <|> ((Type_Annotate . mkRange1) <$> pAT)
      <*> (   (TypeAnnotation_AnnotationName . tokMkQName <$> tyvar)
          <|> ((\n v -> TypeAnnotation_AnnotationVar (tokMkQName n) (tokMkQName v)) <$> tyvar <* pCOLON <*> tyvar) )

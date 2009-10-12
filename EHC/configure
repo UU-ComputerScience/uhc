@@ -677,6 +677,7 @@ jarCmd
 JAVAC_CMD
 JAR_CMD
 ENABLE_CLR
+ENABLE_TAUPHI
 ranlibCmd
 RANLIB_CMD
 arCmd
@@ -1349,6 +1350,7 @@ Optional Features:
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
   --enable-clr            include clr code generation
+  --enable-tauphi         include TauPhi language extension and analyses
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -2234,6 +2236,16 @@ else
 fi
 
 ENABLE_CLR=$enableClr
+
+
+# Check whether --enable-tauphi was given.
+if test "${enable_tauphi+set}" = set; then
+  enableval=$enable_tauphi; enableTauPhi=yes
+else
+  enableTauPhi=no
+fi
+
+ENABLE_TAUPHI=$enableTauPhi
 
 
 ### ar, ranlib, libtool
@@ -4681,7 +4693,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_sys_tiocgwinsz_in_termios_h=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_sys_tiocgwinsz_in_termios_h" >&5
@@ -4712,7 +4724,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_sys_tiocgwinsz_in_sys_ioctl_h=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 { echo "$as_me:$LINENO: result: $ac_cv_sys_tiocgwinsz_in_sys_ioctl_h" >&5
@@ -4795,7 +4807,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -4816,7 +4828,7 @@ if (eval "$ac_cpp conftest.$ac_ext") 2>&5 |
 else
   ac_cv_header_stdc=no
 fi
-rm -f conftest*
+rm -f -r conftest*
 
 fi
 
@@ -29605,6 +29617,7 @@ jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
+ENABLE_TAUPHI!$ENABLE_TAUPHI$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
@@ -29639,7 +29652,6 @@ CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
 CPPFLAGS!$CPPFLAGS$ac_delim
 ac_ct_CC!$ac_ct_CC$ac_delim
-EXEEXT!$EXEEXT$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29681,6 +29693,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+EXEEXT!$EXEEXT$ac_delim
 OBJEXT!$OBJEXT$ac_delim
 CC_STD_FLAG!$CC_STD_FLAG$ac_delim
 cppCmd!$cppCmd$ac_delim
@@ -29734,7 +29747,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 51; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 52; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

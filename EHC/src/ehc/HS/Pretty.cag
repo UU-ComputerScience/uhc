@@ -547,7 +547,7 @@ SEM TypeAnnotation
 %%][5
     | Strict
         loc         .   ppWrap      =   \t -> "!" >|< t
-%%[[8
+%%[[(8 tauphi)
     | * - Strict
         loc         .   ppWrap      =   \t -> "@" >|< @loc.pp >#< t
     | AnnotationName
