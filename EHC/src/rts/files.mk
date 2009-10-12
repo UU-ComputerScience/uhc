@@ -31,6 +31,7 @@ RTS_SRC_CC_SHARED	:= \
         rts \
         llvm-gc \
         timing \
+        base/panic \
         base/utils \
         base/sysalloc \
         mm/mm \
@@ -85,6 +86,7 @@ RTS_SRC_CH_SHARED := \
         primdecl \
         base/sizes \
         base/bits \
+        base/panic \
         base/utils \
         base/sysalloc \
         base/basictypes \

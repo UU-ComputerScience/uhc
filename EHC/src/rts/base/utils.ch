@@ -16,16 +16,8 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Exit * panic
+%%% Exit & panic
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-extern void rts_exit( int exitCode ) ;
-extern void rts_error( char* msg ) ;
-extern void rts_panic1_0( char* msg ) ;
-extern void rts_panic1_1( char* msg, int i ) ;
-extern void rts_panic2_1( char* msg1, char* msg2, int i ) ;
-%%]
 
 %%[8
 extern void gb_error( char* msg ) ;

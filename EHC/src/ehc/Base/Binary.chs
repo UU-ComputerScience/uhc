@@ -22,6 +22,14 @@ entierLogUpBy :: Bits x => Int -> x -> x
 entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%]
 
+%%[(8 codegen) export(entierUpShrBy,entierUpBy)
+entierUpShrBy :: Integral x => x -> x -> x
+entierUpShrBy by x = ((x - 1) `div` by) + 1
+
+entierUpBy :: Integral x => x -> x -> x
+entierUpBy by x = entierUpShrBy by x * by
+%%]
+
 #define EntierLogUpShrBy(x,m)			((((x)-1)>>(m))+1)
 #define EntierLogUpBy(x,m)				(EntierLogUpShrBy(x,m)<<(m))
 
@@ -30,8 +38,8 @@ entierLogUpBy by x = entierLogUpShrBy by x `shiftL` by
 %%% Constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen)
-pow2 :: Int -> Integer
+%%[(8 codegen) export(pow2)
+pow2 :: Bits x => Int -> x
 pow2 x = 1 `shiftL` x
 
 pow2' :: Int -> (Integer,Integer,Integer)
@@ -61,7 +69,7 @@ pow2' x
 %%]
 
 %%[(8 codegen)
-mask2 :: Int -> Integer
+mask2 :: Bits x => Int -> x
 mask2 x = pow2 x - 1
 %%]
 
@@ -77,6 +85,16 @@ shift2 = [8,16,32,64]
 %%[(8 codegen) export(posFits8)
 posFits8 :: Integral c => c -> Bool
 posFits8 x = toInteger x < pow2_8
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrap integer w.r.t. sign, i.e. make >=0 representation of <0 int
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(ensurePositive)
+ensurePositive :: Int -> Integer -> Integer
+ensurePositive nrBits x | x < 0     = x + pow2 nrBits
+                        | otherwise = x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

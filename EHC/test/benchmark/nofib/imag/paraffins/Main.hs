@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -XScopedTypeVariables #-}
+
 {-
  - Id Example Program
  - Ensnaffled by SLPJ from MIT via

@@ -5,6 +5,9 @@
 
 %%[8
 #include "rts.h"
+#if __UHC_TARGET_BC__
+#include "bc/interpreter.h"
+#endif
 #include <getopt.h>
 %%]
 
@@ -188,11 +191,6 @@ int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 	memorySetup() ;
 %%[[99
 	globalsSetup( argc, argv ) ;
-%%]]
-%%[[97
-#	if USE_GPM
-		mp_set_memory_functions( gb_Alloc_GMP, gb_ReAlloc_GMP, gb_Free_GMP ) ;
-#	endif
 %%]]
 %%[[98
 	gb_chan_initstd() ;

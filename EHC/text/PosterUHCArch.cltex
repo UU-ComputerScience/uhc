@@ -1,0 +1,337 @@
+%%[posterUHCArch
+\small\sf
+\def\ColNodeBg{yellow}
+\def\ColNodeFg{black}
+%%[[exportedTikZMacros
+%%]]
+\newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{#4}}}
+\newcommand{\PCNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+%%[[exportedMacros
+\newcommand{\NTitle}[2]{{\Large\textbf{#1} \Large\textit{#2}}}
+\newcommand{\Dots}{\NTitle{...}{}}
+%%]]
+\let\NL=\\
+\noindent
+\begin{tikzpicture}
+
+% grid & reserve the space
+\draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+%\draw[step=1cm,red,very thin] (0,0) grid (21,29.6);
+
+% title
+\draw (10.5,29.5) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\FigScaledPDF{0.5}{2a_NWO_LogoBasis_PMSb}
+\PTitle{%
+ \parbox{.60\linewidth}{\centering \LARGE The Utrecht Haskell Compiler\\
+                        %{\Large The structure of the Essential Haskell Compiler}
+                      }
+}
+\FigScaledPDF{0.5}{UULogoSolRight}
+}
+\vspace{0.85cm}
+};
+
+%% \draw (10.5,27.1) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+%% {\large
+%% \begin{tabular}{p{.52\linewidth}p{.42\linewidth}}
+%% \NTitle{Observations:}{}
+%% &
+%% \NTitle{Resulting problem:}{}
+%% \\
+%% \emph{Programmers} want programming languages to do as much as possible of their programming job
+%% &
+%% \emph{Programming language + compiler} become more complex
+%% \\
+%% \emph{Users} want guarantees of resulting programs, e.g. no errors
+%% &
+%% \\
+%% \end{tabular}
+%% }
+%% };
+
+\draw (10.5,26.6) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\begin{tabular}{p{.37\linewidth}p{.57\linewidth}}
+\NTitle{Goal:}{}
+&
+\NTitle{Design:}{}
+\\
+Experimentation platform for\NL Haskell language and compiler
+&
+Organize by partitioning:\NL
+{\color{red}Transformations}, Aspects, Domain Specific Languages, and Tools
+\\
+\end{tabular}
+}
+};
+
+% transformations
+%% \draw (5.95,24) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
+%% {%\large
+%% \NTitle{Coping with implementation complexity:\\}{transform, transform and transform}\\[0.2cm]
+%% \hspace*{-20mm}\raisebox{-53mm}[27mm][0mm]{\FigScaledPDF{0.50}{ehc-dataflow2c}}
+%% \begin{itemize}
+%% \item From complex to simple representations
+%% \end{itemize}
+%% }
+%% };
+
+% growing example
+% background
+\draw (10.5,24.1) \PCNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+\NTitle{UHC pipeline:\\}{languages and transformations}
+\vspace{14cm}\ 
+};
+%% \begin{scope}[shift={(1.35,2.4)},xscale=0.5,yscale=0.89]
+%% %%@TopicEHCStructure.langSeriesShadowedDefs
+%% 
+%% %% Titles (copy paste modified)
+%% \draw (-1,15.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Simply typed |lambda| calculus (EH1)}};
+%% \draw (1.5,15.5) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Polymorphic type inference (EH3)}};
+%% \draw (4,16.0) node[anchor=north west,color=blue] {\textbf{\(\downarrow\) Higher ranked types (EH4)}};
+%% 
+%% \draw (-2,5.75) node[anchor=west,color=blue] {\textbf{Implementation}};
+%% \draw (-2,5.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+%% \draw (-2,10.25) node[anchor=west,color=blue] {\textbf{Semantics}};
+%% \draw (-2,9.75) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+%% \draw (-2,13.75) node[anchor=west,color=blue] {\textbf{Example}};
+%% \draw (-2,13.25) node[anchor=west,color=blue] {\textbf{\(\rightarrow\)}};
+%% 
+%% %%@TopicEHCStructure.langSeriesShadowed
+%% \end{scope}
+
+\begin{scope}
+  [ blok/.style={rectangle, draw=black, line width=0.6pt, minimum height=5mm, text centered},
+    eenhoog/.style={minimum height=5mm},
+    eenplushoog/.style={minimum height=6.5mm},
+    eenbreed/.style={minimum width=12mm},
+    tweebreed/.style={minimum width=26mm},
+    bron/.style={fill=green!50},
+    lib/.style={fill=green!50},
+    uitvoer/.style={fill=yellow!50},
+    doel/.style={fill=yellow!80},
+    shift={(4.25,9.3)},
+    %scale=1.3,shift={(2,11)},
+  ]
+
+\draw[help lines,white] (-1mm,1mm) grid[step=5mm] (111mm,70mm);
+  
+\node[blok,bron,eenbreed] at (48mm,67mm) (hs1) {HS} ;  
+\node[blok,bron,eenbreed](hs2) at (62mm,67mm) {HS} ;  
+  
+\node[blok,uitvoer,eenbreed](eh1)   at (48mm,58mm) {EH};  
+\node[blok,uitvoer,eenbreed](eh2)   at (62mm,58mm) {EH};  
+  
+\node[blok,uitvoer,eenbreed](core1) at (48mm,49mm) {Core};  
+\node[blok,uitvoer,eenbreed](core2) at (62mm,49mm) {Core};
+
+\node[blok,uitvoer,tweebreed](core0) at (13mm,40mm) {Core};
+\node[blok,uitvoer,eenbreed](jvm1)  at (90mm,40mm) {Jvm};
+\node[blok,uitvoer,eenbreed](jvm2)  at (104mm,40mm){Jvm};
+
+\node[blok,uitvoer,eenbreed](grin00) at (20mm,31mm) {Grin} ;
+\node[blok,uitvoer,tweebreed](grin0) at (13mm,31mm) {Grin};
+\node[blok,uitvoer,eenbreed](grin1) at (48mm,31mm) {Grin} ; 
+\node[blok,uitvoer,eenbreed](grin2) at (62mm,31mm) {Grin} ;
+
+\node[blok,uitvoer,eenbreed](silly00)at (20mm,22mm) {Silly};
+\node[blok,uitvoer,tweebreed](silly0)at (13mm,22mm) {Silly};
+\node[blok,uitvoer,eenbreed](bc1)   at (48mm,22mm) {BC} ; 
+\node[blok,uitvoer,eenbreed](bc2)   at (62mm,22mm) {BC} ;  
+  
+\node[blok,uitvoer,minimum width=6mm](cil) at ( 3mm,13mm) {...};
+\node[blok,uitvoer,minimum width=18mm](c0) at (17mm,13mm) {C};
+\node[blok,lib,eenbreed](crts)      at (34mm,13mm) {C}; 
+\node[blok,uitvoer,eenbreed](c1)    at (48mm,13mm) {C}; 
+\node[blok,uitvoer,eenbreed](c2)    at (62mm,13mm) {C};  
+\node[blok,lib,eenbreed](cbci)      at (76mm,13mm) {C};   
+  
+\node[blok,doel,minimum width=25mm](exe0) at (20.5mm,4mm) {Exe};
+\node[blok,doel,minimum width=41mm](exe1) at (55.5mm,4mm) {Exe};
+\node[blok,doel,minimum width=26mm](jar1) at (97mm,4mm) {Jar};
+  
+\node[blok,lib,minimum width=12mm, anchor=west, xshift=9mm](java) at (cbci.east) {Java};
+
+
+
+
+\node[anchor=south east] at (41.5mm,15mm){{\tiny\shortstack[r]{runtime\\system}}};
+\node[anchor=south west] at (69mm,15mm)  {{\tiny\shortstack[l]{bytecode\\interpreter}}};
+%\node[anchor=west]      at (c1.east)    {{\tiny\shortstack[l]{bytecode\\tables}}};
+\node[anchor=south]      at (98mm,15mm)  {{\tiny\shortstack{graph\\interpreter}}};
+
+
+
+\path [draw, line width=1.5pt, -> ] (hs1.south) -- (eh1.north) ;
+\path [draw, line width=1.5pt, -> ] (hs2.south) -- (eh2.north) ;
+\path [draw, line width=1.5pt, -> ] (eh1.south) -- (core1.north);
+\path [draw, line width=1.5pt, -> ] (eh2.south) -- (core2.north);
+
+\path [draw, line width=1.5pt, -> ] (core1) edge [in=180,out=150,loop] (core1) ;
+\path [draw, line width=1.5pt, <- ] (core2) edge [in=0,out=30,loop] (core2) ;
+
+\path [draw, line width=1.5pt, -> ] (core1.south) -- (grin1.north);
+\path [draw, line width=1.5pt, -> ] (core2.south) -- (grin2.north);
+
+\path [draw, line width=1.5pt, -> ] (grin1) edge [in=195,out=165,loop] (grin1) ;
+\path [draw, line width=1.5pt, <- ] (grin2) edge [in=345,out=15,loop] (grin2) ;
+
+\path [draw, line width=1.5pt, -> ] (grin00) edge [in=345,out=15,loop] (grin0) ;
+\path [draw, line width=1.5pt, -> ] (silly00) edge [in=345,out=15,loop] (silly0) ;
+
+\path [draw, line width=1.5pt, -> ] (grin1.south) -- (bc1.north);
+\path [draw, line width=1.5pt, -> ] (grin2.south) -- (bc2.north);
+\path [draw, line width=1.5pt, -> ] (bc1.south) -- (c1.north);
+\path [draw, line width=1.5pt, -> ] (bc2.south) -- (c2.north);
+
+
+\path [draw, line width=1.5pt, -> ] (core1.235) -- (core0.north east);
+\path [draw, line width=1.5pt, -> ] (core2.235) -- (core0.north east);
+
+\path [draw, line width=1.5pt, -> ] (core1.305) -- (jvm1.north west);
+\path [draw, line width=1.5pt, -> ] (core2.305) -- (jvm2.north west);
+
+\path [draw, line width=1.5pt, -> ] (core0.south)  -- (grin0.north);
+\path [draw, line width=1.5pt, -> ] (grin0.south)  -- (silly0.north);
+\path [draw, line width=1.5pt, <- ] (cil.north)    -- +(  up:3.4mm);
+\path [draw, line width=1.5pt, -> ] (silly0.south) -- +(down:3.4mm);
+
+\path [draw, line width=1.5pt, -> ] (c0.south)     -- +(down:3.7mm);
+\path [draw, line width=1.5pt, -> ] (crts.225)     -- +(down:3.7mm);
+\path [draw, line width=1.5pt, -> ] (crts.315)     -- +(down:3.7mm);
+\path [draw, line width=1.5pt, -> ] (c1.south)     -- +(down:3.7mm);
+\path [draw, line width=1.5pt, -> ] (c2.south)     -- +(down:3.7mm);
+\path [draw, line width=1.5pt, -> ] (cbci.225)     -- +(down:3.7mm);
+
+\path [draw, line width=1.5pt, -> ] (jvm1.235)     -- +(down:30.6mm);
+\path [draw, line width=1.5pt, -> ] (jvm2.305)     -- +(down:30.6mm);
+\path [draw, line width=1.5pt, -> ] (java.south)   -- +(down:3.7mm);
+
+\node[anchor=south,rectangle callout,draw=black,callout absolute pointer={(hs2.north)},xshift=0cm,yshift=3.5cm] at (hs2.north) {\parbox{7cm}{
+%%@TopicUHCArchitecture.exampleStepHS
+}} ;
+
+\node[anchor=south west,rectangle callout,draw=black,callout absolute pointer={(eh2.north east)},xshift=2cm,yshift=-1.5cm] at (eh2.north east) {\parbox{7cm}{
+%%@TopicUHCArchitecture.exampleStepEH
+}} ;
+
+%% \node[anchor=south west,rectangle callout,draw=black,callout absolute pointer={(core2.north east)},xshift=0.7cm,yshift=0cm] at (core2.north east) {\parbox{9cm}{
+%% %%@TopicUHCArchitecture.exampleStepCore
+%% }} ;
+
+\node[anchor=south east,rectangle callout,draw=red,callout absolute pointer={(hs1.north)},xshift=0.5cm,yshift=2.4cm] at (hs1.north) {\parbox{3cm}{
+{\color{red} Haskell}
+}} ;
+
+\node[anchor=south east,rectangle callout,draw=red,callout absolute pointer={($(eh1.north)!0.15!(hs1.south)$)},xshift=-1.2cm,yshift=1.9cm] at (eh1.north) {\parbox{5cm}{
+{\color{red} Desugaring to Essential Haskell,\\ for type analysis}
+}} ;
+
+\node[anchor=south east,rectangle callout,draw=red,callout absolute pointer={($(core1.north)!0.25!(eh1.south)$)},xshift=-2cm,yshift=1.5cm] at (core1.north) {\parbox{5cm}{
+{\color{red} Generating untyped |lambda|-calculus}
+}} ;
+
+\node[anchor=south east,rectangle callout,draw=red,callout absolute pointer={(core1.west)},xshift=-2.5cm,yshift=0cm] at (core1.north) {\parbox{5cm}{
+{\color{red} Transforming,\\ for optimization and simplification}
+}} ;
+
+\node[anchor=east,rectangle callout,draw=red,callout absolute pointer={($(grin0.north)!0.5!(core0.south)$)},xshift=-1.75cm,yshift=0.2cm](elimlazy) at (grin0.north) {\parbox{3cm}{
+{\color{red} Eliminating laziness}
+}} ;
+
+\node[anchor=south west,rectangle callout,draw=red,callout absolute pointer={($(core0.north east)!0.5!(core1.south)$)},xshift=0cm,yshift=0.65cm] at (elimlazy.north west) {\parbox{5.75cm}{
+{\color{red} Combining for whole program analysis}
+}} ;
+
+\node[anchor=east,rectangle callout,draw=red,callout absolute pointer={($(silly0.north)!0.5!(grin0.south)$)},xshift=-1.75cm,yshift=0.2cm] at (silly0.north) {\parbox{3cm}{
+{\color{red} Generating to \\ imperative language}
+}} ;
+
+\end{scope}
+
+% toolchain
+%% \draw (16.4,24) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+%% {%\large
+%% \NTitle{Coping with maintenance complexity:\\}{generate, generate and generate}\\[0.2cm]
+%% {\large from common source: guarantees consistency of generated artefacts}\\
+%% %\FigScaledPDF{0.3}{toolchain2f}
+%% \raisebox{-10mm}[52mm][0mm]{\FigScaledPDF{0.3}{toolchain2f}}
+%% \raggedright
+%% \begin{itemize}
+%% \item Chunks (.chs, .cag): for program, documentation (etc) combination
+%% \item Attribute Grammar (.ag): for tree based computation
+%% \item Ruler (.rul): for type rules
+%% \end{itemize}
+%% }
+%% };
+
+% specification paradigms
+\draw (4.6,8.1) \PCNode{\ColNodeBg}{\ColNodeFg}{8.7}{%
+{%\large
+\NTitle{Specification paradigms:}{}
+\begin{itemize}
+\item {Functional programming}\\
+      {{\hspace*{5mm}GHC: Haskell compiler}}
+\item {Tree-oriented programming}\\
+      {{\hspace*{5mm}UUAG: Attribute Grammar preprocessor}}
+\item {Rule-oriented programming}\\
+      {{\hspace*{5mm}Ruler: Type rule preprocessor}}
+\item {Aspect-oriented programming}\\
+      {{\hspace*{5mm}Shuffle: Source fragmentation preprocessor}}
+\end{itemize}
+\vspace{0.8cm}
+}
+};
+
+% transformation examples
+\draw (15.05,8.1) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
+{%\large
+\NTitle{{\color{red}Transformation} examples:\\}{|> 60| small \& simple transformations}
+\begin{Itemize}
+\item Core: |eta|-reduction, renaming to unique identifiers, elimination of unnecessary recursive |let|s, elimination of name aliases, |lambda|-lifting, ...
+\item Grin (whole program):
+ \begin{itemize}
+  \item remove unused bindings, inline function bodies,
+  \item heap points to analysis,
+  \item inline evaluation and application, eliminate unused case alternatives, eliminate single case alternatives, merge case expressions, ...
+ \end{itemize}
+\end{Itemize}
+\vspace{0.42cm}
+}
+};
+
+%% % future plans
+%% \draw (15.05,8.1) \PCNode{\ColNodeBg}{\ColNodeFg}{11.4}{%
+%% {%\large
+%% \NTitle{Future plans}{}\\
+%% \begin{Itemize}
+%% \item Other evaluation strategies
+%% %% \item Parallel compilers
+%% %% \item Use of visual environments (Proxima)
+%% \item Whole program analysis
+%% \item Static garbage collection
+%% \item Framework for analyses
+%% \item ...
+%% \end{Itemize}
+%% }
+%% };
+
+% participants
+\draw (10.5,2) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large 
+\begin{tabular}{p{.39\linewidth}||p{.33\linewidth}||p{.27\linewidth}}
+\mbox{NWO `Hefboom' project 641.000.412,} 
+\mbox{NWO project 612.063.410,}
+\mbox{Microsoft Research Scholarship}
+& \mbox{Prof.~Dr.~S.~Doaitse~Swierstra,} Dr.~Atze~Dijkstra, Drs.~Jeroen~Fokker, Drs.~Arie~Middelkoop
+& \texttt{http://www.cs.uu.nl/\NL wiki/UHC}
+\\
+\end{tabular}
+}};
+
+\end{tikzpicture}
+%%]
+
+

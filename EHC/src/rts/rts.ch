@@ -34,7 +34,11 @@
 // For now, switch off Boehm GC, turn on own GC
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
-#define GB_DEBUG				0
+%%[[8
+#define GB_DEBUG				0	// 0 or 1 for debugging settings
+%%][100
+#define GB_DEBUG				0	// always 0
+%%]]
 // internal MM admin uses structs with functions, which will be bypassed (for speed) with MM_BYPASS_PLAN on
 #define MM_BYPASS_PLAN			1
 #endif
@@ -66,6 +70,7 @@
 #include "base/sysalloc.h"
 #include "event/event.h"
 #include "base/bits.h"
+#include "base/panic.h"
 #include "mm/mmitf.h"
 #include "base/utils.h"
 #include "base/types.h"
@@ -169,7 +174,7 @@ extern WPtr HeapAreaHigh;
 #	define heapalloc(sz)                Cast(Word,GC_MALLOC(sz*sizeof(Word)))
 #	define heapalloc_uncollectable(sz)  Cast(Word,GC_MALLOC_UNCOLLECTABLE(sz*sizeof(Word)))
 #elif USE_EHC_MM
-#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word)))
+#	define heapalloc(sz)                Cast(Word,mm_itf_alloc(sz*sizeof(Word),0))
 #	define heapalloc_uncollectable(sz)  Cast(Word,mm_itf_allocResident(sz*sizeof(Word)))
 #else
 	Word heapalloc(int);
@@ -178,7 +183,7 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 800000
+#define STACKSIZE 1000000
 #define RETURNSIZE 100
 extern WPtr SP, RP;
 extern WPtr Stack, ReturnArea;

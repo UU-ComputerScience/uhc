@@ -270,6 +270,7 @@ PRIM Word primHClose( GB_NodePtr handle )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHClose" ) ;
 %%]]
 	fclose(chan->content.chan.file) ;
 	return gb_Unit ;
@@ -281,6 +282,7 @@ PRIM Word primHFlush( GB_NodePtr handle )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHFlush" ) ;
 %%]]
 	fflush( chan->content.chan.file ) ;
 	return gb_Unit ;
@@ -292,6 +294,7 @@ PRIM Word primHGetChar( GB_NodePtr handle )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHGetChar" ) ;
 %%]]
 	Bool isEof ;
 	int c ;
@@ -306,6 +309,7 @@ PRIM Word primHPutChar( GB_NodePtr handle, Word c )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHPutChar" ) ;
 %%]]
 	// int c2 = putc( GB_GBInt2Int(c), chan->content.chan.file ) ;
 	int c2 = putc( (c), chan->content.chan.file ) ;
@@ -330,6 +334,7 @@ PRIM GB_NodePtr primHGetContents( GB_NodePtr handle )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHGetContents" ) ;
 %%]]
 	Bool isEof ;
 	GB_NodePtr res, n ;
@@ -364,6 +369,7 @@ PRIM Word primHPutByteArray( GB_NodePtr handle, GB_NodePtr a )
 	GB_NodePtr chan = handle ;
 %%][99
 	GB_NodePtr chan = (GB_NodePtr)(handle->content.fields[0]) ;
+	gb_assert_IsEvaluated( (Word)chan, "primHPutByteArray" ) ;
 %%]]
   	IF_GB_TR_ON(3,printf("primWriteChan sz %d\n", a->content.bytearray.size ););
   	size_t szWritten ;

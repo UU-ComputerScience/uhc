@@ -40,9 +40,21 @@ void mm_allocator_LOF_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* spa
 	
 	// further setup is done at the first allocation request
 	alcr->data = (MM_Allocator_Data_Priv*)alc ;
+#	if	0 && TRACE
+	Word sz ;
+	for ( sz = 4 ; sz < 0x1000 ; sz += 4 ) {
+		Word szWord = EntierLogUpShrBy( sz, Word_SizeInBytes_Log ) ;
+		Word szBase = szWord - 1 ;
+		Word szLog  = firstNonZeroMsBit( (szBase >> MM_Allocator_LOF_RoundGroupSize_Log) + 1, MM_Allocator_LOF_NrRoundGroup-1 ) ;
+		Word szOff = Bits_Size2LoMask(Word,szLog) << MM_Allocator_LOF_RoundGroupSize_Log ;
+		Word szInx = szLog * MM_Allocator_LOF_RoundGroupSize + ((szBase - szOff) >> szLog) ;
+		Word szRounded = (EntierLogUpBy( (szWord - szOff), szLog ) + szOff) << Word_SizeInBytes_Log ;
+		printf("mm_allocator_LOF_Init szInx=%x sz=%x szWord=%x szBase=%x szLog=%x szRounded=%x\n", szInx, sz, szWord, szBase, szLog, szRounded ) ;
+	}
+#	endif
 }
 
-Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
+Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz, Word gcInfo ) {
 	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)alcr->data ;
 	MM_Pages* pages = alc->space->getPages(alc->space) ;
 	Ptr res = NULL ;
@@ -53,16 +65,21 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 	if ( szWord <= MM_Allocator_LOF_MaxRoundedSize_Words ) {
 		// exact fit
 		// determine index into perSize, allowing more unused space for greater size, using more pages for greater size.
-		Word szBase = szWord + MM_Allocator_LOF_RoundGroupSize - 1 ;
-		Word szLog  = firstNonZeroMsBit( szBase >> MM_Allocator_LOF_RoundGroupSize_Log, MM_Allocator_LOF_NrRoundGroup-1 ) ;
-		Word szInx  = szLog * MM_Allocator_LOF_RoundGroupSize + Bits_ExtrTo(Word,szBase >> szLog,MM_Allocator_LOF_RoundGroupSize_Log-1) ;
+		// Word szBase = szWord + MM_Allocator_LOF_RoundGroupSize - 1 ;
+		// Word szLog  = firstNonZeroMsBit( szBase >> MM_Allocator_LOF_RoundGroupSize_Log, MM_Allocator_LOF_NrRoundGroup-1 ) ;
+		// Word szInx  = szLog * MM_Allocator_LOF_RoundGroupSize + Bits_ExtrTo(Word,szBase >> szLog,MM_Allocator_LOF_RoundGroupSize_Log-1) ;
+		Word szBase = szWord - 1 ;
+		Word szLog  = firstNonZeroMsBit( (szBase >> MM_Allocator_LOF_RoundGroupSize_Log) + 1, MM_Allocator_LOF_NrRoundGroup-1 ) ;
+		Word szOff = Bits_Size2LoMask(Word,szLog) << MM_Allocator_LOF_RoundGroupSize_Log ;
+		Word szInx = szLog * MM_Allocator_LOF_RoundGroupSize + ((szBase - szOff) >> szLog) ;
 		MM_Allocator_LOF_PerSize* perSize = &alc->perSizeRounded[ szInx ] ;
-		// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc sz=%x szWord=%x szBase=%x szLog=%x szInx=%x perSize=%p perSize->free=%p\n", sz, szWord, szBase, szLog, szInx, perSize, perSize->free );}) ;
+		// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc szInx=%x sz=%x szWord=%x szBase=%x szLog=%x szRounded=%x perSize=%p perSize->free=%p\n", szInx, sz, szWord, szBase, szLog, EntierLogUpBy( sz, szLog + Word_SizeInBytes_Log ), perSize, perSize->free );}) ;
 		
 		// ensure elements on free list
 		if ( perSize->free == NULL ) {
 			// nr of new free elements - 1, allow for some wasted space at the end + admin space
-			Word szRounded = EntierLogUpBy( sz, szLog + Word_SizeInBytes_Log ) ;
+			// Word szRounded = EntierLogUpBy( sz, szLog + Word_SizeInBytes_Log ) ;
+			Word szRounded = (EntierLogUpBy( (szWord - szOff), szLog ) + szOff) << Word_SizeInBytes_Log ;
 			MM_Pages_LogSize szPagesLog = MM_Pages_MinSize_Log + szLog ;
 			Word max = ((1 << szPagesLog) - sizeof(MM_Allocator_LOF_PageRounded)) / szRounded - 1 ;
 			
@@ -74,7 +91,7 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz ) {
 			// link into perSize table
 			page->next = perSize->pages ;
 			perSize->pages = page ;
-			// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc szRounded=%x szPagesLog=%x max=%x page=%x\n", szRounded, szPagesLog, max, page );}) ;
+			// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Alloc szInx=%x szRounded=%x szPagesLog=%x max=%x page=%x\n", szInx, szRounded, szPagesLog, max, page );}) ;
 			
 			// make user page info point to the perSize info, so we can later deallocate by inserting in the correct list
 			pages->setUserData( pages, (MM_Page)page, 1<<szPagesLog, szInx ) ;
@@ -219,7 +236,7 @@ MM_Allocator mm_allocator_LOF =
 
 %%[8
 Ptr mm_allocator_LOF_Malloc( size_t size ) {
-	void* p = mm_allocator_LOF_Alloc( &mm_allocator_LOF, size ) ;
+	void* p = mm_allocator_LOF_Alloc( &mm_allocator_LOF, size, 0 ) ;
 	return (Ptr)p ;
 }
 
@@ -259,10 +276,10 @@ MM_Malloc mm_malloc_LOF =
 void mm_allocator_LOF_Test() {
 	int i ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
-	Ptr pg1 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1 ) ;
+	Ptr pg1 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1, 0 ) ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
-	Ptr pg2 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 100000 ) ;
-	Ptr pg3 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1 ) ;
+	Ptr pg2 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 100000, 0 ) ;
+	Ptr pg3 = mm_allocator_LOF.alloc( &mm_allocator_LOF, 1, 0 ) ;
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;
 	// return ;
 	mm_allocator_LOF.dealloc( &mm_allocator_LOF, pg1 ) ;
@@ -275,7 +292,7 @@ void mm_allocator_LOF_Test() {
 		int ii = i % II ;
 		Word sz = random() % 18000 + 1 ;
 		if ( ptrs[ii] ) { mm_allocator_LOF.dealloc( &mm_allocator_LOF, ptrs[ii] ) ; }
-		ptrs[ii] = mm_allocator_LOF.alloc( &mm_allocator_LOF, sz ) ;
+		ptrs[ii] = mm_allocator_LOF.alloc( &mm_allocator_LOF, sz, 0 ) ;
 		// memset( ptrs[ii], 0, sz ) ;
 	}
 	mm_allocator_LOF_Dump( &mm_allocator_LOF ) ;

@@ -196,6 +196,12 @@ text-variant-posterTrOrPr:
 	  TEXT_SHUFFLE_VARIANT=31 \
 	  text-variant-dflt-once
 
+text-variant-poster-uhcarch:
+	$(MAKE) TEXT_RULER_DEFS_TEX="-DrulerRuleCmd=rulerRuleVert" \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=storyPoster --set=asArticle --set=fullWide --unset=useHyperref --unset=refToPDF" \
+	  TEXT_SHUFFLE_VARIANT=55 \
+	  text-variant-dflt-once
+
 text-variant-slides-ruler:
 	$(MAKE) TEXT_CFG_TEXT_INCLUDES_PREV_RULER_TEX=yes \
 	  LHS2TEX_OPTS_VARIANT_CONFIG="--set=yesBeamer --set=storyRuler --unset=asArticle --set=asSlides --unset=useHyperref --unset=refToPDF" \

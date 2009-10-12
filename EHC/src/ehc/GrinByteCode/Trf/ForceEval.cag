@@ -46,12 +46,11 @@ ATTR AllNT [ | | trf USE {`seq`} {()}: {()} ]
 
 SEM Module
   | Mod				lhs		.	trf			=	forceEval @moduleNm `seq` forceEval @allImpModNmL `seq` forceEval @impModNmL `seq` forceEval @expEntryL `seq` forceEval @allEntryL
-  												`seq` forceEval @stringL `seq` forceEval @constL `seq` forceEval @cafEntryL
+  												`seq` forceEval @constL `seq` forceEval @cafEntryL
   												`seq` @instrs.trf
 
 SEM Instr
-  | LdGlobal		lhs		.	trf			=	forceEval @link `seq` @locDst.trf
-  | Link 			lhs		.	trf			=	forceEval' @link
+  | LdGlobal		lhs		.	trf			=	forceEval @linkChainEntry `seq` @locDst.trf
   | Call Eval Apply	lhs		.	trf			=	forceEval @callInfo `seq` @locSrc.trf
   | CallC			lhs		.	trf			=	forceEval @callInfo `seq` @nArgSz.trf `seq` @nArg.trf
   | Label LabelRef 	lhs		.	trf			=	forceEval' @locRef

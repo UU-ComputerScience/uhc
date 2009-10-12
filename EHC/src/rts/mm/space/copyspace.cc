@@ -78,7 +78,7 @@ Word mm_space_CopySpace_GetGrowDefaultLog( MM_Space* copySpace ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% CopySpace Space dump
+%%% Tracing: CopySpace Space dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -92,6 +92,20 @@ void mm_space_CopySpace_Dump( MM_Space* copySpace ) {
 	printf( "  Copy nrfrag=%x\n", copySpace->getNrFragments(copySpace) ) ;
 
 	printf( "<------------------------< MM_Space: CopySpace\n" ) ;
+}
+#endif
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tracing: marking fresh
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+#ifdef TRACE
+void mm_space_CopySpace_MarkAsFresh( MM_Space* copySpace ) {
+	MM_Space_CopySpace_Data* spc = (MM_Space_CopySpace_Data*)copySpace->data ;
+	
+	spc->onTopOfSpace->markAsFresh( spc->onTopOfSpace ) ;
 }
 #endif
 %%]
@@ -116,6 +130,7 @@ MM_Space mm_space_CopySpace =
 	, &mm_space_CopySpace_GetGrowDefaultLog
 #ifdef TRACE
 	, &mm_space_CopySpace_Dump
+	, &mm_space_CopySpace_MarkAsFresh
 #endif
 	} ;
 %%]

@@ -31,7 +31,7 @@ typedef struct MM_Plan {
   	// poll, the point where GC can take place
   	// isSpaceFull indicates space from which is polled is full
   	// return True if collection is/was required/done
-  	Bool 						(*pollForGC)( struct MM_Plan*, Bool isSpaceFull, MM_Space* space ) ;
+  	Bool 						(*pollForGC)( struct MM_Plan*, Bool isSpaceFull, MM_Space* space, Word gcInfo ) ;
 
   	// dumping info
   	void 						(*dump)( struct MM_Plan* ) ;

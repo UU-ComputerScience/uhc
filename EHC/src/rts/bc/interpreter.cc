@@ -35,41 +35,6 @@ typedef GB_Word GB_CFun();
 %%% Basic types for C function types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Equivalent of Base.BasicTy
-
-%%[8
-%%]
-#define GB_CFun_BasicTy_Word	0
-
-%%[97
-%%]
-#define GB_CFun_BasicTy_Float	1
-#define GB_CFun_BasicTy_Double	2
-
-%%[8
-%%]
-#define GB_CFun_0(r)						(r)
-#define GB_CFun_1(r,a1)						GB_CFun_0(r) | (a1) << 2
-#define GB_CFun_2(r,a1,a2)					GB_CFun_1(r,a1) | (a2) << 4
-#define GB_CFun_3(r,a1,a2,a3)				GB_CFun_2(r,a1,a2) | (a3) << 6
-#define GB_CFun_4(r,a1,a2,a3,a4)			GB_CFun_3(r,a1,a2,a3) | (a4) << 8
-#define GB_CFun_5(r,a1,a2,a3,a4,a5)			GB_CFun_4(r,a1,a2,a3,a4) | (a5) << 10
-#define GB_CFun_6(r,a1,a2,a3,a4,a5,a6)		GB_CFun_5(r,a1,a2,a3,a4,a5) | (a6) << 12
-
-%%[8
-%%]
-#define GB_CFun_W0				GB_CFun_0(GB_CFun_BasicTy_Word)
-#define GB_CFun_W1W				GB_CFun_1(GB_CFun_BasicTy_Word,GB_CFun_BasicTy_Word)
-
-%%[97
-%%]
-#define GB_CFun_F0				GB_CFun_0(GB_CFun_BasicTy_Float)
-#define GB_CFun_F1F				GB_CFun_1(GB_CFun_BasicTy_Float,GB_CFun_BasicTy_Float)
-
-#define GB_CFun_D0				GB_CFun_0(GB_CFun_BasicTy_Double)
-#define GB_CFun_D1D				GB_CFun_1(GB_CFun_BasicTy_Double,GB_CFun_BasicTy_Double)
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,7 +57,7 @@ Equivalent of Base.BasicTy
 #define GB_PushNodeArgs(nd,hdr,pfr,pto)	/* push args of `fun + args' node fields */ 				\
 								pfr = Cast(GB_Ptr,&((nd)->content.fields[GB_NH_NrFlds(hdr)])) ;	\
 								pto = Cast(GB_Ptr,&((nd)->content.fields[1])) ;								\
-								IF_GB_TR_ON(3,printf("pfr %p pto %p sp %p\n",pfr,pto,sp);) ;			\
+								IF_GB_TR_ON(3,printf("GB_PushNodeArgs:MemCopyBackward pfr %p pto %p sp %p\n",pfr,pto,sp);) ;			\
 								MemCopyBackward(pfr,pto,sp) ;
 
 %%]
@@ -153,7 +118,7 @@ GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes )
 #		if USE_BOEHM_GC
 			Cast(GB_Ptr,GC_MALLOC(nBytes)) ;
 #		elif USE_EHC_MM
-			Cast(GB_Ptr,mm_itf_alloc(nBytes)) ;
+			Cast(GB_Ptr,mm_itf_alloc(nBytes,0)) ;
 #		endif
 	if ( p < gb_allocated_lowest_ptr )
 		gb_allocated_lowest_ptr = p ;
@@ -480,6 +445,7 @@ void gb_push( GB_Word x )
 GB_Word gb_eval( GB_Word x )
 {
 	GB_Push( x ) ;
+	gb_assert_IsNotDangling( x, "gb_eval" ) ;
 %%[[8
 	gb_interpretLoopWith( gb_code_Eval ) ;
 %%][96
@@ -491,6 +457,8 @@ GB_Word gb_eval( GB_Word x )
 		) ;
 %%]]
 	GB_PopIn( x ) ;
+	gb_assert_IsNotDangling( x, "gb_eval" ) ;
+	gb_assert_IsEvaluated( x, "gb_eval" ) ;
 	return x ;
 }
 
@@ -559,7 +527,7 @@ void gb_prByteCodeModule( GB_ByteCodeModule* m )
 	for ( e = 0 ; e < m->bcEntrySize ; e++ )
 	{
 		GB_ByteCodeEntryPoint* ep = &m->bcEntry[e] ;
-		printf("  *** entry %s\n", ep->nm);
+		printf("  *** entry %s\n", ( ep->nm ? ep->nm : "--" ) );
 		if ( ep->bcInstr != NULL )
 		{
 			for ( i = 0 ; i < ep->bcInstrSize ; i++ )
@@ -716,7 +684,8 @@ void gb_prStack( int maxStkSz )
 void gb_prState( char* msg, int maxStkSz )
 {
 	int i ;
-	printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
+	// printf( "--------------------------------- %s ---------------------------------\n", msg ) ;
+	printf( "---------------------\n", msg ) ;
 #	if USE_64_BITS
 		printf( "[%ld]PC 0x%lx: 0x%0.2x '%s'"
 #	else
@@ -756,7 +725,7 @@ void gb_prState( char* msg, int maxStkSz )
 %%][20
 			( "%s + %p/%p: %s\n"
 %%]]
-			, bce->nm
+			, ( bce->nm ? bce->nm : "--" ) 
 			, bci - bce->bcInstr, pc - bce->bcInstr->bcLoc
 			, bci->bc
 			) ;
@@ -792,7 +761,7 @@ void gb_prState( char* msg, int maxStkSz )
 Calling C:
 The interpreter has two entry points to C code:
 - plain/directly
-- via closure
+- via closure, only constructed from within C itself; we assume no unboxed values (like float/double) are passed around.
 Both have a different stack setup, which is not ideal for understanding, so may well change.
 The tricky point is exception handling which makes assumptions about the stack setup.
 The code is split up in preamble + call + postamble, where call is only necessary for the closure based call, plus postamble when an exception did occur.
@@ -843,10 +812,10 @@ The code is split up in preamble + call + postamble, where call is only necessar
 				GB_BP_Link ;
 
 #define GB_CallC_Code_Postamble(nargs,res) \
-				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););														\
 				GB_BP_UnlinkSP ;																										\
 				GB_PopCastIn(GB_BytePtr,pc) ;																							\
 				GB_PopIn(nargs) ;											/* get nr of args									*/		\
+				IF_GB_TR_ON(3,printf("GB_CallC_Code_Postamble nargs %d res %x\n", nargs, res ););										\
 				sp = GB_RegRel(sp,nargs) ;									/* pop args											*/		\
 				GB_Push(res) ;
 %%]
@@ -959,7 +928,7 @@ void gb_interpretLoop()
 
 	while( 1 )
 	{
-		IF_GB_TR_ON(1,gb_prState( "interpreter step", 2 ) ;)
+		IF_GB_TR_ON(1,gb_prState( "interpreter step", 1 ) ;)
 		switch( *(pc++) )
 		{
 			/* load immediate constant on stack */
@@ -1086,6 +1055,7 @@ void gb_interpretLoop()
 			/* l1tr08 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_08) :
 				GB_PCImmIn(int8_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
@@ -1093,18 +1063,21 @@ void gb_interpretLoop()
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_16) :
 				GB_PCImmIn(int16_t,x) ;
 				// printf( "rr=%x off=%x res=%x\n", rr, x, GB_RegByteRel(GB_Word,rr,x) ) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
 			/* l1tr32 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_32) :
 				GB_PCImmIn(int32_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
 			/* l1tr64 */
 			case GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg, GB_InsOp_ImmSz_64) :
 				GB_PCImmIn(int64_t,x) ;
+				gb_assert_IsNotDangling( (Word)GB_RegByteRel( GB_Word, rr, x ), "GB_Ins_Ld(GB_InsOp_Deref1, GB_InsOp_LocB_TOS, GB_InsOp_LocE_Reg ..." ) ;
 				GB_Push( GB_RegByteRelx( rr, x ) ) ;
 				break ;
 
@@ -1201,6 +1174,7 @@ gb_interpreter_InsCallEntry:
 
 			/* casecall */
 			case GB_Ins_CaseCall :
+				GB_PCImmIn(Word,x2) ;										// nr of alternatives, not used further, but required by linking for following table
 				p = Cast(GB_Ptr,pc) ;										// start of table after instr						
 				GB_PopIn(x) ;												// tag of scrutinee is on TOS
 				dst = Cast(GB_BytePtr,p[GB_GBInt2Int(x)]) ;					// destination from following table, indexed by tag
@@ -1216,7 +1190,7 @@ gb_interpreter_InsCallEntry:
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x\n", callenc) ;}) ;
 				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->extra.ccall.type) ;}) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->ccall.type) ;}) ;
 				// p = GB_SPRel(1) ;											/* args												*/
 				// x = GB_TOS ;												/* function											*/
 				// GB_CallC_Code_Preamble(x2) ;
@@ -1263,6 +1237,7 @@ gb_interpreter_InsCallEntry:
 				x = GB_TOS ;
 gb_interpreter_InsEvalEntry:
 				if ( GB_Word_IsPtr(x) ) {
+					gb_assert_IsNotDangling( x, "GB_Ins_Eval" ) ;
 					n = Cast(GB_NodePtr,x) ;
 					h = n->header ;
 					switch( GB_NH_Fld_NdEv(h) )
@@ -1272,6 +1247,7 @@ gb_interpreter_InsEvalEntry:
 								case GB_NodeTagCat_Fun :
 									GB_Push(pc) ;													/* save ret for after eval 			*/
 									GB_BP_Link ;													/* and bp							*/
+									// n->content.fields[0] = gb_Indirection_FollowObject( n->content.fields[0] ) ;
 									gb_assert_IsNotIndirection( n->content.fields[0], "GB_Ins_Eval.GB_NodeTagCat_Fun" ) ;
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
 									p2 = &(n->content.fields[GB_NH_NrFlds(h)]) ;					/* after last arg 					*/
@@ -1283,13 +1259,18 @@ gb_interpreter_InsEvalEntry:
 									break ;
 								case GB_NodeTagCat_CFun :
 									p = &(n->content.fields[1]) ;									/* 1st arg 							*/
-									x2 = x ;                                                        /* remember val + pc 				*/
-									retSave = Cast(GB_Word,pc) ;
+									x2 = x ;                                                        /* remember val, for gb_interpreter_InsEvalUpdContEntry */
+									retSave = Cast(GB_Word,pc) ;									/* remember pc, for gb_interpreter_InsEvalUpdContEntry */
 									gb_assert_IsNotIndirection( n->content.fields[0], "GB_Ins_Eval.GB_NodeTagCat_CFun" ) ;
 									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
-									// no preamble, C call is done directly with args from node, without nr of args pushed
-									// GC sensitive/unsafe, gcsafe'd:
-									GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+									{
+										// GC sensitive/unsafe, gcsafe'd: x2
+										GB_GCSafe_Enter ;
+										GB_GCSafe_1( x2 ) ;
+										// no preamble, C call is done directly with args from node, without nr of args pushed
+										GB_CallC_Code(n->content.fields[0],GB_NH_NrFlds(h)-1,p,x) ;
+										GB_GCSafe_Leave ;
+									}
 %%[[8
 									goto gb_interpreter_InsEvalUpdContEntry ;						/* update with result				*/
 %%][96
@@ -1297,7 +1278,7 @@ gb_interpreter_InsEvalEntry:
 									GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
 									if ( gb_ThrownException ) {
 										// postamble only because we now know we end up in a handler, which uses the default convention
-										GB_CallC_Code_Postamble(x2,x) ;
+										GB_CallC_Code_Postamble(x2,x) ;								/* now x2 as scratch 				*/
 									} else {
 										goto gb_interpreter_InsEvalUpdContEntry ;					/* update with result				*/
 									}
@@ -1312,12 +1293,13 @@ gb_interpreter_InsEvalEntry:
 									break ;
 								case GB_NodeTagCat_Ind :
 									x = gb_Indirection_FollowIndirection( x ) ;
-									GB_SetTOS( x ) ;							/* just follow the indirection		*/
+									GB_SetTOS( x ) ;												/* just follow the indirection		*/
 									goto gb_interpreter_InsEvalEntry ;								/* and re-evaluate					*/
 									break ;
 							}
 							break ;
 						case GB_NodeNdEv_BlH :
+							gb_prWord( x ) ; printf("\n") ;
 							gb_panic1_1( "black hole", x ) ;										/* black hole means cycle			*/
 							break ;
 					}
@@ -1335,9 +1317,10 @@ gb_interpreter_InsEvalEntry:
 				x2 = GB_TOS ;													/* node which was to be evaluated 			*/
 gb_interpreter_InsEvalUpdContEntry:
 				IF_GB_TR_ON(3,printf("GB_Ins_EvalUpdCont toupd=%p, with=%x isInt %d isPtr %d\n",x2,x,GB_Word_IsInt(x),GB_Word_IsPtr(x));) ;
+				gb_assert_IsNotDangling( x, "GB_Ins_EvalUpdCont" ) ;
 				GB_NodePtr nOld = Cast(GB_NodePtr,x2) ;
-				GB_UpdWithIndirection_Code1(nOld,x,n,h,p,p2,p3,GB_SetTOS( x )) ;
-				// GB_UpdWithIndirection_Code_Ind(nOld,x,h,GB_SetTOS( x )) ;
+				// GB_UpdWithIndirection_Code1(nOld,x,n,h,p,p2,p3,GB_SetTOS( x )) ;
+				GB_UpdWithIndirection_Code_Ind(nOld,x,h,GB_SetTOS( x )) ;
 				pc = Cast(GB_BytePtr,retSave) ;									/* jump to saved ret address				*/
 				break ;
 
@@ -1345,6 +1328,7 @@ gb_interpreter_InsEvalUpdContEntry:
 			case GB_Ins_EvalApplyCont :
 				GB_Skip_CallInfoPtr ;
 				GB_PopIn(x) ;													/* evaluated function						*/
+				gb_assert_IsNotDangling( x, "GB_Ins_EvalApplyCont" ) ;
 				gb_assert_IsNotIndirection( x, "GB_Ins_EvalApplyCont" ) ;
 				n = Cast(GB_NodePtr,GB_SPRelx(2)) ;								/* the apply node							*/
 				h = n->header ;
@@ -1357,6 +1341,7 @@ gb_interpreter_InsEvalUpdContEntry:
 			/* papplycont */
 			case GB_Ins_PApplyCont :
 				GB_PopIn(x) ;													/* result value								*/
+				gb_assert_IsNotDangling( x, "GB_Ins_PApplyCont" ) ;
 				gb_assert_IsNotIndirection( x, "GB_Ins_PApplyCont" ) ;
 				pc = Cast(GB_BytePtr,GB_TOS) ;									/* continuation								*/
 				GB_SetTOS( x ) ;												/* result is slided down					*/
@@ -1367,6 +1352,7 @@ gb_interpreter_InsEvalUpdContEntry:
 				GB_Skip_CallInfoPtr ;
 gb_interpreter_InsApplyEntry:
 				n = Cast(GB_NodePtr,GB_TOS) ;										/* function										*/
+				gb_assert_IsNotDangling( x, "GB_Ins_Apply" ) ;
 				gb_assert_IsNotIndirection((Word)n,"GB_Ins_Apply") ;
 				x = GB_SPRelx(1) ;													/* nArgs, in words 								*/
 				h = n->header ;
@@ -1430,14 +1416,20 @@ gb_interpreter_InsApplyEntry:
 			/* heap allocation (+storing), heap retrieving (fetching) */
 			/* allocstoret */
 			case GB_Ins_AllocStore(GB_InsOp_LocB_TOS) :
+				GB_PCImmIn(Word,x2) ;
 				GB_PopIn(x) ;
 				// GC sensitive/unsafe, gcsafe'd:
-				p = GB_HeapAlloc_Bytes(x) ;
+				p = GB_HeapAlloc_Bytes_GCInfo(x,x2) ;
 				p2 = p ;
 				p3 = GB_SPByteRel(GB_Word,x) ;
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
-				IF_GB_TR_ON(3,{printf( "alloc sz=%d p=%p: ", x, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				// IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCInfo*,x2)->nrOfTOS_No_GCTrace, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCStackInfo*,x2)->sz, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+#				if USE_EHC_MM
+					IF_GB_TR_ON(3,{printf( "alloc space=%p\n", mm_Spaces_GetSpaceForAddress( (Word)p2 ) );}) ;
+#				endif
+				gb_assert_IsNotDangling_Node( (GB_NodePtr)p2, "GB_Ins_AllocStore" ) ;
 				break ;
 
 			/* allocstorer */
@@ -1445,6 +1437,7 @@ gb_interpreter_InsApplyEntry:
 			/* fetcht */
 			case GB_Ins_Fetch(GB_InsOp_LocB_TOS) :
 				GB_PopCastIn(GB_NodePtr,n) ;
+				gb_assert_IsNotDangling( (Word)n, "GB_Ins_Fetch" ) ;
 				gb_assert_IsNotIndirection( (Word)n, "GB_Ins_Fetch" ) ;
 				p = Cast(GB_Ptr,&(n->content.fields[GB_Node_NrFlds(n)])) ;
 				p2 = n->content.fields ;
@@ -1463,13 +1456,16 @@ gb_interpreter_InsApplyEntry:
 				h = GB_MkHeader(GB_NH_Fld_Size(h),GB_NodeNdEv_Yes,GB_NodeTagCat_Ind,GB_NH_Fld_Tag(h)) ;
 				n->header = h ;
 				*/
+				gb_assert_IsNotDangling( x, "GB_Ins_FetchUpdate1" ) ;
 				x = gb_Indirection_FollowObject(x) ;
+				gb_assert_IsNotDangling( x, "GB_Ins_FetchUpdate2" ) ;
 				GB_UpdWithIndirection_Code_Ind(n,x,h,;) ;
 				break ;
 
 			/* lnt */
 			case GB_Ins_LdNodeTag :
 				GB_TOSCastedIn(GB_NodePtr,n) ;
+				gb_assert_IsNotDangling( (Word)n, "GB_Ins_LdNodeTag" ) ;
 				gb_assert_IsNotIndirection( (Word)n, "GB_Ins_LdNodeTag" ) ;
 				GB_Push(GB_Int2GBInt(GB_NH_Fld_Tag(n->header))) ;
 				break ;
@@ -1757,6 +1753,10 @@ void gb_Initialize()
 %%]]
 #	endif
 
+%%[[97
+	prim_integer_Initialize() ;
+%%]]
+
 }
 
 %%]
@@ -1772,10 +1772,16 @@ void gb_SetModTable( GB_ModEntry* modTbl, GB_Word modTblSz )
 %%[8
 void gb_InitTables
 	( GB_BytePtr byteCodes, int byteCodesSz
-	, GB_LinkEntry* linkEntries, int linkEntriesSz
+	// , GB_LinkEntry* linkEntries, int linkEntriesSz
 	, HalfWord* cafGlEntryIndices, int cafGlEntryIndicesSz
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
+	// , GB_GCInfo* gcInfos
+	, GB_GCStackInfo* gcStackInfos
+	, GB_LinkChainResolvedInfo* linkChainInds
+	, GB_CallInfo* callinfos
+	, BPtr bytePool
+	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
@@ -1810,6 +1816,76 @@ void gb_InitTables
 		*e = Cast(GB_BytePtr,n) ;
 	}
 
+	for ( ; linkChainOffset > 0 ; ) {
+		WPtr loc = (WPtr)(&byteCodes[ linkChainOffset ]) ;
+		Word link = *loc ;
+		Word info, kind, off ;
+		if ( GB_LinkChainKind_Fld_Enc( link ) == GB_LinkChainEncoding_Ind ) {
+			GB_LinkChainResolvedInfo* ind = &linkChainInds[ GB_LinkChainKind_Ind_Fld_Inx(link) ] ;
+			kind = ind->kind ;
+			info = ind->info ;
+			off  = ind->off ;
+		} else {
+			kind = GB_LinkChainKind_Fld_Kind(link) ;
+			info = GB_LinkChainKind_Fld_Info(link) ;
+			off  = GB_LinkChainKind_Fld_Off(link) ;
+		}
+		IF_GB_TR_ON(3,{printf("gb_InitTables A linkChainOffset=%x, loc=%p, link=%x, enc=%x, kind=%d, info=%x, off=%x\n", linkChainOffset, loc, link, GB_LinkChainKind_Fld_Enc( link ), kind, info, GB_LinkChainKind_Fld_Off( link )) ; }) ;
+		switch ( kind ) {
+			case GB_LinkChainKind_GCInfo :
+				// IF_GB_TR_ON(3,{printf("gb_InitTables gcInfo=%x %p\n", gcInfos[ info ].nrOfTOS_No_GCTrace, &gcInfos[ info ]) ; }) ;
+				IF_GB_TR_ON(3,{printf("gb_InitTables gcStackInfo=%p->%x\n", ( info > 0 ? (&gcStackInfos[ info-1 ]) : NULL ), ( info > 0 ? (gcStackInfos[ info-1 ].sz) : 0 )) ; }) ;
+				// *loc = (Word)(&gcInfos[ info ]) ;
+				*loc = (Word)( info > 0 ? (&gcStackInfos[ info-1 ]) : NULL ) ;				
+				break ;
+
+			case GB_LinkChainKind_Const :
+				*loc = (Word)(&consts[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_Code :
+				*loc = (Word)(&globalEntries[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_CallInfo :
+				*loc = (Word)(&callinfos[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_StringConst :
+				*loc = (Word)(&bytePool[ info ]) ;
+				break ;
+
+			case GB_LinkChainKind_Offset :
+				*loc = Cast(Word,loc+1) + info ;
+				break ;
+
+			case GB_LinkChainKind_Offsets :
+				*loc = info ;
+/*
+*/
+				{
+					WPtr p ;
+					Word j ;
+					for ( j = 0, p = loc+1 ; j < info ; j++ ) {
+						p[j] = Cast(Word,&p[j+1]) + p[j] ;
+					}
+				}
+				break ;
+
+%%[[20
+			case GB_LinkChainKind_ImpEntry :
+				*loc = (Word)(modTbl[ impModules[ info ].globModInx ].expNode) ;
+				break ;
+%%]]
+
+			default :
+				break ;
+		}
+		linkChainOffset = ( off > 0 ? linkChainOffset + off : 0 ) ;
+		IF_GB_TR_ON(3,{printf("gb_InitTables B linkChainOffset=%x off=%x\n", linkChainOffset, off) ; }) ;
+	}
+
+	/*
 	for ( i = 0 ; i < linkEntriesSz ; i++ )
 	{
 		p = Cast(GB_Ptr,linkEntries[i].linkLoc) ;
@@ -1859,6 +1935,7 @@ void gb_InitTables
 
 		}
 	}
+	*/
 	
 %%[[20
 	for ( i = 0 ; i < expNodeSz ; i++ )
@@ -1979,7 +2056,7 @@ int gb_lookupInfoForPC
 	{
 		*m = gb_AllMod[mc].bcModule ;
 		// printf("*m=%x\n", *m) ;
-		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize && (*m)->bcEntry[0].bcInstr != NULL )
+		if ( pc >= (*m)->bcLoc && pc < (*m)->bcLoc + (*m)->bcSize && (*m)->bcEntry != NULL && (*m)->bcEntry[0].bcInstr != NULL )
 		{
 			*e = Cast( GB_ByteCodeEntryPoint*, bsearch( pc, (*m)->bcEntry, (*m)->bcEntrySize, sizeof(GB_ByteCodeEntryPoint), gb_CmpEntryPoint ) ) ;
 			// printf("*m=%x *e=%x\n", *m, *e) ;
@@ -1995,6 +2072,60 @@ int gb_lookupInfoForPC
 	}
 	return False ;
 }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GMP memory allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Todo: finalizer for USE_EHC_MM
+
+%%[97
+#if USE_GMP
+void* gb_Alloc_GMP( size_t nBytes )
+{
+#	if USE_EHC_MM
+		void *n ;
+		n = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+		IF_GB_TR_ON(3,{printf("gb_Alloc_GMP n=%p\n",n);}) ;
+		return n ;
+#	else
+		GB_Node* n ;
+		GB_NodeAlloc_GMP_In(nBytes,n) ;
+		IF_GB_TR_ON(3,{printf("gb_Alloc_GMP B n=%p\n",n);}) ;
+		return n->content.fields ;		/* return ptr to usable area */
+#	endif
+}
+
+void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
+{
+	if ( nBytes > nBytesOld )
+	{
+		void *nNew ;
+#		if USE_EHC_MM
+			nNew = GB_HeapAlloc_Bytes_Fixed( nBytes ) ;
+			IF_GB_TR_ON(3,{printf("gb_ReAlloc_GMP nNew=%p\n",nNew);}) ;
+#		else
+			GB_NodePtr nNewNode ;
+			GB_NodeAlloc_GMP_In(nBytes,nNewNode) ;
+			nNew = nNewNode->content.fields ;
+#		endif
+		memcpy( nNew, n, nBytesOld ) ;
+#		if USE_EHC_MM
+			GB_HeapFree_Fixed( n ) ;
+#		endif
+		return nNew ;
+	}
+	return n ;
+}
+
+void gb_Free_GMP( void *n, size_t nBytesOld )
+{
+#	if USE_EHC_MM
+		GB_HeapFree_Fixed( n ) ;
+#	endif
+}
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

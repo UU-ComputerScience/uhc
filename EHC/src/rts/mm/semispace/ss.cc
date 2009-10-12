@@ -79,7 +79,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 #endif
 
-	*queTraceSupply = mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
+	*queTraceSupply = mm_traceSupply_Buffer ; // mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
 	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
 	plss->queTraceSupply = queTraceSupply ;
 	
@@ -110,7 +110,7 @@ void mm_plan_SS_InitBypass( MM_Plan* plan ) {
 %%]
 
 %%[8
-Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
+Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space, Word gcInfo ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	Bool res ;
 
@@ -119,12 +119,12 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 	}
 	plss->gcInProgress = True ;
 
-	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC plan=%p plss=%p\n",plan,plss);}) ;
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC-BEF plan=%p plss=%p\n",plan,plss);}) ;
 	if ( isSpaceFull ) {
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
-		plss->collector.collect( &plss->collector ) ;
+		plss->collector.collect( &plss->collector, gcInfo ) ;
 		// total as used now
 		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 		Word onePercentSz = prevTotalSz / 100 ;
@@ -140,6 +140,7 @@ Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space ) {
 	} else {
 		res = False ;
 	}
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC-AFT plan=%p plss=%p\n",plan,plss);}) ;
 
 	plss->gcInProgress = False ;
 	return res ;

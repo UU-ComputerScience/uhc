@@ -798,7 +798,7 @@ cpProcessTyCoreBasic modNm
                        [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
                        , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
 %%[[9               
-                       ,  "CLDF"
+                       -- ,  "CLDF"
 %%]
 %%[[8_2        
                        , "CPRNM"
