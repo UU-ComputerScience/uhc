@@ -22,6 +22,8 @@ in let f = \e x -> ...e...
 in ...f g...
 
 
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals as args
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,6 +36,8 @@ in ...f g...
 
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(8 codegen) hs import(Debug.Trace)
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg})
@@ -111,7 +115,7 @@ SEM CodeAGItf
   | AGItf       module      .   gUniq       =   0
 
 SEM CBind
-  | Bind        expr		.	gUniq		=	@lhs.gUniq + Map.size @argMpNew
+  | Bind        expr        .   gUniq       =   @lhs.gUniq + Map.size @argMpNew
 
 %%]
 
@@ -160,7 +164,7 @@ type LamArgMp = Map.Map HsName CVarIntroL
 %%]
 
 %%[(8 codegen)
-ATTR AllBind [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
+ATTR AllBind CExpr [ | | bindLamArgMp USE {`Map.union`} {Map.empty}: LamArgMp ]
 ATTR AllCodeNT [ lamArgMp: LamArgMp | | ]
 
 SEM CodeAGItf
@@ -169,6 +173,21 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   lamArgMp    =   @binds.bindLamArgMp `Map.union` @lhs.lamArgMp
 %%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finding instance annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen)
+ATTR CMetaVal CMetas [ bindLamArgMp: LamArgMp | | isInstance: {Bool} ]
+
+SEM CMetaVal
+  | DictInstance    lhs.isInstance = True
+  | *-DictInstance  lhs.isInstance = False
+
+%%]]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
@@ -179,7 +198,7 @@ ATTR AllCodeNT [ | | cTrf: SELF ]
 ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CBind
-  | Bind        loc			.	(argNewL,argMpNew,bindLamArgMp)
+  | Bind        loc         .   (argNewL,argMpNew,bindLamArgMp)
                                             =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
                                                 then  let  argLevL = fvLAsArg @lhs.introCVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
@@ -187,13 +206,44 @@ SEM CBind
                                                 else  ([],Map.empty, Map.empty)
 %%]
 
+
 %%[(8 codegen)
 SEM CBind
 %%[[8
-  | Bind        lhs			.	cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
-  | Bind        lhs			.	cTrf        =   mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+  | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
+                                                --      ++ (if @bindMeta.isInstance then ("instance " ++ show @nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
+                                                --      ) $
+                                                (mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
+                bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
+%%]
+
+
+%%[(8 codegen)
+
+ATTR CExpr [ | | mbBodyVar : {Maybe HsName} ]
+
+SEM CExpr
+  | Let         lhs.mbBodyVar  =  @body.mbBodyVar   
+  | Var         lhs.mbBodyVar  =  Just @nm
+  | *-Let Var   lhs.mbBodyVar  =  Nothing
+
+%%]
+
+%%[(9 codegen)
+
+ATTR CMetaVal CMetas [ mbBodyVar : {Maybe HsName} | | ]
+
+SEM CBind
+  | Bind   bindMeta.mbBodyVar = @expr.mbBodyVar
+  
+%%]]
+
+
+
+%%[(8 codegen)
 
 SEM CExpr
   | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
@@ -206,3 +256,26 @@ SEM CExpr
                                                      v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2
 %%]
+
+
+%%[(8 codegen)
+
+{
+
+metaExtend :: LamArgMp -> Maybe HsName -> [HsName] -> [HsName]
+
+metaExtend mp self []       = []
+metaExtend mp self (nm:nms) = let r = Map.lookup nm mp
+                                  e = maybe [] assocLKeys r
+                                  e2 = maybe e (\s -> filter (/=s) e) self
+                              in  -- trace (show nm ++ " extended with " ++ show e2 ) $
+                                  (nm : (e2 ++ nms))
+
+  
+}
+
+SEM CMetaVal
+  |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtend @lhs.bindLamArgMp  @lhs.mbBodyVar) @names)
+
+%%]
+

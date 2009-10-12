@@ -147,7 +147,8 @@ SEM CBind
                                         lamBody      = foldr mkLet @expr.cTrf locals
                                         body         = foldr mkLam lamBody    args
                                         extraBind    = CBind_Bind @nm @bindMeta.cTrf body
-                                    in  extraBind : @expr.liftedBinds
+                                    in  -- trace ("dependencies: " ++ show dependencies ++ " locals: " ++ show locals ++ " args: " ++ show args ++ "extraBind: " ++ show extraBind) $
+                                        extraBind : @expr.liftedBinds
                                else @expr.liftedBinds
 
 
@@ -203,7 +204,8 @@ SEM CExpr
                                                                                   ]
                                                                             )
                                                      allNeeded = fix extend needed
-                                                 in  [ CBind_Bind nm bm e
+                                                 in  trace ("needed: " ++ show needed ++ " allNeeded: " ++ show allNeeded ++ " older: " ++ show @lhs.olderBrothers) $
+                                                     [ CBind_Bind nm bm e
                                                      | (CBind_Bind nm bm e) <- @lhs.olderBrothers
                                                      , nm `Set.member` allNeeded
                                                      ]

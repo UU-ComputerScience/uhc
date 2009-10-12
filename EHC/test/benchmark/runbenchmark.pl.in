@@ -1,15 +1,16 @@
 use Time::HiRes qw(gettimeofday tv_interval);
 
 # @dirs = ("nofib/imag/exp3_8");
+@dirs = ("nofib/imag/bernouilli", "nofib/imag/digits-of-e1", "nofib/imag/digits-of-e2", "nofib/imag/exp3_8", "nofib/imag/gen-regexps", "nofib/imag/integrate", "nofib/imag/paraffins", "nofib/imag/primes", "nofib/imag/queens", "nofib/imag/rfib-int", "nofib/imag/rfib-integer", "nofib/imag/rfib-double", "nofib/imag/tak", "nofib/imag/wheel-sieve1", "nofib/imag/wheel-sieve2", "nofib/real/infer" );
 
-@dirs = ("nofib/imag/bernouilli", "nofib/imag/digits-of-e1", "nofib/imag/digits-of-e2", "nofib/imag/exp3_8", "nofib/imag/gen-regexps", "nofib/imag/integrate", "nofib/imag/paraffins", "nofib/imag/primes", "nofib/imag/queens", "nofib/imag/rfib-int", "nofib/imag/rfib-integer", "nofib/imag/rfib-double", "nofib/imag/tak", "nofib/imag/wheel-sieve1", "nofib/imag/wheel-sieve2");
 
-
-@compilers = ("uhc -tbc --cpp", "uhc -tC --cpp", "ghc --make -cpp");
 @compilernames = ("uhc -tbc", "uhc -tC", "ghc");
 
 
 for $dir (@dirs) {
+
+    @compilers = ("uhc -tbc --cpp --import-path=$dir", "uhc -tC --cpp --import-path=$dir", "ghc --make -cpp -i$dir");
+
     
     for $j (0,1,2) {
     
@@ -17,10 +18,10 @@ for $dir (@dirs) {
     
         printf("%-24s %-10s", $dir, $compilernames[$j]);
     
-        system ("rm $dir/Main@SUFFIX_EXEC@ 2>/dev/null");
+        system ("rm $dir/Main $dir/Main@SUFFIX_EXEC@ 2>/dev/null");
         
         $tc0 = [gettimeofday];
-        system ("$compiler $dir/Main.hs 1>comp-output 2>comp-errors");
+        system ("$compiler $dir/Main.hs 1> $dir/comp-output$j 2> $dir/comp-errors$j");
         $tc1 = [gettimeofday];
     
         my $tc = tv_interval $tc0, $tc1;
@@ -39,23 +40,27 @@ for $dir (@dirs) {
                 chomp $args;
                 close INVOER;
                 
-                system ("rm run-output run-errors 2>/dev/null");
+                system ("rm $dir/run-output$j-$n $dir/run-errors$j-$n 2>/dev/null");
 
                 $tr0 = [gettimeofday];
-                system ("$dir/Main@SUFFIX_EXEC@ $args  1> run-output 2> run-errors");
+                if (-e "$dir/stdin$n" ) {
+                    system ("$dir/Main@SUFFIX_EXEC@ $args  < $dir/stdin$n  1> $dir/run-output$j-$n 2> $dir/run-errors$j-$n");
+                } else {
+                    system ("$dir/Main@SUFFIX_EXEC@ $args  1> $dir/run-output$j-$n 2> $dir/run-errors$j-$n");
+                }
                 $tr1 = [gettimeofday];
             
                 my $tr = tv_interval $tr0, $tr1;
             
                 printf("Run%d %-8g ", $n, $tr);
                 
-                open (INVOER, "run-errors");
+                open (INVOER, "$dir/run-errors$j-$n");
                 if (<INVOER>) {
                     print "ERROR ";
                 }
                 else
                 {
-                    open UITVOER, "run-output";
+                    open UITVOER, "$dir/run-output$j-$n";
                     open EXPECT,  "$dir/$uitvoer";
                     $uit = <UITVOER>;
                     $ex  = <EXPECT>;
@@ -78,5 +83,3 @@ for $dir (@dirs) {
     }
     print "\n";
 }
-
-
