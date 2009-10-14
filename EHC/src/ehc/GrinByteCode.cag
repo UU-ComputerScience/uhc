@@ -75,8 +75,8 @@ codeLocNil = -1
 type LabelId = Int
 
 newLabelId :: GBState -> (GBState,LabelId)
-newLabelId st = (st {gbstateLbl = l+1},l)
-  where l = gbstateLbl st
+newLabelId st = (st {gbstLbl = l+1},l)
+  where l = gbstLbl st
 %%]
 
 %%[(8 codegen grin) hs export(LabelLocMp,labelLocAdd,labelLocNew)
@@ -305,8 +305,44 @@ ststGCEncoding stState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function Info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(FunctionInfo'(..),FunctionInfo)
+data FunctionInfo' x
+  = FunctionInfo
+      { funinfoNm				:: !x					-- name of function
+      , funinfoMaxStackSz		:: !StackDepth			-- max stack size used by function, in words (in final bytecode in bytes)
+      }
+  deriving (Eq,Ord)
+
+type FunctionInfo = FunctionInfo' String
+
+emptyFunctionInfo :: FunctionInfo
+emptyFunctionInfo = FunctionInfo "" 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(CallInfoKind(..))
+-- the order must correspond to the first defines of GB_CallInfo_Kind_XXX in rts/bc/interpreter.h
+data CallInfoKind
+  = CallInfoKind_Call             -- normal call
+  | CallInfoKind_Tail             -- tail call
+  | CallInfoKind_Eval             -- eval call
+  | CallInfoKind_EvalWrap         -- eval call internal wrapper
+  | CallInfoKind_TailEv           -- tail eval call
+  | CallInfoKind_Apply            -- apply call
+  | CallInfoKind_CCall            -- C call
+  | CallInfoKind_EvCont           -- eval update continuation
+  | CallInfoKind_ApCont           -- apply continuation
+  | CallInfoKind_PApCont          -- partial apply continuation
+  | CallInfoKind_Hdlr             -- exception handler installment
+  | CallInfoKind_TailEval         -- tail eval call
+  deriving (Enum,Eq,Ord,Show)
+%%]
 
 %%[(8 codegen grin) hs
 data CallInfoExtra
@@ -321,7 +357,7 @@ instance PP CallInfoExtra where
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
-%%[(8 codegen grin) hs export(CallInfo'(..),CallInfo,CallInfoKind(..))
+%%[(8 codegen grin) hs export(CallInfo'(..),CallInfo)
 type MbStrInx = Maybe Int
 type MbCIStr = Maybe String
 
@@ -336,19 +372,6 @@ data CallInfo' info str
 
 type CallInfo = CallInfo' GCStackInfo StringConst
 
-data CallInfoKind
-  = CallInfoKind_Call             -- normal call
-  | CallInfoKind_Tail             -- tail call
-  | CallInfoKind_Eval             -- eval call
-  | CallInfoKind_EvalWrap         -- eval call internal wrapper
-  | CallInfoKind_TailEv           -- tail eval call
-  | CallInfoKind_Apply            -- apply call
-  | CallInfoKind_CCall            -- C call
-  | CallInfoKind_EvCont           -- eval update continuation
-  | CallInfoKind_ApCont           -- apply continuation
-  | CallInfoKind_PApCont          -- partial apply continuation
-  | CallInfoKind_Hdlr             -- exception handler installment
-  deriving (Enum,Eq,Ord,Show)
 %%]
 
 %%[(8 codegen grin) hs export(mkCICall)
@@ -358,9 +381,10 @@ mkCIExtra e k i gc = CallInfo k (fmap StringConst i) gc e
 mkCI :: CallInfoKind -> MbCIStr -> CallInfo
 mkCI k i = mkCIExtra CallInfoExtra_None k i GCStackInfo_None
 
-mkCICall, mkCIEval, mkCIApply :: MbCIStr -> CallInfo
+mkCICall, mkCIEval, mkCITailEval, mkCIApply :: MbCIStr -> CallInfo
 mkCICall       = mkCI                              CallInfoKind_Call  
 mkCIEval       = mkCI                              CallInfoKind_Eval  
+mkCITailEval   = mkCI                              CallInfoKind_TailEval  
 mkCIApply      = mkCI                              CallInfoKind_Apply 
 
 mkCICCall :: [BasicSize] -> MbCIStr -> GCStackInfo -> CallInfo
@@ -420,6 +444,7 @@ data LinkChainKind
   | LinkChainKind_Offsets			-- ref to labels
   | LinkChainKind_CallInfo			-- ref to callinfo
   | LinkChainKind_StringConst		-- ref to C string start address
+  | LinkChainKind_FunctionInfo		-- ref to function info
 %%[[20
   | LinkChainKind_ImpEntry			-- ref to imported code entrypoint
 %%]]
@@ -843,6 +868,33 @@ nmLd optim env stState gbState nm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GB codegen state
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Threaded, gathering state, accumulating info throughout the execution of bytecodes.
+This is in contrast to StackState, which models the state of the stack, including its growth and shrink.
+
+%%[(8 codegen grin) hs export(GBState(..),emptyGBState)
+data GBState
+  = GBState
+      { gbstLbl			:: !LabelId
+      , gbstMaxStkDepth	:: !StackDepth
+      }
+
+emptyGBState :: GBState
+emptyGBState = GBState 0 0
+%%]
+
+%%[(8 codegen grin) hs export(gbstIncByStackState)
+-- Increment gbstate by info from stackstate.
+-- The function may be called redundantly, i.e. its implementation must be idempotent
+gbstIncByStackState :: GBState -> StackState -> GBState
+gbstIncByStackState g s
+  = g { gbstMaxStkDepth = gbstMaxStkDepth g `max` ststDepth s
+      }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GrVal Value introduction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -855,13 +907,6 @@ data GrValIntro
   | GrValIntro_Basic !GrTag !HsName
   | GrValIntro_Enum  !HsName
   | GrValIntro_None
-%%]
-
-%%[(8 codegen grin) hs export(GBState(..))
-data GBState
-  = GBState
-      { gbstateLbl			:: !LabelId
-      }
 %%]
 
 %%[(8 codegen grin) hs export(GrValIntroAlt(..))
@@ -887,11 +932,11 @@ gviLd' opts optim env stState gbState intro
   where ld optim dflt@(GrValIntroAlt_OnTOS ins dfltInc _ _) intro
           = case intro of
               GrValIntro_Nm nm
-                -> (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect nmLdInfo, gbState2)
-                where (nmLdInfo,gbState2) = nmLd' optim env stState gbState nm
+                -> (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect nmLdInfo, gbState3)
+                where (nmLdInfo,gbState3) = nmLd' optim env stState gbState2 nm
               GrValIntro_Str s -- constInx
-                -> (GrValIntroAlt_OnTOS (ins Seq.::+: str) (dfltInc `ststIncDep` nrValWords) defaultOptimEffect [dfltBasicSize], gbState2)
-                where (gbState2,constLbl) = newLabelId gbState
+                -> (GrValIntroAlt_OnTOS (ins Seq.::+: str) (dfltInc `ststIncDep` nrValWords) defaultOptimEffect [dfltBasicSize], gbState3)
+                where (gbState3,constLbl) = newLabelId gbState2
                       -- lce = linkChainConst constLbl constInx
                       -- str = ldg InsOp_LocB_TOS lce
                       str = ldstr InsOp_LocB_TOS (StringConst s)
@@ -915,38 +960,40 @@ gviLd' opts optim env stState gbState intro
                             ValAccessAnnot_Annot (BasicAnnot_Size bsz bty)
                               -> ( GrValIntroAlt_OnTOS (ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins)
                                                        sinc defaultOptimEffect [basicsz]
-                                 , gbState5
+                                 , gbState6 `gbstIncByStackState` stState4
                                  )
-                              where (ins,inc,gbState3) = vaAndLd2Ins optim nm ml
+                              where (ins,inc,gbState4) = vaAndLd2Ins optim nm ml
                                     stState3 = stState2 `ststInc` inc
-                                    (tins,tinc,isEvaluated,gbState4) = tag env stState3 gtag (Just bty) wsz gbState3
-                                    (gbState5,allocLbl) = newLabelId gbState4
-                                    (sins,sinc) = ndStore (stState3 `ststInc` tinc) (wsz + ststDepth tinc) allocLbl
+                                    (tins,tinc,isEvaluated,gbState5) = tag env stState3 gtag (Just bty) wsz gbState4
+                                    (gbState6,allocLbl) = newLabelId gbState5
+                                    stState4 = stState3 `ststInc` tinc
+                                    (sins,sinc) = ndStore stState4 (wsz + ststDepth tinc) allocLbl
                                     wsz  = nrByte2Word $ basicSizeInBytes bsz
                             ValAccessAnnot_Basic bSz _ -> basicSize nm ml bSz
                             _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Just"
                      _ -> panic "GrinByteCode.gviLd'.GrValIntro_Basic.Nothing"
-                where ml@((mbva,_,basicsz,_),gbState2) = nmLd' optim env stState gbState nm
+                where ml@((mbva,_,basicsz,_),gbState3) = nmLd' optim env stState gbState2 nm
               GrValIntro_Grp gtag is
                 -> ( GrValIntroAlt_OnTOS (prepins Seq.:++: ins Seq.:++: Seq.fromList [meta' AnnTag (ppGrTag gtag)] Seq.:++: tins Seq.:++: sins)
                                          sinc defaultOptimEffect [dfltBasicSize]
-                   , gbState4
+                   , gbState5 `gbstIncByStackState` stState5
                    )
-                where (prepins,prepinc) = case (is, tag env stState2 gtag Nothing 0 gbState) of
+                where (prepins,prepinc) = case (is, tag env stState2 gtag Nothing 0 gbState2) of
                                             ([],(_,st,_,_)) | Cfg.nodeNeedsForwarding opts && ststDepth st == 1
                                               -> (Seq.fromList [ldc 0],ststFromDepPerm 1 GCPermit_Not)
                                             _ -> (Seq.empty           ,ststFromDep 0)
                       stState3 = stState2 `ststInc` prepinc
-                      i@(GrValIntroAlt_OnTOS ins inc _ _, gbState2) = gviLdFold' opts dflt (optim {ocxOmitTOSLd = False}) env stState3 gbState is
+                      i@(GrValIntroAlt_OnTOS ins inc _ _, gbState3) = gviLdFold' opts dflt (optim {ocxOmitTOSLd = False}) env stState3 gbState2 is
                       inc2 = prepinc `ststInc` inc
                       stState4 = stState3 `ststInc` inc
-                      (tins,tinc,isEvaluated,gbState3) = tag env stState4 gtag Nothing (ststDepth inc2) gbState2
+                      (tins,tinc,isEvaluated,gbState4) = tag env stState4 gtag Nothing (ststDepth inc2) gbState3
                       stState5 = stState4 `ststInc` tinc
                       inc3 = inc2 `ststInc` tinc
-                      (gbState4,allocLbl) = newLabelId gbState3
+                      (gbState5,allocLbl) = newLabelId gbState4
                       (sins,sinc) = ndStore stState5 (ststDepth inc3) allocLbl
-              _ -> (dflt, gbState)
+              _ -> (dflt, gbState2)
           where stState2 = stState `ststInc` dfltInc
+                gbState2 = gbState `gbstIncByStackState` stState2
                 basicAnnotDflt (nmLdInfo,gbState)
                   = (GrValIntroAlt_Delay ins dfltInc defaultOptimEffect nmLdInfo, gbState)
                 basicAnnotTaggedPtr sgn nm ml bSz
@@ -1170,15 +1217,9 @@ ndStore stState sz lbl
 %%% Constructing: eval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(eval,apply,taileval)
+%%[(8 codegen grin) hs export(eval,apply)
 eval :: MbCIStr -> InsOp_LocB -> Instr
 eval i locB = Instr_Eval locB (mkCIEval i)
-
-taileval :: Integral c => InsOp_LocB -> c -> Instr
-taileval locB nArgSurr
-  = Instr_TailEval locB s1 i1
-  where (s1,i1) = imm $ nrWord2Byte nArgSurr
-        -- (s2,i2) = imm $ nrWord2Byte retOffSurr
 
 apply :: MbCIStr -> InsOp_LocB -> Instr
 apply i locB = Instr_Apply locB (mkCIApply i)
@@ -1188,7 +1229,10 @@ apply i locB = Instr_Apply locB (mkCIApply i)
 %%% Constructing: control, call, etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(call,retcall,tailcall,casecall,retcase,callc)
+%%[(8 codegen grin) hs export(funstart,call,retcall,casecall,retcase,callc)
+funstart :: FunctionInfo -> Instr
+funstart i = Instr_FunStart i
+
 call :: MbCIStr -> InsOp_LocB -> Instr
 call i locB = Instr_Call locB (mkCICall i)
 
@@ -1201,9 +1245,6 @@ rettailcall mk nArgMine nArgSurr -- retOffSurr
 
 retcall :: Integral c => c -> c -> Instr
 retcall = rettailcall Instr_RetCall
-
-tailcall :: Integral c => InsOp_LocB -> c -> c -> Instr
-tailcall locB = rettailcall (Instr_TailCall locB)
 
 casecall :: LinkChainEntry -> Instr
 casecall l
@@ -1220,6 +1261,25 @@ retcase nRes retOffSurr l
   = Instr_RetCase s1 s2 i1 i2 l
   where (s1,i1) = imm $ nrWord2Byte nRes
         (s2,i2) = imm $ nrWord2Byte retOffSurr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing: tail variants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs export(taileval,tailcall,tailapply)
+taileval :: Integral c => MbCIStr -> InsOp_LocB -> c -> Instr
+taileval i locB nArgSurr
+  = Instr_TailEval locB s1 i1 (mkCITailEval i)
+  where (s1,i1) = imm $ nrWord2Byte nArgSurr
+        -- (s2,i2) = imm $ nrWord2Byte retOffSurr
+
+tailcall :: Integral c => InsOp_LocB -> c -> c -> Instr
+tailcall locB = rettailcall (Instr_TailCall locB)
+
+tailapply :: Integral c => InsOp_LocB -> c -> c -> Instr
+tailapply locB = rettailcall (Instr_TailApply locB)
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

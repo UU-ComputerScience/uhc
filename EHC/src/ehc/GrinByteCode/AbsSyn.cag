@@ -40,6 +40,7 @@ SET AllModule = Module
 %%]
 
 %%[(8 codegen grin)
+-- Directly corresponding to bytecode
 DATA Instr
   | Ld          ind             : InsOp_Deref
   				locDst			: InsOp_LocB
@@ -54,15 +55,12 @@ DATA Instr
   | LinkChain   linkChainEntry	: LinkChainEntry
   | LdGlobal	locDst			: InsOp_LocB
                 linkChainEntry	: LinkChainEntry
-  | LdString	locDst			: InsOp_LocB			-- expands to a plain Ld
-                stringConst		: StringConst
   | LdNodeTag
   | AllocStore  locSrc			: InsOp_LocB
   				gcStackInfo		: GCStackInfo
   | Fetch       locSrc			: InsOp_LocB
   | FetchUpdate	
-  | Call        locSrc			: InsOp_LocB
-  				callInfo		: CallInfo
+  | CaseCall	linkChainEntry	: LinkChainEntry
   | CallC		nArgSz			: InsOp_ImmSz
   				nArg			: Imm
   				callEnc			: Imm
@@ -76,19 +74,26 @@ DATA Instr
   				nRes			: Imm
   				retOffSurr		: Imm
   				linkChainEntry	: LinkChainEntry
+  | Call        locSrc			: InsOp_LocB
+  				callInfo		: CallInfo
   | TailCall    locSrc			: InsOp_LocB
   				nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz
   				nArgMine		: Imm
   				nArgSurr		: Imm
-  | CaseCall	linkChainEntry	: LinkChainEntry
   | Eval        locSrc			: InsOp_LocB
   				callInfo		: CallInfo
   | TailEval    locSrc			: InsOp_LocB
   				nArgSurrSz		: InsOp_ImmSz
   				nArgSurr		: Imm
+  				callInfo		: CallInfo
   | Apply       locSrc			: InsOp_LocB
   				callInfo		: CallInfo
+  | TailApply   locSrc			: InsOp_LocB
+  				nArgMineSz		: InsOp_ImmSz
+  				nArgSurrSz		: InsOp_ImmSz
+  				nArgMine		: Imm
+  				nArgSurr		: Imm
   | Op			op				: InsOp_TyOp
   				opndTy			: InsOp_DataOp
   				locDst			: InsOp_LocODst
@@ -96,17 +101,23 @@ DATA Instr
   				locSrc			: InsOp_LocOSrc
   				immSz			: InsOp_ImmSz
   				imm 			: Imm
-  | Ann			kind            : AnnKind
-                ann				: String
-  				instr			: Instr
   | Halt
-  | Meta		meta			: Meta
-  | Label		locRef			: LocRef
-  | LabelRef	locRef			: LocRef
   | TagInt2Word
   | UntagWord2Int
   | TagWord2Word
   | UntagWord2Word
+
+-- Not or indirectly corresponding/translated to bytecode
+DATA Instr
+  | FunStart	functionInfo	: FunctionInfo			-- precedes start of function
+  | LdString	locDst			: InsOp_LocB			-- expands to a plain Ld
+                stringConst		: StringConst
+  | Ann			kind            : AnnKind
+                ann				: String
+  				instr			: Instr
+  | Meta		meta			: Meta
+  | Label		locRef			: LocRef
+  | LabelRef	locRef			: LocRef
 
 DATA Meta
   | CmtHeader	kind            : AnnKind

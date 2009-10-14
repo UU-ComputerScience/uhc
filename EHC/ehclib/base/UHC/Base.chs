@@ -32,7 +32,7 @@ module UHC.Base   -- adapted from thye Hugs prelude
     Ratio      ((:%)), (%), 
     Char, 
     Int, 
-    String, 
+    String,
     Integer, 
     Float, 
     Double, 
@@ -1950,9 +1950,9 @@ data ArrayException
   deriving (Eq, Ord)
 
 data AsyncException
-  = StackOverflow
-  | HeapOverflow
-  | ThreadKilled
+  = HeapOverflow							-- 0
+  | StackOverflow		String				-- 1
+  | ThreadKilled							-- 2
   deriving (Eq, Ord)
 
 

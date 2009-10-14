@@ -128,8 +128,11 @@ extern   GB_Word     rr ;
 #define GB_PopCastIn(ty,v)		{(v) = Cast(ty,*GB_Pop) ;}
 #define GB_PopIn(v)				GB_PopCastIn(GB_Word,v)
 %%]
-#define GB_PopCast(ty)			(Cast(ty *,sp)++)
-#define GB_PopCastIn(ty,v)		{(v) = (GB_PopCast(ty)) ;}
+
+%%[8
+#define GB_Stack_SzAvailable			((Word)sp - (Word)StackAreaLow - STACKSIZE_SPARE_UNUSED)
+#define GB_Stack_SzIsAvailable(sz)		((Word)(sz) <= GB_Stack_SzAvailable)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Base pointer
@@ -292,7 +295,21 @@ Definition must match the one in Prelude.hs
 %%% Exception
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Definition must match the one in Prelude.hs
+Definitions must match the one in Prelude.hs
+
+Async exceptions
+
+%%[96
+#define GB_Tag_AsyncException_HeapOverflow   				0
+#define GB_Tag_AsyncException_StackOverflow   				1
+#define GB_Tag_AsyncException_ThreadKilled	  				2
+
+#define GB_MkAsyncException_HeapOverflow(n)					GB_MkConNode0(n,GB_Tag_AsyncException_HeapOverflow   )
+#define GB_MkAsyncException_StackOverflow(n,s)				GB_MkConNode1(n,GB_Tag_AsyncException_StackOverflow,s)
+#define GB_MkAsyncException_ThreadKilled(n)					GB_MkConNode0(n,GB_Tag_AsyncException_ThreadKilled   )
+%%]
+
+Plain exceptions
 
 %%[96
 #define GB_Tag_Exception_ArithException   					0
@@ -439,6 +456,22 @@ extern void gb_prModEntries( GB_ModEntry* modTbl ) ;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Before each bytecode function start 'function information' is stored, a GB_FunctionInfo*.
+
+%%[8
+#define GB_FunctionInfo_Inline				Word		// A GB_FunctionInfo*
+%%]
+
+Retrieval of function info given a pc
+
+%%[8
+#define GB_FromPCToFunctionInfo(p)			Cast(GB_FunctionInfo*,GB_Deref((Word)(p) - sizeof(GB_FunctionInfo_Inline)))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -473,6 +506,7 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
+// the order must correspond to alternatives of CallInfoKind in ehc/GrinByteCode, extra ones may be at the end
 #define GB_CallInfo_Kind_Call    		0			// normal call
 #define GB_CallInfo_Kind_Tail    		1			// tail call
 #define GB_CallInfo_Kind_Eval    		2			// eval call
@@ -484,18 +518,25 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 #define GB_CallInfo_Kind_ApCont  		8			// apply continuation
 #define GB_CallInfo_Kind_PApCont  		9			// partial apply continuation
 #define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
-#define GB_CallInfo_Kind_EvAppFunCont  	11			// apply fun eval update continuation
-#define GB_CallInfo_Kind_EvAppFunEvCont 12			// apply fun eval update eval continuation
-%%[[96
-#define GB_CallInfo_Kind_IntlCCall		13			// internal C call which must look like foreign function call (for exception handling)
-%%]]
+#define GB_CallInfo_Kind_TailEval		11			// tail eval
+// following may be defined freely
+#define GB_CallInfo_Kind_EvAppFunCont  	12			// apply fun eval update continuation
+#define GB_CallInfo_Kind_EvAppFunEvCont 13			// apply fun eval update eval continuation
 #define GB_CallInfo_Kind_EvalTopWrap  	14			// top level eval call wrapper
+#define GB_CallInfo_Kind_TailEvalCont  	15			// return/cleanup after taileval
+%%[[96
+#define GB_CallInfo_Kind_IntlCCall		16			// internal C call which must look like foreign function call (for exception handling)
+%%]]
 %%]
 
 Retrieval of call info given a bp
 
 %%[8
 #define GB_FromBPToCallInfo(p)			Cast(GB_CallInfo*,GB_Deref(GB_RegRelx(p,1) - sizeof(GB_CallInfo_Inline)))
+%%]
+
+%%[8
+extern Bool gb_CallInfo_Kind_IsVisible( Word kind ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -615,7 +656,8 @@ Retrieval of call info given a bp
 #define GB_Ins_Ld(indLev,locB,locE,immSz)		(GB_Ins_PreLd | ((indLev) << 5) | ((locB) << 4) | ((locE) << 2) | ((immSz) << 0))
 #define GB_Ins_St(indLev,locE,locB,immSz)		(GB_Ins_PreSt | ((indLev) << 5) | ((locE) << 3) | ((locB) << 2) | ((immSz) << 0))
 #define GB_Ins_Call(locB)						(GB_Ins_PreCall | ((0x0) << 1) | ((locB) << 0))
-#define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
+// moved to extension
+// #define GB_Ins_TailCall(locB)					(GB_Ins_PreCall | ((0x1) << 1) | ((locB) << 0))
 #define GB_Ins_RetCall							(GB_Ins_PreCall | ((0x2) << 1) | 0x0)
 #define GB_Ins_RetCase							(GB_Ins_PreCall | ((0x2) << 1) | 0x1)
 #define GB_Ins_CaseCall 						(GB_Ins_PreCall | ((0x3) << 1) | 0x0)
@@ -626,7 +668,8 @@ Retrieval of call info given a bp
 #define GB_Ins_Fetch(locB)						(GB_Ins_PreHeap | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Eval(locB)						(GB_Ins_PreEvAp | ((0x0) << 1) | ((locB) << 0))
 #define GB_Ins_Apply(locB)						(GB_Ins_PreEvAp | ((0x1) << 1) | ((locB) << 0))
-#define GB_Ins_TailEval(locB)					(GB_Ins_PreEvAp | ((0x2) << 1) | ((locB) << 0))
+// moved to extension
+// #define GB_Ins_TailEval(locB)					(GB_Ins_PreEvAp | ((0x2) << 1) | ((locB) << 0))
 #define GB_Ins_Ldg(locB)						(GB_Ins_PreEvAp | ((0x3) << 1) | ((locB) << 0))
 #define GB_Ins_Op(opTy,dtTy,locO)				(GB_Ins_PreArith | ((opTy) << 3) | ((dtTy) << 1) | ((locO) << 0))
 #define GB_Ins_OpExt(indLev,locE,immSz)			(((indLev) << 4) | ((locE) << 2) | ((immSz) << 0))
@@ -636,12 +679,23 @@ Retrieval of call info given a bp
 #define GB_Ins_LdNodeTag						(GB_Ins_PreOther | 0x4)
 #define GB_Ins_EvalUpdCont						(GB_Ins_PreOther | 0x5)
 #define GB_Ins_Ext								(GB_Ins_PreOther | 0x6)
-#define GB_Ins_NOP								(GB_Ins_PreOther | 0x7)
+#define GB_Ins_TailEvalCont						(GB_Ins_PreOther | 0x7)
+// #define GB_Ins_NOP								(GB_Ins_PreOther | 0x7)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Extended instruction opcodes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Split into 2 groups:
+- hi bit == 0: tail variants, ...
+- hi bit == 1: various others
+
+%%[8
+#define GB_InsTail_Call(locB)					(((0x0) << 1) | ((locB) << 0))
+#define GB_InsTail_Eval(locB)					(((0x1) << 1) | ((locB) << 0))
+#define GB_InsTail_Apply(locB)					(((0x2) << 1) | ((locB) << 0))
+%%]
 
 %%[8
 #define GB_InsExt_Halt							0xFF
@@ -691,6 +745,7 @@ extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
 extern GB_NodePtr gb_intl_throwException( GB_Word exc ) ;
 extern GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc ) ;
 extern GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr ) ;
+extern GB_NodePtr gb_intl_throwStackOverflow( GB_FunctionInfo* functionInfo ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -721,6 +776,7 @@ extern void gb_InitTables
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
 	, GB_CallInfo* callinfos
+	, GB_FunctionInfo* functionInfos
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20

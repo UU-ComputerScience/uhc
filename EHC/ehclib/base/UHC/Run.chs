@@ -24,6 +24,8 @@ ehcRunMain m = m
 
 #else
 
+foreign import prim primCallInfoKindIsVisible :: Int -> Bool
+
 -- Wrapper around 'main', invoked as 'ehcRunMain main'
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
@@ -38,7 +40,7 @@ ehcRunMain m =
                          ; if null t
                            then return ()
                            else do { hPutStrLn stderr "Trace:"
-                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ show k ++ ": " ++ s)) $ reverse t
+                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ {- show k ++ ": " ++ -} s)) $ filter (primCallInfoKindIsVisible . fst) $ reverse t
                                    }
                          ; exitWithIntCode 1
                          }

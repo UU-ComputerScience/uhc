@@ -7,13 +7,22 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR GrExpr [ | | willEvalNmS: {Set.Set HsName} ]
+ATTR GrExpr GrAlt [ | | willEvalNmS: {Set.Set HsName} ]
 
 SEM GrExpr
   | Eval App    lhs         .   willEvalNmS     =   Set.singleton @nm
   | Seq         lhs         .   willEvalNmS     =   Set.unions [@expr.willEvalNmS, @body.willEvalNmS]
-  | * - Eval App Seq
+  | Case		lhs			.	willEvalNmS     =   foldr1 Set.intersection @altL.willEvalNmSL
+  | * - Eval App Seq Case
                 lhs         .   willEvalNmS     =   Set.empty
+%%]
+
+%%[(8 codegen grin)
+ATTR GrAltL [ | | willEvalNmSL: {[Set.Set HsName]} ]
+
+SEM GrAltL
+  | Nil			lhs			.	willEvalNmSL	=   []
+  | Cons		lhs			.	willEvalNmSL	=   @hd.willEvalNmS : @tl.willEvalNmSL
 %%]
 
 %%[(8 codegen grin)
