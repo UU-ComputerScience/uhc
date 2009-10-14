@@ -702,9 +702,20 @@ typedef struct GB_GCStackInfo {
 } __attribute__ ((__packed__)) GB_GCStackInfo ;
 
 %%]
-typedef struct GB_GCInfo {
-	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
-} __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function specific information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Descriptor of info about functions
+
+%%[8
+typedef struct GB_FunctionInfo {
+  Word16	szStack ;	// size of stack required by function, in bytes
+  Word8*	nm ; 		// name of function
+} __attribute__ ((__packed__)) GB_FunctionInfo ;
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Link Chain kinds
@@ -726,8 +737,9 @@ Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/Gr
 #define GB_LinkChainKind_Offsets			5
 #define GB_LinkChainKind_CallInfo			6
 #define GB_LinkChainKind_StringConst		7
+#define GB_LinkChainKind_FunctionInfo		8
 %%[[20
-#define GB_LinkChainKind_ImpEntry			8
+#define GB_LinkChainKind_ImpEntry			9
 %%]]
 %%]
 

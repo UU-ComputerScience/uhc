@@ -604,9 +604,9 @@ instance Show ArrayException where
     showException "undefined array element" s
 
 instance Show AsyncException where
-  showsPrec _ StackOverflow   = showString "stack overflow"
-  showsPrec _ HeapOverflow    = showString "heap overflow"
-  showsPrec _ ThreadKilled    = showString "thread killed"
+  showsPrec _ (StackOverflow msg)   = showString "stack overflow: " . showString msg
+  showsPrec _ HeapOverflow          = showString "heap overflow"
+  showsPrec _ ThreadKilled          = showString "thread killed"
 
 showException :: String -> String -> ShowS
 showException tag msg =

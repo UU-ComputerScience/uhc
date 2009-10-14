@@ -183,13 +183,14 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 1000000
+#define STACKSIZE 					0x400000
+#define STACKSIZE_SPARE_UNUSED 		0x100		/* part of stack which is left as unused spare, but can be used by exception handling */
 #define RETURNSIZE 100
+
 extern WPtr SP, RP;
 extern WPtr Stack, ReturnArea;
 extern WPtr StackAreaHigh, StackAreaLow ;
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals

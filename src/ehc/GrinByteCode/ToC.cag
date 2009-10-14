@@ -91,11 +91,15 @@ SEM Instr
                 loc         .   labelCLoc   =   @lhs.cLoc
   | LabelRef    loc         .   labelCLocAft:   CodeAbsLoc
                 loc         .   labelCLocAft=   @lhs.cLoc + Cfg.gbLabelOffsetSize
-  | LinkChain   loc         .   linkCLoc    :   CodeAbsLoc
+  | LinkChain FunStart
+  				loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @lhs.cLoc
   | Call Eval Apply AllocStore CaseCall LdGlobal LdString
                 loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @lhs.cLoc + 1
+  | TailEval
+                loc         .   linkCLoc    :   CodeAbsLoc
+                loc         .   linkCLoc    =   @nArgSurr.cLoc
   | CallC       loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @callEnc.cLoc
   | RetCase     loc         .   linkCLoc    :   CodeAbsLoc
@@ -104,15 +108,17 @@ SEM Instr
 SEM Instr
   | Ld St       imm         .   cLoc        =   @lhs.cLoc + 1
   | Op          imm         .   cLoc        =   @lhs.cLoc + 2
-  | Call CallC Eval Apply AllocStore CaseCall LdGlobal LdString RetCase LinkChain
+  | Call CallC Eval Apply AllocStore CaseCall LdGlobal LdString RetCase LinkChain FunStart TailEval
                 lhs         .   cLoc        =   @linkCLoc + Cfg.sizeofWord
   | LabelRef    lhs         .   cLoc        =   @labelCLocAft
-  | TailCall RetCall
+  | RetCall
                 nArgMine    .   cLoc        =   @lhs.cLoc + 2
+  | TailCall TailApply
+                nArgMine    .   cLoc        =   @lhs.cLoc + 3
   | FetchUpdate LdNodeTag
                 lhs         .   cLoc        =   @lhs.cLoc + 1
   | CallC       nArg        .   cLoc        =   @lhs.cLoc + 2
-  | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 2
+  | TailEval    nArgSurr    .   cLoc        =   @lhs.cLoc + 3
   | RetCase     nRes        .   cLoc        =   @lhs.cLoc + 2
   | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   cLoc        =   @lhs.cLoc + 2
@@ -172,14 +178,16 @@ SEM Instr
 
 %%[(8 codegen grin)
 SEM Instr
-  | Call CallC Eval Apply
+  | Call CallC Eval Apply TailEval
   				loc			.	linkChainEntry
   				  							=	LinkChainEntry (LinkChainKey LinkChainKind_CallInfo (LinkChainId_Loc @linkCLoc)) @ciInx
   | AllocStore	loc			.	linkChainEntry
   				  							=	LinkChainEntry (LinkChainKey LinkChainKind_GCInfo (LinkChainId_Loc @linkCLoc)) (maybe 0 (+1) @gcStackInfoInx)
   | LdString	loc			.	linkChainEntry
   				  							=	LinkChainEntry (LinkChainKey LinkChainKind_StringConst (LinkChainId_Loc @linkCLoc)) (maybe 0 id @stringConstInx)
-  | Call CallC Eval Apply AllocStore LdString
+  | FunStart	loc			.	linkChainEntry
+  				  							=	LinkChainEntry (LinkChainKey LinkChainKind_FunctionInfo (LinkChainId_Loc @linkCLoc)) (maybe 0 id @functionInfoInx)
+  | Call CallC Eval Apply AllocStore LdString FunStart TailEval
 				loc			.	linkChainEntry
 											:	LinkChainEntry
 %%]
@@ -192,7 +200,7 @@ SEM Instr
 ATTR AllInstr [ | | gathLinkChainKeyMp USE {`Map.union`} {Map.empty}: LinkChainKeyMp ]
 
 SEM Instr
-  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain
+  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain FunStart TailEval
   				lhs         .   gathLinkChainKeyMp
   											=   Map.singleton (lcentryKey @linkChainEntry) (lcentryInfo @linkChainEntry)
 %%]
@@ -223,7 +231,7 @@ SEM Module
 
 %%[(8 codegen grin)
 SEM Instr
-  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain
+  | AllocStore LdGlobal LdString Call CallC Eval Apply CaseCall RetCase LinkChain FunStart TailEval
                 (loc.linkChain,lhs.linkChainResolvedIndInfoSet)
                                             =   maybe (0,@lhs.linkChainResolvedIndInfoSet) (linkChainResolvedInfoEncoding @lhs.linkChainResolvedIndInfoSet)
                                                 $ linkChainResolvedLookup (lcentryKey @linkChainEntry) @lhs.linkChainResolvedMp
@@ -323,12 +331,12 @@ gcStackInfoMpAdd
 ATTR AllInstr [ | gcStackInfoMp: GCStackInfoMp | ]
 
 SEM Instr
-  | Call CallC Eval Apply
+  | Call CallC Eval Apply TailEval
   				loc			.	gcStackInfo	=	ciGCStackInfo @callInfo
   				loc			.	gcStackInfo	:	GCStackInfo
 
 SEM Instr
-  | Call CallC Eval Apply AllocStore
+  | Call CallC Eval Apply AllocStore TailEval
   				(lhs.gcStackInfoMp,loc.bytePoolMp,loc.gcStackInfoInx)
   											=	gcStackInfoMpAdd @gcStackInfo @lhs.gcStackInfoMp @lhs.bytePoolMp
 
@@ -357,7 +365,7 @@ SEM Instr
   				(lhs.stringConstMp,lhs.bytePoolMp,loc.stringConstInx)
   											=	stringConstMpAdd @stringConst @lhs.stringConstMp @lhs.bytePoolMp
 SEM Instr
-  | Call CallC Eval Apply
+  | Call CallC Eval Apply TailEval
   				(lhs.stringConstMp,lhs.bytePoolMp,loc.stringConstInx)
   											=	maybe
   													(@lhs.stringConstMp,@bytePoolMp,Nothing)
@@ -404,6 +412,28 @@ EH100/GrinByteCode/ToC.hs:149:107:
     In the expression: StringConst l
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FunctionInfo's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type FunctionInfoMp = BPEBasedMp FunctionInfo' ()
+
+functionInfoMpAdd :: FunctionInfo -> FunctionInfoMp -> BytePoolMp -> (FunctionInfoMp,BytePoolMp,Maybe Int)
+functionInfoMpAdd = bpeBasedMpAdd (const True) (\i -> BytePool_String $ funinfoNm i) (\loc i -> i { funinfoNm = ((),loc) }) const
+%%]
+
+%%[(8 codegen grin)
+ATTR AllInstr [ | functionInfoMp: FunctionInfoMp | ]
+
+SEM Instr
+  | FunStart	(lhs.functionInfoMp,lhs.bytePoolMp,loc.functionInfoInx)
+  											=	functionInfoMpAdd @functionInfo @lhs.functionInfoMp @lhs.bytePoolMp
+SEM Module
+  | Mod         instrs      .   functionInfoMp
+                                            =   emptyBPEBasedMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% CallInfo's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -424,7 +454,7 @@ ciMpAdd ci mp@(sz,m)
 ATTR AllInstr [ | callInfoMp: CallInfoMp | ]
 
 SEM Instr
-  | Call CallC Eval Apply
+  | Call CallC Eval Apply TailEval
                 (lhs.callInfoMp,loc.ciInx)  =   ciMpAdd (@callInfo {ciGCStackInfo = @gcStackInfoInx, ciMbNmStrInx = @stringConstInx}) @lhs.callInfoMp
 
 SEM Module
@@ -522,6 +552,7 @@ SEM Module
                             .   ppNmLinkChainIndTbl     =   @ppNm "linkChainIndirections"
                             .   ppNmCallInfoTbl         =   @ppNm "callinfos"
                             .   ppNmBytePool            =   @ppNm "bytePool"
+                            .   ppNmFunctionInfoTbl     =   @ppNm "functionInfos"
 %%[[20
                             .   strNmImpTbl             =   "impMods"
                             .   strNmExpNode            =   "expNode"
@@ -569,14 +600,14 @@ SEM Module
                                                     bytePool= ppTbl' "Word8" @ppNmBytePool [ ppCmtC @lhs.opts (loc >#< bytePoolEntryComment e) >-< bytePoolEntryEncoding e | (e,loc) <- sortOn (fst.snd) $ Map.toList $ snd @bytePoolMp ]
                                                     bcodetrace
                                                             = ppTbl' "GB_ByteCodeInstrEntry" @ppNmByteCodeTraceTbl
-                                                                (map (\(l,sz,c) -> ppCurlysCommasBlock [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
+                                                                (map (\(l,sz,c) -> ppCurlysCommas [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
                                                                  $ concat bcTrL
                                                                 )
                                                     bcodeentries
                                                             = ppTbl' "GB_ByteCodeEntryPoint" @ppNmByteCodeEntry
                                                                 (zipWith3 (\i l e
                                                                             -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, l) else (pp "NULL",0)
-                                                                               in  ppCurlysCommasBlock
+                                                                               in  ppCurlysCommas
                                                                                      -- [ (@ppNmAString $ constInx $ eiNmStrConst e) >#< ppCmtC @lhs.opts (eiNm e)
                                                                                      [ (maybe (pp "NULL") (ppAddrArrAt @ppNmBytePool) (eiMbNmStr e)) >#< ppCmtC @lhs.opts (eiNm e)
                                                                                      , bc, pp bcs
@@ -613,6 +644,8 @@ SEM Module
                                                     gcStackInfoL = sortOn snd $ Map.toList $ snd @instrs.gcStackInfoMp
                                                     gcStackInfosTbl = ppTbl' "GB_GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
                                                               where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [pp sz, pp len, ppAddrArrAt @ppNmBytePool (bytePoolLocOff loc)]
+                                                    functionInfosTbl = ppTbl' "GB_FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
+                                                              where mk (FunctionInfo (_,loc) sz,_) = ppCurlysCommas [pp (Cfg.sizeofWord * sz), ppAddrArrAt @ppNmBytePool (bytePoolLocOff loc)]
                                                     {-
                                                     gcInfosTbl = ppTbl' "GB_GCInfo" @ppNmGCInfosTbl [ ppCurlysCommasBlock $ mk i | i <- @gcInfoL ]
                                                               where mk i = case i of
@@ -638,6 +671,7 @@ SEM Module
                                                                          , @ppNmGCStackInfosTbl
                                                                          , @ppNmLinkChainIndTbl
                                                                          , @ppNmCallInfoTbl
+                                                                         , @ppNmFunctionInfoTbl
                                                                          , @ppNmBytePool
                                                                          , pp $ maybe 0 id @mbLinkChainCodeLoc
 %%[[20
@@ -712,6 +746,7 @@ SEM Module
                                                       -- ++ gcInfosTbl
                                                       ++ linkChainInds
                                                       ++ gcStackInfosTbl
+                                                      ++ functionInfosTbl
                                                       ++ callinfos
                                                       ++ bcode
                                                       ++ (if ehcOptGenTrace @lhs.opts then bcodetrace ++ bcodeentries else [])
@@ -782,9 +817,11 @@ SEM Instr
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
   | Call Eval Apply AllocStore CaseCall LdGlobal
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc, ppLinkChain @linkChain]
-  | TailCall RetCall
+  | RetCall
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgMine.pp,@nArgSurr.pp]
-  | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArgSurr.pp]
+  | TailCall TailApply
+                lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,ppHex 2 @enc3,@nArgMine.pp,@nArgSurr.pp]
+  | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,ppHex 2 @enc3,@nArgSurr.pp, ppLinkChain @linkChain]
   | FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
   | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, @callEnc.pp, ppLinkChain @linkChain]
@@ -794,7 +831,8 @@ SEM Instr
   | Halt TagInt2Word UntagWord2Int TagWord2Word UntagWord2Word
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2]
   | LabelRef    lhs         .   pp          =   ppCommas [ppWord @refOff]
-  | LinkChain   lhs         .   pp          =   ppCommas [ppLinkChain @linkChain]
+  | LinkChain FunStart
+  				lhs         .   pp          =   ppCommas [ppLinkChain @linkChain]
 %%]
 
 %%[(8 codegen grin)
@@ -922,6 +960,7 @@ SEM Instr
   | Fetch       lhs         .   mn          =   "fetch"         >|< @locSrc.mn
   | Call        lhs         .   mn          =   "call"          >|< @locSrc.mn
   | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
+  | TailApply   lhs         .   mn          =   "tailapply"     >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >#< @nArgSurr.mn 
   | CaseCall    lhs         .   mn          =   pp "casecall"
   | FetchUpdate lhs         .   mn          =   pp "fetchupd"
@@ -944,6 +983,7 @@ SEM Instr
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
   | LinkChain   lhs         .   mn          =   pp ".lnk"
+  | FunStart	lhs         .   mn          =   pp ".fun"
 
 SEM Imm
   | Int         lhs         .   mn          =   case @lhs.immSz of
@@ -1013,6 +1053,8 @@ encInsOpImmSz 8 = enc_InsOp_ImmSz_Bits64
 encInsOpImmSz x = panic ("ToC.encInsOpImmSz:" ++ show x)
 %%]
 
+1st byte of encoding
+
 %%[(8 codegen grin)
 ATTR AllInsOp Meta [ | | enc: Int ]
 
@@ -1034,15 +1076,16 @@ SEM Instr
   -- eval/ldg group
   | Eval        loc         .   enc         =   0xE0 .|. (@locSrc.enc)
   | Apply       loc         .   enc         =   0xE2 .|. (@locSrc.enc)
-  | TailEval    loc         .   enc         =   0xE4 .|. (@locSrc.enc)
   | LdGlobal	loc         .   enc         =   0xE6 .|. (@locDst.enc)
   -- call/control group
   | Call        loc         .   enc         =   0xF0 .|. (@locSrc.enc)
-  | TailCall    loc         .   enc         =   0xF2 .|. (@locSrc.enc)
   | RetCall     loc         .   enc         =   0xF4
   | RetCase     loc         .   enc         =   0xF5
   | CaseCall    loc         .   enc         =   0xF6
   | CallC       loc         .   enc         =   0xF7
+  -- tail eval/call/control group, via extension
+  | TailCall TailEval TailApply
+            	loc         .   enc         =   0xFE
   -- alloc group
   | AllocStore  loc         .   enc         =   0xEC .|. (@locSrc.enc)
   | Fetch       loc         .   enc         =   0xEE .|. (@locSrc.enc)
@@ -1053,12 +1096,16 @@ SEM Instr
             	loc         .   enc         =   0xFE
 %%]
 
+2nd byte of encoding
+
 %%[(8 codegen grin)
 SEM Instr
-  | TailCall RetCall
+  | TailCall    loc         .   enc2        =   (0x00 `shiftL` 1) .|. (@locSrc.enc)
+  | TailEval    loc         .   enc2        =   (0x01 `shiftL` 1) .|. (@locSrc.enc)
+  | TailApply   loc         .   enc2        =   (0x02 `shiftL` 1) .|. (@locSrc.enc)
+  | RetCall
                 loc         .   enc2        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
   | CallC       loc         .   enc2        =   (@nArgSz.enc)
-  | TailEval    loc         .   enc2        =   (@nArgSurrSz.enc `shiftL` 0)
   | RetCase     loc         .   enc2        =   (@nResSz.enc `shiftL` 2) .|. (@retOffSurrSz.enc)
   | Op          loc         .   enc2        =   (@ind.enc `shiftL` 4) .|. (@locSrc.enc `shiftL` 2) .|. (@immSz.enc)
   | Halt        loc         .   enc2        =   0xFF
@@ -1069,7 +1116,17 @@ SEM Instr
                 loc         .   enc2        =   0xFA
   | UntagWord2Word
                 loc         .   enc2        =   0xFB
+%%]
 
+3rd byte of encoding
+
+%%[(8 codegen grin)
+  | TailCall TailApply
+                loc         .   enc3        =   (@nArgMineSz.enc `shiftL` 2) .|. (@nArgSurrSz.enc `shiftL` 0)
+  | TailEval    loc         .   enc3        =   (@nArgSurrSz.enc `shiftL` 0)
+%%]
+
+%%[(8 codegen grin)
 SEM Meta
   | CmtHeader   loc         .   enc         =   0xFF
 
@@ -1131,7 +1188,7 @@ ATTR Imm [ immSz: InsOp_ImmSz | | ]
 SEM Instr
   | Ld St       imm         .   immSz       =   @immSz.self
   | Op          imm         .   immSz       =   @immSz.self
-  | TailCall RetCall
+  | TailCall RetCall TailApply
                 nArgMine    .   immSz       =   @nArgMineSz.self
                 nArgSurr    .   immSz       =   @nArgSurrSz.self
   | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
