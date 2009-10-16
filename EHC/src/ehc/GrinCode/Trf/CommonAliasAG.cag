@@ -50,7 +50,9 @@ SEM GrVal
                 lhs         .   nmAlias         =   NmAlias_None
 
 SEM GrExpr
-  | Seq         lhs         .   nmAlias         =   @body.nmAlias
+  | Seq         lhs         .   nmAlias         =   case (@body.nmAlias,@expr.hasSideEffect) of
+                                                      (NmAlias_Nm n,True) -> NmAlias_NmAfterSideEffect n
+                                                      _ -> @body.nmAlias
   | Eval        lhs         .   nmAlias         =   NmAlias_Eval @nm
   | * - Unit Seq Store Eval
                 lhs         .   nmAlias         =   NmAlias_None
@@ -62,4 +64,16 @@ ATTR GrValL [ | | nmAliasL: {[NmAlias]} ]
 SEM GrValL
   | Cons        lhs         .   nmAliasL        =   @hd.nmAlias : @tl.nmAliasL
   | Nil         lhs         .   nmAliasL        =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Side effect
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrExpr [ | | hasSideEffect: Bool ]
+
+SEM GrExpr
+  | Eval		lhs			.	hasSideEffect	=	True
+  | * - Eval	lhs			.	hasSideEffect	=	False
 %%]
