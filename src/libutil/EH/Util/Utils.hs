@@ -195,6 +195,22 @@ f $? mx = do x <- mx
 
 orMb :: Maybe a -> Maybe a -> Maybe a
 orMb m1 m2 = maybe m2 (const m1) m1
+-- orMb = maybeOr Nothing Just Just
+
+maybeAnd :: x -> (a -> b -> x) -> Maybe a -> Maybe b -> x
+maybeAnd n jj ma mb
+  = case ma of
+      Just a
+        -> case mb of {Just b -> jj a b ; _ -> n}
+      _ -> n
+
+maybeOr :: x -> (a -> x) -> (b -> x) -> Maybe a -> Maybe b -> x
+maybeOr n fa fb ma mb
+  = case ma of
+      Just a -> fa a
+      _      -> case mb of
+                  Just b -> fb b
+                  _      -> n
 
 -------------------------------------------------------------------------
 -- Strongly Connected Components
