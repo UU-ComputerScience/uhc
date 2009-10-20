@@ -176,7 +176,9 @@ cpEhcFullProgPostModulePhases opts modNmL modSpl
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
            , mergeIntoOneBigGrin
+%%[[99
            , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
+%%]]
            ]
            ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
@@ -210,7 +212,9 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           )
   where mergeIntoOneBigCore
           = do { cr <- get
+%%[[99
                ; cpSeq [cpCleanupCore m | m <- modNmL] -- clean up Core and CoreSem (it can still be read through cr in the next statement)
+%%]]
                ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
                                                                  | m <- modNmL
                                                                  ]
