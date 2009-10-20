@@ -325,3 +325,39 @@ grModMerge mL
           = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (Map.union t1 t2)
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How will name be evaluated, used in (e.g.) EvalElim, CommonWillEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+How a name will be used later on in code.
+Used by CommonWillEval to indicate evaluation (WillUseFor_Eval).
+EvalElim also must now whether a name is used as a field, or argument (WillUseFor_NodeField).
+
+%%[(8 codegen grin) hs export(WillUseFor(..),WillUseForMp,WillUseForS,willUseIntersection,willUseUnion,willUseFor,willUseForEval,willUseForNodeField)
+data WillUseFor
+  = WillUseFor_Eval
+  | WillUseFor_NodeField
+  deriving (Eq,Ord,Show)
+
+instance PP WillUseFor where
+  pp = pp . show
+
+type WillUseForS  = Set.Set WillUseFor
+type WillUseForMp = Map.Map HsName WillUseForS
+
+willUseUnion :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseUnion = Map.unionWith Set.union
+
+willUseIntersection :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseIntersection = Map.intersectionWith Set.intersection
+
+willUseFor :: HsName -> WillUseForMp -> WillUseForS
+willUseFor n m = maybe Set.empty id $ Map.lookup n m
+
+willUseForEval :: HsName -> WillUseForMp -> Bool
+willUseForEval n m = maybe False (WillUseFor_Eval `Set.member`) $ Map.lookup n m
+
+willUseForNodeField :: HsName -> WillUseForMp -> Bool
+willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.lookup n m
+%%]
+

@@ -7,54 +7,52 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR GrExpr GrAlt [ | | willEvalNmS: FvS ]
+ATTR GrExpr GrAlt [ | | willUseForMp: WillUseForMp ]
 
 SEM GrExpr
-  | *			loc			.	willEvalNmS		:	FvS
-  | Seq         loc         .   willEvalNmS     =   Set.unions [@expr.willEvalNmS, @body.willEvalNmS]
-  | Case		loc			.	willEvalNmS     =   foldr1 Set.intersection @altL.willEvalNmSL
-  | Eval        loc         .   willEvalNmS     =   Set.singleton @nm
+  | *			loc			.	willUseForMp	:	WillUseForMp
+  | Seq         loc         .   willUseForMp    =   willUseUnion @expr.willUseForMp @body.willUseForMp
+  | Case		loc			.	willUseForMp    =   foldr1 willUseIntersection @altL.willUseForMpL
+  | Eval        loc         .   willUseForMp    =   Map.singleton @nm (Set.singleton WillUseFor_Eval)
   | * - Eval Seq Case
-                loc         .   willEvalNmS     =   Set.empty
+                loc         .   willUseForMp    =   Map.empty
 %%]
-  | Eval App    loc         .   willEvalNmS     =   Set.singleton @nm
-  | * - Eval App Seq Case
-                loc         .   willEvalNmS     =   Set.empty
 
 %%[(8 codegen grin)
-ATTR GrAltL [ | | willEvalNmSL: {[FvS]} ]
+ATTR GrAltL [ | | willUseForMpL: {[WillUseForMp]} ]
 
 SEM GrAltL
-  | Nil			lhs			.	willEvalNmSL	=   []
-  | Cons		lhs			.	willEvalNmSL	=   @hd.willEvalNmS : @tl.willEvalNmSL
+  | Nil			lhs			.	willUseForMpL	=   []
+  | Cons		lhs			.	willUseForMpL	=   @hd.willUseForMp : @tl.willUseForMpL
 %%]
 
 %%[(8 codegen grin)
-ATTR GrExpr GrVal [ willEval: Bool | | ]
+ATTR GrExpr GrVal [ willUseFor: WillUseForS | | ]
 
 SEM GrExpr
-  | Seq         expr        .   willEval        =   case @pat.nmAlias of
-                                                      NmAlias_Nm nmp
-                                                        -> nmp `Set.member` @body.willEvalNmS
-                                                      _ -> False
+  | Seq         expr        .   willUseFor      =   case @pat.nmAlias of
+                                                    NmAlias_Nm nmp
+                                                      -> -- (\v -> tr "XX" (nmp >#< show v) v) $
+                                                         willUseFor nmp @body.willUseForMp
+                                                    _ -> Set.empty
 
 SEM GrAlt
-  | Alt         expr        .   willEval        =   False
+  | Alt         expr        .   willUseFor      =   Set.empty
 
 SEM GrGlobal
-  | Global      loc         .   willEval        =   False
+  | Global      loc         .   willUseFor      =   Set.empty
 
 SEM GrValL
-  | Cons        hd          .   willEval        =   False
+  | Cons        hd          .   willUseFor      =   Set.empty
 %%]
 SEM GrBind
-  | Bind        expr        .   willEval        =   False
+  | Bind        expr        .   willUseFor      =   Set.empty
 
 
 %%[(10 codegen grin)
 SEM GrAdapt
-  | *           loc         .   willEval        =   False
+  | *           loc         .   willUseFor      =   Set.empty
 
 SEM GrSplit
-  | *           loc         .   willEval        =   False
+  | *           loc         .   willUseFor      =   Set.empty
 %%]
