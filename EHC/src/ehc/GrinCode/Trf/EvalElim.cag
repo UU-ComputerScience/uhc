@@ -6,11 +6,11 @@ The basic strategy is as follows:
 \begin{itemize}
 \item Find out to what (IsEval) a GrExpr is evaluated (in attr isEval).
 \item Bind this info to introduced names (in attr isEvalMp).
-\item Find out whether a GrExpr will be evaluated later on (in attr willEval).
+\item Find out whether a GrExpr will be evaluated later on (in attr willUseFor).
 \item This is all combined when computing a replacement GrExpr,
       because closures can only be replaced if it is known that they will be evaluated,
       and evaluations can only be replaced if we know that they have been computed earlier.
-      Hence the need for past (isEvalMp) and future (willEval) info.
+      Hence the need for past (isEvalMp) and future (willUseFor) info.
 \item The transformation also computes new IsEval info, to be bound and propagated.
 \end{itemize}
 
@@ -91,12 +91,6 @@ Note: when HPT analysis is done, in apply the name f is used instead of f'.
 %%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Maybe)
 %%]
 
--- for debugging:
-%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
-%%]
-%%[(8 codegen grin) hs import(Debug.Trace)
-%%]
-
 %%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
@@ -105,6 +99,16 @@ Note: when HPT analysis is done, in apply the name f is used instead of f'.
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval})
 %%]
+
+-- for debugging:
+%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs export(grEvalElim)
 grEvalElim :: EHCOpts -> GrModule -> GrModule
@@ -115,10 +119,6 @@ grEvalElim opts grmod
                  { opts_Inh_GrAGItf = opts
                  })
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Wrapper
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
@@ -310,13 +310,13 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
+%%]
 ATTR GrExpr [ | | evalNmS: FvS ]
 
 SEM GrExpr
-  | App Eval    loc         .   evalNmS         =   @willEvalNmS
+  | App Eval    loc         .   evalNmS         =   Map.keysSet $ Map.filter (WillUseFor_Eval `Set.member`) @willUseForMp
   | * - App Eval
                 loc         .   evalNmS         =   Set.empty
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Delayed evaluations, postponed until just before its original eval
@@ -341,17 +341,10 @@ SEM GrBind
 SEM GrExpr
   | Seq         body        .   delayedEvalMp   =   Map.unions [maybeAnd Map.empty (\n e -> Map.singleton n (del2del (mkSeq n) e)) @mbIntroNm @expr.mbDelayedExpr, @expr.delayedEvalMp]
   | App Eval    (loc.delayedMkSeq,lhs.delayedEvalMp,loc.delayedIsEvals,loc.delayedIsEvalMp)
-                                                =   let (here,furtheron) = Map.partitionWithKey (\n _ -> Set.member n @evalNmS) @lhs.delayedEvalMp
+                                                =   let (here,furtheron) = Map.partitionWithKey (\n _ -> willUseForEval n @willUseForMp) @lhs.delayedEvalMp
                                                         (evals,isevals,isevalmps) = unzip3 [ (e,(n,ie),iem) | (n,(e,ie,iem)) <- Map.toList here ]
                                                     in  (foldr (.) id evals,furtheron,isevals,Map.unions isevalmps)
 %%]
-SEM GrExpr
-  | Seq         (loc.delayedMkSeq,body.delayedEvalMp,loc.delayedIsEvals,loc.delayedIsEvalMp)
-                                                =   let mp  = Map.unions [maybeAnd Map.empty (\n e -> Map.singleton n (del2del (mkSeq n) e)) @mbIntroNm @expr.mbDelayedExpr, @lhs.delayedEvalMp]
-                                                        (here,furtheron) = Map.partitionWithKey (\n _ -> Set.member n @expr.evalNmS) mp
-                                                        (evals,isevals,isevalmps) = unzip3 [ (e,(n,ie),iem) | (n,(e,ie,iem)) <- Map.toList here ]
-                                                    in  (foldr (.) id evals,furtheron,isevals,Map.unions isevalmps)
-                expr        .   delayedEvalMp   =   Map.empty
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Restricting what will participate as 'Will eval'
@@ -363,17 +356,20 @@ cannot move it forwards without interfering with the evaluation state
 expected by its intermediate use.
 
 %%[(8 codegen grin)
-ATTR GrExpr [ | | noWillEvalS: FvS ]
+ATTR GrExpr [ | | alsoWillUseForMp: WillUseForMp ]
 
 SEM GrExpr
-  | Call App    lhs         .   noWillEvalS     =   Map.keysSet @argL.gathFviMp
-  | Store Unit  lhs         .   noWillEvalS     =   Map.keysSet @gathFviMp
+  | Call App    lhs         .   alsoWillUseForMp=   Map.map (const $ Set.singleton WillUseFor_NodeField) @argL.gathFviMp
+  | Store Unit  lhs         .   alsoWillUseForMp=   Map.map (const $ Set.singleton WillUseFor_NodeField) @gathFviMp
   | * - Call App Store Unit
-                lhs         .   noWillEvalS     =   Set.empty
+                lhs         .   alsoWillUseForMp=   Map.empty
 
 SEM GrExpr
-  | Seq         lhs         .   willEvalNmS     =   @willEvalNmS `Set.difference` @expr.noWillEvalS
+  | Seq         lhs         .   willUseForMp    =   @willUseForMp `willUseUnion` @expr.alsoWillUseForMp `willUseUnion` @body.alsoWillUseForMp
 %%]
+SEM GrExpr
+  | Seq         lhs         .   willUseForMp    =   @willUseForMp `Map.difference` @expr.alsoWillUseForMp
+  | Seq         lhs         .   willUseForMp    =   @willUseForMp `willUseUnion` @expr.alsoWillUseForMp
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Will eval redefinition to introduce fake dependency 
@@ -381,8 +377,8 @@ SEM GrExpr
 
 %%[(8 codegen grin)
 SEM GrBind
-  | Bind        expr        .   willEval        =   False
-                expr        .   gathFviMp       <   expr.willEval
+  | Bind        expr        .   willUseFor      =   Set.empty
+                expr        .   gathFviMp       <   expr.willUseFor
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -399,55 +395,30 @@ ATTR GrVal [ | | mbGrExpr: {Maybe GrExpr} ]
 ATTR GrExpr GrVal [ | | mbDelayedExpr: {Maybe DelayedExpr} ]
 
 SEM GrVal
-  | Node        (loc.mbGrExpr,lhs.isEval,lhs.gathIsEvalMp,loc.mbDelayedExpr)
+  | Node        loc         .   willOnlyUseForEval
+                                                =   WillUseFor_Eval `Set.member` @lhs.willUseFor && not (WillUseFor_NodeField `Set.member` @lhs.willUseFor)
+                (loc.mbGrExpr,lhs.isEval,lhs.gathIsEvalMp,loc.mbDelayedExpr)
                                                 =   case (@tag.trf,@fldL.trf) of
-                                                      {-
-                                                      -}
-                                                      (GrTag_Fun nm,_) | @lhs.willEval && ehcOptPriv @lhs.opts                 -- a to be evaluated saturated call closure -> immediate call
-                                                        -> (Just repl, IsEval_EvalToNode, Map.empty, Nothing)
-                                                        where repl = GrExpr_Call nm @fldL.trf
-                                                      {-
-                                                      -}
-                                                      (GrTag_Fun nm,_) | @lhs.willEval                  -- a to be evaluated saturated call closure -> immediate call
+                                                      (GrTag_Fun nm,_)
+                                                        | @willOnlyUseForEval                  -- a to be evaluated saturated call closure -> immediate call
                                                         -> (Nothing, IsEval_None, Map.empty, Just (repl, IsEval_EvalToNode, Map.empty))
                                                         where repl = GrExpr_Call nm @fldL.trf
-                                                      {-
-                                                      -}
-                                                      (GrTag_App _,(GrVal_Var f:fs)) | @lhs.willEval && ehcOptPriv @lhs.opts       -- a to be evaluated apply closure -> immediate apply
-                                                        -> ( Just repl 
-                                                           , IsEval_Apply fRepl fs
-                                                           , Map.singleton f (IsEval_EvalToNodeNm f')
-                                                           , Nothing
-                                                           )
-                                                        where f' = hsnSuffix f "!"
-                                                              fRepl = if optsAllowNodePtrMix @lhs.opts then f' else f
-                                                              repl = GrExpr_Seq (GrExpr_Eval f) (GrPatLam_Var f') (GrExpr_App fRepl fs)
-                                                      {-
-                                                      -}
-                                                      (GrTag_App _,(GrVal_Var f:fs)) | @lhs.willEval       -- a to be evaluated apply closure -> immediate apply
+                                                      (GrTag_App _,(GrVal_Var f:fs))
+                                                        | @willOnlyUseForEval      -- a to be evaluated apply closure -> immediate apply
                                                         -> ( Nothing
                                                            , IsEval_None
                                                            , Map.empty
                                                            , Just (repl,IsEval_Apply fRepl fs,Map.singleton f (IsEval_EvalToNodeNm f'))
                                                            )
                                                         where f' = hsnSuffix f "!"
-                                                              fRepl = if optsAllowNodePtrMix @lhs.opts then f' else f
+                                                              fRepl = f' -- if optsAllowNodePtrMix @lhs.opts then f' else f
                                                               repl = GrExpr_Seq (GrExpr_Eval f) (GrPatLam_Var f') (GrExpr_App fRepl fs)
                                                       (GrTag_Con _ _ _,_)                               -- constructor node is evaluated
                                                         -> (Nothing, IsEval_EvalToPointer, Map.empty, Nothing)
                                                       (GrTag_Rec ,_)                                    -- record as well
                                                         -> (Nothing, IsEval_EvalToPointer, Map.empty, Nothing)
-                                                      {-
-                                                      -}
-                                                      (GrTag_PApp nMiss nm,_)                            -- partial app also, cannot be evaluated further, unless 0 missing
-                                                        | @lhs.willEval && nMiss == 0 && ehcOptPriv @lhs.opts
-                                                          -> (Nothing, IsEval_None, Map.empty, Just (GrExpr_Call nm @fldL.trf, IsEval_EvalToNode, Map.empty))
-                                                        | ehcOptPriv @lhs.opts
-                                                          -> (Nothing, IsEval_EvalToPointer, Map.empty, Nothing)
-                                                      {-
-                                                      -}
                                                       (GrTag_PApp nMiss nm,_)                           -- partial app also, cannot be evaluated further, unless 0 missing
-                                                        | @lhs.willEval && nMiss == 0
+                                                        | @willOnlyUseForEval && nMiss == 0
                                                           -> (Nothing, IsEval_None, Map.empty, Just (GrExpr_Call nm @fldL.trf, IsEval_EvalToNode, Map.empty))
                                                         | otherwise
                                                           -> (Nothing, IsEval_EvalToPointer, Map.empty, Nothing)

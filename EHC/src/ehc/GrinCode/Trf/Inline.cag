@@ -67,6 +67,20 @@ grInline allow grmod
             
 %%]
 
+-- for debugging:
+%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
 %%[(20 codegen grin) -8.grInline hs export(grInline)
 grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
 grInline allow expNmS inlMp grmod
@@ -77,14 +91,6 @@ grInline allow expNmS inlMp grmod
                 , inlMp_Inh_GrAGItf = inlMp
                 , allowOmitBind_Inh_GrAGItf = allow
                 }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Wrapper
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin).wrapper
-WRAPPER GrAGItf
 %%]
 
 There is a cyclic dependency, but it is by design:
@@ -148,7 +154,7 @@ SEM GrModule
 
 %%[(8 codegen grin)
 SEM GrBind
-  | Bind        expr        .   willEval        =   False
+  | Bind        expr        .   willUseFor      =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,7 +186,7 @@ SEM GrBind
                                                           -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
                                                       Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                                                         | @isCAF
-                                                          && @nm `Set.member` @expr.willEvalNmS
+                                                          && willUseForEval @nm @expr.willUseForMp
                                                           && FvUse_Val `Set.member` use
 %%[[20
                                                           && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
