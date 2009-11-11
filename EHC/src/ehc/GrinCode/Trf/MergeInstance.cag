@@ -58,7 +58,7 @@ ATTR GrTag GrVal [ | | mbFunNm : {Maybe HsName} ]
 
 
 SEM GrModule
-  | Mod    globalL.dictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error "MergeInstance: no synonym") k @globalL.collectSynoMap)) @bindL.collectDictMap 
+  | Mod    globalL.dictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error ("MergeInstance: no synonym for" ++ show k ++ " in " ++ show @globalL.collectSynoMap)) k @globalL.collectSynoMap)) @bindL.collectDictMap 
            globalL.classMap = @bindL.collectClassMap
            globalL.arityMap = @bindL.collectArityMap
 
@@ -78,10 +78,15 @@ SEM GrBind
 SEM GrBind
   | Bind    (lhs.newBinds
             ,lhs.collectDictMap)  =  case @annot of
-                                           GrBindAnnInstance xs  -> ([], Map.singleton @nm xs)
+                                           GrBindAnnInstance xs  -> case @argNmL of
+                                                                      [] -> ([], Map.singleton @nm xs)
+                                                                      _  -> ([@loc.grTrf], Map.empty)
                                            _                     -> ([@loc.grTrf], Map.empty)
-  | Rec     lhs.newBinds = [GrBind_Rec @bindL.newBinds]
+  | Rec     lhs.newBinds = [GrBind_Rec @bindL.grTrf]
 
+SEM GrBindL
+  | Nil     lhs.grTrf = []
+  | Cons    lhs.grTrf = @hd.newBinds ++ @tl.grTrf
 
 SEM GrGlobal
   | Global  lhs.collectSynoMap  =  maybe Map.empty
