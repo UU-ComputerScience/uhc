@@ -26,6 +26,7 @@
 %%[8
 void mm_allocator_LOF_Init( MM_Allocator* alcr, MM_Malloc* memmgt, MM_Space* space ) {
 	Word alcSizeLog = maxWord( MM_Pages_MinSize_Log, firstHigherPower2( sizeof(MM_Allocator_LOF_Data) ) ) ;
+	// IF_GB_TR_ON(3,{printf("mm_allocator_LOF_Init alcSizeLog=%x MM_Pages_MinSize_Log=%x sizeof(MM_Allocator_LOF_Data)=%x firstpow2=%x\n", alcSizeLog, MM_Pages_MinSize_Log,sizeof(MM_Allocator_LOF_Data),firstHigherPower2( sizeof(MM_Allocator_LOF_Data) ));}) ;
 	Word alcInx = space->growSpaceLog2( space, alcSizeLog ) ;
 	MM_Allocator_LOF_Data* alc = (MM_Allocator_LOF_Data*)(space->getFragment( space, alcInx )->frag) ;
 	
