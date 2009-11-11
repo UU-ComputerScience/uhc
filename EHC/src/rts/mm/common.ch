@@ -43,7 +43,7 @@ Magic byte for marking fresh mem
 
 %%[8
 #if TRACE
-#define MM_GC_FreshMem_Pattern_Byte				0xaa		// will correspond to an address in upper 2GB of mem
+#define MM_GC_FreshMem_Pattern_Byte				0xaaL		// will correspond to an address in upper 2GB of mem
 #define MM_GC_FreshMem_Pattern_Word32			(MM_GC_FreshMem_Pattern_Byte | (MM_GC_FreshMem_Pattern_Byte << 8) | (MM_GC_FreshMem_Pattern_Byte << 16) | (MM_GC_FreshMem_Pattern_Byte << 24))
 #define MM_GC_FreshMem_Pattern_Word64			(MM_GC_FreshMem_Pattern_Word32 | (MM_GC_FreshMem_Pattern_Word32 << 32))
 #if USE_64_BITS

@@ -276,7 +276,7 @@ void mm_pages_Buddy_Init( MM_Pages* buddyPages, MM_Malloc* memmgt ) {
 
 MM_Page mm_pages_Buddy_AllocPagesLog2( MM_Pages* buddyPages, MM_Pages_LogSize szPagesLog ) {
 	MM_Pages_LogSize szPagesLog0 = szPagesLog - MM_Pages_MinSize_Log ;
-	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPagesLog2 szPagesLog0=%x\n", szPagesLog0);}) ;
+	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPagesLog2 szPagesLog0=%x max=%x\n", szPagesLog0, MM_Pages_Buddy_FreePages_Size);}) ;
 	if ( szPagesLog0 >= MM_Pages_Buddy_FreePages_Size ) { rts_panic1_1( "buddy alloc size request too large", szPagesLog ) ; }
 	
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
