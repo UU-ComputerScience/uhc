@@ -61,7 +61,7 @@ void gb_panic2_2( char* msg1, char* msg2, int i1, int i2 )
 %%[8
 int firstNonZeroBit( Word w ) {
 	int i ;
-	for ( i = 0 ; i < Word_SizeInBits && (! (w & 1)) ; i++, w >>= 1 ) ;
+	for ( i = 0 ; i < Word_SizeInBits && (! (w & ((Word)1L))) ; i++, w >>= 1 ) ;
 	return i ;
 }
 %%]
@@ -80,7 +80,7 @@ int firstNonZeroMsBit( Word w, int startAt ) {
 int firstHigherPower2( Word w ) {
 	int i ;
 	i = firstNonZeroMsBit( w, Word_SizeInBits-1 ) ;
-	return ( w ^ (1<<i) ? i+1 : i ) ;
+	return ( w ^ (((Word)1L)<<i) ? i+1 : i ) ;
 }
 %%]
 
