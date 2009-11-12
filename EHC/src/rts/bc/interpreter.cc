@@ -284,9 +284,13 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 
 Todo: USE_EHC_MM finalization
 
-%%[95
-#if USE_BOEHM_GC
+%%[94
+#if USE_BOEHM_GC || USE_EHC_MM
+#if USE_EHC_MM
+void gb_Node_Finalize( Word p, Word unused )
+#else
 void gb_Node_Finalize( void* p, void* cd )
+#endif
 {
 	GB_NodePtr n = Cast(GB_NodePtr,p) ;
 	GB_NodeHeader h = n->header ;
@@ -294,16 +298,18 @@ void gb_Node_Finalize( void* p, void* cd )
 	{
 		switch( GB_NH_Fld_Tag(h) )
 		{
+%%[[95
 			case GB_NodeTag_Intl_Malloc :
 				gb_free( n->content.ptr ) ;
 				break ;
 			case GB_NodeTag_Intl_Malloc2 :
 				gb_free( n->content.bytearray.ptr ) ;
 				break ;
+%%]]
 %%[[97
 #			if USE_EHC_MM && USE_GMP
 				case GB_NodeTag_Intl_GMP_mpz :
-					mpz_clear( MPZ(n) ) ;
+					gb_Node_FinalizeInteger( n ) ;
 					break ;
 #			endif
 %%]]
@@ -316,8 +322,10 @@ void gb_Node_Finalize( void* p, void* cd )
 	}
 }
 
+#if USE_BOEHM_GC
 void* gb_Dummy_Finalization_Proc ;
 void* gb_Dummy_Finalization_cd ;
+#endif
 #endif
 %%]
 
@@ -609,6 +617,8 @@ Bool gb_CallInfo_Kind_IsVisible( Word kind )
 		case GB_CallInfo_Kind_Apply :
 		case GB_CallInfo_Kind_CCall :
 /*
+*/
+#	if TRACE
 		case GB_CallInfo_Kind_Tail :
 		case GB_CallInfo_Kind_EvalWrap :
 		case GB_CallInfo_Kind_Hdlr :
@@ -618,7 +628,7 @@ Bool gb_CallInfo_Kind_IsVisible( Word kind )
 		case GB_CallInfo_Kind_ApCont :
 		case GB_CallInfo_Kind_PApCont :
 		case GB_CallInfo_Kind_TailEval :
-*/
+#	endif
 			return True ;
 			break ;
 		default :
@@ -970,7 +980,7 @@ void gb_interpretLoop()
 
 	while( True )
 	{
-		IF_GB_TR_ON(1,gb_prState( "interpreter step", 10 ) ;)
+		IF_GB_TR_ON(1,gb_prState( "interpreter step", 3 /*10*/ ) ;)
 		switch( *(pc++) )
 		{
 			/* load immediate constant on stack */
@@ -1567,28 +1577,69 @@ gb_interpreter_InsApplyEntry:
 %%[[1010
 %%]]
 						WPtr bpNext ;
+%%[[1010
+						printf( "GB_Ins_TailEval" ) ;
+						if (bp) { 
+							printf( " k0=%d", GB_FromBPToCallInfo(bp)->kind ) ;
+							bpNext = (WPtr)*bp ;
+							if (bpNext) { 
+								printf( " k1=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+								bpNext = (WPtr)*bpNext ;
+								if (bpNext) { 
+									printf( " k2=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+									bpNext = (WPtr)*bpNext ;
+									if (bpNext) { 
+										printf( " k3=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+										bpNext = (WPtr)*bpNext ;
+										if (bpNext) { 
+											printf( " k4=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+											bpNext = (WPtr)*bpNext ;
+											if (bpNext) { 
+												printf( " k5=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+												bpNext = (WPtr)*bpNext ;
+											}
+										}
+									}
+								}
+							}
+						}
+						printf( "\n" ) ;
+%%]]
 						switch ( GB_FromBPToCallInfo(bp)->kind ) {
+%%[[1010
+							case GB_CallInfo_Kind_EvAppFunEvCont :
+								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) {
+									bpNext = (WPtr)*bpNext ;										/* remove the intermediate update admin */
+									goto gb_interpreter_TailEval_ElimCont ;
+								} else {
+									goto gb_interpreter_TailEval_Default ;
+								}
+								break ;
+%%]]
 							case GB_CallInfo_Kind_EvCont :
 								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) {
-									bp = (WPtr)*bpNext ;												/* remove the intermediate update admin */
+									bpNext = (WPtr)*bpNext ;										/* remove the intermediate update admin */
+									goto gb_interpreter_TailEval_ElimCont ;
+								} else {
+									goto gb_interpreter_TailEval_Default ;
+								}
+								break ;
+							case GB_CallInfo_Kind_TailEvalCont :
+gb_interpreter_TailEval_ElimCont:
+%%[[1010
+								do {
+%%]]
+									bp = bpNext ;														/* remove the intermediate update admin */
 									sp = bp - 2 ;														/* go back the place the previous taileval left us */
 									GB_NodePtr nOld = Cast(GB_NodePtr,GB_TOS) ;							/* get the node under evaluation */
 									GB_UpdWithIndirection_Code_Ind(nOld,x,h,;) ;						/* and let it indirect to the thing to be tailevaluated */
 									GB_SetTOS(x) ;														/* go on evaluating with the new value */
-								} else {
-									sp = bp ;															/* remove all locals of current call, then construct frame for taileval */
-									GB_Push(x2) ;														/* remember nArgSurr, as arg to taileval cleanup 			*/
-									GB_Push( x ) ;														/* value to eval as arg to eval			*/
-								}
-								break ;
-							case GB_CallInfo_Kind_TailEvalCont :
-								bp = bpNext ;														/* remove the intermediate update admin */
-								sp = bp - 2 ;														/* go back the place the previous taileval left us */
-								GB_NodePtr nOld = Cast(GB_NodePtr,GB_TOS) ;							/* get the node under evaluation */
-								GB_UpdWithIndirection_Code_Ind(nOld,x,h,;) ;						/* and let it indirect to the thing to be tailevaluated */
-								GB_SetTOS(x) ;														/* go on evaluating with the new value */
+%%[[1010
+								} while ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) ;
+%%]]
 								break ;
 							default :
+gb_interpreter_TailEval_Default:
 								sp = bp ;															/* remove all locals of current call, then construct frame for taileval */
 								GB_Push(x2) ;														/* remember nArgSurr, as arg to taileval cleanup 			*/
 								GB_Push( x ) ;														/* value to eval as arg to eval			*/
@@ -2288,6 +2339,7 @@ void* gb_ReAlloc_GMP( void *n, size_t nBytesOld, size_t nBytes )
 void gb_Free_GMP( void *n, size_t nBytesOld )
 {
 #	if USE_EHC_MM
+		IF_GB_TR_ON(3,{printf("gb_Free_GMP n=%p\n",n);}) ;
 		GB_HeapFree_Fixed( n ) ;
 #	endif
 }

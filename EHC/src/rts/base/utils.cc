@@ -70,7 +70,7 @@ int firstNonZeroBit( Word w ) {
 int firstNonZeroMsBit( Word w, int startAt ) {
 	// IF_GB_TR_ON(3,{printf("firstNonZeroMsBit w=%llx startAt=%x\n", w, startAt);}) ;
 	int i ;
-	for ( i = startAt ; i >= 0 && (! (w & (Word)(1L<<i))) ; i-- ) ;
+	for ( i = startAt ; i >= 0 && (! (w & (((Word)1L)<<i))) ; i-- ) ;
 	// IF_GB_TR_ON(3,{printf("firstNonZeroMsBit i=%x\n", i);}) ;
 	return i ;
 }

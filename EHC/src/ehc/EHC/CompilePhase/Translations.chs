@@ -32,6 +32,10 @@ Translation to another AST
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 
+-- TyCore semantics
+%%[(8 codegen grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
+%%]
+
 -- Grin semantics
 %%[(8 codegen grin) import({%{EH}GrinCode.ToGrinByteCode}(grinMod2ByteCodeMod))
 %%]
@@ -127,9 +131,22 @@ cpTranslateEH2Core modNm
                  mbEHSem= ecuMbEHSem ecu
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  core   = EHSem.cmodule_Syn_AGItf  ehSem
+         ;  when (isJust mbEHSem)
+                 (cpUpdCU modNm ( ecuStoreCore core
+                                ))
+         }
+%%]
+
+%%[(8 codegen) export(cpTranslateEH2TyCore)
+cpTranslateEH2TyCore :: HsName -> EHCompilePhase ()
+cpTranslateEH2TyCore modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbEHSem= ecuMbEHSem ecu
+                 ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  tycore = EHSem.tcmodule_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
-                 (cpUpdCU modNm ( ecuStoreTyCore tycore . ecuStoreCore core
+                 (cpUpdCU modNm ( ecuStoreTyCore tycore
                                 ))
          }
 %%]
@@ -144,6 +161,19 @@ cpTranslateCore2Grin modNm
                  grin      = Core2GrSem.grMod_Syn_CodeAGItf coreSem
          ;  when (isJust mbCoreSem && targetIsGrin (ehcOptTarget opts))
                  (cpUpdCU modNm $! ecuStoreGrin $! grin)
+         }
+%%]
+
+%%[(8 codegen grin) export(cpTranslateTyCore2Core)
+cpTranslateTyCore2Core :: HsName -> EHCompilePhase ()
+cpTranslateTyCore2Core modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 mbTyCore  = ecuMbTyCore ecu
+                 tycore    = panicJust "cpTranslateTyCore2Core" mbTyCore
+                 core      = TyCore2Core.tycore2core opts tycore
+         ;  when (isJust mbTyCore)
+                 (cpUpdCU modNm $! ecuStoreCore $! core)
          }
 %%]
 

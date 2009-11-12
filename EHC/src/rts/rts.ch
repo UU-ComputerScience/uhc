@@ -36,6 +36,8 @@
 #define USE_EHC_MM				1
 %%[[8
 #define GB_DEBUG				0	// 0 or 1 for debugging settings
+%%][99
+#define GB_DEBUG				0	// 0 or 1 for debugging settings
 %%][100
 #define GB_DEBUG				0	// always 0
 %%]]

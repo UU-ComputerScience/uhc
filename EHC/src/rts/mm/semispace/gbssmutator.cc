@@ -53,6 +53,24 @@ void mm_mutator_GBSS_zzz( MM_Mutator* mutator, ... ) {
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GBSS special purpose allocation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+Ptr mm_mutator_GBSS_AllocWeakPtr( MM_Mutator* mutator /*, Word key, Word val, Ptr finalizer */ ) {
+	// MM_LclRoot_EnterGrp ;
+	// MM_LclRoot_EnterOne2(key,val) ;
+	GB_NodePtr n = (GB_NodePtr)mutator->allocator->alloc( mm_mutator.allocator, GB_NodeWeakPtrSize << Word_SizeInBytes_Log, 0 ) ;
+	n->header = GB_MkWeakPtrHeader ;
+	// n->content.weakptr.key = key ;
+	// n->content.weakptr.val = val ;
+	// n->content.weakptr.finalizer = (MM_WeakPtr_Finalizer)finalizer ;
+	// MM_LclRoot_LeaveGrp ;
+	return (Ptr)n ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GBSS interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -67,6 +85,9 @@ MM_Mutator mm_mutator_GBSS =
 	, &mm_mutator_GBSS_Init
 	, &mm_mutator_GBSS_IsMaintainedByGC
 	// , &
+%%[[94
+	, &mm_mutator_GBSS_AllocWeakPtr
+%%]]
 	} ;
 %%]
 

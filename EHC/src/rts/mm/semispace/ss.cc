@@ -94,6 +94,12 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->gbmModule.init( &plss->gbmModule, &plss->memMgt ) ;
 #endif
 	
+%%[[94
+	mm_weakPtr = mm_weakPtr_List ;
+	mm_weakPtr.init( &mm_weakPtr, &mm_mutator, &plss->collector ) ;
+	plss->weakPtr = &mm_weakPtr ;
+%%]]
+
 	plss->gcInProgress = False ;
 	
 	plan->data = (MM_Plan_Data_Priv*)plss ;

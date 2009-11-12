@@ -218,7 +218,7 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 
 #define GB_NodeTagCat_Con				0			/* data, constructor 											*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 					*/
-%%[[95
+%%[[94
 #define GB_NodeTagCat_Intl				3			/* other internal structures, further described by tag 			*/
 %%]]
 %%]
@@ -245,6 +245,10 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 #define GB_NodeTag_Intl_Chan			6			// Internal node: GB_Chan
 %%]
 
+%%[94
+#define GB_NodeTag_Intl_WeakPtr			7			// Internal node: GB_WeakPtr
+%%]
+
 %%[8
 #if NODEHEADER_VIA_STRUCT
 #define GB_NH_NrFlds(h)					((h).size-1)
@@ -264,11 +268,14 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 // has node traceable content?
 static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 	Bool doTrace = True ;
-%%[[95
+%%[[94
 	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
 		switch( GB_NH_Fld_Tag(h) ) {
+			case GB_NodeTag_Intl_WeakPtr :
+%%[[95
 			case GB_NodeTag_Intl_Malloc :
 			case GB_NodeTag_Intl_Malloc2 :
+%%]]
 %%[[97
 			case GB_NodeTag_Intl_Float :
 			case GB_NodeTag_Intl_Double :
@@ -372,6 +379,11 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 %%]
 extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
+%%[94
+#define GB_NodeWeakPtrSize					(EntierUpDivBy(sizeof(GB_WeakPtr),sizeof(GB_Word)) + 1)
+#define GB_MkWeakPtrHeader					GB_MkHeader(GB_NodeWeakPtrSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_WeakPtr)
+%%]
+
 %%[95
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
 #define GB_NodeMallocSize_ByteArray			(EntierUpDivBy(sizeof(GB_ByteArray),sizeof(GB_Word)) + 1)
@@ -405,6 +417,14 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 %%]
 
 
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% WeakPtr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+typedef MM_WeakPtr_Object	GB_WeakPtr ;
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Byte array
@@ -448,6 +468,9 @@ typedef struct GB_Node {
 #if USE_GMP
     // mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
+%%]]
+%%[[94
+    GB_WeakPtr		weakptr ;			/* when GB_NodeTag_Intl_WeakPtr */
 %%]]
 %%[[98
     GB_Chan			chan ;				/* when GB_NodeTag_Intl_Chan */
@@ -591,6 +614,11 @@ The 'Fixed' variants allocate non-collectable.
 
 #	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
 
+	extern void gb_Node_Finalize( Word p, Word unused ) ;
+#	if USE_GMP
+		extern void gb_Node_FinalizeInteger( GB_NodePtr n ) ;
+#	endif
+	
 	static inline Ptr gb_malloc( size_t sz ) { return mm_itf_malloc( sz ) ; }
 	static inline void gb_free( Ptr p ) { mm_itf_free( p ) ; }
 
@@ -656,24 +684,25 @@ This breaks when compiled without bgc.
 %%[95
 #if USE_BOEHM_GC
 #define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
-#elif USE_EHC_MM
-#define GB_Register_Finalizer(n,cd)			
+#elif 0 && USE_EHC_MM
+// #define GB_Register_Finalizer(n,cd)
+#define GB_Register_Finalizer(n,cd)			{ GB_GCSafe_Enter ; GB_GCSafe_1(n) ; mm_itf_registerFinalization( (Word)(n), &gb_Node_Finalize ) ; GB_GCSafe_Leave ; }
 #else
 #define GB_Register_Finalizer(n,cd)			
 #endif
 %%]
 
 %%[95
-#define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
-											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
-											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
-											}
 #define GB_NodeAlloc_ByteArray_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize_ByteArray,GB_MkMallocHeader_ByteArray,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
 											  (n)->content.bytearray.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
 											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
 											}
 %%]
+#define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
+											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
+											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
+											}
 
 %%[97
 %%]
@@ -682,11 +711,15 @@ This breaks when compiled without bgc.
 
 
 %%[98
-#define GB_NodeAlloc_Chan_In_Fixed(n)		{ GB_NodeAlloc_Hdr_In_Fixed(GB_NodeChanSize, GB_MkChanHeader, n) ; }
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
 %%]
+#define GB_NodeAlloc_Chan_In_Fixed(n)		{ GB_NodeAlloc_Hdr_In_Fixed(GB_NodeChanSize, GB_MkChanHeader, n) ; }
+
+%%[94
+%%]
+#define GB_NodeAlloc_WeakPtr_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeWeakPtrSize, GB_MkWeakPtrHeader, n) ; }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GC specific information
