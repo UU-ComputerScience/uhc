@@ -34,7 +34,7 @@ MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, M
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
 	// IF_GB_TR_ON(3,{printf("mm_space_Fragment_GrowSpaceLog2 szFragLog=%x\n", szFragLog);}) ;
-	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
+	MM_Space_FragmentInx frgInx = mm_flexArray_AllocSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
 	frg->frag = spc->pages->allocPagesLog2( spc->pages, szFragLog ) ;
 	frg->sizeLog = szFragLog ;
@@ -47,7 +47,7 @@ MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, M
 MM_Space_FragmentInx mm_space_Fragment_GrowSpace( MM_Space* fragmentSpace, Word szFrag ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 
-	MM_Space_FragmentInx frgInx = mm_flexArray_NewSlot( &spc->fragments ) ;
+	MM_Space_FragmentInx frgInx = mm_flexArray_AllocSlot( &spc->fragments ) ;
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
 	frg->frag = spc->pages->allocPages( spc->pages, szFrag ) ;
 	frg->sizeLog = 0 ;

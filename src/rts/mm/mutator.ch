@@ -33,6 +33,11 @@ typedef struct MM_Mutator {
 
   	// scan runtime object, add new objects to be traced to trace
   	//void						(*scanObject)( struct MM_Mutator*, MM_TraceSupply* trace ) ;
+
+%%[[94
+  	// allocation variants for specific objects required by MM
+  	Ptr							(*allocWeakPtr)( struct MM_Mutator* ) ;
+%%]]
   	
 } MM_Mutator ;
 %%]

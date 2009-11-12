@@ -42,7 +42,7 @@ int dummy_integer ;
 
 %%[97
 #if USE_GMP
-#define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; }
+#define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; GB_Register_Finalizer(n,0) ; }
 #if ! USE_EHC_MM
 #define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
 #endif
@@ -179,29 +179,41 @@ PRIM Word primIntegerToInt( GB_NodePtr n )
 PRIM GB_NodePtr primCStringToInteger( char* s )
 {
 	GB_NodePtr n ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
 	GB_NodeAlloc_Mpz_In(n) ;
 	mpz_set_str( MPZ(n), s, 10 ) ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 
 PRIM GB_NodePtr primIntToInteger( GB_Int x )
 {
 	GB_NodePtr n ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
 	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 
 PRIM GB_NodePtr primFloatToInteger( Float x )
 {
 	GB_NodePtr n ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 
 PRIM GB_NodePtr primDoubleToInteger( Double x )
 {
 	GB_NodePtr n ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
 	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 #endif
@@ -431,12 +443,15 @@ PRIM Int32 primIntegerToInt32( GB_NodePtr n )
 PRIM GB_NodePtr primInt64ToInteger( Int64 x )
 {
 	GB_NodePtr n ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1_Zeroed(n) ;
 	Int64 xpos = ( x < 0 ? -x : x ) ;
 	GB_NodeAlloc_Mpz_In(n) ;
 	mpz_import( MPZ(n), 1, -1, 8, 0, 0, &xpos ) ;
 	if ( x < 0 ) {
 		mpz_neg( MPZ(n), MPZ(n) ) ;
 	}
+	GB_GCSafe_Leave ;
 	return n ;
 }
 
@@ -512,8 +527,11 @@ PRIM Word32 primIntegerToWord32( GB_NodePtr n )
 PRIM GB_NodePtr primWord64ToInteger( Word64 x )
 {
 	GB_NodePtr n ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1_Zeroed(n) ;
 	GB_NodeAlloc_Mpz_In(n) ;
 	mpz_import( MPZ(n), 1, -1, 8, 0, 0, &x ) ;
+	GB_GCSafe_Leave ;
 	return n ;
 }
 
@@ -631,6 +649,19 @@ void prim_integer_Initialize()
 		// IF_GB_TR_ON(3,{printf("mp_set_memory_functions\n");}) ;
 #	endif
 }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Finalization of Integer object
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97
+#if USE_EHC_MM && USE_GMP
+// specific Integer finalization, hiding the details
+void gb_Node_FinalizeInteger( GB_NodePtr n ) {
+	mpz_clear( MPZ(n) ) ;
+}
+#endif
 %%]
 
 

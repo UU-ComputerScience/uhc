@@ -1,5 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management: roots
+%%% Memory management: WeakPtr
+%%% see associated .ch file for more info.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -7,40 +8,31 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface for global roots
+%%% Dummy values to fool linker into thinking file contains something
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-MM_FlexArray mm_Roots ;
+%%[8.dummyForLinker
+int dummy_weakPtr ;
 %%]
 
-%%[8
-void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr, MM_Trace_Flg flg ) {
-	if ( nr > 0 ) {
-		MM_FlexArray_Inx i = mm_flexArray_AllocSlot( &mm_Roots ) ;
-		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
-		r->ptrToObj = toObj ;
-		r->nrObjs = nr ;
-		r->flags = flg ;
-	}
-}
-
+%%[94 -8.dummyForLinker
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface for local roots
+%%% Default WeakPtr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-MM_LclRoot_Grp*		mm_LclRoots = NULL ;
+%%[94
+MM_WeakPtr mm_weakPtr ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
-void mm_init_roots() {
-	mm_flexArray_New( &mm_malloc_LOF, &mm_Roots, sizeof(MM_Roots_Entry), 100, 0 ) ;
+%%[94
+void mm_init_weakPtr() {
+	// init done as part of a MM_Plan
+	// mm_weakPtr.init( &mm_weakPtr ) ;
 }
 %%]

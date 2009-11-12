@@ -20,6 +20,7 @@ Ty/Trf/ElimAlts.cag
 Ty/Trf/ElimEqual.cag
 Ty/Trf/ForceEval.cag
 TyCore/Pretty.cag
+TyCore/ToCore.cag
 TyCore/SubstApply.cag
 TyCore/Check.cag
 TyCore/SubstCaseAltFail.cag

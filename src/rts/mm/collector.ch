@@ -29,7 +29,8 @@ typedef struct MM_Collector {
   	
   	// tracing live pointers
   	
-  	// collection
+  	// queries
+  	Bool						(*isInCollectedSpace)( struct MM_Collector*, Word obj ) ;
 } MM_Collector ;
 %%]
 

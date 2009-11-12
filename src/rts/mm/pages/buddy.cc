@@ -169,7 +169,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	}
 	
 	// allocate new group
-	MM_FlexArray_Inx grpNew = mm_flexArray_NewSlot( &pgs->buddyGroups ) ;
+	MM_FlexArray_Inx grpNew = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 	Word grpNewMallocSz = (nrNewPages + 2) << MM_Pages_MinSize_Log ;
 	Ptr grpNewMalloced = sys_malloc_Sys.malloc( grpNewMallocSz ) ;
 	MM_BuddyGroup* buddyGrpNew = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpNew ) ;
@@ -185,7 +185,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	MM_BuddyGroup* buddyGrpExtl ;
 	MM_FlexArray_Inx grpExtl ;
 	if ( ! isFirstAlloc && doReuseExtl ) {
-		grpExtl = mm_flexArray_NewSlot( &pgs->buddyGroups ) ;
+		grpExtl = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 		buddyGrpExtl = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpExtl ) ;
 		mm_pages_Buddy_FillGroupWithMem( buddyGrpExtl, pgs->extlData, pgs->extlDataSize ) ;
 		extlFirstPage = minWord( extlFirstPage, buddyGrpExtl->firstPage ) ;

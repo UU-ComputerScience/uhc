@@ -52,11 +52,37 @@ void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 		plss->fromSpace->dump( plss->toSpace ) ;
 		mm_Spaces_Dump() ;
 #	endif
+
 	// run the tracing of objects
 	plss->allTraceSupply.reset( &plss->allTraceSupply, gcInfo ) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect D\n");}) ;
 	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect E\n");}) ;
+	
+%%[[94
+	// find & trace live objects belonging to weakptrs
+	MM_WeakPtr* wp = plss->weakPtr ;
+	MM_WeakPtr_NewAlive newAlive ;
+	MM_Iterator iter ;
+	wp->startFindLiveObjects( wp ) ;
+	do {
+		wp->findLiveObjects( wp, &newAlive ) ;
+		// run tracing for these objects: queue them as tracesupply and run that one again
+		for ( mm_freeListArray_IteratorAt( newAlive.alive, &iter, newAlive.firstAliveInx ) ; iter.hasData ; iter.step( &iter ) ) {
+			MM_WeakPtr_ObjectAdmin* admin = (MM_WeakPtr_ObjectAdmin*)iter.data ;
+			IF_GB_TR_ON(3,{printf("mm_collector_SS_collect F1 alive %x\n",admin->obj);}) ;
+			admin->obj = wp->traceWeakPtr( wp, &plss->gbmTrace, admin->obj ) ;
+			IF_GB_TR_ON(3,{printf("mm_collector_SS_collect F2 alive %x\n",admin->obj);}) ;
+		}
+		plss->queTraceSupply->run( plss->queTraceSupply ) ;
+	} while ( newAlive.aftLastAliveInx > newAlive.firstAliveInx ) ;
+	MM_FreeListArray* toFinalize = wp->endFindLiveObjects( wp ) ;
+	for ( mm_freeListArray_Iterator( toFinalize, &iter ) ; iter.hasData ; iter.step( &iter ) ) {
+		wp->finalizeWeakPtr( wp, ((MM_WeakPtr_ObjectAdmin*)iter.data)->obj ) ;
+	}
+%%]] 
+	
+	// done
 #	if TRACE
 		// mark as fresh for illegal access detection (dangling refs)
 		plss->fromSpace->markAsFresh( plss->fromSpace ) ;
@@ -65,6 +91,10 @@ void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 		plss->fromSpace->dump( plss->fromSpace ) ;
 		plss->fromSpace->dump( plss->toSpace ) ;
 #	endif
+}
+
+Bool mm_collector_SS_IsInCollectedSpace( MM_Collector* collector, Word obj ) {
+	return mm_Spaces_AddressIsGCManagedBySpace( obj, collector->collectedSpace ) ;
 }
 
 %%]
@@ -79,6 +109,7 @@ MM_Collector mm_collector_SS =
 	, NULL
 	, &mm_collector_SS_Init
 	, &mm_collector_SS_collect
+	, &mm_collector_SS_IsInCollectedSpace
 	} ;
 %%]
 

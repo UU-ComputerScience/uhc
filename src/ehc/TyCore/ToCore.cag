@@ -1,0 +1,257 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyCore translation to Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Translate to untyped Core, erasing types.
+%%]
+
+%%[(8 codegen) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen) hs export(tycore2core)
+tycore2core :: EHCOpts -> Module -> CModule
+tycore2core opts mod
+  = core_Syn_AGItf t
+  where t = wrap_AGItf (sem_AGItf (AGItf_AGItf mod))
+                       (Inh_AGItf
+                         { opts_Inh_AGItf = opts
+                         })
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type BindCore = [(Maybe CBindingsCateg,CBindL)]
+
+mkLet :: CBindingsCateg -> BindCore -> CExpr -> CExpr
+mkLet dfltCateg bs e = foldr (\(c,b) e -> mkCExprLet' True (maybe dfltCateg id c) b e) e bs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lists of things
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllExprSeq1 [ | | l0CoreL USE {++} {[]} : {[CExpr]}]
+
+SEM ExprSeq1
+  | L0Val       lhs         .   l0CoreL             =   [@l0.core]
+  | L0LblVal    lhs         .   l0CoreL             =   [@l0.core]
+%%]
+
+%%[(8 codegen)
+ATTR AllExprSeq1 [ | | l0NmL USE {++} {[]} : {[HsName]}]
+
+SEM ExprSeq1
+  | L0Bind      lhs         .   l0NmL               =   [@nm]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Various properties of Expr required for making a choice higher up in the AST
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | mbFFI: {Maybe (HsName -> CBind)} ]
+
+SEM Expr
+  | FFI         lhs         .   mbFFI               =   Just (\n -> CBind_FFI @callconv @safety @impEnt n @ty.coreTy)
+  | * - FFI     lhs         .   mbFFI               =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | mbAppArg: {Maybe [CExpr]} ]
+
+SEM Expr
+  | Seq         lhs         .   mbAppArg            =   Just @seq.l0CoreL
+  | * - Seq     lhs         .   mbAppArg            =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | mbLamArg: {Maybe [HsName]} ]
+
+SEM Expr
+  | Seq         lhs         .   mbLamArg            =   Just @seq.l0NmL
+  | * - Seq     lhs         .   mbLamArg            =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR MbExpr [ | | mbCore: {Maybe CExpr} ]
+
+SEM MbExpr
+  | Just        lhs         .   mbCore              =   Just @just.core
+  | * - Just    lhs         .   mbCore              =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ mbInj: {Maybe CTag} | | ]
+
+SEM Expr
+  | Inject      expr        .   mbInj               =   Just @tag
+  | * - Inject  loc         .   mbInj               =   Nothing
+
+SEM ExprSeq1 FldBind MbExpr ValBind Alt Pat
+  | *           loc         .   mbInj               =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Module
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Module AGItf [ | | core: CModule ]
+
+SEM Module
+  | Mod         lhs         .   core                =   CModule_Mod @moduleNm (mkLet CBindings_Rec @vbinds.core (cundefined @lhs.opts)) []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Expr as expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | core: CExpr ]
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Let         loc         .   ccateg              =   case @categ of
+                                                          ValBindCateg_Rec    -> CBindings_Rec    
+                                                          ValBindCateg_Strict -> CBindings_Strict 
+                                                          ValBindCateg_Plain  -> CBindings_Plain  
+                                                          ValBindCateg_FFI    -> CBindings_FFI    
+%%[[94
+                                                          ValBindCateg_FFE    -> CBindings_FFE    
+%%]]
+                            .   core                =   mkLet @ccateg @vbinds.core @body.core
+  | App         loc         .   core                =   maybe id (flip mkCExprApp) @arg.mbAppArg @func.core
+  | Lam         loc         .   core                =   maybe id mkCExprLam @arg.mbLamArg @res.core
+  | Var         loc         .   core                =   CExpr_Var @nm
+  | Int         loc         .   core                =   CExpr_Int (fromInteger @int)
+  | Char        loc         .   core                =   CExpr_Char @char
+  | String      loc         .   core                =   CExpr_String @str
+  | Tup         loc         .   core                =   CExpr_Tup @tag
+  | Node        loc         .   core                =   mkCExprApp (CExpr_Tup (maybe CTagRec id @lhs.mbInj)) @flds.l0CoreL
+  | Case        loc         .   core                =   CExpr_Case @expr.core @alts.core (maybe (cundefined @lhs.opts) id @dflt.mbCore)
+  | Inject Cast Ann
+                loc         .   core                =   @expr.core
+  | OpenExists CloseExists
+                loc         .   core                =   @body.core
+  | * - App Let Lam Var Int Char String Tup Node Inject Cast OpenExists CloseExists Ann Case
+                loc         .   core                =   cundefined @lhs.opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Expr as ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | coreTy: {T.Ty} ]
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | *
+                loc         .   coreTy              =   T.Ty_Any
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Bind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllValBind [ | | core USE {++} {[]}: BindCore ]
+%%]
+
+%%[(8 codegen)
+SEM ValBind
+  | Val         loc         .   core                =   if @mlev == 0
+                                                        then if isJust @l0.mbFFI
+                                                             then [(Just CBindings_FFI,[fromJust @l0.mbFFI @nm])]
+                                                             else [(Nothing,[mkCBind1 @nm @l0.core])]
+                                                        else []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Pat
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Pat [ | | core: CPat ]
+%%]
+
+%%[(8 codegen)
+SEM Pat
+  | Var         loc         .   core                =   CPat_Var @nm
+  | Con         loc         .   core                =   CPat_Con hsnUnknown @tag @rest.core @flds.l0CoreL
+  | Int         loc         .   core                =   CPat_Int hsnUnknown (fromInteger @int)
+  | Char        loc         .   core                =   CPat_Char hsnUnknown @char
+%%[[(97 codegen)
+  | BoolExpr    loc         .   core                =   CPat_BoolExpr hsnUnknown @expr.core
+%%]]
+%%]
+
+%%[(8 codegen)
+ATTR PatRest [ | | core: CPatRest ]
+%%]
+
+%%[(8 codegen)
+SEM PatRest
+  | Var         loc         .   core                =   CPatRest_Var @nm
+  | Empty       loc         .   core                =   CPatRest_Empty
+%%]
+
+%%[(8 codegen)
+ATTR AllFldBind [ | | l0CoreL USE {++} {[]} : CPatBindL ]
+
+SEM FldBind
+  | Fld         lhs         .   l0CoreL             =   [CPatBind_Bind hsnUnknown @offset.core hsnUnknown (CPat_Var @nm)]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Core generation: Case alts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllAlt [ | | core USE {++} {[]}: CAltL ]
+%%]
+
+%%[(8 codegen)
+SEM Alt
+  | Alt         lhs         .   core                =   [CAlt_Alt @pat.core @expr.core]
+%%]

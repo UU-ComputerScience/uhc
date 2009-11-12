@@ -4,7 +4,7 @@
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Memory management
+%%% Memory management: interface to outside MM
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 The design is inspired by:
@@ -88,7 +88,9 @@ Order of imports is important because of usage dependencies between types.
 %%[8
 #include "config.h"
 #include "common.h"
+#include "basic/iterator.h"
 #include "basic/flexarray.h"
+#include "basic/freelistarray.h"
 #include "basic/dll.h"
 #include "basic/deque.h"
 #include "basic/rangemap.h"
@@ -101,6 +103,7 @@ Order of imports is important because of usage dependencies between types.
 #include "tracesupply.h"
 #include "module.h"
 #include "mutator.h"
+#include "weakptr.h"
 #include "plan.h"
 %%]
 
@@ -123,7 +126,7 @@ extern MM_Allocator* mm_bypass_allocator ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface to outside of MM
+%%% Interface: allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -160,6 +163,10 @@ static inline void mm_itf_free( Ptr p ) {
 }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: root registration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
 // registration of location of GC root
 static inline void mm_itf_registerGCRoot( WPtr p ) {
@@ -174,6 +181,17 @@ static inline void mm_itf_registerGCRoots( WPtr p, Word n ) {
 %%[8
 static inline int mm_itf_registerModule( Ptr m ) {
 	return mm_mutator.module->registerModule( mm_mutator.module, m ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: finalization
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+// register for finalization only
+static inline void mm_itf_registerFinalization( Word x, MM_WeakPtr_Finalizer finalizer ) {
+	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, finalizer ) ;
 }
 %%]
 

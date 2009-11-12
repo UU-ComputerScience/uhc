@@ -39,7 +39,7 @@ void mm_module_GBSS_Init( MM_Module* module, MM_Malloc* memmgt ) {
 int mm_module_GBSS_RegisterModule( MM_Module* module, Ptr perMod ) {
 	MM_Module_GBSS_Data* mod = (MM_Module_GBSS_Data*)module->data ;
 	
-	MM_FlexArray_Inx inx = mm_flexArray_NewSlot( &mod->gbModules ) ;
+	MM_FlexArray_Inx inx = mm_flexArray_AllocSlot( &mod->gbModules ) ;
 	*( (MM_Module_GBSS_Module*)( mm_flexArray_At( &mod->gbModules, inx ) ) ) = *((MM_Module_GBSS_Module*)perMod) ;
 	
 	return inx ;

@@ -14,6 +14,9 @@ typedef QuartWord 				MM_Trace_Flg ;
 
 #define	MM_Trace_Flg_Copy		(1<<0)			// copy inspected object
 #define	MM_Trace_Flg_Trace		(1<<1)			// trace content of object 1 level
+%%[[94
+#define	MM_Trace_Flg_TraceWkPtr	(1<<2)			// also trace weakptr
+%%]]
 
 #define	MM_Trace_Flg_All		(MM_Trace_Flg_Copy | MM_Trace_Flg_Trace)
 
@@ -29,7 +32,10 @@ typedef struct MM_Trace {
 	// private data, but included here for fast access, or always required to be present
   	MM_Allocator*	 			allocator ;			// for copying
   	MM_Collector*	 			collector ;
+  	
+  	// size of obj header
   	Word						objectHeaderNrWords ;
+  	Word						objectHeaderNrBytes ;
 
   	// setup with
   	// - supply to put new traceable objects init
@@ -51,8 +57,12 @@ typedef struct MM_Trace {
   	
   	// size of an object in words
   	Word			 			(*objectNrWords)( struct MM_Trace*, Word obj ) ;
+
   	// object has words which can be traced (this should be made more precise than a single boolean when yes/no traceable are mixed)
   	Bool			 			(*objectHasTraceableWords)( struct MM_Trace*, Word obj ) ;
+  	
+  	// ensure obj does not point to intermediate indirections introduced by either mutator or trace
+  	Word						(*ensureNoIndirections)( struct MM_Trace*, Word obj ) ;
   	
 } MM_Trace ;
 %%]
