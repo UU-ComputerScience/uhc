@@ -150,6 +150,11 @@ extern void mm_pages_Buddy_SetUserData( MM_Pages* buddyPages, MM_Page pg, Word s
 %%]
 
 %%[8
+static inline Bool mm_pages_Buddy_IsInRange( MM_Pages* buddyPages, MM_Page pg ) {
+	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
+	return (Word)pg >= pgs->firstPage && (Word)pg < pgs->afterLastPage ;
+}
+
 static inline Word* mm_pages_Buddy_GetUserData( MM_Pages* buddyPages, MM_Page pg ) {
 	MM_Pages_Buddy_Data* pgs = (MM_Pages_Buddy_Data*)buddyPages->data ;
 	return &(MM_Pages_Buddy_ExtlDataOfPage( pgs, pg )->user) ;

@@ -35,6 +35,12 @@ MM_Space_Fragment* mm_space_CopySpace_GetFragment( MM_Space* copySpace, MM_Space
 	return spc->onTopOfSpace->getFragment( spc->onTopOfSpace, fragmentInx ) ;
 }
 
+Word mm_space_CopySpace_GetFragmentSize( MM_Space* copySpace, MM_Space_FragmentInx fragmentInx ) {
+	MM_Space_CopySpace_Data* spc = (MM_Space_CopySpace_Data*)copySpace->data ;
+	// delegate
+	return spc->onTopOfSpace->getFragmentSize( spc->onTopOfSpace, fragmentInx ) ;
+}
+
 MM_Space_FragmentInx mm_space_CopySpace_GrowSpaceByDefault( MM_Space* copySpace ) {
 	MM_Space_CopySpace_Data* spc = (MM_Space_CopySpace_Data*)copySpace->data ;
 
@@ -126,6 +132,7 @@ MM_Space mm_space_CopySpace =
 	, &mm_space_CopySpace_DeallocSpace
 	, &mm_space_CopySpace_GetNrFragments
 	, &mm_space_CopySpace_GetFragment
+	, &mm_space_CopySpace_GetFragmentSize
 	, &mm_space_CopySpace_GetPages
 	, &mm_space_CopySpace_GetGrowDefaultLog
 #ifdef TRACE

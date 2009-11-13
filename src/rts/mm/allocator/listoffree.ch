@@ -41,6 +41,7 @@ A combination of 2 strategies
       less usually because this is pessimistically estimated for the largest size possible.
       Internal fragmentation is 1 / 2^s (because of rounding up).
     - n*2^s free lists are kept
+    
     n better be bounded, currently n = 6 so, for the typical values:
     - max contiguous  area = 2^(n+p) = 2^16 = 65K words
     - max allocatable size = (2^n-1)*2^s = (2^6-1)*2^4 = 1008 words
@@ -90,6 +91,7 @@ typedef struct MM_Allocator_LOF_FreeRounded {
 typedef struct MM_Allocator_LOF_PerSize {
 	MM_Allocator_LOF_FreeRounded*			free ;		// free chunks
 	MM_Allocator_LOF_PageRounded*			pages ;		// used pages
+	Word									chunkSize ;	// size of chunks as maintained by this PerSize
 } __attribute__ ((__packed__)) MM_Allocator_LOF_PerSize ;
 %%]
 

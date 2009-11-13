@@ -29,6 +29,11 @@ typedef struct MM_Allocator {
   	
   	// allocation, with additional GC info, gcInfo==0 means no info
   	Ptr 						(*alloc)( struct MM_Allocator*, Word sz, Word gcInfo ) ;
+  	// only ensure enough mem
+  	void 						(*ensure)( struct MM_Allocator*, Word sz, Word gcInfo ) ;
+  	// alloc after ensuring enough mem
+  	Ptr 						(*allocEnsured)( struct MM_Allocator*, Word sz ) ;
+
   	// deallocation
   	void 						(*dealloc)( struct MM_Allocator*, Ptr ptr ) ;
   	

@@ -73,6 +73,7 @@ void mm_traceSupply_Bump_Run( MM_TraceSupply* traceSupply ) {
 			Word szWords = trgr->trace->objectNrWords( trgr->trace, (Word)lastPushedAddress ) ;
 			Word hdrSz = trgr->trace->objectHeaderNrWords ;
 			// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Run obj=%p sz=%x tr=%x last=%x lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",lastPushedAddress,szWords,lastPushedAddress + hdrSz,lastTracedAddress,trgr->lastPushedFragment,trgr->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ),trgr->lastTracedAddress);}) ;
+			// !!!! Cannot rely on objectHasTraceableWords because traceable fields may be non-contiguous
 			if ( trgr->trace->objectHasTraceableWords( trgr->trace, (Word)lastPushedAddress ) ) {
 				trgr->trace->traceObjects( trgr->trace, lastPushedAddress + hdrSz, szWords - hdrSz, MM_Trace_Flg_All ) ;
 			}

@@ -143,8 +143,33 @@ static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo ) {
 #	endif
 }
 
+// only ensure enough mem for alloc
+static inline void mm_itf_allocEnsure( size_t sz, Word gcInfo ) {
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			mm_allocator_Bump_Ensure( mm_bypass_allocator, sz, gcInfo ) ;
+#		endif
+#	else
+		mm_mutator.allocator->ensure( mm_mutator.allocator, sz, gcInfo ) ;
+#	endif
+}
+
+// only alloc after enough mem is ensured
+static inline Ptr mm_itf_allocEnsured( size_t sz ) {
+#	if MM_BYPASS_PLAN
+#		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+			return mm_allocator_Bump_AllocEnsured( mm_bypass_allocator, sz ) ;
+#		endif
+#	else
+		return mm_mutator.allocator->allocEnsured( mm_mutator.allocator, sz ) ;
+#	endif
+}
+
 static inline Ptr mm_itf_allocResident( size_t sz ) {
-	return mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz, 0 ) ;
+	// printf( ">mm_itf_allocResident sz=%x\n", sz ) ; fflush(stdout);
+	Ptr p = mm_mutator.residentAllocator->alloc( mm_mutator.residentAllocator, sz, 0 ) ;
+	// printf( "<mm_itf_allocResident sz=%x p=%p\n", sz,p ) ; fflush(stdout);
+	return p ;
 }
 
 static inline void mm_itf_deallocResident( Ptr p ) {

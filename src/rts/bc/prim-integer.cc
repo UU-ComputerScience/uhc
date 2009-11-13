@@ -42,7 +42,9 @@ int dummy_integer ;
 
 %%[97
 #if USE_GMP
-#define GB_NodeAlloc_Mpz_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; GB_Register_Finalizer(n,0) ; }
+#define GB_AllocEnsure_Mpz(nrMpz)			GB_EnsureWords_Finalizer(nrMpz*GB_NodeMpzSize, nrMpz)
+#define GB_NodeAlloc_Mpz_In(n)				{ GB_AllocEnsure_Mpz(1) ; GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; GB_Register_Finalizer(n,0) ; }
+#define GB_NodeAlloc_Mpz_In_Ensured(n)		{ GB_NodeAlloc_Hdr_In(GB_NodeMpzSize,GB_MkMpzHeader,n) ; mpz_init(MPZ(n)) ; GB_Register_FinalizerEnsured(n,0) ; }
 #if ! USE_EHC_MM
 #define GB_NodeAlloc_GMP_In(nBytes,n)		{ int sz = GB_NodeGMPSize(nBytes) ; GB_NodeAlloc_Hdr_In(sz,GB_MkGMPHeader(sz),n) ; }
 #endif
@@ -67,9 +69,10 @@ typedef __mpz_struct*  GB_mpz ;
 
 %%[97
 #if USE_GMP
-#define GB_NodeAlloc_Mpz_SetSignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_si( MPZ(n), (x) ) ; }
-#define GB_NodeAlloc_Mpz_SetUnsignedInt_In(n,x)		{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_ui( MPZ(n), (x) ) ; }
-#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)				{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( MPZ(n), (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetSignedInt_In_Ensured(n,x)		{ GB_NodeAlloc_Mpz_In_Ensured(n) ; mpz_set_si( MPZ(n), (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetUnsignedInt_In_Ensured(n,x)		{ GB_NodeAlloc_Mpz_In_Ensured(n) ; mpz_set_ui( MPZ(n), (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetDbl_In(n,x)						{ GB_NodeAlloc_Mpz_In(n) ; mpz_set_d( MPZ(n), (x) ) ; }
+#define GB_NodeAlloc_Mpz_SetDbl_In_Ensured(n,x)				{ GB_NodeAlloc_Mpz_In_Ensured(n) ; mpz_set_d( MPZ(n), (x) ) ; }
 #endif
 %%]
 
@@ -79,22 +82,25 @@ typedef __mpz_struct*  GB_mpz ;
 
 %%[97
 #if USE_GMP
-#define GB_Integer_Op1_In1(op,z,x)			{ GB_GCSafe_Enter ; GB_GCSafe_1(x) ; GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x) ) ; GB_GCSafe_Leave ; }
-#define GB_Integer_Op2_In1(op,z,x,y)		{ GB_GCSafe_Enter ; GB_GCSafe_2(x,y) ; GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x), MPZ(y) ) ; GB_GCSafe_Leave ; }
-#define GB_Integer_Op2b_In1(op,z,x,y)		{ GB_GCSafe_Enter ; GB_GCSafe_1(x) ; GB_NodeAlloc_Mpz_In(z) ; op( MPZ(z), MPZ(x), y ) ; GB_GCSafe_Leave ; }
-#define GB_Integer_Op2_In2(op,z1,z2,x,y)	{ GB_GCSafe_Enter ; GB_GCSafe_2(x,y) ; GB_NodeAlloc_Mpz_In(z1) ; GB_NodeAlloc_Mpz_In(z2) ; op( MPZ(z1), MPZ(z2), MPZ(x), MPZ(y) ) ; GB_GCSafe_Leave ;  }
-#define GB_Integer_Add_In(z,x,y)			GB_Integer_Op2_In1(mpz_add,z,x,y)
-#define GB_Integer_Sub_In(z,x,y)			GB_Integer_Op2_In1(mpz_sub,z,x,y)
-#define GB_Integer_Mul_In(z,x,y)			GB_Integer_Op2_In1(mpz_mul,z,x,y)
-#define GB_Integer_Div_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_q,z,x,y)
-#define GB_Integer_Mod_In(z,x,y)			GB_Integer_Op2_In1(mpz_fdiv_r,z,x,y)
-#define GB_Integer_DivMod_In(z1,z2,x,y)		GB_Integer_Op2_In2(mpz_fdiv_qr,z1,z2,x,y)
-#define GB_Integer_Quot_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_q,z,x,y)
-#define GB_Integer_Rem_In(z,x,y)			GB_Integer_Op2_In1(mpz_tdiv_r,z,x,y)
-#define GB_Integer_QuotRem_In(z1,z2,x,y)	GB_Integer_Op2_In2(mpz_tdiv_qr,z1,z2,x,y)
-#define GB_Integer_Neg_In(z,x)				GB_Integer_Op1_In1(mpz_neg,z,x)
+#define GB_Integer_Op1_In1(op,z,x)					{ GB_GCSafe_Enter ; GB_GCSafe_1(x) ; GB_AllocEnsure_Mpz(1) ; GB_NodeAlloc_Mpz_In_Ensured(z) ; op( MPZ(z), MPZ(x) ) ; GB_GCSafe_Leave ; }
+#define GB_Integer_Op2_In1(op,z,x,y)				{ GB_GCSafe_Enter ; GB_GCSafe_2(x,y) ; GB_AllocEnsure_Mpz(1) ; GB_NodeAlloc_Mpz_In_Ensured(z) ; op( MPZ(z), MPZ(x), MPZ(y) ) ; GB_GCSafe_Leave ; }
+#define GB_Integer_Op2b_In1(op,z,x,y)				{ GB_GCSafe_Enter ; GB_GCSafe_1(x) ; GB_AllocEnsure_Mpz(1) ; GB_NodeAlloc_Mpz_In_Ensured(z) ; op( MPZ(z), MPZ(x), y ) ; GB_GCSafe_Leave ; }
+#define GB_Integer_Op2_In2(op,z1,z2,x,y)			{ GB_GCSafe_Enter ; GB_GCSafe_2(x,y) ; GB_AllocEnsure_Mpz(2) ; GB_NodeAlloc_Mpz_In_Ensured(z1) ; GB_NodeAlloc_Mpz_In_Ensured(z2) ; op( MPZ(z1), MPZ(z2), MPZ(x), MPZ(y) ) ; GB_GCSafe_Leave ;  }
+#define GB_Integer_Op2_In2_Ensured(op,z1,z2,x,y)	{ GB_NodeAlloc_Mpz_In_Ensured(z1) ; GB_NodeAlloc_Mpz_In_Ensured(z2) ; op( MPZ(z1), MPZ(z2), MPZ(x), MPZ(y) ) ; }
+#define GB_Integer_Add_In(z,x,y)					GB_Integer_Op2_In1(mpz_add,z,x,y)
+#define GB_Integer_Sub_In(z,x,y)					GB_Integer_Op2_In1(mpz_sub,z,x,y)
+#define GB_Integer_Mul_In(z,x,y)					GB_Integer_Op2_In1(mpz_mul,z,x,y)
+#define GB_Integer_Div_In(z,x,y)					GB_Integer_Op2_In1(mpz_fdiv_q,z,x,y)
+#define GB_Integer_Mod_In(z,x,y)					GB_Integer_Op2_In1(mpz_fdiv_r,z,x,y)
+#define GB_Integer_DivMod_In(z1,z2,x,y)				GB_Integer_Op2_In2(mpz_fdiv_qr,z1,z2,x,y)
+#define GB_Integer_DivMod_In_Ensured(z1,z2,x,y)		GB_Integer_Op2_In2_Ensured(mpz_fdiv_qr,z1,z2,x,y)
+#define GB_Integer_Quot_In(z,x,y)					GB_Integer_Op2_In1(mpz_tdiv_q,z,x,y)
+#define GB_Integer_Rem_In(z,x,y)					GB_Integer_Op2_In1(mpz_tdiv_r,z,x,y)
+#define GB_Integer_QuotRem_In(z1,z2,x,y)			GB_Integer_Op2_In2(mpz_tdiv_qr,z1,z2,x,y)
+#define GB_Integer_QuotRem_In_Ensured(z1,z2,x,y)	GB_Integer_Op2_In2_Ensured(mpz_tdiv_qr,z1,z2,x,y)
+#define GB_Integer_Neg_In(z,x)						GB_Integer_Op1_In1(mpz_neg,z,x)
 
-#define GB_Integer_Cmp(x,y)					mpz_cmp(MPZ(x), MPZ(y))
+#define GB_Integer_Cmp(x,y)							mpz_cmp(MPZ(x), MPZ(y))
 
 #endif
 %%]
@@ -181,7 +187,8 @@ PRIM GB_NodePtr primCStringToInteger( char* s )
 	GB_NodePtr n ;
 	// GB_GCSafe_Enter ;
 	// GB_GCSafe_1_Zeroed(n) ;
-	GB_NodeAlloc_Mpz_In(n) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_In_Ensured(n) ;
 	mpz_set_str( MPZ(n), s, 10 ) ;
 	// GB_GCSafe_Leave ;
 	return n ;
@@ -192,7 +199,8 @@ PRIM GB_NodePtr primIntToInteger( GB_Int x )
 	GB_NodePtr n ;
 	// GB_GCSafe_Enter ;
 	// GB_GCSafe_1_Zeroed(n) ;
-	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetSignedInt_In_Ensured( n, x ) ;
 	// GB_GCSafe_Leave ;
 	return n ;
 }
@@ -202,7 +210,8 @@ PRIM GB_NodePtr primFloatToInteger( Float x )
 	GB_NodePtr n ;
 	// GB_GCSafe_Enter ;
 	// GB_GCSafe_1_Zeroed(n) ;
-	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetDbl_In_Ensured( n, x ) ;
 	// GB_GCSafe_Leave ;
 	return n ;
 }
@@ -212,7 +221,8 @@ PRIM GB_NodePtr primDoubleToInteger( Double x )
 	GB_NodePtr n ;
 	// GB_GCSafe_Enter ;
 	// GB_GCSafe_1_Zeroed(n) ;
-	GB_NodeAlloc_Mpz_SetDbl_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetDbl_In_Ensured( n, x ) ;
 	// GB_GCSafe_Leave ;
 	return n ;
 }
@@ -318,9 +328,11 @@ PRIM GB_NodePtr primQuotRemInteger( GB_NodePtr x, GB_NodePtr y )
 	gb_assert_IsNotDangling( (Word)x, "primQuotRemInteger x" ) ;
 	gb_assert_IsNotDangling( (Word)y, "primQuotRemInteger y" ) ;
 	GB_GCSafe_Enter ;
-	GB_GCSafe_3_Zeroed(n,n1,n2) ;
-	GB_Integer_QuotRem_In(n1,n2,x,y) ;
-	GB_MkTupNode2_In(n,n1,n2) ;
+	GB_GCSafe_2(x,y) ;
+	// GB_GCSafe_3_Zeroed(n,n1,n2) ;
+	GB_EnsureWords_Finalizer(2*GB_NodeMpzSize+3, 2) ;
+	GB_Integer_QuotRem_In_Ensured(n1,n2,x,y) ;
+	GB_MkTupNode2_In_Ensured(n,n1,n2) ;
 	GB_GCSafe_Leave ;
 	return n ;
 }
@@ -331,9 +343,11 @@ PRIM GB_NodePtr primDivModInteger( GB_NodePtr x, GB_NodePtr y )
 	gb_assert_IsNotDangling( (Word)x, "primDivModInteger x" ) ;
 	gb_assert_IsNotDangling( (Word)y, "primDivModInteger y" ) ;
 	GB_GCSafe_Enter ;
-	GB_GCSafe_3_Zeroed(n,n1,n2) ;
-	GB_Integer_DivMod_In(n1,n2,x,y) ;
-	GB_MkTupNode2_In(n,n1,n2) ;
+	GB_GCSafe_2(x,y) ;
+	// GB_GCSafe_3_Zeroed(n,n1,n2) ;
+	GB_EnsureWords_Finalizer(2*GB_NodeMpzSize+3, 2) ;
+	GB_Integer_DivMod_In_Ensured(n1,n2,x,y) ;
+	GB_MkTupNode2_In_Ensured(n,n1,n2) ;
 	GB_GCSafe_Leave ;
 	return n ;
 }
@@ -427,7 +441,8 @@ PRIM GB_NodePtr primRotateRightInteger( GB_NodePtr x, Word y )
 PRIM GB_NodePtr primInt32ToInteger( Int32 x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetSignedInt_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetSignedInt_In_Ensured( n, x ) ;
 	return n ;
 }
 
@@ -443,15 +458,16 @@ PRIM Int32 primIntegerToInt32( GB_NodePtr n )
 PRIM GB_NodePtr primInt64ToInteger( Int64 x )
 {
 	GB_NodePtr n ;
-	GB_GCSafe_Enter ;
-	GB_GCSafe_1_Zeroed(n) ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
 	Int64 xpos = ( x < 0 ? -x : x ) ;
-	GB_NodeAlloc_Mpz_In(n) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_In_Ensured(n) ;
 	mpz_import( MPZ(n), 1, -1, 8, 0, 0, &xpos ) ;
 	if ( x < 0 ) {
 		mpz_neg( MPZ(n), MPZ(n) ) ;
 	}
-	GB_GCSafe_Leave ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 
@@ -495,7 +511,8 @@ PRIM GB_NodePtr primWordToInteger( Word x )
 {
 	// printf( "primWordToInteger %x\n", x ) ;
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetUnsignedInt_In_Ensured( n, x ) ;
 	return n ;
 }
 
@@ -510,7 +527,8 @@ PRIM GB_NodePtr primWordToInteger( Word x )
 PRIM GB_NodePtr primWord32ToInteger( Word32 x )
 {
 	GB_NodePtr n ;
-	GB_NodeAlloc_Mpz_SetUnsignedInt_In( n, x ) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_SetUnsignedInt_In_Ensured( n, x ) ;
 	return n ;
 }
 
@@ -527,11 +545,12 @@ PRIM Word32 primIntegerToWord32( GB_NodePtr n )
 PRIM GB_NodePtr primWord64ToInteger( Word64 x )
 {
 	GB_NodePtr n ;
-	GB_GCSafe_Enter ;
-	GB_GCSafe_1_Zeroed(n) ;
-	GB_NodeAlloc_Mpz_In(n) ;
+	// GB_GCSafe_Enter ;
+	// GB_GCSafe_1_Zeroed(n) ;
+	GB_AllocEnsure_Mpz(1) ;
+	GB_NodeAlloc_Mpz_In_Ensured(n) ;
 	mpz_import( MPZ(n), 1, -1, 8, 0, 0, &x ) ;
-	GB_GCSafe_Leave ;
+	// GB_GCSafe_Leave ;
 	return n ;
 }
 
@@ -659,7 +678,12 @@ void prim_integer_Initialize()
 #if USE_EHC_MM && USE_GMP
 // specific Integer finalization, hiding the details
 void gb_Node_FinalizeInteger( GB_NodePtr n ) {
-	mpz_clear( MPZ(n) ) ;
+	// printf( ">gb_Node_FinalizeInteger %p[%x,%x,%x]\n", n, n->content.fields[0], n->content.fields[1], n->content.fields[2] ) ; fflush( stdout ) ;
+	// if (n->content.fields[2]) {
+		mpz_clear( MPZ(n) ) ;
+		// n->content.fields[2] = 0 ;
+	// }
+	// printf( "<gb_Node_FinalizeInteger %p[%x,%x,%x]\n", n, n->content.fields[0], n->content.fields[1], n->content.fields[2] ) ; fflush( stdout ) ;
 }
 #endif
 %%]

@@ -2340,7 +2340,9 @@ void gb_Free_GMP( void *n, size_t nBytesOld )
 {
 #	if USE_EHC_MM
 		IF_GB_TR_ON(3,{printf("gb_Free_GMP n=%p\n",n);}) ;
+		// printf(">gb_Free_GMP n=%p\n",n);fflush(stdout);
 		GB_HeapFree_Fixed( n ) ;
+		// printf("<gb_Free_GMP n=%p\n",n);fflush(stdout);
 #	endif
 }
 #endif
