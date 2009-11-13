@@ -64,6 +64,7 @@ void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 	MM_WeakPtr* wp = plss->weakPtr ;
 	MM_WeakPtr_NewAlive newAlive ;
 	MM_Iterator iter ;
+	// printf("mm_collector_SS_collect\n");fflush(stdout);
 	wp->startFindLiveObjects( wp ) ;
 	do {
 		wp->findLiveObjects( wp, &newAlive ) ;

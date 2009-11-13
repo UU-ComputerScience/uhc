@@ -59,6 +59,7 @@ typedef struct MM_Space {
   	// access
   	MM_Space_FragmentInx	(*getNrFragments)( struct MM_Space* ) ;
   	MM_Space_Fragment*		(*getFragment)( struct MM_Space*, MM_Space_FragmentInx fragmentInx ) ;	// fragment for inx
+  	Word					(*getFragmentSize)( struct MM_Space*, MM_Space_FragmentInx fragmentInx ) ;	// fragment size for inx
   	MM_Pages*				(*getPages)( struct MM_Space* ) ;	// underlying Pages implementation
 
 	// info: log of default growth size, or 0 if no such default

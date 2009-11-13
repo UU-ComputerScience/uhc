@@ -285,7 +285,7 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #		endif
 %%]]
 %%[[98
-			case GB_NodeTag_Intl_Chan :
+			// case GB_NodeTag_Intl_Chan :
 %%]]
 				doTrace = False ;
 				break ;
@@ -342,12 +342,14 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #define GB_MkConNode0(n,tg)						{GB_NodeAlloc_Fields_In_MinAlloc((0),n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)					{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)				{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
+#define GB_MkConNode2_Ensured(n,tg,x1,x2)		{GB_NodeAlloc_In_Ensured(3,n); GB_FillConNode2(n,tg,x1,x2); }
 #define GB_MkConNode3(n,tg,x1,x2,x3)			{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
 #define GB_MkConNode4(n,tg,x1,x2,x3,x4)			{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
 #define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)		{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
 
 #define GB_MkTupNode1_In(n,x1)				GB_MkConNode1(n,0,x1)
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
+#define GB_MkTupNode2_In_Ensured(n,x1,x2)	GB_MkConNode2_Ensured(n,0,x1,x2)
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
@@ -446,7 +448,7 @@ typedef struct GB_ByteArray {
 typedef struct GB_Chan {
   FILE*				file ;
   struct GB_Node*	name ;
-  Bool				isText ;
+  Word				isText ;
 } __attribute__ ((__packed__)) GB_Chan ;
 %%]
 
@@ -545,6 +547,7 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
 
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapFree_Fixed(p)							
@@ -584,8 +587,10 @@ The 'Fixed' variants allocate non-collectable.
 #elif USE_EHC_MM
 
 #	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes,0))
+#	define GB_HeapAlloc_Bytes_Ensured(nBytes)			Cast(GB_Ptr,mm_itf_allocEnsured(nBytes))
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		Cast(GB_Ptr,mm_itf_alloc(nBytes,gcInfo))
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Bytes_Ensured((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,mm_itf_allocResident(nBytes))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapFree_Fixed(p)							mm_itf_deallocResident(p)
@@ -625,6 +630,7 @@ The 'Fixed' variants allocate non-collectable.
 #else
 
 #	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes(nBytes)					GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
@@ -676,20 +682,37 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_NodeAlloc_Fields_In_Fixed_MinAlloc(nFlds,n)		GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n)
 #endif
 
+#if USE_EHC_MM
+#	define GB_NodeAlloc_In_Ensured(nWords,n)					{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Ensured(nWords)) ; }
+#else
+#	define GB_NodeAlloc_In_Ensured(nWords,n)					GB_NodeAlloc_In(nWords,n)
+#endif
+
 %%]
 
 For finalizers boehm's gc is assumed!!!!
 This breaks when compiled without bgc.
+20091001: EHC MM is under construction.
 
 %%[95
 #if USE_BOEHM_GC
 #define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
-#elif 0 && USE_EHC_MM
+#define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+#define GB_EnsureBytes_Finalizer(sz,nrFin)
+#elif USE_EHC_MM
 // #define GB_Register_Finalizer(n,cd)
-#define GB_Register_Finalizer(n,cd)			{ GB_GCSafe_Enter ; GB_GCSafe_1(n) ; mm_itf_registerFinalization( (Word)(n), &gb_Node_Finalize ) ; GB_GCSafe_Leave ; }
+// #define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+// #define GB_EnsureBytes_Finalizer(sz,nrFin)
+#define GB_Register_Finalizer(n,cd)			{ GB_GCSafe_Enter ; GB_GCSafe_1(n) ; GB_Register_FinalizerEnsured(n,cd) ; GB_GCSafe_Leave ; }
+#define GB_Register_FinalizerEnsured(n,cd)	{ mm_itf_registerFinalization( (Word)(n), &gb_Node_Finalize ) ; }
+#define GB_EnsureBytes_Finalizer(sz,nrFin)	{ mm_itf_allocEnsure( (Word_SizeInBytes << 2) + (sz) + nrFin * (GB_NodeWeakPtrSize << Word_SizeInBytes_Log), 0 ) ; }
 #else
-#define GB_Register_Finalizer(n,cd)			
+#define GB_Register_Finalizer(n,cd)	
+#define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+#define GB_EnsureBytes_Finalizer(sz,nrFin)
 #endif
+
+#define GB_EnsureWords_Finalizer(sz,nrFin)	GB_EnsureBytes_Finalizer((sz)<<Word_SizeInBytes_Log,nrFin)
 %%]
 
 %%[95
@@ -699,27 +722,15 @@ This breaks when compiled without bgc.
 											  GB_Register_Finalizer(n,&((n)->content.bytearray.ptr)) ; \
 											}
 %%]
-#define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
-											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
-											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
-											}
-
-%%[97
-%%]
-#define GB_NodeAlloc_Float_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeFloatSize, GB_MkFloatHeader, n) ; }
-#define GB_NodeAlloc_Double_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeDoubleSize,GB_MkDoubleHeader,n) ; }
-
 
 %%[98
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
+											  (n)->content.chan.file = NULL ; \
+											  (n)->content.chan.name = NULL ; \
+											  (n)->content.chan.isText = False ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
 %%]
-#define GB_NodeAlloc_Chan_In_Fixed(n)		{ GB_NodeAlloc_Hdr_In_Fixed(GB_NodeChanSize, GB_MkChanHeader, n) ; }
-
-%%[94
-%%]
-#define GB_NodeAlloc_WeakPtr_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeWeakPtrSize, GB_MkWeakPtrHeader, n) ; }
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GC specific information

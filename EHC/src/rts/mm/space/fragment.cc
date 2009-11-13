@@ -89,6 +89,12 @@ MM_Space_Fragment* mm_space_Fragment_GetFragment( MM_Space* fragmentSpace, MM_Sp
 	return frg ;
 }
 
+Word mm_space_Fragment_GetFragmentSize( MM_Space* fragmentSpace, MM_Space_FragmentInx fragmentInx ) {
+	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
+	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, fragmentInx ) ;
+	return frg->size ;
+}
+
 MM_Pages* mm_space_Fragment_GetPages( MM_Space* fragmentSpace ) {
 	MM_Space_Fragment_Data* spc = (MM_Space_Fragment_Data*)fragmentSpace->data ;
 	return spc->pages ;
@@ -158,6 +164,7 @@ MM_Space mm_space_Fragment =
 	, &mm_space_Fragment_DeallocSpace
 	, &mm_space_Fragment_GetNrFragments
 	, &mm_space_Fragment_GetFragment
+	, &mm_space_Fragment_GetFragmentSize
 	, &mm_space_Fragment_GetPages
 	, &mm_space_Fragment_GetGrowDefaultLog
 #ifdef TRACE

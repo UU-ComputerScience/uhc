@@ -135,8 +135,14 @@ void mm_weakPtr_List_FindLiveObjects( MM_WeakPtr* weakPtr, MM_WeakPtr_NewAlive* 
 		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FindLiveObjects B obj=%x wkptr=%p\n",obj,mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)obj )) ;}) ;
 		MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)obj ) ;
 		Word key = weakPtrList->mutator->trace->ensureNoIndirections( weakPtrList->mutator->trace, w->key ) ;
-		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FindLiveObjects C key=%x alive=%d\n",key,!weakPtrList->collector->isInCollectedSpace( weakPtrList->collector, key )) ;}) ;
-		if ( ! weakPtrList->collector->isInCollectedSpace( weakPtrList->collector, key ) ) {
+		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FindLiveObjects C key=%x dead=%d\n",key,weakPtrList->collector->isInCollectedSpace( weakPtrList->collector, key )) ;}) ;
+		if ( weakPtrList->collector->isInCollectedSpace( weakPtrList->collector, key ) ) {
+			// not collected, prepare for finalization
+			admin->obj = obj ;
+			w->key = key ;
+			// w->val = weakPtrList->mutator->trace->ensureNoIndirections( weakPtrList->mutator->trace, w->val ) ;
+		} else {
+			// is collected, so it is alive
 			// todo: it may be an int as well !!
 			mm_freeListArray_Add( weakPtrList->ptrListNew, (BPtr)admin ) ;
 			mm_freeListArray_DeallocSlot( list, i ) ;
