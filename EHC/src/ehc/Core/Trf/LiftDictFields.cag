@@ -204,7 +204,7 @@ SEM CExpr
                                                                                   ]
                                                                             )
                                                      allNeeded = fix extend needed
-                                                 in  trace ("needed: " ++ show needed ++ " allNeeded: " ++ show allNeeded ++ " older: " ++ show @lhs.olderBrothers) $
+                                                 in  -- trace ("needed: " ++ show needed ++ " allNeeded: " ++ show allNeeded ++ " older: " ++ show @lhs.olderBrothers) $
                                                      [ CBind_Bind nm bm e
                                                      | (CBind_Bind nm bm e) <- @lhs.olderBrothers
                                                      , nm `Set.member` allNeeded
