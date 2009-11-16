@@ -353,7 +353,7 @@ TBD: Needs cleaning up, correct partitioning in variants
       ]
 %%]
 
-%%[97 export(hsnPackedStringToInteger, hsnPrimIntegerToInt)
+%%[97 export(hsnPackedStringToInteger, hsnPrimIntegerToInt, hsnPrimIntToInteger)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,6 +375,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
  , hsnPackedStringToInteger
  , hsnPrimIntegerToInt
+ , hsnPrimIntToInteger
 %%]]
 %%[[97
  , hsnPrimEqChar
@@ -398,6 +399,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[[97
       , "packedStringToInteger"
       , "primIntegerToInt"
+      , "primIntToInteger"
 %%]]
 %%[[97
       , "primEqChar"
@@ -740,6 +742,8 @@ data EHBuiltinNames
       , ehbnFloat                       :: HsName
       , ehbnDouble                      :: HsName
       , ehbnPackedStringToInteger       :: HsName
+      , ehbnPrimIntToInteger            :: HsName
+      , ehbnFromInteger                 :: HsName
       , ehbnDataList                    :: HsName
 %%]]
 %%[[98
@@ -831,6 +835,8 @@ mkEHBuiltinNames f
       , ehbnFloat                       = f IdOcc_Type      hsnFloat
       , ehbnDouble                      = f IdOcc_Type      hsnDouble
       , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
+      , ehbnPrimIntToInteger            = f IdOcc_Val       hsnPrimIntToInteger
+      , ehbnFromInteger                 = f IdOcc_Val       hsnFromInteger
       , ehbnDataList                    = f IdOcc_Type      hsnDataList
 %%]]
 %%[[98

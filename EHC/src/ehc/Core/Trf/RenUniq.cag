@@ -171,7 +171,7 @@ ATTR CExpr [ | | isLamBody: Bool ]
 
 SEM CExpr
   | Lam         lhs         .   isLamBody   =   False
-  | * - Lam     lhs         .   isLamBody   =   True
+  | * - Lam Ann lhs         .   isLamBody   =   True
 %%]
 
 %%[(8 codegen)

@@ -211,7 +211,7 @@ SEM Expr
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @cSubstTop [] @lamArgCoeL
                                                     (e ,s2)   = coeEvalOnAsSubst u2 ww @cexprtop
-                                                in  (e, s1 `cSubstApp` s2)
+                                                in  (@cann e, s1 `cSubstApp` s2)
   | AppTop      lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
   | Rec         lhs         .   cSubst      =   cSubstApp @recExpr.cSubst @cexprapptopCSubst
   | TypeAs      loc         .   (cexpr,cexprtypeasCSubst)
@@ -221,17 +221,6 @@ SEM Expr
                                                 in  (e2, s1 `cSubstApp` s2)
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprtypeasCSubst
 %%]
-    AppImpl
-                loc         .   cexprapp    :=  mkCExprApp1
-                                                    (coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
-                                                      `coeEvalOn` @func.cexpr)
-                                                    @arg.cexpr
-  | Lam
-                loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @body.cSubst @lamBodyCoeL @lamArgCoeL `coeEvalOn` @body.appFunCExpr
-  | AppTop      loc         .   cexpr       :=  coeWipeWeave @lhs.opts @lhs.finTyVarMp @expr.cSubst [] @lamArgCoeL `coeEvalOn` @expr.cexpr
-  | TypeAs      loc         .   cexpr       :=  foAppLRCoe @lhs.opts @fo_ @lhs.finTyVarMp @expr.cSubst
-                                                $ foAppLRCoe @lhs.opts @fo_fitDown @lhs.finTyVarMp @expr.cSubst
-                                                $ @expr.cexpr
 
 %%[(10 codegen)
 SEM Expr
@@ -245,6 +234,12 @@ SEM PatExpr
                                             =   let (e,s) = foAppLRCoeAsSubst @lhs.opts @lUniq_cexpr @fo_ @lhs.finTyVarMp @expr.cSubst @cexprBaseEq
                                                 in  (mkCExprApp e [@expr.cexpr], s)
                 lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprpatCSubst
+%%]
+
+%%[(97 codegen)
+SEM Expr
+  | AppTop      loc         .   cann		=   CExpr_Ann (CExprAnn_Ty @finalTyExpanded)
+  | * - AppTop  loc         .   cann		=   id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

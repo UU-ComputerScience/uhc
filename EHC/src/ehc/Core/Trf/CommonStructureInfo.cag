@@ -1,0 +1,31 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an app
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbFunVar: {Maybe HsName} ]
+
+SEM CExpr
+  | Var         lhs         .   mbFunVar    =   @mbVar
+  | App         lhs         .   mbFunVar    =   @func.mbFunVar
+  | * - Var App Ann
+  				lhs         .   mbFunVar    =   Nothing
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | argL: {[CExpr]} ]
+
+SEM CExpr
+  | App         loc         .   argL        =   @arg.cTrf : @func.argL
+  | * - App Ann lhs         .   argL        =   []
+%%]
+
