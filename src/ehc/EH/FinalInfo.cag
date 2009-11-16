@@ -49,6 +49,16 @@ SEM PatExpr
   				loc         .   finKnPatTy          =   @lhs.finTyVarMp |=> @knPatTy
 %%]
 
+%%[(8 hmtyinfer)
+SEM Expr
+  | AppTop		loc			.	finalTy				=	@lhs.finTyVarMp |=> @ty
+%%[[8
+                            .   finalTyExpanded     =   @finalTy
+%%][11
+                            .   finalTyExpanded     =   tyCanonicFFI (emptyFI {fiEnv = @fe}) @finalTy
+%%]]
+%%]
+
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc         .   finTyVarMp          =   @tmpoTyVarMp |=> @lhs.finTyVarMp

@@ -109,7 +109,7 @@ module UHC.Base   -- adapted from thye Hugs prelude
 
 -- EHC specific functions
     PackedString,
-    packedStringToString, packedStringToInteger,
+    packedStringToString, packedStringToInteger, primIntToInteger,
     primGtInt, primEqChar,
     ByteArray,
 

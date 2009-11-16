@@ -263,6 +263,14 @@ SEM CMetaVal
 
 %%]
 
+%%[(8 codegen)
+SEM CExpr
+  | Ann			loc			.	pp			=	ppParens (@expr.pp >#< @ann.pp)
+
+SEM CExprAnn
+  | Ty			loc			.	pp			=	"::" >#< ppTyWithCfg' CfgPP_HI @ty
+%%]
+
 %%[(9 codegen)
 SEM CExpr
   | Hole        loc         .   pp          =   ppHole @uid

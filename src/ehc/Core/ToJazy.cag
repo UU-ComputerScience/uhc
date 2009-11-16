@@ -467,7 +467,7 @@ SEM CPat
   | Var         lhs         .   scrutinees      =   [Scrutinee_Var @pnm]
   | Int         lhs         .   scrutinees      =   [Scrutinee_Int @int]
   | Char        lhs         .   scrutinees      =   [Scrutinee_Other "char"]
-  | * - Con Var Int Char
+  | * - Con Var Int Char Ann
                 lhs         .   scrutinees      =   [Scrutinee_Other "other"]
 %%]
 
@@ -661,7 +661,7 @@ SEM CExpr
   | String      lhs         .   jty             =   jtyStr
   | Lam         lhs         .   jty             =   jtyFun
   | App         lhs         .   jty             =   jtyApp
-  | * - Int Char String Lam App
+  | * - Int Char String Lam App Ann
                 loc         .   jty             =   jtyObj
 %%]
 
@@ -674,7 +674,7 @@ ATTR CExpr [ | | jiArgFunL: {[J.JInstr]} ]
 
 SEM CExpr
   | App         loc         .   jiArgFunL   =   @arg.ji : @func.jiArgFunL
-  | * - App     lhs         .   jiArgFunL   =   [@ji]
+  | * - App Ann lhs         .   jiArgFunL   =   [@ji]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -688,7 +688,7 @@ SEM CExpr
   | Lam         loc         .   nmArgL      =   @arg : @body.nmArgL
                             .   jiBody      =   @body.jiBody
 				loc			.	nmArgL		:	{[HsName]}
-  | * - Lam     lhs         .   nmArgL      =   []
+  | * - Lam Ann lhs         .   nmArgL      =   []
                             .   jiBody      =   @ji
 %%]
 
@@ -807,7 +807,8 @@ SEM CExpr
                                                                                     ]
                                                                           dflt    = J.Case_Case 0 @lblDefault $ mka @lblDefault @dflt.ji
                                                     in  @scrutineeJI ## alts
-  | * - Int Char Var Let Lam App Case Tup String
+  | Ann			loc			.	ji				=	@expr.ji
+  | * - Int Char Var Let Lam App Case Tup String Ann
                 loc         .   ji              =   emptyJI
 
 %%]

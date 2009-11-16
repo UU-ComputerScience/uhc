@@ -186,6 +186,8 @@ SEM CMetaVal
   | DictInstance    lhs.isInstance = True
   | *-DictInstance  lhs.isInstance = False
 
+SEM CExpr
+  | Lam			argMeta		.	bindLamArgMp=	Map.empty
 %%]]
 
 
@@ -228,17 +230,19 @@ ATTR CExpr [ | | mbBodyVar : {Maybe HsName} ]
 SEM CExpr
   | Let         lhs.mbBodyVar  =  @body.mbBodyVar   
   | Var         lhs.mbBodyVar  =  Just @nm
-  | *-Let Var   lhs.mbBodyVar  =  Nothing
+  | *-Let Var Ann
+  				lhs.mbBodyVar  =  Nothing
 
 %%]
 
 %%[(9 codegen)
-
 ATTR CMetaVal CMetas [ mbBodyVar : {Maybe HsName} | | ]
 
 SEM CBind
   | Bind   bindMeta.mbBodyVar = @expr.mbBodyVar
-  
+
+SEM CExpr
+  | Lam			argMeta		.	mbBodyVar	=	Nothing
 %%]]
 
 

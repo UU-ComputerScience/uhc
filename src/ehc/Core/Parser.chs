@@ -47,11 +47,18 @@ pCNumber
           <|> CExpr_Tup <$ pKeyTk "Tag" <*> pCTag
           )
 
+pCExprAnn :: CParser (CExpr -> CExpr)
+pCExprAnn
+  =   CExpr_Ann
+      <$> (pDCOLON *> (CExprAnn_Ty <$> pTy)
+          )
+  <|> pSucceed id
+
 pCExprBase :: CParser CExpr
 pCExprBase
   =   CExpr_Var <$> pDollNm
   <|> pCNumber
-  <|> pOPAREN *> pCExpr <* pCPAREN
+  <|> pOPAREN *> (pCExpr <**> pCExprAnn) <* pCPAREN
 
 pCExprBaseMeta :: CParser (CExpr,CMetaVal)
 pCExprBaseMeta

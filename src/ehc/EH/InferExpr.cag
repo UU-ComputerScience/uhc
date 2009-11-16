@@ -303,13 +303,14 @@ SEM Expr
 %%[(5 hmtyinfer).AppTop
 SEM Expr
   | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_fresh @lhs.knTy
+                            .   ty                  =   @expr.ty
                 loc         .   lUniq_fresh         :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer).AppTop
 SEM Expr
   | AppTop      loc         .   knTy                :=  @knTopTy
-                            .   ty                  =   @resTy
+                            .   ty                  :=  @resTy
                 expr        .   tyVarMp             =   @forExprTyVarMp
 %%]
 

@@ -108,6 +108,21 @@ SET AllMeta		= CMetaVal CMetaBind CMetas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CExpr
+  | Ann         ann             : CExprAnn
+                expr            : CExpr
+%%]
+
+%%[(8 codegen)
+DATA CExprAnn
+  | Ty			ty				: {Ty}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Let binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -202,7 +217,7 @@ SET AllPat      =   CPatRest CPat CPatL AllPatBind
 SET AllCodeNT   =   CModule AllExpr
 
 SET AllExpr
-  = CExpr AllBind AllAlt AllPat
+  = CExpr CExprAnn AllBind AllAlt AllPat
     AllMeta
 
 SET AllNT
