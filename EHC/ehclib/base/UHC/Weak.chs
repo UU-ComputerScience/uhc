@@ -90,7 +90,7 @@ mkWeak  :: k                            -- ^ key
 mkWeak key val (Just finalizer) = ioFromPrim $ \s ->
    Weak (mkWeakPtr key val finalizer)
 mkWeak key val Nothing = ioFromPrim $ \s ->
-   Weak (mkWeakPtr key val (unsafeCoerce (0::Int)))
+   Weak (mkWeakPtrWOFinalizer key val)
 
 {-|
 Dereferences a weak pointer.  If the key is still alive, then

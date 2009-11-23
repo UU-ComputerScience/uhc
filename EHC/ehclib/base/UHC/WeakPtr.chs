@@ -7,7 +7,8 @@ No useful functionality is provided however, just the interface.
 module UHC.WeakPtr
   ( WeakPtr
   
-  , mkWeakPtr, deRefWeakPtr
+  , mkWeakPtr, mkWeakPtrWOFinalizer
+  , deRefWeakPtr
   , finalizeWeakPtr
   
   , mkWeakPtrForeignEnv
@@ -25,6 +26,7 @@ data WeakPtr val		-- opaque, internals known by RTS
 
 %%[99
 foreign import prim "primMakeWeakPtr" mkWeakPtr :: k -> v -> IO () -> WeakPtr v
+foreign import prim "primMakeWeakPtrWOFinalizer" mkWeakPtrWOFinalizer :: k -> v -> WeakPtr v
 foreign import prim "primDeRefWeakPtr" deRefWeakPtr :: WeakPtr v -> Maybe v
 foreign import prim "primFinalizeWeakPtr" finalizeWeakPtr :: WeakPtr v -> Maybe (IO ())
 %%]

@@ -67,6 +67,18 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+### svn log/history
+AC_PATH_PROG(svnCmd,svn)
+if test -x "$svnCmd"
+then
+  svnExists="yes"
+  $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+else
+  svnExists="no"
+fi
+AC_SUBST(SVN_EXISTS,$svnExists)
+AC_SUBST(SVN_CMD,$svnCmd)
+
 ### svn revision
 AC_PATH_PROG(svnVersionCmd,svnversion)
 if test -x "$svnVersionCmd"

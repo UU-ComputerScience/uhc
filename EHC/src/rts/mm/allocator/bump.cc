@@ -47,7 +47,7 @@ Ptr mm_allocator_Bump_Alloc_AndEnsureSpace( MM_Allocator_Bump_Data* alc, Word sz
 	} else if ( nrFrags >= alc->maxFragments ) {
 		// max nr of fragments consumed, trigger GC, this will (amongst other things) reset this allocator
 		IF_GB_TR_ON(3,printf("mm_allocator_Bump_Alloc_AndEnsureSpace kick GC\n");) ;
-		mm_plan.pollForGC( &mm_plan, True, alc->space, gcInfo ) ;
+		mm_plan.doGC( &mm_plan, False, gcInfo ) ;
 	} else {
 		// get a new fragment
 		IF_GB_TR_ON(3,printf("mm_allocator_Bump_Alloc_AndEnsureSpace new frag\n");) ;

@@ -5,6 +5,9 @@
 
 %%[8
 #include "../../rts.h"
+#if __UHC_TARGET_BC__
+#include "../../bc/interpreter.h"
+#endif
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -65,6 +68,18 @@ Ptr mm_mutator_GBSS_Alloc_WeakPtr( MM_Mutator* mutator ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GBSS running a finalizer, an IO ()
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+void mm_mutator_GBSS_RunFinalizer( MM_Mutator* mutator, Word finalizer ) {
+#	if __UHC_TARGET_BC__
+		gb_runIO( finalizer ) ;
+#	endif
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GBSS interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -81,6 +96,9 @@ MM_Mutator mm_mutator_GBSS =
 	// , &
 %%[[94
 	, &mm_mutator_GBSS_Alloc_WeakPtr
+%%]]
+%%[[99
+	, &mm_mutator_GBSS_RunFinalizer
 %%]]
 	} ;
 %%]

@@ -60,7 +60,7 @@ void mm_traceSupply_GBStack_Run( MM_TraceSupply* traceSupply ) {
 			s += 2 ;
 		}
 		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run B sp=%p *s=%x\n",s,*s);}) ;
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run C\n");}) ;
 }
@@ -87,7 +87,7 @@ void mm_traceSupply_GBStack_Run2( MM_TraceSupply* traceSupply ) {
 				if ( mustGC ) {
 					for ( ; sz > 0 ; sz-- ) {
 						bptr-- ;
-						*bptr = mm_Trace_TraceObject( trgr->trace, *bptr, MM_Trace_Flg_All ) ;
+						*bptr = mm_Trace_TraceObject( trgr->trace, *bptr ) ;
 					}
 				} else {
 					bptr -= sz ;
@@ -97,7 +97,7 @@ void mm_traceSupply_GBStack_Run2( MM_TraceSupply* traceSupply ) {
 		}
 		// deal with remaining part of stackframe, on top of the stack
 		for ( ; s < bptr ; s++ ) {
-			*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+			*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 		}
 		// to next frame, skipping ret info
 		s = b + 2 ;
@@ -105,7 +105,7 @@ void mm_traceSupply_GBStack_Run2( MM_TraceSupply* traceSupply ) {
 	}
 	// remaining part
 	for ( ; s < (WPtr)StackAreaHigh ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 }
 
@@ -120,7 +120,7 @@ void mm_traceSupply_GBStack_Run3( MM_TraceSupply* traceSupply ) {
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run3 BEF s=%p(lo=%p, hi=%p, used=%x, unused=%x) b=%p\n",s,(WPtr)StackAreaLow,(WPtr)StackAreaHigh,(BPtr)StackAreaHigh-(BPtr)s,(BPtr)s-(BPtr)StackAreaLow,b);}) ;
 	// initial part
 	for ( ; s < b ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 	for ( ; b != NULL && b < (WPtr)StackAreaHigh ; ) {
 		GB_CallInfo* ci = GB_FromBPToCallInfo(b) ;
@@ -139,7 +139,7 @@ void mm_traceSupply_GBStack_Run3( MM_TraceSupply* traceSupply ) {
 				if ( descr & 1 ) {
 					for ( ; sz > 0 ; sz-- ) {
 						bptr-- ;
-						*bptr = mm_Trace_TraceObject( trgr->trace, *bptr, MM_Trace_Flg_All ) ;
+						*bptr = mm_Trace_TraceObject( trgr->trace, *bptr ) ;
 					}
 				} else {
 					bptr -= sz ;
@@ -149,14 +149,14 @@ void mm_traceSupply_GBStack_Run3( MM_TraceSupply* traceSupply ) {
 		}
 		// deal with remaining part of stackframe, on top of the stack
 		for ( ; s < bptr ; s++ ) {
-			*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+			*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 		}
 		// to next frame
 		b = (WPtr)*b ;
 	}
 	// remaining part
 	for ( ; s < (WPtr)StackAreaHigh ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run3 AFT\n");}) ;
 }
@@ -183,7 +183,7 @@ static inline WPtr mm_traceSupply_GBStack_RunWithStackInfo( MM_TraceSupply_GBSta
 				printf("mm_traceSupply_GBStack_RunWithStackInfo B gcStackInfo=%p, descr[%x]=%x, tracesz=%x bptr=%x(-1=%x)\n",info,descrInx,descr,sz,bptr,*(bptr-1));
 				for ( ; sz > 0 ; sz-- ) {
 					bptr-- ;
-					*bptr = mm_Trace_TraceObject( trgr->trace, *bptr, MM_Trace_Flg_All ) ;
+					*bptr = mm_Trace_TraceObject( trgr->trace, *bptr ) ;
 				}
 			} else {
 				printf("mm_traceSupply_GBStack_RunWithStackInfo C gcStackInfo=%p, descr[%x]=%x, skipsz=%x bptr=%x(-1=%x)\n",info,descrInx,descr,sz,bptr,*(bptr-1));
@@ -213,7 +213,7 @@ static inline WPtr mm_traceSupply_GBStack_RunWithStackInfo( MM_TraceSupply_GBSta
 				IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_RunWithStackInfo B gcStackInfo=%p, descr[%x]=%x, tracesz=%x bptr=%x(-1=%x)\n",info,descrInx,descr,sz,bptr,*(bptr-1));}) ;
 				for ( ; sz > 0 ; sz-- ) {
 					bptr-- ;
-					*bptr = mm_Trace_TraceObject( trgr->trace, *bptr, MM_Trace_Flg_All ) ;
+					*bptr = mm_Trace_TraceObject( trgr->trace, *bptr ) ;
 				}
 			} else {
 				IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_RunWithStackInfo C gcStackInfo=%p, descr[%x]=%x, skipsz=%x bptr=%x(-1=%x)\n",info,descrInx,descr,sz,bptr,*(bptr-1));}) ;
@@ -229,7 +229,7 @@ static inline WPtr mm_traceSupply_GBStack_RunWithStackInfo( MM_TraceSupply_GBSta
 %%[8
 static inline WPtr mm_traceSupply_GBStack_RunStack( MM_TraceSupply_GBStack_Data* trgr, WPtr s, WPtr bptr ) {
 	for ( ; s < bptr ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 	return s ;
 }
@@ -246,7 +246,7 @@ static inline WPtr mm_traceSupply_GBStack_RunStack( MM_TraceSupply_GBStack_Data*
 	}
 	printf( "\n" ) ;
 	for ( ; s < bptr ; s++ ) {
-		*s = mm_Trace_TraceObject( trgr->trace, *s, MM_Trace_Flg_All ) ;
+		*s = mm_Trace_TraceObject( trgr->trace, *s ) ;
 	}
 	for ( sss = ssssss ; sss < bptr ; sss++ ) {
 		printf( "%x ", *sss ) ;

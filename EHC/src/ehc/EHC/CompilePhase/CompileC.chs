@@ -67,8 +67,11 @@ cpCompileWithGCC how othModNmL modNm
                               -> ( fpExec
                                  , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
-                                 , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "lib" ++ l ++ ".a")
-                                       ((if ehcOptFullProgAnalysis opts then [] else pkgNmL) ++ Cfg.libnamesGccPerVariant)
+                                 -- , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_PKG variant "" ++ "lib" ++ l ++ ".a")
+                                 ,    map (mkl Cfg.LIB_PKG)
+                                          (if ehcOptFullProgAnalysis opts then [] else pkgNmL)
+                                   ++ map (mkl Cfg.LIB)
+                                          Cfg.libnamesGccPerVariant
                                    ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant "" ++ "lib" ++ l ++ ".a") (Cfg.libnamesGcc opts)
                                    ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                  , if   ehcOptFullProgAnalysis opts
@@ -76,6 +79,7 @@ cpCompileWithGCC how othModNmL modNm
                                    else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
                                  )
+                              where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant "") l
                             FinalCompile_Module
                               -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                               where o = fpO modNm fp

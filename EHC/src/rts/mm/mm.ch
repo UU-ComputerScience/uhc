@@ -31,9 +31,9 @@ Order of imports is important because of usage dependencies between types.
 #include "gbm/gbtracesupregs.h"
 #include "gbm/gbtracesupstack.h"
 #include "gbm/gbtracesupmodule.h"
-#endif
 #include "semispace/gbssmutator.h"
 #include "semispace/gbssmodule.h"
+#endif
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
 %%]

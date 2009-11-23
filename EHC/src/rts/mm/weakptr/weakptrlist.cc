@@ -65,12 +65,13 @@ void mm_weakPtr_List_Init( MM_WeakPtr* weakPtr, MM_Mutator* mutator, MM_Collecto
 	weakPtr->data = (MM_WeakPtr_Data_Priv*)weakPtrList ;
 }
 
-Word mm_weakPtr_List_NewWeakPtr( MM_WeakPtr* weakPtr, Word key, Word val, MM_WeakPtr_Finalizer finalizer ) {
-	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x\n", key, val) ;}) ;
+Word mm_weakPtr_List_NewWeakPtr( MM_WeakPtr* weakPtr, Word key, Word val, Word finalizer ) {
+	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x finalizer\n", key, val, finalizer) ;}) ;
+	// printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x finalizer=%x\n", key, val, finalizer) ;
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
 	
 	MM_LclRoot_EnterGrp ;
-	MM_LclRoot_EnterOne2(key,val) ;
+	MM_LclRoot_EnterOne3(key,val,finalizer) ;
 	BPtr ptr = weakPtrList->mutator->allocWeakPtr( weakPtrList->mutator ) ;
 	MM_LclRoot_LeaveGrp ;
 
@@ -86,22 +87,45 @@ Word mm_weakPtr_List_NewWeakPtr( MM_WeakPtr* weakPtr, Word key, Word val, MM_Wea
 	return (Word)ptr ;
 }
 
-void mm_weakPtr_List_FinalizeWeakPtr( MM_WeakPtr* weakPtr, Word ptr ) {
+Word mm_weakPtr_List_DerefWeakPtr( MM_WeakPtr* weakPtr, Word wp ) {
+	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
+	
+	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)wp ) ;
+	
+	return ( w->finalizer == 0 || w->finalizer == MM_Itf_WeakPtr_BeingFinalized ? 0 : w->val ) ;
+}
+
+Word mm_weakPtr_List_FinalizeWeakPtr( MM_WeakPtr* weakPtr, Word wp ) {
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
 
-	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)ptr ) ;
-	Word key = w->key ;
-	Word val = w->val ;
-	MM_WeakPtr_Finalizer finalizer = w->finalizer ;
+	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)wp ) ;
+	Word finalizer = w->finalizer ;
 	
-	w->key = 0 ;
-	w->val = 0 ;
-	w->finalizer = NULL ;
-
-	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizeWeakPtr wptr=%x w=%p key=%x val=%x finalizer=%p\n",ptr,w,key,val,finalizer) ;}) ;
-	if ( finalizer != NULL ) {
-		(*finalizer)( key, val ) ;
+	if ( w->val == 0 ) {
+		// internal (RTS) finalization, only of the key, done directly, no allocation done, only deallocation
+		Word key = w->key ;
+		
+		w->key = 0 ;
+		w->finalizer = 0 ;
+			
+		if ( finalizer != 0 && finalizer != MM_Itf_WeakPtr_NoFinalizer ) {
+			(*(MM_WeakPtr_Finalizer)finalizer)( key ) ;
+			finalizer = 0 ;
+		} else {
+			rts_panic1_1( "mm_weakPtr_List_FinalizeWeakPtr: finalizer == 0 || .. == NoFinalizer", wp ) ;
+		}
+	} else {
+%%[[99
+		// weakptr finalization, delayed because we cannot assume allocation works normal during GC
+		if ( finalizer == MM_Itf_WeakPtr_BeingFinalized ) {
+			// cannot kick another external finalization
+			finalizer = 0 ;
+		} else {
+			w->finalizer = MM_Itf_WeakPtr_BeingFinalized ;
+		}
+%%]]
 	}
+	return ( finalizer == MM_Itf_WeakPtr_NoFinalizer ? 0 : finalizer ) ;
 }
 
 void mm_weakPtr_List_StartFindLiveObjects( MM_WeakPtr* weakPtr ) {
@@ -164,10 +188,13 @@ MM_FreeListArray* mm_weakPtr_List_EndFindLiveObjects( MM_WeakPtr* weakPtr ) {
 Word mm_weakPtr_List_TraceWeakPtr( MM_WeakPtr* weakPtr, MM_Trace* trace, Word obj ) {
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
 	
-	obj = mm_Trace_TraceObject( trace, obj, MM_Trace_Flg_All ) ;
+	obj = mm_Trace_TraceObject( trace, obj ) ;
 	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)obj ) ;
-	w->key = mm_Trace_TraceObject( trace, w->key, MM_Trace_Flg_All ) ;
-	w->val = mm_Trace_TraceObject( trace, w->val, MM_Trace_Flg_All ) ;
+	w->key = mm_Trace_TraceObject( trace, w->key ) ;
+	if ( w->val != 0 ) {
+		w->val       = mm_Trace_TraceObject( trace, w->val       ) ;
+		w->finalizer = mm_Trace_TraceObject( trace, w->finalizer ) ;
+	}
 	
 	return obj ;
 }
@@ -189,6 +216,7 @@ MM_WeakPtr mm_weakPtr_List =
 	{ NULL
 	, &mm_weakPtr_List_Init
 	, &mm_weakPtr_List_NewWeakPtr
+	, &mm_weakPtr_List_DerefWeakPtr
 	, &mm_weakPtr_List_FinalizeWeakPtr
 	, &mm_weakPtr_List_FindLiveObjects
 	, &mm_weakPtr_List_StartFindLiveObjects

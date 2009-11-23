@@ -46,7 +46,7 @@ void mm_traceSupply_Roots_Run( MM_TraceSupply* traceSupply ) {
 	for ( grp = mm_LclRoots ; grp != NULL ; grp = grp->next ) {
 		MM_LclRoot_One* one ;
 		for ( one = grp->ones ; one != NULL ; one = one->next ) {
-			*(one->ptrToObj) = mm_Trace_TraceObject( trgr->trace, *(one->ptrToObj), MM_Trace_Flg_All ) ;
+			*(one->ptrToObj) = mm_Trace_TraceObject( trgr->trace, *(one->ptrToObj) ) ;
 		}
 	}
 	
@@ -54,8 +54,9 @@ void mm_traceSupply_Roots_Run( MM_TraceSupply* traceSupply ) {
 	MM_FlexArray_Inx i, j ;
 	for ( i = 0 ; i < mm_flexArray_SizeUsed( &mm_Roots ) ; i++ ) {
 		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
-		// IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x nr=%x flg=%x\n",i,*(r->ptrToObj), r->nrObjs, r->flags);}) ;
-		trgr->trace->traceObjects( trgr->trace, r->ptrToObj, r->nrObjs, r->flags ) ;
+		// IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x nr=%x flg=%x\n",i,*(r->ptrToObj), r->nrObjs);}) ;
+		// trgr->trace->traceObjects( trgr->trace, r->ptrToObj, r->nrObjs ) ;
+		mm_trace_TraceObjects( trgr->trace, r->ptrToObj, r->nrObjs ) ;
 	}
 
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run C\n");}) ;

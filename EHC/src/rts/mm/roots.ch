@@ -18,7 +18,6 @@ Global roots
 typedef struct MM_Roots_Entry {
 	WPtr	 					ptrToObj ;		// ptr to live object
 	HalfWord	 				nrObjs ;		// nr of objects rooted at ptrToObj
-	MM_Trace_Flg				flags ;
 } MM_Roots_Entry ;
 
 %%]
@@ -46,10 +45,10 @@ extern MM_FlexArray			mm_Roots ;
 %%]
 
 %%[8
-extern void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr, MM_Trace_Flg flg ) ;
+extern void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr ) ;
 
 static inline void mm_Roots_RegisterN( WPtr toObj, HalfWord nr ) {
-	mm_Roots_RegisterNWithFlag( toObj, 1, MM_Trace_Flg_Copy | MM_Trace_Flg_Trace ) ;
+	mm_Roots_RegisterNWithFlag( toObj, 1 ) ;
 }
 
 static inline void mm_Roots_Register1( WPtr toObj ) {
