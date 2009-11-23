@@ -183,6 +183,8 @@ MM_Allocator mm_allocator_Bump =
 	, &mm_allocator_Bump_Init
 	, &mm_allocator_Bump_ResetWithSpace
 	, &mm_allocator_Bump_Alloc
+	, &mm_allocator_Bump_Ensure
+	, &mm_allocator_Bump_AllocEnsured
 	, &mm_allocator_Bump_Dealloc
 	, &mm_allocator_Bump_LastAllocAddress
 	, &mm_allocator_Bump_LastAllocFragment

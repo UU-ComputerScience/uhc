@@ -214,12 +214,13 @@ fviMpFromList = fviMpFromList' FvUse_Other
 
 %%[(8 codegen grin) hs export(NmAlias(..),NmAliasMp, mkNmAliasMp)
 data NmAlias
- = NmAlias_Nm       !HsName                                                 -- name to name
- | NmAlias_Eval     !HsName                                                 -- name to evaluated name
- | NmAlias_Const    {naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
- | NmAlias_Grp      {naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
- | NmAlias_Basic    {naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
-                                                                            -- name to basic value, i.e. node element used for FFI
+ = NmAlias_Nm       			!HsName                                                 -- name to name
+ | NmAlias_NmAfterSideEffect	!HsName                                                 -- name to name, but after an eval
+ | NmAlias_Eval     			!HsName                                                 -- name to evaluated name
+ | NmAlias_Const    			{naliNm :: !HsName, naliVal  :: !GrVal        }         -- name to single constant (other than name)
+ | NmAlias_Grp      			{naliNm :: !HsName, naliAlis :: ![NmAlias]    }         -- name to group of values, i.e. node constituents
+ | NmAlias_Basic    			{naliNm :: !HsName, naliAli  :: !NmAlias, naliAnnot :: BasicAnnot  }
+                                                                     		       	-- name to basic value, i.e. node element used for FFI
  | NmAlias_None
 
 type NmAliasMp = Map.Map HsName NmAlias
@@ -322,5 +323,41 @@ grModMerge mL
   = foldr1 cmb mL
   where cmb (GrModule_Mod m1 g1 b1 t1) (GrModule_Mod m2 g2 b2 t2)
           = GrModule_Mod m2 (List.union g1 g2) (b1 ++ b2) (Map.union t1 t2)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% How will name be evaluated, used in (e.g.) EvalElim, CommonWillEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+How a name will be used later on in code.
+Used by CommonWillEval to indicate evaluation (WillUseFor_Eval).
+EvalElim also must now whether a name is used as a field, or argument (WillUseFor_NodeField).
+
+%%[(8 codegen grin) hs export(WillUseFor(..),WillUseForMp,WillUseForS,willUseIntersection,willUseUnion,willUseFor,willUseForEval,willUseForNodeField)
+data WillUseFor
+  = WillUseFor_Eval
+  | WillUseFor_NodeField
+  deriving (Eq,Ord,Show)
+
+instance PP WillUseFor where
+  pp = pp . show
+
+type WillUseForS  = Set.Set WillUseFor
+type WillUseForMp = Map.Map HsName WillUseForS
+
+willUseUnion :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseUnion = Map.unionWith Set.union
+
+willUseIntersection :: WillUseForMp -> WillUseForMp -> WillUseForMp
+willUseIntersection = Map.intersectionWith Set.intersection
+
+willUseFor :: HsName -> WillUseForMp -> WillUseForS
+willUseFor n m = maybe Set.empty id $ Map.lookup n m
+
+willUseForEval :: HsName -> WillUseForMp -> Bool
+willUseForEval n m = maybe False (WillUseFor_Eval `Set.member`) $ Map.lookup n m
+
+willUseForNodeField :: HsName -> WillUseForMp -> Bool
+willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.lookup n m
 %%]
 

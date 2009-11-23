@@ -173,7 +173,8 @@ SEM CExpr
     Char        lhs         .   mbRepl      =   if @lhs.allowTrfToCon
                                                 then Just @cTrf
                                                 else Nothing
-  | * - Var 
+  | * - Ann
+        Var 
         Int 
         Char    lhs         .   mbRepl      =   Nothing
 %%]

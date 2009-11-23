@@ -29,6 +29,8 @@ Core transformations
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp}, {%{EH}Core.Trf.FindNullaries})
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
+%%]
 %%[(9 codegen) import({%{EH}Core.Trf.LiftDictFields})
 %%]
 %%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
@@ -63,6 +65,7 @@ cpCore1Trf modNm trfNm
                               "CFN"     -> if   ehcOptFullProgAnalysis opts
                                            then cmodTrfFindNullaries
                                            else id
+                              "CTBS"    -> cmodTrfAnnBasedSimplify opts
 %%[[9
                               "CLDF"    -> if   ehcOptFullProgAnalysis opts
                                            then cmodTrfLiftDictFields

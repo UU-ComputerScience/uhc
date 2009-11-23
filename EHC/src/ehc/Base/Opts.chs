@@ -393,11 +393,14 @@ ehcOptEmitCore opts
   = ehcOptFullProgAnalysis opts || targetIsCore (ehcOptTarget opts)
 %%]
 
-%%[(8 codegen) export(ehcOptEmitTyCore)
+%%[(8 codegen) export(ehcOptEmitTyCore,ehcOptTyCore)
 -- generate TyCore
 ehcOptEmitTyCore :: EHCOpts -> Bool
 ehcOptEmitTyCore opts
   = {- ehcOptFullProgAnalysis opts || -} targetIsTyCore (ehcOptTarget opts)
+
+ehcOptTyCore :: EHCOpts -> Bool
+ehcOptTyCore opts = ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

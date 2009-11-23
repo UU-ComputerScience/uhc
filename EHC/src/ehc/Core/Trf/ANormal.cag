@@ -200,7 +200,7 @@ SEM CExpr
   | TupIns TupUpd TupDel
                 loc         .   appTrfIsOk  =   AppYesLet
   | Lam Let     body        .   appTrfIsOk  =   AppNoLet
-  | * - App Lam Let TupIns TupUpd TupDel
+  | * - App Lam Let TupIns TupUpd TupDel Ann
                 loc         .   appTrfIsOk  =   AppYesLet
 
 SEM CAlt
@@ -223,7 +223,7 @@ SEM CExpr
   | TupIns TupUpd
                 fldExpr     .   lamTrfIsOk  =   LamYesLet
   | Lam         body        .   lamTrfIsOk  =   LamNoLet
-  | * - Lam TupIns TupUpd
+  | * - Lam TupIns TupUpd Ann
                 loc         .   lamTrfIsOk  =   LamYesLet
 
 SEM CAlt
@@ -246,7 +246,7 @@ SEM CExpr
   | TupIns TupUpd
                 fldExpr     .   letTrfIsOk  =   True
   | App         loc         .   letTrfIsOk  =   True
-  | * - App TupIns TupUpd
+  | * - App TupIns TupUpd Ann
                 loc         .   letTrfIsOk  =   False
 
 SEM CAlt

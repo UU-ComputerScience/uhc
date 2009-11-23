@@ -57,8 +57,10 @@ SEM CExpr
                                                   (f:fs) | @isMatch
                                                     -> (f,fs)
                                                   _ -> (Nothing,@body.mbFunAppL)
-  | * - App Lam lhs         .   mbApp       =   Nothing
-  | * - App Lam lhs         .   mbFunAppL   =   []
+  | * - App Lam Ann
+  				lhs         .   mbApp       =   Nothing
+  | * - App Lam Ann
+  				lhs         .   mbFunAppL   =   []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -21,7 +21,7 @@ ATTR CExpr [ | | isClosurableExpr: Bool ]
 SEM CExpr
   | Case TupDel TupIns TupUpd Let
                 lhs         .   isClosurableExpr    =   True
-  | * - Case TupDel TupIns TupUpd Let
+  | * - Case TupDel TupIns TupUpd Let Ann
                 lhs         .   isClosurableExpr    =   False
 %%]
 

@@ -36,7 +36,9 @@ RTS_SRC_CC_SHARED	:= \
         base/sysalloc \
         mm/mm \
         mm/common \
+        mm/basic/iterator \
         mm/basic/flexarray \
+        mm/basic/freelistarray \
         mm/basic/dll \
         mm/basic/deque \
         mm/basic/rangemap \
@@ -48,6 +50,7 @@ RTS_SRC_CC_SHARED	:= \
         mm/space \
         mm/mutator \
         mm/roots \
+        mm/weakptr \
         mm/plan \
         mm/pages/buddy \
         mm/tracesupply/group \
@@ -62,6 +65,7 @@ RTS_SRC_CC_SHARED	:= \
         mm/semispace/gbssmodule \
         mm/allocator/listoffree \
         mm/allocator/bump \
+        mm/weakptr/weakptrlist \
     )
 
 RTS_SRC_CC_BYTECODE	:= \
@@ -96,7 +100,9 @@ RTS_SRC_CH_SHARED := \
         mm/mm \
         mm/config \
         mm/common \
+        mm/basic/iterator \
         mm/basic/flexarray \
+        mm/basic/freelistarray \
         mm/basic/dll \
         mm/basic/deque \
         mm/basic/rangemap \
@@ -108,6 +114,7 @@ RTS_SRC_CH_SHARED := \
         mm/space \
         mm/mutator \
         mm/roots \
+        mm/weakptr \
         mm/plan \
         mm/module \
         mm/pages/buddy \
@@ -123,6 +130,7 @@ RTS_SRC_CH_SHARED := \
         mm/semispace/gbssmodule \
         mm/allocator/listoffree \
         mm/allocator/bump \
+        mm/weakptr/weakptrlist \
     )
 
 RTS_SRC_CH_BYTECODE := \

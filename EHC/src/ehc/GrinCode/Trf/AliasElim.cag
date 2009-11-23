@@ -138,8 +138,10 @@ SEM GrExpr
                                                 =   case (@expr.nmAlias,@pat.nmAlias,@body.nmAlias) of
                                                       (_,NmAlias_Nm p,NmAlias_Nm b) | p == b						-- last unit in body yields p, without intermediate computation, may well remove it. See note at begin.
                                                         -> (@expr.trf,id,Map.empty)
+                                                      {-
                                                       (NmAlias_Eval e,pp@(NmAlias_Nm p),_)							-- allow reference to evaluated value instead
                                                         -> (@trf,id,Map.singleton e pp)
+                                                      -}
                                                       -- (c@(NmAlias_Const _ _),pp@(NmAlias_Nm p),_)					-- allow reference to constant instead
                                                       --   -> (@trf,id,Map.singleton p c)
                                                       (e@(NmAlias_Nm _),p@(NmAlias_Nm _),_)							-- p is alias for e, map p to e

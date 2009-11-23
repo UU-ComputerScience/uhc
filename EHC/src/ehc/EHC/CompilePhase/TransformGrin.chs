@@ -78,7 +78,7 @@ cpTransformGrin modNm
                          flt  = ( grFlattenSeq                   , "flatten"          )
                          ale  = ( grAliasElim                    , "alias elim"       )
                          nme  = ( grUnusedNameElim               , "unused name elim" )
-                         eve  = ( grEvalElim                     , "eval elim"        )
+                         eve  = ( grEvalElim opts                , "eval elim"        )
                          mte  = ( grUnusedMetaInfoElim           , "meta info elim"   )
                          cpr  = ( grConstPropagation             , "const prop"       )
                          unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
@@ -87,9 +87,9 @@ cpTransformGrin modNm
                          frm  = ( grPrettyNames                  , "rename uniform"   ) 
 %%]]
 %%[[8
-                         evel = [ flt, ale, eve, ale ]
+                         evel = [ flt, ale, eve, flt, ale ]
 %%][8_2
-                         evel = [ flt, ale, frm, eve, ale ]
+                         evel = [ flt, ale, frm, eve, flt, ale ]
 %%]]
 %%[[8                              
                          inline = mk [inl]

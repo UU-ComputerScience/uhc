@@ -17,6 +17,7 @@ Trace a GBM object, knowing its structure etc.
 // is managed by GC
 static inline Bool mm_trace_GBM_CanTrace( Word obj, MM_Collector* collector ) {
 	// IF_GB_TR_ON(3,{printf("mm_trace_GBM_CanTrace obj=%x\n",obj);}) ;
+	// TODO: querying via collector->isInCollectedSpace
 	Bool res = GB_Word_IsPtr( obj ) && mm_Spaces_AddressIsGCManagedBySpace( obj, collector->collectedSpace ) ;
 #	if TRACE
 		if ( ! res ) {
@@ -211,6 +212,12 @@ void mm_trace_GBM_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs, MM_Tra
 }
 %%]
 
+%%[8
+Word mm_trace_GBM_EnsureNoIndirections( MM_Trace* trace, Word obj ) {
+	return gb_Indirection_FollowObject( obj ) ;
+}
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% GBM interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -221,12 +228,14 @@ MM_Trace mm_trace_GBM =
 	, NULL
 	, NULL
 	, sizeof(GB_NodeHeader) >> Word_SizeInBytes_Log
+	, sizeof(GB_NodeHeader)
 	, &mm_trace_GBM_Init
 	, &mm_trace_GBM_CanTraceObject
 	, &mm_trace_GBM_TraceKnownToBeObject
 	, &mm_trace_GBM_TraceObjects
 	, &mm_trace_GBM_ObjectSize
 	, &mm_trace_GBM_HasTraceableWords
+	, &mm_trace_GBM_EnsureNoIndirections
 	} ;
 %%]
 

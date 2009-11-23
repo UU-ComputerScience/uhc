@@ -166,7 +166,8 @@ SEM GrExpr
   | Call         lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "Call "++show @nm ++ "(" ++ @argL.text ++ ")") ModeWord) @argL.derivedModes
   | FFI          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "FFI" ++show @impEntNm) ModeWord) @argL.derivedModes
   | Eval         lhs.messages    = check @lhs.env @nm ModeWord
-  | App          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "App" ++show @nm) ModeWord) @argL.derivedModes
+  | App          lhs.messages    = check @lhs.env @nm ModeNode ++
+                                   concatMap (checkMd (@lhs.inFun ++ "App" ++show @nm) ModeWord) @argL.derivedModes
   | Throw        lhs.messages    = []
   | Catch        lhs.messages    = []
 

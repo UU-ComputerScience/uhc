@@ -142,7 +142,7 @@ ATTR
 
 SEM CExpr
   | Let         lhs         .   gathArityMp =   @binds.bindArityMp `Map.union` @body.gathArityMp
-  | * - Let     lhs         .   gathArityMp =   Map.empty
+  | * - Let Ann lhs         .   gathArityMp =   Map.empty
 %%]
 
 %%[(8 codegen grin)
@@ -410,6 +410,7 @@ SEM CExpr
   | Var         loc         .   grExpr      =   mbMkStrict @lhs.modNm @lUniq @lhs.isStrict @grVal
   | Tup Int Char
                 loc         .   grExpr      =   retStrict @lhs.isStrict @grVal
+  | Ann         loc         .   grExpr      =   @expr.grExpr
 %%[[9
   | HoleLet     loc         .   grExpr      =   @body.grExpr	-- when this occurs, there were no bindings for the possible (caused by implicit parameters) bindings encoded by HoleLet
 %%]]
@@ -419,7 +420,7 @@ SEM CExpr
                                                 then  mkGrAdapt @lhs.modNm @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty
 %%]]
-  | * - Let Case App Var Tup Int Char
+  | * - Let Case App Var Tup Int Char Ann
 %%[[9
     HoleLet
 %%]]                                      
@@ -452,7 +453,8 @@ SEM CExpr
   | Int         loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnInt  else id)  (GrVal_LitInt @int)
   | Char        loc         .   grVal       =   (if @lhs.doBox then mkGrBox hsnChar else id)  (GrVal_LitInt (ord @char))
   | String      loc         .   grVal       =   (if @lhs.doBox then mkGrBox (ehbnPackedString $ ehcOptBuiltinNames @lhs.opts) else id)  (GrVal_LitStr @str)
-  | * - Int Char String Var Tup
+  | Ann         loc         .   grVal       =   @expr.grVal
+  | * - Int Char String Var Tup Ann
                 loc         .   grVal       =   GrVal_Empty
 %%]
 
@@ -472,7 +474,7 @@ SEM CExpr
   | TupUpd TupIns TupDel
                 offset      .   doBox       =   False
                 loc         .   doBox       =   True
-  | * - TupUpd TupIns TupDel
+  | * - TupUpd TupIns TupDel Ann
                 loc         .   doBox       =   True
 
 SEM CModule
@@ -832,7 +834,7 @@ SEM CExpr
 %%]
   | *
 %%[[10  
-       - TupIns TupUpd TupDel
+       - TupIns TupUpd TupDel Ann
                 loc         .   grTupFldL   =   []
 %%]]                            
                 loc         .   grTupRec    =   @grVal
@@ -847,7 +849,7 @@ ATTR CExpr [ | | grLetBody: GrExpr ]
 
 SEM CExpr
   | Let         lhs         .   grLetBody   =   @body.grLetBody
-  | * - Let     lhs         .   grLetBody   =   @grExpr
+  | * - Let Ann lhs         .   grLetBody   =   @grExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -861,7 +863,7 @@ ATTR CExpr [ | | lamArgDicts: {[[Int]]} ]
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
                 lhs         .   lamArgDicts =   @argMeta.argDicts ++ @body.lamArgDicts
-  | * - Lam     lhs         .   grLamArgL   =   []
+  | * - Lam Ann lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr
                 lhs         .   lamArgDicts =   []
 
@@ -877,7 +879,7 @@ ATTR CExpr [ | | grAppFun: HsName  grAppArgL: GrValL ]
 SEM CExpr
   | App         loc         .   grAppFun    =   @func.grAppFun
                             .   grAppArgL   =   @arg.grVal : @func.grAppArgL
-  | * - App     lhs         .   grAppFun    =   maybe hsnUnknown id . grV2HNm $ @grVal
+  | * - App Ann lhs         .   grAppFun    =   maybe hsnUnknown id . grV2HNm $ @grVal
                             .   grAppArgL   =   []
 %%]
 

@@ -27,6 +27,9 @@ typedef struct MM_Plan_SS_Data {
 	MM_TraceSupply		allTraceSupply ;	// all trace supplies grouped together
 	MM_Trace			gbmTrace ;			// GBM specific
 	MM_Module			gbmModule ;			// GBM specific module info
+%%[[94
+	MM_WeakPtr*			weakPtr ;			// weak ptr admin
+%%]]
 	Bool				gcInProgress ;
 } MM_Plan_SS_Data ;
 %%]

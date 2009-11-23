@@ -36,6 +36,8 @@
 #define USE_EHC_MM				1
 %%[[8
 #define GB_DEBUG				0	// 0 or 1 for debugging settings
+%%][99
+#define GB_DEBUG				0	// 0 or 1 for debugging settings
 %%][100
 #define GB_DEBUG				0	// always 0
 %%]]
@@ -183,13 +185,14 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 1000000
+#define STACKSIZE 					0x400000
+#define STACKSIZE_SPARE_UNUSED 		0x100		/* part of stack which is left as unused spare, but can be used by exception handling */
 #define RETURNSIZE 100
+
 extern WPtr SP, RP;
 extern WPtr Stack, ReturnArea;
 extern WPtr StackAreaHigh, StackAreaLow ;
 %%]
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globals

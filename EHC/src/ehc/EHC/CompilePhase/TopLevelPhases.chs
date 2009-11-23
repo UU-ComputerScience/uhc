@@ -176,7 +176,9 @@ cpEhcFullProgPostModulePhases opts modNmL modSpl
 cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
   = cpSeq ([ cpSeq [cpEnsureGrin m | m <- modNmL]
            , mergeIntoOneBigGrin
+%%[[99
            , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
+%%]]
            ]
            ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
@@ -210,7 +212,9 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
           )
   where mergeIntoOneBigCore
           = do { cr <- get
+%%[[99
                ; cpSeq [cpCleanupCore m | m <- modNmL] -- clean up Core and CoreSem (it can still be read through cr in the next statement)
+%%]]
                ; cpUpdCU mainModNm (ecuStoreCore (Core.cModMerge [ panicJust "cpEhcFullProgPostModulePhases.mergeIntoOneBigCore" $ ecuMbCore $ crCU m cr
                                                                  | m <- modNmL
                                                                  ]
@@ -664,13 +668,25 @@ Part 1 Core processing, on a per module basis, part1 is done always
 %%[(8 codegen)
 cpEhcCorePerModulePart1 :: Bool -> HsName -> EHCompilePhase ()
 cpEhcCorePerModulePart1 earlyMerge modNm
-  = cpSeq [ cpStepUID
-          , cpProcessCoreBasic modNm
-          , cpProcessTyCoreBasic modNm
-          , cpMsg modNm VerboseALot "Core (basic) done"
-          , when (not earlyMerge) $ cpProcessCoreRest modNm
-          , cpStopAt CompilePoint_Core
-          ]
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq
+           (  [ cpStepUID ]
+           ++ (if ehcOptTyCore opts
+               then [ cpProcessTyCoreBasic modNm
+                    , cpMsg modNm VerboseALot "TyCore (basic) done"
+                    , cpTranslateTyCore2Core modNm
+                    , cpStepUID
+                    ]
+               else []
+              )
+           ++ [ cpProcessCoreBasic modNm
+              , cpMsg modNm VerboseALot "Core (basic) done"
+              , when (not earlyMerge) $ cpProcessCoreRest modNm
+              , cpStopAt CompilePoint_Core
+              ]
+           )
+       }
 %%]
 
 %%[(8 codegen) haddock
@@ -762,19 +778,24 @@ cpProcessHs modNm
 %%[8
 cpProcessEH :: HsName -> EHCompilePhase ()
 cpProcessEH modNm
-  = cpSeq [ cpFoldEH modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq [ cpFoldEH modNm
 %%[[99
-          , cpCleanupFoldEH modNm
+               , cpCleanupFoldEH modNm
 %%]]
-          , cpFlowEHSem1 modNm
-          , cpTranslateEH2Output modNm
+               , cpFlowEHSem1 modNm
+               , cpTranslateEH2Output modNm
 %%[[(8 codegen)
-          , cpTranslateEH2Core modNm
+               , if ehcOptTyCore opts
+                 then cpTranslateEH2TyCore modNm
+                 else cpTranslateEH2Core modNm
 %%]]
 %%[[99
-          , cpCleanupEH modNm
+               , cpCleanupEH modNm
 %%]]
-          ]
+               ]
+       }
 %%]
 
 %%[(8 codegen)
@@ -798,7 +819,7 @@ cpProcessTyCoreBasic modNm
                        [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
                        , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
 %%[[9               
-                       -- ,  "CLDF"
+                       ,  "CLDF"
 %%]
 %%[[8_2        
                        , "CPRNM"
@@ -808,7 +829,7 @@ cpProcessTyCoreBasic modNm
                      )
                  -}
                -- , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
-                 when (ehcOptEmitTyCore opts || isJust (ehcOptUseTyCore opts))
+                 when (ehcOptTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
                           ; check modNm
                           })
@@ -832,7 +853,7 @@ cpProcessCoreBasic modNm
 %%[[102
                        -- [ "CS" ] ++
 %%]]
-                       [ "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
+                       [ "CTBS", "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
                        , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
 %%[[9               
                        ,  "CLDF"
@@ -860,7 +881,6 @@ cpProcessCoreFold modNm
   = cpSeq [ cpFoldCore modNm
 %%[[20
           , cpFlowCoreSem modNm
-          -- , cpFlowTyCoreSem modNm
 %%]]
           ]
 %%]

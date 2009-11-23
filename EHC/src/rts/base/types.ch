@@ -218,7 +218,7 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 
 #define GB_NodeTagCat_Con				0			/* data, constructor 											*/
 #define GB_NodeTagCat_PAp				1			/* partial application, tag is size of missing 					*/
-%%[[95
+%%[[94
 #define GB_NodeTagCat_Intl				3			/* other internal structures, further described by tag 			*/
 %%]]
 %%]
@@ -245,6 +245,10 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 #define GB_NodeTag_Intl_Chan			6			// Internal node: GB_Chan
 %%]
 
+%%[94
+#define GB_NodeTag_Intl_WeakPtr			7			// Internal node: GB_WeakPtr
+%%]
+
 %%[8
 #if NODEHEADER_VIA_STRUCT
 #define GB_NH_NrFlds(h)					((h).size-1)
@@ -264,11 +268,14 @@ These must coincide with the values in function src/ehc/GrinCode/GrinByteCode.ta
 // has node traceable content?
 static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 	Bool doTrace = True ;
-%%[[95
+%%[[94
 	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl ) {
 		switch( GB_NH_Fld_Tag(h) ) {
+			case GB_NodeTag_Intl_WeakPtr :
+%%[[95
 			case GB_NodeTag_Intl_Malloc :
 			case GB_NodeTag_Intl_Malloc2 :
+%%]]
 %%[[97
 			case GB_NodeTag_Intl_Float :
 			case GB_NodeTag_Intl_Double :
@@ -278,7 +285,7 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #		endif
 %%]]
 %%[[98
-			case GB_NodeTag_Intl_Chan :
+			// case GB_NodeTag_Intl_Chan :
 %%]]
 				doTrace = False ;
 				break ;
@@ -335,12 +342,14 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #define GB_MkConNode0(n,tg)						{GB_NodeAlloc_Fields_In_MinAlloc((0),n); GB_FillConNode0(n,tg); }
 #define GB_MkConNode1(n,tg,x1)					{GB_NodeAlloc_In(2,n); GB_FillConNode1(n,tg,x1); }
 #define GB_MkConNode2(n,tg,x1,x2)				{GB_NodeAlloc_In(3,n); GB_FillConNode2(n,tg,x1,x2); }
+#define GB_MkConNode2_Ensured(n,tg,x1,x2)		{GB_NodeAlloc_In_Ensured(3,n); GB_FillConNode2(n,tg,x1,x2); }
 #define GB_MkConNode3(n,tg,x1,x2,x3)			{GB_NodeAlloc_In(4,n); GB_FillConNode3(n,tg,x1,x2,x3); }
 #define GB_MkConNode4(n,tg,x1,x2,x3,x4)			{GB_NodeAlloc_In(5,n); GB_FillConNode4(n,tg,x1,x2,x3,x4); }
 #define GB_MkConNode5(n,tg,x1,x2,x3,x4,x5)		{GB_NodeAlloc_In(6,n); GB_FillConNode5(n,tg,x1,x2,x3,x4,x5); }
 
 #define GB_MkTupNode1_In(n,x1)				GB_MkConNode1(n,0,x1)
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
+#define GB_MkTupNode2_In_Ensured(n,x1,x2)	GB_MkConNode2_Ensured(n,0,x1,x2)
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
@@ -371,6 +380,11 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 
 %%]
 extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
+
+%%[94
+#define GB_NodeWeakPtrSize					(EntierUpDivBy(sizeof(GB_WeakPtr),sizeof(GB_Word)) + 1)
+#define GB_MkWeakPtrHeader					GB_MkHeader(GB_NodeWeakPtrSize, GB_NodeNdEv_No, GB_NodeTagCat_Intl, GB_NodeTag_Intl_WeakPtr)
+%%]
 
 %%[95
 #define GB_NodeMallocSize					(EntierUpDivBy(sizeof(void*),sizeof(GB_Word)) + 1)
@@ -407,6 +421,14 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% WeakPtr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+typedef MM_WeakPtr_Object	GB_WeakPtr ;
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -426,7 +448,7 @@ typedef struct GB_ByteArray {
 typedef struct GB_Chan {
   FILE*				file ;
   struct GB_Node*	name ;
-  Bool				isText ;
+  Word				isText ;
 } __attribute__ ((__packed__)) GB_Chan ;
 %%]
 
@@ -448,6 +470,9 @@ typedef struct GB_Node {
 #if USE_GMP
     // mpz_t			mpz ;				/* when GB_NodeTag_Intl_GMP_mpz */
 #endif
+%%]]
+%%[[94
+    GB_WeakPtr		weakptr ;			/* when GB_NodeTag_Intl_WeakPtr */
 %%]]
 %%[[98
     GB_Chan			chan ;				/* when GB_NodeTag_Intl_Chan */
@@ -522,6 +547,7 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
 
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,GC_MALLOC_UNCOLLECTABLE(nBytes))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapFree_Fixed(p)							
@@ -561,8 +587,10 @@ The 'Fixed' variants allocate non-collectable.
 #elif USE_EHC_MM
 
 #	define GB_HeapAlloc_Bytes(nBytes)					Cast(GB_Ptr,mm_itf_alloc(nBytes,0))
+#	define GB_HeapAlloc_Bytes_Ensured(nBytes)			Cast(GB_Ptr,mm_itf_allocEnsured(nBytes))
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		Cast(GB_Ptr,mm_itf_alloc(nBytes,gcInfo))
 #	define GB_HeapAlloc_Words(nWords)					GB_HeapAlloc_Bytes((nWords) << Word_SizeInBytes_Log)
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Bytes_Ensured((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapAlloc_Bytes_Fixed(nBytes)				Cast(GB_Ptr,mm_itf_allocResident(nBytes))
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Bytes_Fixed((nWords) << Word_SizeInBytes_Log)
 #	define GB_HeapFree_Fixed(p)							mm_itf_deallocResident(p)
@@ -591,12 +619,18 @@ The 'Fixed' variants allocate non-collectable.
 
 #	define GB_GC_RegisterModule(m)						mm_itf_registerModule(m)
 
+	extern void gb_Node_Finalize( Word p, Word unused ) ;
+#	if USE_GMP
+		extern void gb_Node_FinalizeInteger( GB_NodePtr n ) ;
+#	endif
+	
 	static inline Ptr gb_malloc( size_t sz ) { return mm_itf_malloc( sz ) ; }
 	static inline void gb_free( Ptr p ) { mm_itf_free( p ) ; }
 
 #else
 
 #	define GB_HeapAlloc_Words(nWords)					Cast(GB_Ptr,heapalloc(nWords))
+#	define GB_HeapAlloc_Words_Ensured(nWords)			GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Words_Fixed(nWords)				GB_HeapAlloc_Words(nWords)
 #	define GB_HeapAlloc_Bytes(nBytes)					GB_HeapAlloc_Words(EntierUpBy(nBytes,sizeof(GB_Word)))
 #	define GB_HeapAlloc_Bytes_GCInfo(nBytes,gcInfo)		GB_HeapAlloc_Bytes(nBytes)
@@ -648,26 +682,40 @@ The 'Fixed' variants allocate non-collectable.
 #	define GB_NodeAlloc_Fields_In_Fixed_MinAlloc(nFlds,n)		GB_NodeAlloc_In_Fixed(GB_GC_MinAlloc_FieldAnd1_Words(nFlds),n)
 #endif
 
+#if USE_EHC_MM
+#	define GB_NodeAlloc_In_Ensured(nWords,n)					{ (n) = Cast(GB_NodePtr,GB_HeapAlloc_Words_Ensured(nWords)) ; }
+#else
+#	define GB_NodeAlloc_In_Ensured(nWords,n)					GB_NodeAlloc_In(nWords,n)
+#endif
+
 %%]
 
 For finalizers boehm's gc is assumed!!!!
 This breaks when compiled without bgc.
+20091001: EHC MM is under construction.
 
 %%[95
 #if USE_BOEHM_GC
 #define GB_Register_Finalizer(n,cd)			GC_REGISTER_FINALIZER(n, &gb_Node_Finalize, cd, Cast(GC_finalization_proc*,&gb_Dummy_Finalization_Proc), &gb_Dummy_Finalization_cd)
+#define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+#define GB_EnsureBytes_Finalizer(sz,nrFin)
 #elif USE_EHC_MM
-#define GB_Register_Finalizer(n,cd)			
+// #define GB_Register_Finalizer(n,cd)
+// #define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+// #define GB_EnsureBytes_Finalizer(sz,nrFin)
+#define GB_Register_Finalizer(n,cd)			{ GB_GCSafe_Enter ; GB_GCSafe_1(n) ; GB_Register_FinalizerEnsured(n,cd) ; GB_GCSafe_Leave ; }
+#define GB_Register_FinalizerEnsured(n,cd)	{ mm_itf_registerFinalization( (Word)(n), &gb_Node_Finalize ) ; }
+#define GB_EnsureBytes_Finalizer(sz,nrFin)	{ mm_itf_allocEnsure( (Word_SizeInBytes << 2) + (sz) + nrFin * (GB_NodeWeakPtrSize << Word_SizeInBytes_Log), 0 ) ; }
 #else
-#define GB_Register_Finalizer(n,cd)			
+#define GB_Register_Finalizer(n,cd)	
+#define GB_Register_FinalizerEnsured(n,cd)	GB_Register_Finalizer(n,cd)
+#define GB_EnsureBytes_Finalizer(sz,nrFin)
 #endif
+
+#define GB_EnsureWords_Finalizer(sz,nrFin)	GB_EnsureBytes_Finalizer((sz)<<Word_SizeInBytes_Log,nrFin)
 %%]
 
 %%[95
-#define GB_NodeAlloc_Malloc_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize,GB_MkMallocHeader,n) ; \
-											  (n)->content.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
-											  GB_Register_Finalizer(n,&((n)->content.ptr)) ; \
-											}
 #define GB_NodeAlloc_ByteArray_In(nBytes,n)	{ GB_NodeAlloc_Hdr_In(GB_NodeMallocSize_ByteArray,GB_MkMallocHeader_ByteArray,n) ; \
 											  (n)->content.bytearray.size = nBytes ; \
 											  (n)->content.bytearray.ptr = gb_malloc(GB_GC_MinAlloc_Malloc(nBytes)) ; \
@@ -675,15 +723,11 @@ This breaks when compiled without bgc.
 											}
 %%]
 
-%%[97
-%%]
-#define GB_NodeAlloc_Float_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeFloatSize, GB_MkFloatHeader, n) ; }
-#define GB_NodeAlloc_Double_In(n)			{ GB_NodeAlloc_Hdr_In(GB_NodeDoubleSize,GB_MkDoubleHeader,n) ; }
-
-
 %%[98
-#define GB_NodeAlloc_Chan_In_Fixed(n)		{ GB_NodeAlloc_Hdr_In_Fixed(GB_NodeChanSize, GB_MkChanHeader, n) ; }
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
+											  (n)->content.chan.file = NULL ; \
+											  (n)->content.chan.name = NULL ; \
+											  (n)->content.chan.isText = False ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
 %%]
@@ -702,9 +746,20 @@ typedef struct GB_GCStackInfo {
 } __attribute__ ((__packed__)) GB_GCStackInfo ;
 
 %%]
-typedef struct GB_GCInfo {
-	Word16		nrOfTOS_No_GCTrace ;		/* Nr of TOS values which may not be traced, like double & float */
-} __attribute__ ((__packed__)) GB_GCInfo, *GB_GCInfoPtr ;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function specific information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Descriptor of info about functions
+
+%%[8
+typedef struct GB_FunctionInfo {
+  Word16	szStack ;	// size of stack required by function, in bytes
+  Word8*	nm ; 		// name of function
+} __attribute__ ((__packed__)) GB_FunctionInfo ;
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Link Chain kinds
@@ -726,8 +781,9 @@ Defines + encoding must correspond with the datatype LinkChainKind in src/ehc/Gr
 #define GB_LinkChainKind_Offsets			5
 #define GB_LinkChainKind_CallInfo			6
 #define GB_LinkChainKind_StringConst		7
+#define GB_LinkChainKind_FunctionInfo		8
 %%[[20
-#define GB_LinkChainKind_ImpEntry			8
+#define GB_LinkChainKind_ImpEntry			9
 %%]]
 %%]
 
