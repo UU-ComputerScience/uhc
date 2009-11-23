@@ -2,8 +2,11 @@
 %%% Memory management: plan
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 A plan is the place where all mm ingredients are combined.
+A plan makes/decides on policies.
 Only one plan can exist for a running program.
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%  interface
@@ -28,10 +31,15 @@ typedef struct MM_Plan {
   	void			 			(*initBypass)( struct MM_Plan* ) ;
 #endif
   	
-  	// poll, the point where GC can take place
-  	// isSpaceFull indicates space from which is polled is full
+  	// the point where GC can take place.
+  	// isPreemptiveGC indicates that space was not yet full, asking for a preemptive GC
   	// return True if collection is/was required/done
-  	Bool 						(*pollForGC)( struct MM_Plan*, Bool isSpaceFull, MM_Space* space, Word gcInfo ) ;
+  	Bool 						(*doGC)( struct MM_Plan*, Bool isPreemptiveGC, Word gcInfo ) ;
+
+%%[[94
+  	// get the queue of to be finalized weak ptrs
+  	MM_DEQue* 					(*getWeakPtrFinalizeQue)( struct MM_Plan* ) ;
+%%]]
 
   	// dumping info
   	void 						(*dump)( struct MM_Plan* ) ;

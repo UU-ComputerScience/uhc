@@ -123,6 +123,45 @@ Word mm_deque_HeadPop( MM_DEQue* deque, Word* words, Word nrWords ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Iteration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+// assume i->hasData
+static void inline mm_deque_IteratorNextOff( MM_DLL** dll, Word* off, Word nrWords ) {
+	MM_DEQue_PageHeader* pg = (MM_DEQue_PageHeader*)*dll ;
+	for ( ; *off > pg->tailOff ; ) {
+	}
+}
+
+// assume i->hasData
+Bool mm_deque_IteratorStep( MM_Iterator* i ) {
+	MM_DEQue* deque = (MM_DEQue*)i->iteratee ;
+	MM_DEQue_Inx inx = i->state + 1 ;
+	if ( inx < mm_deque_SizeUsed(deque) ) {
+		i->state = inx ;
+		i->data = mm_deque_At( deque, inx ) ;
+	} else {
+		i->hasData = False ;
+	}
+	return i->hasData ;
+}
+
+void mm_deque_Iterator( MM_DEQue* deque, MM_Iterator* i ) {
+	Word atInx = deque->headOff ;
+	if ( i->hasData = (! mm_deque_IsEmpty(deque)) ) {
+	}
+	if ( i->hasData = (mm_deque_HeadAvailRead(deque) > 0) ) {
+		i->state = atInx ;
+		i->data = mm_deque_At( deque, atInx ) ;
+		i->step = &mm_deque_IteratorStep ;
+		i->iteratee = (BPtr)deque ;
+	}
+}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% DEQue dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

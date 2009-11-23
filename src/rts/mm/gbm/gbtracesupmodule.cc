@@ -51,12 +51,12 @@ void mm_traceSupply_GBModule_Run( MM_TraceSupply* traceSupply ) {
 		for ( j = 0 ; j < gbMod->nrCafGlobalEntryIndices ; j++ ) {
 			WPtr e = (WPtr)( &gbMod->globalEntries[ gbMod->cafGlobalEntryIndices[j] ] ) ;
 			IF_GB_TR_ON(3,{printf("mm_traceSupply_GBModule_Run C1 i=%x j=%x e=%p *e=%x \n",i,j,e,*e);}) ;
-			*e = mm_Trace_TraceObject( trgr->trace, *e, MM_Trace_Flg_All ) ;
+			*e = mm_Trace_TraceObject( trgr->trace, *e ) ;
 			IF_GB_TR_ON(3,{printf("mm_traceSupply_GBModule_Run C2 i=%x j=%x e=%p *e=%x \n",i,j,e,*e);}) ;
 		}
 %%[[20
 		WPtr e = (WPtr)(gbMod->expNode) ;
-		*e = mm_Trace_TraceObject( trgr->trace, *e, MM_Trace_Flg_All ) ;
+		*e = mm_Trace_TraceObject( trgr->trace, *e ) ;
 %%]]
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBModule_Run D\n");}) ;

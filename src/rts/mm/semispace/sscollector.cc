@@ -27,24 +27,28 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_collector_SS_Init( MM_Collector* collector, MM_Malloc* memmgt ) {
+void mm_collector_SS_Init( MM_Collector* collector, MM_Malloc* memmgt, Ptr /* MM_Plan* */ plan ) {
+	collector->plan = plan ;
 	// MM_Collector_SS_Data* colss = memmgt->malloc( sizeof(MM_Collector_SS_Data) ) ;
 		
 	// collector->data = (MM_Collector_Data_Priv*)colss ;
 }
 
-void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
+void mm_collector_SS_CollectPre( MM_Collector* collector ) {
+}
+
+void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 	// MM_Collector_SS_Data* colss = (MM_Collector_SS_Data*)collector->data ;
 	
 	// we know we are part of an ss plan
-	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(mm_plan.data) ;
-	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect A to=%p, fr=%p\n", plss->toSpace, plss->fromSpace);}) ;
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(((MM_Plan*)collector->plan)->data) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect A to=%p, fr=%p\n", plss->toSpace, plss->fromSpace);}) ;
 	// swap spaces
 	SwapPtr( MM_Space*, plss->toSpace, plss->fromSpace ) ;
 	// tell this to the allocator
-	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect B\n");}) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect B\n");}) ;
 	plss->ssAllocator.resetWithSpace( &plss->ssAllocator, plss->toSpace ) ;
-	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect C sp=%p\n",plss->fromSpace);}) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect C sp=%p\n",plss->fromSpace);}) ;
 	// the old one is to be collected
 	collector->collectedSpace = plss->fromSpace ;
 #	if 0 && TRACE
@@ -55,32 +59,45 @@ void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 
 	// run the tracing of objects
 	plss->allTraceSupply.reset( &plss->allTraceSupply, gcInfo ) ;
-	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect D\n");}) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect D\n");}) ;
 	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
-	IF_GB_TR_ON(3,{printf("mm_collector_SS_collect E\n");}) ;
+	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect E\n");}) ;
 	
 %%[[94
 	// find & trace live objects belonging to weakptrs
 	MM_WeakPtr* wp = plss->weakPtr ;
 	MM_WeakPtr_NewAlive newAlive ;
 	MM_Iterator iter ;
-	// printf("mm_collector_SS_collect\n");fflush(stdout);
+	// printf("mm_collector_SS_Collect\n");fflush(stdout);
 	wp->startFindLiveObjects( wp ) ;
 	do {
 		wp->findLiveObjects( wp, &newAlive ) ;
 		// run tracing for these objects: queue them as tracesupply and run that one again
 		for ( mm_freeListArray_IteratorAt( newAlive.alive, &iter, newAlive.firstAliveInx ) ; iter.hasData ; iter.step( &iter ) ) {
 			MM_WeakPtr_ObjectAdmin* admin = (MM_WeakPtr_ObjectAdmin*)iter.data ;
-			IF_GB_TR_ON(3,{printf("mm_collector_SS_collect F1 alive %x\n",admin->obj);}) ;
+			IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect F1 alive %x\n",admin->obj);}) ;
 			admin->obj = wp->traceWeakPtr( wp, &plss->gbmTrace, admin->obj ) ;
-			IF_GB_TR_ON(3,{printf("mm_collector_SS_collect F2 alive %x\n",admin->obj);}) ;
+			IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect F2 alive %x\n",admin->obj);}) ;
 		}
-		plss->queTraceSupply->run( plss->queTraceSupply ) ;
 	} while ( newAlive.aftLastAliveInx > newAlive.firstAliveInx ) ;
 	MM_FreeListArray* toFinalize = wp->endFindLiveObjects( wp ) ;
+	
+	// finalize dead objects, reviving & queuing the ones which must be done when collecting is done
 	for ( mm_freeListArray_Iterator( toFinalize, &iter ) ; iter.hasData ; iter.step( &iter ) ) {
-		wp->finalizeWeakPtr( wp, ((MM_WeakPtr_ObjectAdmin*)iter.data)->obj ) ;
+		Word wpObj = ((MM_WeakPtr_ObjectAdmin*)iter.data)->obj ;
+		Word finalizer = wp->finalizeWeakPtr( wp, wpObj ) ;
+%%[[99
+		if ( finalizer != 0 ) {
+			Word buf[2] ;
+			buf[0] = wp->traceWeakPtr( wp, &plss->gbmTrace, wpObj ) ;
+			buf[1] = mm_Trace_TraceObject( &plss->gbmTrace, finalizer ) ;
+			mm_deque_TailPush( &plss->weakPtrFinalizeQue, buf, 2 ) ;
+		}
+%%]]
 	}
+%%[[99
+	plss->queTraceSupply->run( plss->queTraceSupply ) ;
+%%]] 
 %%]] 
 	
 	// done
@@ -92,6 +109,18 @@ void mm_collector_SS_collect( MM_Collector* collector, Word gcInfo ) {
 		plss->fromSpace->dump( plss->fromSpace ) ;
 		plss->fromSpace->dump( plss->toSpace ) ;
 #	endif
+}
+
+void mm_collector_SS_CollectPost( MM_Collector* collector ) {
+	MM_Plan* plan = (MM_Plan*)collector->plan ;
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(plan->data) ;
+
+%%[[99
+	Word buf[2] /* ( WeakPtr obj, finalizer ) */ ;
+	for ( ; mm_deque_HeadPop( &plss->weakPtrFinalizeQue, buf, 2 ) > 0 ; ) {
+		plan->mutator->runFinalizer( plan->mutator, buf[1] ) ;
+	}
+%%]]
 }
 
 Bool mm_collector_SS_IsInCollectedSpace( MM_Collector* collector, Word obj ) {
@@ -108,8 +137,11 @@ Bool mm_collector_SS_IsInCollectedSpace( MM_Collector* collector, Word obj ) {
 MM_Collector mm_collector_SS =
 	{ NULL
 	, NULL
+	, NULL
 	, &mm_collector_SS_Init
-	, &mm_collector_SS_collect
+	, &mm_collector_SS_CollectPre
+	, &mm_collector_SS_Collect
+	, &mm_collector_SS_CollectPost
 	, &mm_collector_SS_IsInCollectedSpace
 	} ;
 %%]

@@ -47,12 +47,14 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->ssAllocator.init( &plss->ssAllocator, &plss->memMgt, plss->toSpace ) ;
 		
 	plss->collector = mm_collector_SS ;
-	plss->collector.init( &plss->collector, &plss->memMgt ) ;
+	plss->collector.init( &plss->collector, &plss->memMgt, plan ) ;
 	// plan->collector = &plss->collector ;
 	
+#ifdef __UHC_TARGET_BC__
 	mm_mutator = mm_mutator_GBSS ;
 	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace, &plss->gbmModule ) ;
 	plan->mutator = &mm_mutator ;
+#endif
 		
 	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 5, 5 ) ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
@@ -98,6 +100,8 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	mm_weakPtr = mm_weakPtr_List ;
 	mm_weakPtr.init( &mm_weakPtr, &mm_mutator, &plss->collector ) ;
 	plss->weakPtr = &mm_weakPtr ;
+	
+	mm_deque_Init( &plss->weakPtrFinalizeQue, &plss->memMgt ) ;
 %%]]
 
 	plss->gcInProgress = False ;
@@ -115,40 +119,55 @@ void mm_plan_SS_InitBypass( MM_Plan* plan ) {
 #endif
 %%]
 
+%%[94
+MM_DEQue* mm_plan_SS_GetWeakPtrFinalizeQue( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	
+	return &plss->weakPtrFinalizeQue ;	
+}
+%%]
+
 %%[8
-Bool mm_plan_SS_PollForGC( MM_Plan* plan, Bool isSpaceFull, MM_Space* space, Word gcInfo ) {
+Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word gcInfo ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	Bool res ;
 
+	plss->collector.collectPre( &plss->collector ) ;
+
 	if ( plss->gcInProgress ) {
-		rts_panic1_1( "mm_plan_SS_PollForGC already in progress", 0 ) ;
+		rts_panic1_0( "mm_plan_SS_DoGC already in progress" ) ;
 	}
 	plss->gcInProgress = True ;
-
-	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC-BEF plan=%p plss=%p\n",plan,plss);}) ;
-	if ( isSpaceFull ) {
+	
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-BEF plan=%p plss=%p\n",plan,plss);}) ;
+	// if ( isSpaceFull ) {
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
 		plss->collector.collect( &plss->collector, gcInfo ) ;
 		// total as used now
-		Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
-		Word onePercentSz = prevTotalSz / 100 ;
-		Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
-		// adapt max size of space, based on current occupancy rate, this is currently a poor and hardcoded estimate
-		IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
-		if ( percentageFree < 40 ) {
-			// less then some percentage of free space left, so beef it up
-			Word newTotalSz = prevTotalSz + (60 - percentageFree) * onePercentSz ;
-			plss->ssAllocator.setTotalSize( &plss->ssAllocator, newTotalSz ) ;
+		if ( ! isPreemptiveGC ) {
+			Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
+			Word onePercentSz = prevTotalSz / 100 ;
+			Word percentageFree = (prevTotalSz - curUsedSz) / onePercentSz ;
+			// adapt max size of space, based on current occupancy rate, this is currently a poor and hardcoded estimate
+			IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC prevTotalSz=%x curUsedSz=%x percentageFree=%d newTotalSz=%x\n",prevTotalSz,curUsedSz,percentageFree,prevTotalSz + (60 - percentageFree) * onePercentSz);}) ;
+			if ( percentageFree < 40 ) {
+				// less then some percentage of free space left, so beef it up
+				Word newTotalSz = prevTotalSz + (60 - percentageFree) * onePercentSz ;
+				plss->ssAllocator.setTotalSize( &plss->ssAllocator, newTotalSz ) ;
+			}
 		}
 		res = True ;
-	} else {
-		res = False ;
-	}
-	IF_GB_TR_ON(3,{printf("mm_plan_SS_PollForGC-AFT plan=%p plss=%p\n",plan,plss);}) ;
+	// } else {
+	// 	res = False ;
+	// }
+	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-AFT plan=%p plss=%p\n",plan,plss);}) ;
 
 	plss->gcInProgress = False ;
+
+	plss->collector.collectPost( &plss->collector ) ;
+
 	return res ;
 }
 
@@ -186,7 +205,10 @@ MM_Plan mm_plan_SS =
 #if MM_BYPASS_PLAN
 	, &mm_plan_SS_InitBypass
 #endif
-	, &mm_plan_SS_PollForGC
+	, &mm_plan_SS_DoGC
+%%[[94
+	, &mm_plan_SS_GetWeakPtrFinalizeQue
+%%]]
 #ifdef TRACE
 	, &mm_plan_SS_Dump
 #endif

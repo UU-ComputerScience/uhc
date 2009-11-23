@@ -15,13 +15,12 @@ MM_FlexArray mm_Roots ;
 %%]
 
 %%[8
-void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr, MM_Trace_Flg flg ) {
+void mm_Roots_RegisterNWithFlag( WPtr toObj, HalfWord nr ) {
 	if ( nr > 0 ) {
 		MM_FlexArray_Inx i = mm_flexArray_AllocSlot( &mm_Roots ) ;
 		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
 		r->ptrToObj = toObj ;
 		r->nrObjs = nr ;
-		r->flags = flg ;
 	}
 }
 

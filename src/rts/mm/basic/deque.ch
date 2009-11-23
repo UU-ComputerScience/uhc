@@ -96,15 +96,20 @@ static inline Word mm_deque_TailAvailWrite( MM_DEQue* deque ) {
 	return ((MM_Page_Size - Word_SizeInBytes) - deque->tailOff) >> Word_SizeInBytes_Log ;
 }
 
-// nr of available words for reading at the head end
-static inline Word mm_deque_HeadAvailRead( MM_DEQue* deque ) {
+// nr of available words for reading at some offset in buffer
+static inline Word mm_deque_HeadAvailReadAt( MM_DEQue* deque, Word atOff ) {
 	return
 		( ( mm_deque_HeadTailShareBuffer( deque )
 	      ? deque->tailOff + Word_SizeInBytes
 	      : ((MM_DEQue_PageHeader*)(deque->dll.next))->tailOff + Word_SizeInBytes
 	      )
-	    - deque->headOff
+	    - atOff
 	    ) >> Word_SizeInBytes_Log ;
+}
+
+// nr of available words for reading at the head end
+static inline Word mm_deque_HeadAvailRead( MM_DEQue* deque ) {
+	return mm_deque_HeadAvailReadAt( deque, deque->headOff ) ;
 }
 
 // nr of available words for reading at the tail end

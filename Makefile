@@ -66,8 +66,11 @@ include $(SRC_PREFIX)ehc/files1.mk
 -include $(SRC_PREFIX)experiments/files.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
 
-include extlibs/bgc/files.mk
-include extlibs/gmp/files.mk
+include extlibs/files.mk
+include $(EXTLIBS_PREFIX)bgc/files.mk
+include $(EXTLIBS_PREFIX)gmp/files.mk
+include $(EXTLIBS_PREFIX)ltm/files.mk
+include ehclib/files1.mk
 include $(SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
@@ -84,7 +87,7 @@ include $(SRC_PREFIX)ehc/files2.mk
 -include text/files-targets.mk
 -include $(wildcard text/files2-*.mk)
 -include www/files.mk
-include ehclib/files.mk
+include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
 
@@ -355,8 +358,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(FIGS_ASIS_SRC_PDF)
-	@echo $(FIGS_SRC_SUBDIRS_PREFIX)
+	@echo $(RTS_LTM_DRV_O)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

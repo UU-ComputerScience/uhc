@@ -55,7 +55,9 @@ void mm_traceSupply_Buffer_Run( MM_TraceSupply* traceSupply ) {
 		for ( workPos = 0 ; workPos < nrPopped ; workPos += 2 ) {
 			// IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_Run pop work=%x sz=%x\n",workBuffer[workPos+0],workBuffer[workPos+1]);}) ;
 			Word hdrSz = trgr->trace->objectHeaderNrWords ;
-			trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[workPos+0]) + hdrSz, workBuffer[workPos+1] - hdrSz, MM_Trace_Flg_All ) ;
+			// trgr->trace->traceObjects( trgr->trace, (Word*)(workBuffer[workPos+0]) + hdrSz, workBuffer[workPos+1] - hdrSz ) ;
+			// mm_trace_TraceObjects( trgr->trace, (Word*)(workBuffer[workPos+0]) + hdrSz, workBuffer[workPos+1] - hdrSz ) ;
+			trgr->trace->traceObjectPayload( trgr->trace, workBuffer[workPos] ) ;
 		}
 	}
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Buffer_Run AFT\n");}) ;

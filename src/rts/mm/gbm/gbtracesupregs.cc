@@ -43,7 +43,7 @@ void mm_traceSupply_GBRegs_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt,
 void mm_traceSupply_GBRegs_Run( MM_TraceSupply* traceSupply ) {
 	MM_TraceSupply_GBRegs_Data* trsup = (MM_TraceSupply_GBRegs_Data*)traceSupply->data ;
 	
-	rr = mm_Trace_TraceObject( trsup->trace, rr, MM_Trace_Flg_All ) ;
+	rr = mm_Trace_TraceObject( trsup->trace, rr ) ;
 }
 
 

@@ -103,8 +103,8 @@ Order of imports is important because of usage dependencies between types.
 #include "tracesupply.h"
 #include "module.h"
 #include "mutator.h"
-#include "weakptr.h"
 #include "plan.h"
+#include "weakptr.h"
 %%]
 
 %%[8
@@ -210,13 +210,49 @@ static inline int mm_itf_registerModule( Ptr m ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface: finalization
+%%% Interface: weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[94
-// register for finalization only
+#define	MM_Itf_WeakPtr_NoFinalizer		(-1)
+#define	MM_Itf_WeakPtr_BeingFinalized	(-2)		// delayed finalization
+%%]
+
+%%[94
+// interface to use as a primitive
+// assume: val /= 0
+static inline Word mm_itf_NewWeakPtr( Word key, Word val, Word finalizer ) {
+	return mm_weakPtr.newWeakPtr( &mm_weakPtr, key, val, finalizer ) ;
+}
+
+static inline Word mm_itf_DerefWeakPtr( Word wp ) {
+	return mm_weakPtr.derefWeakPtr( &mm_weakPtr, wp ) ;
+}
+
+static inline Word mm_itf_FinalizeWeakPtr( Word wp ) {
+	return mm_weakPtr.finalizeWeakPtr( &mm_weakPtr, wp ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: finalization, internal case of weak ptr without value and C finalizer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+// register for finalization only, to be used by rts only
 static inline void mm_itf_registerFinalization( Word x, MM_WeakPtr_Finalizer finalizer ) {
-	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, finalizer ) ;
+	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, (Word)finalizer ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: GC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// trigger GC
+static inline Bool mm_itf_gc( ) {
+	return mm_plan.doGC( &mm_plan, True, 0 ) ;
 }
 %%]
 
