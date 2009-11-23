@@ -13,6 +13,9 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
 WRAPPER Expr
 %%]

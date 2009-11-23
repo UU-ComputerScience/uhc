@@ -31,6 +31,9 @@
 %%[(6_4 hmtyinfer || hmtyast) hs export(instCoExist)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(50 hmtyinfer || hmtyast) hs export(HowToInst,instCoFixed)
 %%]
 

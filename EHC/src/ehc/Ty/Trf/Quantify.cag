@@ -26,6 +26,9 @@ WRAPPER TyAGItf
 %%[(9 hmtyinfer || hmtyast) hs import(Data.Maybe,EH.Util.Utils,EH.Util.Pretty) export(tyQuantifyRank)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(99 hmtyinfer || hmtyast)
 %%]
 PRAGMA nostrictcase

@@ -34,6 +34,8 @@ DATA Ty
 %%[(1 hmtyinfer || hmtyast)
 DATA TyAnn
   | Empty
-  | TomsAnn
+%%[[(8 tauphi)
+  | Strictness      s               : Strictness
+%%]]
 %%]
 

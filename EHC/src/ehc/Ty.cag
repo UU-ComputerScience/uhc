@@ -24,6 +24,9 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(2 hmtyinfer || hmtyast) hs export(TyVarId, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
 %%]
 
+%%[(2 hmtyinfer || hmtyast) hs import(Debug.Trace) 
+%%]
+
 %%[(2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set) 
 %%]
 
@@ -103,6 +106,9 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
@@ -592,42 +598,56 @@ showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyIsVar)
+tyIsAnn :: Ty -> Bool
+tyIsAnn = isJust . tyMbAnn
+
+ignoreAnn :: (Ty -> a) -> Ty -> a
+ignoreAnn f ty = f (fromMaybe ty (tyMbAnnTy ty))
+
+
 tyIsVar :: Ty -> Bool
-tyIsVar = isJust . tyMbVar
+tyIsVar = ignoreAnn (isJust . tyMbVar)
 
 tyIsCon :: Ty -> Bool
-tyIsCon = isJust . tyMbCon
+tyIsCon = ignoreAnn (isJust . tyMbCon)
 
 tyMbQu :: Ty -> Maybe TyQu
-tyMbQu t
-  = case t of
+tyMbQu = ignoreAnn f
+  where
+    f t = case t of
 %%[[4
-      Ty_Quant q _ _
-%%][6
-      Ty_Quant q _ _ _
+            Ty_Quant q _ _
+%%][6      
+            Ty_Quant q _ _ _
 %%]]
-        -> Just q
-      _ -> Nothing
+              -> Just q
+            _ -> Nothing
 
 tyIsQu :: Ty -> Bool
-tyIsQu = isJust . tyMbQu
+tyIsQu = ignoreAnn (isJust . tyMbQu)
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast) hs
 tyIsAlts :: Ty -> Bool
-tyIsAlts t = case t of {Ty_Alts _ _ -> True; _ -> False}
+tyIsAlts = ignoreAnn f
+  where
+    f t = case t of {Ty_Alts _ _ -> True; _ -> False}
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs export(tyIsEmptyRow)
 tyIsEmptyRow :: Ty -> Bool
-tyIsEmptyRow = maybe False (== hsnRowEmpty) . tyMbCon
+tyIsEmptyRow = ignoreAnn f
+  where
+    f = maybe False (== hsnRowEmpty) . tyMbCon
 %%]
 
 Only used to steer PP:
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyIsSimple)
 tyIsSimple :: Ty -> Bool
-tyIsSimple t = tyIsVar t || tyIsCon t
+tyIsSimple = ignoreAnn f
+  where
+    f t = tyIsVar t || tyIsCon t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -900,6 +920,14 @@ tyProdArgs   = tyAppArgs
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyLHdAndTl hs
 tyLHdAndTl   = hdAndTl' Ty_Any
+%%]
+
+%%[(4 hmtyinfer) hs
+tyMbAnn :: Ty -> Maybe TyAnn
+tyMbAnn t = case t of {Ty_Ann ann _ -> Just ann ; _ -> Nothing}
+
+tyMbAnnTy :: Ty -> Maybe Ty
+tyMbAnnTy t = case t of {Ty_Ann _ ty -> Just ty ; _ -> Nothing}
 %%]
 
 %%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon)

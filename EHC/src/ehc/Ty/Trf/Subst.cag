@@ -33,6 +33,9 @@ Substitution over a meta level higher is the same as over the current level, exc
 %%[(6 hmtyinfer || hmtyast) hs import({%{EH}VarLookup})
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 -- debug
 %%[(6 hmtyinfer || hmtyast) hs import({%{EH}Base.Debug},EH.Util.Pretty,{%{EH}Ty.Pretty})
 %%]

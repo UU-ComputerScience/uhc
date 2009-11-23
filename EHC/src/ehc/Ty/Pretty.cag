@@ -28,6 +28,9 @@
 %%[(9 hmtyinfer || hmtyast) hs export(ppTyPr)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(1 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
 WRAPPER TyAGItf
 %%]
@@ -488,7 +491,7 @@ SEM Ty
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
-  | Ann             loc     .   pp      =   {- @ann.pp >#< -} @ty.pp
+  | Ann             loc     .   pp      =   @ann.pp >#< @ty.pp
 %%]
 
 %%[(8 hmtyinfer || hmtyast)
@@ -697,6 +700,9 @@ SEM Ty
 %%[(1 hmtyinfer || hmtyast)
 SEM TyAnn
   | Empty			loc		.	pp		=	empty
+%%[[(8 tauphi)
+  | Strictness      loc     .   pp      =   "@" >|< show @s
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

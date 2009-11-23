@@ -423,9 +423,8 @@ SEM PatExprAnn
   | Empty		loc		.	pp		=	empty
 
 SEM TyExprAnn
-%%[[1
   | Empty		loc		.	pp		=	empty
-%%][(8 tauphi)
+%%[[(8 tauphi)
   | Strictness  loc     .   pp      =   "@" >|< show @s
 %%]]
 %%]

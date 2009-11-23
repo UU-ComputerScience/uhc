@@ -32,6 +32,9 @@
 %%[(2 hmtyinfer) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
+%%[(4 hmtyinfer) import(Debug.Trace)
+%%]
+
 %%[(4 hmtyinfer) import({%{EH}Ty.Trf.Instantiate}, {%{EH}Ty.FitsInCommon2}, {%{EH}Base.Opts}, {%{EH}Gam.Full}, Data.Maybe,Data.List as List)
 %%]
 %%[(4 hmtyinfer) import({%{EH}Ty.AppSpineGam})
@@ -1366,6 +1369,17 @@ GADT: type clash between fixed type variable and some other type results in a eq
 %%]
 
 %%[(4 hmtyinfer).fitsIn.DefaultCase
+            f fi q@(Ty_Ann a t1)    t@(Ty_Ann _ t2) = let fiout = f fi t1 t2
+                                                          ty    = foTy fiout
+                                                          r     = fiout { foTy = Ty_Ann a ty }
+                                                      in r
+            -- f fi (Ty_Ann a t1)          t2          = let fiout = f fi t1 t2
+            --                                               ty    = foTy fiout
+            --                                           in fiout { foTy = Ty_Ann a ty }
+            f fi t1                 t@(Ty_Ann a t2) = let fiout = f fi t1 t2
+                                                          ty    = foTy fiout
+                                                          r     = fiout { foTy = Ty_Ann a ty }
+                                                      in r
             f fi t1                     t2          = errClash fi t1 t2
 %%]
 

@@ -27,6 +27,9 @@ Differences:
 %%[(94 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
 WRAPPER
   AGItf Expr ExprSeq1 ValBind
@@ -373,7 +376,7 @@ SEM Expr
   | TupUpd      loc         .   pp          =   ppDef (ppParens @expr.pp) (ppDef (":=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm]) (ppParens @fldExpr.pp))
   | Box			loc			.	pp			=	ppDef (ppKeyw "box" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
   | Unbox		loc			.	pp			=	ppDef (ppKeyw "unbox" >#< ppParens (@fromTy.pp >#< sym @lhs.symMp Sym_RArrow >#< @toTy.pp)) @expr.pp
-  | Ann			loc			.	pp			=	@expr.pp {- annot ... -}
+  | Ann			loc			.	pp			=	"@" >|< @ann.pp >#< @expr.pp
   | CoeArg      loc         .   pp          =   ppKeyw "hole" >#< ppKeyw "_"
   | Hole        loc         .   pp          =   ppKeyw "hole" >#< @uid
   | Err			loc			.	pp			=	ppKeyw "ERR" >#< show @msg
@@ -393,6 +396,14 @@ SEM Expr
   | Sym			loc			.	pp			=	ppKeyw "sym"    >#< ppParens @ty.pp
   | Left		loc			.	pp			=	ppKeyw "left"   >#< ppParens @ty.pp
   | Right		loc			.	pp			=	ppKeyw "right"  >#< ppParens @ty.pp
+%%]
+
+%%[(8 codegen)
+SEM ExprAnn
+  | Empty       loc         .   pp          =   empty
+%%[[(8 tauphi)
+  | Strictness  loc         .   pp          =   pp (show @s)
+%%]]
 %%]
 
 %%[(8 codegen)

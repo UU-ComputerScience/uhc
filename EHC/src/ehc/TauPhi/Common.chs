@@ -7,7 +7,7 @@
 %%% TauPhi Common
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 tauphi) module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
+%%[8 module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
 %%]
 
 %%[(8 tauphi) hs export(Strictness(..))
@@ -18,6 +18,7 @@ data Strictness
   = Strict
   | NonStrict
   | Var HsName
+  deriving (Eq, Ord)
 
 instance Show Strictness where
   show Strict    = "strict"
