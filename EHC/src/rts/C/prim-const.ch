@@ -27,7 +27,14 @@
 #define CWriteBinaryMode     14
 #define CWriteMode           15
 
-#define CUHC_IOBase_AppendBinaryMode  8
+#define CUHC_IOBase_AppendBinaryMode     8
+#define CUHC_IOBase_AppendMode           9
+#define CUHC_IOBase_ReadBinaryMode      10
+#define CUHC_IOBase_ReadMode            11
+#define CUHC_IOBase_ReadWriteBinaryMode 12
+#define CUHC_IOBase_ReadWriteMode       13
+#define CUHC_IOBase_WriteBinaryMode     14
+#define CUHC_IOBase_WriteMode           15
 
 %%]
 
