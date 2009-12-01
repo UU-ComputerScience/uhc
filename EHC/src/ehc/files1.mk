@@ -67,7 +67,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
-														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
+														$(addprefix CompilePhase/,Parsers Output Translations TransformCore TransformTyCore \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM Link \
 															Cleanup Module TopLevelPhases \

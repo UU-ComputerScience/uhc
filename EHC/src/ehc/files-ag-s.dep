@@ -105,3 +105,4 @@ Silly/Pretty.cag
 Silly/PrettyC.cag
 Silly/PrettyS.cag
 Silly/ToLLVM.cag
+TyCore/Trf/FlipStrictness.cag
