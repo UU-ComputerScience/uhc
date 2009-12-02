@@ -1373,9 +1373,9 @@ GADT: type clash between fixed type variable and some other type results in a eq
                                                           ty    = foTy fiout
                                                           r     = fiout { foTy = Ty_Ann a ty }
                                                       in r
-            -- f fi (Ty_Ann a t1)          t2          = let fiout = f fi t1 t2
-            --                                               ty    = foTy fiout
-            --                                           in fiout { foTy = Ty_Ann a ty }
+            f fi (Ty_Ann a t1)          t2          = let fiout = f fi t1 t2
+                                                          ty    = foTy fiout
+                                                      in fiout { foTy = Ty_Ann a ty }
             f fi t1                 t@(Ty_Ann a t2) = let fiout = f fi t1 t2
                                                           ty    = foTy fiout
                                                           r     = fiout { foTy = Ty_Ann a ty }

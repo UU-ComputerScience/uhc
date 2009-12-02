@@ -26,6 +26,9 @@ Matching of types to
 %%[(8 codegen) hs import({%{EH}Error})
 %%]
 
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
+
 %%[(8 codegen) hs import({%{EH}TyCore.Full1})
 %%]
 
