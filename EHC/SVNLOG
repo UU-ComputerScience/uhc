@@ -1,4 +1,44 @@
 ------------------------------------------------------------------------
+r1733 | jleeuwes | 2009-11-28 19:33:08 +0100 (Sat, 28 Nov 2009) | 11 lines
+
+The C backend generated invalid C code: CUHC_IOBase_ReadMode was used, but not
+defined. A comment in the tagConstants function in GrinCode/ToSilly suggested
+the fix:
+
+-- Make sure these are the same as in src/rts/C/prim-const.ch
+
+The names in that file were of the form "C$name" (i.e. CReadMode). I copied the
+definitions, changing the naming scheme to "C_UHC_IOBase_$name". As there
+already was a CUHC_IOBase_AppendBinaryMode, I think this was a safe thing to do.
+I left the "#define C$name"s in there in order not to break stuff.
+
+------------------------------------------------------------------------
+r1732 | jleeuwes | 2009-11-27 22:07:16 +0100 (Fri, 27 Nov 2009) | 1 line
+
+Fix some broken English in error messages.
+------------------------------------------------------------------------
+r1731 | atze | 2009-11-25 12:49:47 +0100 (Wed, 25 Nov 2009) | 1 line
+
+fix of buildfarm problem
+------------------------------------------------------------------------
+r1730 | atze | 2009-11-23 15:16:35 +0100 (Mon, 23 Nov 2009) | 1 line
+
+rm of unnecessary CVS dirs
+------------------------------------------------------------------------
+r1729 | atze | 2009-11-23 15:13:40 +0100 (Mon, 23 Nov 2009) | 7 lines
+
+- Work on finalization & WeakPtr.
+
+- Isolation of packages in separate directory in library, to prepare for Cabal.
+  WARNING: make clean (or throw at least away install/VARIANT/lib)
+
+- Copied LibTomMath (LTM, http://math.libtomcrypt.com/), which is a likely candidate for replacing GMP. LTM is smaller (compiles in < 10 seconds), offers integers only (exactly enough for UHC), relatively fast (2x slower than GMP), public domain, comes with a book explaining how it works, memory allocation and internal representation can be adapted relatively easy for efficient incorporation into UHC. The motivation to do this comes from the observation that currently 1 Integer requires 9 words of overhead (headers, finalization, ...).
+
+------------------------------------------------------------------------
+r1726 | atze | 2009-11-19 08:02:06 +0100 (Thu, 19 Nov 2009) | 1 line
+
+fix of variant 20 build
+------------------------------------------------------------------------
 r1725 | atze | 2009-11-16 11:00:24 +0100 (Mon, 16 Nov 2009) | 3 lines
 
 - Simple annotation mechanism for Core, in particular to annotate types where desired. This is not the equivalent of typed core, as typed core has to check correct w.r.t. types. Annotations here just are optional info to be used for annotation driven code optimisations, a temporary solution until typed core has grown up. Currently used to remove overhead for Int constants. This must go (according to the Haskell report) via fromInteger, but can be shortcutted after type inference, if the Integral value indeed is known to be an Int. If Int constants are used locally in functions this makes a big difference in runtime cost, as to be expected, e.g. rfib-int (bc backend) now runs almost 5x faster, the difference between the bc and C backend now is more consistent (C backend does not really use GMP Integers), varying between 1.5-3 x speed difference.
@@ -678,28 +718,4 @@ This a bit involved:
 - ok: duplicate names for 1 datatype and different constructors, except when having a different type (so must be postponed until after type checking)
 - not ok: duplicate names for 1 datatype and 1 constructor
 
-------------------------------------------------------------------------
-r1605 | atze | 2009-05-13 13:36:12 +0200 (Wed, 13 May 2009) | 1 line
-
-fix (untested) for issue 10, further Cabal integration experimentation
-------------------------------------------------------------------------
-r1604 | Jeroen_Fokker | 2009-05-08 21:06:35 +0200 (Fri, 08 May 2009) | 1 line
-
-Work on HS paper: last typos. This version is as submitted.
-------------------------------------------------------------------------
-r1603 | Jeroen_Fokker | 2009-05-08 20:48:26 +0200 (Fri, 08 May 2009) | 1 line
-
-Work on HS paper: final version (I think). Did a last spell check (with a lot of hits!), and added a new paragraph in the introduction praising the many-transformations-approach. As a bonus, the new paragraph forces better page breaks on the other pages.
-------------------------------------------------------------------------
-r1602 | Jeroen_Fokker | 2009-05-08 20:02:35 +0200 (Fri, 08 May 2009) | 1 line
-
-Work on HS paper: processed Doaitse's an my own last-minute corrections (including the correct characterization of the VSS:ICFP09 paper).
-------------------------------------------------------------------------
-r1601 | Jeroen_Fokker | 2009-05-08 17:06:20 +0200 (Fri, 08 May 2009) | 1 line
-
-More HS paper: sundry additions
-------------------------------------------------------------------------
-r1600 | atze | 2009-05-08 16:35:12 +0200 (Fri, 08 May 2009) | 1 line
-
-hs09
 ------------------------------------------------------------------------

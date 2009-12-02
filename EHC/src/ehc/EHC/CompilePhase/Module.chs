@@ -79,12 +79,12 @@ cpGetHsImports modNm
          ;  let  ecu        = crCU modNm cr
                  mbHsSemMod = ecuMbHSSemMod ecu
                  hsSemMod   = panicJust "cpGetHsImports" mbHsSemMod
+                 modNm'     = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
+                 upd        = ecuStoreHSDeclImpL (HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
          -- ; lift $ putWidthPPLn 120 (pp mod)
          ;  case mbHsSemMod of
-              Just _ -> cpUpdCUWithKey modNm (\_ ecu -> (modNm',upd ecu))
-                     where upd = ecuStoreHSDeclImpL (HSSemMod.modImpNmL_Syn_AGItf hsSemMod)
-                                 . cuUpdKey modNm'
-                           modNm' = HSSemMod.realModuleNm_Syn_AGItf hsSemMod
+              Just _ | ecuIsTopMod ecu -> cpUpdCUWithKey modNm (\_ ecu -> (modNm', upd $ cuUpdKey modNm' ecu))
+                     | otherwise       -> do cpUpdCU modNm upd ; return modNm
               _      -> return modNm
          }
 
