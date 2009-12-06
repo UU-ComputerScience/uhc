@@ -209,8 +209,8 @@ mkScopedCHR2 env clsDecls insts prevStore
          simplStores = zipWith (\u (cx,h,i) -> mkClassSimplChrs (env {fiUniq = u}) store2 (cx,h,i)) ucls clsDecls
          instSimplStore
          			 = chrStoreUnions $ instStore : simplStores
-         canonInsts  = [ (map mkC cx,mkC hd,info,sc) | (cx,hd,info,sc) <- insts ]
-                     where mkC = predCanonic env
+         canonInsts  = [ (map mkC cx, mkC hd, info, sc) | (cx,hd,info,sc) <- insts ]
+                     where mkC = fst . predCanonic env
 %%]
 
 %%[(9 hmtyinfer)

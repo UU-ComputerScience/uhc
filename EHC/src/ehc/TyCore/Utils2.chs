@@ -132,7 +132,7 @@ mkExprStrictSatCaseMeta env mbNm meta e [Alt_Alt (Pat_Con (CTag tyNm _ _ _ _) Pa
       (  [ mkValBind1Meta {- (panicJust "mkExprStrictSatCaseMeta.mbNm" mbNm) -} {- -} nm meta (tyErr "mkExprStrictSatCaseMeta.1") e ]
       ++ maybe [] (\(n,ty) -> [ mkValBind1Meta n meta ty e ]) mbNm
       ) ae
-  where dgi = panicJust "mkExprStrictSatCaseMeta.dgi" $ dataGamLookup tyNm (rceDataGam env)
+  where dgi = panicJust ("mkExprStrictSatCaseMeta.dgi:" ++ show tyNm) $ dataGamLookup tyNm (rceDataGam env)
 mkExprStrictSatCaseMeta env mbNm meta e alts
   = case mbNm of
       Just (n,ty)  -> mkExprStrictInMeta n meta ty e $ mk alts

@@ -552,12 +552,17 @@ SEM Expr
                                                     (b ,s2)   = C.coeEvalOnAsSubst u2 ww @body.appFunExprTC
                                                 in  (@tcTyArgLamWrap b, s1 `C.cSubstApp` s2)
                 lhs         .   tcSubst     =   C.cSubstApp @body.tcSubst @tcexprlamCSubst
-  | AppTop      loc         .   (tcexpr,tcexprapptopCSubst)
+  | AppTop      loc         .   tcexprtop   =   @expr.tcexpr
+                            .   tcSubstTop  =   @expr.tcSubst
+  | Rec         loc         .   tcexprtop   =   @rtcexpr
+                            .   tcSubstTop  =   @recExpr.tcSubst
+  | AppTop Rec  loc         .   (tcexpr,tcexprapptopCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @expr.tcSubst [] @lamArgCoeLTC
-                                                    (e ,s2)   = C.coeEvalOnAsSubst u2 ww @expr.tcexpr
+                                                    (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @tcSubstTop [] @lamArgCoeLTC
+                                                    (e ,s2)   = C.coeEvalOnAsSubst u2 ww @tcexprtop
                                                 in  (e, s1 `C.cSubstApp` s2)
-                lhs         .   tcSubst     =   C.cSubstApp @expr.tcSubst @tcexprapptopCSubst
+  | AppTop      lhs         .   tcSubst     =   C.cSubstApp @expr.tcSubst @tcexprapptopCSubst
+  | Rec         lhs         .   tcSubst     =   C.cSubstApp @recExpr.tcSubst @tcexprapptopCSubst
   | Ann         loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @expr.tcexpr
   | TypeAs      loc         .   (tcexpr,tcexprtypeasCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
@@ -685,7 +690,6 @@ SEM Expr
                                                     else
 %%]]                                                    
                                                           C.Expr_Node {- CTagRec -} $ C.fuL2ExprNodeFldL True Just $ tyRowCanonOrder @recExpr.tcfuExprL
-                            .   tcexpr          =   @rtcexpr
 %%]
                                                           foldl C.mkExprApp1 (C.Expr_Tup CTagRec)
                                                             $ C.fuL2ExprL $ tyRowCanonOrder $ @recExpr.tcfuExprL
@@ -806,7 +810,7 @@ SEM DataFieldExpr
 %%[(8 codegen)
 SEM Expr
   | Sel         loc         .   tcoffset    =   C.tcInt (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
-                            .   tcexpr      =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq
+                            .   tcexpr      =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq_fresh
                                                      ty n = C.tyErr ("Expr.Sel.fld: " ++ show n)
                                                 in   C.mkExprSelCase @rceEnvTC (Just (n1,ty n1)) @expr.tcexpr CTagRec n2 {- @lbl -} @tcoffset Nothing
 %%]
@@ -1134,7 +1138,7 @@ SEM Expr
                                                         ++
 %%]]
                                                         [C.mkLamCoe1 @arg.topNm @ctyLamArgHere]
-  | AppTop
+  | AppTop Rec
 %%[[8
                 loc         .   lamArgCoeLTC        =   []
 %%][9

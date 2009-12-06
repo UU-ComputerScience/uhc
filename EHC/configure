@@ -724,6 +724,7 @@ CPP
 GREP
 EGREP
 GCC_EXTLIBS_OPTIONS
+GMP_ABI
 MACH_DEP_C_FOR_TAILCALL_ENTER
 MACH_DEP_C_FOR_TAILCALL_LEAVE1
 MACH_DEP_C_FOR_TAILCALL_LEAVE2
@@ -28605,14 +28606,18 @@ fi
 if test "x$use32bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m32"
+  gmpABI="32"
 fi
 
 if test "x$use64bits" = "xyes"
 then
   gccExtlibsOptions="$gccExtlibsOptions -m64"
+  gmpABI="64"
 fi
 
 GCC_EXTLIBS_OPTIONS=$gccExtlibsOptions
+
+GMP_ABI=$gmpABI
 
 
 ### general configuration
@@ -29625,6 +29630,7 @@ CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 GCC_EXTLIBS_OPTIONS!$GCC_EXTLIBS_OPTIONS$ac_delim
+GMP_ABI!$GMP_ABI$ac_delim
 MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
 MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
@@ -29661,7 +29667,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 46; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 47; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
