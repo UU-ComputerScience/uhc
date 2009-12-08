@@ -36,6 +36,10 @@ mp_abs (mp_int * a, mp_int * b)
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_abs.c,v $ */

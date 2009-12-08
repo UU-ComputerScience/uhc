@@ -82,6 +82,10 @@ s_mp_sub (mp_int * a, mp_int * b, mp_int * c)
   return MP_OKAY;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_s_mp_sub.c,v $ */

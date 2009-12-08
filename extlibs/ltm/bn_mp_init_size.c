@@ -18,6 +18,12 @@
 /* init an mp_init for a given size */
 int mp_init_size (mp_int * a, int size)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library
+  mp_zero(a) ;
+  printf( "WARNING: mp_init_size sz=%x (%p used=%x alc=%x)\n", size, a, USED(a), ALLOC(a) ) ;
+  // prLTM(a,"mp_init_size") ;
+#else
   int x;
 
   /* pad size so there are always extra digits */
@@ -38,9 +44,14 @@ int mp_init_size (mp_int * a, int size)
   for (x = 0; x < size; x++) {
       SET_DIGIT(a,x,0);
   }
+#endif
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init_size.c,v $ */

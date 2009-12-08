@@ -246,6 +246,10 @@ LBL_M:
   }
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_s_mp_exptmod.c,v $ */

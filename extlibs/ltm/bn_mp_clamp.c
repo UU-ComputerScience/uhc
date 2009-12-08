@@ -25,6 +25,17 @@
 void
 mp_clamp (mp_int * a)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library,
+  /* 20091124 (Atze Dijkstra): ensure USED(a) <= ALLOC(a)
+   */
+  if (USED(a) > ALLOC(a)) {
+    printf( "WARNING: mp_clamp (%p used=%x alc=%x)\n", a, USED(a), ALLOC(a) ) ;
+    // prLTM(a) ;
+    SET_USED(a,ALLOC(a)) ;
+  }
+#endif
+
   /* decrease used while the most significant digit is
    * zero.
    */
@@ -37,6 +48,10 @@ mp_clamp (mp_int * a)
     SET_SIGN(a,MP_ZPOS);
   }
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_clamp.c,v $ */

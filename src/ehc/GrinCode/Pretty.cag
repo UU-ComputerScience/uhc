@@ -295,7 +295,8 @@ SEM GrPatLam
   | BasicAnnot  lhs         .   pp          =   @lhs.ppGrNm @nm
   | EnumAnnot   lhs         .   pp          =   @lhs.ppGrNm @nm
   | OpaqueAnnot lhs         .   pp          =   ppListSep "(" ")" " " [@lhs.ppGrNm @nm]
-  | PtrAnnot    lhs         .   pp          =   ppListSep "(" ")" " " [ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+  | PtrAnnot    lhs         .   pp          =   -- ppListSep "(" ")" " " [ppListSep "(" ")" " " @tagL.ppL, @lhs.ppGrNm @nm]
+                                                ppListSep "(" ")" " " [@lhs.ppGrNm @tycon, @lhs.ppGrNm @nm]
 %%]]
 
 SEM GrVarL

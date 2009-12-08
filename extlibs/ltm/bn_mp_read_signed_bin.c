@@ -34,6 +34,10 @@ int mp_read_signed_bin (mp_int * a, const unsigned char *b, int c)
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_read_signed_bin.c,v $ */

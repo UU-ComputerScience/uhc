@@ -96,6 +96,10 @@ LBL_R:mp_clear (&r);
 LBL_N1:mp_clear (&n1);
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_miller_rabin.c,v $ */

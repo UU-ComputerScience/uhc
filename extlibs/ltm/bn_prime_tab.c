@@ -54,6 +54,10 @@ const mp_digit ltm_prime_tab[] = {
   0x062B, 0x062F, 0x063D, 0x0641, 0x0647, 0x0649, 0x064D, 0x0653
 #endif
 };
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_prime_tab.c,v $ */

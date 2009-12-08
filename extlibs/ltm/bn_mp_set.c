@@ -22,6 +22,10 @@ void mp_set (mp_int * a, mp_digit b)
   SET_DIGIT(a,0,b & MP_MASK);
   SET_USED(a,(DIGIT(a,0) != 0) ? 1 : 0);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_set.c,v $ */

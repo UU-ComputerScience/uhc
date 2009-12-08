@@ -48,6 +48,10 @@ int mp_cmp_mag (mp_int * a, mp_int * b)
   }
   return MP_EQ;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_cmp_mag.c,v $ */

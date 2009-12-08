@@ -38,6 +38,10 @@ unsigned long mp_get_int(mp_int * a)
   /* force result to 32-bits always so it is consistent on non 32-bit platforms */
   return res & 0xFFFFFFFFUL;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_get_int.c,v $ */

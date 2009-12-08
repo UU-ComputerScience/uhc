@@ -48,6 +48,10 @@ mp_rand (mp_int * a, int digits)
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_rand.c,v $ */

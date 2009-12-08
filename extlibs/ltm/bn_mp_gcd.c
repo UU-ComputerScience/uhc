@@ -99,6 +99,10 @@ LBL_V:mp_clear (&u);
 LBL_U:mp_clear (&v);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_gcd.c,v $ */

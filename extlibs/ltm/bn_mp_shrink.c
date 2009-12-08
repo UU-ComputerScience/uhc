@@ -18,6 +18,12 @@
 /* shrink a bignum */
 int mp_shrink (mp_int * a)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library,
+  // shrinking is therefore a NOP, can be done during garbage collection.
+  // printf( "WARNING: mp_shrink (%p used=%x alc=%x)\n", a, USED(a), ALLOC(a) ) ;
+  // prLTM(a) ;
+#else
   mp_digit *tmp;
   if (ALLOC(a) != USED(a) && USED(a) > 0) {
     if ((tmp = OPT_CAST(mp_digit) XREALLOC (DIGITS(a), sizeof (mp_digit) * USED(a))) == NULL) {
@@ -26,8 +32,14 @@ int mp_shrink (mp_int * a)
     SET_DIGITS(a, tmp);
     SET_ALLOC(a,USED(a));
   }
+#endif
+
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_shrink.c,v $ */

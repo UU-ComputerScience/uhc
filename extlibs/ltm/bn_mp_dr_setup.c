@@ -25,6 +25,10 @@ void mp_dr_setup(mp_int *a, mp_digit *d)
         ((mp_word)DIGIT(a,0)));
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_dr_setup.c,v $ */

@@ -38,6 +38,10 @@ mp_count_bits (mp_int * a)
   }
   return r;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_count_bits.c,v $ */

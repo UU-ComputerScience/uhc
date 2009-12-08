@@ -45,6 +45,10 @@ int mp_prime_rabin_miller_trials(int size)
 }
 
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_rabin_miller_trials.c,v $ */

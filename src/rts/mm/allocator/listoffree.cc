@@ -304,6 +304,7 @@ MM_Allocator mm_allocator_LOF =
 #ifdef TRACE
 	, &mm_allocator_LOF_Dump
 #endif
+	, 0
 	} ;
 %%]
 

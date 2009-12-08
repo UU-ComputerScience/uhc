@@ -21,14 +21,22 @@ void mp_zero (mp_int * a)
   int       n;
   mp_digit *tmp;
 
+  // prLTM(a,"mp_zero A");
   SET_SIGN(a,MP_ZPOS);
+  // prLTM(a,"mp_zero B");
   SET_USED(a,0);
+  // prLTM(a,"mp_zero C");
 
   tmp = DIGITS(a);
   for (n = 0; n < ALLOC(a); n++) {
      *tmp++ = 0;
   }
+  // prLTM(a,"mp_zero D");
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_zero.c,v $ */

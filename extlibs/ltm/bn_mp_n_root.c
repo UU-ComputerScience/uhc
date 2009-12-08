@@ -125,6 +125,10 @@ LBL_T2:mp_clear (&t2);
 LBL_T1:mp_clear (&t1);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_n_root.c,v $ */

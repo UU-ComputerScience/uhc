@@ -25,6 +25,10 @@ int mp_init_copy (mp_int * a, mp_int * b)
   }
   return mp_copy (b, a);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init_copy.c,v $ */

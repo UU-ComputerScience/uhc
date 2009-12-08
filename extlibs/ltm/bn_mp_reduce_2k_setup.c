@@ -40,6 +40,10 @@ int mp_reduce_2k_setup(mp_int *a, mp_digit *d)
    mp_clear(&tmp);
    return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k_setup.c,v $ */

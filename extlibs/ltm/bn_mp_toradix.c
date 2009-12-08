@@ -19,7 +19,7 @@
 int mp_toradix (mp_int * a, char *str, int radix)
 {
   int     res, digs;
-  mp_int  t;
+  MP_LOCAL_DEF(t);
   mp_digit d;
   char   *_s = str;
 
@@ -28,28 +28,32 @@ int mp_toradix (mp_int * a, char *str, int radix)
     return MP_VAL;
   }
 
-  /* quick out if its zero */
-  if (mp_iszero(a) == 1) {
+  /* check out if its zero */
+  if ( mp_iszero(a) ) {
      *str++ = '0';
      *str = '\0';
      return MP_OKAY;
   }
 
-  if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
+  // printf( "mp_toradix mp_local_init_copy 1: a=%p used(a)=%x\n", a, USED(a) ) ;
+  mp_local_init_copy(t, a, res, "mp_toradix") ;
+  // printf( "mp_toradix mp_local_init_copy 2\n" ) ;
+  if (res != MP_OKAY) {
     return res;
   }
 
   /* if it is negative output a - */
-  if (SIGN(&t) == MP_NEG) {
+  if (SIGN(MP_LOCAL_REF(t)) == MP_NEG) {
     ++_s;
     *str++ = '-';
-    SET_SIGN(&t,MP_ZPOS);
+    SET_SIGN(MP_LOCAL_REF(t),MP_ZPOS);
   }
 
   digs = 0;
-  while (mp_iszero (&t) == 0) {
-    if ((res = mp_div_d (&t, (mp_digit) radix, &t, &d)) != MP_OKAY) {
-      mp_clear (&t);
+  while (mp_iszero (MP_LOCAL_REF(t)) == 0) {
+    // printf( "mp_toradix mp_div_d\n" ) ;
+    if ((res = mp_div_d (MP_LOCAL_REF(t), (mp_digit) radix, MP_LOCAL_REF(t), &d)) != MP_OKAY) {
+      mp_local_clear(t);
       return res;
     }
     *str++ = mp_s_rmap[d];
@@ -64,9 +68,13 @@ int mp_toradix (mp_int * a, char *str, int radix)
   /* append a NULL so the string is properly terminated */
   *str = '\0';
 
-  mp_clear (&t);
+  mp_local_clear(t);
   return MP_OKAY;
 }
+
+#else
+
+MP_DUMMY_LINKER_DEF
 
 #endif
 

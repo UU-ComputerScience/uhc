@@ -40,6 +40,10 @@ char *mp_error_to_string(int code)
    return "Invalid error code";
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_error.c,v $ */

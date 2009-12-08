@@ -143,7 +143,16 @@ static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo ) {
 #	endif
 }
 
-// only ensure enough mem for alloc
+// check that no more than maxAllocSize of allocator is requested, otherwise panic
+static inline Bool mm_itf_maxAllocCheck( size_t sz ) {
+	if ( mm_mutator.allocator->maxAllocSize && sz > mm_mutator.allocator->maxAllocSize ) {
+		rts_panic1_1( "allocator cannot allocate more than maxAllocSize", sz ) ;
+		return False ; // never reached
+	}
+	return True ;
+}
+
+// only ensure enough mem for alloc, assume no more than maxAllocSize is requested
 static inline void mm_itf_allocEnsure( size_t sz, Word gcInfo ) {
 #	if MM_BYPASS_PLAN
 #		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)

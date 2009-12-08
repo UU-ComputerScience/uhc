@@ -22,17 +22,21 @@ int mp_mul_2d (mp_int * a, int b, mp_int * c)
   int      res;
 
   /* copy */
+  // prLTM(a,"mp_mul_2d a");
+  // prLTM(c,"mp_mul_2d c");
   if (a != c) {
      if ((res = mp_copy (a, c)) != MP_OKAY) {
        return res;
      }
   }
 
+  // prLTM(a,"mp_mul_2d A");
   if (ALLOC(c) < (int)(USED(c) + b/DIGIT_BIT + 1)) {
      if ((res = mp_grow (c, USED(c) + b / DIGIT_BIT + 1)) != MP_OKAY) {
        return res;
      }
   }
+  // prLTM(a,"mp_mul_2d B");
 
   /* shift by as many digits in the bit count */
   if (b >= (int)DIGIT_BIT) {
@@ -79,6 +83,10 @@ int mp_mul_2d (mp_int * a, int b, mp_int * c)
   mp_clamp (c);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_mul_2d.c,v $ */

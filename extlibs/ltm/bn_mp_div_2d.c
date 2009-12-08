@@ -20,7 +20,7 @@ int mp_div_2d (mp_int * a, int b, mp_int * c, mp_int * d)
 {
   mp_digit D, r, rr;
   int     x, res;
-  mp_int  t;
+  MP_LOCAL_DEF(t);
 
 
   /* if the shift count is <= 0 then we do no work */
@@ -32,21 +32,22 @@ int mp_div_2d (mp_int * a, int b, mp_int * c, mp_int * d)
     return res;
   }
 
-  if ((res = mp_init (&t)) != MP_OKAY) {
+  mp_local_init(t, USED(a), res) ;
+  if (res != MP_OKAY) {
     return res;
   }
 
   /* get the remainder */
   if (d != NULL) {
-    if ((res = mp_mod_2d (a, b, &t)) != MP_OKAY) {
-      mp_clear (&t);
+    if ((res = mp_mod_2d (a, b, MP_LOCAL_REF(t))) != MP_OKAY) {
+      mp_local_clear(t);
       return res;
     }
   }
 
   /* copy */
   if ((res = mp_copy (a, c)) != MP_OKAY) {
-    mp_clear (&t);
+    mp_local_clear(t);
     return res;
   }
 
@@ -85,11 +86,15 @@ int mp_div_2d (mp_int * a, int b, mp_int * c, mp_int * d)
   }
   mp_clamp (c);
   if (d != NULL) {
-    mp_exch (&t, d);
+    mp_local_assignfrom(d,t);
   }
-  mp_clear (&t);
+  mp_local_clear(t);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_div_2d.c,v $ */

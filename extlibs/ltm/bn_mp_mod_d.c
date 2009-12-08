@@ -20,6 +20,10 @@ mp_mod_d (mp_int * a, mp_digit b, mp_digit * c)
 {
   return mp_div_d(a, b, NULL, c);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_mod_d.c,v $ */

@@ -36,6 +36,10 @@ int mp_invmod (mp_int * a, mp_int * b, mp_int * c)
 
   return MP_VAL;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_invmod.c,v $ */

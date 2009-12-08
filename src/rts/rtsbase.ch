@@ -43,7 +43,7 @@
 #define MM_BYPASS_PLAN			1
 
 // use LTM (LibTomMath), instead of GMP
-#define USE_LTM					1
+// #define USE_LTM					1
 
 // debugging
 %%[[8

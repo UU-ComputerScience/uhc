@@ -102,6 +102,10 @@ int mp_is_square(mp_int *arg,int *ret)
 ERR:mp_clear(&t);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_is_square.c,v $ */

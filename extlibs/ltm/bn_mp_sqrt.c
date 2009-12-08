@@ -74,6 +74,10 @@ E2: mp_clear(&t1);
   return res;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_sqrt.c,v $ */

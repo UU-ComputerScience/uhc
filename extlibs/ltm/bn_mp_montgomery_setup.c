@@ -52,6 +52,10 @@ mp_montgomery_setup (mp_int * n, mp_digit * rho)
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_montgomery_setup.c,v $ */

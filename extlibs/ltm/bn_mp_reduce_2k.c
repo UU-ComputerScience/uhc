@@ -54,6 +54,10 @@ ERR:
    return res;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k.c,v $ */

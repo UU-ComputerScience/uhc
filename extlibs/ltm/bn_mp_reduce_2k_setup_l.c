@@ -37,6 +37,10 @@ ERR:
    mp_clear(&tmp);
    return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_reduce_2k_setup_l.c,v $ */

@@ -20,16 +20,19 @@ int
 mp_and (mp_int * a, mp_int * b, mp_int * c)
 {
   int     res, ix, px;
-  mp_int  t, *x;
+  MP_LOCAL_DEF(t) ;
+  mp_int  *x;
 
   if (USED(a) > USED(b)) {
-    if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
+    mp_local_init_copy(t, a, res, "mp_and") ;
+    if (res != MP_OKAY) {
       return res;
     }
     px = USED(b);
     x = b;
   } else {
-    if ((res = mp_init_copy (&t, b)) != MP_OKAY) {
+    mp_local_init_copy(t, b, res, "mp_and") ;
+    if (res != MP_OKAY) {
       return res;
     }
     px = USED(a);
@@ -37,19 +40,23 @@ mp_and (mp_int * a, mp_int * b, mp_int * c)
   }
 
   for (ix = 0; ix < px; ix++) {
-    AND_DIGIT(&t,ix,DIGIT(x,ix));
+    AND_DIGIT(MP_LOCAL_REF(t),ix,DIGIT(x,ix));
   }
 
   /* zero digits above the last from the smallest mp_int */
-  for (; ix < USED(&t); ix++) {
-    SET_DIGIT(&t,ix,0);
+  for (; ix < USED(MP_LOCAL_REF(t)); ix++) {
+    SET_DIGIT(MP_LOCAL_REF(t),ix,0);
   }
 
-  mp_clamp (&t);
-  mp_exch (c, &t);
-  mp_clear (&t);
+  mp_clamp (MP_LOCAL_REF(t));
+  mp_local_assignfrom(c, t);
+  mp_local_clear(t);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_and.c,v $ */

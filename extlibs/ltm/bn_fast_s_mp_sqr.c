@@ -107,6 +107,10 @@ int fast_s_mp_sqr (mp_int * a, mp_int * b)
   mp_clamp (b);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_fast_s_mp_sqr.c,v $ */

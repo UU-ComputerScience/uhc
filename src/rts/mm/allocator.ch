@@ -59,6 +59,9 @@ typedef struct MM_Allocator {
   	// dumping info
   	void 						(*dump)( struct MM_Allocator* ) ;
 #endif
+
+	// constants: max alloc size, (default) 0 if no max
+	Word						maxAllocSize ;
 } MM_Allocator ;
 %%]
 

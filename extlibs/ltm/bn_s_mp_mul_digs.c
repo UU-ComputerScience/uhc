@@ -21,23 +21,26 @@
  */
 int s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 {
-  mp_int  t;
+  MP_LOCAL_DEF(t);
   int     res, pa, pb, ix, iy;
   mp_digit u;
   mp_word r;
   mp_digit tmpx, *tmpt, *tmpy;
 
+// #ifndef __UHC_BUILDS_RTS__
   /* can we use the fast multiplier? */
   if (((digs) < MP_WARRAY) &&
       MIN (USED(a), USED(b)) < 
           (1 << ((CHAR_BIT * sizeof (mp_word)) - (2 * DIGIT_BIT)))) {
     return fast_s_mp_mul_digs (a, b, c, digs);
   }
+// #endif
 
-  if ((res = mp_init_size (&t, digs)) != MP_OKAY) {
+  mp_local_init_size(t, digs, res) ;
+  if (res != MP_OKAY) {
     return res;
   }
-  SET_USED(&t,digs);
+  SET_USED(MP_LOCAL_REF(t),digs);
 
   /* compute the digits of the product directly */
   pa = USED(a);
@@ -53,7 +56,7 @@ int s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
     tmpx = DIGIT(a,ix);
     
     /* an alias for the destination shifted ix places */
-    tmpt = DIGITS(&t) + ix;
+    tmpt = &DIGIT(MP_LOCAL_REF(t),ix);
     
     /* an alias for the digits of b */
     tmpy = DIGITS(b);
@@ -77,12 +80,16 @@ int s_mp_mul_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
     }
   }
 
-  mp_clamp (&t);
-  mp_exch (&t, c);
+  mp_clamp (MP_LOCAL_REF(t));
+  mp_local_assignfrom(c,t);
 
-  mp_clear (&t);
+  mp_local_clear(t);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_s_mp_mul_digs.c,v $ */

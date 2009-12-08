@@ -95,8 +95,19 @@ EXIT_IF_ABSENT_LIB_OR_TOOL		:= @EXIT_IF_ABSENT_LIB_OR_TOOL@
 EHC_CFG_TARGET_IS_bc					:= $(filter bc,$(EHC_VARIANT_TARGET))
 EHC_CFG_TARGET_IS_C						:= $(filter C,$(EHC_VARIANT_TARGET))
 
+# which MP lib
+EHC_CFG_MPLIB							:= @MPLIB@
+
 # whether LTM sources should be included in rts
+ifeq (@MPLIB@,ltm)
 EHC_CFG_USE_LTM							:= $(filter $(EHC_VARIANT),$(EHC_LTM_VARIANTS))
+endif
+
+# whether GMP library should be build and linked in when compiling
+ifeq (@MPLIB@,gmp)
+EHC_CFG_USE_GMP							:= $(filter $(EHC_VARIANT),$(EHC_GMP_VARIANTS))
+EHC_CFG_GMP_LIB_ARCHIVE					:= @GMP_LIB_ARCHIVE@
+endif
 
 ###########################################################################################
 # Names of compiler executables

@@ -19,28 +19,33 @@
 int
 mp_mod (mp_int * a, mp_int * b, mp_int * c)
 {
-  mp_int  t;
+  MP_LOCAL_DEF(t);
   int     res;
 
-  if ((res = mp_init (&t)) != MP_OKAY) {
+  mp_local_init(t,USED(b),res) ;
+  if (res != MP_OKAY) {
     return res;
   }
 
-  if ((res = mp_div (a, b, NULL, &t)) != MP_OKAY) {
-    mp_clear (&t);
+  if ((res = mp_div (a, b, NULL, MP_LOCAL_REF(t))) != MP_OKAY) {
+    mp_local_clear(t);
     return res;
   }
 
-  if (SIGN(&t) != SIGN(b)) {
-    res = mp_add (b, &t, c);
+  if (SIGN(MP_LOCAL_REF(t)) != SIGN(b)) {
+    res = mp_add (b, MP_LOCAL_REF(t), c);
   } else {
     res = MP_OKAY;
-    mp_exch (&t, c);
+    mp_local_assignfrom(c, t) ;
   }
 
-  mp_clear (&t);
+  mp_local_clear(t);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_mod.c,v $ */

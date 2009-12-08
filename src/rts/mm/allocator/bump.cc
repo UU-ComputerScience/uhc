@@ -195,6 +195,7 @@ MM_Allocator mm_allocator_Bump =
 #ifdef TRACE
 	, &mm_allocator_Bump_Dump
 #endif
+	, (MM_GC_CopySpace_FragmentSize >> 2)	// 1/4 of a fragment
 	} ;
 %%]
 

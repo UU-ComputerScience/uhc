@@ -26,6 +26,10 @@ int mp_to_signed_bin (mp_int * a, unsigned char *b)
   b[0] = (unsigned char) ((SIGN(a) == MP_ZPOS) ? 0 : 1);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_to_signed_bin.c,v $ */
