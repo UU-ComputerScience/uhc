@@ -18,6 +18,12 @@
 /* init a new mp_int */
 int mp_init (mp_int * a)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library
+  mp_zero(a) ;
+  printf( "WARNING: mp_init (%p used=%x alc=%x)\n", a, USED(a), ALLOC(a) ) ;
+  // prLTM(a,"mp_init") ;
+#else
   int i;
 
   /* allocate memory required and clear it */
@@ -36,9 +42,14 @@ int mp_init (mp_int * a)
   SET_USED(a,0);
   SET_ALLOC(a,MP_PREC);
   SET_SIGN(a,MP_ZPOS);
+#endif
 
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init.c,v $ */

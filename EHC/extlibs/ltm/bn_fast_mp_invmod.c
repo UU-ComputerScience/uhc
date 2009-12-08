@@ -141,6 +141,10 @@ top:
 LBL_ERR:mp_clear_multi (&x, &y, &u, &v, &B, &D, NULL);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_fast_mp_invmod.c,v $ */

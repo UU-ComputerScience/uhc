@@ -27,6 +27,10 @@ int mp_reduce_setup (mp_int * a, mp_int * b)
   }
   return mp_div (a, b, a, NULL);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_reduce_setup.c,v $ */

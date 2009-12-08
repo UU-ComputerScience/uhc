@@ -37,6 +37,10 @@ int mp_cmp_d(mp_int * a, mp_digit b)
     return MP_EQ;
   }
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_cmp_d.c,v $ */

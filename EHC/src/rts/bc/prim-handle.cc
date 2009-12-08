@@ -148,12 +148,12 @@ PRIM Word primGBHandleFileno( GB_NodePtr chan )
 
 PRIM Word primEqGBHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
 {
-	return ( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) ? gb_True : gb_False ) ;
+	return RTS_MkBool( fileno(chan1->content.chan.file) == fileno(chan2->content.chan.file) ) ;
 }
 
 PRIM Word primEqGBHandleFileno( GB_NodePtr chan, Word fno )
 {
-	return ( fno == fileno(chan->content.chan.file) ? gb_True : gb_False ) ;
+	return RTS_MkBool( fno == fileno(chan->content.chan.file) ) ;
 }
 
 PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mbHandleNr )   

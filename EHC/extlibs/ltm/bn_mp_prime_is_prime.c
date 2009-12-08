@@ -76,6 +76,10 @@ int mp_prime_is_prime (mp_int * a, int t, int *result)
 LBL_B:mp_clear (&b);
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_is_prime.c,v $ */

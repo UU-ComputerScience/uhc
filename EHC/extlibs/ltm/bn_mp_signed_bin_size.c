@@ -20,6 +20,10 @@ int mp_signed_bin_size (mp_int * a)
 {
   return 1 + mp_unsigned_bin_size (a);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_signed_bin_size.c,v $ */

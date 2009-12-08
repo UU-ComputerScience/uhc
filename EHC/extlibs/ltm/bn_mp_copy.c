@@ -28,9 +28,15 @@ mp_copy (mp_int * a, mp_int * b)
 
   /* grow dest */
   if (ALLOC(b) < USED(a)) {
+#ifdef __UHC_BUILDS_RTS__
+     printf( "WARNING: mp_copy a=%p used(a)=%x alc(a)=%x (b=%p used(b)=%x alc(b)=%x)\n", a, USED(a), ALLOC(a), b, USED(b), ALLOC(b) ) ;
+     // prLTM(a,"mp_copy") ;
+     return MP_MEM ;
+#else
      if ((res = mp_grow (b, USED(a))) != MP_OKAY) {
         return res;
      }
+#endif
   }
 
   /* zero b and copy the parameters over */
@@ -59,8 +65,13 @@ mp_copy (mp_int * a, mp_int * b)
   /* copy used count and sign */
   SET_USED(b,USED(a));
   SET_SIGN(b,SIGN(a));
+  // printf( "TRACE: mp_copy a=%p used(a)=%x alc(a)=%x (b=%p used(b)=%x alc(b)=%x)\n", a, USED(a), ALLOC(a), b, USED(b), ALLOC(b) ) ;
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_copy.c,v $ */

@@ -24,6 +24,10 @@ int mp_init_set_int (mp_int * a, unsigned long b)
   }
   return mp_set_int(a, b);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init_set_int.c,v $ */

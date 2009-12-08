@@ -24,6 +24,10 @@ int mp_to_signed_bin_n (mp_int * a, unsigned char *b, unsigned long *outlen)
    *outlen = mp_signed_bin_size(a);
    return mp_to_signed_bin(a, b);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_to_signed_bin_n.c,v $ */

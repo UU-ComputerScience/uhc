@@ -37,6 +37,10 @@ int mp_reduce_is_2k_l(mp_int *a)
    return MP_NO;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_reduce_is_2k_l.c,v $ */

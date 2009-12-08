@@ -53,6 +53,10 @@ LBL_T:
   mp_clear_multi (&t1, &t2, NULL);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_lcm.c,v $ */

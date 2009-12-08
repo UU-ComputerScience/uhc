@@ -34,6 +34,10 @@ mp_addmod (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
   mp_clear (&t);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_addmod.c,v $ */

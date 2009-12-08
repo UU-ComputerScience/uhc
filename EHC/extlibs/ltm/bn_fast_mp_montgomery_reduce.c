@@ -165,6 +165,10 @@ int fast_mp_montgomery_reduce (mp_int * x, mp_int * n, mp_digit rho)
   }
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_fast_mp_montgomery_reduce.c,v $ */

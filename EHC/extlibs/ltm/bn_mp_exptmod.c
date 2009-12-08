@@ -105,6 +105,10 @@ int mp_exptmod (mp_int * G, mp_int * X, mp_int * P, mp_int * Y)
 #endif
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_exptmod.c,v $ */

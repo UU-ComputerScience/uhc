@@ -314,6 +314,10 @@ LBL_M:
   }
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 

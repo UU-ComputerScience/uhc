@@ -46,6 +46,10 @@ int mp_cnt_lsb(mp_int *a)
    return x;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_cnt_lsb.c,v $ */

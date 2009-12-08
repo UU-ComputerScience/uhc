@@ -67,12 +67,15 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+### obvious utils which are amiss on some platforms: m4
+REQUIRED_PROG_FOR_EH(m4Cmd,m4)
+
 ### svn log/history
 AC_PATH_PROG(svnCmd,svn)
 if test -x "$svnCmd"
 then
   svnExists="yes"
-  $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
 else
   svnExists="no"
 fi
@@ -792,8 +795,37 @@ AC_SUBST(GMP_ABI,$gmpABI)
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
 
-# Use GMP
-AC_DEFINE([USE_GMP],[1],[Use GNU Multiple Precision library])
+# which MP library
+AC_ARG_WITH(mplib,
+[AC_HELP_STRING([--with-mplib=ltm|gmp],
+                [Specify which MP library to use. Default is ltm (builtin derivative of LibTomMath).])],
+[ mplib="$withval" ],
+[ mplib="ltm" ]
+)
+AC_SUBST(MPLIB,$mplib)
+
+# Use GMP or LTM
+if test "$mplib" = "gmp" ; then
+  AC_DEFINE([USE_GMP],[1],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[0],[Use LTM (LibTomMath) library])
+else
+  AC_DEFINE([USE_GMP],[0],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[1],[Use LTM (LibTomMath) library])
+fi
+
+# which GMP archive
+AC_ARG_WITH(gmplibarchive,
+[AC_HELP_STRING([--with-gmplibarchive=<gmp lib archive>],
+                [If GMP is used, specify absolute location of GMP archive (named like .../gmp-X.Y.Z.tar.gz).])],
+[ gmpLibArchive="$withval" ],
+[ gmpLibArchive=`pwd`/"extlibs/gmp/gmp-4.2.1.tar.gz" ]
+)
+if test -r "$gmpLibArchive" ; then
+  gmpLibArchiveExists="yes"
+else
+  gmpLibArchiveExists="no"
+fi
+AC_SUBST(GMP_LIB_ARCHIVE, "$gmpLibArchive")
 
 # Prefix used for global values, assumed to be present by RTS
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?)])
@@ -1038,6 +1070,15 @@ then
   echo "  javac is available?           : $javacExists"
   if test "x$javacExists" = "xyes" ;then 
   echo "    command for javac           : $javacCmd"
+  fi
+fi
+
+echo "  MP library                    : $mplib"
+if test "$mplib" == "gmp" ; then
+  if test "x$gmpLibArchiveExists" = "xyes" ;then
+    echo "    gmp lib archive             : $gmpLibArchive"
+  else
+    echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
   fi
 fi
 

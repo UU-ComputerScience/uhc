@@ -19,6 +19,11 @@
 int
 mp_clear (mp_int * a)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library,
+  // clearing is therefore a NOP, can be done during garbage collection.
+  // printf( "WARNING: mp_clear (%p used=%x alc=%x)\n", a, USED(a), ALLOC(a) ) ;
+#else
   int i;
 
   /* only do anything if a hasn't been freed previously */
@@ -37,8 +42,14 @@ mp_clear (mp_int * a)
     SET_USED(a,0 );
     SET_SIGN(a,MP_ZPOS);
   }
+#endif
+
   return MP_OKAY ;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_clear.c,v $ */

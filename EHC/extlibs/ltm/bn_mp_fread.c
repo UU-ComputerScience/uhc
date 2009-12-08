@@ -60,6 +60,10 @@ int mp_fread(mp_int *a, int radix, FILE *stream)
    return MP_OKAY;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_fread.c,v $ */

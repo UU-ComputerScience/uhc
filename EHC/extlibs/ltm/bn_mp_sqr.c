@@ -51,6 +51,10 @@ if (USED(a) >= KARATSUBA_SQR_CUTOFF) {
   SET_SIGN(b,MP_ZPOS);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_sqr.c,v $ */

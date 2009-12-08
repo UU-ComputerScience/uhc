@@ -20,16 +20,19 @@ int
 mp_xor (mp_int * a, mp_int * b, mp_int * c)
 {
   int     res, ix, px;
-  mp_int  t, *x;
+  MP_LOCAL_DEF(t) ;
+  mp_int  *x;
 
   if (USED(a) > USED(b)) {
-    if ((res = mp_init_copy (&t, a)) != MP_OKAY) {
+    mp_local_init_copy(t, a, res, "mp_xor") ;
+    if (res != MP_OKAY) {
       return res;
     }
     px = USED(b);
     x = b;
   } else {
-    if ((res = mp_init_copy (&t, b)) != MP_OKAY) {
+    mp_local_init_copy(t, b, res, "mp_xor") ;
+    if (res != MP_OKAY) {
       return res;
     }
     px = USED(a);
@@ -37,13 +40,17 @@ mp_xor (mp_int * a, mp_int * b, mp_int * c)
   }
 
   for (ix = 0; ix < px; ix++) {
-     XOR_DIGIT(&t,ix,DIGIT(x,ix)) ;
+     XOR_DIGIT(MP_LOCAL_REF(t),ix,DIGIT(x,ix)) ;
   }
-  mp_clamp (&t);
-  mp_exch (c, &t);
-  mp_clear (&t);
+  mp_clamp (MP_LOCAL_REF(t));
+  mp_local_assignfrom(c, t);
+  mp_local_clear(t);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_xor.c,v $ */

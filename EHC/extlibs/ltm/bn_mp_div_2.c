@@ -61,6 +61,10 @@ int mp_div_2(mp_int * a, mp_int * b)
   mp_clamp (b);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_div_2.c,v $ */

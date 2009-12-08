@@ -21,12 +21,24 @@
 void
 mp_exch (mp_int * a, mp_int * b)
 {
+#ifdef __UHC_BUILDS_RTS__
+  // all allocation is assumed to be done outside library,
+  // shrinking is therefore a NOP, can be done during garbage collection.
+  printf( "WARNING: mp_exch (%p used=%x alc=%x) (%p used=%x alc=%x)\n", a, USED(a), ALLOC(a), b, USED(b), ALLOC(b) ) ;
+  // prLTM(a) ;
+  // prLTM(b) ;
+#else
   mp_int  t;
 
   t  = *a;
   *a = *b;
   *b = t;
+#endif
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_exch.c,v $ */

@@ -43,11 +43,17 @@ useBoehmGC :: EHCOpts -> Bool
 useBoehmGC opts = gcVariant opts == GCVariant_Boehm
 %%]
 
-%%[97 export(useGMP)
+%%[97 export(mpLib,MPLib(..))
+#undef USE_LTM
 #undef USE_GMP
 
-useGMP :: Bool
-useGMP = mkB USE_GMP
+data MPLib
+  = MPLib_LTM | MPLib_GMP
+  deriving (Show,Eq)
+
+mpLib :: MPLib
+mpLib | mkB USE_GMP = MPLib_GMP
+      | otherwise   = MPLib_LTM
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

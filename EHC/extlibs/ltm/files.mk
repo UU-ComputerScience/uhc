@@ -55,6 +55,9 @@ LTM_SRC_C			:= \
 		bn_mp_fwrite \
 		bn_mp_gcd \
 		bn_mp_get_int \
+		bn_mp_get_uint64 \
+		bn_mp_get_sint64 \
+		bn_mp_get_double \
 		bn_mp_grow \
 		bn_mp_init \
 		bn_mp_init_copy \
@@ -83,6 +86,7 @@ LTM_SRC_C			:= \
 		bn_mp_mulmod \
 		bn_mp_n_root \
 		bn_mp_neg \
+		bn_mp_com \
 		bn_mp_or \
 		bn_mp_prime_fermat \
 		bn_mp_prime_is_divisible \
@@ -92,6 +96,7 @@ LTM_SRC_C			:= \
 		bn_mp_prime_rabin_miller_trials \
 		bn_mp_prime_random_ex \
 		bn_mp_radix_size \
+		bn_mp_radix_size_estim \
 		bn_mp_radix_smap \
 		bn_mp_rand \
 		bn_mp_read_radix \
@@ -108,6 +113,11 @@ LTM_SRC_C			:= \
 		bn_mp_rshd \
 		bn_mp_set \
 		bn_mp_set_int \
+		bn_mp_set_uint64 \
+		bn_mp_set_sint64 \
+		bn_mp_set_double \
+		bn_mp_set_double64 \
+		bn_mp_sgn \
 		bn_mp_shrink \
 		bn_mp_signed_bin_size \
 		bn_mp_sqr \

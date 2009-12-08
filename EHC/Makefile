@@ -68,7 +68,9 @@ include $(SRC_PREFIX)ehc/files1.mk
 
 include extlibs/files.mk
 include $(EXTLIBS_PREFIX)bgc/files.mk
+ifeq ($(EHC_CFG_MPLIB),gmp)
 include $(EXTLIBS_PREFIX)gmp/files.mk
+endif
 include $(EXTLIBS_PREFIX)ltm/files.mk
 include ehclib/files1.mk
 include $(SRC_PREFIX)rts/files.mk
@@ -358,7 +360,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(RTS_LTM_DRV_O)
+	@echo $(XXXX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

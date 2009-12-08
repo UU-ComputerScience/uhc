@@ -155,7 +155,7 @@ libnamesGcc opts
         else []
        )
 %%[[97
-    ++ (if useGMP
+    ++ (if mpLib == MPLib_GMP
         then [ "@EXTLIBS_GMP_PKG_NAME@" ]
         else []
        )

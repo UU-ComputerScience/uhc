@@ -47,6 +47,10 @@ mp_mod_2d (mp_int * a, int b, mp_int * c)
   mp_clamp (c);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_mod_2d.c,v $ */

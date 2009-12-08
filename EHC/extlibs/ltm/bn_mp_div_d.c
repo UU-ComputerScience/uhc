@@ -31,7 +31,7 @@ static int s_is_power_of_two(mp_digit b, int *p)
 /* single digit division (based on routine from MPI) */
 int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
 {
-  mp_int  q;
+  MP_LOCAL_DEF(q);
   mp_word w;
   mp_digit t;
   int     res, ix;
@@ -58,6 +58,7 @@ int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
         *d = DIGIT(a,0) & ((((mp_digit)1)<<ix) - 1);
      }
      if (c != NULL) {
+        // printf( "mp_div_d mp_div_2d:\n" ) ;
         return mp_div_2d(a, ix, c, NULL);
      }
      return MP_OKAY;
@@ -66,17 +67,19 @@ int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
 #ifdef BN_MP_DIV_3_C
   /* three? */
   if (b == 3) {
+     // printf( "mp_div_d mp_div_3:\n" ) ;
      return mp_div_3(a, c, d);
   }
 #endif
 
   /* no easy answer [c'est la vie].  Just division */
-  if ((res = mp_init_size(&q, USED(a))) != MP_OKAY) {
+  mp_local_init_size(MP_LOCAL_REF(q), USED(a), res) ;
+  if (res != MP_OKAY) {
      return res;
   }
   
-  SET_USED(&q,USED(a));
-  SET_SIGN(&q,SIGN(a));
+  SET_USED(MP_LOCAL_REF(q),USED(a));
+  SET_SIGN(MP_LOCAL_REF(q),SIGN(a));
   w = 0;
   for (ix = USED(a) - 1; ix >= 0; ix--) {
      w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)DIGIT(a,ix));
@@ -87,7 +90,7 @@ int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
       } else {
         t = 0;
       }
-      SET_DIGIT(&q,ix,(mp_digit)t);
+      SET_DIGIT(MP_LOCAL_REF(q),ix,(mp_digit)t);
   }
   
   if (d != NULL) {
@@ -95,13 +98,17 @@ int mp_div_d (mp_int * a, mp_digit b, mp_int * c, mp_digit * d)
   }
   
   if (c != NULL) {
-     mp_clamp(&q);
-     mp_exch(&q, c);
+     mp_clamp(MP_LOCAL_REF(q));
+     mp_local_assignfrom(c,q) ;
   }
-  mp_clear(&q);
+  mp_local_clear(q);
   
   return res;
 }
+
+#else
+
+MP_DUMMY_LINKER_DEF
 
 #endif
 

@@ -65,6 +65,10 @@ void mp_rshd (mp_int * a, int b)
   /* remove excess digits */
   DEC_USED(a,b);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_rshd.c,v $ */

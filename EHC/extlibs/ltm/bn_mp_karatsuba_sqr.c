@@ -114,6 +114,10 @@ X0:mp_clear (&x0);
 ERR:
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_karatsuba_sqr.c,v $ */

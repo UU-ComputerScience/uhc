@@ -102,6 +102,10 @@ s_mp_add (mp_int * a, mp_int * b, mp_int * c)
   mp_clamp (c);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_s_mp_add.c,v $ */

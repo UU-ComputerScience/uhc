@@ -36,6 +36,10 @@ mp_cmp (mp_int * a, mp_int * b)
      return mp_cmp_mag(a, b);
   }
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_cmp.c,v $ */

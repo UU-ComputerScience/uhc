@@ -52,6 +52,10 @@ int mp_init_multi(mp_int *mp, ...)
     return res;                /* Assumed ok, if error flagged above. */
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init_multi.c,v $ */

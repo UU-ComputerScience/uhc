@@ -71,6 +71,10 @@ int mp_radix_size (mp_int * a, int radix, int *size)
   return MP_OKAY;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_radix_size.c,v $ */

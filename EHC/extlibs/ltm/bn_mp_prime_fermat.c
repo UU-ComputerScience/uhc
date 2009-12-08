@@ -55,6 +55,10 @@ int mp_prime_fermat (mp_int * a, mp_int * b, int *result)
 LBL_T:mp_clear (&t);
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_fermat.c,v $ */

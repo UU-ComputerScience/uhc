@@ -163,6 +163,10 @@ LBL_ERR:
    return err;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_next_prime.c,v $ */

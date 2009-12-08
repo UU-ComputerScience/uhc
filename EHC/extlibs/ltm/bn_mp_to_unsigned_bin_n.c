@@ -24,6 +24,10 @@ int mp_to_unsigned_bin_n (mp_int * a, unsigned char *b, unsigned long *outlen)
    *outlen = mp_unsigned_bin_size(a);
    return mp_to_unsigned_bin(a, b);
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_to_unsigned_bin_n.c,v $ */

@@ -21,7 +21,7 @@
 int
 s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
 {
-  mp_int  t;
+  MP_LOCAL_DEF(t);
   int     res, pa, pb, ix, iy;
   mp_digit u;
   mp_word r;
@@ -35,10 +35,11 @@ s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
   }
 #endif
 
-  if ((res = mp_init_size (&t, USED(a) + USED(b) + 1)) != MP_OKAY) {
+  mp_local_init_size(t, USED(a) + USED(b) + 1, res) ;
+  if (res != MP_OKAY) {
     return res;
   }
-  SET_USED(&t,USED(a) + USED(b) + 1);
+  SET_USED(MP_LOCAL_REF(t),USED(a) + USED(b) + 1);
 
   pa = USED(a);
   pb = USED(b);
@@ -50,7 +51,7 @@ s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
     tmpx = DIGIT(a,ix);
 
     /* alias to the address of where the digits will be stored */
-    tmpt = &(DIGIT(&t,digs));
+    tmpt = &(DIGIT(MP_LOCAL_REF(t),digs));
 
     /* alias for where to read the right hand side from */
     tmpy = DIGITS(b) + (digs - ix);
@@ -69,11 +70,16 @@ s_mp_mul_high_digs (mp_int * a, mp_int * b, mp_int * c, int digs)
     }
     *tmpt = u;
   }
-  mp_clamp (&t);
-  mp_exch (&t, c);
-  mp_clear (&t);
+  mp_clamp (MP_LOCAL_REF(t));
+  mp_local_assignfrom(c,t);
+
+  mp_local_clear(t);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_s_mp_mul_high_digs.c,v $ */

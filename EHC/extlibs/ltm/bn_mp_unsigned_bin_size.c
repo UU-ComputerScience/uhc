@@ -21,6 +21,10 @@ int mp_unsigned_bin_size (mp_int * a)
   int     size = mp_count_bits (a);
   return (size / 8 + ((size & 7) != 0 ? 1 : 0));
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_unsigned_bin_size.c,v $ */

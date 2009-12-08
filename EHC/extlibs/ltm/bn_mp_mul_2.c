@@ -75,6 +75,10 @@ int mp_mul_2(mp_int * a, mp_int * b)
   SET_SIGN(b,SIGN(a));
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_mul_2.c,v $ */

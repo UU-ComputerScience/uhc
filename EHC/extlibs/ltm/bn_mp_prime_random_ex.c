@@ -118,6 +118,10 @@ error:
 }
 
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_prime_random_ex.c,v $ */

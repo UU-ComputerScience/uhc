@@ -41,6 +41,10 @@ int mp_set_int (mp_int * a, unsigned long b)
   mp_clamp (a);
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_set_int.c,v $ */

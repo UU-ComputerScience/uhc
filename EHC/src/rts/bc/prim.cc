@@ -130,7 +130,7 @@ PRIM Word gb_WriteMode
 PRIM Word primGC(  )
 {
 #	if USE_EHC_MM
-		return ( mm_itf_gc() ? gb_True : gb_False ) ;
+		return RTS_MkBool( mm_itf_gc() ) ;
 #	else
 		return gb_False ;
 #	endif
@@ -534,10 +534,7 @@ PRIM Word primWriteMutVar( GB_NodePtr mutVar, Word newVal, Word state )
 
 PRIM Word primSameMutVar( Word v1, Word v2 )
 {
-	if ( v1 == v2 )
-		return gb_True ;
-	else
-		return gb_False ;
+	return RTS_MkBool( v1 == v2 ) ;
 }
 
 %%]
@@ -606,7 +603,7 @@ PRIM int _setErrno( int e )
 %%[96
 PRIM Word primCallInfoKindIsVisible( Word kind )
 {
-	return ( gb_CallInfo_Kind_IsVisible(kind) ? gb_True : gb_False ) ;
+	return RTS_MkBool( gb_CallInfo_Kind_IsVisible(kind) ) ;
 }
 %%]
 

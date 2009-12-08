@@ -40,7 +40,8 @@ int mp_read_radix (mp_int * a, const char *str, int radix)
   }
 
   /* set the integer to the default of zero */
-  mp_zero (a);
+  // 20091124 (Atze Dijkstra): already done above
+  // mp_zero (a);
   
   /* process each digit of the string */
   while (*str) {
@@ -78,6 +79,10 @@ int mp_read_radix (mp_int * a, const char *str, int radix)
   }
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_read_radix.c,v $ */

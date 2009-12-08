@@ -32,6 +32,10 @@ bn_reverse (unsigned char *s, int len)
     --iy;
   }
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_reverse.c,v $ */

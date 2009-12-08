@@ -18,6 +18,14 @@
 /* grow as required */
 int mp_grow (mp_int * a, int size)
 {
+#ifdef __UHC_BUILDS_RTS__
+  if (ALLOC(a) < size) {
+    // all allocation is assumed to be done outside library
+    printf( "WARNING: mp_grow sz=%x (%p used=%x alc=%x)\n", size, a, USED(a), ALLOC(a) ) ;
+    // prLTM(a,"mp_grow") ;
+    return MP_MEM ;
+  }
+#else
   int     i;
   mp_digit *tmp;
 
@@ -48,8 +56,14 @@ int mp_grow (mp_int * a, int size)
       SET_DIGIT(a,i,0);
     }
   }
+#endif
+
   return MP_OKAY;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_grow.c,v $ */

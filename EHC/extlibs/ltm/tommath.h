@@ -20,8 +20,14 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <limits.h>
+#include <inttypes.h>
 
-#ifdef __UHC_TARGET_BC__
+// #if defined(__UHC_TARGET_BC__) && USE_LTM
+#if defined(__UHC_BUILDS_RTS__)
+#include <alloca.h>
+#endif
+
+#if defined(__UHC_TARGET_BC__)
 #include "../rtsbase.h"
 #endif
 
@@ -64,7 +70,7 @@ extern "C" {
  * At the very least a mp_digit must be able to hold 7 bits
  * [any size beyond that is ok provided it doesn't overflow the data type]
  */
-#ifdef __UHC_TARGET_BC__
+#if defined(__UHC_TARGET_BC__) && USE_LTM
    typedef GB_LTM_1Digit      mp_digit;
    typedef GB_LTM_2Digit      mp_word;
 #elif MP_8BIT
@@ -135,6 +141,32 @@ extern "C" {
 #endif
 #endif
 
+/* a dummy def to fool linker into thinking there is file content when real content is #ifdef'd away */
+#define MP_DUMMY_LINKER_DEF					int dummy ;
+
+/* local allocation of mp_int */
+#if __UHC_BUILDS_RTS__
+#	define MP_LOCAL_DEF(x)					mp_int* x
+#	define MP_LOCAL_REF(x)					x
+
+#	define mp_alloca_size(a,sz)				GB_NodeAlloc_LTMMpzDigs_In_Alloca(sz,a)
+#	define mp_alloca_copy(to,a,res,msg)		mp_alloca_size(to,USED(a)) ; res = mp_copy(a,to)
+#	define mp_local_init_copy(t,a,res,msg)	mp_alloca_copy(t, a, res, msg)
+#	define mp_local_init_size(t,sz,res)		mp_alloca_size(t,sz) ; res = MP_OKAY
+#	define mp_local_init(t,sz,res)			mp_local_init_size(t,sz,res)
+#	define mp_local_clear(t)		
+#	define mp_local_assignfrom(a,t)			mp_copy(t,a)
+#else
+#	define MP_LOCAL_DEF(x)					mp_int x
+#	define MP_LOCAL_REF(x)					&x
+
+#	define mp_local_init_copy(t,a,res,msg)	res = mp_init_copy(MP_LOCAL_REF(t), a)
+#	define mp_local_init_size(t,sz,res)		res = mp_init_size(MP_LOCAL_REF(t),sz)
+#	define mp_local_init(t,sz,res)			res = mp_init(MP_LOCAL_REF(t))
+#	define mp_local_clear(t)				mp_clear(MP_LOCAL_REF(t))
+#	define mp_local_assignfrom(a,t)			mp_exch(MP_LOCAL_REF(t), a)
+#endif
+
 
 /* otherwise the bits per digit is calculated automatically from the size of a mp_digit */
 #ifndef DIGIT_BIT
@@ -192,7 +224,7 @@ extern int KARATSUBA_MUL_CUTOFF,
 /* size of comba arrays, should be at least 2 * 2**(BITS_PER_WORD - BITS_PER_DIGIT*2) */
 #define MP_WARRAY               (1 << (sizeof(mp_word) * CHAR_BIT - 2 * DIGIT_BIT + 1))
 
-#if __UHC_TARGET_BC__
+#if defined(__UHC_TARGET_BC__) && USE_LTM
 // will be a GB_Node or something similar, included for a particular build of the rts
 typedef GB_Node mp_int;
 #else
@@ -206,7 +238,7 @@ typedef struct  {
 /* callback for mp_prime_random, should fill dst with random bytes and return how many read [upto len] */
 typedef int ltm_prime_callback(unsigned char *dst, int len, void *dat);
 
-#if __UHC_TARGET_BC__
+#if defined(__UHC_TARGET_BC__) && USE_LTM
 	#define ALLOC(m)   			GB_LTM_Int_Alloc(m)
 	#define USED(m)    			GB_LTM_Int_Used(m)
 	#define DIGITS(m)  			GB_LTM_Int_Digits(m)
@@ -239,6 +271,41 @@ typedef int ltm_prime_callback(unsigned char *dst, int len, void *dat);
 #define DEC_USED(m,v)		USED(m) -= (v)
 #define DEC1_USED(m)		USED(m)--
 
+// combine two mp_ints digitwise, safely without allocation/init
+#define MP_DIGITWISE_SAFE(mpname,op) 										\
+	int																		\
+	mpname (mp_int * a, mp_int * b, mp_int * c)								\
+	{																		\
+	  int     res, ix, px;													\
+	  mp_int  *x;															\
+																			\
+	  if (USED(a) > USED(b)) {												\
+		if ((res = mp_copy (a, c)) != MP_OKAY) {							\
+		  return res;														\
+		}																	\
+		px = USED(b);														\
+		x = b;																\
+	  } else {																\
+		if ((res = mp_copy (b, c)) != MP_OKAY) {							\
+		  return res;														\
+		}																	\
+		px = USED(a);														\
+		x = a;																\
+	  }																		\
+																			\
+	  for (ix = 0; ix < px; ix++) {											\
+		SET_DIGIT(c,ix,DIGIT(c,ix) op DIGIT(x,ix));							\
+	  }																		\
+																			\
+	  /* zero digits above the last from the smallest mp_int */				\
+	  for (; ix < USED(c); ix++) {											\
+		SET_DIGIT(c,ix,0);													\
+	  }																		\
+																			\
+	  mp_clamp (c);															\
+	  return MP_OKAY;														\
+	}
+
 /* error code to char* string */
 char *mp_error_to_string(int code);
 
@@ -268,6 +335,7 @@ int mp_grow(mp_int *a, int size);
 int mp_init_size(mp_int *a, int size);
 
 /* ---> Basic Manipulations <--- */
+#define mp_isneg(a)  ((SIGN(a) == MP_NEG) ? MP_YES : MP_NO)
 #define mp_iszero(a) ((USED(a) == 0) ? MP_YES : MP_NO)
 #define mp_iseven(a) ((USED(a) > 0 && ((DIGIT(a,0) & 1) == 0)) ? MP_YES : MP_NO)
 #define mp_isodd(a)  ((USED(a) > 0 && ((DIGIT(a,0) & 1) == 1)) ? MP_YES : MP_NO)
@@ -281,8 +349,29 @@ void mp_set(mp_int *a, mp_digit b);
 /* set a 32-bit const */
 int mp_set_int(mp_int *a, unsigned long b);
 
+/* set a 64-bit signed const */
+int mp_set_sint64(mp_int * a, int64_t b);
+
+/* set a 64-bit unsigned const */
+int mp_set_uint64(mp_int * a, uint64_t b);
+
+/* set a double */
+int mp_set_double(mp_int * a, double b);
+
+/* set a double, for which we know if falls in the range of an int64_t */
+int mp_set_double64(mp_int * a, double b);
+
 /* get a 32-bit value */
 unsigned long mp_get_int(mp_int * a);
+
+/* get a unsigned 64-bit value */
+uint64_t mp_get_uint64(mp_int * a);
+
+/* get a signed 64-bit value */
+int64_t mp_get_sint64(mp_int * a);
+
+/* get the double of an mp_int */
+double mp_get_double(mp_int * a);
 
 /* initialize and set a digit */
 int mp_init_set (mp_int * a, mp_digit b);
@@ -345,11 +434,17 @@ int mp_and(mp_int *a, mp_int *b, mp_int *c);
 
 /* ---> Basic arithmetic <--- */
 
+/* b = ~a */
+int mp_com(mp_int * a, mp_int * b);
+
 /* b = -a */
 int mp_neg(mp_int *a, mp_int *b);
 
 /* b = |a| */
 int mp_abs(mp_int *a, mp_int *b);
+
+/* compare to zero */
+int mp_sgn(mp_int * a);
 
 /* compare a to b */
 int mp_cmp(mp_int *a, mp_int *b);
@@ -583,6 +678,9 @@ int mp_read_radix(mp_int *a, const char *str, int radix);
 int mp_toradix(mp_int *a, char *str, int radix);
 int mp_toradix_n(mp_int * a, char *str, int radix, int maxlen);
 int mp_radix_size(mp_int *a, int radix, int *size);
+/* returns size estimate of ASCII reprensentation, based on used size */
+int mp_radix_size_estim (mp_int * a, int radix, int *size) ;
+
 
 int mp_fread(mp_int *a, int radix, FILE *stream);
 int mp_fwrite(mp_int *a, int radix, FILE *stream);
@@ -621,6 +719,7 @@ int s_mp_exptmod (mp_int * G, mp_int * X, mp_int * P, mp_int * Y, int mode);
 void bn_reverse(unsigned char *s, int len);
 
 extern const char *mp_s_rmap;
+
 
 #ifdef __cplusplus
    }

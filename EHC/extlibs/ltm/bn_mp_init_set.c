@@ -25,6 +25,10 @@ int mp_init_set (mp_int * a, mp_digit b)
   mp_set(a, b);
   return err;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_init_set.c,v $ */

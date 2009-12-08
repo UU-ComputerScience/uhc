@@ -36,6 +36,10 @@ int mp_dr_is_modulus(mp_int *a)
    return 1;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_dr_is_modulus.c,v $ */

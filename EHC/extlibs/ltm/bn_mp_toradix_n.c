@@ -81,6 +81,10 @@ int mp_toradix_n(mp_int * a, char *str, int radix, int maxlen)
   return MP_OKAY;
 }
 
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_toradix_n.c,v $ */

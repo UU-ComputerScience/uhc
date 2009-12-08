@@ -19,10 +19,13 @@
 %%]
 
 %%[97
+// Mutually exclusive use a MP (Multiple Precision) library.
+
 /* use GMP */
-#ifdef __UHC_BUILDS_RTS__
 #undef USE_GMP
-#endif
+
+/* use LTM */
+#undef USE_LTM
 %%]
 
 %%[8

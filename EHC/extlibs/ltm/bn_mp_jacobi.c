@@ -98,6 +98,10 @@ LBL_P1:mp_clear (&p1);
 LBL_A1:mp_clear (&a1);
   return res;
 }
+#else
+
+MP_DUMMY_LINKER_DEF
+
 #endif
 
 /* $Source: /cvs/libtom/libtommath/bn_mp_jacobi.c,v $ */

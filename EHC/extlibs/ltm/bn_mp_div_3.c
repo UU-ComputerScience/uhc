@@ -19,7 +19,7 @@
 int
 mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
 {
-  mp_int   q;
+  MP_LOCAL_DEF(q);
   mp_word  w, t;
   mp_digit b;
   int      res, ix;
@@ -27,12 +27,13 @@ mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
   /* b = 2**DIGIT_BIT / 3 */
   b = (((mp_word)1) << ((mp_word)DIGIT_BIT)) / ((mp_word)3);
 
-  if ((res = mp_init_size(&q, USED(a))) != MP_OKAY) {
+  mp_local_init_size(q, USED(a), res) ;
+  if (res != MP_OKAY) {
      return res;
   }
   
-  SET_USED(&q,USED(a));
-  SET_SIGN(&q,SIGN(a));
+  SET_USED(MP_LOCAL_REF(q),USED(a));
+  SET_SIGN(MP_LOCAL_REF(q),SIGN(a));
   w = 0;
   for (ix = USED(a) - 1; ix >= 0; ix--) {
      w = (w << ((mp_word)DIGIT_BIT)) | ((mp_word)DIGIT(a,ix));
@@ -54,7 +55,7 @@ mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
       } else {
         t = 0;
       }
-      SET_DIGIT(&q,ix,(mp_digit)t);
+      SET_DIGIT(MP_LOCAL_REF(q),ix,(mp_digit)t);
   }
 
   /* [optional] store the remainder */
@@ -64,13 +65,17 @@ mp_div_3 (mp_int * a, mp_int *c, mp_digit * d)
 
   /* [optional] store the quotient */
   if (c != NULL) {
-     mp_clamp(&q);
-     mp_exch(&q, c);
+     mp_clamp(MP_LOCAL_REF(q));
+     mp_local_assignfrom(c,q);
   }
-  mp_clear(&q);
+  mp_local_clear(q);
   
   return res;
 }
+
+#else
+
+MP_DUMMY_LINKER_DEF
 
 #endif
 

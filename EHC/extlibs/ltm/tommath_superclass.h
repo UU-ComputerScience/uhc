@@ -1,24 +1,30 @@
 /* super class file for PK algos */
 
-#if 0 && __UHC_BUILDS_RTS__
+#if __UHC_BUILDS_RTS__
+	#define BN_ERROR_C
+	#define BN_MP_ABS_C
 	#define BN_MP_ADD_C
-	#define BN_MP_SUB_C
-	#define BN_MP_MUL_C
-	#define BN_MP_MOD_C
-	#define BN_MP_DIV_C
-	#define BN_MP_CMP_C
 	#define BN_MP_AND_C
+	#define BN_MP_CMP_C
+	#define BN_MP_DIV_C
+	#define BN_MP_GET_INT_C
+	#define BN_MP_LSHD_C
+	#define BN_MP_MOD_C
+	#define BN_MP_MUL_C
 	#define BN_MP_NEG_C
 	#define BN_MP_OR_C
-	#define BN_MP_XOR_C
-	#define BN_MP_ZERO_C
-	#define BN_MP_LSHD_C
+	#define BN_MP_RADIX_SIZE_C
+	#define BN_MP_READ_RADIX_C
 	#define BN_MP_RSHD_C
+	#define BN_MP_SET_INT_C
 	#define BN_MP_SQR_C
 	#define BN_MP_SQRT_C
-	// #define BN_MP_N_ROOT_C
-	#define BN_MP_GET_INT_C
-	#define BN_MP_SET_INT_C
+	#define BN_MP_SUB_C
+	#define BN_MP_TORADIX_C
+	#define BN_MP_XOR_C
+	#define BN_MP_ZERO_C
+	#define BN_REVERSE_C
+	#define BNCORE_C
 #else
 /* default ... include all MPI */
 	#define LTM_ALL
