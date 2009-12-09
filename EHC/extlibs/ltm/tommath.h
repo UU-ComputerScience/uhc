@@ -150,8 +150,12 @@ extern "C" {
 #	define MP_LOCAL_REF(x)					x
 
 #	define mp_alloca_size(a,sz)				GB_NodeAlloc_LTMMpzDigs_In_Alloca(sz,a)
-#	define mp_alloca_copy(to,a,res,msg)		mp_alloca_size(to,USED(a)) ; res = mp_copy(a,to)
-#	define mp_local_init_copy(t,a,res,msg)	mp_alloca_copy(t, a, res, msg)
+#	define mp_alloca_copy_extrasize(to,a,res,extrasz,msg) \
+											mp_alloca_size(to,USED(a)+(extrasz)) ; res = mp_copy(a,to)
+#	define mp_alloca_copy(to,a,res,msg)		mp_alloca_copy_extrasize(to,a,res,0,msg)
+#	define mp_local_init_copy_extrasize(t,a,res,extrasz,msg) \
+											mp_alloca_copy_extrasize(t, a, res, extrasz, msg)
+#	define mp_local_init_copy(t,a,res,msg)	mp_local_init_copy_extrasize(t,a,res,0,msg)
 #	define mp_local_init_size(t,sz,res)		mp_alloca_size(t,sz) ; res = MP_OKAY
 #	define mp_local_init(t,sz,res)			mp_local_init_size(t,sz,res)
 #	define mp_local_clear(t)		
@@ -160,13 +164,15 @@ extern "C" {
 #	define MP_LOCAL_DEF(x)					mp_int x
 #	define MP_LOCAL_REF(x)					&x
 
-#	define mp_local_init_copy(t,a,res,msg)	res = mp_init_copy(MP_LOCAL_REF(t), a)
+#	define mp_local_init_copy_extrasize(t,a,res,extrasz,msg) \
+											res = mp_init_copy(MP_LOCAL_REF(t), a)
 #	define mp_local_init_size(t,sz,res)		res = mp_init_size(MP_LOCAL_REF(t),sz)
 #	define mp_local_init(t,sz,res)			res = mp_init(MP_LOCAL_REF(t))
 #	define mp_local_clear(t)				mp_clear(MP_LOCAL_REF(t))
 #	define mp_local_assignfrom(a,t)			mp_exch(MP_LOCAL_REF(t), a)
 #endif
 
+#define mp_local_init_copy(t,a,res,msg)		mp_local_init_copy_extrasize(t,a,res,0,msg)
 
 /* otherwise the bits per digit is calculated automatically from the size of a mp_digit */
 #ifndef DIGIT_BIT

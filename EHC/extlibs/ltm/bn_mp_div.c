@@ -16,7 +16,7 @@
  */
 #ifdef __UHC_BUILDS_RTS__
 // 20091207 AD: non small seems to be buggy
-#define BN_MP_DIV_SMALL
+// #define BN_MP_DIV_SMALL
 #endif
 
 #ifdef BN_MP_DIV_SMALL
@@ -167,13 +167,13 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
     return res;
   }
 
-  mp_local_init_size( q, USED(a) + 2, res ) ;
+  mp_local_init_size( q, ALLOC(c) + 2, res ) ;
   if (res != MP_OKAY) {
     return res;
   }
   SET_USED(MP_LOCAL_REF(q),USED(a) + 2);
 
-  int sz = (MAX(USED(a),USED(b)) << 1) + 1 ;
+  int sz = (MAX(USED(a),USED(b)) << 1) + 2 ;
   mp_local_init( t1, sz, res ) ;
   if (res != MP_OKAY) {
     goto LBL_Q;
@@ -184,12 +184,12 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
     goto LBL_T1;
   }
 
-  mp_local_init_copy( x, a, res, "mp_div" ) ;
+  mp_local_init_copy_extrasize( x, a, res, ALLOC(c), "mp_div" ) ;
   if (res != MP_OKAY) {
     goto LBL_T2;
   }
 
-  mp_local_init_copy( y, b, res, "mp_div" ) ;
+  mp_local_init_copy_extrasize( y, b, res, ALLOC(c), "mp_div" ) ;
   if (res != MP_OKAY) {
     goto LBL_X;
   }
@@ -200,6 +200,7 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
   SET_SIGN(MP_LOCAL_REF(y),MP_ZPOS) ;
 
   /* normalize both x and y, ensure that y >= b/2, [b == 2**DIGIT_BIT] */
+  // printf( "mp_div A\n" ) ;
   norm = mp_count_bits(MP_LOCAL_REF(y)) % DIGIT_BIT;
   if (norm < (int)(DIGIT_BIT-1)) {
      norm = (DIGIT_BIT-1) - norm;
@@ -218,10 +219,12 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
   t = USED(MP_LOCAL_REF(y)) - 1;
 
   /* while (x >= y*b**n-t) do { q[n-t] += 1; x -= y*b**{n-t} } */
+  // printf( "mp_div B\n" ) ;
   if ((res = mp_lshd (MP_LOCAL_REF(y), n - t)) != MP_OKAY) { /* y = y*b**{n-t} */
     goto LBL_Y;
   }
 
+  // printf( "mp_div C\n" ) ;
   while (mp_cmp (MP_LOCAL_REF(x), MP_LOCAL_REF(y)) != MP_LT) {
     ++(DIGIT(MP_LOCAL_REF(q),n - t));
     if ((res = mp_sub (MP_LOCAL_REF(x), MP_LOCAL_REF(y), MP_LOCAL_REF(x))) != MP_OKAY) {
@@ -230,6 +233,7 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
   }
 
   /* reset y by shifting it back down */
+  // printf( "mp_div D\n" ) ;
   mp_rshd (MP_LOCAL_REF(y), n - t);
 
   /* step 3. for i from n down to (t + 1) */
@@ -257,6 +261,7 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
      
        do q{i-t-1} -= 1; 
     */
+    // printf( "mp_div E\n" ) ;
     SET_DIGIT(MP_LOCAL_REF(q),i - t - 1,(DIGIT(MP_LOCAL_REF(q),i - t - 1) + 1) & MP_MASK);
     do {
       SET_DIGIT(MP_LOCAL_REF(q),i - t - 1,(DIGIT(MP_LOCAL_REF(q),i - t - 1) - 1) & MP_MASK);
@@ -278,19 +283,23 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
     } while (mp_cmp_mag(MP_LOCAL_REF(t1), MP_LOCAL_REF(t2)) == MP_GT);
 
     /* step 3.3 x = x - q{i-t-1} * y * b**{i-t-1} */
+    // printf( "mp_div F\n" ) ;
     if ((res = mp_mul_d (MP_LOCAL_REF(y), DIGIT(MP_LOCAL_REF(q),i - t - 1), MP_LOCAL_REF(t1))) != MP_OKAY) {
       goto LBL_Y;
     }
 
+    // printf( "mp_div G\n" ) ;
     if ((res = mp_lshd (MP_LOCAL_REF(t1), i - t - 1)) != MP_OKAY) {
       goto LBL_Y;
     }
 
+    // printf( "mp_div H\n" ) ;
     if ((res = mp_sub (MP_LOCAL_REF(x), MP_LOCAL_REF(t1), MP_LOCAL_REF(x))) != MP_OKAY) {
       goto LBL_Y;
     }
 
     /* if x < 0 then { x = x + y*b**{i-t-1}; q{i-t-1} -= 1; } */
+    // printf( "mp_div I\n" ) ;
     if (SIGN(MP_LOCAL_REF(x)) == MP_NEG) {
       if ((res = mp_copy (MP_LOCAL_REF(y), MP_LOCAL_REF(t1))) != MP_OKAY) {
         goto LBL_Y;
@@ -313,6 +322,7 @@ int mp_div (mp_int * a, mp_int * b, mp_int * c, mp_int * d)
   /* get sign before writing to c */
   SET_SIGN(MP_LOCAL_REF(x),USED(MP_LOCAL_REF(x)) == 0 ? MP_ZPOS : SIGN(a));
 
+  // printf( "mp_div J\n" ) ;
   if (c != NULL) {
     mp_clamp (MP_LOCAL_REF(q));
     mp_local_assignfrom(c,q);
