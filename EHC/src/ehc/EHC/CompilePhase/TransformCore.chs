@@ -29,6 +29,8 @@ Core transformations
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.EtaRed}, {%{EH}Core.Trf.ElimTrivApp}, {%{EH}Core.Trf.FindNullaries})
 %%]
+%%[(8 codegen) import({%{EH}Core.Trf.Fusion})
+%%]
 %%[(9 codegen) import({%{EH}Core.Trf.LiftDictFields})
 %%]
 %%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
@@ -48,6 +50,7 @@ cpCore1Trf modNm trfNm
                  u1     = uidChild $ crsiHereUID $ crsi
                  core2  = ( case trfNm of
                               "CER"     -> cmodTrfEtaRed
+                              "CFUSION" -> cmodTrfFusion
                               "CETA"    -> cmodTrfElimTrivApp opts
                               "CCP"     -> cmodTrfConstProp opts
                               "CRU"     -> cmodTrfRenUniq
