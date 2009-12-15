@@ -15,7 +15,7 @@ Simplifies expressions based on their structure & annotation:
 %%% Type based simplifications
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.AnnBasedSimplify} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Binary},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfAnnBasedSimplify)
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnnBasedSimplify} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Bits},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfAnnBasedSimplify)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set)

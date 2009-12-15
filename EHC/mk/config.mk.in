@@ -57,6 +57,13 @@ EXTLIBS_BGC_PKG_NAME		:= @EXTLIBS_BGC_PKG_NAME@
 EXTLIBS_GMP_PKG_NAME		:= @EXTLIBS_GMP_PKG_NAME@
 
 ###########################################################################################
+# naming of files
+###########################################################################################
+
+# name of pkg config file, assumed to be present for each package in its package dir
+UHC_PKG_CONFIGFILE_NAME		:= installed-pkg-config
+
+###########################################################################################
 # inclusion of features
 ###########################################################################################
 

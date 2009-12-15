@@ -27,7 +27,7 @@ JVM compilation
 
 %%[(8 codegen jazy) import({%{EH}Core.ToJazy})
 %%]
-%%[(8 codegen java) import({%{EH}Base.Binary},{%{EH}JVMClass.ToBinary})
+%%[(8 codegen java) import({%{EH}Base.Bits},{%{EH}JVMClass.ToBinary})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,7 +114,7 @@ cpCompileJazyJVM how othModNmL modNm
        ; when (isJust mbClsL && targetIsJVM (ehcOptTarget opts))
               (do { let (mainNm,clss1) = fromJust mbClsL
                         clss2          = concatMap jvmclass2binary clss1
-                        variant        = ehcenvVariant (ehcOptEnvironment opts)
+                        variant        = Cfg.installVariant opts
                   ; cpMsg modNm VerboseALot "Emit Jazy"
                   ; when (ehcOptVerbosity opts >= VerboseDebug)
                          (lift $ putStrLn (show modNm ++ " JVM classes: " ++ show (map fst clss2)))
@@ -140,7 +140,7 @@ cpCompileJazyJVM how othModNmL modNm
                               ; cpLinkJar (Just fpManifest) (modNm : othModNmL2) (JarMk_Exec modNm fp)
                               }
                         where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
-                              libJarL = map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "lib" ++ l ++ ".jar") (["jazy"] ++ pkgNmL)
+                              libJarL = map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB variant "" ++ "lib" ++ l ++ ".jar") (["jazy"] ++ pkgNmL)
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )
                                    , ( "Main-Class", show mainNm )

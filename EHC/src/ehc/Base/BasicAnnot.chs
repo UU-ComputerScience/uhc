@@ -11,7 +11,7 @@
 %%[(8 codegen) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Binary})
+%%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

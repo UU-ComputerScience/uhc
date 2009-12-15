@@ -2,7 +2,7 @@
 %%% Interface to binary file by compositionally glueing bytes (and words, ...)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Base.Binary}
+%%[(8 codegen) module {%{EH}Base.Bits}
 %%]
 
 %%[(8 codegen) import(Data.Word,Data.Int,Data.Bits,Data.Char)

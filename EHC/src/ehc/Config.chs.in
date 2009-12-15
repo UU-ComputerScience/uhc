@@ -73,13 +73,39 @@ verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Install locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(installRoot)
+installRoot :: EHCOpts -> String
+installRoot opts
+%%[[8
+  = envroot
+%%][99
+  = maybe envroot id (ehcOptCfgInstallRoot opts)
+%%]]
+  where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
+%%]
+
+%%[(8 codegen) export(installVariant)
+installVariant :: EHCOpts -> String
+installVariant opts
+%%[[8
+  = envvariant
+%%][99
+  = maybe envvariant id (ehcOptCfgInstallVariant opts)
+%%]]
+  where envvariant = ehcenvVariant $ ehcOptEnvironment opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(mkInstallFilePrefix)
 mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
 mkInstallFilePrefix opts whatfile variant pkg
-  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts) pkg
+  = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

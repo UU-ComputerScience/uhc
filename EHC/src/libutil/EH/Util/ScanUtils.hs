@@ -11,6 +11,7 @@ module EH.Util.ScanUtils
   , isLF, isStr, isStrQuote
   , isWhite, isBlack
   , isVarStart, isVarRest
+  
   )
   where
 
@@ -22,6 +23,7 @@ import qualified Data.Set as Set
 import EH.Util.Pretty
 
 import UU.Parsing
+import EH.Util.ParseUtils
 import UU.Scanner.Position( noPos, Pos(..), Position(..) )
 import UU.Scanner.GenToken
 
@@ -122,6 +124,7 @@ data ScanOpts
         ,   scoLitmode          ::  !Bool                   -- do literal scanning
         ,   scoVerbOpenClose    ::  ![(String,String)]      -- open/close pairs used for verbatim text
         ,   scoAllowQualified   ::  !Bool  					-- allow qualified variations, i.e. prefixing with "XXX."
+        ,   scoAllowFloat       ::  !Bool  					-- allow float notation, i.e. numbers with dots inside
         }
 
 defaultScanOpts :: ScanOpts
@@ -141,6 +144,7 @@ defaultScanOpts
         ,   scoLitmode          =   False
         ,   scoVerbOpenClose    =   []
         ,   scoAllowQualified   =	True
+        ,   scoAllowFloat       =   True
         }
 
 -------------------------------------------------------------------------

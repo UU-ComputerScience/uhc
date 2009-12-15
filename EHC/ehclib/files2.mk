@@ -128,23 +128,31 @@ ehclib-variant-dflt: \
 	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) --meta-export-env ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
+	        mkdir -p $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} ;\
+	        hsFiles="`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'`" ; \
+	        ( echo $${hsFiles} | \
+	            sed -e 's+^+exposed-modules: +' \
+	                -e "s+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg}/++g" \
+	                -e 's+\.[^.]*hs++g' \
+	                -e 's+/+.+g' ; \
+	        ) > $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/$(UHC_PKG_CONFIGFILE_NAME) ; \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          --cpp \
 	          $(EHCLIB_DEBUG_OPTS) \
 	          --compile-only \
-	          --hide-all-packages \
+	          --pkg-hide-all \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
 	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 	          --pkg-build=$${pkg} \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
-	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'` \
+	          $${hsFiles} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'` \
 	          +RTS -K30m ; \
 	        err=$$? ; \
 	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
-	        pkgs="$${pkgs} --package $${pkg}" ; \
+	        pkgs="$${pkgs} --pkg-expose $${pkg}" ; \
 	      done \
 	     ,)
 

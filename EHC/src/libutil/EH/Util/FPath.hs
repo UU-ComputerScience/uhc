@@ -24,6 +24,7 @@ module EH.Util.FPath
   , SearchPath, FileSuffixes
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
+  , searchFPathFromLoc
   , searchLocationsForReadableFiles, searchPathForReadableFiles, searchPathForReadableFile
   
   , fpathEnsureExists
@@ -51,7 +52,7 @@ filePathMkPrefix d@(_:_) | last d /= '/'    = d ++ "/"
 filePathMkPrefix d                          = d
 
 filePathUnPrefix :: String -> String
-filePathUnPrefix d | isJust il && l == '/'  = i
+filePathUnPrefix d | isJust il && l == '/'  = filePathUnPrefix i
   where il = initlast d
         (i,l) = fromJust il
 filePathUnPrefix d                          = d
@@ -290,8 +291,11 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchLocationsForReadableFiles :: (loc -> String) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
-searchLocationsForReadableFiles getdir stopAtFirst locs suffs fp
+searchFPathFromLoc :: String -> FPath -> [(String,FPath)]
+searchFPathFromLoc loc fp = [(loc,fpathPrependDir loc fp)]
+
+searchLocationsForReadableFiles :: (loc -> FPath -> [(loc,FPath)]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
+searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
   = let select stop f fps
           = foldM chk [] fps
           where chk r fp
@@ -307,19 +311,19 @@ searchLocationsForReadableFiles getdir stopAtFirst locs suffs fp
                  then return [(fp',loc)]
                  else return []
                }
-        tryToOpenWithSuffs loc suffs fp
+        tryToOpenWithSuffs suffs (loc,fp)
           = case suffs of
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
                       (\(ms,f) -> tryToOpen loc ms f)
                       ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
         tryToOpenInDir loc
-          = select True (tryToOpenWithSuffs loc suffs) [fpathPrependDir (getdir loc) fp {-,fpathSetDir dir fp -}]
+          = select True (tryToOpenWithSuffs suffs) (getfp loc fp)
      in select True tryToOpenInDir locs
 
 searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
 searchPathForReadableFiles stopAtFirst locs suffs fp
-  = fmap (map fst) $ searchLocationsForReadableFiles id stopAtFirst locs suffs fp
+  = fmap (map fst) $ searchLocationsForReadableFiles searchFPathFromLoc stopAtFirst locs suffs fp
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp

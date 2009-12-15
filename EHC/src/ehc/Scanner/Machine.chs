@@ -215,17 +215,17 @@ scan opts pos input
                        (toks,drops) = tok name p s'
                    in toks ++ doScan (advc drops $ foldl adv p name) (drop drops s')
 %%]
-%%[5.isDigit
-     | isDigit c = let (tktype,number,width,s') = getNumber cs
-                   in  valueToken tktype number p : doScan (advc width p) s'
-%%]
-%%[8 -5.isDigit
-     | isDigit c
+%%[8
+     | scoAllowFloat opts && isDigit c
          = let (tktype,(number,mantissa,exp),w,cs') = getRational' cs
                m = maybe "" (\mant -> "." ++ mant)
                e = maybe "" (\(sign,exp) -> "E" ++ maybe "" id sign ++ exp)
            in  valueToken tktype (number ++ m mantissa ++ e exp) p
                  : doScan (advc w p) cs'
+%%]
+%%[5
+     | isDigit c = let (tktype,number,width,s') = getNumber cs
+                   in  valueToken tktype number p : doScan (advc width p) s'
 %%]
 %%[5
      | otherwise = errToken ("Unexpected character " ++ show c) p
