@@ -30,6 +30,7 @@ module EH.Util.FPath
   , fpathEnsureExists
   
   , filePathMkPrefix, filePathUnPrefix
+  , filePathCoalesceSeparator
   , filePathMkAbsolute, filePathUnAbsolute
   )
 where
@@ -56,6 +57,11 @@ filePathUnPrefix d | isJust il && l == '/'  = filePathUnPrefix i
   where il = initlast d
         (i,l) = fromJust il
 filePathUnPrefix d                          = d
+
+filePathCoalesceSeparator :: String -> String
+filePathCoalesceSeparator ('/':d@('/':_)) = filePathCoalesceSeparator d
+filePathCoalesceSeparator (c:d) = c : filePathCoalesceSeparator d
+filePathCoalesceSeparator d     = d
 
 -------------------------------------------------------------------------------------------
 -- Making into absolute path and inverse, where absolute means a heading '/'

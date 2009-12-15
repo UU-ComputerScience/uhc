@@ -57,6 +57,8 @@ data ImmediateQuitOption
   | ImmediateQuitOption_Meta_Targets                        -- print all codegeneration targets (empty if no codegen)
   | ImmediateQuitOption_Meta_TargetDefault                  -- print the default codegeneration target (dummy if no codegen)
 %%[[99
+  | ImmediateQuitOption_Meta_Pkgdir_System                  -- print system package dir
+  | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
   | ImmediateQuitOption_NumericVersion                      -- print numerical version, for external version comparison
   | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
   | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
@@ -262,10 +264,11 @@ data EHCOpts
       ,  ehcOptPkgDb          ::  PackageDatabase	-- package database to be used for searching packages
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
+      ,  ehcOptUserDir        ::  String            -- user dir for storing user specific stuff
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude                     -- use & assume presence of prelude
                               ::  Bool
-      ,  ehcOptHideAllPackages::  Bool              -- hide all implicitly used packages
+      -- ,  ehcOptHideAllPackages::  Bool              -- hide all implicitly used packages
       ,  ehcOptPackageSearchFilter	 ::  [PackageSearchFilter]	-- description of what to expose from package database
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
       ,  ehcOptOutputPkgLibDir::  Maybe String      -- where to put output the lib part of a package, instead of same dir as input file
@@ -449,9 +452,10 @@ defaultEHCOpts
       ,  ehcOptPkgDb          	=	emptyPackageDatabase
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
+      ,  ehcOptUserDir          =   ""
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
-      ,  ehcOptHideAllPackages  =   False
+      -- ,  ehcOptHideAllPackages  =   False
       ,  ehcOptPackageSearchFilter
       							=	pkgSearchFilter PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
       ,  ehcOptOutputDir        =   Nothing
@@ -581,13 +585,15 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-target-default"]   (NoArg oTargetDflt)             "meta: print the default codegeneration target (then stop)"
      ,  Option ""   ["meta-targets"]     (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
 %%[[99
-     ,  Option ""   ["meta-export-env"]  (OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop)"
-     ,  Option ""   ["meta-dir-env"]     (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop)"
-     ,  Option ""   ["pkg-build"]        (ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
-     ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")      "pkg: where to put the lib part of a package"
-     ,  Option ""   ["pkg-expose"]       (ReqArg oExposePackage "package")    "expose/use package"
-     ,  Option ""   ["pkg-hide"]         (ReqArg oHidePackage   "package")    "hide package"
-     ,  Option ""   ["pkg-hide-all"]     (NoArg oHideAllPackages)             "hide all (implicitly) assumed/used packages"
+     ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
+     ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
+     ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
+     ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
+     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
+     ,  Option ""   ["pkg-build-libdir"] 	(ReqArg oOutputPkgLibDir "dir")      "pkg: where to put the lib part of a package"
+     ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "expose/use package"
+     ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "hide package"
+     ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "hide all (implicitly) assumed/used packages"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")            "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant")     "cfg: installation variant (to be used only by wrapper script)"
 %%]]
@@ -777,13 +783,15 @@ ehcCmdLineOpts
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
          oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
          oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
+         oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
+         oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
          oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
                                         , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_ExposePkg [s]
                                         }
          oHidePackage         s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_HidePkg [s]
                                         }
-         oHideAllPackages       o   = o { ehcOptHideAllPackages             = True
-                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ [PackageSearchFilter_HideAll]
+         oHideAllPackages       o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ [PackageSearchFilter_HideAll]
+                                        -- , ehcOptHideAllPackages             = True
                                         }
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                         , ehcOptDoLinking                   = False

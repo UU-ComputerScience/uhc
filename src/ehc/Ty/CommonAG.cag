@@ -62,6 +62,7 @@ SEM Ty
 SEM Ty
   | App         loc         .   appIsLikeProd   :   Bool
                 loc         .   appIsArrow      :   Bool
+                loc         .   appIsRec        :   Bool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

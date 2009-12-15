@@ -166,11 +166,16 @@ pkgMpFromDirFile order pkgfp
 -- read content of a dir containing package dirs
 pkgMpFromDir :: Int -> FilePath -> IO PackageMp
 pkgMpFromDir order fp
-  = do dirContent <- getDirectoryContents fp
-       -- putStrLn (show fp)
-       -- putStrLn (show dirContent)
-       mps <- mapM (\f -> pkgMpFromDirFile order $ fpathSetDir fp $ fpathSetBase f emptyFPath) dirContent
-       return $ pkgMpUnions mps
+  = do { isDir <- doesDirectoryExist fp
+       ; if isDir
+         then do { dirContent <- getDirectoryContents fp
+                 -- putStrLn (show fp)
+                 -- putStrLn (show dirContent)
+                 ; mps <- mapM (\f -> pkgMpFromDirFile order $ fpathSetDir fp $ fpathSetBase f emptyFPath) dirContent
+                 ; return $ pkgMpUnions mps
+                 }
+         else return Map.empty
+       }
 
 -- read content of multiple dir containing package dirs
 pkgDbFromDirs :: [FilePath] -> IO PackageDatabase
