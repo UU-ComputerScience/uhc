@@ -91,6 +91,8 @@ main
 %%]]
 %%[[99
                                 where p = mkFPath progName
+%%][101
+                                where p = mkFPath "uhc"		-- hardbaked name
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts2          = foldl (flip ($)) opts1 o
@@ -149,7 +151,7 @@ handleImmQuitOption immq opts
                                     ) ehcCmdLineOpts)
 %%][8
               ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName
+                                    ++ "\n\nUsage: " ++ fpathToStr (ehcProgName opts)
                                     ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
                                     )
                                     ehcCmdLineOpts)
@@ -314,10 +316,9 @@ doCompilePrepare fnL@(fn:_) opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs
-                    (   [ filePathUnPrefix
-                          -- $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) ""
-                          $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.USER_PKG installVariant (show (ehcOptTarget opts)) ""
-                        | d <- ehcOptLibFileLocPath opts
+                    (   [ filePathCoalesceSeparator $ filePathUnPrefix
+                          $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
+                        | d <- ehcOptPkgdirLocPath opts
                         ]
                      {-
                      ++ [ filePathUnPrefix
