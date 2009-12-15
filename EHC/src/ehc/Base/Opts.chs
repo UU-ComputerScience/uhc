@@ -261,6 +261,7 @@ data EHCOpts
 %%[[99
       ,  ehcOptCheckVersion   ::  Bool				-- use out of date of compiler version when determining need for recompilation
       ,  ehcOptLibFileLocPath ::  FileLocPath
+      ,  ehcOptPkgdirLocPath  ::  FileLocPath
       ,  ehcOptPkgDb          ::  PackageDatabase	-- package database to be used for searching packages
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
@@ -449,6 +450,7 @@ defaultEHCOpts
 %%[[99
       ,  ehcOptCheckVersion     =   True
       ,  ehcOptLibFileLocPath   =   []
+      ,  ehcOptPkgdirLocPath    =   []
       ,  ehcOptPkgDb          	=	emptyPackageDatabase
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
@@ -489,7 +491,7 @@ ehcCmdLineOpts
 %%[[1
      ,  Option "t"  ["target"]           (OptArg oTarget "")                  "code generation not available"
 %%][(8 codegen)
-     ,  Option "t"  ["target"]           (OptArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
+     ,  Option "t"  ["target"]           (ReqArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
@@ -581,9 +583,9 @@ ehcCmdLineOpts
                                                                               "emit derivation tree on .lhs file; f=final, i=infer, default=f; p=paper size (0=a0,...; <n>m=2^<n> meter), dflt=2; f=show subsumption"
 %%][100
 %%]]
-     ,  Option ""   ["meta-variant"]     (NoArg oVariant)                     "meta: print variant (then stop)"
-     ,  Option ""   ["meta-target-default"]   (NoArg oTargetDflt)             "meta: print the default codegeneration target (then stop)"
-     ,  Option ""   ["meta-targets"]     (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
+     ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     "meta: print variant (then stop)"
+     ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
+     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
 %%[[99
      ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
      ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
@@ -594,11 +596,12 @@ ehcCmdLineOpts
      ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "expose/use package"
      ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "hide package"
      ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "hide all (implicitly) assumed/used packages"
-     ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")            "cfg: installation root (to be used only by wrapper script)"
-     ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant")     "cfg: installation variant (to be used only by wrapper script)"
+     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "additional package search directories, each dir must have subdir lib/<target>/pkg (this may change)"
+     ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
+     ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
 %%]]
 %%[[(8 codegen)
-     ,  Option ""   ["tycore"]           (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
+     ,  Option ""   ["tycore"]              (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
 %%]]
      ]
 %%]
@@ -654,9 +657,7 @@ ehcCmdLineOpts
 %%[[1
          oTarget     _   o =  o
 %%][(8 codegen)
-         oTarget     ms  o =  case ms of
-                                Just t -> o { ehcOptTarget = Map.findWithDefault defaultTarget t supportedTargetMp }
-                                _      -> o
+         oTarget      s  o =  o { ehcOptTarget = Map.findWithDefault defaultTarget s supportedTargetMp }
 %%]]
 %%[[1
          oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Targets       }
@@ -777,6 +778,7 @@ ehcCmdLineOpts
          oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_NumericVersion }
          oUsrFileLocPath      s o   = o { ehcOptImportFileLocPath           = ehcOptImportFileLocPath o ++ mkFileLocPath s }
          oLibFileLocPath      s o   = o { ehcOptLibFileLocPath              = ehcOptLibFileLocPath o ++ mkFileLocPath s }
+         oPkgdirLocPath       s o   = o { ehcOptPkgdirLocPath               = ehcOptPkgdirLocPath o ++ mkFileLocPath s }
          oNoPrelude             o   = o { ehcOptUseAssumePrelude            = False   }
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }
