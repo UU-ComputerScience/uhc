@@ -326,8 +326,7 @@ doCompilePrepare fnL@(fn:_) opts
                      -}
                      {-
                      -}
-                     ++ [ filePathUnPrefix
-                          $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
+                     ++ [ filePathUnPrefix d
                         | d <- [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
