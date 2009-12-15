@@ -47,7 +47,7 @@ Translation to another AST
 -- Jazy/JVM semantics
 %%[(8 codegen jazy) import({%{EH}Core.ToJazy})
 %%]
-%%[(8 codegen java) import({%{EH}Base.Binary},{%{EH}JVMClass.ToBinary})
+%%[(8 codegen java) import({%{EH}Base.Bits},{%{EH}JVMClass.ToBinary})
 %%]
 
 -- Alternative backends

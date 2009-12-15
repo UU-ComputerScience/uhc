@@ -39,6 +39,11 @@
 %%[50 import({%{EH}Ty.Trf.Instantiate})
 %%]
 
+%%[8 import({%{EH}Base.FileSearchLocation}) export(module {%{EH}Base.FileSearchLocation})
+%%]
+
+%%[99 import(qualified {%{EH}ConfigInstall} as Cfg)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Option after which its handling the compiler quits immediately
@@ -69,68 +74,6 @@ data InOrOutputFor
   | OutputFor_Pkg
   | InputFrom_Loc FileLoc
 %%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Kind of search path location
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[99 export(FileLocKind(..))
-data FileLocKind
-  = FileLocKind_Dir									-- directory
-  | FileLocKind_Pkg	PkgName							-- package
-
-instance Show FileLocKind where
-  show  FileLocKind_Dir		= "directory"
-  show (FileLocKind_Pkg p)	= "package: " ++ p
-%%]
-
-%%[8.FileLoc export(FileLoc,filelocDir,emptyFileLoc)
-type FileLoc = String
-
-emptyFileLoc :: FileLoc
-emptyFileLoc = ""
-
-filelocDir :: FileLoc -> String
-filelocDir = id
-%%]
-
-%%[99 -8.FileLoc export(FileLoc(..),emptyFileLoc)
-data FileLoc
-  = FileLoc
-      {	filelocKind		:: FileLocKind
-      , filelocDir		:: String
-      }
-
-instance Show FileLoc where
-  show (FileLoc k d) = d ++ " (" ++ show k ++ ")"
-
-emptyFileLoc :: FileLoc
-emptyFileLoc = FileLoc FileLocKind_Dir ""
-%%]
-
-%%[8 export(mkDirFileLoc)
-mkDirFileLoc
-%%[[8
-  = id
-%%][99
-  = FileLoc FileLocKind_Dir
-%%]]
-%%]
-
-%%[99 export(mkPkgFileLoc)
-mkPkgFileLoc :: PkgName -> String -> FileLoc
-mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
-%%]
-
-%%[99 export(filelocIsPkg)
-filelocIsPkg :: FileLoc -> Bool
-filelocIsPkg (FileLoc (FileLocKind_Pkg _) _) = True
-filelocIsPkg _                               = False
-%%]
-
-%%[8 export(FileLocPath)
-type FileLocPath = [FileLoc]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -316,17 +259,21 @@ data EHCOpts
 %%[[99
       ,  ehcOptCheckVersion   ::  Bool				-- use out of date of compiler version when determining need for recompilation
       ,  ehcOptLibFileLocPath ::  FileLocPath
+      ,  ehcOptPkgDb          ::  PackageDatabase	-- package database to be used for searching packages
       ,  ehcOptLibPackages    ::  [String]
       ,  ehcProgName          ::  FPath             -- name of this program
       ,  ehcOptCPP            ::  Bool              -- do preprocess with C preprecessor CPP
       ,  ehcOptUseAssumePrelude                     -- use & assume presence of prelude
                               ::  Bool
       ,  ehcOptHideAllPackages::  Bool              -- hide all implicitly used packages
+      ,  ehcOptPackageSearchFilter	 ::  [PackageSearchFilter]	-- description of what to expose from package database
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
       ,  ehcOptOutputPkgLibDir::  Maybe String      -- where to put output the lib part of a package, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
       ,  ehcOptPkg            ::  Maybe PkgOption	-- package building (etc) option
+      ,  ehcOptCfgInstallRoot        ::  Maybe String      -- the directory where the installation resides; overrides ehcenvInstallRoot
+      ,  ehcOptCfgInstallVariant     ::  Maybe String      -- the installation variant; overrides ehcenvVariant
 %%]]
       }
 %%]
@@ -499,16 +446,21 @@ defaultEHCOpts
 %%[[99
       ,  ehcOptCheckVersion     =   True
       ,  ehcOptLibFileLocPath   =   []
+      ,  ehcOptPkgDb          	=	emptyPackageDatabase
       ,  ehcOptLibPackages      =   []
       ,  ehcProgName            =   emptyFPath
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
       ,  ehcOptHideAllPackages  =   False
+      ,  ehcOptPackageSearchFilter
+      							=	pkgSearchFilter PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
       ,  ehcOptOutputDir        =   Nothing
       ,  ehcOptOutputPkgLibDir  =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
       ,  ehcOptPkg              =   Nothing
+      ,  ehcOptCfgInstallRoot   =   Nothing
+      ,  ehcOptCfgInstallVariant=   Nothing
 %%]]
       }
 %%]
@@ -615,8 +567,8 @@ ehcCmdLineOpts
      
      -- ,  Option ""   ["use-inplace"]      (boolArg oUseInplace)                "use the inplace runtime libraries"
 
-     ,  Option ""   ["package"]          (ReqArg oPackage "package")          "expose/use package"
-     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "hide all implicitly assumed/used packages"
+     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
+     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
      ,  Option ""   ["odir"]             (ReqArg oOutputDir "dir")            "base directory for generated files. Implies --compile-only"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
 %%]]
@@ -632,7 +584,12 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-export-env"]  (OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop)"
      ,  Option ""   ["meta-dir-env"]     (NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop)"
      ,  Option ""   ["pkg-build"]        (ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
-     ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")            "pkg: where to put the lib part of a package"
+     ,  Option ""   ["pkg-build-libdir"] (ReqArg oOutputPkgLibDir "dir")      "pkg: where to put the lib part of a package"
+     ,  Option ""   ["pkg-expose"]       (ReqArg oExposePackage "package")    "expose/use package"
+     ,  Option ""   ["pkg-hide"]         (ReqArg oHidePackage   "package")    "hide package"
+     ,  Option ""   ["pkg-hide-all"]     (NoArg oHideAllPackages)             "hide all (implicitly) assumed/used packages"
+     ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")            "cfg: installation root (to be used only by wrapper script)"
+     ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant")     "cfg: installation variant (to be used only by wrapper script)"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["tycore"]           (OptArg oUseTyCore "opt[,...]")      ("temporary/development: use typed core. opts: " ++ (concat $ intersperse " " $ Map.keys tycoreOptMp))
@@ -820,8 +777,14 @@ ehcCmdLineOpts
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
          oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
          oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
-         oPackage             s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s] }
-         oHideAllPackages       o   = o { ehcOptHideAllPackages             = True }
+         oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
+                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_ExposePkg [s]
+                                        }
+         oHidePackage         s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_HidePkg [s]
+                                        }
+         oHideAllPackages       o   = o { ehcOptHideAllPackages             = True
+                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ [PackageSearchFilter_HideAll]
+                                        }
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                         , ehcOptDoLinking                   = False
                                         }
@@ -830,6 +793,8 @@ ehcCmdLineOpts
          oPkgBuild            s o   = o { ehcOptPkg                         = Just (PkgOption_Build s)
                                         , ehcOptDoLinking                   = False
                                         }
+         oCfgInstallRoot      s o   = o { ehcOptCfgInstallRoot              = Just s }
+         oCfgInstallVariant   s o   = o { ehcOptCfgInstallVariant           = Just s }
 %%]]
 %%[[(99 hmtyinfer)
          oDerivTree  ms  o =  case ms of

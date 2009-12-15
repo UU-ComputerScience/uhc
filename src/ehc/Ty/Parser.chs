@@ -18,7 +18,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 hmtyinfer || hmtyast)
-type P p = PlainParser Token p
+-- type P p = PlainParser Token p
 %%]
 
 %%[(20 hmtyinfer || hmtyast)

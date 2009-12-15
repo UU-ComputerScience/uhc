@@ -533,7 +533,7 @@ typedef struct GB_Node {
 #define GB_LTM_Int_Used(n)		(((n))->content.mpz.used)
 #define GB_LTM_Int_Sign(n)		(((n))->content.mpz.sign)
 #define GB_LTM_Int_Digits(n)	(((n))->content.mpz.digits)
-#define GB_LTM_Int_Alloc(n)		((GB_NH_NrFlds(((n))->header) - 1) << 1)
+#define GB_LTM_Int_Alloc(n)		Cast(HalfWord,((GB_NH_NrFlds(((n))->header) - 1) << 1))
 #endif
 %%]
 
