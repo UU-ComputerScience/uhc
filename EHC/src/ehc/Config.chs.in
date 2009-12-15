@@ -108,6 +108,18 @@ mkInstallFilePrefix opts whatfile variant pkg
   = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
 %%]
 
+%%[(8 codegen) export(mkInstallPkgdirSystem)
+mkInstallPkgdirSystem :: EHCOpts -> String
+mkInstallPkgdirSystem opts
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG (installVariant opts) ""
+%%]
+
+%%[(8 codegen) export(mkInstallPkgdirUser)
+mkInstallPkgdirUser :: EHCOpts -> String
+mkInstallPkgdirUser opts
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG "" (show $ ehcOptTarget opts) ""
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Cmds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

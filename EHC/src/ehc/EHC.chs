@@ -94,24 +94,33 @@ main
 %%]]
                  oo@(o,n,errs)  = getOpt Permute ehcCmdLineOpts args
                  opts2          = foldl (flip ($)) opts1 o
-         ;  case ehcOptImmQuit opts2 of
-              Just immq     -> handleImmQuitOption immq opts2
+%%[[1
+         ;  let opts3 = opts2
+%%][99
+         ;  userDir <- ehcenvDir (envkey opts2)
+         ;  let opts3 = opts2 {ehcOptUserDir = userDir}
+%%]]
+         ;  case ehcOptImmQuit opts3 of
+              Just immq     -> handleImmQuitOption immq opts3
               _ | null errs ->
 %%[[1
-                               doCompileRun (if null n then "" else head n) opts2
+                               doCompileRun (if null n then "" else head n) opts3
 %%][8
-                               unless (null n) (doCompileRun n opts2)
+                               unless (null n) (doCompileRun n opts3)
 %%][99
-                               do { mbEnv <- importEHCEnvironment (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts2) Cfg.ehcDefaultVariant)
-                                  ; let opts3 = maybe opts2 (\e -> opts2 {ehcOptEnvironment = e}) mbEnv
+                               do { mbEnv <- importEHCEnvironment (envkey opts3)
+                                  ; let opts4 = maybe opts3 (\e -> opts3 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
-                                  ; unless (null n) (doCompileRun n opts3)
+                                  ; unless (null n) (doCompileRun n opts4)
                                   }
 %%]]
                 | otherwise -> do { putStr (head errs)
                                   ; exitFailure
                                   }
          }
+%%[[99
+  where envkey opts = mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,6 +189,14 @@ handleImmQuitOption immq opts
                     _            -> (ehcenvInstallRoot env,ehcenvVariant env)
       ImmediateQuitOption_Meta_DirEnv
         -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
+              ; putStrLn d
+              }
+      ImmediateQuitOption_Meta_Pkgdir_System
+        -> do { let d = Cfg.mkInstallPkgdirSystem opts
+              ; putStrLn d
+              }
+      ImmediateQuitOption_Meta_Pkgdir_User
+        -> do { let d = Cfg.mkInstallPkgdirUser opts
               ; putStrLn d
               }
 %%]]
@@ -294,14 +311,24 @@ doCompilePrepare fnL@(fn:_) opts
 %%[[99
              installRoot            = Cfg.installRoot    opts
              installVariant         = Cfg.installVariant opts
+       -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
+       ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs
                     (   [ filePathUnPrefix
                           -- $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) ""
                           $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.USER_PKG installVariant (show (ehcOptTarget opts)) ""
                         | d <- ehcOptLibFileLocPath opts
                         ]
+                     {-
                      ++ [ filePathUnPrefix
                           $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
+                        ]
+                     -}
+                     {-
+                     -}
+                     ++ [ filePathUnPrefix
+                          $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
+                        | d <- [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
        ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (ehcOptPackageSearchFilter opts) pkgDb1
@@ -327,34 +354,34 @@ doCompilePrepare fnL@(fn:_) opts
                               -}
                               ++ [fileLocPkgDb]
 %%]]
-             opts2          = opts { ehcOptImportFileLocPath = searchPath
+             opts3          = opts2 { ehcOptImportFileLocPath = searchPath
 %%[[99
-                                   , ehcOptPkgDb = pkgDb3
+                                    , ehcOptPkgDb = pkgDb3
 %%]]
-                                   }
+                                    }
 {- this does not work in ghc 6.8.2
              crsi           = emptyEHCompileRunStateInfo
-                                { crsiOpts		 =	 opts2
-                                , crsiHSInh      =   initialHSSem opts2
-                                , crsiEHInh      =   initialEHSem opts2 fp
+                                { crsiOpts		 =	 opts3
+                                , crsiHSInh      =   initialHSSem opts3
+                                , crsiEHInh      =   initialEHSem opts3 fp
 %%[[(8 codegen)
-                                , crsiCoreInh    =   initialCore2GrSem opts2
+                                , crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
 %%[[20
-                                , crsiHIInh      =   initialHISem opts2
-                                , crsiHSModInh   =   initialHSSemMod opts2
+                                , crsiHIInh      =   initialHISem opts3
+                                , crsiHSModInh   =   initialHSSemMod opts3
 %%]]
                                 }
 -}
-             crsi           =   (EHCompileRunStateInfo opts2
+             crsi           =   (EHCompileRunStateInfo opts3
                                                        uidStart uidStart
-                                                       (initialHSSem opts2) (initialEHSem opts2 fp)
+                                                       (initialHSSem opts3) (initialEHSem opts3 fp)
 %%[[(8 codegen)
-                                                       (initialCore2GrSem opts2)
+                                                       (initialCore2GrSem opts3)
 %%]]
 %%[[20
                                                        Nothing
-                                                       (initialHISem opts2) (initialHSSemMod opts2)
+                                                       (initialHISem opts3) (initialHSSemMod opts3)
                                                        Map.empty Map.empty defaultOptim
 %%]]
 %%[[(20 codegen)
@@ -365,7 +392,7 @@ doCompilePrepare fnL@(fn:_) opts
 %%]]
                                 )
              initialState   = mkEmptyCompileRun topModNm crsi
-       ; return $ Just (opts2,fpL,topModNmL,initialState)
+       ; return $ Just (opts3,fpL,topModNmL,initialState)
        }
 
 doCompileRun :: [String] -> EHCOpts -> IO ()
