@@ -96,7 +96,7 @@ AC_SUBST(SVN_VERSION_EXISTS,$svnVersionExists)
 AC_SUBST(SVN_VERSION_CMD,$svnVersionCmd)
 AC_SUBST(SVN_REVISION,$svnRevision)
 
-### enable options
+### enable options: java
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
 AC_SUBST(ENABLE_JAVA,$enableJava)
 if test x$enableJava = xyes
@@ -128,6 +128,11 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
+### enable options: llvm
+AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
+AC_SUBST(ENABLE_LLVM,$enableLlvm)
+
+### enable options: clr
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
@@ -506,8 +511,11 @@ AC_ARG_WITH(llvm-as,
                 [Path to the LLVM Assembler])],
 [ llvmAs="$withval" ],
 [ 
-  if test "$LLVM_AS" = ""; then
-    AC_PATH_PROG(llvmAs,llvm-as)
+  if test "x$LLVM_AS" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
+    fi
   else
     llvmAs=$LLVM_AS
   fi
@@ -521,8 +529,11 @@ AC_ARG_WITH(opt,
                 [Path to the LLVM bitcode optimizer])],
 [ llvmOpt="$withval" ],
 [
-  if test "$LLVM_OPT" = ""; then
-    AC_PATH_PROG(llvmOpt,opt)
+  if test "x$LLVM_OPT" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmOpt,opt)
+    fi
   else
     llvmOpt=$LLVM_OPT
   fi
@@ -536,14 +547,24 @@ AC_ARG_WITH(llc,
                 [Path to the LLVM Compiler])],
 [ llvmLlc="$withval" ],
 [
-  if test "$LLC" = ""; then
-    AC_PATH_PROG(llvmLlc, llc)
+  if test "x$LLC" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmLlc,llc)
+    fi
   else
     llvmLlc=$LLC
   fi
 ]
 )
 AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+
+if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+then
+  llvmExists=yes
+else
+  llvmExists=no
+fi
 
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
@@ -1070,6 +1091,28 @@ then
   echo "  javac is available?           : $javacExists"
   if test "x$javacExists" = "xyes" ;then 
   echo "    command for javac           : $javacCmd"
+  fi
+fi
+
+if test x$enableLlvm = xyes
+then
+  echo "  llvm is available?            : $llvmExists"
+  echo "    command for llc             : $llvmLlc"
+  if test -x $llvmLlc
+  then
+    echo "    version                     :" `$llvmLlc -version`
+  else
+    echo "    **** ERROR **** : llc is not available and/or executable"
+  fi
+  echo "    command for llvm-as         : $llvmAs"
+  if test ! -x $llvmAs
+  then
+    echo "    **** ERROR **** : llvm-as is not available and/or executable"
+  fi
+  echo "    command for opt             : $llvmOpt"
+  if test ! -x $llvmOpt
+  then
+    echo "    **** ERROR **** : opt is not available and/or executable"
   fi
 fi
 

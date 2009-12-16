@@ -680,6 +680,7 @@ javacCmd
 jarCmd
 JAVAC_CMD
 JAR_CMD
+ENABLE_LLVM
 ENABLE_CLR
 ranlibCmd
 RANLIB_CMD
@@ -1354,6 +1355,7 @@ Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
   --enable-java           include java code generation
+  --enable-llvm           include llvm code generation
   --enable-clr            include clr code generation
 
 Optional Packages:
@@ -2200,7 +2202,7 @@ SVN_VERSION_CMD=$svnVersionCmd
 SVN_REVISION=$svnRevision
 
 
-### enable options
+### enable options: java
 # Check whether --enable-java was given.
 if test "${enable_java+set}" = set; then
   enableval=$enable_java; enableJava=yes
@@ -2345,6 +2347,18 @@ echo "$as_me: error:
 
 fi
 
+### enable options: llvm
+# Check whether --enable-llvm was given.
+if test "${enable_llvm+set}" = set; then
+  enableval=$enable_llvm; enableLlvm=yes
+else
+  enableLlvm=no
+fi
+
+ENABLE_LLVM=$enableLlvm
+
+
+### enable options: clr
 # Check whether --enable-clr was given.
 if test "${enable_clr+set}" = set; then
   enableval=$enable_clr; enableClr=yes
@@ -4155,8 +4169,11 @@ if test "${with_llvm_as+set}" = set; then
   withval=$with_llvm_as;  llvmAs="$withval"
 else
 
-  if test "$LLVM_AS" = ""; then
-    # Extract the first word of "llvm-as", so it can be a program name with args.
+  if test "x$LLVM_AS" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+
+  # Extract the first word of "llvm-as", so it can be a program name with args.
 set dummy llvm-as; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4196,6 +4213,19 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+  if test -z "$llvmAs"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install llvm-as before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install llvm-as before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+    fi
   else
     llvmAs=$LLVM_AS
   fi
@@ -4213,8 +4243,11 @@ if test "${with_opt+set}" = set; then
   withval=$with_opt;  llvmOpt="$withval"
 else
 
-  if test "$LLVM_OPT" = ""; then
-    # Extract the first word of "opt", so it can be a program name with args.
+  if test "x$LLVM_OPT" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+
+  # Extract the first word of "opt", so it can be a program name with args.
 set dummy opt; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4254,6 +4287,19 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+  if test -z "$llvmOpt"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install opt before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install opt before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+    fi
   else
     llvmOpt=$LLVM_OPT
   fi
@@ -4271,8 +4317,11 @@ if test "${with_llc+set}" = set; then
   withval=$with_llc;  llvmLlc="$withval"
 else
 
-  if test "$LLC" = ""; then
-    # Extract the first word of "llc", so it can be a program name with args.
+  if test "x$LLC" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+
+  # Extract the first word of "llc", so it can be a program name with args.
 set dummy llc; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
 echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
@@ -4312,6 +4361,19 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+  if test -z "$llvmLlc"; then
+
+  { { echo "$as_me:$LINENO: error:
+     You must install llc before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&5
+echo "$as_me: error:
+     You must install llc before you can continue
+     Perhaps it is already installed, but not in your PATH?" >&2;}
+   { (exit 1); exit 1; }; }
+
+  fi
+
+    fi
   else
     llvmLlc=$LLC
   fi
@@ -4321,6 +4383,13 @@ fi
 
 LLVM_LLC_CMD=$llvmLlc
 
+
+if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+then
+  llvmExists=yes
+else
+  llvmExists=no
+fi
 
 # md5
 # Extract the first word of "md5 md5sum", so it can be a program name with args.
@@ -29776,6 +29845,7 @@ javacCmd!$javacCmd$ac_delim
 jarCmd!$jarCmd$ac_delim
 JAVAC_CMD!$JAVAC_CMD$ac_delim
 JAR_CMD!$JAR_CMD$ac_delim
+ENABLE_LLVM!$ENABLE_LLVM$ac_delim
 ENABLE_CLR!$ENABLE_CLR$ac_delim
 ranlibCmd!$ranlibCmd$ac_delim
 RANLIB_CMD!$RANLIB_CMD$ac_delim
@@ -29807,7 +29877,6 @@ UUAGC_CMD!$UUAGC_CMD$ac_delim
 gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
 CC!$CC$ac_delim
-CFLAGS!$CFLAGS$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29849,6 +29918,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
 CPPFLAGS!$CPPFLAGS$ac_delim
 ac_ct_CC!$ac_ct_CC$ac_delim
@@ -29908,7 +29978,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 57; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 58; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -30397,6 +30467,28 @@ then
   echo "  javac is available?           : $javacExists"
   if test "x$javacExists" = "xyes" ;then
   echo "    command for javac           : $javacCmd"
+  fi
+fi
+
+if test x$enableLlvm = xyes
+then
+  echo "  llvm is available?            : $llvmExists"
+  echo "    command for llc             : $llvmLlc"
+  if test -x $llvmLlc
+  then
+    echo "    version                     :" `$llvmLlc -version`
+  else
+    echo "    **** ERROR **** : llc is not available and/or executable"
+  fi
+  echo "    command for llvm-as         : $llvmAs"
+  if test ! -x $llvmAs
+  then
+    echo "    **** ERROR **** : llvm-as is not available and/or executable"
+  fi
+  echo "    command for opt             : $llvmOpt"
+  if test ! -x $llvmOpt
+  then
+    echo "    **** ERROR **** : opt is not available and/or executable"
   fi
 fi
 

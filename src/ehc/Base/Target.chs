@@ -120,6 +120,9 @@ supportedTargetMp :: Map.Map String Target
                     , mk Target_FullProgAnal_Grin_C [FFIWay_CCall]
                     ]
 %%]]
+%%[[(8 codegen llvm)
+                 ++ [ mk Target_FullProgAnal_Grin_LLVM [FFIWay_CCall] ]
+%%]]
 %%[[(8 codegen clr)
                  ++ [ mk Target_FullProgAnal_Grin_CLR [FFIWay_CCall] ]
 %%]]
@@ -283,6 +286,9 @@ ffiWayForPrim Target_Interpreter_Core_Jazy			= Just FFIWay_Jazy
 %%]]
 %%[[(8 codegen clr)
 ffiWayForPrim Target_FullProgAnal_Grin_CLR			= Just FFIWay_CLR
+%%]]
+%%[[(8 codegen llvm)
+ffiWayForPrim Target_FullProgAnal_Grin_LLVM			= Just FFIWay_CCall
 %%]]
 ffiWayForPrim t | targetIsC t						= Just FFIWay_CCall
                 | otherwise							= Nothing

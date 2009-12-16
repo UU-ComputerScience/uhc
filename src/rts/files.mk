@@ -222,23 +222,27 @@ RTS_SRC_CC := \
 
 PRM_SRC_CC := \
     $(PRM_SRC_CC_SHARED) \
-    $(if $(EHC_CFG_TARGET_IS_bc), $(PRM_SRC_CC_BYTECODE) ,) \
-    $(if $(EHC_CFG_TARGET_IS_C),  $(PRM_SRC_CC_WHOLEPROG) ,)
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(PRM_SRC_CC_BYTECODE)  ,) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(PRM_SRC_CC_WHOLEPROG) ,) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(PRM_SRC_CC_WHOLEPROG) ,)
 
 RTS_SRC_CH := \
     $(RTS_SRC_CH_SHARED)  \
-    $(if $(EHC_CFG_TARGET_IS_bc), $(RTS_SRC_CH_BYTECODE) ,) \
-    $(if $(EHC_CFG_TARGET_IS_C),  $(RTS_SRC_CH_WHOLEPROG)  ,)
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(RTS_SRC_CH_BYTECODE)  ,) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(RTS_SRC_CH_WHOLEPROG) ,) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(RTS_SRC_CH_WHOLEPROG) ,)
 
 RTS_GEN_C := \
     $(RTS_GEN_C_SHARED)  \
-    $(if $(EHC_CFG_TARGET_IS_bc), $(RTS_GEN_C_BYTECODE) ,) \
-    $(if $(EHC_CFG_TARGET_IS_C),  $(RTS_GEN_C_WHOLEPROG)  ,)
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(RTS_GEN_C_BYTECODE)  ,) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(RTS_GEN_C_WHOLEPROG) ,) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(RTS_GEN_C_WHOLEPROG) ,)
 
 RTS_GEN_H := \
     $(RTS_GEN_H_SHARED)  \
-    $(if $(EHC_CFG_TARGET_IS_bc), $(RTS_GEN_H_BYTECODE) ,) \
-    $(if $(EHC_CFG_TARGET_IS_C),  $(RTS_GEN_H_WHOLEPROG)  ,)
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(RTS_GEN_H_BYTECODE)  ,) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(RTS_GEN_H_WHOLEPROG) ,) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(RTS_GEN_H_WHOLEPROG) ,)
 
 
 ###########################################################################################

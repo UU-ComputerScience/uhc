@@ -181,6 +181,8 @@ ehclib-codegentargetspecific-core:
 
 ehclib-codegentargetspecific-clr:
 
+ehclib-codegentargetspecific-llvm: $(if $(EHC_CFG_USE_GRIN),$(if $(ENABLE_LLVM),$(INSTALL_LIB_RTS),),)
+
 ###########################################################################################
 # ehclib dispatch
 ###########################################################################################
