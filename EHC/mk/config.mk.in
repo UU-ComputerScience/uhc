@@ -72,7 +72,13 @@ ifeq (@ENABLE_JAVA@,yes)
 ENABLE_JAVA					:= yes
 endif
 
+# include java code generation
 ifeq (@ENABLE_CLR@,yes)
 ENABLE_CLR					:= yes
+endif
+
+# include llvm code generation
+ifeq (@ENABLE_LLVM@,yes)
+ENABLE_LLVM					:= yes
 endif
 

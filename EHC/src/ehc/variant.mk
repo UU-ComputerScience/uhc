@@ -6,7 +6,7 @@
 # aspects, EHC_ASPECTS to be configured at top level, for now here
 ###########################################################################################
 
-EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noHmTyRuler $(if $(ENABLE_JAVA),java jazy,) $(if $(ENABLE_CLR),clr,))
+EHC_ASPECTS								:= $(if $(ASPECTS),$(ASPECTS),base hmtyinfer codegen grin noHmTyRuler $(if $(ENABLE_JAVA),java jazy,) $(if $(ENABLE_LLVM),llvm,) $(if $(ENABLE_CLR),clr,))
 EHC_ASPECTS_SUFFIX						:= $(if $(ASPECTS),-$(subst $(space),-,$(ASPECTS)),)
 EHC_ASPECTS_SUFFIX2						:= $(subst -,,$(EHC_ASPECTS_SUFFIX))
 
