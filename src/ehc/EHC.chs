@@ -144,23 +144,22 @@ handleImmQuitOption :: ImmediateQuitOption -> EHCOpts -> IO ()
 handleImmQuitOption immq opts
   = case immq of
       ImmediateQuitOption_Help
-        -> do { progName  <- getProgName
+        -> do {
 %%[[1
-              ; putStrLn (usageInfo ("version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs]]\n\noptions:"
-                                    ) ehcCmdLineOpts)
-%%][8
+                progName  <- getProgName
+%%][99
+                let progName = fpathToStr (ehcProgName opts)
+%%]]
               ; putStrLn (usageInfo (  "version: " ++ Cfg.verInfo Cfg.version ++ ", aspects: " ++ ehcOptAspects opts
-                                    ++ "\n\nUsage: " ++ fpathToStr (ehcProgName opts)
-                                    ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
+                                    ++ "\n\nUsage: " ++ progName ++ " [options] [file[.eh|.hs] ...]\n\noptions:"
                                     )
                                     ehcCmdLineOpts)
 %%[[(8 codegen)
               ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
 %%][100
 %%]]
-%%]]
               }
+        where 
       ImmediateQuitOption_Version
         -> putStrLn (Cfg.verInfo Cfg.version)
       ImmediateQuitOption_Meta_Variant
@@ -314,7 +313,7 @@ doCompilePrepare fnL@(fn:_) opts
              installRoot            = Cfg.installRoot    opts
              installVariant         = Cfg.installVariant opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
-       ; let opts2 = opts -- {ehcOptUserDir = userDir}
+       -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs
                     (   [ filePathCoalesceSeparator $ filePathUnPrefix
                           $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
@@ -354,7 +353,7 @@ doCompilePrepare fnL@(fn:_) opts
                               -}
                               ++ [fileLocPkgDb]
 %%]]
-             opts3          = opts2 { ehcOptImportFileLocPath = searchPath
+             opts3          = opts { ehcOptImportFileLocPath = searchPath
 %%[[99
                                     , ehcOptPkgDb = pkgDb3
 %%]]
