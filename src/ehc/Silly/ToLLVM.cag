@@ -624,7 +624,7 @@ Function declaration for the GRIN generated fun_main function.
 -}
 fun_mainFuncDecl :: LLVMFunctionDecl
 fun_mainFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "fun_main" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "fun_fun0tildemain" Void FixedArgs []
   
 fun_mainFullProgFuncDecl =  
   LLVMFunctionDecl_LLVMFunctionDecl "fun_mainFullProg" Void FixedArgs []

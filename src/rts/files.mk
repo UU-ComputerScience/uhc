@@ -308,7 +308,7 @@ $(RTS_GEN_H): $(GEN_RTSGBCCALL_BLD_EXEC) $(RTS_MKF)
 
 # Use Shuffle to convert .cc to .c (RTS and Primitives)
 
-$(RTS_DRV_C) $(PRM_DRV_C): $(RTS_BLD_PREFIX)%.c: $(RTS_SRC_PREFIX)%.cc
+$(RTS_DRV_C) $(PRM_DRV_C): $(RTS_BLD_PREFIX)%.c: $(RTS_SRC_PREFIX)%.cc $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
@@ -316,7 +316,7 @@ $(RTS_DRV_C) $(PRM_DRV_C): $(RTS_BLD_PREFIX)%.c: $(RTS_SRC_PREFIX)%.cc
 
 # Use Shuffle to convert .ch to .h (RTS only)
 
-$(RTS_DRV_H): $(RTS_BLD_PREFIX)%.h: $(RTS_SRC_PREFIX)%.ch
+$(RTS_DRV_H): $(RTS_BLD_PREFIX)%.h: $(RTS_SRC_PREFIX)%.ch $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_C) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@

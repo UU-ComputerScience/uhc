@@ -68,12 +68,11 @@ cpCompileWithGCC how othModNmL modNm
                               -> ( fpExec
                                  , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
-                                 -- , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant "" ++ "lib" ++ l ++ ".a")
                                  ,    map (mkl Cfg.INST_LIB_PKG)
                                           (if ehcOptFullProgAnalysis opts then [] else pkgNmL)
                                    ++ map (mkl Cfg.INST_LIB)
                                           Cfg.libnamesGccPerVariant
-                                   ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ "lib" ++ l ++ ".a") (Cfg.libnamesGcc opts)
+                                   ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ Cfg.mkCLibFilename "" l) (Cfg.libnamesGcc opts)
                                    ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                  , if   ehcOptFullProgAnalysis opts
                                    then [ ]
