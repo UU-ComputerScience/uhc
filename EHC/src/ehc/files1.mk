@@ -354,7 +354,7 @@ $(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_
 ###########################################################################################
 
 # rules for ehc library sources+derived
-$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
+$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
@@ -378,7 +378,7 @@ $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(SRC_EHC_PREFIX)%
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
-$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
+$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
