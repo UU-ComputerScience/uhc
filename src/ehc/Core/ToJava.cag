@@ -229,6 +229,7 @@ SEM CExpr
   | TupDel      loc         .   jvSrc       =   empty
   | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
   | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | Ann     	loc			.	jvSrc		=	@expr.jvSrc
   | CaseAltFail loc			.	jvSrc		=	empty -- cannot happen
 
 SEM CBind

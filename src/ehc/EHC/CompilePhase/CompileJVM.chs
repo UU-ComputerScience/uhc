@@ -140,7 +140,9 @@ cpCompileJazyJVM how othModNmL modNm
                               ; cpLinkJar (Just fpManifest) (modNm : othModNmL2) (JarMk_Exec modNm fp)
                               }
                         where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
-                              libJarL = map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB variant "" ++ "lib" ++ l ++ ".jar") (["jazy"] ++ pkgNmL)
+                              libJarL
+                                =    map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB     variant "" ++ "lib" ++ l ++ ".jar") (["jazy"])
+                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant "" ++ "lib" ++ l ++ ".jar") (pkgNmL)
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )
                                    , ( "Main-Class", show mainNm )
