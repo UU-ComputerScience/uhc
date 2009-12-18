@@ -112,9 +112,9 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 # ehclib targets
 ###########################################################################################
 
-#EHCLIB_DEBUG_OPTS						=
+EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= -v3
-EHCLIB_DEBUG_OPTS						= -v4
+#EHCLIB_DEBUG_OPTS						= -v4
 #EHCLIB_DEBUG_OPTS						= -v4 --debug-stopat-hi-error=1 
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1 --priv=1
