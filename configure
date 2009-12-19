@@ -29152,8 +29152,7 @@ ac_config_files="$ac_config_files test/benchmark/runbenchmark.pl"
 
 ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific.hs"
 
-ac_config_files="$ac_config_files bin/llvm-compilerdriver"
-
+# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
 ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h"
 
 cat >confcache <<\_ACEOF
@@ -29713,7 +29712,6 @@ do
     "test/benchmark/runbenchmark.pl") CONFIG_FILES="$CONFIG_FILES test/benchmark/runbenchmark.pl" ;;
     "src/ehc/Config.chs") CONFIG_FILES="$CONFIG_FILES src/ehc/Config.chs" ;;
     "src/helium/Utils/OSSpecific.hs") CONFIG_FILES="$CONFIG_FILES src/helium/Utils/OSSpecific.hs" ;;
-    "bin/llvm-compilerdriver") CONFIG_FILES="$CONFIG_FILES bin/llvm-compilerdriver" ;;
     "src/ehc/ConfigDefines.chs") CONFIG_HEADERS="$CONFIG_HEADERS src/ehc/ConfigDefines.chs" ;;
     "src/rts/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/config.ch" ;;
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
@@ -30372,11 +30370,6 @@ echo "$as_me: $ac_file is unchanged" >&6;}
 
   esac
 
-
-  case $ac_file$ac_mode in
-    "bin/llvm-compilerdriver":F) chmod +x bin/llvm-compilerdriver ;;
-
-  esac
 done # for ac_tag
 
 

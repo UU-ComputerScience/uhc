@@ -51,7 +51,7 @@ cpCompileWithLLVM modNm
        ; when ( targetIsLLVM (ehcOptTarget opts) )
          (  do { let compileLL 
                        = mkShellCmd
-                           (  [ Cfg.shellCmdLLVM ]
+                           (  Cfg.shellCmdLLVMC opts variant
                            ++ libs
                            ++ outputOpts
                            ++ inputOpts
