@@ -1018,8 +1018,8 @@ mkTyRec :: AssocL HsName Ty -> Ty
 mkTyRec al = hsnRec `mkConApp` [tyRowEmpty `mkTyRow` al]
 
 mkTyRecExt :: Ty -> AssocL HsName Ty -> Ty
-mkTyRecExt rec al
-  =  let  (row,exts) = tyRowExts (tyRecRow rec)
+mkTyRecExt recd al
+  =  let  (row,exts) = tyRowExts (tyRecRow recd)
      in   hsnRec `mkConApp` [row `mkTyRow` (exts ++ al)]
 
 mkTySum :: AssocL HsName Ty -> Ty

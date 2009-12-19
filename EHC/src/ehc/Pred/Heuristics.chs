@@ -74,19 +74,19 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 
 %%[(9 hmtyinfer) export(toEvidence)
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
-toEvidence f a = rec (f a)
-  where  rec (HeurAlts p [])                 =  Evid_Unresolved p
-         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         rec (HeurAlts p rs)                 =  reallyAmbigEvid p (reds rs)
-         red (HeurRed i alts)                =  (i,map rec alts)
+toEvidence f a = evd (f a)
+  where  evd (HeurAlts p [])                 =  Evid_Unresolved p
+         evd (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
+         evd (HeurAlts p rs)                 =  reallyAmbigEvid p (reds rs)
+         red (HeurRed i alts)                =  (i,map evd alts)
          reds rs                             =  map red rs
 %%]
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
-toEvidence f a = rec (f a)
-  where  rec (HeurAlts p [])                 =  Evid_Unresolved p
-         rec (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         rec (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
-         red (HeurRed i alts)                =  (i,map rec alts)
+toEvidence f a = evd (f a)
+  where  evd (HeurAlts p [])                 =  Evid_Unresolved p
+         evd (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
+         evd (HeurAlts p rs)                 =  Evid_Ambig p (reds rs)
+         red (HeurRed i alts)                =  (i,map evd alts)
          reds rs                             =  map red rs
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,8 +165,8 @@ reallyAmbigEvid p evs
 
 %%[(9 hmtyinfer) export(solvable)
 solvable :: HeurAlts p info -> HeurAlts p info
-solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map rec rs))
-   where rec (HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
+solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map heu rs))
+   where heu (HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
                                   | otherwise          = Nothing
                                   where reds' = map solvable reds
 

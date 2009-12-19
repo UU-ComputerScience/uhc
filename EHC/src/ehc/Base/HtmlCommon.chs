@@ -72,15 +72,15 @@ ppAnn :: (Annotation Ty -> String) -> Annotation Ty -> PP_Doc
 ppAnn f ann
   = ppEnclosingTag ("<a href=\"#\" onclick=\"return false;\" class=\"ann\" title=\"" >|< ppA >|< "\">") (f ann) "</a>"
   where
-    ppA = rec ann
-    rec a
+    ppA = mk ann
+    mk a
       = let uid   = annUID a
             mInst = annInstFrom a
             mRef  = annOnRefTp a
-         in f ann >#< "[" >|< show uid >|< "," >#< recM mRef >|< "]" >#< recM mInst
+         in f ann >#< "[" >|< show uid >|< "," >#< mkM mRef >|< "]" >#< mkM mInst
       
-    recM (Just a) = rec a
-    recM Nothing  = pp "_"
+    mkM (Just a) = mk a
+    mkM Nothing  = pp "_"
 
 mkInfoHtmlBlock :: PP a => UID -> a -> PP_Doc
 mkInfoHtmlBlock u p
@@ -88,21 +88,21 @@ mkInfoHtmlBlock u p
 
 convertSpaces :: String -> String
 convertSpaces
-  = reverse . rec True ""
+  = reverse . mk True ""
   where
-    rec True aux (' ':xs)
-      = rec True (";psbn&" ++ aux) xs
-    rec isOutsideTag aux (x:xs)
-      | x == '<'  = rec False (x:aux) xs
-      | x == '>'  = rec True (x:aux) xs
+    mk True aux (' ':xs)
+      = mk True (";psbn&" ++ aux) xs
+    mk isOutsideTag aux (x:xs)
+      | x == '<'  = mk False (x:aux) xs
+      | x == '>'  = mk True (x:aux) xs
       | x == '\r' = case xs of
-                      ('\n':ys) -> rec isOutsideTag (">rb<\n\r" ++ aux) ys
-                      ys        -> rec isOutsideTag (">rb<\r" ++ aux) ys
+                      ('\n':ys) -> mk isOutsideTag (">rb<\n\r" ++ aux) ys
+                      ys        -> mk isOutsideTag (">rb<\r" ++ aux) ys
       | x == '\n' = case xs of
-                      ('\r':ys) -> rec isOutsideTag (">rb<\n\r" ++ aux) ys
-                      ys        -> rec isOutsideTag (">rb<\n" ++ aux) ys
-      | otherwise = rec isOutsideTag (x:aux) xs
-    rec _ aux []
+                      ('\r':ys) -> mk isOutsideTag (">rb<\n\r" ++ aux) ys
+                      ys        -> mk isOutsideTag (">rb<\n" ++ aux) ys
+      | otherwise = mk isOutsideTag (x:aux) xs
+    mk _ aux []
       = aux
 
 mkHTMLDocument :: PP_Doc -> String
