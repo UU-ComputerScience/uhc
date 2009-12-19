@@ -54,6 +54,13 @@ ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
 	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
 	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
 	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+	$(if $(EHC_CFG_USE_CODEGEN), \
+	  if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) ; then \
+	    for targ in `$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-targets` ; do \
+	      $(MAKE) ehc-codegentargetspecific-$${targ} ; \
+	    done \
+	  fi \
+	,)
 
 #ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG) \
 #			$(if $(EHC_CFG_USE_GRIN) \
@@ -61,6 +68,29 @@ ehc-variant-dflt: $(EHC_ALL_DPDS) $(LIB_EH_UTIL_INS_FLAG) $(LIB_EHC_INS_FLAG)
 #	mkdir -p $(dir $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)) && \
 #	$(GHC) --make $(GHC_OPTS) $(GHC_OPTS_WHEN_EHC) -package $(LIB_EH_UTIL_PKG_NAME) -package $(LIB_EHC_PKG_NAME) \
 #	       -i$(EHC_BLD_VARIANT_ASPECTS_PREFIX) $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHC_MAIN).hs -o $(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
+
+###########################################################################################
+# code generation target specific make targets, for each $(EHC_TARGETS)
+###########################################################################################
+
+ehc-codegentargetspecific-bc:
+
+ehc-codegentargetspecific-C:
+
+ehc-codegentargetspecific-jazy:
+
+ehc-codegentargetspecific-core:
+
+ehc-codegentargetspecific-clr:
+
+ehc-codegentargetspecific-llvm: $(call FUN_INSTALL_VARIANT_BIN_PREFIX,$(EHC_VARIANT))llvmc
+
+###########################################################################################
+# LLVM specific
+###########################################################################################
+
+$(call FUN_INSTALL_VARIANT_BIN_PREFIX,$(EHC_VARIANT))llvmc: $(BIN_PREFIX)llvmc
+	install $(BIN_PREFIX)llvmc $@
 
 ###########################################################################################
 # rules for ehc haddock
