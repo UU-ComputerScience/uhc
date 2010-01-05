@@ -373,3 +373,10 @@ text-variant-hs09-uhcarch:
 	  TEXT_SHUFFLE_VARIANT=51 \
 	  text-variant-dflt-bib
 
+text-variant-theplan:
+	$(MAKE) TEXT_CFG_SHUFFLE_INCLUDES_CHUNK_SRC= \
+	  INCLUDE_DERIVED_MK=yes \
+	  LHS2TEX_OPTS_VARIANT_CONFIG="--unset=yesBeamer --set=theplan --set=kscode --set=blockstyle --set=asArticle --set=wide" \
+	  TEXT_SHUFFLE_VARIANT=57 \
+	  text-variant-dflt-bib-dotdpd
+
