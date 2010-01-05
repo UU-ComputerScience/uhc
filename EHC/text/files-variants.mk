@@ -24,7 +24,8 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								icfp08-subst padl09-subst padl09-subst-tr \
 								tr-abstrint ldta08-abstrint \
 								ldta09-agidiom \
-								hs09-uhcarch
+								hs09-uhcarch \
+								theplan
 
 # subtext
 TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
@@ -50,7 +51,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								uniqueness/Slides uniqueness/TopicImplementation \
 								HowToDoc HowToExperiment \
 								ReleaseHistory \
-								RoadMap
+								RoadMap \
+								ThePlan
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -65,6 +67,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 37: entcs paper: base (share)
 # 39: documentation using simplified latex/...: base (share)
 # 54: poster: base (share)
+# 56: article: base (share)
 
 # ALL PRODUCTS
 # 2	: ehc book (previously phd)
@@ -112,6 +115,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 52: doc: roadmap
 # 53: slides "UHC Architecture", Haskell Symposium 2009
 # 55: poster UHC Architecture (Siren 2009)
+# 57: the big plan, i.e. 'vision' + roadmap + directions + projects
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -132,6 +136,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		1 < 77, \
 		1 < 37, \
 		1 < 54, \
+		1 < 56, \
 		35, \
 		9 < 15, \
 		9 < 16, \
@@ -165,5 +170,6 @@ TEXT_SHUFFLE_ORDER	+= \
 		54 < 13, \
 		54 < 27, \
 		54 < 31, \
-		54 < 55
+		54 < 55, \
+		56 < 57
 		

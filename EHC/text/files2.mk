@@ -220,6 +220,18 @@ text-variant-dflt-bib: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	$(PDFLATEX) $(TEXT_MAIN)
 	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
 
+# variation on -bib where .dot file is generated, to be included later as drawn pdf
+text-variant-dflt-bib-dotdpd: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
+	mkdir -p $(dir $(TEXT_BLD_PDF))
+	cd $(TEXT_TMP_VARIANT_PREFIX) ; \
+	echo "graph {}" | dot -Tpdf > $(TEXT_MAIN)-dpd.pdf ; \
+	$(PDFLATEX) $(TEXT_MAIN) ; \
+	$(BIBTEX) $(TEXT_MAIN) ; \
+	$(PDFLATEX) $(TEXT_MAIN) ; \
+	dot -Tpdf $(TEXT_MAIN).dot > $(TEXT_MAIN)-dpd.pdf ; \
+	$(PDFLATEX) $(TEXT_MAIN)
+	cp $(TEXT_TMP_VARIANT_PREFIX)$(TEXT_MAIN).pdf $(TEXT_BLD_PDF)
+
 text-variant-dflt-bib-inx: $(TEXT_ALL_PDFONLY_DPD) $(TEXT_BIB_DRV)
 	mkdir -p $(dir $(TEXT_BLD_PDF))
 	cd $(TEXT_TMP_VARIANT_PREFIX) ; \

@@ -48,12 +48,24 @@
 \documentclass{article}
 %%]
 
+%%[18
+\documentclass[ignorenonframetext]{beamer}
+%%]
+
 %%[19
 \documentclass[a4]{report}
 %%]
 
 %%[20
 \documentclass[sffont=false,color=false,a4paper]{st-thesis}
+%%]
+
+%%[22
+\documentclass[a4paper]{report}
+%%]
+
+%%[26
+%%@main.articleDocumentClass
 %%]
 
 %%[30
@@ -66,16 +78,16 @@
                10pt]{scrbook}
 %%]
 
-%%[22
-\documentclass[a4paper]{report}
+%%[35
+\documentclass[a4paper]{book}
 %%]
 
-%%[26
+%%[37
 %%@main.articleDocumentClass
 %%]
 
-%%[77
-%%@main.articleDocumentClass
+%%[39 doclatex
+\documentclass[a4paper]{article}
 %%]
 
 %%[54
@@ -83,20 +95,12 @@
 \documentclass[10pt,headexclude,footexclude]{article}
 %%]
 
-%%[18
-\documentclass[ignorenonframetext]{beamer}
-%%]
-
-%%[37
-%%@main.articleDocumentClass
-%%]
-
-%%[35
-\documentclass[a4paper]{book}
-%%]
-
-%%[39 doclatex
+%%[56
 \documentclass[a4paper]{article}
+%%]
+
+%%[77
+%%@main.articleDocumentClass
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -578,6 +582,10 @@
 \SetSectionsForArticle
 %%]
 
+%%[56
+\SetSectionsForArticle
+%%]
+
 %%[11
 \SetSectionsForArticle
 %%]
@@ -1018,6 +1026,11 @@ WWW home page:
 \author{Atze Dijkstra}
 %%]
 
+%%[57
+\title{The UHC Plan}
+\author{Atze Dijkstra}
+%%]
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1198,6 +1211,10 @@ WWW home page:
 \maketitle
 %%]
 
+%%[56
+\maketitle
+%%]
+
 
 %%[33
 %if entcs
@@ -1370,6 +1387,12 @@ and
 
 %%[39 doclatex
 \tableofcontents
+%%]
+
+%%[56
+{\setlength{\parskip}{0cm}
+\tableofcontents
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -2947,6 +2970,14 @@ To be done ...
 
 %%[35
 %%@LLVM.main
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The UHC Plan
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[57
+%%@ThePlan.main
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
