@@ -59,6 +59,7 @@ RTS_SRC_CC_SHARED	:= \
         mm/tracesupply/buffer \
         mm/tracesupply/bumpsupply \
         mm/tracesupply/supplyroots \
+        mm/tracesupply/weakptrfinalizeque \
         mm/space/fragment \
         mm/space/copyspace \
         mm/semispace/ss \
@@ -115,6 +116,7 @@ RTS_SRC_CH_SHARED := \
         mm/tracesupply \
         mm/collector \
         mm/space \
+        mm/mutatormutrec \
         mm/mutator \
         mm/roots \
         mm/weakptr \
@@ -125,6 +127,7 @@ RTS_SRC_CH_SHARED := \
         mm/tracesupply/buffer \
         mm/tracesupply/bumpsupply \
         mm/tracesupply/supplyroots \
+        mm/tracesupply/weakptrfinalizeque \
         mm/space/fragment \
         mm/space/copyspace \
         mm/semispace/ss \

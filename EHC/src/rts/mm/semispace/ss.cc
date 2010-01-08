@@ -52,42 +52,67 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	
 #ifdef __UHC_TARGET_BC__
 	mm_mutator = mm_mutator_GBSS ;
-	mm_mutator.init( &mm_mutator, &plss->memMgt, &plss->ssAllocator, &plss->residentAllocator, &plss->gbmTrace, &plss->gbmModule ) ;
+	mm_mutator.init
+		( &mm_mutator
+		, &plss->memMgt
+		, &plss->ssAllocator
+		, &plss->residentAllocator
+		, &plss->gbmTrace
+		, &plss->gbmModule
+%%[[94
+		, &mm_weakPtr					// init later
+		, &plss->weakPtrFinalizeQue		// init later
+%%]]
+		) ;
 	plan->mutator = &mm_mutator ;
 #endif
 		
+%%[[8
 	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 5, 5 ) ;
+%%][99
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 6, 6 ) ;
+%%]]
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
 	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
 	MM_TraceSupply* regsTraceSupply   = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
 	MM_TraceSupply* rootsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
 	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
 	MM_TraceSupply* moduleTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 3 ) ;
+%%[[8
 	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
+%%][99
+	MM_TraceSupply* finQueTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 4 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 5 ) ;
+%%]]
 	
 #ifdef __UHC_TARGET_BC__
 	*regsTraceSupply = mm_traceSupply_GBRegs ;
-	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	regsTraceSupply->init( regsTraceSupply, &plss->memMgt, plan->mutator ) ;
 #endif
 	
 	*rootsTraceSupply = mm_traceSupply_Roots ;
-	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, plan->mutator ) ;
 	
 #ifdef __UHC_TARGET_BC__
 	*stackTraceSupply = mm_traceSupply_GBStack ;
-	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, plan->mutator ) ;
 	
 	*moduleTraceSupply = mm_traceSupply_GBModule ;
-	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	moduleTraceSupply->init( moduleTraceSupply, &plss->memMgt, plan->mutator ) ;
 #endif
 
+%%[[99
+	*finQueTraceSupply = mm_traceSupply_WeakPtrFinalizeQue ;
+	finQueTraceSupply->init( finQueTraceSupply, &plss->memMgt, plan->mutator ) ;
+%%]]
+	
 	*queTraceSupply = mm_traceSupply_Buffer ; // mm_traceSupply_Bump ; // mm_traceSupply_Buffer ;
-	queTraceSupply->init( queTraceSupply, &plss->memMgt, &plss->gbmTrace ) ;
+	queTraceSupply->init( queTraceSupply, &plss->memMgt, plan->mutator ) ;
 	plss->queTraceSupply = queTraceSupply ;
 	
 	plss->allTraceSupply = mm_traceSupply_Group ;
-	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, &plss->gbmTrace, traceSupplies ) ;
-	
+	plss->allTraceSupply.initWithSub( &plss->allTraceSupply, &plss->memMgt, plan->mutator, traceSupplies ) ;
+
 #ifdef __UHC_TARGET_BC__
 	plss->gbmTrace = mm_trace_GBM ;
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
@@ -101,7 +126,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	mm_weakPtr.init( &mm_weakPtr, &mm_mutator, &plss->collector ) ;
 	plss->weakPtr = &mm_weakPtr ;
 	
-	mm_deque_Init( &plss->weakPtrFinalizeQue, &plss->memMgt ) ;
+	mm_deque_InitWithSize( &plss->weakPtrFinalizeQue, &plss->memMgt, MM_WeakPtrFinalizeQue_Data_SizeInWords ) ;
 %%]]
 
 	plss->gcInProgress = False ;

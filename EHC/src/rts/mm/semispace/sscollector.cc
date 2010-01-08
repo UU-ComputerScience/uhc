@@ -89,10 +89,10 @@ void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 		Word finalizer = wp->finalizeWeakPtr( wp, wpObj ) ;
 %%[[99
 		if ( finalizer != 0 ) {
-			Word buf[2] ;
-			buf[0] = wp->traceWeakPtr( wp, &plss->gbmTrace, wpObj ) ;
-			buf[1] = mm_Trace_TraceObject( &plss->gbmTrace, finalizer ) ;
-			mm_deque_TailPush( &plss->weakPtrFinalizeQue, buf, 2 ) ;
+			MM_WeakPtrFinalizeQue_Data buf ;
+			buf.wpObj = wp->traceWeakPtr( wp, &plss->gbmTrace, wpObj ) ;
+			buf.finalizer = mm_Trace_TraceObject( &plss->gbmTrace, finalizer ) ;
+			mm_deque_TailPush( &plss->weakPtrFinalizeQue, (WPtr)&buf, MM_WeakPtrFinalizeQue_Data_SizeInWords ) ;
 		}
 %%]]
 	}
@@ -117,9 +117,9 @@ void mm_collector_SS_CollectPost( MM_Collector* collector ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(plan->data) ;
 
 %%[[99
-	Word buf[2] /* ( WeakPtr obj, finalizer ) */ ;
-	for ( ; mm_deque_HeadPop( &plss->weakPtrFinalizeQue, buf, 2 ) > 0 ; ) {
-		plan->mutator->runFinalizer( plan->mutator, buf[1] ) ;
+	MM_WeakPtrFinalizeQue_Data buf /* ( WeakPtr obj, finalizer ) */ ;
+	for ( ; mm_deque_HeadPop( &plss->weakPtrFinalizeQue, (WPtr)&buf, MM_WeakPtrFinalizeQue_Data_SizeInWords ) > 0 ; ) {
+		plan->mutator->runFinalizer( plan->mutator, buf.finalizer ) ;
 	}
 %%]]
 }

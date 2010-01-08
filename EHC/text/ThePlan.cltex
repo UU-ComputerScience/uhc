@@ -62,7 +62,7 @@
 
 \section{Work package dependency graph}
 \pagestyle{empty}
-\FigurePDF{t}{0.33}{\jobname-dpd}{Work packages, |X -> Y ===| |X| needs |Y| }{fig-workpackages}
+\FigurePDF{t}{0.31}{\jobname-dpd}{Work packages, |X -> Y ===| |X| needs |Y| }{fig-workpackages}
 
 %%@ThePlan.exit
 %%]
@@ -374,7 +374,7 @@ UHC can compile itself.
  {topgoal}% options
  {Maint}% ident
  {UHC longterm maintainability}% descr
- {UHC.Driver,UHC.Helium,UHC-GHC,Ruler.TySys}% prerequisites (, separated)
+ {Buildfarm,UHC.Driver,UHC.Helium,UHC-GHC,Ruler.TySys}% prerequisites (, separated)
  {}% required time
  {maint}% kind of work
  {Maintenance}% categorization, area to which this applies
@@ -522,7 +522,7 @@ Static GC: determine statically when memory can be reused.
  {activity=research}% options
  {Incr.UHC}% ident
  {Incrementalization of UHC analyses}% descr
- {}% prerequisites (, separated)
+ {Incr.HPT}% prerequisites (, separated)
  {}% required time
  {nwo,phd}% kind of work
  {Analyses,Performance}% categorization, area to which this applies
@@ -530,6 +530,19 @@ Static GC: determine statically when memory can be reused.
  {}% worker
 Incrementalization of UHC analyses based on their AG description.
 AG generated incrementalized code.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Incr.HPT}% ident
+ {Incrementalization of HPT analysis}% descr
+ {WholeAna.+HPT}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses,Performance}% categorization, area to which this applies
+ {2009}% startdate
+ {Jeroen Leeuwestein}% worker
+Incrementalization of HPT analysis.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
@@ -1018,13 +1031,26 @@ Threads. Two levels: OS threads as offered by OS, non-preemptive microthreads wi
  {}% options
  {UHC.Test}% ident
  {UHC (regress) tested}% descr
- {Test.nofib}% prerequisites (, separated)
+ {Test.nofib,Test.regress}% prerequisites (, separated)
  {}% required time
  {}% kind of work
  {Internal}% categorization, area to which this applies
  {}% startdate
  {}% worker
 UHC testing against various test suites.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Buildfarm}% ident
+ {UHC daily builds on buildfarm}% descr
+ {Test.regress}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Buildfarm building, testing.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
@@ -1038,6 +1064,19 @@ UHC testing against various test suites.
  {}% startdate
  {}% worker
 UHC can deal with nofib test suite.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Test.regress}% ident
+ {Regression test suite}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC regression tests.
 \end{WorkPackage}
 
 \begin{WorkPackage}%

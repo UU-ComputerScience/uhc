@@ -199,6 +199,20 @@ Word mm_weakPtr_List_TraceWeakPtr( MM_WeakPtr* weakPtr, MM_Trace* trace, Word ob
 	return obj ;
 }
 
+Word mm_weakPtr_List_TraceWeakPtrWhenFinalizing( MM_WeakPtr* weakPtr, MM_Trace* trace, Word obj ) {
+	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
+	
+	obj = mm_Trace_TraceObject( trace, obj ) ;
+	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)obj ) ;
+	w->key = mm_Trace_TraceObject( trace, w->key ) ;
+	if ( w->val != 0 ) {
+		w->val       = mm_Trace_TraceObject( trace, w->val       ) ;
+		// don't collect the finalizer, because there is none here anymore, has been set to MM_Itf_WeakPtr_BeingFinalized
+	}
+	
+	return obj ;
+}
+
 %%]
 
 void mm_weakPtr_List_zzz( MM_WeakPtr* weakPtr, ... ) {
@@ -222,6 +236,7 @@ MM_WeakPtr mm_weakPtr_List =
 	, &mm_weakPtr_List_StartFindLiveObjects
 	, &mm_weakPtr_List_EndFindLiveObjects
 	, &mm_weakPtr_List_TraceWeakPtr
+	, &mm_weakPtr_List_TraceWeakPtrWhenFinalizing
 	// , &
 	} ;
 %%]

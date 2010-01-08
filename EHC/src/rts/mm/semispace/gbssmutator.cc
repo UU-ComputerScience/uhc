@@ -31,7 +31,18 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-void mm_mutator_GBSS_Init( MM_Mutator* mutator, MM_Malloc* memmgt, MM_Allocator* allocator, MM_Allocator* resAllocator, MM_Trace* trace, MM_Module* module ) {
+void mm_mutator_GBSS_Init
+		( MM_Mutator* mutator
+		, MM_Malloc* memmgt
+		, MM_Allocator* allocator
+		, MM_Allocator* resAllocator
+		, MM_Trace* trace
+		, MM_Module* module
+%%[[94
+		, MM_WeakPtr* weakPtrAdm
+		, MM_DEQue* weakPtrFinalizeQue
+%%]]
+		) {
 	// MM_Mutator_GBSS_Data* mutss = memmgt.malloc( sizeof(MM_Mutator_GBSS_Data) ) ;
 	
 	mutator->allocator = allocator ;
@@ -39,6 +50,10 @@ void mm_mutator_GBSS_Init( MM_Mutator* mutator, MM_Malloc* memmgt, MM_Allocator*
 	mutator->trace = trace ;
 	mutator->module = module ;
 	mutator->malloc = memmgt ;
+%%[[94
+	mutator->weakPtrAdm = weakPtrAdm ;
+	mutator->weakPtrFinalizeQue = weakPtrFinalizeQue ;
+%%]]
 	
 	// mutator->data = (MM_Mutator_Data_Priv*)mutatoryyy ;
 }
@@ -91,6 +106,10 @@ MM_Mutator mm_mutator_GBSS =
 	, NULL
 	, NULL
 	, NULL
+%%[[94
+	, NULL
+	, NULL
+%%]]
 	, &mm_mutator_GBSS_Init
 	, &mm_mutator_GBSS_IsMaintainedByGC
 	// , &
