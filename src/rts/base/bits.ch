@@ -41,6 +41,8 @@
 
 #define EntierUpDivBy(x,m)				(((x)-1)/(m)+1)
 #define EntierUpBy(x,m)					(EntierUpDivBy(x,m)*(m))
+#define EntierDownDivBy(x,m)			((x)/(m))
+#define EntierDownBy(x,m)				(EntierDownDivBy(x,m)*(m))
 %%]
 
 %%[8

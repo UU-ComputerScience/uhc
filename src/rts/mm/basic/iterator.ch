@@ -23,6 +23,9 @@ typedef struct MM_Iterator {
 	Bool		hasData ;	// specific state: not yet done
 	Word		state ;		// iterator interpretable state, if the structure is index based it is guaranteed to hold the current index
 	Word		state2 ;	// extra/2nd state, optionally used
+	Word		state3 ;	// extra/3rd state, optionally used
+	Word		state4 ;	// extra/4th state, optionally used
+	Word		state5 ;	// extra/5th state, optionally used
 
 	// do one step, as specified by the structure the iterator iterates over, return hasData
 	Bool		(*step)( struct MM_Iterator* ) ;

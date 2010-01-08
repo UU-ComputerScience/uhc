@@ -31,13 +31,6 @@ provided hook will run all finalizers of which the value /= 0.
 %%[94
 typedef void (*MM_WeakPtr_Finalizer)( Word ) ;
 
-// the alive result of finding new alive weakptrs
-typedef struct MM_WeakPtr_NewAlive {
-	MM_FreeListArray*		alive ;				// the list of still alive objects
-	MM_FlexArray_Inx		firstAliveInx ;		// the range of new alive objects
-	MM_FlexArray_Inx		aftLastAliveInx ;
-} MM_WeakPtr_NewAlive ;
-
 typedef struct MM_WeakPtr_Object {
 	Word					key ;
 	Word					val ;
@@ -47,38 +40,29 @@ typedef struct MM_WeakPtr_Object {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% WeakPtr object + finalizer as put in the que for finalizers yet to be run
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The elements of the que of to be finalizer wptrs separately keeps the
+finalizer, because it has been set a tombstone value when the wptr was
+tombstoned. However, it must be remembered still so it can be run and
+GC'ed.
+
+%%[94
+typedef struct MM_WeakPtrFinalizeQue_Data {
+	Word					wpObj ;
+	Word					finalizer ;	
+} __attribute__ ((__packed__)) MM_WeakPtrFinalizeQue_Data ;
+
+#define MM_WeakPtrFinalizeQue_Data_SizeInWords	EntierLogUpShrBy(sizeof(MM_WeakPtrFinalizeQue_Data), Word_SizeInBytes_Log)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% WeakPtr interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[94
-typedef Ptr  MM_WeakPtr_Data_Priv ;
-
-typedef struct MM_WeakPtr {
-	// private data of WeakPtr
-  	MM_WeakPtr_Data_Priv 		data ;
-  	
-  	// setup with a particular MM_Mutator
-  	void			 			(*init)( struct MM_WeakPtr*, MM_Mutator* mutator, MM_Collector* collector ) ;
-  	
-  	// add
-  	Word			 			(*newWeakPtr)( struct MM_WeakPtr*, Word key, Word val, Word finalizer ) ;
-  	// deref, == 0 means it is already finalized or otherwise considered dead
-  	Word			 			(*derefWeakPtr)( struct MM_WeakPtr*, Word wp ) ;
-  	// finalize, if return /= 0 it is a finalizer (usually a IO ()): finalization should then be done by the mutator
-  	Word			 			(*finalizeWeakPtr)( struct MM_WeakPtr*, Word wp ) ;
-  	
-  	// finding live pointers, return in newAlive, move those to a new list (internally)
-  	void			 			(*findLiveObjects)( struct MM_WeakPtr*, MM_WeakPtr_NewAlive* newAlive ) ;
-  	// begin & end finding, as findLiveObjects is called iteratively
-  	void			 			(*startFindLiveObjects)( struct MM_WeakPtr* ) ;
-  	// return set of objects to be finalized
-  	MM_FreeListArray*			(*endFindLiveObjects)( struct MM_WeakPtr* ) ;
-  	
-  	// trace weakptr
-  	Word						(*traceWeakPtr)( struct MM_WeakPtr*, MM_Trace*, Word obj ) ;
-  	
-  	// collection
-} MM_WeakPtr ;
+// see mutatormutrec
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

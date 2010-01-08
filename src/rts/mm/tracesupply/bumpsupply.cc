@@ -12,8 +12,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-static inline WPtr* mm_traceSupply_Bump_LastPushAddress( MM_TraceSupply_Bump_Data* trgr, MM_Space_FragmentInx inx ) {
-	return (WPtr*)mm_flexArray_At( &trgr->lastPushedAddresses, inx ) ;
+static inline WPtr* mm_traceSupply_Bump_LastPushAddress( MM_TraceSupply_Bump_Data* trsup, MM_Space_FragmentInx inx ) {
+	return (WPtr*)mm_flexArray_At( &trsup->lastPushedAddresses, inx ) ;
 }
 %%]
 
@@ -33,71 +33,71 @@ static inline WPtr* mm_traceSupply_Bump_LastPushAddress( MM_TraceSupply_Bump_Dat
 
 %%[8
 void mm_traceSupply_Bump_Reset( MM_TraceSupply* traceSupply, Word gcInfo ) {
-	MM_TraceSupply_Bump_Data* trgr = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
-	MM_Space* spc = trgr->trace->allocator->getSpace( trgr->trace->allocator ) ;
+	MM_TraceSupply_Bump_Data* trsup = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
+	MM_Space* spc = trsup->trace->allocator->getSpace( trsup->trace->allocator ) ;
 
-	// mm_flexArray_EnsureSlot( &trgr->lastPushedAddresses, spc->getNrFragments(spc) ) ;
-	mm_flexArray_EnsureSlot( &trgr->lastPushedAddresses, trgr->trace->allocator->getTotalSize(trgr->trace->allocator) >> spc->getGrowDefaultLog(spc) ) ;
+	// mm_flexArray_EnsureSlot( &trsup->lastPushedAddresses, spc->getNrFragments(spc) ) ;
+	mm_flexArray_EnsureSlot( &trsup->lastPushedAddresses, trsup->trace->allocator->getTotalSize(trsup->trace->allocator) >> spc->getGrowDefaultLog(spc) ) ;
 	
-	trgr->lastTracedFragment
-		= trgr->lastPushedFragment
-		= trgr->trace->allocator->lastAllocFragment( trgr->trace->allocator ) ;
-	trgr->lastTracedAddress
-		= *mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment )
-		= (Word*)trgr->trace->allocator->lastAllocAddress( trgr->trace->allocator ) ;
-	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Reset last frag=%x flexsz=%x lastPushedFragment=%x lastTracedFragment=%x lastPushedAddress=%p lastTracedAddress=%p\n",trgr->trace->allocator->lastAllocFragment( trgr->trace->allocator ),trgr->trace->allocator->getTotalSize(trgr->trace->allocator) >> spc->getGrowDefaultLog(spc),trgr->lastPushedFragment,trgr->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ),trgr->lastTracedAddress);}) ;
+	trsup->lastTracedFragment
+		= trsup->lastPushedFragment
+		= trsup->trace->allocator->lastAllocFragment( trsup->trace->allocator ) ;
+	trsup->lastTracedAddress
+		= *mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment )
+		= (Word*)trsup->trace->allocator->lastAllocAddress( trsup->trace->allocator ) ;
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Reset last frag=%x flexsz=%x lastPushedFragment=%x lastTracedFragment=%x lastPushedAddress=%p lastTracedAddress=%p\n",trsup->trace->allocator->lastAllocFragment( trsup->trace->allocator ),trsup->trace->allocator->getTotalSize(trsup->trace->allocator) >> spc->getGrowDefaultLog(spc),trsup->lastPushedFragment,trsup->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment ),trsup->lastTracedAddress);}) ;
 }
 
-void mm_traceSupply_Bump_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Trace* trace ) {
-	MM_TraceSupply_Bump_Data* trgr = memmgt->malloc( sizeof(MM_TraceSupply_Bump_Data) ) ;
-	trgr->trace = trace ;
-	mm_flexArray_New( memmgt, &trgr->lastPushedAddresses, sizeof(WPtr), 0, 0 ) ;
-	traceSupply->data = (MM_TraceSupply_Data_Priv*)trgr ;
+void mm_traceSupply_Bump_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Mutator* mutator ) {
+	MM_TraceSupply_Bump_Data* trsup = memmgt->malloc( sizeof(MM_TraceSupply_Bump_Data) ) ;
+	trsup->trace = mutator->trace ;
+	mm_flexArray_New( memmgt, &trsup->lastPushedAddresses, sizeof(WPtr), 0, 0 ) ;
+	traceSupply->data = (MM_TraceSupply_Data_Priv*)trsup ;
 	// mm_traceSupply_Bump_Reset( traceSupply ) ;
 }
 
 void mm_traceSupply_Bump_Run( MM_TraceSupply* traceSupply ) {
-	MM_TraceSupply_Bump_Data* trgr = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
-	MM_Space* spc = trgr->trace->allocator->getSpace( trgr->trace->allocator ) ;
+	MM_TraceSupply_Bump_Data* trsup = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
+	MM_Space* spc = trsup->trace->allocator->getSpace( trsup->trace->allocator ) ;
 
 	// mm_traceSupply_Bump_Reset( traceSupply ) ;
 	
-	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Run lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",trgr->lastPushedFragment,trgr->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ),trgr->lastTracedAddress);}) ;
-	Bool inSameFragment = trgr->lastTracedFragment == trgr->lastPushedFragment ;
-	while ( *mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ) < trgr->lastTracedAddress || ( ! inSameFragment ) ) {
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Run lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",trsup->lastPushedFragment,trsup->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment ),trsup->lastTracedAddress);}) ;
+	Bool inSameFragment = trsup->lastTracedFragment == trsup->lastPushedFragment ;
+	while ( *mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment ) < trsup->lastTracedAddress || ( ! inSameFragment ) ) {
 		// lastPushedAddress + lastTracedAddress may change as side effect of tracing
-		Word* lastPushedAddress = *( (WPtr*)mm_flexArray_At( &trgr->lastPushedAddresses, trgr->lastTracedFragment ) ) ;
-		Word* lastTracedAddress = trgr->lastTracedAddress ;
+		Word* lastPushedAddress = *( (WPtr*)mm_flexArray_At( &trsup->lastPushedAddresses, trsup->lastTracedFragment ) ) ;
+		Word* lastTracedAddress = trsup->lastTracedAddress ;
 		Word* lastTracedAddressNew = lastPushedAddress ;
 		for ( ; lastPushedAddress < lastTracedAddress ; ) {
-			Word szWords = trgr->trace->objectNrWords( trgr->trace, (Word)lastPushedAddress ) ;
-			Word hdrSz = trgr->trace->objectHeaderNrWords ;
-			// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Run obj=%p sz=%x tr=%x last=%x lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",lastPushedAddress,szWords,lastPushedAddress + hdrSz,lastTracedAddress,trgr->lastPushedFragment,trgr->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ),trgr->lastTracedAddress);}) ;
+			Word szWords = trsup->trace->objectNrWords( trsup->trace, (Word)lastPushedAddress ) ;
+			Word hdrSz = trsup->trace->objectHeaderNrWords ;
+			// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_Run obj=%p sz=%x tr=%x last=%x lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",lastPushedAddress,szWords,lastPushedAddress + hdrSz,lastTracedAddress,trsup->lastPushedFragment,trsup->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment ),trsup->lastTracedAddress);}) ;
 			// !!!! Cannot rely on objectHasTraceableWords because traceable fields may be non-contiguous
-			if ( trgr->trace->objectHasTraceableWords( trgr->trace, (Word)lastPushedAddress ) ) {
-				// trgr->trace->traceObjects( trgr->trace, lastPushedAddress + hdrSz, szWords - hdrSz ) ;
-				mm_trace_TraceObjects( trgr->trace, lastPushedAddress + hdrSz, szWords - hdrSz ) ;
+			if ( trsup->trace->objectHasTraceableWords( trsup->trace, (Word)lastPushedAddress ) ) {
+				// trsup->trace->traceObjects( trsup->trace, lastPushedAddress + hdrSz, szWords - hdrSz ) ;
+				mm_trace_TraceObjects( trsup->trace, lastPushedAddress + hdrSz, szWords - hdrSz ) ;
 			}
 			lastPushedAddress += szWords ;
 		}
 		if ( inSameFragment ) {
-			trgr->lastTracedAddress = lastTracedAddressNew ;
+			trsup->lastTracedAddress = lastTracedAddressNew ;
 		} else {
-			trgr->lastTracedFragment++ ;
-			trgr->lastTracedAddress = (Word*)( spc->getFragment( spc, trgr->lastTracedFragment )->frag + (1 << spc->getGrowDefaultLog(spc)) ) ;
+			trsup->lastTracedFragment++ ;
+			trsup->lastTracedAddress = (Word*)( spc->getFragment( spc, trsup->lastTracedFragment )->frag + (1 << spc->getGrowDefaultLog(spc)) ) ;
 		}
-		inSameFragment = trgr->lastTracedFragment == trgr->lastPushedFragment ;
+		inSameFragment = trsup->lastTracedFragment == trsup->lastPushedFragment ;
 	}
 }
 
 // push ptr + size
 // extra is used by this supply as the fragment
 void mm_traceSupply_Bump_PushWork( MM_TraceSupply* traceSupply, Word* work, Word nrWorkWords, Word extra ) {
-	MM_TraceSupply_Bump_Data* trgr = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
-	// trgr->lastPushedAddress  = work  ;
-	trgr->lastPushedFragment = extra ;
-	*mm_traceSupply_Bump_LastPushAddress( trgr, extra ) = work ;
-	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_PushWork lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",trgr->lastPushedFragment,trgr->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trgr, trgr->lastPushedFragment ),trgr->lastTracedAddress);}) ;
+	MM_TraceSupply_Bump_Data* trsup = (MM_TraceSupply_Bump_Data*)traceSupply->data ;
+	// trsup->lastPushedAddress  = work  ;
+	trsup->lastPushedFragment = extra ;
+	*mm_traceSupply_Bump_LastPushAddress( trsup, extra ) = work ;
+	// IF_GB_TR_ON(3,{printf("mm_traceSupply_Bump_PushWork lastPushedFragment=%x lastTracedFragment=%x lPush=%p lTrace=%p\n",trsup->lastPushedFragment,trsup->lastTracedFragment,*mm_traceSupply_Bump_LastPushAddress( trsup, trsup->lastPushedFragment ),trsup->lastTracedAddress);}) ;
 }
 %%]
 

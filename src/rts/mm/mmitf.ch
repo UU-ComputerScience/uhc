@@ -100,9 +100,10 @@ Order of imports is important because of usage dependencies between types.
 #include "collector.h"
 #include "trace.h"
 #include "roots.h"
-#include "tracesupply.h"
 #include "module.h"
+#include "mutatormutrec.h"
 #include "mutator.h"
+#include "tracesupply.h"
 #include "plan.h"
 #include "weakptr.h"
 %%]

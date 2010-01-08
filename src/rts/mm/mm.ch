@@ -25,6 +25,9 @@ Order of imports is important because of usage dependencies between types.
 #include "tracesupply/bumpsupply.h"
 #include "tracesupply/group.h"
 #include "tracesupply/supplyroots.h"
+%%[[99
+#include "tracesupply/weakptrfinalizeque.h"
+%%]]
 #include "weakptr/weakptrlist.h"
 #ifdef __UHC_TARGET_BC__
 #include "gbm/gbtrace.h"
