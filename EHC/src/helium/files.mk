@@ -167,9 +167,9 @@ helium: $(LIB_HELIUM_INS_FLAG)
 # rules
 $(LIB_HELIUM_CABAL_DRV): $(HELIUM_MKF) $(LIB_HELIUM_ALL_DRV_HS)
 	mkdir -p $(@D)
-	$(call GEN_CABAL \
+	$(call FUN_GEN_CABAL_LIB \
 	, $(LIB_HELIUM_PKG_NAME) \
-	, $(EH_VERSION) \
+	, $(EH_VERSION_SHORT) \
 	, mtl parsec Top Lvm\
 	, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) OverlappingInstances \
 	, Helium library \
