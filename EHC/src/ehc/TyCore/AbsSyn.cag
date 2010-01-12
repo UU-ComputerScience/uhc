@@ -176,6 +176,7 @@ DATA ExprAnn
   | Empty
 %%[[(8 tauphi)
   | Strictness      s               : Strictness
+  | GrinHint        s               : String
 %%]]
 %%]
 

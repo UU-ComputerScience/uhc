@@ -23,7 +23,7 @@ TyCore transformations
 %%]
 
 -- Core transformations
-%%[(8 codegen) import({%{EH}TyCore.Trf.FlipStrictness})
+%%[(8 codegen) import({%{EH}TyCore.Trf.FlipStrictness},{%{EH}TyCore.Trf.OptimizeStrictness})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -41,6 +41,7 @@ cpTyCore1Trf modNm trfNm
                  core2  = ( case trfNm of
 %%[[(8 tauphi)
                               "FLSN"    -> cmodTrfFlipStrictness
+                              "OPSN"    -> cmodTrfOptimizeStrictness
 %%]]
                               _         -> id
                           ) tyCore

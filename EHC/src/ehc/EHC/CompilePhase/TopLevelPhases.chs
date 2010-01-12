@@ -817,7 +817,7 @@ cpProcessTyCoreBasic modNm
                      (
                        [
 %%[[(8 tauphi)
-                          "FLSN"
+                         "OPSN"
 %%]
                        ]
                      )

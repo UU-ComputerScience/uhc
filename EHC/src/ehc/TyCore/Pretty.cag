@@ -403,6 +403,7 @@ SEM ExprAnn
   | Empty       loc         .   pp          =   empty
 %%[[(8 tauphi)
   | Strictness  loc         .   pp          =   pp (show @s)
+  | GrinHint    loc         .   pp          =   pp ("GrinHint{" ++ @s ++ "}")
 %%]]
 %%]
 

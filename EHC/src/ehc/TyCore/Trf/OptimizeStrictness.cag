@@ -1,0 +1,98 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Optimize TyCore based on strictness annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.OptimizeStrictness} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Control.Applicative, Control.Monad, Data.Maybe, qualified Data.Map as Map)
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
+%%]
+
+%%[1 hs import(Debug.Trace)
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 tauphi).tcmodTrfOptimizeStrictness hs
+cmodTrfOptimizeStrictness :: Module -> Module
+cmodTrfOptimizeStrictness tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 tauphi)
+ATTR AGItf [ | | cTrf: Module ]
+ATTR AllCodeNT
+  [ sigMap : {Map.Map HsName Expr}
+  |
+  | cTrf : SELF
+    sigMap1 USE {`Map.union`} {Map.empty} : {Map.Map HsName Expr}
+    leftVar USE {<|>} {Nothing} : {Maybe HsName}
+    argPos USE {<|>} {Nothing} : {Maybe Int}
+  ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   {- trace (Map.foldWithKey (\k v s -> show k ++ " " ++ show v ++ "\n" ++ s) "" @module.sigMap) -} @module.cTrf
+                module      .   sigMap      =   @module.sigMap1
+
+SEM Expr
+  | App         lhs         .   cTrf        =   Expr_Ann (ExprAnn_GrinHint $ "ApP " ++ show (strictArg @func.leftVar @loc.argPos @lhs.sigMap)) (Expr_App @func.cTrf @arg.cTrf)
+  | Var         lhs         .   cTrf        =   Expr_Var @nm
+  -- | Let         lhs         .   cTrf        =   Expr_Ann (ExprAnn_GrinHint "Let") (Expr_Let undefined @vbinds.cTrf @body.cTrf)
+
+{
+strictArg :: Maybe HsName -> Maybe Int -> Map.Map HsName Expr -> Maybe Expr
+strictArg n x m = n >>= \n -> x >>= \x -> Map.lookup n m >>= arg x
+  where
+    arg :: Int -> Expr -> Maybe Expr
+    arg _ x = Just x
+    arg 0 e = Just e
+    arg 1 (Expr_Arrow l r) = Just l
+    arg x (Expr_Arrow l r) = arg (x-1) r
+}
+
+SEM ExprAnn
+  | Strictness  lhs         .   cTrf        =   ExprAnn_GrinHint $ case @s of { Strict -> "Strict"; NonStrict -> "Strict"; x -> "Other" }
+
+SEM Expr
+  | App         lhs         .   argPos      =   @loc.argPos
+                loc         .   argPos      =   fmap (+1) @func.argPos
+  | Var         lhs         .   leftVar     =   Just @nm
+                lhs         .   argPos      =   Just 0
+
+SEM ValBind
+  | Val         lhs         .   sigMap1     =   Map.singleton @nm @l1.cTrf
+                lhs         .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @l0.cTrf
+
+%%]
+
