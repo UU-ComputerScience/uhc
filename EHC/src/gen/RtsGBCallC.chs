@@ -66,6 +66,7 @@ mkC maxCCallArgs
   >-< fundef "void" "gb_callc" [fundefarg "GB_Word" nargs, fundefarg "GB_Word" callenc ]
         (  [ localvar "GB_WordPtr" a (Just $ cast "GB_WordPtr" "GB_SPRel(1)")
            , localvar "GB_Word" f (Just $ pp "GB_TOS")
+           , localvar "Word" szRes Nothing
            ]
         -- ++ [ localvar "GB_WordEquiv" rw Nothing ]
         ++ [ localvar (gbtyAsIs $ basicGBTy t) (r' t) Nothing | t <- allGrinBasicSize ]
@@ -87,8 +88,8 @@ mkC maxCCallArgs
                         , stat "GB_BP_UnlinkSP"
                         , stat (call "GB_PopCastIn" ["GB_BytePtr",pc])
                         , stat (call "GB_PopIn" [nargs])
-                        , assign sp (call "GB_RegByteRel" [pp "GB_Word", pp sp, op "-" (op "*" nargs (sizeof "GB_Word")) (sizeof restyStck)])
-                        -- , stat (call "GB_SetRegByteRel" [pp restyStck, pp sp, pp "0", pp $ r' res])
+                        , assign szRes (op "-" (op "*" nargs (sizeof "GB_Word")) (sizeof restyStck))
+                        , assign sp (call "GB_RegByteRel" [pp "GB_Word", pp sp, pp szRes])
                         , stat (call "GB_SetCallCResult" [pp restyStck, pp (gbtyWordEquiv resgbty), pp sp, pp "0", pp $ r' res])
                         ]
                    )
@@ -103,6 +104,7 @@ mkC maxCCallArgs
   where r = "res_"
         r' t = r ++ (gbtyAsIs $ basicGBTy t)
         f = "func"
+        szRes = "sz"
         a = "args"
         pc = "pc"
         sp = "sp"

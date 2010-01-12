@@ -186,7 +186,7 @@ SEM ErrL
 
 %%[(1 hmtyinfer || hmtyast).MissingSig
 SEM Err
-  | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing sig for" (@wher)
+  | MissingSig          lhs     .  pp   =   ppMsgErr    "Missing signature for" (@wher)
 %%]%%[[99
                                                         @range
 %%]]
@@ -315,7 +315,7 @@ SEM Err
 
 %%[(8 codegen)
 SEM Err
-  | IllegalFFIWay       lhs     .  pp   =   ppMsgErr    "Cannot foreign interface"
+  | IllegalFFIWay       lhs     .  pp   =   ppMsgErr    "Illegal foreign interface"
                                                         (    "to:" >#< @ffiWay
                                                         )
 %%[[99
@@ -348,7 +348,7 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates did remain unproven"
+  | NotProvenPreds      lhs     .  pp   =   ppMsgErr    "Predicates remain unproven"
 %%[[9
                                                         (    "preds:" >#< vlist @preds
 %%][99
@@ -370,13 +370,13 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proof for predicates did overlap"
+  | OverlapPreds        lhs     .  pp   =   ppMsgErr    "Proofs for predicates overlap"
                                                         (    vlist . map (\(p,evs) -> p >#< ":" >#< ppBracketsCommas evs) $ @overl
                                                         )
 %%[[99
                                                         @range
 %%]]
-  | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type vars (not allowed)"
+  | TyHasFreeTVars      lhs     .  pp   =   ppMsgErr    "Type has free type variables (not allowed)"
                                                         (    "type:" >#< pp @ty
                                                         )
 %%[[99
@@ -394,7 +394,7 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | NoMostSpecificPred  lhs     .  pp   =   ppMsgErr    "No most specific predicate can be chosen between"
+  | NoMostSpecificPred  lhs     .  pp   =   ppMsgErr    "Cannot determine most specific predicate"
                                                         (    "preds:" >#< vlist [@pred1,@pred2]
                                                         )
 %%[[99
@@ -465,7 +465,7 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | MutRecModules       lhs     .  pp   =   ppMsgErr    "Mutual recursive modules"
+  | MutRecModules       lhs     .  pp   =   ppMsgErr    "Mutually recursive modules"
                                                         (    "modules:" >#< vlist (map ppCommas' @mutRecL)
                                                         )
 %%[[99

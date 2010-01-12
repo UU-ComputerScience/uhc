@@ -25,7 +25,7 @@ int dummy_array ;
 %%[95
 PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 {
-	gb_assert_IsNotIndirection(Cast(Word,mn),"primByteArrayToString1Char") ;
+	gb_assert_IsNotIndirection(Cast(Word,mn),"primByteArrayToString1Char BEF") ;
 	char* s = Cast(char*,mn->content.bytearray.ptr) ;
 	int   igoff = GB_GBInt2Int(goff) ;
 	char  c = s[ igoff ] ;
@@ -43,6 +43,7 @@ PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 		IF_GB_TR_ON(3,printf("primByteArrayToString1Char Nil n=%p h(n)=%x\n", n, n->header ););
 	}
 	GB_GCSafe_Leave ;
+	IF_GB_TR_ON(3,printf("primByteArrayToString1Char AFT n=%p\n", n ););
   	return n ;
 }
 
@@ -142,10 +143,7 @@ PRIM Word primByteArrayContents( GB_NodePtr bytearray )
 %%[99
 PRIM Word primSameByteArray( GB_NodePtr bytearray1, GB_NodePtr bytearray2 )
 {
-	if ( bytearray1->content.bytearray.ptr == bytearray2->content.bytearray.ptr )
-		return gb_True ;
-	else
-		return gb_False ;
+	return RTS_MkBool( bytearray1->content.bytearray.ptr == bytearray2->content.bytearray.ptr ) ;
 }
 
 %%]
@@ -252,10 +250,7 @@ PRIM GB_NodePtr primNewArray( Word nWords, Word initVal )
 %%[99
 PRIM Word primSameArray( GB_NodePtr array1, GB_NodePtr array2 )
 {
-	if ( array1 == array2 )
-		return gb_True ;
-	else
-		return gb_False ;
+	return RTS_MkBool( array1 == array2 ) ;
 }
 
 %%]

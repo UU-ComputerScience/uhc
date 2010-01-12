@@ -100,11 +100,12 @@ Order of imports is important because of usage dependencies between types.
 #include "collector.h"
 #include "trace.h"
 #include "roots.h"
-#include "tracesupply.h"
 #include "module.h"
+#include "mutatormutrec.h"
 #include "mutator.h"
-#include "weakptr.h"
+#include "tracesupply.h"
 #include "plan.h"
+#include "weakptr.h"
 %%]
 
 %%[8
@@ -143,7 +144,16 @@ static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo ) {
 #	endif
 }
 
-// only ensure enough mem for alloc
+// check that no more than maxAllocSize of allocator is requested, otherwise panic
+static inline Bool mm_itf_maxAllocCheck( size_t sz ) {
+	if ( mm_mutator.allocator->maxAllocSize && sz > mm_mutator.allocator->maxAllocSize ) {
+		rts_panic1_1( "allocator cannot allocate more than maxAllocSize", sz ) ;
+		return False ; // never reached
+	}
+	return True ;
+}
+
+// only ensure enough mem for alloc, assume no more than maxAllocSize is requested
 static inline void mm_itf_allocEnsure( size_t sz, Word gcInfo ) {
 #	if MM_BYPASS_PLAN
 #		if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
@@ -210,13 +220,49 @@ static inline int mm_itf_registerModule( Ptr m ) {
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Interface: finalization
+%%% Interface: weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[94
-// register for finalization only
+#define	MM_Itf_WeakPtr_NoFinalizer		(-1)
+#define	MM_Itf_WeakPtr_BeingFinalized	(-2)		// delayed finalization
+%%]
+
+%%[94
+// interface to use as a primitive
+// assume: val /= 0
+static inline Word mm_itf_NewWeakPtr( Word key, Word val, Word finalizer ) {
+	return mm_weakPtr.newWeakPtr( &mm_weakPtr, key, val, finalizer ) ;
+}
+
+static inline Word mm_itf_DerefWeakPtr( Word wp ) {
+	return mm_weakPtr.derefWeakPtr( &mm_weakPtr, wp ) ;
+}
+
+static inline Word mm_itf_FinalizeWeakPtr( Word wp ) {
+	return mm_weakPtr.finalizeWeakPtr( &mm_weakPtr, wp ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: finalization, internal case of weak ptr without value and C finalizer
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[94
+// register for finalization only, to be used by rts only
 static inline void mm_itf_registerFinalization( Word x, MM_WeakPtr_Finalizer finalizer ) {
-	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, finalizer ) ;
+	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, (Word)finalizer ) ;
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Interface: GC
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+// trigger GC
+static inline Bool mm_itf_gc( ) {
+	return mm_plan.doGC( &mm_plan, True, 0 ) ;
 }
 %%]
 

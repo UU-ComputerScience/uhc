@@ -17,15 +17,22 @@ typedef struct MM_Collector {
 	// private data of Collector
   	MM_Collector_Data_Priv 		data ;
   	
+  	// collector is always part of a plan
+  	Ptr /* MM_Plan* */ 			plan ;
+
   	// private data still, but available for fast access ;
   	// the current collected space
   	MM_Space*					collectedSpace ;
   	
   	// setup with a particular MM_Pages
-  	void			 			(*init)( struct MM_Collector*, MM_Malloc* memmgt ) ;
+  	void			 			(*init)( struct MM_Collector*, MM_Malloc* memmgt, Ptr /* MM_Plan* */ plan ) ;
   	
+  	// called before breaking allocation invariants as required to do collection
+  	void						(*collectPre)( struct MM_Collector* ) ;
   	// collect
   	void						(*collect)( struct MM_Collector*, Word gcInfo ) ;
+  	// called after allocation invariants are reinstalled
+  	void						(*collectPost)( struct MM_Collector* ) ;
   	
   	// tracing live pointers
   	

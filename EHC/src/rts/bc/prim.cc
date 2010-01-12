@@ -123,6 +123,21 @@ PRIM Word gb_WriteMode
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Garbage Collection
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+PRIM Word primGC(  )
+{
+#	if USE_EHC_MM
+		return RTS_MkBool( mm_itf_gc() ) ;
+#	else
+		return gb_False ;
+#	endif
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -135,7 +150,20 @@ Conceptually:
 %%[99
 PRIM Word primMakeWeakPtr( Word key, Word val, Word finalizer )
 {
-	return val ;
+#	if USE_EHC_MM
+		return mm_itf_NewWeakPtr( key, val, finalizer ) ;
+#	else
+		return val ;
+#	endif
+}
+
+PRIM Word primMakeWeakPtrWOFinalizer( Word key, Word val )
+{
+#	if USE_EHC_MM
+		return mm_itf_NewWeakPtr( key, val, MM_Itf_WeakPtr_NoFinalizer ) ;
+#	else
+		return val ;
+#	endif
 }
 
 PRIM GB_NodePtr primDeRefWeakPtr( Word wp )
@@ -143,8 +171,16 @@ PRIM GB_NodePtr primDeRefWeakPtr( Word wp )
 	GB_NodePtr wpDeref ;
 	GB_GCSafe_Enter ;
 	GB_GCSafe_1(wp) ;
-	// GB_GCSafe_1_Zeroed(wpDeref) ;
-	GB_MkMaybeJust( wpDeref, wp ) ;
+#	if USE_EHC_MM
+		wp = mm_itf_DerefWeakPtr( wp ) ;
+		if ( wp == 0 ) {
+			GB_MkMaybeNothing( wpDeref ) ;
+		} else {
+			GB_MkMaybeJust( wpDeref, wp ) ;
+		}
+#	else
+		GB_MkMaybeJust( wpDeref, wp ) ;
+#	endif
 	GB_GCSafe_Leave ;
 	return wpDeref ;
 }
@@ -152,7 +188,19 @@ PRIM GB_NodePtr primDeRefWeakPtr( Word wp )
 PRIM GB_NodePtr primFinalizeWeakPtr( Word wp )
 {
 	GB_NodePtr fin ;
-	GB_MkMaybeNothing( fin ) ;
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1(wp) ;
+#	if USE_EHC_MM
+		wp = mm_itf_FinalizeWeakPtr( wp ) ;
+		if ( wp == 0 ) {
+			GB_MkMaybeNothing( fin ) ;
+		} else {
+			GB_MkMaybeJust( fin, wp ) ;
+		}
+#	else
+		GB_MkMaybeNothing( fin ) ;
+#	endif
+	GB_GCSafe_Leave ;
 	return fin ;
 }
 
@@ -486,10 +534,7 @@ PRIM Word primWriteMutVar( GB_NodePtr mutVar, Word newVal, Word state )
 
 PRIM Word primSameMutVar( Word v1, Word v2 )
 {
-	if ( v1 == v2 )
-		return gb_True ;
-	else
-		return gb_False ;
+	return RTS_MkBool( v1 == v2 ) ;
 }
 
 %%]
@@ -558,7 +603,7 @@ PRIM int _setErrno( int e )
 %%[96
 PRIM Word primCallInfoKindIsVisible( Word kind )
 {
-	return ( gb_CallInfo_Kind_IsVisible(kind) ? gb_True : gb_False ) ;
+	return RTS_MkBool( gb_CallInfo_Kind_IsVisible(kind) ) ;
 }
 %%]
 

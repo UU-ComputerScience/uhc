@@ -49,11 +49,14 @@ typedef struct MM_Trace {
   	
   	// trace a single object, return new object
   	// assumption: canTraceObject( , obj ) == True
-  	Word			 			(*traceObject)( struct MM_Trace*, Word obj, MM_Trace_Flg flg ) ;
+  	Word			 			(*traceObject)( struct MM_Trace*, Word obj ) ;
+  	
+  	// trace payload of an object, given there is payload to be traced
+  	void			 			(*traceObjectPayload)( struct MM_Trace*, Word Obj ) ;
   	
   	// trace multiple objects, replace by new objects
   	// check on traceability is done by function
-  	void			 			(*traceObjects)( struct MM_Trace*, Word* objs, Word nrObjs, MM_Trace_Flg flg ) ;
+  	// void			 			(*traceObjects)( struct MM_Trace*, Word* objs, Word nrObjs ) ;
   	
   	// size of an object in words
   	Word			 			(*objectNrWords)( struct MM_Trace*, Word obj ) ;
@@ -67,11 +70,19 @@ typedef struct MM_Trace {
 } MM_Trace ;
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Combined functionality
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[8
-static inline Word mm_Trace_TraceObject( MM_Trace* trace, Word obj, MM_Trace_Flg flg ) {
+extern void mm_trace_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) ;
+%%]
+
+%%[8
+static inline Word mm_Trace_TraceObject( MM_Trace* trace, Word obj ) {
 	// printf("mm_Trace_TraceObject obj=%x space(obj)=%x space=%x\n",obj,mm_Spaces_GetSpaceForAddress(obj),trace->collector->collectedSpace);
 	if ( trace->canTraceObject( trace, obj ) ) {
-		return trace->traceObject( trace, obj, flg ) ;
+		return trace->traceObject( trace, obj ) ;
 	} else {
 		return obj ;
 	}

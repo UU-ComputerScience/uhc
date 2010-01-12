@@ -43,7 +43,7 @@ void mm_init_plan() {
 %%[8
 #ifdef TRACE
 void mm_plan_Test() {
-#	if (MM_Cfg_Plan == MM_Cfg_Plan_SS)
+#	if (MM_Cfg_Plan == MM_Cfg_Plan_SS) && __UHC_TARGET_BC__
 		mm_plan.dump( &mm_plan ) ;
 		GB_NodePtr p1 = (GB_NodePtr)mm_plan.mutator->allocator->alloc( mm_plan.mutator->allocator, 12, 0 ) ;
 		IF_GB_TR_ON(3,{printf("mm_plan_Test alloc p1=%p\n",p1);}) ;

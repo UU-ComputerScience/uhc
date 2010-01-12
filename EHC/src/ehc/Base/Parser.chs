@@ -7,7 +7,10 @@
 %%% Basic/shared parsers
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner})
+%%[8 module {%{EH}Base.Parser} import(UU.Parsing, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Builtin},{%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.ParseUtils})
+%%]
+
+%%[8 import({%{EH}Base.ParseUtils}) export(module {%{EH}Base.ParseUtils})
 %%]
 
 %%[20 import({%{EH}Module},qualified Data.Set as Set,qualified EH.Util.Rel as Rel)
@@ -21,7 +24,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(pDollNm,pUID,pInt)
-type P p = PlainParser Token p
 
 pDollNm :: P HsName
 pDollNm = tokMkQName <$> pVaridTk

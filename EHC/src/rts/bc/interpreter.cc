@@ -287,7 +287,7 @@ Todo: USE_EHC_MM finalization
 %%[94
 #if USE_BOEHM_GC || USE_EHC_MM
 #if USE_EHC_MM
-void gb_Node_Finalize( Word p, Word unused )
+void gb_Node_Finalize( Word p )
 #else
 void gb_Node_Finalize( void* p, void* cd )
 #endif
@@ -506,6 +506,22 @@ void gb_setPC( GB_BytePtr c )
 	GB_BP_UnlinkSP ;
 }
 
+%%]
+
+%%[99
+void gb_runIO( GB_Word io )
+{
+	GB_NodePtr runIO ;
+	
+	GB_GCSafe_Enter ;
+	GB_GCSafe_1( io ) ;
+	GB_GCSafe_1_Zeroed( runIO ) ;
+	
+	GB_MkAppNode1In( runIO, io, gb_Unit ) ;
+
+	GB_GCSafe_Leave ;
+	gb_eval( (Word)runIO ) ;
+}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

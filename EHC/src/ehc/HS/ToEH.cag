@@ -46,19 +46,19 @@ ehTupleConstructor range arity semvar sempatvar semlam
 %%[[1
         semcon
 %%][7
-        semtop semrec semrecext semrecempty
+        semtop semrecd semrecdext semrecdempty
 %%]]
-  = foldr (rngLift range semlam) rec ps
+  = foldr (rngLift range semlam) recd ps
   where ns     = take arity hsnLclSupply
         ps     = map (rngLift range sempatvar) ns
-        rec    = mkt (map (rngLift range semvar) ns)
+        recd   = mkt (map (rngLift range semvar) ns)
 %%[[1
         mkt ns = mkRngParApp range (rngLift range semcon (hsnProd arity) : ns)
 %%][7
         mkt ns = semtop ps
-                 $ rngLift range semrec
-                 $ foldl (\r e -> rngLift range semrecext r Nothing e)
-                         (rngLift range semrecempty)
+                 $ rngLift range semrecd
+                 $ foldl (\r e -> rngLift range semrecdext r Nothing e)
+                         (rngLift range semrecdempty)
                          ns
 %%]]
 %%]

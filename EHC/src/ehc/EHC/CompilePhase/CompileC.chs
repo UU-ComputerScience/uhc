@@ -46,6 +46,7 @@ gccInclDirs opts
   = [ mk kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
   where mk (FileLocKind_Dir  ) d = d
         mk (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+        mk  FileLocKind_PkgDb  d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
 %%]
 
 %%[(8 codegen) export(cpCompileWithGCC)
@@ -60,22 +61,25 @@ cpCompileWithGCC how othModNmL modNm
                             _          -> mkOutputFPath opts modNm fp "c"
                  fpO m f= mkOutputFPath opts m f "o"
                  fpExec = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
-                 variant= ehcenvVariant (ehcOptEnvironment opts)
+                 variant= Cfg.installVariant opts
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles)
                         = case how of
                             FinalCompile_Exec
                               -> ( fpExec
                                  , [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
-                                 , map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB variant "" ++ "lib" ++ l ++ ".a")
-                                       ((if ehcOptFullProgAnalysis opts then [] else pkgNmL) ++ Cfg.libnamesGccPerVariant)
-                                   ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.LIB_SHARED variant "" ++ "lib" ++ l ++ ".a") (Cfg.libnamesGcc opts)
+                                 ,    map (mkl Cfg.INST_LIB_PKG)
+                                          (if ehcOptFullProgAnalysis opts then [] else pkgNmL)
+                                   ++ map (mkl Cfg.INST_LIB)
+                                          Cfg.libnamesGccPerVariant
+                                   ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ Cfg.mkCLibFilename "" l) (Cfg.libnamesGcc opts)
                                    ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
                                  , if   ehcOptFullProgAnalysis opts
                                    then [ ]
                                    else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
                                  )
+                              where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant "") l
                             FinalCompile_Module
                               -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                               where o = fpO modNm fp
@@ -90,8 +94,8 @@ cpCompileWithGCC how othModNmL modNm
                              = mkShellCmd
                                  (  [ Cfg.shellCmdGcc ]
                                  ++ gccDefs opts ["O"]
-                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE variant "" ]
-                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INCLUDE_SHARED variant "" ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE variant "" ]
+                                 ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE_SHARED variant "" ]
 %%[[(99 codegen)
                                  ++ [ "-I" ++ d | d <- gccInclDirs opts ]
 %%]]

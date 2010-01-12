@@ -66,8 +66,13 @@ include $(SRC_PREFIX)ehc/files1.mk
 -include $(SRC_PREFIX)experiments/files.mk
 -include $(SRC_EXPERIMENTS_PREFIX)subst/files.mk
 
-include extlibs/bgc/files.mk
-include extlibs/gmp/files.mk
+include extlibs/files.mk
+include $(EXTLIBS_PREFIX)bgc/files.mk
+ifeq ($(EHC_CFG_MPLIB),gmp)
+include $(EXTLIBS_PREFIX)gmp/files.mk
+endif
+include $(EXTLIBS_PREFIX)ltm/files.mk
+include ehclib/files1.mk
 include $(SRC_PREFIX)rts/files.mk
 ifeq ($(ENABLE_JAVA),yes)
 -include $(SRC_PREFIX)jazy/files.mk
@@ -84,7 +89,7 @@ include $(SRC_PREFIX)ehc/files2.mk
 -include text/files-targets.mk
 -include $(wildcard text/files2-*.mk)
 -include www/files.mk
-include ehclib/files.mk
+include ehclib/files2.mk
 include test/files.mk
 include test/benchmark/files.mk
 
@@ -211,8 +216,10 @@ uhc: $(EHC_FOR_UHC_BLD_EXEC) $(EHC_UHC_INSTALL_VARIANT)/ehclibs
 UHC_INSTALL_VARIANT_PREFIX 	:= $(call FUN_INSTALLABS_VARIANT_PREFIX,$(EHC_UHC_INSTALL_VARIANT))
 UHC_INSTALL_VARIANTNAME		:= $(UHC_EXEC_NAME)-$(EH_VERSION_FULL)
 UHC_INSTALL_PREFIX			:= $(call FUN_DIR_VARIANT_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME))
+UHC_INSTALL_EHCBINARY		:= $(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)
 
 uhc-install: uhc
+	rm -f $(UHC_INSTALL_EXEC) $(UHC_INSTALL_EXEC).sh $(UHC_INSTALL_SHELL).sh
 	mkdir -p $(UHC_INSTALL_PREFIX)
 	$(call FUN_COPY_FILES_BY_TAR,$(UHC_INSTALL_VARIANT_PREFIX),$(UHC_INSTALL_PREFIX),*) ; \
 	alltargets="`$(EHC_FOR_UHC_BLD_EXEC) --meta-targets`" ; \
@@ -222,10 +229,10 @@ uhc-install: uhc
 	done ; \
 	rm -f $(UHC_INSTALL_EXEC) ; \
 	mkdir -p $(INSTALL_UHC_BIN_PREFIX) ; \
-	ehc="$(UHC_INSTALL_PREFIX)bin/$(EHC_EXEC_NAME)$(EXEC_SUFFIX)" ; \
-	$(STRIP) $${ehc} ; \
-	ln -s $${ehc} $(UHC_INSTALL_EXEC)
-	$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
+	$(STRIP) $(UHC_INSTALL_EHCBINARY) ; \
+	#ln -s $(UHC_INSTALL_EHCBINARY) $(UHC_INSTALL_EXEC)
+	$(call FUN_GEN_SHELL_ALIAS,$(UHC_INSTALL_EHCBINARY),$(UHC_INSTALL_SHELL),--cfg-install-root=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT) --cfg-install-variant=$(UHC_INSTALL_VARIANTNAME))
+	#$(UHC_INSTALL_EXEC) --meta-export-env=$(TOPLEVEL_SYSTEM_ABSPATH_PREFIX)$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME)
 
 uhc-install-postprocess-bc:
 	cd $(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,$(INSTALL_UHC_ROOT),$(UHC_INSTALL_VARIANTNAME),$(EHC_VARIANT_TARGET)) ; \
@@ -248,6 +255,8 @@ uhc-install-postprocess-C:
 uhc-install-postprocess-core:
 	
 uhc-install-postprocess-jazy:
+	
+uhc-install-postprocess-llvm:
 	
 # still to do: uhc --meta-export-env=$(INSTALL_UHC_LIB_PREFIX),$(UHC_EXEC_NAME)
 
@@ -355,8 +364,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(FIGS_ASIS_SRC_PDF)
-	@echo $(FIGS_SRC_SUBDIRS_PREFIX)
+	@echo $(XXXX)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

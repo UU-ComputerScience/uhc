@@ -73,13 +73,57 @@ verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Install locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(installRoot)
+installRoot :: EHCOpts -> String
+installRoot opts
+%%[[8
+  = envroot
+%%][99
+  = maybe envroot id (ehcOptCfgInstallRoot opts)
+%%]]
+  where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
+%%]
+
+%%[(8 codegen) export(installVariant)
+installVariant :: EHCOpts -> String
+installVariant opts
+%%[[8
+  = envvariant
+%%][99
+  = maybe envvariant id (ehcOptCfgInstallVariant opts)
+%%]]
+  where envvariant = ehcenvVariant $ ehcOptEnvironment opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% File locations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(mkInstallFilePrefix)
 mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
 mkInstallFilePrefix opts whatfile variant pkg
-  = mkDirbasedInstallPrefix (ehcenvInstallRoot $ ehcOptEnvironment opts) whatfile variant (show $ ehcOptTarget opts) pkg
+  = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
+%%]
+
+%%[(8 codegen) export(mkInstallBindirPrefix)
+mkInstallBindirPrefix :: EHCOpts -> String -> String
+mkInstallBindirPrefix opts variant
+  = mkDirbasedInstallPrefix (installRoot opts) INST_BIN variant "" ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirSystem)
+mkInstallPkgdirSystem :: EHCOpts -> String
+mkInstallPkgdirSystem opts
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG (installVariant opts) ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirUser)
+mkInstallPkgdirUser :: EHCOpts -> String
+mkInstallPkgdirUser opts
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG "" (show $ ehcOptTarget opts) ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -91,7 +135,12 @@ shellCmdGcc :: String
 shellCmdGcc = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
 %%]
 
-%%[8 export(shellCmdLLVM)
+%%[8 export(shellCmdLLVMC)
+shellCmdLLVMC :: EHCOpts -> String -> [String]
+shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "@LLVM_AS_CMD@", "@LLVM_OPT_CMD@", "@LLVM_LLC_CMD@", "@GCC_CMD@"]
+%%]
+
+%%[8888 export(shellCmdLLVM)
 shellCmdLLVM :: String
 shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
 %%]
@@ -155,7 +204,7 @@ libnamesGcc opts
         else []
        )
 %%[[97
-    ++ (if useGMP
+    ++ (if mpLib == MPLib_GMP
         then [ "@EXTLIBS_GMP_PKG_NAME@" ]
         else []
        )

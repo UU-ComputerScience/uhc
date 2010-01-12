@@ -13,6 +13,10 @@
 #define RTS_LT     gb_LT
 %%]
 
+%%[8
+#define RTS_MkBool(b)		((b) ? RTS_True : RTS_False)
+%%]
+
 %%[98
 #define CAppendBinaryMode    gb_AppendBinaryMode
 #define CAppendMode          gb_AppendMode

@@ -67,6 +67,21 @@ AC_DEFUN(REQUIRED_OPTIONAL_PROG_FOR_EH,
   fi
 ])
 
+### obvious utils which are amiss on some platforms: m4
+REQUIRED_PROG_FOR_EH(m4Cmd,m4)
+
+### svn log/history
+AC_PATH_PROG(svnCmd,svn)
+if test -x "$svnCmd"
+then
+  svnExists="yes"
+  ### $svnCmd log -rHEAD:1 --limit 100 > SVNLOG
+else
+  svnExists="no"
+fi
+AC_SUBST(SVN_EXISTS,$svnExists)
+AC_SUBST(SVN_CMD,$svnCmd)
+
 ### svn revision
 AC_PATH_PROG(svnVersionCmd,svnversion)
 if test -x "$svnVersionCmd"
@@ -81,7 +96,7 @@ AC_SUBST(SVN_VERSION_EXISTS,$svnVersionExists)
 AC_SUBST(SVN_VERSION_CMD,$svnVersionCmd)
 AC_SUBST(SVN_REVISION,$svnRevision)
 
-### enable options
+### enable options: java
 AC_ARG_ENABLE(java, AS_HELP_STRING([--enable-java],[include java code generation]), [enableJava=yes], [enableJava=no])
 AC_SUBST(ENABLE_JAVA,$enableJava)
 if test x$enableJava = xyes
@@ -113,6 +128,11 @@ then
   AC_SUBST(JAR_CMD,$jarCmd)
 fi
 
+### enable options: llvm
+AC_ARG_ENABLE(llvm, AS_HELP_STRING([--enable-llvm],[include llvm code generation]), [enableLlvm=yes], [enableLlvm=no])
+AC_SUBST(ENABLE_LLVM,$enableLlvm)
+
+### enable options: clr
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
@@ -494,8 +514,11 @@ AC_ARG_WITH(llvm-as,
                 [Path to the LLVM Assembler])],
 [ llvmAs="$withval" ],
 [ 
-  if test "$LLVM_AS" = ""; then
-    AC_PATH_PROG(llvmAs,llvm-as)
+  if test "x$LLVM_AS" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
+    fi
   else
     llvmAs=$LLVM_AS
   fi
@@ -509,8 +532,11 @@ AC_ARG_WITH(opt,
                 [Path to the LLVM bitcode optimizer])],
 [ llvmOpt="$withval" ],
 [
-  if test "$LLVM_OPT" = ""; then
-    AC_PATH_PROG(llvmOpt,opt)
+  if test "x$LLVM_OPT" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmOpt,opt)
+    fi
   else
     llvmOpt=$LLVM_OPT
   fi
@@ -524,14 +550,24 @@ AC_ARG_WITH(llc,
                 [Path to the LLVM Compiler])],
 [ llvmLlc="$withval" ],
 [
-  if test "$LLC" = ""; then
-    AC_PATH_PROG(llvmLlc, llc)
+  if test "x$LLC" = "x"; then
+    if test x$enableLlvm = xyes
+    then
+      REQUIRED_PROG_FOR_EH(llvmLlc,llc)
+    fi
   else
     llvmLlc=$LLC
   fi
 ]
 )
 AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+
+if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+then
+  llvmExists=yes
+else
+  llvmExists=no
+fi
 
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
@@ -783,8 +819,37 @@ AC_SUBST(GMP_ABI,$gmpABI)
 # Use Boehm's GC
 AC_DEFINE([USE_BOEHM_GC],[1],[Use Boehm's garbage collector])
 
-# Use GMP
-AC_DEFINE([USE_GMP],[1],[Use GNU Multiple Precision library])
+# which MP library
+AC_ARG_WITH(mplib,
+[AC_HELP_STRING([--with-mplib=ltm|gmp],
+                [Specify which MP library to use. Default is ltm (builtin derivative of LibTomMath).])],
+[ mplib="$withval" ],
+[ mplib="ltm" ]
+)
+AC_SUBST(MPLIB,$mplib)
+
+# Use GMP or LTM
+if test "$mplib" = "gmp" ; then
+  AC_DEFINE([USE_GMP],[1],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[0],[Use LTM (LibTomMath) library])
+else
+  AC_DEFINE([USE_GMP],[0],[Use GMP (GNU Multiple Precision) library])
+  AC_DEFINE([USE_LTM],[1],[Use LTM (LibTomMath) library])
+fi
+
+# which GMP archive
+AC_ARG_WITH(gmplibarchive,
+[AC_HELP_STRING([--with-gmplibarchive=<gmp lib archive>],
+                [If GMP is used, specify absolute location of GMP archive (named like .../gmp-X.Y.Z.tar.gz).])],
+[ gmpLibArchive="$withval" ],
+[ gmpLibArchive=`pwd`/"extlibs/gmp/gmp-4.2.1.tar.gz" ]
+)
+if test -r "$gmpLibArchive" ; then
+  gmpLibArchiveExists="yes"
+else
+  gmpLibArchiveExists="no"
+fi
+AC_SUBST(GMP_LIB_ARCHIVE, "$gmpLibArchive")
 
 # Prefix used for global values, assumed to be present by RTS
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?)])
@@ -966,7 +1031,7 @@ AC_SUBST(EXIT_IF_ABSENT_LIB_OR_TOOL, $exitIfAbsentLibOrTool)
 AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([test/benchmark/runbenchmark.pl])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
-AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
+# AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
 AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h])
 AC_OUTPUT
 
@@ -1029,6 +1094,37 @@ then
   echo "  javac is available?           : $javacExists"
   if test "x$javacExists" = "xyes" ;then 
   echo "    command for javac           : $javacCmd"
+  fi
+fi
+
+if test x$enableLlvm = xyes
+then
+  echo "  llvm is available?            : $llvmExists"
+  echo "    command for llc             : $llvmLlc"
+  if test -x $llvmLlc
+  then
+    echo "    version                     :" `$llvmLlc -version`
+  else
+    echo "    **** ERROR **** : llc is not available and/or executable"
+  fi
+  echo "    command for llvm-as         : $llvmAs"
+  if test ! -x $llvmAs
+  then
+    echo "    **** ERROR **** : llvm-as is not available and/or executable"
+  fi
+  echo "    command for opt             : $llvmOpt"
+  if test ! -x $llvmOpt
+  then
+    echo "    **** ERROR **** : opt is not available and/or executable"
+  fi
+fi
+
+echo "  MP library                    : $mplib"
+if test "$mplib" == "gmp" ; then
+  if test "x$gmpLibArchiveExists" = "xyes" ;then
+    echo "    gmp lib archive             : $gmpLibArchive"
+  else
+    echo "    **** ERROR **** : GMP lib archive not readable: $gmpLibArchive"
   fi
 fi
 

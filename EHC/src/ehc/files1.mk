@@ -21,6 +21,7 @@ EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(
 #UHC_EXEC_NAME							:= uhc
 #UHC_BLD_EXEC							:= $(EHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
 UHC_INSTALL_EXEC						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)$(EXEC_SUFFIX)
+UHC_INSTALL_SHELL						:= $(INSTALL_UHC_BIN_PREFIX)$(UHC_EXEC_NAME)
 EHC_FOR_UHC_BLD_EXEC					:= $(call FUN_EHC_INSTALL_VARIANT_ASPECTS_EXEC,$(EHC_UHC_INSTALL_VARIANT))
 
 # sources + dpds, for .rul
@@ -58,7 +59,7 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix TauPhi/,Common) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
-													$(addprefix Base/,Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Binary) \
+													$(addprefix Base/,Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
 													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
@@ -354,7 +355,7 @@ $(INSABS_EHC_LIB_ALL_AG): $(INSTALLFORBLDABS_EHC_LIB_AG_PREFIX)%: $(EHC_BLD_LIB_
 ###########################################################################################
 
 # rules for ehc library sources+derived
-$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE)
+$(EHC_AG_ALL_MAIN_DRV_AG) $(EHC_AG_ALL_DPDS_DRV_AG): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.ag: $(SRC_EHC_PREFIX)%.cag $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_AG) $(LIB_EHC_SHUFFLE_DEFS) $(SHUFFLE_OPTS_WHEN_EHC) $(EHC_SHUFFLE_OPTS_WHEN_UHC_$(EHC_VARIANT)) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F)  --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@&& \
 	touch $@
@@ -378,7 +379,7 @@ $(EHC_HS_MAIN_DRV_HS): $(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(SRC_EHC_PREFIX)%
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=Main --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
 
-$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE)
+$(EHC_HS_UTIL_DRV_HS): $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs: $(SRC_EHC_PREFIX)%.chs $(SHUFFLE) # $(MK_CONFIG_MKF)
 	mkdir -p $(@D)
 	$(SHUFFLE_HS) $(LIB_EHC_SHUFFLE_DEFS) --gen-reqm="($(EHC_VARIANT) $(EHC_ASPECTS))" --base=$(*F) --variant-order="$(EHC_SHUFFLE_ORDER)" $< > $@ && \
 	touch $@
@@ -425,9 +426,11 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "ehcDefaultInplaceInstallDir = \"$(INSTALLABS_DIR)\"" ; \
 	  echo "" ; \
+	  echo "ehcPkgConfigfileName = \"$(UHC_PKG_CONFIGFILE_NAME)\"" ; \
+	  echo "" ; \
 	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
 	  echo "" ; \
-	  echo "data WhatInstallFile = LIB | LIB_SHARED | INCLUDE | INCLUDE_SHARED | LIB_PKG | LIB_PKG_INCLUDE " ; \
+	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG | INST_LIB_PKG_INCLUDE " ; \
 	  echo "" ; \
 	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
@@ -445,11 +448,13 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	    echo "" ; \
 	  fi ; \
 	  echo "mkDirbasedInstallPrefix dir what variant target pkg = case what of" ; \
-	  echo "  LIB              -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
-	  echo "  INCLUDE          -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
-	  echo "  LIB_SHARED       -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
-	  echo "  INCLUDE_SHARED   -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
-	  echo "  LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
-	  echo "  LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
+	  echo "  USER_PKG              -> dir ++ \"/\" ++ target" ; \
+	  echo "  INST_LIB              -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  INST_BIN              -> \"$(call FUN_DIR_VARIANT_BIN_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_INCLUDE          -> \"$(call FUN_DIR_VARIANT_INC_TARGET_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \")\"" ; \
+	  echo "  INST_LIB_SHARED       -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_INCLUDE_SHARED   -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
+	  echo "  INST_LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "  INST_LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
 	) > $@
 

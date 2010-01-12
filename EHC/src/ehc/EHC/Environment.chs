@@ -2,9 +2,13 @@
 %%% EHC environmental info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 Environmental info for EHC to run.
 Currently:
 - install directory (where e.g. libraries reside)
+
+20091210 AD: to become obsolete, because cmdline --cfg-XX parameters will take care of this from within a wrapper shell script.
+%%]
 
 %%[8 module {%{EH}EHC.Environment}
 %%]

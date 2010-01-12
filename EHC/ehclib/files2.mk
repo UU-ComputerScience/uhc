@@ -1,45 +1,4 @@
 ###########################################################################################
-# locations
-###########################################################################################
-
-# location of lib src
-EHCLIB_EHCLIB							:= ehclib
-EHCLIB_EHCLIB_PREFIX					:= $(EHCLIB_EHCLIB)/
-EHCLIB_EHCBASE							:= base
-EHCLIB_EHCBASE_PREFIX					:= $(EHCLIB_EHCBASE)/
-EHCLIB_EHCLIB_EHCBASE					:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE)
-EHCLIB_EHCLIB_EHCBASE_PREFIX			:= $(EHCLIB_EHCLIB_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
-EHCLIB_SRC_PREFIX						:= $(TOP_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
-EHCLIBABS_SRC_PREFIX					:= $(TOPABS2_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
-EHCLIB_BASE_SRC_PREFIX					:= $(TOP_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
-EHCLIBABS_BASE_SRC_PREFIX				:= $(TOPABS2_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
-
-# location of GHC sync'ed lib src
-EHCLIB_GHCSYNC							:= ehclib-ghc-sync
-EHCLIB_GHCSYNC_PREFIX					:= $(EHCLIB_GHCSYNC)/
-
-# sync download location + name
-EHCLIB_GHCSYNC_DOWNLOAD_PREFIX			:= http://www.haskell.org/ghc/dist/stable/dist/
-EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE		:= ghc-6.10.1.20090106
-EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH		:= $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)-src.tar.bz2
-EHCLIB_GHCSYNC_DOWNLOAD					:= $(EHCLIB_GHCSYNC_DOWNLOAD_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH)
-
-# extracted sync, frozen as .tgz into svn repo
-EHCLIB_GHCSYNC_FROZEN_NAME_BASE			:= ehclib-ghc-sync-frozen
-EHCLIB_GHCSYNC_FROZEN_NAME_ARCH			:= $(EHCLIB_GHCSYNC_FROZEN_NAME_BASE).tgz
-EHCLIB_GHCSYNC_FROZEN					:= $(call WINXX_CYGWIN_NAME2,$(EHCLIBABS_SRC_PREFIX)$(EHCLIB_GHCSYNC_FROZEN_NAME_ARCH))
-
-# build locations
-EHCLIB_BLD_VARIANT_ASPECTS_PREFIX		:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHCLIB_EHCLIB_PREFIX)
-EHCLIB_BASE_BLD_VARIANT_ASPECTS_PREFIX	:= $(EHC_BLD_VARIANT_ASPECTS_PREFIX)$(EHCLIB_EHCLIB_EHCBASE_PREFIX)
-EHCLIB_BLD_SYNC_PREFIX					:= $(BLD_PREFIX)$(EHCLIB_GHCSYNC_PREFIX)
-EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)frozen/
-
-# install locations
-EHCLIB_INSTALL_VARIANT_TARGET_PREFIX		:= $(INSTALL_VARIANT_LIB_TARGET_PREFIX)
-EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
-
-###########################################################################################
 # which library files to get from which GHC packages
 ###########################################################################################
 
@@ -83,13 +42,13 @@ EHCLIB_SYNC_ALL_PKG_DRV					:= $(EHCLIB_SYNC_ALL_PKG_DRV_HS) $(EHCLIB_SYNC_ALL_P
 # files, intermediate files, for ehclib
 ###########################################################################################
 
-# this file
-EHCLIB_MKF								:= $(EHCLIB_SRC_PREFIX)files.mk
+# this (and other make)file
+EHCLIB_MKF								:= $(addprefix $(EHCLIB_SRC_PREFIX),files1.mk files2.mk)
 
 # end products
 # NOTE: library is just a bunch of compiled .hs files, triggered by compile of a Main
 EHCLIB_MAIN								:= CompileAll
-FUN_EHCLIB_ALL_LIB						= $(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,$(1),$(2))$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
+FUN_EHCLIB_ALL_LIB						= $(call FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX,$(1),$(2))$(EHCLIB_EHCBASE_PREFIX)$(EHCLIB_MAIN)$(EXEC_SUFFIX)
 FUN_EHCLIB_ALL_LIB2						= $(patsubst %,$(call FUN_EHCLIB_ALL_LIB,$(1),%),$(EHC_VARIANT_TARGETS))
 EHCLIB_ALL_LIBS							= $(patsubst %,$(call FUN_EHCLIB_ALL_LIB,%,$(EHC_VARIANT_TARGET)),$(EHC_VARIANTS))
 EHCLIB_ALL_LIBS2						= $(foreach variant,$(EHC_VARIANTS),$(call FUN_EHCLIB_ALL_LIB2,$(variant)))
@@ -169,23 +128,31 @@ ehclib-variant-dflt: \
 	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) --meta-export-env ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
+	        mkdir -p $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} ;\
+	        hsFiles="`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'`" ; \
+	        ( echo $${hsFiles} | \
+	            sed -e 's+^+exposed-modules: +' \
+	                -e "s+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg}/++g" \
+	                -e 's+\.[^.]*hs++g' \
+	                -e 's+/+.+g' ; \
+	        ) > $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/$(UHC_PKG_CONFIGFILE_NAME) ; \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          --cpp \
 	          $(EHCLIB_DEBUG_OPTS) \
 	          --compile-only \
-	          --hide-all-packages \
+	          --pkg-hide-all \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
 	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 	          --pkg-build=$${pkg} \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
-	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'` \
+	          $${hsFiles} \
 	          `find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.c'` \
 	          +RTS -K30m ; \
 	        err=$$? ; \
 	        if test $${err} -ne 0 ; then exit $${err} ; fi ; \
-	        pkgs="$${pkgs} --package $${pkg}" ; \
+	        pkgs="$${pkgs} --pkg-expose $${pkg}" ; \
 	      done \
 	     ,)
 
@@ -214,6 +181,8 @@ ehclib-codegentargetspecific-core:
 
 ehclib-codegentargetspecific-clr:
 
+ehclib-codegentargetspecific-llvm: $(if $(EHC_CFG_USE_GRIN),$(if $(ENABLE_LLVM),$(INSTALL_LIB_RTS),),)
+
 ###########################################################################################
 # ehclib dispatch
 ###########################################################################################
@@ -228,8 +197,8 @@ $(patsubst %,%/ehclibs,$(EHC_VARIANTS)): %/ehclibs:
 
 $(EHCLIB_ALL_LIBS2): %: $(EHCLIB_ALL_SRC) $(EHCLIB_MKF) $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) $(RTS_ALL_SRC)
 	mkdir -p $(@D)
-	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
-	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_LIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \
+	$(MAKE) EHC_VARIANT=`       echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\1+p'` \
+	        EHC_VARIANT_TARGET=`echo $(*D) | sed -n -e 's+$(call FUN_INSTALL_VARIANT_PKGLIB_TARGET_PREFIX,\([0-9]*\),\([a-zA-Z0-9_]*\)).*+\2+p'` \
 	        ehclib-variant-dflt
 	touch $@
 

@@ -9,19 +9,23 @@
 
 # Program to assemble .ll files
 #
-LLVM_AS="@LLVM_AS_CMD@"
+LLVM_AS="$1"
+shift
 
 # Program to optimize .bc files
 #
-LLVM_OPT="@LLVM_OPT_CMD@ -std-compile-opts -dce -globalsmodref-aa -internalize -ipsccp"
+LLVM_OPT="$1 -std-compile-opts -dce -globalsmodref-aa -internalize -ipsccp"
+shift
 
 # Binary to compile .bc files to .s files
 #
-LLC="@LLVM_LLC_CMD@ -mtriple=@TARGET_TRIPLE@"
+LLC="$1 -mtriple=i386-apple-darwin9.8.0"
+shift
 
 # Native linker
 #
-NATIVE_LD="@GCC_CMD@"
+NATIVE_LD="$1"
+shift
 
 # Strip the symbol table
 #
@@ -40,7 +44,7 @@ while getopts "l:o:" opt; do
     case $opt in 
         l )    LIBS="$LIBS $OPTARG" ;;
         o )    OUTPUT="$OPTARG" ;;
-        \? )   echo 'usage: llvm-compilerdriver [-l lib] [-o file] file'
+        \? )   echo 'usage: llvmc as-cmd opt-cmd llc-cmd gcc-cmd [-l lib] [-o file] file'
                exit 1 ;;
     esac
 done
