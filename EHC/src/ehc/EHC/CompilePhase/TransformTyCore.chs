@@ -40,7 +40,7 @@ cpTyCore1Trf modNm trfNm
                  u1     = uidChild $ crsiHereUID $ crsi
                  core2  = ( case trfNm of
 %%[[(8 tauphi)
-                              "FLSN"    -> cmodTrfFlipStrictness
+--                              "FLSN"    -> cmodTrfFlipStrictness
                               "OPSN"    -> cmodTrfOptimizeStrictness
 %%]]
                               _         -> id

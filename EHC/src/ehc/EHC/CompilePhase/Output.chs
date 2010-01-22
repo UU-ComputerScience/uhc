@@ -30,6 +30,7 @@ Output generation, on stdout or file
 -- Core output
 %%[(8 codegen) import({%{EH}Core.Pretty})
 %%]
+-- TyCore output
 %%[(8 codegen) import({%{EH}TyCore.Pretty})
 %%]
 -- Grin input and output

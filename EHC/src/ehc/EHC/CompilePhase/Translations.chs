@@ -7,6 +7,9 @@ Translation to another AST
 %%[8 module {%{EH}EHC.CompilePhase.Translations}
 %%]
 
+%%[1 import(Debug.Trace)
+%%]
+
 -- general imports
 %%[8 import(qualified Data.Map as Map, qualified Data.Set as Set, qualified EH.Util.FastSeq as Seq)
 %%]
@@ -34,6 +37,8 @@ Translation to another AST
 
 -- TyCore semantics
 %%[(8 codegen grin) import(qualified {%{EH}TyCore.ToCore} as TyCore2Core)
+%%]
+%%[(8 codegen grin) import(qualified {%{EH}TyCore.PrettyAST} as TyCoreSem)
 %%]
 
 -- Grin semantics
@@ -146,8 +151,10 @@ cpTranslateEH2TyCore modNm
                  ehSem  = panicJust "cpTranslateEH2Core" mbEHSem
                  tycore = EHSem.tcmodule_Syn_AGItf ehSem
          ;  when (isJust mbEHSem)
-                 (cpUpdCU modNm ( ecuStoreTyCore tycore
-                                ))
+                 (do { cpUpdCU modNm (ecuStoreTyCore tycore)
+                     ; when (ehcOptShowTyCore opts)
+                            (lift $ putPPLn (TyCoreSem.ppAST opts tycore))
+                     })
          }
 %%]
 
@@ -257,4 +264,18 @@ cpTranslateByteCode modNm
 
 
 
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
+%%[1 import(Debug.Trace)
+%%]
 
