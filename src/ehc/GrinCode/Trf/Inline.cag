@@ -74,7 +74,7 @@ grInline allow grmod
 %%]
 
 --Added
-%%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,qualified Debug.Trace as Trace)
+%%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,qualified Debug.Trace as Trace,Data.List)
 %%]
                        
 
@@ -176,35 +176,27 @@ ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
 
 %%[(8 codegen grin)
 {
-type GraphData = [(HsName, HsName, [HsName])]
 
 toNode nm nms = (nm,nm,nms)
 
 -- Find the loopbreaker for inlining recursive functions, but don't loop.
-getLoopBreakers :: GraphData -> [HsName]
-getLoopBreakers gData = -- Trace.trace ("show gData " ++ show gData) []
-
-  let (graph,re,_) = Graph.graphFromEdges gData
-      bounds = (\l -> (minimum l,maximum l)) (Graph.vertices graph)
-      loopBreakers = map ((\(a,b,c) -> a) . re) (getLoopBreakers' bounds (Graph.edges graph))  
-  in  (\b -> Trace.trace ("loopBreakers = " ++ show b) b)
-      $ Trace.trace (show loopBreakers) $ loopBreakers
-  where
-  getLoopBreakers' :: Graph.Bounds -> [Graph.Edge] -> [Graph.Vertex]
-  getLoopBreakers' bounds edges =
-    let graph :: Graph.Graph
-        graph = (\g -> Trace.trace ("graph = " ++ show g) g) $ 
-                Graph.buildG bounds edges
-        sccs :: [[Graph.Vertex]]
-        sccs = map Tree.flatten (Graph.scc graph)
-        nonTrivialSccs = filter (\l -> length l > 1) sccs
+-- TODO topological sorting. Fix the right scc instead of arbitrary.
+-- TODO heuristic for choosing loopbreaker.
+type GraphData = [(HsName, HsName, [HsName])]       
+calcLoopBreakers :: GraphData -> [HsName]
+calcLoopBreakers graph = 
+    let sccs :: [[HsName]]
+        sccs = map Graph.flattenSCC (Graph.stronglyConnComp graph)
+        isDirectRecursive name = let (a,b,edges) = fromJust (find (\(name2,_,_) -> name == name2) graph)
+                                 in  elem name edges
+        nonTrivialSccs = filter (\l -> length l > 1 || isDirectRecursive (head l) ) sccs
         loopBreaker = head (head nonTrivialSccs)                   
     in  if    (null nonTrivialSccs)
         then  []
-        else  let fixedEdges = 
-                    let validEdge (a,b) = b /= loopBreaker 
-                    in  filter validEdge edges
-              in  (loopBreaker : getLoopBreakers' bounds fixedEdges)
+        else  let newGraph = map (map3 (filter (/= loopBreaker))) graph
+                  map3 f (a,b,c) = (a,b,f c)
+                  validEdge (a,b) = b /= loopBreaker 
+              in  (loopBreaker : calcLoopBreakers newGraph)
 }
 
 ATTR AllBind [ | | dependencies USE {++} {[]}: {[(HsName,[HsName])]} ]
@@ -221,8 +213,10 @@ SEM GrBind
                                         ++ "\ndependencies = " ++ show d) d) $
                                         [(@nm,filter (\name -> Map.member name @loc.gathFviMp) @lhs.inhBindingNames)]
             lhs.synBindingNames     = [@nm]
-  | Rec     bindL.loopBreakers      = let graphData = map (\(nm,dependency) -> toNode nm dependency) @bindL.dependencies
-                                      in  (getLoopBreakers graphData) ++ @lhs.loopBreakers
+  | Rec     bindL.loopBreakers      = (\b -> Trace.trace ("\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames
+                                        ++ "\n loopbreakers are:" ++ show b) b) $
+                                      let graphData = map (\(nm,dependency) -> toNode nm dependency) @bindL.dependencies
+                                      in  (calcLoopBreakers graphData) ++ @lhs.loopBreakers
             bindL.inhBindingNames   = @bindL.synBindingNames
 %%]
 
@@ -240,15 +234,15 @@ ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 -- for example: costly calculation of PI.
 
 SEM GrBind
-  | Bind        (lhs.gathInlMp,loc.omitBind)    =   (\r -> Trace.trace ("\nnm = " ++ show @nm ++ ", (gathInlMp,omit) = " ++ show r) r) $
-
+  | Bind        (lhs.gathInlMp,loc.omitBind)    =   -- (\r -> Trace.trace ("\nnm = " ++ show @nm ++ ", (gathInlMp,omit) = " ++ show r) r) $
                                                     if   (elem @nm @lhs.loopBreakers)
                                                     then Trace.trace (show @nm ++ " is a loopBreaker so no inlining.") $
                                                          (Map.empty,False) -- Don't inline loopbreakers
-
                                                          
-                                                    else Trace.trace ("\nnm = " ++ show @nm ++ "\noccurrence = " 
-                                                            ++ show (Map.lookup @nm @lhs.fviMp)) $
+                                                    else (if length @lhs.loopBreakers > 1
+                                                         then Trace.trace ("\nnm = " ++ show @nm ++ "\noccurrence = " 
+                                                            ++ show (Map.lookup @nm @lhs.fviMp))
+                                                         else id) $
                                                          -- Map.lookup @nm @lhs.fviMp: kan nothing geven - dead code?
                                                          -- Test: const (Map.empty,False) $
 
