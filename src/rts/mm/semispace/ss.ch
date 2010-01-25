@@ -11,6 +11,11 @@ See XXX.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#define	MM_PLAN_SS_GCPROGRESS_COLLECTING			(1<<0)
+#define	MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING		(1<<1)
+%%]
+
+%%[8
 // the administration
 typedef struct MM_Plan_SS_Data {
 	MM_Space			fragSpace0 ; 		// the 2 lower level spaces
@@ -31,7 +36,7 @@ typedef struct MM_Plan_SS_Data {
   	MM_DEQue 			weakPtrFinalizeQue ;	// queue of weakptrs to be finalized
 	MM_WeakPtr*			weakPtr ;				// weak ptr admin
 %%]]
-	Bool				gcInProgress ;
+	Word				gcProgress ;		// gc state
 } MM_Plan_SS_Data ;
 %%]
 
