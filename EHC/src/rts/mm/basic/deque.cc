@@ -164,6 +164,7 @@ Bool mm_deque_IteratorStep( MM_Iterator* i ) {
 		i->hasData = False ;
 	} else {
 		i->data = &((BPtr)(i->state2))[ off ] ;
+		i->state = off ;
 	}
 	return i->hasData ;
 }
@@ -175,7 +176,7 @@ void mm_deque_Iterator( MM_DEQue* deque, MM_Iterator* i ) {
 		i->state2 = (Word)deque->dll.next ;
 		i->state3 = deque->tailOff ;
 		i->state4 = (Word)deque->dll.prev ;
-		i->state5 = deque->nrWordsElt << Word_SizeInBytes_Log ;
+		i->state5 = deque->nrWordsElt << Word_SizeInBytes_Log ; // cached size of increment (could be removed)
 		i->data = &((BPtr)(i->state2))[ atOff ] ;
 		i->step = &mm_deque_IteratorStep ;
 		i->iteratee = (BPtr)deque ;

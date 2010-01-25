@@ -468,7 +468,7 @@ Placeholder for goal ``minimal memory use'' by generated executables.
  {}% options
  {GC.Extra}% ident
  {Full-fledged GC}% descr
- {GC.Par,GC.Gen,GC.Precise}% prerequisites (, separated)
+ {GC.Par,GC.Gen,GC.Precise,GC.Stat}% prerequisites (, separated)
  {}% required time
  {design}% kind of work
  {Goal,GC,RTD}% categorization, area to which this applies
@@ -1344,7 +1344,7 @@ Like GHC time profiling on UHC.
  {}% options
  {Debug.Exec}% ident
  {Debugging executables}% descr
- {}% prerequisites (, separated)
+ {Log.Exec}% prerequisites (, separated)
  {}% required time
  {maint}% kind of work
  {Internal}% categorization, area to which this applies
@@ -1364,6 +1364,46 @@ Debugger
  {}% startdate
  {}% worker
 Debugger \& dumping tools, AG visualisation
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Log.Exec}% ident
+ {Runtime logging facilities}% descr
+ {Event.Exec}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Logging \& tracing, with 2 dimensions: topic, level.
+To be turned on/off via commandline.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Event.Exec}% ident
+ {Runtime event framework}% descr
+ {Log.Exec,GC.Stat}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Runtime events; with instances for log, trace, statistics.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Stat}% ident
+ {GC runtime statistics}% descr
+ {Event.Exec}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+GC statistics: e.g. time between GC, size alloc distribution, pause times.
 \end{WorkPackage}
 
 %%]

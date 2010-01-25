@@ -40,7 +40,7 @@ void mm_collector_SS_CollectPre( MM_Collector* collector ) {
 void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 	// MM_Collector_SS_Data* colss = (MM_Collector_SS_Data*)collector->data ;
 	
-	// printf( "Collect!!\n" ) ;
+	// printf( "Collect!!\n" ) ;fflush(stdout);
 	// we know we are part of an ss plan
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(((MM_Plan*)collector->plan)->data) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect A to=%p, fr=%p\n", plss->toSpace, plss->fromSpace);}) ;
