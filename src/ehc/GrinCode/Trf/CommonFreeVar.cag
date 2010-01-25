@@ -33,6 +33,7 @@ SEM GrAlt
   | Alt         lhs         .   gathFviMp       =   @expr.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
 
 SEM GrBind
-  | Bind        lhs         .   gathFviMp       =   @expr.gathFviMp `fviMpDifference` fviMpFromList @argNmL
+  | Bind        lhs         .   gathFviMp       =   @loc.gathFviMp
+                loc         .   gathFviMp       =   @expr.gathFviMp `fviMpDifference` fviMpFromList @argNmL
 %%]
 

@@ -28,10 +28,10 @@ DATA GrGlobal
 TYPE GrGlobalL    =   [GrGlobal]
 
 DATA GrBind
-  | Bind        nm              : {HsName}
+  | Bind        nm              : {HsName}   -- name of the binding
                 annot           : GrBindAnn
-                argNmL          : {[HsName]}
-                expr            : GrExpr
+                argNmL          : {[HsName]} -- argument names
+                expr            : GrExpr     -- the body
   | Arity       nm              : {HsName}
                 arity           : {Int}
   | Rec         bindL           : GrBindL

@@ -3,6 +3,8 @@
 Inline functions that are used only once.
 (To do: inline more functions, e.g. small ones. But than the body should be cloned, with introduced fresh variables etc).
 
+New opportunities for this transformation are present because the InlineEA transformation introduces new Call constructs.
+
 The inlined function is not completely dropped,
 because its arity is still needed in SplitFetch.
 So we keep a binding with a trivial body.
@@ -32,6 +34,7 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LateInline} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(lateInline)
 
+-- JV : inline after HTP analysis. Eval inlining can give oppurtutnaties for futher inlining.
 lateInline :: (GrModule,HptMap) -> (GrModule,HptMap)
 lateInline (grmod,hptMap) 
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
@@ -66,27 +69,41 @@ SEM GrExpr
   
   
 -- build a map with inline info
-  
+-- should be inline or not?
+-- If in finalINnfo -> yes
+
+-- mapping from name-number to (argumentnames, the copy of the body of the function)
+
 ATTR AllBind AllExpr [ | | copy : SELF ]  
 ATTR AllBind [ | insertInfo : {Map.Map Int ([HsName],GrExpr)} | ]
 ATTR AllBind AllGrExpr [ finalInfo : {Map.Map Int ([HsName],GrExpr)} |  | ]
+-- FIXME: need to remember if copy is needed.
+-- FIXME: need to remember what is changed in HTP table
 
 SEM GrModule  
   | Mod       bindL.insertInfo   = Map.empty
               bindL.finalInfo    = @bindL.insertInfo
 
-SEM GrBind
-  | Bind      lhs.insertInfo  =  if   Map.findWithDefault 0 (getNr @nm) @lhs.finalCount == 1
-                                 then Map.insert (getNr @nm) (@argNmL, @expr.grTrf) @lhs.insertInfo
-                                 else @lhs.insertInfo
+
+
+-- Todo: number again, and runHTP analysis again. Maybe we need something new besides HNmNr, and than we can alter the
+-- number functionality in NumberIdents.cag
+-- FIXME we have only to copy the 2nd?
+-- FIXME: renumber: find max number, renumber non -HMmnr's
+
+SEM GrBind                                               -- Hsname are HNmNr's
+  | Bind      lhs.insertInfo  =  if   Map.findWithDefault 0 (getNr @nm) @lhs.finalCount == 1        -- jv: count usages in the map, and only inline if function used only once.
+                                 then Map.insert (getNr @nm) (@argNmL, @expr.grTrf) @lhs.insertInfo -- add current to insertInfo map.
+                                 else @lhs.insertInfo -- dont change map.
+                                 -- FIXME need to determine if copy is needed.
   
 
 -- perform the inlining
 
-SEM GrExpr
-  | Call      lhs.grTrf  =  maybe @loc.grTrf
-                                  ( \(args,body) -> substitute args @argL.copy body )
-                                  ( Map.lookup (getNr @nm) @lhs.finalInfo )
+SEM GrExpr                  -- change the module if name is found in finalinfo
+  | Call      lhs.grTrf  =  maybe @loc.grTrf                                          -- not found => no change
+                                  ( \(args,body) -> substitute args @argL.copy body ) -- found     => substitute
+                                  ( Map.lookup (getNr @nm) @lhs.finalInfo )           -- FIXME need copy
 
 
 -- drop the inlined bindings
@@ -94,13 +111,14 @@ SEM GrExpr
 {-
 ATTR GrBind [ | | drop : {Bool} ]
 
+ -- should we drop?
 SEM GrBind
-  | Bind   lhs . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
-  | Rec    lhs . drop  =  null @bindL.grTrf
-
+  | Bind   lhs . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1) -- drop if is in finalinfo OR more then once in finalcount
+  | Rec    lhs . drop  =  null @bindL.grTrf -- drop if empty
+ -- do the drop
 SEM GrBindL
   | Cons  lhs  .  grTrf  =  if @hd.drop
-                            then             @tl.grTrf
+                            then             @tl.grTrf -- not needed anymore.
                             else @hd.grTrf : @tl.grTrf
 -}
 
@@ -108,7 +126,9 @@ SEM GrBindL
 -- So, keep an "Arity" binding to retain the arity
 
 SEM GrBind
+ -- should be inline or not? same condition as above, except for recusive functions
   | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
+       -- do the 'drop'
            lhs . grTrf  =  if   @loc.drop
                            then GrBind_Arity @nm (length @argNmL)
                            else @loc.grTrf
@@ -118,12 +138,12 @@ SEM GrBind
 
 %%[(8 codegen grin) hs
 
+-- convert to name
 val2name :: GrVal -> HsName
 val2name (GrVal_Var nm) = nm
 val2name v              = error $ "LateInline: variable is not a name: " ++ show v
 
-
-substitute argnms vals expr = let env = Map.fromList (zip argnms (map val2name vals))
-                              in  substExpr env expr
+substitute argnms vals expr = let env = Map.fromList (zip argnms (map val2name vals))   -- map from: argument -> value name. (hsname -> hsname/HNmNr)
+                              in  substExpr env expr      -- substitutes variable names by other names
 
 %%]

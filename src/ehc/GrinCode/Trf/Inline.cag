@@ -73,6 +73,11 @@ grInline allow grmod
 %%[(8 codegen grin) hs import({%{EH}Base.Debug})
 %%]
 
+--Added
+%%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,qualified Debug.Trace as Trace)
+%%]
+                       
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,6 +170,61 @@ SEM GrBind
 ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inlining recursive functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+{
+type GraphData = [(HsName, HsName, [HsName])]
+
+toNode nm nms = (nm,nm,nms)
+
+-- Find the loopbreaker for inlining recursive functions, but don't loop.
+getLoopBreakers :: GraphData -> [HsName]
+getLoopBreakers gData = -- Trace.trace ("show gData " ++ show gData) []
+
+  let (graph,re,_) = Graph.graphFromEdges gData
+      bounds = (\l -> (minimum l,maximum l)) (Graph.vertices graph)
+      loopBreakers = map ((\(a,b,c) -> a) . re) (getLoopBreakers' bounds (Graph.edges graph))  
+  in  (\b -> Trace.trace ("loopBreakers = " ++ show b) b)
+      $ Trace.trace (show loopBreakers) $ loopBreakers
+  where
+  getLoopBreakers' :: Graph.Bounds -> [Graph.Edge] -> [Graph.Vertex]
+  getLoopBreakers' bounds edges =
+    let graph :: Graph.Graph
+        graph = (\g -> Trace.trace ("graph = " ++ show g) g) $ 
+                Graph.buildG bounds edges
+        sccs :: [[Graph.Vertex]]
+        sccs = map Tree.flatten (Graph.scc graph)
+        nonTrivialSccs = filter (\l -> length l > 1) sccs
+        loopBreaker = head (head nonTrivialSccs)                   
+    in  if    (null nonTrivialSccs)
+        then  []
+        else  let fixedEdges = 
+                    let validEdge (a,b) = b /= loopBreaker 
+                    in  filter validEdge edges
+              in  (loopBreaker : getLoopBreakers' bounds fixedEdges)
+}
+
+ATTR AllBind [ | | dependencies USE {++} {[]}: {[(HsName,[HsName])]} ]
+ATTR AllBind [ loopBreakers: {[HsName]} | |  ]
+ATTR AllBind [ inhBindingNames : {[HsName]} |  |  ]
+ATTR AllBind [  |  | synBindingNames USE {++} {[]} : {[HsName]} ]
+
+SEM GrModule | Mod  bindL.loopBreakers    = []
+                    bindL.inhBindingNames = []
+
+SEM GrBind
+  | Bind    lhs.dependencies        = (\d -> Trace.trace ("bindingNames = " ++ show @lhs.inhBindingNames 
+                                        -- ++ "\ngathMp = " ++ show @loc.gathFviMp 
+                                        ++ "\ndependencies = " ++ show d) d) $
+                                        [(@nm,filter (\name -> Map.member name @loc.gathFviMp) @lhs.inhBindingNames)]
+            lhs.synBindingNames     = [@nm]
+  | Rec     bindL.loopBreakers      = let graphData = map (\(nm,dependency) -> toNode nm dependency) @bindL.dependencies
+                                      in  (getLoopBreakers graphData) ++ @lhs.loopBreakers
+            bindL.inhBindingNames   = @bindL.synBindingNames
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Inlineable functions
@@ -174,33 +234,61 @@ ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
 ATTR AllBind [ | | gathInlMp USE {`Map.union`} {Map.empty}: GrInlMp ]
 ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 
+-- CAF: Constant applicative function, a function without parameters, for example Pi.
+--J: make the descision to inline a binding or not.
+-- CAF's are treated special, because the can easily result in work duplication
+-- for example: costly calculation of PI.
+
 SEM GrBind
-  | Bind        (lhs.gathInlMp,loc.omitBind)    =   case Map.lookup @nm @lhs.fviMp of
-                                                      -- a once used function can be inlined and its binding removed
-                                                      Just (FvInfo 1 use)
-                                                        | not @isCAF
-                                                          && FvUse_Call `Set.member` use
+  | Bind        (lhs.gathInlMp,loc.omitBind)    =   (\r -> Trace.trace ("\nnm = " ++ show @nm ++ ", (gathInlMp,omit) = " ++ show r) r) $
+
+                                                    if   (elem @nm @lhs.loopBreakers)
+                                                    then Trace.trace (show @nm ++ " is a loopBreaker so no inlining.") $
+                                                         (Map.empty,False) -- Don't inline loopbreakers
+
+                                                         
+                                                    else Trace.trace ("\nnm = " ++ show @nm ++ "\noccurrence = " 
+                                                            ++ show (Map.lookup @nm @lhs.fviMp)) $
+                                                         -- Map.lookup @nm @lhs.fviMp: kan nothing geven - dead code?
+                                                         -- Test: const (Map.empty,False) $
+
+                                                         (case Map.lookup @nm @lhs.fviMp of
+                                                          -- a once used function can be inlined and its binding removed
+                                                          Just (FvInfo 1 use)
+                                                            -- once used, not CAF and not exported
+                                                            | not @isCAF
+                                                              && FvUse_Call `Set.member` use
 %%[[20
-                                                          && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
-%%]]
-                                                          -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
-                                                      Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
-                                                        | @isCAF
-                                                          && willUseForEval @nm @expr.willUseForMp
-                                                          && FvUse_Val `Set.member` use
+                                                              && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
+                                                              -- inline possible but keep the bind. (Code duplication).
+%%]]                                                          
+                                                              -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
+                                                          Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
+                                                            | @isCAF
+                                                              && willUseForEval @nm @expr.willUseForMp
+                                                              && FvUse_Val `Set.member` use
 %%[[20
-                                                          && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
+                                                              && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
-                                                          -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
-                                                      _ | not @isCAF
-                                                          && (  @expr.isFFIWrapper                  -- wrappers are inlined
-                                                             || @expr.isConWrapper
-                                                             || @expr.inlineCost <= 10              -- and low cost values as well
-                                                             )
-                                                          -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)
-                                                        | otherwise
-                                                          -> (Map.empty, False)
-  | Rec         lhs         .   gathInlMp       =   Map.empty
+                                                              -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
+                                                          _ | not @isCAF
+                                                          -- bindings that are used once or more and that aren't a CAF.
+		                                                      -- TODO: improve this descision for inlining bindings which are used more than once
+                                                            -- for example:
+                                                            -- - how many time used (if possible)
+                                                            -- - determine the cost of the function   (with heuristics?)
+                                                            -- - How important is the usage: highorder functions? arguments to recursive groups?
+                                                            -- - Not inline all cases if used more than once?
+                                                              && (  @expr.isFFIWrapper                  -- wrappers are inlined
+                                                                 || @expr.isConWrapper
+                                                                 || @expr.inlineCost <= 10              -- and low cost values as well
+                                                                 )
+                                                                 -- TODO: This is now only the size, so only code-duplication is only looked at, not work duplication.
+                                                              -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)    --False because the bind is used more often.
+                                                            | otherwise
+
+                                                              -> (Map.empty, False) -- don't inline
+                                                        )
 %%]
 
 %%[(8 codegen grin)

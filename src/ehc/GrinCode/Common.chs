@@ -35,6 +35,7 @@ hsnMainFullProg = hsnPrefix "fun0~" hsnMain
 hsnMainFullProg = hsnSuffix hsnMain "FullProg"
 %%]]
 
+-- The fixed numbers for special functions.
 mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)
 
 evaluateNr    = HNmNr 3 (OrigFunc (hsnFromString "evaluate"))

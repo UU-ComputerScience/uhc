@@ -260,6 +260,7 @@ data GrInl
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
       }
+  deriving Show
 
 type GrInlMp = Map.Map HsName GrInl
 %%]
