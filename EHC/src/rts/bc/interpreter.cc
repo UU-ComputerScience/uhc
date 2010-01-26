@@ -9,15 +9,22 @@
 %%]
 
 %%[8
-#if USE_REGS_FOR_PC_SP
+#if USE_REGS_FOR_BP
 #else
-GB_BytePtr  pc ;
+GB_Ptr      bp ;
+#endif
+
+#if USE_REGS_FOR_SP
+#else
 GB_Ptr      sp ;
 #endif
 
-GB_Ptr      bp ;
+#if USE_REGS_FOR_PC
+#else
+GB_BytePtr  pc ;
+#endif
 
-#if defined(RR_REG) && USE_REGS_FOR_PC_SP
+#if defined(RR_REG) && USE_REGS_FOR_SP && USE_REGS_FOR_PC && USE_REGS_FOR_BP
 #else
 GB_Word     rr ;
 #endif
@@ -1241,21 +1248,24 @@ gb_interpreter_InsCallEntry:
 			/* callc */
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
-				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args										*/
+				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args											*/
 				GB_Word callenc ;
-				GB_PCImmIn2(GB_InsOp_ImmSz_32,callenc) ; 			/* call encoding										*/
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x\n", callenc) ;}) ;
+				GB_PCImmIn2(GB_InsOp_ImmSz_32,callenc) ; 					/* call encoding										*/
+				GB_PCImmIn(GB_Word,x) ;										/* call encoding wrapper function						*/
+				x = *Cast(GB_Word*,x) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x wrapper=%x TOS(func)=%x\n", callenc, x, GB_TOS) ;}) ;
 				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->ccall.type) ;}) ;
-				// p = GB_SPRel(1) ;											/* args												*/
-				// x = GB_TOS ;												/* function											*/
+				// p = GB_SPRel(1) ;										/* args													*/
+				// x = GB_TOS ;												/* function												*/
 				// GB_CallC_Code_Preamble(x2) ;
 				// GB_CallC_Code(x,x2,p,x) ;
 				// GB_SetTOS( gb_Indirection_FollowObject(GB_TOS) ) ;
 				gb_assert_IsNotIndirection( GB_TOS, "GB_Ins_CallC" ) ;
 				// GC sensitive/unsafe, gcsafe'd:
 				gb_callc( x2, callenc ) ;
+				// ((Fun_Void)x)() ;											/* call the wrapper */
 %%[[96
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %p, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 				GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;

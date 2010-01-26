@@ -356,7 +356,7 @@ UUAGC_OPTS_WHEN_UHC_AST_DATA			:= --strictdata
 UUAGC_OPTS_WHEN_UHC_AST_SEM				:= --strictwrap -O
 
 # GCC options
-GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@
+GCC_OPTS_WHEN_EHC						:= @CC_STD_FLAG@ @GCC_EHC_OPTIONS@ -fomit-frame-pointer
 
 # CPP options
 CPP_OPTS_WHEN_EHC						:= @CPP_EHC_OPTIONS@
