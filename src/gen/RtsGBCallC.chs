@@ -2,6 +2,20 @@
 %%% Generate C Call code for grin bytecode interpreter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+20100126: obsolete, but still left as example code. The work described
+below is now directly generated into C source files corresponding the a
+HS module.
+
+RtsGBCallC generates a C header and source file for a C calling wrapper.
+Arguments must be passed between the GB and C stack. This is important
+especially for float and double as these are not directly passed via the
+C stack. The general solution is to let the C compiler do this job by
+invoking a C function via a wrapper function which passes arguments and
+result. This is not the most efficient solution, but it works, certainly
+in an interpreter setting.
+%%]
+
 %%[8 module Main
 %%]
 

@@ -106,7 +106,7 @@ SEM Instr
   | CallC       loc         .   linkCLocCallEnc
   											:   CodeAbsLoc
                 loc         .   linkCLocCallEnc
-                							=   @callEnc.cLoc
+                							=   @nArg.cLoc
                 loc         .   linkCLoc    :   CodeAbsLoc
                 loc         .   linkCLoc    =   @linkCLocCallEnc + Cfg.sizeofWord
   | RetCase     loc         .   linkCLoc    :   CodeAbsLoc
@@ -914,7 +914,7 @@ SEM Instr
   | TailEval    lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,ppHex 2 @enc3,@nArgSurr.pp, ppLinkChain @linkChain]
   | FetchUpdate LdNodeTag
                 lhs         .   pp          =   ppCommas [ppHex 2 @enc]
-  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, @callEnc.pp, ppLinkChain @linkChainCallEnc, ppLinkChain @linkChain]
+  | CallC       lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nArg.pp, ppLinkChain @linkChainCallEnc, ppLinkChain @linkChain]
   | RetCase     lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@nRes.pp,@retOffSurr.pp, ppLinkChain @linkChain]
   | Op          lhs         .   pp          =   ppCommas [ppHex 2 @enc,ppHex 2 @enc2,@imm.pp]
   | Ann         lhs         .   pp          =   @instr.pp -- >#< ppCmtC @lhs.opts @ann
@@ -1055,7 +1055,7 @@ SEM Instr
   | CaseCall    lhs         .   mn          =   pp "casecall"
   | FetchUpdate lhs         .   mn          =   pp "fetchupd"
   | LdNodeTag   lhs         .   mn          =   pp "lnt"
-  | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn >#< @callEnc.mn
+  | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
@@ -1283,7 +1283,6 @@ SEM Instr
                 nArgSurr    .   immSz       =   @nArgSurrSz.self
   | TailEval    nArgSurr    .   immSz       =   @nArgSurrSz.self
   | CallC       nArg        .   immSz       =   @nArgSz.self
-                callEnc     .   immSz       =   InsOp_ImmSz_Bits32
   | RetCase     nRes        .   immSz       =   @nResSz.self
                 retOffSurr  .   immSz       =   @retOffSurrSz.self
 %%]

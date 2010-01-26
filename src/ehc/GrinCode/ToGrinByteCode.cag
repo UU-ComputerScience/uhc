@@ -652,7 +652,7 @@ SEM GrExpr
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins, inc, False, gbState)
   | Call        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                =   case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {GB.lcxDoLdTOS = True}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> case @lhs.returnCtxt of
                                                              ReturnCtxt_Returns nrArgsOuter
@@ -669,7 +669,7 @@ SEM GrExpr
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                              -> (ins, inc, False, gbState, @constMp2)
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
-                                                    else case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {- GB.lcxDoLdTOS = True -}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                    else case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {GB.lcxDoLdTOS = True}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ basicsz, gbState)
                                                              -> ( ins Seq.:++: fins Seq.:++:
                                                                   Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< GB.ststDepth inc >#< "basicsz=" >|< basicszStr)] ++ call)

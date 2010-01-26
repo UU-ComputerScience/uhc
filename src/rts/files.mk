@@ -179,13 +179,15 @@ PRM_SRC_CC_WHOLEPROG := \
 
 RTS_GEN_C_BYTECODE := \
     $(patsubst %,$(RTS_BLD_PREFIX)%.c,\
-        bc/ccall \
     )
+# 20100126: obsolete, but left as example
+#        bc/ccall \
 
 RTS_GEN_H_BYTECODE := \
     $(patsubst %,$(RTS_BLD_PREFIX)%.h,\
-        bc/ccall \
     )
+# 20100126: obsolete, but left as example
+#        bc/ccall \
 
 
 

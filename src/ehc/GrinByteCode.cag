@@ -609,8 +609,8 @@ linkChainMpResolve labelLocMp keyMp
 %%[(8 codegen grin) hs export(LoadCtxt(..),defaultLoadCtxt)
 data LoadCtxt
   = LoadCtxt
-      { lcxOmitTOSLd    :: !Bool
-      , lcxDoLdTOS		:: !Bool			-- for 0 offset sp relative emit relative load (when True) or delay by emitting LoadSrc_TOS
+      { lcxDoLdTOS    	:: !Bool			-- for 0 offset sp relative emit relative load (when True) or delay by emitting LoadSrc_TOS
+      , lcxOmitTOSLd	:: !Bool			-- if LoadSrc_TOS is emitted allow its corresponding optimization by not loading a ref to TOS on TOS
       }
 
 defaultLoadCtxt :: LoadCtxt
@@ -865,8 +865,8 @@ nmLd' ldcxt env stState gbState nm
       _ -> ( (Nothing,loadWithPreFrom [instrann' AnnIdUse ("dummy ld for" >#< nm) $ ldl stkDepth] nrValWords LoadSrc_TOS {-(offSrc 0 nrValWords)-},dfltBasicSize,GCPermit_Not)
            , gbState
            )
-  where offSrc off sz | off == 0  = LoadSrc_TOS
-                      | otherwise = LoadSrc_TOS_Rel off sz
+  where offSrc off sz | off == 0 && not (lcxDoLdTOS ldcxt) = LoadSrc_TOS
+                      | otherwise                          = LoadSrc_TOS_Rel off sz
         dfltBasicSize = grinBasicAnnotSize BasicAnnot_Dflt
         stkDepth = ststDepth stState
 %%]
@@ -1275,9 +1275,9 @@ casecall l
 
 callc :: Integral c => MbCIStr -> (LabelId,Int,[BasicSize]) -> StackState -> c -> Instr
 callc i (lbl,inx,ty) stState nArg
-  = Instr_CallC s1 i1 ce l (mkCICCall ty i (ststGCEncoding stState))
+  = Instr_CallC s1 i1 {- ce -} l (mkCICCall ty i (ststGCEncoding stState))
   where (s1,i1) = imm nArg
-        (_ ,ce) = imm $ basicGrinSizeLEncoding ty
+        -- (_ ,ce) = imm $ basicGrinSizeLEncoding ty
         l       = linkChainConst lbl inx
 
 retcase :: Integral c => c -> c -> LinkChainEntry -> Instr

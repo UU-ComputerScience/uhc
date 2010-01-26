@@ -5,7 +5,7 @@
 %%[8
 #include "../rts.h"
 #include "interpreter.h"
-#include "ccall.h"
+// #include "ccall.h"
 %%]
 
 %%[8
@@ -1249,11 +1249,11 @@ gb_interpreter_InsCallEntry:
 			case GB_Ins_CallC :
 				GB_PCExtIn(x) ;
 				GB_PCImmIn2(Bits_ExtrFromToSh(GB_Byte,x,0,1),x2) ; 			/* nr of args											*/
-				GB_Word callenc ;
-				GB_PCImmIn2(GB_InsOp_ImmSz_32,callenc) ; 					/* call encoding										*/
+				// GB_Word callenc ;
+				// GB_PCImmIn2(GB_InsOp_ImmSz_32,callenc) ; 					/* call encoding										*/
 				GB_PCImmIn(GB_Word,x) ;										/* call encoding wrapper function						*/
 				x = *Cast(GB_Word*,x) ;
-				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: callenc=%x wrapper=%x TOS(func)=%x\n", callenc, x, GB_TOS) ;}) ;
+				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: wrapper=%x TOS(func)=%x\n", x, GB_TOS) ;}) ;
 				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->ccall.type) ;}) ;
@@ -1264,8 +1264,8 @@ gb_interpreter_InsCallEntry:
 				// GB_SetTOS( gb_Indirection_FollowObject(GB_TOS) ) ;
 				gb_assert_IsNotIndirection( GB_TOS, "GB_Ins_CallC" ) ;
 				// GC sensitive/unsafe, gcsafe'd:
-				gb_callc( x2, callenc ) ;
-				// ((Fun_Void)x)() ;											/* call the wrapper */
+				// gb_callc( x2, callenc ) ;
+				((Fun_Void)x)() ;											/* call the wrapper */
 %%[[96
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-A: gb_ThrownException = %p, gb_ThrownException_NrOfEvalWrappers = %d\n", gb_ThrownException, gb_ThrownException_NrOfEvalWrappers) ;}) ;
 				GB_PassExcWith(,,gb_ThrownException_NrOfEvalWrappers > 0,goto interpretIsDone) ;
