@@ -64,6 +64,9 @@ DATA Instr
   | CallC		nArgSz			: InsOp_ImmSz
   				nArg			: Imm
   				callEnc			: Imm
+  				-- callSizes		: {[BasicSize]}
+  				linkChainEntryCallEnc
+  								: LinkChainEntry
   				callInfo		: CallInfo
   | RetCall     nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz

@@ -140,6 +140,7 @@ RTS_SRC_CH_SHARED := \
 RTS_SRC_CH_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
         bc/types \
+        bc/registers \
         bc/interpreter \
         mm/semispace/gbssmutator \
         mm/semispace/gbssmodule \
