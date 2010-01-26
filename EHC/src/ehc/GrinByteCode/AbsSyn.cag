@@ -63,7 +63,7 @@ DATA Instr
   | CaseCall	linkChainEntry	: LinkChainEntry
   | CallC		nArgSz			: InsOp_ImmSz
   				nArg			: Imm
-  				callEnc			: Imm
+  				-- callEnc			: Imm					-- 20100126: obsolete, no code generated anymore, replaced by:
   				-- callSizes		: {[BasicSize]}
   				linkChainEntryCallEnc
   								: LinkChainEntry
