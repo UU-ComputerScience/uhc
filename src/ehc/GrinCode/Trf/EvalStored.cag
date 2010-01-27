@@ -41,11 +41,13 @@ by
 WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalStored} export(evalStored)
-
-evalStored :: GrModule -> GrModule
+                   
+evalStored :: GrModule -> Maybe GrModule
 evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                         (Inh_GrAGItf)
-                   in grTrf_Syn_GrAGItf t
+                    in  if   (changed_Syn_GrAGItf t)
+                        then Just (grTrf_Syn_GrAGItf t)
+                        else Nothing
 %%]
 
 
@@ -69,6 +71,8 @@ ATTR GrExpr [  | | mbStoredValue : {Maybe GrVal}
                    mbUpdatedVar  : {Maybe HsName} ]
                    
 ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+
+ATTR AllNT GrAGItf [ | | changed USE {||} {False} : {Bool} ]
 
 ATTR GrPatLam [ | | getName : {HsName} ]
 
@@ -107,10 +111,11 @@ SEM GrExpr
   | * - UpdateUnit
         FetchUpdate lhs.mbUpdatedVar  =  Nothing
 
-  | Eval            lhs.grTrf         =  if Map.findWithDefault 0 @nm @lhs.localFreq >= 2    -- defined, and used since then
-                                         then @loc.grTrf
-                                         else maybe @loc.grTrf
-                                                    evaluateNode
+  | Eval            (lhs.grTrf,lhs.changed)
+                                      =  if Map.findWithDefault 0 @nm @lhs.localFreq >= 2    -- defined, and used since then
+                                         then (@loc.grTrf,False)
+                                         else maybe (@loc.grTrf,False)
+                                                    (\v -> (evaluateNode v,True))
                                                     (Map.lookup @nm @lhs.env)
 
 %%]

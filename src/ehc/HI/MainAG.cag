@@ -140,7 +140,7 @@ SEM Binding
 %%]]
 %%[[(20 codegen grin)
     | GrInlines
-        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g) | (n,(a,g)) <- @inlMp ]
+        lhs             .   inlMp       =   Map.fromList [ (n,GrInl_Call a g (error "mainAG 143")) | (n,(a,g)) <- @inlMp ]
 %%]]
 %%]
 

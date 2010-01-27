@@ -76,6 +76,9 @@ grInline allow grmod
 --Added
 %%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,qualified Debug.Trace as Trace,Data.List)
 %%]
+
+%%[(8 codegen grin) ag import({GrinCode/InsideCase})
+%%]
                        
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,9 +90,10 @@ WRAPPER GrAGItf
 %%]
 
 %%[(20 codegen grin) -8.grInline hs export(grInline)
-grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (GrModule,GrInlMp)
+grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (Maybe GrModule,GrInlMp)
 grInline allow expNmS inlMp grmod
-  = (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t)
+  = (if Map.null (gathInlMp_Syn_GrAGItf t) then Nothing else Just (trf_Syn_GrAGItf t)
+    ,gathInlMp_Syn_GrAGItf t)
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
                 { expNmS_Inh_GrAGItf = expNmS
@@ -211,7 +215,7 @@ SEM GrBind
   | Bind    lhs.dependencies        = (\d -> Trace.trace ("bindingNames = " ++ show @lhs.inhBindingNames 
                                         -- ++ "\ngathMp = " ++ show @loc.gathFviMp 
                                         ++ "\ndependencies = " ++ show d) d) $
-                                        [(@nm,filter (\name -> Map.member name @loc.gathFviMp) @lhs.inhBindingNames)]
+                                        [(@nm,filter (\name -> Map.member name @gathFviMp) @lhs.inhBindingNames)]
             lhs.synBindingNames     = [@nm]
   | Rec     bindL.loopBreakers      = (\b -> Trace.trace ("\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames
                                         ++ "\n loopbreakers are:" ++ show b) b) $
@@ -234,55 +238,45 @@ ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 -- for example: costly calculation of PI.
 
 SEM GrBind
-  | Bind        (lhs.gathInlMp,loc.omitBind)    =   -- (\r -> Trace.trace ("\nnm = " ++ show @nm ++ ", (gathInlMp,omit) = " ++ show r) r) $
-                                                    if   (elem @nm @lhs.loopBreakers)
-                                                    then Trace.trace (show @nm ++ " is a loopBreaker so no inlining.") $
-                                                         (Map.empty,False) -- Don't inline loopbreakers
-                                                         
-                                                    else (if length @lhs.loopBreakers > 1
-                                                         then Trace.trace ("\nnm = " ++ show @nm ++ "\noccurrence = " 
-                                                            ++ show (Map.lookup @nm @lhs.fviMp))
-                                                         else id) $
-                                                         -- Map.lookup @nm @lhs.fviMp: kan nothing geven - dead code?
-                                                         -- Test: const (Map.empty,False) $
-
-                                                         (case Map.lookup @nm @lhs.fviMp of
-                                                          -- a once used function can be inlined and its binding removed
-                                                          Just (FvInfo 1 use)
-                                                            -- once used, not CAF and not exported
-                                                            | not @isCAF
-                                                              && FvUse_Call `Set.member` use
+  | Bind  (lhs.gathInlMp,loc.omitBind)    
+              =  let  isLoopBreaker = elem @nm @lhs.loopBreakers
+                 in   case Map.lookup @nm @lhs.fviMp of
+                        -- a once used function can be inlined and its binding removed
+                        Just (FvInfo 1 use)
+                          -- once used, not CAF and not exported
+                          | not @isCAF
+                            && FvUse_Call `Set.member` use
 %%[[20
-                                                              && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
-                                                              -- inline possible but keep the bind. (Code duplication).
+                            && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
+                            -- inline possible but keep the bind. (Code duplication).
 %%]]                                                          
-                                                              -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), True)
-                                                          Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
-                                                            | @isCAF
-                                                              && willUseForEval @nm @expr.willUseForMp
-                                                              && FvUse_Val `Set.member` use
+                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker), True)
+                        Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
+                          | @isCAF
+                            && willUseForEval @nm @expr.willUseForMp
+                            && FvUse_Val `Set.member` use
 %%[[20
-                                                              && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
+                            && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
-                                                              -> (Map.singleton @nm (GrInl_CAF @expr.trf), True)
-                                                          _ | not @isCAF
-                                                          -- bindings that are used once or more and that aren't a CAF.
-		                                                      -- TODO: improve this descision for inlining bindings which are used more than once
-                                                            -- for example:
-                                                            -- - how many time used (if possible)
-                                                            -- - determine the cost of the function   (with heuristics?)
-                                                            -- - How important is the usage: highorder functions? arguments to recursive groups?
-                                                            -- - Not inline all cases if used more than once?
-                                                              && (  @expr.isFFIWrapper                  -- wrappers are inlined
-                                                                 || @expr.isConWrapper
-                                                                 || @expr.inlineCost <= 10              -- and low cost values as well
-                                                                 )
-                                                                 -- TODO: This is now only the size, so only code-duplication is only looked at, not work duplication.
-                                                              -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf), False)    --False because the bind is used more often.
-                                                            | otherwise
+                            -> (Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker), True)
+                        _ | not @isCAF
+                        -- bindings that are used once or more and that aren't a CAF.
+                        -- TODO: improve this descision for inlining bindings which are used more than once
+                          -- for example:
+                          -- - how many time used (if possible)
+                          -- - determine the cost of the function   (with heuristics?)
+                          -- - How important is the usage: highorder functions? arguments to recursive groups?
+                          -- - Not inline all cases if used more than once?
+                            && (  @expr.isFFIWrapper                  -- wrappers are inlined
+                               || @expr.isConWrapper
+                               || @expr.inlineCost <= 10              -- and low cost values as well
+                               )
+                               -- TODO: This is now only the size, so only code-duplication is only looked at, not work duplication.
+                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker), False)    --False because the bind is used more often.
+                          | otherwise
 
-                                                              -> (Map.empty, False) -- don't inline
-                                                        )
+                            -> (Map.empty, False) -- don't inline
+                                                  
 %%]
 
 %%[(8 codegen grin)
@@ -313,7 +307,7 @@ SEM GrModule
 inlMayExport :: HsNameS -> HsNameS -> HsName -> GrInl -> Bool
 inlMayExport onlyInThisModule expNmS n inl
   = case inl of
-      GrInl_Call _ e
+      GrInl_Call _ e _
         -> n `Set.member` expNmS
            && Set.null (onlyInThisModule `Set.intersection` Map.keysSet (grFreeVars e))
       _ -> False
@@ -393,7 +387,7 @@ inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS)
 inlGrVar inlMp nmL
   = (foldr (.) id mks,Set.unions inls)
   where inl nm = case Map.lookup nm inlMp of
-                   Just (GrInl_CAF e) -> (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm)
+                   Just (GrInl_CAF e _) -> (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm)
                    _ -> (id,Set.empty)
         (mks,inls) = unzip $ map inl nmL
 
@@ -417,7 +411,12 @@ SEM GrExpr
 %%[(8 codegen grin)
 SEM GrExpr
   | Call        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
-                                                      Just (GrInl_Call as e) | inlNmsAreInlineable @argL.asNmL
+                                                      Just (GrInl_Call as e lb) | inlNmsAreInlineable @argL.asNmL 
+                                                                                  && (not lb || 
+                                                                                    ((if @lhs.insideCase 
+                                                                                    then Trace.trace ("\ndidn't inline cause of insideCase: " ++ show @lhs.insideCase) 
+                                                                                    else id) $
+                                                                                    not @lhs.insideCase))
                                                         -> ( @grVarTrf $ inlRename @lhs.uniq @argL.asNmL as e
                                                            , Set.insert @nm @grVarInlNmS
                                                            )
@@ -427,7 +426,7 @@ SEM GrExpr
                                                          in  (grVarTrf @trf, grVarInlNmS)
                                                     else (@trf, Set.empty)
   | Eval        (lhs.trf,loc.gathInlNmS)        =   case Map.lookup @nm @lhs.inlMp of
-                                                      Just (GrInl_CAF e) | @lhs.isCAF
+                                                      Just (GrInl_CAF e lb) | @lhs.isCAF && not lb
                                                         -> (e, Set.singleton @nm)
                                                       _ -> (@trf, Set.empty)
 %%]

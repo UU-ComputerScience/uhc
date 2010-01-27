@@ -252,13 +252,16 @@ nmAliasRepl m n
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs export(GrInl(..),GrInlMp)
+
 data GrInl
   = GrInl_Call
       { inlArgNmL   :: ![HsName]
       , inlGrExpr   :: !GrExpr
+      , inlLoopBr   :: !Bool
       }
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
+      , inlLoopBr   :: !Bool
       }
   deriving Show
 

@@ -27,11 +27,11 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs 
-singleCase :: GrModule -> GrModule
+singleCase :: GrModule -> (Maybe GrModule)
 singleCase grmod 
    = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                           (Inh_GrAGItf)
-     in grTrf_Syn_GrAGItf t
+     in  if (changed_Syn_GrAGItf t) then Just (grTrf_Syn_GrAGItf t) else Nothing
 %%]
 
 
@@ -61,6 +61,7 @@ SEM GrAltL
 
 -- Auxiliary: translate a PatAlt to a PatLam
 ATTR GrPatAlt [ | | lamPat : {Maybe GrPatLam} ]
+ATTR GrAGItf AllNT [|| changed USE {||} {False} : {Bool}]
 
 SEM GrPatAlt
   | Node         lhs . lamPat    = Just (GrPatLam_VarNode (GrVar_KnownTag @tag.grTrf : map GrVar_Var @fldL))
@@ -69,9 +70,11 @@ SEM GrPatAlt
 
 -- Do the replacement if possible
 SEM GrExpr
-  | Case  lhs.grTrf      =  maybe @loc.grTrf
-                                  (\(p,e) -> case p of
-                                               Nothing   -> e
-                                               Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e)
-                                  @altL.onlyAlt
+  | Case  (lhs.grTrf,lhs.changed) =   maybe (@loc.grTrf,False)
+                                      (\(p,e) -> (case p of
+                                                   Nothing   -> e
+                                                   Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e
+                                                  ,True))
+                                                  
+                                      @altL.onlyAlt
 %%]

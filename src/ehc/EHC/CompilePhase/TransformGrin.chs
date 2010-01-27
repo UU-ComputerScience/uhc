@@ -36,6 +36,10 @@ Grin transformation
 %%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})
 %%]
 
+--Added
+%%[(8 codegen grin) hs import(Data.Graph.Inductive.Query.Monad)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: transformations, on grin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -98,7 +102,10 @@ cpTransformGrin modNm
                                          ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
                                                expNmOffMp     = crsiExpNmOffMp modNm crsi
                                                optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                               (g,gathInlMp)  = (\grin -> mapFst (maybe grin id)
+                                                                (grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) grin)
+                                                                )
+                                                                $ fromJust $ ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }

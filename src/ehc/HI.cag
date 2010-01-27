@@ -236,7 +236,7 @@ hiFromAllGams exps hiddenExps fg idg
     Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
 %%]]
 %%[[(20 codegen grin)
-    Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
+    Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g _) <- Map.toList inlMp ] ]
 %%]]
 %%]
 

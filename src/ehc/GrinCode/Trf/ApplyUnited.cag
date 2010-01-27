@@ -29,11 +29,13 @@ where n = |a b|
 WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ApplyUnited} export(applyUnited)
-
-applyUnited :: GrModule -> GrModule
+                    
+applyUnited :: GrModule -> Maybe GrModule
 applyUnited grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                                          (Inh_GrAGItf)
-                    in grTrf_Syn_GrAGItf t
+                     in  if   (changed_Syn_GrAGItf t)
+                         then Just (grTrf_Syn_GrAGItf t)
+                         else Nothing
 %%]
 
 
@@ -55,6 +57,8 @@ ATTR GrPatLam [ | | getName : {HsName} ]
 
 ATTR GrVal [ | | hasPAppTag : {Bool} ]
 
+ATTR AllNT GrAGItf [ | | changed USE {||} {False} : {Bool} ]
+
 SEM GrPatLam
   | Var       lhs.getName  =  @nm
   | * - Var   lhs.getName  =  error "ApplyUnited: getName from non-variable"
@@ -65,7 +69,7 @@ SEM GrVal
 
 
 SEM GrBind
-  | Bind      expr.env     =  Map.empty
+  | Bind      expr.env     =  Map.empty 
 
 SEM GrExpr
   | Seq       body.env  =  maybe @lhs.env
@@ -77,9 +81,10 @@ SEM GrExpr
                                           else Nothing
   | * - Unit        lhs.mbUnitPNode    =  Nothing
  
-  | App             lhs.grTrf          =  maybe @loc.grTrf
-                                                (applyNode @nm @argL.grTrf)
-                                                (Map.lookup @nm @lhs.env)
+  | App             (lhs.grTrf,lhs.changed)
+                                       =  maybe (@loc.grTrf,False)
+                                          (\node -> (applyNode @nm @argL.grTrf node,True))
+                                          (Map.lookup @nm @lhs.env)
 
 %%]
 

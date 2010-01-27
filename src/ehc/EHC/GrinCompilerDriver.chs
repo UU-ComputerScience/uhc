@@ -104,6 +104,10 @@
 %%[(8 codegen clr) import({%{EH}GrinCode.ToCil(grin2cil)})
 %%]
 
+--Added
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalCase(evalCase)})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compilerdriver entry point
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,24 +121,52 @@ doCompileGrin
 
 %%[(8 codegen grin) -1.doCompileGrin
 
+inlineCollectionIterated :: CompileAction ()
+inlineCollectionIterated = loop 0 
+  where 
+  flatten = transformAndWrite (Just . grFlattenSeq) "Flatten"
+  loop i =  let si = show i in
+            do
+            { esChange <- transformAndWrite evalStored (si ++ "EvalStored")
+            ; auChange <- transformAndWrite applyUnited (si ++ "ApplyUnited")
+            ; flatten
+%%[[8
+            ; inChange <- transformAndWrite (grInline False) (si ++ "Inline")
+%%][20
+            ; inChange <- transformAndWrite (fst . (grInline False Set.empty Map.empty)) (si ++ "Inline")
+%%]]  
+            ; flatten
+            ; transformAndWrite evalCase (si ++ "EvalCase")
+            ; transformAndWrite singleCase (si ++ "SingleCase")
+            ; flatten
+            -- from specialize
+            ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (si ++ "unusedExprDropped")
+            ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (si ++ "after-cp")
+            ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (si ++ "simpleNullary")
+            ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (si ++ "memberSelected")
+            ; transformCode         (dropUnreachableBindings False) 
+                                                "DropUnreachableBindings" ; caWriteGrin (si ++ "reachable")
+            -- loop
+            ; when (inChange || esChange || auChange) (loop (i+1))
+            }  
+  
+transformAndWrite :: (GrModule -> Maybe GrModule) -> String -> CompileAction Bool
+transformAndWrite process message = do 
+  { result <- transformCodeMb process message
+  ; caWriteGrin message
+  ; return result
+  }
 
-specialize s 
-  =    do{ transformCode         evalStored         "EvalStored"       ; caWriteGrin (s++"a-evalstored")
-         ; transformCode         applyUnited        "ApplyUnited"      
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"b-applyUnited")
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (s++"c-unusedExprDropped")
-         ; transformCode         specConst          "SpecConst"        ; caWriteGrin (s++"d-specConst")
-         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (s++"e-after-cp")
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
-         ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (s++"g-simpleNullary")
-		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (s++"h-memberSelected")
-         ; transformCode         (dropUnreachableBindings False) 
-                                             "DropUnreachableBindings" ; caWriteGrin (s++"i-reachable")
-         }
-
-
-
+simpleSingleCase code = maybe code id (singleCase code)  
+  
+transformCodeMb :: (GrModule -> Maybe GrModule) -> String -> CompileAction Bool
+transformCodeMb process message 
+  = task VerboseALot message body (const Nothing)
+    where body = do { grin <- gets gcsGrin
+                    ; let mbCode = process grin
+                    ; modify (maybe id (\code -> gcsUpdateGrin code) mbCode)
+                    ; return (isJust mbCode)
+                    }
 
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
 doCompileGrin input opts
@@ -158,23 +190,10 @@ doCompileGrin input opts
 %%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
-
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
-
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+         ; inlineCollectionIterated                 
 
-         ; specialize "-123-1"
-         ; specialize "-123-2"
-         ; specialize "-123-3"
-         ; specialize "-123-4"
-         ; specialize "-123-5"
-         ; specialize "-123-6"
-         -- ; specialize "-123-7"
-         -- ; specialize "-123-8"
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
@@ -201,15 +220,15 @@ doCompileGrin input opts
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-142-emptyAlts"
-         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         simpleSingleCase   "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
-		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
+         ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
                                                                        ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
-         ; transformCode         singleCase         "singleCase"       ; 
+         ; transformCode         simpleSingleCase   "singleCase"    
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-163-singleCase"
 
 
@@ -295,7 +314,7 @@ caParseGrin
 
 %%[(8 codegen grin)
 
-caHeapPointsTo :: CompileAction ()
+caHeapPointsTo :: CompileAction Int
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrin
          ; let (iterCount,hptMap) = heapPointsToAnalysis code
@@ -459,18 +478,6 @@ checkCode process message
        ; when (not (null errors)) (error (unlines errors))
        }
 
-transformCodeInline :: String -> CompileAction ()
-transformCodeInline message 
-  = do { putMsg VerboseALot message Nothing
-       ; grin <- gets gcsGrin
-%%[[8
-       ; let code = grInline False grin
-%%][20
-       ; let (code,_) = grInline False Set.empty Map.empty grin 
-%%]]
-       ; modify (gcsUpdateGrin code)
-       }
-
 transformCodeUseHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
 transformCodeUseHpt process message 
   = do { putMsg VerboseALot message Nothing
@@ -485,7 +492,7 @@ transformCodeChgHpt process message
        ; gcsPutCodeHpt (process tup)
        }
 
-transformCodeIterated :: (GrModule->(GrModule,Bool)) -> String -> CompileAction ()
+transformCodeIterated :: (GrModule->(GrModule,Bool)) -> String -> CompileAction Int
 transformCodeIterated process message 
   = task VerboseALot message (caFixCount 1) (\i -> Just $ show i ++ " iteration(s)")
      where
@@ -562,13 +569,14 @@ putMsg minVerbosity msg mbMsg =  harden_ $ do
     liftIO $ putStrLn message
 
 
-task :: Verbosity -> String -> CompileAction a -> (a -> Maybe String) -> CompileAction ()
+task :: Verbosity -> String -> CompileAction a -> (a -> Maybe String) -> CompileAction a
 task minVerbosity taskDesc ca f = do
     { startMsg minVerbosity taskDesc
     ; start   <- liftIO getCPUTime
     ; result  <- ca
     ; end     <- liftIO getCPUTime
     ; finishMsg minVerbosity (f result) (end-start)
+    ; return result
     }
     where
     startMsg :: Verbosity -> String -> CompileAction ()

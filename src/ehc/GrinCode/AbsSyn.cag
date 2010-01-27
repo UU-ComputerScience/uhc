@@ -54,7 +54,7 @@ DATA GrExpr
                 offset          : {Int}
                 mbTag           : {Maybe GrTag}
   | Store       val             : GrVal
-  | Call        nm              : {HsName}
+  | Call        nm              : {HsName}  -- A function call always returns a whnf, however suspended computations may still be hidden inside it.
                 argL            : GrValL
   | FFI
 %%[[8
@@ -67,8 +67,8 @@ DATA GrExpr
                 ffiAnnot        : {GrFFIAnnot}
 %%]]
                 argL            : GrValL
-  | Eval        nm              : {HsName}
-  | App         nm              : {HsName}
+  | Eval        nm              : {HsName}  -- The binding of nm has type PApp Node.
+  | App         nm              : {HsName}  -- The binding of nm has type pointer.
                 argL            : GrValL
   | Throw       nm              : {HsName}
   | Catch       body            : GrExpr
@@ -204,3 +204,4 @@ SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
 SET AllNTNoMod  =   AllExpr AllGlobal AllBind
 SET AllNT       =   GrModule AllNTNoMod
 %%]
+

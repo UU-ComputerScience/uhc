@@ -23,6 +23,9 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 WRAPPER GrAGItf GrExpr GrPatLam GrPatAlt GrTag
 %%]
 
+%%[(8 codegen grin) ag import({GrinCode/InsideCase})
+%%]
+
 %%[(8 codegen grin) hs export(ppGrModule,ppGrExpr,ppGrExpr2,ppGrPatAlt,ppGrPatLam,ppGrTag)
 ppGrModule :: GrModule -> PP_Doc
 ppGrModule cmod
@@ -44,6 +47,7 @@ ppGrExpr2 x tg
   =  let  t = wrap_GrExpr  (sem_GrExpr tg)
                            (Inh_GrExpr
                              { ppGrNm_Inh_GrExpr = cfgppHsName x
+                             , insideCase_Inh_GrExpr = True
                              })
      in   (pp_Syn_GrExpr t)
 
@@ -197,7 +201,7 @@ SEM GrExpr
                                                     indent 2 (ppCurlysSemisV $ reverse @altL.ppL)
 %%]]
   | App         lhs         .   pp          =   "apply" >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
-  | Call        lhs         .   pp          =   "call"  >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
+  | Call        lhs         .   pp          =   "call"  {--}>#< ("(insideCase = " ++ show @lhs.insideCase ++ ")") >#< ppSpaced (@lhs.ppGrNm @nm : @argL.ppL)
 %%[[8
   | FFI         lhs         .   pp          =   "ffi" >#< ppSpaced (@ppent : @ppannot : @argL.ppL)
 %%][8_2
