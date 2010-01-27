@@ -8,10 +8,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+#if defined(__GNUC__) && !defined(DEBUG)
+
+// add additional settings if/when it works on your platform
+#ifdef __i386__
 #define USE_REGS_FOR_SP 		1
 #define USE_REGS_FOR_PC 		1
 #define USE_REGS_FOR_BP 		0
+#else
+#define USE_REGS_FOR_SP 		0
+#define USE_REGS_FOR_PC 		0
+#define USE_REGS_FOR_BP 		0
+#endif
 #define USE_REGS_FOR_PC_SP 		USE_REGS_FOR_SP && USE_REGS_FOR_PC && USE_REGS_FOR_BP
+
+#endif
 
 %%]
 
