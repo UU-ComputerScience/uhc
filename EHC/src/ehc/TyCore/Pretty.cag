@@ -591,7 +591,8 @@ ATTR Expr [ | | mbSeq: {Maybe [PP_Doc]} ]
 SEM Expr
   | Seq			lhs			.	mbSeq		=	Just @seq.ppL
   | Seq1		lhs			.	mbSeq		=	Just [@seq1.pp]
-  | * - Seq Seq1
+  | App         lhs         .   mbSeq       =   Just [pp "App"]
+  | * - Seq Seq1 App
   				lhs			.	mbSeq		=	Nothing
 %%]
 

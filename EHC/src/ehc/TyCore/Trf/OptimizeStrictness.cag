@@ -16,7 +16,7 @@
 %%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
-%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
+%%[(8 codegen) hs import({%{EH}TyCore})
 %%]
 
 %%[1 hs import(Debug.Trace)
@@ -50,23 +50,6 @@ cmodTrfOptimizeStrictness tcmod
      in   cTrf_Syn_AGItf t
 %%]
 
-Module_Mod Test []
-[ ValBind_Val id Nothing 0
-    (Expr_Arrow
-      (Expr_Seq [])
-      (Expr_Arrow
-         (Expr_Seq [ExprSeq1_L0Val (Expr_Arrow (Expr_Seq []) (Expr_Seq [ExprSeq1_L0Val (Expr_Ann (ExprAnn_Strictness strict) (Expr_Var Int)) Nothing])) Nothing])
-         (Expr_Seq [ExprSeq1_L0Val (Expr_Var Int) Nothing])))
-    (Expr_Lam
-      (Expr_Seq [])
-      (Expr_Lam 
-         (Expr_Seq [ExprSeq1_L0Bind x Nothing (Expr_Arrow (Expr_Seq []) (Expr_Seq [ExprSeq1_L0Val (Expr_Ann (ExprAnn_Strictness strict) (Expr_Var Int)) Nothing]))])
-         (Expr_App (Expr_Var x) (Expr_Seq []))))
-, ValBind_Val main Nothing 0
-    (Expr_Arrow (Expr_Seq []) (Expr_Seq [ExprSeq1_L0Val (Expr_Var Int) Nothing]))
-    (Expr_Lam (Expr_Seq []) (Expr_App (Expr_App (Expr_Var id) (Expr_Seq [])) (Expr_Seq [ExprSeq1_L0Val (Expr_Lam (Expr_Seq []) (Expr_Int 2 (Expr_Seq [ExprSeq1_L0Val (Expr_Var Int) Nothing]))) Nothing])))
-]
-
 %%[(8 tauphi)
 ATTR AGItf [ | | cTrf: Module ]
 ATTR AllCodeNT
@@ -75,40 +58,64 @@ ATTR AllCodeNT
   |
   | cTrf : SELF
     strictWrkr : SELF
+    lazyWrppr  : SELF
     sigMap1 USE {`Map.union`} {Map.empty} : {Map.Map HsName Expr}
     leftVar USE {<|>} {Nothing} : {Maybe HsName}
     argPos USE {<|>} {Nothing} : {Maybe Int}
   ]
 ATTR AllExprBase
-  [ level  : {Int}
+  [ strictName : {HsName}
   |
   |
   ]
+ATTR AllExpr
+  [
+  |
+  | hasStrictW USE {||} {False} : {Bool}
+  ]
 
 SEM AGItf
-  | AGItf       lhs         .   cTrf        =   {- trace (Map.foldWithKey (\k v s -> show k ++ " " ++ show v ++ "\n" ++ s) "" @module.sigMap) -} @module.cTrf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
                 module      .   sigMap      =   @module.sigMap1
                 module      .   params      =   Map.empty
 
 SEM ValBindL
-  | Cons        lhs         .   cTrf        =   @hd.strictWrkr : @hd.cTrf : @tl.cTrf
+  | Cons        lhs         .   cTrf        =   if @hd.hasStrictW
+                                                then @hd.strictWrkr : @hd.lazyWrppr : @tl.cTrf
+                                                else @hd.cTrf : @tl.cTrf
 
 SEM ValBind
-  | Val         lhs         .   strictWrkr  =   ValBind_Val (hsnFromString (show @nm ++ "_strict")) @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
-                bindMeta    .   level       =   0
-                l1          .   level       =   1
-                l0          .   level       =   0
+  | Val         lhs         .   strictWrkr  =   ValBind_Val @loc.strictName @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
+                lhs         .   hasStrictW  =   @l1.hasStrictW -- If type isn't strict, neither is body
+                lhs         .   lazyWrppr   =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf (mkLazyWrapper @loc.strictName @l0.cTrf)
+                l0          .   strictName  =   @loc.strictName
+                loc         .   strictName  =   hsnFromString (show @nm ++ "_strict")
+
+{
+mkLazyWrapper :: HsName -> Expr -> Expr
+mkLazyWrapper n (Expr_Lam (Expr_Seq []) e) = Expr_Lam (Expr_Seq []) (mkLazyWrapper n e)
+mkLazyWrapper n e                          = f [] e
+  where
+    f :: [(HsName, Maybe ExprAnn)] -> Expr -> Expr
+    f anns (Expr_Lam arg res) = Expr_Lam arg $ f ((paramName arg, paramAnn arg) : anns) res
+    f anns _                  = foldr (\(n, ma) e -> Expr_App e (case ma of { Just (ExprAnn_Strictness Strict) -> mkExprUnThunk; _ -> singletonSeq} $ Expr_Var n)) (mkExprUnThunk $ Expr_Var n) anns
+}
 
 SEM Expr
-  | App         lhs         .   strictWrkr  =   maybe (Expr_App @func.cTrf @arg.cTrf) (const (singletonSeq @func.cTrf)) (@func.leftVar >>= \l -> Map.lookup l @lhs.params >>= \a -> case a of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
-  | Lam         lhs         .   xtrictCopy  =   if isJust (paramAnn @arg.strictWrkr >>= \(_, x) -> case x of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
-                                                then Expr_Lam (id $ @arg.strictWrkr) @res.strictWrkr
+  | App         lhs         .   strictWrkr  =   if isJust (@func.leftVar >>= \l -> Map.lookup l @lhs.params >>= \a -> case a of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
+                                                then (singletonSeq @func.cTrf)
+                                                else (Expr_App @func.cTrf @arg.cTrf)
+  | Lam         lhs         .   strictWrkr  =   if isJust (paramAnn @arg.strictWrkr >>= \ann -> case ann of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
+                                                then Expr_Lam @arg.strictWrkr @res.strictWrkr
                                                 else Expr_Lam @arg.strictWrkr @res.strictWrkr
-                res         .   params      =   maybe @lhs.params (\(x, y) -> Map.insert x y @lhs.params) (paramAnn (@arg.cTrf))
-  | Arrow       lhs         .   strictWrkr  =   let e = Expr_Arrow @arg.strictWrkr @res.strictWrkr
-                                                in if isThunkType e && isJust ((exprAnn $ headSeq $ unThunkType e) >>= \a -> case a of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
-                                                   then headSeq $ unThunkType e
-                                                   else e
+                res         .   params      =   maybe @lhs.params (\ann -> Map.insert (paramName @arg.cTrf) ann @lhs.params) (paramAnn (@arg.cTrf))
+  | Arrow       lhs         .   strictWrkr  =   if @loc.isStrict
+                                                then headSeq $ unThunkType @loc.self
+                                                else @loc.self
+                lhs         .   hasStrictW  =   @loc.hasStrictW
+                loc         .   self        =   Expr_Arrow @arg.strictWrkr @res.strictWrkr
+                loc         .   hasStrictW  =   @loc.isStrict || @arg.hasStrictW || @res.hasStrictW
+                loc         .   isStrict    =   isThunkType @loc.self && isJust ((exprAnn $ headSeq $ unThunkType @loc.self) >>= \a -> case a of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
   -- | Var         lhs         .   strictWrkr  =   annTrace (show $ Map.lookup @nm @lhs.params) $ Expr_Var @nm
 
 {
@@ -151,10 +158,14 @@ unThunkType :: Expr -> Expr
 unThunkType (Expr_Arrow (Expr_Seq []) e) = e
 unThunkType e                            = error $ "forceThunkType: type (" ++ show e ++ ") isn't a thunk type."
 
-paramAnn :: Expr -> Maybe (HsName, ExprAnn)
-paramAnn (Expr_Seq [ExprSeq1_L0Bind x Nothing e]) = let e' = headSeq e
+paramName :: Expr -> HsName
+paramName (Expr_Seq [ExprSeq1_L0Bind n Nothing e]) = n
+paramName e = error $ "OptimizeStrictness.paramName: not a valid bind (" ++ show e ++ ")"
+
+paramAnn :: Expr -> Maybe ExprAnn
+paramAnn (Expr_Seq [ExprSeq1_L0Bind _ Nothing e]) = let e' = headSeq e
                                                         ae = headSeq $ if isThunkType e' then unThunkType e' else e'
-                                                    in case ae of (Expr_Ann a _) -> Just (x, a); _ -> Nothing
+                                                    in case ae of (Expr_Ann a _) -> Just a; _ -> Nothing
 paramAnn _                                        = Nothing
 
 exprAnn :: Expr -> Maybe ExprAnn
