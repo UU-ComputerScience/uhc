@@ -151,9 +151,12 @@ seqToList :: Expr -> [Expr]
 seqToList (Expr_Seq [ExprSeq1_L0Val e _]) = [e]
 seqToList e                               = [e]
 
-mapSeq :: Expr -> (Expr -> Expr) -> Expr
-mapSeq (Expr_Seq [ExprSeq1_L0Val e _]) = [e]
-mapSeq e                               = [e]
+mapSeq :: (Expr -> Expr) -> Expr -> Expr
+mapSeq f (Expr_Seq xs) = Expr_Seq (map g xs)
+  where
+    g (ExprSeq1_L0Val e m) = ExprSeq1_L0Val (f e) m
+    g e                    = error $ "TyCore.Trf.OptimizeStrictness.mapSeq: cannot map expression (" ++ show e ++ ")"
+mapSeq _ e = e
 
 headSeq :: Expr -> Expr
 headSeq = head . seqToList

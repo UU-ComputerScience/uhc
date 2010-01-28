@@ -272,8 +272,8 @@ symMpPlain
          , (Sym_C_Seq , "]" )
          , (Sym_O_Th  , "{" )
          , (Sym_C_Th  , "}" )
-         , (Sym_O_UnTh, "{" )
-         , (Sym_C_UnTh, "}" )
+         , (Sym_O_UnTh, "|" )
+         , (Sym_C_UnTh, "|" )
          , (Sym_RArrow, "->")
          ]
       ++ [ (Sym_Exists, ppKeyw "exists")
