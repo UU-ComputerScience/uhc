@@ -70,6 +70,7 @@ GrinCode/Trf/DropDeadBindings.cag
 GrinCode/Trf/DropUnreachableBindings.cag
 GrinCode/Trf/DropUnusedExpr.cag
 GrinCode/Trf/EmptyAlts.cag
+GrinCode/Trf/EvalCase.cag
 GrinCode/Trf/EvalElim.cag
 GrinCode/Trf/EvalStored.cag
 GrinCode/Trf/FlattenSeq.cag
@@ -92,6 +93,7 @@ GrinCode/Trf/SingleCase.cag
 GrinCode/Trf/SpecConst.cag
 GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
+GrinCode/Trf/UnitEval.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
 GrinByteCode/ToC.cag

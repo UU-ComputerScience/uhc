@@ -129,7 +129,7 @@ SEM GrBind
  -- should be inline or not? same condition as above, except for recusive functions
   | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
        -- do the 'drop'
-           lhs . grTrf  =  if   @loc.drop
+           lhs . grTrf  =  if   (@loc.drop {-&& False-})
                            then GrBind_Arity @nm (length @argNmL)
                            else @loc.grTrf
 
