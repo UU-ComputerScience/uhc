@@ -125,7 +125,7 @@ inlineCollectionIterated :: CompileAction ()
 inlineCollectionIterated = loop 0 
   where 
   flatten = transformAndWrite (Just . grFlattenSeq) "Flatten"
-  loop i =  let si = show i in
+  loop i =  let si = ("-123-" ++ show i ++ "-") in
             do
             { esChange <- transformAndWrite evalStored (si ++ "EvalStored")
             ; auChange <- transformAndWrite applyUnited (si ++ "ApplyUnited")
