@@ -63,15 +63,16 @@ ATTR AllCodeNT
     leftVar USE {<|>} {Nothing} : {Maybe HsName}
     argPos USE {<|>} {Nothing} : {Maybe Int}
   ]
-ATTR AllExprBase
-  [ strictName : {HsName}
-  |
-  |
-  ]
 ATTR AllExpr
   [
   |
   | hasStrictW USE {||} {False} : {Bool}
+  ]
+ATTR AllExprBase
+  [ strictName : {HsName}
+  |
+  |
+    strictArgs USE {++} {[]} : {[Bool]}
   ]
 
 SEM AGItf
@@ -87,18 +88,18 @@ SEM ValBindL
 SEM ValBind
   | Val         lhs         .   strictWrkr  =   ValBind_Val @loc.strictName @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
                 lhs         .   hasStrictW  =   @l1.hasStrictW -- If type isn't strict, neither is body
-                lhs         .   lazyWrppr   =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf (mkLazyWrapper @loc.strictName @l0.cTrf)
+                lhs         .   lazyWrppr   =   trace (show @l1.strictArgs) $ ValBind_Val @nm @bindMeta.cTrf @mlev @l1.lazyWrppr (mkLazyWrapper @loc.strictName @l1.strictArgs @l0.lazyWrppr)
                 l0          .   strictName  =   @loc.strictName
                 loc         .   strictName  =   hsnFromString (show @nm ++ "_strict")
 
 {
-mkLazyWrapper :: HsName -> Expr -> Expr
-mkLazyWrapper n (Expr_Lam (Expr_Seq []) e) = Expr_Lam (Expr_Seq []) (mkLazyWrapper n e)
-mkLazyWrapper n e                          = f [] e
+mkLazyWrapper :: HsName -> [Bool] -> Expr -> Expr
+mkLazyWrapper n (_:sas) (Expr_Lam (Expr_Seq []) e) = Expr_Lam (Expr_Seq []) (mkLazyWrapper n sas e)
+mkLazyWrapper n sas     e                          = f [] sas e
   where
-    f :: [(HsName, Maybe ExprAnn)] -> Expr -> Expr
-    f anns (Expr_Lam arg res) = Expr_Lam arg $ f ((paramName arg, paramAnn arg) : anns) res
-    f anns _                  = foldr (\(n, ma) e -> Expr_App e (case ma of { Just (ExprAnn_Strictness Strict) -> mkExprUnThunk; _ -> singletonSeq} $ Expr_Var n)) (mkExprUnThunk $ Expr_Var n) anns
+    f :: [(HsName, Bool)] -> [Bool] -> Expr -> Expr
+    f anns (b:sas) (Expr_Lam arg res) = Expr_Lam arg $ f ((paramName arg, b) : anns) sas res
+    f anns _       _                  = foldr (\(n, b) e -> Expr_App e ((if b then mkExprUnThunk else singletonSeq) $ Expr_Var n)) (mkExprUnThunk $ Expr_Var n) anns
 }
 
 SEM Expr
@@ -110,12 +111,15 @@ SEM Expr
                                                 else Expr_Lam @arg.strictWrkr @res.strictWrkr
                 res         .   params      =   maybe @lhs.params (\ann -> Map.insert (paramName @arg.cTrf) ann @lhs.params) (paramAnn (@arg.cTrf))
   | Arrow       lhs         .   strictWrkr  =   if @loc.isStrict
-                                                then headSeq $ unThunkType @loc.self
-                                                else @loc.self
+                                                then unAnn $ headSeq $ unThunkType @loc.strictSelf
+                                                else mapSeq unAnn @loc.strictSelf
                 lhs         .   hasStrictW  =   @loc.hasStrictW
-                loc         .   self        =   Expr_Arrow @arg.strictWrkr @res.strictWrkr
+                lhs         .   strictArgs  =   @arg.hasStrictW : @res.strictArgs
+                loc         .   strictSelf  =   Expr_Arrow @arg.strictWrkr @res.strictWrkr
+                loc         .   self        =   Expr_Arrow @arg.cTrf @res.cTrf
                 loc         .   hasStrictW  =   @loc.isStrict || @arg.hasStrictW || @res.hasStrictW
                 loc         .   isStrict    =   isThunkType @loc.self && isJust ((exprAnn $ headSeq $ unThunkType @loc.self) >>= \a -> case a of (ExprAnn_Strictness Strict) -> Just (); _ -> Nothing)
+                lhs         .   lazyWrppr   =   Expr_Arrow @arg.lazyWrppr (unAnn @res.lazyWrppr)
   -- | Var         lhs         .   strictWrkr  =   annTrace (show $ Map.lookup @nm @lhs.params) $ Expr_Var @nm
 
 {
@@ -147,6 +151,10 @@ seqToList :: Expr -> [Expr]
 seqToList (Expr_Seq [ExprSeq1_L0Val e _]) = [e]
 seqToList e                               = [e]
 
+mapSeq :: Expr -> (Expr -> Expr) -> Expr
+mapSeq (Expr_Seq [ExprSeq1_L0Val e _]) = [e]
+mapSeq e                               = [e]
+
 headSeq :: Expr -> Expr
 headSeq = head . seqToList
 
@@ -171,6 +179,11 @@ paramAnn _                                        = Nothing
 exprAnn :: Expr -> Maybe ExprAnn
 exprAnn (Expr_Ann a _) = Just a
 exprAnn _              = Nothing
+
+unAnn :: Expr -> Expr
+unAnn (Expr_Seq [ExprSeq1_L0Val (Expr_Ann _ e) m]) = Expr_Seq [ExprSeq1_L0Val e m]
+unAnn (Expr_Ann _ e)                               = e
+unAnn e                                            = e
 
 }
 
