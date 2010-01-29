@@ -292,6 +292,20 @@ fi
 AC_SUBST(GHC_CMD,$ghcCmd)
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+AC_SUBST(GHC_CMD1,$ghcCmd1)
+
+
 ### now we know we have ghc, check for some libraries using ghc-pkg
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
 ghcLibUulibExists=no
@@ -427,6 +441,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -491,12 +509,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -505,65 +528,69 @@ esac
 
 AC_SUBST(CPP_CMD,$cppCmd)
 
-# LLVM Assembler 
-AC_ARG_WITH(llvm-as,
-[AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
-                [Path to the LLVM Assembler])],
-[ llvmAs="$withval" ],
-[ 
-  if test "x$LLVM_AS" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
-    fi
-  else
-    llvmAs=$LLVM_AS
-  fi
-]
-)
-AC_SUBST(LLVM_AS_CMD,$llvmAs)
 
-# LLVM Optimizer 
-AC_ARG_WITH(opt,
-[AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
-                [Path to the LLVM bitcode optimizer])],
-[ llvmOpt="$withval" ],
-[
-  if test "x$LLVM_OPT" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmOpt,opt)
-    fi
-  else
-    llvmOpt=$LLVM_OPT
-  fi
-]
-)
-AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
-
-# LLVM Compiler
-AC_ARG_WITH(llc,
-[AC_HELP_STRING([--with-llc=<LLVM Compiler>],
-                [Path to the LLVM Compiler])],
-[ llvmLlc="$withval" ],
-[
-  if test "x$LLC" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmLlc,llc)
-    fi
-  else
-    llvmLlc=$LLC
-  fi
-]
-)
-AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
-
-if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+if test x$enableLlvm = xyes
 then
-  llvmExists=yes
-else
-  llvmExists=no
+  # LLVM Assembler 
+  AC_ARG_WITH(llvm-as,
+  [AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
+                  [Path to the LLVM Assembler])],
+  [ llvmAs="$withval" ],
+  [ 
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
+      fi
+    else
+      llvmAs=$LLVM_AS
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_AS_CMD,$llvmAs)
+  
+  # LLVM Optimizer 
+  AC_ARG_WITH(opt,
+  [AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
+                  [Path to the LLVM bitcode optimizer])],
+  [ llvmOpt="$withval" ],
+  [
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmOpt,opt)
+      fi
+    else
+      llvmOpt=$LLVM_OPT
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
+  
+  # LLVM Compiler
+  AC_ARG_WITH(llc,
+  [AC_HELP_STRING([--with-llc=<LLVM Compiler>],
+                  [Path to the LLVM Compiler])],
+  [ llvmLlc="$withval" ],
+  [
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmLlc,llc)
+      fi
+    else
+      llvmLlc=$LLC
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+  
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
+  else
+    llvmExists=no
+  fi
 fi
 
 # md5
@@ -973,7 +1000,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -1051,6 +1078,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -1132,7 +1160,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"
