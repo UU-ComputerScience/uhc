@@ -95,8 +95,19 @@ module Foreign.C.Error (
 
 
 #ifdef __UHC__
-{- ensure any defs are commented out, and errno not expanded
+{- 
+We will include "errno.h" because it #defines preprocessor-constants like CONST_EACCES.
+But "errno.h" also declares C datastructures, which we do not need.
+They are ignored however, because this section is commented out for Haskell.
+
+In Cygwin 1.7.1, "errno.h" in turn includes sys/errno.h, which includes sys/reent.h, which includes 
+sys/_types.h, which includes machine/_types. In machine/_types there seems to be a problem
+with GCC 3.3, probably a bug in Cygwin. Because we don't need the content of these files anyway,
+we define _SYS_REENT_H_, which prevents sys/reent.h to be expanded.
+
+#define _SYS_REENT_H_
 #include "errno.h"
+
 #undef errno
 -}
 #endif
