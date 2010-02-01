@@ -364,7 +364,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(XXXX)
+	@echo $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

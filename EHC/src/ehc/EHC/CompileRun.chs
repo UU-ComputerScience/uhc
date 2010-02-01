@@ -270,7 +270,7 @@ cpSystemRaw cmd args
   = do { exitCode <- lift $ rawSystem cmd args
        ; case exitCode of
            ExitSuccess -> return ()
-           _           -> cpSetFail
+           _           -> cpSetErrs [rngLift emptyRange Err_PP $ pp $ show exitCode] -- cpSetFail
        }
 %%]
 

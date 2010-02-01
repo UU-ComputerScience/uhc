@@ -322,7 +322,7 @@ Placeholder for goal general performance of UHC itself.
  {topgoal}% options
  {Feature}% ident
  {General desirable features}% descr
- {GADT,ExtRec,FunDep,ExistPred,GHC.lib,GC.Extra,Conc,Generic,MutRec}% prerequisites (, separated)
+ {GADT,ExtRec,FunDep,ExistPred,GHC.lib,GC.Extra,Conc,Generic,MutRec,ModSys,ExplImpl,MetaProg,DpdTyped,PersState}% prerequisites (, separated)
  {}% required time
  {Compat}% kind of work
  {Goal,CompatGHC}% categorization, area to which this applies
@@ -420,6 +420,19 @@ Tools for building compilers.
  {}% startdate
  {}% worker
 Compiletime detection of correctness aspects, varying from typing to runtime behavior which can be predicted.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {RealWorld}% ident
+ {Support for specific real world programming needs}% descr
+ {PersState}% prerequisites (, separated)
+ {}% required time
+ {Correct}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Language features which are required to make real world applications.
 \end{WorkPackage}
 
 %%]
@@ -730,6 +743,58 @@ Application to UHC of techniques for optimal sharing.
 Sharing functionality between UHC and GHC. E.g. on the Core level.
 \end{WorkPackage}
 
+\begin{WorkPackage}%
+ {activity=research}% options
+ {ModSys}% ident
+ {1st class module system}% descr
+ {ExistPred,ExplImpl}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Modules which can be properly manipulated: instantiated, used as parameters.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {DpdTyped}% ident
+ {Dependently typed programming}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Support for dependently typed programming
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {PersState}% ident
+ {Persistent execution state}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+For web-based programming.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {MetaProg}% ident
+ {Meta programming}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+A la Template Haskell (AST based meta programming) + Meta programming based on computed info (AG Attribute meta programming)
+\end{WorkPackage}
+
 %%]
 
 %%[workPackages.haskell98compatibility
@@ -929,6 +994,19 @@ Concurrency: threads, STM, concurrency aware GC, parallel GC.
  {}% startdate
  {}% worker
 Language features required for generic programming.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ExplImpl}% ident
+ {Explicit implicit parameters}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Language mechanisms for manipulating explicitly what is by default implicit: dictionary passing.
 \end{WorkPackage}
 
 %%]
