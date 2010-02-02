@@ -67,6 +67,7 @@ test-lists: $(TEST_MKF)
 test-expect test-regress: test-lists
 	@how=`echo $@ | sed -e 's/.*expect.*/exp/' -e 's/.*regress.*/reg/'` ; \
 	nerrors=0; \
+	nerrorsPlatformDpd=0; \
 	nwarnings=0; \
 	ehcOpts="--target=$(EHC_VARIANT_TARGET)" ; \
     case $(EHC_VARIANT_TARGET) in \
@@ -167,6 +168,12 @@ test-expect test-regress: test-lists
 	        else \
 	          texe=$${tb}$${texeSuffix} ; \
 	          cleanup="$${cleanup} $${texe}" ; \
+	          platformDpd="`grep platform: $${t}`" ; \
+	          platformMsg="" ; \
+	          if test "x$${platformDpd}" != "x" ; \
+	          then \
+	            platformMsg="($${platformDpd}) --" ; \
+	          fi ; \
 	          $${ehc} $${ehcOpts} $${optPreludePath} $${t} > $${th} 2>&1 ; \
 	          if test $$? = 0 -a -r $${texe} ; \
 	          then \
@@ -176,11 +183,16 @@ test-expect test-regress: test-lists
 	        fi ; \
 	        if test $${tr} = $${th} -a -r $${te} ; \
 	        then \
-	          echo "-- $${te} -- $${th} --" | $(INDENT2) ; \
+	          echo "-- $${te} -- $${th} --" $${platformMsg} | $(INDENT2) ; \
 	          if ! cmp $${te} $${th} > /dev/null ; \
 	          then \
 	            diff $${te} $${th} | $(INDENT4) ; \
-	            nerrors="`expr $${nerrors} + 1`" ; \
+	            if test "x$${platformDpd}" != "x" ; \
+	            then \
+	              nerrorsPlatformDpd="`expr $${nerrorsPlatformDpd} + 1`" ; \
+	            else \
+	              nerrors="`expr $${nerrors} + 1`" ; \
+	            fi ; \
 	          fi \
 	        elif test ! -r $${te} ; \
 	        then \
@@ -196,7 +208,7 @@ test-expect test-regress: test-lists
 	    exit 1; \
 	  fi \
 	done; \
-	echo "== completed with $${nerrors} errors and $${nwarnings} warnings =="; \
+	echo "== completed with $${nerrors} errors, $${nerrorsPlatformDpd} (probably) platform dependent errors, and $${nwarnings} warnings =="; \
 	exit $${nerrors};
 
 

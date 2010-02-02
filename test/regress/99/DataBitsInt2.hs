@@ -1,6 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : library Data.Bits, for Int variants
    expected: ok
+   platform: word size dependent
 ---------------------------------------------------------------------------------------- -}
 
 module DataBitsInt2 where
