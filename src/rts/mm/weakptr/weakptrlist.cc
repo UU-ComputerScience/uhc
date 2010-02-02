@@ -250,7 +250,7 @@ MM_WeakPtr mm_weakPtr_List =
 void mm_weakPtr_List_Dump( MM_WeakPtr* weakPtr ) {
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
 
-	printf( ">------------------------> MM_WeakPtr: List: weakPtr=%x weakPtrList=%x\n", weakPtr, weakPtrList ) ;
+	printf( ">------------------------> MM_WeakPtr: List: weakPtr=%p weakPtrList=%p\n", weakPtr, weakPtrList ) ;
 
 	mm_freeListArray_Dump( weakPtrList->ptrList ) ;
 
