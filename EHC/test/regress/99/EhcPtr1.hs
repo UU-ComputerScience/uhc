@@ -1,6 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : EHC.Ptr test, partial impl for Foreign.Ptr
    expected: ok
+   platform: word size dependent
 ---------------------------------------------------------------------------------------- -}
 
 module EhcPtr1 where
