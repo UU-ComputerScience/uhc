@@ -20,7 +20,7 @@ SEM GrPatLam
 SEM GrVar
   | Var         lhs         .   introNmL        =   [@nm]
   | KnownTag    lhs         .   introNmL        =   [ error "introNmL non-Var, but KnownTag" ] 
-  | Ignore      lhs         .   introNmL        =   [ error "introNmL non-Var, but Ignore" ]   
+  | Ignore      lhs         .   introNmL        =   [] -- error "introNmL non-Var, but Ignore" ]   
 -- | * - Var     lhs         .   introNmL        =   [ error "introNmL non-Var" ]
 %%]
 

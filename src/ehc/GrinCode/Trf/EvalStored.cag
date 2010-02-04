@@ -35,7 +35,9 @@ by
 %%]
 %%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(qualified Debug.Trace as Trace)
+%%]
+%%[(8 codegen grin) hs import(Data.Maybe)
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -70,7 +72,7 @@ ATTR AllBind AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
 ATTR GrExpr [  | | mbStoredValue : {Maybe GrVal}
                    mbUpdatedVar  : {Maybe HsName} ]
                    
-ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+ATTR AllGlobal AllBind [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
 
 ATTR AllNT GrAGItf [ | | changed USE {||} {False} : {Bool} ]
 
@@ -78,14 +80,28 @@ ATTR GrPatLam [ | | getName : {HsName} ]
 
 ATTR GrVal [ | | hasFinalTag : {Bool} ]
 
+ATTR GrExpr [  | | mbNode : {Maybe GrVal} ]
+
 SEM GrPatLam
   | Var       lhs.getName  =  @nm
   | * - Var   lhs.getName  =  error "EvalStored: getName from non-variable"
 
 SEM GrGlobal
-  | Global    lhs.initialEnv  =  if @val.hasFinalTag
+  | Global    lhs.initialEnv  =  if @val.hasFinalTag || True
                                  then Map.singleton @nm @val.grTrf
                                  else Map.empty
+
+SEM GrBind
+  | Bind      lhs.initialEnv   =  if (@isCAF && isJust @expr.mbNode)
+                                  then Map.singleton @nm (fromJust @expr.mbNode)
+                                  else Map.empty
+  | Bind      loc.isCAF        =  null @argNmL
+
+SEM GrExpr
+  | Unit      lhs.mbNode  =  case @val.grTrf of
+                                    (GrVal_Node _ _) -> Just @val.grTrf
+                                    _                -> Nothing 
+  | * - Unit  lhs.mbNode  =  Nothing
 
 SEM GrVal
   | Node      lhs.hasFinalTag  =  isFinalTag @tag.grTrf
@@ -93,7 +109,7 @@ SEM GrVal
 
 
 SEM GrModule
-  | Mod       bindL.env    =  @globalL.initialEnv
+  | Mod       bindL.env    =  @globalL.initialEnv `Map.union` @bindL.initialEnv
 
 SEM GrExpr
   | Seq       loc.env2  =  maybe @lhs.env

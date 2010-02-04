@@ -12,7 +12,7 @@ Use the left law if both are applicable.
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(qualified Debug.Trace as Trace)
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
@@ -36,6 +36,7 @@ ATTR GrPatLam
      GrVar
      GrTagL
      GrTag   [ | | self: SELF ]
+     
 ATTR GrAGItf GrModule AllBind GrExpr AllAlt [ | | changed USE {||} {False}: Bool ]
 
 SEM GrExpr
@@ -63,6 +64,20 @@ SEM GrExpr
 --                                    else @loc.grTrf    -- no transformations possible
 
   | *-Seq  lhs . patsubst  =  Map.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove duplicate subs in caseLambda %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrAlt
+  | Alt   expr.subst = foldr Map.delete @lhs.subst @pat.varsBound
+
+ATTR GrPatAlt [ | | varsBound USE {++} {[]} : {[HsName]} ]
+
+SEM GrPatAlt
+  | Node      lhs.varsBound = @fldL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%
@@ -120,7 +135,7 @@ testL pat val
       GrPatLam_Empty      -> case val of
                               GrVal_Empty         -> Just (id,id)
                               _                   -> Nothing -- error "CopyProp: left: empty-pattern does not match"
-      GrPatLam_Var     v  ->                         Just (Map.insert v val, id)
+      GrPatLam_Var     v  -> Just (Map.insert v val, id)
       GrPatLam_VarNode vs -> case val of
                               GrVal_Var      _    -> Nothing
                               GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
@@ -188,7 +203,11 @@ getHsName nm subst
       Nothing    -> nm
       Just repl  -> case repl of
                       GrVal_Var v -> v
-                      _           -> error ("CopyPropagation cannot substitute " ++ show repl)
+                      _           ->  -- This previsously was an error.
+                                      Trace.trace ("2CopyPropagation cannot substitute " ++ show repl
+                                        ++ " when substituting name " ++ show nm) $
+                                      nm
+                                     
 
 mbSubstTag nm subst 
   =  case Map.lookup nm subst of

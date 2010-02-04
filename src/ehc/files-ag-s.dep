@@ -93,7 +93,6 @@ GrinCode/Trf/SingleCase.cag
 GrinCode/Trf/SpecConst.cag
 GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
-GrinCode/Trf/UnitEval.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
 GrinByteCode/ToC.cag

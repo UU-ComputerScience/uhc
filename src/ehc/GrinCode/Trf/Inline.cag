@@ -92,7 +92,7 @@ WRAPPER GrAGItf
 %%[(20 codegen grin) -8.grInline hs export(grInline)
 grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (Maybe GrModule,GrInlMp)
 grInline allow expNmS inlMp grmod
-  = (if (not (changed_Syn_GrAGItf t)) then Nothing else Just (trf_Syn_GrAGItf t)
+  = (if (changed_Syn_GrAGItf t) then Just (trf_Syn_GrAGItf t) else Nothing 
     ,gathInlMp_Syn_GrAGItf t)
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
@@ -211,15 +211,22 @@ ATTR AllBind [  |  | synBindingNames USE {++} {[]} : {[HsName]} ]
 
 SEM GrModule | Mod  bindL.loopBreakers    = []
                     bindL.inhBindingNames = []
+                 
+{
+showLoopBreakers = False
+condTrace c s v = if c then Trace.trace s v else v
+}                 
 
 SEM GrBind
-  | Bind    lhs.dependencies        = (\d -> Trace.trace ("bindingNames = " ++ show @lhs.inhBindingNames 
+  | Bind    lhs.dependencies        = --(\d -> Trace.trace ("bindingNames = " ++ show @lhs.inhBindingNames 
                                         -- ++ "\ngathMp = " ++ show @loc.gathFviMp 
-                                        ++ "\ndependencies = " ++ show d) d) $
+                                      --  ++ "\ndependencies = " ++ show d) d) $
                                         [(@nm,filter (\name -> Map.member name @gathFviMp) @lhs.inhBindingNames)]
             lhs.synBindingNames     = [@nm]
-  | Rec     bindL.loopBreakers      = (\b -> Trace.trace ("\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames
-                                        ++ "\n loopbreakers are:" ++ show b) b) $
+  | Rec     bindL.loopBreakers      = (\b -> condTrace showLoopBreakers (
+                                          "\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames ++
+                                          "\n loopbreakers are:" ++ show b
+                                        ) b) $
                                       let graphData = map (\(nm,dependency) -> toNode nm dependency) @bindL.dependencies
                                       in  (calcLoopBreakers graphData) ++ @lhs.loopBreakers
             bindL.inhBindingNames   = @bindL.synBindingNames
@@ -234,7 +241,7 @@ ATTR AllBind [ | | gathInlMp USE {`Map.union`} {Map.empty}: GrInlMp ]
 ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 
 -- CAF: Constant applicative function, a function without parameters, for example Pi.
---J: make the descision to inline a binding or not.
+-- J: make the descision to inline a binding or not.
 -- CAF's are treated special, because the can easily result in work duplication
 -- for example: costly calculation of PI.
 
@@ -384,13 +391,17 @@ ATTR AllNT [ | | trf: SELF ]
 %%]
 
 %%[(8 codegen grin) hs
-inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS)
+
+showInlines = False
+
+inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS,Bool)
 inlGrVar inlMp nmL
-  = (foldr (.) id mks,Set.unions inls)
+  = (foldr (.) id mks,Set.unions inls,or changes)
   where inl nm = case Map.lookup nm inlMp of
-                   Just (GrInl_CAF e _) -> (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm)
-                   _ -> (id,Set.empty)
-        (mks,inls) = unzip $ map inl nmL
+                   Just (GrInl_CAF e _) -> condTrace showInlines ("inlining caf " ++ show nm ++ "\nval = " ++ show e) $
+                                           (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm,True)
+                   _ -> (id,Set.empty,False)
+        (mks,inls,changes) = unzip3 $ map inl nmL
 
 inlNmsAreInlineable :: [Maybe HsName] -> Bool
 inlNmsAreInlineable = and . map isJust
@@ -403,36 +414,34 @@ inlRename uniq asFrom as e
 
 %%[(8 codegen grin)
 SEM GrExpr
-  | Call        loc         .   (grVarTrf,grVarInlNmS)
-                                                =   if @lhs.isCAF
+  | Call        loc         .   (grVarTrf,grVarInlNmS,inlGrVarChanges)
+                                                =   if   @lhs.isCAF
                                                     then inlGrVar @lhs.inlMp (Map.keys @argL.gathFviMp)
-                                                    else (id,Set.empty)
+                                                    else (id,Set.empty,False)
 %%]
 
 %%[(8 codegen grin)
+
 SEM GrExpr
   | Call        (lhs.trf,loc.gathInlNmS,lhs.changed)  
                     =   case Map.lookup @nm @lhs.inlMp of
                               Just (GrInl_Call as e lb) | inlNmsAreInlineable @argL.asNmL 
-                                                          && (not lb || 
-                                                            ((if @lhs.insideCase 
-                                                            then Trace.trace ("\ndidn't inline cause of insideCase: " ++ show @lhs.insideCase) 
-                                                            else id) $
-                                                            not @lhs.insideCase))
-                                -> Trace.trace ("inlining call " ++ show @nm) $
+                                                          && (not (lb && @lhs.insideCase))
+                                -> condTrace showInlines ("inlining call " ++ show @nm) $
                                    ( @grVarTrf $ inlRename @lhs.uniq @argL.asNmL as e
                                    , Set.insert @nm @grVarInlNmS
                                    , True)
-                              _ -> (@grVarTrf @trf, @grVarInlNmS, False)
+                              _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges)
   | App         (lhs.trf,loc.gathInlNmS,lhs.changed)        
-                  =   if @lhs.isCAF
-                      then let (grVarTrf,grVarInlNmS) = inlGrVar @lhs.inlMp (@nm : Map.keys @argL.gathFviMp)
-                           in  (grVarTrf @trf, grVarInlNmS, True)
+                  =   if       @lhs.isCAF
+                      then let (grVarTrf,grVarInlNmS,changed) = inlGrVar @lhs.inlMp (@nm : Map.keys @argL.gathFviMp)
+                           in  (grVarTrf @trf, grVarInlNmS, changed)
                       else (@trf, Set.empty, False)
   | Eval        (lhs.trf,loc.gathInlNmS,lhs.changed)        
                   =   case Map.lookup @nm @lhs.inlMp of
                           Just (GrInl_CAF e lb) | @lhs.isCAF && not lb
-                            -> (e, Set.singleton @nm, True)
+                            -> condTrace showInlines ("inlining caf " ++ show @nm ++ "\nval = " ++ show e) $
+                               (e, Set.singleton @nm, True)
                           _ -> (@trf, Set.empty, False)
 %%]
 
