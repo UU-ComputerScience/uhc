@@ -9,6 +9,8 @@
 %%]
 %%[(8 codegen) import(EH.Util.Pretty)
 %%]
+%%[(20 codegen) import({%{EH}Base.Binary})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Targets for code generation
@@ -265,7 +267,7 @@ data FFIWay
   | FFIWay_CCall			-- as C call
   | FFIWay_Jazy				-- as Java/Jazy
   | FFIWay_CLR				-- as CLR, just a placeholder
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Enum)
 
 instance Show FFIWay where
   show FFIWay_Prim	= "prim"
@@ -313,3 +315,15 @@ allTargetInfoMp :: TargInfoMp
 allFFIWays :: [FFIWay]
 allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+instance Binary FFIWay where
+  put = putEnum
+  get = getEnum
+%%]
+
+

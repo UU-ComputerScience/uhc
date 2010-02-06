@@ -16,17 +16,53 @@
 %%[99 hs import({%{EH}Base.ForceEval})
 %%]
 
+%%[94 hs import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[94 hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%]
+
 %%[94 ag import({Foreign/AbsSyn})
 %%]
 
 %%[94
-DERIVING AllForeign     : Show, Eq
+DERIVING AllForeign
+  : Show, Eq
+  , Typeable, Data
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
+%%[94 hs
 instance ForceEval ForeignEnt
+%%]
+
+%%[99 hs
+instance Binary ForeignEnt where
+  put (ForeignEnt_CCall     a) = putWord8 0 >> put a
+  put (ForeignEnt_PlainCall a) = putWord8 1 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM ForeignEnt_CCall     get
+             1 -> liftM ForeignEnt_PlainCall get
+
+instance Binary CCall where
+  put (CCall_Id      a b c d) = putWord8 0 >> put a >> put b >> put c >> put d
+  put (CCall_Dynamic        ) = putWord8 1
+  put (CCall_Wrapper        ) = putWord8 2
+  put (CCall_Empty          ) = putWord8 3
+  get = do t <- getWord8
+           case t of
+             0 -> liftM4 CCall_Id      get get get get
+             1 -> return CCall_Dynamic
+             2 -> return CCall_Wrapper
+             3 -> return CCall_Empty
+
+instance Binary PlainCall where
+  put (PlainCall_Id      a) = putWord8 0 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM  PlainCall_Id get
+
 %%]

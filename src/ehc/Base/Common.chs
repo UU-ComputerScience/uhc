@@ -109,6 +109,9 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%]
+
 %%[99 import({%{EH}Base.Hashable})
 %%]
 %%[99 import({%{EH}Base.ForceEval})
@@ -117,14 +120,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-instance Show (Ptr a) where
-   showsPrec _ (Ptr a) rs = pad_out (showHex (addrToInteger a) "")
-     where
-        -- want 0s prefixed to pad it out to a fixed length.
-       pad_out ls = 
-          '0':'x':(replicate (2*SIZEOF_HSPTR - length ls) '0') ++ ls ++ rs
-
 
 %%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars)
 ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
@@ -159,7 +154,7 @@ ppHsnNonAlpha scanOpts
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.UID.Base export(UID)
+%%[1.UID.Base export(UID(..))
 %%[[1
 newtype UID = UID { uidInts :: [Int] }
 %%][99
@@ -859,7 +854,7 @@ data CompilePoint
 %%[1
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Enum)
 
 instance PP Fixity where
   pp Fixity_Infix  = pp "infix"
@@ -1467,5 +1462,65 @@ metaLevKi  = metaLevTy  + 1
 metaLevSo  = metaLevKi  + 1
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20
+instance Binary VarUIDHsName where
+  put (VarUIDHs_Name a b) = putWord8 0 >> put a >> put b
+  put (VarUIDHs_UID  a  ) = putWord8 1 >> put a
+  put (VarUIDHs_Var  a  ) = putWord8 2 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 VarUIDHs_Name get get
+             1 -> liftM  VarUIDHs_UID  get
+             2 -> liftM  VarUIDHs_Var  get
 
+instance Binary Fixity where
+  put = putEnum
+  get = getEnum
+
+instance Binary x => Binary (AlwaysEq x) where
+  put (AlwaysEq x) = put x
+  get = liftM AlwaysEq get
+
+instance Binary UID where
+%%[[20
+  put (UID a) = put a
+  get = liftM UID get
+%%][99
+  put (UID a b) = put a >> put b
+  get = liftM2 UID get get
+%%]]
+
+instance Binary PredOccId where
+  put (PredOccId a) = put a
+  get = liftM PredOccId get
+
+instance Binary a => Binary (RLList a) where
+  put (RLList a) = put a
+  get = liftM RLList get
+
+instance Binary CTag where
+  put (CTagRec          ) = putWord8 0
+  put (CTag    a b c d e) = putWord8 1 >> put a >> put b >> put c >> put d >> put e
+  get = do t <- getWord8
+           case t of
+             0 -> return CTagRec
+             1 -> liftM5 CTag    get get get get get
+
+instance Binary Range where
+  put (Range_Unknown    ) = putWord8 0
+  put (Range_Builtin    ) = putWord8 1
+  put (Range_Range   a b) = putWord8 2 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> return Range_Unknown
+             1 -> return Range_Builtin
+             2 -> liftM2 Range_Range get get
+
+instance Binary Pos where
+  put (Pos a b c) = put a >> put b >> put c
+  get = liftM3 Pos get get get
+%%]

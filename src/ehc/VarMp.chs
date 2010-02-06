@@ -59,6 +59,11 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(6 hmtyinfer || hmtyast) import({%{EH}Base.Debug}) export(VarMpInfo(..),varmpToAssocL)
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[(50 hmtyinfer || hmtyast) export(varmpKeys)
 %%]
 
@@ -79,6 +84,9 @@ data VarMp' k v
       { varmpMetaLev 	:: !MetaLev				-- the base meta level
       , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 %%]
 
 %%[(99 hmtyinfer || hmtyast) export(varmpToMap)
@@ -268,7 +276,12 @@ data VarMpInfo
 %%[[13
   | VMIPredSeq !PredSeq
 %%]]
-  deriving (Eq,Show)
+  deriving
+    ( Eq, Show
+%%[[20
+    , Typeable, Data
+%%]]
+    )
 %%]
 
 %%[(2 hmtyinfer || hmtyast).vmiMbTy export(vmiMbTy)
@@ -671,3 +684,33 @@ instance PP VarMpInfo where
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer || hmtyast)
+instance Binary VarMpInfo where
+  put (VMITy      a) = putWord8 0  >> put a
+  put (VMIImpls   a) = putWord8 1  >> put a
+  put (VMIScope   a) = putWord8 2  >> put a
+  put (VMIPred    a) = putWord8 3  >> put a
+  put (VMIAssNm   a) = putWord8 4  >> put a
+  put (VMILabel   a) = putWord8 5  >> put a
+  put (VMIOffset  a) = putWord8 6  >> put a
+  put (VMIPredSeq a) = putWord8 7  >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM VMITy      get
+             1 -> liftM VMIImpls   get
+             2 -> liftM VMIScope   get
+             3 -> liftM VMIPred    get
+             4 -> liftM VMIAssNm   get
+             5 -> liftM VMILabel   get
+             6 -> liftM VMIOffset  get
+             7 -> liftM VMIPredSeq get
+
+instance (Ord k, Binary k, Binary v) => Binary (VarMp' k v) where
+  put (VarMp a b) = put a >> put b
+  get = liftM2 VarMp get get
+
+%%]

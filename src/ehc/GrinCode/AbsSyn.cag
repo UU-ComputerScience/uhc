@@ -85,18 +85,18 @@ TYPE GrAltL     =   [GrAlt]
 
 DATA GrVal
   | Empty
-  | LitInt      int             : {Int}
-  | LitStr      str             : {String}
-  | Tag         tag             : GrTag
   | Var         nm              : {HsName}
-  | Node        tag             : GrTag
-                fldL            : GrValL
   | VarNode     fldL            : GrValL
   | BasicNode   tag             : GrTag
                 nm              : {HsName}
   | EnumNode    nm              : {HsName}
-  | OpaqueNode  nm              : {HsName}
   | PtrNode     nm              : {HsName}
+  | LitInt      int             : {Int}
+  | LitStr      str             : {String}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : GrValL
+  | OpaqueNode  nm              : {HsName}
 %%[[10
   | NodeAdapt   nm              : {HsName}
                 fldL            : GrAdaptL

@@ -14,6 +14,11 @@
 %%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
+%%[(20 codegen) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% BasicSize: size of BasicTy
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,6 +34,11 @@ data BasicSize
   | BasicSize_Double
 %%]]
   deriving (Eq,Ord,Enum)
+%%]
+
+%%[(20 codegen) hs
+deriving instance Typeable BasicSize
+deriving instance Data BasicSize
 %%]
 
 The Show of BasicSize should returns strings of which the first letter is unique for the type.
@@ -236,6 +246,11 @@ data BasicTy
   deriving (Eq,Ord,Enum)
 %%]
 
+%%[(20 codegen) hs
+deriving instance Typeable BasicTy
+deriving instance Data BasicTy
+%%]
+
 The Show of BasicTy should returns strings of which the first letter is unique for the type.
 When used to pass to code, only this first letter is used.
 
@@ -289,6 +304,11 @@ defaultGrinBasicAnnot :: BasicAnnot
 defaultGrinBasicAnnot = BasicAnnot_Size basicSizeWord BasicTy_Word
 %%]
 
+%%[(20 codegen) hs
+deriving instance Typeable BasicAnnot
+deriving instance Data BasicAnnot
+%%]
+
 %%[(8 codegen grin) hs export(grinBasicAnnotSizeInBytes,grinBasicAnnotSizeInWords)
 grinBasicAnnotSizeInBytes :: BasicAnnot -> Int
 grinBasicAnnotSizeInBytes = basicSizeInBytes . grinBasicAnnotSize
@@ -321,3 +341,28 @@ instance PP BasicAnnot where
   pp (BasicAnnot_Dflt             ) = pp "annotdflt"
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs
+instance Binary BasicAnnot where
+  put (BasicAnnot_Size          s t) = putWord8 0 >> put s >> put t
+  put (BasicAnnot_FromTaggedPtr b t) = putWord8 1 >> put b >> put t
+  put (BasicAnnot_ToTaggedPtr   b t) = putWord8 2 >> put b >> put t
+  put (BasicAnnot_Dflt             ) = putWord8 3
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 BasicAnnot_Size get get
+             1 -> liftM2 BasicAnnot_FromTaggedPtr get get
+             2 -> liftM2 BasicAnnot_ToTaggedPtr get get
+             3 -> return BasicAnnot_Dflt
+
+instance Binary BasicTy where
+  put = putEnum
+  get = getEnum
+
+instance Binary BasicSize where
+  put = putEnum
+  get = getEnum
+%%]

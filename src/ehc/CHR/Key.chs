@@ -11,6 +11,9 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
+%%[20 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -56,6 +59,11 @@ instance PP Key where
 %%[[9999
   pp (Key_Hash h) = pp $ show h
 %%]]
+%%]
+
+%%[20
+deriving instance Typeable Key
+deriving instance Data Key
 %%]
 
 %%[9999

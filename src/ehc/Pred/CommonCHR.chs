@@ -24,6 +24,11 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
@@ -53,7 +58,12 @@ data RedHowAnnotation
   |  RedHow_ByEqFromAssume
   |  RedHow_ByEqIdentity
 %%]]
-  deriving (Eq, Ord)
+  deriving
+    ( Eq, Ord
+%%[[20
+    , Typeable, Data
+%%]]
+    )
 %%]
 
 %%[(99 hmtyinfer) export(rhaMbId)
@@ -152,7 +162,7 @@ gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeCons
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer)
@@ -192,4 +202,43 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]
+%%]
+
+%%[(20 hmtyinfer)
+instance Binary RedHowAnnotation where
+  put (RedHow_ByInstance       a b c) = putWord8 0  >> put a >> put b >> put c
+  put (RedHow_BySuperClass     a b c) = putWord8 1  >> put a >> put b >> put c
+  put (RedHow_ProveObl         a b  ) = putWord8 2  >> put a >> put b
+  put (RedHow_Assumption       a b  ) = putWord8 3  >> put a >> put b
+  put (RedHow_ByScope          a    ) = putWord8 4  >> put a
+  put (RedHow_ByLabel          a b c) = putWord8 5  >> put a >> put b >> put c
+  put (RedHow_Lambda           a b  ) = putWord8 6  >> put a >> put b
+%%[[16
+  put (RedHow_ByEqSymmetry          ) = putWord8 7
+  put (RedHow_ByEqTrans             ) = putWord8 8
+  put (RedHow_ByEqCongr             ) = putWord8 9
+  put (RedHow_ByEqTyReduction  a b  ) = putWord8 10 >> put a >> put b
+  put (RedHow_ByPredSeqUnpack       ) = putWord8 11
+  put (RedHow_ByEqFromAssume        ) = putWord8 12
+  put (RedHow_ByEqIdentity          ) = putWord8 13
+%%]]
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 RedHow_ByInstance       get get get 
+             1  -> liftM3 RedHow_BySuperClass     get get get 
+             2  -> liftM2 RedHow_ProveObl         get get 
+             3  -> liftM2 RedHow_Assumption       get get 
+             4  -> liftM  RedHow_ByScope          get 
+             5  -> liftM3 RedHow_ByLabel          get get get
+             6  -> liftM2 RedHow_Lambda           get get 
+%%[[16
+             7  -> return RedHow_ByEqSymmetry     
+             8  -> return RedHow_ByEqTrans        
+             9  -> return RedHow_ByEqCongr        
+             10 -> liftM2 RedHow_ByEqTyReduction  get get 
+             11 -> return RedHow_ByPredSeqUnpack  
+             12 -> return RedHow_ByEqFromAssume   
+             13 -> return RedHow_ByEqIdentity     
+%%]]
+
 %%]

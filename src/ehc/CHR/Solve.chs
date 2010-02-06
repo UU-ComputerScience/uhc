@@ -20,6 +20,9 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
+%%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
@@ -44,6 +47,9 @@ data StoredCHR p i g s
       , storedKeys      :: ![Maybe CHRKey]               	-- keys of all constraints; at storedKeyedInx: Nothing
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
+%%[[20
+  -- deriving (Typeable, Data)
+%%]]
 
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
@@ -52,6 +58,9 @@ data CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
+%%[[20
+  -- deriving (Typeable, Data)
+%%]]
 
 mkCHRStore trie = CHRStore trie
 

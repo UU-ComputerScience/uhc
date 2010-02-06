@@ -297,10 +297,10 @@ crPartitionNewerOlderImports :: HsName -> EHCompileRun -> ([EHCompileUnit],[EHCo
 crPartitionNewerOlderImports modNm cr
   = partition isNewer $ map (flip crCU cr) $ ecuImpNmL ecu
   where ecu = crCU modNm cr
-        t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHITime ecu
+        t   = panicJust "crPartitionNewerOlderImports1" $ ecuMbHIInfoTime ecu
         isNewer ecu'
             = t' `diffClockTimes` t > noTimeDiff 
-            where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHITime ecu'
+            where t' = panicJust "crPartitionNewerOlderImports2" $ ecuMbHIInfoTime ecu'
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

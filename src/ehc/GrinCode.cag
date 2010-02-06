@@ -7,7 +7,7 @@
 %%% Haskell importable interface to GRIN code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty)
+%%[(8 codegen grin) hs module {%{EH}GrinCode} import({%{EH}Base.Common},{%{EH}Base.Opts},EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[(8 codegen grin) hs import(qualified Data.Map as Map,qualified Data.Set as Set,qualified Data.List as List)
@@ -40,6 +40,11 @@
 %%[(10 codegen grin) hs export(mkGrPatRecSplit,mkGrPatConSplit)
 %%]
 
+%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%]
+
 %%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
@@ -47,8 +52,16 @@
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
-DERIVING * - GrTag    : Show, Eq
-DERIVING GrTag        : Show
+DERIVING * - GrTag
+  : Show, Eq
+%%[[20
+  , Typeable, Data
+%%]]
+DERIVING GrTag
+  : Show
+%%[[20
+  , Typeable, Data
+%%]]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -100,6 +113,11 @@ mkGrTagAnn = GrTagAnn
 emptyGrTagAnn = mkGrTagAnn 0 0
 %%]
 
+%%[(20 codegen grin) hs
+deriving instance Typeable GrTagAnn
+deriving instance Data GrTagAnn
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,6 +152,11 @@ data GrBindAnn
 
 %%]
 
+%%[(20 codegen grin) hs
+deriving instance Typeable GrBindAnn
+deriving instance Data GrBindAnn
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alternative categories
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -153,6 +176,11 @@ data GrAltAnn
   | GrAltAnnReenter
   deriving (Eq,Ord,Show)
 
+%%]
+
+%%[(20 codegen grin) hs
+deriving instance Typeable GrAltAnn
+deriving instance Data GrAltAnn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,6 +288,9 @@ data GrInl
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 type GrInlMp = Map.Map HsName GrInl
 %%]
@@ -361,3 +392,188 @@ willUseForNodeField :: HsName -> WillUseForMp -> Bool
 willUseForNodeField n m = maybe False (WillUseFor_NodeField `Set.member`) $ Map.lookup n m
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen grin) hs
+instance Binary GrInl where
+  put (GrInl_Call a b) = putWord8  0 >> put a >> put b
+  put (GrInl_CAF  a  ) = putWord8  1 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM2 GrInl_Call get get
+             1 -> liftM  GrInl_CAF  get
+
+instance Binary GrExpr where
+  put (GrExpr_Seq         a b c  ) = putWord8 0  >> put a >> put b >> put c
+  put (GrExpr_Unit        a      ) = putWord8 1  >> put a
+  put (GrExpr_UpdateUnit  a b    ) = putWord8 2  >> put a >> put b
+  put (GrExpr_Case        a b    ) = putWord8 3  >> put a >> put b
+  put (GrExpr_FetchNode   a      ) = putWord8 4  >> put a
+  put (GrExpr_FetchUpdate a b    ) = putWord8 5  >> put a >> put b
+  put (GrExpr_FetchField  a b c  ) = putWord8 6  >> put a >> put b >> put c
+  put (GrExpr_Store       a      ) = putWord8 7  >> put a
+  put (GrExpr_Call        a b    ) = putWord8 8  >> put a >> put b
+%%[[20
+  put (GrExpr_FFI         a b    ) = putWord8 9  >> put a >> put b
+%%][94
+  put (GrExpr_FFI         a b c  ) = putWord8 9  >> put a >> put b >> put c
+%%][99
+  put (GrExpr_FFI         a b c d) = putWord8 9  >> put a >> put b >> put c >> put d
+%%]]
+  put (GrExpr_Eval        a      ) = putWord8 10 >> put a
+  put (GrExpr_App         a b    ) = putWord8 11 >> put a >> put b
+  put _                            = panic "GrinCode.Binary.GrExpr.put"		-- unused are unimplemented
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 GrExpr_Seq          get get get
+             1  -> liftM  GrExpr_Unit         get
+             2  -> liftM2 GrExpr_UpdateUnit   get get
+             3  -> liftM2 GrExpr_Case         get get
+             4  -> liftM  GrExpr_FetchNode    get
+             5  -> liftM2 GrExpr_FetchUpdate  get get
+             6  -> liftM3 GrExpr_FetchField   get get get
+             7  -> liftM  GrExpr_Store        get
+             8  -> liftM2 GrExpr_Call         get get
+%%[[20
+             9  -> liftM2 GrExpr_FFI          get get
+%%][94
+             9  -> liftM3 GrExpr_FFI          get get get
+%%][99
+             9  -> liftM4 GrExpr_FFI          get get get get
+%%]]
+             10 -> liftM  GrExpr_Eval         get
+             11 -> liftM2 GrExpr_App          get get
+             _  -> panic "GrinCode.Binary.GrExpr.get"		-- unused are unimplemented
+
+
+instance Binary GrAlt where
+  put (GrAlt_Alt          a b c  ) = putWord8 0  >> put a >> put b >> put c
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 GrAlt_Alt          get get get
+
+instance Binary GrTag where
+  put (GrTag_Con         a b c  ) = putWord8 0  >> put a >> put b >> put c
+  put (GrTag_Fun         a      ) = putWord8 1  >> put a
+  put (GrTag_PApp        a b    ) = putWord8 2  >> put a >> put b
+  put (GrTag_App         a      ) = putWord8 3  >> put a
+  put (GrTag_Unboxed            ) = putWord8 4
+  put (GrTag_Hole               ) = putWord8 5
+  put (GrTag_Rec                ) = putWord8 6
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 GrTag_Con          get get get
+             1  -> liftM  GrTag_Fun          get
+             2  -> liftM2 GrTag_PApp         get get
+             3  -> liftM  GrTag_App          get
+             4  -> return GrTag_Unboxed
+             5  -> return GrTag_Hole
+             6  -> return GrTag_Rec
+
+instance Binary GrPatLam where
+  put (GrPatLam_Empty              ) = putWord8 0
+  put (GrPatLam_Var         a      ) = putWord8 1  >> put a
+  put (GrPatLam_VarNode     a      ) = putWord8 2  >> put a
+  put (GrPatLam_BasicNode   a b    ) = putWord8 3  >> put a >> put b
+  put (GrPatLam_EnumNode    a      ) = putWord8 4  >> put a
+  put (GrPatLam_PtrNode     a      ) = putWord8 5  >> put a
+  put (GrPatLam_OpaqueNode  a      ) = putWord8 6  >> put a
+  put (GrPatLam_BasicAnnot  a b    ) = putWord8 7  >> put a >> put b
+  put (GrPatLam_EnumAnnot   a b    ) = putWord8 8  >> put a >> put b
+  put (GrPatLam_PtrAnnot    a b    ) = putWord8 9  >> put a >> put b
+  put (GrPatLam_OpaqueAnnot a      ) = putWord8 10 >> put a
+  get = do t <- getWord8
+           case t of
+             0  -> return GrPatLam_Empty
+             1  -> liftM  GrPatLam_Var          get
+             2  -> liftM  GrPatLam_VarNode      get
+             3  -> liftM2 GrPatLam_BasicNode    get get
+             4  -> liftM  GrPatLam_EnumNode     get
+             5  -> liftM  GrPatLam_PtrNode      get
+             6  -> liftM  GrPatLam_OpaqueNode   get
+             7  -> liftM2 GrPatLam_BasicAnnot   get get
+             8  -> liftM2 GrPatLam_EnumAnnot    get get
+             9  -> liftM2 GrPatLam_PtrAnnot     get get
+             10 -> liftM  GrPatLam_OpaqueAnnot  get
+
+instance Binary GrVal where
+  put (GrVal_Empty              ) = putWord8 0
+  put (GrVal_Var         a      ) = putWord8 1  >> put a
+  put (GrVal_VarNode     a      ) = putWord8 2  >> put a
+  put (GrVal_BasicNode   a b    ) = putWord8 3  >> put a >> put b
+  put (GrVal_EnumNode    a      ) = putWord8 4  >> put a
+  put (GrVal_PtrNode     a      ) = putWord8 5  >> put a
+  put (GrVal_LitInt      a      ) = putWord8 6  >> put a
+  put (GrVal_LitStr      a      ) = putWord8 7  >> put a
+  put (GrVal_Tag         a      ) = putWord8 8  >> put a
+  put (GrVal_Node        a b    ) = putWord8 9  >> put a >> put b
+  put (GrVal_OpaqueNode  a      ) = putWord8 10 >> put a
+  put _                           = panic "GrinCode.Binary.GrVal.put"		-- unused are unimplemented
+  get = do t <- getWord8
+           case t of
+             0  -> return GrVal_Empty
+             1  -> liftM  GrVal_Var          get
+             2  -> liftM  GrVal_VarNode      get
+             3  -> liftM2 GrVal_BasicNode    get get
+             4  -> liftM  GrVal_EnumNode     get
+             5  -> liftM  GrVal_PtrNode      get
+             6  -> liftM  GrVal_LitInt       get
+             7  -> liftM  GrVal_LitStr       get
+             8  -> liftM  GrVal_Tag          get
+             9  -> liftM2 GrVal_Node         get get
+             10 -> liftM  GrVal_OpaqueNode   get
+             _  -> panic "GrinCode.Binary.GrVal.get"		-- unused are unimplemented
+
+instance Binary GrPatAlt where
+  put (GrPatAlt_LitInt      a      ) = putWord8 0  >> put a
+  put (GrPatAlt_Tag         a      ) = putWord8 1  >> put a
+  put (GrPatAlt_Node        a b    ) = putWord8 2  >> put a >> put b
+  put (GrPatAlt_Otherwise          ) = putWord8 3
+  put _                              = panic "GrinCode.Binary.GrPatAlt.put"		-- unused are unimplemented
+  get = do t <- getWord8
+           case t of
+             0  -> liftM  GrPatAlt_LitInt       get
+             1  -> liftM  GrPatAlt_Tag          get
+             2  -> liftM2 GrPatAlt_Node         get get
+             3  -> return GrPatAlt_Otherwise
+             _  -> panic "GrinCode.Binary.GrPatAlt.get"		-- unused are unimplemented
+
+instance Binary GrVar where
+  put (GrVar_Var           a      ) = putWord8 0  >> put a
+  put (GrVar_KnownTag      a      ) = putWord8 1  >> put a
+  put (GrVar_Ignore               ) = putWord8 2
+  get = do t <- getWord8
+           case t of
+             0  -> liftM  GrVar_Var         get
+             1  -> liftM  GrVar_KnownTag    get
+             2  -> return GrVar_Ignore
+
+instance Binary GrAltAnn where
+  put (GrAltAnnNormal              ) = putWord8 0
+  put (GrAltAnnIdent               ) = putWord8 1
+  put (GrAltAnnCalling      a b    ) = putWord8 2  >> put a >> put b
+  put (GrAltAnnReenter             ) = putWord8 3
+  get = do t <- getWord8
+           case t of
+             0  -> return GrAltAnnNormal
+             1  -> return GrAltAnnIdent
+             2  -> liftM2 GrAltAnnCalling      get get
+             3  -> return GrAltAnnReenter
+
+instance Binary GrTagAnn where
+  put (GrTagAnn a b) = put a >> put b
+  get = liftM2 GrTagAnn get get
+
+
+%%]
+
+%%[(99 codegen grin) hs
+instance Binary GrFFIAnnot where
+  put (GrFFIAnnot_IsResEval a) = putWord8 0  >> put a 
+  get = do t <- getWord8
+           case t of
+             0  -> liftM GrFFIAnnot_IsResEval get
+
+%%]

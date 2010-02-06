@@ -31,6 +31,11 @@ Derived from work by Gerrit vd Geest.
 %%[(20 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
 %%]
 
@@ -240,13 +245,16 @@ data Guard
   | EqualScope              PredScope PredScope                             -- scopes are equal
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%[[10
-  | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
+  | NonEmptyRowLacksLabel   Ty LabelOffset Ty Label                         -- non empty row does not have label?, yielding its position + rest
 %%]]
 %%[[16
-  | IsCtxNilReduction Ty Ty
-  | EqsByCongruence Ty Ty PredSeq
-  | UnequalTy Ty Ty
-  | EqualModuloUnification Ty Ty
+  | IsCtxNilReduction       Ty Ty
+  | EqsByCongruence         Ty Ty PredSeq
+  | UnequalTy               Ty Ty
+  | EqualModuloUnification  Ty Ty
+%%]]
+%%[[20
+  deriving (Typeable, Data)
 %%]]
 %%]
 
@@ -407,7 +415,7 @@ isLetProveFailure glob x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval, Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer)
@@ -428,3 +436,33 @@ instance ForceEval Guard where
 %%]]
 %%]
 
+%%[(20 hmtyinfer)
+instance Binary Guard where
+  put (HasStrictCommonScope     a b c  ) = putWord8 0  >> put a >> put b >> put c
+  put (IsVisibleInScope         a b    ) = putWord8 1  >> put a >> put b
+  put (NotEqualScope            a b    ) = putWord8 2  >> put a >> put b
+  put (EqualScope               a b    ) = putWord8 3  >> put a >> put b
+  put (IsStrictParentScope      a b c  ) = putWord8 4  >> put a >> put b >> put c
+  put (NonEmptyRowLacksLabel    a b c d) = putWord8 5  >> put a >> put b >> put c >> put d
+%%[[16
+  put (IsCtxNilReduction        a b    ) = putWord8 6  >> put a >> put b
+  put (EqsByCongruence          a b c  ) = putWord8 7  >> put a >> put b >> put c
+  put (UnequalTy                a b    ) = putWord8 8  >> put a >> put b
+  put (EqualModuloUnification   a b    ) = putWord8 9  >> put a >> put b
+%%]]
+  get = do t <- getWord8
+           case t of
+             0  -> liftM3 HasStrictCommonScope     get get get
+             1  -> liftM2 IsVisibleInScope         get get
+             2  -> liftM2 NotEqualScope            get get
+             3  -> liftM2 EqualScope               get get
+             4  -> liftM3 IsStrictParentScope      get get get
+             5  -> liftM4 NonEmptyRowLacksLabel    get get get get
+%%[[16
+             6  -> liftM2 IsCtxNilReduction        get get
+             7  -> liftM3 EqsByCongruence          get get get
+             8  -> liftM2 UnequalTy                get get
+             9  -> liftM2 EqualModuloUnification   get get
+%%]]
+
+%%]

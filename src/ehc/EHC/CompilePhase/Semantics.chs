@@ -45,6 +45,10 @@ Folding over AST to compute semantics
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
 
+-- for debug
+%%[20 hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: computing semantics
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -158,7 +162,7 @@ cpFoldHsMod modNm
          }
 %%]
 
-%%[20 export(cpFoldHI)
+%%[2020 export(cpFoldHI)
 cpFoldHI :: HsName -> EHCompilePhase ()
 cpFoldHI modNm
   =  do  {  cr <- get
@@ -182,6 +186,37 @@ cpFoldHI modNm
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))
+                     })
+         }
+%%]
+
+%%[20 export(cpFoldHIInfo)
+cpFoldHIInfo :: HsName -> EHCompilePhase ()
+cpFoldHIInfo modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 mbHIInfo   = ecuMbPrevHIInfo ecu
+                 hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
+                 hasMain    = HI.hiiHasMain hiInfo
+         ;  when (isJust mbHIInfo && HI.hiiIsValid hiInfo)
+                 (do { let mm     = crsiModMp crsi
+                           mmi    = Map.findWithDefault emptyModMpInfo modNm mm
+                           mmi'   = mkModMpInfo modNm
+                                                (mmiInscps mmi)
+                                                ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
+                                                (HI.hiiHiddenExps hiInfo)
+                     ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
+                     ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
+                                     . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)
+                                     . ecuStoreHIUsedImpL (HI.hiiHIUsedImpModL hiInfo)
+                                     . ecuSetHasMain hasMain
+                                     )
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (lift $ putStrLn
+                               (show modNm
+                                ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModL hiInfo)
+                                ++ ", used=" ++ show (HI.hiiHIUsedImpModL hiInfo)
+                            )  )
                      })
          }
 %%]

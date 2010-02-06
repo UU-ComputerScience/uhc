@@ -30,6 +30,11 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -242,6 +247,21 @@ dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(20 hmtyinfer)
+deriving instance Typeable DataFldInfo
+deriving instance Data DataFldInfo
+
+deriving instance Typeable DataTagInfo
+deriving instance Data DataTagInfo
+
+deriving instance Typeable DataFldInConstr
+deriving instance Data DataFldInConstr
+
+deriving instance Typeable DataGamInfo
+deriving instance Data DataGamInfo
+
+%%]
+
 %%[(99 hmtyinfer)
 instance ForceEval DataFldInfo
 %%[[102
@@ -266,4 +286,28 @@ instance ForceEval DataGamInfo where
 %%[[102
   fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
+%%]
+
+%%[(20 hmtyinfer)
+instance Binary DataFldInfo where
+  put (DataFldInfo a) = put a
+  get = liftM DataFldInfo get
+
+instance Binary DataTagInfo where
+%%[[20
+  put (DataTagInfo a b c) = put a >> put b >> put c 
+  get = liftM3 DataTagInfo get get get
+%%][95
+  put (DataTagInfo a b c d) = put a >> put b >> put c >> put d
+  get = liftM4 DataTagInfo get get get get
+%%]]
+
+instance Binary DataFldInConstr where
+  put (DataFldInConstr a) = put a
+  get = liftM DataFldInConstr get
+
+instance Binary DataGamInfo where
+  put (DataGamInfo a b c d e f g) = put a >> put b >> put c >> put d >> put e >> put f >> put g
+  get = liftM7 DataGamInfo get get get get get get get
+
 %%]

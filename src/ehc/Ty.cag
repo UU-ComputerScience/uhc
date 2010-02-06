@@ -105,6 +105,11 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
 %%]
 
+%%[(20 hmtyinfer || hmtyast) hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%]
+%%[(20 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary})
+%%]
+
 %%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
 %%]
 
@@ -112,7 +117,14 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%]
 
 %%[1 ag
-DERIVING *     : Show, Eq, Ord
+DERIVING *
+  : Show, Eq, Ord
+%%[[20
+  , Typeable, Data
+%%]]
+
+DERIVING TyVarCateg
+  : Enum
 %%]
 
 Debug:
@@ -320,7 +332,12 @@ instance Show TyHardness where
 data LabelOffset
   = LabelOffset_Off !Int
   | LabelOffset_Var !UID
-  deriving (Eq,Ord)
+  deriving
+    ( Eq, Ord
+%%[[20
+    , Typeable, Data
+%%]]
+    )
 %%]
 
 %%[(10 hmtyinfer || hmtyast) hs
@@ -341,6 +358,11 @@ data PredScope
 
 initPredScope :: PredScope
 initPredScope = PredScope_Lev rllEmpty
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs
+deriving instance Typeable PredScope
+deriving instance Data PredScope
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(pscpMbVar)
@@ -443,6 +465,11 @@ mkImplsProveOcc :: UID -> PredScope -> ImplsProveOcc
 mkImplsProveOcc = ImplsProveOcc
 %%]
 
+%%[(20 hmtyinfer || hmtyast) hs
+deriving instance Typeable ImplsProveOcc
+deriving instance Data ImplsProveOcc
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pred occurrence, to be obsolete when fully moved to CHR
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -495,6 +522,11 @@ data CHRPredOccCxt
 
 %%]
 
+%%[(20 hmtyinfer || hmtyast) hs
+deriving instance Typeable CHRPredOccCxt
+deriving instance Data CHRPredOccCxt
+%%]
+
 %%[(9 hmtyinfer || hmtyast) hs export(CHRPredOcc(..),cpoScope,mkCHRPredOcc)
 data CHRPredOcc
   =  CHRPredOcc
@@ -516,6 +548,11 @@ mkCHRPredOcc p sc = mkCHRPredOccRng emptyRange p sc
 
 cpoScope :: CHRPredOcc -> PredScope
 cpoScope = cpocxScope . cpoCxt
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs
+deriving instance Typeable CHRPredOcc
+deriving instance Data CHRPredOcc
 %%]
 
 %%[(99 hmtyinfer || hmtyast) hs export(mkCHRPredOccRng)
@@ -1377,6 +1414,11 @@ instance Show TyKiKey where
 %%]]
 %%]
 
+%%[(20 hmtyinfer || hmtyast) hs
+deriving instance Typeable TyKiKey
+deriving instance Data TyKiKey
+%%]
+
 %%[6 hs export(tyKiKeyIsName)
 tyKiKeyIsName :: TyKiKey -> Bool
 tyKiKeyIsName (TyKiKey_Name _) = True
@@ -1727,5 +1769,170 @@ instToL1AssocL :: [InstTo] -> AssocL TyVarId (MetaLev,Ty)
 instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 hs
+instance Binary TyKiKey where
+  put (TyKiKey_Name  a) = putWord8 0 >> put a
+%%[[(20 hmtyinfer || hmtyast)
+  put (TyKiKey_TyVar a) = putWord8 1 >> put a
+%%]]
+  get = do t <- getWord8
+           case t of
+             0 -> liftM TyKiKey_Name  get
+%%[[(20 hmtyinfer || hmtyast)
+             1 -> liftM TyKiKey_TyVar get
+%%]]
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs
+instance Binary ImplsProveOcc where
+  put (ImplsProveOcc a b) = put a >> put b
+  get = liftM2 ImplsProveOcc get get
+
+instance Binary PredScope where
+  put (PredScope_Lev   a      ) = putWord8 0  >> put a
+  put (PredScope_Var   a      ) = putWord8 1  >> put a
+  get = do tag <- getWord8
+           case tag of
+             0  -> liftM  PredScope_Lev   get
+             1  -> liftM  PredScope_Var   get
+
+instance Binary CHRPredOccCxt where
+  put (CHRPredOccCxt_Scope1 a) = put a
+  get = liftM CHRPredOccCxt_Scope1 get
+
+instance Binary LabelOffset where
+  put (LabelOffset_Off a) = putWord8 0 >> put a
+  put (LabelOffset_Var a) = putWord8 1 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> liftM LabelOffset_Off get
+             1 -> liftM LabelOffset_Var get
+
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs
+instance Binary Ty where
+  put (Ty_Con   a      ) = putWord8 0  >> put a
+  put (Ty_App   a b    ) = putWord8 1  >> put a >> put b
+  put (Ty_Ann   a b    ) = putWord8 2  >> put a >> put b
+  put (Ty_Var   a b    ) = putWord8 3  >> put a >> put b
+  put (Ty_Any          ) = putWord8 4
+  put (Ty_Quant a b c d) = putWord8 5  >> put a >> put b >> put c >> put d
+  put (Ty_Ext   a b c  ) = putWord8 6  >> put a >> put b >> put c
+  put (Ty_Pred  a      ) = putWord8 7  >> put a
+  put (Ty_Lam   a b    ) = putWord8 8  >> put a >> put b
+  put (Ty_Impls a      ) = putWord8 9  >> put a
+  get = do tag <- getWord8
+           case tag of
+             0  -> liftM  Ty_Con   get
+             1  -> liftM2 Ty_App   get get
+             2  -> liftM2 Ty_Ann   get get
+             3  -> liftM2 Ty_Var   get get
+             4  -> return Ty_Any
+             5  -> liftM4 Ty_Quant get get get get
+             6  -> liftM3 Ty_Ext   get get get
+             7  -> liftM  Ty_Pred  get
+             8  -> liftM2 Ty_Lam   get get
+             9  -> liftM  Ty_Impls get
+
+instance Binary TyAnn where
+  put (TyAnn_Empty) = putWord8 0
+  get = do tag <- getWord8
+           case tag of
+             0 -> return TyAnn_Empty
+
+instance Binary TyVarCateg where
+  put = putEnum
+  get = getEnum
+
+instance Binary TyQu where
+  put (TyQu_Forall a) = putWord8 0 >> put a
+  put (TyQu_Exists a) = putWord8 1 >> put a
+  get = do tag <- getWord8
+           case tag of
+             0 -> liftM  TyQu_Forall   get
+             1 -> liftM  TyQu_Exists   get
+
+instance Binary Pred where
+  put (Pred_Class  a  ) = putWord8 0 >> put a
+  put (Pred_Pred   a  ) = putWord8 1 >> put a
+  put (Pred_Lacks  a b) = putWord8 2 >> put a >> put b
+  put (Pred_Arrow  a b) = putWord8 3 >> put a >> put b
+%%[[16
+  put (Pred_Eq     a b) = putWord8 4 >> put a >> put b
+%%]]
+  put (Pred_Var    a  ) = putWord8 5 >> put a
+  put (Pred_Preds  a  ) = putWord8 6 >> put a
+  get = do tag <- getWord8
+           case tag of
+             0 -> liftM  Pred_Class   get
+             1 -> liftM  Pred_Pred    get
+             2 -> liftM2 Pred_Lacks   get get
+             3 -> liftM2 Pred_Arrow   get get
+%%[[16
+             4 -> liftM2 Pred_Eq      get get
+%%]]
+             5 -> liftM  Pred_Var     get
+             6 -> liftM  Pred_Preds   get
+
+instance Binary Label where
+  put (Label_Lab  a) = putWord8 0 >> put a
+  put (Label_Var  a) = putWord8 1 >> put a
+  get = do tag <- getWord8
+           case tag of
+             0 -> liftM  Label_Lab   get
+             1 -> liftM  Label_Var   get
+
+instance Binary PredSeq where
+  put (PredSeq_Nil          ) = putWord8 0
+  put (PredSeq_Cons  a b    ) = putWord8 1  >> put a >> put b
+  put (PredSeq_Var   a      ) = putWord8 2  >> put a
+  get = do tag <- getWord8
+           case tag of
+             0  -> return PredSeq_Nil
+             1  -> liftM2 PredSeq_Cons  get get
+             2  -> liftM  PredSeq_Var   get
+
+{-
+instance Binary PredSeq where
+  put = putList (PredSeq_Nil ==) (\(PredSeq_Cons a b) -> (a,b))
+  get = getList PredSeq_Nil PredSeq_Cons
+-}
+
+instance Binary CHRPredOcc where
+%%[[20
+  put (CHRPredOcc a b  ) = put a >> put b
+%%][99
+  put (CHRPredOcc a b c) = put a >> put b >> put c
+%%]]
+%%[[20
+  get = liftM2 CHRPredOcc get get
+%%][99
+  get = liftM3 CHRPredOcc get get get
+%%]]
+
+instance Binary Impls where
+  put (Impls_Nil             ) = putWord8 0
+  put (Impls_Tail a b        ) = putWord8 1  >> put a >> put b
+%%[[20
+  put (Impls_Cons a b c d e  ) = putWord8 2  >> put a >> put b >> put c >> put d >> put e
+%%][99
+  put (Impls_Cons a b c d e f) = putWord8 2  >> put a >> put b >> put c >> put d >> put e >> put f
+%%]]
+  get = do tag <- getWord8
+           case tag of
+             0  -> return Impls_Nil
+             1  -> liftM2 Impls_Tail  get get
+             2  ->
+%%[[20
+                   liftM5 Impls_Cons  get get get get get
+%%][99
+                   liftM6 Impls_Cons  get get get get get get
+%%]]
+
+%%]
 
