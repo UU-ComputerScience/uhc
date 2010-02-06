@@ -101,7 +101,7 @@ SEM Binding
                                               VisibleNo  -> (Rel.empty,@exports)
                                               VisibleYes -> (@exports,Rel.empty)
     | Ids
-        lhs             .   idGam       =   gamFromAssocL [ (o,mkIdDefOcc od IdAsp_Any nmLevOutside emptyRange) | (o,od) <- @idOccs ]
+        lhs             .   idGam       =   hiiIdDefOccGamFromAssocL @idOccs
     | Fixity
         lhs             .   fixityGam   =   gamSingleton @nm (FixityGamInfo @prio @fixity)
 %%[[(20 hmtyinfer)
@@ -132,7 +132,7 @@ SEM Binding
     | Class
         lhs             .   clGam       =   gamSingleton @nm (Pr.ClGamInfo @prToEvidTy @ruleTy @nmEvid)
     | CHRStore
-        lhs             .   chrStore    =   chrStoreFromElems @chrs
+        lhs             .   chrStore    =   hiiScopedPredStoreFromList @chrs
 %%]]
 %%[[(20 codegen)
     | Arities

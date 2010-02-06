@@ -26,6 +26,11 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -41,6 +46,11 @@ data TyGamInfo
       }
 %%]]
       deriving Show
+%%]
+
+%%[(20 hmtyinfer)
+deriving instance Typeable TyGamInfo
+deriving instance Data TyGamInfo
 %%]
 
 %%[(6 hmtyinfer || hmtyast).mkTGIData export(mkTGIData)
@@ -216,3 +226,8 @@ instance ForceEval TyGamInfo where
 %%]]
 %%]
 
+%%[(20 hmtyinfer || hmtyast)
+instance Binary TyGamInfo where
+  put (TyGamInfo a) = put a
+  get = liftM TyGamInfo get
+%%]

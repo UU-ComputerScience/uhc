@@ -23,6 +23,9 @@
 %%[10 export(hsnConcat)
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%]
+
 %%[9999 import({%{EH}Base.Hashable})
 %%]
 
@@ -418,6 +421,44 @@ instance Position HsName where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance Binary HsName where
+  put (HNm   a  ) = putWord8 0 >> put a
+  put (HNmQ  a  ) = putWord8 1 >> put a
+  put (HNPos a  ) = putWord8 2 >> put a
+  put (HNmNr a b) = putWord8 3 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> liftM  HNm   get
+             1 -> liftM  HNmQ  get
+             2 -> liftM  HNPos get
+             3 -> liftM2 HNmNr get get
+
+instance Binary OrigName where
+  put (OrigNone    ) = putWord8 0
+  put (OrigLocal  a) = putWord8 1 >> put a
+  put (OrigGlobal a) = putWord8 2 >> put a
+  put (OrigFunc   a) = putWord8 3 >> put a
+  get = do t <- getWord8
+           case t of
+             0 -> return OrigNone
+             1 -> liftM  OrigLocal  get
+             2 -> liftM  OrigGlobal get
+             3 -> liftM  OrigFunc   get
+
+instance Binary IdOccKind where
+  put = putEnum
+  get = getEnum
+
+instance Binary IdOcc where
+  put (IdOcc a b) = put a >> put b
+  get = liftM2 IdOcc get get
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifier occurrences
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -438,7 +479,7 @@ data IdOccKind
 %%[[20
   | IdOcc_Data
 %%]]
-  deriving (Eq,Ord)
+  deriving (Eq,Ord,Enum)
 %%]
 
 %%[1
@@ -501,5 +542,4 @@ type HsNameMp = Map.Map HsName HsName
 hsnRepl :: HsNameMp -> HsName -> HsName
 hsnRepl m n = Map.findWithDefault n n m
 %%]
-
 

@@ -39,6 +39,10 @@ CompilePhase building blocks: parsers
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
 %%]
 
+-- serialization
+%%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,7 +159,7 @@ cpParseCore modNm
        }
 %%]
 
-%%[20 export(cpParseHI)
+%%[2020 export(cpParseHI)
 cpParseHI :: HsName -> EHCompilePhase ()
 cpParseHI modNm
   = do { cr <- get
@@ -175,6 +179,30 @@ cpParseHI modNm
        }
 %%]
 
+%%[20 export(cpDecodeHIInfo)
+cpDecodeHIInfo :: HsName -> EHCompilePhase ()
+cpDecodeHIInfo modNm
+  = do { cr <- get
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[20
+              fpH     = fpathSetSuff "hi" fp
+%%][99
+              -- if outputdir is specified, use that location to possibly read hi from.
+              fpH     = mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi"
+%%]]
+       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpH
+       ; hiinfo <- lift $
+           catch (do { i <- Bin.getBinaryFPath fpH
+                     ; return i
+                     })
+                 (\_ -> return $ HI.emptyHIInfo {HI.hiiIsValid = False})
+       ; when (ehcOptVerbosity opts >= VerboseALot)
+              (do { lift $ putPPLn (pp hiinfo)
+                  })
+       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: on top of parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,8 +212,10 @@ cpGetPrevHI :: HsName -> EHCompilePhase ()
 cpGetPrevHI modNm
   = do { cr <- get
        ; let  ecu        = crCU modNm cr
-       ; when (isJust (ecuMbHITime ecu))
-              (cpParseHI modNm)
+       -- ; when (isJust (ecuMbHITime ecu))
+       --        (cpParseHI modNm)
+       ; when (isJust (ecuMbHIInfoTime ecu))
+              (cpDecodeHIInfo modNm)
        }
 %%]
 

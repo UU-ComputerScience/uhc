@@ -310,6 +310,8 @@ AC_SUBST(GHC_CMD1,$ghcCmd1)
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -330,6 +332,12 @@ then
     ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
+    fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
     fi
   fi
 fi
@@ -1037,13 +1045,14 @@ AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
 AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -1100,6 +1109,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
     echo "        version                 : $ghcLibNetwork"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"

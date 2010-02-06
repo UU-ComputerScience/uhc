@@ -32,6 +32,11 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%[9 import({%{EH}Base.Common})
 %%]
 
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%]
+%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -58,6 +63,9 @@ data SGamElt v
       { sgeScpId	:: !Int							-- scope ident
       , sgeVal		:: v							-- the value
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 type SMap k v = Map.Map k [SGamElt v]	
 
@@ -67,6 +75,9 @@ data SGam k v
       , sgScp		:: !Scp							-- scope stack
       , sgMap		:: SMap k v						-- map holding the values
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 mkSGam :: SMap k v -> SGam k v
 mkSGam = SGam 0 [0]
@@ -76,6 +87,17 @@ emptySGam = mkSGam Map.empty
 
 instance Show (SGam k v) where
   show _ = "SGam"
+
+%%]
+
+%%[20
+instance (Binary v) => Binary (SGamElt v) where
+  put (SGamElt a b) = put a >> put b
+  get = liftM2 SGamElt get get
+
+instance (Ord k, Binary k, Binary v) => Binary (SGam k v) where
+  put (SGam a b c) = put a >> put b >> put c
+  get = liftM3 SGam get get get
 %%]
 
 %%[9

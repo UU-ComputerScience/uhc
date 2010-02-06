@@ -31,6 +31,11 @@
 %%[(15 hmtyinfer) export(ClsFuncDep(..))
 %%]
 
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
+%%]
+%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
@@ -70,6 +75,15 @@ emptyCLGI
 %%]]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+deriving instance Typeable ClGamInfo
+deriving instance Data ClGamInfo
+%%]
+
 %%[(9 hmtyinfer)
 instance PP ClGamInfo where
   pp clgi = pp (clgiDfltDictNm clgi) >#< "::" >#< ppTy (clgiRuleTy clgi) >#< "::" >#< ppTy (clgiPrToEvidTy clgi)
@@ -89,4 +103,11 @@ instance ForceEval ClGamInfo where
   fevCount (ClGamInfo e r n) = cm1 "ClGamInfo" `cmUnion` fevCount e `cmUnion` fevCount r `cmUnion` fevCount n
 %%]]
 %%]
+
+%%[(20 hmtyinfer)
+instance Binary ClGamInfo where
+  put (ClGamInfo a b c) = put a >> put b >> put c
+  get = liftM3 ClGamInfo get get get
+%%]
+
 

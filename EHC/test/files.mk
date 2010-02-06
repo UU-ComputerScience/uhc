@@ -119,6 +119,7 @@ test-expect test-regress: test-lists
 	      if test -r $$t -a -x $${ehc} ; \
 	      then \
 	        te=$${t}.exp$${v} ; tr=$${t}.reg$${v} ; th=$${t}.$${how}$${v} ; \
+	        rm -f $${tb}.hi ; \
 	        if test $${v} -lt $(EHC_PREL_VARIANT) ; \
 	        then \
 	          tprelbase=`sed -n -e 's/^-- %% *inline test *([a-z0-9]*) --$$/prefix1/p' < $$t` ; \

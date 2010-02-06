@@ -32,10 +32,12 @@ Conversion from Pred to CHR.
 %%% Rule store
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR)
-type PredStore p g s info = CHRStore p info g s
-type ScopedPredStore = PredStore CHRPredOcc Guard VarMp RedHowAnnotation
-type ScopedPredCHR   = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
+%%[(9 hmtyinfer) export(ScopedPredStore,ScopedPredCHR,ScopedPredStoreL)
+type PredStore  p g s info = CHRStore p info g s
+type PredStoreL p g s info = [CHR (Constraint p info) g s]
+type ScopedPredStore  = PredStore  CHRPredOcc Guard VarMp RedHowAnnotation
+type ScopedPredStoreL = PredStoreL CHRPredOcc Guard VarMp RedHowAnnotation
+type ScopedPredCHR    = CHR (Constraint CHRPredOcc RedHowAnnotation) Guard VarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
