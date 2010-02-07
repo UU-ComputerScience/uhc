@@ -109,7 +109,7 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.Hashable})
@@ -1463,27 +1463,69 @@ metaLevSo  = metaLevKi  + 1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-instance Binary VarUIDHsName where
-  put (VarUIDHs_Name a b) = putWord8 0 >> put a >> put b
-  put (VarUIDHs_UID  a  ) = putWord8 1 >> put a
-  put (VarUIDHs_Var  a  ) = putWord8 2 >> put a
-  get = do t <- getWord8
-           case t of
-             0 -> liftM2 VarUIDHs_Name get get
-             1 -> liftM  VarUIDHs_UID  get
-             2 -> liftM  VarUIDHs_Var  get
+deriving instance Typeable VarUIDHsName
+deriving instance Data VarUIDHsName
+
+deriving instance Typeable Fixity
+deriving instance Data Fixity
+
+deriving instance Typeable1 AlwaysEq
+deriving instance Data x => Data (AlwaysEq x)
+
+deriving instance Typeable UID
+deriving instance Data UID
+
+deriving instance Typeable PredOccId
+deriving instance Data PredOccId
+
+deriving instance Typeable1 RLList
+deriving instance Data x => Data (RLList x)
+
+deriving instance Typeable CTag
+deriving instance Data CTag
+
+deriving instance Typeable Range
+deriving instance Data Range
+
+deriving instance Typeable Pos
+deriving instance Data Pos
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance Serialize VarUIDHsName where
+  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 VarUIDHs_Name sget sget
+              1 -> liftM  VarUIDHs_UID  sget
+              2 -> liftM  VarUIDHs_Var  sget
 
 instance Binary Fixity where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary x => Binary (AlwaysEq x) where
   put (AlwaysEq x) = put x
   get = liftM AlwaysEq get
+
+instance Serialize x => Serialize (AlwaysEq x) where
+  sput (AlwaysEq x) = sput x
+  sget = liftM AlwaysEq sget
 
 instance Binary UID where
 %%[[20
@@ -1494,21 +1536,29 @@ instance Binary UID where
   get = liftM2 UID get get
 %%]]
 
+instance Serialize UID where
+  sput = sputPlain
+  sget = sgetPlain
+
 instance Binary PredOccId where
   put (PredOccId a) = put a
   get = liftM PredOccId get
+
+instance Serialize PredOccId where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary a => Binary (RLList a) where
   put (RLList a) = put a
   get = liftM RLList get
 
-instance Binary CTag where
-  put (CTagRec          ) = putWord8 0
-  put (CTag    a b c d e) = putWord8 1 >> put a >> put b >> put c >> put d >> put e
-  get = do t <- getWord8
-           case t of
-             0 -> return CTagRec
-             1 -> liftM5 CTag    get get get get get
+instance Serialize CTag where
+  sput (CTagRec          ) = sputWord8 0
+  sput (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sget = do t <- sgetWord8
+            case t of
+              0 -> return CTagRec
+              1 -> liftM5 CTag    sget sget sget sget sget
 
 instance Binary Range where
   put (Range_Unknown    ) = putWord8 0
@@ -1519,6 +1569,10 @@ instance Binary Range where
              0 -> return Range_Unknown
              1 -> return Range_Builtin
              2 -> liftM2 Range_Range get get
+
+instance Serialize Range where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary Pos where
   put (Pos a b c) = put a >> put b >> put c

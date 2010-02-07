@@ -33,9 +33,7 @@
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
-%%[20 import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
-%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 export(modImpPrelude)
@@ -479,11 +477,11 @@ instance ForceEval ModEnt where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-instance Binary ModEnt where
-  put (ModEnt a b c d) = put a >> put b >> put c >> put d
-  get = liftM4 ModEnt get get get get
+instance Serialize ModEnt where
+  sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 ModEnt sget sget sget sget
 %%]

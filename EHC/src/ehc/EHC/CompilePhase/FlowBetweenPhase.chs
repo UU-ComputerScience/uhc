@@ -33,7 +33,7 @@ XXX
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- CHR solver

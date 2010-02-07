@@ -105,9 +105,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(13 hmtyinfer || hmtyast) hs export(PredSeq(..))
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
-%%]
-%%[(20 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary})
+%%[(20 hmtyinfer || hmtyast) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(1 hmtyinfer || hmtyast).TyAST ag import({Ty/AbsSyn})
@@ -1774,16 +1772,16 @@ instToL1AssocL l = [ (v,(tyquMetaLev q,k)) | (InstTo_Qu q _ v k) <- l ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs
-instance Binary TyKiKey where
-  put (TyKiKey_Name  a) = putWord8 0 >> put a
+instance Serialize TyKiKey where
+  sput (TyKiKey_Name  a) = sputWord8 0 >> sput a
 %%[[(20 hmtyinfer || hmtyast)
-  put (TyKiKey_TyVar a) = putWord8 1 >> put a
+  sput (TyKiKey_TyVar a) = sputWord8 1 >> sput a
 %%]]
-  get = do t <- getWord8
-           case t of
-             0 -> liftM TyKiKey_Name  get
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM TyKiKey_Name  sget
 %%[[(20 hmtyinfer || hmtyast)
-             1 -> liftM TyKiKey_TyVar get
+              1 -> liftM TyKiKey_TyVar sget
 %%]]
 %%]
 
@@ -1791,6 +1789,10 @@ instance Binary TyKiKey where
 instance Binary ImplsProveOcc where
   put (ImplsProveOcc a b) = put a >> put b
   get = liftM2 ImplsProveOcc get get
+
+instance Serialize ImplsProveOcc where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary PredScope where
   put (PredScope_Lev   a      ) = putWord8 0  >> put a
@@ -1800,9 +1802,17 @@ instance Binary PredScope where
              0  -> liftM  PredScope_Lev   get
              1  -> liftM  PredScope_Var   get
 
+instance Serialize PredScope where
+  sput = sputPlain
+  sget = sgetPlain
+
 instance Binary CHRPredOccCxt where
   put (CHRPredOccCxt_Scope1 a) = put a
   get = liftM CHRPredOccCxt_Scope1 get
+
+instance Serialize CHRPredOccCxt where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary LabelOffset where
   put (LabelOffset_Off a) = putWord8 0 >> put a
@@ -1812,42 +1822,50 @@ instance Binary LabelOffset where
              0 -> liftM LabelOffset_Off get
              1 -> liftM LabelOffset_Var get
 
+instance Serialize LabelOffset where
+  sput = sputPlain
+  sget = sgetPlain
+
 %%]
 
 %%[(20 hmtyinfer || hmtyast) hs
-instance Binary Ty where
-  put (Ty_Con   a      ) = putWord8 0  >> put a
-  put (Ty_App   a b    ) = putWord8 1  >> put a >> put b
-  put (Ty_Ann   a b    ) = putWord8 2  >> put a >> put b
-  put (Ty_Var   a b    ) = putWord8 3  >> put a >> put b
-  put (Ty_Any          ) = putWord8 4
-  put (Ty_Quant a b c d) = putWord8 5  >> put a >> put b >> put c >> put d
-  put (Ty_Ext   a b c  ) = putWord8 6  >> put a >> put b >> put c
-  put (Ty_Pred  a      ) = putWord8 7  >> put a
-  put (Ty_Lam   a b    ) = putWord8 8  >> put a >> put b
-  put (Ty_Impls a      ) = putWord8 9  >> put a
-  get = do tag <- getWord8
-           case tag of
-             0  -> liftM  Ty_Con   get
-             1  -> liftM2 Ty_App   get get
-             2  -> liftM2 Ty_Ann   get get
-             3  -> liftM2 Ty_Var   get get
-             4  -> return Ty_Any
-             5  -> liftM4 Ty_Quant get get get get
-             6  -> liftM3 Ty_Ext   get get get
-             7  -> liftM  Ty_Pred  get
-             8  -> liftM2 Ty_Lam   get get
-             9  -> liftM  Ty_Impls get
+instance Serialize Ty where
+  sput (Ty_Con   a      ) = sputWord8 0  >> sput a
+  sput (Ty_App   a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (Ty_Ann   a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (Ty_Var   a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (Ty_Any          ) = sputWord8 4
+  sput (Ty_Quant a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
+  sput (Ty_Ext   a b c  ) = sputWord8 6  >> sput a >> sput b >> sput c
+  sput (Ty_Pred  a      ) = sputWord8 7  >> sput a
+  sput (Ty_Lam   a b    ) = sputWord8 8  >> sput a >> sput b
+  sput (Ty_Impls a      ) = sputWord8 9  >> sput a
+  sget = do tag <- sgetWord8
+            case tag of
+              0  -> liftM  Ty_Con   sget
+              1  -> liftM2 Ty_App   sget sget
+              2  -> liftM2 Ty_Ann   sget sget
+              3  -> liftM2 Ty_Var   sget sget
+              4  -> return Ty_Any
+              5  -> liftM4 Ty_Quant sget sget sget sget
+              6  -> liftM3 Ty_Ext   sget sget sget
+              7  -> liftM  Ty_Pred  sget
+              8  -> liftM2 Ty_Lam   sget sget
+              9  -> liftM  Ty_Impls sget
 
-instance Binary TyAnn where
-  put (TyAnn_Empty) = putWord8 0
-  get = do tag <- getWord8
-           case tag of
-             0 -> return TyAnn_Empty
+instance Serialize TyAnn where
+  sput (TyAnn_Empty) = sputWord8 0
+  sget = do tag <- sgetWord8
+            case tag of
+              0 -> return TyAnn_Empty
 
 instance Binary TyVarCateg where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize TyVarCateg where
+  sput = sputPlain
+  sget = sgetPlain
 
 instance Binary TyQu where
   put (TyQu_Forall a) = putWord8 0 >> put a
@@ -1857,45 +1875,49 @@ instance Binary TyQu where
              0 -> liftM  TyQu_Forall   get
              1 -> liftM  TyQu_Exists   get
 
-instance Binary Pred where
-  put (Pred_Class  a  ) = putWord8 0 >> put a
-  put (Pred_Pred   a  ) = putWord8 1 >> put a
-  put (Pred_Lacks  a b) = putWord8 2 >> put a >> put b
-  put (Pred_Arrow  a b) = putWord8 3 >> put a >> put b
-%%[[16
-  put (Pred_Eq     a b) = putWord8 4 >> put a >> put b
-%%]]
-  put (Pred_Var    a  ) = putWord8 5 >> put a
-  put (Pred_Preds  a  ) = putWord8 6 >> put a
-  get = do tag <- getWord8
-           case tag of
-             0 -> liftM  Pred_Class   get
-             1 -> liftM  Pred_Pred    get
-             2 -> liftM2 Pred_Lacks   get get
-             3 -> liftM2 Pred_Arrow   get get
-%%[[16
-             4 -> liftM2 Pred_Eq      get get
-%%]]
-             5 -> liftM  Pred_Var     get
-             6 -> liftM  Pred_Preds   get
+instance Serialize TyQu where
+  sput = sputPlain
+  sget = sgetPlain
 
-instance Binary Label where
-  put (Label_Lab  a) = putWord8 0 >> put a
-  put (Label_Var  a) = putWord8 1 >> put a
-  get = do tag <- getWord8
-           case tag of
-             0 -> liftM  Label_Lab   get
-             1 -> liftM  Label_Var   get
+instance Serialize Pred where
+  sput (Pred_Class  a  ) = sputWord8 0 >> sput a
+  sput (Pred_Pred   a  ) = sputWord8 1 >> sput a
+  sput (Pred_Lacks  a b) = sputWord8 2 >> sput a >> sput b
+  sput (Pred_Arrow  a b) = sputWord8 3 >> sput a >> sput b
+%%[[16
+  sput (Pred_Eq     a b) = sputWord8 4 >> sput a >> sput b
+%%]]
+  sput (Pred_Var    a  ) = sputWord8 5 >> sput a
+  sput (Pred_Preds  a  ) = sputWord8 6 >> sput a
+  sget = do tag <- sgetWord8
+            case tag of
+              0 -> liftM  Pred_Class   sget
+              1 -> liftM  Pred_Pred    sget
+              2 -> liftM2 Pred_Lacks   sget sget
+              3 -> liftM2 Pred_Arrow   sget sget
+%%[[16
+              4 -> liftM2 Pred_Eq      sget sget
+%%]]
+              5 -> liftM  Pred_Var     sget
+              6 -> liftM  Pred_Preds   sget
 
-instance Binary PredSeq where
-  put (PredSeq_Nil          ) = putWord8 0
-  put (PredSeq_Cons  a b    ) = putWord8 1  >> put a >> put b
-  put (PredSeq_Var   a      ) = putWord8 2  >> put a
-  get = do tag <- getWord8
-           case tag of
-             0  -> return PredSeq_Nil
-             1  -> liftM2 PredSeq_Cons  get get
-             2  -> liftM  PredSeq_Var   get
+instance Serialize Label where
+  sput (Label_Lab  a) = sputWord8 0 >> sput a
+  sput (Label_Var  a) = sputWord8 1 >> sput a
+  sget = do tag <- sgetWord8
+            case tag of
+              0 -> liftM  Label_Lab   sget
+              1 -> liftM  Label_Var   sget
+
+instance Serialize PredSeq where
+  sput (PredSeq_Nil          ) = sputWord8 0
+  sput (PredSeq_Cons  a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (PredSeq_Var   a      ) = sputWord8 2  >> sput a
+  sget = do tag <- sgetWord8
+            case tag of
+              0  -> return PredSeq_Nil
+              1  -> liftM2 PredSeq_Cons  sget sget
+              2  -> liftM  PredSeq_Var   sget
 
 {-
 instance Binary PredSeq where
@@ -1903,35 +1925,35 @@ instance Binary PredSeq where
   get = getList PredSeq_Nil PredSeq_Cons
 -}
 
-instance Binary CHRPredOcc where
+instance Serialize CHRPredOcc where
 %%[[20
-  put (CHRPredOcc a b  ) = put a >> put b
+  sput (CHRPredOcc a b  ) = sput a >> sput b
 %%][99
-  put (CHRPredOcc a b c) = put a >> put b >> put c
+  sput (CHRPredOcc a b c) = sput a >> sput b >> sput c
 %%]]
 %%[[20
-  get = liftM2 CHRPredOcc get get
+  sget = liftM2 CHRPredOcc sget sget
 %%][99
-  get = liftM3 CHRPredOcc get get get
+  sget = liftM3 CHRPredOcc sget sget sget
 %%]]
 
-instance Binary Impls where
-  put (Impls_Nil             ) = putWord8 0
-  put (Impls_Tail a b        ) = putWord8 1  >> put a >> put b
+instance Serialize Impls where
+  sput (Impls_Nil             ) = sputWord8 0
+  sput (Impls_Tail a b        ) = sputWord8 1  >> sput a >> sput b
 %%[[20
-  put (Impls_Cons a b c d e  ) = putWord8 2  >> put a >> put b >> put c >> put d >> put e
+  sput (Impls_Cons a b c d e  ) = sputWord8 2  >> sput a >> sput b >> sput c >> sput d >> sput e
 %%][99
-  put (Impls_Cons a b c d e f) = putWord8 2  >> put a >> put b >> put c >> put d >> put e >> put f
+  sput (Impls_Cons a b c d e f) = sputWord8 2  >> sput a >> sput b >> sput c >> sput d >> sput e >> sput f
 %%]]
-  get = do tag <- getWord8
-           case tag of
-             0  -> return Impls_Nil
-             1  -> liftM2 Impls_Tail  get get
-             2  ->
+  sget = do tag <- sgetWord8
+            case tag of
+              0  -> return Impls_Nil
+              1  -> liftM2 Impls_Tail  sget sget
+              2  ->
 %%[[20
-                   liftM5 Impls_Cons  get get get get get
+                    liftM5 Impls_Cons  sget sget sget sget sget
 %%][99
-                   liftM6 Impls_Cons  get get get get get get
+                    liftM6 Impls_Cons  sget sget sget sget sget sget
 %%]]
 
 %%]

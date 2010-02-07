@@ -59,9 +59,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(6 hmtyinfer || hmtyast) import({%{EH}Base.Debug}) export(VarMpInfo(..),varmpToAssocL)
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(50 hmtyinfer || hmtyast) export(varmpKeys)
@@ -685,32 +683,32 @@ instance PP VarMpInfo where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 hmtyinfer || hmtyast)
-instance Binary VarMpInfo where
-  put (VMITy      a) = putWord8 0  >> put a
-  put (VMIImpls   a) = putWord8 1  >> put a
-  put (VMIScope   a) = putWord8 2  >> put a
-  put (VMIPred    a) = putWord8 3  >> put a
-  put (VMIAssNm   a) = putWord8 4  >> put a
-  put (VMILabel   a) = putWord8 5  >> put a
-  put (VMIOffset  a) = putWord8 6  >> put a
-  put (VMIPredSeq a) = putWord8 7  >> put a
-  get = do t <- getWord8
-           case t of
-             0 -> liftM VMITy      get
-             1 -> liftM VMIImpls   get
-             2 -> liftM VMIScope   get
-             3 -> liftM VMIPred    get
-             4 -> liftM VMIAssNm   get
-             5 -> liftM VMILabel   get
-             6 -> liftM VMIOffset  get
-             7 -> liftM VMIPredSeq get
+instance Serialize VarMpInfo where
+  sput (VMITy      a) = sputWord8 0  >> sput a
+  sput (VMIImpls   a) = sputWord8 1  >> sput a
+  sput (VMIScope   a) = sputWord8 2  >> sput a
+  sput (VMIPred    a) = sputWord8 3  >> sput a
+  sput (VMIAssNm   a) = sputWord8 4  >> sput a
+  sput (VMILabel   a) = sputWord8 5  >> sput a
+  sput (VMIOffset  a) = sputWord8 6  >> sput a
+  sput (VMIPredSeq a) = sputWord8 7  >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM VMITy      sget
+              1 -> liftM VMIImpls   sget
+              2 -> liftM VMIScope   sget
+              3 -> liftM VMIPred    sget
+              4 -> liftM VMIAssNm   sget
+              5 -> liftM VMILabel   sget
+              6 -> liftM VMIOffset  sget
+              7 -> liftM VMIPredSeq sget
 
-instance (Ord k, Binary k, Binary v) => Binary (VarMp' k v) where
-  put (VarMp a b) = put a >> put b
-  get = liftM2 VarMp get get
+instance (Ord k, Serialize k, Serialize v) => Serialize (VarMp' k v) where
+  sput (VarMp a b) = sput a >> sput b
+  sget = liftM2 VarMp sget sget
 
 %%]

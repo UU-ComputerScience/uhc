@@ -54,13 +54,13 @@ EHC_HS_MAIN_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,$(EHC_MAIN))
 EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHC_HS_MAIN_SRC_CHS))
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
-													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
+													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred HI \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
 													$(addprefix Base/,Binary Serialize GenC Opts Hashable Target BasicAnnot Common Builtin Builtin2 HsName Debug Trie CfgPP ForceEval LaTeX HtmlCommon Bits FileSearchLocation PackageDatabase ParseUtils) \
 													$(addprefix Scanner/,Common Machine Scanner Token TokenParser) \
-													$(addsuffix /Parser,Base Ty EH HS Foreign HI Core GrinCode) \
+													$(addsuffix /Parser,Base Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam) \
 													$(addprefix Core/,Utils Coercion) \
@@ -321,7 +321,7 @@ $(LIB_EHC_CABAL_DRV): $(EHC_ALL_DPDS_NO_MAIN) $(EHC_MKF)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EHC_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, $(LIB_EH_UTIL_PKG_NAME) binary syb \
+		, $(LIB_EH_UTIL_PKG_NAME) binary syb bytestring \
 		, $(CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES) DeriveDataTypeable OverlappingInstances \
 		, Part of EH$(EHC_VARIANT_ASPECTS) compiler packaged as library \
 		, $(subst $(PATH_SEP),.,$(patsubst $(EHC_BLD_LIB_HS_VARIANT_PREFIX)%.hs,$(LIB_EHC_QUAL_PREFIX)%,\

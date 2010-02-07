@@ -24,9 +24,7 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
@@ -162,7 +160,7 @@ gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeCons
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, ForceEval
+%%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer)
@@ -205,40 +203,40 @@ instance ForceEval RedHowAnnotation where
 %%]
 
 %%[(20 hmtyinfer)
-instance Binary RedHowAnnotation where
-  put (RedHow_ByInstance       a b c) = putWord8 0  >> put a >> put b >> put c
-  put (RedHow_BySuperClass     a b c) = putWord8 1  >> put a >> put b >> put c
-  put (RedHow_ProveObl         a b  ) = putWord8 2  >> put a >> put b
-  put (RedHow_Assumption       a b  ) = putWord8 3  >> put a >> put b
-  put (RedHow_ByScope          a    ) = putWord8 4  >> put a
-  put (RedHow_ByLabel          a b c) = putWord8 5  >> put a >> put b >> put c
-  put (RedHow_Lambda           a b  ) = putWord8 6  >> put a >> put b
+instance Serialize RedHowAnnotation where
+  sput (RedHow_ByInstance       a b c) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (RedHow_BySuperClass     a b c) = sputWord8 1  >> sput a >> sput b >> sput c
+  sput (RedHow_ProveObl         a b  ) = sputWord8 2  >> sput a >> sput b
+  sput (RedHow_Assumption       a b  ) = sputWord8 3  >> sput a >> sput b
+  sput (RedHow_ByScope          a    ) = sputWord8 4  >> sput a
+  sput (RedHow_ByLabel          a b c) = sputWord8 5  >> sput a >> sput b >> sput c
+  sput (RedHow_Lambda           a b  ) = sputWord8 6  >> sput a >> sput b
 %%[[16
-  put (RedHow_ByEqSymmetry          ) = putWord8 7
-  put (RedHow_ByEqTrans             ) = putWord8 8
-  put (RedHow_ByEqCongr             ) = putWord8 9
-  put (RedHow_ByEqTyReduction  a b  ) = putWord8 10 >> put a >> put b
-  put (RedHow_ByPredSeqUnpack       ) = putWord8 11
-  put (RedHow_ByEqFromAssume        ) = putWord8 12
-  put (RedHow_ByEqIdentity          ) = putWord8 13
+  sput (RedHow_ByEqSymmetry          ) = sputWord8 7
+  sput (RedHow_ByEqTrans             ) = sputWord8 8
+  sput (RedHow_ByEqCongr             ) = sputWord8 9
+  sput (RedHow_ByEqTyReduction  a b  ) = sputWord8 10 >> sput a >> sput b
+  sput (RedHow_ByPredSeqUnpack       ) = sputWord8 11
+  sput (RedHow_ByEqFromAssume        ) = sputWord8 12
+  sput (RedHow_ByEqIdentity          ) = sputWord8 13
 %%]]
-  get = do t <- getWord8
-           case t of
-             0  -> liftM3 RedHow_ByInstance       get get get 
-             1  -> liftM3 RedHow_BySuperClass     get get get 
-             2  -> liftM2 RedHow_ProveObl         get get 
-             3  -> liftM2 RedHow_Assumption       get get 
-             4  -> liftM  RedHow_ByScope          get 
-             5  -> liftM3 RedHow_ByLabel          get get get
-             6  -> liftM2 RedHow_Lambda           get get 
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 RedHow_ByInstance       sget sget sget 
+              1  -> liftM3 RedHow_BySuperClass     sget sget sget 
+              2  -> liftM2 RedHow_ProveObl         sget sget 
+              3  -> liftM2 RedHow_Assumption       sget sget 
+              4  -> liftM  RedHow_ByScope          sget 
+              5  -> liftM3 RedHow_ByLabel          sget sget sget
+              6  -> liftM2 RedHow_Lambda           sget sget 
 %%[[16
-             7  -> return RedHow_ByEqSymmetry     
-             8  -> return RedHow_ByEqTrans        
-             9  -> return RedHow_ByEqCongr        
-             10 -> liftM2 RedHow_ByEqTyReduction  get get 
-             11 -> return RedHow_ByPredSeqUnpack  
-             12 -> return RedHow_ByEqFromAssume   
-             13 -> return RedHow_ByEqIdentity     
+              7  -> return RedHow_ByEqSymmetry     
+              8  -> return RedHow_ByEqTrans        
+              9  -> return RedHow_ByEqCongr        
+              10 -> liftM2 RedHow_ByEqTyReduction  sget sget 
+              11 -> return RedHow_ByPredSeqUnpack  
+              12 -> return RedHow_ByEqFromAssume   
+              13 -> return RedHow_ByEqIdentity     
 %%]]
 
 %%]

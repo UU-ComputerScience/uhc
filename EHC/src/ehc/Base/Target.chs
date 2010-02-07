@@ -9,7 +9,7 @@
 %%]
 %%[(8 codegen) import(EH.Util.Pretty)
 %%]
-%%[(20 codegen) import({%{EH}Base.Binary})
+%%[(20 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -317,13 +317,27 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+deriving instance Typeable FFIWay
+deriving instance Data FFIWay
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen)
 instance Binary FFIWay where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize FFIWay where
+  sput = sputPlain
+  sget = sgetPlain
+
 %%]
 
 

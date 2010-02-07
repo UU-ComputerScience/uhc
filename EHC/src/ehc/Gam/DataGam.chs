@@ -30,9 +30,7 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -289,25 +287,25 @@ instance ForceEval DataGamInfo where
 %%]
 
 %%[(20 hmtyinfer)
-instance Binary DataFldInfo where
-  put (DataFldInfo a) = put a
-  get = liftM DataFldInfo get
+instance Serialize DataFldInfo where
+  sput (DataFldInfo a) = sput a
+  sget = liftM DataFldInfo sget
 
-instance Binary DataTagInfo where
+instance Serialize DataTagInfo where
 %%[[20
-  put (DataTagInfo a b c) = put a >> put b >> put c 
-  get = liftM3 DataTagInfo get get get
+  sput (DataTagInfo a b c) = sput a >> sput b >> sput c 
+  sget = liftM3 DataTagInfo sget sget sget
 %%][95
-  put (DataTagInfo a b c d) = put a >> put b >> put c >> put d
-  get = liftM4 DataTagInfo get get get get
+  sput (DataTagInfo a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 DataTagInfo sget sget sget sget
 %%]]
 
-instance Binary DataFldInConstr where
-  put (DataFldInConstr a) = put a
-  get = liftM DataFldInConstr get
+instance Serialize DataFldInConstr where
+  sput (DataFldInConstr a) = sput a
+  sget = liftM DataFldInConstr sget
 
-instance Binary DataGamInfo where
-  put (DataGamInfo a b c d e f g) = put a >> put b >> put c >> put d >> put e >> put f >> put g
-  get = liftM7 DataGamInfo get get get get get get get
+instance Serialize DataGamInfo where
+  sput (DataGamInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
+  sget = liftM7 DataGamInfo sget sget sget sget sget sget sget
 
 %%]

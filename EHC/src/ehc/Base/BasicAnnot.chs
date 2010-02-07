@@ -14,9 +14,7 @@
 %%[(8 codegen) hs import(qualified {%{EH}Config} as Cfg, {%{EH}Base.Bits})
 %%]
 
-%%[(20 codegen) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 codegen) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -358,11 +356,15 @@ instance Binary BasicAnnot where
              2 -> liftM2 BasicAnnot_ToTaggedPtr get get
              3 -> return BasicAnnot_Dflt
 
+instance Serialize BasicAnnot where
+  sput = sputPlain
+  sget = sgetPlain
+
 instance Binary BasicTy where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
 
 instance Binary BasicSize where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
 %%]

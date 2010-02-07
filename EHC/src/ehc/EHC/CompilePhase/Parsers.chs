@@ -27,7 +27,7 @@ CompilePhase building blocks: parsers
 %%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}HS.Parser} as HSPrs)
 %%]
 -- HI parser
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.Parser} as HIPrs)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 -- Core parser
 %%[(20 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
@@ -192,7 +192,8 @@ cpDecodeHIInfo modNm
 %%]]
        ; cpMsg' modNm VerboseALot "Decoding" Nothing fpH
        ; hiinfo <- lift $
-           catch (do { i <- Bin.getBinaryFPath fpH
+           catch (do { i <- getSerializeFile (fpathToStr fpH)
+                            -- Bin.getBinaryFPath fpH
                      ; return i
                      })
                  (\_ -> return $ HI.emptyHIInfo {HI.hiiIsValid = False})

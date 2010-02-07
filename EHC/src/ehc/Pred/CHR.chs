@@ -31,9 +31,7 @@ Derived from work by Gerrit vd Geest.
 %%[(20 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
@@ -415,7 +413,7 @@ isLetProveFailure glob x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: ForceEval, Binary
+%%% Instances: ForceEval, Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer)
@@ -437,32 +435,32 @@ instance ForceEval Guard where
 %%]
 
 %%[(20 hmtyinfer)
-instance Binary Guard where
-  put (HasStrictCommonScope     a b c  ) = putWord8 0  >> put a >> put b >> put c
-  put (IsVisibleInScope         a b    ) = putWord8 1  >> put a >> put b
-  put (NotEqualScope            a b    ) = putWord8 2  >> put a >> put b
-  put (EqualScope               a b    ) = putWord8 3  >> put a >> put b
-  put (IsStrictParentScope      a b c  ) = putWord8 4  >> put a >> put b >> put c
-  put (NonEmptyRowLacksLabel    a b c d) = putWord8 5  >> put a >> put b >> put c >> put d
+instance Serialize Guard where
+  sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (NotEqualScope            a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (EqualScope               a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (IsStrictParentScope      a b c  ) = sputWord8 4  >> sput a >> sput b >> sput c
+  sput (NonEmptyRowLacksLabel    a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
 %%[[16
-  put (IsCtxNilReduction        a b    ) = putWord8 6  >> put a >> put b
-  put (EqsByCongruence          a b c  ) = putWord8 7  >> put a >> put b >> put c
-  put (UnequalTy                a b    ) = putWord8 8  >> put a >> put b
-  put (EqualModuloUnification   a b    ) = putWord8 9  >> put a >> put b
+  sput (IsCtxNilReduction        a b    ) = sputWord8 6  >> sput a >> sput b
+  sput (EqsByCongruence          a b c  ) = sputWord8 7  >> sput a >> sput b >> sput c
+  sput (UnequalTy                a b    ) = sputWord8 8  >> sput a >> sput b
+  sput (EqualModuloUnification   a b    ) = sputWord8 9  >> sput a >> sput b
 %%]]
-  get = do t <- getWord8
-           case t of
-             0  -> liftM3 HasStrictCommonScope     get get get
-             1  -> liftM2 IsVisibleInScope         get get
-             2  -> liftM2 NotEqualScope            get get
-             3  -> liftM2 EqualScope               get get
-             4  -> liftM3 IsStrictParentScope      get get get
-             5  -> liftM4 NonEmptyRowLacksLabel    get get get get
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 HasStrictCommonScope     sget sget sget
+              1  -> liftM2 IsVisibleInScope         sget sget
+              2  -> liftM2 NotEqualScope            sget sget
+              3  -> liftM2 EqualScope               sget sget
+              4  -> liftM3 IsStrictParentScope      sget sget sget
+              5  -> liftM4 NonEmptyRowLacksLabel    sget sget sget sget
 %%[[16
-             6  -> liftM2 IsCtxNilReduction        get get
-             7  -> liftM3 EqsByCongruence          get get get
-             8  -> liftM2 UnequalTy                get get
-             9  -> liftM2 EqualModuloUnification   get get
+              6  -> liftM2 IsCtxNilReduction        sget sget
+              7  -> liftM3 EqsByCongruence          sget sget sget
+              8  -> liftM2 UnequalTy                sget sget
+              9  -> liftM2 EqualModuloUnification   sget sget
 %%]]
 
 %%]

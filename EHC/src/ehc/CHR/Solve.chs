@@ -20,7 +20,7 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(2020 hmtyinfer || hmtyast) import({%{EH}Base.Binary})
 %%]
 
 %%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})

@@ -30,7 +30,7 @@
 %%[20 hs import(qualified Data.Map as Map,qualified EH.Util.Rel as Rel,qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
 %%]
 
-%%[20 hs export(AGItf(..),Module(..),Binding(..),Bindings)
+%%[2020 hs export(AGItf(..),Module(..),Binding(..),Bindings)
 %%]
 
 %%[20 hs export(Visible(..))
@@ -38,10 +38,7 @@
 
 %%[20 hs import(Control.Monad, {%{EH}Base.Binary})
 %%]
-%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
-%%]
-
-%%[20 ag import({HI/AbsSyn})
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 
 %%[99 hs import({%{EH}Base.ForceEval})
@@ -188,158 +185,21 @@ hiiPostCheckValidity opts i = i { hiiIsValid = optsDiscrRecompileRepr opts == hi
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GHC 6.8.1 bug workaround
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-GHC 6.8.1 problem:
-Leaving out workAroundGHC_6_8_1_Bug causes to yield Fixity_Infix irrespective of actual value.
-Solution seems to be to wrap non-trivial function around value?
-It also has to do with strict datatype fields, omitting '!' in front of Fixity makes it work as well:
-  | Binding_Fixity !(HsName) !(Int) (Fixity)
-
-%%[20 hs export(workAroundGHC_6_8_1_Bug)
-workAroundGHC_6_8_1_Bug :: Int -> Fixity -> Fixity
-workAroundGHC_6_8_1_Bug p f
-  = case f of
-      Fixity_Infix | p >= 0 -> Fixity_Infix
-      _                     -> f
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Gam flattening
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs
 gamFlatten :: Ord k => Gam k v -> Gam k v
-gamFlatten = gamFromAssocL . gamToAssocL
+gamFlatten = id -- gamFromAssocL . gamToAssocL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Building
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[20 hs export(hiFromHIInfo)
-hiFromHIInfo :: HIInfo -> Seq.FastSeq Binding
-hiFromHIInfo i
-  = hiFromAllGams
-      i
-      (hiiExps          i)
-      (hiiHiddenExps    i)
-      (hiiFixityGam     i)
-      (hiiIdDefAssocL   i)
-      (hiiHIDeclImpModL i)
-      (hiiHIUsedImpModL i)
-      (hiiSettings      i)
-%%[[(20 hmtyinfer)
-      (hiiValGam        i)
-      (hiiTyGam         i)
-      (hiiTyKiGam       i)
-      (hiiPolGam        i)
-      (hiiDataGam       i)
-      (hiiClGam         i)
-      (hiiCHRStoreL      i)
-%%]]
-%%[[(20 codegen)
-      (hiiCArityMp      i)
-%%]]
-%%[[(20 codegen grin)
-      (hiiGrInlMp       i)
-%%]]
-%%]
-
-%%[20 hs
-hiFromGam :: (HsName -> v -> Binding) -> Gam HsName v -> Seq.FastSeq Binding
-hiFromGam mk g = Seq.fromList [ mk n v | (n,v) <- gamToAssocL g ]
-
-hiFromAllGams 
-  :: HIInfo
-     -> ModEntRel
-     -> ModEntRel
-     -> FixityGam
-     -> AssocL IdOcc IdOcc
-     -> [HsName]
-     -> [HsName]
-     -> HiSettings
-%%[[(20 hmtyinfer)
-     -> ValGam
-     -> TyGam
-     -> TyKiGam
-     -> PolGam
-     -> DataGam
-     -> Pr.ClGam
-     -> ScopedPredStoreL
-%%]]
-%%[[(20 codegen)
-     -> CArityMp
-%%]]
-%%[[(20 codegen grin)
-     -> GrInlMp
-%%]]
-     -> Seq.FastSeq Binding
-hiFromAllGams (HIInfo
-                { hiiSrcSig               = hi_sig
-                , hiiCompileFlags         = hi_fl
-                , hiiHasMain              = hi_hm
-                , hiiSrcTimeStamp         = hi_ts
-                , hiiSrcVersionMajor      = hi_m
-                , hiiSrcVersionMinor      = hi_mm
-                , hiiSrcVersionMinorMinor = hi_mmm
-                , hiiSrcVersionSvn        = hi_svn
-                })
-              exps hiddenExps fg idg
-              impd impu
-              settings
-%%[[(20 hmtyinfer)
-              vg tg tkg pg dg ig chrStore
-%%]]
-%%[[(20 codegen)
-              arityMp
-%%]]
-%%[[(20 codegen grin)
-              inlMp
-%%]]
-  =          Seq.fromList [ Binding_Stamp hi_ts hi_sig hi_m hi_mm hi_mmm hi_svn hi_fl 0
-                          , Binding_Settings hi_hm
-                          ]
-    Seq.:++: Seq.fromList [Binding_Export VisibleYes exps]
-    Seq.:++: Seq.fromList [Binding_Export VisibleNo hiddenExps]
-    Seq.:++: hiFromGam  (\n fgi  -> Binding_Fixity n (fgiPrio fgi) (workAroundGHC_6_8_1_Bug (fgiPrio fgi) $ fgiFixity fgi)) fg
-    -- Seq.:++: Seq.fromList [Binding_Ids [ (o,doccOcc docc) | (o,docc) <- gamToAssocL idg ]]
-    Seq.:++: Seq.fromList [Binding_Ids idg]
-    Seq.:++: Seq.fromList [Binding_ImportModules impd impu]
-    Seq.:++: Seq.fromList [Binding_Settings (hisettingsHasMain settings)]
-%%[[(20 hmtyinfer)
-    Seq.:++: Seq.fromList [Binding_TyKinds [ (k,tkgiKi i) | (k,i) <- gamToAssocL tkg ]]
-    Seq.:++: Seq.fromList [Binding_TyPolarities [ (n,pgiPol i) | (n,i) <- gamToAssocL pg ]]
-    Seq.:++: hiFromGam  (\n vgi  -> Binding_Val n (vgiTy vgi)) vg
-    Seq.:++: hiFromGam  (\n tgi  -> Binding_Ty n (tgiTy tgi)) tg
-    Seq.:++: hiFromGam  (\n dgi  -> let mkt i = (dtiCTag i,Map.toList $ Map.map dfiOffset $ dtiFldMp i)
-                                    in  Binding_DataCon n (dgiDataTy dgi) (assocLMapElt mkt $ dgiConstrTagAssocL dgi)
-%%[[20
-                                                          (dgiIsNewtype dgi)
-%%][94
-                                                          (dgiMbNewtype dgi)
-%%]]
-                        ) dg
-    Seq.:++: hiFromGam  (\n clgi -> Binding_Class n (Pr.clgiPrToEvidTy clgi) (Pr.clgiRuleTy clgi) (Pr.clgiDfltDictNm clgi)) ig
-    -- Seq.:++: Seq.fromList [Binding_CHRStore $ chrStoreElems chrStore]
-    Seq.:++: Seq.fromList [Binding_CHRStore chrStore]
-%%]]
-%%[[(20 codegen)
-    Seq.:++: Seq.fromList [Binding_Arities $ Map.toList arityMp]
-%%]]
-%%[[(20 codegen grin)
-    Seq.:++: Seq.fromList [Binding_GrInlines [ (n,(a,g)) | (n,GrInl_Call a g) <- Map.toList inlMp ] ]
-%%]]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 hs
-instance Binary HIInfo where
-  put        (HIInfo
+instance Serialize HIInfo where
+  sput       (HIInfo
                   { hiiSrcSig               = hi_sig
                   , hiiCompileFlags         = hi_fl
                   , hiiHasMain              = hi_hm
@@ -370,65 +230,65 @@ instance Binary HIInfo where
                   , hiiGrInlMp              = im
 %%]]
                   })
-              =    put hi_sig
-                >> put hi_ts
-                >> put hi_fl
-                >> put hi_hm
-                >> put hi_m
-                >> put hi_mm
-                >> put hi_mmm
-                >> put hi_svn
-                >> put e
-                >> put he
-                >> put (gamFlatten fg)
-                >> put idg
-                >> put impd
-                >> put impu
+              =    sput hi_sig
+                >> sput hi_ts
+                >> sput hi_fl
+                >> sput hi_hm
+                >> sput hi_m
+                >> sput hi_mm
+                >> sput hi_mmm
+                >> sput hi_svn
+                >> sput e
+                >> sput he
+                >> sput (gamFlatten fg)
+                >> sput idg
+                >> sput impd
+                >> sput impu
 %%[[(20 hmtyinfer)
-                >> put (gamFlatten vg)
-                >> put (gamFlatten tg)
-                >> put (gamFlatten tkg)
-                >> put (gamFlatten pg)
-                >> put (gamFlatten dg)
-                >> put (gamFlatten cg)
-                >> put cs
+                >> sput (gamFlatten vg)
+                >> sput (gamFlatten tg)
+                >> sput (gamFlatten tkg)
+                >> sput (gamFlatten pg)
+                >> sput (gamFlatten dg)
+                >> sput (gamFlatten cg)
+                >> sput cs
 %%]]
 %%[[(99 codegen)
-                >> put am
+                >> sput am
 %%]]
 %%[[(99 codegen grin)
-                >> put im
+                >> sput im
 %%]]
-  get = do
-  { hi_sig  <- get
-  ; hi_ts   <- get
-  ; hi_fl   <- get
+  sget = do
+  { hi_sig  <- sget
+  ; hi_ts   <- sget
+  ; hi_fl   <- sget
   ; if hi_sig == verSig version && hi_ts == verTimestamp version
-    then do { hi_hm     <- get
-            ; hi_m      <- get
-            ; hi_mm     <- get
-            ; hi_mmm    <- get
-            ; hi_svn    <- get
-            ; e         <- get
-            ; he        <- get
-            ; fg        <- get
-            ; idg       <- get
-            ; impd      <- get
-            ; impu      <- get
+    then do { hi_hm     <- sget
+            ; hi_m      <- sget
+            ; hi_mm     <- sget
+            ; hi_mmm    <- sget
+            ; hi_svn    <- sget
+            ; e         <- sget
+            ; he        <- sget
+            ; fg        <- sget
+            ; idg       <- sget
+            ; impd      <- sget
+            ; impu      <- sget
 %%[[(20 hmtyinfer)
-            ; vg        <- get
-            ; tg        <- get
-            ; tkg       <- get
-            ; pg        <- get
-            ; dg        <- get
-            ; cg        <- get
-            ; cs        <- get
+            ; vg        <- sget
+            ; tg        <- sget
+            ; tkg       <- sget
+            ; pg        <- sget
+            ; dg        <- sget
+            ; cg        <- sget
+            ; cs        <- sget
 %%]]
 %%[[(99 codegen)
-            ; am        <- get
+            ; am        <- sget
 %%]]
 %%[[(99 codegen grin)
-            ; im        <- get
+            ; im        <- sget
 %%]]
             ; return 
                 (emptyHIInfo
@@ -472,6 +332,10 @@ instance Binary HIInfo where
                   })
             }
   }
+%%]
+
+%%[20 hs
+-- instance Serialize HIInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

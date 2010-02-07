@@ -23,7 +23,7 @@
 %%[10 export(hsnConcat)
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary})
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})
@@ -421,7 +421,25 @@ instance Position HsName where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+deriving instance Typeable HsName
+deriving instance Data HsName
+
+deriving instance Typeable OrigName
+deriving instance Data OrigName
+
+deriving instance Typeable IdOccKind
+deriving instance Data IdOccKind
+
+deriving instance Typeable IdOcc
+deriving instance Data IdOcc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
@@ -450,12 +468,26 @@ instance Binary OrigName where
              3 -> liftM  OrigFunc   get
 
 instance Binary IdOccKind where
-  put = putEnum
-  get = getEnum
+  put = putEnum8
+  get = getEnum8
 
 instance Binary IdOcc where
   put (IdOcc a b) = put a >> put b
   get = liftM2 IdOcc get get
+%%]
+
+%%[20
+instance Serialize HsName where
+  sput = sputShared
+  sget = sgetShared
+
+instance Serialize IdOccKind where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Serialize IdOcc where
+  sput = sputShared
+  sget = sgetShared
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

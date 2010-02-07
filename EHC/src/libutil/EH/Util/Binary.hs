@@ -4,8 +4,8 @@
 
 module EH.Util.Binary
   ( module Data.Binary
-  -- , module Data.Binary.Get
-  -- , module Data.Binary.Put
+  , module Data.Binary.Get
+  , module Data.Binary.Put
 
   , hGetBinary
   , getBinaryFile
@@ -19,8 +19,8 @@ module EH.Util.Binary
 
 import qualified Data.ByteString.Lazy as L
 import Data.Binary
-import Data.Binary.Put
-import Data.Binary.Get
+import Data.Binary.Put(runPut)
+import Data.Binary.Get(runGet)
 import IO
 import Control.Monad
 
