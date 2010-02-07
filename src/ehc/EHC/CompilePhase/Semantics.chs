@@ -34,7 +34,7 @@ Folding over AST to compute semantics
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem,qualified {%{EH}HI} as HI)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Module

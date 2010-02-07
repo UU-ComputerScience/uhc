@@ -31,9 +31,7 @@
 %%[(15 hmtyinfer) export(ClsFuncDep(..))
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
@@ -105,9 +103,9 @@ instance ForceEval ClGamInfo where
 %%]
 
 %%[(20 hmtyinfer)
-instance Binary ClGamInfo where
-  put (ClGamInfo a b c) = put a >> put b >> put c
-  get = liftM3 ClGamInfo get get get
+instance Serialize ClGamInfo where
+  sput (ClGamInfo a b c) = sput a >> sput b >> sput c
+  sget = liftM3 ClGamInfo sget sget sget
 %%]
 
 

@@ -16,9 +16,9 @@
 %%[99 hs import({%{EH}Base.ForceEval})
 %%]
 
-%%[94 hs import(Control.Monad, {%{EH}Base.Binary})
+%%[94 hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[94 hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%[94 hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[94 ag import({Foreign/AbsSyn})
@@ -39,30 +39,30 @@ instance ForceEval ForeignEnt
 %%]
 
 %%[99 hs
-instance Binary ForeignEnt where
-  put (ForeignEnt_CCall     a) = putWord8 0 >> put a
-  put (ForeignEnt_PlainCall a) = putWord8 1 >> put a
-  get = do t <- getWord8
-           case t of
-             0 -> liftM ForeignEnt_CCall     get
-             1 -> liftM ForeignEnt_PlainCall get
+instance Serialize ForeignEnt where
+  sput (ForeignEnt_CCall     a) = sputWord8 0 >> sput a
+  sput (ForeignEnt_PlainCall a) = sputWord8 1 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM ForeignEnt_CCall     sget
+              1 -> liftM ForeignEnt_PlainCall sget
 
-instance Binary CCall where
-  put (CCall_Id      a b c d) = putWord8 0 >> put a >> put b >> put c >> put d
-  put (CCall_Dynamic        ) = putWord8 1
-  put (CCall_Wrapper        ) = putWord8 2
-  put (CCall_Empty          ) = putWord8 3
-  get = do t <- getWord8
-           case t of
-             0 -> liftM4 CCall_Id      get get get get
-             1 -> return CCall_Dynamic
-             2 -> return CCall_Wrapper
-             3 -> return CCall_Empty
+instance Serialize CCall where
+  sput (CCall_Id      a b c d) = sputWord8 0 >> sput a >> sput b >> sput c >> sput d
+  sput (CCall_Dynamic        ) = sputWord8 1
+  sput (CCall_Wrapper        ) = sputWord8 2
+  sput (CCall_Empty          ) = sputWord8 3
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM4 CCall_Id      sget sget sget sget
+              1 -> return CCall_Dynamic
+              2 -> return CCall_Wrapper
+              3 -> return CCall_Empty
 
-instance Binary PlainCall where
-  put (PlainCall_Id      a) = putWord8 0 >> put a
-  get = do t <- getWord8
-           case t of
-             0 -> liftM  PlainCall_Id get
+instance Serialize PlainCall where
+  sput (PlainCall_Id      a) = sputWord8 0 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  PlainCall_Id sget
 
 %%]

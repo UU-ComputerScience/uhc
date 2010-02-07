@@ -32,7 +32,7 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 %%[20 import(Control.Monad, {%{EH}Base.Binary})
 %%]
@@ -88,16 +88,6 @@ emptySGam = mkSGam Map.empty
 instance Show (SGam k v) where
   show _ = "SGam"
 
-%%]
-
-%%[20
-instance (Binary v) => Binary (SGamElt v) where
-  put (SGamElt a b) = put a >> put b
-  get = liftM2 SGamElt get get
-
-instance (Ord k, Binary k, Binary v) => Binary (SGam k v) where
-  put (SGam a b c) = put a >> put b >> put c
-  get = liftM3 SGam get get get
 %%]
 
 %%[9
@@ -261,7 +251,28 @@ sgamNoDups g@(SGam {sgScp = scp, sgMap = m})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance (Serialize v) => Serialize (SGamElt v) where
+  sput (SGamElt a b) = sput a >> sput b
+  sget = liftM2 SGamElt sget sget
+%%]
+
+%%[20
+instance (Ord k, Serialize k, Serialize v) => Serialize (SGam k v) where
+  sput (SGam a b c) = sput a >> sput b >> sput c
+  sget = liftM3 SGam sget sget sget
+%%]
+
+%%[20
+-- instance (Binary v) => Serialize (SGamElt v)
+-- instance (Ord k, Binary k, Binary v) => Serialize (SGam k v)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99

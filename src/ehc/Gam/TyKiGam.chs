@@ -23,9 +23,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -234,8 +232,8 @@ instance ForceEval TyKiGamInfo where
 %%]
 
 %%[(20 hmtyinfer || hmtyast)
-instance Binary TyKiGamInfo where
-  put (TyKiGamInfo a) = put a
-  get = liftM TyKiGamInfo get
+instance Serialize TyKiGamInfo where
+  sput (TyKiGamInfo a) = sput a
+  sget = liftM TyKiGamInfo sget
 %%]
 

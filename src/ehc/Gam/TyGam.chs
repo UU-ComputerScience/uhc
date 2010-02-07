@@ -26,9 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -227,7 +225,7 @@ instance ForceEval TyGamInfo where
 %%]
 
 %%[(20 hmtyinfer || hmtyast)
-instance Binary TyGamInfo where
-  put (TyGamInfo a) = put a
-  get = liftM TyGamInfo get
+instance Serialize TyGamInfo where
+  sput (TyGamInfo a) = sput a
+  sget = liftM TyGamInfo sget
 %%]

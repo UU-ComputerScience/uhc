@@ -7,9 +7,11 @@
 
 %%[20 import(EH.Util.Binary) export (module EH.Util.Binary)
 %%]
-%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics.Aliases)
+%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics.Aliases) export(module Data.Typeable)
 %%]
-%%[20 import(Data.Generics(Data, constrIndex, toConstr, gmapQ, indexConstr, dataTypeOf, fromConstrM))
+%%[2020 import(Data.Generics(Data, constrIndex, toConstr, gmapQ, indexConstr, dataTypeOf, fromConstrM))
+%%]
+%%[20 import(Data.Generics(Data)) export(module Data.Generics)
 %%]
 %%[20 import(Data.Word, Data.Array, Control.Monad)
 %%]
@@ -27,6 +29,20 @@ getEnum = do n <- get
              return (toEnum n)
 
 %%]
+
+%%[20 export(putEnum8, getEnum8)
+putEnum8 :: Enum x => x -> Put
+putEnum8 x = putWord8 (fromIntegral $ fromEnum x)
+
+getEnum8 :: Enum x => Get x
+getEnum8 = do n <- getWord8
+              return (toEnum $ fromIntegral n)
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List abstraction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20 export(putList, getList)
 putList :: (Binary a, Binary b) => (x -> Bool) -> (x -> (a,b)) -> x -> Put

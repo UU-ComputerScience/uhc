@@ -24,7 +24,7 @@ Output generation, on stdout or file
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Core output
@@ -165,7 +165,8 @@ cpOutputHI suff modNm
          ;  when (ehcOptVerbosity opts >= VerboseALot)
                  (do { lift $ putPPLn (pp hiinfo)
                      })
-         ;  lift $ Bin.putBinaryFile fpH2 hiinfo
+         ;  lift $ putSerializeFile fpH2 hiinfo
+                   -- Bin.putBinaryFile fpH2 hiinfo
          ;  now <- lift $ getClockTime
          -- ;  cpUpdCU modNm (ecuStoreHITime now)
          ;  cpUpdCU modNm (ecuStoreHIInfoTime now)

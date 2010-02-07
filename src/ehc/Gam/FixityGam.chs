@@ -26,9 +26,7 @@
 %%[(3 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[20 import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[20 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -70,7 +68,7 @@ instance ForceEval FixityGamInfo
 %%]
 
 %%[20
-instance Binary FixityGamInfo where
-  put (FixityGamInfo a b) = put a >> put b
-  get = liftM2 FixityGamInfo get get
+instance Serialize FixityGamInfo where
+  sput (FixityGamInfo a b) = sput a >> sput b
+  sget = liftM2 FixityGamInfo sget sget
 %%]

@@ -367,7 +367,7 @@ doCompilePrepare fnL@(fn:_) opts
                                 , crsiCoreInh    =   initialCore2GrSem opts3
 %%]]
 %%[[20
-                                , crsiHIInh      =   initialHISem opts3
+                                -- , crsiHIInh      =   initialHISem opts3
                                 , crsiHSModInh   =   initialHSSemMod opts3
 %%]]
                                 }
@@ -380,7 +380,8 @@ doCompilePrepare fnL@(fn:_) opts
 %%]]
 %%[[20
                                                        Nothing
-                                                       (initialHISem opts3) (initialHSSemMod opts3)
+                                                       -- (initialHISem opts3)
+                                                       (initialHSSemMod opts3)
                                                        Map.empty Map.empty defaultOptim
 %%]]
 %%[[(20 codegen)

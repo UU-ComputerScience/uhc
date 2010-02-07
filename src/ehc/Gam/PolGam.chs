@@ -23,9 +23,7 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary})
-%%]
-%%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})
@@ -132,8 +130,8 @@ instance ForceEval PolGamInfo where
 %%]
 
 %%[(20 hmtyinfer)
-instance Binary PolGamInfo where
-  put (PolGamInfo a) = put a
-  get = liftM PolGamInfo get
+instance Serialize PolGamInfo where
+  sput (PolGamInfo a) = sput a
+  sget = liftM PolGamInfo sget
 %%]
 

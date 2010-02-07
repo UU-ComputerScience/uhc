@@ -11,7 +11,7 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
-%%[20 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%[20 import({%{EH}Base.Binary})
 %%]
 
 %%[99 import({%{EH}Base.ForceEval})

@@ -37,7 +37,7 @@ An EHC compile run maintains info for one compilation invocation
 %%]
 
 -- HI Syntax and semantics, HS module semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
 %%]
@@ -66,7 +66,7 @@ data EHCompileRunStateInfo
 %%]]
 %%[[20
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
-      , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
+      -- , crsiHIInh       :: !HISem.Inh_AGItf                     -- current inh attrs for HI sem
       , crsiHSModInh    :: !HSSemMod.Inh_AGItf                  -- current inh attrs for HS module analysis sem
       , crsiModMp       :: !ModMp                               -- import/export info for modules
       , crsiGrpMp       :: (Map.Map HsName EHCompileGroup)      -- not yet used, for mut rec modules
@@ -95,7 +95,7 @@ emptyEHCompileRunStateInfo
 %%]]
 %%[[20
       , crsiMbMainNm    =   Nothing
-      , crsiHIInh       =   panic "emptyEHCompileRunStateInfo.crsiHIInh"
+      -- , crsiHIInh       =   panic "emptyEHCompileRunStateInfo.crsiHIInh"
       , crsiHSModInh    =   panic "emptyEHCompileRunStateInfo.crsiHSModInh"
       , crsiModMp       =   Map.empty
       , crsiGrpMp       =   Map.empty

@@ -11,7 +11,7 @@
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary})
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 %%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
 %%]
@@ -127,7 +127,7 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: Binary, ForceEval
+%%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer || hmtyast)
@@ -143,14 +143,14 @@ instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
 %%]
 
 %%[(20 hmtyinfer || hmtyast)
-instance (Binary p, Binary i) => Binary (Constraint p i) where
-  put (Prove     a    ) = putWord8 0 >> put a
-  put (Assume    a    ) = putWord8 1 >> put a
-  put (Reduction a b c) = putWord8 2 >> put a >> put b >> put c
-  get = do t <- getWord8
-           case t of
-             0 -> liftM  Prove     get
-             1 -> liftM  Assume    get
-             2 -> liftM3 Reduction get get get
+instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
+  sput (Prove     a    ) = sputWord8 0 >> sput a
+  sput (Assume    a    ) = sputWord8 1 >> sput a
+  sput (Reduction a b c) = sputWord8 2 >> sput a >> sput b >> sput c
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  Prove     sget
+              1 -> liftM  Assume    sget
+              2 -> liftM3 Reduction sget sget sget
 %%]
 
