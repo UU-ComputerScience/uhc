@@ -845,6 +845,15 @@ pLiteral
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
+pExpressionMinusPrefix :: HSParser (Expression -> Expression)
+pExpressionMinusPrefix
+  =   (Expression_Negate . mkRange1) <$> pMINUS
+
+pExpressionMbMinusPrefix :: HSParser (Expression -> Expression)
+pExpressionMbMinusPrefix
+  =   pExpressionMinusPrefix
+  <|> pSucceed id
+
 pExpressionBase :: HSParser Expression
 pExpressionBase
   =   Expression_Literal emptyRange  <$> pLiteral
@@ -856,8 +865,48 @@ pExpressionBase
   <?> "pExpressionBase"
   where pInParens :: HSParser (Range -> Expression)
         pInParens
-          =   (pExpression
-               <**> (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing)
+{-
+          =   (\(e,res) r ->
+                 let mk res e
+                       = case res of
+                           Expression3OpSection_None
+                             -> Expression_Parenthesized r e
+                           Expression3OpSection_Op (o,_)
+                             -> Expression_SectionApplication r (Just e) o Nothing
+                           Expression3OpSection_CommaList es
+%%[[1
+                             -> Expression_Tuple r (e:es)
+%%][7
+                             -> Expression_RowRecordUpdate r (Expression_RowRecordEmpty r)
+                                                           (map (RowRecordExpressionUpdate_Extends r Nothing) (e:es))
+%%]]
+                           Expression3OpSection_Typed (t,r)
+                             -> Expression_Typed r e t
+                 in foldr mk e $ reverse res
+              )
+              <$> pExpression3OpSection pOp pExpressionPreBase
+-}
+{-
+-}
+          =   (\(e,_,res) r ->
+                 let chk ress e
+                       = case ress of
+                           (Expression4Result_Op (o,_) : _)
+                             -> Expression_SectionApplication r (Just e) o Nothing
+                           (Expression4Result_CommaList es : _)
+%%[[1
+                             -> Expression_Tuple r (e:es)
+%%][7
+                             -> Expression_RowRecordUpdate r (Expression_RowRecordEmpty r)
+                                                           (map (RowRecordExpressionUpdate_Extends r Nothing) (e:es))
+%%]]
+                           _ -> Expression_Parenthesized r e
+                 in chk res e
+              )
+              <$> pExpression4'' True pOp pExpressionPrefix pExpressionLayout
+{-
+          =   (pExpression <**>
+                    (   (\(o,_) e r -> Expression_SectionApplication r (Just e) o Nothing)
                         <$> pOp
                     <|> pSucceed (flip Expression_Parenthesized)
 %%[[1
@@ -869,6 +918,7 @@ pExpressionBase
                         <$> pList1 (pComma *> pExpression)
 %%]]
               )     )
+-}
           <|> (\ts r -> Expression_TupleConstructor r (length ts + 1)) <$> commas'
           <|> (pOpm
                <**> (   (\e (o,_) r -> Expression_SectionApplication r Nothing o (Just e)) <$> pExpression
@@ -1033,7 +1083,7 @@ pExpressionApp
 %%[1
 pExpressionLayout :: HSParser Expression
 pExpressionLayout
-  =   pExpressionApp
+  =   pMaybe id id pExpressionMinusPrefix <*> pExpressionApp
 %%[[5
   <|> (Expression_Case . mkRange1) <$> pCASE <*> pExpression <* pOptSEMISeparator <* pOF <*> pAlternatives
 %%]]
@@ -1047,6 +1097,132 @@ pExpressionLayout
 pOp, pOpm :: HSParser (Expression,Range)
 pOp  = mkRngNm' Expression_Variable <$> qvarop  <|> mkRngNm' Expression_Constructor <$> qconop
 pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Constructor <$> qconop
+%%]
+
+%%[1
+data Expression4Result
+  = Expression4Result_Op				(Expression,Range)
+  | Expression4Result_CommaList      	[Expression]
+  | Expression4Result_Typed
+  | Expression4Result_NotOpPre
+  -- deriving Eq
+
+type Expression4 = (Expression,Int,[Expression4Result])
+
+pExpression4'' :: Bool -> HSParser (Expression,Range) -> HSParser (Expression -> Expression) -> HSParser Expression -> HSParser Expression4
+pExpression4'' inParen pOp pPreNotOp pBase
+  =   ((\(e,cnt,res) -> (mkC cnt e,0,res)) <$> pE)
+      <**> (addCommaP $ addOpP
+            $ (   (addCommaP2
+                   $ ((\c t (e,cnt,res) -> (Expression_Typed (mkRange1 c) (mkC cnt e) t, 0, Expression4Result_Typed : res))
+                      <$> pDCOLON <*> pType
+                  )  )
+              <|> pSucceed id
+           )  )
+  where pE  ::  HSParser Expression4
+        pE  =   pBase <**>
+                  (   pSucceed (\e -> (e,0,[]))
+                  <|> (\(op,rng) (r,opCnt,res) l -> (Expression_InfixApplication rng l op r, opCnt+1, res)) <$> pOp <*> pE
+                  )
+            <|> (\p (e,cnt,res) -> (p $ mkC cnt $ e, 0, Expression4Result_NotOpPre : res))
+                <$> pPreNotOp <*> pE
+
+        -- add trailing parsers, depending on being inside parenthesis
+        addCommaP, addCommaP2, addOpP :: HSParser (Expression4 -> Expression4) -> HSParser (Expression4 -> Expression4)
+
+        -- optionally add tuple expr remainder as choice
+        addCommaP  p | inParen   = p <|> (\es (e,cnt,res) -> (mkC cnt e, 0, Expression4Result_CommaList es : res))
+                                         <$> pList1 (pComma *> pExpression)
+                     | otherwise = p
+
+        -- optionally add tuple expr remainder as following in a sequence
+        addCommaP2 p | inParen   = (\mkecntres es ecntres ->
+                                      let (e,cnt,res) = mkecntres ecntres
+                                      in  (mkC cnt e, 0, (if null es then [] else [Expression4Result_CommaList es]) ++ res)
+                                   )
+                                   <$> p <*> pList (pComma *> pExpression)
+                     | otherwise = p
+
+        -- optionally add operator as choice
+        addOpP     p | inParen   = p <|> (\o (e,cnt,res) -> (mkC cnt e, 0, Expression4Result_Op o : res))
+                                         <$> pOp
+                     | otherwise = p
+
+        -- add additional AST depending on nr of operators
+        mkC cnt = if cnt > 0 then Expression_InfixApplicationChainTop emptyRange else id
+
+pExpression4' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression4' pPreNotOp = (\(e,_,_) -> e) <$> pExpression4'' False pOp pPreNotOp pExpressionLayout
+%%]
+
+%%[1
+pExpression3' :: HSParser Expression -> HSParser Expression
+pExpression3' pBase
+  =   pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  <?> "pExpression3'"
+  where pE  ::  HSParser Expression
+        pE     =   mkE 
+                   <$> pChainr -- _ng
+                           ((\(op,rng) (l,lc) (r,rc) ->
+                               (Expression_InfixApplication rng l op r, lc+rc+1)
+                            )
+                            <$> pOp
+                           )
+                           ((\e -> (e,0)) <$> pBase)
+        mkE (e,0) = e
+        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
+
+data Expression3OpSectionResult
+  = Expression3OpSection_None
+  | Expression3OpSection_Op				(Expression,Range)
+  | Expression3OpSection_CommaList      [Expression]
+  | Expression3OpSection_Typed			(Type,Range)
+
+pExpression3OpSection :: HSParser (Expression,Range) -> HSParser Expression -> HSParser (Expression,[Expression3OpSectionResult])
+pExpression3OpSection pOp pBase
+  =   mkE <$> pE
+  <?> "pExpression3OpSection"
+  where pE  ::  HSParser (Expression,Int,[Expression3OpSectionResult])
+        pE = pBase <**>
+               (   pOp <**>
+                     (   (\(re,cnt,tailop) (op,rng) le ->
+                            (Expression_InfixApplication rng le op re, cnt+1, tailop)
+                         )
+                         <$> pE
+                     <|> pSucceed (\o e -> (e,0,[Expression3OpSection_Op o]))
+                     )
+               <|> (\es e -> (e,0,[Expression3OpSection_CommaList es]))
+                   <$> pList1 (pComma *> pExpression)
+               <|> (\c t es e -> (e,0,[Expression3OpSection_Typed (t,mkRange1 c)] ++ (if null es then [] else [Expression3OpSection_CommaList es])))
+                   <$> pDCOLON <*> pType
+                   <*> pList (pComma *> pExpression)
+               <|> pSucceed (\e -> (e,0,[Expression3OpSection_None]))
+               )
+        mkE (e,0,tailop) = (e,tailop)
+        mkE (e,_,tailop) = (Expression_InfixApplicationChainTop emptyRange e,tailop)
+
+%%]
+
+
+%%[1
+pExpression2' :: HSParser (Expression -> Expression) -> HSParser Expression
+pExpression2' pPre
+  =   pE <??> ((\c t e -> Expression_Typed (mkRange1 c) e t) <$> pDCOLON <*> pType)
+  <?> "pExpression2'"
+  where pE  ::  HSParser Expression
+        pE     =   mkE 
+                   <$> pChainr -- _ng
+                           ((\(op,rng) (l,lc) (r,rc) ->
+                               (Expression_InfixApplication rng l op r, lc+rc+1)
+                            )
+                            <$> pOp
+                           )
+                           ((\e -> (e,0)) <$> pPreE)
+        pPreE  ::  HSParser Expression
+        pPreE  =   pExpressionLayout
+               <|> (\ps e -> foldr ($) e ps) <$> pList1 pPre <*> pExpressionLayout
+        mkE (e,0) = e
+        mkE (e,_) = Expression_InfixApplicationChainTop emptyRange e
 %%]
 
 %%[1
@@ -1065,17 +1241,28 @@ pExpression' pPreE
 %%]
 
 %%[1
+pExpressionPreBase :: HSParser Expression
+pExpressionPreBase = (\ps e -> foldr ($) e ps) <$> pList_gr pExpressionPrefix <*> pExpressionLayout
+
 pExpression :: HSParser Expression
 pExpression
-  =   pExpression' pExpressionPrefix
-  <?> "pExpression"
+  -- =   pExpression' pExpressionPrefix
+  -- =   pExpression2' pExpressionPrefix
+  -- = pExpression3' pExpressionPreBase
+  = pExpression4' pExpressionPrefix
+    <?> "pExpression"
 %%]
 
 %%[1
 pExpressionNoLet :: HSParser Expression
 pExpressionNoLet
-  =   pExpression' pExpressionNoLetPrefix
-  <?> "pExpressionNoLet"
+  -- =   pExpression' pExpressionNoLetPrefix
+  -- =   pExpression2' pExpressionNoLetPrefix
+  -- = pExpression3' pBase3
+  =   pExpression4' pExpressionNoLetPrefix
+    <?> "pExpressionNoLet"
+  where pBase3 :: HSParser Expression
+        pBase3 = (\ps e -> foldr ($) e ps) <$> pList pExpressionNoLetPrefix <*> pExpressionLayout
 %%]
 
 %%[1.pExpressionLetPrefix
@@ -1097,11 +1284,11 @@ pExpressionLetPrefix
 %%[1.pExpressionNoLetPrefix
 pExpressionNoLetPrefix :: HSParser (Expression -> Expression)
 pExpressionNoLetPrefix
-  =   (Expression_Negate . mkRange1) <$> pMINUS
+  =   pLAM <**> pLamArgs
 %%[[5
   <|> (Expression_If . mkRange1) <$> pIF <*> pExpression <* pOptSEMISeparator <* pTHEN <*> pExpression <* pOptSEMISeparator <* pELSE
 %%]]
-  <|> pLAM <**> pLamArgs
+  -- <|> pExpressionMinusPrefix
   <?> "pExpressionNoLetPrefix"
   where pLamArgs
           =   (\a1 a2 t e -> a1 t (a2 t e))

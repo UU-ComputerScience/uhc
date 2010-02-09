@@ -108,8 +108,10 @@ cpOutputGrin suff modNm
                  grinPP = ppGrModule grin
                  mkb x  = x ++ suff
                  fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
-         ;  cpMsg modNm VerboseALot "Emit Grin"
-         ;  lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
+         ;  when (True) -- ehcOptFullProgAnalysis opts)
+                 (do { cpMsg modNm VerboseALot "Emit Grin"
+                     ; lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
+                     })
          }
 
 %%]

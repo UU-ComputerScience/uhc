@@ -3,13 +3,73 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, UndecidableInstances, OverlappingInstances #-}
 %%]
+{-# LANGUAGE ScopedTypeVariables, FlexibleInstances, UndecidableInstances, OverlappingInstances #-}
 
 %%[doesWhat doclatex
-Serialization is built on top of Binary.
-Throughout put/get a map is maintained which remembers previously put values.
-When such a value is put a 2nd time, a reference to it is put instead.
+Serialization is built on top of Binary, adding sharing, additionally
+requiring Typeable and Ord instances for maintaining maps. Whilst
+putting/getting a map is maintained which remembers previously put
+values. When such a value is put a 2nd time, a reference to it is put
+instead.
+
+Values which are shared, put share commands (SCmd) onto the Binary
+serialization. There are SCmds for defining a shared value and referring
+to it, coming in 8/16/.. bitsized reference flavors (this saves space).
+
+Turning on serialization means defining an instance for the type of the
+value, similar to instances for Binary:
+
+\begin{code}
+data Foo = Bar1 | Bar2 Int Int
+
+instance Serialize Foo where
+  sput (Bar1    ) = sputWord8 0
+  sput (Bar2 a b) = sputWord8 1 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return Bar1
+           1 -> liftM2 Bar2 sget sget
+\end{code}
+
+When a Binary instance already is defined, the definition can be more simple:
+\begin{code}
+instance Serialize Foo where
+  sput = sputPlain
+  sget = sgetPlain
+\end{code}
+
+The plain variants delegate the work to their Binary equivalents.
+
+By default no sharing is done, it can be enabled by:
+
+\begin{code}
+instance Serialize Foo where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+\end{code}
+
+When shared the internals are not shared, as above. If the internals
+(i.e. the fields) also must be shared the following instance is
+required, using the original code for sput/sget for the fields of a
+value:
+
+\begin{code}
+instance Serialize Foo where
+  sput = sputShared
+  sget = sgetShared
+  sputNested (Bar1    ) = sputWord8 0
+  sputNested (Bar2 a b) = sputWord8 1 >> sput a >> sput b
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return Bar1
+           1 -> liftM2 Bar2 sget sget
+\end{code}
+
 %%]
 
 %%[20 module {%{EH}Base.Serialize}
@@ -34,27 +94,46 @@ When such a value is put a 2nd time, a reference to it is put instead.
 %%% Serialization with state
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-20100206 AD, code is still in modeling stage, by default falls back on Binary's put/get.
-
-%%[20
-newtype SerKey
-  = SerKey Int
-  deriving (Eq,Ord)
-
-instance Bn.Binary (SerKey) where
-  put (SerKey x) = Bn.put x
-  get = liftM SerKey Bn.get
-
-%%]
+Shared values are stored in a per type map, to keep all type correct. To
+make this work a double mapping is maintained, keyed by the type
+descriptor string of a type (obtained via Typeable) and keyed by the Int
+reference to it.
 
 %%[20
 data SCmd
-  = SCmd_Unshared | SCmd_ShareDef | SCmd_ShareRef
+  = SCmd_Unshared
+  | SCmd_ShareDef   | SCmd_ShareRef			-- 
+  | SCmd_ShareDef16 | SCmd_ShareRef16
+  | SCmd_ShareDef8  | SCmd_ShareRef8
   deriving (Enum)
 
 instance Bn.Binary SCmd where
   put = Bn.putEnum8
   get = Bn.getEnum8
+
+scmdTo16 :: SCmd -> SCmd
+scmdTo16 SCmd_ShareDef = SCmd_ShareDef16
+scmdTo16 SCmd_ShareRef = SCmd_ShareRef16
+scmdTo16 c             = c
+
+scmdTo8 :: SCmd -> SCmd
+scmdTo8 SCmd_ShareDef = SCmd_ShareDef8
+scmdTo8 SCmd_ShareRef = SCmd_ShareRef8
+scmdTo8 c             = c
+
+scmdToNrBits :: SCmd -> Int
+scmdToNrBits SCmd_ShareDef16 = 16
+scmdToNrBits SCmd_ShareRef16 = 16
+scmdToNrBits SCmd_ShareDef8  = 8
+scmdToNrBits SCmd_ShareRef8  = 8
+scmdToNrBits _               = 32
+
+scmdFrom :: SCmd -> SCmd
+scmdFrom SCmd_ShareDef16 = SCmd_ShareDef
+scmdFrom SCmd_ShareRef16 = SCmd_ShareRef
+scmdFrom SCmd_ShareDef8  = SCmd_ShareDef
+scmdFrom SCmd_ShareRef8  = SCmd_ShareRef
+scmdFrom c               = c
 %%]
 
 %%[20
@@ -63,12 +142,11 @@ data SerPutMp = forall x . (Typeable x, Ord x) => SerPutMp (Map.Map x Int)
 data SPutS
   = SPutS
       { sputsInx :: Int
-      , sputsMp  :: Map.Map SerKey Int
       , sputsSMp :: Map.Map String SerPutMp
       , sputsPut :: Bn.Put
       }
 
-emptySPutS = SPutS 0 Map.empty Map.empty (return ())
+emptySPutS = SPutS 0 Map.empty (return ())
 
 type SPut = St.State SPutS ()
 
@@ -79,8 +157,7 @@ data SerGetMp = forall x . (Typeable x, Ord x) => SerGetMp (Map.Map Int x)
 
 data SGetS
   = SGetS
-      { sgetsMp  :: Map.Map Int SerKey
-      , sgetsSMp :: Map.Map String SerGetMp
+      { sgetsSMp :: Map.Map String SerGetMp
       }
 
 type SGet x = St.StateT SGetS Bn.Get x
@@ -88,21 +165,16 @@ type SGet x = St.StateT SGetS Bn.Get x
 
 %%[20 export(Serialize(..))
 class Serialize x where
-  share :: x -> Maybe SerKey
-  unshare :: SerKey -> x
   sput :: x -> SPut
   sget :: SGet x
-  {-
-  shareFind :: x -> Maybe Int
-  -}
-  -- initSerPutMp :: (Typeable x, Ord x) => x -> SerPutMp
-    
-  share   _ = Nothing
-  unshare _ = panic "Serialize.unshare"		-- unshare is only called when a corresponding share has returned a Just
   
-  -- initSerPutMp _ = SerPutMp (Map.empty :: Map.Map x Int)
+  sputNested :: x -> SPut
+  sgetNested :: SGet x
+    
+  -- default just falls back on Binary, invoked by sputShared/sgetShared
+  sputNested = panic "not implemented (must be done by instance): Serialize.sputNested"
+  sgetNested = panic "not implemented (must be done by instance): Serialize.sgetNested"
 
--- default just falls back on Binary
 %%]
 instance Bn.Binary x => Serialize x where
   sput = sputPlain
@@ -125,9 +197,11 @@ liftG g = lift g
 %%[20 export(sputPlain,sgetPlain)
 sputPlain :: (Bn.Binary x,Serialize x) => x -> SPut
 sputPlain x = liftP (Bn.put x)
+{-# INLINE sputPlain #-}
 
 sgetPlain :: (Bn.Binary x,Serialize x) => SGet x
 sgetPlain = lift Bn.get
+{-# INLINE sgetPlain #-}
 
 %%]
 
@@ -139,28 +213,21 @@ sputUnshared x
                    })
        }
 
-sputShared3 :: (Bn.Binary x, Serialize x) => x -> SPut
-sputShared3 x
-  = case share x of
-      Just k
-        -> do { s <- St.get
-              ; let m = sputsMp s
-              ; case Map.lookup k m of
-                  Just inx
-                    -> -- if already put before, put the index referring to it
-                       St.put (s { sputsPut = sputsPut s >> Bn.put SCmd_ShareRef >> Bn.put inx
-                                 })
-                  _ -> -- if not yet shared, allocate new index and put it together with the value
-                       St.put (s { sputsInx = i+1
-                                 , sputsMp  = Map.insert k i m
-                                 , sputsPut = sputsPut s >> Bn.put SCmd_ShareDef >> Bn.put i >> Bn.put x
-                                 })
-                    where i = sputsInx s
-              }
-      _ -> sputUnshared x
+putRef :: SCmd -> Int -> Bn.Put
+putRef c i
+  = if i < 256
+    then do { Bn.put (scmdTo8 c)
+            ; Bn.putWord8 (fromIntegral i)
+            }
+    else if i < 65000
+    then do { Bn.put (scmdTo16 c)
+            ; Bn.putWord16be (fromIntegral i)
+            }
+    else do { Bn.put c
+            ; Bn.put i
+            }
 
--- 20100207 AD: this should work... not yet tested though
-sputShared :: (Ord x, Bn.Binary x, Serialize x, Typeable x) => x -> SPut
+sputShared :: (Ord x, Serialize x, Typeable x) => x -> SPut
 sputShared x
   = do { s <- St.get
        ; let tykey = tyConString $ typeRepTyCon $ typeOf x
@@ -174,48 +241,39 @@ sputShared x
            _ -> addNew tykey x x Map.empty s
        }
   where useExisting i s
-          = St.put (s { sputsPut = sputsPut s >> Bn.put SCmd_ShareRef >> Bn.put i })
+          = St.put (s { sputsPut = sputsPut s >> putRef SCmd_ShareRef i })
         addNew tykey x xcasted m s
-          = St.put (s { sputsInx = i+1
-                      , sputsSMp = Map.insert tykey (SerPutMp (Map.insert xcasted i m)) (sputsSMp s)
-                      , sputsPut = sputsPut s >> Bn.put SCmd_ShareDef >> Bn.put i >> Bn.put x
-                      })
+          = do { St.put (s { sputsInx = i+1
+                           , sputsSMp = Map.insert tykey (SerPutMp (Map.insert xcasted i m)) (sputsSMp s)
+                           , sputsPut = sputsPut s >> putRef SCmd_ShareDef i
+                           })
+               ; sputNested x
+               }
           where i = sputsInx s
 %%]
 
 %%[20 export(sgetShared)
-sgetShared3 :: (Bn.Binary x,Serialize x) => SGet x
-sgetShared3
-  = do { s <- St.get
-       ; let m = sgetsMp s
-       ; cmd <- lift Bn.get
-       ; case cmd of
-           SCmd_Unshared
-             -> lift Bn.get
-           SCmd_ShareDef
-             -> do { inx <- lift Bn.get
-                   ; k <- lift Bn.get
-                   ; let m' = Map.insert inx k m
-                   ; St.put (s {sgetsMp = m'})
-                   ; return (unshare k)
-                   }
-           SCmd_ShareRef
-             -> do { inx <- lift Bn.get
-                   ; let x = unshare $ fromJust $ Map.lookup inx m
-                   ; return x
-                   }
-       }
+getRef :: SCmd -> Bn.Get Int
+getRef c
+  = case scmdToNrBits c of
+      8 -> do { i <- Bn.getWord8
+              ; return (fromIntegral i :: Int)
+              }
+      16-> do { i <- Bn.getWord16be
+              ; return (fromIntegral i :: Int)
+              }
+      _ -> Bn.get
 
-sgetShared :: forall x. (Ord x, Bn.Binary x, Serialize x, Typeable x) => SGet x
+sgetShared :: forall x. (Ord x, Serialize x, Typeable x) => SGet x
 sgetShared
-  = do { s <- St.get
-       ; cmd <- lift Bn.get
-       ; case cmd of
+  = do { cmd <- lift Bn.get
+       ; case scmdFrom cmd of
            SCmd_Unshared
-             -> lift Bn.get
+             -> sgetNested
            SCmd_ShareDef
-             -> do { i <- lift Bn.get
-                   ; x <- lift Bn.get
+             -> do { i <- lift (getRef cmd)
+                   ; x <- sgetNested
+                   ; s <- St.get
                    ; let tykey = tyConString $ typeRepTyCon $ typeOf (undefined :: x)
                    ; case Map.lookup tykey (sgetsSMp s) of
                        Just (SerGetMp m)
@@ -227,7 +285,8 @@ sgetShared
                    ; return x
                    }
            SCmd_ShareRef
-             -> do { i <- lift Bn.get
+             -> do { i <- lift (getRef cmd)
+                   ; s <- St.get
                    ; let tykey = tyConString $ typeRepTyCon $ typeOf (undefined :: x)
                    ; case Map.lookup tykey (sgetsSMp s) of
                        Just (SerGetMp m)
@@ -242,18 +301,30 @@ sgetShared
 %%% Low level
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(sputWord8)
+%%[20 export(sputWord8,sgetWord8)
 sputWord8            :: Word8 -> SPut
 sputWord8 x          = liftP (Bn.putWord8 x)
-%%]
+{-# INLINE sputWord8 #-}
 
-%%[20 export(sgetWord8)
 sgetWord8 :: SGet Word8
 sgetWord8 = liftG Bn.getWord8
+{-# INLINE sgetWord8 #-}
+
+%%]
+
+%%[20 export(sputWord16,sgetWord16)
+sputWord16           :: Word16 -> SPut
+sputWord16 x         = liftP (Bn.putWord16be x)
+{-# INLINE sputWord16 #-}
+
+sgetWord16 :: SGet Word16
+sgetWord16 = liftG Bn.getWord16be
+{-# INLINE sgetWord16 #-}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Default instances
+%%% Default instances, copied & modified from Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
@@ -268,6 +339,14 @@ instance Serialize Char where
 instance Serialize Bool where
   sput = sputPlain
   sget = sgetPlain
+
+{-
+instance Serialize String where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+-}
 
 instance (Serialize a, Serialize b) => Serialize (a,b) where
     sput (a,b)           = sput a >> sput b
@@ -309,7 +388,7 @@ serialize :: Serialize x => x -> Bn.Put
 serialize x = sputsPut $ snd $ St.runState (sput x) emptySPutS
  
 unserialize :: Serialize x => Bn.Get x
-unserialize = St.evalStateT sget (SGetS Map.empty Map.empty)
+unserialize = St.evalStateT sget (SGetS Map.empty)
 
 %%]
 

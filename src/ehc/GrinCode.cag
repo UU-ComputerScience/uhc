@@ -570,14 +570,51 @@ instance Serialize GrTagAnn where
   sput (GrTagAnn a b) = sput a >> sput b
   sget = liftM2 GrTagAnn sget sget
 
+instance Serialize GrBind where
+  sput (GrBind_Bind  a b c d) = sputWord8 0  >> sput a >> sput b >> sput c >> sput d
+  sput (GrBind_Arity a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (GrBind_Rec   a      ) = sputWord8 2  >> sput a
+  sget 
+    = do t <- sgetWord8
+         case t of
+           0 -> liftM4 GrBind_Bind  sget sget sget sget
+           1 -> liftM2 GrBind_Arity sget sget
+           2 -> liftM  GrBind_Rec   sget
+
+instance Serialize GrModule where
+  sput (GrModule_Mod  a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 GrModule_Mod  sget sget sget sget
+
+instance Serialize GrGlobal where
+  sput (GrGlobal_Global a b) = sputWord8 0  >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+           0  -> liftM2 GrGlobal_Global sget sget
+
+
 
 %%]
 
-%%[(99 codegen grin) hs
+%%[(20 codegen grin) hs
 instance Serialize GrFFIAnnot where
   sput (GrFFIAnnot_IsResEval a) = sputWord8 0  >> sput a 
   sget = do t <- sgetWord8
             case t of
               0  -> liftM GrFFIAnnot_IsResEval sget
 
+instance Serialize GrBindAnn where
+  sput (GrBindAnnNormal           ) = sputWord8 0
+  sput (GrBindAnnClass       a    ) = sputWord8 1 >> sput a
+  sput (GrBindAnnInstance    a    ) = sputWord8 2 >> sput a
+  sput (GrBindAnnOverloaded  a    ) = sputWord8 3 >> sput a
+  sput (GrBindAnnSpecialized a b c) = sputWord8 4 >> sput a >> sput b >> sput c
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return GrBindAnnNormal
+           1 -> liftM  GrBindAnnClass         sget
+           2 -> liftM  GrBindAnnInstance      sget
+           3 -> liftM  GrBindAnnOverloaded    sget
+           4 -> liftM3 GrBindAnnSpecialized   sget sget sget
 %%]
