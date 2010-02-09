@@ -3,8 +3,6 @@
 Inline functions that are used only once.
 (To do: inline more functions, e.g. small ones. But than the body should be cloned, with introduced fresh variables etc).
 
-New opportunities for this transformation are present because the InlineEA transformation introduces new Call constructs.
-
 The inlined function is not completely dropped,
 because its arity is still needed in SplitFetch.
 So we keep a binding with a trivial body.
@@ -38,7 +36,8 @@ lateInline :: (GrModule,HptMap) -> (GrModule,HptMap)
 lateInline (grmod,hptMap) 
   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) 
             (Inh_GrAGItf { })
-    in (grTrf_Syn_GrAGItf t, hptMap)
+    in -- trace ("adjustcount: " ++ show (finalCount_Syn_GrAGItf t)) $
+       (grTrf_Syn_GrAGItf t, hptMap)
 
 %%]
 
@@ -50,6 +49,8 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 
 
 %%[(8 codegen grin)
+
+-- build a map with usage count
 
 ATTR GrAGItf GrModule [ | | finalCount : {Map.Map Int Int} ]
 ATTR AllBind AllGrExpr [ | updateCount : {Map.Map Int Int} | ]
@@ -63,6 +64,9 @@ SEM GrModule
 SEM GrExpr
   | Call      lhs.updateCount     = Map.insertWith (+) (getNr @nm) 1 @lhs.updateCount
   
+  
+-- build a map with inline info
+  
 ATTR AllBind AllExpr [ | | copy : SELF ]  
 ATTR AllBind [ | insertInfo : {Map.Map Int ([HsName],GrExpr)} | ]
 ATTR AllBind AllGrExpr [ finalInfo : {Map.Map Int ([HsName],GrExpr)} |  | ]
@@ -71,22 +75,41 @@ SEM GrModule
   | Mod       bindL.insertInfo   = Map.empty
               bindL.finalInfo    = @bindL.insertInfo
 
-SEM GrBind                                               -- Hsname are HNmNr's
-  | Bind      lhs.insertInfo  =  if   Map.findWithDefault 0 (getNr @nm) @lhs.finalCount == 1        -- jv: count usages in the map, and only inline if function used only once.
-                                 then Map.insert (getNr @nm) (@argNmL, @expr.grTrf) @lhs.insertInfo -- add current to insertInfo map.
+SEM GrBind
+  | Bind      lhs.insertInfo  =  if   Map.findWithDefault 0 (getNr @nm) @lhs.finalCount == 1
+                                 then Map.insert (getNr @nm) (@argNmL, @expr.grTrf) @lhs.insertInfo
                                  else @lhs.insertInfo
   
 
 -- perform the inlining
 
-SEM GrExpr                  -- change the module if name is found in finalinfo
-  | Call      lhs.grTrf  =  maybe @loc.grTrf                                          -- not found => no change
-                                  ( \(args,body) -> substitute args @argL.copy body ) -- found     => substitute
-                                  ( Map.lookup (getNr @nm) @lhs.finalInfo )           -- FIXME need copy
+SEM GrExpr
+  | Call      lhs.grTrf  =  maybe @loc.grTrf
+                                  ( \(args,body) -> substitute args @argL.copy body )
+                                  ( Map.lookup (getNr @nm) @lhs.finalInfo )
+
+
+-- drop the inlined bindings
+
+{-
+ATTR GrBind [ | | drop : {Bool} ]
+
+SEM GrBind
+  | Bind   lhs . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
+  | Rec    lhs . drop  =  null @bindL.grTrf
+
+SEM GrBindL
+  | Cons  lhs  .  grTrf  =  if @hd.drop
+                            then             @tl.grTrf
+                            else @hd.grTrf : @tl.grTrf
+-}
+
+-- Do not completely drop the function, because its arity is still needed in SplitFetch
+-- So, keep an "Arity" binding to retain the arity
 
 SEM GrBind
   | Bind   loc . drop  =  Map.member (getNr @nm) @lhs.finalInfo || (Map.findWithDefault 1 (getNr @nm) @lhs.finalCount == 0 && getNr @nm/=1)
-           lhs . grTrf  =  if   (@loc.drop {-&& False-})
+           lhs . grTrf  =  if   @loc.drop
                            then GrBind_Arity @nm (length @argNmL)
                            else @loc.grTrf
 
@@ -95,12 +118,12 @@ SEM GrBind
 
 %%[(8 codegen grin) hs
 
--- convert to name
 val2name :: GrVal -> HsName
 val2name (GrVal_Var nm) = nm
 val2name v              = error $ "LateInline: variable is not a name: " ++ show v
 
-substitute argnms vals expr = let env = Map.fromList (zip argnms (map val2name vals))   -- map from: argument -> value name. (hsname -> hsname/HNmNr)
-                              in  substExpr env expr      -- substitutes variable names by other names
+
+substitute argnms vals expr = let env = Map.fromList (zip argnms (map val2name vals))
+                              in  substExpr env expr
 
 %%]
