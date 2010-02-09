@@ -1,0 +1,33 @@
+
+%%[(8 codegen grin) hs import(qualified Data.Set as Set,Data.Maybe)
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode})
+
+%%[(20 codegen grin)
+ATTR AllNT [ | | usedIds USE {++} {[]} : {[Int]} ]
+
+SEM GrModule
+  | Mod   lhs.usedIds = [0..5]
+
+SEM GrBind
+  | Bind  lhs.usedIds = ((\i -> [i,i+1]) getNr @nm)
+                        ++ @argNmL.usedIds
+                        ++ @expr.usedIds
+                        
+SEM GrGlobal
+  | Global  lhs.usedIds = (getNr @nm:@val.usedIds)
+  
+SEM GrPatLam
+  | Var BasicNode EnumNode PtrNode OpaqueNode BasicAnnot EnumAnnot PtrAnnot OpaqueAnnot
+      lhs.usedIds = [getNr @nm]
+
+SEM GrVar
+  | Var lhs.usedIds = [getNr @nm]
+  
+ATTR ALLNT [ | freeIds : {Set.Set Int} | ]
+
+SEM GrAGItf
+  | AGItf module.freeIds = (Set.fromDistinctAscList [0..]) 
+                            // (Set.fromList @module.usedIds)
+%%]
