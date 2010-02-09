@@ -940,7 +940,9 @@ isEmptyRange (Range_Range p _) = p == noPos
 isEmptyRange  _                = False
 %%]
 
-%%[99
+20100209 AD: The lax equality/compare goes badly with serialization. TBD: fix this...
+
+%%[20
 instance Eq Range where
   _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
 
@@ -1537,8 +1539,10 @@ instance Binary UID where
 %%]]
 
 instance Serialize UID where
-  sput = sputPlain
-  sget = sgetPlain
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
 
 instance Binary PredOccId where
   put (PredOccId a) = put a
@@ -1553,12 +1557,15 @@ instance Binary a => Binary (RLList a) where
   get = liftM RLList get
 
 instance Serialize CTag where
-  sput (CTagRec          ) = sputWord8 0
-  sput (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
-  sget = do t <- sgetWord8
-            case t of
-              0 -> return CTagRec
-              1 -> liftM5 CTag    sget sget sget sget sget
+  sput = sputShared
+  sget = sgetShared
+  sputNested (CTagRec          ) = sputWord8 0
+  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return CTagRec
+           1 -> liftM5 CTag    sget sget sget sget sget
 
 instance Binary Range where
   put (Range_Unknown    ) = putWord8 0
@@ -1571,8 +1578,10 @@ instance Binary Range where
              2 -> liftM2 Range_Range get get
 
 instance Serialize Range where
-  sput = sputPlain
-  sget = sgetPlain
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
 
 instance Binary Pos where
   put (Pos a b c) = put a >> put b >> put c

@@ -890,16 +890,19 @@ cpProcessCoreFold modNm
 %%[(8 codegen)
 -- folded core -> grin and jazy
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
-cpProcessCoreRest modNm 
-  = cpSeq [ cpTranslateCore2Grin modNm
-          , cpOutputGrin "" modNm
+cpProcessCoreRest modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq (   [ cpTranslateCore2Grin modNm ]
+                ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin "" modNm ] else [])
 %%[[(8 jazy)
-          , cpTranslateCore2Jazy modNm
+                ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
 %%[[99
-          , cpCleanupCore modNm
+                ++ [ cpCleanupCore modNm ]
 %%]]
-          ]
+               )
+       }
           
 %%]
 

@@ -19,8 +19,8 @@ module EH.Util.Binary
 
 import qualified Data.ByteString.Lazy as L
 import Data.Binary
-import Data.Binary.Put(runPut)
-import Data.Binary.Get(runGet)
+import Data.Binary.Put(runPut,putWord16be)
+import Data.Binary.Get(runGet,getWord16be)
 import IO
 import Control.Monad
 
