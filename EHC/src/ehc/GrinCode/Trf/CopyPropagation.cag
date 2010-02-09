@@ -66,20 +66,6 @@ SEM GrExpr
   | *-Seq  lhs . patsubst  =  Map.empty
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Remove duplicate subs in caseLambda %%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-SEM GrAlt
-  | Alt   expr.subst = foldr Map.delete @lhs.subst @pat.varsBound
-
-ATTR GrPatAlt [ | | varsBound USE {++} {[]} : {[HsName]} ]
-
-SEM GrPatAlt
-  | Node      lhs.varsBound = @fldL
-%%]
-
 %%%%%%%%%%%%%%%%%%%%%%
 %%% Right Unit law %%%
 %%%%%%%%%%%%%%%%%%%%%%
