@@ -41,7 +41,7 @@ $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, mtl binary bytestring \
+		, mtl binary bytestring uulib \
 		,  \
 		, General purpose utilities for EH \
 		, $(patsubst %,$(LIB_EH_UTIL_QUAL_PREFIX)%,$(LIB_EH_UTIL_HS_MOD)) \

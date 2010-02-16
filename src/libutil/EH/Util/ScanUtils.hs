@@ -118,6 +118,7 @@ data ScanOpts
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
         ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
         ,   scoOffsideTrigs     ::  ![String]               -- offside triggers
+        ,   scoOffsideTrigsGE   ::  ![String]               -- offside triggers, but allowing equal indentation (for HS 'do' notation, as per Haskell2010)
         ,   scoOffsideModule    ::  !String                 -- offside start of module
         ,   scoOffsideOpen      ::  !String                 -- offside open symbol
         ,   scoOffsideClose     ::  !String                 -- offside close symbol
@@ -138,6 +139,7 @@ defaultScanOpts
         ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False
         ,   scoOffsideTrigs     =   []
+        ,   scoOffsideTrigsGE   =   []
         ,   scoOffsideModule    =   ""
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""
