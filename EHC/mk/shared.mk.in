@@ -321,8 +321,7 @@ FUN_EHC_GCC_LD_OPTS							= -L$(call FUN_INSTALLABS_VARIANT_LIB_SHARED_PREFIX,$(
 ###########################################################################################
 
 # GHC options
-GHC_EHC_PKG_UULIB						:= uulib
-GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package $(GHC_EHC_PKG_UULIB)
+GHC_OPTS								:= -fglasgow-exts $(OPT_GHC_STANDARD_PACKAGES) -package uulib
 GHC_OPTS_OPTIM							:= -O2
 GHC_OPTS_WHEN_EHC						:= @GHC_EHC_OPTIONS@
 
@@ -443,7 +442,7 @@ FUN_GEN_CABAL		= \
 					echo   "Author:				UHC Team" ; \
 					echo   "Homepage:			http://www.cs.uu.nl/wiki/UHC" ; \
 					echo   "Category:			Testing" ; \
-					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(GHC_EHC_PKG_UULIB) $(3)))" ; \
+					echo   "Build-Depends:		$(subst $(space),$(comma),$(strip @CABAL_BASE_LIB_DEPENDS@ @CABAL_EXTRA_LIB_DEPENDS@ $(3)))" ; \
 					echo   "Build-Tools:		" ; \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \

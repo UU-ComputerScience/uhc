@@ -7,16 +7,16 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}HS.Parser} import(IO, UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
+%%[1 module {%{EH}HS.Parser} import(UU.Parsing, UU.Parsing.Offside, EH.Util.ParseUtils, UU.Scanner.GenToken, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}Scanner.Common}, {%{EH}HS})
 %%]
 
-%%[1 export(pAGItf, HSParser)
+%%[1 import(IO)
+%%]
+
+%%[5 import(Data.Maybe)
 %%]
 
 %%[(8 codegen) import ({%{EH}Base.Target})
-%%]
-
-%%[20 export(pFixity, pAGItfImport, HSParser')
 %%]
 
 -- debugging
@@ -39,18 +39,18 @@ tokEmpty = Reserved "" noPos
 %%% Parser
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(HSParser,HSParser')
 type HSParser         ep    =    LayoutParser Token ep
 type HSParser'        ep    =    PlainParser Token ep
 %%]
 
-%%[1
+%%[1 export(pAGItf)
 pAGItf :: HSParser AGItf
 pAGItf
   =   AGItf_AGItf <$> pModule pBody
 %%]
 
-%%[20
+%%[20 export(pAGItfImport)
 pAGItfImport :: HSParser AGItf
 pAGItfImport
   =   AGItf_AGItf <$> pModule pBodyImport
@@ -218,7 +218,6 @@ pDeclaration :: HSParser Declaration
 pDeclaration
   =   pDeclarationValue
   <|> pDeclarationTypeSignature
-  <|> pDeclarationFixity
 %%[[5
   <|> pDeclarationData
 %%]]
@@ -226,7 +225,6 @@ pDeclaration
   <|> pDeclarationKindSignature
 %%]]
 %%[[9
-  <|> pDeclarationClass
   <|> pDeclarationInstance
 %%]]
 %%[[11
@@ -239,10 +237,12 @@ pDeclaration
 pTopDeclaration :: HSParser Declaration
 pTopDeclaration
   =   pDeclaration
+  <|> pDeclarationFixity
 %%[[8
   <|> pDeclarationForeign
 %%]]
 %%[[9
+  <|> pDeclarationClass
   <|> pDeclarationDefault
 %%]]
   <?> "pTopDeclaration"
@@ -268,7 +268,7 @@ pDeclarations1
 
 %%[1
 pWhere' :: HSParser Declaration -> HSParser MaybeDeclarations
-pWhere' pD = Just <$ pWHERE <*> pDeclarations' pD <|> pSucceed Nothing
+pWhere' pD = pMb (pWHERE *> pDeclarations' pD)
 
 pWhere :: HSParser MaybeDeclarations
 pWhere = pWhere' pDeclaration
@@ -278,7 +278,7 @@ pWhere = pWhere' pDeclaration
 %%% Fixity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
+%%[1 export(pFixity)
 pDeclarationFixity :: HSParser Declaration
 pDeclarationFixity
   = (\f p os@(o:_) -> Declaration_Fixity (mkRange1 o) f p (tokMkQNames os))
@@ -1121,6 +1121,13 @@ pExpression4'' inParen pOp pPreNotOp pBase
            )  )
   where pE  ::  HSParser Expression4
         pE  =   pBase <**>
+{-
+                  (     (\(op,rng) (r,opCnt,res) l -> (Expression_InfixApplication rng l op r, opCnt+1, res)) <$> pOp <*> pE
+                  `opt` (\e -> (e,0,[]))
+                  )
+-}
+{-
+-}
                   (   pSucceed (\e -> (e,0,[]))
                   <|> (\(op,rng) (r,opCnt,res) l -> (Expression_InfixApplication rng l op r, opCnt+1, res)) <$> pOp <*> pE
                   )
@@ -1325,6 +1332,77 @@ pAlternative
 pAlternatives :: HSParser Alternatives
 pAlternatives
   = pBlock1 pOCURLY pSEMI pCCURLY pAlternative
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Try out layout parsing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+hasSuccess :: Steps a s p -> Bool
+hasSuccess (StRepair _ _ _ ) = False
+hasSuccess (Best     _ _ _ ) = False 
+hasSuccess _                 = True
+
+pCloseTry :: (OutputState o, InputState i s p, Position p, Symbol s, Ord s) 
+           => OffsideParser i o s p ()
+pCloseTry = OP (pWrap f g ( () <$ pSym CloseBrace) )
+  where g state steps1 k = (state,ar,k)
+{-
+-}
+          where ar = case state of
+                               Off _ _ _ (Just state')
+                                 -> let steps2 = k state'
+                                    in if not (hasSuccess steps1) && hasSuccess steps2
+                                       then Cost 1# steps2
+                                       else steps1
+                               _ -> steps1
+{-
+          where ar = steps1
+-}
+            
+        f acc state steps k = let (stl,ar,str2rr) = g state (val snd steps)  k
+                              in (stl ,val (acc ()) ar , str2rr )
+
+pOffsideTry :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
+         => OffsideParser i o s p x 
+         -> OffsideParser i o s p y 
+         -> OffsideParser i o s p a 
+         -> OffsideParser i o s p a 
+         -> OffsideParser i o s p a
+pOffsideTry open close bodyE bodyI = 
+       open *> bodyE <* close
+   <|> pOpen *> bodyI <* pClose
+
+pBlockTry :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
+       => OffsideParser i o s p x 
+       -> OffsideParser i o s p y 
+       -> OffsideParser i o s p z 
+       -> OffsideParser i o s p a 
+       -> OffsideParser i o s p [a]
+pBlockTry open sep close p =  pOffsideTry open close explicit implicit
+ where -- elem = (:) <$> p `opt` id
+       elem = pMb p
+       sep' = () <$ sep        
+       -- elems s = ($[]) <$> pFoldr1Sep ((.),id) s elem
+       elems s = (\h t -> catMaybes (h:t)) <$> elem <*> pList (s *> elem)
+       explicit = elems sep'
+       implicit = elems (sep' <|> pSeparator)
+
+pBlock1Try :: (InputState i s p, OutputState o, Position p, Symbol s, Ord s) 
+       => OffsideParser i o s p x 
+       -> OffsideParser i o s p y 
+       -> OffsideParser i o s p z 
+       -> OffsideParser i o s p a 
+       -> OffsideParser i o s p [a]
+pBlock1Try open sep close p =  pOffsideTry open close explicit implicit
+ where elem = (Just <$> p) `opt` Nothing
+       sep' = () <$ sep
+       -- elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pList ( s *> elem)
+       elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pList (s *> pMb p)
+       -- elems s = (\h t -> catMaybes (h:t)) <$ pList s <*> (Just <$> p) <*> pListSep (pList1 s) (Just <$> p)
+       explicit = elems sep'
+       implicit = elems (sep' <|> pSeparator)
+%%[1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
