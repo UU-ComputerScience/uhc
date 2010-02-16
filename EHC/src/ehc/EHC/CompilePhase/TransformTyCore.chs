@@ -23,7 +23,11 @@ TyCore transformations
 %%]
 
 -- Core transformations
-%%[(8 codegen) import({%{EH}TyCore.Trf.FlipStrictness},{%{EH}TyCore.Trf.OptimizeStrictness})
+%%[(8 codegen) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
+%%]
+%%[(8 codegen) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
+%%]
+%%[(8 codegen) import({%{EH}TyCore.Trf.OptimizeStrictness})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,8 +44,9 @@ cpTyCore1Trf modNm trfNm
                  u1     = uidChild $ crsiHereUID $ crsi
                  core2  = ( case trfNm of
 %%[[(8 tauphi)
---                              "FLSN"    -> cmodTrfFlipStrictness
-                              "OPSN"    -> cmodTrfOptimizeStrictness
+                              "EliminateExplicitLaziness"    -> cmodTrfEliminateExplicitLaziness
+                              "IntroduceExplicitLaziness"    -> cmodTrfIntroduceExplicitLaziness
+                              "OptimizeStrictness"           -> cmodTrfOptimizeStrictness
 %%]]
                               _         -> id
                           ) tyCore

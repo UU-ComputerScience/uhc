@@ -1,0 +1,104 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate explicit lazy constructs from TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.EliminateExplicitLaziness}
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
+%%]
+
+%%[1 hs import(Debug.Trace)
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 tauphi).tcmodTrfEliminateExplicitLaziness hs
+cmodTrfEliminateExplicitLaziness :: Module -> Module
+cmodTrfEliminateExplicitLaziness tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 tauphi)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AGItf [ | | cTrf: Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+
+SEM Expr
+  | Force       lhs         .   cTrf        =   mkExprUnThunk @expr.cTrf 
+  | Delay       lhs         .   cTrf        =   mkExprThunk @expr.cTrf 
+  | Lazy        lhs         .   cTrf        =   mkTyThunk @expr.cTrf 
+-- mkExprThunk :: Expr -> Expr
+-- mkExprThunk e = Expr_Lam (Expr_Seq []) e
+-- %%]
+-- 
+-- %%[(8 codegen) hs export(mkExprUnThunk)
+-- mkExprUnThunk :: Expr -> Expr
+-- mkExprUnThunk e = Expr_App e (Expr_Seq [])
+--  | App         lhs         .   cTrf        =   if @isUnThunk then Expr_Force @func.cTrf else Expr_App @func.cTrf @arg.cTrf
+--  | Lam         lhs         .   cTrf        =   if @isThunk then Expr_Delay @res.cTrf else Expr_Lam @arg.cTrf @res.cTrf
+--  | Arrow       lhs         .   cTrf        =   if @isThunk then Expr_Lazy @res.cTrf else @loc.e
+--                loc         .   e           =   Expr_Arrow @arg.cTrf @res.cTrf
+
+{
+et :: String -> Expr -> Expr
+et s e = Expr_Ann (ExprAnn_GrinHint s) e
+}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utility attr's: is Expr a thunk? is Expr a Seq?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR Expr [ | | emptySeq: {Bool} ]
+
+SEM Expr
+  | Seq			lhs			.	emptySeq    =   null @seq
+  | Seq1		lhs			.	emptySeq    =   False
+  | * - Seq Seq1
+  				lhs			.	emptySeq    =   False
+%%]
+
+%%[(8 codegen)
+SEM Expr
+  | Arrow Lam	loc			.	isThunk		=	@arg.emptySeq
+  | App			loc			.	isUnThunk	=	@arg.emptySeq
+%%]
+

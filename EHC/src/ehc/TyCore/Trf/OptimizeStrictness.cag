@@ -88,7 +88,7 @@ SEM ValBindL
 SEM ValBind
   | Val         lhs         .   strictWrkr  =   ValBind_Val @loc.strictName @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
                 lhs         .   hasStrictW  =   @l1.hasStrictW -- If type isn't strict, neither is body
-                lhs         .   lazyWrppr   =   trace (show @l1.strictArgs) $ ValBind_Val @nm @bindMeta.cTrf @mlev @l1.lazyWrppr (mkLazyWrapper @loc.strictName @l1.strictArgs @l0.lazyWrppr)
+                lhs         .   lazyWrppr   =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.lazyWrppr (mkLazyWrapper @loc.strictName @l1.strictArgs @l0.lazyWrppr)
                 l0          .   strictName  =   @loc.strictName
                 loc         .   strictName  =   hsnFromString (show @nm ++ "_strict")
 

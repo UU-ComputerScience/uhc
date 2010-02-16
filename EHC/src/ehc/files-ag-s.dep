@@ -106,5 +106,6 @@ Silly/Pretty.cag
 Silly/PrettyC.cag
 Silly/PrettyS.cag
 Silly/ToLLVM.cag
-TyCore/Trf/FlipStrictness.cag
+TyCore/Trf/EliminateExplicitLaziness.cag
+TyCore/Trf/IntroduceExplicitLaziness.cag
 TyCore/Trf/OptimizeStrictness.cag

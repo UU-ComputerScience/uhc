@@ -354,11 +354,14 @@ SEM Expr
 													>-< indent 1 (ppCurlysSemisBlock (@alts.ppL ++ dflt))
   | Tup         loc         .   pp          =   ppTag @tag
   | Node        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "node" {- >#< ppTag @tag -}) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
+  | OpenExists  loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "openexists"  >#< @bind.pp >#< "=" >#< @tyOpened.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | CloseExists loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "closeexists" >#< @bind.pp >#< "=" >#< @tyClosed.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | Delay       loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
+  | Force       loc         .   pp          =   ppFrThnk @lhs.symMp @expr.pp
   | Sum         loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "sum" ) (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
   | Prod        loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "prod") (ppSeq' @lhs.symMp @lhs.ppHow @flds.ppL)
   | Exists      loc         .   pp          =   sym @lhs.symMp Sym_Exists >#< @arg.pp >#< "." >#< @expr.pp
-  | CloseExists loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "closeexists" >#< @bind.pp >#< "=" >#< @tyClosed.pp) (ppParens @ty.pp >-< ppParens @body.pp)
-  | OpenExists  loc         .   pp          =   howDef @lhs.ppHow (ppKeyw "openexists"  >#< @bind.pp >#< "=" >#< @tyOpened.pp) (ppParens @ty.pp >-< ppParens @body.pp)
+  | Lazy        loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
   | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
   | Seq 		loc			.	pp			=	ppSeq  @lhs.symMp @seq.ppL
   | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId

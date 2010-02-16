@@ -86,6 +86,9 @@ DATA Expr
   				tyOpened		: Expr
   				ty				: Expr
   				body			: Expr
+  -- Explict Delay/Force constructs, instead of \[] -> functions.
+  | Delay       expr            : Expr
+  | Force       expr            : Expr
 %%]
 
 L1 only
@@ -99,6 +102,8 @@ DATA Expr
   -- related to existentials
   | Exists    	arg 			: Expr
   				expr			: Expr
+  -- Explicit Lazy type, instead of [] -> types.
+  | Lazy        expr            : Expr
 %%]
 
 Value, possibly bound as well
