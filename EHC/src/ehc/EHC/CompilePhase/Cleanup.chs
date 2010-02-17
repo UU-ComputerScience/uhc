@@ -110,8 +110,9 @@ cpCleanupFlow :: HsName -> EHCompilePhase ()
 cpCleanupFlow modNm
   = cpUpdCU modNm
       (\e -> e { ecuMbHSSemMod        = Nothing
-               , ecuMbPrevHI          = Nothing
-               , ecuMbPrevHISem       = Nothing
+               -- , ecuMbPrevHI          = Nothing
+               -- , ecuMbPrevHISem       = Nothing
+               , ecuMbPrevHIInfo      = Nothing
                }
       )
 %%]

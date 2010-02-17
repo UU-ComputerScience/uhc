@@ -74,18 +74,36 @@ emptyFI     =  FIIn     {  fiFIOpts          =   strongFIOpts
 %%]
 
 %%[(4 hmtyinfer) export(fiLookupVar',fiLookupTyVarCyc)
+-- lookup a tvar subsequently in 2 VarMps
 fiLookupVar' :: (v -> VarMp -> Maybe x) -> v -> VarMp -> VarMp -> Maybe x
 fiLookupVar' lkup v m1 m2
   = case lkup v m1 of
       Nothing -> lkup v m2
       j       -> j
 
+-- lookup a tvar in the VarMps of a FIIn
 fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
 fiLookupTyVarCyc  fi v  =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
 %%]
-fiLookupTyVarCyc :: FIIn -> TyVarId -> Maybe Ty
-fiLookupTyVarCyc  fi v | fiVarIsExpanded v fi =  Nothing
-                       | otherwise            =  fiLookupVar' varmpTyLookupCyc v (fiVarMpLoc fi) (fiVarMp fi)
+
+%%[(4 hmtyinfer) export(fiLookupReplaceTyCyc)
+-- lookup a possible tvar in the VarMps of a FIIn, the result being the replacement if any
+fiLookupReplaceTyCyc :: FIIn -> Ty -> Ty
+fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMbVar t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Allowing binding of tvar?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer) export(fiAllowTyVarBind)
+-- Pre: is a tyvar
+fiAllowTyVarBind :: FIIn -> Ty -> Bool
+fiAllowTyVarBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain
+%%[[9
+                                      && not (v `Set.member` fioDontBind (fiFIOpts fi))
+%%]]
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Rank

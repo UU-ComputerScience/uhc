@@ -109,6 +109,9 @@
 %%[20 export(ppCurlysAssocL)
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[99 import({%{EH}Base.Hashable})
 %%]
 %%[99 import({%{EH}Base.ForceEval})
@@ -117,14 +120,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Printing of names with non-alpha numeric constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-instance Show (Ptr a) where
-   showsPrec _ (Ptr a) rs = pad_out (showHex (addrToInteger a) "")
-     where
-        -- want 0s prefixed to pad it out to a fixed length.
-       pad_out ls = 
-          '0':'x':(replicate (2*SIZEOF_HSPTR - length ls) '0') ++ ls ++ rs
-
 
 %%[8 export(ppHsnNonAlpha,ppHsnEscaped,hsnEscapeeChars)
 ppHsnEscaped :: Either Char (Set.Set Char) -> Char -> Set.Set Char -> HsName -> PP_Doc
@@ -159,7 +154,7 @@ ppHsnNonAlpha scanOpts
 %%% Unique id's
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1.UID.Base export(UID)
+%%[1.UID.Base export(UID(..))
 %%[[1
 newtype UID = UID { uidInts :: [Int] }
 %%][99
@@ -450,10 +445,11 @@ mkRngParApp r as  = semRngParens r (mkRngApp r as)
 %%[1.PP.ppAppTop export(ppAppTop)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) argL dflt
-  =  if       hsnIsArrow conNm
+  =  if       (  hsnIsArrow conNm
 %%[[9
               || hsnIsPrArrow conNm
 %%]]
+              ) && length argL == 2
                                 then  ppListSep "" "" (" " >|< con >|< " ") argL
      else if  hsnIsProd  conNm  then  ppParensCommas argL
 %%[[5
@@ -859,7 +855,7 @@ data CompilePoint
 %%[1
 data Fixity
   = Fixity_Infix | Fixity_Infixr | Fixity_Infixl
-  deriving (Eq,Ord,Show)
+  deriving (Eq,Ord,Show,Enum)
 
 instance PP Fixity where
   pp Fixity_Infix  = pp "infix"
@@ -945,7 +941,9 @@ isEmptyRange (Range_Range p _) = p == noPos
 isEmptyRange  _                = False
 %%]
 
-%%[99
+20100209 AD: The lax equality/compare goes badly with serialization. TBD: fix this...
+
+%%[20
 instance Eq Range where
   _ == _ = True				-- a Range is ballast, not a criterium to decide equality for
 
@@ -1467,5 +1465,126 @@ metaLevKi  = metaLevTy  + 1
 metaLevSo  = metaLevKi  + 1
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Typeable, Data
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20
+deriving instance Typeable VarUIDHsName
+deriving instance Data VarUIDHsName
 
+deriving instance Typeable Fixity
+deriving instance Data Fixity
+
+deriving instance Typeable1 AlwaysEq
+deriving instance Data x => Data (AlwaysEq x)
+
+deriving instance Typeable UID
+deriving instance Data UID
+
+deriving instance Typeable PredOccId
+deriving instance Data PredOccId
+
+deriving instance Typeable1 RLList
+deriving instance Data x => Data (RLList x)
+
+deriving instance Typeable CTag
+deriving instance Data CTag
+
+deriving instance Typeable Range
+deriving instance Data Range
+
+deriving instance Typeable Pos
+deriving instance Data Pos
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance Serialize VarUIDHsName where
+  sput (VarUIDHs_Name a b) = sputWord8 0 >> sput a >> sput b
+  sput (VarUIDHs_UID  a  ) = sputWord8 1 >> sput a
+  sput (VarUIDHs_Var  a  ) = sputWord8 2 >> sput a
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM2 VarUIDHs_Name sget sget
+              1 -> liftM  VarUIDHs_UID  sget
+              2 -> liftM  VarUIDHs_Var  sget
+
+instance Binary Fixity where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize Fixity where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary x => Binary (AlwaysEq x) where
+  put (AlwaysEq x) = put x
+  get = liftM AlwaysEq get
+
+instance Serialize x => Serialize (AlwaysEq x) where
+  sput (AlwaysEq x) = sput x
+  sget = liftM AlwaysEq sget
+
+instance Binary UID where
+%%[[20
+  put (UID a) = put a
+  get = liftM UID get
+%%][99
+  put (UID a b) = put a >> put b
+  get = liftM2 UID get get
+%%]]
+
+instance Serialize UID where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
+instance Binary PredOccId where
+  put (PredOccId a) = put a
+  get = liftM PredOccId get
+
+instance Serialize PredOccId where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary a => Binary (RLList a) where
+  put (RLList a) = put a
+  get = liftM RLList get
+
+instance Serialize CTag where
+  sput = sputShared
+  sget = sgetShared
+  sputNested (CTagRec          ) = sputWord8 0
+  sputNested (CTag    a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sgetNested
+    = do t <- sgetWord8
+         case t of
+           0 -> return CTagRec
+           1 -> liftM5 CTag    sget sget sget sget sget
+
+instance Binary Range where
+  put (Range_Unknown    ) = putWord8 0
+  put (Range_Builtin    ) = putWord8 1
+  put (Range_Range   a b) = putWord8 2 >> put a >> put b
+  get = do t <- getWord8
+           case t of
+             0 -> return Range_Unknown
+             1 -> return Range_Builtin
+             2 -> liftM2 Range_Range get get
+
+instance Serialize Range where
+  sput = sputShared
+  sget = sgetShared
+  sputNested = sputPlain
+  sgetNested = sgetPlain
+
+instance Binary Pos where
+  put (Pos a b c) = put a >> put b >> put c
+  get = liftM3 Pos get get get
+%%]

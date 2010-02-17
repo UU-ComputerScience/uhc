@@ -22,23 +22,18 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty})
 %%]
 
-%%[(8 codegen) hs export(mkCMod)
-%%]
-
-%%[(8 codegen) hs export(CaseFailSubst)
-%%]
-
-%%[(9 codegen) hs export(cbindLNub)
-%%]
-
-%%[(20 codegen) hs export(cModMerge)
+%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
 %%]
 
 %%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
 %%[(8 codegen) ag import({Core/AbsSyn})
-DERIVING *     : Show, Eq
+DERIVING *
+  : Show, Eq
+%%[[20
+  , Typeable, Data
+%%]]
 %%]
 
 -- for debug only
@@ -221,7 +216,12 @@ data CBindingsCateg
 %%[[94
   | CBindings_FFE				-- exported function (not implemented yet)
 %%]]
-  deriving (Show,Eq)
+  deriving (Show,Eq,Enum)
+%%]
+
+%%[(20 codegen) hs
+deriving instance Typeable CBindingsCateg
+deriving instance Data CBindingsCateg
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -271,7 +271,7 @@ cbindNm (CBind_FFI _ _ _ n _  ) = n
 %%% Remove duplicate bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs
+%%[(9 codegen) hs export(cbindLNub)
 cbindLNub :: CBindL -> CBindL
 cbindLNub = nubBy (\b1 b2 -> cbindNm b1 == cbindNm b2)
 %%]
@@ -413,7 +413,7 @@ mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindings_Strict [mkCBind1 nm e] (
 mkCExprMbStrictIn _         e mkC =                                        mkC e
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(mkCMod)
 mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
@@ -725,7 +725,7 @@ mkCExprLetHole i b = i `CExpr_HoleLet` b
 %%% Module merge
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(20 codegen) hs
+%%[(20 codegen) hs export(cModMerge)
 cModMerge :: [CModule] -> CModule
 cModMerge mL
   = foldr1 cmb mL
@@ -739,7 +739,7 @@ cModMerge mL
 %%% Subst to replace CaseAltFail
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(CaseFailSubst)
 type CaseFailSubst = Map.Map UID CExpr
 %%]
 

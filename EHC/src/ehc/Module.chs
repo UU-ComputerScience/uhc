@@ -33,6 +33,9 @@
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[99 export(modImpPrelude)
 %%]
 
@@ -69,6 +72,11 @@ type ModEntRngMp   = Map.Map IdOcc  [HsName]
 mentIsCon :: ModEnt -> Bool
 mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
+%%]
+
+%%[20
+deriving instance Typeable ModEnt
+deriving instance Data ModEnt
 %%]
 
 %%[20 export(ppModMp)
@@ -460,7 +468,7 @@ modMpCombine ms mp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[102
@@ -468,4 +476,12 @@ instance ForceEval ModEnt where
   fevCount (ModEnt k i o) = cmUnions [cm1 "ModEnt",fevCount k,fevCount i,fevCount o]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20
+instance Serialize ModEnt where
+  sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 ModEnt sget sget sget sget
+%%]

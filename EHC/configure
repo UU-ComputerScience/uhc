@@ -663,6 +663,7 @@ HADDOCK_VERSION
 HADDOCK_CMD
 haddockCmd
 ghcPkgCmd
+GHC_CMD1
 GHC_VERSION
 GHC_CMD
 ghcCmd
@@ -3303,6 +3304,21 @@ GHC_CMD=$ghcCmd
 GHC_VERSION=$ghcVersion
 
 
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+GHC_CMD1=$ghcCmd1
+
+
+
 ### now we know we have ghc, check for some libraries using ghc-pkg
 # Extract the first word of "ghc-pkg", so it can be a program name with args.
 set dummy ghc-pkg; ac_word=$2
@@ -3346,6 +3362,8 @@ fi
 
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -3366,6 +3384,12 @@ then
     ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
+    fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
     fi
   fi
 fi
@@ -3610,6 +3634,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -4514,12 +4542,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -4529,16 +4562,19 @@ esac
 CPP_CMD=$cppCmd
 
 
-# LLVM Assembler
+
+if test x$enableLlvm = xyes
+then
+  # LLVM Assembler
 
 # Check whether --with-llvm-as was given.
 if test "${with_llvm_as+set}" = set; then :
   withval=$with_llvm_as;  llvmAs="$withval"
 else
 
-  if test "x$LLVM_AS" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "llvm-as", so it can be a program name with args.
 set dummy llvm-as; ac_word=$2
@@ -4588,27 +4624,27 @@ fi
 
   fi
 
+      fi
+    else
+      llvmAs=$LLVM_AS
     fi
-  else
-    llvmAs=$LLVM_AS
-  fi
 
 
 fi
 
-LLVM_AS_CMD=$llvmAs
+  LLVM_AS_CMD=$llvmAs
 
 
-# LLVM Optimizer
+  # LLVM Optimizer
 
 # Check whether --with-opt was given.
 if test "${with_opt+set}" = set; then :
   withval=$with_opt;  llvmOpt="$withval"
 else
 
-  if test "x$LLVM_OPT" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "opt", so it can be a program name with args.
 set dummy opt; ac_word=$2
@@ -4658,27 +4694,27 @@ fi
 
   fi
 
+      fi
+    else
+      llvmOpt=$LLVM_OPT
     fi
-  else
-    llvmOpt=$LLVM_OPT
-  fi
 
 
 fi
 
-LLVM_OPT_CMD=$llvmOpt
+  LLVM_OPT_CMD=$llvmOpt
 
 
-# LLVM Compiler
+  # LLVM Compiler
 
 # Check whether --with-llc was given.
 if test "${with_llc+set}" = set; then :
   withval=$with_llc;  llvmLlc="$withval"
 else
 
-  if test "x$LLC" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "llc", so it can be a program name with args.
 set dummy llc; ac_word=$2
@@ -4728,22 +4764,23 @@ fi
 
   fi
 
+      fi
+    else
+      llvmLlc=$LLC
     fi
-  else
-    llvmLlc=$LLC
-  fi
 
 
 fi
 
-LLVM_LLC_CMD=$llvmLlc
+  LLVM_LLC_CMD=$llvmLlc
 
 
-if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
-then
-  llvmExists=yes
-else
-  llvmExists=no
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
+  else
+    llvmExists=no
+  fi
 fi
 
 # md5
@@ -8018,7 +8055,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -8070,13 +8107,14 @@ EXTLIBS_BGC_PKG_NAME="gc"
 EXTLIBS_GMP_PKG_NAME="gmp"
  # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -9374,6 +9412,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -9395,6 +9434,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
     echo "        version                 : $ghcLibNetwork"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
@@ -9455,7 +9501,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"

@@ -271,7 +271,8 @@ install: uhc-install
 ###########################################################################################
 
 uhc-test: thaw-test-expect
-	@echo "WARNING: output may slightly differ for the following tests: " IO2.hs IO3.hs SysEnv1.hs
+	@echo "WARNING: output may slightly differ for tests commented with 'platform',"
+	@echo "         and (because of visible internal naming) for:" IO2.hs IO3.hs
 	$(MAKE) test-regress TEST_VARIANTS=uhc
 
 test: uhc-test
@@ -364,7 +365,7 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(XXXX)
+	@echo $(if $(ENABLE_JAVA),$(INSTALL_LIB_JAZY),)
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst

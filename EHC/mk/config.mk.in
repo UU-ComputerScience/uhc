@@ -27,7 +27,6 @@ EH_VERSION_FULL			:= @EH_VERSION_FULL@
 # STRIP_CMD		: strip cmd
 # TOPABS_PREFIX	: absolute prefix/pathname to top dir
 
-### Unix
 EXEC_SUFFIX			:= @SUFFIX_EXEC@
 LIB_SUFFIX			:= @SUFFIX_LIB@
 PATH_SEP			:= /
@@ -36,14 +35,6 @@ PATHS_SEP_COL		:= :
 STRIP_CMD			:= strip
 TOPABS_PREFIX		:= @TOP_ABS@/
 TOPABS2_PREFIX		:= @TOP_ABS2@/
-
-### WinXX
-#EXEC_SUFFIX			:= .exe
-#PATH_SEP			:= /
-#PATHS_SEP			:= ;
-#PATHS_SEP_COL		:= :
-#STRIP_CMD				:= strip
-#TOPABS_PREFIX		:= c:/whatever/
 
 ### remaining config
 # which version (usually v1 = current, v2 == under development)

@@ -24,7 +24,8 @@
 int mp_set_double64(mp_int * a, double b)
 {
   int     res ;
-  
+   
+  // printf( "mp_set_double64 %f\n", b ) ;
   int64_t rounded = (int64_t)b ; // llround( b ) ;
   if ((res = mp_set_sint64(a, rounded)) != MP_OKAY) {
     return res;

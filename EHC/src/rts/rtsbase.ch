@@ -78,6 +78,9 @@
 #include <limits.h>
 #include "base/sizes.h"
 #include "base/basictypes.h"
+#if __UHC_TARGET_BC__
+#include "bc/registers.h"
+#endif
 #include "base/bits.h"
 #include "base/sysalloc.h"
 #include "base/panic.h"

@@ -396,6 +396,14 @@ SEM Body
         loc             .   idGam       =   gamAddGam @declarations.idDefOccGam @lhs.idGam
 %%]
 
+TBD: 20100205 AD: The code below to remap identifiers should be revised. Too complex.
+
+The basic idea is to combine:
+- a mapping from fully qualified identifiers to other here irrelevant info (lhs.idGam)
+- a mapping defining the visibility of identifiers (lhs.modInScope)
+Each defined identifier from idGam may introduce its unqualified version, depending whether an unqualified name is indeed in scope and comes from the right module.
+
+
 %%[20 -1.initIdGam
 ATTR AGItf Module Body [ modInScope: ModEntDomMp | | ]
 
@@ -409,25 +417,39 @@ SEM Body
                                                                 where es' = [ e | e <- es, isq (mentIdOcc e) ]
                                                               _ -> Nothing
                                                 -- for an id, get all inscope occurrences, with + without qualifier
-                                                lks :: IdOcc -> [(HsName,[ModEnt])]
-                                                lks o     = catMaybes $ ns1 ++ ns2
+                                                lks :: Bool -> IdOcc -> [(HsName,[ModEnt])]
+                                                lks allowRename o
+                                                          = ns1 ++ catMaybes ns2
                                                           where (mq,n)    = hsnSplitQualify (ioccNm o)
                                                                 (ns1,isq) = case mq of
-                                                                              Just q  -> ([lkn (const True) (hsnPrefixQual (as q) n)],(\o -> maybe False (==q) (hsnQualifier (ioccNm o))))
-                                                                              Nothing -> ([],const True)
+                                                                              Just q  -> ( qres
+                                                                                         , (\o' -> maybe False ({- == q -} `elem` qquals {- -}) (hsnQualifier (ioccNm o'))
+                                                                                           )
+                                                                                         )
+                                                                                      where (qres,qquals)
+                                                                                               = maybe ([],[q])
+                                                                                                       (\x@(_,es) -> ( [x]
+                                                                                                                     , q : extra es
+                                                                                                       )             )
+                                                                                                       (lkn (const True) (hsnPrefixQual (as q) n))
+                                                                              Nothing -> ( [], const True )
                                                                 ns2       = [lkn isq n]
+                                                                extra | allowRename = \es -> catMaybes $ map (hsnQualifier . ioccNm . mentIdOcc) es
+                                                                      | otherwise   = const []
                                                 -- map qualifier to a possible 'qualified as' alias
                                                 as :: HsName -> HsName
                                                 as n = Map.findWithDefault n n @importdeclarations.modAsMp
-                                                -- compute new gamma holding proper mapping for unqualified an qualified idents
+                                                -- compute new gamma holding proper mapping for unqualified & qualified idents
                                                 mkg sel g
                                                    = gamFromAssocL
-                                                       [ (o {ioccNm = n},d {doccNmAlts = Just ns})
+                                                       [ {- tr "NameAnalysis.mkg" (o >#< ns)
+                                                         $ -} (o {ioccNm = n},d {doccNmAlts = Just ns})
                                                        | (o,d) <- gamToAssocL g
                                                        , (n,es) <- sel o
                                                        , let ns = [ ioccNm eo | e <- es, let eo = mentIdOcc e, ioccKind eo == ioccKind o ]
                                                        ]
-                                            in  mkg lks @declarations.idDefOccGam `gamUnion` mkg lks @lhs.idGam
+                                                gnew = mkg (lks False) @lhs.idGam
+                                            in  mkg (lks False) @declarations.idDefOccGam `gamUnion` gnew
 %%]
 
 %%[1
@@ -639,7 +661,12 @@ SEM Expression
       RecordConstruction
 %%]]
         loc             .   (refname,_,idUseOccGam,errIdUse)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val @idAsp @range
+                                        =   let x@(n,_,_,_) = mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val @idAsp @range
+                                                dbgnm = mkHNm "putStrLn"
+                                                dbgoc = IdOcc dbgnm IdOcc_Val
+                                            in  {- if @name == dbgnm
+                                                then tr "Expr.idGam" (dbgoc >-< n >-< gamLookup dbgoc @lhs.idGam >-< @lhs.idGam) x
+                                                else -} x
 %%[[7
     | RecordConstruction
         lhs             .   idUseOccGam =   gamUnions [@idUseOccGam,@recordExpressionBindings.idUseOccGam]

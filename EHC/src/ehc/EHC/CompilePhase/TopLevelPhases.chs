@@ -258,7 +258,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
                 ++ ", can use HI instead of HS: " ++ show (ecuCanUseHIInsteadOfHS ecu)
                 ++ ", is main: " ++ show (ecuIsMainMod ecu)
                 ++ ", is top: " ++ show (ecuIsTopMod ecu)
-                ++ ", valid HI: " ++ show (ecuIsValidHI ecu)
+                ++ ", valid HI: " ++ show (ecuIsValidHIInfo ecu)
                 ++ ", HS newer: " ++ show (ecuIsHSNewerThanHI ecu)
                 ))
        ; cpUpdCU modNm (ecuSetNeedsCompile (needsCompile && canCompile))
@@ -540,14 +540,16 @@ cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHS2 modNm
   = cpSeq [ cpGetMetaInfo [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir] modNm
           , cpGetPrevHI modNm
-          , cpFoldHI modNm
+          -- , cpFoldHI modNm
+          , cpFoldHIInfo modNm
           ]
 
 cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHI modNm
   = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core, GetMeta_Grin] modNm
           , cpGetPrevHI modNm
-          , cpFoldHI modNm
+          -- , cpFoldHI modNm
+          , cpFoldHIInfo modNm
           ]
 
 cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
@@ -878,16 +880,19 @@ cpProcessCoreFold modNm
 %%[(8 codegen)
 -- folded core -> grin and jazy
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
-cpProcessCoreRest modNm 
-  = cpSeq [ cpTranslateCore2Grin modNm
-          , cpOutputGrin "" modNm
+cpProcessCoreRest modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq (   [ cpTranslateCore2Grin modNm ]
+                ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin "" modNm ] else [])
 %%[[(8 jazy)
-          , cpTranslateCore2Jazy modNm
+                ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
 %%[[99
-          , cpCleanupCore modNm
+                ++ [ cpCleanupCore modNm ]
 %%]]
-          ]
+               )
+       }
           
 %%]
 

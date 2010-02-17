@@ -428,14 +428,14 @@ void mm_pages_Buddy_Dump( MM_Pages* buddyPages ) {
 	
 	printf( ">------------------------>\n" ) ;
 	printf
-		( "Pgs: nrPages=%x firstPage=%p aftPage=%p extl=%x extlSz=%x\n"
+		( "Pgs: nrPages=%x firstPage=%x aftPage=%x extl=%p extlSz=%x\n"
 		, pgs->nrPages, pgs->firstPage, pgs->afterLastPage, pgs->extlData, pgs->extlDataSize
 		) ;
 
 	for ( i = 0 ; i < mm_flexArray_SizeUsed(&pgs->buddyGroups) ; i++ ) {
 		MM_BuddyGroup* grp = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, i ) ;
 		printf
-			( "  Grp: %d: nrPages=%x firstPage=%p aftPage=%p alloc=%p allocSz=%x\n"
+			( "  Grp: %d: nrPages=%x firstPage=%x aftPage=%x alloc=%p allocSz=%x\n"
 			, i, grp->nrPages, grp->firstPage, grp->afterLastPage, grp->malloced, grp->mallocedSize
 			) ;
 	}

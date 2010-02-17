@@ -1,6 +1,7 @@
 {- ----------------------------------------------------------------------------------------
    what    : base classes for Data.Word: Word64, Word32, Word16, Word8, Word
    expected: ok
+   platform: word size dependent
 ---------------------------------------------------------------------------------------- -}
 
 module DataWord1 where

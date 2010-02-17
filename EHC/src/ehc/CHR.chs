@@ -20,6 +20,9 @@ to avoid explosion of search space during resolution.
 %%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
 %%]
 
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
@@ -35,6 +38,9 @@ data CHR cnstr guard subst
       , chrGuard        :: ![guard] 		-- subst -> Maybe subst
       , chrBody         :: ![cnstr]
       }
+%%[[20
+  deriving (Typeable, Data)
+%%]]
 
 emptyCHRGuard :: [a]
 emptyCHRGuard = []
@@ -147,7 +153,7 @@ chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval, Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 hmtyinfer || hmtyast)
@@ -156,4 +162,10 @@ instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
 %%[[102
   fevCount (CHR h sz g b) = cm1 "CHR" `cmUnion` fevCount h `cmUnion` fevCount sz `cmUnion` fevCount g `cmUnion` fevCount b
 %%]]
+%%]
+
+%%[(20 hmtyinfer || hmtyast)
+instance (Serialize c,Serialize g,Serialize s) => Serialize (CHR c g s) where
+  sput (CHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 CHR sget sget sget sget
 %%]

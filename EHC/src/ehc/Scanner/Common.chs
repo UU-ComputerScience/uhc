@@ -129,6 +129,9 @@ ehScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =   offsideTrigs
+%%[[9
+        ,   scoOffsideTrigsGE   =   offsideTrigsGE
+%%]]
         ,   scoOffsideModule    =   "let"
         ,   scoOffsideOpen      =   "{"
         ,   scoOffsideClose     =   "}"
@@ -141,10 +144,12 @@ ehScanOpts
 %%[[8
             ,  "letstrict"
 %%]]
-%%[[9
-            ,  "do"
-%%]]
             ]
+%%[[9
+        offsideTrigsGE   =
+            [  "do"
+            ]
+%%]]
 %%]
 
 %%[1
@@ -223,6 +228,8 @@ hsScanOpts
         ,   scoOffsideTrigs     =
                 scoOffsideTrigs ehScanOpts
                 ++ offsideTrigs
+        ,   scoOffsideTrigsGE   =
+                scoOffsideTrigsGE ehScanOpts
         ,   scoOffsideModule    =   "module"
         }
   where offsideTrigs     =
@@ -421,12 +428,13 @@ scanHandle opts fn fh
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
         -- ;  putStrLn (" tokens: " ++ show tokens)
-        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
+        ;  return (scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens)
         }
   where   moduleT   = reserved (scoOffsideModule scanOpts) noPos
           oBrace    = reserved (scoOffsideOpen scanOpts) noPos
           cBrace    = reserved (scoOffsideClose scanOpts) noPos
-          triggers  = [ reserved x noPos | x <- scoOffsideTrigs scanOpts ]
+          triggers  =  [ (Trigger_IndentGT,reserved x noPos) | x <- scoOffsideTrigs   scanOpts ]
+                    ++ [ (Trigger_IndentGE,reserved x noPos) | x <- scoOffsideTrigsGE scanOpts ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

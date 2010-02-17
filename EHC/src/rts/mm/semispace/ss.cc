@@ -129,7 +129,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	mm_deque_InitWithSize( &plss->weakPtrFinalizeQue, &plss->memMgt, MM_WeakPtrFinalizeQue_Data_SizeInWords ) ;
 %%]]
 
-	plss->gcInProgress = False ;
+	plss->gcProgress = 0 ;
 	
 	plan->data = (MM_Plan_Data_Priv*)plss ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init C plan=%x plss=%x\n",plan,plss);}) ;
@@ -159,10 +159,10 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
 
 	plss->collector.collectPre( &plss->collector ) ;
 
-	if ( plss->gcInProgress ) {
+	if ( plss->gcProgress & MM_PLAN_SS_GCPROGRESS_COLLECTING ) {
 		rts_panic1_0( "mm_plan_SS_DoGC already in progress" ) ;
 	}
-	plss->gcInProgress = True ;
+	plss->gcProgress |= MM_PLAN_SS_GCPROGRESS_COLLECTING ;
 	
 	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-BEF plan=%p plss=%p\n",plan,plss);}) ;
 	// if ( isSpaceFull ) {
@@ -189,9 +189,13 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
 	// }
 	IF_GB_TR_ON(3,{printf("mm_plan_SS_DoGC-AFT plan=%p plss=%p\n",plan,plss);}) ;
 
-	plss->gcInProgress = False ;
+	plss->gcProgress &= ~MM_PLAN_SS_GCPROGRESS_COLLECTING ;
 
-	plss->collector.collectPost( &plss->collector ) ;
+	if ( ! (plss->gcProgress & MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING) ) {
+		plss->gcProgress |= MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING ;
+		plss->collector.collectPost( &plss->collector ) ;
+		plss->gcProgress &= ~MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING ;
+	}
 
 	return res ;
 }

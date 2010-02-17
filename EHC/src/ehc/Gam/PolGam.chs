@@ -23,6 +23,9 @@
 %%[(6 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
 %%]
 
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[99 import({%{EH}Base.ForceEval})
 %%]
 
@@ -45,6 +48,11 @@ type PolGam = Gam HsName PolGamInfo
 mapPolGam :: (Ty -> Ty) -> PolGam -> PolGam
 mapPolGam f
   = fst . gamMapThr (\(nm, PolGamInfo ty) thr -> ((nm, PolGamInfo $ f ty), thr)) ()
+%%]
+
+%%[(20 hmtyinfer || hmtyast)
+deriving instance Typeable PolGamInfo
+deriving instance Data PolGamInfo
 %%]
 
 %%[(17 hmtyinfer || hmtyast) export(polGamLookup,polGamLookupErr)
@@ -119,5 +127,11 @@ instance ForceEval PolGamInfo where
 %%[[102
   fevCount (PolGamInfo p) = cmUnions [cm1 "PolGamInfo",fevCount p]
 %%]]
+%%]
+
+%%[(20 hmtyinfer)
+instance Serialize PolGamInfo where
+  sput (PolGamInfo a) = sput a
+  sget = liftM PolGamInfo sget
 %%]
 

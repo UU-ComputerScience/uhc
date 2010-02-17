@@ -106,8 +106,18 @@ cpGetMetaInfo gm modNm
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
          ;  when (GetMeta_HS `elem` gm)
                  (tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu))
+         {-
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHITime
+%%[[20
+                                              (fpathSetSuff "hi"        fp     )
+%%][99
+                                              (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
+%%]]
+                 )
+         -}
+         ;  when (GetMeta_HI `elem` gm)
+                 (tm opts ecu ecuStoreHIInfoTime
 %%[[20
                                               (fpathSetSuff "hi"        fp     )
 %%][99
