@@ -21,7 +21,7 @@ ppTyS = ppS ppTy
 %%]
 
 %%[(98 hmtyinfer || hmtyast) hs export(tyTopLevelMain)
-tyTopLevelMain :: EHCOpts -> Ty
-tyTopLevelMain opts = mk1ConApp (ehbnIO $ ehcOptBuiltinNames opts) (mkProdApp [])
+tyTopLevelMain :: EHCOpts -> TyVarId -> Ty
+tyTopLevelMain opts uniq = mk1ConApp (ehbnIO $ ehcOptBuiltinNames opts) (mkTyVar uniq)
 %%]
 

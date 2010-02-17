@@ -146,7 +146,7 @@ predCanonic' opts (Pred_Eq t1 t2)
     )
     where
       (t1',m1) = tyCanonic' opts t1
-      (t2',m2) = tyCanonic' opts t2
+      (t2',m2) = tyCanonic' opts t2 -- (m1 |=> t2)
 %%]]
 predCanonic' opts pr
   = case tyCanonicMb' opts $ Ty_Pred pr of

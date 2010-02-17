@@ -488,7 +488,7 @@ SEM Ty
                             .   ppNice  =   ppParNeed  @parNeed @lhs.parNeed @ppAppTop
                             .   pp      =   if @isSpineRoot then @ppNice else @ppDflt
   | Any             loc     .   pp      =   pp hsnUnknown
-  | Ann             loc     .   pp      =   {- @ann.pp >#< -} @ty.pp
+  | Ann             loc     .   pp      =   {- @ann.pp >#< -} @ty.pp >|< "@" >|< @ann.pp	-- this pp currently only for debugging, change as required
 %%]
 
 %%[(8 hmtyinfer || hmtyast)

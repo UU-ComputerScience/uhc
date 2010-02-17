@@ -914,6 +914,7 @@ data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
 
 fioBindNoSet :: FIOBind -> TyVarIdS
 fioBindNoSet (FIOBindNoBut s) = s
+fioBindNoSet _                = Set.empty
 
 fioBindIsYes :: FIOBind -> Bool
 fioBindIsYes FIOBindYes = True

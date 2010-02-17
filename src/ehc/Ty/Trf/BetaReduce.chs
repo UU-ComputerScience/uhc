@@ -52,7 +52,7 @@ betaRedTyLookup fi nm = fmap tgiTy $ tyGamLookup nm $ feTyGam $ fiEnv fi
 %%[(11 hmtyinfer)
 tyBetaRed1 :: FIIn -> TyBetaRedLkup -> Ty -> Maybe (Ty,[PP_Doc])
 tyBetaRed1 fi lkup tp
-  = eval fun args
+  = eval (fiLookupReplaceTyCyc fi fun) args
   where (fun,args) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) tp
         eval lam@(Ty_Lam fa b) args
           | lamLen <= argLen
@@ -69,7 +69,7 @@ tyBetaRed1 fi lkup tp
         -- * removes negation on 'basic' polarities
         eval (Ty_Con nm) [arg]
           | nm == hsnPolNegation
-              = case fun' of
+              = case fiLookupReplaceTyCyc fi fun' of
                   Ty_Con nm
                     | nm == hsnPolNegation   -> mkres (head args')
                     | otherwise              -> mkres (polOpp arg)
