@@ -623,10 +623,28 @@ showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(4 hmtyinfer || hmtyast) hs export(tyIsA)
+tyIsA :: Ty -> String
+tyIsA (Ty_Con   a      ) = "CON"
+tyIsA (Ty_App   a b    ) = "APP"
+tyIsA (Ty_Ann   a b    ) = "ANN"
+tyIsA (Ty_Var   a b    ) = "VAR"
+tyIsA (Ty_Any          ) = "ANY"
+tyIsA (Ty_Quant a b c d) = "QUANT"
+tyIsA (Ty_Ext   a b c  ) = "EXT"
+tyIsA (Ty_Pred  a      ) = "PRED"
+tyIsA (Ty_Lam   a b    ) = "LAM"
+tyIsA (Ty_Impls a      ) = "IMPLS"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyIsVar)
+%%[(4 hmtyinfer || hmtyast) hs export(tyIsVar,tyIsCon)
 tyIsVar :: Ty -> Bool
 tyIsVar = isJust . tyMbVar
 

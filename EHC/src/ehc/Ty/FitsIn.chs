@@ -382,18 +382,11 @@ fitsInFI fi ty1 ty2
                                     where tv' = mkTyVar tv
 %%]
 
-%%[(4 hmtyinfer).fitsIn.allowBind
-            allowBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain
-%%[[9
-                                           && not (v `Set.member` fioDontBind (fiFIOpts fi))
-%%]]
-%%]
-
 %%[(4 hmtyinfer).fitsIn.allowImpredTVBind
             allowImpredTVBindL fi t _
-                = fioBindLFirst (fiFIOpts fi) && allowBind fi t
+                = fioBindLFirst (fiFIOpts fi) && fiAllowTyVarBind fi t
             allowImpredTVBindR fi t _
-                = fioBindRFirst (fiFIOpts fi) && allowBind fi t
+                = fioBindRFirst (fiFIOpts fi) && fiAllowTyVarBind fi t
 %%]
 
 %%[(4 hmtyinfer).fitsIn.unquant
@@ -921,7 +914,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                 where mbTy1   = fiLookupTyVarCyc fi v1
                       t1'     = fromJust mbTy1
-                      fi2     = trfi "fVar" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                      fi2     = trfi "fVar L"
+                                     ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
+%%[[9999
+                                            >-< "fioDontBind:" >#< show (fioDontBind (fiFIOpts fi)) >-< "fioBindNoSet:" >#< show (fioBindNoSet mbvs) >-< "fioBindIsYes:" >#< show (fioBindIsYes mbvs)
+%%]]
+                                     ) fi
 %%[[9
                       mbvs    = fioBindLVars (fiFIOpts fi)
 %%]]
@@ -935,12 +933,28 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                 where mbTy2   = fiLookupTyVarCyc fi v2
                       t2'     = fromJust mbTy2
-                      fi2     = trfi "fVar" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                      fi2     = trfi "fVar R"
+                                     ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
+%%[[9999
+                                            >-< "fioDontBind:" >#< show (fioDontBind (fiFIOpts fi)) >-< "fioBindNoSet:" >#< show (fioBindNoSet mbvs) >-< "fioBindIsYes:" >#< show (fioBindIsYes mbvs)
+%%]]
+                                     ) fi
 %%[[9
                       mbvs    = fioBindRVars (fiFIOpts fi)
 %%]]
             fVar f fi t1                    t2                = f fi2 t1 t2
-                where fi2     = trfi "fVar" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                where fi2     = trfi "fVar Dflt"
+                                     ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
+%%[[9999
+                                            >-< "fioDontBind    :" >#< show (fioDontBind (fiFIOpts fi))
+                                            >-< "fioBindNoSet(L):" >#< show (fioBindNoSet (fioBindLVars (fiFIOpts fi)))
+                                            >-< "fioBindIsYes(L):" >#< show (fioBindIsYes (fioBindLVars (fiFIOpts fi)))
+                                            >-< "tyIsA       (L):" >#< tyIsA t1
+                                            >-< "fioBindNoSet(R):" >#< show (fioBindNoSet (fioBindRVars (fiFIOpts fi)))
+                                            >-< "fioBindIsYes(R):" >#< show (fioBindIsYes (fioBindRVars (fiFIOpts fi)))
+                                            >-< "tyIsA       (R):" >#< tyIsA t2
+%%]]
+                                     ) fi
 %%]
 
 %%[(9 hmtyinfer)
@@ -969,9 +983,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 | s1 == s2                          = dtfo "con" fi t1 t2 [] emptyVarMp
                                                       $ res fi t2
             f fi t1@(Ty_Var v1 f1)      t2@(Ty_Var v2 f2)
-                | v1 == v2 && f1 == f2              = res fi t1
-                | lBefR && allowBind fi t1          = bind fi v1 t2
-                | not lBefR && allowBind fi t2      = bind fi v2 t1
+                | v1 == v2 && f1 == f2                 = res fi t1
+                | lBefR && fiAllowTyVarBind fi t1      = bind fi v1 t2
+                | not lBefR && fiAllowTyVarBind fi t2  = bind fi v2 t1
                 where lBefR = fioBindLBeforeR (fiFIOpts fi)
 %%]
 
@@ -1284,21 +1298,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 
 %%[(4 hmtyinfer).fitsIn.Var2
             f fi t1@(Ty_Var v1 _)       t2
-                | allowBind fi t1                   = case deepInstMatchTy fi t2 of
+                | fiAllowTyVarBind fi t1            = case deepInstMatchTy fi t2 of
                                                         Just (t1',fi') | fiRankEqInstRank fi
                                                           -> fVar f (fiInitInstRank $ fiBindTyVar v1 t1' fi') t1 t2
                                                         _ -> occurBind fi v1 t2
             f fi t1                     t2@(Ty_Var v2 _)
-                | allowBind fi t2                   = case deepInstMatchTy fi t1 of
+                | fiAllowTyVarBind fi t2            = case deepInstMatchTy fi t1 of
                                                         Just (t2',fi') | fiRankEqInstRank fi
                                                           -> fVar f (fiInitInstRank $ fiBindTyVar v2 t2' fi') t1 t2
                                                         _ -> occurBind fi v2 t1
 %%]
-                                                          -> f (fiInitInstRank $ fiBindTyVar v1 t1' fi') (Debug.tr "X1" (t1' >#< t2) t1') (Debug.tr "X2" (t1' >#< t2) t2)
-            f fi t1@(Ty_Var v1 _)       t2
-                | allowBind fi t1                   = occurBind fi v1 t2
-            f fi t1                     t2@(Ty_Var v2 _)
-                | allowBind fi t2                   = occurBind fi v2 t1
 
 %%[(4 hmtyinfer).fitsIn.App
             f fi t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
@@ -1309,8 +1318,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo    = fVar f fi2 tf1 tf2
                        spine  = asgiSpine $ foAppSpineInfo ffo
-                       -- (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
-                       (as,_) = hdAndTl' (Debug.tr "Ty.FitsIn: trace" (vlist $ reverse $ foTrace ffo) $ panic ("Ty.FitsIn: no spine info")) spine
+%%[[4
+                       (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
+                       -- (as,_) = hdAndTl' (Debug.tr "Ty.FitsIn: trace" (vlist $ reverse $ foTrace ffo) $ panic ("Ty.FitsIn: no spine info")) spine
+%%][100
+                       (as,_) = hdAndTl' unknownAppSpineVertebraeInfo spine
+%%]]
                        pol    = asPolarity as
                        fi3    = trfi "spine" ("f tf1 tf2:" >#< ppTyWithFI fi2 (foTy ffo) >-< "spine:" >#< ppCommas spine) fi2
                        fi4    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}

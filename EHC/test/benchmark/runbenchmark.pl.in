@@ -4,21 +4,21 @@ use Time::HiRes qw(gettimeofday tv_interval);
 @dirs = ("nofib/imag/bernouilli", "nofib/imag/digits-of-e1", "nofib/imag/digits-of-e2", "nofib/imag/exp3_8", "nofib/imag/gen-regexps", "nofib/imag/integrate", "nofib/imag/paraffins", "nofib/imag/primes", "nofib/imag/queens", "nofib/imag/rfib-int", "nofib/imag/rfib-integer", "nofib/imag/rfib-double", "nofib/imag/tak", "nofib/imag/wheel-sieve1", "nofib/imag/wheel-sieve2", "nofib/real/infer" );
 
 
-@compilernames = ("uhc -tbc", "uhc -tC", "ghc");
+@compilernames = ("uhc -tbc", "uhc -tC", "ghc", "ghc -O2");
 
 
 for $dir (@dirs) {
 
-    @compilers = ("uhc -tbc --cpp --import-path=$dir", "uhc -tC --cpp --import-path=$dir", "ghc --make -cpp -i$dir");
+    @compilers = ("uhc -tbc --cpp --import-path=$dir", "uhc -tC --cpp --import-path=$dir", "ghc --make -cpp -i$dir", "ghc -O2 --make -cpp -i$dir");
 
     
-    for $j (0,1,2) {
+    for $j (0,1,2,3) {
     
         $compiler = $compilers[$j];
     
         printf("%-24s %-10s", $dir, $compilernames[$j]);
     
-        system ("rm $dir/Main $dir/Main@SUFFIX_EXEC@ 2>/dev/null");
+        system ("rm $dir/*.hi $dir/*.grin $dir/*.core $dir/*.o $dir/Main $dir/Main@SUFFIX_EXEC@ 2>/dev/null");
         
         $tc0 = [gettimeofday];
         system ("$compiler $dir/Main.hs 1> $dir/comp-output$j 2> $dir/comp-errors$j");

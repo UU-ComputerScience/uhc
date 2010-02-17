@@ -445,10 +445,11 @@ mkRngParApp r as  = semRngParens r (mkRngApp r as)
 %%[1.PP.ppAppTop export(ppAppTop)
 ppAppTop :: PP arg => (HsName,arg) -> [arg] -> PP_Doc -> PP_Doc
 ppAppTop (conNm,con) argL dflt
-  =  if       hsnIsArrow conNm
+  =  if       (  hsnIsArrow conNm
 %%[[9
               || hsnIsPrArrow conNm
 %%]]
+              ) && length argL == 2
                                 then  ppListSep "" "" (" " >|< con >|< " ") argL
      else if  hsnIsProd  conNm  then  ppParensCommas argL
 %%[[5
