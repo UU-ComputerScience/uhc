@@ -818,8 +818,8 @@ cpProcessTyCoreBasic modNm
                        [
 %%[[(8 tauphi)
                          "IntroduceExplicitLaziness"
-                       , "EliminateExplicitLaziness"
                        , "OptimizeStrictness"
+                       , "EliminateExplicitLaziness"
 %%]
                        ]
                      )

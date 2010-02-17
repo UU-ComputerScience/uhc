@@ -19,14 +19,7 @@
 %%[(8 tauphi) hs import({%{EH}TauPhi.Common})
 %%]
 
-%%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
-%%]
-
-%%[1 hs import(Debug.Trace)
-%%]
-
--- for debug
-%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%[(8 codegen) hs import({%{EH}TyCore})
 %%]
 
 
@@ -61,15 +54,15 @@ SEM AGItf
   | AGItf       lhs         .   cTrf        =   @module.cTrf
 
 SEM Expr
-  | App         lhs         .   cTrf        =   if @isUnThunk then Expr_Force @func.cTrf else Expr_App @func.cTrf @arg.cTrf
-  | Lam         lhs         .   cTrf        =   if @isThunk then Expr_Delay @res.cTrf else Expr_Lam @arg.cTrf @res.cTrf
-  | Arrow       lhs         .   cTrf        =   if @isThunk then Expr_Lazy @res.cTrf else @loc.e
-                loc         .   e           =   Expr_Arrow @arg.cTrf @res.cTrf
-
-{
-et :: String -> Expr -> Expr
-et s e = Expr_Ann (ExprAnn_GrinHint s) e
-}
+  | App         lhs         .   cTrf        =   if @isUnThunk
+                                                then Expr_Force @func.cTrf
+                                                else Expr_App @func.cTrf @arg.cTrf
+  | Lam         lhs         .   cTrf        =   if @isThunk
+                                                then Expr_Delay @res.cTrf
+                                                else Expr_Lam @arg.cTrf @res.cTrf
+  | Arrow       lhs         .   cTrf        =   if @isThunk
+                                                then Expr_Lazy @res.cTrf
+                                                else Expr_Arrow @arg.cTrf @res.cTrf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
