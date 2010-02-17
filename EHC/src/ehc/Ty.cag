@@ -626,7 +626,7 @@ showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%% Debugging
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(4 hmtyinfer || hmtyast) hs export(tyIsA)
+%%[(9999 hmtyinfer || hmtyast) hs export(tyIsA)
 tyIsA :: Ty -> String
 tyIsA (Ty_Con   a      ) = "CON"
 tyIsA (Ty_App   a b    ) = "APP"
