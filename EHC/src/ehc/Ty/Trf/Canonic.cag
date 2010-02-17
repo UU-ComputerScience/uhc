@@ -41,6 +41,9 @@ Impls_Nil, and removed in the type itself.
 %%[(9 hmtyinfer) hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(11 hmtyinfer) hs import({%{EH}Base.Opts},{%{EH}Ty.Trf.BetaReduce})
 %%]
 

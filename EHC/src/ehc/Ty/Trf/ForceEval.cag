@@ -10,6 +10,9 @@
 %%[(99 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.ForceEval} import({%{EH}Base.Common},{%{EH}Ty},{%{EH}Base.ForceEval})
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(99 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
 WRAPPER Ty Label Pred
 

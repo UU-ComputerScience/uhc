@@ -28,6 +28,9 @@ what the context to be passed will be. To solve this, each possible location for
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
 %%]
 
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+
 %%[(9 hmtyinfer || hmtyast) hs import(EH.Util.Pretty)
 %%]
 
