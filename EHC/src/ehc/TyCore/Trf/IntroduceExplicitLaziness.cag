@@ -70,10 +70,11 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
+ATTR AllExpr [ | | copy : SELF ]
 ATTR Expr [ | | emptySeq: {Bool} ]
 
 SEM Expr
-  | Seq			lhs			.	emptySeq    =   null @seq
+  | Seq			lhs			.	emptySeq    =   null @seq.copy
   | Seq1		lhs			.	emptySeq    =   False
   | * - Seq Seq1
   				lhs			.	emptySeq    =   False

@@ -34,7 +34,7 @@ instance Show Strictness where
 %%% Instances: Typeable, Data
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 tauphi)
 deriving instance Typeable Strictness
 deriving instance Data Strictness
 
@@ -44,7 +44,7 @@ deriving instance Data Strictness
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20
+%%[(20 tauphi)
 instance Serialize Strictness where
   sput (Strict)    = sputWord8 0
   sput (NonStrict) = sputWord8 1
