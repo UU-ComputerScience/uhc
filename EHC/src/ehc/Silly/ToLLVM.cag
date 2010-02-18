@@ -371,7 +371,7 @@ SEM Constant
   | LiteralInt  lhs.llvmVar  = Constant @value @lhs.intType
   | LiteralStr  lhs.llvmVar  = @loc.globStrVar
   | Alias       lhs.llvmVar  = let value = Data.Map.findWithDefault
-                                             (error "Alias not in constantmap")
+                                             (error ("Alias \'" ++ @name ++ "\' not in constantMap"))
                                              @name @lhs.constantMap 
                                 in Constant value @lhs.intType                                                                 
 %%]
@@ -516,7 +516,9 @@ ATTR Functions Function
      [ constantMap : {Data.Map.Map String Int} | | ]
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList @constants
+  | SilModule   functions.constantMap =
+        let aliases = zipWith (\(a,b) c->(a,c)) @aliases [0..]
+         in Data.Map.fromList (aliases ++ @constants)
 %%]
 
 %%[(8 codegen grin)
