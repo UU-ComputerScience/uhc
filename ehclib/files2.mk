@@ -9,7 +9,7 @@ EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils consUtils)
 EHCLIB_SYNC_ALL_PKG_base_C				:= $(patsubst %,cbits/%.c,)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
-											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Monoid Complex Ix Dynamic) \
+											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Complex Ix Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
 											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array C/String) \
 											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt Posix/Types) \
