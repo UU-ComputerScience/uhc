@@ -19,7 +19,7 @@ shift
 
 # Binary to compile .bc files to .s files
 #
-LLC="$1 -mtriple=i386-apple-darwin9.8.0"
+LLC="$1 -mtriple=`uname -m`-`uname -s`-`uname -p`"
 shift
 
 # Native linker
