@@ -23,7 +23,9 @@ where n = |a b|
 %%]
 %%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import({%{EH}Base.Debug})
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Debug)
 %%]
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -72,17 +74,21 @@ SEM GrBind
   | Bind      expr.env     =  Map.empty 
 
 SEM GrExpr
-  | Seq       body.env  =  maybe @lhs.env
-                                 (\val -> Map.insert @pat.getName val @lhs.env)
+  | Seq       body.env  =   -- (const $ "seq with pattern " ++ show @pat.getName ++ "\nexpr = " ++ show @expr.grTrf) >>>
+                            maybe @lhs.env
+                                 (\val -> -- (const $ "\ninserting " ++ show @pat.getName ++ " for AU ") >>>
+                                          Map.insert @pat.getName val @lhs.env)
                                  @expr.mbUnitPNode
                                  
-  | Unit            lhs.mbUnitPNode    =  if @val.hasPAppTag
+  | Unit            lhs.mbUnitPNode    =  -- (const $ "found unit, val = " ++ show @val.grTrf) >>>
+                                          if @val.hasPAppTag
                                           then Just @val.grTrf
                                           else Nothing
   | * - Unit        lhs.mbUnitPNode    =  Nothing
  
   | App             (lhs.grTrf,lhs.changed)
-                                       =  maybe (@loc.grTrf,False)
+                                       =  -- (const $ "\nfound apply, nm = " ++ show @nm) >>>
+                                          maybe (@loc.grTrf,False)
                                           (\node -> (applyNode @nm @argL.grTrf node,True))
                                           (Map.lookup @nm @lhs.env)
 
@@ -92,7 +98,8 @@ SEM GrExpr
 
 
 applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
-  =  let n = length flds2
+  =  -- (const $ "\napplyNode " ++ show nm2 ++ "\nnode = " ++ show node) >>>
+     let n = length flds2
      in  if n<needs
          then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2))
          else if n==needs

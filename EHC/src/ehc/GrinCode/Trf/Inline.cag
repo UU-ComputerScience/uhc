@@ -47,13 +47,10 @@ to a loop.
 %%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.AliasRename})
-%%]
-
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG}, {GrinCode/Trf/CommonFreeVar}, {GrinCode/Trf/CommonWillEval})
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/Trf/CommonWillEval},{GrinCode/Trf/CommonAliasAG})
 %%]
 
 
@@ -71,7 +68,13 @@ to a loop.
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/UniqueIds})
-%%]                       
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MkUniqueBindings})
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.SubstExpr})
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper
@@ -161,6 +164,8 @@ SEM GrModule
   | Mod         bindL       .   fviMp           =   @bindL.gathFviMp
 %%]
 
+{-
+-}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Will eval defined here because could not be factored out
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -185,29 +190,26 @@ ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
 %%[(8 codegen grin)
 {
 
-toNode nm nms = (nm,nm,nms)
-
 -- Find the loopbreaker for inlining recursive functions, but don't loop.
 -- TODO topological sorting. Fix the right scc instead of arbitrary.
 -- TODO heuristic for choosing loopbreaker.
-type GraphData = [(HsName, HsName, [HsName])]       
+type GraphData = [(HsName, [HsName])]       
 calcLoopBreakers :: GraphData -> [HsName]
 calcLoopBreakers graph = 
     let sccs :: [[HsName]]
-        sccs = map Graph.flattenSCC (Graph.stronglyConnComp graph)
-        isDirectRecursive name = let (a,b,edges) = fromJust (find (\(name2,_,_) -> name == name2) graph)
+        sccs = scc graph
+        isDirectRecursive name = let (a,edges) = fromJust (find ((name ==) . fst) graph)
                                  in  elem name edges
         nonTrivialSccs = filter (\l -> length l > 1 || isDirectRecursive (head l) ) sccs
         loopBreaker = head (head nonTrivialSccs)                   
     in  if    (null nonTrivialSccs)
         then  []
-        else  let newGraph = map (map3 (filter (/= loopBreaker))) graph
-                  map3 f (a,b,c) = (a,b,f c)
-                  validEdge (a,b) = b /= loopBreaker 
+        else  let newGraph = map (\(a,b) -> (a,filter (/= loopBreaker) b)) graph
+                  validEdge = (/= loopBreaker) . snd
               in  (loopBreaker : calcLoopBreakers newGraph)
 }
 
-ATTR AllBind [ | | dependencies USE {++} {[]}: {[(HsName,[HsName])]} ]
+ATTR AllBind [ | | dependencies USE {++} {[]}: {GraphData} ]
 ATTR AllBind [ loopBreakers: {[HsName]} | |  ]
 ATTR AllBind [ inhBindingNames : {[HsName]} |  |  ]
 ATTR AllBind [  |  | synBindingNames USE {++} {[]} : {[HsName]} ]
@@ -230,8 +232,7 @@ SEM GrBind
                                           "\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames ++
                                           "\n loopbreakers are:" ++ show b
                                         ) b) $
-                                      let graphData = map (\(nm,dependency) -> toNode nm dependency) @bindL.dependencies
-                                      in  (calcLoopBreakers graphData) ++ @lhs.loopBreakers
+                                      (calcLoopBreakers @bindL.dependencies) ++ @lhs.loopBreakers
             bindL.inhBindingNames   = @bindL.synBindingNames
 %%]
 
@@ -261,7 +262,7 @@ SEM GrBind
                             && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
                             -- inline possible but keep the bind. (Code duplication).
 %%]]                                                          
-                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker), True)
+                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker undefined), True)
                         Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                           | @isCAF
                             && willUseForEval @nm @expr.willUseForMp
@@ -283,7 +284,7 @@ SEM GrBind
                                || @expr.inlineCost <= 10              -- and low cost values as well
                                )
                                -- TODO: This is now only the size, so only code-duplication is only looked at, not work duplication.
-                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker), False)    --False because the bind is used more often.
+                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker undefined), False)    --False because the bind is used more often.
                           | otherwise
 
                             -> (Map.empty, False) -- don't inline
@@ -318,7 +319,7 @@ SEM GrModule
 inlMayExport :: HsNameS -> HsNameS -> HsName -> GrInl -> Bool
 inlMayExport onlyInThisModule expNmS n inl
   = case inl of
-      GrInl_Call _ e _
+      GrInl_Call _ e _ _
         -> n `Set.member` expNmS
            && Set.null (onlyInThisModule `Set.intersection` Map.keysSet (grFreeVars e))
       _ -> False
@@ -385,6 +386,34 @@ SEM GrModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% bindId
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllBind [ | bindId: Int | ]
+ATTR AllGrExpr [ bindId: Int | | ]
+ATTR AllNTNoMod [ bindIdDigits: Int | | ]
+
+SEM GrBind
+  | Bind expr.bindId = @lhs.bindId
+
+SEM GrBind
+  | Bind lhs.bindId	=	@lhs.bindId+1
+
+SEM GrModule
+  | Mod bindL.bindId = 0
+        bindL.bindIdDigits = digits @bindL.bindId
+
+{
+digits :: Int -> Int
+digits i = if i < 10 then 1 + digits (floor (toEnum i / toEnum 10)) else 1
+}
+        
+SEM GrBind
+  | Bind expr.uniqueIds = (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation: inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -409,11 +438,7 @@ inlGrVar inlMp nmL
 inlNmsAreInlineable :: [Maybe HsName] -> Bool
 inlNmsAreInlineable = and . map isJust
 
-inlRename :: Int -> [Maybe HsName] -> [HsName] -> GrExpr -> GrExpr
-inlRename uniq asFrom as e
-  = grAliasRename (Just $ (`hsnSuffix` show uniq)) (mkNmAliasMp $ zip as (map fromJust asFrom)) e
 %%]
-  = grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust asFrom)) e
 
 %%[(8 codegen grin)
 SEM GrExpr
@@ -426,15 +451,23 @@ SEM GrExpr
 %%[(8 codegen grin)
 
 SEM GrExpr
-  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed)  
-                    =   case Map.lookup @nm @lhs.inlMp of
-                              Just (GrInl_Call as e lb) | inlNmsAreInlineable @argL.asNmL 
-                                                          && (not (lb && @lhs.insideCase))
-                                -> condTrace showInlines ("inlining call " ++ show @nm) $
-                                   ( @grVarTrf $ inlRename @lhs.uniq @argL.asNmL as e
-                                   , Set.insert @nm @grVarInlNmS
-                                   , True)
-                              _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges)
+  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed,lhs.uniqueIds)
+                    = --(const $ "inlining.." ++ show @nm) >>>
+                      --(\(a,b,c,d) -> "uniqueIds for " ++ show @nm ++ " is " ++ show (take 5 d)) >>>
+                        case Map.lookup @nm @lhs.inlMp of
+                          Just (GrInl_Call as e lb _) | not (lb {-&& @lhs.insideCase-})
+                                                       && inlNmsAreInlineable @argL.asNmL 
+                              -> condTrace showInlines ("inlining call " ++ show @nm) $
+                                  let argSubsEnv = Map.fromList (zip as (map fromJust @argL.asNmL))
+                                      argsSubstituted = substExpr argSubsEnv e
+                                      (newBindingNames,remUniqueIds) = mkUniqueBindings @lhs.uniqueIds argsSubstituted
+                                  in  ( @grVarTrf newBindingNames
+                                      , Set.insert @nm @grVarInlNmS
+                                      , True
+                                      , remUniqueIds
+                                      )                                
+                          _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges, @lhs.uniqueIds)
+
   | App         (lhs.trf,loc.gathInlNmS,lhs.changed)        
                   =   if       @lhs.isCAF
                       then let (grVarTrf,grVarInlNmS,changed) = inlGrVar @lhs.inlMp (@nm : Map.keys @argL.gathFviMp)

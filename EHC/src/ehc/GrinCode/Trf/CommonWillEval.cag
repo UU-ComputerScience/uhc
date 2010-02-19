@@ -10,12 +10,12 @@
 ATTR GrExpr GrAlt [ | | willUseForMp: WillUseForMp ]
 
 SEM GrExpr
-  | *			loc			.	willUseForMp	:	WillUseForMp
-  | Seq         loc         .   willUseForMp    =   willUseUnion @expr.willUseForMp @body.willUseForMp
-  | Case		loc			.	willUseForMp    =   foldr1 willUseIntersection @altL.willUseForMpL
-  | Eval        loc         .   willUseForMp    =   Map.singleton @nm (Set.singleton WillUseFor_Eval)
+  | *			            loc			    .	willUseForMp	  :	WillUseForMp
+  | Seq               loc         . willUseForMp    =   willUseUnion @expr.willUseForMp @body.willUseForMp
+  | Case		          loc			    .	willUseForMp    =   foldr1 willUseIntersection @altL.willUseForMpL
+  | Eval              loc         . willUseForMp    =   Map.singleton @nm (Set.singleton WillUseFor_Eval)
   | * - Eval Seq Case
-                loc         .   willUseForMp    =   Map.empty
+                      loc         . willUseForMp    =   Map.empty
 %%]
 
 %%[(8 codegen grin)
