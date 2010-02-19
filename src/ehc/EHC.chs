@@ -210,25 +210,33 @@ handleImmQuitOption immq opts
 Order is significant.
 
 %%[8
-type FileSuffMp = [(String,EHCompileUnitState)]
+type FileSuffMp = [(FileSuffix,EHCompileUnitState)]
 
 fileSuffMpHs :: FileSuffMp
 fileSuffMpHs
-  = [ ( "hs"  , ECUSHaskell HSStart )
+  = [ ( Just "hs"  , ECUSHaskell HSStart )
 %%[[99
-    , ( "lhs" , ECUSHaskell LHSStart )
+    , ( Just "lhs" , ECUSHaskell LHSStart )
 %%]]
-    , ( "eh"  , ECUSEh EHStart )
+    , ( Just "eh"  , ECUSEh EHStart )
 %%[[20
-    , ( "hi"  , ECUSHaskell HIStart )
+    , ( Just "hi"  , ECUSHaskell HIStart )
 %%]]
 %%[[(8 grin)
     -- currently not supported
-    , ( "grin", ECUSGrin )
+    , ( Just "grin", ECUSGrin )
 %%]]
 %%[[(94 codegen)
-    , ( "c"   , ECUSC CStart )
+    , ( Just "c"   , ECUSC CStart )
 %%]]
+    ]
+%%]
+
+%%[8
+-- Suffix map for empty suffix, defaults to .hs
+fileSuffMpHsNoSuff :: FileSuffMp
+fileSuffMpHsNoSuff
+  = [ ( Nothing  , ECUSHaskell HSStart )
     ]
 %%]
 
@@ -414,11 +422,13 @@ doCompileRun fnL@(fn:_) opts
 %%][20
                        imp :: Maybe FPath -> Maybe (HsName,(FPath,FileLoc)) -> HsName -> EHCompilePhase (HsName,Maybe (HsName,(FPath,FileLoc)))
                        imp mbFp mbPrev nm
+                         = do { let isTopModule = isJust mbFp
+                                    fileSuffMpHs' = (if isTopModule then fileSuffMpHsNoSuff else []) ++ fileSuffMpHs
 %%[[20
-                         = do { fpsFound <- cpFindFilesForFPath False fileSuffMpHs searchPath (Just nm) mbFp
+                              ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
-                         = do { let searchPath' = adaptedSearchPath mbPrev
-                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) const False fileSuffMpHs searchPath' (Just nm) mbFp
+                              ; let searchPath' = adaptedSearchPath mbPrev
+                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) const False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
                               ; when (ehcOptVerbosity opts >= VerboseDebug)
                                      (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)
@@ -426,7 +436,7 @@ doCompileRun fnL@(fn:_) opts
                                          ; lift $ putStrLn $ "searchPath: " ++ show searchPath'
 %%]]
                                          })
-                              ; when (isJust mbFp)
+                              ; when isTopModule
                                      (cpUpdCU nm (ecuSetIsTopMod True))
                               ; case fpsFound of
                                   (fp:_)
