@@ -1,0 +1,91 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Definition-site arity raising in TyCore
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise}
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).tcmodTrfDefinitionSiteArityRaise hs
+cmodTrfDefinitionSiteArityRaise :: Module -> Module
+cmodTrfDefinitionSiteArityRaise tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf : SELF ]
+ATTR Expr
+  [
+  |
+  |
+    lamArgs  : {[Expr]}
+    arrArgs  : {[Expr]}
+  ]
+
+SEM Expr
+  | Lam
+                lhs         .   lamArgs     =   @arg.cTrf : @res.lamArgs
+  | Arrow
+                lhs         .   arrArgs     =   @arg.cTrf : @res.arrArgs
+  | * - Lam Arrow
+                lhs         .   lamArgs     =   []
+                lhs         .   arrArgs     =   []
+
+SEM ValBind
+  | Val
+                lhs         .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev ({- annTrace ("\n" ++ show (@loc.newArrSeq) ++ "\n" ++ show @loc.newLamSeq) -} @l1.cTrf) @l0.cTrf
+                loc         .   newLamSeq   =   concatMap seqToList @l0.lamArgs
+                loc         .   newArrSeq   =   take (length @loc.newLamSeq) $ concatMap seqToList @l1.arrArgs
+
+{
+annTrace :: String -> Expr -> Expr
+annTrace s e = Expr_Ann (ExprAnn_GrinHint s) e
+
+seqToList :: Expr -> [ExprSeq1]
+seqToList (Expr_Seq es) = es
+seqToList e             = error $ "DefinitionSiteArityRaise.seqToList: Expr '"
+                                    ++ show e ++ "' not a Expr_Seq."
+}
+%%]
+

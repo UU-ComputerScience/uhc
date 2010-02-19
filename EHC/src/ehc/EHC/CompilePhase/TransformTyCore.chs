@@ -25,9 +25,13 @@ TyCore transformations
 -- Core transformations
 %%[(8 codegen) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
 %%]
+%%[(8 codegen) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise})
+%%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
 %%]
-%%[(8 codegen) import({%{EH}TyCore.Trf.OptimizeStrictness})
+%%[(8 codegen) import({%{EH}TyCore.Trf.RemoveTopLevelLaziness})
+%%]
+%%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -43,10 +47,12 @@ cpTyCore1Trf modNm trfNm
                  tyCore = panicJust "cpCore1Trf" mbCore
                  u1     = uidChild $ crsiHereUID $ crsi
                  core2  = ( case trfNm of
+                              "EliminateExplicitLaziness" -> cmodTrfEliminateExplicitLaziness
+                              "DefinitionSiteArityRaise"  -> cmodTrfDefinitionSiteArityRaise
+                              "IntroduceExplicitLaziness" -> cmodTrfIntroduceExplicitLaziness
+                              "RemoveTopLevelLaziness"    -> cmodTrfRemoveTopLevelLaziness
 %%[[(8 tauphi)
-                              "EliminateExplicitLaziness"    -> cmodTrfEliminateExplicitLaziness
-                              "IntroduceExplicitLaziness"    -> cmodTrfIntroduceExplicitLaziness
-                              "OptimizeStrictness"           -> cmodTrfOptimizeStrictness
+                              "OptimizeStrictness"        -> cmodTrfOptimizeStrictness
 %%]]
                               _         -> id
                           ) tyCore

@@ -818,11 +818,14 @@ cpProcessTyCoreBasic modNm
                    modNm
                      (
                        [
-%%[[(8 tauphi)
                          "IntroduceExplicitLaziness"
-                       , "OptimizeStrictness"
-                       , "EliminateExplicitLaziness"
+                       , "RemoveTopLevelLaziness"
+                       , "DefinitionSiteArityRaise"
+                       --  "IntroduceExplicitLaziness"
+%%[[(8 tauphi)
+                       --, "OptimizeStrictness"
 %%]
+                       , "EliminateExplicitLaziness"
                        ]
                      )
                , when (ehcOptTyCore opts)

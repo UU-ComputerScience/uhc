@@ -9,11 +9,11 @@
 
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.EliminateExplicitLaziness}
 %%]
- 
-%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
-%%]
 
 %%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
 %%[(8 codegen) hs import({%{EH}TyCore})
@@ -36,16 +36,16 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 tauphi).tcmodTrfEliminateExplicitLaziness hs
+%%[(8 codegen).tcmodTrfEliminateExplicitLaziness hs
 cmodTrfEliminateExplicitLaziness :: Module -> Module
 cmodTrfEliminateExplicitLaziness tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
 %%]
 
-%%[(8 tauphi)
-ATTR AllCodeNT [ | | cTrf: SELF ]
+%%[(8 codegen)
 ATTR AGItf [ | | cTrf: Module ]
+ATTR AllCodeNT [ | | cTrf: SELF ]
 
 SEM AGItf
   | AGItf       lhs         .   cTrf        =   @module.cTrf
