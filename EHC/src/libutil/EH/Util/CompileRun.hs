@@ -242,7 +242,7 @@ cpFindFilesForFPathInLocations
      , FPATH n, FileLocatable u loc, Show loc
      , CompileUnitState s,CompileRunError e p,CompileUnit u n loc s,CompileModName n,CompileRunStateInfo i n p
      ) => (loc -> n -> FPath -> [(loc,FPath)]) -> (FPath -> loc -> res)
-          -> Bool -> [(String,s)] -> [loc] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [res]
+          -> Bool -> [(FileSuffix,s)] -> [loc] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [res]
 cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
   = do { cr <- get
        ; let cus = maybe cusUnk (flip crCUState cr) mbModNm
@@ -259,9 +259,9 @@ cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
                         -> do { cpUpdCU modNm (cuUpdLocation loc . cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
                               ; return (map (uncurry putres) ffs)
                               }
-                        where cus = case lookup (fpathSuff ff) suffs of
+                        where cus = case lookup (Just $ fpathSuff ff) suffs of
                                       Just c  -> c
-                                      Nothing -> case lookup "*" suffs of
+                                      Nothing -> case lookup (Just "*") suffs of
                                                    Just c  -> c
                                                    Nothing -> cusUnk
                   }
@@ -272,7 +272,7 @@ cpFindFilesForFPath
   :: ( Ord n
      , FPATH n, FileLocatable u String
      , CompileUnitState s,CompileRunError e p,CompileUnit u n String s,CompileModName n,CompileRunStateInfo i n p
-     ) => Bool -> [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
+     ) => Bool -> [(FileSuffix,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
 cpFindFilesForFPath
   = cpFindFilesForFPathInLocations cpFindFileForNameOrFPath (\fp _ -> fp)
 
@@ -280,7 +280,7 @@ cpFindFileForFPath
   :: ( Ord n
      , FPATH n, FileLocatable u String
      , CompileUnitState s,CompileRunError e p,CompileUnit u n String s,CompileModName n,CompileRunStateInfo i n p
-     ) => [(String,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
+     ) => [(FileSuffix,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e (Maybe FPath)
 cpFindFileForFPath suffs sp mbModNm mbFp
   = do { fps <- cpFindFilesForFPath True suffs sp mbModNm mbFp
        ; return (listToMaybe fps)

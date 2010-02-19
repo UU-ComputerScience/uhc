@@ -21,7 +21,8 @@ module EH.Util.FPath
   
   , fpathOpenOrStdin, openFPath
   
-  , SearchPath, FileSuffixes
+  , SearchPath
+  , FileSuffixes, FileSuffix
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchFPathFromLoc
@@ -280,7 +281,8 @@ fpathEnsureExists fp
 -------------------------------------------------------------------------------------------
 
 type SearchPath = [String]
-type FileSuffixes = [String]
+type FileSuffix   =  Maybe String
+type FileSuffixes = [FileSuffix]
 
 searchPathFromFPaths :: [FPath] -> SearchPath
 searchPathFromFPaths fpL = nub [ d | (Just d) <- map fpathMbDir fpL ] ++ [""]
@@ -322,7 +324,7 @@ searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
                       (\(ms,f) -> tryToOpen loc ms f)
-                      ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
+                      ({- (Nothing,fp) : -} zipWith (\s f -> (s,f)) suffs (repeat fp))
         tryToOpenInDir loc
           = select True (tryToOpenWithSuffs suffs) (getfp loc fp)
      in select True tryToOpenInDir locs
