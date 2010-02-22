@@ -22,6 +22,7 @@ import Data.Binary
 import Data.Binary.Put(runPut,putWord16be)
 import Data.Binary.Get(runGet,getWord16be)
 import IO
+import System.IO(openBinaryFile)
 import Control.Monad
 
 import EH.Util.FPath
@@ -38,7 +39,7 @@ hGetBinary h
 -- | Decode from FilePath
 getBinaryFile :: Binary a => FilePath -> IO a
 getBinaryFile fn
-  = do { h <- openFile fn ReadMode
+  = do { h <- openBinaryFile fn ReadMode
        ; b <- hGetBinary h
        -- ; hClose h
        ; return b ;
@@ -61,7 +62,7 @@ hPutBinary h pt
 -- | Encode to FilePath
 putBinaryFile :: Binary a => FilePath -> a -> IO ()
 putBinaryFile fn pt
-  = do { h <- openFile fn WriteMode
+  = do { h <- openBinaryFile fn WriteMode
        ; hPutBinary h pt
        ; hClose h
        }
