@@ -129,15 +129,7 @@ cpFoldHs modNm
 %%[[20
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
-                     ; when hasMain
-                            (do { cr <- get
-                                ; let (crsi,opts) = crBaseInfo' cr
-                                      mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
-                                ; case crsiMbMainNm crsi of
-                                    Just n                   -> mkerr 1 [n]
-                                    _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-                                      | otherwise            -> mkerr 0 []
-                                })
+                     ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
          }
@@ -205,6 +197,7 @@ cpFoldHIInfo modNm
                                                 (mmiInscps mmi)
                                                 ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
                                                 (HI.hiiHiddenExps hiInfo)
+                     ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
                      ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
                                      . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)

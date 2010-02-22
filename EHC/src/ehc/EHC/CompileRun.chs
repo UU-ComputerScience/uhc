@@ -350,4 +350,20 @@ crPartitionIntoPkgAndOthers cr modNmL
               where (ecu,_,_,_) = crBaseInfo m cr
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Set 'main'-ness of module, checking whethere there are not too many modules having a main
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(crSetAndCheckMain)
+crSetAndCheckMain :: HsName -> EHCompilePhase ()
+crSetAndCheckMain modNm
+  = do { cr <- get
+       ; let (crsi,opts) = crBaseInfo' cr
+             mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
+       ; case crsiMbMainNm crsi of
+           Just n | n /= modNm      -> mkerr 1 [n]
+           _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
+             | otherwise            -> mkerr 0 []
+       }
+%%]
 
