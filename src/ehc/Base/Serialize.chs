@@ -77,7 +77,7 @@ instance Serialize Foo where
 
 %%[20 import(qualified {%{EH}Base.Binary} as Bn)
 %%]
-%%[20 import(qualified Data.ByteString.Lazy as L, IO)
+%%[20 import(qualified Data.ByteString.Lazy as L, IO, System.IO(openBinaryFile))
 %%]
 
 %%[20 import(EH.Util.Utils)
@@ -396,7 +396,7 @@ unserialize = St.evalStateT sget (SGetS Map.empty)
 -- | Serialize to FilePath
 putSerializeFile :: Serialize a => FilePath -> a -> IO ()
 putSerializeFile fn x
-  = do { h <- openFile fn WriteMode
+  = do { h <- openBinaryFile fn WriteMode
        ; L.hPut h (Bn.runPut $ serialize x)
        ; hClose h
        }
@@ -404,7 +404,7 @@ putSerializeFile fn x
 -- | Unserialize from FilePath
 getSerializeFile :: Serialize a => FilePath -> IO a
 getSerializeFile fn
-  = do { h <- openFile fn ReadMode
+  = do { h <- openBinaryFile fn ReadMode
        ; b <- liftM (Bn.runGet unserialize) (L.hGetContents h)
        -- ; hClose h
        ; return b ;
