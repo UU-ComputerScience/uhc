@@ -41,7 +41,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
-%%[8 import({%{EH}EHC.CompilePhase.TransformCore},{%{EH}EHC.CompilePhase.TransformGrin})
+%%[8 import({%{EH}EHC.CompilePhase.Transformations},{%{EH}EHC.CompilePhase.TransformGrin})
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Semantics})
 %%]
@@ -206,7 +206,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , mergeIntoOneBigCore
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "full.core" mainModNm] else [])
+           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -851,22 +851,7 @@ cpProcessCoreBasic modNm
        ; let (_,opts) = crBaseInfo' cr   -- '
        ; cpSeq [ cpTransformCore
                    modNm
-                     (
-%%[[102
-                       -- [ "CS" ] ++
-%%]]
-                       [ "CTBS", "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
-%%[[9               
-                       ,  "CLDF"
-%%]
-%%[[8_2        
-                       , "CPRNM"
-%%]]
-                       , "CFN"
-                       ]
-                     )
-               , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
+               , when (ehcOptEmitCore opts)   (cpOutputCore  "" "core"   modNm)
 %%[[(8 codegen java)
                , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
 %%]]

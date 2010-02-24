@@ -1,0 +1,184 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Add explicit stack trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Add an explicit stack trace as described by \textit{Finding the needle: stack traces for GHC}, Haskell Symposium 2009, Allwood et.al.
+
+For now, differences are:
+\begin{itemize}
+\item Do it globally, for all modules, thereby losing sharing for CAFs.
+\end{itemize}
+
+%%]
+
+%%[(99 codegen) hs module {%{EH}Core.Trf.ExplicitStackTrace} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfExplicitStackTrace)
+%%]
+
+%%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
+%%]
+
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonCLamCallInfo})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen) hs
+cmodTrfExplicitStackTrace :: EHCOpts -> CLamCallMp -> CModule -> (CModule,CLamCallMp)
+cmodTrfExplicitStackTrace opts clamCallMp cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { opts_Inh_CodeAGItf = opts
+                               , clamCallMp_Inh_CodeAGItf = clamCallMp
+                               })
+     in   ( cTrf_Syn_CodeAGItf t
+          , debugCLamCallMp_Syn_CodeAGItf t `Map.union`
+            gathCLamCallMp_Syn_CodeAGItf  t
+            -- [ | (n,) <- debugCLamCallMp_Syn_CodeAGItf t ]
+          )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding candidates for tracing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR CExpr [ | | isTraceCandidate: Bool ]
+ATTR CExpr [ | | traceCandidateLamArgs: {[HsName]}
+                 traceCandidateLamBody: CExpr
+           ]
+
+SEM CExpr
+  | Lam         lhs         .   isTraceCandidate
+                                            =   True
+                            .   traceCandidateLamArgs
+                                            =   @arg : @body.traceCandidateLamArgs
+                            .   traceCandidateLamBody
+                                            =   @body.traceCandidateLamBody
+  | * - Lam     lhs         .   isTraceCandidate
+                                            =   False
+                            .   traceCandidateLamArgs
+                                            =   []
+                            .   traceCandidateLamBody
+                                            =   @cTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Being in context which provides stack trace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR AllExpr AllBind [ mbInStackTraceCtxt: {Maybe HsName} | | ]
+
+SEM CModule
+  | Mod         loc         .   mbInStackTraceCtxt
+                                            =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newly bound CLamCallInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Only stack trace info is gathered, and assumed to propagate correctly.
+
+%%[(99 codegen) hs
+mbStackTrace :: EHCOpts -> Bool -> HsName -> StackTraceInfo
+mbStackTrace opts isCand nm
+  | isCand && ehcOptTargetVariant opts == TargetVariant_Debug
+              = StackTraceInfo_HasStackTraceEquiv (hsnSuffix nm "-$explstacktraced")
+  | otherwise = StackTraceInfo_None
+%%]
+
+%%[(99 codegen)
+SEM CBind
+  | Bind        (loc.mbStackTrace,lhs.bindCLamCallMp)
+                                            =   let mbt = mbStackTrace @lhs.opts @expr.isTraceCandidate @nm
+                                                in  (mbt,Map.singleton @nm (CLamCallInfo 0 mbt))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR AllBind [ | | bindCTrfL USE {++} {[]}: {[CBind]} ]
+
+SEM CBind
+  | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newCLamCallMp)
+                                            =   case @mbStackTrace of
+                                                  StackTraceInfo_HasStackTraceEquiv dbNm | @expr.isTraceCandidate
+                                                    -> ( [ mkCBind1 dbNm (mkCExprLam1 nm @expr.cTrf) 
+                                                         , mkCBind1Metas @nm @bindMeta.cTrf 
+                                                           $ mkCExprLam @expr.traceCandidateLamArgs
+                                                           $ mkCExprApp (CExpr_Var dbNm) (CExpr_Int 0 : map CExpr_Var @expr.traceCandidateLamArgs)   -- TBD: empty stack
+                                                         ]
+                                                       , Just nm
+                                                       -- , Map.singleton dbNm $ CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv @nm)
+                                                       , Map.fromList
+                                                           [ (dbNm, CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv  @nm ))
+                                                           -- , (@nm , CLamCallInfo 0 (StackTraceInfo_HasStackTraceEquiv dbNm))
+                                                           ]
+                                                       )
+                                                    where nm = mkHNm "_$stacktrace"
+                                                  _ -> ([@cTrf], @lhs.mbInStackTraceCtxt, Map.empty)
+  | * - Bind    loc         .   bindCTrfL   =   [@cTrf]
+%%]
+
+%%[(99 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CExpr
+  | Let         lhs         .   cTrf        =   CExpr_Let @categ @binds.bindCTrfL @body.cTrf
+  | Var         lhs         .   cTrf        =   case Map.lookup @nm @lhs.clamCallMp of
+                                                  Just (CLamCallInfo {clciStackTrace=StackTraceInfo_HasStackTraceEquiv dbNm})
+                                                    -> case @lhs.mbInStackTraceCtxt of
+                                                         Just stTrNm
+                                                           -> mkCExprApp1 (CExpr_Var dbNm) (CExpr_Var stTrNm)  -- TBD: push on stack
+                                                         _ -> @cTrf
+                                                  _ -> @cTrf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering newly introduced bindings to CLamCallInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+ATTR
+  AllCodeNT
+  CodeAGItf
+    [ | | debugCLamCallMp USE {`Map.union`} {Map.empty}: CLamCallMp ]
+
+SEM CBind
+  | Bind        lhs         .   debugCLamCallMp=   @newCLamCallMp `Map.union` @expr.debugCLamCallMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional type signatures for AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen)
+SEM CBind
+  | *           loc         .   cTrf        :   CBind
+%%]
+

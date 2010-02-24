@@ -7,39 +7,68 @@
 
 %%[(8 codegen) import(qualified Data.Map as Map,Data.List)
 %%]
-%%[(8 codegen) import(EH.Util.Pretty)
+%%[(8 codegen) import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 %%[(20 codegen) import({%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[doesWhat doclatex
+Abstract naming convention of Target alternatives reflect what is done:
+
+\paragraph{Target}
+Target_<treatment>_<intermediate-lang>_<codegen-lang>
+
+\begin{itemize}
+\item
+\textbf{treatment}
+  : type of internal analysis done
+    \begin{itemize}
+    \item FullProgAnal: full program analysis
+    \item Interpreter : enough for interpreting
+    \end{itemize}
+
+\item
+\textbf{intermediate-lang}
+  : the last intermediate language leading to final codegeneration
+    \begin{itemize}
+    \item Grin
+    \item Core
+    \end{itemize}
+
+\item
+\textbf{codegen-lang}
+  : the language for which code is generated
+    \begin{itemize}
+    \item C
+    \item LLVM
+    \item JVM
+    \item CLR
+    \item Jazy, Java lazy interpreter
+    \end{itemize}
+\end{itemize}
+
+Combinations are all hardcoded to make explicit that only particular combinations are allowed.
+This may change later if/when combinations can be chosen independent/orthogonal.
+
+\paragraph{TargetVariant}
+Variants of target are incompatible, that is cannot be used interchangedly.
+The code is specific for a particular meta purpose, such as profiling and debugging.
+Currently there are target variants for:
+
+\begin{itemize}
+\item
+\textbf{debug}
+  : includes debugging info, currently:
+    \begin{itemize}
+    \item stack trace
+    \end{itemize}
+
+\end{itemize}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Targets for code generation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Abstract naming convention of Target alternatives reflect what is done:
-
-Target_<treatment>_<intermediate-lang>_<codegen-lang>
-
-<treatment>
-  : type of internal analysis done
-    - FullProgAnal: full program analysis
-    - Interpreter : enough for interpreting
-
-<intermediate-lang>
-  : the last intermediate language leading to final codegeneration
-    - Grin
-    - Core
-
-<codegen-lang>
-  : the language for which code is generated
-    - C
-    - LLVM
-    - JVM
-    - CLR
-    - Jazy, Java lazy interpreter
-
-Combinations are all hardcoded to make explicit that only particular combinations are allowed.
-This may change later if/when combinations can be chosen independent/orthogonal.
 
 %%[(8 codegen) export(Target(..))
 data Target
@@ -132,12 +161,58 @@ supportedTargetMp :: Map.Map String Target
         mk t ffis = (t,TargetInfo (FFIWay_Prim : ffis)) 
 
 showSupportedTargets' :: String -> String
-showSupportedTargets' sep
-  = concat $ intersperse sep $ Map.keys supportedTargetMp
+showSupportedTargets'
+  = showStringMapKeys supportedTargetMp
 
 showSupportedTargets :: String
 showSupportedTargets
   = showSupportedTargets' " "
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Target variants
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(TargetVariant(..))
+data TargetVariant
+  = TargetVariant_Plain						-- no special stuff
+  | TargetVariant_Debug						-- debugging variant
+  -- more: profiling, ....
+  deriving (Eq,Ord,Enum)
+%%]
+
+%%[(8 codegen) export(defaultTargetVariant)
+defaultTargetVariant :: TargetVariant
+defaultTargetVariant = TargetVariant_Plain
+%%]
+
+%%[(8 codegen)
+instance Show TargetVariant where
+  show TargetVariant_Plain				= "plain"
+  show TargetVariant_Debug				= "debug"
+%%]
+
+Supported target variants.
+
+%%[(8 codegen) export(allTargetVariantMp,showAllTargetVariants',showAllTargetVariants)
+allTargetVariantMp :: Map.Map String TargetVariant
+allTargetVariantMp
+  = Map.fromList ts
+  where ts
+          = [ (show t, t)
+            | t <-
+                  [ TargetVariant_Plain
+                  , TargetVariant_Debug
+                  ]
+            ]
+
+showAllTargetVariants' :: String -> String
+showAllTargetVariants'
+  = showStringMapKeys allTargetVariantMp
+
+showAllTargetVariants :: String
+showAllTargetVariants
+  = showAllTargetVariants' " "
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -323,6 +398,9 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 %%[(20 codegen)
 deriving instance Typeable FFIWay
 deriving instance Data FFIWay
+
+deriving instance Typeable TargetVariant
+deriving instance Data TargetVariant
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -335,6 +413,14 @@ instance Binary FFIWay where
   get = getEnum8
 
 instance Serialize FFIWay where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Binary TargetVariant where
+  put = putEnum8
+  get = getEnum8
+
+instance Serialize TargetVariant where
   sput = sputPlain
   sget = sgetPlain
 

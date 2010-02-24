@@ -13,6 +13,8 @@
 %%[(20 hmtyinfer || hmtyast) hs import({%{EH}Ty})
 %%]
 
+%%[(20 codegen) hs import({%{EH}Base.Target})
+%%]
 %%[(20 codegen) hs import({%{EH}Core})
 %%]
 %%[(20 codegen) hs import(qualified {%{EH}TyCore} as C)
@@ -85,6 +87,7 @@ data HIInfo
   = HIInfo
       { hiiIsValid              :: !Bool
       , hiiSrcSig               :: !String
+      , hiiTargetVariant        :: !TargetVariant
       , hiiCompileFlags         :: !String
       , hiiHasMain              :: !Bool
       , hiiSrcTimeStamp         :: !String
@@ -110,7 +113,7 @@ data HIInfo
       , hiiCHRStoreL            :: !ScopedPredStoreL
 %%]]
 %%[[(20 codegen)
-      , hiiCArityMp             :: !CArityMp
+      , hiiCLamCallMp           :: !CLamCallMp
 %%]]
 %%[[(20 codegen grin)
       , hiiGrInlMp              :: !GrInlMp
@@ -122,7 +125,7 @@ data HIInfo
 
 emptyHIInfo :: HIInfo
 emptyHIInfo 
-  = HIInfo True "" "" False "" "" "" "" ""
+  = HIInfo True "" defaultTargetVariant "" False "" "" "" "" ""
            Rel.empty Rel.empty emptyGam []
            [] []
            emptyHiSettings
@@ -181,7 +184,12 @@ hiiScopedPredStoreFromList = chrStoreFromElems
 
 %%[20 hs export(hiiPostCheckValidity)
 hiiPostCheckValidity :: EHCOpts -> HIInfo -> HIInfo
-hiiPostCheckValidity opts i = i { hiiIsValid = optsDiscrRecompileRepr opts == hiiCompileFlags i && hiiIsValid i }
+hiiPostCheckValidity opts i
+  = i { hiiIsValid
+          =    hiiIsValid i
+            -- && optsDiscrRecompileRepr opts == hiiCompileFlags  i
+            && ehcOptTargetVariant    opts == hiiTargetVariant i
+      }
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -201,6 +209,7 @@ gamFlatten = id -- gamFromAssocL . gamToAssocL
 instance Serialize HIInfo where
   sput       (HIInfo
                   { hiiSrcSig               = hi_sig
+                  , hiiTargetVariant        = hi_tv
                   , hiiCompileFlags         = hi_fl
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts
@@ -224,7 +233,7 @@ instance Serialize HIInfo where
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCArityMp             = am
+                  , hiiCLamCallMp           = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
@@ -232,6 +241,7 @@ instance Serialize HIInfo where
                   })
               =    sput hi_sig
                 >> sput hi_ts
+                >> sput hi_tv
                 >> sput hi_fl
                 >> sput hi_hm
                 >> sput hi_m
@@ -262,6 +272,7 @@ instance Serialize HIInfo where
   sget = do
   { hi_sig  <- sget
   ; hi_ts   <- sget
+  ; hi_tv   <- sget
   ; hi_fl   <- sget
   ; if hi_sig == verSig version && hi_ts == verTimestamp version
     then do { hi_hm     <- sget
@@ -295,6 +306,7 @@ instance Serialize HIInfo where
                   { hiiIsValid              = True
                   , hiiSrcSig               = hi_sig
                   , hiiCompileFlags         = hi_fl
+                  , hiiTargetVariant        = hi_tv
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts
                   , hiiSrcVersionMajor      = hi_m
@@ -304,7 +316,8 @@ instance Serialize HIInfo where
                   , hiiExps                 = e
                   , hiiHiddenExps           = he
                   , hiiFixityGam            = fg
-                  , hiiIdDefAssocL          = {- tr "HIInfo.Binary.get idGam" (pp $ lookup (IdOcc (mkHNm "Prelude.putStrLn") IdOcc_Val) idg) $ -} idg
+                  , hiiIdDefAssocL          = {- tr "HIInfo.Binary.get idGam" (pp $ lookup (IdOcc (mkHNm "Prelude.putStrLn") IdOcc_Val) idg) $ -}
+                                              idg
                   , hiiHIDeclImpModL        = impd
                   , hiiHIUsedImpModL        = impu
 %%[[(20 hmtyinfer)
@@ -317,7 +330,7 @@ instance Serialize HIInfo where
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCArityMp             = am
+                  , hiiCLamCallMp           = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
@@ -329,6 +342,7 @@ instance Serialize HIInfo where
                   { hiiIsValid              = False
                   , hiiSrcSig               = hi_sig
                   , hiiCompileFlags         = hi_fl
+                  , hiiTargetVariant        = hi_tv
                   })
             }
   }
@@ -360,7 +374,7 @@ instance ForceEval HIInfo where
                   , hiiCHRStoreL        = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCArityMp         = am
+                  , hiiCLamCallMp       = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp          = im
@@ -384,7 +398,7 @@ instance ForceEval HIInfo where
                 , hiiCHRStoreL        = cs
 %%]]
 %%[[(102 codegen)
-                , hiiCArityMp         = am
+                , hiiCLamCallMp       = am
 %%]]
 %%[[(102 codegen grin)
                 , hiiGrInlMp          = im

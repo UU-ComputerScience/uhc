@@ -9,7 +9,7 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonCLamCallInfo})
 WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
@@ -129,56 +129,20 @@ SEM CBind
                                                 else @lhs.evalCtx
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known function arity
+%%% Newly bound CLamCallInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
-ATTR
-  CModule CExpr
-%%[[20
-  CodeAGItf
-%%]]
-    [ | | gathArityMp: CArityMp ]
-
-SEM CExpr
-  | Let         lhs         .   gathArityMp =   @binds.bindArityMp `Map.union` @body.gathArityMp
-  | * - Let Ann lhs         .   gathArityMp =   Map.empty
-%%]
+Here we only gather arity info, stack trace info is assumed to be gathered earlier,
+and assumed to propagate correctly when merged with this info.
 
 %%[(8 codegen grin)
-ATTR
-  AllCodeNT
-%%[[20
-  CodeAGItf
-%%]]
-    [ arityMp: CArityMp | | ]
-%%]
-
-%%[(8 codegen grin).CodeAGItf.arityMp
-SEM CodeAGItf
-  | AGItf       module      .   arityMp     =   @module.gathArityMp
-%%]
-
-%%[(20 codegen grin) -8.CodeAGItf.arityMp
-SEM CodeAGItf
-  | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
-%%]
-
-%%[(8 codegen grin)
-SEM CExpr
-  | Lam			body		.	arityMp		=	Map.delete @arg @lhs.arityMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known function arity
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
-
 SEM CBind
-  | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
-  | FFI         lhs         .   bindArityMp =   @nm `Map.singleton` (length @argTyL + length @argTyLExtra)
+  | Bind        lhs         .   bindCLamCallMp
+                                            =   Map.singleton @nm
+                                                              (CLamCallInfo (length @expr.grLamArgL) StackTraceInfo_None)
+  | FFI         lhs         .   bindCLamCallMp
+                                            =   Map.singleton @nm
+                                                              (CLamCallInfo (length @argTyL + length @argTyLExtra) StackTraceInfo_None)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,12 +153,12 @@ SEM CBind
 ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
-  | Var         loc         .   mbLam       =   case arityMpLookupLam @nm @lhs.arityMp of
+  | Var         loc         .   mbLam       =   case clamCallMpLookupLam @nm @lhs.clamCallMp of
                                                     j@(Just arity) | @lhs.isTopApp
                                                         -> j
                                                     _   -> Nothing
                 lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
-  | App         loc         .   mbLam       =   arityMpLookupLam @grAppFun @lhs.arityMp
+  | App         loc         .   mbLam       =   clamCallMpLookupLam @grAppFun @lhs.clamCallMp
                             .   appArity    =   length @grAppArgL
                 lhs         .   asArgNmS    =   @func.asArgNmS
                                                     `Set.union`  maybe @arg.asArgNmS Set.singleton @arg.mbVar
@@ -283,14 +247,14 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
 %%[(8 codegen grin) hs
-simplArgL :: HsName -> UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
-simplArgL modNm uniq arityMp vL
+simplArgL :: HsName -> UID -> CLamCallMp -> GrValL -> (GrValL,GrExpr->GrExpr)
+simplArgL modNm uniq clamCallMp vL
   =  let  nL = map (uidQualHNm modNm) . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
                     ->  case a of
                             GrVal_Var v | isJust mbArity
                                 -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                where mbArity = arityMpLookupLam v arityMp
+                                where mbArity = clamCallMpLookupLam v clamCallMp
                                       a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
                             GrVal_Node _ _
                                 -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
@@ -380,7 +344,7 @@ SEM CExpr
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
                                                      n = uidQualHNm @lhs.modNm @lUniq
-                                                     (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.arityMp argL
+                                                     (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.clamCallMp argL
                                                 in   case @func.mbTupApp of
                                                        Just t
                                                          -> let v  =  case t of
@@ -399,8 +363,8 @@ SEM CExpr
                                                                           | arity < @appArity && @lhs.isStrict
                                                                               -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                           | otherwise
-                                                                              -- -> mkSq (GrExpr_Store (GrVal_Node (GrTag_Fun funNm) (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
-                                                                              -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -> mkSq (GrExpr_Store (GrVal_Node (GrTag_Fun funNm) (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -- -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
                                                                         Nothing
                                                                           | @lhs.isStrict
                                                                               -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')
@@ -417,7 +381,7 @@ SEM CExpr
 %%[[10
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
-                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
+                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.clamCallMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
                                                 else  GrExpr_Unit GrVal_Empty
 %%]]
   | * - Let Case App Var Tup Int Char Ann
@@ -433,12 +397,12 @@ SEM CExpr
 %%[(10 codegen grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
-mkGrAdapt :: HsName -> UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
-mkGrAdapt modNm u arityMp isStrict tupFldL tupRecNm
+mkGrAdapt :: HsName -> UID -> CLamCallMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
+mkGrAdapt modNm u clamCallMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
           (oL',wrO) = unboxArgL modNm u1 hsnInt oL
-          (vL',wrV) = simplArgL modNm u2 arityMp vL
+          (vL',wrV) = simplArgL modNm u2 clamCallMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'

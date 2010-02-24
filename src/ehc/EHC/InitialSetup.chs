@@ -99,7 +99,7 @@ initialCore2GrSem opts
       , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
       , Core2GrSem.opts_Inh_CodeAGItf            = opts
 %%[[20
-      , Core2GrSem.arityMp_Inh_CodeAGItf         = Map.empty
+      , Core2GrSem.clamCallMp_Inh_CodeAGItf      = Map.empty
 %%]]
       }
 %%]

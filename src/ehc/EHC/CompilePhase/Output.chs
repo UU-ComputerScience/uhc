@@ -28,7 +28,7 @@ Output generation, on stdout or file
 %%]
 
 -- Core output
-%%[(8 codegen) import({%{EH}Core.Pretty})
+%%[(8 codegen) import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Pretty})
 %%]
@@ -69,17 +69,24 @@ cpOutputTyCore suff modNm
          }
 %%]
 
-%%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: String -> HsName -> EHCompilePhase ()
-cpOutputCore suff modNm
+%%[(8 codegen) export(cpOutputCoreModule,cpOutputCore)
+cpOutputCoreModule :: String -> String -> HsName -> CModule -> EHCompilePhase ()
+cpOutputCoreModule nmsuff suff modNm cMod
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 fpC = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
+         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
+         }
+
+cpOutputCore :: String -> String -> HsName -> EHCompilePhase ()
+cpOutputCore nmsuff suff modNm
   =  do  {  cr <- get
          -- part 1: current .core
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
-                 fpC = mkOutputFPath opts modNm fp suff
          ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
+         ;  cpOutputCoreModule nmsuff suff modNm cMod
          }
 %%]
 
@@ -138,8 +145,8 @@ cpOutputHI suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hiinfo = (ecuHIInfo ecu)
-                               { HI.hiiExps       = mmiExps       mmi
-                               , HI.hiiHiddenExps = mmiHiddenExps mmi
+                               { HI.hiiExps                 = mmiExps       mmi
+                               , HI.hiiHiddenExps           = mmiHiddenExps mmi
                                , HI.hiiHasMain              = ecuHasMain ecu
                                , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version
                                , HI.hiiSrcSig               = Cfg.verSig Cfg.version

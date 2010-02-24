@@ -49,6 +49,7 @@ Core/Trf/ElimTrivApp.cag
 Core/Trf/Strip.cag
 Core/Trf/PrettyVarNames.cag
 Core/Trf/AnnBasedSimplify.cag
+Core/Trf/ExplicitStackTrace.cag
 GrinCode/Pretty.cag
 GrinCode/FreeVars.cag
 GrinCode/PointsToAnalysis.cag

@@ -406,7 +406,7 @@ data ModMpInfo
       , mmiExps     		:: !ModEntRel
       , mmiHiddenExps     	:: !ModEntRel
 %%[[(20 codegen)
-      , mmiNmOffMp  		:: !HsName2OffsetMp
+      , mmiNmOffMp  		:: !HsName2OffsetMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
 %%]]
       }
 
@@ -414,8 +414,8 @@ instance Show ModMpInfo where
   show _ = "ModMpInfo"
 
 instance PP ModMpInfo where
-  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
-       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps       i)
+       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps         i)
        >-< "Hidden Exps:" >#< (ppAssocL $ Rel.toList $ mmiHiddenExps   i)
 
 emptyModMpInfo :: ModMpInfo
@@ -423,19 +423,39 @@ emptyModMpInfo = mkModMpInfo hsnUnknown Rel.empty Rel.empty Rel.empty
 
 mkModMpInfo :: HsName -> ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
 mkModMpInfo modNm i e he
-  = ModMpInfo
-      { mmiInscps   		= i
-      , mmiExps     		= e
-      , mmiHiddenExps     	= he
+  = resetModMpInfo modNm
+    $ ModMpInfo
+        { mmiInscps   		= i
+        , mmiExps     		= e
+        , mmiHiddenExps     = he
 %%[[(20 codegen)
-      , mmiNmOffMp  		= expsNmOffMp modNm $ e `Rel.union` he
+        , mmiNmOffMp  		= Map.empty
 %%]]
-      }
+        }
+
+resetModMpInfo :: HsName -> ModMpInfo -> ModMpInfo
+%%[[20
+resetModMpInfo _     i = i
+%%][(20 codegen)
+resetModMpInfo modNm i = i {mmiNmOffMp = expsNmOffMp modNm $ mmiExps i `Rel.union` mmiHiddenExps i}
+%%]]
 
 type ModMp = Map.Map HsName ModMpInfo
 
 ppModMp :: ModMp -> PP_Doc
 ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
+%%]
+
+%%[20 export(modMpAddHiddenExps)
+modMpAddHiddenExps :: HsName -> [HsName] -> ModMp -> ModMp
+modMpAddHiddenExps modNm newExpNms mm
+  = Map.update (\i@(ModMpInfo {mmiHiddenExps=he})
+                  -> Just $ resetModMpInfo modNm
+                          $ i { mmiHiddenExps
+                                  = Rel.fromList [ (n, ModEnt IdOcc_Val (IdOcc n IdOcc_Val) Set.empty emptyRange) | n <- newExpNms ]
+                                    `Rel.union` he
+                              }
+               ) modNm mm
 %%]
 
 The exported names of the module

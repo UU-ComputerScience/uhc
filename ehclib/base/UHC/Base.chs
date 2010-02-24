@@ -308,7 +308,8 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
                                        | otherwise = (>= m + (n'-n)/2)
 
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
-iterate' f x = x : (iterate' f $! f x)
+iterate' f x = x : (letstrict fx = f x in iterate' f fx)
+-- iterate' f x = x : (iterate' f $! f x)
 
 
 --------------------------------------------------------------
@@ -1504,7 +1505,7 @@ concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
 length           :: [a] -> Int
-length            = foldl' (\n _ -> n + 1) 0
+length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
 
 (!!)             :: [a] -> Int -> a
 xs     !! n | n<0 = error "Prelude.!!: negative index"
@@ -1518,7 +1519,8 @@ foldl f z (x:xs)  = foldl f (f z x) xs
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
-foldl' f a (x:xs) = (foldl' f $! f a x) xs
+foldl' f a (x:xs) = letstrict fax = f a x in foldl' f fax xs
+-- foldl' f a (x:xs) = (foldl' f $! f a x) xs
 
 foldl1           :: (a -> a -> a) -> [a] -> a
 foldl1 f (x:xs)   = foldl f x xs

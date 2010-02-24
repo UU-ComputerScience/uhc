@@ -91,7 +91,7 @@ data PkgOption
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(cmdLineTrfs)
+%%[(8888 codegen) export(cmdLineTrfs)
 data TrfOpt = TrfYes String | TrfNo String | TrfAllYes | TrfAllNo
 
 cmdLineTrfs :: AssocL String String
@@ -116,7 +116,7 @@ cmdLineTrfs
     ]
 %%]
 
-%%[(8 codegen) export(trfOptOverrides)
+%%[(8888 codegen) export(trfOptOverrides)
 trfOptOverrides :: [TrfOpt] -> String -> Maybe Bool
 trfOptOverrides opts trf
   =  ovr opts
@@ -202,8 +202,9 @@ data EHCOpts
       -- ,  ehcOptEmitCore       ::  Bool
       ,  ehcOptOptimise       ::  Optimise          -- optimisation level
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
-      ,  ehcOptTrf            ::  [TrfOpt]
+      -- ,  ehcOptTrf            ::  [TrfOpt]
       ,  ehcOptTarget         ::  Target            -- code generation target
+      ,  ehcOptTargetVariant  ::  TargetVariant     -- code generation target variant
       ,  ehcOptUseTyCore      ::  Maybe [TyCoreOpt] -- use TyCore instead of Core (temporary option until Core is obsolete)
 %%]]
 %%[[(8 codegen grin)
@@ -386,8 +387,9 @@ defaultEHCOpts
 %%[[(8 codegen)
       ,  ehcOptDumpCoreStages   =   False
       ,  ehcOptOptimise         =   OptimiseNormal
-      ,  ehcOptTrf              =   []
+      -- ,  ehcOptTrf              =   []
       ,  ehcOptTarget           =   defaultTarget
+      ,  ehcOptTargetVariant    =   defaultTargetVariant
       ,  ehcOptUseTyCore        =   Nothing
 %%]]
 %%[[(8 codegen grin)
@@ -491,7 +493,8 @@ ehcCmdLineOpts
 %%[[1
      ,  Option "t"  ["target"]           (OptArg oTarget "")                  "code generation not available"
 %%][(8 codegen)
-     ,  Option "t"  ["target"]           (ReqArg oTarget (showSupportedTargets' "|"))  ("generate code for target, default=" ++ show defaultTarget)
+     ,  Option "t"  ["target"]           (ReqArg oTarget (showSupportedTargets'  "|"))  ("generate code for target, default=" ++ show defaultTarget)
+     ,  Option ""   ["target-variant"]   (ReqArg oTargetVariant (showAllTargetVariants' "|"))  ("generate code for target variant, default=" ++ show defaultTargetVariant)
 %%]]
 %%[[1
      ,  Option "p"  ["pretty"]           (OptArg oPretty "hs|eh|ast|-")       "show pretty printed source or EH abstract syntax tree, default=eh, -=off, (downstream only)"
@@ -522,8 +525,8 @@ ehcCmdLineOpts
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
-     ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
-                                                                              "switch on/off core transformations"
+     -- ,  Option ""   ["trf"]              (ReqArg oTrf ("([+|-][" ++ concat (intersperse "|" (assocLKeys cmdLineTrfs)) ++ "])*"))
+     --                                                                          "switch on/off core transformations"
      ,  Option ""   ["dump-core-stages"] (boolArg optDumpCoreStages)          "dump intermediate Core transformation stages (no)"
 %%][100
 %%]]
@@ -655,9 +658,10 @@ ehcCmdLineOpts
                                 _      -> o { ehcOptUseTyCore = Just [] }
 %%]]
 %%[[1
-         oTarget     _   o =  o
+         oTarget        _ o =  o
 %%][(8 codegen)
-         oTarget      s  o =  o { ehcOptTarget = Map.findWithDefault defaultTarget s supportedTargetMp }
+         oTarget        s o =  o { ehcOptTarget        = Map.findWithDefault defaultTarget        s supportedTargetMp }
+         oTargetVariant s o =  o { ehcOptTargetVariant = Map.findWithDefault defaultTargetVariant s allTargetVariantMp }
 %%]]
 %%[[1
          oTargets        o =  o { ehcOptImmQuit       = Just ImmediateQuitOption_Meta_Targets       }
@@ -716,7 +720,7 @@ ehcCmdLineOpts
 %%]]
                                 _            -> o
 
-%%[[(8 codegen)
+%%[[(8888 codegen)
          oTrf        s   o =  o { ehcOptTrf           = opt s   }
                            where  opt "" =  []
                                   opt o  =  let  (pm,o2) = span (\c -> c == '+' || c == '-') o
