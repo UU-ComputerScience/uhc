@@ -1,0 +1,26 @@
+
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.Inline(grInline)})
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.HptInline}
+%%]
+
+%%[(8 codegen grin) hs import(EH.Util.Debug)
+%%]
+
+%%[(20 codegen grin) -8.grInline hs export(hptInline)
+hptInline :: Bool -> HsNameS -> GrInlMp -> (GrModule,HptMap) -> Maybe ((GrModule,HptMap),GrInlMp)
+hptInline allow expNmS inlMp (grMod,hptMap) = 
+  let inlineResult = grInline allow  expNmS inlMp grMod   
+      processInline (grMod,inlMp,varSubs) = 
+        let newHptMap = addEnvNamedElems hptMap additions
+            additions :: [(Int,AbstractValue)]
+            additions = -- (\a -> "additions are: " ++ show a) >>>
+                        map (\(a,b) -> (getNr b,getEnvVar hptMap (getNr a))) varSubs
+        in  seq additions ((grMod,newHptMap),inlMp)
+  in  fmap processInline inlineResult
+    
+%%]

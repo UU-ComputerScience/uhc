@@ -1,26 +1,69 @@
 
 %%[(8 codegen grin)
-ATTR AllNT [ | usedIds USE {++} {[]} : {[Int]} | ]
 
-{-
--}
+ATTR AllNT [|| gathUsedIds USE {++} {[]} : {[Int]} ]
+ATTR AllGrExpr AllBind [ usedIds : {[Int]} ||]
+
+{
+checkUnique :: (Eq a,Show a) => [a] -> Bool
+checkUnique l = case l of
+  [] -> True
+  (x:xs) -> if elem x xs
+            then error (show x ++ " is not unique,\nxs = " ++ show xs)
+            else checkUnique xs
+  
+mustCheckUsedUnique = True
+}
+
 SEM GrModule
-  | Mod   lhs.usedIds = [0..5] ++ @bindL.usedIds ++ @globalL.usedIds
+  | Mod   loc.gathUsedIds = let removeWildCards = filter (/= 0)
+                            in  ([0..5] ++) $
+                                (\l -> seq (mustCheckUsedUnique && checkUnique l) l) $
+                                removeWildCards (@globalL.gathUsedIds ++ @bindL.gathUsedIds)
+          bindL.usedIds   = @loc.gathUsedIds
   
 SEM GrBind
-  | Bind  lhs.usedIds = ((\i -> [i,i+1]) $ getNr @nm)
-                          ++ @expr.usedIds
+  | Bind  lhs.gathUsedIds = ((\i -> [i,i+1]) $ getNr @nm)
+                              ++ @expr.gathUsedIds ++ map getNr @argNmL
 {-   
 -}                     
 SEM GrGlobal
-  | Global  lhs.usedIds = (getNr @nm : @val.usedIds)
+  | Global  lhs.gathUsedIds = (getNr @nm : @val.gathUsedIds)
   
 SEM GrPatLam
   | Var BasicNode EnumNode PtrNode OpaqueNode BasicAnnot EnumAnnot PtrAnnot OpaqueAnnot
-      lhs.usedIds = [getNr @nm]
+      lhs.gathUsedIds = [getNr @nm]
+      
+SEM GrPatAlt
+  | Node lhs.gathUsedIds = map getNr @fldL
 
 SEM GrVar
-  | Var lhs.usedIds = [getNr @nm]
+  | Var lhs.gathUsedIds = [getNr @nm]
   
 ATTR AllGrExpr [ | uniqueIds : {[Int]} | ]                               
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% bindId
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllBind [ | bindId: Int | ]
+ATTR AllBind [ bindIdDigits: Int | | ]
+
+SEM GrBind
+  | Bind lhs.bindId	=	@lhs.bindId+1
+
+SEM GrModule
+  | Mod bindL.bindId = 0
+        bindL.bindIdDigits = digits @bindL.bindId
+
+{
+digits :: Int -> Int
+digits i = if i >= 10 then 1 + digits (floor (toEnum i / toEnum 10)) else 1
+}
+        
+SEM GrBind
+  | Bind expr.uniqueIds = --(\l -> "bindIds = " ++ take 2000 (show l)) >>>
+                          (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
 %%]

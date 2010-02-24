@@ -74,20 +74,25 @@ SEM GrBind
   | Bind      expr.env     =  Map.empty 
 
 SEM GrExpr
-  | Seq       body.env  =   -- (const $ "seq with pattern " ++ show @pat.getName ++ "\nexpr = " ++ show @expr.grTrf) >>>
-                            maybe @lhs.env
-                                 (\val -> -- (const $ "\ninserting " ++ show @pat.getName ++ " for AU ") >>>
+  | Seq       body.env  =   maybe (--(const $ "did not insert expr = " ++ show @expr.grTrf) >>>
+                                  @lhs.env)
+                                 (\val -> --(const $ "\ninserting " ++ show @pat.getName ++ " with expr = " ++ show @expr.grTrf) >>>
                                           Map.insert @pat.getName val @lhs.env)
-                                 @expr.mbUnitPNode
+                                 (case @expr.grTrf of
+                                    GrExpr_Unit val@(GrVal_Node (GrTag_PApp _ _) _) -> Just val
+                                    _                                           -> Nothing
+                                  )
                                  
-  | Unit            lhs.mbUnitPNode    =  -- (const $ "found unit, val = " ++ show @val.grTrf) >>>
+  | Unit            lhs.mbUnitPNode    =  
                                           if @val.hasPAppTag
-                                          then Just @val.grTrf
-                                          else Nothing
+                                          then --(const $ "found PTAGunit, val = " ++ show @val.grTrf) >>>
+                                                Just @val.grTrf
+                                          else --(const $ "found notPTAGunit, val = " ++ show @val.grTrf) >>>
+                                                Nothing
   | * - Unit        lhs.mbUnitPNode    =  Nothing
  
   | App             (lhs.grTrf,lhs.changed)
-                                       =  -- (const $ "\nfound apply, nm = " ++ show @nm) >>>
+                                       =  --(const $ "\nfound apply, nm = " ++ show @nm) >>>
                                           maybe (@loc.grTrf,False)
                                           (\node -> (applyNode @nm @argL.grTrf node,True))
                                           (Map.lookup @nm @lhs.env)
@@ -98,7 +103,7 @@ SEM GrExpr
 
 
 applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
-  =  -- (const $ "\napplyNode " ++ show nm2 ++ "\nnode = " ++ show node) >>>
+  =  --(const $ "\napplyNode " ++ show nm2 ++ "\nnode = " ++ show node) >>>
      let n = length flds2
      in  if n<needs
          then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2))

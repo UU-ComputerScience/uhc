@@ -26,39 +26,44 @@ WRAPPER GrExpr
 
 type UniqueIds = [Int]
 
-mkUniqueBindings :: [Int] -> GrExpr -> (GrExpr,[Int])
+mkUniqueBindings :: [Int] -> GrExpr -> (GrExpr,[Int],VarSubs)
 mkUniqueBindings uniqueIds e
-  = (trf_Syn_GrExpr t,uniqueIds_Syn_GrExpr t)
+  = (trf_Syn_GrExpr t,uniqueIds_Syn_GrExpr t,gathSubs_Syn_GrExpr t)
   where t = wrap_GrExpr (sem_GrExpr e)
             $ Inh_GrExpr
                 { uniqueIds_Inh_GrExpr = uniqueIds
                 , subs_Inh_GrExpr = Map.empty
                 }   
                 
-type Subs = Map.Map HsName HsName
+type Env = Map.Map HsName HsName
+type VarSubs = [(HsName,HsName)]
 %%]
 
 %%[(8 codegen grin) ag
 
 ATTR AllGrExpr [ | uniqueIds : {UniqueIds} | ]
-ATTR AllExpr [ subs : {Subs} | | ]
+ATTR AllExpr [ subs : {Env} | | ]
+ATTR AllExpr [ || gathSubs USE {++} {[]} : {VarSubs} ]
 
 {
 mkNewName :: HsName -> Int -> HsName
 mkNewName (HNmNr _ origName) unique = HNmNr unique origName
 
-changeName :: HsName -> (Subs,UniqueIds) -> (Subs,UniqueIds)
+changeName :: HsName -> (Env,UniqueIds) -> (Env,UniqueIds)
 changeName name (subs,(uniqueId:remIds)) = (Map.insert name (mkNewName name uniqueId) subs,remIds)
 }
 
 SEM GrExpr
-  | Seq (loc.subs,expr.uniqueIds) = { -- (\p@(a,_) -> Trace.trace ("loc.subs = " ++ show a) p) $
-                                      foldr changeName (@lhs.subs, @lhs.uniqueIds) @pat.introNmL }
+  | Seq (loc.subs,expr.uniqueIds,lhs.gathSubs) = { -- (\p@(a,_) -> Trace.trace ("loc.subs = " ++ show a) p) $
+            let (newSubs,remIds) = foldr changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)  }
   | Seq body.uniqueIds = @expr.uniqueIds
   | Seq lhs.uniqueIds = @body.uniqueIds
 
 SEM GrAlt
-  | Alt (loc.subs,expr.uniqueIds) = foldr changeName (@lhs.subs, @lhs.uniqueIds) @pat.introNmL
+  | Alt (loc.subs,expr.uniqueIds,lhs.gathSubs) = {
+            let (newSubs,remIds) = foldr changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs) }
   | Alt lhs.uniqueIds = @expr.uniqueIds
                             
 %%]

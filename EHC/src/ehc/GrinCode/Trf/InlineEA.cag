@@ -44,6 +44,8 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(EH.Util.Debug)
+%%]
 
 %%[(8 codegen grin) hs
 inlineEA :: Bool -> (GrModule,HptMap) -> (GrModule,HptMap)
@@ -150,7 +152,8 @@ ATTR GrModule
      AllGrExpr [ | unique : Int | ]
 
 SEM GrAGItf
-  | AGItf      module . unique  =  getEnvSize @lhs.hptMap
+  | AGItf      module . unique  =  -- (\s -> "uniqueStart = " ++ show s) >>>
+                                    getEnvSize @lhs.hptMap
                lhs    . hptMap  =  addEnvElems @lhs.hptMap (map snd (sort @module.newItems))
 
 SEM GrModule

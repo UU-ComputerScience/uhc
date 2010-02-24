@@ -44,7 +44,7 @@ to a loop.
 %%]
 
 -- for debugging:
-%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
+%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils,EH.Util.Debug)
 %%]
 
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
@@ -54,14 +54,13 @@ to a loop.
 %%]
 
 
--- for debugging:
 %%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Debug})
 %%]
 
 --Added
-%%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,qualified Debug.Trace as Trace,Data.List)
+%%[(8 codegen grin) hs import(qualified Data.Graph as Graph,qualified Data.Tree as Tree,Data.List)
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/InsideCase})
@@ -96,10 +95,9 @@ grInline allow grmod
 %%]
 
 %%[(20 codegen grin) -8.grInline hs export(grInline)
-grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> (Maybe GrModule,GrInlMp)
+grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> Maybe (GrModule,GrInlMp,VarSubs)
 grInline allow expNmS inlMp grmod
-  = (if (changed_Syn_GrAGItf t) then Just (trf_Syn_GrAGItf t) else Nothing 
-    ,gathInlMp_Syn_GrAGItf t)
+  = if (changed_Syn_GrAGItf t) then Just (trf_Syn_GrAGItf t,gathInlMp_Syn_GrAGItf t,varSubs_Syn_GrAGItf t) else Nothing 
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
                 { expNmS_Inh_GrAGItf = expNmS
@@ -134,12 +132,30 @@ PRAGMA nocycle
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% VarSubs
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+{
+type VarSubs = [(HsName,HsName)]
+}
+ATTR GrAGItf GrModule AllExpr AllBind [ || varSubs USE {++} {[]} : {VarSubs} ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has inlining occured?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR GrAGItf AllNT  [ | | changed USE {||} {False} : {Bool} ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Globally used vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen grin)
 ATTR GrAGItf GrModule AllBind [ expNmS: HsNameS | | ]
-ATTR GrAGItf AllNT  [ | | changed USE {||} {False} : {Bool} ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,7 +200,7 @@ ATTR GrAGItf GrModule AllBind [ allowOmitBind : {Bool} | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Inlining recursive functions
+%%% Inlining mutual recursive functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
@@ -214,26 +230,31 @@ ATTR AllBind [ loopBreakers: {[HsName]} | |  ]
 ATTR AllBind [ inhBindingNames : {[HsName]} |  |  ]
 ATTR AllBind [  |  | synBindingNames USE {++} {[]} : {[HsName]} ]
 
-SEM GrModule | Mod  bindL.loopBreakers    = []
-                    bindL.inhBindingNames = []
+SEM GrModule 
+  | Mod   bindL.loopBreakers    = (\b -> condTrace showLoopBreakers (
+                                    "\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames ++
+                                    "\n loopbreakers are:" ++ show b
+                                  ) b) $
+                                  calcLoopBreakers @bindL.dependencies
+          bindL.inhBindingNames = []
                  
 {
 showLoopBreakers = False
-condTrace c s v = if c then Trace.trace s v else v
+condTrace c s v = if c then (const $ s) >>> v else v
 }                 
 
+SEM GrBindL
+  | Cons    hd.inhBindingNames      = @hd.synBindingNames
+
 SEM GrBind
-  | Bind    lhs.dependencies        = --(\d -> Trace.trace ("bindingNames = " ++ show @lhs.inhBindingNames 
-                                        -- ++ "\ngathMp = " ++ show @loc.gathFviMp 
-                                      --  ++ "\ndependencies = " ++ show d) d) $
-                                        [(@nm,filter (\name -> Map.member name @gathFviMp) @lhs.inhBindingNames)]
+  | Bind    lhs.dependencies        = (\d -> condTrace showLoopBreakers (
+                                      "bindingNames = " ++ show @lhs.inhBindingNames 
+                                      ++ "\ngathMp = " ++ show @loc.gathFviMp 
+                                      ++ "\ndependencies = " ++ show d
+                                      ) d) $
+                                      [(@nm,filter (\name -> Map.member name @gathFviMp) @lhs.inhBindingNames)]
+                                      
             lhs.synBindingNames     = [@nm]
-  | Rec     bindL.loopBreakers      = (\b -> condTrace showLoopBreakers (
-                                          "\nrecursive bind found,names are:\n" ++ show @bindL.synBindingNames ++
-                                          "\n loopbreakers are:" ++ show b
-                                        ) b) $
-                                      (calcLoopBreakers @bindL.dependencies) ++ @lhs.loopBreakers
-            bindL.inhBindingNames   = @bindL.synBindingNames
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -273,7 +294,7 @@ SEM GrBind
                             -> (Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker), True)
                         _ | not @isCAF
                         -- bindings that are used once or more and that aren't a CAF.
-                        -- TODO: improve this descision for inlining bindings which are used more than once
+                        -- TODO: improve this decision for inlining bindings which are used more than once
                           -- for example:
                           -- - how many time used (if possible)
                           -- - determine the cost of the function   (with heuristics?)
@@ -288,7 +309,7 @@ SEM GrBind
                           | otherwise
 
                             -> (Map.empty, False) -- don't inline
-                                                  
+  | Rec lhs.gathInlMp = Map.empty
 %%]
 
 %%[(8 codegen grin)
@@ -372,48 +393,6 @@ SEM GrBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Uniq
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllGrExpr AllBind [ | uniq: Int | ]
-
-SEM GrExpr
-  | Call		lhs			.	uniq			=	@lhs.uniq+1
-
-SEM GrModule
-  | Mod         loc         .   uniq            =   0
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% bindId
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllBind [ | bindId: Int | ]
-ATTR AllGrExpr [ bindId: Int | | ]
-ATTR AllNTNoMod [ bindIdDigits: Int | | ]
-
-SEM GrBind
-  | Bind expr.bindId = @lhs.bindId
-
-SEM GrBind
-  | Bind lhs.bindId	=	@lhs.bindId+1
-
-SEM GrModule
-  | Mod bindL.bindId = 0
-        bindL.bindIdDigits = digits @bindL.bindId
-
-{
-digits :: Int -> Int
-digits i = if i < 10 then 1 + digits (floor (toEnum i / toEnum 10)) else 1
-}
-        
-SEM GrBind
-  | Bind expr.uniqueIds = (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation: inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -451,7 +430,7 @@ SEM GrExpr
 %%[(8 codegen grin)
 
 SEM GrExpr
-  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed,lhs.uniqueIds)
+  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed,lhs.uniqueIds,lhs.varSubs)
                     = --(const $ "inlining.." ++ show @nm) >>>
                       --(\(a,b,c,d) -> "uniqueIds for " ++ show @nm ++ " is " ++ show (take 5 d)) >>>
                         case Map.lookup @nm @lhs.inlMp of
@@ -460,13 +439,14 @@ SEM GrExpr
                               -> condTrace showInlines ("inlining call " ++ show @nm) $
                                   let argSubsEnv = Map.fromList (zip as (map fromJust @argL.asNmL))
                                       argsSubstituted = substExpr argSubsEnv e
-                                      (newBindingNames,remUniqueIds) = mkUniqueBindings @lhs.uniqueIds argsSubstituted
+                                      (newBindingNames,remUniqueIds,varSubs) = mkUniqueBindings @lhs.uniqueIds argsSubstituted
                                   in  ( @grVarTrf newBindingNames
                                       , Set.insert @nm @grVarInlNmS
                                       , True
                                       , remUniqueIds
+                                      , varSubs
                                       )                                
-                          _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges, @lhs.uniqueIds)
+                          _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges, @lhs.uniqueIds, [])
 
   | App         (lhs.trf,loc.gathInlNmS,lhs.changed)        
                   =   if       @lhs.isCAF
