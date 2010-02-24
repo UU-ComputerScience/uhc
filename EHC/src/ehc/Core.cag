@@ -10,7 +10,7 @@
 %%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetVariant(..))) export(module {%{EH}Base.Target})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
@@ -22,10 +22,15 @@
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty})
 %%]
 
-%%[(20 codegen) hs import(Data.Typeable(Typeable), Data.Generics(Data), qualified {%{EH}Base.Serialize} as Ser)
+%%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
 %%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%]
+
+%%[(99 codegen) hs import({%{EH}Base.ForceEval})
 %%]
 
 %%[(8 codegen) ag import({Core/AbsSyn})
@@ -413,9 +418,12 @@ mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindings_Strict [mkCBind1 nm e] (
 mkCExprMbStrictIn _         e mkC =                                        mkC e
 %%]
 
-%%[(8 codegen) hs export(mkCMod)
+%%[(8 codegen) hs export(mkCMod,emptyCModule)
 mkCMod :: CExpr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
+
+emptyCModule :: CModule
+emptyCModule = mkCMod (CExpr_Int 0)
 %%]
 
 %%[(95 codegen) hs export(mkCIf)
@@ -662,33 +670,64 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known function arity
+%%% Calling convention info for lambda expressions/CAFs: known function arity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(CArityMp)
-type CArityMp = Map.Map HsName Int
+%%[(8 codegen) hs export(StackTraceInfo(..),CLamCallInfo(..),CLamCallMp,clamCallMpUpdateWith)
+data StackTraceInfo
+  = StackTraceInfo_None
+  | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
+  | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
+%%[[20
+  deriving (Data,Typeable)
+%%]]
+
+data CLamCallInfo
+  = CLamCallInfo
+      { clciArity			:: !Int
+      , clciStackTrace  	:: !StackTraceInfo
+      }
+%%[[20
+  deriving (Data,Typeable)
+%%]]
+
+emptyCLamCallInfo :: CLamCallInfo
+emptyCLamCallInfo = CLamCallInfo 0 StackTraceInfo_None
+
+type CLamCallMp = Map.Map HsName CLamCallInfo
+
+-- propagate from previous (left) to new (right) only the stacktrace info
+clamCallMpUpdateWith :: CLamCallMp -> CLamCallMp -> CLamCallMp
+clamCallMpUpdateWith prev new
+  = Map.mapWithKey
+      (\n i
+         -> maybe i (\(CLamCallInfo {clciStackTrace=t}) -> i {clciStackTrace=t})
+            $ Map.lookup n prev
+      ) new
 %%]
 
-%%[(8 codegen) hs export(arityMpLookupLam,arityMpLookupCaf)
-arityMpLookupLam :: HsName -> CArityMp -> Maybe Int
-arityMpLookupLam n m
+%%[(8 codegen) hs export(clamCallMpLookupLam,clamCallMpLookupCaf)
+clamCallMpLookupLam :: HsName -> CLamCallMp -> Maybe Int
+clamCallMpLookupLam n m
   = case Map.lookup n m of
-      j@(Just a) | a > 0 -> j
-      _                  -> Nothing
+      j@(Just (CLamCallInfo {clciArity=a})) | a > 0
+        -> Just a
+      _ -> Nothing
 
-arityMpLookupCaf :: HsName -> CArityMp -> Maybe Int
-arityMpLookupCaf n m
+clamCallMpLookupCaf :: HsName -> CLamCallMp -> Maybe Int
+clamCallMpLookupCaf n m
   = case Map.lookup n m of
-      j@(Just a) | a == 0 -> j
-      _                   -> Nothing
+      j@(Just (CLamCallInfo {clciArity=a})) | a == 0
+        -> Just a
+      _ -> Nothing
 %%]
 
-%%[(8 codegen) hs export(arityMpFilterLam,arityMpFilterCaf)
-arityMpFilterLam :: CArityMp -> CArityMp
-arityMpFilterLam = Map.filter (>0)
+%%[(8 codegen) hs export(clamCallMpFilterLam,clamCallMpFilterCaf)
+clamCallMpFilterLam :: CLamCallMp -> CLamCallMp
+clamCallMpFilterLam = Map.filter ((>0) . clciArity)
 
-arityMpFilterCaf :: CArityMp -> CArityMp
-arityMpFilterCaf = Map.filter (==0)
+clamCallMpFilterCaf :: CLamCallMp -> CLamCallMp
+clamCallMpFilterCaf = Map.filter ((==0) . clciArity)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -741,6 +780,32 @@ cModMerge mL
 
 %%[(8 codegen) hs export(CaseFailSubst)
 type CaseFailSubst = Map.Map UID CExpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize, ForceEval
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen) hs
+instance Serialize CLamCallInfo where
+  sput (CLamCallInfo a b) = sput a >> sput b
+  sget = liftM2 CLamCallInfo  sget sget
+
+instance Serialize StackTraceInfo where
+  sput (StackTraceInfo_None                ) = sputWord8 0
+  sput (StackTraceInfo_HasStackTraceEquiv a) = sputWord8 1 >> sput a
+  sput (StackTraceInfo_IsStackTraceEquiv  a) = sputWord8 2 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+           0 -> return StackTraceInfo_None
+           1 -> liftM  StackTraceInfo_HasStackTraceEquiv sget
+           2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
+%%]
+
+%%[(99 codegen) hs
+instance ForceEval CLamCallInfo where
+  forceEval x@(CLamCallInfo a b) = x
 %%]
 
 

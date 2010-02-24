@@ -200,7 +200,7 @@ cpDecodeHIInfo modNm
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
-       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       ; cpUpdCU modNm (ecuStorePrevHIInfo $ HI.hiiPostCheckValidity opts hiinfo)
        }
 %%]
 

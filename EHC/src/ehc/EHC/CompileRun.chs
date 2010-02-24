@@ -236,15 +236,19 @@ cpMsg' modNm v m mbInfo fp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: step unique counter
+%%% Compile actions: step/set unique counter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(cpStepUID)
+%%[8 export(cpStepUID,cpSetUID)
 cpStepUID :: EHCompilePhase ()
 cpStepUID
   = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsiNextUID crsi)
                       in  crsi {crsiNextUID = n, crsiHereUID = h}
             )
+
+cpSetUID :: UID -> EHCompilePhase ()
+cpSetUID u
+  = cpUpdSI (\crsi -> crsi {crsiNextUID = u})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

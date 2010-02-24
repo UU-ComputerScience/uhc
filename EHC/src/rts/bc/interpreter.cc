@@ -1604,7 +1604,7 @@ gb_interpreter_InsApplyEntry:
 %%]]
 						WPtr bpNext ;
 %%[[1010
-						printf( "GB_Ins_TailEval" ) ;
+						printf( "GB_Ins_TailEval BEF" ) ;
 						if (bp) { 
 							printf( " k0=%d", GB_FromBPToCallInfo(bp)->kind ) ;
 							bpNext = (WPtr)*bp ;
@@ -1696,6 +1696,34 @@ gb_interpreter_TailEval_Default:
 						}
 %%]]
 						pc = &gb_code_AfterTailEvalCall[sizeof(GB_CallInfo_Inline)] ;			/* ret addr is to taileval cleanup 			*/
+%%[[1010
+						printf( "GB_Ins_TailEval AFT" ) ;
+						if (bp) { 
+							printf( " k0=%d", GB_FromBPToCallInfo(bp)->kind ) ;
+							bpNext = (WPtr)*bp ;
+							if (bpNext) { 
+								printf( " k1=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+								bpNext = (WPtr)*bpNext ;
+								if (bpNext) { 
+									printf( " k2=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+									bpNext = (WPtr)*bpNext ;
+									if (bpNext) { 
+										printf( " k3=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+										bpNext = (WPtr)*bpNext ;
+										if (bpNext) { 
+											printf( " k4=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+											bpNext = (WPtr)*bpNext ;
+											if (bpNext) { 
+												printf( " k5=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+												bpNext = (WPtr)*bpNext ;
+											}
+										}
+									}
+								}
+							}
+						}
+						printf( "\n" ) ;
+%%]]
 						goto gb_interpreter_InsEvalEntry ;										/* jump to eval						*/
 		
 					case GB_InsExt_Halt:

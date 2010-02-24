@@ -63,11 +63,11 @@ EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													$(addsuffix /Parser,Base Ty EH HS Foreign Core GrinCode) \
 													$(addprefix Ty/,FIEnv FIEnv2 FitsInCommon FitsInCommon2 FitsIn Utils1 Utils2 AppSpineGam Trf/BetaReduce) \
 													$(addprefix Gam/,Utils Instantiate Quantify LevelMapGam ScopeMapGam Full AppSpineGam FixityGam TyGam KiGam DataGam PolGam TyKiGam ValGam) \
-													$(addprefix Core/,Utils Coercion) \
+													$(addprefix Core/,Utils Coercion Trf) \
 													$(addprefix TyCore/,Base Utils2 Coercion Full0 Full1 Full2 Subst) \
 													$(addprefix GrinCode/,Common SolveEqs) \
 													$(addprefix EHC/,Common Environment CompileUnit CompileGroup CompileRun GrinCompilerDriver InitialSetup \
-														$(addprefix CompilePhase/,Parsers Output Translations TransformCore \
+														$(addprefix CompilePhase/,Parsers Output Translations Transformations \
 															FlowBetweenPhase TransformGrin Semantics \
 															CompileLLVM CompileC CompileJVM Link \
 															Cleanup Module TopLevelPhases \

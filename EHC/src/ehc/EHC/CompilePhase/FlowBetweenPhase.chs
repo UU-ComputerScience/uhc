@@ -242,9 +242,9 @@ cpFlowHISem modNm
 %%[[(20 codegen)
                  coreInh  = crsiCoreInh crsi
                  coreInh' = coreInh
-                              { Core2GrSem.arityMp_Inh_CodeAGItf   = (HI.hiiCArityMp hiInfo) `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.clamCallMp_Inh_CodeAGItf   = (HI.hiiCLamCallMp hiInfo) `Map.union` Core2GrSem.clamCallMp_Inh_CodeAGItf coreInh
                               }
-                              {- Core2GrSem.arityMp_Inh_CodeAGItf   = (prepFlow $! HISem.arityMp_Syn_AGItf hiSem) `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
+                              {- Core2GrSem.clamCallMp_Inh_CodeAGItf   = (prepFlow $! HISem.clamCallMp_Syn_AGItf hiSem) `Map.union` Core2GrSem.clamCallMp_Inh_CodeAGItf coreInh
                               -}
 %%]]
                  optim    = crsiOptim crsi
@@ -277,14 +277,14 @@ cpFlowCoreSem modNm
                  usedImpL = Set.toList $ cmodUsedModNms core
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
-                 am       = prepFlow $! Core2GrSem.gathArityMp_Syn_CodeAGItf coreSem
+                 am       = prepFlow $! Core2GrSem.gathCLamCallMp_Syn_CodeAGItf coreSem
                  coreInh' = coreInh
-                              { Core2GrSem.arityMp_Inh_CodeAGItf   = am `Map.union` Core2GrSem.arityMp_Inh_CodeAGItf coreInh
+                              { Core2GrSem.clamCallMp_Inh_CodeAGItf   = am `Map.union` Core2GrSem.clamCallMp_Inh_CodeAGItf coreInh
                               }
                  hii'     = hii
                               { HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 codegen grin)
-                              , HI.hiiCArityMp      = am
+                              , HI.hiiCLamCallMp    = am
 %%]]
                               }
          ;  when (isJust (ecuMbCoreSem ecu))

@@ -155,7 +155,7 @@ handleImmQuitOption immq opts
                                     )
                                     ehcCmdLineOpts)
 %%[[(8 codegen)
-              ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
+              -- ; putStrLn ("Transformations:\n" ++ (unlines . map (\(n,t) -> "  " ++ n ++ ": " ++ t) $ cmdLineTrfs))
 %%][100
 %%]]
               }
