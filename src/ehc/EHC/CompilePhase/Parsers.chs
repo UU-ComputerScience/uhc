@@ -192,7 +192,8 @@ cpDecodeHIInfo modNm
 %%]]
        ; cpMsg' modNm VerboseALot "Decoding" Nothing fpH
        ; hiinfo <- lift $
-           catch (do { i <- getSerializeFile (fpathToStr fpH)
+           catch (do { i <- getSGetFile (fpathToStr fpH) (HI.sgetHIInfo opts)
+                            -- getSerializeFile (fpathToStr fpH)
                             -- Bin.getBinaryFPath fpH
                      ; return i
                      })
@@ -200,7 +201,7 @@ cpDecodeHIInfo modNm
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
-       ; cpUpdCU modNm (ecuStorePrevHIInfo $ HI.hiiPostCheckValidity opts hiinfo)
+       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
        }
 %%]
 
