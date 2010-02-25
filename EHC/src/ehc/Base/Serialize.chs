@@ -136,7 +136,7 @@ scmdFrom SCmd_ShareRef8  = SCmd_ShareRef
 scmdFrom c               = c
 %%]
 
-%%[20
+%%[20 export(SPut)
 data SerPutMp = forall x . (Typeable x, Ord x) => SerPutMp (Map.Map x Int)
 
 data SPutS
@@ -152,7 +152,7 @@ type SPut = St.State SPutS ()
 
 %%]  
 
-%%[20
+%%[20 export(SGet)
 data SerGetMp = forall x . (Typeable x, Ord x) => SerGetMp (Map.Map Int x)
 
 data SGetS
@@ -383,13 +383,41 @@ instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
 %%% The actual IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 export(runSPut,runSGet)
+runSPut :: SPut -> Bn.Put
+runSPut x = sputsPut $ snd $ St.runState x emptySPutS
+ 
+runSGet :: SGet x -> Bn.Get x
+runSGet x = St.evalStateT x (SGetS Map.empty)
+
+%%]
+
 %%[20 export(serialize,unserialize)
 serialize :: Serialize x => x -> Bn.Put
-serialize x = sputsPut $ snd $ St.runState (sput x) emptySPutS
+serialize x = runSPut (sput x)
  
 unserialize :: Serialize x => Bn.Get x
-unserialize = St.evalStateT sget (SGetS Map.empty)
+unserialize = runSGet sget
 
+%%]
+
+%%[20 export(putSPutFile,getSGetFile)
+-- | SPut to FilePath
+putSPutFile :: FilePath -> SPut -> IO ()
+putSPutFile fn x
+  = do { h <- openBinaryFile fn WriteMode
+       ; L.hPut h (Bn.runPut $ runSPut x)
+       ; hClose h
+       }
+
+-- | SGet from FilePath
+getSGetFile :: FilePath -> SGet a -> IO a
+getSGetFile fn x
+  = do { h <- openBinaryFile fn ReadMode
+       ; b <- liftM (Bn.runGet $ runSGet x) (L.hGetContents h)
+       -- ; hClose h
+       ; return b ;
+       }
 %%]
 
 %%[20 export(putSerializeFile,getSerializeFile)

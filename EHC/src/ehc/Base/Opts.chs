@@ -260,7 +260,7 @@ data EHCOpts
                               ::  Bool              -- show fitsIn derivation tree as well
 %%]]
 %%[[99
-      ,  ehcOptCheckVersion   ::  Bool				-- use out of date of compiler version when determining need for recompilation
+      ,  ehcOptHiValidityCheck::  Bool				-- when .hi and compiler are out of sync w.r.t. timestamp and checksum, recompile
       ,  ehcOptLibFileLocPath ::  FileLocPath
       ,  ehcOptPkgdirLocPath  ::  FileLocPath
       ,  ehcOptPkgDb          ::  PackageDatabase	-- package database to be used for searching packages
@@ -450,7 +450,7 @@ defaultEHCOpts
       ,  ehcOptEmitDerivFitsIn  =   False
 %%]]
 %%[[99
-      ,  ehcOptCheckVersion     =   True
+      ,  ehcOptHiValidityCheck  =   True
       ,  ehcOptLibFileLocPath   =   []
       ,  ehcOptPkgdirLocPath    =   []
       ,  ehcOptPkgDb          	=	emptyPackageDatabase
@@ -563,11 +563,11 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[99
-     ,  Option ""   ["no-version-check"] (NoArg oNoVersionCheck)              "no check for compiler version when recompiling"
      ,  Option ""   ["numeric-version"]  (NoArg oNumVersion)                  "print show numeric version (then stop)"
      ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
      ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
+     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
@@ -778,7 +778,7 @@ ehcCmdLineOpts
          oCompileOnly           o   = o { ehcOptDoLinking                   = False    }
 %%]]
 %%[[99
-         oNoVersionCheck        o   = o { ehcOptCheckVersion                = False    }
+         oNoHiCheck             o   = o { ehcOptHiValidityCheck             = False    }
          oNumVersion            o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_NumericVersion }
          oUsrFileLocPath      s o   = o { ehcOptImportFileLocPath           = ehcOptImportFileLocPath o ++ mkFileLocPath s }
          oLibFileLocPath      s o   = o { ehcOptLibFileLocPath              = ehcOptLibFileLocPath o ++ mkFileLocPath s }
