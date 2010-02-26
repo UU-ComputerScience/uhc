@@ -59,6 +59,8 @@ SEM SilModule
 %%]
 
 %%[(8 codegen grin)
+
+
 SEM Statements
   | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
 
@@ -67,7 +69,25 @@ SEM Statement
   | Smart     lhs . trfStats = let dp = @lhs.distance+ @lhs.numberParameters
                                    smartTups = zip [dp+1,dp ..] @vals.trf
                                 in smartAssignment smartTups
-  | * - Smart lhs . trfStats = [@loc.trf]
+                                
+  | Yield     lhs . trfStats = if @lhs.optOwn>=1
+                               then  let nMyRes  = length @vals.trf
+                                         moveRet = nMyRes > @lhs.numberParameters
+                                         vals2   = @vals.trf ++ [Value_Var (Variable_Subs Variable_SP (1+ @lhs.distance)) | moveRet]
+                                         dp      = @lhs.distance+ @lhs.numberParameters
+                                         smartTups = zip [dp+1,dp ..] vals2
+                                     in  smartAssignment smartTups
+                                         ++
+                                         [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (dp+2))
+                                         , Statement_Return (max nMyRes @lhs.numberParameters + 1)
+                                         ]
+                               else [ Statement_Assignment v e
+                                    | (v,e) <-zip [Variable_Subs Variable_RP i | i <- [0..] ]
+                                                  @vals.trf
+                                    ]
+                                    
+  | * - Smart 
+        Yield lhs . trfStats = [@loc.trf]
   
 
 
