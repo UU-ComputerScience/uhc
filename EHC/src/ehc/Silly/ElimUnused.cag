@@ -23,7 +23,6 @@ WRAPPER SilModule
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
 
-
 %%[(8 codegen grin) hs
 elimUnused :: EHCOpts -> SilModule -> SilModule
 elimUnused options input   

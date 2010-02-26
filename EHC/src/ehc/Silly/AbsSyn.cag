@@ -48,6 +48,7 @@ DATA Statement
   |  Comment     comment    : {[String]}
   |  Smart       vals       : Values
   |  Voiden      val        : Value
+  |  Yield       vals       : Values
 
 DATA Alternative
   |  Alternative when       : Constant
