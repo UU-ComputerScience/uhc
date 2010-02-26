@@ -262,7 +262,7 @@ hsnShowAlphanumeric (HNm _ s) = dontStartWithDigit(stringAlphanumeric $ hsnHNmFl
 %%]]
 hsnShowAlphanumeric (HNPos p)                   = "y" ++ show p
 hsnShowAlphanumeric (HNmNr n OrigNone)          = "x" ++ show n
-hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = hsnShowAlphanumeric orig
+hsnShowAlphanumeric (HNmNr n (OrigLocal orig))  = "x" ++ show n   -- hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigGlobal orig)) = "global_" ++ hsnShowAlphanumeric orig
 hsnShowAlphanumeric (HNmNr n (OrigFunc   orig)) = "fun_"    ++ hsnShowAlphanumeric orig
 %%[[8
