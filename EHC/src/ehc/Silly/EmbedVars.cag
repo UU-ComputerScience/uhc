@@ -85,7 +85,7 @@ SEM Function
                                                 (  (if   @lhs.optOwn==1 && not (null @parameters)
                                                     then Statement_Comment ["Parameters"]
                                                          : zipWith Statement_Assignment
-                                                                   (map (Variable_Param undefined) @parameters)
+                                                                   (map (Variable_Param 99999) @parameters)
                                                                    (map (Value_Var . Variable_Subs Variable_SP) [2..])
                                                     else []
                                                    )

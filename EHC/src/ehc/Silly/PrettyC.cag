@@ -226,7 +226,7 @@ SEM Variable
   | Global
     Local
     Param       lhs.prettyC   = case @name of 
-                                  HNmNr _ OrigNone -> text "0"
+                                  HNmNr n OrigNone -> text ("x" ++ show n)
                                   _                -> text (hsnShowAlphanumeric @name)
                 lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          lhs.prettyC   = text "SP"
