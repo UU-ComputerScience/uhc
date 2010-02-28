@@ -195,7 +195,7 @@ type Limitations   = [Limitation]
 %% Abstract interpretation result          %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
+%%[(8 codegen grin) export(HptMap, getBaseEnvList, getEnvVar, absFetch, addEnvElems, addEnvNamedElems, getEnvSize, getTags, getNodes, isBottom, showHptMap, isPAppTag, isFinalTag, isApplyTag, filterTaggedNodes, getApplyNodeVars)
 
 type HptMap  = Array Int AbstractValue
 
@@ -211,7 +211,7 @@ getBaseEnvList ae = assocs ae
      
 getEnvVar :: HptMap -> Int -> AbstractValue
 getEnvVar ae i  | snd (bounds ae) >= i = (ae ! i)
-                | otherwise            = trace ("variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
+                | otherwise            = error ("getEnvVar: variable "++ show i ++ " not found") AbsBottom   -- AbsError $ "variable "++ show i ++ " not found"
                          
 
 limit :: Maybe (Set.Set GrTag) -> AbstractValue -> AbstractValue
@@ -232,12 +232,13 @@ absFetchDirect a i  = case getEnvVar a i of
 
 
 absFetch :: HptMap -> HsName -> AbstractValue
-absFetch a (HNmNr i _) = case getEnvVar a i of
+absFetch a nm@(HNmNr i _) = case getEnvVar a i of
                              AbsPtr an vs ws -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs) ++ map (getEnvVar a) (Set.toList ws))   -- TODO: ++ inhoud van ws?
                              AbsBottom     -> AbsNodes (Nodes Map.empty)
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
                              AbsNodes _     -> error $ "variable " ++ show i ++ " is a node variable"
+                             _              -> error $ "absFetch fails with nm = " ++ show nm
 absFetch a x = error ("absFetch tried on " ++ show x)
 
 getTags av = case av of
@@ -264,6 +265,22 @@ addEnvElems e vs
          e2    = listArray (low, high+extra) (elems e ++ vs)
      in e2
 
+---------------------------------------------------------------------------------------------------------
+--- Maybe should be replaced.
+replaceAt :: Int -> a -> [a] -> [a]
+replaceAt i a xs = case (i,xs) of
+  (_,[]) -> error "cannot replace outside of list"
+  (0,x:xs) -> a:xs 
+  (_,x:xs) -> x: replaceAt (i-1) a xs
+---------------------------------------------------------------------------------------------------------    
+     
+addEnvNamedElems :: HptMap -> [(Int,AbstractValue)] -> HptMap
+addEnvNamedElems hpt vs
+  = let (low, high) = bounds hpt
+        extra = foldl (\i -> max i . fst) high vs - high
+        e2 = listArray (low, high+extra) (foldr (uncurry replaceAt) (elems hpt ++ replicate extra AbsBottom) vs)
+    in e2
+     
 getEnvSize :: HptMap -> Int
 getEnvSize e  = let (low,high) = bounds e
                 in  high-low+1

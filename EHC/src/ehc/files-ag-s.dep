@@ -75,6 +75,7 @@ GrinCode/Trf/EvalElim.cag
 GrinCode/Trf/EvalStored.cag
 GrinCode/Trf/FlattenSeq.cag
 GrinCode/Trf/GlobalConstants.cag
+GrinCode/Trf/HptInline.cag
 GrinCode/Trf/ImpossibleCase.cag
 GrinCode/Trf/Inline.cag
 GrinCode/Trf/InlineEA.cag
@@ -84,6 +85,7 @@ GrinCode/Trf/MayLiveUnboxed.cag
 GrinCode/Trf/MemberSelect.cag
 GrinCode/Trf/MergeCase.cag
 GrinCode/Trf/MergeInstance.cag
+GrinCode/Trf/MkUniqueBindings.cag
 GrinCode/Trf/NormForHPT.cag
 GrinCode/Trf/NumberIdents.cag
 GrinCode/Trf/PrettyVarNames.cag
