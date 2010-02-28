@@ -35,6 +35,8 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.Inline(grInline)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.HptInline(hptInline)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
@@ -109,7 +111,7 @@
 %%]
 %%[(8 codegen grin) import(Data.Graph.Inductive.Query.Monad)
 %%]
-%%[(8 codegen grin) import(qualified Debug.Trace as Trace)
+%%[(8 codegen grin) hs import(EH.Util.Debug)
 %%]
 
 
@@ -124,39 +126,66 @@ doCompileGrin
 %%]
 
 %%[(8 codegen grin) -1.doCompileGrin
-inlineCollectionIterated :: String -> CompileAction ()
-inlineCollectionIterated s = loop 0 
-  where 
-  loop i =  let si = (s ++ show i ++ "-") in
-            Trace.trace ("inlineLoop " ++ show i) $
-            do
-            { 
-%%[[8
-            ; inChange <- transformAndWrite (grInline False) (si ++ "a-Inline")
-%%][20
-            ; inChange <- transformAndWrite (fst . (grInline False Set.empty Map.empty)) (si ++ "a-Inline")
-%%]]  
-            ; esChange <- transformAndWrite evalStored (si ++ "b-EvalStored")
-            ; auChange <- transformAndWrite ((>>= (Just . grFlattenSeq)) . applyUnited) (si ++ "c-ApplyUnited")
-            ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (si ++ "d-unusedExprDropped")
-            -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin (si ++"e-specConst")
-            ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (si ++ "f-copyPropagation")
-            ; ecChange <- transformAndWrite evalCase (si ++"g-evalCase")
-            ; scChange <- transformAndWrite ((>>= (Just . grFlattenSeq)) . singleCase) (si ++ "h-singleCase")
-            ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (si ++"i-simpleNullary")
-            ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (si ++"j-memberSelected")
-            ; transformCode         (dropUnreachableBindings False) 
-                                                "DropUnreachableBindings" ; caWriteGrin (si ++"k-reachable")
-            -- loop
-            ; when (inChange || esChange || auChange || ecChange || scChange) 
-                    ((if False then (Trace.trace ("inChange = " ++ show inChange
-                                  ++ "\n esChange = " ++ show esChange
-                                  ++ "\n auChange = " ++ show auChange
-                                  ++ "\n ecChange = " ++ show ecChange
-                                  ++ "\n scChange = " ++ show scChange) 
-                                  ) else id) (loop (i+1)))
-            }  
 
+showLoopChanges = False
+
+inlineCollectionIterated :: String -> Bool -> CompileAction ()
+inlineCollectionIterated s useHpt = loop 0 
+  where 
+  flatten trf = (>>= (Just . grFlattenSeq)) . trf
+  flattenHpt trf = (>>= \(code,hpt) -> Just $ (grFlattenSeq code,hpt)) . trf
+  loop i = let si = s ++ show i ++ "-" in
+    (const $ "inlineLoop " ++ show i) >>> 
+    do
+    { 
+%%[[8
+    ; inChange <- transformAndWrite (grInline False) (si ++ "a-Inline")
+%%][20
+    ; inChange <- (if useHpt 
+        then transformAndWriteHpt (flattenHpt (fmap fst . (hptInline False Set.empty Map.empty)))
+        else transformAndWrite (flatten (fmap (\(a,b,c) -> a) . (grInline False Set.empty Map.empty)))
+        ) (si ++ "a-Inline")
+%%]]  
+    ; esChange <- transformAndWrite evalStored (si ++ "b-EvalStored")
+    ; auChange <- transformAndWrite (flatten applyUnited) (si ++ "c-ApplyUnited")
+    ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (si ++ "d-unusedExprDropped")
+    -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin (si ++"e-specConst")
+    ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (si ++ "f-copyPropagation")
+    ; ecChange <- transformAndWrite evalCase (si ++"g-evalCase")
+    ; scChange <- transformAndWrite (flatten singleCase) (si ++ "h-singleCase")
+    ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (si ++"i-simpleNullary")
+    ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (si ++"j-memberSelected")
+    ; transformCode         (dropUnreachableBindings True) 
+                                        "DropUnreachableBindings" ; caWriteGrin (si ++"k-reachable")
+    -- loop
+    ; when (inChange || esChange || auChange || ecChange || scChange) (
+            (loop (i+1)) 
+            <?< (showLoopChanges,
+                  const $ "inChange = " ++ show inChange
+                  ++ "\n esChange = " ++ show esChange
+                  ++ "\n auChange = " ++ show auChange
+                  ++ "\n ecChange = " ++ show ecChange
+                  ++ "\n scChange = " ++ show scChange
+                 0))
+    }
+       
+transformAndWriteHpt :: ((GrModule,HptMap) -> Maybe (GrModule,HptMap)) -> String -> CompileAction Bool
+transformAndWriteHpt process message = do
+  { changed <- transformCodeMbHpt process message
+  ; when changed (caWriteGrin message)
+  ; return changed
+  }
+  
+transformCodeMbHpt :: ((GrModule,HptMap) -> Maybe (GrModule,HptMap)) -> String -> CompileAction Bool
+transformCodeMbHpt process message = let    
+  body = do 
+    { grinHpt <- gcsGetCodeHpt
+    ; let mbResult = process grinHpt
+    ; maybe (return ()) gcsPutCodeHpt mbResult
+    ; return (isJust mbResult)
+    }
+  in task VerboseALot message body (const Nothing)
+  
 transformAndWrite :: (GrModule -> Maybe GrModule) -> String -> CompileAction Bool
 transformAndWrite process message = do 
   { changed <- transformCodeMb process message
@@ -200,28 +229,14 @@ doCompileGrin input opts
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         -- ; transformCodeInline                      "Inline" 
-         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
-
-         -- ; transformCode         simpleSingleCase   "singleCase"       ; 
-         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
 
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-123-numbered"
 
-         ; inlineCollectionIterated "-123-"
-         {-
-         ; specialize "-123-1"
-         ; specialize "-123-2"
-         ; specialize "-123-3"
-         ; specialize "-123-4"
-         ; specialize "-123-5"
-         ; specialize "-123-6"
-         -- ; specialize "-123-7"
-         -- ; specialize "-123-8"
-         -}
+         ; inlineCollectionIterated "-124-" False
 
-         ; transformCode         (dropUnreachableBindings False) 
+         ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
 
 
@@ -229,27 +244,25 @@ doCompileGrin input opts
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
          
-         ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
+         ; inlineCollectionIterated "-132-" True
 
-         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-132-possibleCase"
+         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-133-possibleCase"
 
 
          --; transformCodeUseHpt   dropDeadBindings   "DropDeadBindings" ; caWriteGrin "-132-undead"
-         ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
+         ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-134-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
-                                             "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
-         ; transformCodeChgHpt   lateInline         "LateInline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
+                                             "DropUnreachableBindings" ; caWriteGrin "-135-reachable"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-142-emptyAlts"
          ; transformCode         simpleSingleCase   "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
-		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
+         ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
          ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
                                                                        ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
@@ -502,18 +515,6 @@ checkCode process message
        ; grin <- gets gcsGrin
        ; let errors = process grin
        ; when (not (null errors)) (error (unlines errors))
-       }
-
-transformCodeInline :: String -> CompileAction ()
-transformCodeInline message 
-  = do { putMsg VerboseALot message Nothing
-       ; grin <- gets gcsGrin
-%%[[8
-       ; let code = simplifyTrf (grInline False) grin
-%%][20
-       ; let (code,_) = mapFst (maybe grin id) (grInline False Set.empty Map.empty grin)
-%%]]
-       ; modify (gcsUpdateGrin code)
        }
 
 transformCodeUseHpt :: ((GrModule,HptMap)->GrModule) -> String -> CompileAction ()
