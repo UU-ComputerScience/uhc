@@ -218,4 +218,3 @@ maybeOr n fa fb ma mb
 
 scc :: Ord n => [(n,[n])] -> [[n]]
 scc = map Graph.flattenSCC . Graph.stronglyConnComp . map (\(n,ns) -> (n, n, ns))
-
