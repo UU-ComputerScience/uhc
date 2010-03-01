@@ -230,9 +230,9 @@ SEM Statement
   
   | Return      lhs.llvmCode = [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]  
                                     
-  | Smart       lhs.llvmCode = error "Silly.ToLLVM: Smart should occur only in intermediate Silly"
+  | Yield       lhs.llvmCode = error "Silly.ToLLVM: Yield should occur only in intermediate Silly"
                                     
-  | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
+  | * - Assignment Assignment2 Call Comment Jump Label Return Yield Switch IfThenElse
                 lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives

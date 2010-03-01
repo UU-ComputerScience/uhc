@@ -56,6 +56,19 @@ SEM SilModule
   | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
 
 
+ATTR Values [ | | length : {Int} ]
+
+SEM Values
+  | Nil lhs.length = 0
+  | Cons lhs.length = 1 + @tl.length
+
+
+ATTR Functions Function Statements Statement Alternatives Alternative [  |  retNr : {Int} |  ]
+
+SEM SilModule
+  | SilModule     functions . retNr   = 3
+
+
 %%]
 
 %%[(8 codegen grin)
@@ -65,10 +78,46 @@ SEM Statements
   | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
 
 SEM Statement
-  | Smart     lhs . trf      = Statement_Comment ["Smart"]
-  | Smart     lhs . trfStats = let dp = @lhs.distance+ @lhs.numberParameters
-                                   smartTups = zip [dp+1,dp ..] @vals.trf
-                                in smartAssignment smartTups
+  | Call      lhs . trfStats =  if @tailJumps && @lhs.optOwn>=1
+                                then (  let dp = @lhs.distance+ @lhs.numberParameters
+                                            dist = @lhs.distance
+                                            args2   = (reverse @args.trf ++ map (Value_Var . Variable_Subs Variable_SP) [dist+1, dist] )
+                                            smartTups = zip [dp+1,dp ..] args2
+                                        in  (  Statement_Comment ["Call (Own controlled tail) "]
+                                               :
+                                               smartAssignment smartTups
+                                               ++
+                                               [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (dist + @lhs.numberParameters+2- @loc.nMyParams-2))
+                                               , Statement_Jump @name
+                                               ]
+                                            )
+                                     )
+                                 else (   Statement_Comment ["Call (Normal or Tail)"]
+                                      :   (if @lhs.optOwn>=1
+                                           then (  zipWith Statement_Assignment
+                                                           (map (Variable_Subs Variable_SP) [-1,-2..])
+                                                           (  reverse @args.trf
+                                                           ++ [ if @lhs.optOwn>=3 
+                                                                 then Value_Label @loc.label
+                                                                 else Value_Con (Constant_LiteralInt 0)
+                                                              , Value_Cast (Value_Offset Variable_SP @lhs.distance) True
+                                                              ]
+                                                           )
+                                                ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
+                                                   , Statement_Call @name @tailJumps [] 
+                                                   ]
+                                                ++ if @lhs.optOwn>=3
+                                                    then [ Statement_Label @loc.label ]
+                                                    else []
+                                                )
+                                           else [@loc.trf]
+                                          )
+                                      )
+           loc.nMyParams = @args.length
+           lhs.retNr     = @lhs.retNr + 1
+           loc.label     = "retlab"++show @lhs.retNr
+
+
                                 
   | Yield     lhs . trfStats = if @lhs.optOwn>=1
                                then  let nMyRes  = length @vals.trf
@@ -86,8 +135,8 @@ SEM Statement
                                                   @vals.trf
                                     ]
                                     
-  | * - Smart 
-        Yield lhs . trfStats = [@loc.trf]
+  | * - Yield
+        Call   lhs . trfStats = [@loc.trf]
   
 
 
@@ -173,16 +222,6 @@ SEM Variable
 
 SEM Variable
   | Unembedded   lhs.trf = (if @lhs.optOwn>=2 then (embed2 @lhs.distance) else embed) @lhs.embedMap @name
-
-SEM Variable
-  | Subs         lhs.trf = if @array.trf==Variable_BP
-                            then Variable_Subs Variable_SP (@index + @lhs.distance)
-                            else Variable_Subs @array.trf @index
-
-SEM Value
-  | Offset       lhs.trf = if @var.trf==Variable_BP
-                            then Value_Offset Variable_SP (@off + @lhs.distance)
-                            else Value_Offset @var.trf @off
 
 %%]
 
