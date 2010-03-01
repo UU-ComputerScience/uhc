@@ -879,7 +879,9 @@ SEM GrModule
 %%[[20
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ]
-                                                      [ m | Just m <- map (\(n,_) -> Map.lookup n @entryNmMp) $ sortOn snd $ Map.toList @lhs.expNmOffMp ]
+                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp
+                                                          , let m = panicJust ("ToGrinByteCode.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
+                                                      ]
 %%]]
                                                       @entryL
                                                       (Seq.toList @i)

@@ -15,6 +15,9 @@ For now, differences are:
 \item Do it globally, for all modules, thereby losing sharing for CAFs.
 \end{itemize}
 
+Note: currently this trf is placed after renaming identifiers to unique names. It therefore must maintain the unique naming invariant.
+However, ideally, this trf should be placed before that, but this currently breaks.
+
 %%]
 
 %%[(99 codegen) hs module {%{EH}Core.Trf.ExplicitStackTrace} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfExplicitStackTrace)
@@ -117,6 +120,23 @@ SEM CBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Local name of stacktrace
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+See note on need of keeping names unique above.
+
+%%[(99 codegen)
+ATTR AllCodeNT [ | uniq: Int | ]
+
+SEM CModule
+  | Mod         loc         .   uniq        =   0
+
+SEM CBind
+  | Bind        loc         .   uniq        =   @lhs.uniq + 1
+                            .   nmStackTrace=   mkHNm $ "_$" ++ show @lhs.uniq ++ "_stacktrace"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -127,19 +147,18 @@ SEM CBind
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newCLamCallMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @expr.isTraceCandidate
-                                                    -> ( [ mkCBind1 dbNm (mkCExprLam1 nm @expr.cTrf) 
+                                                    -> ( [ mkCBind1 dbNm (mkCExprLam1 @nmStackTrace @expr.cTrf) 
                                                          , mkCBind1Metas @nm @bindMeta.cTrf 
                                                            $ mkCExprLam @expr.traceCandidateLamArgs
                                                            $ mkCExprApp (CExpr_Var dbNm) (CExpr_Int 0 : map CExpr_Var @expr.traceCandidateLamArgs)   -- TBD: empty stack
                                                          ]
-                                                       , Just nm
+                                                       , Just @nmStackTrace
                                                        -- , Map.singleton dbNm $ CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv @nm)
                                                        , Map.fromList
                                                            [ (dbNm, CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv  @nm ))
                                                            -- , (@nm , CLamCallInfo 0 (StackTraceInfo_HasStackTraceEquiv dbNm))
                                                            ]
                                                        )
-                                                    where nm = mkHNm "_$stacktrace"
                                                   _ -> ([@cTrf], @lhs.mbInStackTraceCtxt, Map.empty)
   | * - Bind    loc         .   bindCTrfL   =   [@cTrf]
 %%]

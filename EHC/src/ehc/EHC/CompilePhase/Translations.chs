@@ -214,7 +214,7 @@ cpTranslateGrin2Bytecode modNm
 %%[[20
          -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
          ;  when (ehcOptVerbosity opts >= VerboseDebug)
-                 (lift $ putStrLn (show expNmOffMp))
+                 (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
 %%]]
 
          ;  when (isJust mbGrin)
