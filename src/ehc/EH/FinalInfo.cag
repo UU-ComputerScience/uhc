@@ -37,6 +37,11 @@ SEM Expr
   | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_
 %%]
 
+%%[(8 hmtyinfer).finValGam
+SEM Expr
+  | Let         loc         .   finValGamDecls      :=  @lhs.finTyVarMp |=> @quValGam_ex_subst
+%%]
+
 %%[(5 hmtyinfer)
 SEM DataConstr
   | Constr      loc         .   finDataConTy        =   @lhs.finTyVarMp |=> @dataConTyAsVar

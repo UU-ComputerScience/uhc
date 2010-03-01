@@ -101,6 +101,7 @@ trfCore opts modNm trfcore
 
                  -- make names unique
                ; t_ren_uniq
+                 -- from now on INVARIANT: keep all names globally unique
 
                  -- removal of unnecessary constructs: aliases
                ; t_inl_letali
@@ -112,8 +113,10 @@ trfCore opts modNm trfcore
                  -- optionally modify to include explicit stack trace
                ; when (ehcOptTargetVariant opts == TargetVariant_Debug)
                       (do { t_expl_trace
+                            -- from now on INVARIANT: renaming of identifiers must also rename additional exported names here introduced
+
                           ; t_let_unrec
-                          ; t_ren_uniq
+                          -- ; t_ren_uniq
                           })
 %%]]
 

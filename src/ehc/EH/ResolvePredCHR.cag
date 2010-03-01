@@ -234,7 +234,8 @@ SEM Expr
   | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @tyVarMpDeclsL0}
                             .   toProveCnstrMp      =   @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
-                                                    =   Map.partitionWithKey (\k _ -> isLetProveCandidate @gTyTvS $ cnstrPred k) @toProveCnstrMp
+                                                    =   let (here,there) = Map.partitionWithKey (\k _ -> isLetProveCandidate @gTyTvS $ cnstrPred k) @toProveCnstrMp
+                                                        in  (here, predOccCnstrMpLiftScope @predScope there)
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1SimpTyVarMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
                                 ,chrSolve1EvidBindMp,chrSolve1ScopeBindMp,chrSolve1EvidCoreMp

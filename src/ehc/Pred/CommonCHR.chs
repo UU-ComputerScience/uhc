@@ -159,6 +159,19 @@ gathPredLToAssumeCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
 gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 %%]
 
+%%[(9 hmtyinfer) export(predOccCnstrMpLiftScope)
+-- | Lift predicate occurrences to new scope, used to lift unproven predicates to an outer scope.
+predOccCnstrMpLiftScope :: PredScope -> CHRPredOccCnstrMp -> CHRPredOccCnstrMp
+predOccCnstrMpLiftScope sc
+  = Map.mapKeysWith (++) c . Map.map (map i)
+  where c (Prove o@(CHRPredOcc {cpoCxt=cx}))
+            = Prove (o {cpoCxt = cx {cpocxScope = sc}})
+        c x = x
+        i (RedHow_ProveObl id _)
+            = RedHow_ProveObl id sc
+        i x = x
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
