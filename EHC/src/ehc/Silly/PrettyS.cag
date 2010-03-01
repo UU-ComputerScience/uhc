@@ -176,7 +176,7 @@ SEM Statement
   | Return      loc.prettyS   = ";" >#< @loc.pretty >-<
                                 instruction1 "jmp" (dereference (indirectOffset (@retdiff *(-4)) esp))
   | Label       loc.prettyS   = label @name
-  | Smart       loc.prettyS   = error "Silly.PrettyS: Statement_Smart found"
+  | Yield       loc.prettyS   = error "Silly.PrettyS: Statement_Yield found"
 
 
 
@@ -227,8 +227,6 @@ SEM Variable
                 loc.prettyPtr = "((Pointer)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          loc.prettyS   = text "SP"
                 loc.prettyPtr = text "SP"
-  | BP          loc.prettyS   = text "BP"
-                loc.prettyPtr = text "BP"
   | RP          loc.prettyS   = text "RP"
                 loc.prettyPtr = text "RP"
   | Subs        loc.prettyS   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
@@ -339,7 +337,7 @@ SEM Statement
   | Jump        loc.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      loc.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
   | Label       loc.pretty = "LABEL"  >#< text @name >|< ";"
-  | Smart       loc.pretty = "SMART ("  >#< @vals.pretty >|< ");"
+  | Yield       loc.pretty = "YIELD ("  >#< @vals.pretty >|< ");"
   | Comment     loc.pretty = comment @comment
     
   
@@ -357,7 +355,6 @@ SEM Variable
   | Param          loc.pretty = text ("P" ++ hsnShowAlphanumeric @name)
   | Global         loc.pretty = text ("G" ++ hsnShowAlphanumeric @name)
   | SP             loc.pretty = text "SP"  
-  | BP             loc.pretty = text "BP"  
   | RP             loc.pretty = text "RP"  
   | Subs           loc.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
   | Aux            loc.pretty = text "AUX"

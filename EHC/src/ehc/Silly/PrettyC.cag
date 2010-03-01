@@ -155,7 +155,7 @@ SEM Statement
   | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optTraceAssign @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
   | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @retdiff @lhs.optOwn
   | Label       lhs.prettyC   = label @lhs.optTraceAssign @name
-  | Smart       lhs.prettyC   = error "Silly.PrettyC: Statement_Smart"
+  | Yield       lhs.prettyC   = error "Silly.PrettyC: Statement_Yield"
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
@@ -231,8 +231,6 @@ SEM Variable
                 lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
-  | BP          lhs.prettyC   = text "BP"
-                lhs.prettyPtr = text "BP"
   | RP          lhs.prettyC   = text "RP"
                 lhs.prettyPtr = text "RP"
   | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"

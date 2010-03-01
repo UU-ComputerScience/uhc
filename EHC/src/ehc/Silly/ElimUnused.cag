@@ -96,7 +96,6 @@ SEM Function
                                                 [ nm | nm <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
                                                 @body.trf
   
-
 SEM Value
   | Call         lhs.isntCall  =  False
   | * - Call     lhs.isntCall  =  True

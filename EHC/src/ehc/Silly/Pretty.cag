@@ -71,7 +71,6 @@ SEM Statement
   | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
   | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
-  | Smart       lhs.pretty = "SMART ("  >#< @vals.pretty >|< ");"
   | Yield       lhs.pretty = "YIELD ("  >#< @vals.pretty >|< ");"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
@@ -107,7 +106,6 @@ SEM Variable
   | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
 %%]]
   | SP             lhs.pretty = text "SP"  
-  | BP             lhs.pretty = text "BP"  
   | RP             lhs.pretty = text "RP"  
   | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
   | Aux            lhs.pretty = text "AUX"

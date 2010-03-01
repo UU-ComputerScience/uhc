@@ -46,7 +46,6 @@ DATA Statement
   |  Return      retdiff    : {Int}
   |  Label       name       : {String}
   |  Comment     comment    : {[String]}
-  |  Smart       vals       : Values
   |  Voiden      val        : Value
   |  Yield       vals       : Values
 
@@ -70,7 +69,6 @@ DATA Variable
                  index      : {Int}
   |  SP
   |  RP
-  |  BP
   |  Aux
   |  Ptr
   |  None

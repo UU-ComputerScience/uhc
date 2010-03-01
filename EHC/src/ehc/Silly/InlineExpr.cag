@@ -162,6 +162,4 @@ notSame :: Variable -> Value -> Bool
 notSame v1 (Value_Var v2) = v1 /= v2
 notSame _ _ = True
 
-
-
 %%]

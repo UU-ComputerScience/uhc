@@ -78,15 +78,6 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
 
 ATTR AllBind AllGrExpr AllGlobal [ maxConstrParameters : {Int} | | ]
 
-ATTR GrValL [ | | length : {Int} ]
-
-SEM GrValL
-  | Nil lhs.length = 0
-  | Cons lhs.length = 1 + @tl.length
-
-
-ATTR GrBind GrBindL GrExpr GrAlt GrAltL [  |  retNr : {Int} |  ]
-
 %%]
 
 %%[(8 codegen grin)
@@ -144,7 +135,7 @@ SEM GrModule
                                                     (  @globalL.initStats1
                                                     ++ @globalL.initStats2
                                                     ++ (if @lhs.optOwn>=1
-                                                         then [ Statement_Assignment Variable_SP (Value_Offset Variable_BP (0+2)) ]
+                                                         then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (2+2)) ]
                                                          else []
                                                        )
                                                     ++ [ Statement_Return 1 ]
@@ -153,8 +144,6 @@ SEM GrModule
                                 )
 
         loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
-        bindL . retNr   = 3
-
 
 
 SEM GrBind
@@ -264,47 +253,19 @@ SEM GrExpr
                         then  [ Statement_Comment ["Evaluate to ptrNode"]
                               , Statement_Assignment (Variable_Unembedded (fromJust @lhs.mbPtrTarget)) (head @argL.values)
                               ]
-                        else if not @lhs.hasNext && @lhs.optOwn>=1
-                        then ( 
-                                 [ Statement_Comment ["Call (Own controlled tail) "]
-                                 , Statement_Smart (reverse @argL.values ++ map (Value_Var . Variable_Subs Variable_BP) [1, 0] )
-                                 , Statement_Assignment  Variable_SP (Value_Offset Variable_BP (@lhs.numberParameters+2- @loc.nMyParams-2))
-                                 , Statement_Jump @nm
-                                 ]
+                        else  (   Statement_Call @nm (not @lhs.hasNext) @argL.values
+                                  :   if   not @lhs.hasNext && @lhs.optOwn>=1
+                                      then []
+                                      else assignments "Result" 
+                                                       []
+                                                       (map mkVar @lhs.targets) 
+                                                       ( let n = length @lhs.targets
+                                                         in  if @lhs.optOwn>=1
+                                                              then map (arrayValue Variable_SP) [-1,-2..(0-n)]
+                                                              else map (arrayValue Variable_RP) [0..n-1]
+                                                       )
                               )
-                         else (   Statement_Comment ["Call (Normal or Tail)"]
-                              :   (if @lhs.optOwn>=1
-                                   then (  zipWith Statement_Assignment
-                                                   (map (arrayVariab Variable_SP) [-1,-2..])
-                                                   (  reverse @argL.values
-                                                   ++ [ if @lhs.optOwn>=3 
-                                                         then Value_Label @loc.label
-                                                         else Value_Con (Constant_LiteralInt 0)
-                                                      , Value_Cast (Value_Offset Variable_BP 0) True
-                                                      ]
-                                                   )
-                                        ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
-                                           , Statement_Call @nm (not @lhs.hasNext) [] 
-                                           ]
-                                        ++ if @lhs.optOwn>=3
-                                            then [ Statement_Label @loc.label ]
-                                            else []
-                                        )
-                                   else [Statement_Call @nm (not @lhs.hasNext) @argL.values]
-                                  )
-                              ++  assignments "Result" 
-                                              []
-                                              (map mkVar @lhs.targets) 
-                                              ( let n = length @lhs.targets
-                                                in  if @lhs.optOwn>=1
-                                                     then map (arrayValue Variable_SP) [-1,-2..(0-n)]
-                                                     else map (arrayValue Variable_RP) [0..n-1]
-                                              )
-                              )
-           loc.nMyParams = @argL.length
            lhs.localsSet = Set.fromList @lhs.targets
-           lhs.retNr     = @lhs.retNr + 1
-           loc.label     = "retlab"++show @lhs.retNr
 
  | App     lhs.stats  = [Statement_Comment ["App: SHOULDNT"]]
  | Eval    lhs.stats  = [Statement_Comment ["Eval: SHOULDNT"]]
@@ -525,18 +486,6 @@ yielding what optOwn values numberParameters
      in  [ Statement_Comment [what ++ " (Yielding)"]
          , Statement_Yield values
          ]
-     {-
-         : if optOwn>=1
-            then [ Statement_Smart (values ++ [Value_Var (Variable_Subs Variable_BP 1) | moveRet])
-                 , Statement_Assignment Variable_SP (Value_Offset Variable_BP (numberParameters+2))
-                 , Statement_Return (max nMyRes numberParameters + 1)
-                 ]
-            else [ Statement_Assignment v e
-                 | (v,e) <-zip [arrayVariab Variable_RP i | i <- [0..] ]
-                               values
-                 ]
-     -}
-
 
 assignments :: String -> [Variable] -> [Variable] -> [Value] -> [Statement]
 assignments what vars1 vars2 values
