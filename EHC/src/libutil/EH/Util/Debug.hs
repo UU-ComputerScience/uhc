@@ -1,6 +1,7 @@
 module EH.Util.Debug
   ( tr, trp,
-    (>>>),(<<<)
+    (>>>),(<<<),
+    (>?>),(<?<)
   )
   where
 

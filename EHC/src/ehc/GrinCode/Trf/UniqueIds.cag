@@ -1,8 +1,12 @@
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% usedIds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(8 codegen grin)
 
-ATTR AllNT [|| gathUsedIds USE {++} {[]} : {[Int]} ]
-ATTR AllGrExpr AllBind [ usedIds : {[Int]} ||]
+ATTR AllNT [ | | gathUsedIds USE {++} {[]} : {[Int]} ]
+ATTR AllNT [ usedIds : {[Int]} | | ]
 
 {
 checkUnique :: (Eq a,Show a) => [a] -> Bool
@@ -12,7 +16,7 @@ checkUnique l = case l of
             then error (show x ++ " is not unique,\nxs = " ++ show xs)
             else checkUnique xs
   
-mustCheckUsedUnique = True
+mustCheckUsedUnique = False
 }
 
 SEM GrModule
@@ -40,14 +44,15 @@ SEM GrPatAlt
 SEM GrVar
   | Var lhs.gathUsedIds = [getNr @nm]
   
-ATTR AllGrExpr [ | uniqueIds : {[Int]} | ]                               
+ATTR AllNT [ | uniqueIds : {[Int]} | ]                               
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% bindId
+%%% uniqueIds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
+
 ATTR AllBind [ | bindId: Int | ]
 ATTR AllBind [ bindIdDigits: Int | | ]
 
@@ -63,7 +68,8 @@ digits :: Int -> Int
 digits i = if i >= 10 then 1 + digits (floor (toEnum i / toEnum 10)) else 1
 }
         
-SEM GrBind
-  | Bind expr.uniqueIds = --(\l -> "bindIds = " ++ take 2000 (show l)) >>>
-                          (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
+SEM GrAGItf
+  | AGItf module.uniqueIds =  --(\l -> "bindIds = " ++ take 2000 (show l)) >>>
+                              -- (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
+                              [0..] \\ @module.gathUsedIds
 %%]

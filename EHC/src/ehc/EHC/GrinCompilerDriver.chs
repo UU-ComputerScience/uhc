@@ -166,7 +166,7 @@ inlineCollectionIterated s useHpt = loop 0
                   ++ "\n auChange = " ++ show auChange
                   ++ "\n ecChange = " ++ show ecChange
                   ++ "\n scChange = " ++ show scChange
-                 0))
+                 ))
     }
        
 transformAndWriteHpt :: ((GrModule,HptMap) -> Maybe (GrModule,HptMap)) -> String -> CompileAction Bool

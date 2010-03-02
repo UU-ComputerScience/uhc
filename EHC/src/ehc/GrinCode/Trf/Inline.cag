@@ -78,6 +78,7 @@ to a loop.
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.SubstExpr})
 %%]
 
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,8 +184,6 @@ SEM GrModule
   | Mod         bindL       .   fviMp           =   @bindL.gathFviMp
 %%]
 
-{-
--}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Will eval defined here because could not be factored out
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -218,6 +217,8 @@ ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 SEM GrBind
   | Bind  (lhs.gathInlMp,loc.omitBind)    
               =  let  isLoopBreaker = elem @nm @lhs.loopBreakers
+                      callInline = Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker @expr.idsNeeded)
+                      cafInline = Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker)
                  in   case Map.lookup @nm @lhs.fviMp of
                         -- a once used function can be inlined and its binding removed
                         Just (FvInfo 1 use)
@@ -228,7 +229,7 @@ SEM GrBind
                             && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
                             -- inline possible but keep the bind. (Code duplication).
 %%]]                                                          
-                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker undefined), True)
+                            -> (callInline, True)
                         Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                           | @isCAF
                             && willUseForEval @nm @expr.willUseForMp
@@ -236,21 +237,13 @@ SEM GrBind
 %%[[20
                             && not (@nm `Set.member` @lhs.expNmS)         -- only inline if not exported as global value
 %%]]
-                            -> (Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker), True)
+                            -> (cafInline, True)
                         _ | not @isCAF
-                        -- bindings that are used once or more and that aren't a CAF.
-                        -- TODO: improve this decision for inlining bindings which are used more than once
-                          -- for example:
-                          -- - how many time used (if possible)
-                          -- - determine the cost of the function   (with heuristics?)
-                          -- - How important is the usage: highorder functions? arguments to recursive groups?
-                          -- - Not inline all cases if used more than once?
                             && (  @expr.isFFIWrapper                  -- wrappers are inlined
                                || @expr.isConWrapper
                                || @expr.inlineCost <= 10              -- and low cost values as well
                                )
-                               -- TODO: This is now only the size, so only code-duplication is only looked at, not work duplication.
-                            -> (Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker undefined), False)    --False because the bind is used more often.
+                            -> (callInline, False)    --False because the bind is used more often.
                           | otherwise
 
                             -> (Map.empty, False) -- don't inline
@@ -338,6 +331,25 @@ SEM GrBind
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UniqueIdsNeeded
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllGrExpr [ | | idsNeeded USE {+} {0} : Int]
+
+SEM GrExpr
+  | Seq lhs.idsNeeded = length @pat.introNmL + @expr.idsNeeded + @body.idsNeeded
+
+SEM GrAlt
+  | Alt lhs.idsNeeded = length @pat.introNmL + @expr.idsNeeded
+
+SEM GrBind
+  | Bind (expr.uniqueIds,lhs.uniqueIds) = (const $ "bind " ++ show @nm ++ " idsNeeded = " ++ show @expr.idsNeeded) >>>
+                                          splitAt @expr.idsNeeded @lhs.uniqueIds
+                                      
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Transformation: inline
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -354,7 +366,7 @@ inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS,Bool)
 inlGrVar inlMp nmL
   = (foldr (.) id mks,Set.unions inls,or changes)
   where inl nm = case Map.lookup nm inlMp of
-                   Just (GrInl_CAF e _) -> condTrace showInlines ("inlining caf " ++ show nm ++ "\nval = " ++ show e) $
+                   Just (GrInl_CAF e _) -> (showInlines,const $ "inlining caf " ++ show nm ++ "\nval = " ++ show e) >?>
                                            (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm,True)
                    _ -> (id,Set.empty,False)
         (mks,inls,changes) = unzip3 $ map inl nmL
@@ -375,13 +387,13 @@ SEM GrExpr
 %%[(8 codegen grin)
 
 SEM GrExpr
-  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed,lhs.uniqueIds,lhs.varSubs)
+  | Call        (lhs.trf,loc.gathInlNmS,lhs.changed,lhs.uniqueIds,lhs.varSubs,lhs.idsNeeded)
                     = --(const $ "inlining.." ++ show @nm) >>>
                       --(\(a,b,c,d) -> "uniqueIds for " ++ show @nm ++ " is " ++ show (take 5 d)) >>>
                         case Map.lookup @nm @lhs.inlMp of
-                          Just (GrInl_Call as e lb _) | not (lb {-&& @lhs.insideCase-})
+                          Just (GrInl_Call as e lb idsNeeded) | not (lb {-&& @lhs.insideCase-})
                                                        && inlNmsAreInlineable @argL.asNmL 
-                              -> condTrace showInlines ("inlining call " ++ show @nm) $
+                              ->  (True,const $ "inlining call " ++ show @nm) >?>
                                   let argSubsEnv = Map.fromList (zip as (map fromJust @argL.asNmL))
                                       argsSubstituted = substExpr argSubsEnv e
                                       (newBindingNames,remUniqueIds,varSubs) = mkUniqueBindings @lhs.uniqueIds argsSubstituted
@@ -390,20 +402,23 @@ SEM GrExpr
                                       , True
                                       , remUniqueIds
                                       , varSubs
+                                      , idsNeeded
                                       )                                
-                          _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges, @lhs.uniqueIds, [])
+                          _ -> (@grVarTrf @trf, @grVarInlNmS, @inlGrVarChanges, @lhs.uniqueIds, [], 0)
 
   | App         (lhs.trf,loc.gathInlNmS,lhs.changed)        
                   =   if       @lhs.isCAF
                       then let (grVarTrf,grVarInlNmS,changed) = inlGrVar @lhs.inlMp (@nm : Map.keys @argL.gathFviMp)
-                           in  (grVarTrf @trf, grVarInlNmS, changed)
+                           in   (False,const $ "inlining app caf") >?>
+                               (grVarTrf @trf, grVarInlNmS, changed)
                       else (@trf, Set.empty, False)
-  | Eval        (lhs.trf,loc.gathInlNmS,lhs.changed)        
+  | Eval        -- What is this about? I really don't get it. How is this related to globals? CAFS can only be inlined from CAFS, okay.
+                (lhs.trf,loc.gathInlNmS,lhs.changed)        
                   =   case Map.lookup @nm @lhs.inlMp of
                           Just (GrInl_CAF e lb) | @lhs.isCAF && not lb
-                            -> condTrace showInlines ("inlining caf " ++ show @nm ++ "\nval = " ++ show e) $
+                            -> (False,const $ "inlining eval caf " ++ show @nm ++ "\nval = " ++ show e) >?>
                                (e, Set.singleton @nm, True)
-                          _ -> (@trf, Set.empty, False)
+                          _ -> (@trf, Set.empty, False) 
 %%]
 
 %%[(8 codegen grin)

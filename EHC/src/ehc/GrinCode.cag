@@ -258,7 +258,7 @@ data GrInl
       { inlArgNmL   :: ![HsName]
       , inlGrExpr   :: !GrExpr
       , inlLoopBr   :: !Bool
-      , uniqueIds   :: [Int]
+      , idsNeeded   :: Int
       }
   | GrInl_CAF
       { inlGrExpr   :: !GrExpr
