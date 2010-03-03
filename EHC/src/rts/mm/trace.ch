@@ -52,7 +52,7 @@ typedef struct MM_Trace {
   	Word			 			(*traceObject)( struct MM_Trace*, Word obj ) ;
   	
   	// trace payload of an object, given there is payload to be traced
-  	void			 			(*traceObjectPayload)( struct MM_Trace*, Word Obj ) ;
+  	void			 			(*traceObjectPayload)( struct MM_Trace*, Word obj ) ;
   	
   	// trace multiple objects, replace by new objects
   	// check on traceability is done by function

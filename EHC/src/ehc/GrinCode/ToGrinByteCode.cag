@@ -11,16 +11,15 @@
 %%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Error})
+%%[(8 codegen grin) hs import({%{EH}Error},{%{EH}BuiltinPrims})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty},qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}BuiltinPrims})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty})
+%%]
+%%[(8 codegen grin) hs import(qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}LamInfo})
 %%]
 
-%%[(8 codegen grin) hs export(grinMod2ByteCodeMod)
-%%]
-
-%%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)})
+%%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
 %%]
 
 %%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
@@ -37,7 +36,7 @@ Debug
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).grinMod2ByteCodeMod hs
+%%[(8 codegen grin).grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
 grinMod2ByteCodeMod :: EHCOpts -> GrModule -> (GB.Module,[Err])
 grinMod2ByteCodeMod opts gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
@@ -47,16 +46,17 @@ grinMod2ByteCodeMod opts gmod
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
 
-%%[(20 codegen grin) -8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
-grinMod2ByteCodeMod opts allImpNmL impNmL impNmOffMpMp expNmOffMp gmod
+%%[(20 codegen grin) -8.grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
+grinMod2ByteCodeMod :: EHCOpts -> LamMp -> [HsName] -> {- [HsName] -> -} HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
+grinMod2ByteCodeMod opts lamMp allImpNmL {- impNmL -} impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
-                               { expNmOffMp_Inh_GrAGItf = expNmOffMp
-                               , impNmOffMpMp_Inh_GrAGItf = impNmOffMpMp
-                               , allImpNmL_Inh_GrAGItf = allImpNmL
-                               , impNmL_Inh_GrAGItf = impNmL
-                               , opts_Inh_GrAGItf = opts
+                               { expNmOffMp_Inh_GrAGItf     = expNmOffMp
+                               , impNmOffMpMp_Inh_GrAGItf   = impNmOffMpMp
+                               , allImpNmL_Inh_GrAGItf      = allImpNmL
+                               -- , impNmL_Inh_GrAGItf         = offMpKeysSorted impNmOffMpMp -- impNmL
+                               , opts_Inh_GrAGItf           = opts
+                               , lamMp_Inh_GrAGItf          = lamMp
                                })
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
@@ -104,7 +104,13 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllBind AllGrExpr GrModule GrAGItf [ opts: EHCOpts | | ]
+ATTR AllBind AllGrExpr GrModule GrAGItf
+  [ opts: EHCOpts
+%%[[20
+    lamMp: LamMp
+%%]]
+  | |
+  ]
 %%]
 
 %%[(8 codegen grin)
@@ -112,7 +118,12 @@ ATTR AllBind AllGrExpr GrModule GrAGItf [ opts: EHCOpts | | ]
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
 %%[(20 codegen grin)
-ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]}  impNmL: {[HsName]} | | ]
+ATTR GrAGItf GrModule
+  [ expNmOffMp: HsName2OffsetMp
+    allImpNmL: {[HsName]}
+    -- impNmL: {AssocL HsName Int}
+  | |
+  ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -165,8 +176,8 @@ SEM GrExpr
 %%[(8 codegen grin)
 SEM GrExpr
   | FFI         loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (@impEntNm) else Nothing
-  | Call Eval App
-                loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing
+  | Eval App    loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing
+  | Call        loc         .   mbDebugStrNm    =   Just (if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing, @nm)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -491,6 +502,7 @@ SEM GrExpr
                                                       { GB.neVAGam = @lhs.vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 
@@ -499,6 +511,7 @@ SEM GrBind
                                                       { GB.neVAGam = @lhs.vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 
@@ -507,6 +520,7 @@ SEM GrModule
                                                       { GB.neVAGam = @vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 %%]
@@ -662,7 +676,7 @@ SEM GrExpr
                                                                where (fins,fdep,gbState2) = GB.nmLd GB.defaultLoadCtxt @nmEnv (@ldStState `GB.ststInc` inc) gbState @nm
                                                                      nArgMine    = length @argL.grvalIntroL
                                                              _ -> (ins', inc', False, gbState2)
-                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStr @nmEnv ins inc @ldStState gbState @nm
+                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStrNm @nmEnv ins inc @ldStState gbState @nm
   | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState,constMp3)
                                                 =   if @optimForIntlPrim
                                                     then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
@@ -878,7 +892,7 @@ SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[20
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
-                                                      [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ]
+                                                      (offMpKeysSorted @lhs.impNmOffMpMp)
                                                       [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp
                                                           , let m = panicJust ("ToGrinByteCode.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
                                                       ]
@@ -905,7 +919,14 @@ SEM GrModule
 
 SEM GrBind
   | Bind        lhs         .   i               =   Seq.fromList
-                                                       [ GB.funstart (GB.FunctionInfo (show @nm) (GB.gbstMaxStkDepth @expr.gbState))
+                                                       [ GB.funstart (GB.FunctionInfo (show @nm) @nm (GB.gbstMaxStkDepth @expr.gbState)
+%%[[8
+                                                                                      []
+%%][20
+                                                                                      (maybe [] (\i -> if laminfo1stArgIsStackTrace i then [GB.FunctionInfoFlag_1stArgIsStackTrace] else [])
+                                                                                       $ Map.lookup @nm @lhs.lamMp)
+%%]]
+                                                                                      )
                                                        , GB.label (GB.LocRef_CodeEntry @entryInx)
                                                        , GB.meta' GB.AnnFunStart @nm
                                                        ]

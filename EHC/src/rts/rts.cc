@@ -150,7 +150,7 @@ int main_Sil_Exit(int argc, char** argv)
 {
 %%[[8
      printf("%d\n", (int)RP[1] );
-%%][100
+%%][99
 %%]]
 	
 #	if TIMING
@@ -284,8 +284,7 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 		gb_prState( "exit state", 1 ) ;
 	} else {
 #		ifdef DUMP_INTERNALS
-			gb_prTOSAsInt() ;
-			printf( "\n" ) ;
+			IF_TR_ON(3,{gb_prTOSAsInt() ;printf( "\n" ) ;})
 #		endif
 	}
 	GB_GCSafe_Leave ;

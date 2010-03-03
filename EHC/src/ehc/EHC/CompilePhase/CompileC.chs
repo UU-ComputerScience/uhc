@@ -79,7 +79,7 @@ cpCompileWithGCC how othModNmL modNm
                                    else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
                                  )
-                              where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant "") l
+                              where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant l) l
                             FinalCompile_Module
                               -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                               where o = fpO modNm fp

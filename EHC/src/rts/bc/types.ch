@@ -353,6 +353,7 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #define GB_MkTupNode1_In(n,x1)				GB_MkConNode1(n,0,x1)
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
 #define GB_MkTupNode2_In_Ensured(n,x1,x2)	GB_MkConNode2_Ensured(n,0,x1,x2)
+#define GB_MkTupNode3_In(n,x1,x2,x3)		GB_MkConNode3(n,0,x1,x2,x3)
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
@@ -814,9 +815,18 @@ Descriptor of info about functions
 %%[8
 typedef struct GB_FunctionInfo {
   Word16	szStack ;	// size of stack required by function, in bytes
+  Word8		flags ;
   Word8*	nm ; 		// name of function
 } __attribute__ ((__packed__)) GB_FunctionInfo ;
 
+typedef SHalfWord		GB_FunctionInfo_Inx ;
+
+#define GB_FunctionInfo_Inx_None						(-1)
+%%]
+
+%%[8
+#define GB_FunctionInfoFlag_None						0x0
+#define GB_FunctionInfoFlag_1stArgIsStackTrace			0x1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

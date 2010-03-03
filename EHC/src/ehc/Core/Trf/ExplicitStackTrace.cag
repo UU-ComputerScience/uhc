@@ -20,13 +20,15 @@ However, ideally, this trf should be placed before that, but this currently brea
 
 %%]
 
-%%[(99 codegen) hs module {%{EH}Core.Trf.ExplicitStackTrace} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfExplicitStackTrace)
+%%[(99 codegen) hs module {%{EH}Core.Trf.ExplicitStackTrace}
+%%]
+%%[(99 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}LamInfo})
 %%]
 
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonCLamCallInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -38,18 +40,18 @@ PRAGMA nocycle
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen) hs
-cmodTrfExplicitStackTrace :: EHCOpts -> CLamCallMp -> CModule -> (CModule,CLamCallMp)
-cmodTrfExplicitStackTrace opts clamCallMp cmod
+%%[(99 codegen) hs export(cmodTrfExplicitStackTrace)
+cmodTrfExplicitStackTrace :: EHCOpts -> LamMp -> CModule -> (CModule,LamMp)
+cmodTrfExplicitStackTrace opts lamMp cmod
   =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
                              (Inh_CodeAGItf
                                { opts_Inh_CodeAGItf = opts
-                               , clamCallMp_Inh_CodeAGItf = clamCallMp
+                               , lamMp_Inh_CodeAGItf = lamMp
                                })
      in   ( cTrf_Syn_CodeAGItf t
-          , debugCLamCallMp_Syn_CodeAGItf t `Map.union`
-            gathCLamCallMp_Syn_CodeAGItf  t
-            -- [ | (n,) <- debugCLamCallMp_Syn_CodeAGItf t ]
+          , debugLamMp_Syn_CodeAGItf t `Map.union`
+            gathLamMp_Syn_CodeAGItf  t
+            -- [ | (n,) <- debugLamMp_Syn_CodeAGItf t ]
           )
 %%]
 
@@ -99,7 +101,7 @@ SEM CModule
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Newly bound CLamCallInfo
+%%% Newly bound LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 Only stack trace info is gathered, and assumed to propagate correctly.
@@ -114,9 +116,9 @@ mbStackTrace opts isCand nm
 
 %%[(99 codegen)
 SEM CBind
-  | Bind        (loc.mbStackTrace,lhs.bindCLamCallMp)
+  | Bind        (loc.mbStackTrace,lhs.bindLamMp)
                                             =   let mbt = mbStackTrace @lhs.opts @expr.isTraceCandidate @nm
-                                                in  (mbt,Map.singleton @nm (CLamCallInfo 0 mbt))
+                                                in  (mbt,Map.singleton @nm (LamInfo 0 mbt Nothing))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -128,8 +130,8 @@ See note on need of keeping names unique above.
 %%[(99 codegen)
 ATTR AllCodeNT [ | uniq: Int | ]
 
-SEM CModule
-  | Mod         loc         .   uniq        =   0
+SEM CodeAGItf
+  | AGItf       loc         .   uniq        =   0
 
 SEM CBind
   | Bind        loc         .   uniq        =   @lhs.uniq + 1
@@ -144,19 +146,20 @@ SEM CBind
 ATTR AllBind [ | | bindCTrfL USE {++} {[]}: {[CBind]} ]
 
 SEM CBind
-  | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newCLamCallMp)
+  | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @expr.isTraceCandidate
                                                     -> ( [ mkCBind1 dbNm (mkCExprLam1 @nmStackTrace @expr.cTrf) 
                                                          , mkCBind1Metas @nm @bindMeta.cTrf 
                                                            $ mkCExprLam @expr.traceCandidateLamArgs
-                                                           $ mkCExprApp (CExpr_Var dbNm) (CExpr_Int 0 : map CExpr_Var @expr.traceCandidateLamArgs)   -- TBD: empty stack
+                                                           $ mkCExprApp (CExpr_Var dbNm)
+                                                                        ( CExpr_Var (ehbnDataListAltNil $ ehcOptBuiltinNames @lhs.opts)
+                                                                        : map CExpr_Var @expr.traceCandidateLamArgs
+                                                                        )
                                                          ]
                                                        , Just @nmStackTrace
-                                                       -- , Map.singleton dbNm $ CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv @nm)
                                                        , Map.fromList
-                                                           [ (dbNm, CLamCallInfo 0 (StackTraceInfo_IsStackTraceEquiv  @nm ))
-                                                           -- , (@nm , CLamCallInfo 0 (StackTraceInfo_HasStackTraceEquiv dbNm))
+                                                           [ (dbNm, LamInfo 0 (StackTraceInfo_IsStackTraceEquiv @nm) Nothing)
                                                            ]
                                                        )
                                                   _ -> ([@cTrf], @lhs.mbInStackTraceCtxt, Map.empty)
@@ -169,27 +172,29 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 
 SEM CExpr
   | Let         lhs         .   cTrf        =   CExpr_Let @categ @binds.bindCTrfL @body.cTrf
-  | Var         lhs         .   cTrf        =   case Map.lookup @nm @lhs.clamCallMp of
-                                                  Just (CLamCallInfo {clciStackTrace=StackTraceInfo_HasStackTraceEquiv dbNm})
+  | Var         lhs         .   cTrf        =   case Map.lookup @nm @lhs.lamMp of
+                                                  Just (LamInfo {laminfoStackTrace=StackTraceInfo_HasStackTraceEquiv dbNm})
                                                     -> case @lhs.mbInStackTraceCtxt of
                                                          Just stTrNm
-                                                           -> mkCExprApp1 (CExpr_Var dbNm) (CExpr_Var stTrNm)  -- TBD: push on stack
+                                                           -> mkCExprApp1 (CExpr_Var dbNm)
+                                                                          (mkCExprApp (CExpr_Var hsnStackTracePush) [cstring @lhs.opts (show @nm), CExpr_Var stTrNm])
                                                          _ -> @cTrf
                                                   _ -> @cTrf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Gathering newly introduced bindings to CLamCallInfo
+%%% Gathering newly introduced bindings to LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 codegen)
 ATTR
   AllCodeNT
   CodeAGItf
-    [ | | debugCLamCallMp USE {`Map.union`} {Map.empty}: CLamCallMp ]
+    [ | | debugLamMp USE {`Map.union`} {Map.empty}: LamMp ]
 
 SEM CBind
-  | Bind        lhs         .   debugCLamCallMp=   @newCLamCallMp `Map.union` @expr.debugCLamCallMp
+  | Bind        lhs         .   debugLamMp
+                                            =   @newLamMp `Map.union` @expr.debugLamMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

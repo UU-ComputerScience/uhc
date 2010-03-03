@@ -315,6 +315,7 @@ typedef struct GB_ModEntry {
   GB_NodePtr*				expNode ;
 %%]]
   GB_ByteCodeModule*		bcModule ;
+  GB_FunctionInfo*			functionInfos ;
 } GB_ModEntry ;
 
 extern int gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
@@ -325,8 +326,8 @@ Imported module info: binding of module name to position in global module table 
 
 %%[20
 typedef struct GB_ImpModEntry {
-  char*						name ;
-  Word						globModInx ;
+  char*						name ;			// name of module
+  Word						globModInx ;	// index global table of GB_ModEntry, filled in at link time
 } GB_ImpModEntry ;
 %%]
 
@@ -375,24 +376,27 @@ typedef struct GB_CallInfo_CCall {
 } GB_CallInfo_CCall ;
 
 typedef struct GB_CallInfo {
-	Word8	 			kind ;
-	Word8*   			name ;
-	GB_GCStackInfo*		gcStackInfo ;
+	Word8	 				kind ;
+	Word8*   				name ;					// name of called function (to become obsolete when functionInfo works)
+	// GB_FunctionInfo*		functionInfo ;			// info about the called function (20100301 AD: under implementation)
+	GB_FunctionInfo_Inx		functionInfoModOff ;	// offset in imported module table, replaced at linking time with index into global module table
+	GB_FunctionInfo_Inx		functionInfoOff ;		// offset in per module FunctionInfo table
+	GB_GCStackInfo*			gcStackInfo ;
 #if TRACE
-	GB_CallInfo_CCall	ccall ;
+	GB_CallInfo_CCall		ccall ;
 #endif
-} GB_CallInfo ;
+} __attribute__ ((__packed__)) GB_CallInfo ;
 
 typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
 #if TRACE
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc,w}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc,w}		// make CallInfo
 #else
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc}		// make CallInfo
 #endif
-#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL,NULL)
+#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,-1,-1,NULL,NULL)
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
@@ -419,6 +423,13 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 %%]]
 %%]
 
+Flags
+
+%%[8
+%%]
+#define GB_CallInfo_Flag_None				0			// nothing, nada
+#define GB_CallInfo_Flag_ExplStackTrace		1			// this function takes as its first arg
+
 Retrieval of call info given a bp
 
 %%[8
@@ -427,6 +438,8 @@ Retrieval of call info given a bp
 
 %%[8
 extern Bool gb_CallInfo_Kind_IsVisible( Word kind ) ;
+extern GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
+extern Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -669,14 +682,14 @@ extern void gb_InitTables
 	// , GB_GCInfo* gcInfos
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
-	, GB_CallInfo* callinfos
-	, GB_FunctionInfo* functionInfos
+	, GB_CallInfo* callinfos, int callinfosSz
+	, GB_FunctionInfo* functionInfos, int functionInfosSz
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
-	, GB_ModEntry* modTbl
+	, GB_ModEntry* modTbl, Word modTblInx
 %%]]
 	) ;
 %%]

@@ -801,6 +801,7 @@ cpProcessEH modNm
 %%]
 
 %%[(8 codegen)
+-- | TBD: finish it, only a sketch now
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
@@ -849,11 +850,13 @@ cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr   -- '
-       ; cpSeq [ cpTransformCore
-                   modNm
-               , when (ehcOptEmitCore opts)   (cpOutputCore  "" "core"   modNm)
+       ; cpSeq [ cpTransformCore modNm
+%%[[20
+               , cpFlowHILamMp modNm
+%%]]
+               , when (ehcOptEmitCore opts) (cpOutputCore "" "core" modNm)
 %%[[(8 codegen java)
-               , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
+               , when (ehcOptEmitJava opts) (cpOutputJava    "java" modNm)
 %%]]
                , cpProcessCoreFold modNm
                ]
@@ -911,6 +914,9 @@ cpProcessBytecode modNm
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr    -- '
        ; cpSeq [ cpTranslateByteCode modNm
+%%[[20
+               , cpFlowHILamMp modNm
+%%]]
 %%[[99
                , cpCleanupFoldBytecode modNm
 %%]]

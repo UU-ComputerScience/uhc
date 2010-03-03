@@ -107,13 +107,13 @@ SEM ValBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-ATTR AllCodeNT [ fvSLamMp: FvSMp | | ]
+ATTR AllCodeNT [ lamFvSMp: FvSMp | | ]
 
 SEM AGItf
-  | AGItf       module      .   fvSLamMp    =   Map.empty
+  | AGItf       module      .   lamFvSMp    =   Map.empty
 
 SEM Expr
-  | Let         loc         .   fvSLamMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.fvSLamMp @binds.fvSMp
+  | Let         loc         .   lamFvSMp    =   (let  start varS = fvsClosure @binds.bindLamS @lhs.lamS varS @lhs.lamFvSMp @binds.fvSMp
                                                  in   case @categ of
                                                         ValBindCateg_Rec
                                                           ->  fvsTransClosure lm m
@@ -121,7 +121,7 @@ SEM Expr
                                                         _ ->  m
                                                           where (m,_)   = start @lhs.varS
                                                 )
-                                                `Map.union` @lhs.fvSLamMp
+                                                `Map.union` @lhs.lamFvSMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -168,7 +168,7 @@ ATTR AGItf [ | | cTrf: CModule ]
 SEM ValBind
   | Val         loc			.	(argNewL,argMpNew,bindLamArgMp)
                                             =   if {- @isLiftable && @lhs.lev /= cLevModule -} @expr.isLam
-                                                then  let  argLevL = fvLAsArg @lhs.introVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.fvSLamMp
+                                                then  let  argLevL = fvLAsArg @lhs.introVarIntroMp $ panicJust "LamGlobalAsArg.CBind.Bind.argLevL" $ Map.lookup @nm $ @lhs.lamFvSMp
                                                            (argOL,argNL,argONMp) = fvLArgRepl @lhs.gUniq $ argLevL
                                                       in   (argNL, argONMp, @nm `Map.singleton` argOL)
                                                 else  ([],Map.empty, Map.empty)

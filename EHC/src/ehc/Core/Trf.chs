@@ -14,6 +14,10 @@
 %%[(8 codegen) import({%{EH}EHC.Common})
 %%]
 
+-- LamInfo
+%%[(8 codegen) import({%{EH}LamInfo})
+%%]
+
 -- Core
 %%[(8 codegen) import({%{EH}Core})
 %%]
@@ -59,12 +63,12 @@ data TrfCore
       , trfcoreCoreStages   	:: [(String,CModule)]
       , trfcoreUniq         	:: !UID
 %%[[20
-      , trfcoreExpNmOffMp   	:: !HsName2OffsetMp
+      , trfcoreExpNmOffMp       :: !HsName2OffsetMp
 %%]]
 %%[[99
-      , trfcoreInhCLamCallMp    :: !CLamCallMp		-- from context
-      , trfcoreGathCLamCallMp   :: !CLamCallMp		-- gathered anew
-      , trfcoreExtraExports		:: !FvS				-- extra exported names, introduced by transformations
+      , trfcoreInhLamMp         :: !LamMp       -- from context
+      , trfcoreGathLamMp        :: !LamMp       -- gathered anew
+      , trfcoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
 %%]]
       }
 
@@ -193,13 +197,13 @@ trfCore opts modNm trfcore
 %%]]
 %%[[99        
         t_expl_trace    = liftTrf2 "expl-sttrace" (\m s@(TrfCore {trfcoreExtraExports=exps})
-                                                     -> s { trfcoreGathCLamCallMp = m
+                                                     -> s { trfcoreGathLamMp      = m
                                                           , trfcoreExtraExports   = exps `Set.union`
                                                                                     Set.fromList [ n
-                                                                                                 | (n,CLamCallInfo {clciStackTrace=(StackTraceInfo_IsStackTraceEquiv _)}) <- Map.toList m
+                                                                                                 | (n,LamInfo {laminfoStackTrace=(StackTraceInfo_IsStackTraceEquiv _)}) <- Map.toList m
                                                                                                  ]
                                                           }
-                                                  )     $ cmodTrfExplicitStackTrace opts (trfcoreInhCLamCallMp trfcore)
+                                                  )     $ cmodTrfExplicitStackTrace opts (trfcoreInhLamMp trfcore)
 %%]]
 %%]
 

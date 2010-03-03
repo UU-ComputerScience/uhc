@@ -607,6 +607,17 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Explicit stack trace construction entry point
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(hsnStackTracePush)
+[hsnStackTracePush]
+  = map
+      (mkRV hsnModIntlBase)
+      [ "pushExplicitStackTrace" ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -645,6 +656,7 @@ hsnModIntlTypes                         =   hsnPrefixQual hsnUHC (hsnFromString 
 hsnModIntlPtr                           =   hsnPrefixQual hsnUHC (hsnFromString "Ptr")
 hsnModIntlRun                           =   hsnPrefixQual hsnUHC (hsnFromString "Run")
 hsnModIntlIOBase                        =   hsnPrefixQual hsnUHC (hsnFromString "IOBase")
+hsnModIntlStackTrace                    =   hsnPrefixQual hsnUHC (hsnFromString "StackTrace")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -761,6 +773,7 @@ data EHBuiltinNames
       , ehbnPrelReadParen               :: HsName
       , ehbnPrimEqChar                  :: HsName
       , ehbnAddr                        :: HsName
+      -- , ehbnStackTracePush              :: HsName
 %%]]
       }
 
@@ -854,6 +867,7 @@ mkEHBuiltinNames f
       , ehbnPrelReadParen               = f IdOcc_Val       hsnPrelReadParen
       , ehbnPrimEqChar                  = f IdOcc_Val       hsnPrimEqChar
       , ehbnAddr                        = f IdOcc_Type      hsnAddr
+      -- , ehbnStackTracePush              = f IdOcc_Val       hsnStackTracePush
 %%]]
       }
 %%]

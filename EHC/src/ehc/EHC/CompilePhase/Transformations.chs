@@ -19,18 +19,23 @@ Interface/wrapper to various transformations for Core, Grin, etc.
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
 %%]
-%%[99 import({%{EH}Module(modMpAddHiddenExps)},{%{EH}EHC.CompilePhase.Module(cpUpdateModOffMp)})
+%%[99 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
+%%]
+
+-- Core transformations
+%%[(8 codegen) import({%{EH}Core.Trf})
 %%]
 
 -- Output
 %%[8 import({%{EH}EHC.CompilePhase.Output(cpOutputCoreModule)})
 %%]
 
+-- HI syntax and semantics
+%%[20 import(qualified {%{EH}HI} as HI)
+%%]
+
 -- Core semantics
 %%[(99 codegen grin) import( {%{EH}Core.ToGrin(Inh_CodeAGItf(..))})
-%%]
--- Core transformations
-%%[(8 codegen) import({%{EH}Core.Trf})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -54,7 +59,7 @@ cpTransformCore modNm
                              , trfcoreExpNmOffMp    = crsiExpNmOffMp modNm crsi
 %%]]
 %%[[99
-                             , trfcoreInhCLamCallMp = clamCallMp_Inh_CodeAGItf $ crsiCoreInh crsi
+                             , trfcoreInhLamMp      = lamMp_Inh_CodeAGItf $ crsiCoreInh crsi
 %%]]
                              }
               trfcoreOut = trfCore opts modNm trfcoreIn
@@ -72,17 +77,16 @@ cpTransformCore modNm
 
 %%[[99
          -- put back result: call info map (lambda arity, ...)
-       ; cpUpdSI (\crsi -> let inh = crsiCoreInh crsi
-                               m   = trfcoreGathCLamCallMp trfcoreOut `Map.union` clamCallMp_Inh_CodeAGItf inh
-                           in  crsi {crsiCoreInh = inh {clamCallMp_Inh_CodeAGItf = m}}
-                 )
-
-         -- put back result: additional hidden exports
-       ; when (not $ Set.null $ trfcoreExtraExports trfcoreOut)
-              (do { cpUpdSI (\crsi -> crsi { crsiModMp = modMpAddHiddenExps modNm (Set.toList $ trfcoreExtraExports trfcoreOut) $ crsiModMp crsi
-                                           })
-                  ; cpUpdateModOffMp [modNm]
-                  })
+       ; let hii   = ecuHIInfo ecu
+             lamMp = HI.hiiLamMp hii
+       ; cpUpdCU modNm
+           ( ecuStoreHIInfo
+               (hii { HI.hiiLamMp = trfcoreGathLamMp trfcoreOut `Map.union` lamMp
+                    })
+           )
+       
+         -- put back result: additional hidden exports, it should be in a cpFlowXX variant
+       ; cpUpdHiddenExports modNm (Set.toList $ trfcoreExtraExports trfcoreOut)
 %%]]
        }
 %%]
