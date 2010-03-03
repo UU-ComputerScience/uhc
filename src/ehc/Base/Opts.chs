@@ -273,7 +273,7 @@ data EHCOpts
       -- ,  ehcOptHideAllPackages::  Bool              -- hide all implicitly used packages
       ,  ehcOptPackageSearchFilter	 ::  [PackageSearchFilter]	-- description of what to expose from package database
       ,  ehcOptOutputDir      ::  Maybe String      -- where to put output, instead of same dir as input file
-      ,  ehcOptOutputPkgLibDir::  Maybe String      -- where to put output the lib part of a package, instead of same dir as input file
+      -- ,  ehcOptOutputPkgLibDir::  Maybe String      -- where to put output the lib part of a package, instead of same dir as input file
       ,  ehcOptKeepIntermediateFiles
                               ::  Bool              -- keep intermediate files
       ,  ehcOptPkg            ::  Maybe PkgOption	-- package building (etc) option
@@ -463,7 +463,7 @@ defaultEHCOpts
       ,  ehcOptPackageSearchFilter
       							=	pkgSearchFilter PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
       ,  ehcOptOutputDir        =   Nothing
-      ,  ehcOptOutputPkgLibDir  =   Nothing
+      -- ,  ehcOptOutputPkgLibDir  =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
       ,  ehcOptPkg              =   Nothing
@@ -595,7 +595,7 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
      ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
-     ,  Option ""   ["pkg-build-libdir"] 	(ReqArg oOutputPkgLibDir "dir")      "pkg: where to put the lib part of a package"
+     -- ,  Option ""   ["pkg-build-libdir"] 	(ReqArg oOutputPkgLibDir "dir")      "pkg: where to put the lib part of a package"
      ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "expose/use package"
      ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "hide package"
      ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "hide all (implicitly) assumed/used packages"
@@ -802,7 +802,7 @@ ehcCmdLineOpts
          oOutputDir           s o   = o { ehcOptOutputDir                   = Just s
                                         , ehcOptDoLinking                   = False
                                         }
-         oOutputPkgLibDir     s o   = o { ehcOptOutputPkgLibDir             = Just s }
+         -- oOutputPkgLibDir     s o   = o { ehcOptOutputPkgLibDir             = Just s }
          oKeepIntermediateFiles o   = o { ehcOptKeepIntermediateFiles       = True }
          oPkgBuild            s o   = o { ehcOptPkg                         = Just (PkgOption_Build s)
                                         , ehcOptDoLinking                   = False

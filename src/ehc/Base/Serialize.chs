@@ -328,6 +328,10 @@ sgetWord16 = liftG Bn.getWord16be
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
+instance Serialize () where
+  sput _ = return ()
+  sget   = return ()
+
 instance Serialize Int where
   sput = sputPlain
   sget = sgetPlain

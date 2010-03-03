@@ -64,6 +64,7 @@ import UHC.STRef
 import UHC.Types
 import UHC.MutVar
 import UHC.ByteArray
+import UHC.StackTrace
 
 %%]
 
@@ -629,16 +630,16 @@ catchException m k = m
 
 #else
 
-foreign import prim primCatchException :: forall a . a -> (([(Int,String)],SomeException) -> a) -> a
+foreign import prim primCatchException :: forall a . a -> ((SomeException,ImplicitStackTrace,ExplicitStackTrace) -> a) -> a
 
-catchTracedException :: IO a -> (([(Int,String)],SomeException) -> IO a) -> IO a
+catchTracedException :: IO a -> ((SomeException,ImplicitStackTrace,ExplicitStackTrace) -> IO a) -> IO a
 catchTracedException (IO m) k = IO $ \s ->
   primCatchException (m s)
                      (\te -> case (k te) of {IO k' -> k' s })
 
 catchException :: IO a -> (SomeException -> IO a) -> IO a
 catchException m k =
-  catchTracedException m (\(_,e) -> k e)
+  catchTracedException m (\(e,_,_) -> k e)
 
 catch :: IO a -> (IOError -> IO a) -> IO a
 catch m h = catchException m $ \e -> case e of

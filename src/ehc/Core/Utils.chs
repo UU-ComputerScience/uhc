@@ -325,19 +325,19 @@ fvsClosure newS lamOuterS varOuterS fvmOuter fvmNew
      in   (Map.map fv fvmNew2,Map.map (`Set.intersection` newS) fvmNew2)
 
 fvsTransClosure :: FvSMp -> FvSMp -> FvSMp
-fvsTransClosure frLamMp frVarMp
-  =  let  frVarMp2 = Map.mapWithKey
+fvsTransClosure lamFvSMp varFvSMp
+  =  let  varFvSMp2 = Map.mapWithKey
                        (\n s -> s `Set.union` (Set.unions
-                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ frVarMp)
+                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ varFvSMp)
                                                $ Set.toList
                                                $ panicJust "fvsTransClosure.2"
-                                               $ Map.lookup n frLamMp
+                                               $ Map.lookup n lamFvSMp
                        )                      )
-                       frVarMp
+                       varFvSMp
           sz = sum . map Set.size . Map.elems
-     in   if sz frVarMp2 > sz frVarMp
-          then fvsTransClosure frLamMp frVarMp2
-          else frVarMp
+     in   if sz varFvSMp2 > sz varFvSMp
+          then fvsTransClosure lamFvSMp varFvSMp2
+          else varFvSMp
 %%]
 
 %%[(8 codegen) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)

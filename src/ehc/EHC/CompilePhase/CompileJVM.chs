@@ -116,7 +116,7 @@ cpLinkJar mbManif modNmL jarMk
                        where (libf,libd) = mkInOrOutputFPathDirFor OutputFor_Pkg opts l1 l2 "jar"
                              (l1,l2,libd')
                                = case jarMk of
-                                   JarMk_Pkg  p    -> (fp, fp, fmap (\d -> d ++ "/" ++ p) libd)
+                                   JarMk_Pkg  p    -> (fp, fp, fmap (\d -> d {- ++ "/" ++ p -}) libd)
                                                    where fp = mkFPath $ Cfg.mkJarFilename "" p
                                    JarMk_Exec m fp -> (mkFPath m,fp,libd)
        ; cpRegisterFilesToRm codeFiles
@@ -171,7 +171,7 @@ cpCompileJazyJVM how othModNmL modNm
                         where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
                               libJarL
                                 =    map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB     variant "" ++ "lib" ++ l ++ ".jar") (["jazy"])
-                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant "" ++ "lib" ++ l ++ ".jar") (pkgNmL)
+                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant l  ++ "lib" ++ l ++ ".jar") (pkgNmL)
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )
                                    , ( "Main-Class", show mainNm )

@@ -22,7 +22,7 @@ DATA Module
   | Mod         moduleNm        : {String}
 %%[[20
                 allImpModNmL	: {AssocL HsName String}
-                impModNmL		: {AssocL HsName String}
+                impModNmL		: {AssocL HsName Int}
                 expEntryL		: {[EntryInfo]}
 %%]]
                 allEntryL		: {[EntryInfo]}
@@ -78,7 +78,7 @@ DATA Instr
   				retOffSurr		: Imm
   				linkChainEntry	: LinkChainEntry
   | Call        locSrc			: InsOp_LocB
-  				callInfo		: CallInfo
+  				callInfo		: CallInfoCall
   | TailCall    locSrc			: InsOp_LocB
   				nArgMineSz		: InsOp_ImmSz
   				nArgSurrSz		: InsOp_ImmSz

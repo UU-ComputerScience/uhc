@@ -119,7 +119,7 @@ EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= -v3
 #EHCLIB_DEBUG_OPTS						= -v4
 #EHCLIB_DEBUG_OPTS						= -v4 --debug-stopat-hi-error=1 
-#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
+#EHCLIB_DEBUG_OPTS						= -O0 --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1 -O0
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1 --priv=1
 
@@ -147,7 +147,6 @@ ehclib-variant-dflt: \
 	          --pkg-hide-all \
 	          --target=$(EHC_VARIANT_TARGET) \
 	          --odir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg} \
-	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 	          --pkg-build=$${pkg} \
 	          --import-path=$(call FUN_MK_PKG_INC_DIR,$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$${pkg}/) \
 	          $${pkgs} \
@@ -162,6 +161,7 @@ ehclib-variant-dflt: \
 
 #	     ,$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --cpp --target=$(EHC_VARIANT_TARGET) $(EHCLIB_HS_MAIN_DRV_HS) \
 #	      set -xv;\
+#	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 
 ###########################################################################################
 # make all ehclibs target

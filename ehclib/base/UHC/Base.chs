@@ -118,6 +118,11 @@ module UHC.Base   -- adapted from thye Hugs prelude
     
 -- System
     exitWithIntCode,
+
+-- StackTrace
+    ExplicitStackTrace,
+    ImplicitStackTrace,
+    pushExplicitStackTrace,
     
 ) where
 
@@ -2063,6 +2068,9 @@ exitWithIntCode     :: Int -> IO a
 exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
 
+%%]
+
+%%[99
 
 ----------------------------------------------------------------
 -- main program
@@ -2071,4 +2079,18 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 -- see UHC.Run
 
 -- main = return () -- dummy
+%%]
+
+Stacktraces are implicitly referred to from any other module, so must be in the first.
+
+%%[99
+-- For now a stacktrace (i.e. explicit call stack) is simply a list
+type ExplicitStackTrace = [String]
+
+-- and the implicit (i.e. runtime stack) stack trace a list of (kind of stack frame, function name)
+type ImplicitStackTrace = [(Int,String)]
+
+pushExplicitStackTrace :: String -> ExplicitStackTrace -> ExplicitStackTrace
+pushExplicitStackTrace = (:)
+
 %%]

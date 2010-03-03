@@ -15,12 +15,14 @@
 
 %%[(20 codegen) hs import({%{EH}Base.Target})
 %%]
-%%[(20 codegen) hs import({%{EH}Core})
+%%[(20 codegen) hs import({%{EH}Core}, {%{EH}LamInfo})
 %%]
 %%[(20 codegen) hs import(qualified {%{EH}TyCore} as C)
 %%]
 
 %%[(20 codegen grin) hs import({%{EH}GrinCode})
+%%]
+%%[(20 codegen grin) hs import({%{EH}GrinByteCode})
 %%]
 
 %%[20 hs import({%{EH}Config},{%{EH}Module})
@@ -68,14 +70,16 @@ instance Show Visible where
   show VisibleYes = "visibleyes"
 %%]
 
-%%[2020 hs export(HiSettings(..),emptyHiSettings)
-data HiSettings
-  = HiSettings
-      { hisettingsHasMain :: Bool
+%%[2020 hs export(HILamInfo(..),emptyHILamInfo)
+-- | Info about function implementation which must be visible across modules
+data HILamInfo
+  = HILamInfo
+      { hilaminfoGrinByteCode :: GrinByteCodeLamInfo
       }
   deriving (Typeable, Data)
 
-emptyHiSettings = HiSettings False
+emptyHILamInfo :: HILamInfo
+emptyHILamInfo = HILamInfo emptyGrinByteCodeLamInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -102,7 +106,6 @@ data HIInfo
       , hiiIdDefAssocL          :: !(AssocL IdOcc IdOcc) -- IdDefOccGam
       , hiiHIDeclImpModL        :: ![HsName]
       , hiiHIUsedImpModL        :: ![HsName]
-      -- , hiiSettings             :: !HiSettings
 %%[[(20 hmtyinfer)
       , hiiValGam               :: !ValGam
       , hiiTyGam                :: !TyGam
@@ -113,7 +116,7 @@ data HIInfo
       , hiiCHRStoreL            :: !ScopedPredStoreL
 %%]]
 %%[[(20 codegen)
-      , hiiCLamCallMp           :: !CLamCallMp
+      , hiiLamMp                :: !LamMp
 %%]]
 %%[[(20 codegen grin)
       , hiiGrInlMp              :: !GrInlMp
@@ -274,7 +277,7 @@ sgetHIInfo opts = do
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCLamCallMp           = am
+                  , hiiLamMp                = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
@@ -291,6 +294,10 @@ sgetHIInfo opts = do
             }
   }
 %%]
+
+instance Serialize HILamInfo where
+  sput (HILamInfo a) = sput a
+  sget = liftM  HILamInfo sget
 
 %%[20 hs
 instance Serialize HIInfo where
@@ -320,7 +327,7 @@ instance Serialize HIInfo where
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCLamCallMp           = am
+                  , hiiLamMp                = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
@@ -368,6 +375,8 @@ instance Serialize HIInfo where
 %%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+instance ForceEval HILamInfo
+
 %%[99 hs
 instance ForceEval HIInfo where
 %%[[99
@@ -386,7 +395,7 @@ instance ForceEval HIInfo where
                   , hiiCHRStoreL        = cs
 %%]]
 %%[[(99 codegen)
-                  , hiiCLamCallMp       = am
+                  , hiiLamMp       = am
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp          = im
@@ -410,7 +419,7 @@ instance ForceEval HIInfo where
                 , hiiCHRStoreL        = cs
 %%]]
 %%[[(102 codegen)
-                , hiiCLamCallMp       = am
+                , hiiLamMp       = am
 %%]]
 %%[[(102 codegen grin)
                 , hiiGrInlMp          = im

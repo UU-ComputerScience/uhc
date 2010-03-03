@@ -54,6 +54,13 @@ Translation to another AST
 %%[(8 codegen grin) import(qualified {%{EH}EHC.GrinCompilerDriver} as GRINC)
 %%]
 
+-- HI AST
+%%[(20 codegen grin) import(qualified {%{EH}HI} as HI)
+%%]
+-- LamInfo
+%%[(20 codegen grin) import({%{EH}LamInfo})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: translations to another AST
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,68 +198,98 @@ cpTranslateCore2Jazy modNm
 %%[(8 codegen grin) export(cpTranslateGrin2Bytecode)
 cpTranslateGrin2Bytecode :: HsName -> EHCompilePhase ()
 cpTranslateGrin2Bytecode modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 modNmLL= crCompileOrder cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
+  =  do { cr <- get
+        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
 %%[[20
-                 expNmOffMp
-                        = crsiExpNmOffMp modNm crsi
-                 optim  = crsiOptim crsi
+        ; when (ehcOptVerbosity opts >= VerboseDebug)
+               (lift $ putStrLn ("crsiModOffMp: " ++ show (crsiModOffMp crsi)))
 %%]]
-                 (bc,errs)
-                        = grinMod2ByteCodeMod opts
+        ; let  modNmLL= crCompileOrder cr
+               mbGrin = ecuMbGrin ecu
+               grin   = panicJust "cpTranslateGrin2Bytecode1" mbGrin
 %%[[20
-                            (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
-                            (ecuImpNmL ecu)
-                            -- (crsiModOffMp crsi)
-                            (Map.fromList [ (n,(o,mp)) | (o,n) <- zip [0..] (ecuImpNmL ecu), let (_,mp) = panicJust "cpTranslateGrin2Bytecode2" (Map.lookup n (crsiModOffMp crsi))])
-                            expNmOffMp
+               expNmOffMp
+                      = crsiExpNmOffMp modNm crsi
+               optim  = crsiOptim crsi
 %%]]
-                            $ grin
+               (bc,errs)
+                      = grinMod2ByteCodeMod opts
 %%[[20
-         -- ;  lift $ putStrLn (show (crsiModOffMp crsi))
-         ;  when (ehcOptVerbosity opts >= VerboseDebug)
-                 (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
+                          (Core2GrSem.lamMp_Inh_CodeAGItf $ crsiCoreInh crsi) -- (HI.hiiLamMp $ ecuHIInfo ecu)
+                          (if ecuIsMainMod ecu then [ m | (m,_) <- sortOn snd $ Map.toList $ Map.map fst $ crsiModOffMp crsi ] else [])
+                          -- (ecuImpNmL ecu)
+                          (Map.fromList [ (n,(o,mp))
+                                        | (o,n) <- zip [0..] (ecuImpNmL ecu)
+                                        , let (_,mp) = panicJust ("cpTranslateGrin2Bytecode2: " ++ show n) (Map.lookup n (crsiModOffMp crsi))
+                                        ])
+                          expNmOffMp
+%%]]
+                          $ grin
+%%[[20
+        ; when (ehcOptVerbosity opts >= VerboseDebug)
+               (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
 %%]]
 
-         ;  when (isJust mbGrin)
-                 (cpUpdCU modNm $! ecuStoreBytecode bc)
-         ;  when (ehcOptErrAboutBytecode opts)
-                 (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
-         }
+        ; when (isJust mbGrin)
+               (cpUpdCU modNm $! ecuStoreBytecode bc)
+        ; when (ehcOptErrAboutBytecode opts)
+               (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
+        }
 %%]
 
 %%[(8 codegen grin) export(cpTranslateGrin)
 cpTranslateGrin :: HsName -> EHCompilePhase ()
 cpTranslateGrin modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
-                 mbGrin = ecuMbGrin ecu
-                 grin   = panicJust "cpTranslateGrin" mbGrin
-         ;  when (isJust mbGrin)
-                 (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
-         }
+  =  do { cr <- get
+        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+               mbGrin = ecuMbGrin ecu
+               grin   = panicJust "cpTranslateGrin" mbGrin
+        ; when (isJust mbGrin)
+               (lift $ GRINC.doCompileGrin (Right (fp,grin)) opts)
+        }
 %%]
 
 %%[(8 codegen grin) export(cpTranslateByteCode)
 cpTranslateByteCode :: HsName -> EHCompilePhase ()
 cpTranslateByteCode modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 mbBytecode = ecuMbBytecode ecu
+  =  do { cr <- get
+        ; let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+               mbBytecode = ecuMbBytecode ecu
 %%[[8
-                 grinbcPP = gbmod2C opts $ panicJust "cpTranslateByteCode" mbBytecode
+               grinbcPP = gbmod2C opts $ panicJust "cpTranslateByteCode1" mbBytecode
 %%][20
-                 grinbcPP = vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
-                          where (ppMod,ppMain)
-                                  = gbmod2C opts $ panicJust "cpTranslateByteCode" mbBytecode
+               coreInh  = crsiCoreInh crsi
+               (grinbcPP,functionInfoExportMp)
+                        = ( vlist ([ppMod] ++ (if ecuIsMainMod ecu then [ppMain] else []))
+                          , functionInfoExportMp
+                          )
+                        where (ppMod,ppMain,functionInfoExportMp)
+                                = gbmod2C opts lkup $ panicJust "cpTranslateByteCode2" mbBytecode
+                                where lkup n = do { li <- Map.lookup n (Core2GrSem.lamMp_Inh_CodeAGItf coreInh)
+                                                  ; ex <- laminfoGrinByteCode li
+                                                  ; return ex
+                                                  }
 %%]]
-         ;  when (ehcOptEmitBytecode opts && isJust mbBytecode)
-                 (do { cpUpdCU modNm $! ecuStoreBytecodeSem grinbcPP
-                     })
-         }
+          -- put back results: generated bytecode, new info about lambda's
+        ; when (ehcOptEmitBytecode opts && isJust mbBytecode)
+               (do { cpUpdCU modNm
+                      ( ecuStoreBytecodeSem grinbcPP
+%%[[20
+                      . ( let hii = ecuHIInfo ecu
+                          in  ecuStoreHIInfo
+                                (hii { HI.hiiLamMp = lamMpMergeFrom laminfoGrinByteCode (\gbi i -> i {laminfoGrinByteCode=gbi}) const emptyLamInfo' functionInfoExportMp $ HI.hiiLamMp hii
+                                     })
+                        )
+%%]]
+                      )
+{-
+                   ; when (ehcOptVerbosity opts >= VerboseDebug)
+                          (lift $ do { putStrLn ("cpTranslateByteCode.lamMp: " ++ show (HI.hiiLamMp hii))
+                                     ; putStrLn ("cpTranslateByteCode.functionInfoExportMp: " ++ show functionInfoExportMp)
+                                     })
+-}
+                   })
+        }
 %%]
 
 

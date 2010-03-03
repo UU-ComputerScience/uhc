@@ -3,6 +3,12 @@
 %include afp.fmt
 %%]
 
+%%[doesWhat doclatex
+Core AST as Haskell datatype.
+
+Datatype LamInfo holds the implementation info to be exported from a module.
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Haskell importable interface to Code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -13,13 +19,16 @@
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetVariant(..))) export(module {%{EH}Base.Target})
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty)
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
 %%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
 %%]
 
-%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty})
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) hs import({%{EH}LamInfo},{%{EH}Ty})
 %%]
 
 %%[(20 codegen grin) hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -670,67 +679,6 @@ fvsLev lm lDflt fvs = foldr (\n l -> fvLev n lm `max` l) lDflt $ Set.toList $ fv
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Calling convention info for lambda expressions/CAFs: known function arity
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(StackTraceInfo(..),CLamCallInfo(..),CLamCallMp,clamCallMpUpdateWith)
-data StackTraceInfo
-  = StackTraceInfo_None
-  | StackTraceInfo_HasStackTraceEquiv	HsName		-- has a stack traced equivalent
-  | StackTraceInfo_IsStackTraceEquiv	HsName		-- is a stack traced equivalent
-%%[[20
-  deriving (Data,Typeable)
-%%]]
-
-data CLamCallInfo
-  = CLamCallInfo
-      { clciArity			:: !Int
-      , clciStackTrace  	:: !StackTraceInfo
-      }
-%%[[20
-  deriving (Data,Typeable)
-%%]]
-
-emptyCLamCallInfo :: CLamCallInfo
-emptyCLamCallInfo = CLamCallInfo 0 StackTraceInfo_None
-
-type CLamCallMp = Map.Map HsName CLamCallInfo
-
--- propagate from previous (left) to new (right) only the stacktrace info
-clamCallMpUpdateWith :: CLamCallMp -> CLamCallMp -> CLamCallMp
-clamCallMpUpdateWith prev new
-  = Map.mapWithKey
-      (\n i
-         -> maybe i (\(CLamCallInfo {clciStackTrace=t}) -> i {clciStackTrace=t})
-            $ Map.lookup n prev
-      ) new
-%%]
-
-%%[(8 codegen) hs export(clamCallMpLookupLam,clamCallMpLookupCaf)
-clamCallMpLookupLam :: HsName -> CLamCallMp -> Maybe Int
-clamCallMpLookupLam n m
-  = case Map.lookup n m of
-      j@(Just (CLamCallInfo {clciArity=a})) | a > 0
-        -> Just a
-      _ -> Nothing
-
-clamCallMpLookupCaf :: HsName -> CLamCallMp -> Maybe Int
-clamCallMpLookupCaf n m
-  = case Map.lookup n m of
-      j@(Just (CLamCallInfo {clciArity=a})) | a == 0
-        -> Just a
-      _ -> Nothing
-%%]
-
-%%[(8 codegen) hs export(clamCallMpFilterLam,clamCallMpFilterCaf)
-clamCallMpFilterLam :: CLamCallMp -> CLamCallMp
-clamCallMpFilterLam = Map.filter ((>0) . clciArity)
-
-clamCallMpFilterCaf :: CLamCallMp -> CLamCallMp
-clamCallMpFilterCaf = Map.filter ((==0) . clciArity)
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Name to offset (in a record)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -740,7 +688,11 @@ type HsName2OffsetMp   = Map.Map HsName HsNameOffset
 type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
-%%[(20 codegen) hs export(offMpMpKeysSet)
+%%[(20 codegen) hs export(offMpKeysSorted,offMpMpKeysSet)
+-- | Module names, sorted on import order, which is included as 0-based offset (used as index in import entry table)
+offMpKeysSorted :: HsName2OffsetMpMp -> AssocL HsName Int
+offMpKeysSorted m = sortOn snd [ (n,o) | (n,(o,_)) <- Map.toList m ]
+
 offMpMpKeysSet :: HsName2OffsetMpMp -> Set.Set HsName
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
@@ -787,9 +739,9 @@ type CaseFailSubst = Map.Map UID CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(20 codegen) hs
-instance Serialize CLamCallInfo where
-  sput (CLamCallInfo a b) = sput a >> sput b
-  sget = liftM2 CLamCallInfo  sget sget
+instance Serialize LamInfo where
+  sput (LamInfo a b c) = sput a >> sput b >> sput c
+  sget = liftM3 LamInfo  sget sget sget
 
 instance Serialize StackTraceInfo where
   sput (StackTraceInfo_None                ) = sputWord8 0
@@ -804,8 +756,8 @@ instance Serialize StackTraceInfo where
 %%]
 
 %%[(99 codegen) hs
-instance ForceEval CLamCallInfo where
-  forceEval x@(CLamCallInfo a b) = x
+instance ForceEval LamInfo where
+  forceEval x@(LamInfo a b c) = x
 %%]
 
 
