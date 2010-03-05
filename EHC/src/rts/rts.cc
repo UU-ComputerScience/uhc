@@ -284,7 +284,7 @@ int main_GB_Run(int argc, char** argv, GB_BytePtr initPC, GB_Word initCAF)
 		gb_prState( "exit state", 1 ) ;
 	} else {
 #		ifdef DUMP_INTERNALS
-			IF_TR_ON(3,{gb_prTOSAsInt() ;printf( "\n" ) ;})
+			IF_GB_TR_ON(3,{gb_prTOSAsInt() ;printf( "\n" ) ;})
 #		endif
 	}
 	GB_GCSafe_Leave ;

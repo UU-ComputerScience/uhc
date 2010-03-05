@@ -24,6 +24,14 @@ data EnumValToken
   | TkConid
   | TkOp
   | TkConOp
+  | TkString
+  | TkChar
+  | TkInteger8
+  | TkInteger10
+  | TkInteger16
+  | TkFraction
+  | TkTextnm
+  | TkTextln 
 %%[[18
   | TkVaridUnboxed
   | TkConidUnboxed
@@ -36,14 +44,6 @@ data EnumValToken
   | TkQOp
   | TkQConOp
 %%]]
-  | TkString
-  | TkChar
-  | TkInteger8
-  | TkInteger10
-  | TkInteger16
-  | TkFraction
-  | TkTextnm
-  | TkTextln 
   | TkError
   deriving (Eq, Ord)
 %%]

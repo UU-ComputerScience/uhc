@@ -66,6 +66,9 @@
 %%[95 hs export(Deriving(..), Derivings)
 %%]
 
+%%[99 hs export(Pragma(..), Pragmas)
+%%]
+
 %%[1.Token hs import(UU.Scanner.Token)
 %%]
 

@@ -59,6 +59,9 @@ scan opts pos input
    isSymbol = (`Set.member` scoSpecChars opts) -- locatein (scoSpecChars opts)
    isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
    isPairSym= (`Set.member` scoSpecPairs opts) -- locatein (scoSpecPairs opts)
+%%[[99
+   isPragma = (`Set.member` scoPragmasTxt opts)
+%%]]
 
    isIdStart c = isLower    c || c == '_'
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
@@ -124,7 +127,18 @@ scan opts pos input
                                        in  doScan (foldl adv p (c:sp)) next
 
    doScan p ('-':'-':s)  = doScan p (dropWhile (/= '\n') s)
-   doScan p ('{':'-':s)  = lexNest doScan (advc 2 p) s
+%%[[99
+{-
+-}
+   doScan p ('{':'-':'#':s)
+     | isPragma pragma
+       = reserved "{-#" p : reserved pragma p2 : doScan p3 s3
+       where (w        ,s2) = getWhite s
+             p2             = advc (length w) $ advc 3 p
+             (pragma,p3,s3) = scanIdent isIdChar p2 s2
+   doScan p ('#':'-':'}':s) = reserved "#-}" p : doScan (advc 3 p) s
+%%]]
+   doScan p ('{':'-':s)  = scanNestedComment doScan (advc 2 p) s
    doScan p ('"':ss)
      = let (s,p',rest) = scanString (advc 1 p) ss
        in if null rest || head rest /= '"'
@@ -243,15 +257,16 @@ varKind (c  :s) | isUpper c = TkConid
                 | otherwise = TkVarid
 varKind []                  = TkVarid
 
-lexNest :: (Pos -> String -> [Token]) 
+scanNestedComment
+        :: (Pos -> String -> [Token]) 
         -> Pos 
         -> String 
         -> [Token]
-lexNest cont pos inp = lexNest' cont pos inp
- where lexNest' c p ('-':'}':s) = c (advc 2 p) s
-       lexNest' c p ('{':'-':s) = lexNest' (lexNest' c) (advc 2 p) s
-       lexNest' c p (x:s)       = lexNest' c (adv p x) s
-       lexNest' _ _ []          = [ errToken "Unterminated nested comment" pos]
+scanNestedComment cont pos inp = nest cont pos inp
+ where nest c p ('-':'}':s) = c (advc 2 p) s
+       nest c p ('{':'-':s) = nest (nest c) (advc 2 p) s
+       nest c p (x:s)       = nest c (adv p x) s
+       nest _ _ []          = [ errToken "Unterminated nested comment" pos]
 
 
 scanString :: Pos -> String -> (String,Pos,String)
@@ -281,7 +296,14 @@ getchar s@('\"':_ ) = (Nothing,0,s)
 getchar   ('\\':xs) = let (c,l,r) = getEscChar xs
                       in (c,l+1,r)
 getchar (x:xs)      = (Just x,1,xs)
+%%]
 
+%%[99
+getWhite :: String -> (String,String)
+getWhite = span (`elem` " \t\r\n")
+%%]
+
+%%[5
 scanDQuoteIdent :: String -> (String,Int,String)
 scanDQuoteIdent []             = ("",0,[])
 scanDQuoteIdent ('\'':'\'':xs) = ("",0,xs)

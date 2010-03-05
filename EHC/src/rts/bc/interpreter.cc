@@ -756,7 +756,7 @@ void gb_prTOSAsInt( )
 				  , GB_GBInt2Int(GB_TOS) ) ;
 }
 
-void gb_prStack( int maxStkSz )
+void gb_prStack( WPtr sp, int maxStkSz )
 {
     int i ;
     
@@ -822,7 +822,7 @@ void gb_prState( char* msg, int maxStkSz )
 			, bci->bc
 			) ;
 	}
-	gb_prStack( maxStkSz ) ;
+	gb_prStack( sp, maxStkSz ) ;
 }
 
 #endif
@@ -1892,8 +1892,10 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
 	GB_CallInfo* ci ;
+	Bool didEncounterExplicitStackTrace = False ;
 	GB_NodePtr thrownExc ;
 	GB_NodePtr reifiedBackTrace, explicitStackTrace ;
+	
 	GB_GCSafe_Enter ;
 	GB_GCSafe_1(exc) ;
 	GB_GCSafe_3_Zeroed(thrownExc,reifiedBackTrace,explicitStackTrace) ;
@@ -1929,11 +1931,22 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 			GB_GCSafe_Enter ;
 			GB_GCSafe_3_Zeroed(n1, n2, n3) ;
 			Word8* ciName = gb_CallInfo_GetName( gb_AllMod, ci ) ;
+			// printf("gb_intl_throwException ciNm=%s\n",ciName) ;
 			GB_MkCFunNode1In(n1,primCStringToString,ciName) ;
 			GB_MkTupNode2_In(n2,GB_Int2GBInt(ci->kind),n1) ;
 			n3 = reifiedBackTrace ;
 			GB_MkListCons(reifiedBackTrace,n2,n3) ;
 			GB_GCSafe_Leave ;
+		}
+		if ( ! didEncounterExplicitStackTrace ) {
+			GB_FunctionInfo* fi = gb_CallInfo_GetFunctionInfo( gb_AllMod, ci ) ;
+			// if (fi) {printf("gb_intl_throwException fi->nm=%s fi->flags=%x\n",fi->nm,fi->flags) ;}
+			if ( fi != NULL && fi->flags & GB_FunctionInfoFlag_1stArgIsStackTrace ) {
+				explicitStackTrace = (GB_NodePtr)GB_RegRelx(p,2) ;
+				// gb_prWord( (Word)explicitStackTrace ) ; printf("\n") ;
+				// gb_prStack( p, 10 ) ;
+				didEncounterExplicitStackTrace = True ;
+			}
 		}
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;

@@ -148,6 +148,7 @@ cpOutputHI suff modNm
                                { HI.hiiExps                 = mmiExps       mmi
                                , HI.hiiHiddenExps           = mmiHiddenExps mmi
                                , HI.hiiHasMain              = ecuHasMain ecu
+                               , HI.hiiTargetVariant        = ehcOptTargetVariant opts
                                , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version
                                , HI.hiiSrcSig               = Cfg.verSig Cfg.version
                                , HI.hiiSrcVersionMajor      = Cfg.verMajor Cfg.version

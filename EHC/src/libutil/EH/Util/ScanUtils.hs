@@ -111,6 +111,7 @@ Hence not all options are used by all scanners.
 data ScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      ::  !(Set.Set String)       -- identifiers which are keywords
+        ,   scoPragmasTxt       ::  !(Set.Set String)       -- identifiers which are pragmas
         ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
@@ -132,6 +133,7 @@ defaultScanOpts :: ScanOpts
 defaultScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      =   Set.empty
+        ,   scoPragmasTxt       =   Set.empty
         ,   scoCommandsTxt      =   Set.empty
         ,   scoKeywordsOps      =   Set.empty
         ,   scoSpecChars        =   Set.empty
