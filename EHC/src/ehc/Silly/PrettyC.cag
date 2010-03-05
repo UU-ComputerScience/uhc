@@ -22,9 +22,7 @@
 prettyC :: EHCOpts -> SilModule -> PP_Doc
 prettyC opts silmod
   = let t = wrap_SilModule (sem_SilModule silmod)
-                           (Inh_SilModule { opts_Inh_SilModule = opts
-                                          }
-                           )
+                           (Inh_SilModule { opts_Inh_SilModule = opts })
      in  prettyC_Syn_SilModule t
 
 %%]
@@ -43,14 +41,15 @@ ATTR Functions Function Statements Statement Alternatives Alternative
   [ optTraceCall     : {Bool} -- when True, function entrance/exit is logged
     optTraceAssign   : {Bool} -- when True, every assignement is logged
     optCaseDefault   : {Bool} -- when True, error messages are given as default case for each switch
-    optOwn           : {Int}
+    optGenOwn        : {Bool} -- when True, use own stack; when False, use C stack
   | | ]
 
 SEM SilModule
   | SilModule  loc.optTraceCall   = ehcOptGenTrace       @lhs.opts
                loc.optTraceAssign = ehcOptGenTrace2      @lhs.opts
                loc.optCaseDefault = ehcOptGenCaseDefault @lhs.opts
-               loc.optOwn         = ehcOptOwn            @lhs.opts
+               loc.optGenOwn      = ehcOptGenOwn         @lhs.opts
+               loc.optGenLink     = ehcOptGenOwn @lhs.opts  &&  ehcOptGenLink @lhs.opts
 
 %%]
 
@@ -93,7 +92,7 @@ SEM SilModule
                                 >-< text "Word auxPtr;"
                                 >-< text ""
                                 >-< comment ["Function definitions"]
-                                >-< (if @loc.optOwn>=3
+                                >-< (if @loc.optGenOwn
                                      then  (   @loc.silMain1
                                            >-< text ""
                                            >-< @functions.prettyC
@@ -113,13 +112,12 @@ SEM SilModule
 
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
-                                >-< ppWhen (@loc.optOwn>=4) (text "register WPtr SP asm (\"%esp\");")
-                                -- >-< ppWhen (@loc.optOwn>=4) (text "register Word  auxPtr asm (\"%ecx\");")
-                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 1 "initialize"
+                                -- >-< ppWhen False (text "register WPtr SP asm (\"%esp\");")
+                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
 %%[[8
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 2 "fun_fun0tildemain"
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_fun0tildemain"
 %%][99
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optOwn 2 "fun_mainFullProg"
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_mainFullProg"
 %%]]                                             
                                              >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
                                              >-<  "return 0;"
@@ -136,12 +134,11 @@ SEM SilModule
 
 
 SEM Function
-  | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
-                                >-< indent 4 (   ppWhen @tailJumps jumpPrepare
-                                             >-< methodLocals (map hsnShowAlphanumeric @locals)
+  | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
+                                >-< indent 4 (   methodLocals (map hsnShowAlphanumeric @locals)
                                              >-< @body.prettyC
                                              )
-                                >-< methodFooter @lhs.optOwn @lhs.optTraceCall (hsnShowAlphanumeric @name)
+                                >-< methodFooter @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name)
 
                 lhs.protoC    = methodHead (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters) >|< ";"
                 body.functionname = hsnShowAlphanumeric @name
@@ -151,11 +148,9 @@ SEM Statement
   | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
   | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
-  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optOwn (hsnShowAlphanumeric @name) @args.prettyCs
-  | Jump        lhs.prettyC   = jumpSillyFunctionFromSilly @lhs.optTraceAssign @lhs.optOwn (hsnShowAlphanumeric @name) @lhs.optTraceCall @lhs.functionname
-  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @retdiff @lhs.optOwn
+  | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign (fromJust @mbRetDiff) @lhs.optGenOwn
   | Label       lhs.prettyC   = label @lhs.optTraceAssign @name
-  | Yield       lhs.prettyC   = error "Silly.PrettyC: Statement_Yield"
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
@@ -296,38 +291,32 @@ callCfunction ::  String -> [PP_Doc] -> PP_Doc
 callCfunction f ps
  = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
 
-callSillyFunctionFromC :: Bool -> Int -> Int -> String -> PP_Doc
-callSillyFunctionFromC tras optOwn n nm
- | optOwn<=2 = nm >|< "();"
- | optOwn>=3 = let lab = "mainlab" ++ show n
-               in  "*--SP = (Word)(&&" >|< lab >|< ");"   -- return address
-                   >-< ppWhen tras
-                              (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
-                   >-< "*--SP = (Word)0;"                 -- link
-                   >-< "goto" >#< nm >|< ";"              -- do the call
-                   >-< label tras lab                     -- return here
+callSillyFunctionFromC :: Bool -> Bool -> Bool -> Int -> String -> PP_Doc
+callSillyFunctionFromC tras optGenOwn optGenLink n nm
+ | optGenOwn = let lab = "mainlab" ++ show n
+               in  "*--SP = (Word)(&&" >|< lab >|< ");"                   -- return address
+                   >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
+                   >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
+                   >-< "goto" >#< nm >|< ";"                              -- do the call
+                   >-< label tras lab                                     -- return here
+ | otherwise = nm >|< "();"
  
  
-callSillyFunctionFromSilly ::  Int -> String -> [PP_Doc] -> PP_Doc
-callSillyFunctionFromSilly optOwn nm pars
- | optOwn<=2 = callCfunction nm pars >|< ";"
- | optOwn>=3 = "goto" >#< nm >|< ";"
+callSillyFunctionFromSilly ::  Bool -> String -> [PP_Doc] -> PP_Doc
+callSillyFunctionFromSilly optGenOwn nm pars
+ | optGenOwn = "goto" >#< nm >|< ";"
+ | otherwise = callCfunction nm pars >|< ";"
 
 
 quoted :: String -> String
 quoted s = "\"" ++ s ++ "\""
 
-returnFromSillyFunction tras retdiff optOwn
- | optOwn>=5   = "asm ( " >|< (  --  quoted ("movl -" ++ show (4*retdiff) ++ "(%esp),%eax\\n\\t")
-                                 --  >-<  quoted "jmp *%eax"
-                                 quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)")
-                              )
-                          >|< ");"
-                 >-< "goto *(SP[-" >|< show retdiff >|< "]);"                          
- | optOwn>=3   = ppWhen tras
+returnFromSillyFunction tras retdiff optGenOwn
+ | optGenOwn   = ppWhen tras
                       (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
  	             >-< "goto *(SP[-" >|< show retdiff >|< "]);"
- | optOwn<=2   = text ""
+ | otherwise   = text ""
+-- | False     = "asm ( " >|<  quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)") >|< ");"
 
 
 %%]
@@ -365,20 +354,18 @@ methodHead nm params
 paramTrace :: String -> PP_Doc
 paramTrace x = text ("printf(\"    " ++  x ++            " = %d\\n\" , " ++ x ++ "); fflush(stdout);")
 
-methodHeader :: Bool -> Int -> Bool -> String -> [String] -> PP_Doc
-methodHeader tras optOwn optTrace nm params
- | optOwn<=2 =  methodHead nm params
+methodHeader :: Bool -> Bool -> Bool -> String -> [String] -> PP_Doc
+methodHeader tras optGenOwn optTrace nm params
+ | optGenOwn = label tras nm
+                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
+ | otherwise =  methodHead nm params
                 >#< "{"
                 >-< ppWhen optTrace (foldr (>-<) (trace ("enter " ++ init (tail (show nm)))) (map paramTrace params) )
- | optOwn>=3 = label tras nm
-                >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
 
-methodFooter :: Int -> Bool -> String -> PP_Doc
-methodFooter optOwn optTrace nm
- | optOwn<=2 =  ppWhen (False && optTrace) (trace ("leave "++init (tail (show nm))))
-                >-< text "}"
-                >-< text ""
- | optOwn>=3 = text ""
+methodFooter :: Bool -> Bool -> String -> PP_Doc
+methodFooter optGenOwn optTrace nm
+ | optGenOwn = text ""
+ | otherwise = text "}" >-< text ""
 
 methodLocals :: [String] -> PP_Doc
 methodLocals ns
@@ -386,23 +373,6 @@ methodLocals ns
             (   comment ["Local names"]
             >-< declareNames "Word" ns
             )
-
-
-jumpPrepare :: PP_Doc
-jumpPrepare
- =  pp machDepCForTailcallEnter
-
-jumpSillyFunctionFromSilly :: Bool -> Int -> String -> Bool -> String -> PP_Doc
-jumpSillyFunctionFromSilly tras optOwn nm optTraceCall functionname
- | optOwn<=2 = ppWhen tras
-                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
- 	           >-< machDepCForTailcallLeave1
-               >#< "{ register void* _tail_call_dest = ((void*)" >|< nm >|< ");"
-               >#< machDepCForTailcallLeave2
-               >-< "goto *_tail_call_dest; }"
- | optOwn>=3 = ppWhen tras
-                      (" printf(\"goto " >#< nm >#< "\\n\"); fflush(stdout);")
- 	           >-< "goto" >#< nm >|< ";"
 
 
 assignment2 :: Bool -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc

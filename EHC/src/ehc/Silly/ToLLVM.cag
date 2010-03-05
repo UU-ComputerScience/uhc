@@ -222,17 +222,12 @@ SEM Statement
                 loc.(uniqNr2, resumeLabel) =
                                newFresh @loc.uniqNr1 Label
 
-  | Jump        lhs.llvmCode = error $ "Generated jump instructions not allowed"
-                                     ++ " in LLVM. Is -g set to 0?"
-  
   | Label       lhs.llvmCode = error $ "Generated label instructions not"
                                      ++ " allowed in LLVM. Is -g set to 0?"
   
   | Return      lhs.llvmCode = [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]  
                                     
-  | Yield       lhs.llvmCode = error "Silly.ToLLVM: Yield should occur only in intermediate Silly"
-                                    
-  | * - Assignment Assignment2 Call Comment Jump Label Return Yield Switch IfThenElse
+  | * - Assignment Assignment2 Call Comment Jump Label Return Switch IfThenElse
                 lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives
@@ -849,3 +844,4 @@ bool2calltype (True)  = TailCall
 bool2calltype (False) = StdCall 
 }
 %%]
+
