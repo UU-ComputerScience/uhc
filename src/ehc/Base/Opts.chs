@@ -211,8 +211,10 @@ data EHCOpts
       ,  ehcOptTimeCompile    ::  Bool
 
       ,  ehcOptGenCaseDefault ::  Bool
-      ,  ehcOptOwn            ::  Int
       ,  ehcOptGenCmt         ::  Bool
+      ,  ehcOptGenOwn         ::  Bool
+      ,  ehcOptGenRVS         ::  Bool
+      ,  ehcOptGenLink        ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenTrace2      ::  Bool
@@ -394,9 +396,10 @@ defaultEHCOpts
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
-
+      ,  ehcOptGenOwn           =   True
+      ,  ehcOptGenRVS           =   False
+      ,  ehcOptGenLink          =   False
       ,  ehcOptGenCaseDefault   =   False
-      ,  ehcOptOwn              =   3
       ,  ehcOptGenDebug         =   True
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenTrace2        =   False
@@ -533,7 +536,9 @@ ehcCmdLineOpts
 %%[[(8 codegen grin)
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
-     ,  Option "g"  ["gen-own"]          (OptArg  oOwn "0|1|2|3|4")           "generate own 1=parameters/tailjumps, 2=locals, 3=calls, 4=stack (3)"
+     ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
+     ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
+     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
@@ -734,15 +739,6 @@ ehcCmdLineOpts
                                                    _          -> []
 %%]]
 %%[[(8 codegen grin)
-         oOwn        ms  o =  case ms of
-                                Just "0"    -> o { ehcOptOwn     = 0       }
-                                Just "1"    -> o { ehcOptOwn     = 1       }
-                                Just "2"    -> o { ehcOptOwn     = 2       }
-                                Just "3"    -> o { ehcOptOwn     = 3       }
-                                Just "4"    -> o { ehcOptOwn     = 4       }
-                                Just "5"    -> o { ehcOptOwn     = 5       }
-                                Nothing     -> o { ehcOptOwn     = 3       }
-                                _           -> o { ehcOptOwn     = 3       }
          oRTSInfo    s   o =  o { ehcOptGenRTSInfo     = read s       }
 %%]]
          oVerbose    ms  o =  case ms of
@@ -870,6 +866,9 @@ optSetGenTrace2      o b = o { ehcOptGenTrace2      = b }
 optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
+optSetGenOwn         o b = o { ehcOptGenOwn         = b }
+optSetGenRVS         o b = o { ehcOptGenRVS         = b }
+optSetGenLink        o b = o { ehcOptGenLink        = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }

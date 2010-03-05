@@ -26,14 +26,15 @@ WRAPPER SilModule
 %%]
 
 %%[(8 codegen grin) hs
+
+
+decrement :: Int -> Int
+decrement n = n-1
+
 embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   
   = let t = wrap_SilModule (sem_SilModule input)
-                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
-                                                                then options{ ehcOptOwn = 0 }
-                                                                else options
-                                          } 
-                           )
+                           (Inh_SilModule {opts_Inh_SilModule = options})
     in trf_Syn_SilModule t
 %%]
 
@@ -41,7 +42,7 @@ embedVars options input
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
-ATTR Statement Statements Alternative Alternatives Variable Value Values [ distance : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ numberLocals : {Int} | | ]
 ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
 ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
 ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
@@ -50,10 +51,15 @@ ATTR Statement Statements Alternative Alternatives                       [ neede
 ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
 ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
 ATTR Function Functions 
-     Statement Statements Alternative Alternatives Value Values Variable [ optOwn  : {Int}  | | ]
+     Statement Statements Alternative Alternatives Value Values Variable [ optGenOwn  : {Bool}  optGenLink : {Bool} | | ]
+ATTR Function Functions 
+     Statement Statements Alternative Alternatives                       [ optGenReturnViaStack : {Bool} | | ]
+
 
 SEM SilModule
-  | SilModule  loc.optOwn  = ehcOptOwn @lhs.opts
+  | SilModule  loc.optGenOwn            = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)
+               loc.optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
+               loc.optGenLink           = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenLink @lhs.opts
 
 
 ATTR Values [ | | length : {Int} ]
@@ -73,105 +79,101 @@ SEM SilModule
 
 %%[(8 codegen grin)
 
+SEM Statement
+  | Call      lhs . trfStats =  if not @lhs.optGenOwn
+                                then [@loc.trf]
+                                else if @tailJumps
+                                then (  let locPar = @lhs.numberLocals + @lhs.numberParameters
+                                            sources      = reverse @args.trf                                                    -- put arguments on the stack
+                                                           ++ [ Value_Var (Variable_Subs Variable_SP (@lhs.numberLocals +1))    -- put original return address on the stack
+                                                              | @lhs.optGenLink                                                 --  (if there is a link below it)
+                                                              ]
+                                                           ++ [ Value_Var (Variable_Subs Variable_SP (@lhs.numberLocals   ))    -- put original link on the stack (if there is one), or otherwise the original return address
+                                                              ]
+                                            destinations = iterate decrement (locPar+ (if @lhs.optGenLink then 2 else 1) -1)
+                                            adjust       = locPar - @args.length
+                                        in  Statement_Comment ["Tailcall"]
+                                            :
+                                            smartAssignment (zip destinations sources)                                          -- do stack-putting in an overlapping fashion with the original stack contents
+                                            ++
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: increment for original parameters&callinfo&locals, decrement for new parameters&callinfo
+                                            | adjust /= 0                                                                       --   (if necessary)
+                                            ]
+                                            ++
+                                            [ Statement_Call @name True []                                                      -- do the jump, which will return to the original return address
+                                            ]
+                                     )
+                                else (  let sources     =  reverse @args.trf                                                    -- put arguments on stack
+                                                           ++ [ Value_Label @loc.label ]                                        -- put return address on the stack
+                                                           ++ [ Value_Cast (Value_Offset Variable_SP @lhs.numberLocals) True    -- put dynamic link on the stack
+                                                              | @lhs.optGenLink                                                 --  (if requested)
+                                                              ]
+                                            destinations = (map (Variable_Subs Variable_SP) (iterate decrement (-1)))
+                                            adjust       = - @args.length - (if @lhs.optGenLink then 2 else 1)
+                                        in  Statement_Comment ["Call"]
+                                            :
+                                            zipWith Statement_Assignment destinations sources                                   -- do stack-putting by assignments
+                                            ++ 
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: decrement for new parameters&callinfo
+                                            , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
+                                            , Statement_Label @loc.label                                                        -- return here after the call
+                                            ]
+                                     )
+           lhs.retNr     = @lhs.retNr + 1
+           loc.label     = "retlab"++show @lhs.retNr
+
+                                
+  | Return    lhs . trfStats = let locPar = @lhs.numberLocals + @lhs.numberParameters
+                                   callInfoSize = if @lhs.optGenLink then 2 else 1
+                               in  (  if @lhs.optGenReturnViaStack
+                                      then  let moveRet = @vals.length  > @lhs.numberParameters
+                                                sources = @vals.trf 
+                                                          ++ [Value_Var (Variable_Subs Variable_SP (1+ @lhs.numberLocals)) | moveRet]
+                                                destinations = iterate decrement (locPar+ callInfoSize -1)
+                                            in  smartAssignment (zip destinations sources)    -- results overlap original parameters&callinfo&locals
+                                      else  [ Statement_Assignment v e
+                                            | (v,e) <-zip [Variable_Subs Variable_RP i | i <- [0..] ]
+                                                          @vals.trf
+                                            ]
+                                   )
+                                   ++
+                                   (  if @lhs.optGenOwn
+                                      then let n | @lhs.optGenReturnViaStack = max @vals.length @lhs.numberParameters
+                                                 | otherwise                 =                  @lhs.numberParameters
+                                           in  [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (locPar + callInfoSize ))
+                                               , Statement_Return [] (Just (n + 1 ))
+                                               ]                                    
+                                      else []
+                                   )
+
+  | * - Return
+        Call   lhs . trfStats = [@loc.trf]
 
 SEM Statements
   | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
 
-SEM Statement
-  | Call      lhs . trfStats =  if @tailJumps && @lhs.optOwn>=1
-                                then (  let dp = @lhs.distance+ @lhs.numberParameters
-                                            dist = @lhs.distance
-                                            args2   = (reverse @args.trf ++ map (Value_Var . Variable_Subs Variable_SP) [dist+1, dist] )
-                                            smartTups = zip [dp+1,dp ..] args2
-                                        in  (  Statement_Comment ["Call (Own controlled tail) "]
-                                               :
-                                               smartAssignment smartTups
-                                               ++
-                                               [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (dist + @lhs.numberParameters+2- @loc.nMyParams-2))
-                                               , Statement_Jump @name
-                                               ]
-                                            )
-                                     )
-                                 else (   Statement_Comment ["Call (Normal or Tail)"]
-                                      :   (if @lhs.optOwn>=1
-                                           then (  zipWith Statement_Assignment
-                                                           (map (Variable_Subs Variable_SP) [-1,-2..])
-                                                           (  reverse @args.trf
-                                                           ++ [ if @lhs.optOwn>=3 
-                                                                 then Value_Label @loc.label
-                                                                 else Value_Con (Constant_LiteralInt 0)
-                                                              , Value_Cast (Value_Offset Variable_SP @lhs.distance) True
-                                                              ]
-                                                           )
-                                                ++ [ Statement_Assignment  Variable_SP (Value_Offset Variable_SP (- @loc.nMyParams-2))
-                                                   , Statement_Call @name @tailJumps [] 
-                                                   ]
-                                                ++ if @lhs.optOwn>=3
-                                                    then [ Statement_Label @loc.label ]
-                                                    else []
-                                                )
-                                           else [@loc.trf]
-                                          )
-                                      )
-           loc.nMyParams = @args.length
-           lhs.retNr     = @lhs.retNr + 1
-           loc.label     = "retlab"++show @lhs.retNr
 
-
-                                
-  | Yield     lhs . trfStats = if @lhs.optOwn>=1
-                               then  let nMyRes  = length @vals.trf
-                                         moveRet = nMyRes > @lhs.numberParameters
-                                         vals2   = @vals.trf ++ [Value_Var (Variable_Subs Variable_SP (1+ @lhs.distance)) | moveRet]
-                                         dp      = @lhs.distance+ @lhs.numberParameters
-                                         smartTups = zip [dp+1,dp ..] vals2
-                                     in  smartAssignment smartTups
-                                         ++
-                                         [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (dp+2))
-                                         , Statement_Return (max nMyRes @lhs.numberParameters + 1)
-                                         ]
-                               else [ Statement_Assignment v e
-                                    | (v,e) <-zip [Variable_Subs Variable_RP i | i <- [0..] ]
-                                                  @vals.trf
-                                    ]
-                                    
-  | * - Yield
-        Call   lhs . trfStats = [@loc.trf]
   
-
 
 SEM Function
   | Function  lhs . trf    =  Function_Function @name
-                                                @tailJumps
                                                 -- parameters
-                                                (if @lhs.optOwn>=1 then [] else @parameters)
+                                                (if @lhs.optGenOwn then [] else @parameters)
                                                 -- locals
-                                                (if @lhs.optOwn>=2
-                                                 then [] 
-                                                 else if @lhs.optOwn>=1 then @loc.newlocals ++ @parameters else @loc.newlocals
-                                                )
+                                                (if @lhs.optGenOwn then [] else Set.toList (Set.difference @body.localsSet (Set.fromList @parameters)))
                                                 -- body
-                                                (  (if   @lhs.optOwn==1 && not (null @parameters)
-                                                    then Statement_Comment ["Parameters"]
-                                                         : zipWith Statement_Assignment
-                                                                   (map (Variable_Param 99999) @parameters)
-                                                                   (map (Value_Var . Variable_Subs Variable_SP) [2..])
-                                                    else []
+                                                (  ( if   @lhs.optGenOwn
+                                                     then Statement_Comment ["Expects " ++ show (length @parameters) ++ " parameters, uses " ++ show @loc.numberLocals ++ " local variables" ]
+                                                          : [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.numberLocals)) | @loc.numberLocals > 0 ]
+                                                     else []
                                                    )
-                                                ++ (if   @lhs.optOwn>=1
-                                                    then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.distance))
-                                                         ]
-                                                    else []
-                                                   )
-                                                ++ @body.trf
+                                                   ++ @body.trf
                                                 )
                                                 
 SEM Function
   | Function  body . numberParameters = length @parameters
-              loc  . distance = maxNeededLocal @body.localsSet @body.embedMap + @loc.roomForCcalls
-              loc  . roomForCcalls= 2
-              loc  . newlocals  =  Set.toList (Set.difference @body.localsSet (Set.fromList @parameters))
               body . embedMap = Map.fromList (zipWith (makeEmbedTupel Variable_Param) [1..] @parameters)
+              loc  . numberLocals = maxNeededLocal @body.localsSet @body.embedMap
 
 
 ATTR Variable [ | | unembeddedName : {Maybe HsName} ]
@@ -221,7 +223,7 @@ SEM Variable
 
 
 SEM Variable
-  | Unembedded   lhs.trf = (if @lhs.optOwn>=2 then (embed2 @lhs.distance) else embed) @lhs.embedMap @name
+  | Unembedded   lhs.trf = (if @lhs.optGenOwn then (embed2 @lhs.numberLocals (if @lhs.optGenLink then 2 else 1)) else embed) @lhs.embedMap @name
 
 %%]
 
@@ -244,15 +246,16 @@ embed m x@(HNmNr n _) = if n==0
                                     id
                                     (Map.lookup n m)
 
-embed2 :: Int -> EmbedMap -> EmbedFunction
-embed2 d m x@(HNmNr n _) = if n==0
-                            then Variable_None
-                            else maybe (Variable_Global x)
-                                       (\v -> case v of
-                                                Variable_Local n _ -> Variable_Subs Variable_SP (d+0-n)
-                                                Variable_Param n _ -> Variable_Subs Variable_SP (d+1+n)
-                                       )
-                                       (Map.lookup n m)
+embed2 :: Int -> Int -> EmbedMap -> EmbedFunction
+embed2 d callInfoSize m x@(HNmNr n _) 
+   = if n==0
+     then Variable_None
+     else maybe (Variable_Global x)
+                (\v -> case v of
+                            Variable_Local n _ -> Variable_Subs Variable_SP (d-n)
+                            Variable_Param n _ -> Variable_Subs Variable_SP (d+callInfoSize-1+n)
+                )
+                (Map.lookup n m)
 
 --showEmbedPair :: Int -> HptMap -> (Int,Variable) -> String
 --showEmbedPair d h (i, Variable_Param n name) = "Param " ++ show n ++ " \t" ++ postPad 12 (hsnShowAlphanumeric name) ++ "\tSP[" ++ show (d+1+n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"

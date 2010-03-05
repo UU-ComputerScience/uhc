@@ -23,7 +23,6 @@ DATA SilModule
 
 DATA Function
   |  Function    name       : {HsName}
-                 tailJumps  : {Bool}
                  parameters : {[HsName]}
                  locals     : {[HsName]}
                  body       : Statements
@@ -42,12 +41,11 @@ DATA Statement
   |  Call        name       : {HsName}
                  tailJumps  : {Bool}
                  args       : Values
-  |  Jump        name       : {HsName}
-  |  Return      retdiff    : {Int}
+  |  Return      vals       : Values
+                 mbRetDiff  : {Maybe Int}
   |  Label       name       : {String}
   |  Comment     comment    : {[String]}
   |  Voiden      val        : Value
-  |  Yield       vals       : Values
 
 DATA Alternative
   |  Alternative when       : Constant

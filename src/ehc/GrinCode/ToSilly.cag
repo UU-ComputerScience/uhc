@@ -38,9 +38,7 @@ WRAPPER GrAGItf
 grin2silly :: HptMap -> GrModule -> EHCOpts -> SilModule
 grin2silly hptmap gr opts
  = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf gr))
-                        (Inh_GrAGItf { opts_Inh_GrAGItf = if ehcOptEmitLLVM opts
-                                                          then opts{ ehcOptOwn = 0 }
-                                                          else opts
+                        (Inh_GrAGItf { opts_Inh_GrAGItf = opts
                                      , hptMap_Inh_GrAGItf = hptmap
                                      }
                         )
@@ -73,7 +71,6 @@ ATTR GrGlobal GrGlobalL [ | | initStats1   USE {++} {[]} : {Statements}
 ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          |
                          | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName}
-                           tailJumps USE {&&} {True} : {Bool}
                          ]
 
 ATTR AllBind AllGrExpr AllGlobal [ maxConstrParameters : {Int} | | ]
@@ -117,10 +114,8 @@ SEM GrAlt
                                       _               -> (False, @lhs.hasNext, @lhs.targets           )
 
 
-
-
-
-ATTR AllGrExpr [ functionName : HsName | | ]
+ATTR AllGrExpr         [ functionName : HsName         | | ]
+ATTR AllGrExpr AllBind [ optGenReturnViaStack : {Bool} | | ]
 
 SEM GrBind
   | Bind    expr.functionName = @nm
@@ -128,22 +123,18 @@ SEM GrBind
 
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagAliases @lhs.opts) -- aliases
+                                (tagAliases @lhs.opts)                       -- aliases
                                 (tagConstants @lhs.opts (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
-                                @globalL.names              -- variables
-                                ( Function_Function (hsnFromString "initialize") False [] []
+                                @globalL.names                               -- variables
+                                ( @loc.initFunction : @bindL.functions )     -- functions
+
+        loc . initFunction  =  Function_Function (hsnFromString "initialize") [] []
                                                     (  @globalL.initStats1
                                                     ++ @globalL.initStats2
-                                                    ++ (if @lhs.optOwn>=1
-                                                         then [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (2+2)) ]
-                                                         else []
-                                                       )
-                                                    ++ [ Statement_Return 1 ]
+                                                    ++ [ Statement_Return [] Nothing ]
                                                     )
-                                : @bindL.functions            -- functions
-                                )
-
         loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
+        loc . optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
 
 
 SEM GrBind
@@ -152,21 +143,16 @@ SEM GrBind
                             else   [ Function_Function
                                    -- name
                                    @nm
-                                   @expr.tailJumps
                                    -- parameters
                                    @argNmL
                                    -- locals
                                    @loc.locals
                                    -- body
-                                   (@expr.stats ++ [@loc.return])   
+                                   @expr.stats
                                  ]
 
           expr . numberParameters = length @argNmL
           loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)
-          -- We add an explicit return if no tailjumps are done in the function
-          loc  . return = if @lhs.optOwn >= 1 && @expr.tailJumps 
-                          then Statement_Comment ["Tailjump, no explicit return"]
-                          else Statement_Return 0 
           
 
 SEM GrExpr
@@ -177,20 +163,26 @@ SEM GrExpr
            loc.name   = mkVar @nm
            lhs.stats   = if not @lhs.hasNext
                           then assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
-                               ++ yielding "Unit" @lhs.optOwn @val.values @lhs.numberParameters
+                               ++ [ Statement_Comment ["Return (Unit after Update)"]
+                                  , Statement_Return @val.values Nothing
+                                  ]
                           else maybe (assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Updateunit to PtrNode"] : store2 (mkVar t) (length @val.values) (length @val.values) (map (arrayVariab @loc.name) [0..]) @val.values)
                                      @lhs.mbPtrTarget
 
  | Unit    lhs.stats  = if not @lhs.hasNext
-                         then yielding  "Unit" @lhs.optOwn @val.values @lhs.numberParameters
+                         then  [ Statement_Comment ["Return (Unit)"]
+                               , Statement_Return @val.values Nothing
+                               ]
                          else maybe  (assignments "Unit" [] (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
                                      @lhs.mbPtrTarget
            lhs.localsSet = Set.fromList @lhs.targets
 
  | FFI     lhs.stats  = if not @lhs.hasNext
-                         then yielding  "FFI" @lhs.optOwn [@loc.callres] @lhs.numberParameters
+                         then  [ Statement_Comment ["Return (FFI)"]
+                               , Statement_Return [@loc.callres] Nothing
+                               ]
                          else case @lhs.targets
                               of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
                                   _             -> assignments "FFI" [] (map mkVar @lhs.targets) [@loc.callres]
@@ -254,16 +246,14 @@ SEM GrExpr
                               , Statement_Assignment (Variable_Unembedded (fromJust @lhs.mbPtrTarget)) (head @argL.values)
                               ]
                         else  (   Statement_Call @nm (not @lhs.hasNext) @argL.values
-                                  :   if   not @lhs.hasNext && @lhs.optOwn>=1
-                                      then []
-                                      else assignments "Result" 
-                                                       []
-                                                       (map mkVar @lhs.targets) 
-                                                       ( let n = length @lhs.targets
-                                                         in  if @lhs.optOwn>=1
-                                                              then map (arrayValue Variable_SP) [-1,-2..(0-n)]
-                                                              else map (arrayValue Variable_RP) [0..n-1]
-                                                       )
+                                  :  assignments "Result" 
+                                                 []
+                                                 (map mkVar @lhs.targets) 
+                                                 ( let n = length @lhs.targets     -- n is 0 for tailcalls, so no assignments in that case
+                                                   in  if @lhs.optGenReturnViaStack
+                                                       then map (arrayValue Variable_SP) [-1,-2..(0-n)]
+                                                       else map (arrayValue Variable_RP) [0..n-1]
+                                                 )
                               )
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -290,12 +280,7 @@ SEM GrGlobal
                                  n  = length vs
                                  n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
                              in  [ storeAlloc NotManaged (Variable_Global @globNm) n n2 vs ]
-           lhs.initStats2  = let vs = @val.values
-                                 n  = length vs
-                                 n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap @globNm))))
-                             in  storePopulate (Variable_Global @globNm) vs
-
-
+           lhs.initStats2  = storePopulate (Variable_Global @globNm) @val.values
 
 SEM GrVal
  | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
@@ -371,16 +356,6 @@ SEM GrPatAlt
            lhs.constant = error "GrPatAlt:other constant"
 -- TODO: | LitInt = ...
 
-
-
-SEM GrExpr
- | Seq     lhs.tailJumps = @body.tailJumps
- | Call    lhs.tailJumps = not @lhs.hasNext
- | Case    lhs.tailJumps = @altL.tailJumps
- | * - Seq Call Case
-           lhs.tailJumps = False
-
-
 %%]
 
 
@@ -447,11 +422,7 @@ ATTR GrAGItf
   [ opts : {EHCOpts} | | ]
 
 ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
-  [ optOwn : {Int} 
-    opts   : {EHCOpts}  | | ]
-
-SEM GrAGItf
-  | AGItf loc.optOwn  = ehcOptOwn @lhs.opts
+  [ opts   : {EHCOpts}  | | ]
 
 %%]
 
@@ -478,14 +449,6 @@ SEM GrTag
 
 
 tagArity (GrTag_Con ann _ _) = gtannArity ann
-
-
-yielding what optOwn values numberParameters
-  =  let nMyRes  = length values
-         moveRet = nMyRes > numberParameters
-     in  [ Statement_Comment [what ++ " (Yielding)"]
-         , Statement_Yield values
-         ]
 
 assignments :: String -> [Variable] -> [Variable] -> [Value] -> [Statement]
 assignments what vars1 vars2 values

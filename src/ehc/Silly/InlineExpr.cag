@@ -26,11 +26,7 @@ WRAPPER SilModule
 inlineExpr :: EHCOpts -> SilModule -> SilModule
 inlineExpr options input   
   = let t = wrap_SilModule (sem_SilModule input)
-                           (Inh_SilModule {opts_Inh_SilModule = if ehcOptEmitLLVM options
-                                                                then options{ ehcOptOwn = 0 }
-                                                                else options
-                                          } 
-                           )
+                           (Inh_SilModule {opts_Inh_SilModule = options })
     in trf_Syn_SilModule t
 %%]
 
@@ -163,3 +159,4 @@ notSame v1 (Value_Var v2) = v1 /= v2
 notSame _ _ = True
 
 %%]
+

@@ -56,7 +56,6 @@ SEM Function
 %%][8_2
 SEM Function
   | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
-                            >#< (if @tailJumps then text "{ TailJump }" else text "{ NoTailJump }")
                             >-< "{"
                             >-< indent 4 ("locals" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >|< ";")
                             >-< indent 4 (@body.pretty)
@@ -68,10 +67,8 @@ SEM Statement
   | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
-  | Jump        lhs.pretty = "JUMP"   >#< hsnShowAlphanumeric @name >|< ";"
-  | Return      lhs.pretty = "RETURN" >#< text (show @retdiff) >|< ";"
+  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >#< text (show @mbRetDiff) >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
-  | Yield       lhs.pretty = "YIELD ("  >#< @vals.pretty >|< ");"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
   | Call        lhs.pretty = "CALL"   >#< hsnShowAlphanumeric @name >|< "(" >|< @args.pretty >|< ");"
