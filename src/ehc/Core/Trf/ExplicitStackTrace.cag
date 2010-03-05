@@ -28,7 +28,7 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
-%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLamInfo})
+%%[(99 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 
@@ -64,6 +64,15 @@ ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level, let also one level higher
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 codegen grin)
+SEM CExpr
+  | Let         binds       .   lev         =   @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Binding candidates for tracing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -86,6 +95,10 @@ SEM CExpr
                                             =   []
                             .   traceCandidateLamBody
                                             =   @cTrf
+
+SEM CBind
+  | Bind        loc         .   isTraceCandidate
+                                            =   @lhs.isGlobal || @expr.isTraceCandidate
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,7 +130,7 @@ mbStackTrace opts isCand nm
 %%[(99 codegen)
 SEM CBind
   | Bind        (loc.mbStackTrace,lhs.bindLamMp)
-                                            =   let mbt = mbStackTrace @lhs.opts @expr.isTraceCandidate @nm
+                                            =   let mbt = mbStackTrace @lhs.opts @isTraceCandidate @nm
                                                 in  (mbt,Map.singleton @nm (LamInfo 0 mbt Nothing))
 %%]
 
@@ -148,7 +161,7 @@ ATTR AllBind [ | | bindCTrfL USE {++} {[]}: {[CBind]} ]
 SEM CBind
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
-                                                  StackTraceInfo_HasStackTraceEquiv dbNm | @expr.isTraceCandidate
+                                                  StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
                                                     -> ( [ mkCBind1 dbNm (mkCExprLam1 @nmStackTrace @expr.cTrf) 
                                                          , mkCBind1Metas @nm @bindMeta.cTrf 
                                                            $ mkCExprLam @expr.traceCandidateLamArgs

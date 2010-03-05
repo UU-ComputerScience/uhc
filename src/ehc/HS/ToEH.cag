@@ -222,6 +222,11 @@ SEM Declaration
                     .   eh          =   rngLift @range EH.Decl_FFE @exportrefname @callconvention @ent (rngLift @range EH.Expr_Var @refname) @type.eh
         lhs         .   eh          =   [@eh]
 %%]
+%%[99
+    | Pragma Module
+        loc         .   eh          =   undefined
+        lhs         .   eh          =   []
+%%]
 
 %%[15
 ATTR FunctionalDependencies [ | | eh USE {:} {[]}: {[EH.FuncDep]} ]

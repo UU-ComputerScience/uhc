@@ -18,15 +18,12 @@ ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
 %%[1.Body
 SEM Body
     | Body
-        lhs         .   pp          =   @declarations.pp >-< @ppExtra
-		loc			.	ppExtra		=	empty
-%%]
-
-%%[20.Body -1.Body
-SEM Body
-    | Body
-        lhs         .   pp          =   @importdeclarations.pp >-< @declarations.pp >-< @ppExtra
-		loc			.	ppExtra		=	empty
+        lhs         .   pp          =  
+%%[[20
+                                        @importdeclarations.pp >-< 
+%%]]
+                                        @declarations.pp >-< @ppExtra
+        loc         .   ppExtra     =   empty
 %%]
 
 %%[20
@@ -107,6 +104,10 @@ SEM Declaration
     | Type
         loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
 %%]
+%%[99
+    | Pragma
+        loc         .   pp          =   "{-#" >#< @pragma.pp >#< "#-}"
+%%]
 
 %%[15
 SEM FunctionalDependency
@@ -124,6 +125,16 @@ SEM Declaration
 SEM Deriving
     | Deriving
         loc         .   pp          =   ppInstNm @useimplicitly @maybeinstancename >#< @name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pragms          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM Pragma
+  | Language
+  		loc			.	pp			=	"LANGUAGE" >#< ppCommas @pragmas
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

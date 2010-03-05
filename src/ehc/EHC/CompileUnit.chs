@@ -8,7 +8,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -51,6 +51,10 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
 %%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%]
+
+-- pragma
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
 
 -- debug
@@ -163,6 +167,9 @@ data EHCompileUnit
       , ecuHIInfo            :: !HI.HIInfo
       , ecuDirIsWritable     :: !Bool
 %%]]
+%%[[99
+      , ecuPragmas           :: !(Set.Set Pragma.Pragma)
+%%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      :: ![FPath]
       , ecuSeqNr      		 :: !EHCCompileSeqNr
@@ -241,6 +248,9 @@ emptyECU
       , ecuMbOptim           = Nothing
       , ecuHIInfo            = HI.emptyHIInfo
       , ecuDirIsWritable     = False
+%%]]
+%%[[99
+      , ecuPragmas           = Set.empty
 %%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
@@ -466,6 +476,11 @@ ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%[20 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
+%%[99 export(ecuStorePragmas)
+ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
+ecuStorePragmas x ecu = ecu { ecuPragmas = x }
 %%]
 
 %%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)

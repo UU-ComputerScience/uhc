@@ -470,8 +470,10 @@ expsNmOffMp modNm exps
     $ [ nm
       | e <- Set.toList $ Rel.rng exps
       , mentKind e == IdOcc_Val
-      , let nm = ioccNm (mentIdOcc e)
-      , panicJust "Module.expsNmOffMp" (hsnQualifier nm) == modNm
+      , let nm     = ioccNm (mentIdOcc e)
+            mbqual = hsnQualifier nm
+      , isJust mbqual		-- unqualified names cannot be exported, but they should not intro'd in the 1st place!! TBD 20100303 AD
+      , panicJust ("Module.expsNmOffMp: " ++ show nm) mbqual == modNm
       ]
 %%]
 

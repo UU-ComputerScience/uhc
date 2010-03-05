@@ -150,6 +150,9 @@ cpFoldHsMod modNm
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain
+%%[[99
+                                . ecuStorePragmas (HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod)
+%%]]
                  )              )
          }
 %%]

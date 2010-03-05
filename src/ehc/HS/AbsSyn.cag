@@ -28,11 +28,12 @@ DATA Module
     | Module
         range                    : Range
         name                     : MaybeName
-%%]
-%%[20
+%%[[99
+        fileheaderpragmas        : Pragmas
+%%]]
+%%[[20
         exports                  : MaybeExports
-%%]
-%%[1
+%%]]
         body                     : Body
 %%]
 
@@ -238,6 +239,15 @@ DATA Declaration                                  {- *** -}
         simpletype               : SimpleType
         type                     : Type
 %%]
+%%[99
+    | Pragma
+        range                    : Range
+        pragma               	 : Pragma
+    | Module
+        range                    : Range
+        name                     : MaybeName
+        exports                  : MaybeExports
+%%]
 
 %%[90
 DATA Fixity
@@ -288,6 +298,25 @@ SET AllDeclaration
 %%[[90
     Fixity
 %%]]
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Pragmas                                                            --
+-- ------------------------------------------------------------------------
+
+%%[99
+TYPE Pragmas     				= [ Pragma ]
+
+DATA Pragma
+    | Language
+    	range					: Range
+    	pragmas					: Names
+    | Other
+    	range					: Range
+    	pragmas					: Names
+
+SET AllPragma
+  = Pragma Pragmas
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1275,6 +1304,9 @@ SET AllNT
     AllBasics
 %%[[6
     AllKind
+%%]]
+%%[[99
+    AllPragma
 %%]]
 %%]
 
