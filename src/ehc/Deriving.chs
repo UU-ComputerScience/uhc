@@ -130,7 +130,7 @@ mkDerivClsMp fe valGam dataGam
                                                   ]
                                        ) vs
                              where n = mkHNm uniq
-                                   nStrict = hsnSuffix n "!"
+                                   nStrict = hsnUniqifyEval n
                 )
                 Nothing -- no zero arg
                 gt lt
@@ -251,7 +251,7 @@ mkDerivClsMp fe valGam dataGam
                 undef undef
                 (\opts dgi nrOfAlts cNm _ body
                   -> let cNmv = CExpr_Var cNm
-                         cNm1 = hsnSuffix cNm "!boundCheck"
+                         cNm1 = hsnUniqifyStr HsNameUniqifier_Evaluated "boundCheck" cNm -- hsnSuffix cNm "!boundCheck"
                      in  mkCIf opts (Just cNm1)
                            (cbuiltinApp opts ehbnPrimGtInt [cNmv,CExpr_Int (nrOfAlts-1)])
                            (cerror opts $ "too high for toEnum to " ++ show (dgiTyNm dgi))

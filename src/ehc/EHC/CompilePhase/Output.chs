@@ -106,18 +106,27 @@ cpOutputJava suff modNm
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
-cpOutputGrin :: String -> HsName -> EHCompilePhase ()
-cpOutputGrin suff modNm
+cpOutputGrin :: Bool -> String -> HsName -> EHCompilePhase ()
+cpOutputGrin binary suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOutputGrin" mbGrin
-                 grinPP = ppGrModule grin
                  mkb x  = x ++ suff
                  fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
+                 fnG    = fpathToStr fpG
          ;  when (True) -- ehcOptFullProgAnalysis opts)
                  (do { cpMsg modNm VerboseALot "Emit Grin"
-                     ; lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
+%%[[8
+                     ; lift $ putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+%%][20
+                     ; lift (if binary
+                             then do { -- maybe also a check for existence, as required for .hi files?
+                                       putSerializeFile fnG grin
+                                     }
+                             else putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+                            )
+%%]]
                      })
          }
 

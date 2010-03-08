@@ -46,11 +46,11 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- Force evaluation for IO
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
-%%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
+%%[(9999 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
-%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%[(9999 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
 %%]
 
 -- pragma
@@ -370,6 +370,8 @@ ecuStoreCore :: EcuUpdater Core.CModule
 %%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 %%][99
+ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
+%%][9999
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
@@ -395,6 +397,8 @@ ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
+ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
+%%][9999
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
 
@@ -402,6 +406,8 @@ ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8
 ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
 %%][99
+ecuStoreBytecode x ecu | x `seq` True = ecu { ecuMbBytecode = Just x }
+%%][9999
 ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
 %%]]
 
@@ -459,6 +465,8 @@ ecuStoreHIInfo :: EcuUpdater HI.HIInfo
 %%[[8
 ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
 %%][99
+ecuStoreHIInfo x ecu | x `seq` True = ecu { ecuHIInfo = x }
+%%][9999
 ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]

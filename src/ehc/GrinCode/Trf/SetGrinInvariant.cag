@@ -87,7 +87,7 @@ SEM GrPatLam
 
 SEM GrExpr
   | Eval      lhs.grTrf = maybe @loc.grTrf
-                                (\_ -> GrExpr_Unit (GrVal_Var @nm))
+                                (\_ -> GrExpr_Unit (GrVal_Var @nm) GrType_None)
                                 (Map.lookup @nm @lhs.env)
 
 

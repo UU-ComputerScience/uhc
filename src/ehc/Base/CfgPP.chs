@@ -69,7 +69,7 @@ instance CfgPP CfgPP_HI where
     = ppHsnNonAlpha hiScanOpts n
 %%][20
     = case n of
-        HNPos i
+        HsName_Pos i
           -> pp i
         _ -> ppHsnNonAlpha hiScanOpts n
 %%]]

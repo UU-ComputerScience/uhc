@@ -33,7 +33,7 @@
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -260,7 +260,7 @@ deriving instance Data DataGamInfo
 
 %%]
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval DataFldInfo
 %%[[102
   where

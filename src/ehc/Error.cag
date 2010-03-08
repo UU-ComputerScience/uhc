@@ -25,7 +25,7 @@
 %%[(9 codegen) hs import({%{EH}Core})
 %%]
 
-%%[99 hs import({%{EH}Base.ForceEval})
+%%[9999 hs import({%{EH}Base.ForceEval})
 %%]
 
 %%[9
@@ -84,7 +84,7 @@ mkNestErr' :: Range -> PP_Doc -> [ErrSq] -> ErrSq
 mkNestErr' r wher errs = Seq.fromList $ mkNestErr r wher $ Seq.toList $ Seq.unions errs
 
 mkNestErr :: Range -> PP_Doc -> ErrL -> ErrL
-mkNestErr r wher errL | null (forceEval errL) = []
+mkNestErr r wher errL | null ({- forceEval -} errL) = []
                       | otherwise             = [Err_NestedIn r wher errL]
 %%]
 
@@ -120,7 +120,7 @@ mkErr_NamesNotIntrod r m ns = mkErr_NamesNotIntrod' r m (zip (map pp ns) (repeat
 %%% Force eval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 hs
+%%[9999 hs
 instance ForceEval Err
 %%[[102
   where

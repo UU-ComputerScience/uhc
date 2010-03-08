@@ -320,7 +320,7 @@ inlNmsAreInlineable = and . map isJust
 
 inlRename :: Int -> [Maybe HsName] -> [HsName] -> GrExpr -> GrExpr
 inlRename uniq asFrom as e
-  = grAliasRename (Just $ (`hsnSuffix` show uniq)) (mkNmAliasMp $ zip as (map fromJust asFrom)) e
+  = grAliasRename (Just $ (hsnUniqifyInt HsNameUniqifier_Inline uniq)) (mkNmAliasMp $ zip as (map fromJust asFrom)) e
 %%]
   = grAliasRename (Map.fromList $ zipWith (\a n -> (a,NmAlias_Nm n)) as (map fromJust asFrom)) e
 

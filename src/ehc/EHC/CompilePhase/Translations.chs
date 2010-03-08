@@ -230,8 +230,10 @@ cpTranslateGrin2Bytecode modNm
                (lift $ putStrLn ("expNmOffMp: " ++ show expNmOffMp))
 %%]]
 
+        ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: store bytecode")
         ; when (isJust mbGrin)
                (cpUpdCU modNm $! ecuStoreBytecode bc)
+        ; cpMsg modNm VerboseDebug ("cpTranslateGrin2Bytecode: stored bytecode")
         ; when (ehcOptErrAboutBytecode opts)
                (cpSetLimitErrsWhen 5 "Grin to ByteCode" errs)
         }

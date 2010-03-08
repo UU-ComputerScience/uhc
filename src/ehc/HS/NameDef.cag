@@ -385,9 +385,9 @@ SEM Pattern
 %%[9
 SEM Declaration
     | Instance
-        loc         .   instancename=   maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
+        loc         .   instancename=   maybe (hsnUniqifyUID HsNameUniqifier_ClassDict @lUniq (mkHNm @name)) id @maybeinstancename -- maybe (hsnSuffix (mkHNm @lUniq) ("_instance_"++ show @name)) id @maybeinstancename
     | Class
-        loc         .   instancename=   hsnSuffix (mkHNm @lUniq) ("_class_"++ show @simpletype.name)
+        loc         .   instancename=   hsnUniqifyUID HsNameUniqifier_Class @lUniq (mkHNm @simpletype.name) -- hsnSuffix (mkHNm @lUniq) ("_class_"++ show @simpletype.name)
     | InstanceUseImplicitly
         loc         .   instancename=   mkHNm @lUniq
     | Default

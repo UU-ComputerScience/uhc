@@ -45,10 +45,10 @@
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 
-%%[99 hs import({%{EH}Base.ForceEval})
+%%[9999 hs import({%{EH}Base.ForceEval})
 %%]
 
-%%[(99 codegen grin) hs import({%{EH}GrinCode.Trf.ForceEval})
+%%[(9999 codegen grin) hs import({%{EH}GrinCode.Trf.ForceEval})
 %%]
 
 -- for debug
@@ -377,7 +377,7 @@ instance Serialize HIInfo where
 
 instance ForceEval HILamInfo
 
-%%[99 hs
+%%[9999 hs
 instance ForceEval HIInfo where
 %%[[99
   forceEval x@(HIInfo

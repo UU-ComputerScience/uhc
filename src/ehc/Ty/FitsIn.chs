@@ -666,8 +666,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[[(10 codegen)
                                  r = CExpr_Var rn
                                  tr = C.Expr_Var rn
-                                 mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnSuffix rn "!") r CTagRec n n (mkCExprHole globOpts u) Nothing
-                                 mkLTSel n u = C.mkExprSelCase (C.emptyRCEEnv globOpts) (Just (hsnSuffix rn "!",C.tyErr ("fitsIn.mkLTSel: " ++ show n ++ ":" ++ show u))) tr CTagRec n (C.mkExprHole globOpts u) Nothing
+                                 mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnUniqifyEval rn) r CTagRec n n (mkCExprHole globOpts u) Nothing
+                                 mkLTSel n u = C.mkExprSelCase (C.emptyRCEEnv globOpts) (Just (hsnUniqifyEval rn,C.tyErr ("fitsIn.mkLTSel: " ++ show n ++ ":" ++ show u))) tr CTagRec n (C.mkExprHole globOpts u) Nothing
 %%]]
                                  mkLPred' r l u
                                    =  let  r' = maybe Ty_Any fst $ tyRowExtr l r

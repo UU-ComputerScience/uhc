@@ -61,7 +61,7 @@ type Code = [MethodDecl]
 
 -- The name of the pointer class.
 refObjNm :: DottedName
-refObjNm = hsn2TypeDottedName (HNm "ReferenceObject")
+refObjNm = hsn2TypeDottedName (mkHNmBase "ReferenceObject")
 
 -- The pointer class.
 refObj :: TypeDef

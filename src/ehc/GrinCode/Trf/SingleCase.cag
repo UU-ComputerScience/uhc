@@ -72,6 +72,6 @@ SEM GrExpr
   | Case  lhs.grTrf      =  maybe @loc.grTrf
                                   (\(p,e) -> case p of
                                                Nothing   -> e
-                                               Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e)
+                                               Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf GrType_None) pat e)
                                   @altL.onlyAlt
 %%]

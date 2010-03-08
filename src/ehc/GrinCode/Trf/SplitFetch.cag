@@ -222,7 +222,7 @@ SEM GrExpr
                                           newName   = Map.findWithDefault oldName (getNr oldName) @lhs.renameMap
                                     ; let mbTag     = checkSingleTag @lhs.hptMap oldName
                                           f (v,o)   = (v, GrExpr_FetchField newName o @pat.mbTag)
-                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)))
+                                          g (v,0)   = (v, GrExpr_Unit (GrVal_Tag (fromJust mbTag)) GrType_None)
                                           g (v,o)   = (v, GrExpr_FetchField newName o mbTag)
                                     ; let res = if      isJust @pat.mbTag then (map f fetches, Nothing                          )
                                                 else if isJust mbTag      then (map g fetches, Nothing                          )
@@ -298,7 +298,7 @@ SEM GrExpr
                                            names       =  map (\n->HNmNr n OrigNone) numbers
                                        in  ( newuniq
                                            , zip numbers (map (absFetchField @lhs.hptMap @nm) [start..])
-                                           , buildSeqs (GrExpr_Unit node) (zip names fetches) 
+                                           , buildSeqs (GrExpr_Unit node GrType_None) (zip names fetches) 
                                            )
                                   else (@lhs.uniq, [], @loc.grTrf)
 %%]

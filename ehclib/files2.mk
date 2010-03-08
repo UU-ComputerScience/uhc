@@ -114,6 +114,7 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 
 EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= --no-hi-check
+#EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --target-variant=debug --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= -O0
 #EHCLIB_DEBUG_OPTS						= -v3
@@ -273,9 +274,9 @@ $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH): $(EHCLIB_MKF)
 $(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_SRC)) \
 			: $(EHCLIB_BLD_SYNC_SRC_PREFIX)% \
 			: $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/%
-	mkdir -p $$(@D)
-	cp $$< $$@
-	touch $$@
+	mkdir -p $(@D)
+	cp $< $@
+	touch $@
 
 # template for extraction for a package
 #define EHCLIB_PKG_TEMPLATE

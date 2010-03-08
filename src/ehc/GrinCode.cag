@@ -22,6 +22,9 @@
 %%[(8 codegen grin) hs export(GrAGItf(..), GrModule(..))
 %%]
 
+%%[(8 codegen grin) hs export(GrType(..), GrTypeBase(..), GrTypeBaseL)
+%%]
+
 %%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
 %%]
 
@@ -411,7 +414,7 @@ instance Serialize GrInl where
 
 instance Serialize GrExpr where
   sput (GrExpr_Seq         a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
-  sput (GrExpr_Unit        a      ) = sputWord8 1  >> sput a
+  sput (GrExpr_Unit        a b    ) = sputWord8 1  >> sput a >> sput b
   sput (GrExpr_UpdateUnit  a b    ) = sputWord8 2  >> sput a >> sput b
   sput (GrExpr_Case        a b    ) = sputWord8 3  >> sput a >> sput b
   sput (GrExpr_FetchNode   a      ) = sputWord8 4  >> sput a
@@ -432,7 +435,7 @@ instance Serialize GrExpr where
   sget = do t <- sgetWord8
             case t of
               0  -> liftM3 GrExpr_Seq          sget sget sget
-              1  -> liftM  GrExpr_Unit         sget
+              1  -> liftM2 GrExpr_Unit         sget sget
               2  -> liftM2 GrExpr_UpdateUnit   sget sget
               3  -> liftM2 GrExpr_Case         sget sget
               4  -> liftM  GrExpr_FetchNode    sget
@@ -451,6 +454,21 @@ instance Serialize GrExpr where
               11 -> liftM2 GrExpr_App          sget sget
               _  -> panic "GrinCode.Serialize.GrExpr.sget"		-- unused are unimplemented
 
+instance Serialize GrType where
+  sput (GrType_None     ) = sputWord8 0
+  sput (GrType_Arrow a b) = sputWord8 1  >> sput a >> sput b
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrType_None
+              1  -> liftM2 GrType_Arrow         sget sget
+
+instance Serialize GrTypeBase where
+  sput (GrTypeBase_Node     ) = sputWord8 0
+  sput (GrTypeBase_Pointer  ) = sputWord8 1
+  sget = do t <- sgetWord8
+            case t of
+              0  -> return GrTypeBase_Node
+              1  -> return GrTypeBase_Pointer
 
 instance Serialize GrAlt where
   sput (GrAlt_Alt          a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c

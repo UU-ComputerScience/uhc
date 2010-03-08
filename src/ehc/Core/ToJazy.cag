@@ -156,8 +156,8 @@ nmVar pkg mod v
 %%][20
   = safeNm $ handleUpper $ hsnQualified v
   where handleUpper v
-          = case v of
-               HNm s@(c:vs) | isUpper c -> HNm (s ++ "_")
+          = case hsnMbBaseString v of
+               Just s@(c:vs) | isUpper c -> mkHNmBase (s ++ "_")
                _ -> v
 %%]]
 
@@ -208,7 +208,7 @@ nmSetOrEvlN n = nmEvalN n
 -- ensure a name valid for JVM
 safeNm :: HsName -> HsName
 safeNm
-  = hsnMapQualified (HNm . concatMap safe . show)
+  = hsnMapQualified (concatMap safe)
   where safe '.'  = "_dot"
         safe ':'  = "_colon"
         safe '/'  = "_fslash"
@@ -1133,7 +1133,7 @@ SEM CBind
                                                              else dflt
                                                         else dflt
                 lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
-  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (HNm @impEntNm)
+  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (mkHNmBase @impEntNm)
                             .   lkupBuiltin     =   let m = builtinKnownBoxedTyMp @lhs.opts
                                                     in  \n -> Map.lookup n m
                             .   (globClasses,ji)=   let mkxxbox how mbCon

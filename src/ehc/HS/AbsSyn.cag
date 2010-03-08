@@ -311,9 +311,9 @@ DATA Pragma
     | Language
     	range					: Range
     	pragmas					: Names
-    | Other
+    | OptionsGHC
     	range					: Range
-    	pragmas					: Names
+    	options					: Names
 
 SET AllPragma
   = Pragma Pragmas

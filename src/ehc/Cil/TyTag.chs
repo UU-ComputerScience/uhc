@@ -72,22 +72,22 @@ fromCTag (CTag t nm n a m) = TyCon t nm n a m
 intTyTag :: TyTag
 intTyTag = TyCon nm nm 0 1 1
   where
-   nm = HNm "Int"
+   nm = mkHNmBase "Int"
 
 charTyTag :: TyTag
 charTyTag = TyCon nm nm 0 1 1
   where
-    nm = HNm "Char"
+    nm = mkHNmBase "Char"
 
 packedStringTyTag :: TyTag
 packedStringTyTag = TyCon nm nm 0 1 1
   where
-    nm = HNm "PackedString"
+    nm = mkHNmBase "PackedString"
 
 unitTyTag :: TyTag
 unitTyTag = TyCon nm nm 0 0 0
   where
-    nm = HNm "Unit"
+    nm = mkHNmBase "Unit"
 
 toPrimitiveType :: TyTag -> PrimitiveType
 toPrimitiveType t | t == intTyTag          = Int32

@@ -7,7 +7,10 @@
 %%% Simplify code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfRenUniq)
+%%[(8 codegen) hs module {%{EH}Core.Trf.RenUniq} import(Data.Maybe,Data.Char,Control.Monad(liftM),qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
@@ -22,7 +25,7 @@ PRAGMA strictcase
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(cmodTrfRenUniq)
 cmodTrfRenUniq :: CModule -> CModule
 cmodTrfRenUniq cmod
   =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
@@ -74,14 +77,18 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 type ARenMp = Map.Map HsName HsName
 %%]
 
-%%[(20 codegen) hs
+%%[(8 codegen) hs
 -- breaks assumption that globals are qualified, locals not. Problem in future when records are used for globals and access differs.
 mkUniq :: HsName -> HsName -> UID -> HsName
 mkUniq q n u
-  = (if hsnIsQual n
+  = 
+%%[[20
+    (if hsnIsQual n
      then id
      else hsnSetQual q
-    ) $ hsnSuffix n ("__" ++ show u)
+    ) $ 
+%%]]
+    hsnUniqifyUID HsNameUniqifier_GloballyUnique u n
 %%]
 
 %%[(8 codegen) hs
@@ -95,11 +102,13 @@ aRenAdd isGlob q nL u m
   = Map.fromList [ (n,mkNm n u) | (n,u) <- zip nL uL ] `Map.union` m
   where uL = mkNewUIDL (length nL) u
         doChngNm n = not isGlob || n `Map.member` m
+        mkNm n u = if doChngNm n
 %%[[8
-        mkNm n u = if doChngNm n then hsnSuffix n ("__" ++ show u) else n
+                   then mkUniq hsnUnknown n u
 %%][20
-        mkNm n u = if doChngNm n then mkUniq q n u else n
+                   then mkUniq q n u
 %%]]
+                   else n
 %%]
 
 %%[(8 codegen) hs

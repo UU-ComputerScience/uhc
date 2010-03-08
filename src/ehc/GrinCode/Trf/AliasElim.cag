@@ -123,7 +123,7 @@ nmAliasOne mpGlob e p
       (NmAlias_Nm ne, NmAlias_Nm np)
         -> (id,Map.singleton np $ nmAliasRepl' mpGlob ne)
       (NmAlias_Const _ c, NmAlias_Nm np)
-        -> (GrExpr_Seq (GrExpr_Unit c) (GrPatLam_Var np),Map.empty)
+        -> (GrExpr_Seq (GrExpr_Unit c GrType_None) (GrPatLam_Var np),Map.empty)
       _ -> (id,Map.empty)
 
 nmAliasGrp :: NmAliasMp -> [NmAlias] -> [NmAlias] -> (GrExpr->GrExpr,NmAliasMp)

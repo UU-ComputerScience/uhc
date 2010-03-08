@@ -13,7 +13,7 @@
 %%[94 hs export(ForeignEnt(..), CCall(..), PlainCall(..), ForeignAGItf(..)) 
 %%]
 
-%%[99 hs import({%{EH}Base.ForceEval})
+%%[9999 hs import({%{EH}Base.ForceEval})
 %%]
 
 %%[94 hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -34,7 +34,7 @@ DERIVING AllForeign
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs
+%%[9999 hs
 instance ForceEval ForeignEnt
 %%]
 
