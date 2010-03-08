@@ -56,7 +56,7 @@ SEM GrBind
   | Bind          lhs.grTrf  =  if @expr.valid
                                 then @loc.grTrf
                                 -- else GrBind_Arity @nm (length @argNmL)
-                                else GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty)
+                                else GrBind_Bind @nm @annot @argNmL (GrExpr_Unit GrVal_Empty GrType_None)
                                 
 -- Invalid alternatives are removed from the list
 

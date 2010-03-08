@@ -34,7 +34,7 @@
 %%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
 %%]
 
-%%[(99 codegen grin) hs import({%{EH}Base.ForceEval})
+%%[(9999 codegen grin) hs import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1518,7 +1518,7 @@ halt = Instr_Halt
 %%% Instances: ForceEval, Serializable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen grin) hs
+%%[(9999 codegen grin) hs
 instance ForceEval Const
 instance ForceEval LinkChainEntry
 instance ForceEval LocRef

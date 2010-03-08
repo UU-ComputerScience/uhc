@@ -89,7 +89,7 @@ SEM GrExpr
 applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
   =  let n = length flds2
      in  if n<needs
-         then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2))
+         then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2)) GrType_None
          else if n==needs
               then GrExpr_Call  nm  (flds1++flds2)
               else let newname = hsnFromString "hallo"

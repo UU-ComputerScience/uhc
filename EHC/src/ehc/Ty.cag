@@ -1281,7 +1281,7 @@ predMatchNm p
        Pred_Pred  t    -> predMatchNm $ snd $ tyPrArrowArgsRes t
 %%]
 %%[(10 hmtyinfer || hmtyast) hs
-       Pred_Lacks _ (Label_Lab l)  -> hsnPrefix "_Lab_" l
+       Pred_Lacks _ (Label_Lab l)  -> hsnUniqify HsNameUniqifier_LacksLabel l
        Pred_Lacks _ _              -> mkHNm "_LabVar_"      -- necessary? only used by CHR's
 %%]
 
@@ -1594,12 +1594,12 @@ tyInsertAnnRec (Ty_App tyInit tyExts) mbNm addTy
         exts' = insert mbNm exts
      in tyInit `Ty_App` (tyEmpty `mkTyRow` exts')
   where
-    insert Nothing   exts = (HNPos (1 + maxHnPos exts), addTy) : exts
+    insert Nothing   exts = (mkHNmPos (1 + maxHnPos exts), addTy) : exts
     insert (Just nm) exts = (nm, addTy) : exts
 tyInsertAnnRec _ _ _ = Ty_Any
 
 maxHnPos :: AssocL HsName a -> Int
-maxHnPos l = maximum (0 : [n | (HNPos n, _) <- l ])
+maxHnPos l = maximum (0 : [n | (mkHNmPos n, _) <- l ])
 
 tyReplaceAnnRec :: Ty -> HsName -> Ty -> Ty
 tyReplaceAnnRec (Ty_App tyInit tyExts) nm replTy

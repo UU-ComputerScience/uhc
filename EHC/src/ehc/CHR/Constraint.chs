@@ -19,7 +19,7 @@
 %%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,7 +130,7 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
 %%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
   forceEval x@(Prove     p     ) | forceEval p `seq` True = x
   forceEval x@(Assume    p     ) | forceEval p `seq` True = x

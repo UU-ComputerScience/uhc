@@ -205,6 +205,18 @@ cpDecodeHIInfo modNm
        }
 %%]
 
+%%[20 export(cpDecodeGrin)
+cpDecodeGrin :: HsName -> EHCompilePhase ()
+cpDecodeGrin modNm
+  = do { cr <- get
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              fpC     = fpathSetSuff "grin" fp
+       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
+       ; grin <- lift $ getSerializeFile (fpathToStr fpC)
+       ; cpUpdCU modNm (ecuStoreGrin grin)
+       }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: on top of parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -237,7 +249,7 @@ cpGetPrevGrin modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbGrinTime ecu) && isNothing (ecuMbGrin ecu))
-              (cpParseGrin modNm)
+              (cpDecodeGrin modNm) -- (cpParseGrin modNm)
        }
 %%]
 

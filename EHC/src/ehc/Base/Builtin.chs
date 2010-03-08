@@ -96,10 +96,11 @@ hsnUn           nm                  =   strUn `hsnPrefix` nm
 
 %%[3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
-hsnIsUn         (HNm s)             =   isPrefixOf strUn $ hsnHNmFldToString s
+hsnIsUn                             =   maybe False (isPrefixOf strUn) . hsnMbBaseString
+-- hsnIsUn         (HsName_Base s)     =   isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
-%%[20 -3.hsnIsUn
+%%[2020 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
@@ -109,10 +110,11 @@ hsnIsUn         hsn
 
 %%[3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
-hsnUnUn         (HNm s)             =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
+hsnUnUn         n                   =   maybe n (\(s,mk) -> mk $ drop (length strUn) s) $ hsnBaseUnpack n
+-- hsnUnUn         (HsName_Base s)     =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
 %%]
 
-%%[20 -3.hsnUnUn
+%%[2020 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
@@ -157,7 +159,7 @@ hsnIsRow        hsn                 =   hsn == hsnRow
 
 %%[7 export(positionalFldNames)
 positionalFldNames                  ::  [HsName]
-positionalFldNames                  =   map HNPos [1..]
+positionalFldNames                  =   map mkHNmPos [1..]
 %%]
 
 %%[8 export(hsnMain)
@@ -176,7 +178,7 @@ hsnIsConstructorName :: HsName -> Bool
 hsnIsConstructorName n | isJust ms = case fromJust ms of
                                        (x:xs) -> constructorInitial x
                                    where ms = mbHNm n
-hsnIsConstructorName (HNPos n)     = False
+hsnIsConstructorName (HsName_Pos n)= False
 %%]
 %%[20
 hsnIsConstructorName n             = hsnIsConstructorName (snd $ hsnInitLast n)

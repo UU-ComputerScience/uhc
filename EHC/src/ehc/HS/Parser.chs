@@ -133,7 +133,8 @@ close = pWrap f g (pVCCURLY)
 pPragma' :: (Range -> Pragma -> x) -> HSParser x
 pPragma' mk
   = pPacked' pOPRAGMA pCPRAGMA
-      (   (\t ps r -> mk r $ Pragma_Language (mkRange1 t) ps) <$> pLANGUAGE_prag <*> pCommas (tokMkQName <$> conid)
+      (   (\t ps r -> mk r $ Pragma_Language   (mkRange1 t) ps) <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
+      -- <|> (\t ps r -> mk r $ Pragma_OptionsGHC (mkRange1 t) ps) <$> pOPTIONSGHC_prag <*> pCommas (tokMkQName <$ pMINUS <*> conid)
       )
 
 pPragma :: HSParser Pragma

@@ -24,7 +24,5 @@ instance Hashable String where
   hash = hashString
 
 %%]
-instance Hashable a => Hashable [a] where
-  hash = foldr (\a h -> h `xor` hash a) 0
 
 

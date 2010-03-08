@@ -17,7 +17,6 @@ Ty/Trf/ElimBoth.cag
 Ty/Trf/FreshVar.cag
 Ty/Trf/ElimAlts.cag
 Ty/Trf/ElimEqual.cag
-Ty/Trf/ForceEval.cag
 TyCore/Pretty.cag
 TyCore/ToCore.cag
 TyCore/SubstApply.cag
@@ -44,7 +43,6 @@ Core/Trf/FloatToGlobal.cag
 Core/Trf/LiftDictFields.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
-Core/Trf/ForceEval.cag
 Core/Trf/ElimTrivApp.cag
 Core/Trf/Strip.cag
 Core/Trf/PrettyVarNames.cag
@@ -56,7 +54,6 @@ GrinCode/PointsToAnalysis.cag
 GrinCode/ToGrinByteCode.cag
 GrinCode/ToCil.cag
 GrinCode/ToSilly.cag
-GrinCode/Trf/ForceEval.cag
 GrinCode/Trf/AliasElim.cag
 GrinCode/Trf/AliasRename.cag
 GrinCode/Trf/ApplyUnited.cag
@@ -95,7 +92,6 @@ GrinCode/Trf/SubstExpr.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
 GrinByteCode/ToC.cag
-GrinByteCode/Trf/ForceEval.cag
 LLVM/Pretty.cag
 Silly/ElimUnused.cag
 Silly/EmbedVars.cag

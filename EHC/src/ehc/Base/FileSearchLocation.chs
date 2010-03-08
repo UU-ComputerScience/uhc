@@ -117,8 +117,8 @@ type PkgKey2 = Maybe Version
 type PkgKey  = (PkgKey1,PkgKey2)
 
 instance HSNM PkgKey where
-  mkHNm (n,Just v) =   HNm (n ++ "-" ++ (concat $ intersperse "." $ map show $ versionBranch v))
-  mkHNm (n,_     ) = mkHNm  n
+  mkHNm (n,Just v) =   mkHNmBase (n ++ "-" ++ (concat $ intersperse "." $ map show $ versionBranch v))
+  mkHNm (n,_     ) =   mkHNm      n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

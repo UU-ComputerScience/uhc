@@ -14,10 +14,10 @@
 %%[20 import({%{EH}Base.Binary})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%[99 import({%{EH}Base.Hashable},Data.Bits)
@@ -104,7 +104,7 @@ instance Keyable x => TrieKeyable x Key where
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval Key where
 %%[[(99 hmtyinfer || hmtyast)
   forceEval x@(Key_Ty   y) | forceEval y `seq` True = x

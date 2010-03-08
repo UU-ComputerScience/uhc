@@ -23,7 +23,7 @@ Assumptions (to be documented further)
 %%[(2020 hmtyinfer || hmtyast) import({%{EH}Base.Binary})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 -- For debug
@@ -569,7 +569,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where
   forceEval x@(StoredCHR c i ks id) | forceEval c `seq` forceEval ks `seq` forceEval id `seq` True = x
 %%[[102

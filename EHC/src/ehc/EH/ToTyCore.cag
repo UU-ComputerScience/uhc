@@ -857,7 +857,7 @@ SEM Decl
                                                            , C.mkValBind1 en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
-                                                         , let en = hsnSuffix f "_datafield_sel_error"
+                                                         , let en = hsnUniqifyStr HsNameUniqifier_New "datafield_sel_error" f -- hsnSuffix f "_datafield_sel_error"
                                                          ]
 %%]
 
@@ -1305,7 +1305,7 @@ cdictOffset n r = tyRecOffset n $ r
 SEM Decl
   | Class       lhs         .   valBindL      =   let  x = mkHNm "x"
                                                      vx = Expr_Var x
-                                                     xStrict = hsnSuffix x "!"
+                                                     xStrict = hsnUniqifyEval x
                                                      vxStrict = Expr_Var xStrict
                                                      mkSel n = mkExprSatSelsCaseMeta
                                                                  ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) (CMetaVal_Dict Nothing) vx @dictTag
@@ -1317,7 +1317,7 @@ SEM Decl
                                                        = [C.mkValBind1 nDflt (mkExprLam1Meta nD (CMetaVal_Dict Nothing) d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = mkExprApp (Expr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
-                                                             nD = hsnPrefix "_self_" nDflt
+                                                             nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ C.mkValBind1 n $ mkExprLam1Meta x (CMetaVal_Dict Nothing) $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
@@ -1412,7 +1412,7 @@ SEM Decl
                                                      memberNames     = [ n 
                                                                        | (n,_) <- tyRowCanonOrder @recTyExts 
                                                                        ]
-                                                     memberNewNames  = [ hsnSuffix @dictNm ('~':show n)
+                                                     memberNewNames  = [ hsnUniqifyStr HsNameUniqifier_DictField (show n) @dictNm -- hsnSuffix @dictNm ('~':show n)
                                                                        | n <- memberNames
                                                                        ]
                                                      memberNewVars   = map Expr_Var memberNewNames
@@ -1422,8 +1422,8 @@ SEM Decl
                                                                                                                                                                                        
                                                      mkNormalD instanceBindings
                                                        = let dfltNm       = clgiDfltDictNm @clgi
-                                                             rsltNmStrict = hsnSuffix rsltNm "!"
-                                                             dfltNmStrict = hsnSuffix dfltNm "!"
+                                                             rsltNmStrict = hsnUniqifyEval rsltNm
+                                                             dfltNmStrict = hsnUniqifyEval dfltNm
                                                              dfltVar      = Expr_Var dfltNm
                                                              rsltVarStrict= Expr_Var rsltNmStrict
                                                              dfltVarStrict= Expr_Var dfltNmStrict
@@ -1599,7 +1599,7 @@ SEM Decl
                                                                      nrOfAlts rsltVar extraCxL (dcfInitialArgL dcf)
                                                             else mkExprLam (dcfInitialArgL dcf ++ take fArity nsA)
                                                                    (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
-                                                                    $ mkExprStrictSatCase @rceEnvTC (Just $ hsnSuffix n1 "!") n1v
+                                                                    $ mkExprStrictSatCase @rceEnvTC (Just $ hsnUniqifyEval n1) n1v
                                                                       [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
                                                                                  (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
                                                                       | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
@@ -1628,7 +1628,7 @@ SEM Decl
                                                              mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
                                                                = case nms of
                                                                    (n:ns) | arity > 0
-                                                                     -> mkExprStrictSatCase @rceEnvTC (Just $ hsnSuffix n "!") (Expr_Var n)
+                                                                     -> mkExprStrictSatCase @rceEnvTC (Just $ hsnUniqifyEval n) (Expr_Var n)
                                                                           (   [ mka (dtiCTag dti) tsubs (mkc tg altInx (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
                                                                            ++ [ mka t (nsubs t n) (dcfAllTagLtExpr dcf) | t <- map dtiCTag dtisLT ]
                                                                            ++ [ mka t (nsubs t n) (dcfAllTagGtExpr dcf) | t <- map dtiCTag dtisGT ]

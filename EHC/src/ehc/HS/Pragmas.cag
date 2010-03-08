@@ -13,7 +13,13 @@ ATTR AGItf Module [ | | fileHeaderPragmas USE {`Set.union`} {Set.empty}: {Set.Se
 
 SEM Pragma
     | Language
-        lhs             .   pragmas     =   Set.fromList $ catMaybes [ Map.lookup (show p) Pragma.allPragmaMp | p <- @pragmas ]
+        loc             .   pragmaNames =   [ p |      p  <- map show @pragmas ]
+    | OptionsGHC
+        loc             .   pragmaNames =   [] -- [ p | ('X':p) <- map show @options ]
+
+SEM Pragma
+    | Language OptionsGHC
+        lhs             .   pragmas     =   Set.fromList $ catMaybes [ Map.lookup p Pragma.allPragmaMp | p <- @pragmaNames ]
 
 SEM Module
     | Module

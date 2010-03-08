@@ -27,7 +27,7 @@ This file exists to avoid module circularities.
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -176,7 +176,7 @@ predOccCnstrMpLiftScope sc
 %%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval VarUIDHsName where
   forceEval x@(VarUIDHs_Name i n) | forceEval i `seq` forceEval n `seq` True = x
   forceEval x@(VarUIDHs_UID  i  ) | forceEval i `seq` True = x

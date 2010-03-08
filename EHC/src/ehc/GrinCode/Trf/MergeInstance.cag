@@ -146,7 +146,7 @@ makeGlobal dictMap fundefs am nm k (v:vs)
                                             args = map f dss
                                             f ds = selectField dictMap fundefs nm ds
                                             node = GrVal_Node tag (map GrVal_Var vs ++ args)
-                                            name = hsnSuffix nm ('~':show k)
+                                            name = hsnUniqifyStr HsNameUniqifier_GloballyUniqueDict (show k) nm -- hsnSuffix nm ('~':show k)
                                         in  (GrVal_Var name, Just (GrGlobal_Global name node))
 
 selectField :: DictMap -> [[HsName]] -> HsName -> [Int] -> GrVal

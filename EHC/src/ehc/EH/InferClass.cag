@@ -40,7 +40,7 @@ SEM Decl
 
 %%[(9 hmtyinfer) hs
 tyPrLToSupNmL :: TyL -> [HsName]
-tyPrLToSupNmL = zipWith (\i p -> hsnSuffix (tyPredNm p) (show i)) [1..]
+tyPrLToSupNmL = zipWith (\i p -> hsnUniqifyInt HsNameUniqifier_SuperClass i (tyPredNm p)) [1..]
 %%]
 
 %%[(9 hmtyinfer)
@@ -142,8 +142,8 @@ SEM Decl
                                 .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
                                 .   (dictNm,inclForElim)
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
-                                .   dictBuildNm     =   hsnPrefix "_res_" @dictNm
-                                .   dictSelfNm      =   hsnPrefix "_self_" @dictNm
+                                .   dictBuildNm     =   hsnUniqify HsNameUniqifier_ResultDict @dictNm
+                                .   dictSelfNm      =   hsnUniqify HsNameUniqifier_SelfDict @dictNm
                                 .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix

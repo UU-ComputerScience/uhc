@@ -60,7 +60,7 @@ scan opts pos input
    isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
    isPairSym= (`Set.member` scoSpecPairs opts) -- locatein (scoSpecPairs opts)
 %%[[99
-   isPragma = (`Set.member` scoPragmasTxt opts)
+   isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
 %%]]
 
    isIdStart c = isLower    c || c == '_'

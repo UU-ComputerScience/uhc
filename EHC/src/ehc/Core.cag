@@ -39,7 +39,7 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
-%%[(99 codegen) hs import({%{EH}Base.ForceEval})
+%%[(9999 codegen) hs import({%{EH}Base.ForceEval})
 %%]
 
 %%[(8 codegen) ag import({Core/AbsSyn})
@@ -755,7 +755,7 @@ instance Serialize StackTraceInfo where
            2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
 %%]
 
-%%[(99 codegen) hs
+%%[(9999 codegen) hs
 instance ForceEval LamInfo where
   forceEval x@(LamInfo a b c) = x
 %%]

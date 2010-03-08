@@ -41,7 +41,7 @@ XXX
 %%]
 
 -- Force evaluation for IO
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 -- for debug
@@ -54,13 +54,14 @@ XXX
 
 %%[20.prepFlow
 prepFlow :: a -> a
-prepFlow = id
+prepFlow x | x `seq` True = x
+-- prepFlow = id
 
 gamUnionFlow :: Ord k => Gam k v -> Gam k v -> Gam k v
 gamUnionFlow = gamUnion
 %%]
 
-%%[99 -20.prepFlow
+%%[9999 -20.prepFlow
 prepFlow :: ForceEval a => a -> a
 prepFlow = forceEval
 
