@@ -5,6 +5,16 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Definition-site arity raising in TyCore
+%%%
+%%% To keep sharing when doing partial applications, this will only raise nested lambdas.
+%%%
+%%% For example:
+%%% > \[x] -> \[y] -> let g = f x y
+%%% >                 in \[z] -> g z
+%%%
+%%% Becomes:
+%%% > \[x, y] -> let g = f x y
+%%% >            in \[z] -> g z
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise}
@@ -14,6 +24,9 @@
 %%]
  
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Bool.Extras)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe)
@@ -54,29 +67,67 @@ SEM AGItf
 %%]
 
 %%[(8 codegen)
-ATTR AllCodeNT [ | | cTrf : SELF ]
+ATTR AllCodeNT
+  [
+  |
+  | cTrf : SELF
+    worker : SELF
+    wrapper : SELF
+  ]
+ATTR AllExpr
+  [
+  |
+  | hasWorker USE {||} {False} : {Bool}
+  ]
 ATTR Expr
   [
   |
   |
     lamArgs  : {[Expr]}
+    lamTails : {[Expr]}
     arrArgs  : {[Expr]}
+    arrTails : {[Expr]}
   ]
+
+SEM ValBindL
+  | Cons        lhs         .   cTrf        =   if @hd.hasWorker
+                                                then @hd.worker : @hd.wrapper : @tl.cTrf
+                                                else @hd.cTrf : @tl.cTrf
 
 SEM Expr
   | Lam
                 lhs         .   lamArgs     =   @arg.cTrf : @res.lamArgs
+                            .   lamTails    =   @res.cTrf : @res.lamTails
   | Arrow
                 lhs         .   arrArgs     =   @arg.cTrf : @res.arrArgs
+                            .   arrTails    =   @res.cTrf : @res.arrTails
   | * - Lam Arrow
                 lhs         .   lamArgs     =   []
-                lhs         .   arrArgs     =   []
+                            .   lamTails    =   []
+                            .   arrArgs     =   []
+                            .   arrTails    =   []
 
 SEM ValBind
   | Val
-                lhs         .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev ({- annTrace ("\n" ++ show (@loc.newArrSeq) ++ "\n" ++ show @loc.newLamSeq) -} @l1.cTrf) @l0.cTrf
+                lhs         .   hasWorker   =   isJust @newLamTail
+                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newArr @newLam
+                            .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @l0.cTrf
+                loc         .   newLam      =   maybe @l0.cTrf
+                                                      (\e -> Expr_Lam (Expr_Seq @newLamSeq) e)
+                                                      @newLamTail
+                loc         .   newArr      =   maybe @l1.cTrf
+                                                      (\e -> Expr_Arrow (Expr_Seq @newArrSeq) e)
+                                                      @newArrTail
                 loc         .   newLamSeq   =   concatMap seqToList @l0.lamArgs
-                loc         .   newArrSeq   =   take (length @loc.newLamSeq) $ concatMap seqToList @l1.arrArgs
+                            .   newLamTail  =   if @nrArgs /= 0
+                                                then Just $ @l0.lamTails !! (@nrArgs - 1)
+                                                else Nothing
+                            .   newArrSeq   =   take (@nrArgs) $ concatMap seqToList @l1.arrArgs
+                            .   newArrTail  =   if @nrArgs /= 0
+                                                then Just $ @l1.arrTails !! (@nrArgs - 1)
+                                                else Nothing
+                            .   nrArgs      =   length @loc.newLamSeq
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
 
 {
 annTrace :: String -> Expr -> Expr

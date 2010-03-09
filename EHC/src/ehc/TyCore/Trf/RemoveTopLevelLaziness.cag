@@ -95,18 +95,18 @@ SEM ValBind
 
 SEM Expr
   | Delay
-                lhs         .   rmLaziness  =   @loc.rmLaziness
-                lhs         .   cTrf        =   if @loc.rmLaziness
+                lhs         .   rmLaziness  =   @rmLaziness
+                lhs         .   cTrf        =   if @rmLaziness
                                                 then @expr.cTrf
-                                                else @loc.original
+                                                else @original
                 loc         .   original    =   Expr_Delay @expr.cTrf
                 loc         .   rmLaziness  =   @lhs.tlDelay && @expr.isLam
                 expr        .   tlDelay     =   False
                 expr        .   rmLaziness  =   False
 
   | Force
-                lhs         .   cTrf        =   maybe @loc.original
-                                                      (\n -> bool @loc.original
+                lhs         .   cTrf        =   maybe @original
+                                                      (\n -> bool @original
                                                                   @expr.cTrf
                                                                   (elem n @lhs.rmForceVars))
                                                       @expr.isVar
@@ -115,7 +115,7 @@ SEM Expr
   | Lazy
                 lhs         .   cTrf        =   if @lhs.rmLaziness
                                                 then @expr.cTrf
-                                                else @loc.original
+                                                else @original
                 loc         .   original    =   Expr_Lazy @expr.cTrf
                 expr        .   rmLaziness  =   False
 
