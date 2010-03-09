@@ -29,7 +29,7 @@ TyCore transformations
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
 %%]
-%%[(8 codegen) import({%{EH}TyCore.Trf.RemoveTopLevelLaziness})
+%%[(8 codegen) import({%{EH}TyCore.Trf.RemoveLazyFunctions})
 %%]
 %%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness})
 %%]
@@ -50,7 +50,7 @@ cpTyCore1Trf modNm trfNm
                               "EliminateExplicitLaziness" -> cmodTrfEliminateExplicitLaziness
                               "DefinitionSiteArityRaise"  -> cmodTrfDefinitionSiteArityRaise
                               "IntroduceExplicitLaziness" -> cmodTrfIntroduceExplicitLaziness
-                              "RemoveTopLevelLaziness"    -> cmodTrfRemoveTopLevelLaziness
+                              "RemoveLazyFunctions"       -> cmodTrfRemoveLazyFunctions
 %%[[(8 tauphi)
                               "OptimizeStrictness"        -> cmodTrfOptimizeStrictness
 %%]]

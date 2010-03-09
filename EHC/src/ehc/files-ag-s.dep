@@ -108,5 +108,5 @@ Silly/ToLLVM.cag
 TyCore/Trf/EliminateExplicitLaziness.cag
 TyCore/Trf/DefinitionSiteArityRaise.cag
 TyCore/Trf/IntroduceExplicitLaziness.cag
-TyCore/Trf/RemoveTopLevelLaziness.cag
+TyCore/Trf/RemoveLazyFunctions.cag
 TyCore/Trf/OptimizeStrictness.cag

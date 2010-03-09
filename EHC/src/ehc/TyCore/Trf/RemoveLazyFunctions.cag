@@ -1,0 +1,140 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove lazy bound lambdas
+%%% 
+%%% Perhaps beter to never generate them in the first place, but this is easier for now.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.RemoveLazyFunctions}
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Bool.Extras)
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore})
+%%]
+
+%%[1 hs import(Debug.Trace)
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).tcmodTrfRemoveLazyFunctions hs
+cmodTrfRemoveLazyFunctions :: Module -> Module
+cmodTrfRemoveLazyFunctions tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf : SELF ]
+ATTR AllExpr
+  [ lazyVars : {[HsName]}
+  |
+  | genLazyVars USE {++} {[]} : {[HsName]}
+  ]
+ATTR Expr
+  [
+  |
+  | isArrow     : {Bool}
+    isLam       : {Bool}
+    isLazyArrow : {Bool}
+    mbVarNm     : {Maybe HsName}
+  ]
+
+SEM Module
+  | Mod
+                tbinds
+                            .   lazyVars    =   []
+                vbinds
+                            .   lazyVars    =   @vbinds.genLazyVars
+
+SEM Expr
+  | Let
+                vbinds
+                            .   lazyVars    =   bool @lhs.lazyVars @extLazyVars (@categ == ValBindCateg_Rec)
+                body
+                            .   lazyVars    =   @extLazyVars
+                loc         .   extLazyVars =   @vbinds.genLazyVars ++ @lhs.lazyVars
+
+SEM ValBind
+  | Val
+                lhs         .   genLazyVars =   bool [] [@nm] @l1.isLazyArrow
+                            .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf
+                                                  @l0.cTrf
+
+SEM Expr
+  | Delay
+                lhs         .   cTrf        =   if @expr.isLam
+                                                then @expr.cTrf
+                                                else @original
+                loc         .   original    =   Expr_Delay @expr.cTrf
+
+  | Force
+                lhs         .   cTrf        =   maybe @original
+                                                      (\n -> bool @original
+                                                                  @expr.cTrf
+                                                                  (elem n @lhs.lazyVars))
+                                                      @expr.mbVarNm
+                loc         .   original    =   Expr_Force @expr.cTrf
+
+  | Lazy
+                lhs         .   cTrf        =   if @expr.isArrow
+                                                then @expr.cTrf
+                                                else @original
+                loc         .   original    =   Expr_Lazy @expr.cTrf
+
+SEM Expr
+  | Arrow
+                lhs         .   isArrow     =   True
+  | * - Arrow
+                lhs         .   isArrow     =   False
+  | Lam
+                lhs         .   isLam       =   True
+  | * - Lam
+                lhs         .   isLam       =   False
+  | Lazy
+                lhs         .   isLazyArrow =   @expr.isArrow
+  | * - Lazy
+                lhs         .   isLazyArrow =   False
+  | Var
+                lhs         .   mbVarNm     =   Just @nm
+  | * - Var
+                lhs         .   mbVarNm     =   Nothing
+%%]
+
