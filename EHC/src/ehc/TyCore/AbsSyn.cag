@@ -179,6 +179,7 @@ DATA Expr
 %%[(8 codegen)
 DATA ExprAnn
   | Empty
+  | Annotation      s           : String
 %%[[(8 tauphi)
   | Strictness      s           : Strictness
   | GrinHint        s           : String

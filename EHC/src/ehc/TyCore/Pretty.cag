@@ -404,6 +404,7 @@ SEM Expr
 %%[(8 codegen)
 SEM ExprAnn
   | Empty       loc         .   pp          =   empty
+  | Annotation  loc         .   pp          =   pp ("{" ++ @s ++ "}")
 %%[[(8 tauphi)
   | Strictness  loc         .   pp          =   pp (show @s)
   | GrinHint    loc         .   pp          =   pp ("GrinHint{" ++ @s ++ "}")

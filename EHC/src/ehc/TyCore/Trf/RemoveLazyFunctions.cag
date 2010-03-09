@@ -64,7 +64,8 @@ SEM AGItf
 %%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf : SELF ]
 ATTR AllExpr
-  [ lazyVars : {[HsName]}
+  [ lazyVars  : {[HsName]}
+    boundLazy : {Bool}
   |
   | genLazyVars USE {++} {[]} : {[HsName]}
   ]
@@ -73,6 +74,7 @@ ATTR Expr
   |
   | isArrow     : {Bool}
     isLam       : {Bool}
+    isDelayLam  : {Bool}
     isLazyArrow : {Bool}
     mbVarNm     : {Maybe HsName}
   ]
@@ -81,8 +83,10 @@ SEM Module
   | Mod
                 tbinds
                             .   lazyVars    =   []
+                            .   boundLazy   =   False
                 vbinds
                             .   lazyVars    =   @vbinds.genLazyVars
+                            .   boundLazy   =   False
 
 SEM Expr
   | Let
@@ -94,13 +98,14 @@ SEM Expr
 
 SEM ValBind
   | Val
-                lhs         .   genLazyVars =   bool [] [@nm] @l1.isLazyArrow
+                lhs         .   genLazyVars =   bool [] [@nm] @l0.isDelayLam
                             .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf
-                                                  @l0.cTrf
+                                                  $ @l0.cTrf
+                l1          .   boundLazy   =   @l0.isDelayLam
 
 SEM Expr
   | Delay
-                lhs         .   cTrf        =   if @expr.isLam
+                lhs         .   cTrf        =   if @isDelayLam
                                                 then @expr.cTrf
                                                 else @original
                 loc         .   original    =   Expr_Delay @expr.cTrf
@@ -114,9 +119,10 @@ SEM Expr
                 loc         .   original    =   Expr_Force @expr.cTrf
 
   | Lazy
-                lhs         .   cTrf        =   if @expr.isArrow
+                lhs         .   cTrf        =   if @lhs.boundLazy
                                                 then @expr.cTrf
                                                 else @original
+                expr        .   boundLazy   =  False
                 loc         .   original    =   Expr_Lazy @expr.cTrf
 
 SEM Expr
@@ -128,6 +134,11 @@ SEM Expr
                 lhs         .   isLam       =   True
   | * - Lam
                 lhs         .   isLam       =   False
+  | Delay
+                lhs         .   isDelayLam  =   @isDelayLam
+                loc         .   isDelayLam  =   @expr.isLam
+  | * - Delay
+                lhs         .   isDelayLam  =   False
   | Lazy
                 lhs         .   isLazyArrow =   @expr.isArrow
   | * - Lazy
