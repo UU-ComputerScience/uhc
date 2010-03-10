@@ -138,7 +138,7 @@ SEM Functions
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
                                                          (LLVMExpression_Alloca @lhs.intType 1) ) @locals
-                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode ++ [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
@@ -366,7 +366,7 @@ SEM Constant
   | LiteralInt  lhs.llvmVar  = Constant @value @lhs.intType
   | LiteralStr  lhs.llvmVar  = @loc.globStrVar
   | Alias       lhs.llvmVar  = let value = Data.Map.findWithDefault
-                                             (error "Alias not in constantmap")
+                                             (error ("Alias \'" ++ @name ++ "\' not in constantMap"))
                                              @name @lhs.constantMap 
                                 in Constant value @lhs.intType                                                                 
 %%]
@@ -511,7 +511,9 @@ ATTR Functions Function
      [ constantMap : {Data.Map.Map String Int} | | ]
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList @constants
+    | SilModule   functions.constantMap =
+        let aliases = zipWith (\(a,b) c->(a,c)) @aliases [0..] in 
+                Data.Map.fromList (aliases ++ @constants)
 %%]
 
 %%[(8 codegen grin)
