@@ -266,7 +266,7 @@ SEM Value
   | Call        lhs.llvmVar  = @loc.llvmVar
                 lhs.llvmCode = @args.llvmCode ++ @loc.castCode ++ @loc.llvmCode
  
-                loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams
+                loc.fnDecl  = LLVMFunctionDecl_LLVMFunctionDecl @name @lhs.intType FixedArgs @loc.formalParams Nothing
                 
                 -- Some arguments can be pointers and need to be casted
                 -- to inttypes 
@@ -465,7 +465,7 @@ SEM Function
                 loc.fnDecl : {LLVMFunctionDecl}
                 loc.fnDecl = let prms = mkVarList LocalVar @parameters 
                                                            @lhs.intType
-                              in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms
+                              in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms Nothing -- (Just "shadow-stack")
 %%]
   
 %%[(8 codegen grin)
@@ -607,31 +607,31 @@ Function declaration for the entry point of the binary.
 -}
 mainFuncDecl :: LLVMFunctionDecl
 mainFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "main" i32 FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "main" i32 FixedArgs [] Nothing
 
 {-|
 Function declaration for the Silly generated initialize function.
 -}
 initializeFuncDecl :: LLVMFunctionDecl
 initializeFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "initialize" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "initialize" Void FixedArgs [] Nothing
 
 {-|
 Function declaration for the GRIN generated fun_main function.
 -}
 fun_mainFuncDecl :: LLVMFunctionDecl
 fun_mainFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "fun_fun0tildemain" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "fun_fun0tildemain" Void FixedArgs [] Nothing
   
 fun_mainFullProgFuncDecl =  
-  LLVMFunctionDecl_LLVMFunctionDecl "fun_mainFullProg" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "fun_mainFullProg" Void FixedArgs [] Nothing
 
 {-|
 Function declaration of printf from the standard C library.
 -}
 stdlibPrintfFuncDecl :: LLVMFunctionDecl
 stdlibPrintfFuncDecl = 
-  LLVMFunctionDecl_LLVMFunctionDecl "printf" i32 VarArgs [(LocalVar "str" (pLift i8))]
+  LLVMFunctionDecl_LLVMFunctionDecl "printf" i32 VarArgs [(LocalVar "str" (pLift i8))] Nothing
 
 {-|
 Function declaration for a run-time function that reports an pattern match
@@ -639,7 +639,7 @@ failure and terminates the program.
 -}
 primPatternMatchFailureFuncDecl :: LLVMFunctionDecl
 primPatternMatchFailureFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailure" Void FixedArgs [] 
+  LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailure" Void FixedArgs [] Nothing 
 
 {-|
 Function declaration for a run-time function that initializes the garbage
@@ -647,7 +647,7 @@ collector.
 -}
 gcInitFuncDecl :: LLVMFunctionDecl
 gcInitFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_init" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_init" Void FixedArgs [] Nothing
   
 {-|
 Function declaration for a run-time malloc function that is managed by the
@@ -656,7 +656,7 @@ return type, supporting both 32 and 64 bit memory allocation.
 -}  
 gcMallocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcMallocFuncDecl intType =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc" (pLift intType) FixedArgs [(LocalVar "x" intType)] Nothing
 
 {-|
 Function declaration for a run-time function that mallocs a piece of memory that
@@ -665,11 +665,11 @@ argument type and for the return type, supporting both 32 and 64 bit memory allo
 -}
 gcMallocUncollectableFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcMallocUncollectableFuncDecl intType =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] 
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] Nothing
 
 gcPrintStatsFuncDecl :: LLVMFunctionDecl
 gcPrintStatsFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmc_print_statistics" Void FixedArgs []
+  LLVMFunctionDecl_LLVMFunctionDecl "llvmc_print_statistics" Void FixedArgs [] Nothing
 }
 %%]
 

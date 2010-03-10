@@ -9,6 +9,8 @@
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty)
 %%]
+%%[(8 codegen grin) hs import(EH.Util.PrettySimple)
+%%]
 %%[(8 codegen grin) hs import({%{EH}LLVM})
 %%]
 %%[(8 codegen grin) import({LLVM/AbsSyn})
@@ -46,7 +48,8 @@ ATTR LLVMFunctionDecls
      
 ATTR LLVMFunctionDecl
      [ | | prettyCall : {[LLVMVar] -> PP_Doc}
-           prettySig  : {PP_Doc} ]
+           prettySig  : {PP_Doc} 
+           prettyGC   : {PP_Doc} ]
           
      
 SEM LLVMModule
@@ -71,6 +74,7 @@ SEM LLVMFunctions
 SEM LLVMFunction
   | Func        lhs.pretty = "define" >#< show @linkage >#< @funcDecl.prettySig
                              >#< "nounwind"
+                             >#< @funcDecl.prettyGC
                              >-< "{"
                              >-< indent 4 @body.pretty
                              >-< "}"
@@ -84,12 +88,15 @@ SEM LLVMFunctionDecls
   
 SEM LLVMFunctionDecl
   | LLVMFunctionDecl    lhs.prettySig  = case @varargs of
-                                            VarArgs   -> ppVarargsFunctionSignature @name @returnType @params   
+                                            VarArgs   -> ppVarargsFunctionSignature @name @returnType @params 
                                             FixedArgs -> ppFunctionSignature @name @returnType @params
                         lhs.prettyCall = case @varargs of
                                             VarArgs   -> ppVarargsFunctionCall @name @returnType @params
                                             FixedArgs -> ppFunctionSignature @name @returnType
-                             
+                        lhs.prettyGC   = case @gcname of
+                                            Just name -> "gc" >#< '"' >|< name >|< '"'
+                                            Nothing   -> empty
+
 SEM LLVMStatement
   | Assignment  lhs.pretty = ppAssignment @dest @source.pretty
   | Branch      lhs.pretty = ppBranch @target
