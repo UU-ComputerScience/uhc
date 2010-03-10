@@ -51,13 +51,14 @@ ATTR Statement Statements Alternative Alternatives                       [ neede
 ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
 ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
 ATTR Function Functions 
-     Statement Statements Alternative Alternatives Value Values Variable [ optGenOwn  : {Bool}  optGenLink : {Bool} | | ]
+     Statement Statements Alternative Alternatives Value Values Variable [ optGenOwn  : {Bool}  optGenLink : {Bool}  optGenLocReg : {Bool}| | ]
 ATTR Function Functions 
      Statement Statements Alternative Alternatives                       [ optGenReturnViaStack : {Bool} | | ]
 
 
 SEM SilModule
   | SilModule  loc.optGenOwn            = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)
+               loc.optGenLocReg         = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenLocReg @lhs.opts
                loc.optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
                loc.optGenLink           = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenLink @lhs.opts
 
@@ -83,12 +84,14 @@ SEM Statement
   | Call      lhs . trfStats =  if not @lhs.optGenOwn
                                 then [@loc.trf]
                                 else if @tailJumps
-                                then (  let locPar = @lhs.numberLocals + @lhs.numberParameters
+                                then (  let nl |  @lhs.optGenLocReg = 0
+                                               |  otherwise         = @lhs.numberLocals
+                                            locPar = nl + @lhs.numberParameters
                                             sources      = reverse @args.trf                                                    -- put arguments on the stack
-                                                           ++ [ Value_Var (Variable_Subs Variable_SP (@lhs.numberLocals +1))    -- put original return address on the stack
+                                                           ++ [ Value_Var (Variable_Subs Variable_SP (nl +1))                   -- put original return address on the stack
                                                               | @lhs.optGenLink                                                 --  (if there is a link below it)
                                                               ]
-                                                           ++ [ Value_Var (Variable_Subs Variable_SP (@lhs.numberLocals   ))    -- put original link on the stack (if there is one), or otherwise the original return address
+                                                           ++ [ Value_Var (Variable_Subs Variable_SP (nl   ))                   -- put original link on the stack (if there is one), or otherwise the original return address
                                                               ]
                                             destinations = iterate decrement (locPar+ (if @lhs.optGenLink then 2 else 1) -1)
                                             adjust       = locPar - @args.length
@@ -103,14 +106,25 @@ SEM Statement
                                             [ Statement_Call @name True []                                                      -- do the jump, which will return to the original return address
                                             ]
                                      )
-                                else (  let sources     =  reverse @args.trf                                                    -- put arguments on stack
+                                else (  let nl |  @lhs.optGenLocReg = 0
+                                               |  otherwise         = @lhs.numberLocals
+                                            worthyNames = [ n 
+                                                          | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                          , Set.member v @lhs.neededSet
+                                                          ]
+                                            registersToSave = map (Variable_Subs Variable_LP) worthyNames
+                                            sources     =  ( if @lhs.optGenLocReg
+                                                             then map Value_Var registersToSave                                        -- saveRegisters
+                                                             else []
+                                                           )
+                                                           ++ reverse @args.trf                                                 -- put arguments on stack
                                                            ++ [ Value_Label @loc.label ]                                        -- put return address on the stack
-                                                           ++ [ Value_Cast (Value_Offset Variable_SP @lhs.numberLocals) True    -- put dynamic link on the stack
+                                                           ++ [ Value_Cast (Value_Offset Variable_SP nl) True                   -- put dynamic link on the stack
                                                               | @lhs.optGenLink                                                 --  (if requested)
                                                               ]
                                             destinations = (map (Variable_Subs Variable_SP) (iterate decrement (-1)))
-                                            adjust       = - @args.length - (if @lhs.optGenLink then 2 else 1)
-                                        in  Statement_Comment ["Call"]
+                                            adjust       = - length sources
+                                        in  Statement_Comment ["Call, worthy: " ++ show worthyNames]
                                             :
                                             zipWith Statement_Assignment destinations sources                                   -- do stack-putting by assignments
                                             ++ 
@@ -118,17 +132,26 @@ SEM Statement
                                             , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
                                             , Statement_Label @loc.label                                                        -- return here after the call
                                             ]
+                                            ++
+                                            ( if @lhs.optGenLocReg
+                                              then Statement_Assignment Variable_SP (Value_Offset Variable_SP (length registersToSave))
+                                                   :
+                                                   zipWith Statement_Assignment registersToSave (map Value_Var destinations)           -- restore registers
+                                              else []
+                                            )
                                      )
            lhs.retNr     = @lhs.retNr + 1
            loc.label     = "retlab"++show @lhs.retNr
 
                                 
-  | Return    lhs . trfStats = let locPar = @lhs.numberLocals + @lhs.numberParameters
+  | Return    lhs . trfStats = let nl |  @lhs.optGenLocReg = 0
+                                      |  otherwise         = @lhs.numberLocals
+                                   locPar  =  nl +  @lhs.numberParameters
                                    callInfoSize = if @lhs.optGenLink then 2 else 1
                                in  (  if @lhs.optGenReturnViaStack
                                       then  let moveRet = @vals.length  > @lhs.numberParameters
                                                 sources = @vals.trf 
-                                                          ++ [Value_Var (Variable_Subs Variable_SP (1+ @lhs.numberLocals)) | moveRet]
+                                                          ++ [Value_Var (Variable_Subs Variable_SP (1+nl)) | moveRet]
                                                 destinations = iterate decrement (locPar+ callInfoSize -1)
                                             in  smartAssignment (zip destinations sources)    -- results overlap original parameters&callinfo&locals
                                       else  [ Statement_Assignment v e
@@ -164,7 +187,10 @@ SEM Function
                                                 -- body
                                                 (  ( if   @lhs.optGenOwn
                                                      then Statement_Comment ["Expects " ++ show (length @parameters) ++ " parameters, uses " ++ show @loc.numberLocals ++ " local variables" ]
-                                                          : [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.numberLocals)) | @loc.numberLocals > 0 ]
+                                                          : ( if   @lhs.optGenLocReg || @loc.numberLocals == 0
+                                                              then []
+                                                              else [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.numberLocals)) ]
+                                                            )
                                                      else []
                                                    )
                                                    ++ @body.trf
@@ -223,7 +249,14 @@ SEM Variable
 
 
 SEM Variable
-  | Unembedded   lhs.trf = (if @lhs.optGenOwn then (embed2 @lhs.numberLocals (if @lhs.optGenLink then 2 else 1)) else embed) @lhs.embedMap @name
+  | Unembedded   lhs.trf =  embedUsing (if   not @lhs.optGenOwn 
+                                        then strategyId
+                                        else if   @lhs.optGenLocReg
+                                             then strategyLocReg  @lhs.numberLocals (if @lhs.optGenLink then 2 else 1)
+                                             else strategyOnStack @lhs.numberLocals (if @lhs.optGenLink then 2 else 1)
+                                       ) 
+                                       @lhs.embedMap 
+                                       @name
 
 %%]
 
@@ -235,27 +268,34 @@ SEM Variable
 
 type EmbedMap = Map.Map Int Variable
 type EmbedFunction = HsName->Variable
+type EmbedStrategy = Variable -> Variable
 
 makeEmbedTupel :: (Int->HsName->Variable) -> Int -> HsName -> (Int,Variable)
 makeEmbedTupel constr k x@(HNmNr n _) = (n, constr k x)
 
-embed :: EmbedMap -> EmbedFunction
-embed m x@(HNmNr n _) = if n==0
-                         then Variable_None
-                         else maybe (Variable_Global x)
-                                    id
-                                    (Map.lookup n m)
 
-embed2 :: Int -> Int -> EmbedMap -> EmbedFunction
-embed2 d callInfoSize m x@(HNmNr n _) 
-   = if n==0
-     then Variable_None
-     else maybe (Variable_Global x)
-                (\v -> case v of
-                            Variable_Local n _ -> Variable_Subs Variable_SP (d-n)
-                            Variable_Param n _ -> Variable_Subs Variable_SP (d+callInfoSize-1+n)
-                )
-                (Map.lookup n m)
+strategyId :: EmbedStrategy
+strategyId v = v
+
+strategyOnStack :: Int -> Int -> EmbedStrategy
+strategyOnStack d _            (Variable_Local n _) = Variable_Subs Variable_SP (d-n)
+strategyOnStack d callInfoSize (Variable_Param n _) = Variable_Subs Variable_SP (d+callInfoSize-1+n)
+
+strategyLocReg :: Int -> Int -> EmbedStrategy
+strategyLocReg d _            (Variable_Local n _) = Variable_Subs Variable_LP n
+strategyLocReg d callInfoSize (Variable_Param n _) = Variable_Subs Variable_SP (callInfoSize-1+n)
+
+
+
+
+
+embedUsing :: EmbedStrategy -> EmbedMap -> EmbedFunction
+embedUsing strat m x@(HNmNr n _) = if n==0
+                                   then Variable_None
+                                   else maybe (Variable_Global x)
+                                              strat
+                                              (Map.lookup n m)
+
 
 --showEmbedPair :: Int -> HptMap -> (Int,Variable) -> String
 --showEmbedPair d h (i, Variable_Param n name) = "Param " ++ show n ++ " \t" ++ postPad 12 (hsnShowAlphanumeric name) ++ "\tSP[" ++ show (d+1+n) ++ "]\t(" ++ show (getEnvVar h i) ++ ")"

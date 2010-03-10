@@ -119,7 +119,7 @@ SEM SilModule
 %%][99
                                              >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_mainFullProg"
 %%]]                                             
-                                             >-<  "if (RP[1]==0) { RP[0] = SP[-1]; RP[1] = SP[-2]; }"
+                                             >-<  "if (Ret1==0) { Ret0 = SP[-1]; Ret1 = SP[-2]; }"
                                              >-<  "return 0;"
                                              )
 
@@ -150,7 +150,7 @@ SEM Statement
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign (fromJust @mbRetDiff) @lhs.optGenOwn
-  | Label       lhs.prettyC   = label @lhs.optTraceAssign @name
+  | Label       lhs.prettyC   = label @lhs.optTraceCall @name
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
@@ -217,6 +217,14 @@ SEM Constant
   | LiteralStr  lhs.prettyTXT = text (show 99999)   --  "((Word)" >|< text @value >|< ")"
   | Alias       lhs.prettyTXT = text @name
 
+
+ATTR Variable [ | | isLpRp : {Bool} ]
+
+SEM Variable
+  | LP
+    RP          lhs.isLpRp   = True
+  | * - LP RP   lhs.isLpRp   = False
+
 SEM Variable
   | Global
     Local
@@ -224,12 +232,18 @@ SEM Variable
                                   HNmNr n OrigNone -> text ("x" ++ show n)
                                   _                -> text (hsnShowAlphanumeric @name)
                 lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+  | LP          lhs.prettyC   = text "Loc"
+                lhs.prettyPtr = text "Loc"
   | SP          lhs.prettyC   = text "SP"
                 lhs.prettyPtr = text "SP"
-  | RP          lhs.prettyC   = text "RP"
-                lhs.prettyPtr = text "RP"
-  | Subs        lhs.prettyC   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
-                lhs.prettyPtr = "((WPtr)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
+  | RP          lhs.prettyC   = text "Ret"
+                lhs.prettyPtr = text "Ret"
+  | Subs        lhs.prettyC   = if @array.isLpRp
+                                then @array.prettyPtr >|<         show @index
+                                else @array.prettyPtr >|< "[" >|< show @index >|< "]"
+                lhs.prettyPtr = if @array.isLpRp
+                                then "((WPtr)(" >|< @array.prettyPtr         >|< show @index         >|< "))"
+                                else "((WPtr)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
   | Aux         lhs.prettyC   = text "auxVar"
                 lhs.prettyPtr = text "((WPtr)auxVar)"
   | Ptr         lhs.prettyC   = text "auxPtr"
