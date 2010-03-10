@@ -66,7 +66,7 @@ cpCompileWithGCC how othModNmL modNm
                         = case how of
                             FinalCompile_Exec
                               -> ( fpExec
-                                 , [ Cfg.gccOpts, "-O2", "-o", fpathToStr fpExec ]
+                                 , [ Cfg.gccOpts, "-O1", "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
                                  ,    map (mkl Cfg.INST_LIB_PKG)
                                           (if ehcOptFullProgAnalysis opts then [] else pkgNmL)

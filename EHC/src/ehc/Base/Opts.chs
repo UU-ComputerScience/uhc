@@ -215,6 +215,7 @@ data EHCOpts
       ,  ehcOptGenOwn         ::  Bool
       ,  ehcOptGenRVS         ::  Bool
       ,  ehcOptGenLink        ::  Bool
+      ,  ehcOptGenLocReg      ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenTrace2      ::  Bool
@@ -399,6 +400,7 @@ defaultEHCOpts
       ,  ehcOptGenOwn           =   True
       ,  ehcOptGenRVS           =   False
       ,  ehcOptGenLink          =   False
+      ,  ehcOptGenLocReg        =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
       ,  ehcOptGenTrace         =   False
@@ -539,6 +541,7 @@ ehcCmdLineOpts
      ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
      ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
      ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (no)"
+     ,  Option ""   ["gen-locreg"]       (boolArg optSetGenLocReg)            "allocate locals in registers that are saved before calls (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
@@ -869,6 +872,7 @@ optSetGenCmt         o b = o { ehcOptGenCmt         = b }
 optSetGenOwn         o b = o { ehcOptGenOwn         = b }
 optSetGenRVS         o b = o { ehcOptGenRVS         = b }
 optSetGenLink        o b = o { ehcOptGenLink        = b }
+optSetGenLocReg      o b = o { ehcOptGenLocReg      = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }

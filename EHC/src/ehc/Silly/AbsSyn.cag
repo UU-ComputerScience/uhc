@@ -65,6 +65,7 @@ DATA Variable
   |  Global      name       : {HsName}
   |  Subs        array      : Variable
                  index      : {Int}
+  |  LP
   |  SP
   |  RP
   |  Aux
