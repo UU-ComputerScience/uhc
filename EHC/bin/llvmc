@@ -1,8 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Compiler driver for generating LLVM Binaries
 # 
-
 ###############################################################################
 # Config options
 ###############################################################################
@@ -54,8 +53,14 @@ INPUT_LL=$1
 OUTPUT_BASE=${OUTPUT%.*}
 INPUT_BASE=${OUTPUT%.*}
 
+# enabling debugging for printing created bash commands:
+set -x
+
 $LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
 $LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
 $LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
 $NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
 $STRIP $OUTPUT
+
+set +x
+

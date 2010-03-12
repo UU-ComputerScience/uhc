@@ -88,6 +88,10 @@ ATTR Alternatives
      
 ATTR Alternative
      [ | | jumpTarget : {(LLVMVar,LLVMVar)} ]  
+
+ATTR Value
+     [ | | gcManaged : {SillyAllocManageType} ]
+
      
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
@@ -97,7 +101,9 @@ SEM SilModule
                                                      : gcPrintStatsFuncDecl
                                                      : gcMallocFuncDecl @lhs.intType
                                                      : gcMallocUncollectableFuncDecl @lhs.intType
-                                                     : primPatternMatchFailureFuncDecl : @functions.externFuncs 
+                                                     : primPatternMatchFailureFuncDecl 
+                                                     : gcRootFuncDecl
+                                                     : @functions.externFuncs 
                                                      )
                                                      ( @loc.main : @functions.llvmCode )
                                                      
@@ -153,12 +159,21 @@ SEM Statement
   --     cast the LHS
   --   * Store
   | Assignment  lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.lhsptrCode ++ @loc.fitsCode ++
-                               [LLVMStatement_Store @loc.fitsVar @loc.lhsptrVar] 
+                               [LLVMStatement_Store @loc.fitsVar @loc.lhsptrVar] ++ @loc.gcrootCode 
  
                 loc.(uniqNr1,lhsptrVar,lhsptrCode) =
                                cast2ptr @dest.gUniq @dest.llvmVar @lhs.pointerType
                 loc.(uniqNr2,fitsVar,fitsCode) =
-                               makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar                                         
+                               makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar   
+                loc.(uniqNr3,gcfitsVar,gcfitsCode) = let  targetType   = pLift $ pLift i8
+                                                          (nr', fresh) = newFresh @loc.uniqNr2 targetType 
+                                                          nt           = LocalVar (getPlainName @loc.lhsptrVar) (pLift $ getType @loc.lhsptrVar) in 
+                                                                (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast nt targetType])
+                loc.gcrootCode = 
+                               case @source.gcManaged of 
+                                   GCManaged  -> [] -- @loc.gcfitsCode ++ 
+                                                 -- [LLVMStatement_Call gcRootFuncDecl StdCall [@loc.gcfitsVar, (StrConstant "null" (pLift i8))]]
+                                   NotManaged -> []                                      
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
                                [ LLVMStatement_Store @loc.fits1Var @loc.destptrVar ] ++
@@ -248,13 +263,20 @@ SEM Values
                 lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
   | Nil         lhs.llvmVar  = [] 
                 lhs.llvmCode = []       
+
+-- gcManaged spul
+
+SEM Value
+    | Alloc     lhs.gcManaged = @gcManaged
+    | * - Alloc lhs.gcManaged = NotManaged
+
        
 SEM Value
   {-|
     Assign a Malloc to a fresh variable
   -}
   | Alloc       lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @loc.llvmCode
+                lhs.llvmCode = @loc.llvmCode 
                 loc.(gUniq,llvmVar,llvmCode) =
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
 
@@ -388,7 +410,7 @@ SEM Statement
   -- different from the data type definition.
   | Assignment  source.gUniq = @lhs.gUniq
                 dest  .gUniq = @source.gUniq
-                lhs   .gUniq = @loc.uniqNr2
+                lhs   .gUniq = @loc.uniqNr3
 
   -- Set the order source -> dest -> dest2 explicit, because it is differs
   -- from the data type definition.
@@ -670,6 +692,11 @@ gcMallocUncollectableFuncDecl intType =
 gcPrintStatsFuncDecl :: LLVMFunctionDecl
 gcPrintStatsFuncDecl =
   LLVMFunctionDecl_LLVMFunctionDecl "llvmc_print_statistics" Void FixedArgs [] Nothing
+
+gcRootFuncDecl :: LLVMFunctionDecl
+gcRootFuncDecl = 
+  LLVMFunctionDecl_LLVMFunctionDecl "llvm.gcroot" Void FixedArgs [(LocalVar "ptrloc" (pLift $ pLift i8)), (LocalVar "metadata" (pLift i8))] Nothing
+
 }
 %%]
 
