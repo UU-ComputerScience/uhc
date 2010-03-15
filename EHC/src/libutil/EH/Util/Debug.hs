@@ -1,7 +1,8 @@
 module EH.Util.Debug
   ( tr, trp,
     (>>>),(<<<),
-    (>?>),(<?<)
+    (>?>),(<?<),
+    (>=>)
   )
   where
 
@@ -31,3 +32,10 @@ infixr 0 >?>
 
 b <?< (p,a) = (if p then trace (a b) else id) b
 (p,a) >?> b = (if p then trace (a b) else id) b
+
+infixr 0 >=>
+
+(p,s) >=> b = (if p then (\a -> trace (s ++ " = " ++ show a) a)
+                          . trace (s ++ " called") 
+                    else id
+              ) b

@@ -256,7 +256,7 @@ nmAliasRepl m n
 data GrInl
   = GrInl_Call
       { inlArgNmL   :: ![HsName]
-      , inlGrExpr   :: !GrExpr
+      , inlGrExpr   :: GrExpr
       , inlLoopBr   :: !Bool
       , idsNeeded   :: Int
       }

@@ -15,7 +15,9 @@
 %%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen grin) hs import(qualified Debug.Trace as Trace)
+%%[(8 codegen grin) hs import(Control.Monad.Error)
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Debug)
 %%]
 
 %%[(8 codegen grin).wrapper
@@ -47,23 +49,25 @@ ATTR AllExpr [ || gathSubs USE {++} {[]} : {VarSubs} ]
 
 {
 mkNewName :: HsName -> Int -> HsName
-mkNewName (HNmNr _ origName) unique = HNmNr unique origName
+mkNewName (HNmNr origUnique origName) unique = HNmNr unique origName
+                                               -- <<< (const $ "replacing id " ++ show origUnique)
 
-changeName :: HsName -> (Env,UniqueIds) -> (Env,UniqueIds)
-changeName name (subs,(uniqueId:remIds)) = (Map.insert name (mkNewName name uniqueId) subs,remIds)
+changeName :: (Env,UniqueIds) -> HsName -> (Env,UniqueIds)
+changeName (subs,(uniqueId:remIds)) name  = (Map.insert name (mkNewName name uniqueId) subs,remIds)
+changeName (subs,[])                name  = error $ "MkUniqueBindings has no id to replace name " ++ show name
 }
 
 SEM GrExpr
-  | Seq (loc.subs,expr.uniqueIds,lhs.gathSubs) = { -- (\p@(a,_) -> Trace.trace ("loc.subs = " ++ show a) p) $
-            let (newSubs,remIds) = foldr changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
-            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)  }
+  | Seq (loc.subs,expr.uniqueIds,lhs.gathSubs) =
+            let (newSubs,remIds) = foldl changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)
   | Seq body.uniqueIds = @expr.uniqueIds
   | Seq lhs.uniqueIds = @body.uniqueIds
 
 SEM GrAlt
-  | Alt (loc.subs,expr.uniqueIds,lhs.gathSubs) = {
-            let (newSubs,remIds) = foldr changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
-            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs) }
+  | Alt (loc.subs,expr.uniqueIds,lhs.gathSubs) =
+            let (newSubs,remIds) = foldl changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)
   | Alt lhs.uniqueIds = @expr.uniqueIds
                             
 %%]
@@ -132,24 +136,24 @@ SEM GrPatLam
   | PtrAnnot	  lhs			.	trf				=	GrPatLam_PtrAnnot (getNewName @tycon @lhs.subs) @loc.newName
 
 SEM GrVar
-  | Var         lhs     . trf       =   GrVar_Var (getNewName @nm @lhs.subs)
+  | Var         lhs     . trf       = GrVar_Var (getNewName @nm @lhs.subs)
 
 SEM GrVal
   | Var BasicNode EnumNode PtrNode OpaqueNode NodeAdapt
                 loc.newName = getNewName @nm @lhs.subs
      
   | Var         lhs     . trf       = GrVal_Var $ @loc.newName
-  | BasicNode	  lhs			.	trf				=	GrVal_BasicNode @tag.trf @loc.newName
-  | EnumNode	  lhs			.	trf				=	GrVal_EnumNode @loc.newName
+  | BasicNode   lhs			.	trf				=	GrVal_BasicNode @tag.trf @loc.newName
+  | EnumNode    lhs			.	trf				=	GrVal_EnumNode @loc.newName
   | PtrNode	    lhs			.	trf				=	GrVal_PtrNode @loc.newName
   | OpaqueNode	lhs			.	trf				=	GrVal_OpaqueNode @loc.newName
 %%[[10
-  | NodeAdapt   lhs     . trf       =   GrVal_NodeAdapt @loc.newName @fldL.trf
+  | NodeAdapt   lhs     . trf       = GrVal_NodeAdapt @loc.newName @fldL.trf
 %%]]
 %%]
 
 %%[(10 codegen grin)
 SEM GrSplit
-  | Sel         lhs     . trf       =   GrSplit_Sel (getNewName @nm @lhs.subs) @off.trf
+  | Sel         lhs     . trf       = GrSplit_Sel (getNewName @nm @lhs.subs) @off.trf
   
 %%]

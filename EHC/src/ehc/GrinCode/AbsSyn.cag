@@ -67,8 +67,8 @@ DATA GrExpr
                 ffiAnnot        : {GrFFIAnnot}
 %%]]
                 argL            : GrValL
-  | Eval        nm              : {HsName}  -- The binding of nm has type PApp Node.
-  | App         nm              : {HsName}  -- The binding of nm has type pointer.
+  | Eval        nm              : {HsName}  -- The binding of nm has type pointer.
+  | App         nm              : {HsName}  -- The binding of nm has type PApp Node.
                 argL            : GrValL
   | Throw       nm              : {HsName}
   | Catch       body            : GrExpr
