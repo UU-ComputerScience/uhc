@@ -1,0 +1,1 @@
+./configure --with-ghc=d:/haskell/bin/ghc.exe --with-gcc=/bin/gcc-4 --with-cpp=/bin/cpp-4 --with-ehc-unixtool-prefix=d:/cygwin
