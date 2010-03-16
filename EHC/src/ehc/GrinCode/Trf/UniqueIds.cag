@@ -43,8 +43,7 @@ SEM GrPatAlt
 
 SEM GrVar
   | Var lhs.gathUsedIds = [getNr @nm]
-  
-ATTR AllNT [ | uniqueIds : {[Int]} | ]                               
+                              
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,23 +52,9 @@ ATTR AllNT [ | uniqueIds : {[Int]} | ]
 
 %%[(8 codegen grin)
 
-ATTR AllBind [ | bindId: Int | ]
-ATTR AllBind [ bindIdDigits: Int | | ]
-
-SEM GrBind
-  | Bind lhs.bindId	=	@lhs.bindId+1
-
-SEM GrModule
-  | Mod bindL.bindId = 0
-        bindL.bindIdDigits = digits @bindL.bindId
-
-{
-digits :: Int -> Int
-digits i = if i >= 10 then 1 + digits (floor (toEnum i / toEnum 10)) else 1
-}
+ATTR AllNT [ | uniqueIds : {[Int]} | ]   
         
 SEM GrAGItf
-  | AGItf module.uniqueIds =  --(\l -> "bindIds = " ++ take 2000 (show l)) >>>
-                              -- (map (\i -> i * 10 ^ @lhs.bindIdDigits + @lhs.bindId) [0..]) \\ @lhs.usedIds
+  | AGItf module.uniqueIds =  (const $ "usedIds = " ++ show @module.gathUsedIds) >>>
                               [0..] \\ @module.gathUsedIds
 %%]

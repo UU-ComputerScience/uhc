@@ -278,7 +278,7 @@ addEnvNamedElems :: HptMap -> [(Int,AbstractValue)] -> HptMap
 addEnvNamedElems hpt vs
   = let (low, high) = bounds hpt
         extra = foldl (\i -> max i . fst) high vs - high
-        e2 = listArray (low, high+extra) (foldr (uncurry replaceAt) (elems hpt ++ replicate extra AbsBottom) vs)
+        e2 = listArray (low, high+extra) (foldl (flip $ uncurry replaceAt) (elems hpt ++ replicate extra AbsBottom) vs)
     in e2
      
 getEnvSize :: HptMap -> Int

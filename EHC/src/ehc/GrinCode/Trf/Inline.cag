@@ -344,9 +344,8 @@ SEM GrBind
 %%[(8 codegen grin)
 ATTR AllNTNoMod [ | | inlinedCallIds USE {+} {0} : Int ]
 ATTR AllNTNoMod [ | | idsCreated USE {+} {0} : Int ]
+ATTR AllBind [ | | remIds USE {++} {[]} : {[Int]} ]
 
-{-
--}
 SEM GrExpr
   | Seq lhs.idsCreated = length @pat.introNmL + @expr.idsCreated + @body.idsCreated
 
@@ -361,6 +360,7 @@ SEM GrBind
                                             --  ++ " uniqueIds = " ++ show a) >>>
                                             splitAt @expr.inlinedCallIds @lhs.uniqueIds
           loc.idsCreated = @expr.idsCreated + @expr.inlinedCallIds
+          lhs.remIds = @expr.uniqueIds
                                       
 %%]
 
@@ -420,9 +420,6 @@ SEM GrExpr
                         let argumentSubstitutions = Map.fromList (zip as (map fromJust @argL.asNmL))
                             argumentedCallBody = substExpr argumentSubstitutions e
                             (finalInlinableCode,remUniqueIds,varSubs) = mkUniqueBindings @lhs.uniqueIds argumentedCallBody
-                                                                        {- <<< (const $ "calling mkbinding for call to " ++ show @nm ++ " with idsCreated = " ++ show idsCreated
-                                                                              ++ " and uniqueIds = " ++ show (length @lhs.uniqueIds)
-                                                                              ++ "\ntrf = " ++ disp (ppGrExpr argumentedCallBody) 0 "") -}
                         in  ( @grVarTrf finalInlinableCode                    
                             , Set.insert @nm @grVarInlNmS    
                             , varSubs
@@ -449,7 +446,9 @@ SEM GrExpr
 ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrModule
-  | Mod         lhs         .   trf             =   GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @tagsMp
+  | Mod         lhs         .   trf             =   (const $ "remIds = " ++ show @bindL.remIds ++ 
+                                                      "\ntotalIdsRenamed = " ++ show @bindL.inlinedCallIds) >>> 
+                                                    GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @tagsMp
 
 SEM GrBind
   | Bind        lhs         .   trfSq           =   -- (const $ "remUniqueIds = " ++ show @expr.uniqueIds) >>>

@@ -135,16 +135,19 @@ inlineCollectionIterated s useHpt = loop 0
   flatten trf = (>>= (Just . grFlattenSeq)) . trf
   flattenHpt trf = (>>= \(code,hpt) -> Just $ (grFlattenSeq code,hpt)) . trf
   loop i = let si = s ++ show i ++ "-" in
-    (const $ "inlineLoop " ++ show i) >>> 
+    (const $ "inlineLoopy " ++ show i) >>> 
     do
     { 
 %%[[8
     ; inChange <- transformAndWrite (grInline False) (si ++ "a-Inline")
 %%][20
-    ; inChange <- (if useHpt 
-        then transformAndWriteHpt (flattenHpt (fmap fst . (hptInline False Set.empty Map.empty)))
-        else transformAndWrite (flatten (fmap (\(a,b,c) -> a) . (grInline False Set.empty Map.empty)))
-        ) (si ++ "a-Inline")
+    ; inChange <- if useHpt 
+        then do { b <- transformAndWriteHpt (flattenHpt (fmap fst . (hptInline False Set.empty Map.empty)) ) (si ++ "a-Inline")
+                ; caWriteHptMap (si ++ "a-JHeapMap")
+                ; return b
+                }
+        else transformAndWrite (flatten (fmap (\(a,b,c) -> a) . (grInline False Set.empty Map.empty)) ) (si ++ "a-Inline")
+        
 %%]]  
     ; esChange <- transformAndWrite evalStored (si ++ "b-EvalStored")
     ; auChange <- transformAndWrite (flatten applyUnited) (si ++ "c-ApplyUnited")

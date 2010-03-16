@@ -19,8 +19,9 @@ hptInline allow expNmS inlMp (grMod,hptMap) =
         let newHptMap = addEnvNamedElems hptMap additions
             additions :: [(Int,AbstractValue)]
             additions = -- (\a -> "additions are: " ++ show a) >>>
-                        map (\(a,b) -> (getNr b,getEnvVar hptMap (getNr a))) varSubs
-        in  seq additions ((grMod,newHptMap),inlMp)
+                        map (\(fromId,toId) -> (getNr toId,getEnvVar newHptMap (getNr fromId))) varSubs
+        in  (const $ "varSubs length = " ++ show (length varSubs) ++ "\nvarsubs = " ++ show varSubs) >>>
+            seq additions ((grMod,newHptMap),inlMp)
   in  fmap processInline inlineResult
     
 %%]

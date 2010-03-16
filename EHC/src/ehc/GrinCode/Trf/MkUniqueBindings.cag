@@ -24,6 +24,10 @@
 WRAPPER GrExpr
 %%]
 
+%%[(8 codegen grin)
+PRAGMA nocycle
+%%]
+
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MkUniqueBindings} export(mkUniqueBindings)
 
 type UniqueIds = [Int]
@@ -60,14 +64,14 @@ changeName (subs,[])                name  = error $ "MkUniqueBindings has no id 
 SEM GrExpr
   | Seq (loc.subs,expr.uniqueIds,lhs.gathSubs) =
             let (newSubs,remIds) = foldl changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
-            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs ++ @expr.gathSubs ++ @body.gathSubs)
   | Seq body.uniqueIds = @expr.uniqueIds
   | Seq lhs.uniqueIds = @body.uniqueIds
 
 SEM GrAlt
   | Alt (loc.subs,expr.uniqueIds,lhs.gathSubs) =
             let (newSubs,remIds) = foldl changeName (Map.empty, @lhs.uniqueIds) @pat.introNmL
-            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs)
+            in  (@lhs.subs `Map.union` newSubs,remIds,Map.assocs newSubs ++ @expr.gathSubs)
   | Alt lhs.uniqueIds = @expr.uniqueIds
                             
 %%]
