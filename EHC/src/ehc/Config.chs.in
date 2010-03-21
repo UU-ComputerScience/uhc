@@ -117,13 +117,13 @@ mkInstallBindirPrefix opts variant
 %%[(99 codegen) export(mkInstallPkgdirSystem)
 mkInstallPkgdirSystem :: EHCOpts -> String
 mkInstallPkgdirSystem opts
-  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG (installVariant opts) ""
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
 %%]
 
 %%[(99 codegen) export(mkInstallPkgdirUser)
 mkInstallPkgdirUser :: EHCOpts -> String
 mkInstallPkgdirUser opts
-  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG "" (show $ ehcOptTarget opts) ""
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -68,9 +68,13 @@ cpCompileWithGCC how othModNmL modNm
                               -> ( fpExec
                                  , [ Cfg.gccOpts, "-O1", "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
-                                 ,    map (mkl Cfg.INST_LIB_PKG)
-                                          (if ehcOptFullProgAnalysis opts then [] else pkgNmL)
-                                   ++ map (mkl Cfg.INST_LIB)
+                                 ,
+%%[[99
+                                      map (mkl2 Cfg.INST_LIB_PKG2)
+                                          (if ehcOptFullProgAnalysis opts then [] else pkgKeyL)
+                                   ++
+%%]]
+                                      map (mkl Cfg.INST_LIB)
                                           Cfg.libnamesGccPerVariant
                                    ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_SHARED variant "" ++ Cfg.mkCLibFilename "" l) (Cfg.libnamesGcc opts)
                                    ++ map ("-l" ++) Cfg.libnamesGccEhcExtraExternalLibs
@@ -79,15 +83,21 @@ cpCompileWithGCC how othModNmL modNm
                                    else [ fpathToStr $ fpO m fp | m <- othModNmL2, let (_,_,_,fp) = crBaseInfo m cr ]
                                  , []
                                  )
-                              where mkl how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant l) l
+                              where mkl  how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant l) l
+%%[[99
+                                    mkl2 how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant (showPkgKey l) ++ "/" ++
+                                                                       mkInternalPkgFileBase l (Cfg.installVariant opts)
+                                                                         (ehcOptTarget opts) (ehcOptTargetVariant opts) ++ "/")
+                                                                    (showPkgKey l)
+%%]]
                             FinalCompile_Module
                               -> (o, [ Cfg.gccOpts, "-c", "-o", fpathToStr o ], Cfg.ehcGccOptsStatic, [], [], [o])
                               where o = fpO modNm fp
 %%[[8
-                 pkgNmL     = [] :: [String]
+                 pkgKeyL    = [] :: [String]
                  othModNmL2 = othModNmL
 %%][99
-                 (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
+                 (pkgKeyL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
 %%]]
          ;  when (targetIsC (ehcOptTarget opts))
                  (do { let compileC
@@ -110,7 +120,7 @@ cpCompileWithGCC how othModNmL modNm
                                 ; lift $ putStrLn compileC
                                 })
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (do { lift $ putStrLn ("pkgs : " ++ show pkgNmL)
+                            (do { lift $ putStrLn ("pkgs : " ++ show pkgKeyL)
                                 ; lift $ putStrLn ("other: " ++ show othModNmL2)
                                 })
                      ; cpSeq [ cpSystem compileC

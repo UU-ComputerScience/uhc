@@ -171,7 +171,7 @@ cpCompileJazyJVM how othModNmL modNm
                         where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
                               libJarL
                                 =    map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB     variant "" ++ "lib" ++ l ++ ".jar") (["jazy"])
-                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant l  ++ "lib" ++ l ++ ".jar") (pkgNmL)
+                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant l  ++ "lib" ++ l ++ ".jar") (map showPkgKey pkgNmL)
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )
                                    , ( "Main-Class", show mainNm )
