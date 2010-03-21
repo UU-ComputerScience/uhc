@@ -100,7 +100,19 @@ main
          ;  let opts3 = opts2
 %%][99
          ;  userDir <- ehcenvDir (envkey opts2)
-         ;  let opts3 = opts2 {ehcOptUserDir = userDir}
+         ;  let opts3 = opts2 { ehcOptUserDir = userDir
+                              , ehcOptOutputDir =
+                                  let outputDir = maybe "." id (ehcOptOutputDir opts2)
+                                  in  case ehcOptPkg opts2 of
+                                        Just (PkgOption_Build s)
+                                          -> case parsePkgKey s of
+                                               Just k  -> Just $
+                                                          outputDir ++ "/" ++
+                                                          mkInternalPkgFileBase k (Cfg.installVariant opts2)
+                                                                                (ehcOptTarget opts2) (ehcOptTargetVariant opts2)
+                                               _       -> ehcOptOutputDir opts2
+                                        _ -> ehcOptOutputDir opts2
+                              }
 %%]]
          ;  case ehcOptImmQuit opts3 of
               Just immq     -> handleImmQuitOption immq opts3
@@ -322,7 +334,7 @@ doCompilePrepare fnL@(fn:_) opts
              installVariant         = Cfg.installVariant opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
-       ; pkgDb1 <- pkgDbFromDirs
+       ; pkgDb1 <- pkgDbFromDirs opts
                     (   [ filePathCoalesceSeparator $ filePathUnPrefix
                           $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
                         | d <- ehcOptPkgdirLocPath opts
@@ -340,13 +352,15 @@ doCompilePrepare fnL@(fn:_) opts
                     )
        ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (ehcOptPackageSearchFilter opts) pkgDb1
              pkgDb3 = pkgDbFreeze pkgDb2
+       -- ; putStrLn $ "db1 " ++ show pkgDb1
+       -- ; putStrLn $ "db2 " ++ show pkgDb2
+       -- ; putStrLn $ "db3 " ++ show pkgDb3
        -- ; putStrLn (show $ ehcOptPackageSearchFilter opts)
-       -- ; putStrLn (show pkgDb3)
 %%]]
        ; let searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ mkPkgFileLoc p $ filePathUnPrefix
+                              ++ [ mkPkgFileLoc (p, Nothing) {- TBD: broken -} $ filePathUnPrefix
                                    $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
                                  | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
