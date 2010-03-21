@@ -521,7 +521,7 @@ FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) |
 # $2: dest dir
 # $3: original variant name
 # $4: target variant name
-FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do echo $${i}; tgt=$(2)/`echo $${i} | sed s+$(3)/+$(4)/+g`; install -D $${i} $${tgt}; done)
+FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do echo $${i}; tgt=$(2)/`echo $${i} | sed s+$(3)/+$(4)/+g`; mkdir -p  `dirname $${tgt}` ; install $${i} $${tgt}; done)
 
 ###########################################################################################
 # Misc
