@@ -136,7 +136,7 @@ AC_SUBST(ENABLE_LLVM,$enableLlvm)
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
-### ar, ranlib, libtool
+### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
 case $HostPlatform in
@@ -151,6 +151,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
+### ar
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 # See remarks about cpp
 case $HostPlatform in
@@ -165,6 +166,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(AR_CMD,$arCmd)
 
+### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
@@ -604,6 +606,10 @@ fi
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
 AC_SUBST(MD5_CMD,$md5Cmd)
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+AC_CHECK_PROGS(tarCmd,gnutar tar)
+AC_SUBST(TAR_CMD,$tarCmd)
 
 # xxx
 #AC_PATH_PROG(xxxCmd,xxx)
