@@ -221,6 +221,7 @@ JAVAC						:= @JAVAC_CMD@
 JAR							:= @JAR_CMD@
 SHELL_FILTER_NONEMP_FILES	:= $(BINABS_PREFIX)filterOutEmptyFiles
 SHELL_AGDEPEND				:= $(BINABS_PREFIX)agdepend
+TAR							:= @TAR_CMD@
 
 # lhs2TeX
 LHS2TEX_ENV					:= $(LHS2TEX)
@@ -513,7 +514,7 @@ FILTER_OUT_EMPTY_FILES		= $(if $(strip $(1)),$(shell echo $(1) | sed -e 's/\([^ 
 # $1: src dir
 # $2: dest dir
 # $3: src files relative to src dir
-FUN_COPY_FILES_BY_TAR			= ((cd $(1) && tar --ignore-failed-read -cf - $(3)) | (cd $(2) && tar xf -))
+FUN_COPY_FILES_BY_TAR			= ((cd $(1) && $(TAR) --ignore-failed-read -cf - $(3)) | (cd $(2) && $(TAR) xf -))
 
 # copy files recursively while renaming the variant subdirectory
 # $1: src dir

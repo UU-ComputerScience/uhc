@@ -258,20 +258,20 @@ $(EHCLIB_ASIS_ALL_DRV_array_ASIS): $(call FUN_INSTALL_PKG_PREFIX,array)%.h : $(E
 # extract .hs & .c files from frozen archive
 $(EHCLIB_FROZEN_ALL_DRV_HS) $(EHCLIB_FROZEN_ALL_DRV_C): $(EHCLIB_GHCSYNC_FROZEN)
 	mkdir -p $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)
-	cd $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) && tar xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)++'`
+	cd $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX) && $(TAR) xfoz $< `echo $@ | sed -e 's+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)++'`
 	touch $@
 
 # extract 'as is' files from frozen archive
 $(EHCLIB_FROZEN_ALL_DRV_base_ASIS): $(EHCLIB_GHCSYNC_FROZEN)
 	prefix=$(call FUN_INSTALL_PKG_PREFIX,base); \
 	mkdir -p $${prefix}; \
-	cd $${prefix} && tar --strip-components 1 -xoz -f $< `echo $@ | sed -e "s+$${prefix}+base/+"`
+	cd $${prefix} && $(TAR) --strip-components 1 -xoz -f $< `echo $@ | sed -e "s+$${prefix}+base/+"`
 	touch $@
 
 $(EHCLIB_FROZEN_ALL_DRV_array_ASIS): $(EHCLIB_GHCSYNC_FROZEN)
 	prefix=$(call FUN_INSTALL_PKG_PREFIX,array); \
 	mkdir -p $${prefix}; \
-	cd $${prefix} && tar --strip-components 1 -xoz -f $< `echo $@ | sed -e "s+$${prefix}+array/+"`
+	cd $${prefix} && $(TAR) --strip-components 1 -xoz -f $< `echo $@ | sed -e "s+$${prefix}+array/+"`
 	touch $@
 
 # generate .hs from .chs via shuffle
@@ -313,14 +313,14 @@ $(addprefix $(EHCLIB_BLD_SYNC_SRC_PREFIX),$(EHCLIB_SYNC_ALL_PKG_SRC)) \
 
 # construction of frozen archive
 $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH): $(EHCLIB_SYNC_ALL_PKG_DRV)
-	cd $(EHCLIB_BLD_SYNC_SRC_PREFIX) && tar cfz $(EHCLIB_GHCSYNC_FROZEN) *
+	cd $(EHCLIB_BLD_SYNC_SRC_PREFIX) && $(TAR) cfz $(EHCLIB_GHCSYNC_FROZEN) *
 
 # use this target to download the ghc dist from which the frozen extract will be made
 ehclib-ghc-sync-download: $(EHCLIB_GHCSYNC_DOWNLOAD_DRV_ARCH)
 
 # use this target to extract what will be frozen
 ehclib-ghc-sync-extract:
-	cd $(EHCLIB_BLD_SYNC_PREFIX) && tar xfoj $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH) $(addprefix $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/,$(EHCLIB_SYNC_ALL_PKG_SRC))
+	cd $(EHCLIB_BLD_SYNC_PREFIX) && $(TAR) xfoj $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_ARCH) $(addprefix $(EHCLIB_GHCSYNC_DOWNLOAD_NAME_BASE)/libraries/,$(EHCLIB_SYNC_ALL_PKG_SRC))
 
 # use this target to make the frozen extract from the ghc libraries, to be used as part of ehclib
 ehclib-ghc-sync-frozen: $(EHCLIB_GHCSYNC_FROZEN_DRV_ARCH)
