@@ -228,7 +228,8 @@ pkgDbFreeze db
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,String)
+-- For a module, find the package to use and the location of the root dir of that package.
+pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,FilePath)
 pkgDbSearch db modNm
   = do pkgs <- mbPkgs
        dirOf $ disambig $ {- tr "pkgDbSearch" (show modNm ++ show pkgs) $ -} pkgs

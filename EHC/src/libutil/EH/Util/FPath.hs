@@ -299,7 +299,9 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchFPathFromLoc :: String -> FPath -> [(String,FPath)]
+-- Simple function that returns a particular file under a
+-- certain root dir.
+searchFPathFromLoc :: FilePath -> FPath -> [(FilePath,FPath)]
 searchFPathFromLoc loc fp = [(loc,fpathPrependDir loc fp)]
 
 searchLocationsForReadableFiles :: (loc -> FPath -> [(loc,FPath)]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]

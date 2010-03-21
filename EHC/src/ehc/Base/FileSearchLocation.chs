@@ -180,7 +180,7 @@ data PackageInfo
       }
       deriving Show
 
--- content of a package
+-- content of a package (keys are name, then version)
 type PackageMp = Map.Map PkgKey1 (Map.Map PkgKey2 [PackageInfo])
 
 emptyPackageMp :: PackageMp
@@ -189,6 +189,9 @@ emptyPackageMp = Map.empty
 -- reverse map from module name to package key
 type Module2PackageMp = Map.Map HsName [PkgKey]
 
+-- A package database contains an actual package map, plus a function
+-- that maps modules to associated package maps. The latter is computed
+-- by "freezing" the package database using "pkgDbFreeze".
 data PackageDatabase
   = PackageDatabase
       { pkgDbPkgMp		:: PackageMp
