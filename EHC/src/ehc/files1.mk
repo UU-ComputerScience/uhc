@@ -429,11 +429,7 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "" ; \
 	  echo "ehcAssumedPackages = words \"$(EHC_PACKAGES_ASSUMED)\"" ; \
 	  echo "" ; \
-	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG | INST_LIB_PKG2 | INST_LIB_PKG_INCLUDE " ; \
-	  echo "" ; \
-	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
-	  echo "" ; \
-	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+	  echo "data WhatInstallFile = USER_PKG | INST_BIN | INST_LIB | INST_LIB_SHARED | INST_INCLUDE | INST_INCLUDE_SHARED | INST_LIB_PKG2 {- | INST_LIB_PKG | INST_LIB_PKG_INCLUDE -} " ; \
 	  echo "" ; \
 	  echo "mkCLibFilename dirprefix pkg = \"$(call FUN_MK_CLIB_FILENAME,\" ++ dirprefix ++ \",\" ++ pkg ++ \")\"" ; \
 	  echo "" ; \
@@ -456,7 +452,11 @@ $(EHC_HS_CFGINSTALL_DRV_HS): $(EHC_MKF) $(MK_SHARED_MKF)
 	  echo "  INST_LIB_SHARED       -> \"$(call FUN_DIR_VARIANT_LIB_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
 	  echo "  INST_INCLUDE_SHARED   -> \"$(call FUN_DIR_VARIANT_INC_SHARED_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
 	  echo "  INST_LIB_PKG2         -> \"$(call FUN_DIR_VARIANT_LIB_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \")\"" ; \
-	  echo "  INST_LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
-	  echo "  INST_LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
 	) > $@
 
+#	  echo "mkDirbasedLibVariantTargetPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+#	  echo "" ; \
+#	  echo "mkDirbasedTargetVariantPkgPrefix dir variant target pkg = \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \
+#	  echo "" ; \
+#	  echo "  INST_LIB_PKG_INCLUDE  -> \"$(call FUN_MK_PKG_INC_DIR,$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \"))\"" ; \
+#	  echo "  INST_LIB_PKG          -> \"$(call FUN_DIR_VARIANT_LIB_TARGET_PKG_PREFIX,\" ++ dir ++ \",\" ++ variant ++ \",\" ++ target ++ \",\" ++ pkg ++ \")\"" ; \

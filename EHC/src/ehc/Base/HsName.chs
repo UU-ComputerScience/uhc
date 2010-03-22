@@ -473,6 +473,16 @@ hsnSetLevQual _ _ n = n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix the uniqifier part by making a string of it, suffixing it to the base part
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(hsnFixUniqifiers)
+hsnFixUniqifiers :: HsName -> HsName
+hsnFixUniqifiers (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp "_@" us)) Map.empty
+hsnFixUniqifiers n                     = n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Make globally unique by prefixing with module name (if not already done so)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
