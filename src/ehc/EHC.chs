@@ -335,18 +335,18 @@ doCompilePrepare fnL@(fn:_) opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
        ; pkgDb1 <- pkgDbFromDirs opts
-                    (   [ filePathCoalesceSeparator $ filePathUnPrefix
+                    ({-
+                        [ filePathCoalesceSeparator $ filePathUnPrefix
                           $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
                         | d <- ehcOptPkgdirLocPath opts
                         ]
-                     {-
                      ++ [ filePathUnPrefix
                           $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
                         ]
                      -}
                      {-
                      -}
-                     ++ [ filePathUnPrefix d
+                        [ filePathUnPrefix d
                         | d <- [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
@@ -360,12 +360,12 @@ doCompilePrepare fnL@(fn:_) opts
        ; let searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ mkPkgFileLoc (p, Nothing) {- TBD: broken -} $ filePathUnPrefix
+                              {-
+                              ++ [ mkPkgFileLoc (p, Nothing) $ filePathUnPrefix
                                    $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
                                  | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
                                  ]
-                              {-
                               ++ [ mkPkgFileLoc p $ filePathUnPrefix
                                    $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) p
                                  | p <- (   ehcOptLibPackages opts

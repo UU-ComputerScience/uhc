@@ -24,6 +24,10 @@
 %%[(94 codegen jazy) hs import({%{EH}Foreign.Extract})
 %%]
 
+-- debug
+%%[(8 jazy) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,8 +160,8 @@ nmVar pkg mod v
 %%][20
   = safeNm $ handleUpper $ hsnQualified v
   where handleUpper v
-          = case hsnMbBaseString v of
-               Just s@(c:vs) | isUpper c -> mkHNmBase (s ++ "_")
+          = case hsnBaseUnpack v of
+               Just (s@(c:vs), mk) | isUpper c -> mk (s ++ "_")
                _ -> v
 %%]]
 
@@ -176,7 +180,7 @@ nmVarToFld v
 %%[[8
   = v
 %%][20
-  = hsnQualified v
+  = {- (\x -> tr "ToJazy.nmVarToFld" (v >#< x) x) $ -} hsnQualified v
 %%]]
 
 -- name of class of data type
@@ -208,7 +212,7 @@ nmSetOrEvlN n = nmEvalN n
 -- ensure a name valid for JVM
 safeNm :: HsName -> HsName
 safeNm
-  = hsnMapQualified (concatMap safe)
+  = hsnMapQualified (concatMap safe) . hsnFixUniqifiers
   where safe '.'  = "_dot"
         safe ':'  = "_colon"
         safe '/'  = "_fslash"
@@ -217,6 +221,7 @@ safeNm
         safe '\\' = "_bslash"
         safe '['  = "_lbrack"
         safe ']'  = "_rbrack"
+        safe '@'  = "_at"
         safe  c   = [c]
 %%]
 
