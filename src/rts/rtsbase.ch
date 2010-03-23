@@ -12,8 +12,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#include "config.h"
+#include "HsFFI.h"
 %%]
+#include "config.h"
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal config, must proceed includes
@@ -74,22 +75,20 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <inttypes.h>
-#include <limits.h>
-#include "base/sizes.h"
-#include "base/basictypes.h"
+// #include <inttypes.h>
+// #include <limits.h>
+// #include "base/sizes.h"
+// #include "base/basictypes.h"
+// #include "base/bits.h"
 #if __UHC_TARGET_BC__
 #include "bc/registers.h"
 #endif
-#include "base/bits.h"
 #include "base/sysalloc.h"
 #include "base/panic.h"
 #include "mm/mmitf.h"
 #include "base/utils.h"
 
 %%[[97
-#include <math.h>
-#include <float.h>
 #ifndef FP_ZERO
 #warning FP_ZERO not defined (assuming value 2). Using floating point numbers may give problems.
 #define FP_ZERO 2

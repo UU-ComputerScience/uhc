@@ -66,6 +66,36 @@
 %%]
 
 %%[8
+#ifdef __UHC_TARGET_BC__
+
+# define Int_MinValue				(Bits_MinSInt(Word,Word_SizeInBits,Word_SizeInBits-GB_Word_SizeOfWordTag)+1)
+# define Int_MaxValue				(Bits_MaxSInt(Word,Word_SizeInBits,Word_SizeInBits-GB_Word_SizeOfWordTag))
+# if   USE_64_BITS
+#  define Word_MinValue				Word64_MinValue
+#  define Word_MaxValue				(Word64_MaxValue >> GB_Word_SizeOfWordTag)
+# else
+#  define Word_MinValue				Word32_MinValue
+#  define Word_MaxValue				(Word32_MaxValue >> GB_Word_SizeOfWordTag)
+# endif
+
+#else
+
+# if   USE_64_BITS
+#  define Int_MinValue				Int64_MinValue
+#  define Int_MaxValue				Int64_MaxValue
+#  define Word_MinValue				Word64_MinValue
+#  define Word_MaxValue				Word64_MaxValue
+# else
+#  define Int_MinValue				Int32_MinValue
+#  define Int_MaxValue				Int32_MaxValue
+#  define Word_MinValue				Word32_MinValue
+#  define Word_MaxValue				Word32_MaxValue
+# endif
+
+#endif
+%%]
+
+%%[8
 #define Byte_SizeInBits			8
 #define Byte_SizeInBits_Log		3
 %%]

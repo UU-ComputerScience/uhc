@@ -55,17 +55,6 @@ PRIM Word primError(Word s)
 	return 0;	
 }
 
-
-PRIM Word primMinInt()
-{
-	return 0x10000000;
-}
-PRIM Word primMaxInt()
-{
-	return 0x0FFFFFFF;
-}
-
-
 %%]
 
 
