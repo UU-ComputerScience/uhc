@@ -119,6 +119,9 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 # ehclib targets
 ###########################################################################################
 
+#EHCLIB_BASE_OPTS						= 
+EHCLIB_BASE_OPTS						= -O2
+
 EHCLIB_DEBUG_OPTS						=
 #EHCLIB_DEBUG_OPTS						= --no-hi-check
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
@@ -149,8 +152,9 @@ ehclib-variant-dflt: \
 	                -e 's+/+.+g' ; \
 	        ) > $(call FUN_INSTALL_PKG_PREFIX,$${pkg})$(UHC_PKG_CONFIGFILE_NAME) ; \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
-	          --cpp \
+	          $(EHCLIB_BASE_OPTS) \
 	          $(EHCLIB_DEBUG_OPTS) \
+	          --cpp \
 	          --compile-only \
 	          --pkg-hide-all \
 	          --target=$(EHC_VARIANT_TARGET) \
@@ -166,10 +170,6 @@ ehclib-variant-dflt: \
 	        pkgs="$${pkgs} --pkg-expose $${pkg}" ; \
 	      done \
 	     ,)
-
-#	     ,$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --cpp --target=$(EHC_VARIANT_TARGET) $(EHCLIB_HS_MAIN_DRV_HS) \
-#	      set -xv;\
-#	          --pkg-build-libdir=$(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX) \
 
 ###########################################################################################
 # make all ehclibs target
