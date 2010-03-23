@@ -58,9 +58,6 @@
 #endif
 
 
-// the empty PRIM define is used to mark exported functions from prim.c, used to automatically generate prim.h
-#define PRIM
-
 %%]
 
 

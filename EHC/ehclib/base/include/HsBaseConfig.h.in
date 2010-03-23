@@ -307,19 +307,19 @@
 #ifdef __UHC_BUILDS_O__
 
 #if defined(__UHC_TARGET_BC__) || defined(__UHC_TARGET_C__)
-# define HsBool				Word
-# define HsInt				Word
-# define HsWord64			Word64
-# define HsWord32			Word32
-# define HsWord16			Word16
-# define HsWord8			Word8
-# ifdef __UHC_TARGET_BC__
-#  define HS_BOOL_FALSE		gb_False
-#  define HS_BOOL_TRUE		gb_True
-# else
-#  define HS_BOOL_FALSE		0
-#  define HS_BOOL_TRUE		1
-# endif
+// # define HsBool				Word
+// # define HsInt				Word
+// # define HsWord64			Word64
+// # define HsWord32			Word32
+// # define HsWord16			Word16
+// # define HsWord8			Word8
+// # ifdef __UHC_TARGET_BC__
+// #  define HS_BOOL_FALSE		gb_False
+// #  define HS_BOOL_TRUE		gb_True
+// # else
+// #  define HS_BOOL_FALSE		0
+// #  define HS_BOOL_TRUE		1
+// # endif
 #endif /* __UHC_TARGET_BC__ */
 
 #endif /* __UHC_BUILDS_O__ */

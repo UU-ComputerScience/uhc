@@ -88,6 +88,7 @@ RTS_SRC_CH_SHARED := \
         timing \
         priminline \
         primdecl \
+        HsFFI \
         base/sizes \
         base/bits \
         base/panic \
@@ -135,6 +136,7 @@ RTS_SRC_CH_SHARED := \
 
 RTS_SRC_CH_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+        bc/base \
         bc/types \
         bc/registers \
         bc/interpreter \
@@ -161,6 +163,7 @@ PRM_SRC_CC_SHARED := \
 PRM_SRC_CC_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc,\
         bc/prim \
+        bc/prim-bool \
         bc/prim-handle \
         bc/prim-array \
         bc/prim-thread \

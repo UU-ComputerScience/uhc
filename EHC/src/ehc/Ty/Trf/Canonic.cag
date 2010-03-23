@@ -31,8 +31,8 @@ recursive canonicalization of inner components, type level beta
 reduction and canonicalization alternately done.
 
 A VarMp (substitution) with additional changes in the type is threaded.
-Currently (20090821) only empty implicits (Impls_Tail) are replaced by
-Impls_Nil, and removed in the type itself.
+Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
+\verb@Impls_Nil@, and removed in the type itself.
 %%]
 
 %%[(9 hmtyinfer) hs module {%{EH}Ty.Trf.Canonic} import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Ty.FitsInCommon2})
