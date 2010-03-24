@@ -210,6 +210,7 @@ AGC							:= @UUAGC_CMD@
 GHC							:= @GHC_CMD@
 GHC1						:= @GHC_CMD1@
 GHC_VERSION         		:= @GHC_VERSION@
+HSC2HS						:= @HSC2HS_CMD@
 HADDOCK						:= @HADDOCK_CMD@
 HADDOCK_VERSION     		:= @HADDOCK_VERSION@
 GCC							:= @GCC_CMD@

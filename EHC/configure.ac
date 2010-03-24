@@ -308,8 +308,12 @@ esac
 AC_SUBST(GHC_CMD1,$ghcCmd1)
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+### assuming we have ghc, check for some of the additional tools
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+AC_PATH_PROG(hsc2hsCmd,hsc2hs)
+AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
 ghcLibNetwork=no
