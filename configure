@@ -701,6 +701,8 @@ GHC_CMD
 GHC_VERSION
 GHC_CMD1
 ghcPkgCmd
+hsc2hsCmd
+HSC2HS_CMD
 haddockCmd
 HADDOCK_CMD
 HADDOCK_VERSION
@@ -2772,7 +2774,7 @@ GHC_CMD1=$ghcCmd1
 
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+### assuming we have ghc, check for some of the additional tools
 # Extract the first word of "ghc-pkg", so it can be a program name with args.
 set dummy ghc-pkg; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -2813,6 +2815,50 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+# Extract the first word of "hsc2hs", so it can be a program name with args.
+set dummy hsc2hs; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_hsc2hsCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $hsc2hsCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_hsc2hsCmd="$hsc2hsCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_hsc2hsCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+hsc2hsCmd=$ac_cv_path_hsc2hsCmd
+if test -n "$hsc2hsCmd"; then
+  { echo "$as_me:$LINENO: result: $hsc2hsCmd" >&5
+echo "${ECHO_T}$hsc2hsCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+HSC2HS_CMD=$hsc2hsCmd
+
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
 ghcLibNetwork=no
@@ -29930,6 +29976,8 @@ GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
 GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
+hsc2hsCmd!$hsc2hsCmd$ac_delim
+HSC2HS_CMD!$HSC2HS_CMD$ac_delim
 haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
@@ -29939,8 +29987,6 @@ CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 uuagcCmd!$uuagcCmd$ac_delim
 UUAGC_CMD!$UUAGC_CMD$ac_delim
-gccCmd!$gccCmd$ac_delim
-GCC_CMD!$GCC_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29982,6 +30028,8 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+gccCmd!$gccCmd$ac_delim
+GCC_CMD!$GCC_CMD$ac_delim
 CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
@@ -30042,7 +30090,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 58; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

@@ -59,7 +59,14 @@ cpCompileWithGCC how othModNmL modNm
                             EHCUKind_C -> fp
 %%]]
                             _          -> mkOutputFPath opts modNm fp "c"
+%%[[8
                  fpO m f= mkOutputFPath opts m f "o"
+%%][99
+                 fpO m f= case ehcOptPkg opts of
+                            Just _ -> mkOutputFPath opts (hsnMapQualified (const base) m) (fpathSetBase base f) "o"
+                                   where base = hsnShow "_" "_" m
+                            _      -> mkOutputFPath opts m f "o"
+%%]]
                  fpExec = maybe (mkOutputFPath opts modNm fp "") (\s -> mkOutputFPath opts modNm fp s) Cfg.mbSuffixExec
                  variant= Cfg.installVariant opts
                  (fpTarg,targOpt,linkOpts,linkLibOpt,dotOFilesOpt,genOFiles)
