@@ -69,38 +69,25 @@ ATTR AllExpr
   |
   | genLazyVars USE {++} {[]} : {[HsName]}
   ]
-ATTR Expr
-  [
-  |
-  | isArrow     : {Bool}
-    isLam       : {Bool}
-    isDelayLam  : {Bool}
-    isLazyArrow : {Bool}
-    mbVarNm     : {Maybe HsName}
-  ]
 
 SEM Module
   | Mod
-                tbinds
-                            .   lazyVars    =   []
+                tbinds      .   lazyVars    =   []
                             .   boundLazy   =   False
-                vbinds
-                            .   lazyVars    =   @vbinds.genLazyVars
+                vbinds      .   lazyVars    =   @vbinds.genLazyVars
                             .   boundLazy   =   False
 
 SEM Expr
   | Let
-                vbinds
-                            .   lazyVars    =   bool @lhs.lazyVars @extLazyVars (@categ == ValBindCateg_Rec)
-                body
-                            .   lazyVars    =   @extLazyVars
+                vbinds      .   lazyVars    =   if @categ == ValBindCateg_Rec
+                                                then @extLazyVars
+                                                else @lhs.lazyVars
+                body        .   lazyVars    =   @extLazyVars
                 loc         .   extLazyVars =   @vbinds.genLazyVars ++ @lhs.lazyVars
 
 SEM ValBind
   | Val
                 lhs         .   genLazyVars =   bool [] [@nm] @l0.isDelayLam
-                            .   cTrf        =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf
-                                                  $ @l0.cTrf
                 l1          .   boundLazy   =   @l0.isDelayLam
 
 SEM Expr
@@ -122,14 +109,20 @@ SEM Expr
                 lhs         .   cTrf        =   if @lhs.boundLazy
                                                 then @expr.cTrf
                                                 else @original
-                expr        .   boundLazy   =  False
                 loc         .   original    =   Expr_Lazy @expr.cTrf
+                expr        .   boundLazy   =   False
+%%]
+
+%%[(8 codegen)
+ATTR Expr
+  [
+  |
+  | isLam       : {Bool}
+    isDelayLam  : {Bool}
+    mbVarNm     : {Maybe HsName}
+  ]
 
 SEM Expr
-  | Arrow
-                lhs         .   isArrow     =   True
-  | * - Arrow
-                lhs         .   isArrow     =   False
   | Lam
                 lhs         .   isLam       =   True
   | * - Lam
@@ -139,10 +132,6 @@ SEM Expr
                 loc         .   isDelayLam  =   @expr.isLam
   | * - Delay
                 lhs         .   isDelayLam  =   False
-  | Lazy
-                lhs         .   isLazyArrow =   @expr.isArrow
-  | * - Lazy
-                lhs         .   isLazyArrow =   False
   | Var
                 lhs         .   mbVarNm     =   Just @nm
   | * - Var

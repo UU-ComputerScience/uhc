@@ -35,6 +35,9 @@
 %%[(8 codegen) hs import({%{EH}TyCore})
 %%]
 
+%%[1 hs import(Debug.Trace)
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapping
@@ -94,6 +97,41 @@ SEM ValBindL
                                                 then @hd.worker : @hd.wrapper : @tl.cTrf
                                                 else @hd.cTrf : @tl.cTrf
 
+-- Worker
+SEM ValBind
+  | Val
+                lhs         .   hasWorker   =   isJust @newLamTail
+                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newArr @newLam
+                loc         .   newLam      =   maybe @l0.cTrf
+                                                      (\e -> Expr_Lam (Expr_Seq @newLamSeq) e)
+                                                      @newLamTail
+                loc         .   newArr      =   maybe @l1.cTrf
+                                                      (\e -> Expr_Arrow (Expr_Seq @newArrSeq) e)
+                                                      @newArrTail
+                loc         .   newLamSeq   =   concatMap seqToList @l0.lamArgs
+                            .   newLamTail  =   if @nrArgs > 1
+                                                then Just $ @l0.lamTails !! (@nrArgs - 1)
+                                                else Nothing
+                            .   newArrSeq   =   take (@nrArgs) $ concatMap seqToList @l1.arrArgs
+                            .   newArrTail  =   if @nrArgs > 1
+                                                then Just $ @l1.arrTails !! (@nrArgs - 1)
+                                                else Nothing
+                            .   nrArgs      =   length @loc.newLamSeq
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+
+-- Wrapper
+SEM ValBind
+  | Val
+                lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapLambdas
+                loc         .   wrapLambdas =   foldr Expr_Lam (@wrapBody) @l0.lamArgs
+                            .   wrapBody    =   foldl Expr_App (Expr_Var @workerNm `Expr_App` @fstSeq) @sndSeq
+                            .   fstSeq      =   Expr_Seq . mkTySeqVals . map (mkExprThunk . mkExprUnThunk . Expr_Var)
+                                                  $ take @nrArgs @varNms
+                            .   sndSeq      =   map (Expr_Seq . mkTySeqVals . return . mkExprThunk . mkExprUnThunk . Expr_Var)
+                                                  $ drop @nrArgs @varNms
+                            .   varNms      =   mapMaybe bindNm @newLamSeq
+
+-- Collect lambda args and bodies
 SEM Expr
   | Lam
                 lhs         .   lamArgs     =   @arg.cTrf : @res.lamArgs
@@ -107,31 +145,10 @@ SEM Expr
                             .   arrArgs     =   []
                             .   arrTails    =   []
 
-SEM ValBind
-  | Val
-                lhs         .   hasWorker   =   isJust @newLamTail
-                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newArr @newLam
-                            .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @l0.cTrf
-                loc         .   newLam      =   maybe @l0.cTrf
-                                                      (\e -> Expr_Lam (Expr_Seq @newLamSeq) e)
-                                                      @newLamTail
-                loc         .   newArr      =   maybe @l1.cTrf
-                                                      (\e -> Expr_Arrow (Expr_Seq @newArrSeq) e)
-                                                      @newArrTail
-                loc         .   newLamSeq   =   concatMap seqToList @l0.lamArgs
-                            .   newLamTail  =   if @nrArgs /= 0
-                                                then Just $ @l0.lamTails !! (@nrArgs - 1)
-                                                else Nothing
-                            .   newArrSeq   =   take (@nrArgs) $ concatMap seqToList @l1.arrArgs
-                            .   newArrTail  =   if @nrArgs /= 0
-                                                then Just $ @l1.arrTails !! (@nrArgs - 1)
-                                                else Nothing
-                            .   nrArgs      =   length @loc.newLamSeq
-                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
-
 {
-annTrace :: String -> Expr -> Expr
-annTrace s e = Expr_Ann (ExprAnn_GrinHint s) e
+bindNm :: ExprSeq1 -> Maybe HsName
+bindNm (ExprSeq1_L0Bind nm _ _) = Just nm
+bindNm _                        = Nothing
 
 seqToList :: Expr -> [ExprSeq1]
 seqToList (Expr_Seq es) = es

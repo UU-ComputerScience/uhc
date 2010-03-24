@@ -27,11 +27,11 @@
 %%[(8 codegen) hs import(Data.Bool.Extras)
 %%]
 
-%%[1 hs import(Debug.Trace)
-%%]
-
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
+%%[1 hs import(Debug.Trace)
 %%]
 
 
