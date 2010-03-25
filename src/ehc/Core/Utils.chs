@@ -460,7 +460,7 @@ type RCEAltL = [RAlt]
 data RCESplitCateg
   = RCESplitVar UIDS | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
 %%[[97
-  | RCESplitBoolExpr
+  | RCESplitBoolExpr -- (Maybe CExpr)
 %%]]
   deriving Eq
 
@@ -504,8 +504,8 @@ rceMatchIrrefutable env (arg:args') alts@[RAlt_Alt (RPat_Irrefutable n b : remPa
   = mkCExprLet CBindings_Plain (rceRebinds False arg alts) $ mkCExprLet CBindings_Plain b remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
-rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
-rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
+rceMkConAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
+rceMkConAltAndSubAlts env (arg:args) alts@(alt:_)
   = CAlt_Alt altPat (mkCExprLet CBindings_Plain (rceRebinds True arg alts) subMatch)
   where (subAlts,subAltSubNms)
           =  unzip
@@ -525,7 +525,7 @@ rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
   = mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
   where arg'   =  hsnUniqifyEval arg
-        alts'  =  map (rceMkAltAndSubAlts env (arg':args))
+        alts'  =  map (rceMkConAltAndSubAlts env (arg':args))
                   $ groupSortOn (ctagTag . rcaTag)
                   $ filter (not . null . rcaPats)
                   $ alts
@@ -548,15 +548,28 @@ rceMatchConst env (arg:args) alts
 
 %%[(97 codegen) hs
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts
+rceMatchBoolExpr env aargs@(arg:args) alts
+  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) alts'
+  where alts'  =  map (\(u, alts@(RAlt_Alt (RPat_BoolExpr _ b _ : _) _ _ : _))
+                         -> ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
+                            , mkCExprApp b [CExpr_Var arg]
+                            , rceMatch env args [ RAlt_Alt remPats e f | (RAlt_Alt (RPat_BoolExpr _ _ _ : remPats) e f) <- alts ]
+                            )
+                      )
+                  $ zip [0..]
+                  $ groupSortOn (rcpMbConst . head . rcaPats)
+                  $ filter (not . null . rcaPats)
+                  $ alts
+%%]
+rceMatchBoolExpr2 :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
+rceMatchBoolExpr2 env (arg:args) alts
   = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
-  where m = [ ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg -- hsnSuffix arg $ "!" ++ show u
+  where m = [ ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
               , mkCExprApp b [CExpr_Var arg]
               , rceMatch env args [RAlt_Alt remPats e f]
               )
-            | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e f) <- zip [0..] alts
+            | (u,RAlt_Alt (RPat_BoolExpr _ b _ : remPats) e f) <- zip [0..] alts
             ]
-%%]
 
 %%[(8 codegen) hs
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
@@ -594,7 +607,7 @@ rceMatch env args alts
                         else if raltIsConst         a  then RCESplitConst
                         else if raltIsIrrefutable   a  then RCESplitIrrefutable
 %%[[97
-                        else if raltIsBoolExpr      a  then RCESplitBoolExpr
+                        else if raltIsBoolExpr      a  then RCESplitBoolExpr -- (fromJust $ raltMbBoolExpr a)
 %%]]
                         else if raltIsConMany       a  then RCESplitConMany
                                                        else RCESplitCon

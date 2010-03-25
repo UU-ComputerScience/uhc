@@ -69,7 +69,7 @@ data RPat
   | RPat_Char			{ rcpPNm :: !RPatNm, rcpChar :: !Char }
   | RPat_Irrefutable	{ rcpPNm :: !RPatNm, rcpCBindL :: ![CBind] }
 %%[[97
-  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpExpr :: !CExpr }
+  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpExpr :: !CExpr, rcpMbConst :: Maybe SrcConst }
 %%]]
 
 data RPatConBind
@@ -123,10 +123,13 @@ raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _ _) = True
 raltIsIrrefutable _                                         = False
 %%]
 
-%%[(97 codegen) hs export(raltIsBoolExpr)
+%%[(97 codegen) hs export(raltMbBoolExpr,raltIsBoolExpr)
+raltMbBoolExpr :: RAlt -> Maybe (Maybe SrcConst)
+raltMbBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ e : _) _ _)  = Just e
+raltMbBoolExpr _                                         = Nothing
+
 raltIsBoolExpr :: RAlt -> Bool
-raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _ _)  = True
-raltIsBoolExpr _                                       = False
+raltIsBoolExpr = isJust . raltMbBoolExpr
 %%]
 
 Flatten bindings, delaying the handling of many bindings to the rewriting of case patterns.
@@ -152,7 +155,7 @@ rpat2CPat p
       RPat_Int      n v     -> CPat_Int (rpatNmNm n) v
       RPat_Char     n v     -> CPat_Char (rpatNmNm n) v
 %%[[97
-      RPat_BoolExpr n v     -> CPat_BoolExpr (rpatNmNm n) v
+      RPat_BoolExpr n v _   -> CPat_BoolExpr (rpatNmNm n) v
 %%]]
 %%]
 
@@ -279,6 +282,14 @@ cexprIsLam _                 = False
 cbindNm :: CBind -> HsName
 cbindNm (CBind_Bind      n _ _) = n
 cbindNm (CBind_FFI _ _ _ n _  ) = n
+%%]
+
+%%[(97 codegen) hs export(cexprMbConst)
+cexprMbConst :: CExpr -> Maybe Integer
+cexprMbConst e@(CExpr_Int     i) = Just $ toInteger i
+cexprMbConst e@(CExpr_Char    c) = Just $ toInteger $ ord c
+cexprMbConst e@(CExpr_Integer i) = Just i
+cexprMbConst _                   = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

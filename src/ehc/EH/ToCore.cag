@@ -523,7 +523,7 @@ SEM PatExpr
 
 %%[(97 codegen)
 SEM PatExpr
-  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @cexpr
+  | Expr        loc         .   rpat        =   RPat_BoolExpr @cpNm @cexpr @mbConst
 %%]
 
 %%[(8 codegen)

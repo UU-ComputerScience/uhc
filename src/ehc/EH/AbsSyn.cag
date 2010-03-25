@@ -423,6 +423,7 @@ DATA PatExpr
 %%[97
 DATA PatExpr
   | Expr            expr            : Expr
+                    mbConst         : {Maybe SrcConst}
 %%]
 
 %%[1.AllPatExpr

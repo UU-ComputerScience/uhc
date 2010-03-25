@@ -1440,3 +1440,15 @@ instance Binary Pos where
   put (Pos a b c) = put a >> put b >> put c
   get = liftM3 Pos get get get
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants as appearing directly from the source text, without class related toInteger (etc) interpretation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97 export(SrcConst(..))
+data SrcConst
+  = SrcConst_Int	Integer
+  | SrcConst_Char	Char
+  | SrcConst_Ratio	Integer Integer
+  deriving (Eq,Show,Ord)
+%%]

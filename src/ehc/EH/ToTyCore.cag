@@ -919,7 +919,7 @@ SEM PatExpr
 
 %%[(97 codegen)
 SEM PatExpr
-  | Expr        loc         .   rpatTC      =   C.RPat_BoolExpr @tcpNm (C.tyErr "PatExpr.Expr.rpatTC") @tcexpr
+  | Expr        loc         .   rpatTC      =   C.RPat_BoolExpr @tcpNm (C.tyErr "PatExpr.Expr.rpatTC") @tcexpr @mbConst
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
