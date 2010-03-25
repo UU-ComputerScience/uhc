@@ -571,19 +571,24 @@ SEM Type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[97 hs
-ehExpLitInt :: Range -> Int -> String -> Int -> [HsName] -> EH.Expr
+ehExpLitInt :: Range -> Int -> String -> Int -> [HsName] -> (EH.Expr,Maybe SrcConst)
 ehExpLitInt r b s sign litrefnames
-  | sign < 0  = mk (\e -> ehExpVarApp r (litrefnames !! 1) [e])
-  | otherwise = mk id
-  where mk neg = neg $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst (intDenot2Integer b s)]
+  | sign < 0  = mk (\e -> ehExpVarApp r (litrefnames !! 1) [e], negate)
+  | otherwise = mk (id                                        , id    )
+  where i = intDenot2Integer b s
+        mk (neg,negconst)
+          = (neg $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst i], Just $ SrcConst_Int $ negconst i)
 
-ehExpLitFloat :: Range -> String -> Int -> [HsName] -> EH.Expr
+ehExpLitFloat :: Range -> String -> Int -> [HsName] -> (EH.Expr,Maybe SrcConst)
 ehExpLitFloat r s sign litrefnames
-  | sign < 0  = mk (\e -> ehExpVarApp r (litrefnames !! 2) [e])
-  | otherwise = mk id
-  where (n,d) = floatDenot2NomDenom s
-        mk neg = neg $ ehExpVarApp r (litrefnames !! 1)
-                     $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst n,rngLift r EH.Expr_IIConst d]]
+  | sign < 0  = mk (\e -> ehExpVarApp r (litrefnames !! 2) [e], \(n,d) -> (negate n, d))
+  | otherwise = mk (id                                        , id                     )
+  where nd@(n,d) = floatDenot2NomDenom s
+        mk (neg,negconst)
+          = ( neg $ ehExpVarApp r (litrefnames !! 1)
+                  $ [rngLift r EH.Expr_Parens $ ehExpVarApp r (litrefnames !! 0) [rngLift r EH.Expr_IIConst n,rngLift r EH.Expr_IIConst d]]
+            , Just $ uncurry SrcConst_Ratio $ negconst nd
+            )
 %%]
 
 %%[1 hs
@@ -635,14 +640,14 @@ SEM Expression
 %%[[1
                                           Literal_Int    r   s -> rngLift r EH.Expr_IConst (read s)
 %%][97
-                                          Literal_Int    r b s -> ehExpLitInt r b s 1 @litrefnames
+                                          Literal_Int    r b s -> fst $ ehExpLitInt r b s 1 @litrefnames
 %%]]
                                           Literal_Char   r s -> rngLift r EH.Expr_CConst (head s)
 %%[[5
                                           Literal_String r s -> rngLift r EH.Expr_SConst s
 %%]]
 %%[[97
-                                          Literal_Float  r s -> ehExpLitFloat r s 1 @litrefnames
+                                          Literal_Float  r s -> fst $ ehExpLitFloat r s 1 @litrefnames
 %%]]
     | Variable
         loc         .   eh          =   rngLift @range EH.Expr_Var @refname
@@ -1062,21 +1067,21 @@ SEM Pattern
 %%[[1
                                             mkc r = rngLift r EH.PatExpr_CConst
 %%][97
-                                            mkc r = mke r . rngLift r EH.Expr_CConst
-                                            mke r = rngLift r EH.PatExpr_Expr
+                                            mkc r = \c -> mke r (rngLift r EH.Expr_CConst c, Just $ SrcConst_Char c)
+                                            mke r = uncurry (rngLift r EH.PatExpr_Expr)
 %%]]
                                         in  case @literal.eh of
                                               Literal_Char   r   s -> mkc r $ head s
 %%[[1
                                               Literal_Int    r   s -> rngLift r EH.PatExpr_IConst (@sign * read s)
 %%][97
-                                              Literal_Int    r b s -> mke r $ ehExpLitInt r b s @sign @litrefnames
+                                              Literal_Int    r b s -> mke r (ehExpLitInt r b s @sign @litrefnames)
 %%]]
 %%[[5
                                               Literal_String r   s -> foldr (\c p -> ehPatConApp r (@litrefnames !! 0) [mkc r c,p]) (ehPatConApp r (@litrefnames !! 1) []) s
 %%]]
 %%[[97
-                                              Literal_Float  r   s -> mke r $ ehExpLitFloat r s @sign @litrefnames
+                                              Literal_Float  r   s -> mke r (ehExpLitFloat r s @sign @litrefnames)
 %%]]
     | Variable
         lhs         .   eh          =   rngLift @range EH.PatExpr_Var
