@@ -338,13 +338,13 @@ $(PRM_DRV_H): %.h: %.c $(RTS_MKF)
 # Use the C compiler to compile .c to .o    (for primitives, use -O2 optimization)
 
 $(RTS_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(PRM_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) -o $@ -c $<
 
 $(PRM_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(PRM_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS) -O2   -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) -O2   -o $@ -c $<
 
 $(RTS_LTM_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(LTM_GCC_OPTS) -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) $(LTM_GCC_OPTS) -o $@ -c $<
 
 
 # install .h files in the ehc/install/99/include directory

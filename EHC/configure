@@ -667,6 +667,7 @@ EH_VERSION_MINORMINOR
 EH_VERSION_STABILITY
 EH_VERSION_SHORT
 EH_VERSION_FULL
+EH_VERSION_ASNUMBER
 m4Cmd
 svnCmd
 SVN_EXISTS
@@ -2030,6 +2031,8 @@ EH_VERSION_STABILITY=alpha
 EH_VERSION_SHORT=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 
 EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR
+
+EH_VERSION_ASNUMBER=$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR
 
 
 
@@ -29942,6 +29945,7 @@ EH_VERSION_MINORMINOR!$EH_VERSION_MINORMINOR$ac_delim
 EH_VERSION_STABILITY!$EH_VERSION_STABILITY$ac_delim
 EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
 EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
+EH_VERSION_ASNUMBER!$EH_VERSION_ASNUMBER$ac_delim
 m4Cmd!$m4Cmd$ac_delim
 svnCmd!$svnCmd$ac_delim
 SVN_EXISTS!$SVN_EXISTS$ac_delim
@@ -29986,7 +29990,6 @@ CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 uuagcCmd!$uuagcCmd$ac_delim
-UUAGC_CMD!$UUAGC_CMD$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -30028,6 +30031,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+UUAGC_CMD!$UUAGC_CMD$ac_delim
 gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
 CC!$CC$ac_delim
@@ -30090,7 +30094,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 60; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 61; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5

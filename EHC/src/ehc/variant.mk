@@ -58,6 +58,13 @@ EHC_VARIANT_TARGETS						:= $(shell if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXE
 EHC_VARIANT_TARGET						:= $(shell if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC); then $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-target-default; else echo bc; fi)
 EHC_VARIANT_TARGET_PREFIX				:= $(EHC_VARIANT_TARGET)/
 
+# target info as passed as cpp flag
+EHC_VARIANT_TARGET_UHC_DEFINE1			:= __UHC_TARGET_$(shell echo $(EHC_VARIANT_TARGET) | tr "[a-z]" "[A-Z]")__
+EHC_VARIANT_TARGET_UHC_DEFINE2			:= __UHC_TARGET__=$(EHC_VARIANT_TARGET)
+
+# target + variant based options passed around
+RTS_GCC_CC_OPTS_VARIANT_TARGET			:= -D$(EHC_VARIANT_TARGET_UHC_DEFINE1) -D$(EHC_VARIANT_TARGET_UHC_DEFINE2)
+
 ###########################################################################################
 # lib/cabal/module config
 ###########################################################################################
