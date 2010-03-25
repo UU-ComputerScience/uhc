@@ -15,6 +15,7 @@ EH_VERSION_MINORMINOR	:= @EH_VERSION_MINORMINOR@
 EH_VERSION_STABILITY	:= @EH_VERSION_STABILITY@
 EH_VERSION_SHORT		:= @EH_VERSION_SHORT@
 EH_VERSION_FULL			:= @EH_VERSION_FULL@
+EH_VERSION_ASNUMBER		:= @EH_VERSION_ASNUMBER@
 
 ###########################################################################################
 # platform config, currently changed to config by autoconf

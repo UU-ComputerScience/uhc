@@ -31,10 +31,14 @@ C + CPP compilation
 %%[(8 codegen)
 gccDefs :: EHCOpts -> [String] -> [String]
 gccDefs opts builds
-  = map (\d -> "-D__UHC" ++ d ++ "__")
-    $  [ "", "_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts) ]
-    ++ map ("_BUILDS_" ++) builds
-    ++ [ "_" ++ map (\c -> case c of {'.' -> '_'; c -> c}) (Cfg.verFull Cfg.version) ]
+  = map (\(d,mbval) -> "-D__UHC" ++ d ++ "__" ++ maybe "" ("=" ++) mbval)
+      $  [ (""                                                    , Just (Cfg.verAsNumber Cfg.version))
+         , ("_TARGET_" ++ (map toUpper $ show $ ehcOptTarget opts), Nothing                           )
+         ]
+      ++ map (\x -> ("_BUILDS_" ++ x, Nothing))
+             builds
+      ++ map (\x -> (x,Nothing))
+             [ "_" ++ map (\c -> case c of {'.' -> '_'; c -> c}) (Cfg.verFull Cfg.version) ]
 %%[[(99 codegen grin)
     --  ++ (if ehcOptFullProgAnalysis opts then ["_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]

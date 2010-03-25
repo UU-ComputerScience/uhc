@@ -49,5 +49,5 @@ EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)frozen/
 
 # As C .h include file, as is in svn repo, after configuration.
 # These files are copied into rts as well
-EHCLIB_ASIS_RTS_SRC_ASIS				:= $(addprefix $(EHCLIB_BASE_INC_SRC_PREFIX),MachDeps.h)
+EHCLIB_ASIS_RTS_SRC_ASIS				:= $(addprefix $(EHCLIB_BASE_INC_SRC_PREFIX),MachDeps.h HsBase.h HsBaseConfig.h)
 

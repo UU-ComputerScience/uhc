@@ -34,6 +34,7 @@ data Version
       , verQuality          :: !String
       , verShort            :: !String
       , verFull             :: !String
+      , verAsNumber         :: !String
       , verProg             :: !String
 %%[[20
       , verTimestamp        :: !String
@@ -53,6 +54,7 @@ version
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verShort            = "@EH_VERSION_SHORT@"
       , verFull             = "@EH_VERSION_FULL@"
+      , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
 %%[[20
       , verTimestamp        = Sig.timestamp
