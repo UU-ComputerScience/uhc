@@ -31,7 +31,10 @@ Derived from work by Gerrit vd Geest.
 %%[(20 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(99 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[(9999 hmtyinfer) import({%{EH}Base.ForceEval},{%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -240,13 +243,16 @@ data Guard
   | EqualScope              PredScope PredScope                             -- scopes are equal
   | IsStrictParentScope     PredScope PredScope PredScope                   -- parent scope of each other?
 %%[[10
-  | NonEmptyRowLacksLabel	Ty LabelOffset Ty Label							-- non empty row does not have label?, yielding its position + rest
+  | NonEmptyRowLacksLabel   Ty LabelOffset Ty Label                         -- non empty row does not have label?, yielding its position + rest
 %%]]
 %%[[16
-  | IsCtxNilReduction Ty Ty
-  | EqsByCongruence Ty Ty PredSeq
-  | UnequalTy Ty Ty
-  | EqualModuloUnification Ty Ty
+  | IsCtxNilReduction       Ty Ty
+  | EqsByCongruence         Ty Ty PredSeq
+  | UnequalTy               Ty Ty
+  | EqualModuloUnification  Ty Ty
+%%]]
+%%[[20
+  deriving (Typeable, Data)
 %%]]
 %%]
 
@@ -407,10 +413,10 @@ isLetProveFailure glob x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval, Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval Guard where
   forceEval x@(HasStrictCommonScope   sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
   forceEval x@(IsStrictParentScope    sc1 sc2 sc3) | forceEval sc1 `seq` forceEval sc2 `seq` forceEval sc3 `seq` True = x
@@ -428,3 +434,33 @@ instance ForceEval Guard where
 %%]]
 %%]
 
+%%[(20 hmtyinfer)
+instance Serialize Guard where
+  sput (HasStrictCommonScope     a b c  ) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (IsVisibleInScope         a b    ) = sputWord8 1  >> sput a >> sput b
+  sput (NotEqualScope            a b    ) = sputWord8 2  >> sput a >> sput b
+  sput (EqualScope               a b    ) = sputWord8 3  >> sput a >> sput b
+  sput (IsStrictParentScope      a b c  ) = sputWord8 4  >> sput a >> sput b >> sput c
+  sput (NonEmptyRowLacksLabel    a b c d) = sputWord8 5  >> sput a >> sput b >> sput c >> sput d
+%%[[16
+  sput (IsCtxNilReduction        a b    ) = sputWord8 6  >> sput a >> sput b
+  sput (EqsByCongruence          a b c  ) = sputWord8 7  >> sput a >> sput b >> sput c
+  sput (UnequalTy                a b    ) = sputWord8 8  >> sput a >> sput b
+  sput (EqualModuloUnification   a b    ) = sputWord8 9  >> sput a >> sput b
+%%]]
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 HasStrictCommonScope     sget sget sget
+              1  -> liftM2 IsVisibleInScope         sget sget
+              2  -> liftM2 NotEqualScope            sget sget
+              3  -> liftM2 EqualScope               sget sget
+              4  -> liftM3 IsStrictParentScope      sget sget sget
+              5  -> liftM4 NonEmptyRowLacksLabel    sget sget sget sget
+%%[[16
+              6  -> liftM2 IsCtxNilReduction        sget sget
+              7  -> liftM3 EqsByCongruence          sget sget sget
+              8  -> liftM2 UnequalTy                sget sget
+              9  -> liftM2 EqualModuloUnification   sget sget
+%%]]
+
+%%]

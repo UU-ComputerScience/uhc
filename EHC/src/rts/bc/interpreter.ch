@@ -3,116 +3,6 @@
 #define __BC_INTERPRETER_H__
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Internal config
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-// #define USE_REGS_FOR_PC_SP 		1
-#define USE_REGS_FOR_PC_SP 		0
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Register usage (adapted from lvm evaluator.c)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[8
-#if defined(__GNUC__) && !defined(DEBUG)
-#ifdef __i386__
-# define PC_REG asm("%esi")
-# define SP_REG asm("%edi")
-# define FP_REG
-#endif
-#ifdef __x86_64__
-#define PC_REG asm("6")
-#define SP_REG asm("7")
-#define FP_REG
-#undef USE_REGS_FOR_PC_SP
-#endif
-#ifdef __mips__
-#define PC_REG asm("$16")
-#define SP_REG asm("$17")
-#define FP_REG asm("$18")
-#endif
-#ifdef __sparc__
-#define PC_REG asm("%l0")
-#define SP_REG asm("%l1")
-#define FP_REG asm("%l2")
-#endif
-#ifdef __alpha__
-#ifdef __CRAY__
-#define PC_REG asm("r9")
-#define SP_REG asm("r10")
-#define FP_REG asm("r11")
-#define INSTR_BASE_REG asm("r12")
-#else
-#define PC_REG asm("$9")
-#define SP_REG asm("$10")
-#define FP_REG asm("$11")
-#define INSTR_BASE_REG asm("$12")
-#endif
-#endif
-#if defined(PPC) || defined(_ARCH_PPC) || defined(_POWER) || defined(_IBMR2)
-#define RR_REG asm("25")
-#define PC_REG asm("26")
-#define SP_REG asm("27")
-#define FP_REG asm("28")
-#endif
-#ifdef __hppa__
-#define PC_REG asm("%r18")
-#define SP_REG asm("%r17")
-#define FP_REG asm("%r16")
-#endif
-#ifdef __mc68000__
-#define PC_REG asm("a5")
-#define SP_REG asm("a4")
-#define FP_REG asm("d7")
-#endif
-#ifdef __arm__
-#define PC_REG asm("r9")
-#define SP_REG asm("r8")
-#define FP_REG asm("r7")
-#endif
-#ifdef __ia64__
-#define PC_REG asm("36")
-#define SP_REG asm("37")
-#define FP_REG asm("38")
-#define INSTR_BASE_REG asm("39")
-#endif
-#endif  /* GNUC & DEBUG */
-
-%%]
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Registers
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Registers:
-pc: program counter
-sp: stack pointer (used for temporaries, locals, expression calculation)
-bp: base pointer (used for exception handling)
-rr: user available scratch register
-
-%%[8
-#if USE_REGS_FOR_PC_SP
-register GB_BytePtr  pc PC_REG ;
-register GB_Ptr      sp SP_REG ;
-#else
-extern   GB_BytePtr  pc ;
-extern   GB_Ptr      sp ;
-#endif
-
-extern   GB_Ptr      bp ;
-
-#if defined(RR_REG) && USE_REGS_FOR_PC_SP
-register GB_Word     rr RR_REG ;
-#else
-extern   GB_Word     rr ;
-#endif
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Stack
@@ -425,6 +315,7 @@ typedef struct GB_ModEntry {
   GB_NodePtr*				expNode ;
 %%]]
   GB_ByteCodeModule*		bcModule ;
+  GB_FunctionInfo*			functionInfos ;
 } GB_ModEntry ;
 
 extern int gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
@@ -435,8 +326,8 @@ Imported module info: binding of module name to position in global module table 
 
 %%[20
 typedef struct GB_ImpModEntry {
-  char*						name ;
-  Word						globModInx ;
+  char*						name ;			// name of module
+  Word						globModInx ;	// index global table of GB_ModEntry, filled in at link time
 } GB_ImpModEntry ;
 %%]
 
@@ -485,24 +376,27 @@ typedef struct GB_CallInfo_CCall {
 } GB_CallInfo_CCall ;
 
 typedef struct GB_CallInfo {
-	Word8	 			kind ;
-	Word8*   			name ;
-	GB_GCStackInfo*		gcStackInfo ;
+	Word8	 				kind ;
+	Word8*   				name ;					// name of called function (to become obsolete when functionInfo works)
+	// GB_FunctionInfo*		functionInfo ;			// info about the called function (20100301 AD: under implementation)
+	GB_FunctionInfo_Inx		functionInfoModOff ;	// offset in imported module table, replaced at linking time with index into global module table
+	GB_FunctionInfo_Inx		functionInfoOff ;		// offset in per module FunctionInfo table
+	GB_GCStackInfo*			gcStackInfo ;
 #if TRACE
-	GB_CallInfo_CCall	ccall ;
+	GB_CallInfo_CCall		ccall ;
 #endif
-} GB_CallInfo ;
+} __attribute__ ((__packed__)) GB_CallInfo ;
 
 typedef GB_CallInfo* GB_CallInfoPtr ;
 
 #define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
 
 #if TRACE
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc,w}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc,w}		// make CallInfo
 #else
-#define GB_MkCallInfoWith(k,n,gc,w)		{k,(BPtr)n,gc}		// make CallInfo
+#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc}		// make CallInfo
 #endif
-#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,NULL,NULL)
+#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,-1,-1,NULL,NULL)
 
 #define GB_CallInfo_Fld_Kind(i)    		i
 
@@ -529,6 +423,13 @@ typedef GB_CallInfo* GB_CallInfoPtr ;
 %%]]
 %%]
 
+Flags
+
+%%[8
+%%]
+#define GB_CallInfo_Flag_None				0			// nothing, nada
+#define GB_CallInfo_Flag_ExplStackTrace		1			// this function takes as its first arg
+
 Retrieval of call info given a bp
 
 %%[8
@@ -537,6 +438,8 @@ Retrieval of call info given a bp
 
 %%[8
 extern Bool gb_CallInfo_Kind_IsVisible( Word kind ) ;
+extern GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
+extern Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -779,14 +682,14 @@ extern void gb_InitTables
 	// , GB_GCInfo* gcInfos
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
-	, GB_CallInfo* callinfos
-	, GB_FunctionInfo* functionInfos
+	, GB_CallInfo* callinfos, int callinfosSz
+	, GB_FunctionInfo* functionInfos, int functionInfosSz
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
-	, GB_ModEntry* modTbl
+	, GB_ModEntry* modTbl, Word modTblInx
 %%]]
 	) ;
 %%]

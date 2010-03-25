@@ -27,6 +27,7 @@ double mp_get_double(mp_int * a)
      return 0.0;
   }
 
+  // printf( "mp_get_double SIGN=%d MP_NEG=%d\n", SIGN(a), MP_NEG ) ;
   /* get number of digits of the lsb we have to read */
   i = USED(a)-1;
 
@@ -35,12 +36,18 @@ double mp_get_double(mp_int * a)
    
   // printf( "mp_get_double i=%d dig[i]=%x(%f) res=%f res<<=%f\n", i, DIGIT(a,i), (double)DIGIT(a,i), res, (res * (double)(1 << DIGIT_BIT)) ) ;
   while (--i >= 0) {
-    double res2 = (res * (double)(1 << DIGIT_BIT)) + (double)DIGIT(a,i);
+    double res2 = (res * (double)(1L << DIGIT_BIT)) + (double)DIGIT(a,i);
   	// printf( "mp_get_double i=%d dig[i]=%x(%f) res=%f res<<=%f res2=%f\n", i, DIGIT(a,i), (double)DIGIT(a,i), res, (res * (double)(1 << DIGIT_BIT)), res2 ) ;
   	res = res2 ;
   }
 
+  // printf( "mp_get_double SIGN=%d MP_NEG=%d\n", SIGN(a), MP_NEG ) ;
   return ( SIGN(a) == MP_NEG ? -res : res ) ;
+  // if (SIGN(a) == MP_NEG) {
+  // 	res *= -1 ;
+  // }
+  // printf( "mp_get_double res=%f\n", res ) ;
+  // return res ;
 }
 #else
 

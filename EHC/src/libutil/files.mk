@@ -41,7 +41,7 @@ $(LIB_EH_UTIL_CABAL_DRV): $(LIBUTIL_MKF) $(LIB_EH_UTIL_HS_SRC)
 	$(call FUN_GEN_CABAL_LIB \
 		, $(LIB_EH_UTIL_PKG_NAME) \
 		, $(EH_VERSION_SHORT) \
-		, mtl \
+		, mtl binary bytestring uulib \
 		,  \
 		, General purpose utilities for EH \
 		, $(patsubst %,$(LIB_EH_UTIL_QUAL_PREFIX)%,$(LIB_EH_UTIL_HS_MOD)) \
@@ -64,6 +64,6 @@ $(LIB_EH_UTIL_INS_FLAG): $(LIB_EH_UTIL_HS_DRV) $(LIB_EH_UTIL_CABAL_DRV) $(LIB_EH
 	cd $(BLD_LIBUTIL_PREFIX) && \
 	$(LIB_EH_UTIL_SETUP) configure $(CABAL_SETUP_OPTS) --prefix=$(INSTALLFORBLDABS_PREFIX) $(CABAL_OPT_INSTALL_LOC) && \
 	$(LIB_EH_UTIL_SETUP) build && \
-	$(LIB_EH_UTIL_SETUP) install $(CABAL_OPT_INSTALL_LOC) && \
+	$(LIB_EH_UTIL_SETUP) install && \
 	echo $@ > $@
 

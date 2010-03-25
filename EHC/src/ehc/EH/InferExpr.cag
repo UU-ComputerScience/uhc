@@ -15,8 +15,9 @@
 SEM AGItf
   | AGItf       loc         .   (foMain,nmErrs)     =   if @lhs.isMainMod
                                                         then let (t,e) = valGamLookupTy hsnMain @expr.gathValGam
-                                                             in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts), e)
+                                                             in  (fitsIn strongFIOpts @fe @lUniq_98_fitsIn_ty @expr.tyVarMp t (tyTopLevelMain @lhs.opts @lUniq_98_IO_tvar), e)
                                                         else (emptyFO,[])
+                loc         .   lUniq_98_IO_tvar    :   UNIQUEREF gUniq
                 loc         .   lUniq_98_fitsIn_ty  :   UNIQUEREF gUniq
 %%]
 

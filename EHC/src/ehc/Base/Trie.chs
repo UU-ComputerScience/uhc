@@ -31,7 +31,10 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[9 import(EH.Util.Pretty hiding (empty))
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})
@@ -56,6 +59,14 @@ data TrieKey k
 
 mkTrieKeys :: [k] -> [TrieKey k]
 mkTrieKeys = Prelude.map (TK_One TKK_Normal)
+%%]
+
+%%[20
+deriving instance Typeable TrieKeyKind
+deriving instance Data TrieKeyKind
+
+deriving instance Typeable1 TrieKey
+deriving instance Data x => Data (TrieKey x)
 %%]
 
 %%[9
@@ -112,6 +123,9 @@ data Trie k v
       , triePartSubs    :: SubTrie k v              -- partial search continuation
       , trieSubs        :: SubTrie k v              -- normal search continuation
       }
+%%[[20
+ deriving (Typeable, Data)
+%%]]
 
 emptyTrie, empty :: Trie k v
 emptyTrie = Trie Nothing Map.empty Map.empty
@@ -361,7 +375,7 @@ delete keys = deleteByKey $ mkTrieKeys keys
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance (ForceEval k, ForceEval v) => ForceEval (Trie k v) where
   forceEval x | forceEval (trieMbVal x) `seq` forceEval (triePartSubs x) `seq` forceEval (trieSubs x) `seq` True = x
 %%[[102

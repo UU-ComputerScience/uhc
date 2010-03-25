@@ -33,6 +33,9 @@
 %%[(20 codegen) import ({%{EH}Core}(HsName2OffsetMp))
 %%]
 
+%%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
 %%[99 export(modImpPrelude)
 %%]
 
@@ -69,6 +72,11 @@ type ModEntRngMp   = Map.Map IdOcc  [HsName]
 mentIsCon :: ModEnt -> Bool
 mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
+%%]
+
+%%[20
+deriving instance Typeable ModEnt
+deriving instance Data ModEnt
 %%]
 
 %%[20 export(ppModMp)
@@ -398,7 +406,7 @@ data ModMpInfo
       , mmiExps     		:: !ModEntRel
       , mmiHiddenExps     	:: !ModEntRel
 %%[[(20 codegen)
-      , mmiNmOffMp  		:: !HsName2OffsetMp
+      , mmiNmOffMp  		:: !HsName2OffsetMp		-- cached mapping of names to offsets, for all that is exported, visible or hidden
 %%]]
       }
 
@@ -406,8 +414,8 @@ instance Show ModMpInfo where
   show _ = "ModMpInfo"
 
 instance PP ModMpInfo where
-  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps i)
-       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps   i)
+  pp i =   "In scp     :" >#< (ppAssocL $ Rel.toList $ mmiInscps       i)
+       >-< "Exps       :" >#< (ppAssocL $ Rel.toList $ mmiExps         i)
        >-< "Hidden Exps:" >#< (ppAssocL $ Rel.toList $ mmiHiddenExps   i)
 
 emptyModMpInfo :: ModMpInfo
@@ -415,19 +423,39 @@ emptyModMpInfo = mkModMpInfo hsnUnknown Rel.empty Rel.empty Rel.empty
 
 mkModMpInfo :: HsName -> ModEntRel -> ModEntRel -> ModEntRel -> ModMpInfo
 mkModMpInfo modNm i e he
-  = ModMpInfo
-      { mmiInscps   		= i
-      , mmiExps     		= e
-      , mmiHiddenExps     	= he
+  = resetModMpInfo modNm
+    $ ModMpInfo
+        { mmiInscps   		= i
+        , mmiExps     		= e
+        , mmiHiddenExps     = he
 %%[[(20 codegen)
-      , mmiNmOffMp  		= expsNmOffMp modNm $ e `Rel.union` he
+        , mmiNmOffMp  		= Map.empty
 %%]]
-      }
+        }
+
+resetModMpInfo :: HsName -> ModMpInfo -> ModMpInfo
+%%[[20
+resetModMpInfo _     i = i
+%%][(20 codegen)
+resetModMpInfo modNm i = i {mmiNmOffMp = expsNmOffMp modNm $ mmiExps i `Rel.union` mmiHiddenExps i}
+%%]]
 
 type ModMp = Map.Map HsName ModMpInfo
 
 ppModMp :: ModMp -> PP_Doc
 ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
+%%]
+
+%%[20 export(modMpAddHiddenExps)
+modMpAddHiddenExps :: HsName -> [HsName] -> ModMp -> ModMp
+modMpAddHiddenExps modNm newExpNms mm
+  = Map.update (\i@(ModMpInfo {mmiHiddenExps=he})
+                  -> Just $ resetModMpInfo modNm
+                          $ i { mmiHiddenExps
+                                  = Rel.fromList [ (n, ModEnt IdOcc_Val (IdOcc n IdOcc_Val) Set.empty emptyRange) | n <- newExpNms ]
+                                    `Rel.union` he
+                              }
+               ) modNm mm
 %%]
 
 The exported names of the module
@@ -442,8 +470,10 @@ expsNmOffMp modNm exps
     $ [ nm
       | e <- Set.toList $ Rel.rng exps
       , mentKind e == IdOcc_Val
-      , let nm = ioccNm (mentIdOcc e)
-      , panicJust "Module.expsNmOffMp" (hsnQualifier nm) == modNm
+      , let nm     = ioccNm (mentIdOcc e)
+            mbqual = hsnQualifier nm
+      , isJust mbqual		-- unqualified names cannot be exported, but they should not intro'd in the 1st place!! TBD 20100303 AD
+      , panicJust ("Module.expsNmOffMp: " ++ show nm) mbqual == modNm
       ]
 %%]
 
@@ -460,7 +490,7 @@ modMpCombine ms mp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[102
@@ -468,4 +498,12 @@ instance ForceEval ModEnt where
   fevCount (ModEnt k i o) = cmUnions [cm1 "ModEnt",fevCount k,fevCount i,fevCount o]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instances: Binary, Serialize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20
+instance Serialize ModEnt where
+  sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 ModEnt sget sget sget sget
+%%]

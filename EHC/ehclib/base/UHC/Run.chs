@@ -12,6 +12,7 @@ import UHC.Base
 import UHC.IOBase
 import UHC.OldException
 import UHC.OldIO
+import UHC.StackTrace
 
 %%]
 
@@ -30,20 +31,25 @@ foreign import prim primCallInfoKindIsVisible :: Int -> Bool
 ehcRunMain :: IO a -> IO a
 ehcRunMain m =
   catchTracedException m
-    (\(t,e) -> case e of
-                 ExitException ExitSuccess
-                   -> exitWithIntCode 0
-                 ExitException (ExitFailure code)
-                     | code == 0 -> exitWithIntCode 1
-                     | otherwise -> exitWithIntCode code
-                 _ -> do { hPutStrLn stderr ("Error: " ++ show e)
-                         ; if null t
+    (\(exc,implTrace,explTrace)
+       -> case exc of
+            ExitException ExitSuccess
+              -> exitWithIntCode 0
+            ExitException (ExitFailure code)
+                | code == 0 -> exitWithIntCode 1
+                | otherwise -> exitWithIntCode code
+            _ -> do { hPutStrLn stderr ("Error: " ++ show exc)
+                    ; if null explTrace
+                      then if null implTrace
                            then return ()
                            else do { hPutStrLn stderr "Trace:"
-                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ {- show k ++ ": " ++ -} s)) $ filter (primCallInfoKindIsVisible . fst) $ reverse t
+                                   ; mapM_ (\(k,s) -> hPutStrLn stderr ("  " ++ {- show k ++ ": " ++ -} s)) $ filter (primCallInfoKindIsVisible . fst) $ reverse implTrace
                                    }
-                         ; exitWithIntCode 1
-                         }
+                      else do { hPutStrLn stderr "Explicit stack trace:"
+                              ; mapM_ (\s -> hPutStrLn stderr s) explTrace
+                              }
+                    ; exitWithIntCode 1
+                    }
     )
 
 #endif

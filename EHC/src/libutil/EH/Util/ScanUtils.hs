@@ -111,6 +111,7 @@ Hence not all options are used by all scanners.
 data ScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      ::  !(Set.Set String)       -- identifiers which are keywords
+        ,   scoPragmasTxt       ::  !(Set.Set String)       -- identifiers which are pragmas
         ,   scoCommandsTxt      ::  !(Set.Set String)       -- identifiers which are commands
         ,   scoKeywordsOps      ::  !(Set.Set String)       -- operators which are keywords
         ,   scoSpecChars        ::  !(Set.Set Char)         -- 1 char keywords
@@ -118,6 +119,7 @@ data ScanOpts
         ,   scoSpecPairs        ::  !(Set.Set String)       -- pairs of chars which form keywords
         ,   scoDollarIdent      ::  !Bool                   -- allow $ encoded identifiers
         ,   scoOffsideTrigs     ::  ![String]               -- offside triggers
+        ,   scoOffsideTrigsGE   ::  ![String]               -- offside triggers, but allowing equal indentation (for HS 'do' notation, as per Haskell2010)
         ,   scoOffsideModule    ::  !String                 -- offside start of module
         ,   scoOffsideOpen      ::  !String                 -- offside open symbol
         ,   scoOffsideClose     ::  !String                 -- offside close symbol
@@ -131,6 +133,7 @@ defaultScanOpts :: ScanOpts
 defaultScanOpts
   =  ScanOpts
         {   scoKeywordsTxt      =   Set.empty
+        ,   scoPragmasTxt       =   Set.empty
         ,   scoCommandsTxt      =   Set.empty
         ,   scoKeywordsOps      =   Set.empty
         ,   scoSpecChars        =   Set.empty
@@ -138,6 +141,7 @@ defaultScanOpts
         ,   scoSpecPairs        =   Set.empty
         ,   scoDollarIdent      =   False
         ,   scoOffsideTrigs     =   []
+        ,   scoOffsideTrigsGE   =   []
         ,   scoOffsideModule    =   ""
         ,   scoOffsideOpen      =   ""
         ,   scoOffsideClose     =   ""

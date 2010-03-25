@@ -27,7 +27,7 @@ CompilePhase building blocks: parsers
 %%[8 import(qualified {%{EH}HS} as HS, qualified {%{EH}HS.Parser} as HSPrs)
 %%]
 -- HI parser
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.Parser} as HIPrs)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 -- Core parser
 %%[(20 codegen) import(qualified {%{EH}Core} as Core, qualified {%{EH}Core.Parser} as CorePrs)
@@ -37,6 +37,10 @@ CompilePhase building blocks: parsers
 %%]
 -- Grin parser
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinCode.Parser} as GrinParser)
+%%]
+
+-- serialization
+%%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -155,7 +159,7 @@ cpParseCore modNm
        }
 %%]
 
-%%[20 export(cpParseHI)
+%%[2020 export(cpParseHI)
 cpParseHI :: HsName -> EHCompilePhase ()
 cpParseHI modNm
   = do { cr <- get
@@ -175,6 +179,44 @@ cpParseHI modNm
        }
 %%]
 
+%%[20 export(cpDecodeHIInfo)
+cpDecodeHIInfo :: HsName -> EHCompilePhase ()
+cpDecodeHIInfo modNm
+  = do { cr <- get
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+%%[[20
+              fpH     = fpathSetSuff "hi" fp
+%%][99
+              -- if outputdir is specified, use that location to possibly read hi from.
+              fpH     = mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi"
+%%]]
+       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpH
+       ; hiinfo <- lift $
+           catch (do { i <- getSGetFile (fpathToStr fpH) (HI.sgetHIInfo opts)
+                            -- getSerializeFile (fpathToStr fpH)
+                            -- Bin.getBinaryFPath fpH
+                     ; return i
+                     })
+                 (\_ -> return $ HI.emptyHIInfo {HI.hiiIsValid = False})
+       ; when (ehcOptVerbosity opts >= VerboseALot)
+              (do { lift $ putPPLn (pp hiinfo)
+                  })
+       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       }
+%%]
+
+%%[20 export(cpDecodeGrin)
+cpDecodeGrin :: HsName -> EHCompilePhase ()
+cpDecodeGrin modNm
+  = do { cr <- get
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              fpC     = fpathSetSuff "grin" fp
+       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
+       ; grin <- lift $ getSerializeFile (fpathToStr fpC)
+       ; cpUpdCU modNm (ecuStoreGrin grin)
+       }
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: on top of parsing
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -184,8 +226,10 @@ cpGetPrevHI :: HsName -> EHCompilePhase ()
 cpGetPrevHI modNm
   = do { cr <- get
        ; let  ecu        = crCU modNm cr
-       ; when (isJust (ecuMbHITime ecu))
-              (cpParseHI modNm)
+       -- ; when (isJust (ecuMbHITime ecu))
+       --        (cpParseHI modNm)
+       ; when (isJust (ecuMbHIInfoTime ecu))
+              (cpDecodeHIInfo modNm)
        }
 %%]
 
@@ -205,7 +249,7 @@ cpGetPrevGrin modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbGrinTime ecu) && isNothing (ecuMbGrin ecu))
-              (cpParseGrin modNm)
+              (cpDecodeGrin modNm) -- (cpParseGrin modNm)
        }
 %%]
 

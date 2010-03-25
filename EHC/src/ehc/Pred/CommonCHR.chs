@@ -24,7 +24,10 @@ This file exists to avoid module circularities.
 %%[(9 hmtyinfer) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,7 +56,12 @@ data RedHowAnnotation
   |  RedHow_ByEqFromAssume
   |  RedHow_ByEqIdentity
 %%]]
-  deriving (Eq, Ord)
+  deriving
+    ( Eq, Ord
+%%[[20
+    , Typeable, Data
+%%]]
+    )
 %%]
 
 %%[(99 hmtyinfer) export(rhaMbId)
@@ -151,11 +159,24 @@ gathPredLToAssumeCnstrMp :: [PredOcc] -> CHRPredOccCnstrMp
 gathPredLToAssumeCnstrMp l = cnstrMpFromList [ rngLift (poRange po) mkAssumeConstraint (poPr po) (poId po) (poScope po) | po <- l ]
 %%]
 
+%%[(9 hmtyinfer) export(predOccCnstrMpLiftScope)
+-- | Lift predicate occurrences to new scope, used to lift unproven predicates to an outer scope.
+predOccCnstrMpLiftScope :: PredScope -> CHRPredOccCnstrMp -> CHRPredOccCnstrMp
+predOccCnstrMpLiftScope sc
+  = Map.mapKeysWith (++) c . Map.map (map i)
+  where c (Prove o@(CHRPredOcc {cpoCxt=cx}))
+            = Prove (o {cpoCxt = cx {cpocxScope = sc}})
+        c x = x
+        i (RedHow_ProveObl id _)
+            = RedHow_ProveObl id sc
+        i x = x
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval VarUIDHsName where
   forceEval x@(VarUIDHs_Name i n) | forceEval i `seq` forceEval n `seq` True = x
   forceEval x@(VarUIDHs_UID  i  ) | forceEval i `seq` True = x
@@ -192,4 +213,43 @@ instance ForceEval RedHowAnnotation where
   fevCount (RedHow_ByLabel      l o sc)  = cm1 "RedHow_ByLabel"         `cmUnion` fevCount l `cmUnion` fevCount o `cmUnion` fevCount sc
   fevCount (RedHow_Lambda       i   sc)  = cm1 "RedHow_Lambda"      	`cmUnion` fevCount i `cmUnion` fevCount sc
 %%]]
+%%]
+
+%%[(20 hmtyinfer)
+instance Serialize RedHowAnnotation where
+  sput (RedHow_ByInstance       a b c) = sputWord8 0  >> sput a >> sput b >> sput c
+  sput (RedHow_BySuperClass     a b c) = sputWord8 1  >> sput a >> sput b >> sput c
+  sput (RedHow_ProveObl         a b  ) = sputWord8 2  >> sput a >> sput b
+  sput (RedHow_Assumption       a b  ) = sputWord8 3  >> sput a >> sput b
+  sput (RedHow_ByScope          a    ) = sputWord8 4  >> sput a
+  sput (RedHow_ByLabel          a b c) = sputWord8 5  >> sput a >> sput b >> sput c
+  sput (RedHow_Lambda           a b  ) = sputWord8 6  >> sput a >> sput b
+%%[[16
+  sput (RedHow_ByEqSymmetry          ) = sputWord8 7
+  sput (RedHow_ByEqTrans             ) = sputWord8 8
+  sput (RedHow_ByEqCongr             ) = sputWord8 9
+  sput (RedHow_ByEqTyReduction  a b  ) = sputWord8 10 >> sput a >> sput b
+  sput (RedHow_ByPredSeqUnpack       ) = sputWord8 11
+  sput (RedHow_ByEqFromAssume        ) = sputWord8 12
+  sput (RedHow_ByEqIdentity          ) = sputWord8 13
+%%]]
+  sget = do t <- sgetWord8
+            case t of
+              0  -> liftM3 RedHow_ByInstance       sget sget sget 
+              1  -> liftM3 RedHow_BySuperClass     sget sget sget 
+              2  -> liftM2 RedHow_ProveObl         sget sget 
+              3  -> liftM2 RedHow_Assumption       sget sget 
+              4  -> liftM  RedHow_ByScope          sget 
+              5  -> liftM3 RedHow_ByLabel          sget sget sget
+              6  -> liftM2 RedHow_Lambda           sget sget 
+%%[[16
+              7  -> return RedHow_ByEqSymmetry     
+              8  -> return RedHow_ByEqTrans        
+              9  -> return RedHow_ByEqCongr        
+              10 -> liftM2 RedHow_ByEqTyReduction  sget sget 
+              11 -> return RedHow_ByPredSeqUnpack  
+              12 -> return RedHow_ByEqFromAssume   
+              13 -> return RedHow_ByEqIdentity     
+%%]]
+
 %%]

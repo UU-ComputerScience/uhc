@@ -96,10 +96,11 @@ hsnUn           nm                  =   strUn `hsnPrefix` nm
 
 %%[3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
-hsnIsUn         (HNm s)             =   isPrefixOf strUn $ hsnHNmFldToString s
+hsnIsUn                             =   maybe False (isPrefixOf strUn) . hsnMbBaseString
+-- hsnIsUn         (HsName_Base s)     =   isPrefixOf strUn $ hsnHNmFldToString s
 %%]
 
-%%[20 -3.hsnIsUn
+%%[2020 -3.hsnIsUn
 hsnIsUn                             ::  HsName -> Bool
 hsnIsUn         hsn
   = case hsnInitLast hsn of
@@ -109,10 +110,11 @@ hsnIsUn         hsn
 
 %%[3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
-hsnUnUn         (HNm s)             =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
+hsnUnUn         n                   =   maybe n (\(s,mk) -> mk $ drop (length strUn) s) $ hsnBaseUnpack n
+-- hsnUnUn         (HsName_Base s)     =   hsnFromString $ drop (length strUn) $ hsnHNmFldToString s
 %%]
 
-%%[20 -3.hsnUnUn
+%%[2020 -3.hsnUnUn
 hsnUnUn                             ::  HsName -> HsName
 hsnUnUn         hsn
   = case hsnInitLast hsn of
@@ -157,7 +159,7 @@ hsnIsRow        hsn                 =   hsn == hsnRow
 
 %%[7 export(positionalFldNames)
 positionalFldNames                  ::  [HsName]
-positionalFldNames                  =   map HNPos [1..]
+positionalFldNames                  =   map mkHNmPos [1..]
 %%]
 
 %%[8 export(hsnMain)
@@ -176,7 +178,7 @@ hsnIsConstructorName :: HsName -> Bool
 hsnIsConstructorName n | isJust ms = case fromJust ms of
                                        (x:xs) -> constructorInitial x
                                    where ms = mbHNm n
-hsnIsConstructorName (HNPos n)     = False
+hsnIsConstructorName (HsName_Pos n)= False
 %%]
 %%[20
 hsnIsConstructorName n             = hsnIsConstructorName (snd $ hsnInitLast n)
@@ -607,6 +609,17 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Explicit stack trace construction entry point
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(hsnStackTracePush)
+[hsnStackTracePush]
+  = map
+      (mkRV hsnModIntlBase)
+      [ "pushExplicitStackTrace" ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Fixed modules + names
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -645,6 +658,7 @@ hsnModIntlTypes                         =   hsnPrefixQual hsnUHC (hsnFromString 
 hsnModIntlPtr                           =   hsnPrefixQual hsnUHC (hsnFromString "Ptr")
 hsnModIntlRun                           =   hsnPrefixQual hsnUHC (hsnFromString "Run")
 hsnModIntlIOBase                        =   hsnPrefixQual hsnUHC (hsnFromString "IOBase")
+hsnModIntlStackTrace                    =   hsnPrefixQual hsnUHC (hsnFromString "StackTrace")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -761,6 +775,7 @@ data EHBuiltinNames
       , ehbnPrelReadParen               :: HsName
       , ehbnPrimEqChar                  :: HsName
       , ehbnAddr                        :: HsName
+      -- , ehbnStackTracePush              :: HsName
 %%]]
       }
 
@@ -854,6 +869,7 @@ mkEHBuiltinNames f
       , ehbnPrelReadParen               = f IdOcc_Val       hsnPrelReadParen
       , ehbnPrimEqChar                  = f IdOcc_Val       hsnPrimEqChar
       , ehbnAddr                        = f IdOcc_Type      hsnAddr
+      -- , ehbnStackTracePush              = f IdOcc_Val       hsnStackTracePush
 %%]]
       }
 %%]

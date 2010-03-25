@@ -31,6 +31,7 @@ AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR)
+AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -136,7 +137,7 @@ AC_SUBST(ENABLE_LLVM,$enableLlvm)
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
-### ar, ranlib, libtool
+### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
 case $HostPlatform in
@@ -151,6 +152,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
+### ar
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 # See remarks about cpp
 case $HostPlatform in
@@ -165,6 +167,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(AR_CMD,$arCmd)
 
+### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
@@ -292,10 +295,30 @@ fi
 AC_SUBST(GHC_CMD,$ghcCmd)
 AC_SUBST(GHC_VERSION, $ghcVersion)
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+AC_SUBST(GHC_CMD1,$ghcCmd1)
+
+
+### assuming we have ghc, check for some of the additional tools
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+AC_PATH_PROG(hsc2hsCmd,hsc2hs)
+AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -316,6 +339,12 @@ then
     ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
+    fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
     fi
   fi
 fi
@@ -427,6 +456,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -491,12 +524,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -505,70 +543,78 @@ esac
 
 AC_SUBST(CPP_CMD,$cppCmd)
 
-# LLVM Assembler 
-AC_ARG_WITH(llvm-as,
-[AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
-                [Path to the LLVM Assembler])],
-[ llvmAs="$withval" ],
-[ 
-  if test "x$LLVM_AS" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
-    fi
-  else
-    llvmAs=$LLVM_AS
-  fi
-]
-)
-AC_SUBST(LLVM_AS_CMD,$llvmAs)
 
-# LLVM Optimizer 
-AC_ARG_WITH(opt,
-[AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
-                [Path to the LLVM bitcode optimizer])],
-[ llvmOpt="$withval" ],
-[
-  if test "x$LLVM_OPT" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmOpt,opt)
-    fi
-  else
-    llvmOpt=$LLVM_OPT
-  fi
-]
-)
-AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
-
-# LLVM Compiler
-AC_ARG_WITH(llc,
-[AC_HELP_STRING([--with-llc=<LLVM Compiler>],
-                [Path to the LLVM Compiler])],
-[ llvmLlc="$withval" ],
-[
-  if test "x$LLC" = "x"; then
-    if test x$enableLlvm = xyes
-    then
-      REQUIRED_PROG_FOR_EH(llvmLlc,llc)
-    fi
-  else
-    llvmLlc=$LLC
-  fi
-]
-)
-AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
-
-if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+if test x$enableLlvm = xyes
 then
-  llvmExists=yes
-else
-  llvmExists=no
+  # LLVM Assembler 
+  AC_ARG_WITH(llvm-as,
+  [AC_HELP_STRING([--with-llvm-as=<LLVM Assembler>],
+                  [Path to the LLVM Assembler])],
+  [ llvmAs="$withval" ],
+  [ 
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmAs,llvm-as)
+      fi
+    else
+      llvmAs=$LLVM_AS
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_AS_CMD,$llvmAs)
+  
+  # LLVM Optimizer 
+  AC_ARG_WITH(opt,
+  [AC_HELP_STRING([--with-llvm-opt=<LLVM bitcode optimizer>],
+                  [Path to the LLVM bitcode optimizer])],
+  [ llvmOpt="$withval" ],
+  [
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmOpt,opt)
+      fi
+    else
+      llvmOpt=$LLVM_OPT
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_OPT_CMD,$llvmOpt)
+  
+  # LLVM Compiler
+  AC_ARG_WITH(llc,
+  [AC_HELP_STRING([--with-llc=<LLVM Compiler>],
+                  [Path to the LLVM Compiler])],
+  [ llvmLlc="$withval" ],
+  [
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
+        REQUIRED_PROG_FOR_EH(llvmLlc,llc)
+      fi
+    else
+      llvmLlc=$LLC
+    fi
+  ]
+  )
+  AC_SUBST(LLVM_LLC_CMD,$llvmLlc)
+  
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
+  else
+    llvmExists=no
+  fi
 fi
 
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
 AC_SUBST(MD5_CMD,$md5Cmd)
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+AC_CHECK_PROGS(tarCmd,gnutar tar)
+AC_SUBST(TAR_CMD,$tarCmd)
 
 # xxx
 #AC_PATH_PROG(xxxCmd,xxx)
@@ -854,38 +900,22 @@ AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?
 ### machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
-        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
         ;;
   x86_64-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   i386-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
         ;;
   *)
-        mach_dep_c_for_tailcall_leave1=""
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 
 ### other platform specific stuff
@@ -973,7 +1003,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -1010,13 +1040,14 @@ AC_SUBST(RTS_PKG_NAME, "EH-RTS")
 AC_SUBST(EXTLIBS_BGC_PKG_NAME, "gc") # should coincide with installed lib in extlibs/bgc
 AC_SUBST(EXTLIBS_GMP_PKG_NAME, "gmp") # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -1051,6 +1082,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then 
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -1072,6 +1104,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
     echo "        version                 : $ghcLibNetwork"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
@@ -1132,7 +1171,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"

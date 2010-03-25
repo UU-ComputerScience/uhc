@@ -9,7 +9,10 @@ Note: everything is exported.
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1 module {%{EH}Scanner.Common} import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
+%%[1 module {%{EH}Scanner.Common}
+%%]
+
+%%[1 import(IO, UU.Parsing, UU.Parsing.Offside, UU.Scanner.Position, UU.Scanner.GenToken, UU.Scanner.GenTokenParser, EH.Util.ScanUtils(), {%{EH}Base.Builtin}, {%{EH}Base.Common})
 %%]
 
 %%[1 import(qualified Data.Set as Set)
@@ -129,6 +132,9 @@ ehScanOpts
 %%]
 %%[1
         ,   scoOffsideTrigs     =   offsideTrigs
+%%[[9
+        ,   scoOffsideTrigsGE   =   offsideTrigsGE
+%%]]
         ,   scoOffsideModule    =   "let"
         ,   scoOffsideOpen      =   "{"
         ,   scoOffsideClose     =   "}"
@@ -141,10 +147,12 @@ ehScanOpts
 %%[[8
             ,  "letstrict"
 %%]]
-%%[[9
-            ,  "do"
-%%]]
             ]
+%%[[9
+        offsideTrigsGE   =
+            [  "do"
+            ]
+%%]]
 %%]
 
 %%[1
@@ -182,6 +190,12 @@ hsScanOpts
 %%[[94
                     ++ tokKeywStrsHS94
 %%]]
+                )
+%%]
+%%[99
+        ,   scoPragmasTxt      =
+                (Set.fromList $ 
+                       tokPragmaStrsHS99
                 )
 %%]
 %%[1
@@ -223,6 +237,8 @@ hsScanOpts
         ,   scoOffsideTrigs     =
                 scoOffsideTrigs ehScanOpts
                 ++ offsideTrigs
+        ,   scoOffsideTrigsGE   =
+                scoOffsideTrigsGE ehScanOpts
         ,   scoOffsideModule    =   "module"
         }
   where offsideTrigs     =
@@ -417,16 +433,34 @@ scanHandle opts fn fh
 %%[5 -1.scanHandle
 %%]
 
+%%[99
+splitTokensOnModuleTrigger :: ScanOpts -> [Token] -> Maybe ([Token],[Token])
+splitTokensOnModuleTrigger scanOpts ts
+  = case break ismod ts of
+      (ts1,ts2@[]) -> Nothing
+      tss          -> Just tss
+  where ismod (Reserved s _) | s == scoOffsideModule scanOpts = True
+        ismod _                                               = False
+%%]
+
 %%[1.offsideScanHandle
 offsideScanHandle scanOpts fn fh
   = do  {  tokens <- scanHandle scanOpts fn fh
         -- ;  putStrLn (" tokens: " ++ show tokens)
-        ;  return (scanOffside moduleT oBrace cBrace triggers tokens)
+%%[[1
+        ;  return (scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens)
+%%][99
+        ;  case splitTokensOnModuleTrigger scanOpts tokens of
+             Just (ts1,ts2) -> return $ scanLiftTokensToOffside ts1
+                                      $ scanOffsideWithTriggers moduleT oBrace cBrace triggers ts2
+             _              -> return $ scanOffsideWithTriggers moduleT oBrace cBrace triggers tokens
+%%]]
         }
   where   moduleT   = reserved (scoOffsideModule scanOpts) noPos
           oBrace    = reserved (scoOffsideOpen scanOpts) noPos
           cBrace    = reserved (scoOffsideClose scanOpts) noPos
-          triggers  = [ reserved x noPos | x <- scoOffsideTrigs scanOpts ]
+          triggers  =  [ (Trigger_IndentGT,reserved x noPos) | x <- scoOffsideTrigs   scanOpts ]
+                    ++ [ (Trigger_IndentGE,reserved x noPos) | x <- scoOffsideTrigsGE scanOpts ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -886,8 +920,23 @@ pSTATIC          = pKeyTk "static" -- not a HS keyword, but only for foreign fun
 pH               = pKeyTk "h" -- not a HS keyword, but only for foreign function entity
 pAMPERSAND       = pKeyTk "&" -- not a HS keyword, but only for foreign function entity
 
-tokKeywStrsEH94 = [  ]
-tokKeywStrsHS94 = [ "unsafe", "threadsafe", "dynamic" ]
+tokKeywStrsEH94  = [  ]
+tokKeywStrsHS94  = [ "unsafe", "threadsafe", "dynamic" ]
+%%]
+
+%%[99
+pLANGUAGE_prag  		,
+	-- pOPTIONSGHC_prag  	,
+    pOPRAGMA    		,
+    pCPRAGMA
+  :: IsParser p Token => p Token
+
+pLANGUAGE_prag   = pKeyTk "LANGUAGE"
+-- pOPTIONSGHC_prag = pKeyTk "OPTIONS_GHC"
+pOPRAGMA         = pKeyTk "{-#"
+pCPRAGMA         = pKeyTk "#-}"
+
+tokPragmaStrsHS99= [ "LANGUAGE" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
 %%]
 
 %%[90

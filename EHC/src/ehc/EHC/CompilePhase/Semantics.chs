@@ -34,7 +34,7 @@ Folding over AST to compute semantics
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem,qualified {%{EH}HI} as HI)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Module
@@ -43,6 +43,10 @@ Folding over AST to compute semantics
 %%[20 import({%{EH}Module})
 %%]
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
+%%]
+
+-- for debug
+%%[20 hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -125,15 +129,7 @@ cpFoldHs modNm
 %%[[20
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
-                     ; when hasMain
-                            (do { cr <- get
-                                ; let (crsi,opts) = crBaseInfo' cr
-                                      mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
-                                ; case crsiMbMainNm crsi of
-                                    Just n                   -> mkerr 1 [n]
-                                    _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-                                      | otherwise            -> mkerr 0 []
-                                })
+                     ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
          }
@@ -154,11 +150,14 @@ cpFoldHsMod modNm
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain
+%%[[99
+                                . ecuStorePragmas (HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod)
+%%]]
                  )              )
          }
 %%]
 
-%%[20 export(cpFoldHI)
+%%[2020 export(cpFoldHI)
 cpFoldHI :: HsName -> EHCompilePhase ()
 cpFoldHI modNm
   =  do  {  cr <- get
@@ -182,6 +181,38 @@ cpFoldHI modNm
                                      )
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))
+                     })
+         }
+%%]
+
+%%[20 export(cpFoldHIInfo)
+cpFoldHIInfo :: HsName -> EHCompilePhase ()
+cpFoldHIInfo modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 mbHIInfo   = ecuMbPrevHIInfo ecu
+                 hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
+                 hasMain    = HI.hiiHasMain hiInfo
+         ;  when (isJust mbHIInfo && HI.hiiIsValid hiInfo)
+                 (do { let mm     = crsiModMp crsi
+                           mmi    = Map.findWithDefault emptyModMpInfo modNm mm
+                           mmi'   = mkModMpInfo modNm
+                                                (mmiInscps mmi)
+                                                ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
+                                                (HI.hiiHiddenExps hiInfo)
+                     ; when hasMain (crSetAndCheckMain modNm)
+                     ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
+                     ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
+                                     . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)
+                                     . ecuStoreHIUsedImpL (HI.hiiHIUsedImpModL hiInfo)
+                                     . ecuSetHasMain hasMain
+                                     )
+                     ; when (ehcOptVerbosity opts >= VerboseDebug)
+                            (lift $ putStrLn
+                               (show modNm
+                                ++ ": hi imps, decl=" ++ show (HI.hiiHIDeclImpModL hiInfo)
+                                ++ ", used=" ++ show (HI.hiiHIUsedImpModL hiInfo)
+                            )  )
                      })
          }
 %%]

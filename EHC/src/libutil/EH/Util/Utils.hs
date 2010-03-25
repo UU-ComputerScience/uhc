@@ -21,6 +21,9 @@ unionMapSet f = Set.unions . map f . Set.toList
 inverseMap :: (Ord k, Ord v') => (k -> v -> (v',k')) -> Map.Map k v -> Map.Map v' k'
 inverseMap mk = Map.fromList . map (uncurry mk) . Map.toList
 
+showStringMapKeys :: Map.Map String x -> String -> String
+showStringMapKeys m sep = concat $ intersperse sep $ Map.keys m
+
 -------------------------------------------------------------------------
 -- List
 -------------------------------------------------------------------------

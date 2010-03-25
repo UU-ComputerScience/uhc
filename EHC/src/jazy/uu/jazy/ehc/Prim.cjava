@@ -124,6 +124,8 @@ public class Prim
     public static Object primEqInt( int v1, int v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtInt( int v1, int v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtInt( int v1, int v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeInt( int v1, int v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeInt( int v1, int v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpInt( int v1, int v2 ) {
     	if (v1 < v2) {
@@ -191,6 +193,8 @@ public class Prim
     public static Object primEqLong( long v1, long v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtLong( long v1, long v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtLong( long v1, long v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeLong( long v1, long v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeLong( long v1, long v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpLong( long v1, long v2 ) {
     	if (v1 < v2) {
@@ -254,6 +258,8 @@ public class Prim
     public static Object primEqInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.equals(v2)) ; }
     public static Object primLtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) < 0) ; }
     public static Object primGtInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) > 0) ; }
+    public static Object primLeInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) <= 0) ; }
+    public static Object primGeInteger( BigInteger v1, BigInteger v2 ) { return RTS.mkBool(v1.compareTo(v2) >= 0) ; }
     
     public static Object primCmpInteger( BigInteger v1, BigInteger v2 ) {
     	return RTS.mkOrdering( v1.compareTo(v2) ) ;
@@ -418,6 +424,8 @@ public class Prim
     public static Object primEqFloat( float v1, float v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtFloat( float v1, float v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtFloat( float v1, float v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeFloat( float v1, float v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeFloat( float v1, float v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpFloat( float v1, float v2 ) {
     	if (v1 < v2) {
@@ -482,6 +490,8 @@ public class Prim
     public static Object primEqDouble( double v1, double v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtDouble( double v1, double v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtDouble( double v1, double v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeDouble( double v1, double v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeDouble( double v1, double v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpDouble( double v1, double v2 ) {
     	if (v1 < v2) {
@@ -531,6 +541,8 @@ public class Prim
     public static Object primEqChar( char v1, char v2 ) { return RTS.mkBool(v1 == v2) ; }
     public static Object primLtChar( char v1, char v2 ) { return RTS.mkBool(v1 < v2) ; }
     public static Object primGtChar( char v1, char v2 ) { return RTS.mkBool(v1 > v2) ; }
+    public static Object primLeChar( char v1, char v2 ) { return RTS.mkBool(v1 <= v2) ; }
+    public static Object primGeChar( char v1, char v2 ) { return RTS.mkBool(v1 >= v2) ; }
     
     public static Object primCmpChar( char v1, char v2 ) {
     	if (v1 < v2) {
@@ -651,11 +663,12 @@ public class Prim
 
 %%[(98 jazy)
     // TBD: deal with exceptions
-    public static Handle primStdin() { return RTS.stdin ; }
-    public static Handle primStdout() { return RTS.stdout ; }
-    public static Handle primStderr() { return RTS.stderr ; }
+    public static Object primStdin() { return RTS.stdin ; }
+    public static Object primStdout() { return RTS.stdout ; }
+    public static Object primStderr() { return RTS.stderr ; }
 
-    public static Object primHPutByteArray( Handle h, byte[] b ) {
+    public static Object primHPutByteArray( Object x, byte[] b ) {
+    	Handle h = (Handle)x ;
     	try {
     		h.out.write( b ) ;
 		} catch (IOException e) {
@@ -663,7 +676,8 @@ public class Prim
     	return RTS.Unit ;
     }
 
-    public static Object primHPutChar( Handle h, char c ) {
+    public static Object primHPutChar( Object x, char c ) {
+    	Handle h = (Handle)x ;
     	try {
     		h.out.write( c ) ;
 		} catch (IOException e) {
@@ -674,7 +688,8 @@ public class Prim
 
 // not a nice solution the get to know something about file nr, but Java does not let you know this nr.
 %%[(98 jazy)
-    public static Object primHEqFileno( Handle h, int fileno ) {
+    public static Object primHEqFileno( Object x, int fileno ) {
+    	Handle h = (Handle)x ;
     	switch ( fileno ) {
     		case 0 : return RTS.mkBool( System.in.equals( h.in ) ) ; 
     		case 1 : return RTS.mkBool( System.out.equals( h.out ) ) ;

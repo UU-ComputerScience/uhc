@@ -8,19 +8,15 @@ RTS_SRC_PREFIX := $(SRC_PREFIX)rts/
 # Build location
 RTS_BLD_PREFIX := $(EHC_BLD_VARIANT_ASPECTS_PREFIX)rts/$(EHC_VARIANT_TARGET)/
 
-# lib/cabal config
-#RTS_PKG_NAME						:= EH-RTS # via mk/config.mk.in
-RTS_INSTALLFORBLD_FLAG				:= $(INSTALLFORBLDABS_FLAG_PREFIX)$(RTS_PKG_NAME)
-
 # Install location
 RTS_LIB_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_LIB_TARGET_PREFIX,$(EHC_VARIANT_ASPECTS),$(EHC_VARIANT_TARGET))
 RTS_INC_PREFIX			:= $(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$(EHC_VARIANT_ASPECTS),$(EHC_VARIANT_TARGET))
 
 # install
-INSTALL_LIB_RTS						:= $(call FUN_MK_CLIB_FILENAME,$(RTS_LIB_PREFIX),$(RTS_PKG_NAME))
+INSTALL_LIB_RTS			:= $(call FUN_MK_CLIB_FILENAME,$(RTS_LIB_PREFIX),$(RTS_PKG_NAME))
 
 # this file
-RTS_MKF						:= $(patsubst %,$(RTS_SRC_PREFIX)%.mk,files)
+RTS_MKF					:= $(patsubst %,$(RTS_SRC_PREFIX)%.mk,files)
 
 
 
@@ -92,6 +88,7 @@ RTS_SRC_CH_SHARED := \
         timing \
         priminline \
         primdecl \
+        HsFFI \
         base/sizes \
         base/bits \
         base/panic \
@@ -139,7 +136,9 @@ RTS_SRC_CH_SHARED := \
 
 RTS_SRC_CH_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+        bc/base \
         bc/types \
+        bc/registers \
         bc/interpreter \
         mm/semispace/gbssmutator \
         mm/semispace/gbssmodule \
@@ -164,6 +163,7 @@ PRM_SRC_CC_SHARED := \
 PRM_SRC_CC_BYTECODE := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc,\
         bc/prim \
+        bc/prim-bool \
         bc/prim-handle \
         bc/prim-array \
         bc/prim-thread \
@@ -178,13 +178,15 @@ PRM_SRC_CC_WHOLEPROG := \
 
 RTS_GEN_C_BYTECODE := \
     $(patsubst %,$(RTS_BLD_PREFIX)%.c,\
-        bc/ccall \
     )
+# 20100126: obsolete, but left as example
+#        bc/ccall \
 
 RTS_GEN_H_BYTECODE := \
     $(patsubst %,$(RTS_BLD_PREFIX)%.h,\
-        bc/ccall \
     )
+# 20100126: obsolete, but left as example
+#        bc/ccall \
 
 
 
@@ -336,13 +338,13 @@ $(PRM_DRV_H): %.h: %.c $(RTS_MKF)
 # Use the C compiler to compile .c to .o    (for primitives, use -O2 optimization)
 
 $(RTS_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(PRM_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) -o $@ -c $<
 
 $(PRM_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(PRM_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS) -O2   -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) -O2   -o $@ -c $<
 
 $(RTS_LTM_DRV_O): $(RTS_BLD_PREFIX)%.o: $(RTS_BLD_PREFIX)%.c $(RTS_DRV_H) $(RTS_ALLEXT_DRV_H) $(RTS_GEN_H)
-	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(LTM_GCC_OPTS) -o $@ -c $<
+	$(GCC) $(call FUN_EHC_GCC_CC_OPTS,$(EHC_VARIANT_ASPECTS)) $(RTS_GCC_CC_OPTS_OPTIM) $(RTS_GCC_CC_OPTS_VARIANT_TARGET) $(LTM_GCC_OPTS) -o $@ -c $<
 
 
 # install .h files in the ehc/install/99/include directory

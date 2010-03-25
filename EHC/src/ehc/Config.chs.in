@@ -34,6 +34,7 @@ data Version
       , verQuality          :: !String
       , verShort            :: !String
       , verFull             :: !String
+      , verAsNumber         :: !String
       , verProg             :: !String
 %%[[20
       , verTimestamp        :: !String
@@ -53,6 +54,7 @@ version
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verShort            = "@EH_VERSION_SHORT@"
       , verFull             = "@EH_VERSION_FULL@"
+      , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
 %%[[20
       , verTimestamp        = Sig.timestamp
@@ -117,13 +119,13 @@ mkInstallBindirPrefix opts variant
 %%[(99 codegen) export(mkInstallPkgdirSystem)
 mkInstallPkgdirSystem :: EHCOpts -> String
 mkInstallPkgdirSystem opts
-  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG (installVariant opts) ""
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
 %%]
 
 %%[(99 codegen) export(mkInstallPkgdirUser)
 mkInstallPkgdirUser :: EHCOpts -> String
 mkInstallPkgdirUser opts
-  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG "" (show $ ehcOptTarget opts) ""
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,8 +181,8 @@ shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
 mkShellCmdLibtool :: String -> [String] -> [[String]]
 mkShellCmdLibtool archive files
   = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
-    then [ [shellCmdAr,"r",{- "-c", -} archive] ++ files
-         , [shellCmdRanlib,archive]
+    then [ [shellCmdAr,"-r","-s",archive] ++ files
+         -- , [shellCmdRanlib,archive]
          ]
     else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
          ]
@@ -261,23 +263,3 @@ mbSuffixExec
       ""      -> Nothing
       s       -> Just s
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Options to adapt the structure of the generated code
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin) export( machDepCForTailcallEnter, machDepCForTailcallLeave1, machDepCForTailcallLeave2 )
--- assembler instruction(s) to correct the C stack when
--- jumping out of a function instead of doing a tail call
--- should be "leave" for x86 processor
-
-machDepCForTailcallEnter :: String
-machDepCForTailcallEnter = "@MACH_DEP_C_FOR_TAILCALL_ENTER@"
-
-machDepCForTailcallLeave1 :: String
-machDepCForTailcallLeave1 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE1@"
-
-machDepCForTailcallLeave2 :: String
-machDepCForTailcallLeave2 = "@MACH_DEP_C_FOR_TAILCALL_LEAVE2@"
-%%]
-

@@ -31,7 +31,7 @@ packages.
 %%]
 
 -- general imports
-%%[99 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Version, Data.List)
+%%[99 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Version, Data.List, Data.Maybe)
 %%]
 %%[99 import(System.Environment, System.Directory, Control.Monad)
 %%]
@@ -141,47 +141,60 @@ parseModuleNames = parseString hsScanOpts pModuleNames
 
 %%[99 export(pkgDbFromDirs)
 -- read content of package dir + config file
-pkgMpFromDirFile :: Int -> FPath -> IO PackageMp
-pkgMpFromDirFile order pkgfp
+pkgMpFromDirFile :: EHCOpts -> PkgKey -> Int -> FPath -> IO PackageMp
+pkgMpFromDirFile opts pkgkey order pkgfp
   = do -- print pkgfp
        -- print mbKey
        isDir <- doesDirectoryExist pkgdir
-       case mbKey of
-         Just k@(pkg,_) | isDir
-           -> do { let fpCfg = fpathToStr $ fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName
-                       pkgInfo = PackageInfo (mkPkgFileLoc pkg pkgdir) order Set.empty
+       if isDir then
+              do { let fpCfg = fpathToStr $ fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName
+                       pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty
                  ; cfgExists <- doesFileExist fpCfg
-                 ; if cfgExists
+                 ; pm <- if cfgExists
                    then do h <- openFile fpCfg ReadMode
                            cfg <- hGetContents h
                            let i = foldr ($) pkgInfo (pkgCfgParse cfg)
                            i `seq` hClose h
-                           return $ pkgMpSingleton k i
-                   else return $ pkgMpSingleton k pkgInfo 
+                           return $ pkgMpSingleton pkgkey i
+                   else return $ pkgMpSingleton pkgkey pkgInfo 
+                 -- ; print pm
+                 ; return pm
                  }
-         _ -> return Map.empty
-  where mbKey  = parsePkgKey (fpathBase pkgfp)
-        pkgdir = fpathToStr pkgfp
+         else return Map.empty
+  where pkgdir = fpathToStr pkgfp
 
 -- read content of a dir containing package dirs
-pkgMpFromDir :: Int -> FilePath -> IO PackageMp
-pkgMpFromDir order fp
+pkgMpFromDir :: EHCOpts -> Int -> FilePath -> IO PackageMp
+pkgMpFromDir opts order fp
   = do { isDir <- doesDirectoryExist fp
+       -- ; putStrLn ("dir-exists: " ++ show (fp,isDir))
        ; if isDir
-         then do { dirContent <- getDirectoryContents fp
+         then do { pkgWithVersions <- getDirectoryContents fp
+                 ; let pkgWithVersionsBases = catMaybes $
+                                              map (\f -> do { k <- parsePkgKey f
+                                                            ; return $ (k,fpathPrependDir fp $ fpathFromStr $
+                                                                            mkInternalPkgFileBase k (Cfg.installVariant opts)
+                                                                            (ehcOptTarget opts) (ehcOptTargetVariant opts))
+                                                            })
+                                                  pkgWithVersions
                  -- putStrLn (show fp)
-                 -- putStrLn (show dirContent)
-                 ; mps <- mapM (\f -> pkgMpFromDirFile order $ fpathSetDir fp $ fpathSetBase f emptyFPath) dirContent
-                 ; return $ pkgMpUnions mps
+                 -- putStrLn (show pkgWithVersions)
+                 -- putStrLn (show pkgWithVersionsBases)
+                 ; mps <- mapM (\ (k,f) -> pkgMpFromDirFile opts k order f) pkgWithVersionsBases
+                 -- ; putStrLn (show mps)
+                 ; let mpsu = pkgMpUnions mps
+                 ; return mpsu
                  }
          else return Map.empty
        }
 
--- read content of multiple dir containing package dirs
-pkgDbFromDirs :: [FilePath] -> IO PackageDatabase
-pkgDbFromDirs fps
-  = do mps <- zipWithM pkgMpFromDir [1..] fps
-       return (emptyPackageDatabase {pkgDbPkgMp = pkgMpUnions mps})
+-- read and combine contents of multiple package database directories
+pkgDbFromDirs :: EHCOpts -> [FilePath] -> IO PackageDatabase
+pkgDbFromDirs opts fps
+  = do mps <- zipWithM (pkgMpFromDir opts) [1..] fps
+       let mpsu = pkgMpUnions mps
+       -- putStrLn ("unions: " ++ show mpsu)
+       return (emptyPackageDatabase {pkgDbPkgMp = mpsu})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -228,9 +241,10 @@ pkgDbFreeze db
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
-pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,String)
+-- For a module, find the package to use and the location of the root dir of that package.
+pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,FilePath)
 pkgDbSearch db modNm
-  = do pkgs <- mbPkgs
+  = do pkgs <- {- tr "pkgDbSearch0" (show $ (db, pkgDbMod2PkgMp db)) -} mbPkgs
        dirOf $ disambig $ {- tr "pkgDbSearch" (show modNm ++ show pkgs) $ -} pkgs
   where mbPkgs   = Map.lookup modNm $ pkgDbMod2PkgMp db
         disambig = head . sortBy cmp
@@ -244,10 +258,10 @@ pkgDbSearch db modNm
 -- look up a file location, defaults to plain file search except for a package db which is then queried
 fileLocSearch :: EHCOpts -> FileLoc -> HsName -> FPath -> [(FileLoc,FPath)]
 fileLocSearch opts loc modNm fp
-  = case {- tr "fileLocSearch1" (show modNm ++ ": " ++ show fp) $ -} filelocKind loc of
+  = case {- tr "fileLocSearch1" (show modNm ++ ": " ++ show fp ++ " " ++ show loc) $ -} filelocKind loc of
       FileLocKind_PkgDb
         -> maybe [] srch $ pkgDbSearch (ehcOptPkgDb opts) modNm
-        where srch (k,d) = [ (mkPkgFileLoc (showPkgKey k) d',fp') | (d',fp') <- searchFPathFromLoc d fp ]
+        where srch (k,d) = [ (mkPkgFileLoc k d',fp') | (d',fp') <- searchFPathFromLoc d fp ]
       _ -> [ (loc,fp') | (_,fp') <- searchFPathFromLoc (filelocDir loc) fp ]
 %%]
 

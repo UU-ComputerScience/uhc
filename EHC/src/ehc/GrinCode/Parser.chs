@@ -57,7 +57,8 @@ pExprSeq        ::   GRIParser GrExpr
 pExprSeq        =    pChainr ((\p e1 e2 -> GrExpr_Seq e1 p e2) <$ pSemi <* pKey "\\" <*> pPatLam <* pKey "->") pExpr
 
 pExpr           ::   GRIParser GrExpr
-pExpr           =    GrExpr_Unit    <$  pKey "unit"         <*> pVal
+pExpr           =    (\v -> GrExpr_Unit v GrType_None)
+                                    <$  pKey "unit"         <*> pVal
                 <|>  GrExpr_UpdateUnit <$  pKey "updateunit"<*> pGrNm <*> pVal    
                 <|>  GrExpr_Store   <$  pKey "store"        <*> pVal
                 <|>  GrExpr_Eval    <$  pKey "eval"         <*> pGrNm

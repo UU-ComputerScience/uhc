@@ -106,8 +106,18 @@ cpGetMetaInfo gm modNm
          ;  let (ecu,_,opts,fp) = crBaseInfo modNm cr
          ;  when (GetMeta_HS `elem` gm)
                  (tm opts ecu ecuStoreHSTime        (ecuSrcFilePath ecu))
+         {-
          ;  when (GetMeta_HI `elem` gm)
                  (tm opts ecu ecuStoreHITime
+%%[[20
+                                              (fpathSetSuff "hi"        fp     )
+%%][99
+                                              (mkInOrOutputFPathFor (InputFrom_Loc $ ecuFileLocation ecu) opts modNm fp "hi")
+%%]]
+                 )
+         -}
+         ;  when (GetMeta_HI `elem` gm)
+                 (tm opts ecu ecuStoreHIInfoTime
 %%[[20
                                               (fpathSetSuff "hi"        fp     )
 %%][99
@@ -176,8 +186,30 @@ cpUpdateModOffMp modNmL
   = do { cr <- get
        ; let crsi   = crStateInfo cr
              offMp  = crsiModOffMp crsi
-             offMp' = Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip modNmL [Map.size offMp ..] ] `Map.union` offMp
+             -- offMp' = Map.fromList [ (m,(o,crsiExpNmOffMp m crsi)) | (m,o) <- zip modNmL [Map.size offMp ..] ] `Map.union` offMp
+             (offMp',_)
+                    = foldr add (offMp,Map.size offMp) modNmL
+                    where add modNm (offMp,offset)
+                            = case Map.lookup modNm offMp of
+                                Just (o,_) -> (Map.insert modNm (o     ,new) offMp, offset  )
+                                _          -> (Map.insert modNm (offset,new) offMp, offset+1)
+                            where new = crsiExpNmOffMp modNm crsi
        ; cpUpdSI (\crsi -> crsi {crsiModOffMp = offMp'})
        }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Update new hidden exports
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(cpUpdHiddenExports)
+cpUpdHiddenExports :: HsName -> [HsName] -> EHCompilePhase ()
+cpUpdHiddenExports modNm exps
+  = when (not $ null exps)
+         (do { cpUpdSI (\crsi -> crsi { crsiModMp = modMpAddHiddenExps modNm exps $ crsiModMp crsi
+                                      })
+             ; cpUpdateModOffMp [modNm]
+             })
+
 %%]
 

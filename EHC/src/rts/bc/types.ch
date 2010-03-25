@@ -21,8 +21,6 @@
 typedef Word  GB_Word ;
 typedef SWord GB_SWord ;
 
-#define GB_Word_SizeInBits		Word_SizeInBits
-
 typedef GB_Word* 	GB_WordPtr ;
 typedef GB_WordPtr 	GB_Ptr ;
 typedef GB_Ptr*  	GB_PtrPtr ;
@@ -86,7 +84,6 @@ typedef union GB_WordEquiv {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Word_SizeOfWordTag 		2
 #define GB_Word_TagMask 			Bits_Size2LoMask(GB_Word,GB_Word_SizeOfWordTag)
 #define GB_Word_IntMask 			(~ GB_Word_TagMask)
 #define GB_Word_TagPtr 				0
@@ -322,7 +319,6 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #if ! USE_EHC_MM
 #	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 #endif
-#define GB_MkConEnumNodeAsTag(tg)			(tg /* GB_Int2GBInt(tg) */)
 
 #define GB_FillNodeFlds1(n,x1)				{                                (n)->content.fields[0] = Cast(GB_Word,x1);}
 #define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1         );(n)->content.fields[1] = Cast(GB_Word,x2);}
@@ -353,6 +349,7 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #define GB_MkTupNode1_In(n,x1)				GB_MkConNode1(n,0,x1)
 #define GB_MkTupNode2_In(n,x1,x2)			GB_MkConNode2(n,0,x1,x2)
 #define GB_MkTupNode2_In_Ensured(n,x1,x2)	GB_MkConNode2_Ensured(n,0,x1,x2)
+#define GB_MkTupNode3_In(n,x1,x2,x3)		GB_MkConNode3(n,0,x1,x2,x3)
 
 #define GB_FillCFunNode0(n,f)				{GB_NodeHeader _h = GB_MkCFunHeader(0); GB_FillNodeHdr(_h,n);GB_FillNodeFlds1(n,f);}
 #define GB_FillCFunNode1(n,f,x1)			{GB_NodeHeader _h = GB_MkCFunHeader(1); GB_FillNodeHdr(_h,n);GB_FillNodeFlds2(n,f,x1);}
@@ -418,7 +415,7 @@ extern GB_NodePtr gb_MkCAF( GB_BytePtr pc ) ;
 #define GB_Node_ZeroFields(n)				{ memset( ((GB_NodePtr)n)->content.fields, 0, (GB_NH_Fld_Size(((GB_NodePtr)n)->header) << Word_SizeInBytes_Log) - sizeof(GB_NodeHeader) ) ; }
 
 %%[99
-#define GB_MkNode_Handle_GBHandle(n,chan)	GB_MkConNode1(n,2,chan)
+#define GB_MkNode_Handle_OldHandle(n,chan)	GB_MkConNode1(n,2,chan)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -814,9 +811,18 @@ Descriptor of info about functions
 %%[8
 typedef struct GB_FunctionInfo {
   Word16	szStack ;	// size of stack required by function, in bytes
+  Word8		flags ;
   Word8*	nm ; 		// name of function
 } __attribute__ ((__packed__)) GB_FunctionInfo ;
 
+typedef SHalfWord		GB_FunctionInfo_Inx ;
+
+#define GB_FunctionInfo_Inx_None						(-1)
+%%]
+
+%%[8
+#define GB_FunctionInfoFlag_None						0x0
+#define GB_FunctionInfoFlag_1stArgIsStackTrace			0x1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

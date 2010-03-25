@@ -11,16 +11,15 @@
 %%[(8 codegen grin) hs import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Base.Builtin},qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Error})
+%%[(8 codegen grin) hs import({%{EH}Error},{%{EH}BuiltinPrims})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty},qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}BuiltinPrims})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty})
+%%]
+%%[(8 codegen grin) hs import(qualified {%{EH}GrinByteCode} as GB,{%{EH}Core},{%{EH}GrinCode},{%{EH}LamInfo})
 %%]
 
-%%[(8 codegen grin) hs export(grinMod2ByteCodeMod)
-%%]
-
-%%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)})
+%%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
 %%]
 
 %%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
@@ -37,7 +36,7 @@ Debug
 %%% Haskell itf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin).grinMod2ByteCodeMod hs
+%%[(8 codegen grin).grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
 grinMod2ByteCodeMod :: EHCOpts -> GrModule -> (GB.Module,[Err])
 grinMod2ByteCodeMod opts gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
@@ -47,16 +46,17 @@ grinMod2ByteCodeMod opts gmod
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
 
-%%[(20 codegen grin) -8.grinMod2ByteCodeMod hs
-grinMod2ByteCodeMod :: EHCOpts -> [HsName] -> [HsName] -> HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
-grinMod2ByteCodeMod opts allImpNmL impNmL impNmOffMpMp expNmOffMp gmod
+%%[(20 codegen grin) -8.grinMod2ByteCodeMod hs export(grinMod2ByteCodeMod)
+grinMod2ByteCodeMod :: EHCOpts -> LamMp -> [HsName] -> {- [HsName] -> -} HsName2OffsetMpMp -> HsName2OffsetMp -> GrModule -> (GB.Module,[Err])
+grinMod2ByteCodeMod opts lamMp allImpNmL {- impNmL -} impNmOffMpMp expNmOffMp gmod
   =  let  t = wrap_GrAGItf  (sem_GrAGItf (GrAGItf_AGItf gmod))
                             (Inh_GrAGItf
-                               { expNmOffMp_Inh_GrAGItf = expNmOffMp
-                               , impNmOffMpMp_Inh_GrAGItf = impNmOffMpMp
-                               , allImpNmL_Inh_GrAGItf = allImpNmL
-                               , impNmL_Inh_GrAGItf = impNmL
-                               , opts_Inh_GrAGItf = opts
+                               { expNmOffMp_Inh_GrAGItf     = expNmOffMp
+                               , impNmOffMpMp_Inh_GrAGItf   = impNmOffMpMp
+                               , allImpNmL_Inh_GrAGItf      = allImpNmL
+                               -- , impNmL_Inh_GrAGItf         = offMpKeysSorted impNmOffMpMp -- impNmL
+                               , opts_Inh_GrAGItf           = opts
+                               , lamMp_Inh_GrAGItf          = lamMp
                                })
      in   (gbMod_Syn_GrAGItf t, errs_Syn_GrAGItf t)
 %%]
@@ -104,7 +104,13 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllBind AllGrExpr GrModule GrAGItf [ opts: EHCOpts | | ]
+ATTR AllBind AllGrExpr GrModule GrAGItf
+  [ opts: EHCOpts
+%%[[20
+    lamMp: LamMp
+%%]]
+  | |
+  ]
 %%]
 
 %%[(8 codegen grin)
@@ -112,7 +118,12 @@ ATTR AllBind AllGrExpr GrModule GrAGItf [ opts: EHCOpts | | ]
 ATTR AllNTNoMod [ modNmConstInx: Int | | ]
 
 %%[(20 codegen grin)
-ATTR GrAGItf GrModule [ expNmOffMp: HsName2OffsetMp  allImpNmL: {[HsName]}  impNmL: {[HsName]} | | ]
+ATTR GrAGItf GrModule
+  [ expNmOffMp: HsName2OffsetMp
+    allImpNmL: {[HsName]}
+    -- impNmL: {AssocL HsName Int}
+  | |
+  ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -141,6 +152,9 @@ constAdd c constMp
 
 constCFunAdd :: String -> ConstMp -> (Int,ConstMp)
 constCFunAdd nm = constAdd (GB.Const_CFunction nm)
+
+constCCallEncWrapper :: [BasicSize] -> ConstMp -> (Int,ConstMp)
+constCCallEncWrapper szs = constAdd (GB.Const_CCallEncWrapper szs)
 %%]
 
 %%[(8 codegen grin)
@@ -151,7 +165,8 @@ SEM GrModule
   				globalL		.	constMp			=	Map.empty
 
 SEM GrExpr
-  | FFI         (loc.constInx,lhs.constMp)      =   constCFunAdd @impEntNm @lhs.constMp
+  | FFI         (loc.constInx,loc.constMp2)     =   constCFunAdd @impEntNm @lhs.constMp
+                lhs			.	constMp	    	=   @constMp3
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -161,8 +176,8 @@ SEM GrExpr
 %%[(8 codegen grin)
 SEM GrExpr
   | FFI         loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (@impEntNm) else Nothing
-  | Call Eval App
-                loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing
+  | Eval App    loc         .   mbDebugStr      =   if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing
+  | Call        loc         .   mbDebugStrNm    =   Just (if ehcOptGenDebug @lhs.opts then Just (show @nm) else Nothing, @nm)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -487,6 +502,7 @@ SEM GrExpr
                                                       { GB.neVAGam = @lhs.vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 
@@ -495,6 +511,7 @@ SEM GrBind
                                                       { GB.neVAGam = @lhs.vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 
@@ -503,6 +520,7 @@ SEM GrModule
                                                       { GB.neVAGam = @vaGam
 %%[[20
                                                       , GB.neImpNmMp = @lhs.impNmOffMpMp
+                                                      , GB.neLamMp   = @lhs.lamMp
 %%]]
                                                       }
 %%]
@@ -616,7 +634,7 @@ ATTR GrExpr [ | | primNrArgForIntl: Int ]
 
 SEM GrExpr
   | FFI         loc         .   mbGbPrim        =   lookupPrim BackendGrinByteCode @impEntNm
-                            .   optimForIntlPrim=   maybe False (\p -> gbprimNrArgs p == @argL.length && ehcOptOptimise @lhs.opts >= OptimiseNormal) @mbGbPrim
+                            .   optimForIntlPrim=   maybe False (\p -> gbprimNrArgs p == @argL.length {- && ehcOptOptimise @lhs.opts >= OptimiseNormal -}) @mbGbPrim
                 lhs         .   primNrArgForIntl=   if @optimForIntlPrim then @argL.length else 0
   | Seq         pat         .   primArgForIntl  =   @body.primNrArgForIntl > 0
                 lhs         .   primNrArgForIntl=   if @expr.primNrArgForIntl > 0 then @expr.primNrArgForIntl else @body.primNrArgForIntl - 1
@@ -639,44 +657,47 @@ SEM GrExpr
 %%[(8 codegen grin)
 SEM GrExpr
   | Unit        loc         .   (valIns,valStInc,retIsDone,mbUnitIntro,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
+                                                =   case GB.gviLd @lhs.opts (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimise @lhs.opts >= OptimiseNormal -} }) @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState) | not @lhs.isSeqArgCtxt
                                                         -> (ins,inc,False,Nothing, gbState)
                                                       _ -> (Seq.empty,GB.ststFromDep 0,True,Just (UnitIntro @val.grvalIntro), @aftLblGBState)
   | Store       loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
+                                                =   case GB.gviLd @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins, inc, False, gbState)
   | Call        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                =   case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {GB.lcxDoLdTOS = True}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> case @lhs.returnCtxt of
                                                              ReturnCtxt_Returns nrArgsOuter
                                                                -> ( ins Seq.:++: fins Seq.:++: Seq.fromList [GB.tailcall GB.InsOp_LocB_TOS nArgMine nrArgsOuter {- retOffSurr -}]
                                                                   , GB.ststFromDep 0, True, gbState2
                                                                   )
-                                                               where (fins,fdep,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv (@ldStState `GB.ststInc` inc) gbState @nm
+                                                               where (fins,fdep,gbState2) = GB.nmLd GB.defaultLoadCtxt @nmEnv (@ldStState `GB.ststInc` inc) gbState @nm
                                                                      nArgMine    = length @argL.grvalIntroL
                                                              _ -> (ins', inc', False, gbState2)
-                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStr @nmEnv ins inc @ldStState gbState @nm
-  | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
+                                                               where (ins',inc',gbState2) = GB.gvCall @mbDebugStrNm @nmEnv ins inc @ldStState gbState @nm
+  | FFI         loc         .   (valIns,valStInc,retIsDone,aftLdGBState,constMp3)
                                                 =   if @optimForIntlPrim
-                                                    then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                    then case gbprimMk (fromJust @mbGbPrim) @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
-                                                             -> (ins, inc, False, gbState)
+                                                             -> (ins, inc, False, gbState, @constMp2)
                                                            _ -> panic ("ToGrinByteCode.mbGbPrim:" ++ show @impEntNm)
-                                                    else case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                    else case GB.gviLdFold @lhs.opts (GB.defaultLoadCtxt {GB.lcxDoLdTOS = True}) @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                            (GB.GrValIntroAlt_OnTOS ins inc _ basicsz, gbState)
                                                              -> ( ins Seq.:++: fins Seq.:++:
                                                                   Seq.fromList ([GB.meta' GB.AnnIdUse (@impEntNm >#< "szargs=" >|< GB.ststDepth inc >#< "basicsz=" >|< basicszStr)] ++ call)
                                                                 , GB.ststFromDepPerm (basicSizeInWords patbasicsz) (grinBasicAnnotGCPermit @lhs.patBasicAnnot), False
-                                                                , gbState2 `GB.gbstIncByStackState` callStState
+                                                                , gbState3 `GB.gbstIncByStackState` callStState
+                                                                , constMp3
                                                                 )
-                                                             where (gbState2,constLbl) = GB.newLabelId gbState
+                                                             where (gbState2,constLbl  ) = GB.newLabelId gbState
+                                                                   (gbState3,callencLbl) = GB.newLabelId gbState2
                                                                    fins = Seq.fromList [GB.ldg GB.InsOp_LocB_TOS $ GB.linkChainConst constLbl @constInx]
                                                                    finc = GB.ststFromDepPerm 1 GCPermit_Not
                                                                    patbasicsz = grinBasicAnnotSize @lhs.patBasicAnnot
                                                                    basicszs = patbasicsz : basicsz
+                                                                   (callencInx,constMp3) = constCCallEncWrapper basicszs @constMp2
                                                                    basicszStr = map basicGrinSizeCharEncoding basicszs
                                                                    callStState = @ldStState `GB.ststInc` inc `GB.ststInc` finc
 %%[[8
@@ -684,13 +705,15 @@ SEM GrExpr
 %%][94
                                                                    call  = if forextractOptIsPtr @foreignEntInfo then [] else cl
 %%]]
-                                                                         where cl = [GB.meta' GB.AnnStackDepth callStState,GB.callc @mbDebugStr basicszs callStState (GB.ststDepth inc)]
+                                                                         where cl = [ GB.meta' GB.AnnStackDepth callStState
+                                                                                    , GB.callc @mbDebugStr (callencLbl,callencInx,basicszs) callStState (GB.ststDepth inc)
+                                                                                    ]
   | FetchUpdate loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState $ map GB.GrValIntro_Nm $ [@src,@dst] of
+                                                =   case GB.gviLdFold @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState $ map GB.GrValIntro_Nm $ [@src,@dst] of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins Seq.:++: Seq.fromList [GB.fetchupdate], GB.ststFromDep 0, False, gbState)
   | Eval        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultOptimCtxt {GB.ocxOmitTOSLd = ehcOptOptimise @lhs.opts >= OptimiseNormal}) @nmEnv @ldStState @aftLblGBState @nm
+                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimise @lhs.opts >= OptimiseNormal -} }) @nmEnv @ldStState @aftLblGBState @nm
                                                     in  case @lhs.returnCtxt of
                                                           ReturnCtxt_Returns nrArgsOuter
                                                             -> (ins Seq.:++: eins, GB.ststFromDep 0, True, gbState)
@@ -698,7 +721,7 @@ SEM GrExpr
                                                           _ -> (ins Seq.:++: eins, inc, False, gbState)
                                                             where eins = Seq.fromList [GB.eval @mbDebugStr GB.InsOp_LocB_TOS]
   | App         loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   case GB.gviLdFold @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
+                                                =   case GB.gviLdFold @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @aftLblGBState @argL.grvalIntroL of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         {-
                                                         -> ( ins Seq.:++: Seq.fromList [GB.ldc (length @argL.grvalIntroL)] Seq.:++: fins Seq.:++: Seq.fromList [GB.apply @mbDebugStr GB.InsOp_LocB_TOS]
@@ -712,11 +735,11 @@ SEM GrExpr
                                                                      nArgMine = nargs + 2 * GB.nrValWords
                                                              _ -> ( ains1 Seq.:++: ains2, GB.ststFromDep GB.nrValWords, False, gbState2 )
                                                                where ains2 = Seq.fromList [GB.apply @mbDebugStr GB.InsOp_LocB_TOS]
-                                                        where (fins,_,gbState2) = GB.nmLd GB.defaultOptimCtxt @nmEnv (@ldStState `GB.ststInc` inc `GB.ststIncDep` GB.nrValWords) gbState @nm
+                                                        where (fins,_,gbState2) = GB.nmLd GB.defaultLoadCtxt @nmEnv (@ldStState `GB.ststInc` inc `GB.ststIncDep` GB.nrValWords) gbState @nm
                                                               ains1 = ins Seq.:++: Seq.fromList [GB.ldc nargs] Seq.:++: fins
                                                               nargs = length @argL.grvalIntroL
   | Case        loc         .   (valIns,valStInc,retIsDone,scrutineeStInc,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @altL.gbState @val.grvalIntro of
+                                                =   case GB.gviLd @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @altL.gbState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         | @altL.nrAlts == 1
                                                           -> ( ins Seq.:++: @altL.i, GB.ststFromDep GB.nrValWords, True, inc, gbState )
@@ -765,13 +788,13 @@ SEM GrExpr
                                                           where inc = GB.ststDepth incSt 
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
-                                                            | ehcOptOptimise @lhs.opts >= OptimiseNormal && bsz <= Cfg.sizeofGrWord
+                                                            | {- ehcOptOptimise @lhs.opts >= OptimiseNormal && -} bsz <= Cfg.sizeofGrWord
                                                               -> (Seq.empty,GB.ststFromDep 0,Map.singleton nmp (GB.Val_Int i),@expr.gbState)
                                                               where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)
                                                               -> nm ins inc gbState nmi
                                                               where (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
-                                                                      = GB.gviLd @lhs.opts GB.defaultOptimCtxt @nmEnv @ldStState @expr.gbState gvi
+                                                                      = GB.gviLd @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @expr.gbState gvi
                                                           _   -> nm Seq.empty (GB.ststFromDep 0) @expr.gbState @pat.nmIntro
 %%]
 
@@ -869,8 +892,10 @@ SEM GrModule
   | Mod         lhs         .   gbMod           =   GB.Module_Mod @moduleNmAlpha
 %%[[20
                                                       [ (n,hsnShowAlphanumeric n) | n <- @lhs.allImpNmL ]
-                                                      [ (n,hsnShowAlphanumeric n) | n <- @lhs.impNmL ]
-                                                      [ m | Just m <- map (\(n,_) -> Map.lookup n @entryNmMp) $ sortOn snd $ Map.toList @lhs.expNmOffMp ]
+                                                      (offMpKeysSorted @lhs.impNmOffMpMp)
+                                                      [ m | (n,_) <- sortOn snd $ Map.toList @lhs.expNmOffMp
+                                                          , let m = panicJust ("ToGrinByteCode.GrModule.Mod: " ++ show n) (Map.lookup n @entryNmMp)
+                                                      ]
 %%]]
                                                       @entryL
                                                       (Seq.toList @i)
@@ -894,7 +919,14 @@ SEM GrModule
 
 SEM GrBind
   | Bind        lhs         .   i               =   Seq.fromList
-                                                       [ GB.funstart (GB.FunctionInfo (show @nm) (GB.gbstMaxStkDepth @expr.gbState))
+                                                       [ GB.funstart (GB.FunctionInfo (show @nm) @nm (GB.gbstMaxStkDepth @expr.gbState)
+%%[[8
+                                                                                      []
+%%][20
+                                                                                      (maybe [] (\i -> if laminfo1stArgIsStackTrace i then [GB.FunctionInfoFlag_1stArgIsStackTrace] else [])
+                                                                                       $ Map.lookup @nm @lhs.lamMp)
+%%]]
+                                                                                      )
                                                        , GB.label (GB.LocRef_CodeEntry @entryInx)
                                                        , GB.meta' GB.AnnFunStart @nm
                                                        ]

@@ -44,7 +44,7 @@ pTyBase
           = pOROWROW
              *> (   foldl (\r (l,e) -> Ty_Ext r l e)
                     <$> pRow <* pVBAR
-                    <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> HNPos <$> pInt) <* pDCOLON <*> pTy)
+                    <*> pList1Sep pCOMMA ((,) <$> (pDollNm <|> mkHNmPos <$> pInt) <* pDCOLON <*> pTy)
                 <|> pSucceed (Ty_Con hsnRowEmpty)
                 )
             <*  pCROWROW

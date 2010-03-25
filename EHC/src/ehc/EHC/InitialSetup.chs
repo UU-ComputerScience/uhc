@@ -28,7 +28,7 @@ Initial values
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
 -- HI semantics
-%%[20 import(qualified {%{EH}HI.MainAG} as HISem)
+%%[2020 import(qualified {%{EH}HI.MainAG} as HISem)
 %%]
 -- module
 %%[20 import(qualified {%{EH}HS.ModImpExp} as HSSemMod)
@@ -99,7 +99,7 @@ initialCore2GrSem opts
       , Core2GrSem.dataGam_Inh_CodeAGItf         = emptyGam
       , Core2GrSem.opts_Inh_CodeAGItf            = opts
 %%[[20
-      , Core2GrSem.arityMp_Inh_CodeAGItf         = Map.empty
+      , Core2GrSem.lamMp_Inh_CodeAGItf           = Map.empty
 %%]]
       }
 %%]
@@ -114,7 +114,7 @@ initialHSSemMod opts
       }
 %%]
 
-%%[20 export(initialHISem)
+%%[2020 export(initialHISem)
 initialHISem :: EHCOpts -> HISem.Inh_AGItf
 initialHISem opts
   = HISem.Inh_AGItf

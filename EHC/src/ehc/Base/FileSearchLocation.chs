@@ -25,6 +25,9 @@ In principle such files reside in directories or packages.
 %%[8 import(qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe, Data.Version, Data.List)
 %%]
 
+%%[99 import({%{EH}Base.Target}, qualified {%{EH}ConfigInstall} as Cfg)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Kind of location
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -34,12 +37,12 @@ FileLocKind indicates where something can be found. After found, a FileLocKind_P
 %%[99 export(FileLocKind(..))
 data FileLocKind
   = FileLocKind_Dir									-- plain directory
-  | FileLocKind_Pkg	PkgName							-- specific package
+  | FileLocKind_Pkg	PkgKey							-- specific package
   | FileLocKind_PkgDb								-- yet unknown package in the package database
 
 instance Show FileLocKind where
   show  FileLocKind_Dir		= "directory"
-  show (FileLocKind_Pkg p)	= "package: " ++ p
+  show (FileLocKind_Pkg p)	= "package: " ++ showPkgKey p
   show  FileLocKind_PkgDb	= "package database"
 %%]
 
@@ -84,7 +87,7 @@ mkDirFileLoc
 %%]
 
 %%[99 export(mkPkgFileLoc)
-mkPkgFileLoc :: PkgName -> String -> FileLoc
+mkPkgFileLoc :: PkgKey -> String -> FileLoc
 mkPkgFileLoc p = FileLoc (FileLocKind_Pkg p)
 %%]
 
@@ -117,8 +120,8 @@ type PkgKey2 = Maybe Version
 type PkgKey  = (PkgKey1,PkgKey2)
 
 instance HSNM PkgKey where
-  mkHNm (n,Just v) =   HNm (n ++ "-" ++ (concat $ intersperse "." $ map show $ versionBranch v))
-  mkHNm (n,_     ) = mkHNm  n
+  mkHNm (n,Just v) =   mkHNmBase (n ++ "-" ++ (concat $ intersperse "." $ map show $ versionBranch v))
+  mkHNm (n,_     ) =   mkHNm      n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,7 +183,7 @@ data PackageInfo
       }
       deriving Show
 
--- content of a package
+-- content of a package (keys are name, then version)
 type PackageMp = Map.Map PkgKey1 (Map.Map PkgKey2 [PackageInfo])
 
 emptyPackageMp :: PackageMp
@@ -189,6 +192,9 @@ emptyPackageMp = Map.empty
 -- reverse map from module name to package key
 type Module2PackageMp = Map.Map HsName [PkgKey]
 
+-- A package database contains an actual package map, plus a function
+-- that maps modules to associated package maps. The latter is computed
+-- by "freezing" the package database using "pkgDbFreeze".
 data PackageDatabase
   = PackageDatabase
       { pkgDbPkgMp		:: PackageMp
@@ -200,3 +206,14 @@ emptyPackageDatabase :: PackageDatabase
 emptyPackageDatabase = PackageDatabase emptyPackageMp Map.empty
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing paths for specific files in package databases
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(mkInternalPkgFileBase)
+
+mkInternalPkgFileBase :: PkgKey -> String {- compiler name/version -} -> Target -> TargetVariant -> FilePath
+mkInternalPkgFileBase pkgKey compversion tgt tgtv =
+  Cfg.mkInternalPkgFileBase (showPkgKey pkgKey) compversion (show tgt) (show tgtv)
+
+%%]

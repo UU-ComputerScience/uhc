@@ -54,6 +54,7 @@ cpJar :: Maybe String -> Maybe FPath -> JarWhat -> FPath -> [FPath] -> EHCompile
 cpJar relToDir mbManif what archive files
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
+             veryVerbose = ehcOptVerbosity opts >= VerboseALot
        ; cwd <- lift getCurrentDirectory
        ; (archive',files',mbInsideDir)
            <- case relToDir of
@@ -63,17 +64,45 @@ cpJar relToDir mbManif what archive files
                        where mkd = fpathUnPrependDir d
                              mka a = if fpathIsAbsolute a then a else fpathPrependDir cwd a
                 _      -> return (archive,files,Nothing)
-       ; let jargs
-               = case what of
-                   Jar_Create -> (if isJust mbManif
-                                  then ["cfm", fpathToStr archive', fpathToStr $ fromJust mbManif]
-                                  else ["cf", fpathToStr archive']
-                                 ) ++ map fpathToStr files'
-             j = mkShellCmd $ [Cfg.shellCmdJar] ++ jargs
-       ; when (ehcOptVerbosity opts >= VerboseALot) (lift $ putStrLn (maybe "" (\d -> "In dir " ++ d ++ ": ") mbInsideDir ++ j))
-       ; cpSystemRaw Cfg.shellCmdJar jargs
-       ; lift $ setCurrentDirectory cwd
+       ; when veryVerbose (lift $ putStrLn ("Jar: " ++ maybe "" (\d -> "in dir " ++ d ++ ": ") mbInsideDir ++ show files'))
+       ; cpSeq
+           (  ( case what of
+                  Jar_Create | not (null files')
+                    -> [jarCreateOrUpdate veryVerbose archive' files' mbManif]
+                  _ -> []
+              )
+           ++ [lift $ setCurrentDirectory cwd]
+           )
        }
+  where -- split files in groups, fed to jar group by group, necessary because is somewhere a limit on nr of shell args
+        -- TBD: correct Manifest (does not reflect actual content when only part of .hs are compiled)
+        jarCreateOrUpdate veryVerbose archive files mbManif
+          = do { archiveExists <- lift $ doesFileExist archive'
+               ; cpSeq
+                 $ map oneJar
+                     (firstJargs archiveExists filesfirst : map restJargs filesrest)
+               }
+          where (manif,manifOpt)
+                  = maybe ([],"") (\m -> ([fpathToStr m],"m")) mbManif
+                breakInto at l
+                  = case splitAt at l of
+                      ([],_ ) -> []
+                      (l1,[]) -> [l1]
+                      (l1,l2) -> l1 : breakInto at l2
+                filess@(filesfirst:filesrest)
+                  = breakInto 1000 $ map fpathToStr files
+                firstJargs archiveExists files
+                  = [ (if archiveExists then "u" else "c")  ++ "f" ++ verbOpt ++ manifOpt, archive' ] ++ manif ++ files
+                restJargs files
+                  = [ "uf" ++ verbOpt, archive' ] ++ files
+                verbOpt
+                  = if veryVerbose then "v" else ""
+                archive'
+                  = fpathToStr archive
+                oneJar jargs
+                  = cpSystemRaw Cfg.shellCmdJar jargs
+                             -- where j = mkShellCmd $ [Cfg.shellCmdJar] ++ jargs
+                                   
 %%]
 
 %%[(99 codegen jazy) export(cpLinkJar)
@@ -87,7 +116,7 @@ cpLinkJar mbManif modNmL jarMk
                        where (libf,libd) = mkInOrOutputFPathDirFor OutputFor_Pkg opts l1 l2 "jar"
                              (l1,l2,libd')
                                = case jarMk of
-                                   JarMk_Pkg  p    -> (fp, fp, fmap (\d -> d ++ "/" ++ p) libd)
+                                   JarMk_Pkg  p    -> (fp, fp, fmap (\d -> d {- ++ "/" ++ p -}) libd)
                                                    where fp = mkFPath $ Cfg.mkJarFilename "" p
                                    JarMk_Exec m fp -> (mkFPath m,fp,libd)
        ; cpRegisterFilesToRm codeFiles
@@ -139,10 +168,15 @@ cpCompileJazyJVM how othModNmL modNm
                               ; cpRegisterFilesToRm [fpManifest]
                               ; cpLinkJar (Just fpManifest) (modNm : othModNmL2) (JarMk_Exec modNm fp)
                               }
-                        where (pkgNmL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
+                        where (pkgKeyL,othModNmL2) = crPartitionIntoPkgAndOthers cr othModNmL
                               libJarL
-                                =    map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB     variant "" ++ "lib" ++ l ++ ".jar") (["jazy"])
-                                  ++ map (\l -> Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG variant "" ++ "lib" ++ l ++ ".jar") (pkgNmL)
+                                =    map mkl1 (["jazy"])
+                                  ++ map mkl2 pkgKeyL
+                                where mkl1 l = Cfg.mkInstallFilePrefix opts Cfg.INST_LIB      variant ""
+                                               ++ "lib" ++ l ++ ".jar"
+                                      mkl2 l = Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG2 variant (showPkgKey l)
+                                               ++ "/" ++ mkInternalPkgFileBase l (Cfg.installVariant opts) (ehcOptTarget opts) (ehcOptTargetVariant opts)
+                                               ++ "/" ++ "lib" ++ (showPkgKey l) ++ ".jar"
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )
                                    , ( "Main-Class", show mainNm )

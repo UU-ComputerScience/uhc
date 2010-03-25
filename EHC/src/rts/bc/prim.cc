@@ -24,11 +24,6 @@
 PRIM Word gb_Unit 
 	= GB_MkConEnumNodeAsTag( 0 ) ;
 
-PRIM Word gb_False
-	= GB_MkConEnumNodeAsTag( 0 ) ;
-PRIM Word gb_True
-	= GB_MkConEnumNodeAsTag( 1 ) ;
-
 #if ! USE_EHC_MM
 GB_Node gb_Nil_Node
     = GB_MkConEnumNode( GB_Tag_List_Nil ) ;
@@ -230,35 +225,6 @@ PRIM GB_NodePtr primDivModInt( GB_Int x, GB_Int y )
 }
 
 %%]
-
-%%[95
-PRIM Word primMaxInt()
-{
-  	// return GB_Int2GBInt(Bits_MaxSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-  	return (Bits_MaxSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)) ;
-}
-
-PRIM Word primMinInt()
-{
-  	// return GB_Int2GBInt(Bits_MinSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-  	return (Bits_MinSInt(Word,Word_SizeInBits,GB_Word_SizeInBits-GB_Word_SizeOfWordTag)+1) ;
-}
-%%]
-
-%%[97
-PRIM Word primMaxWord()
-{
-	// printf( "primMaxWord %x\n", Word32_MaxValue >> GB_Word_SizeOfWordTag ) ;
-  	return Word32_MaxValue >> GB_Word_SizeOfWordTag ;
-}
-
-PRIM Word primMinWord()
-{
-  	return Word32_MinValue ;
-}
-%%]
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% bitwise logical operators

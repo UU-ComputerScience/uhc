@@ -14,7 +14,7 @@
 %%[8 import({%{EH}Base.CfgPP})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -249,7 +249,7 @@ mkIdDefAsp o a = IdDefAsp o a
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval IdAspect where
   forceEval x@(IdAsp_Val_Pat d    ) | d `seq` True = x
   forceEval x@(IdAsp_Val_Fun p d i) | p `seq` d `seq` forceEval i `seq` True = x

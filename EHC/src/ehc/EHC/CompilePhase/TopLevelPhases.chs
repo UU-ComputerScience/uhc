@@ -41,7 +41,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Output})
 %%]
-%%[8 import({%{EH}EHC.CompilePhase.TransformCore},{%{EH}EHC.CompilePhase.TransformGrin})
+%%[8 import({%{EH}EHC.CompilePhase.Transformations},{%{EH}EHC.CompilePhase.TransformGrin})
 %%]
 %%[8 import({%{EH}EHC.CompilePhase.Semantics})
 %%]
@@ -180,7 +180,7 @@ cpEhcGrinFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , cpSeq [cpCleanupGrin m | m <- impModNmL] -- clean up unused Grin (moved here from cpCleanupCU)
 %%]]
            ]
-           ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-fullgrin" mainModNm] else [])
+           ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-fullgrin" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Grin generated, from: " ++ show impModNmL)
               ]
           )
@@ -206,7 +206,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , mergeIntoOneBigCore
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "full.core" mainModNm] else [])
+           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -256,7 +256,7 @@ cpEhcFullProgModuleDetermineNeedsCompile modNm
                 ++ ", can use HI instead of HS: " ++ show (ecuCanUseHIInsteadOfHS ecu)
                 ++ ", is main: " ++ show (ecuIsMainMod ecu)
                 ++ ", is top: " ++ show (ecuIsTopMod ecu)
-                ++ ", valid HI: " ++ show (ecuIsValidHI ecu)
+                ++ ", valid HI: " ++ show (ecuIsValidHIInfo ecu)
                 ++ ", HS newer: " ++ show (ecuIsHSNewerThanHI ecu)
                 ))
        ; cpUpdCU modNm (ecuSetNeedsCompile (needsCompile && canCompile))
@@ -538,14 +538,16 @@ cpEhcHaskellModulePrepareHS2 :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHS2 modNm
   = cpSeq [ cpGetMetaInfo [GetMeta_HS, GetMeta_HI, GetMeta_Core, GetMeta_Grin, GetMeta_Dir] modNm
           , cpGetPrevHI modNm
-          , cpFoldHI modNm
+          -- , cpFoldHI modNm
+          , cpFoldHIInfo modNm
           ]
 
 cpEhcHaskellModulePrepareHI :: HsName -> EHCompilePhase ()
 cpEhcHaskellModulePrepareHI modNm
   = cpSeq [ cpGetMetaInfo [GetMeta_HI, GetMeta_Core, GetMeta_Grin] modNm
           , cpGetPrevHI modNm
-          , cpFoldHI modNm
+          -- , cpFoldHI modNm
+          , cpFoldHIInfo modNm
           ]
 
 cpEhcHaskellModulePrepare :: HsName -> EHCompilePhase ()
@@ -710,6 +712,7 @@ cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis :: EHCOpts -> Bool -> Bool -> Bool 
 cpEhcCoreGrinPerModuleDoneNoFullProgAnalysis opts isMainMod isTopMod doMkExec modNm
   = cpSeq (  [ cpEhcCorePerModulePart2 (ehcOptEarlyModMerge opts) modNm
 %%[[20
+             , cpMsg modNm VerboseDebug "cpFlowOptim"
              , cpFlowOptim modNm
 %%]]
 %%[[99
@@ -799,6 +802,7 @@ cpProcessEH modNm
 %%]
 
 %%[(8 codegen)
+-- | TBD: finish it, only a sketch now
 cpProcessTyCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessTyCoreBasic modNm 
   = do { cr <- get
@@ -847,26 +851,13 @@ cpProcessCoreBasic :: HsName -> EHCompilePhase ()
 cpProcessCoreBasic modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr   -- '
-       ; cpSeq [ cpTransformCore
-                   modNm
-                     (
-%%[[102
-                       -- [ "CS" ] ++
+       ; cpSeq [ cpTransformCore modNm
+%%[[20
+               , cpFlowHILamMp modNm
 %%]]
-                       [ "CTBS", "CER", "CRU", "CLU", "CILA", "CETA", "CCP", "CILA", "CETA"
-                       , "CFL", "CLGA", "CCGA", "CLU", "CFL", {- "CLGA", -} "CLFG"    
-%%[[9               
-                       ,  "CLDF"
-%%]
-%%[[8_2        
-                       , "CPRNM"
-%%]]
-                       , "CFN"
-                       ]
-                     )
-               , when (ehcOptEmitCore opts)   (cpOutputCore   "core"   modNm)
+               , when (ehcOptEmitCore opts) (cpOutputCore "" "core" modNm)
 %%[[(8 codegen java)
-               , when (ehcOptEmitJava opts)   (cpOutputJava   "java"   modNm)
+               , when (ehcOptEmitJava opts) (cpOutputJava    "java" modNm)
 %%]]
                , cpProcessCoreFold modNm
                ]
@@ -888,16 +879,19 @@ cpProcessCoreFold modNm
 %%[(8 codegen)
 -- folded core -> grin and jazy
 cpProcessCoreRest :: HsName -> EHCompilePhase ()
-cpProcessCoreRest modNm 
-  = cpSeq [ cpTranslateCore2Grin modNm
-          , cpOutputGrin "" modNm
+cpProcessCoreRest modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       ; cpSeq (   [ cpTranslateCore2Grin modNm ]
+                ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
-          , cpTranslateCore2Jazy modNm
+                ++ [ cpTranslateCore2Jazy modNm ]
 %%]]
 %%[[99
-          , cpCleanupCore modNm
+                ++ [ cpCleanupCore modNm ]
 %%]]
-          ]
+               )
+       }
           
 %%]
 
@@ -906,9 +900,9 @@ cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr     -- '
-       ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin "-000-initial" modNm] else [])
+       ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
                 ++ [cpTransformGrin modNm]
-                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin "-099-final" modNm]  else [])
+                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
                 ++ (if ehcOptFullProgAnalysis opts then [cpTranslateGrin modNm] else [])
                )
@@ -920,7 +914,11 @@ cpProcessBytecode :: HsName -> EHCompilePhase ()
 cpProcessBytecode modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr    -- '
-       ; cpSeq [ cpTranslateByteCode modNm
+       ; cpSeq [ cpMsg modNm VerboseALot "Translate ByteCode"
+               , cpTranslateByteCode modNm
+%%[[20
+               , cpFlowHILamMp modNm
+%%]]
 %%[[99
                , cpCleanupFoldBytecode modNm
 %%]]

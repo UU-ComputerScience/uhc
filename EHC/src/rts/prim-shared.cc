@@ -355,3 +355,32 @@ PRIM Word primEqStableAddr( Word x, Word y )
 // #endif
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Min/Max for Int, Word
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[95
+PRIM Word primMaxInt()
+{
+  	return Int_MaxValue ;
+}
+
+PRIM Word primMinInt()
+{
+  	return Int_MinValue ;
+}
+%%]
+
+%%[97
+PRIM Word primMaxWord()
+{
+	// printf( "primMaxWord %x\n", Word32_MaxValue >> GB_Word_SizeOfWordTag ) ;
+  	return Word_MaxValue ;
+}
+
+PRIM Word primMinWord()
+{
+  	return Word_MinValue ;
+}
+%%]
+

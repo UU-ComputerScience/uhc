@@ -9,14 +9,16 @@
 
 %%[(8 codegen grin) hs module {%{EH}Core.ToGrin} export(Inh_CodeAGItf(..),Syn_CodeAGItf(..),wrap_CodeAGItf,sem_CodeAGItf)
 %%]
-%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX})
+%%[(8 codegen grin).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/CommonToXX},{Core/CommonLamInfo})
 WRAPPER CodeAGItf
 %%]
 %%[(8 codegen grin) hs import(Char, Data.Maybe, Data.List, qualified Data.Set as Set, qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils, EH.Util.Pretty)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}GrinCode}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Opts}, qualified {%{EH}Config} as Cfg, {%{EH}Base.Builtin},{%{EH}Base.Builtin2})
+%%]
+%%[(8 codegen grin) hs import({%{EH}LamInfo}, {%{EH}Core}, {%{EH}Ty}, {%{EH}Gam.Full}, {%{EH}GrinCode})
 %%]
 
 %%[(8 codegen grin) hs import(Debug.Trace)
@@ -129,56 +131,20 @@ SEM CBind
                                                 else @lhs.evalCtx
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known function arity
+%%% Newly bound LamInfo
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin)
-ATTR
-  CModule CExpr
-%%[[20
-  CodeAGItf
-%%]]
-    [ | | gathArityMp: CArityMp ]
-
-SEM CExpr
-  | Let         lhs         .   gathArityMp =   @binds.bindArityMp `Map.union` @body.gathArityMp
-  | * - Let Ann lhs         .   gathArityMp =   Map.empty
-%%]
+Here we only gather arity info, stack trace info is assumed to be gathered earlier,
+and assumed to propagate correctly when merged with this info.
 
 %%[(8 codegen grin)
-ATTR
-  AllCodeNT
-%%[[20
-  CodeAGItf
-%%]]
-    [ arityMp: CArityMp | | ]
-%%]
-
-%%[(8 codegen grin).CodeAGItf.arityMp
-SEM CodeAGItf
-  | AGItf       module      .   arityMp     =   @module.gathArityMp
-%%]
-
-%%[(20 codegen grin) -8.CodeAGItf.arityMp
-SEM CodeAGItf
-  | AGItf       module      .   arityMp     =   @module.gathArityMp `Map.union` @lhs.arityMp
-%%]
-
-%%[(8 codegen grin)
-SEM CExpr
-  | Lam			body		.	arityMp		=	Map.delete @arg @lhs.arityMp
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Known function arity
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen grin)
-ATTR AllBind [ | | bindArityMp USE {`Map.union`} {Map.empty}: CArityMp ]
-
 SEM CBind
-  | Bind        lhs         .   bindArityMp =   @nm `Map.singleton` length @expr.grLamArgL
-  | FFI         lhs         .   bindArityMp =   @nm `Map.singleton` (length @argTyL + length @argTyLExtra)
+  | Bind        lhs         .   bindLamMp
+                                            =   Map.singleton @nm
+                                                              (LamInfo (length @expr.grLamArgL) StackTraceInfo_None Nothing)
+  | FFI         lhs         .   bindLamMp
+                                            =   Map.singleton @nm
+                                                              (LamInfo (length @argTyL + length @argTyLExtra) StackTraceInfo_None Nothing)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -189,12 +155,12 @@ SEM CBind
 ATTR AllCodeNT [ | | asArgNmS USE {`Set.union`} {Set.empty}: FvS ]
 
 SEM CExpr
-  | Var         loc         .   mbLam       =   case arityMpLookupLam @nm @lhs.arityMp of
+  | Var         loc         .   mbLam       =   case lamMpLookupLam @nm @lhs.lamMp of
                                                     j@(Just arity) | @lhs.isTopApp
                                                         -> j
                                                     _   -> Nothing
                 lhs         .   asArgNmS    =   maybe Set.empty (const (Set.singleton @nm)) @mbLam
-  | App         loc         .   mbLam       =   arityMpLookupLam @grAppFun @lhs.arityMp
+  | App         loc         .   mbLam       =   lamMpLookupLam @grAppFun @lhs.lamMp
                             .   appArity    =   length @grAppArgL
                 lhs         .   asArgNmS    =   @func.asArgNmS
                                                     `Set.union`  maybe @arg.asArgNmS Set.singleton @arg.mbVar
@@ -251,24 +217,24 @@ cTagsMp2GrTagMap = Map.fromList . map (\(tn,ts) -> (tn, tr ts))
 
 %%[(8 codegen grin) hs
 grE2V :: GrExpr -> Maybe GrVal
-grE2V e = case e of {GrExpr_Unit v -> Just v; _ -> Nothing}
+grE2V e = case e of {GrExpr_Unit v _ -> Just v; _ -> Nothing}
 
 grV2HNm :: GrVal -> Maybe HsName
 grV2HNm v = case v of {GrVal_Var n -> Just n; _ -> Nothing}
 
-emptyGrExpr = GrExpr_Unit GrVal_Empty
+emptyGrExpr = GrExpr_Unit GrVal_Empty GrType_None
 
 mbMkStrict :: HsName -> UID -> Bool -> GrVal -> GrExpr
 mbMkStrict modNm u isStrict v
   = case v of
       GrVal_Node _ _ -> dflt
-      _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v) (GrPatLam_Var n) (GrExpr_Eval n)
+      _ | isStrict   -> GrExpr_Seq (GrExpr_Unit v GrType_None) (GrPatLam_Var n) (GrExpr_Eval n)
         | otherwise  -> dflt
         where n = uidQualHNm modNm u
-  where dflt = GrExpr_Unit v
+  where dflt = GrExpr_Unit v GrType_None
 
 retStrict :: Bool -> GrVal -> GrExpr
-retStrict isStrict = if isStrict then (\v->GrExpr_Unit v) else GrExpr_Store
+retStrict isStrict = if isStrict then (\v->GrExpr_Unit v GrType_None) else GrExpr_Store
 %%]
 
 %%[(8 codegen grin) hs
@@ -283,14 +249,14 @@ mkSq e1 p e2 = GrExpr_Seq e1 (GrPatLam_Var p) e2
 %%]
 
 %%[(8 codegen grin) hs
-simplArgL :: HsName -> UID -> CArityMp -> GrValL -> (GrValL,GrExpr->GrExpr)
-simplArgL modNm uniq arityMp vL
+simplArgL :: HsName -> UID -> LamMp -> GrValL -> (GrValL,GrExpr->GrExpr)
+simplArgL modNm uniq lamMp vL
   =  let  nL = map (uidQualHNm modNm) . mkNewUIDL (length vL) $ uniq
      in   foldr  (\(n,a) (aL,wG)
                     ->  case a of
                             GrVal_Var v | isJust mbArity
                                 -> (GrVal_Var n : aL,mkSq a' n . wG)
-                                where mbArity = arityMpLookupLam v arityMp
+                                where mbArity = lamMpLookupLam v lamMp
                                       a' = GrExpr_Store (mkNdPApp v (fromJust mbArity) [])
                             GrVal_Node _ _
                                 -> (GrVal_Var n : aL,mkSq (GrExpr_Store a) n . wG)
@@ -314,7 +280,7 @@ unboxArg modNm uniq tyNm v
   =  case v of
        GrVal_LitInt _
            -> (v,id)
-       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox tyNm n))
+       _   -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox tyNm n))
   where n = uidQualHNm modNm uniq
 
 unboxArgL :: HsName -> UID -> HsName -> GrValL -> (GrValL,GrExpr->GrExpr)
@@ -338,7 +304,7 @@ mkHole    (GrBind_Bind nm _ _ _)    rest  = GrExpr_Seq (GrExpr_Store (GrVal_Node
 mkVarBind (GrBind_Bind nm _ _ body) rest  = GrExpr_Seq body (GrPatLam_Var nm) rest
 
 mkVarBindWithUpdate
-          (GrBind_Bind nm _ _ body) rest  = let nm2 = hsnPrefix "_" nm
+          (GrBind_Bind nm _ _ body) rest  = let nm2 = hsnUniqify HsNameUniqifier_GrinUpdated nm
                                             in  GrExpr_Seq body 
                                                            (GrPatLam_Var nm2)
                                                            (GrExpr_Seq (GrExpr_FetchUpdate nm2 nm)
@@ -380,7 +346,7 @@ SEM CExpr
                                                      funNm = @grAppFun
                                                      mkE  = retStrict @lhs.isStrict
                                                      n = uidQualHNm @lhs.modNm @lUniq
-                                                     (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.arityMp argL
+                                                     (argL',wrapGr) = simplArgL @lhs.modNm @lUniq2 @lhs.lamMp argL
                                                 in   case @func.mbTupApp of
                                                        Just t
                                                          -> let v  =  case t of
@@ -399,8 +365,8 @@ SEM CExpr
                                                                           | arity < @appArity && @lhs.isStrict
                                                                               -> mkSq (GrExpr_Call funNm (take arity argL')) n (GrExpr_App n (drop arity argL'))
                                                                           | otherwise
-                                                                              -- -> mkSq (GrExpr_Store (GrVal_Node (GrTag_Fun funNm) (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
-                                                                              -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -> mkSq (GrExpr_Store (GrVal_Node (GrTag_Fun funNm) (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
+                                                                              -- -> mkSq (GrExpr_Store (mkNdPApp funNm 0 (take arity argL'))) n (GrExpr_Store (mkNdApp n (drop arity argL')))
                                                                         Nothing
                                                                           | @lhs.isStrict
                                                                               -> mkSq (GrExpr_Eval funNm) n (GrExpr_App n argL')
@@ -417,8 +383,8 @@ SEM CExpr
 %%[[10
   | TupIns TupUpd TupDel
                 loc         .   grExpr      =   if @lhs.isTopTup
-                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.arityMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
-                                                else  GrExpr_Unit GrVal_Empty
+                                                then  mkGrAdapt @lhs.modNm @lUniq @lhs.lamMp @lhs.isStrict (reverse @grTupFldL) (maybe hsnUnknown id (grV2HNm @grTupRec))
+                                                else  GrExpr_Unit GrVal_Empty GrType_None
 %%]]
   | * - Let Case App Var Tup Int Char Ann
 %%[[9
@@ -427,18 +393,18 @@ SEM CExpr
 %%[[10
     TupIns TupUpd TupDel
 %%]]                                      
-                loc         .   grExpr      =   GrExpr_Unit @grVal
+                loc         .   grExpr      =   GrExpr_Unit @grVal GrType_None
 %%]
 
 %%[(10 codegen grin) hs
 type TupAdaptFldL = [(GrVal,GrVal,GrVal->GrVal->GrAdapt)]
 
-mkGrAdapt :: HsName -> UID -> CArityMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
-mkGrAdapt modNm u arityMp isStrict tupFldL tupRecNm
+mkGrAdapt :: HsName -> UID -> LamMp -> Bool -> TupAdaptFldL -> HsName -> GrExpr
+mkGrAdapt modNm u lamMp isStrict tupFldL tupRecNm
   =  let  [u1,u2] = mkNewUIDL 2 (uidChild u)
           (oL,vL,mkAL) = unzip3 tupFldL
           (oL',wrO) = unboxArgL modNm u1 hsnInt oL
-          (vL',wrV) = simplArgL modNm u2 arityMp vL
+          (vL',wrV) = simplArgL modNm u2 lamMp vL
      in   wrV . wrO . retStrict isStrict
           . GrVal_NodeAdapt tupRecNm
           . zipWith3 ($) mkAL oL' $ vL'
@@ -556,17 +522,17 @@ SEM CBind
                                                     where tyState = Ty_Con $ ehbnRealWorld (ehcOptBuiltinNames @lhs.opts)
                                                           [nmState,nmRes,nmIgnoreRes] = take 3 (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq2))
                                                           wrapRes = mkRes . dealWithUnitRes
-                                                                  where mkRes r = GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit $ mkGrRecNode $ map GrVal_Var [nmState,nmRes])
+                                                                  where mkRes r = GrExpr_Seq (unit2store r) (GrPatLam_Var nmRes) (GrExpr_Unit (mkGrRecNode $ map GrVal_Var [nmState,nmRes]) GrType_None)
                                                                         dealWithUnitRes
                                                                                 = case tyMbRecExts iores of
-                                                                                    Just (_,[]) -> \r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit $ mkGrRecNode [])
+                                                                                    Just (_,[]) -> \r -> GrExpr_Seq r (GrPatLam_Var nmIgnoreRes) (GrExpr_Unit (mkGrRecNode []) GrType_None)
                                                                                     _           -> id
                                                   _ -> (@resTy,[],[],id)
                                                   
 {
 unit2store :: GrExpr -> GrExpr
-unit2store (GrExpr_Seq e p (GrExpr_Unit x))  =  GrExpr_Seq e p (GrExpr_Store x)
-unit2store e                                 =  error $ "unit2store applied to non-unit " ++ show e
+unit2store (GrExpr_Seq e p (GrExpr_Unit x _))  =  GrExpr_Seq e p (GrExpr_Store x)
+unit2store e                                   =  error $ "unit2store applied to non-unit " ++ show e
 }
 %%]
 
@@ -579,7 +545,7 @@ These defaults are overridden by a table in BuiltinPrims, used here.
 
 %%[(99 codegen grin) hs
 evalArg :: Bool -> HsName -> GrExpr
-evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm)
+evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm) GrType_None
 
 evalRes :: Bool -> HsName -> GrExpr -> GrExpr
 evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm) else e
@@ -625,7 +591,7 @@ tyNmMayLiveAsTaggedPtr opts
 SEM CBind
   | FFI         loc         .   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                                             =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq))
-                                                     nmArgPatL = map (hsnPrefix "_") nmArgL
+                                                     nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
                                                 in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  isOpaque tn   = maybe True null (dataGamTagsOfTy tn @lhs.dataGam)
                                                      isEnumable tn = maybe False dgiIsEnumable (dataGamLookup tn @lhs.dataGam)
@@ -662,11 +628,11 @@ SEM CBind
                                                           in  -- Basic
                                                               if isJust mbResAnn
                                                               then GrExpr_Seq e (GrPatLam_BasicAnnot (annotOfUnboxed True (fromJust mbResAnn) resTyNm) @nmRes)
-                                                                                (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v))
+                                                                                (GrExpr_Unit (GrVal_BasicNode (GrTag_Con (mkGrTagAnn 1 1) 0 resTyNm) v) GrType_None)
                                                               -- Enumerable
                                                               else if isEnumable resTyNm
                                                               then GrExpr_Seq e (GrPatLam_EnumAnnot resTyNm @nmRes)
-                                                                                (GrExpr_Unit (GrVal_EnumNode v))
+                                                                                (GrExpr_Unit (GrVal_EnumNode v) GrType_None)
                                                               -- Record (which is Enumerable or Pointer)
                                                               else if isJust (tyMbRecRow resTy)
                                                               then let arity = length $ snd $ tyRecExts resTy
@@ -674,16 +640,16 @@ SEM CBind
                                                                        tag   = GrTag_Con (mkGrTagAnn arity arity) 0 nm
                                                                    in  if arity==0
                                                                        then GrExpr_Seq e (GrPatLam_EnumAnnot nm @nmRes)     -- 0-tuple is assumed to be Enumerable (change this here, and in the RTS, if the 0-tuple is to be regarded as a basis for extensible rows)
-                                                                                         (GrExpr_Unit (GrVal_EnumNode v))
+                                                                                         (GrExpr_Unit (GrVal_EnumNode v) GrType_None)
                                                                        else GrExpr_Seq e (GrPatLam_PtrAnnot nm @nmRes)
-                                                                                         (GrExpr_Unit (GrVal_PtrNode v))
+                                                                                         (GrExpr_Unit (GrVal_PtrNode v) GrType_None)
                                                               -- Opaque
                                                               else if isOpaque resTy
                                                               then GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
-                                                                                (GrExpr_Unit (GrVal_OpaqueNode v))
+                                                                                (GrExpr_Unit (GrVal_OpaqueNode v) GrType_None)
                                                               -- Pointer
                                                               else GrExpr_Seq e (GrPatLam_PtrAnnot resTyNm @nmRes)
-                                                                                (GrExpr_Unit (GrVal_PtrNode v))
+                                                                                (GrExpr_Unit (GrVal_PtrNode v) GrType_None)
 %%[[8
                                                      mkEval (n,p)
                                                        = GrExpr_Seq (GrExpr_Eval n) p
@@ -803,7 +769,7 @@ ATTR AllPat AllAlt [ | | grWrapCaseSel USE {`const`} {idGrWrapCaseSel}: {GrVal -
 SEM CPat
   | Int Char    lhs         .   grWrapCaseSel
                                             =   let n = uidQualHNm @lhs.modNm @lUniq
-                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v) (mkGrUnbox hsnInt n))
+                                                in  \v -> (GrVal_Var n,GrExpr_Seq (GrExpr_Unit v GrType_None) (mkGrUnbox hsnInt n))
 %%]
 
 %%[(8 codegen grin)

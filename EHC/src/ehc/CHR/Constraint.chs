@@ -11,10 +11,15 @@
 %%[(9 hmtyinfer || hmtyast) import(qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+%%[(20 hmtyinfer || hmtyast) import(Data.Typeable(Typeable,Typeable2), Data.Generics(Data))
+%%]
+
 %%[(20 hmtyinfer || hmtyast) import({%{EH}Base.CfgPP})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,6 +32,11 @@ data Constraint p info
   | Assume     		{ cnstrPred :: !p }														-- assumed
   | Reduction  		{ cnstrPred :: !p, cnstrInfo :: !info, cnstrFromPreds :: ![p] }			-- 'side effect', residual info used by (e.g.) codegeneration
   deriving (Eq, Ord, Show)
+%%]
+
+%%[(20 hmtyinfer || hmtyast)
+deriving instance Typeable2 Constraint
+deriving instance (Data x, Data y) => Data (Constraint x y)
 %%]
 
 %%[(9 hmtyinfer || hmtyast)
@@ -117,10 +127,10 @@ instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Binary, ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
   forceEval x@(Prove     p     ) | forceEval p `seq` True = x
   forceEval x@(Assume    p     ) | forceEval p `seq` True = x
@@ -132,4 +142,15 @@ instance (ForceEval p, ForceEval info) => ForceEval (Constraint p info) where
 %%]]
 %%]
 
+%%[(20 hmtyinfer || hmtyast)
+instance (Serialize p, Serialize i) => Serialize (Constraint p i) where
+  sput (Prove     a    ) = sputWord8 0 >> sput a
+  sput (Assume    a    ) = sputWord8 1 >> sput a
+  sput (Reduction a b c) = sputWord8 2 >> sput a >> sput b >> sput c
+  sget = do t <- sgetWord8
+            case t of
+              0 -> liftM  Prove     sget
+              1 -> liftM  Assume    sget
+              2 -> liftM3 Reduction sget sget sget
+%%]
 

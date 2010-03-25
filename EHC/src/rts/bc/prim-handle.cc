@@ -153,6 +153,8 @@ PRIM Word primEqGBHandle( GB_NodePtr chan1, GB_NodePtr chan2 )
 
 PRIM Word primEqGBHandleFileno( GB_NodePtr chan, Word fno )
 {
+	IF_GB_TR_ON(3,{printf("primEqGBHandleFileno: chan=%p fno=%d\n", chan, fno) ;}) ;
+	IF_GB_TR_ON(3,{printf("primEqGBHandleFileno: fileno(chan)=%d\n", fileno(chan->content.chan.file)) ;}) ;
 	return RTS_MkBool( fno == fileno(chan->content.chan.file) ) ;
 }
 
@@ -253,7 +255,7 @@ PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mb
 	
 %%[[99
 	GB_NodePtr handle ;
-	GB_MkNode_Handle_GBHandle(handle,chan) ;
+	GB_MkNode_Handle_OldHandle(handle,chan) ;
 %%]]
 	
 	GB_GCSafe_Leave ;

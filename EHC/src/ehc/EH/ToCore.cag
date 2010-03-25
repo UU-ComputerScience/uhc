@@ -427,7 +427,7 @@ SEM Decl
                                                            , mkCBind1 en (cerror @lhs.opts ("has no field selection '" ++ show f ++ "'"))
                                                            ]
                                                          | (f,i) <- Map.toList $ dgiFldInConstrMp @dgi
-                                                         , let en = hsnSuffix f "_datafield_sel_error"
+                                                         , let en = hsnUniqifyStr HsNameUniqifier_New "datafield_sel_error" f -- hsnSuffix f "_datafield_sel_error"
                                                          ]
 %%]
 
@@ -743,7 +743,7 @@ cdictOffset n r = tyRecOffset n $ r
 SEM Decl
   | Class       lhs         .   cbindL      =   let  x = mkHNm "x"
                                                      vx = CExpr_Var x
-                                                     xStrict = hsnSuffix x "!"
+                                                     xStrict = hsnUniqifyEval x
                                                      vxStrict = CExpr_Var xStrict
                                                      mkSel n = mkCExprSatSelsCaseMeta
                                                                  ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) (CMetaVal_Dict Nothing) vx @dictTag
@@ -755,7 +755,7 @@ SEM Decl
                                                        = [mkCBind1 nDflt (mkCExprLam1Meta nD (CMetaVal_Dict Nothing) d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = mkCExprApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (cundefined @lhs.opts))
-                                                             nD = hsnPrefix "_self_" nDflt
+                                                             nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
                                                      ++ [ mkCBind1 n $ mkCExprLam1Meta x (CMetaVal_Dict Nothing) $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
@@ -802,7 +802,7 @@ Part of the processing is generating fresh names for members.
 In the example, "03" is a prefix specific for the default definitions of class Eq, and "05" for the instance definition Eq Boolean.
 
 We use a few notational conventions in the example:
- * what is shown as a string is really an HsName, thus "eq" really is HNm "eq"
+ * what is shown as a string is really an HsName, thus "eq" really is HsName_Base "eq"
  * we use => to denote a CBind, thus  a=>b  means  CBind a m b 
  * we omit the meta-annotation m in CBinds.
 
@@ -850,7 +850,7 @@ SEM Decl
                                                      memberNames     = [ n 
                                                                        | (n,_) <- tyRowCanonOrder @recTyExts 
                                                                        ]
-                                                     memberNewNames  = [ hsnSuffix @dictNm ('~':show n)
+                                                     memberNewNames  = [ hsnUniqifyStr HsNameUniqifier_DictField (show n) @dictNm -- hsnSuffix @dictNm ('~':show n)
                                                                        | n <- memberNames
                                                                        ]
                                                      memberNewVars   = map CExpr_Var memberNewNames
@@ -860,8 +860,8 @@ SEM Decl
                                                                                                                                                                                        
                                                      mkNormalD instanceBindings
                                                        = let dfltNm       = clgiDfltDictNm @clgi
-                                                             rsltNmStrict = hsnSuffix rsltNm "!"
-                                                             dfltNmStrict = hsnSuffix dfltNm "!"
+                                                             rsltNmStrict = hsnUniqifyEval rsltNm
+                                                             dfltNmStrict = hsnUniqifyEval dfltNm
                                                              dfltVar      = CExpr_Var dfltNm
                                                              rsltVarStrict= CExpr_Var rsltNmStrict
                                                              dfltVarStrict= CExpr_Var dfltNmStrict
@@ -1061,7 +1061,7 @@ SEM Decl
                                                                      nrOfAlts rsltVar extraCxL (dcfInitialArgL dcf)
                                                             else mkCExprLam (dcfInitialArgL dcf ++ take fArity nsA)
                                                                    (dcfWrapCase dcf @lhs.opts @derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
-                                                                    $ mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n1 "!") n1v
+                                                                    $ mkCExprStrictSatCase @rceEnv (Just $ hsnUniqifyEval n1) n1v
                                                                       [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
                                                                                  (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
                                                                       | (ctag,altPrOccL) <- zip (map dtiCTag dtis) @derivAltsPrOcc
@@ -1090,7 +1090,7 @@ SEM Decl
                                                              mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
                                                                = case nms of
                                                                    (n:ns) | arity > 0
-                                                                     -> mkCExprStrictSatCase @rceEnv (Just $ hsnSuffix n "!") (CExpr_Var n)
+                                                                     -> mkCExprStrictSatCase @rceEnv (Just $ hsnUniqifyEval n) (CExpr_Var n)
                                                                           (   [ mka (dtiCTag dti) tsubs (mkc tg altInx (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
                                                                            ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- map dtiCTag dtisLT ]
                                                                            ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- map dtiCTag dtisGT ]
@@ -1152,7 +1152,7 @@ rpatBindL2CBindL env subBinds parNm ct rest pbL
     $  map  (\(RPatBind_Bind l o _ p,mbOff)
                 -> let  b n = [CBindInPat (mkCBind1 n (mkc n mbOff)) subBinds]
                         pn  = parNm
-                        pn' = hsnSuffix pn "!"
+                        pn' = hsnUniqifyEval pn
                         mkc n (Just o) = mkCExprSatSelCase env (Just pn') (CExpr_Var pn) ct n l o rest
                         mkc n Nothing  = mkCExprSelCase    env (Just pn') (CExpr_Var pn) ct n l o rest
                    in   case {- tr "rpatBindL2CBindL" (rcpPNm p >#< hasSub) $ -} rcpPNm p of
@@ -1169,7 +1169,7 @@ rpatBindL2CBindL env hasSub parNm ct rest pbL
     $  map  (\(RPatBind_Bind l o _ p,mbOff)
                 -> let  b n = [mkCBind1 n (mkc n mbOff)]
                         pn  = parNm
-                        pn' = hsnSuffix pn "!"
+                        pn' = hsnUniqifyEval pn
                         mkc n (Just o) = mkCExprSatSelCase env (Just pn') (CExpr_Var pn) ct n l o rest
                         mkc n Nothing  = mkCExprSelCase    env (Just pn') (CExpr_Var pn) ct n l o rest
                    in   case {- tr "rpatBindL2CBindL" (rcpPNm p >#< hasSub) $ -} rcpPNm p of

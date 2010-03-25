@@ -84,5 +84,5 @@ SEM GrExpr
 %%[[10
                                   GrVal_NodeAdapt _ _   -> @trf
 %%]]
-                                  v                     -> GrExpr_Unit v
+                                  v                     -> GrExpr_Unit v GrType_None
 %%]

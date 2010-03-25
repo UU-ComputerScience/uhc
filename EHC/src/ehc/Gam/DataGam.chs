@@ -30,7 +30,10 @@
 %%[(7 hmtyinfer) import({%{EH}Ty.Trf.Quantify})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%]
+
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -242,7 +245,22 @@ dgiIsEnumable dgi = dgiMaxConstrArity dgi == 0
 %%% Instances
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(20 hmtyinfer)
+deriving instance Typeable DataFldInfo
+deriving instance Data DataFldInfo
+
+deriving instance Typeable DataTagInfo
+deriving instance Data DataTagInfo
+
+deriving instance Typeable DataFldInConstr
+deriving instance Data DataFldInConstr
+
+deriving instance Typeable DataGamInfo
+deriving instance Data DataGamInfo
+
+%%]
+
+%%[(9999 hmtyinfer)
 instance ForceEval DataFldInfo
 %%[[102
   where
@@ -266,4 +284,28 @@ instance ForceEval DataGamInfo where
 %%[[102
   fevCount (DataGamInfo n t nl tm cm nt mx) = cmUnions [cm1 "DataGamInfo",fevCount n,fevCount t,fevCount nl,fevCount tm,fevCount cm,fevCount nt,fevCount mx]
 %%]]
+%%]
+
+%%[(20 hmtyinfer)
+instance Serialize DataFldInfo where
+  sput (DataFldInfo a) = sput a
+  sget = liftM DataFldInfo sget
+
+instance Serialize DataTagInfo where
+%%[[20
+  sput (DataTagInfo a b c) = sput a >> sput b >> sput c 
+  sget = liftM3 DataTagInfo sget sget sget
+%%][95
+  sput (DataTagInfo a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 DataTagInfo sget sget sget sget
+%%]]
+
+instance Serialize DataFldInConstr where
+  sput (DataFldInConstr a) = sput a
+  sget = liftM DataFldInConstr sget
+
+instance Serialize DataGamInfo where
+  sput (DataGamInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
+  sget = liftM7 DataGamInfo sget sget sget sget sget sget sget
+
 %%]

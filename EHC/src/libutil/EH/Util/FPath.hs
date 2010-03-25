@@ -21,7 +21,8 @@ module EH.Util.FPath
   
   , fpathOpenOrStdin, openFPath
   
-  , SearchPath, FileSuffixes
+  , SearchPath
+  , FileSuffixes, FileSuffix
   , mkInitSearchPath, searchPathFromFPath, searchPathFromFPaths
   , searchPathFromString
   , searchFPathFromLoc
@@ -280,7 +281,8 @@ fpathEnsureExists fp
 -------------------------------------------------------------------------------------------
 
 type SearchPath = [String]
-type FileSuffixes = [String]
+type FileSuffix   =  Maybe String
+type FileSuffixes = [FileSuffix]
 
 searchPathFromFPaths :: [FPath] -> SearchPath
 searchPathFromFPaths fpL = nub [ d | (Just d) <- map fpathMbDir fpL ] ++ [""]
@@ -297,7 +299,9 @@ searchPathFromString
   where f "" = Nothing
         f sp = Just (break (== ';') sp)
 
-searchFPathFromLoc :: String -> FPath -> [(String,FPath)]
+-- Simple function that returns a particular file under a
+-- certain root dir.
+searchFPathFromLoc :: FilePath -> FPath -> [(FilePath,FPath)]
 searchFPathFromLoc loc fp = [(loc,fpathPrependDir loc fp)]
 
 searchLocationsForReadableFiles :: (loc -> FPath -> [(loc,FPath)]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
@@ -322,7 +326,7 @@ searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
                       (\(ms,f) -> tryToOpen loc ms f)
-                      ((Nothing,fp) : zipWith (\s f -> (Just s,f)) suffs (repeat fp))
+                      ({- (Nothing,fp) : -} zipWith (\s f -> (s,f)) suffs (repeat fp))
         tryToOpenInDir loc
           = select True (tryToOpenWithSuffs suffs) (getfp loc fp)
      in select True tryToOpenInDir locs

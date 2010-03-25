@@ -11,8 +11,9 @@ See XXX.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define	MM_PLAN_SS_GCPROGRESS_COLLECTING			(1<<0)
-#define	MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING		(1<<1)
+// state of gc progress
+#define	MM_PLAN_SS_GCPROGRESS_COLLECTING			(1<<0)		// busy with collecting
+#define	MM_PLAN_SS_GCPROGRESS_POSTCOLLECTING		(1<<1)		// busy with gc postprocessing
 %%]
 
 %%[8

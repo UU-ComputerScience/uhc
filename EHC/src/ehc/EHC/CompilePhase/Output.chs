@@ -24,11 +24,11 @@ Output generation, on stdout or file
 %%]
 
 -- HI syntax and semantics
-%%[20 import(qualified {%{EH}HI} as HI, qualified {%{EH}HI.MainAG} as HISem)
+%%[20 import(qualified {%{EH}HI} as HI)
 %%]
 
 -- Core output
-%%[(8 codegen) import({%{EH}Core.Pretty})
+%%[(8 codegen) import({%{EH}Core},{%{EH}Core.Pretty})
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Pretty})
 %%]
@@ -37,6 +37,13 @@ Output generation, on stdout or file
 %%]
 -- Java output
 %%[(8 codegen java) import({%{EH}Core.ToJava})
+%%]
+
+-- serialization
+%%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
+%%]
+-- for debugging only
+%%[20 import({%{EH}Gam})
 %%]
 
 -- module admin
@@ -62,17 +69,24 @@ cpOutputTyCore suff modNm
          }
 %%]
 
-%%[(8 codegen) export(cpOutputCore)
-cpOutputCore :: String -> HsName -> EHCompilePhase ()
-cpOutputCore suff modNm
+%%[(8 codegen) export(cpOutputCoreModule,cpOutputCore)
+cpOutputCoreModule :: String -> String -> HsName -> CModule -> EHCompilePhase ()
+cpOutputCoreModule nmsuff suff modNm cMod
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+                 fpC = mkOutputFPath opts modNm fp (suff ++ nmsuff) -- for now nmsuff after suff, but should be inside name
+         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
+         }
+
+cpOutputCore :: String -> String -> HsName -> EHCompilePhase ()
+cpOutputCore nmsuff suff modNm
   =  do  {  cr <- get
          -- part 1: current .core
-         ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
+         ;  let  (ecu,_,_,_) = crBaseInfo modNm cr
                  mbCore = ecuMbCore ecu
                  cMod   = panicJust "cpOutputCore" mbCore
-                 fpC = mkOutputFPath opts modNm fp suff
          ;  cpMsg modNm VerboseALot "Emit Core"
-         ;  lift $ putPPFPath fpC (ppCModule opts cMod) 100
+         ;  cpOutputCoreModule nmsuff suff modNm cMod
          }
 %%]
 
@@ -92,17 +106,28 @@ cpOutputJava suff modNm
 %%]
 
 %%[(8 codegen grin) export(cpOutputGrin)
-cpOutputGrin :: String -> HsName -> EHCompilePhase ()
-cpOutputGrin suff modNm
+cpOutputGrin :: Bool -> String -> HsName -> EHCompilePhase ()
+cpOutputGrin binary suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mbGrin = ecuMbGrin ecu
                  grin   = panicJust "cpOutputGrin" mbGrin
-                 grinPP = ppGrModule grin
                  mkb x  = x ++ suff
                  fpG    = mkOutputFPath opts (mkHNm $ mkb $ show modNm) (fpathUpdBase mkb fp) "grin"
-         ;  cpMsg modNm VerboseALot "Emit Grin"
-         ;  lift $ putPPFPath fpG grinPP 1000 --TODO ? getal
+                 fnG    = fpathToStr fpG
+         ;  when (True) -- ehcOptFullProgAnalysis opts)
+                 (do { cpMsg modNm VerboseALot "Emit Grin"
+%%[[8
+                     ; lift $ putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+%%][20
+                     ; lift (if binary
+                             then do { -- maybe also a check for existence, as required for .hi files?
+                                       putSerializeFile fnG grin
+                                     }
+                             else putPPFPath fpG (ppGrModule grin) 1000 --TODO ? getal
+                            )
+%%]]
+                     })
          }
 
 %%]
@@ -128,22 +153,31 @@ cpOutputHI suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                 binds  = Seq.toList $ HI.hiFromHIInfo
-                          $ ((ecuHIInfo ecu)
-                               { HI.hiiExps       = mmiExps       mmi
-                               , HI.hiiHiddenExps = mmiHiddenExps mmi
-                               })
-                 hi     = HISem.wrap_AGItf
-                            (HISem.sem_AGItf
-                              (HI.AGItf_AGItf $ HI.Module_Module modNm
-                                $ [ HI.Binding_Stamp (Cfg.verTimestamp Cfg.version) (Cfg.verSig Cfg.version) (Cfg.verMajor Cfg.version) (Cfg.verMinor Cfg.version) (Cfg.verMinorMinor Cfg.version) (Cfg.verSvnRevision Cfg.version) (optsDiscrRecompileRepr opts) 0
-                                  , HI.Binding_Settings (ecuHasMain ecu)
-                                  ] ++ binds))
-                            (crsiHIInh crsi)
+                 hiinfo = (ecuHIInfo ecu)
+                               { HI.hiiExps                 = mmiExps       mmi
+                               , HI.hiiHiddenExps           = mmiHiddenExps mmi
+                               , HI.hiiHasMain              = ecuHasMain ecu
+                               , HI.hiiTargetVariant        = ehcOptTargetVariant opts
+                               , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version
+                               , HI.hiiSrcSig               = Cfg.verSig Cfg.version
+                               , HI.hiiSrcVersionMajor      = Cfg.verMajor Cfg.version
+                               , HI.hiiSrcVersionMinor      = Cfg.verMinor Cfg.version
+                               , HI.hiiSrcVersionMinorMinor = Cfg.verMinorMinor Cfg.version
+                               , HI.hiiSrcVersionSvn        = Cfg.verSvnRevision Cfg.version
+                               , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
+                               }
+                 fpH    = mkOutputFPath opts modNm fp suff
+                 fnH    = fpathToStr fpH
          ;  cpMsg modNm VerboseALot "Emit HI"
-         ;  lift $ putPPFPath (mkOutputFPath opts modNm fp suff) (HISem.pp_Syn_AGItf hi) 120
+         ;  hiExists <- lift $ doesFileExist fnH
+         ;  when (hiExists)
+                 (lift $ removeFile fnH)
+         ;  when (ehcOptVerbosity opts >= VerboseALot)
+                 (do { lift $ putPPLn (pp hiinfo)
+                     })
+         ;  lift $ putSerializeFile fnH hiinfo
          ;  now <- lift $ getClockTime
-         ;  cpUpdCU modNm (ecuStoreHITime now)
+         ;  cpUpdCU modNm (ecuStoreHIInfoTime now)
          }
 
 %%]

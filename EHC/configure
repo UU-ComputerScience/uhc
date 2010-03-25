@@ -667,6 +667,7 @@ EH_VERSION_MINORMINOR
 EH_VERSION_STABILITY
 EH_VERSION_SHORT
 EH_VERSION_FULL
+EH_VERSION_ASNUMBER
 m4Cmd
 svnCmd
 SVN_EXISTS
@@ -699,7 +700,10 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX
 ghcCmd
 GHC_CMD
 GHC_VERSION
+GHC_CMD1
 ghcPkgCmd
+hsc2hsCmd
+HSC2HS_CMD
 haddockCmd
 HADDOCK_CMD
 HADDOCK_VERSION
@@ -729,6 +733,8 @@ llvmLlc
 LLVM_LLC_CMD
 md5Cmd
 MD5_CMD
+tarCmd
+TAR_CMD
 CPP
 GREP
 EGREP
@@ -736,9 +742,6 @@ GCC_EXTLIBS_OPTIONS
 GMP_ABI
 MPLIB
 GMP_LIB_ARCHIVE
-MACH_DEP_C_FOR_TAILCALL_ENTER
-MACH_DEP_C_FOR_TAILCALL_LEAVE1
-MACH_DEP_C_FOR_TAILCALL_LEAVE2
 GCC_EHC_EXTRA_EXTERN_LIBS
 SUFFIX_SHELL
 SUFFIX_EXEC
@@ -2029,6 +2032,8 @@ EH_VERSION_SHORT=$EH_VERSION_MAJOR.$EH_VERSION_MINOR
 
 EH_VERSION_FULL=$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR
 
+EH_VERSION_ASNUMBER=$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR
+
 
 
 
@@ -2369,7 +2374,7 @@ fi
 ENABLE_CLR=$enableClr
 
 
-### ar, ranlib, libtool
+### ranlib
 
   # Extract the first word of "ranlib", so it can be a program name with args.
 set dummy ranlib; ac_word=$2
@@ -2437,6 +2442,7 @@ esac
 RANLIB_CMD=$ranlibCmd
 
 
+### ar
 
   # Extract the first word of "ar", so it can be a program name with args.
 set dummy ar; ac_word=$2
@@ -2504,6 +2510,7 @@ esac
 AR_CMD=$arCmd
 
 
+### libtool
 
   # Extract the first word of "libtool", so it can be a program name with args.
 set dummy libtool; ac_word=$2
@@ -2755,7 +2762,22 @@ GHC_CMD=$ghcCmd
 GHC_VERSION=$ghcVersion
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+case $HostPlatform in
+  i*86-*-mingw* | i*86-*-cygwin* )
+  ghcCmd1=`echo $ghcCmd | sed 's+/\(.\)/+\1:/+'`
+  echo "ghcCmd is $ghcCmd, raw is $ghcCmd1"
+  echo $ghcCmd | sed 's+/\(.\)/+\1:/+'
+  ;;
+  *)
+  ghcCmd1=$ghcCmd
+  ;;
+esac
+
+GHC_CMD1=$ghcCmd1
+
+
+
+### assuming we have ghc, check for some of the additional tools
 # Extract the first word of "ghc-pkg", so it can be a program name with args.
 set dummy ghc-pkg; ac_word=$2
 { echo "$as_me:$LINENO: checking for $ac_word" >&5
@@ -2796,8 +2818,54 @@ echo "${ECHO_T}no" >&6; }
 fi
 
 
+# Extract the first word of "hsc2hs", so it can be a program name with args.
+set dummy hsc2hs; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_path_hsc2hsCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  case $hsc2hsCmd in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_hsc2hsCmd="$hsc2hsCmd" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_path_hsc2hsCmd="$as_dir/$ac_word$ac_exec_ext"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+  ;;
+esac
+fi
+hsc2hsCmd=$ac_cv_path_hsc2hsCmd
+if test -n "$hsc2hsCmd"; then
+  { echo "$as_me:$LINENO: result: $hsc2hsCmd" >&5
+echo "${ECHO_T}$hsc2hsCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+HSC2HS_CMD=$hsc2hsCmd
+
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
+ghcLibNetwork=no
+ghcLibBinary=no
 if test x$ghcExists = xyes
 then
   if test -x "$ghcCmd" -a -x "$ghcPkgCmd"
@@ -2818,6 +2886,12 @@ then
     ghcLibNetwork=`$ghcPkgCmd list --simple-output network`
     if test "x$ghcLibNetwork" != "x" ; then
       ghcLibNetworkExists=yes
+    fi
+
+    # binary
+    ghcLibBinary=`$ghcPkgCmd list --simple-output binary`
+    if test "x$ghcLibBinary" != "x" ; then
+      ghcLibBinaryExists=yes
     fi
   fi
 fi
@@ -3062,6 +3136,10 @@ case $HostPlatform in
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$gccCmd"
         then
           gccCmd="`echo $gccCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$gccCmd"
+          then
+            gccCmd="$gccCmd-3"
+          fi
         fi
         ;;
   *)
@@ -4147,12 +4225,17 @@ fi
 # Now we have to deal with weird cygwin behaviour which allows /usr/bin to be used
 # whereas in reality it is mapped onto /bin. Direct acccess to /usr/bin with a c:/cygwin prefix therefore does not work
 # and has to be stripped of the /usr part.
+# Then, the resulting filename may refer to a symbolic link. If so, Try to dereference it by postfixing -3, that is cpp becomes cpp-3
 # For other tools like gcc we have to this too.
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         if test ! -x "$toplevelSystemAbsolutePathPrefix/$cppCmd"
         then
           cppCmd="`echo $cppCmd | sed -e 's+/usr++'`"
+          if test -L "$toplevelSystemAbsolutePathPrefix/$cppCmd"
+          then
+            cppCmd="$cppCmd-3"
+          fi
         fi
         ;;
   *)
@@ -4162,16 +4245,19 @@ esac
 CPP_CMD=$cppCmd
 
 
-# LLVM Assembler
+
+if test x$enableLlvm = xyes
+then
+  # LLVM Assembler
 
 # Check whether --with-llvm-as was given.
 if test "${with_llvm_as+set}" = set; then
   withval=$with_llvm_as;  llvmAs="$withval"
 else
 
-  if test "x$LLVM_AS" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLVM_AS" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "llvm-as", so it can be a program name with args.
 set dummy llvm-as; ac_word=$2
@@ -4225,27 +4311,27 @@ echo "$as_me: error:
 
   fi
 
+      fi
+    else
+      llvmAs=$LLVM_AS
     fi
-  else
-    llvmAs=$LLVM_AS
-  fi
 
 
 fi
 
-LLVM_AS_CMD=$llvmAs
+  LLVM_AS_CMD=$llvmAs
 
 
-# LLVM Optimizer
+  # LLVM Optimizer
 
 # Check whether --with-opt was given.
 if test "${with_opt+set}" = set; then
   withval=$with_opt;  llvmOpt="$withval"
 else
 
-  if test "x$LLVM_OPT" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLVM_OPT" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "opt", so it can be a program name with args.
 set dummy opt; ac_word=$2
@@ -4299,27 +4385,27 @@ echo "$as_me: error:
 
   fi
 
+      fi
+    else
+      llvmOpt=$LLVM_OPT
     fi
-  else
-    llvmOpt=$LLVM_OPT
-  fi
 
 
 fi
 
-LLVM_OPT_CMD=$llvmOpt
+  LLVM_OPT_CMD=$llvmOpt
 
 
-# LLVM Compiler
+  # LLVM Compiler
 
 # Check whether --with-llc was given.
 if test "${with_llc+set}" = set; then
   withval=$with_llc;  llvmLlc="$withval"
 else
 
-  if test "x$LLC" = "x"; then
-    if test x$enableLlvm = xyes
-    then
+    if test "x$LLC" = "x"; then
+      if test x$enableLlvm = xyes
+      then
 
   # Extract the first word of "llc", so it can be a program name with args.
 set dummy llc; ac_word=$2
@@ -4373,22 +4459,23 @@ echo "$as_me: error:
 
   fi
 
+      fi
+    else
+      llvmLlc=$LLC
     fi
-  else
-    llvmLlc=$LLC
-  fi
 
 
 fi
 
-LLVM_LLC_CMD=$llvmLlc
+  LLVM_LLC_CMD=$llvmLlc
 
 
-if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
-then
-  llvmExists=yes
-else
-  llvmExists=no
+  if test -x $llvmLlc -a -x $llvmAs -a -x $llvmOpt
+  then
+    llvmExists=yes
+  else
+    llvmExists=no
+  fi
 fi
 
 # md5
@@ -4433,6 +4520,52 @@ fi
 
 
 MD5_CMD=$md5Cmd
+
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+for ac_prog in gnutar tar
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ echo "$as_me:$LINENO: checking for $ac_word" >&5
+echo $ECHO_N "checking for $ac_word... $ECHO_C" >&6; }
+if test "${ac_cv_prog_tarCmd+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  if test -n "$tarCmd"; then
+  ac_cv_prog_tarCmd="$tarCmd" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+  for ac_exec_ext in '' $ac_executable_extensions; do
+  if { test -f "$as_dir/$ac_word$ac_exec_ext" && $as_test_x "$as_dir/$ac_word$ac_exec_ext"; }; then
+    ac_cv_prog_tarCmd="$ac_prog"
+    echo "$as_me:$LINENO: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+done
+IFS=$as_save_IFS
+
+fi
+fi
+tarCmd=$ac_cv_prog_tarCmd
+if test -n "$tarCmd"; then
+  { echo "$as_me:$LINENO: result: $tarCmd" >&5
+echo "${ECHO_T}$tarCmd" >&6; }
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
+
+  test -n "$tarCmd" && break
+done
+
+TAR_CMD=$tarCmd
 
 
 # xxx
@@ -28943,41 +29076,22 @@ _ACEOF
 ### machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
-        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
         ;;
   x86_64-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   i386-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
         ;;
   *)
-        mach_dep_c_for_tailcall_leave1=""
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
-MACH_DEP_C_FOR_TAILCALL_ENTER="$mach_dep_c_for_tailcall_enter"
-
-MACH_DEP_C_FOR_TAILCALL_LEAVE1="$mach_dep_c_for_tailcall_leave1"
-
-MACH_DEP_C_FOR_TAILCALL_LEAVE2="$mach_dep_c_for_tailcall_leave2"
-
 GCC_EHC_EXTRA_EXTERN_LIBS="$gcc_ehc_extra_extern_libs"
 
 
@@ -29078,7 +29192,7 @@ case $HostPlatform in
         # get rid off /cygdrive/ prefix
         hardtop=`echo ${hardtop} | sed -e 's%^/cygdrive/\(.\)/%\1:/%' `
         hardtop_plat=`cygpath -w ${hardtop} | sed -e 's@\\\\@/@g' `
-        hardtop_plat2=`echo ${hardtop_plat} | sed -e 's@^\(.\):@/\1@' `
+        hardtop_plat2=${hardtop}
         shellrun="/bin/bash "
         ;;
   *)
@@ -29130,13 +29244,14 @@ EXTLIBS_BGC_PKG_NAME="gc"
 EXTLIBS_GMP_PKG_NAME="gmp"
  # should coincide with installed lib in extlibs/gmp
 
-### if some of the required libraries/tools are absent, this def will check for it and exit
+### if some of the required libraries/tools are absent, this def will check for it and exit when make is invoked
 if test "x$uuagcExists" = "xyes" \
    -a "x$ghcExists" = "xyes" \
    -a "x$gccExists" = "xyes" \
    -a "x$ghcLibFglExists" = "xyes" \
    -a "x$ghcLibUulibExists" = "xyes" \
-   -a "x$ghcLibNetworkExists" = "xyes"
+   -a "x$ghcLibNetworkExists" = "xyes" \
+   -a "x$ghcLibBinaryExists" = "xyes"
 then
   exitIfAbsentLibOrTool=""
 else
@@ -29830,6 +29945,7 @@ EH_VERSION_MINORMINOR!$EH_VERSION_MINORMINOR$ac_delim
 EH_VERSION_STABILITY!$EH_VERSION_STABILITY$ac_delim
 EH_VERSION_SHORT!$EH_VERSION_SHORT$ac_delim
 EH_VERSION_FULL!$EH_VERSION_FULL$ac_delim
+EH_VERSION_ASNUMBER!$EH_VERSION_ASNUMBER$ac_delim
 m4Cmd!$m4Cmd$ac_delim
 svnCmd!$svnCmd$ac_delim
 SVN_EXISTS!$SVN_EXISTS$ac_delim
@@ -29862,7 +29978,10 @@ TOPLEVEL_SYSTEM_ABSPATH_PREFIX!$TOPLEVEL_SYSTEM_ABSPATH_PREFIX$ac_delim
 ghcCmd!$ghcCmd$ac_delim
 GHC_CMD!$GHC_CMD$ac_delim
 GHC_VERSION!$GHC_VERSION$ac_delim
+GHC_CMD1!$GHC_CMD1$ac_delim
 ghcPkgCmd!$ghcPkgCmd$ac_delim
+hsc2hsCmd!$hsc2hsCmd$ac_delim
+HSC2HS_CMD!$HSC2HS_CMD$ac_delim
 haddockCmd!$haddockCmd$ac_delim
 HADDOCK_CMD!$HADDOCK_CMD$ac_delim
 HADDOCK_VERSION!$HADDOCK_VERSION$ac_delim
@@ -29871,10 +29990,6 @@ CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
 uuagcCmd!$uuagcCmd$ac_delim
-UUAGC_CMD!$UUAGC_CMD$ac_delim
-gccCmd!$gccCmd$ac_delim
-GCC_CMD!$GCC_CMD$ac_delim
-CC!$CC$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -29916,6 +30031,10 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+UUAGC_CMD!$UUAGC_CMD$ac_delim
+gccCmd!$gccCmd$ac_delim
+GCC_CMD!$GCC_CMD$ac_delim
+CC!$CC$ac_delim
 CFLAGS!$CFLAGS$ac_delim
 LDFLAGS!$LDFLAGS$ac_delim
 CPPFLAGS!$CPPFLAGS$ac_delim
@@ -29933,6 +30052,8 @@ llvmLlc!$llvmLlc$ac_delim
 LLVM_LLC_CMD!$LLVM_LLC_CMD$ac_delim
 md5Cmd!$md5Cmd$ac_delim
 MD5_CMD!$MD5_CMD$ac_delim
+tarCmd!$tarCmd$ac_delim
+TAR_CMD!$TAR_CMD$ac_delim
 CPP!$CPP$ac_delim
 GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
@@ -29940,9 +30061,6 @@ GCC_EXTLIBS_OPTIONS!$GCC_EXTLIBS_OPTIONS$ac_delim
 GMP_ABI!$GMP_ABI$ac_delim
 MPLIB!$MPLIB$ac_delim
 GMP_LIB_ARCHIVE!$GMP_LIB_ARCHIVE$ac_delim
-MACH_DEP_C_FOR_TAILCALL_ENTER!$MACH_DEP_C_FOR_TAILCALL_ENTER$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE1!$MACH_DEP_C_FOR_TAILCALL_LEAVE1$ac_delim
-MACH_DEP_C_FOR_TAILCALL_LEAVE2!$MACH_DEP_C_FOR_TAILCALL_LEAVE2$ac_delim
 GCC_EHC_EXTRA_EXTERN_LIBS!$GCC_EHC_EXTRA_EXTERN_LIBS$ac_delim
 SUFFIX_SHELL!$SUFFIX_SHELL$ac_delim
 SUFFIX_EXEC!$SUFFIX_EXEC$ac_delim
@@ -29976,7 +30094,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 58; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 61; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -30420,6 +30538,7 @@ echo "  ghc is available?             : $ghcExists"
 if test "x$ghcExists" = "xyes" ;then
 echo "    version                     : $ghcVersion"
 echo "    command for ghc             : $ghcCmd"
+echo "    command for ghc raw         : $ghcCmd1"
 echo "    libraries:"
 echo "      uulib is available?       : $ghcLibUulibExists"
   if test "x$ghcLibUulibExists" = "xyes"
@@ -30441,6 +30560,13 @@ echo "      network is available?     : $ghcLibNetworkExists"
     echo "        version                 : $ghcLibNetwork"
   else
     echo "        **** ERROR **** : 'network' must be installed, use cabal+hackage"
+  fi
+echo "      binary is available?      : $ghcLibBinaryExists"
+  if test "x$ghcLibBinaryExists" = "xyes"
+  then
+    echo "        version                 : $ghcLibBinary"
+  else
+    echo "        **** ERROR **** : 'binary' must be installed, use cabal+hackage"
   fi
 else
 echo "    **** ERROR **** : ghc must be installed, see http://www.haskell.org/ghc"
@@ -30501,7 +30627,7 @@ echo "    version                     : $haddockVersion"
 echo "    command for haddock         : $haddockCmd"
 fi
 
-#echo
-#echo "Misc debug/tmp info:"
-#echo "  hardtop_plat                        : $hardtop_plat"
-
+echo "Absolute location of directories:"
+echo "  ehc repository                : $hardtop_plat2"
+echo "  ehc repository raw            : $hardtop_plat"
+echo "  unix root prefix raw          : $toplevelSystemAbsolutePathPrefix"
