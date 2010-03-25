@@ -26,9 +26,12 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(EH.Util.Debug)
+%%]
 
 
-%%[(8 codegen grin) hs export(heapPointsToAnalysis)
+
+%%[(8 codegen grin) hs export(heapPointsToAnalysis,continuedHeapPointsToAnalysis)
 
 {-
 Main module entry point:
@@ -47,6 +50,21 @@ heapPointsToAnalysis grmod
         
         -- now solve the equations
     in  solveEquations lenEnv equations limitations
+  
+continuedHeapPointsToAnalysis :: (HptMap,GrModule) -> (Int,HptMap)
+continuedHeapPointsToAnalysis (hptMap,grmod)
+  = let -- traverse the tree
+        inh = Inh_GrAGItf {  }
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
+
+        -- get four synthesized attributes
+        equations   = equations_Syn_GrAGItf syn
+        limitations = limitations_Syn_GrAGItf syn
+        
+        -- now solve the equations
+    in  solveEquationsAgain hptMap equations limitations
+        <<< (const $ "continuedHptAnalysis, hptMap = " ++ show hptMap)
+    
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -93,7 +111,7 @@ SEM GrPatLam
     OpaqueAnnot
     PtrAnnot     lhs . maxVar  =  getNr @nm
 
-
+ 
 SEM GrAGItf
   | AGItf  lhs.equations = [ IsEqual x y
                            | (funnr, args) <- @module.allCalls
@@ -287,7 +305,7 @@ SEM GrExpr
                                  (InPtr   tvar      ,  InNode stag snms  )  -> [ IsPointer tvar stag snms ]
 
                                  
-  | UpdateUnit loc.equations2 =  [ IsEqual (getNr @nm)  (fromJust @val.var) ]
+  | UpdateUnit loc.equations2 =  [] -- [ IsEqual (getNr @nm)  (fromJust @val.var) ]
   | Unit       lhs.equations  =  @loc.equations1
   | UpdateUnit lhs.equations  =  @loc.equations2 ++ @loc.equations1
 

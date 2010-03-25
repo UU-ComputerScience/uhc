@@ -10,7 +10,7 @@ Printing names depends on the printing context. ppGrNm factors this out, but for
 if .hi interface files ppGrExpr requires a parameterised variant which prints names as required for .hi files.
 20070310: this is now done via CfgPP
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Pretty} import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode})
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Pretty} import(qualified Data.Map as Map,Data.Array,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}GrinCode},{%{EH}GrinCode.Common})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
@@ -78,6 +78,12 @@ instance PP GrExpr where
 
 instance PPForHI GrExpr where
   ppForHI = ppGrExpr2 CfgPP_HI
+  
+instance PP HptMap where
+  pp hpt = vlist (assocs hpt)
+  
+instance PP AbstractValue where
+  pp abs = text $ show abs
 %%]
 
 %%[(99 codegen grin) hs

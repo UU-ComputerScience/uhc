@@ -4,7 +4,7 @@
 %%]
 %%[(8 codegen grin) module {%{EH}GrinCode.Common}
 %%]
-%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Monoid, Char(isDigit) )
+%%[(8 codegen grin) import( qualified Data.Map as Map, qualified Data.Set as Set, Data.Array, Data.Maybe, Data.Monoid, Char(isDigit) )
 %%]
 %%[(8 codegen grin) import( {%{EH}Base.Common}, {%{EH}Base.Builtin} )
 %%]
@@ -17,7 +17,7 @@
 %% Special names                  %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr)
+%%[(8 codegen grin) export(wildcardNm, wildcardNr, mainNr, getNr, throwTag, hsnMainFullProg, conName, evaluateNr, evaluateArgNr, diffMap)
 
 wildcardNm = hsnFromString "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
@@ -71,7 +71,6 @@ data AbstractValue
   | AbsError String
     deriving (Eq, Ord)
 
-
 type AbstractCall
   = (Variable, [Maybe Variable])
   
@@ -113,7 +112,9 @@ instance Monoid AbstractValue where
     mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
-    mappend a               b               =  AbsError $ "Wrong variable usage: pointer, node or basic value mixed" ++ show a ++ " / " ++ show b
+    mappend a               b               =  AbsError $ "Wrong variable usage: pointer, node or basic value mixed" 
+                                                ++ "\n first = " ++ show a 
+                                                ++ "\n second = " ++ show b
 
 
 -- (Ord GrTag) is needed for (Ord AbstractValue) which is needed for Map.unionWith in mergeNodes
@@ -199,6 +200,42 @@ type Limitations   = [Limitation]
 
 type HptMap  = Array Int AbstractValue
 
+diffMap :: HptMap -> HptMap -> HptMap
+diffMap h1 h2 
+  | bounds h1 == bounds h2 = listArray (bounds h1) (zipWith diff (elems h1) (elems h2))
+  | otherwise = error "woopsie"
+
+nodeDiff :: AbstractNodes -> AbstractNodes -> Maybe AbstractNodes
+nodeDiff (Nodes a) (Nodes b) = if Map.null c then Nothing else Just (Nodes c)
+  where c = Map.differenceWith tagNodeDiff a b
+
+tagNodeDiff :: [Set.Set Variable] -> [Set.Set Variable] -> Maybe [Set.Set Variable]
+tagNodeDiff a b = if all Set.null c then Nothing else Just c
+  where c = zipWith Set.difference a b
+
+ptrDiff   (AbsPtr   an1 vs1 ws1) (AbsPtr an2 vs2 ws2) 
+    = if (Set.null ws3 && Set.null vs3 && isNothing an3) then AbsBottom else AbsPtr (maybe (Nodes Map.empty) id an3) vs3 ws3
+  where
+  ws3 = Set.difference ws1 ws2
+  vs3 = Set.difference vs1 vs2
+  an3 = nodeDiff an1 an2
+
+diff :: AbstractValue -> AbstractValue -> AbstractValue
+diff    AbsBottom    b               =  AbsBottom
+diff  a                 AbsBottom    =  a
+diff    AbsBasic        AbsBasic     =  AbsBottom
+diff   (AbsTags  at)   (AbsTags  bt) =  let rem = Set.difference at bt in
+                                        if Set.null rem then AbsBottom else AbsTags rem
+diff   (AbsNodes an)   (AbsNodes bn) =  maybe AbsBottom AbsNodes (nodeDiff an bn)
+diff   ptr1@(AbsPtr _ _ _) ptr2@(AbsPtr _ _ _) 
+                                     =  ptrDiff ptr1 ptr2
+diff   (AbsUnion am)   (AbsUnion bm) =  AbsUnion (Map.differenceWith (\a b -> case diff a b of { AbsBottom -> Nothing; x -> Just x }) am bm)
+diff a@(AbsError _ ) _               =  a
+diff _               b@(AbsError _ ) =  b
+diff a               b               =  AbsError $ "Wrong variable usage: pointer, node or basic value mixed" 
+                                            ++ "\n first = " ++ show a 
+                                            ++ "\n second = " ++ show b
+                                                
 showHptElem :: (Int,AbstractValue) -> String
 showHptElem (n,v) = show n ++ ": " ++ show v
 

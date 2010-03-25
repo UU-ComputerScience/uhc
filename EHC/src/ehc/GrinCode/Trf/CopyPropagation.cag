@@ -127,13 +127,13 @@ testL pat val
                               GrVal_Empty         -> Nothing
                               _                   -> Nothing -- error "CopyProp: left: empty-pattern does not match"
       GrPatLam_Var     v  ->                         Just (Map.insert v val, id)
-                                                      <<< (const $ "putting " ++ show val ++ " in " ++ show v)
+                                                      <?< (False,const $ "putting " ++ show val ++ " in " ++ show v)
       GrPatLam_VarNode vs -> case val of
                               GrVal_Var      _    -> Nothing
                               GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
-                                                      <<< (const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
+                                                      <?< (False,const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
                               GrVal_VarNode    xs -> Just (unifyNodes vs              xs )
-                                                      <<< (const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
+                                                      <?< (False,const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
                               GrVal_EnumNode    n -> Nothing
                               GrVal_BasicNode t n -> Nothing -- error $ "CopyProp: left: node-pattern does not match BasicNode" ++ show n
                               GrVal_OpaqueNode  n -> Nothing -- error $ "CopyProp: left: node-pattern does not match OpaqueNode" ++ show n
@@ -158,10 +158,10 @@ unifyVars GrVar_Ignore        _                            =  (id, id)
 unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2)  | t1==t2     =  (id, id)
                                               | otherwise  =  error $ "CopyProp: unify: tags do not match: " ++ show t1 ++ " and " ++ show t2
 unifyVars (GrVar_KnownTag t1) (GrVal_Var v2)               =  (id, Map.insert v2 (GrVal_Tag t1))
-                                                                -- <<< (const $ "putting " ++ show val ++ " in tag" ++ show t1)
+                                                                <?< (False,const $ "putting " ++ show v2 ++ " in tag" ++ show t1)
 unifyVars (GrVar_KnownTag _ ) _                            =  (id,id)
 unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, id)
-                                                                <<< (const $ "putting2 " ++ show x ++ " in var" ++ show v1)
+                                                                <?< (False,const $ "putting2 " ++ show x ++ " in var" ++ show v1)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%

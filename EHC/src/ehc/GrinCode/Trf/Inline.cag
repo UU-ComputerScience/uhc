@@ -238,19 +238,19 @@ SEM GrBind
                             && not exported         -- only inline if not exported as global value
                             -- inline possible but keep the bind. (Code duplication).
 %%]]                                                          
-                            -> (callInline, True)
+                            -> (callInline, False {-True-}) -- Should be true.
                         Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                           | @isCAF
-                            && False -- willUseForEval @nm @expr.willUseForMp
+                            && willUseForEval @nm @expr.willUseForMp
                             && FvUse_Val `Set.member` use
 %%[[20
                             && not exported         -- only inline if not exported as global value
 %%]]
-                            -> (cafInline, True)
+                            -> (cafInline, False {- True -}) -- Must be True
                         Just _ 
                           | -- Code duplication because bind is used more than once.
                             not @isCAF
-                            && True -- trivialExpr
+                            && trivialExpr
                             -> (callInline, False)    --False because the bind is used more often.
                         _
                             -> (Map.empty, False) -- don't inline
@@ -355,9 +355,9 @@ SEM GrAlt
 SEM GrBindL
   | Cons  
 SEM GrBind
-  | Bind  (expr.uniqueIds,lhs.uniqueIds) =  --(\(a,b) -> "bind " ++ show @nm 
-                                              -- ++ " idsNeeded = " ++ show @expr.idsNeeded 
-                                            --  ++ " uniqueIds = " ++ show a) >>>
+  | Bind  (expr.uniqueIds,lhs.uniqueIds) =  (False,\(a,b) -> "bind " ++ show @nm 
+                                              ++ " idsCreated = " ++ show @expr.idsCreated 
+                                              ++ " uniqueIds = " ++ show a) >?>
                                             splitAt @expr.inlinedCallIds @lhs.uniqueIds
           loc.idsCreated = @expr.idsCreated + @expr.inlinedCallIds
           lhs.remIds = @expr.uniqueIds
@@ -446,8 +446,8 @@ SEM GrExpr
 ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrModule
-  | Mod         lhs         .   trf             =   (const $ "remIds = " ++ show @bindL.remIds ++ 
-                                                      "\ntotalIdsRenamed = " ++ show @bindL.inlinedCallIds) >>> 
+  | Mod         lhs         .   trf             =   (False,const $ "remIds = " ++ show @bindL.remIds ++ 
+                                                      "\ntotalIdsRenamed = " ++ show @bindL.inlinedCallIds) >?> 
                                                     GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @tagsMp
 
 SEM GrBind

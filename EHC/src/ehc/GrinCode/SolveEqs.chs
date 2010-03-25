@@ -5,7 +5,7 @@
 
 %%[(8 codegen grin) module {%{EH}GrinCode.SolveEqs}
 %%]
-%%[(8 codegen grin) export(solveEquations)
+%%[(8 codegen grin) export(solveEquations,solveEquationsAgain)
 %%]
 %%[(8 codegen grin) import(Data.Maybe, Data.Either, Data.List, Data.Ix, Data.Monoid, Data.Array.ST, Data.Array.IArray, Control.Monad.ST, Control.Monad)
 %%]
@@ -18,6 +18,8 @@
 %%[(8 codegen grin) import(Debug.Trace)
 %%]
 %%[(8 codegen grin) import(System.IO.Unsafe)
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Debug)
 %%]
 
 %%[(8 codegen grin).updateEnv
@@ -58,7 +60,20 @@ readAV2 c0 env v
 
 envChanges :: Equation -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [(Variable,AbstractValue)]
 envChanges equat env
-  = case equat of
+  = (False, const $ "envChanges") >?>
+    (\a -> let d = case equat of 
+      { IsBasic         d            -> d      
+      ; IsTags          d ts         -> d      
+      ; IsPointer       d t as       -> d
+      ; IsConstruction  d t as   ev  -> d
+      ; IsUpdate        d v          -> d
+      ; IsEqual         d v          -> d
+      ; IsEnumeration   d v          -> d
+      ; IsSelection     d v i t      -> d
+      ; IsEvaluation    d v      ev  -> d
+      ; IsApplication   d vs     ev  -> d
+      } in if True {-d == 222-} then trace ("222 eq = " ++ show equat) a else a) $                                      
+    case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
       
       IsTags          d ts         -> return [(d, AbsTags (Set.fromList ts))]
@@ -82,11 +97,12 @@ envChanges equat env
       IsEqual         d v          -> do
                                       {  (c,_,av) <- readArray env v
                                       ;  if c then do {
-                                      ;  let res = case av of
-                                                     AbsPtr _ vs ws -> AbsPtr (Nodes Map.empty) (Set.insert v vs) Set.empty
-                                                     _              -> av
-                                      ;  return [(d, res)]
-                                      } else return [] }
+                                        ;  let res = case av of
+                                                       AbsPtr _ vs ws -> AbsPtr (Nodes Map.empty) (Set.insert v vs) Set.empty
+                                                       _              -> av
+                                        ;  return [(d, res)]
+                                        } else return [] 
+                                      }
 
       IsEnumeration   d v          -> do
                                       {  (c,_,av) <- readArray env v
@@ -142,21 +158,21 @@ envChanges equat env
           _            ->  return $ AbsError ("Variable passed to eval is not a location: " ++ show av)
 
 
-    findFinalValue _ AbsBottom
-      = return AbsBottom
-    findFinalValue c (AbsPtr (Nodes nodes) _ ws)
-      = do { ans <- mapM (readAV2 c env) (Set.toList ws)
-           ; aws <- mapM (findFinalValue undefined) ans
-           ; r <- findFinalValueIntern nodes
-           ; return (mconcat (r:aws))
-           }
-    findFinalValue _ (AbsNodes (Nodes nodes))
-      = findFinalValueIntern nodes
-    findFinalValue _ av
-      = error ("findFinalValueForPtr " ++ show av)
+    findFinalValue c v = (True,const $ "findFinalValue, v = " ++ show v) >?>
+      case v of
+        AbsBottom -> return AbsBottom
+        (AbsPtr (Nodes nodes) _ ws) -> do 
+              { ans <- mapM (readAV2 c env) (Set.toList ws)
+              ; aws <- mapM (findFinalValue undefined) ans
+              ; r <- findFinalValueIntern nodes
+              ; return (mconcat (r:aws))
+              }
+        (AbsNodes (Nodes nodes)) -> findFinalValueIntern nodes
+        av -> error ("findFinalValueForPtr " ++ show av)
 
     findFinalValueIntern nodes
-      = do { let x = AbsNodes (Nodes (Map.filterWithKey (const . isFinalTag) nodes))
+      = (False, const $ "findFinalValueIntern, nodes = " ++ show nodes) >?>
+        do { let x = AbsNodes (Nodes (Map.filterWithKey (const . isFinalTag) nodes))
            --; zs <- mapM (readAV2 False env) [ getNr (trace (show nm ++ " = " ++ show f ++ "\n") nm)  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
            ; zs <- mapM (readAV2 False env) [ getNr nm  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
            ; avs <- mapM (findFinalValue undefined) zs
@@ -201,6 +217,8 @@ envChanges equat env
 
 %%[(8 codegen grin)
 
+debug = True
+
 fixpoint procEqs env
   = countFixpoint 0
     where
@@ -208,13 +226,16 @@ fixpoint procEqs env
         { 
           changes <- procEqs
         
-        ; ae <- getAssocs env
-        --; let s  =  unlines (("SOLUTION": map show ae)) 
-        --; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
-        --                           ; return (return ())
-        --                           }
-        --                       )
-        --; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
+        ; let debugPrint = do
+                { ae <- getAssocs env
+                ; let s  =  unlines (("SOLUTION": map show ae)) 
+                ; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
+                                           ; return (return ())
+                                           }
+                                       )
+                ; trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
+                }
+        ; when debug debugPrint
 
         ; if    changes>0
           then  countFixpoint (count+1)
@@ -227,93 +248,104 @@ procChange env (i,e1) =
    do { (c,_,e0) <- readArray env i
       ; let e2       =  e0 `mappend` e1
             changed  =  e0 /= e2
-      ; when changed (writeArray env i (c,True,e2))
+      ; case e2 of { AbsError e -> error $ "variable " ++ show i ++ " going bad, err = " ++ e; _ -> return ()}
+      ; when changed (writeArray env i (c,True,e2) <?< (True,const $ "hptChange = " ++ show (i,e2)))
       --; when changed (trace ("change " ++ show i ++ " from " ++ show e0 ++ "\n             to " ++ show e2) (return ()))
       ; return changed
       }
 
-
 solveEquations :: Int -> Equations -> Limitations -> (Int,HptMap)
-solveEquations lenEnv eqs lims =
-    runST (
-    do { 
-       --; let eqsStr = unlines (map show eqs )
-       --; let limsStr = unlines (map show lims)
-       --; _ <- unsafePerformIO (do { writeFile ("eqs.txt") eqsStr
-       --                           ; writeFile ("lims.txt") limsStr
-       --                           ; return (return ())
-       --                           }
-       --                       )
-
-       -- create arrays
-       ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
-
-       ; let dependentsChanged (AbsPtr an vs ws)
-                =  do { cs <- mapM (readC env) ({- Set.toList vs ++ -} Set.toList ws)
-                      ; return (or cs)
-                      }
-             dependentsChanged _ 
-                =  return False
-
-       ; let close i 
-                = do { (c0,c1,a) <- readArray env i
-                     ; c2 <- dependentsChanged a
-                     ; when c2 (writeArray env i (c0,c2,a))
-                     ; return ()
-                     }
-
-       ; let shift r i 
-                = do { (_,c,a) <- readArray env i
-                     --; c2 <- if c1 then return True else dependentsChanged a
-                     ; writeArray env i (c,False,a)
-                     ; return (if c then r+1 else r)
-                     }
-
-       ; let procEq equat
-                = do
-                  { 
-                  ; cs <- envChanges equat env
-                  ; mapM_ (procChange env) cs
-                  ; return ()
-                  }
-
-       ; let (eqs1a, eqs1b) = partition eqOnceApplicable eqs
-
-
-       ; let procEqs = do { mapM_ procEq eqs1b
-                          ; mapM close [0..lenEnv-1]
-                          ; r <- foldM shift 0 [0..lenEnv-1]
-                          ; return r
-                          }
-
-                  
-       ; _ <- mapM procEq eqs1a
-                  
-       ; count <- fixpoint procEqs env
-      
-       ; let limsMp = Map.fromList lims
-             lims2 = [ (y,z) 
-                     | IsEvaluation x y _ <- eqs1b
-                     , let mbz = Map.lookup x limsMp
-                     , isJust mbz
-                     , let z=fromJust mbz 
-                     ]
-                     ++ lims
-             lims2Mp = Map.fromList lims2
-                     
-
-       --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
-
-       ; mapM (procLimit env) lims2      
-
-       --; ae  <- getAssocs env
-       --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
-      
-       ; absEnv0 <- mapArray (\(_,_,a)->a) env
-       ; absEnv  <- unsafeFreeze absEnv0
-       ; return (count, absEnv)
+solveEquations lenEnv eqs lims = runST $ do 
+       { env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
+       ; solveEquationsBase env eqs lims
        }
-       )
+
+solveEquationsAgain :: HptMap -> Equations -> Limitations -> (Int,HptMap)
+solveEquationsAgain hpt eqs lims = runST $ do 
+       { let hptBounds = bounds hpt
+       ; let inpList =  map (\t -> (True,False,snd t) ) (assocs hpt)
+       ; env <- newListArray hptBounds inpList
+       ;  solveEquationsBase env eqs lims
+       }
+
+solveEquationsBase :: STArray s Variable (Bool,Bool,AbstractValue) -> Equations -> Limitations -> ST s (Int,HptMap)
+solveEquationsBase env eqs lims = do
+   { let eqsStr = unlines (map show eqs )
+   ; let limsStr = unlines (map show lims)
+   ; when debug (unsafePerformIO $ do 
+                  { writeFile ("eqs.txt") eqsStr
+                  ; writeFile ("lims.txt") limsStr
+                  ; return (return ())
+                  }
+               )
+
+   -- create arrays
+   ; lenEnv <- fmap (\(i,o) -> o+1) (getBounds env)
+   ; let dependentsChanged (AbsPtr an vs ws)
+            =  do { cs <- mapM (readC env) ({- Set.toList vs ++ -} Set.toList ws)
+                  ; return (or cs)
+                  }
+         dependentsChanged _ 
+            =  return False
+
+   ; let close i 
+            = do { (c0,c1,a) <- readArray env i
+                 ; c2 <- dependentsChanged a
+                 ; when c2 (writeArray env i (c0,c2,a))
+                 ; return ()
+                 }
+
+   ; let shift r i 
+            = do { (_,c,a) <- readArray env i
+                 --; c2 <- if c1 then return True else dependentsChanged a
+                 ; writeArray env i (c,False,a)
+                 ; return (if c then r+1 else r)
+                 }
+
+   ; let procEq equat
+            = do
+              { 
+              ; cs <- envChanges equat env
+              ; mapM_ (procChange env) cs
+              ; return ()
+              }
+
+   ; let (eqs1a, eqs1b) = partition eqOnceApplicable eqs
+
+
+   ; let procEqs = do { mapM_ procEq  eqs1b
+                      ; mapM close [0..lenEnv-1]
+                      ; r <- foldM shift 0 [0..lenEnv-1]
+                      ; return r
+                      }
+
+              
+   ; _ <- mapM procEq eqs1a
+              
+   ; count <- fixpoint procEqs env
+  
+   ; let limsMp = Map.fromList lims
+         lims2 = [ (y,z) 
+                 | IsEvaluation x y _ <- eqs1b
+                 , let mbz = Map.lookup x limsMp
+                 , isJust mbz
+                 , let z=fromJust mbz 
+                 ]
+                 ++ lims
+         lims2Mp = Map.fromList lims2
+                 
+
+   --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
+   ; (const $ "count = " ++ show count) >>> return ()
+   ; mapM (procLimit env) lims2      
+
+   --; ae  <- getAssocs env
+   --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+  
+   ; absEnv0 <- mapArray (\(_,_,a)->a) env
+   ; absEnv  <- unsafeFreeze absEnv0
+   ; return (count, absEnv)
+   }
 
 procLimit env (x,ts)
  = do { (c,b,av) <- readArray env x

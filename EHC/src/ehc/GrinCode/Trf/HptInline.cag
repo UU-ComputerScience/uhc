@@ -2,6 +2,9 @@
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.Inline(grInline)})
 %%]
 
+%%[(8 codegen grin) hs import({%{EH}GrinCode.PointsToAnalysis(continuedHeapPointsToAnalysis,heapPointsToAnalysis)})
+%%]
+
 %%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
 %%]
 
@@ -10,18 +13,51 @@
 
 %%[(8 codegen grin) hs import(EH.Util.Debug)
 %%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty})
+%%]
+%%[(8 codegen grin) hs import(EH.Util.Pretty)
+%%]
+%%[(8 codegen grin) hs import(Data.Array)
+%%]
+
 
 %%[(20 codegen grin) -8.grInline hs export(hptInline)
 hptInline :: Bool -> HsNameS -> GrInlMp -> (GrModule,HptMap) -> Maybe ((GrModule,HptMap),GrInlMp)
 hptInline allow expNmS inlMp (grMod,hptMap) = 
-  let inlineResult = grInline allow  expNmS inlMp grMod   
+  let inlineResult = grInline allow  expNmS inlMp grMod
+      debug = False
+      processInline :: (GrModule,GrInlMp,[(HsName,HsName)]) -> ((GrModule,HptMap),GrInlMp)
       processInline (grMod,inlMp,varSubs) = 
-        let newHptMap = addEnvNamedElems hptMap additions
-            additions :: [(Int,AbstractValue)]
-            additions = -- (\a -> "additions are: " ++ show a) >>>
-                        map (\(fromId,toId) -> (getNr toId,getEnvVar newHptMap (getNr fromId))) varSubs
-        in  (const $ "varSubs length = " ++ show (length varSubs) ++ "\nvarsubs = " ++ show varSubs) >>>
-            seq additions ((grMod,newHptMap),inlMp)
-  in  fmap processInline inlineResult
+        let hptWithNewBindings = let              
+                  hptAddedBinds :: [(Int,AbstractValue)]
+                  hptAddedBinds = -- (\a -> "additions are: " ++ show a) >>>
+                     map (\(fromId,toId) -> (getNr toId,getEnvVar hptWithNewBindings (getNr fromId))) varSubs       
+              in addEnvNamedElems hptMap hptAddedBinds
+        
+            hptExtended :: HptMap
+            hptExtended = 
+              let (low,high) = bounds hptMap
+                  extra = foldl (\i -> max i . getNr . snd) high varSubs - high
+                  res = listArray (low, high+extra) (elems hptMap ++ replicate extra AbsBottom) 
+                  hptAddedBinds :: [(Int,AbstractValue)]
+                  hptAddedBinds = map (\(fromId,toId) -> (getNr toId,AbsBottom)) varSubs  
+              in addEnvNamedElems hptMap hptAddedBinds
+                         
+                        
+            (count,updatedHpt) =  --(0,hptWithNewBindings) 
+                                  -- heapPointsToAnalysis grMod 
+                                  continuedHeapPointsToAnalysis (hptExtended,grMod)
+            diffHpt = diffMap hptExtended (snd $ heapPointsToAnalysis grMod) 
+        in  ((grMod,updatedHpt),inlMp)          
+            <<< (const $ "hptExtended = " ++ disp (pp hptExtended) 80 [])
+            -- <<< (const $ "hptHPT = " ++ disp (pp updatedHpt) 80 [])
+            -- <<< (const $ "diffHpt = " ++ disp (pp diffHpt) 80 [])     
+            <?< (False, const $ "hptInlinedgrin = \n" ++ disp (ppGrModule (grMod)) 0 [])
+            <?< (debug, const $ "varSubs length = " ++ show (length varSubs) ++ "\nvarsubs = " ++ show varSubs)
+            <?< (debug, const $ "hptAddedBinds = \n" ++ show hptWithNewBindings)
+            <?< (debug, const $ "hptOld = \n" ++ show hptMap)
+            
+      result = fmap processInline inlineResult
+  in  result
     
 %%]

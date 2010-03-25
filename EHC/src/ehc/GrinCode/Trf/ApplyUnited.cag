@@ -109,7 +109,7 @@ applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1)
          then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2))
          else if n==needs
               then GrExpr_Call  nm  (flds1++flds2)
-              else let newname = hsnFromString "hallo"
+              else let newname = HNmNr 666 (OrigLocal (hsnFromString "ApplyUnitedApplyNode"))
                        flds2a  = take needs flds2
                        flds2b  = drop needs flds2
                    in  GrExpr_Seq (GrExpr_Call  nm  (flds1++flds2a))

@@ -160,7 +160,6 @@ inlineCollectionIterated s useHpt = loop 0
     ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (si ++"j-memberSelected")
     ; transformCode         (dropUnreachableBindings True) 
                                         "DropUnreachableBindings" ; caWriteGrin (si ++"k-reachable")
-    -- loop
     ; when (inChange || esChange || auChange || ecChange || scChange) (
             (loop (i+1)) 
             <?< (showLoopChanges,
@@ -250,6 +249,7 @@ doCompileGrin input opts
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
+         -- ; caHeapPointsTo ; caWriteHptMap "-131b-hpt"  -- Should be removed  
          ; inlineCollectionIterated "-132-" True
 
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-133-possibleCase"
