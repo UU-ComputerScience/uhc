@@ -72,7 +72,7 @@ envChanges equat env
       ; IsSelection     d v i t      -> d
       ; IsEvaluation    d v      ev  -> d
       ; IsApplication   d vs     ev  -> d
-      } in if True {-d == 222-} then trace ("222 eq = " ++ show equat) a else a) $                                      
+      } in if True {-d == 222-} then trace ("eq = " ++ show equat) a else a) $                                      
     case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
       
@@ -248,7 +248,6 @@ procChange env (i,e1) =
    do { (c,_,e0) <- readArray env i
       ; let e2       =  e0 `mappend` e1
             changed  =  e0 /= e2
-      ; case e2 of { AbsError e -> error $ "variable " ++ show i ++ " going bad, err = " ++ e; _ -> return ()}
       ; when changed (writeArray env i (c,True,e2) <?< (True,const $ "hptChange = " ++ show (i,e2)))
       --; when changed (trace ("change " ++ show i ++ " from " ++ show e0 ++ "\n             to " ++ show e2) (return ()))
       ; return changed

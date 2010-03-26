@@ -23,8 +23,9 @@
 
 %%[(20 codegen grin) -8.grInline hs export(hptInline)
 hptInline :: Bool -> HsNameS -> GrInlMp -> (GrModule,HptMap) -> Maybe ((GrModule,HptMap),GrInlMp)
-hptInline allow expNmS inlMp (grMod,hptMap) = 
+hptInline allow expNmS inlMp (grMod,evalInlinedHptMap) = 
   let inlineResult = grInline allow  expNmS inlMp grMod
+      hptMap = heapPointsToAnalysis grMod 
       debug = False
       processInline :: (GrModule,GrInlMp,[(HsName,HsName)]) -> ((GrModule,HptMap),GrInlMp)
       processInline (grMod,inlMp,varSubs) = 
@@ -36,17 +37,14 @@ hptInline allow expNmS inlMp (grMod,hptMap) =
         
             hptExtended :: HptMap
             hptExtended = 
-              let (low,high) = bounds hptMap
-                  extra = foldl (\i -> max i . getNr . snd) high varSubs - high
-                  res = listArray (low, high+extra) (elems hptMap ++ replicate extra AbsBottom) 
-                  hptAddedBinds :: [(Int,AbstractValue)]
+              let hptAddedBinds :: [(Int,AbstractValue)]
                   hptAddedBinds = map (\(fromId,toId) -> (getNr toId,AbsBottom)) varSubs  
               in addEnvNamedElems hptMap hptAddedBinds
                          
                         
-            (count,updatedHpt) =  --(0,hptWithNewBindings) 
-                                  -- heapPointsToAnalysis grMod 
-                                  continuedHeapPointsToAnalysis (hptExtended,grMod)
+            (count,updatedHpt) =  -- (0,hptWithNewBindings) 
+                                  heapPointsToAnalysis grMod 
+                                  -- continuedHeapPointsToAnalysis (hptExtended,grMod)
             diffHpt = diffMap hptExtended (snd $ heapPointsToAnalysis grMod) 
         in  ((grMod,updatedHpt),inlMp)          
             <<< (const $ "hptExtended = " ++ disp (pp hptExtended) 80 [])

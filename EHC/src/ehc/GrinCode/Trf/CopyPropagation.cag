@@ -198,10 +198,11 @@ getHsName nm subst
   =  case Map.lookup nm subst of
       Nothing    -> nm
       Just repl  -> case repl of
-                      GrVal_Var v -> v
-                      _           -> error ("CopyPropagation cannot substitute for name " ++ show nm ++ "\nvalue " ++ disp (ppGrExpr (GrExpr_Unit repl)) 0 ""
-                                             ++ "\nvalue2 = " ++ show repl
-                                             ++ "\nsubst = " ++ show subst)
+        GrVal_Var v -> v
+        _           -> error ("CopyPropagation cannot substitute for name " ++ show nm ++ "\nvalue " 
+                               ++ disp (ppGrExpr (GrExpr_Unit repl GrType_None)) 0 ""
+                               ++ "\nvalue2 = " ++ show repl
+                               ++ "\nsubst = " ++ show subst)
 
 mbSubstTag nm subst 
   =  case Map.lookup nm subst of

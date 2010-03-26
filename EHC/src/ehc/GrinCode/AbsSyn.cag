@@ -49,7 +49,7 @@ DATA GrExpr
                 pat             : GrPatLam
                 body            : GrExpr
   | Unit        val             : GrVal
-                type			: GrType
+                type			      : GrType
   | UpdateUnit  nm              : {HsName}
                 val             : GrVal
   | Case        val             : GrVal

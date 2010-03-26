@@ -1,5 +1,7 @@
 %%[doesWhat doclatex
 
+Changed by Remy. Made recursive so that unit (PApp)  Apply Apply  can remove both applies.
+
 do not do \textit{APPLY} on variables that bind the result of a previous \textit{UNIT} of a P-node.
 Instead, do a \textit{CALL} of the function if it is now saturated, or build a new P-node if it is undersaturated.
 
@@ -79,7 +81,7 @@ SEM GrExpr
                                  (\val -> --(const $ "\ninserting " ++ show @pat.getName ++ " with expr = " ++ show @expr.grTrf) >>>
                                           Map.insert @pat.getName val @lhs.env)
                                  (case @expr.grTrf of
-                                    GrExpr_Unit val@(GrVal_Node (GrTag_PApp _ _) _) -> Just val
+                                    GrExpr_Unit val@(GrVal_Node (GrTag_PApp _ _) _) _ -> Just val
                                     _                                           -> Nothing
                                   )
                                  

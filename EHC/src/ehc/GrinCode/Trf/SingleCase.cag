@@ -70,11 +70,12 @@ SEM GrPatAlt
 
 -- Do the replacement if possible
 SEM GrExpr
-  | Case  (lhs.grTrf,lhs.changed) =   maybe (@loc.grTrf,False)
-                                      (\(p,e) -> (case p of
-                                                   Nothing   -> e
-                                                   Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf) pat e
-                                                  ,True))
-                                                  
-                                      @altL.onlyAlt
+  | Case  (lhs.grTrf,lhs.changed) =   
+              maybe (@loc.grTrf,False)
+              (\(p,e) -> (case p of
+                           Nothing   -> e
+                           Just pat  -> GrExpr_Seq (GrExpr_Unit @val.grTrf GrType_None) pat e
+                          ,True))
+                          
+              @altL.onlyAlt
 %%]
