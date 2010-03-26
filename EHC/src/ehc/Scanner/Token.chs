@@ -7,17 +7,18 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5 module {%{EH}Scanner.Token} import(UU.Scanner.Position, UU.Scanner.GenToken) export(Token,EnumValToken(..), module UU.Scanner.GenToken)
+%%[5 module {%{EH}Scanner.Token} import(UU.Scanner.Position, UU.Scanner.GenToken) export(module UU.Scanner.GenToken)
 %%]
 
 %%[5 export(reserved,valueToken,errToken,tokTpIsInt)
 %%]
 
-%%[8 import(Data.Set) export(tokTpIsId)
+%%[8 import(qualified Data.Set as Set) export(tokTpIsId)
 %%]
 
-%%[5
-type Token = GenToken String EnumValToken String
+%%[5 export(Token, ValTokenVal,EnumValToken(..))
+type ValTokenVal = [String]
+type Token = GenToken String EnumValToken ValTokenVal
 
 data EnumValToken
   = TkVarid
@@ -48,12 +49,25 @@ data EnumValToken
   deriving (Eq, Ord)
 %%]
 
+%%[5 export(tokenVals,tokenVal,tokenMap)
+tokenVals :: Token -> [String]
+tokenVals (ValToken _ v _) = v
+tokenVals (Reserved   v _) = [v]
+
+tokenVal :: Token -> String
+tokenVal = concat . tokenVals
+
+tokenMap :: (String->String) -> Token -> Token
+tokenMap f (ValToken t v p) = ValToken t (map f v) p
+tokenMap f (Reserved   k p) = Reserved   (f k) p
+%%]
+
 %%[5
 reserved                :: String -> Pos -> Token
 reserved                =  Reserved 
 
 valueToken              :: EnumValToken -> String -> Pos -> Token
-valueToken              =  ValToken 
+valueToken t s p        =  ValToken t [s] p
 
 errToken                :: String -> Pos -> Token
 errToken                =  valueToken TkError 
@@ -67,8 +81,8 @@ tokTpIsInt tp = tp == TkInteger8 || tp == TkInteger10 || tp == TkInteger16
 %%[8
 tokTpIsId :: EnumValToken -> Bool
 tokTpIsId
-  = (`member` ts)
-  where ts = fromList
+  = (`Set.member` ts)
+  where ts = Set.fromList
   			   [TkVarid,TkConid,TkOp,TkConOp
 %%[[18
   			   ,TkVaridUnboxed,TkConidUnboxed,TkOpUnboxed,TkConOpUnboxed

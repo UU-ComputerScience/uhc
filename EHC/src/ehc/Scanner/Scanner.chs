@@ -7,6 +7,9 @@
 
 %%]
 
+%%[5 import(Data.List)
+%%]
+
 %%[5 export(module {%{EH}Scanner.Machine}, module {%{EH}Scanner.Token}, module {%{EH}Scanner.TokenParser}, module UU.Scanner.Position)
 %%]
 
@@ -19,7 +22,7 @@ instance Show Token where
     = showString
        (case token of
          Reserved key      pos -> "symbol "      ++ key ++ maybeshow pos
-         ValToken tp val   pos -> show tp ++ " " ++ val ++ maybeshow pos
+         ValToken tp val   pos -> show tp ++ " " ++ concat (intersperse "." val) ++ maybeshow pos
        )
 instance Show EnumValToken where
  show tp = case tp of       

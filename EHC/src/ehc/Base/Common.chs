@@ -893,15 +893,15 @@ tokMkInt t
   = case genTokTp t of
       Just TkInteger10 -> read v
       _                -> 0
-  where v = genTokVal t
+  where v = tokenVal t
 
 tokMkStr :: Token -> String
-tokMkStr = genTokVal
+tokMkStr = tokenVal
 %%]
 
 %%[1.tokMkQName hs
 tokMkQName :: Token -> HsName
-tokMkQName = hsnFromString . genTokVal
+tokMkQName = hsnFromString . tokenVal
 %%]
 
 %%[7 -1.tokMkQName hs
@@ -909,7 +909,7 @@ tokMkQName :: Token -> HsName
 tokMkQName t
   = case genTokTp t of
       Just tp | tokTpIsInt tp -> mkHNmPos $ tokMkInt t
-      _                       -> mkHNm $ genTokVal t
+      _                       -> mkHNm $ map hsnFromString $ tokenVals t
 %%]
 
 %%[1 hs
