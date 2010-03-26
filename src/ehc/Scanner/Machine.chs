@@ -93,6 +93,23 @@ scan opts pos input
 %%]
 
 %%[20
+   scanQualified :: String -> ([String],String)
+   scanQualified s
+     = qual [] s
+     where split isX s  = span (\c -> isX c && c /= '.') s
+           validQuald c = isId c || isOpsym c
+           isId       c = isIdStart c || isUpper c
+           qual q s
+             = case s of
+                 (c:s') | isUpper c                         				-- possibly a module qualifier
+                   -> case split isIdChar s' of
+                        (s'',('.':srest@(c':_))) | validQuald c'  			-- something validly qualifiable follows
+                          -> qual (q ++ [[c] ++ s'']) srest
+                        _ -> dflt
+                 (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
+                   -> dflt
+             where dflt = (q,s)
+%%]
    scanQualified :: String -> (String,String)
    scanQualified s
      = qual "" s
@@ -109,7 +126,6 @@ scan opts pos input
                  (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
                    -> dflt
              where dflt = (q,s)
-%%]
 
 %%[99
    scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
@@ -206,9 +222,15 @@ scan opts pos input
                                                in  valueToken (mktok $ varKind n) n p
                     in  tok : doScan p'' s''
 %%[[20
-               else case doScan (advc (length qualPrefix) p) qualTail of
+               else case doScan (advc (length qualPrefix + sum (map length qualPrefix)) p) qualTail of
                       (tok@(ValToken tp val _):toks)
                          -> ValToken (tokTpQual tp) (qualPrefix ++ val) p : toks
+                      ts -> ts
+%%]]
+%%[[2020
+               else case doScan (advc (length qualPrefix) p) qualTail of
+                      (tok@(ValToken tp [val] _):toks)
+                         -> ValToken (tokTpQual tp) [qualPrefix ++ val] p : toks
                       ts -> ts
 %%]]
 %%]
