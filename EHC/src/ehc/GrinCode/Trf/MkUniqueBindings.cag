@@ -54,6 +54,7 @@ ATTR AllExpr [ || gathSubs USE {++} {[]} : {VarSubs} ]
 {
 mkNewName :: HsName -> Int -> HsName
 mkNewName (HNmNr origUnique origName) unique = HNmNr unique origName
+mkNewName origName unique = HNmNr unique (OrigLocal origName)
                                                -- <<< (const $ "replacing id " ++ show origUnique)
 
 changeName :: (Env,UniqueIds) -> HsName -> (Env,UniqueIds)

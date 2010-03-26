@@ -25,7 +25,7 @@
 hptInline :: Bool -> HsNameS -> GrInlMp -> (GrModule,HptMap) -> Maybe ((GrModule,HptMap),GrInlMp)
 hptInline allow expNmS inlMp (grMod,hptMap) = 
   let inlineResult = grInline allow  expNmS inlMp grMod
-      (_,safeHptMap) = heapPointsToAnalysis grMod      
+      (_,safeHptMap) = (0,hptMap) -- heapPointsToAnalysis grMod      
   in  fmap (processInline safeHptMap) inlineResult
 
 processInline :: HptMap -> (GrModule,GrInlMp,[(HsName,HsName)]) -> ((GrModule,HptMap),GrInlMp)
@@ -55,8 +55,8 @@ processInline hptMap (grMod,inlMp,varSubs) =
                
   diffHpt = diffMap hptExtended (snd $ heapPointsToAnalysis grMod)               
   (count,updatedHpt) =  -- (0,hptWithNewBindings) 
-                        heapPointsToAnalysis grMod 
-                        -- continuedHeapPointsToAnalysis (hptExtended,grMod)
+                        -- heapPointsToAnalysis grMod 
+                        continuedHeapPointsToAnalysis (hptExtended,grMod)
                         
 %%]
 
