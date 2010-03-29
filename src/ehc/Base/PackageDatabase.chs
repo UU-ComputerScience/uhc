@@ -174,7 +174,7 @@ pkgMpFromDir opts order fp
                                               map (\f -> do { k <- parsePkgKey f
                                                             ; return $ (k,fpathPrependDir fp $ fpathFromStr $
                                                                             mkInternalPkgFileBase k (Cfg.installVariant opts)
-                                                                            (ehcOptTarget opts) (ehcOptTargetVariant opts))
+                                                                            (ehcOptTarget opts) (ehcOptTargetFlavor opts))
                                                             })
                                                   pkgWithVersions
                  -- putStrLn (show fp)

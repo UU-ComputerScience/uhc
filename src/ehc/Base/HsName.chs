@@ -244,9 +244,13 @@ hsnShow _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ 
 %%]]
 %%]
 
-%%[7
+%%[1
 instance Show HsName where
+%%[[1
+  show (HsName_Base s) = s
+%%][7
   show = hsnShow "." "_@"
+%%]]
 %%]
 
 %%[1

@@ -21,7 +21,7 @@ Note: everything is exported.
 %%[1 import(EH.Util.ScanUtils)
 %%]
 
-%%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
+%%[1.Scanner import(UU.Scanner, {%{EH}Scanner.TokenParser}) export(module UU.Scanner)
 %%]
 
 %%[1 export(module {%{EH}Scanner.Common})

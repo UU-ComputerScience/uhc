@@ -50,12 +50,16 @@ Target_<treatment>_<intermediate-lang>_<codegen-lang>
 Combinations are all hardcoded to make explicit that only particular combinations are allowed.
 This may change later if/when combinations can be chosen independent/orthogonal.
 
-\paragraph{TargetVariant}
-Variants of target are incompatible, that is cannot be used interchangedly.
+\paragraph{TargetFlavor}
+Flavors of target are incompatible, that is cannot be used interchangedly.
 The code is specific for a particular meta purpose, such as profiling and debugging.
-Currently there are target variants for:
+Currently there are target flavors for:
 
 \begin{itemize}
+\item
+\textbf{plain}
+  : base flavor
+
 \item
 \textbf{debug}
   : includes debugging info, currently:
@@ -170,49 +174,49 @@ showSupportedTargets
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Target variants
+%%% Target flavors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(TargetVariant(..))
-data TargetVariant
-  = TargetVariant_Plain						-- no special stuff
-  | TargetVariant_Debug						-- debugging variant
+%%[(8 codegen) export(TargetFlavor(..))
+data TargetFlavor
+  = TargetFlavor_Plain						-- no special stuff
+  | TargetFlavor_Debug						-- debugging variant
   -- more: profiling, ....
   deriving (Eq,Ord,Enum)
 %%]
 
-%%[(8 codegen) export(defaultTargetVariant)
-defaultTargetVariant :: TargetVariant
-defaultTargetVariant = TargetVariant_Plain
+%%[(8 codegen) export(defaultTargetFlavor)
+defaultTargetFlavor :: TargetFlavor
+defaultTargetFlavor = TargetFlavor_Plain
 %%]
 
 %%[(8 codegen)
-instance Show TargetVariant where
-  show TargetVariant_Plain				= "plain"
-  show TargetVariant_Debug				= "debug"
+instance Show TargetFlavor where
+  show TargetFlavor_Plain				= "plain"
+  show TargetFlavor_Debug				= "debug"
 %%]
 
 Supported target variants.
 
-%%[(8 codegen) export(allTargetVariantMp,showAllTargetVariants',showAllTargetVariants)
-allTargetVariantMp :: Map.Map String TargetVariant
-allTargetVariantMp
+%%[(8 codegen) export(allTargetFlavorMp,showAllTargetFlavors',showAllTargetFlavors)
+allTargetFlavorMp :: Map.Map String TargetFlavor
+allTargetFlavorMp
   = Map.fromList ts
   where ts
           = [ (show t, t)
             | t <-
-                  [ TargetVariant_Plain
-                  , TargetVariant_Debug
+                  [ TargetFlavor_Plain
+                  , TargetFlavor_Debug
                   ]
             ]
 
-showAllTargetVariants' :: String -> String
-showAllTargetVariants'
-  = showStringMapKeys allTargetVariantMp
+showAllTargetFlavors' :: String -> String
+showAllTargetFlavors'
+  = showStringMapKeys allTargetFlavorMp
 
-showAllTargetVariants :: String
-showAllTargetVariants
-  = showAllTargetVariants' " "
+showAllTargetFlavors :: String
+showAllTargetFlavors
+  = showAllTargetFlavors' " "
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -399,8 +403,8 @@ allFFIWays = nub $ concatMap targiAllowedFFI $ Map.elems allTargetInfoMp
 deriving instance Typeable FFIWay
 deriving instance Data FFIWay
 
-deriving instance Typeable TargetVariant
-deriving instance Data TargetVariant
+deriving instance Typeable TargetFlavor
+deriving instance Data TargetFlavor
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -416,11 +420,11 @@ instance Serialize FFIWay where
   sput = sputPlain
   sget = sgetPlain
 
-instance Binary TargetVariant where
+instance Binary TargetFlavor where
   put = putEnum8
   get = getEnum8
 
-instance Serialize TargetVariant where
+instance Serialize TargetFlavor where
   sput = sputPlain
   sget = sgetPlain
 

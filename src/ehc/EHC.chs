@@ -109,7 +109,7 @@ main
                                                Just k  -> Just $
                                                           outputDir ++ "/" ++
                                                           mkInternalPkgFileBase k (Cfg.installVariant opts2)
-                                                                                (ehcOptTarget opts2) (ehcOptTargetVariant opts2)
+                                                                                (ehcOptTarget opts2) (ehcOptTargetFlavor opts2)
                                                _       -> ehcOptOutputDir opts2
                                         _ -> ehcOptOutputDir opts2
                               }
@@ -188,8 +188,10 @@ handleImmQuitOption immq opts
         -> putStr (show defaultTarget)
 %%]]
 %%[[99
-      ImmediateQuitOption_NumericVersion
-        -> putStrLn (Cfg.verNumeric Cfg.version)
+      ImmediateQuitOption_VersionDotted
+        -> putStrLn (Cfg.verFull Cfg.version)
+      ImmediateQuitOption_VersionAsNumber
+        -> putStrLn (Cfg.verAsNumber Cfg.version)
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
              (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
@@ -347,7 +349,7 @@ doCompilePrepare fnL@(fn:_) opts
                      {-
                      -}
                         [ filePathUnPrefix d
-                        | d <- [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
+                        | d <- ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
        ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (ehcOptPackageSearchFilter opts) pkgDb1

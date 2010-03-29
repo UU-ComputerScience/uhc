@@ -181,51 +181,6 @@ mkDerivClsMp fe valGam dataGam
                 )
                 undef undef
                 nowrap
-{-
-           -- Enum(enumFromTo)
-           , mkf ehbnClassEnumFldEnumFromTo
-                Nothing -- only data constructor patterns
-                (take 2 hsnLclSupply)
-                Nothing -- no extra args for recursion on constituents
-                0
-                nononzeroargs
-                (Just $
-                  \_ dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argTo]
-                     -> cbuiltinApp opts ehbnMap
-                          [ cbuiltinApp opts ehbnClassEnumFldToEnum [self]
-                          , cbuiltinApp opts ehbnClassEnumFldEnumFromTo
-                              [ dictEnumInt
-                              , cbuiltinApp opts ehbnClassEnumFldFromEnum [self,CExpr_Var argFrom]
-                              , cbuiltinApp opts ehbnClassEnumFldFromEnum [self,CExpr_Var argTo]
-                              ]
-                          ]
-                )
-                undef undef
-                nowrap
--}
-{-
-           -- Enum(enumFromThenTo)
-           , mkf ehbnClassEnumFldEnumFromThenTo
-                Nothing -- only data constructor patterns
-                (take 3 hsnLclSupply)
-                Nothing -- no extra args for recursion on constituents
-                0
-                nononzeroargs
-                (Just $
-                  \_ dtiSubs nrOfAlts self [dictEnumInt] [argFrom,argThen,argTo]
-                     -> cbuiltinApp opts ehbnMap
-                          [ cbuiltinApp opts ehbnClassEnumFldToEnum [self]
-                          , cbuiltinApp opts ehbnClassEnumFldEnumFromThenTo
-                              [ dictEnumInt
-                              , cbuiltinApp opts ehbnClassEnumFldFromEnum [self,CExpr_Var argFrom]
-                              , cbuiltinApp opts ehbnClassEnumFldFromEnum [self,CExpr_Var argThen]
-                              , cbuiltinApp opts ehbnClassEnumFldFromEnum [self,CExpr_Var argTo]
-                              ]
-                          ]
-                )
-                undef undef
-                nowrap
--}
            -- Enum(fromEnum)
            , mkf ehbnClassEnumFldFromEnum
                 Nothing -- only data constructor patterns
@@ -251,7 +206,7 @@ mkDerivClsMp fe valGam dataGam
                 undef undef
                 (\opts dgi nrOfAlts cNm _ body
                   -> let cNmv = CExpr_Var cNm
-                         cNm1 = hsnUniqifyStr HsNameUniqifier_Evaluated "boundCheck" cNm -- hsnSuffix cNm "!boundCheck"
+                         cNm1 = hsnUniqifyStr HsNameUniqifier_Evaluated "boundCheck" cNm
                      in  mkCIf opts (Just cNm1)
                            (cbuiltinApp opts ehbnPrimGtInt [cNmv,CExpr_Int (nrOfAlts-1)])
                            (cerror opts $ "too high for toEnum to " ++ show (dgiTyNm dgi))
@@ -350,6 +305,14 @@ mkDerivClsMp fe valGam dataGam
            ]
            
 %%[[99
+      -- Ix
+      ,  mkc ehbnClassIx []
+           [
+           -- Ix(range)
+           -- Ix(index)
+           -- Ix(inRange)
+           ]
+
       -- Read
       ,  mkc ehbnClassRead []
            [

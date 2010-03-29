@@ -179,6 +179,10 @@ cpParseHI modNm
        }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: Binary reading
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[20 export(cpDecodeHIInfo)
 cpDecodeHIInfo :: HsName -> EHCompilePhase ()
 cpDecodeHIInfo modNm
@@ -205,16 +209,27 @@ cpDecodeHIInfo modNm
        }
 %%]
 
-%%[20 export(cpDecodeGrin)
-cpDecodeGrin :: HsName -> EHCompilePhase ()
-cpDecodeGrin modNm
+%%[20
+-- | Decode from serialized file and store result in the compileunit for the module modNm
+cpDecode :: Serialize x => String -> EcuUpdater x -> HsName -> EHCompilePhase ()
+cpDecode suff store modNm
   = do { cr <- get
        ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpC     = fpathSetSuff "grin" fp
+              fpC     = fpathSetSuff suff fp
        ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
-       ; grin <- lift $ getSerializeFile (fpathToStr fpC)
-       ; cpUpdCU modNm (ecuStoreGrin grin)
+       ; x <- lift $ getSerializeFile (fpathToStr fpC)
+       ; cpUpdCU modNm (store x)
        }
+%%]
+
+%%[20 export(cpDecodeGrin)
+cpDecodeGrin :: HsName -> EHCompilePhase ()
+cpDecodeGrin = cpDecode "grin" ecuStoreGrin
+%%]
+
+%%[20 export(cpDecodeCore)
+cpDecodeCore :: HsName -> EHCompilePhase ()
+cpDecodeCore = cpDecode "core" ecuStoreCore
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +254,8 @@ cpGetPrevCore modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
-              (cpParseCore modNm)
+              (cpDecodeCore modNm)
+              -- (cpParseCore modNm)
        }
 %%]
 
