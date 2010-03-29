@@ -7,13 +7,40 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser)
+%%[doesWhat doclatex
+Basic token parsers, for constants and other simple stuff.
+
+Note that everything is exported.
 %%]
 
-%%[5 import({%{EH}Scanner.Token})
+%%[1 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser)
 %%]
 
-Everything is exported.
+%%[1.Token import(UU.Scanner.GenToken)
+%%]
+
+%%[5 -1.Token import({%{EH}Scanner.Token})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Token parser wrappers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.pHsValToken
+pHsValToken :: IsParser p (GenToken key tp val) => tp -> val -> p (val,Pos)
+pHsValToken = pValToken
+
+pHsCostValToken'          :: IsParser p (GenToken key tp val) => Int -> tp -> val -> p (GenToken key tp val)
+pHsCostValToken' = pCostValToken'
+%%]
+
+%%[5 -1.pHsValToken
+pHsValToken :: IsParser p Token => EnumValToken -> String -> p (String,Pos)
+pHsValToken t s = valTokenStringRes <$> pValToken t [s]
+
+pHsCostValToken'          :: IsParser p Token => Int -> EnumValToken -> String -> p Token
+pHsCostValToken' c tp val =  pCostValToken' c tp [val]
+%%]
 
 %%[5
 -------------------------------------------------------------------------
@@ -22,12 +49,6 @@ Everything is exported.
 
 valTokenStringRes :: (ValTokenVal,Pos) -> (String,Pos)
 valTokenStringRes (l,p) = (concat l,p)
-
-pHsValToken :: IsParser p Token => EnumValToken -> String -> p (String,Pos)
-pHsValToken t s = valTokenStringRes <$> pValToken t [s]
-
-pHsCostValToken'          :: IsParser p Token => Int -> EnumValToken -> String -> p Token
-pHsCostValToken' c tp val =  pCostValToken' c tp [val]
 
 pKeyPos           :: IsParser p Token => String -> p Pos
 pKeyPos  keyword  =  pReserved keyword

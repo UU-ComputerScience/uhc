@@ -98,7 +98,8 @@ filelocIsPkg (FileLoc  FileLocKind_PkgDb  _) = True
 filelocIsPkg _                               = False
 %%]
 
-%%[8 export(FileLocPath)
+%%[8 export(StringPath,FileLocPath)
+type StringPath  = [String]
 type FileLocPath = [FileLoc]
 %%]
 
@@ -212,7 +213,7 @@ emptyPackageDatabase = PackageDatabase emptyPackageMp Map.empty
 
 %%[99 export(mkInternalPkgFileBase)
 
-mkInternalPkgFileBase :: PkgKey -> String {- compiler name/version -} -> Target -> TargetVariant -> FilePath
+mkInternalPkgFileBase :: PkgKey -> String {- compiler name/version -} -> Target -> TargetFlavor -> FilePath
 mkInternalPkgFileBase pkgKey compversion tgt tgtv =
   Cfg.mkInternalPkgFileBase (showPkgKey pkgKey) compversion (show tgt) (show tgtv)
 

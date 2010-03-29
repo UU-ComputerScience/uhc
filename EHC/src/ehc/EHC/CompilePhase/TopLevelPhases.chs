@@ -206,7 +206,7 @@ cpEhcCoreFullProgPostModulePhases opts modNmL (impModNmL,mainModNm)
            , mergeIntoOneBigCore
            , cpProcessCoreFold mainModNm -- redo folding for replaced main module
            ]
-           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore "" "full.core" mainModNm] else [])
+           ++ (if ehcOptDumpCoreStages opts then [cpOutputCore False "" "full.core" mainModNm] else [])
            ++ [ cpMsg mainModNm VerboseDebug ("Full Core generated, from: " ++ show impModNmL)
               ]
           )
@@ -855,9 +855,9 @@ cpProcessCoreBasic modNm
 %%[[20
                , cpFlowHILamMp modNm
 %%]]
-               , when (ehcOptEmitCore opts) (cpOutputCore "" "core" modNm)
+               , when (ehcOptEmitCore opts) (cpOutputCore True "" "core" modNm)
 %%[[(8 codegen java)
-               , when (ehcOptEmitJava opts) (cpOutputJava    "java" modNm)
+               , when (ehcOptEmitJava opts) (cpOutputJava         "java" modNm)
 %%]]
                , cpProcessCoreFold modNm
                ]

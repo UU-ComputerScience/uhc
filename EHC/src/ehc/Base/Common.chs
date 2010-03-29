@@ -886,6 +886,13 @@ nmLevModule  =  0
 %%% Token related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.tokenVal hs export(tokenVal)
+tokenVal = genTokVal
+%%]
+
+%%[5 -1.tokenVal hs
+%%]
+
 %%[1 hs
 -- Assumption: tokTpIsInt (genTokTp t) == True
 tokMkInt :: Token -> Int

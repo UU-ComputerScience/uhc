@@ -7,6 +7,13 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+A |Token| is the result of scanning, the lexeme coming out of |scan|.
+A |Token| is a specialisation of |GenToken|, available from the UU scanning library.
+The value variant represents its values as @[String]@ in order to preserve qualification info.
+This is only relevant when modules are available.
+%%]
+
 %%[5 module {%{EH}Scanner.Token} import(UU.Scanner.Position, UU.Scanner.GenToken) export(module UU.Scanner.GenToken)
 %%]
 
@@ -16,10 +23,14 @@
 %%[8 import(qualified Data.Set as Set) export(tokTpIsId)
 %%]
 
-%%[5 export(Token, ValTokenVal,EnumValToken(..))
+%%[5 export(Token, ValTokenVal)
+-- | The value of a Token is a [String], of length > 1 only when it encodes qualified identifiers
 type ValTokenVal = [String]
 type Token = GenToken String EnumValToken ValTokenVal
+%%]
 
+%%[5 export(EnumValToken(..))
+-- | The kind of tokens
 data EnumValToken
   = TkVarid
   | TkConid
@@ -40,7 +51,7 @@ data EnumValToken
   | TkConOpUnboxed
 %%]]
 %%[[20
-  | TkQVarid
+  | TkQVarid			-- qualified variants
   | TkQConid
   | TkQOp
   | TkQConOp
@@ -50,10 +61,12 @@ data EnumValToken
 %%]
 
 %%[5 export(tokenVals,tokenVal,tokenMap)
+-- | Extract the parts of a qualified identifier
 tokenVals :: Token -> [String]
 tokenVals (ValToken _ v _) = v
 tokenVals (Reserved   v _) = [v]
 
+-- | Extract the value as a flattened string
 tokenVal :: Token -> String
 tokenVal = concat . tokenVals
 
@@ -103,6 +116,7 @@ tokTpUnboxed t       = t
 %%]
 
 %%[20 export(tokTpQual)
+-- | Qualified equivalents of token kinds representing unqualified tokens
 tokTpQual :: EnumValToken -> EnumValToken
 tokTpQual TkVarid = TkQVarid
 tokTpQual TkConid = TkQConid

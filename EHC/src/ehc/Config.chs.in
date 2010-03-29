@@ -63,15 +63,9 @@ version
       }
 %%]
 
-%%[1 export(verNumeric, verDist, verInfo)
-verNumeric :: Version -> String
-verNumeric v = verShort v ++ "." ++ verMinorMinor v
-
-verDist :: Version -> String
-verDist v = verFull v
-
+%%[1 export(verInfo)
 verInfo :: Version -> String
-verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
+verInfo v = verProg v ++ "-" ++ verFull v ++ ", Revision " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

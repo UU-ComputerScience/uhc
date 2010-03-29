@@ -91,7 +91,7 @@ data HIInfo
   = HIInfo
       { hiiIsValid              :: !Bool
       , hiiSrcSig               :: !String
-      , hiiTargetVariant        :: !TargetVariant
+      , hiiTargetFlavor         :: !TargetFlavor
       , hiiCompileFlags         :: !String
       , hiiHasMain              :: !Bool
       , hiiSrcTimeStamp         :: !String
@@ -128,7 +128,7 @@ data HIInfo
 
 emptyHIInfo :: HIInfo
 emptyHIInfo 
-  = HIInfo True "" defaultTargetVariant "" False "" "" "" "" ""
+  = HIInfo True "" defaultTargetFlavor "" False "" "" "" "" ""
            Rel.empty Rel.empty emptyGam []
            [] []
            -- emptyHiSettings
@@ -191,7 +191,7 @@ hiiPostCheckValidity opts i
   = i { hiiIsValid
           =    hiiIsValid i
             -- && optsDiscrRecompileRepr opts == hiiCompileFlags  i
-            && ehcOptTargetVariant    opts == hiiTargetVariant i
+            && ehcOptTargetFlavor    opts == hiiTargetFlavor i
       }
 %%]
 
@@ -217,7 +217,7 @@ sgetHIInfo opts = do
   ; hi_fl   <- sget
   ; if (    hi_sig == verSig version
          && hi_ts  == verTimestamp version
-         && hi_tv  == ehcOptTargetVariant opts
+         && hi_tv  == ehcOptTargetFlavor opts
        )
 %%[[99
        || not (ehcOptHiValidityCheck opts)
@@ -253,7 +253,7 @@ sgetHIInfo opts = do
                   { hiiIsValid              = True
                   , hiiSrcSig               = hi_sig
                   , hiiCompileFlags         = hi_fl
-                  , hiiTargetVariant        = hi_tv
+                  , hiiTargetFlavor         = hi_tv
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts
                   , hiiSrcVersionMajor      = hi_m
@@ -289,7 +289,7 @@ sgetHIInfo opts = do
                   { hiiIsValid              = False
                   , hiiSrcSig               = hi_sig
                   , hiiCompileFlags         = hi_fl
-                  , hiiTargetVariant        = hi_tv
+                  , hiiTargetFlavor         = hi_tv
                   })
             }
   }
@@ -303,7 +303,7 @@ instance Serialize HILamInfo where
 instance Serialize HIInfo where
   sput       (HIInfo
                   { hiiSrcSig               = hi_sig
-                  , hiiTargetVariant        = hi_tv
+                  , hiiTargetFlavor         = hi_tv
                   , hiiCompileFlags         = hi_fl
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts

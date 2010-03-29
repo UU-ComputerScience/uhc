@@ -98,7 +98,7 @@ cpCompileWithGCC how othModNmL modNm
 %%[[99
                                     mkl2 how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant (showPkgKey l) ++ "/" ++
                                                                        mkInternalPkgFileBase l (Cfg.installVariant opts)
-                                                                         (ehcOptTarget opts) (ehcOptTargetVariant opts) ++ "/")
+                                                                         (ehcOptTarget opts) (ehcOptTargetFlavor opts) ++ "/")
                                                                     (showPkgKey l)
 %%]]
                             FinalCompile_Module
