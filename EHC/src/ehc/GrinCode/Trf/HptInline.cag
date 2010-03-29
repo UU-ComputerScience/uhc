@@ -1,5 +1,5 @@
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.Inline(grInline)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.InlineNumber(grInline)})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}GrinCode.PointsToAnalysis(continuedHeapPointsToAnalysis,heapPointsToAnalysis)})

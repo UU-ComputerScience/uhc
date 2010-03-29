@@ -74,7 +74,8 @@ GrinCode/Trf/FlattenSeq.cag
 GrinCode/Trf/GlobalConstants.cag
 GrinCode/Trf/HptInline.cag
 GrinCode/Trf/ImpossibleCase.cag
-GrinCode/Trf/Inline.cag
+GrinCode/Trf/InlineNumber.cag
+GrinCode/Trf/InlineOld.cag
 GrinCode/Trf/InlineEA.cag
 GrinCode/Trf/LateInline.cag
 GrinCode/Trf/LowerGrin.cag

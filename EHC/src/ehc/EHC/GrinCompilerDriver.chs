@@ -33,7 +33,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.Inline(grInline)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineNumber(grInline)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.HptInline(hptInline)})
 %%]
