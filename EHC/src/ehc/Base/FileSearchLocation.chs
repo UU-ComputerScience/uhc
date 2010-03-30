@@ -131,7 +131,7 @@ instance HSNM PkgKey where
 
 %%[99
 pPkgKey :: P PkgKey
-pPkgKey = (pVarid <|> pConid) <+> pMb (pMINUS *> pVersion)
+pPkgKey = (concat <$> pList1_ng (pVarid <|> pConid <|> ("-" <$ pMINUS))) <+> pMb (pMINUS *> pVersion)
 
 pVersion :: P Version
 pVersion = (\v -> Version (map read v) []) <$> pList1Sep pDOT pInteger10
