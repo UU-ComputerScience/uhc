@@ -118,8 +118,8 @@ SEM CAlt
   | Alt    expr  . isLocalInInstance = False
 SEM CModule
   | Mod    expr  . isLocalInInstance = False
-SEM CPatBind
-  | Bind   offset. isLocalInInstance = False
+SEM CPatFld
+  | Fld    offset. isLocalInInstance = False
 
 
 ATTR AllBind   [ | | cLamBinds, 

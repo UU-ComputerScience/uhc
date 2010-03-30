@@ -70,13 +70,13 @@ SEM CPatRest
 
 SEM CPat
   | Var			lhs			.	cTrf		=	CPat_Var hsnUnknown
-  | Con			lhs			.	cTrf		=	CPat_Con hsnUnknown emptyCTag @rest.cTrf @binds.cTrf
-  | Int			lhs			.	cTrf		=	CPat_Int hsnUnknown 1
-  | Char		lhs			.	cTrf		=	CPat_Char hsnUnknown 'c'
-  | BoolExpr	lhs			.	cTrf		=	CPat_BoolExpr hsnUnknown (CExpr_Int 1)
+  | Con			lhs			.	cTrf		=	CPat_Con emptyCTag @rest.cTrf @binds.cTrf
+  | Int			lhs			.	cTrf		=	CPat_Int 1
+  | Char		lhs			.	cTrf		=	CPat_Char 'c'
+  | BoolExpr	lhs			.	cTrf		=	CPat_BoolExpr (CExpr_Int 1)
 
-SEM CPatBind
-  | Bind		lhs			.	cTrf		=	CPatBind_Bind hsnUnknown @offset.cTrf hsnUnknown @pat.cTrf
+SEM CPatFld
+  | Fld 		lhs			.	cTrf		=	CPatFld_Fld hsnUnknown @offset.cTrf @fldNm
 
 SEM CBind
   | Bind		lhs			.	cTrf		=	CBind_Bind hsnUnknown @bindMeta.cTrf @expr.cTrf

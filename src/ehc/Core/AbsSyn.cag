@@ -166,14 +166,11 @@ TYPE CAltL      =   [CAlt]
 %%[(8 codegen)
 DATA CPat
   | Var         pnm             : {HsName}
-  | Con         pnm             : {HsName}
-                tag             : {CTag}
+  | Con         tag             : {CTag}
                 rest            : CPatRest
-                binds           : CPatBindL
-  | Int         pnm             : {HsName}
-                int             : {Int}
-  | Char        pnm             : {HsName}
-                char            : {Char}
+                binds           : CPatFldL
+  | Int         int             : {Int}
+  | Char        char            : {Char}
 
 TYPE CPatL      =   [CPat]
 %%]
@@ -183,19 +180,17 @@ DATA CPatRest
   | Var         nm              : {HsName}
   | Empty
 
-DATA CPatBind
-  | Bind        lbl             : {HsName}
+DATA CPatFld
+  | Fld         lbl             : {HsName}
                 offset          : CExpr
-                nm              : {HsName}
-                pat             : CPat
+                fldNm           : {HsName}
 
-TYPE CPatBindL  =   [CPatBind]
+TYPE CPatFldL   =   [CPatFld]
 %%]
 
 %%[(97 codegen)
 DATA CPat
-  | BoolExpr    pnm             : {HsName}
-                cexpr           : {CExpr}
+  | BoolExpr    cexpr           : {CExpr}
 %%]
 
   | TupSplit    pnm             : {RPatNm}
@@ -212,8 +207,8 @@ DATA CPat
 %%[(8 codegen)
 SET AllAlt      =   CAlt CAltL
 SET AllBind     =   CBind CBindL
-SET AllPatBind  =   CPatBind CPatBindL
-SET AllPat      =   CPatRest CPat CPatL AllPatBind
+SET AllPatFld   =   CPatFld CPatFldL
+SET AllPat      =   CPatRest CPat CPatL AllPatFld
 SET AllCodeNT   =   CModule AllExpr
 
 SET AllExpr

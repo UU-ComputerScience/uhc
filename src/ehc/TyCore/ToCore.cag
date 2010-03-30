@@ -217,12 +217,12 @@ ATTR Pat [ | | core: CPat ]
 
 %%[(8 codegen)
 SEM Pat
-  | Var         loc         .   core                =   CPat_Var @nm
-  | Con         loc         .   core                =   CPat_Con hsnUnknown @tag @rest.core @flds.l0CoreL
-  | Int         loc         .   core                =   CPat_Int hsnUnknown (fromInteger @int)
-  | Char        loc         .   core                =   CPat_Char hsnUnknown @char
+  | Var         loc         .   core                =   CPat_Var  @nm
+  | Con         loc         .   core                =   CPat_Con  @tag @rest.core @flds.l0CoreL
+  | Int         loc         .   core                =   CPat_Int  (fromInteger @int)
+  | Char        loc         .   core                =   CPat_Char @char
 %%[[(97 codegen)
-  | BoolExpr    loc         .   core                =   CPat_BoolExpr hsnUnknown @expr.core
+  | BoolExpr    loc         .   core                =   CPat_BoolExpr @expr.core
 %%]]
 %%]
 
@@ -237,10 +237,10 @@ SEM PatRest
 %%]
 
 %%[(8 codegen)
-ATTR AllFldBind [ | | l0CoreL USE {++} {[]} : CPatBindL ]
+ATTR AllFldBind [ | | l0CoreL USE {++} {[]} : CPatFldL ]
 
 SEM FldBind
-  | Fld         lhs         .   l0CoreL             =   [CPatBind_Bind hsnUnknown @offset.core hsnUnknown (CPat_Var @nm)]
+  | Fld         lhs         .   l0CoreL             =   [CPatFld_Fld hsnUnknown @offset.core @nm]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -195,7 +195,7 @@ mkDerivClsMp fe valGam dataGam
                 nowrap
            -- Enum(toEnum)
            , mkf ehbnClassEnumFldToEnum
-                (Just $ \altInx _ _ _ -> CPat_Int hsnWild altInx)
+                (Just $ \altInx _ _ _ -> CPat_Int altInx)
                 []
                 Nothing -- no extra args for recursion on constituents
                 0

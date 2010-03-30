@@ -30,7 +30,7 @@
 %%% Abstract syntax for encoding case+pattern rewrite info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
+%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatFld(..))
 data RAlt
   = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !Expr, raaFailS :: UIDS }
 
@@ -45,11 +45,11 @@ data RPat
 %%]]
 
 data RPatConBind
-  = RPatConBind_One		{ rpcbRest :: !PatRest, rpcbBinds :: ![RPatBind] }
+  = RPatConBind_One		{ rpcbRest :: !PatRest, rpcbBinds :: ![RPatFld] }
   | RPatConBind_Many	{ rpcbConBinds :: ![RPatConBind] }
 
-data RPatBind
-  = RPatBind_Bind		{ rpbLbl :: !HsName, rpbOffset :: !Expr, rpbNm :: !HsName, rpbPat :: !RPat }
+data RPatFld
+  = RPatFld_Fld		{ rpbLbl :: !HsName, rpbOffset :: !Expr, rpbNm :: !HsName, rpbPat :: !RPat }
 %%]
 
 %%[(8 codegen) hs export(rcaPat,raltLPatNms)
@@ -138,8 +138,8 @@ rpatConBind2PatConBind b
   	  RPatConBind_One 	r bs 	-> (r,map rpatBind2FldBind bs)
   	  RPatConBind_Many 	bs 		-> head (map rpatConBind2PatConBind bs)
 
-rpatBind2FldBind :: RPatBind -> FldBind
-rpatBind2FldBind (RPatBind_Bind l o n p) = FldBind_Fld n (rcpTy p) o		-- guaranteed to be a rpat with a Ty
+rpatBind2FldBind :: RPatFld -> FldBind
+rpatBind2FldBind (RPatFld_Fld l o n p) = FldBind_Fld n (rcpTy p) o		-- guaranteed to be a rpat with a Ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

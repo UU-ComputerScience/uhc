@@ -243,17 +243,9 @@ SEM CBind
 %%]]
 
 ATTR AllAlt AllPat [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
-ATTR CPat [ | | fldNm: HsName ]
 
-SEM CPat
-  | Var Con Int Char
-%%[[97
-    BoolExpr
-%%]]
-                lhs         .   fldNm       =   @pnm
-
-SEM CPatBind
-  | Bind        lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm
+SEM CPatFld
+  | Fld         lhs         .   jvSrc       =   jvBind  "Object" @fldNm
                                                         (jvInx  (jvNmPP @lhs.jvCaseScrutinee)
                                                                 (jvForceInt @offset.jvSrc >|< (if @lhs.tagSz == 0 then empty else ("+" >|< pp @lhs.tagSz))))
 
@@ -294,8 +286,8 @@ SEM CExpr
 SEM CBind
   | Bind        expr        .   jvBuiltin   =   empty
 
-SEM CPatBind
-  | Bind        offset      .   jvBuiltin   =   empty
+SEM CPatFld
+  | Fld         offset      .   jvBuiltin   =   empty
 
 SEM CAlt
   | Alt         expr        .   jvBuiltin   =   empty
@@ -318,7 +310,7 @@ SEM CExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen java)
-ATTR AllPatBind [ tagSz: Int | | ]
+ATTR AllPatFld [ tagSz: Int | | ]
 ATTR CPatL CPat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM CPat
@@ -382,8 +374,8 @@ SEM CAlt
 SEM CBind
   | Bind        expr        .   mbLamNm     =   Just @nm
 
-SEM CPatBind
-  | Bind        offset      .   mbLamNm     =   Nothing
+SEM CPatFld
+  | Fld         offset      .   mbLamNm     =   Nothing
 
 SEM CModule
   | Mod         expr        .   mbLamNm     =   Nothing

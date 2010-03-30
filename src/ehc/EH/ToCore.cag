@@ -476,8 +476,8 @@ SEM PatExpr
 %%]
 
 %%[(8 codegen) hs
-fsL2PatOffsetL :: FieldSplitL -> AssocL RPatBind (Maybe Int)
-fsL2PatOffsetL l = [ (RPatBind_Bind n oe n p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
+fsL2PatOffsetL :: FieldSplitL -> AssocL RPatFld (Maybe Int)
+fsL2PatOffsetL l = [ (RPatFld_Fld n oe p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
 %%]
 
 %%[(8 codegen)
@@ -997,10 +997,10 @@ annotateBindings selfnm bs = zipWith annBind bs (map mbFindValueVar xs)
         mbFindValueExpr (CExpr_Let _ [CBind_Bind _ _ (CExpr_Var v)] c) = let  mba = mbFindValueVar v
                                                                          in   maybe (trace ("ToCore: annotateBindings: name not found:"++show v) Nothing) (\a->Just (a ++ [findPlace c])) mba
         mbFindValueExpr e = Nothing
-        findPlace (CExpr_Case _ [CAlt_Alt (CPat_Con _ _ _ zs) (CExpr_Var v)] _) = findPosition v 0 zs
+        findPlace (CExpr_Case _ [CAlt_Alt (CPat_Con _ _ zs) (CExpr_Var v)] _) = findPosition v 0 zs
         findPosition v n [] = error ("ToCore: annotateBindings: position not found: " ++ show v)
-        findPosition v n (CPatBind_Bind x _ _ _:zs) | v==x       =  n
-                                                    | otherwise  =  findPosition v (n+1) zs       
+        findPosition v n (CPatFld_Fld x _ _:zs) | v==x       =  n
+                                                | otherwise  =  findPosition v (n+1) zs       
 
 %%]
 
@@ -1146,10 +1146,10 @@ data CBindInPat = CBindInPat CBind [CBindInPat]
 cbindInPatFlatten :: [CBindInPat] -> [CBind]
 cbindInPatFlatten = concatMap (\(CBindInPat b subs) -> b : cbindInPatFlatten subs)
 
-rpatBindL2CBindL :: RCEEnv -> [CBindInPat] -> HsName -> CTag -> MbCPatRest -> AssocL RPatBind (Maybe Int) -> [CBindInPat]
+rpatBindL2CBindL :: RCEEnv -> [CBindInPat] -> HsName -> CTag -> MbCPatRest -> AssocL RPatFld (Maybe Int) -> [CBindInPat]
 rpatBindL2CBindL env subBinds parNm ct rest pbL 
   = concat
-    $  map  (\(RPatBind_Bind l o _ p,mbOff)
+    $  map  (\(RPatFld_Fld l o p,mbOff)
                 -> let  b n = [CBindInPat (mkCBind1 n (mkc n mbOff)) subBinds]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
@@ -1163,10 +1163,10 @@ rpatBindL2CBindL env subBinds parNm ct rest pbL
     $  pbL
   where hasSub = not $ null subBinds
 %%[(8 codegen) hs
-rpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL RPatBind (Maybe Int) -> [CBind]
+rpatBindL2CBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbCPatRest -> AssocL RPatFld (Maybe Int) -> [CBind]
 rpatBindL2CBindL env hasSub parNm ct rest pbL 
   = concat
-    $  map  (\(RPatBind_Bind l o _ p,mbOff)
+    $  map  (\(RPatFld_Fld l o p,mbOff)
                 -> let  b n = [mkCBind1 n (mkc n mbOff)]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn

@@ -54,8 +54,8 @@ rceEnvDataAlts env t
 %%[(8 codegen) export(mkCPatCon)
 mkCPatCon :: CTag -> Int -> Maybe [HsName] -> CPat
 mkCPatCon ctag arity mbNmL
-  = CPat_Con hsnWild ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
-  where mkB n o = CPatBind_Bind hsnUnknown (CExpr_Int o) n (CPat_Var n)
+  = CPat_Con ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
+  where mkB n o = CPatFld_Fld hsnUnknown (CExpr_Int o) n
         nmL = maybe (repeat hsnWild) id mbNmL
 %%]
 
@@ -81,16 +81,16 @@ caltLSaturate env alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-cpatBindOffsetL :: [CPatBind] -> ([CPatBind],CBindL)
+cpatBindOffsetL :: [CPatFld] -> ([CPatFld],CBindL)
 cpatBindOffsetL pbL
   =  let  (pbL',obL)
             =  unzip
                .  map
-                    (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
+                    (\b@(CPatFld_Fld l o pn)
                         ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset pn -- hsnPrefix "off_" pn
                             in   case o of
                                    CExpr_Int _  -> (b,[])
-                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
+                                   _            -> (CPatFld_Fld l (CExpr_Var offNm) pn,[mkCBind1 offNm o])
                     )
                $  pbL
      in   (pbL',concat obL)
@@ -98,8 +98,8 @@ cpatBindOffsetL pbL
 caltOffsetL :: CAlt -> (CAlt,CBindL)
 caltOffsetL alt
   =  case alt of
-       CAlt_Alt (CPat_Con n t r b) e
-         ->  (CAlt_Alt (CPat_Con n t r b') e,offBL)
+       CAlt_Alt (CPat_Con t r b) e
+         ->  (CAlt_Alt (CPat_Con t r b') e,offBL)
              where (b',offBL) = cpatBindOffsetL b
        _ ->  (alt,[])
 %%]
@@ -114,7 +114,7 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 
 %%[(8 codegen) export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
 mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> CAltL -> CExpr
-mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
+mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm]) ae]
   | dgiIsNewtype dgi
   = mkCExprLet CBindings_Plain
       (  [ mkCBind1Meta {- (panicJust "mkCExprStrictSatCaseMeta.mbNm" mbNm) -} {- -} pnm meta e ]
@@ -140,9 +140,9 @@ mkCExprSelsCasesMeta' :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> [(CTag,[
 mkCExprSelsCasesMeta' env mbNm meta e tgSels
   = mkCExprStrictSatCaseMeta env mbNm meta e alts
   where  alts = [ CAlt_Alt
-                    (CPat_Con (maybe (cexprVar e) id mbNm) ct
+                    (CPat_Con ct
                        (mkRest mbRest ct)
-                       [CPatBind_Bind lbl off n (CPat_Var n) | (n,lbl,off) <- nmLblOffL]
+                       [CPatFld_Fld lbl off n | (n,lbl,off) <- nmLblOffL]
                     )
                     sel
                 | (ct,nmLblOffL,mbRest,sel) <- tgSels
@@ -421,30 +421,30 @@ fsLReorder opts fsL
 %%]
 
 %%[(8 codegen) export(rpbReorder,patBindLOffset)
-rpbReorder :: EHCOpts -> [RPatBind] -> [RPatBind]
+rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
 rpbReorder opts pbL
   =  let  (pbL',_)
             =  foldr
-                 (\(RPatBind_Bind l o n p) (pbL,exts) 
+                 (\(RPatFld_Fld l o p) (pbL,exts) 
                      ->  let  mkOff lbl exts o
                                 =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
                                    in  caddint opts o nrSmaller
-                         in   ((RPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
+                         in   ((RPatFld_Fld l (mkOff l exts o) p):pbL,l:exts)
                  )
                  ([],[])
             $  pbL
-          cmpPB (RPatBind_Bind l1 _ _ _)  (RPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
+          cmpPB (RPatFld_Fld l1 _ _)  (RPatFld_Fld l2 _ _) = rowLabCmp l1 l2
      in   sortBy cmpPB pbL'
 
-patBindLOffset :: [RPatBind] -> ([RPatBind],[CBindL])
+patBindLOffset :: [RPatFld] -> ([RPatFld],[CBindL])
 patBindLOffset
   =  unzip
   .  map
-       (\b@(RPatBind_Bind l o n p@(RPat_Var pn))
+       (\b@(RPatFld_Fld l o p@(RPat_Var pn))
            ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
                in   case o of
                       CExpr_Int _  -> (b,[])
-                      _            -> (RPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
+                      _            -> (RPatFld_Fld l (CExpr_Var offNm) p,[mkCBind1 offNm o])
        )
 %%]
 
@@ -460,7 +460,7 @@ type RCEAltL = [RAlt]
 data RCESplitCateg
   = RCESplitVar UIDS | RCESplitCon | RCESplitConMany | RCESplitConst | RCESplitIrrefutable
 %%[[97
-  | RCESplitBoolExpr -- (Maybe CExpr)
+  | RCESplitBoolExpr
 %%]]
   deriving Eq
 
@@ -511,15 +511,15 @@ rceMkConAltAndSubAlts env (arg:args) alts@(alt:_)
           =  unzip
                [ (RAlt_Alt (pats ++ ps) e f, map (rpatNmNm . rcpPNm) pats)
                | (RAlt_Alt (RPat_Con _ _ (RPatConBind_One _ pbinds) : ps) e f) <- alts
-               , let pats = [ p | (RPatBind_Bind _ _ _ p) <- pbinds ]
+               , let pats = [ p | (RPatFld_Fld _ _ p) <- pbinds ]
                ]
         subMatch
           =  rceMatch env (head subAltSubNms ++ args) subAlts
         altPat
           =  case alt of
                RAlt_Alt (RPat_Con n t (RPatConBind_One r pbL) : _) _ _
-                 ->  CPat_Con (rpatNmNm n) t r pbL'
-                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (rpatNmNm $ rcpPNm p)) | (RPatBind_Bind l o n p) <- pbL ]
+                 ->  CPat_Con t r pbL'
+                     where  pbL' = [ CPatFld_Fld l o (rpatNmNm $ rcpPNm p) | (RPatFld_Fld l o p) <- pbL ]
 
 rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
@@ -607,7 +607,7 @@ rceMatch env args alts
                         else if raltIsConst         a  then RCESplitConst
                         else if raltIsIrrefutable   a  then RCESplitIrrefutable
 %%[[97
-                        else if raltIsBoolExpr      a  then RCESplitBoolExpr -- (fromJust $ raltMbBoolExpr a)
+                        else if raltIsBoolExpr      a  then RCESplitBoolExpr
 %%]]
                         else if raltIsConMany       a  then RCESplitConMany
                                                        else RCESplitCon

@@ -472,7 +472,7 @@ SEM Pat
 %%]
 
 %%[(8 jazy)
-ATTR AllPatBind [ ctag: CTag | | ]
+ATTR AllPatFld [ ctag: CTag | | ]
 
 SEM Pat
   | Con			binds		.	ctag			=	@tag

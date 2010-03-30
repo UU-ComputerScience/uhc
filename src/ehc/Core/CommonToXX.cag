@@ -64,8 +64,8 @@ SEM CModule
 SEM CBind
   | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
 
-SEM CPatBind
-  | Bind        offset      .   isStrict    =   True
+SEM CPatFld
+  | Fld         offset      .   isStrict    =   True
                             .   isLamBody   =   False
 
 SEM CExpr
@@ -84,8 +84,8 @@ ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
 SEM CModule
   | Mod         expr        .   evalCtx         =   EvalCtx_Eval
 
-SEM CPatBind
-  | Bind        offset      .   evalCtx         =   EvalCtx_Eval
+SEM CPatFld
+  | Fld         offset      .   evalCtx         =   EvalCtx_Eval
 
 
 SEM CExpr
