@@ -92,15 +92,17 @@ void memorySetup()
 {
 #if USE_BOEHM_GC
     GC_INIT() ;
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
 #elif USE_EHC_MM
     mm_init() ;
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
 #else
     HeapAreaLow = (WPtr)malloc(sizeof(Word)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
     HP = HeapAreaLow;
+    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
 #endif
 
-    Stack      = (WPtr)malloc(sizeof(Word)*STACKSIZE);
     ReturnArea = (WPtr)malloc(sizeof(Word)*RETURNSIZE);
     LocalsArea = (WPtr)malloc(sizeof(Word)*LOCALSSIZE);
 
