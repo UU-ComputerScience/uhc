@@ -756,14 +756,14 @@ SEM Pat
 %%]
 
 %%[(8 codegen grin)
-ATTR AllPatBind [ | | patNmL USE {++} {[]}: {[HsName]} ]
+ATTR AllPatFld [ | | patNmL USE {++} {[]}: {[HsName]} ]
 
 SEM FldBind
   | Fld         lhs         .   patNmL      =   [@pat.patNm]
 %%]
 
 %%[(10 codegen grin)
-ATTR AllPatBind [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
+ATTR AllPatFld [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
 SEM FldBind
   | Fld         lhs         .   grTupFldL   =   [(@offset.grVal,\o -> GrSplit_Sel @pat.patNm o)]

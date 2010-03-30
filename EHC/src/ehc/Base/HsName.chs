@@ -177,8 +177,8 @@ hsnBaseUnpack (HsName_Base s    ) = Just (s,HsName_Base)
 %%[[7
 hsnBaseUnpack (HsName_Modf q b u) = fmap (\(bs,mk) -> (bs, \s -> HsName_Modf q (mk s) u)) (hsnBaseUnpack b)
 -- hsnBaseUnpack (HNmQ        ns   ) = do { (i,l) <- initlast ns ; (bs,mk) <- hsnBaseUnpack l ; return (bs, \s -> (HNmQ $ i ++ [mk s])) }
-%%]]
 hsnBaseUnpack _                   = Nothing
+%%]]
 
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String

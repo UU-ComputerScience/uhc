@@ -112,8 +112,8 @@ SEM CBind
   | Bind        expr        .   isTopApp    =   True
                             .   isTopTup    =   True
 
-SEM CPatBind
-  | Bind        offset      .   isTopApp    =   True
+SEM CPatFld
+  | Fld         offset      .   isTopApp    =   True
                             .   isTopTup    =   True
 
 SEM CAlt
@@ -148,8 +148,8 @@ SEM CExpr
 SEM CBind
   | Bind		loc			.	whatAbove		=	ExprIsOther
 
-SEM CPatBind
-  | Bind		loc			.	whatAbove		=	ExprIsOther
+SEM CPatFld
+  | Fld 		loc			.	whatAbove		=	ExprIsOther
 
 SEM CAlt
   | Alt			loc			.	whatAbove		=	ExprIsOther

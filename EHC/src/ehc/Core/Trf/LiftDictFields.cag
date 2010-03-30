@@ -127,8 +127,8 @@ SEM CExpr
 
 SEM CModule
   | Mod    expr.lifteeSet = Set.empty
-SEM CPatBind
-  | Bind   offset.lifteeSet =  Set.empty
+SEM CPatFld
+  | Fld    offset.lifteeSet =  Set.empty
 
 
 -- insert the bindings requested
@@ -179,8 +179,8 @@ SEM CModule
   | Mod    expr.olderBrothers = []
            expr.olderFvMp     = Map.empty
            expr.selfDictNm    = Nothing
-SEM CPatBind
-  | Bind   offset.olderBrothers = []
+SEM CPatFld
+  | Fld    offset.olderBrothers = []
            offset.olderFvMp     = Map.empty
            offset.selfDictNm    = Nothing
 SEM CBind

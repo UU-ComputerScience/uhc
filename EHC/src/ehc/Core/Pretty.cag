@@ -108,7 +108,7 @@ ppTag t = ppCTag' CfgPP_Core t
 
 %%[(8 codegen)
 ATTR CodeAGItf AllCodeNT [ | | pp USE {>-<} {empty} : PP_Doc ]
-ATTR CPatBindL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
+ATTR CPatFldL CPatL CBindL CAltL [ | | ppL: {[PP_Doc]} ]
 ATTR CExpr [ | | lamBodyPP: PP_Doc  lamArgPPL: {[PP_Doc]} ]
 ATTR CExpr [ | | appFunPP : PP_Doc  appArgPPL: {[PP_Doc]} ]
 
@@ -208,11 +208,11 @@ SEM CAltL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
 SEM CPat
-  | Int         lhs         .   pp          =   ppCNm @pnm >#< ppLit "Int"    (show @int)
-  | Char        lhs         .   pp          =   ppCNm @pnm >#< ppLit "Char"   [@char]
+  | Int         lhs         .   pp          =   ppLit "Int"    (show @int)
+  | Char        lhs         .   pp          =   ppLit "Char"   [@char]
   | Var         lhs         .   pp          =   ppCNm @pnm
 %%[[8
-  | Con         lhs         .   pp          =   ppDef (ppCNm @pnm >#< "#Tag" >#< ppTag @tag)
+  | Con         lhs         .   pp          =   ppDef ("#Tag" >#< ppTag @tag)
                                                       (ppCurly (@rest.pp >#< "|" >#< ppCommas' @binds.ppL))
 %%][8_2
   | Con         lhs         .   pp          =   ppCTag'' CfgPP_Core @tag
@@ -222,13 +222,13 @@ SEM CPatL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 
-SEM CPatBind
-  | Bind        lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp,ppCNm @nm] >|< "=" >|< @pat.pp
+SEM CPatFld
+  | Fld         lhs         .   pp          =   ppCurlysCommas' [ppCNm @lbl,@offset.pp {- ,ppCNm @nm -}] >|< "=" >|< ppCNm @fldNm -- @pat.pp
 
 SEM CPatRest
   | Var         lhs         .   pp          =   ppCNm @nm
 
-SEM CPatBindL
+SEM CPatFldL
   | Nil         lhs         .   ppL         =   []
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
 %%]
