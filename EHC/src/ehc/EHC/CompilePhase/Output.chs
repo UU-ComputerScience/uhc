@@ -175,6 +175,7 @@ cpOutputHI suff modNm
                                , HI.hiiSrcVersionMinorMinor = Cfg.verMinorMinor Cfg.version
                                , HI.hiiSrcVersionSvn        = Cfg.verSvnRevision Cfg.version
                                , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
+                               , HI.hiiCompiler             = Cfg.installVariant opts
                                }
                  fpH    = mkOutputFPath opts modNm fp suff
                  fnH    = fpathToStr fpH
