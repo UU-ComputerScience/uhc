@@ -85,19 +85,20 @@ EHCLIB_C_ALL_SRC_C						:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EH
 EHCLIB_C_ALL_DRV_C						:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%,$(EHCLIB_C_ALL_SRC_C))
 
 # as C .h include file, as is in svn repo
-EHCLIB_ASIS_ALL_SRC_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/include/*.h))
 EHCLIB_ASIS_ALL_SRC_base_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)base/include/*.h)
 EHCLIB_ASIS_ALL_SRC_array_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)array/include/*.h)
-EHCLIB_ASIS_ALL_DRV_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(patsubst $(EHCLIB_SRC_PREFIX)$(pkg)/%.h,$(call FUN_INSTALL_PKG_PREFIX,$(pkg))%.h,$(EHCLIB_ASIS_ALL_SRC_ASIS)))
+EHCLIB_ASIS_ALL_SRC_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(EHCLIB_ASIS_ALL_SRC_$(pkg)_ASIS))
+
 EHCLIB_ASIS_ALL_DRV_base_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)base/%.h,$(call FUN_INSTALL_PKG_PREFIX,base)%.h,$(EHCLIB_ASIS_ALL_SRC_base_ASIS))
 EHCLIB_ASIS_ALL_DRV_array_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)array/%.h,$(call FUN_INSTALL_PKG_PREFIX,array)%.h,$(EHCLIB_ASIS_ALL_SRC_array_ASIS))
+EHCLIB_ASIS_ALL_DRV_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(EHCLIB_ASIS_ALL_DRV_$(pkg)_ASIS))
 
 # as haskell, from frozen sync
 EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
 EHCLIB_FROZEN_ALL_DRV_C					:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg)_C)))
-EHCLIB_FROZEN_ALL_DRV_ASIS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(call FUN_INSTALL_PKG_PREFIX,$(pkg)),$(EHCLIB_SYNC_ALL_PKG_$(pkg)_ASIS)))
 EHCLIB_FROZEN_ALL_DRV_base_ASIS			:= $(addprefix $(call FUN_INSTALL_PKG_PREFIX,base),$(EHCLIB_SYNC_ALL_PKG_base_ASIS))
 EHCLIB_FROZEN_ALL_DRV_array_ASIS		:= $(addprefix $(call FUN_INSTALL_PKG_PREFIX,array),$(EHCLIB_SYNC_ALL_PKG_array_ASIS))
+EHCLIB_FROZEN_ALL_DRV_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(EHCLIB_FROZEN_ALL_DRV_$(pkg)_ASIS))
 
 # all
 EHCLIB_ALL_SRC							:= $(EHCLIB_HS_ALL_SRC_HS) $(EHCLIB_CHS_ALL_SRC_CHS) $(EHCLIB_ASIS_ALL_SRC_ASIS)
@@ -285,7 +286,7 @@ $(EHCLIB_CHS_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC
 	touch $@
 
 # generate .hs from .hsc via hsc2hs
-$(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hsc
+$(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC_PREFIX)%.hsc $(EHCLIB_ALL_DRV_ASIS)
 	mkdir -p $(@D)
 	$(HSC2HS) --output=$@ --cc=$(GCC) \
 	  --cflag='-D__UHC__=$(EH_VERSION_ASNUMBER)' \
@@ -293,6 +294,7 @@ $(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC
 	  --cflag='-D$(EHC_VARIANT_TARGET_UHC_DEFINE2)' \
 	  -I$(call FUN_INSTALLABS_VARIANT_INC_TARGET_PREFIX,$(EHC_VARIANT),$(EHC_VARIANT_TARGET)) \
 	  -I$(call FUN_INSTALLABS_VARIANT_INC_SHARED_PREFIX,$(EHC_VARIANT)) \
+	  $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$(pkg)))) \
 	  $< && \
 	touch $@
 
