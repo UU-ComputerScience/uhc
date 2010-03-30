@@ -89,9 +89,10 @@ emptyHILamInfo = HILamInfo emptyGrinByteCodeLamInfo
 %%[20 hs export(HIInfo(..), emptyHIInfo)
 data HIInfo
   = HIInfo
-      { hiiIsValid              :: !Bool
+      { hiiValidity             :: !HIValidity
       , hiiSrcSig               :: !String
       , hiiTargetFlavor         :: !TargetFlavor
+      , hiiCompiler             :: !String
       , hiiCompileFlags         :: !String
       , hiiHasMain              :: !Bool
       , hiiSrcTimeStamp         :: !String
@@ -128,7 +129,7 @@ data HIInfo
 
 emptyHIInfo :: HIInfo
 emptyHIInfo 
-  = HIInfo True "" defaultTargetFlavor "" False "" "" "" "" ""
+  = HIInfo HIValidity_Absent "" defaultTargetFlavor "" "" False "" "" "" "" ""
            Rel.empty Rel.empty emptyGam []
            [] []
            -- emptyHiSettings
@@ -185,6 +186,14 @@ hiiScopedPredStoreFromList = chrStoreFromElems
 %%% Validity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 hs export(HIValidity(..))
+data HIValidity
+  = HIValidity_Ok				-- ok
+  | HIValidity_Inconsistent		-- inconsistent with compiler
+  | HIValidity_Absent			-- not available
+  deriving (Eq,Enum,Show,Typeable,Data)
+%%]
+
 %%[2020 hs export(hiiPostCheckValidity)
 hiiPostCheckValidity :: EHCOpts -> HIInfo -> HIInfo
 hiiPostCheckValidity opts i
@@ -208,6 +217,12 @@ gamFlatten = id -- gamFromAssocL . gamToAssocL
 %%% Instances: Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 hs
+instance Serialize HIValidity where
+  sput = sputEnum8
+  sget = sgetEnum8
+%%]
+
 %%[20 hs export(sgetHIInfo)
 sgetHIInfo :: EHCOpts -> SGet HIInfo
 sgetHIInfo opts = do
@@ -215,6 +230,7 @@ sgetHIInfo opts = do
   ; hi_ts   <- sget
   ; hi_tv   <- sget
   ; hi_fl   <- sget
+  ; hi_comp <- sget
   ; if (    hi_sig == verSig version
          && hi_ts  == verTimestamp version
          && hi_tv  == ehcOptTargetFlavor opts
@@ -250,8 +266,9 @@ sgetHIInfo opts = do
 %%]]
             ; return 
                 (emptyHIInfo
-                  { hiiIsValid              = True
+                  { hiiValidity             = HIValidity_Ok
                   , hiiSrcSig               = hi_sig
+                  , hiiCompiler             = hi_comp
                   , hiiCompileFlags         = hi_fl
                   , hiiTargetFlavor         = hi_tv
                   , hiiHasMain              = hi_hm
@@ -286,9 +303,11 @@ sgetHIInfo opts = do
             }
     else do { return
                 (emptyHIInfo
-                  { hiiIsValid              = False
+                  { hiiValidity             = HIValidity_Inconsistent
                   , hiiSrcSig               = hi_sig
+                  , hiiSrcTimeStamp         = hi_ts
                   , hiiCompileFlags         = hi_fl
+                  , hiiCompiler             = hi_comp
                   , hiiTargetFlavor         = hi_tv
                   })
             }
@@ -304,6 +323,7 @@ instance Serialize HIInfo where
   sput       (HIInfo
                   { hiiSrcSig               = hi_sig
                   , hiiTargetFlavor         = hi_tv
+                  , hiiCompiler             = hi_comp
                   , hiiCompileFlags         = hi_fl
                   , hiiHasMain              = hi_hm
                   , hiiSrcTimeStamp         = hi_ts
@@ -337,6 +357,7 @@ instance Serialize HIInfo where
                 >> sput hi_ts
                 >> sput hi_tv
                 >> sput hi_fl
+                >> sput hi_comp
                 >> sput hi_hm
                 >> sput hi_m
                 >> sput hi_mm
@@ -370,85 +391,4 @@ instance Serialize HIInfo where
 %%[20 hs
 -- instance Serialize HIInfo
 %%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Instances: ForceEval
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-instance ForceEval HILamInfo
-
-%%[9999 hs
-instance ForceEval HIInfo where
-%%[[99
-  forceEval x@(HIInfo
-                  { hiiExps             = e
-                  , hiiHiddenExps       = he
-                  , hiiFixityGam        = fg
-                  , hiiIdDefAssocL      = idg
-%%[[(20 hmtyinfer)
-                  , hiiValGam           = vg
-                  , hiiTyGam            = tg
-                  , hiiTyKiGam          = tkg
-                  , hiiPolGam           = pg
-                  , hiiDataGam          = dg
-                  , hiiClGam            = cg
-                  , hiiCHRStoreL        = cs
-%%]]
-%%[[(99 codegen)
-                  , hiiLamMp       = am
-%%]]
-%%[[(99 codegen grin)
-                  , hiiGrInlMp          = im
-%%]]
-                  }
-              )
-              = x
-%%][102
-  fevCount  (HIInfo
-                { hiiExps             = e
-                , hiiHiddenExps       = he
-                , hiiFixityGam        = fg
-                , hiiIdDefAssocL      = idg
-%%[[(20 hmtyinfer)
-                , hiiValGam           = vg
-                , hiiTyGam            = tg
-                , hiiTyKiGam          = tkg
-                , hiiPolGam           = pg
-                , hiiDataGam          = dg
-                , hiiClGam            = cg
-                , hiiCHRStoreL        = cs
-%%]]
-%%[[(102 codegen)
-                , hiiLamMp       = am
-%%]]
-%%[[(102 codegen grin)
-                , hiiGrInlMp          = im
-%%]]
-                }
-            )
-            = cmUnions [cm1 "HIInfo"
-                       ,fevCount e
-                       ,fevCount he
-                       ,fevCount fg
-                       ,fevCount idg
-%%[[(20 hmtyinfer)
-                       ,fevCount vg
-                       ,fevCount tg
-                       ,fevCount tkg
-                       ,fevCount pg
-                       ,fevCount dg
-                       ,fevCount cg
-                       ,fevCount cs
-%%]]
-%%[[(102 codegen)
-                       ,fevCount am
-%%]]
-%%[[(102 codegen grin)
-                       ,fevCount im
-%%]]
-                       ]
-%%]]
-%%]
-
-
 

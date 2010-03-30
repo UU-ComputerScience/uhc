@@ -42,6 +42,9 @@ CompilePhase building blocks: parsers
 -- serialization
 %%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
 %%]
+-- config
+%%[20 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: parsing
@@ -201,11 +204,23 @@ cpDecodeHIInfo modNm
                             -- Bin.getBinaryFPath fpH
                      ; return i
                      })
-                 (\_ -> return $ HI.emptyHIInfo {HI.hiiIsValid = False})
+                 (\_ -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
-       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       ; case HI.hiiValidity hiinfo of
+%%[[99
+           HI.HIValidity_Inconsistent | not canCompile
+             -> cpSetLimitErrsWhen 1 "Read HI (of previous compile) of module"
+                  [rngLift emptyRange Err_InconsistentHI
+                     (show modNm)
+                     (fpathToStr fpH)
+                     [Cfg.verTimestamp Cfg.version, Cfg.installVariant opts]
+                     [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  ]
+                  ]
+             where canCompile = crModCanCompile modNm cr
+%%]]
+           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
        }
 %%]
 

@@ -532,7 +532,7 @@ ecuIsValidHI ecu
 ecuIsValidHIInfo :: EHCompileUnit -> Bool
 ecuIsValidHIInfo ecu
   = case ecuMbPrevHIInfo ecu of
-      Just i -> HI.hiiIsValid i
+      Just i -> HI.hiiValidity i == HI.HIValidity_Ok
       _      -> False
 %%]
 

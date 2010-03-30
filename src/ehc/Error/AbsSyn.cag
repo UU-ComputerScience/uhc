@@ -212,4 +212,12 @@ DATA Err
                         reason     : String
 %%]
 
+%%[99
+DATA Err
+  | InconsistentHI      modNm      : String
+                        file       : String
+                        expected   : {[String]}
+                        inHI       : {[String]}
+%%]
+
 

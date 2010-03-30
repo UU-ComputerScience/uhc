@@ -497,4 +497,17 @@ SEM Err
 %%]]
 %%]
 
+%%[99
+SEM Err
+  | InconsistentHI      lhs     .  pp   =   ppMsgErr    (".hi file cannot be used with this compiler")
+                                                        (    "module              :" >#< @modNm
+                                                         >-< "file                :" >#< @file
+                                                         >-< "this compiler       :" >#< (concat $ intersperse " / " @expected)
+                                                         >-< "compiler of .hi file:" >#< (concat $ intersperse " / " @inHI    )
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+%%]
+
 
