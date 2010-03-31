@@ -1,3 +1,5 @@
+{-# LANGUAGE UndecidableInstances #-}
+
 -------------------------------------------------------------------------
 -- Combinators for a compile run
 -------------------------------------------------------------------------
@@ -44,7 +46,7 @@ import Control.Monad.State
 import IO
 import qualified Data.Map as Map
 import EH.Util.Pretty
-import EH.Util.Utils(panicJust, scc)
+import EH.Util.Utils
 import EH.Util.FPath
 
 
@@ -84,13 +86,24 @@ class CompileUnit u n l s | u -> n l s where
   cuUpdState    :: s -> u -> u
   cuImports     :: u -> [n]
 
-class CompileRunError e p | e -> p where
+class FPathError e => CompileRunError e p | e -> p where
   crePPErrL         :: [e] -> PP_Doc
   creMkNotFoundErrL :: p -> String -> [String] -> [e]
   creAreFatal       :: [e] -> Bool
+  
+  -- defaults
+  crePPErrL         _     = empty
+  creMkNotFoundErrL _ _ _ = []
+  creAreFatal       _     = True
 
 class CompileRunStateInfo i n p where
   crsiImportPosOfCUKey :: n -> i -> p
+
+-------------------------------------------------------------------------
+-- Instances
+-------------------------------------------------------------------------
+
+instance CompileRunError String p
 
 -------------------------------------------------------------------------
 -- Locatable
@@ -234,14 +247,14 @@ crCULocation modNm cr = maybe noFileLocation fileLocation (crMbCU modNm cr)
 -- Find file for FPath
 -------------------------------------------------------------------------
 
-cpFindFileForNameOrFPath :: FPATH n => String -> n -> FPath -> [(String,FPath)]
+cpFindFileForNameOrFPath :: (FPATH n) => String -> n -> FPath -> [(String,FPath)]
 cpFindFileForNameOrFPath loc _ fp = searchFPathFromLoc loc fp
 
 cpFindFilesForFPathInLocations
   :: ( Ord n
      , FPATH n, FileLocatable u loc, Show loc
      , CompileUnitState s,CompileRunError e p,CompileUnit u n loc s,CompileModName n,CompileRunStateInfo i n p
-     ) => (loc -> n -> FPath -> [(loc,FPath)]) -> (FPath -> loc -> res)
+     ) => (loc -> n -> FPath -> [(loc,FPath,[e])]) -> ((FPath,loc,[e]) -> res)
           -> Bool -> [(FileSuffix,s)] -> [loc] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [res]
 cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
   = do { cr <- get
@@ -249,15 +262,21 @@ cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
        ; if cusIsUnk cus
           then do { let fp = maybe (mkFPath $ panicJust ("cpFindFileForFPath") $ mbModNm) id mbFp
                         modNm = maybe (mkCMNm $ fpathBase $ fp) id mbModNm
-                  ; fpsFound <- lift (searchLocationsForReadableFiles (\l f -> getfp l modNm f) stopAtFirst locs (map fst suffs) fp)
+                  ; fpsFound <- lift (searchLocationsForReadableFiles (\l f -> getfp l modNm f)
+                                                                      stopAtFirst locs (map fst suffs) fp
+                                     )
                   ; case fpsFound of
                       []
                         -> do { cpSetErrs (creMkNotFoundErrL (crsiImportPosOfCUKey modNm (crStateInfo cr)) (fpathToStr fp) (map show locs))
                               ; return []
                               }
-                      ffs@((ff,loc):_)
+                      ((_,_,e@(_:_)):_)
+                        -> do { cpSetErrs e
+                              ; return []
+                              }
+                      ffs@((ff,loc,_):_)
                         -> do { cpUpdCU modNm (cuUpdLocation loc . cuUpdFPath ff . cuUpdState cus . cuUpdKey modNm)
-                              ; return (map (uncurry putres) ffs)
+                              ; return (map putres ffs)
                               }
                         where cus = case lookup (Just $ fpathSuff ff) suffs of
                                       Just c  -> c
@@ -265,16 +284,17 @@ cpFindFilesForFPathInLocations getfp putres stopAtFirst suffs locs mbModNm mbFp
                                                    Just c  -> c
                                                    Nothing -> cusUnk
                   }
-          else return (maybe [] (\nm -> [putres (crCUFPath nm cr) (crCULocation nm cr)]) mbModNm)
+          else return (maybe [] (\nm -> [putres (crCUFPath nm cr,crCULocation nm cr,[])]) mbModNm)
        }
 
 cpFindFilesForFPath
-  :: ( Ord n
+  :: forall e n u p i s .
+     ( Ord n
      , FPATH n, FileLocatable u String
      , CompileUnitState s,CompileRunError e p,CompileUnit u n String s,CompileModName n,CompileRunStateInfo i n p
      ) => Bool -> [(FileSuffix,s)] -> [String] -> Maybe n -> Maybe FPath -> CompilePhase n u i e [FPath]
 cpFindFilesForFPath
-  = cpFindFilesForFPathInLocations cpFindFileForNameOrFPath (\fp _ -> fp)
+  = cpFindFilesForFPathInLocations (\l n f -> map (tup12to123 ([]::[e])) $ cpFindFileForNameOrFPath l n f) tup123to1
 
 cpFindFileForFPath
   :: ( Ord n

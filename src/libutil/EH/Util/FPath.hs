@@ -1,6 +1,7 @@
 module EH.Util.FPath 
   ( FPath(..), fpathSuff
   , FPATH(..)
+  , FPathError -- (..)
   , emptyFPath
   -- , mkFPath
   , fpathFromStr
@@ -240,6 +241,14 @@ instance FPATH FPath where
   mkFPath = id
 
 -------------------------------------------------------------------------------------------
+-- Class 'is error related to FPath'
+-------------------------------------------------------------------------------------------
+
+class FPathError e
+
+instance FPathError String
+
+-------------------------------------------------------------------------------------------
 -- Open path for read or return stdin
 -------------------------------------------------------------------------------------------
 
@@ -304,7 +313,7 @@ searchPathFromString
 searchFPathFromLoc :: FilePath -> FPath -> [(FilePath,FPath)]
 searchFPathFromLoc loc fp = [(loc,fpathPrependDir loc fp)]
 
-searchLocationsForReadableFiles :: (loc -> FPath -> [(loc,FPath)]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc)]
+searchLocationsForReadableFiles :: FPathError e => (loc -> FPath -> [(loc,FPath,[e])]) -> Bool -> [loc] -> FileSuffixes -> FPath -> IO [(FPath,loc,[e])]
 searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
   = let select stop f fps
           = foldM chk [] fps
@@ -321,8 +330,9 @@ searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
                  then return [(fp',loc)]
                  else return []
                }
-        tryToOpenWithSuffs suffs (loc,fp)
-          = case suffs of
+        tryToOpenWithSuffs suffs (loc,fp,x)
+          = fmap (map (tup12to123 x)) $ 
+            case suffs of
               [] -> tryToOpen loc Nothing fp
               _  -> select stopAtFirst
                       (\(ms,f) -> tryToOpen loc ms f)
@@ -333,7 +343,7 @@ searchLocationsForReadableFiles getfp stopAtFirst locs suffs fp
 
 searchPathForReadableFiles :: Bool -> SearchPath -> FileSuffixes -> FPath -> IO [FPath]
 searchPathForReadableFiles stopAtFirst locs suffs fp
-  = fmap (map fst) $ searchLocationsForReadableFiles searchFPathFromLoc stopAtFirst locs suffs fp
+  = fmap (map tup123to1) $ searchLocationsForReadableFiles (\s f -> map (tup12to123 ([]::[String])) $ searchFPathFromLoc s f) stopAtFirst locs suffs fp
 
 searchPathForReadableFile :: SearchPath -> FileSuffixes -> FPath -> IO (Maybe FPath)
 searchPathForReadableFile paths suffs fp

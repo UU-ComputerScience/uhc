@@ -446,7 +446,7 @@ doCompileRun fnL@(fn:_) opts
                               ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
                               ; let searchPath' = adaptedSearchPath mbPrev
-                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) const False fileSuffMpHs' searchPath' (Just nm) mbFp
+                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
                               ; when (ehcOptVerbosity opts >= VerboseDebug)
                                      (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)

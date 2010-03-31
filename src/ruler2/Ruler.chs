@@ -93,6 +93,8 @@ instance CompileUnit RCompileUnit Nm String RCompileUnitState where
   cuUpdKey   nm u   = u {rcuModNm = nm}
   cuImports         = rcuImpNmL
 
+instance FPathError Err
+
 instance CompileRunError Err SPos where
   crePPErrL                 = ppErrPPL
   creMkNotFoundErrL p fp sp = [Err_FileNotFound p fp sp]
