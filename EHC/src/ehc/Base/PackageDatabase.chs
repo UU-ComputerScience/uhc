@@ -266,27 +266,31 @@ pkgDbFreeze db
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
--- For a module, find the package to use and the location of the root dir of that package.
-pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,FilePath)
+-- | For a module, find the package to use and the location of the root dir of that package.
+pkgDbSearch :: PackageDatabase -> HsName -> Maybe (PkgKey,FilePath,[Err])
 pkgDbSearch db modNm
-  = do pkgs <- {- tr "pkgDbSearch0" (show $ (db, pkgDbMod2PkgMp db)) -} mbPkgs
-       dirOf $ disambig $ {- tr "pkgDbSearch" (show modNm ++ show pkgs) $ -} pkgs
+  = do pkgs <- mbPkgs
+       dirOf $ disambig pkgs
   where mbPkgs   = Map.lookup modNm $ pkgDbMod2PkgMp db
-        disambig = head . sortBy cmp
-                 where cmp (_,Nothing) (_,Nothing) = EQ					-- versionless goes first
+        disambig pks
+                 = case sortBy cmp pks of
+                     [k]               -> (k,[])          -- no ambiguity
+                     (k@(_,Nothing):_) -> (k,[])          -- versionless overrides others
+                     ks@(k:_)          -> (k,[rngLift emptyRange Err_AmbiguousNameRef "module" "package" modNm (map mkHNm ks)])
+                 where cmp (_,Nothing) (_,Nothing) = EQ                 -- versionless goes first
                        cmp (_,Nothing) (_,_      ) = LT
-                       cmp (_,k21    ) (_,k22    ) = compare k22 k21	-- then highest version
-        dirOf k = fmap (\i -> (k,filelocDir $ pkginfoLoc i)) $ pkgMpLookup k $ pkgDbPkgMp db
+                       cmp (_,k21    ) (_,k22    ) = compare k22 k21    -- then highest version
+        dirOf (k,e) = fmap (\i -> (k,filelocDir $ pkginfoLoc i,e)) $ pkgMpLookup k $ pkgDbPkgMp db
 %%]
 
 %%[99 export(fileLocSearch)
 -- look up a file location, defaults to plain file search except for a package db which is then queried
-fileLocSearch :: EHCOpts -> FileLoc -> HsName -> FPath -> [(FileLoc,FPath)]
+fileLocSearch :: EHCOpts -> FileLoc -> HsName -> FPath -> [(FileLoc,FPath,[Err])]
 fileLocSearch opts loc modNm fp
   = case {- tr "fileLocSearch1" (show modNm ++ ": " ++ show fp ++ " " ++ show loc) $ -} filelocKind loc of
       FileLocKind_PkgDb
         -> maybe [] srch $ pkgDbSearch (ehcOptPkgDb opts) modNm
-        where srch (k,d) = [ (mkPkgFileLoc k d',fp') | (d',fp') <- searchFPathFromLoc d fp ]
-      _ -> [ (loc,fp') | (_,fp') <- searchFPathFromLoc (filelocDir loc) fp ]
+        where srch (k,d,e) = [ (mkPkgFileLoc k d',fp',e) | (d',fp') <- searchFPathFromLoc d fp ]
+      _ -> [ (loc,fp',[]) | (_,fp') <- searchFPathFromLoc (filelocDir loc) fp ]
 %%]
 

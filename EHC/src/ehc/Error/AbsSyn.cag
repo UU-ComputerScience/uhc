@@ -196,7 +196,9 @@ DATA Err
   | MustHaveMain
   | ModNameMismatch     nmOfFile   : HsName
                         nmFromSrc  : HsName
-  | AmbiguousNameRef    nm         : HsName
+  | AmbiguousNameRef    kindName   : {String}
+                        kind       : {String}
+                        nm         : HsName
                         nmAlts     : {[HsName]}
   | MutRecModules       mutRecL    : {[[HsName]]}
 %%]

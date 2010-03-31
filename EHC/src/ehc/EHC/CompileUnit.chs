@@ -313,6 +313,8 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuImports         = ecuImpNmL
 %%]]
 
+instance FPathError Err
+
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
   creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
