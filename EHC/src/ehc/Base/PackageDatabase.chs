@@ -31,7 +31,7 @@ packages.
 %%]
 
 -- general imports
-%%[99 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Version, Data.List, Data.Maybe)
+%%[99 import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Version, Data.List, Data.Maybe, Data.Char)
 %%]
 %%[99 import(System.Environment, System.Directory, Control.Monad)
 %%]
@@ -111,12 +111,13 @@ First key/value pairs are extracted, these are then parsed based on the keyword.
 -- parse content of a package config file, yielding updates to PackageInfo, ignoring unused fields
 pkgCfgParse :: String -> [PackageInfo -> PackageInfo]
 pkgCfgParse s
-  = map (\(k,v) -> case k of
-                     "exposed-modules"
-                       -> maybe id (\ns i -> i {pkginfoExposedModules = Set.fromList ns}) $ parseModuleNames v
-                     _ -> id
+  = map (\(k,v) -> case map toLower k of
+                     "exposed-modules" -> add (\ns i -> i {pkginfoExposedModules = Set.fromList ns}) parseModuleNames v
+                     "exposed"         -> add (\ex i -> i {pkginfoIsExposed      = ex             }) parseBool        v
+                     _                 -> id
         ) $ Map.toList kvs
-  where (kvs,_) = foldr p (Map.empty,"") $ lines s
+  where add upd parse v = maybe id upd $ parse v
+        (kvs,_) = foldr p (Map.empty,"") $ lines s
         p s (kvs,saccum)
           = case elemIndex ':' s of
               Just colpos -> (Map.insert k (appendaccum v) kvs, "")
@@ -127,12 +128,21 @@ pkgCfgParse s
 %%]
 
 %%[99
--- For rhs of exposed-modules
+-- | For rhs of field 'exposed-modules'
 pModuleNames :: P [HsName]
 pModuleNames = pList (tokMkQName <$> (pQConidTk <|> pConidTk))
 
 parseModuleNames :: String -> Maybe [HsName]
 parseModuleNames = parseString hsScanOpts pModuleNames
+%%]
+
+%%[99
+-- | For rhs of field 'exposed'
+pBool :: P Bool
+pBool = True <$ pKeyTk "True" <|> False <$ pKeyTk "False"
+
+parseBool :: String -> Maybe Bool
+parseBool = parseString (defaultScanOpts {scoKeywordsTxt = Set.fromList ["True","False"]}) pBool
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -148,7 +158,7 @@ pkgMpFromDirFile opts pkgkey order pkgfp
        isDir <- doesDirectoryExist pkgdir
        if isDir then
               do { let fpCfg = fpathToStr $ fpathSetDir pkgdir $ fpathFromStr Cfg.ehcPkgConfigfileName
-                       pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty
+                       pkgInfo = PackageInfo (mkPkgFileLoc pkgkey pkgdir) order Set.empty True
                  ; cfgExists <- doesFileExist fpCfg
                  ; pm <- if cfgExists
                    then do h <- openFile fpCfg ReadMode
@@ -217,6 +227,21 @@ pkgDbSelectBySearchFilter searchFilters fullDb
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The exposed packages, as specified by their config file
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 export(pkgExposedPackages)
+pkgExposedPackages :: PackageDatabase -> [PkgKey]
+pkgExposedPackages db
+  = [ (k1,k2)
+    | (k1,mp1) <- Map.toList $ pkgDbPkgMp db
+    , (k2,is ) <- Map.toList mp1
+    , i        <- is						-- TBD: disambiguation
+    , pkginfoIsExposed i
+    ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Freeze database, subsequent changes must be refrozen
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -231,8 +256,8 @@ pkgDbFreeze db
                   | m <- Set.toList $ pkginfoExposedModules i
                   ]
               | (k1,mp1) <- Map.toList $ pkgDbPkgMp db
-              , (k2,is) <- Map.toList mp1
-              , i <- is
+              , (k2,is)  <- Map.toList mp1
+              , i        <- is
               ]
 %%]
 
