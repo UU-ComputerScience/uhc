@@ -162,10 +162,10 @@ data PackageSearchFilter
 %%]
 
 %%[99 export(pkgSearchFilter)
-pkgSearchFilter :: ([PkgKey] -> PackageSearchFilter) -> [String] -> [PackageSearchFilter]
-pkgSearchFilter mk ss
+pkgSearchFilter :: (x -> Maybe PkgKey) -> ([PkgKey] -> PackageSearchFilter) -> [x] -> [PackageSearchFilter]
+pkgSearchFilter mkKey mk ss
   = if null ps then [] else [mk ps]
-  where ps = catMaybes $ map parsePkgKey ss
+  where ps = catMaybes $ map mkKey ss
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -181,6 +181,7 @@ data PackageInfo
       , pkginfoOrder				:: !Int							-- for multiple packages the relative order
       -- , pkginfoKeyVals				:: PackageCfgKeyVals			-- key/value pairs of pkg config info
       , pkginfoExposedModules		:: !(Set.Set HsName)			-- exposed modules
+      , pkginfoIsExposed		    :: !Bool						-- pkg is exposed?
       }
       deriving Show
 

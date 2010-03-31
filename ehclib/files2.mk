@@ -155,6 +155,7 @@ ehclib-variant-dflt: \
 	                -e "s+$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg}/++g" \
 	                -e 's+\.[^.]*hs++g' \
 	                -e 's+/+.+g' ; \
+	          echo "exposed: True" ; \
 	        ) > $(call FUN_INSTALL_PKG_PREFIX,$${pkg})$(UHC_PKG_CONFIGFILE_NAME) ; \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          $(EHCLIB_BASE_OPTS) \

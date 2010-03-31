@@ -462,7 +462,7 @@ defaultEHCOpts
       ,  ehcOptCPP              =   False
       ,  ehcOptUseAssumePrelude =   True
       ,  ehcOptPackageSearchFilter
-      							=	pkgSearchFilter PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
+      							=	[] -- pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg Cfg.ehcAssumedPackages
       ,  ehcOptOutputDir        =   Nothing
       ,  ehcOptKeepIntermediateFiles
                                 =   False
@@ -786,9 +786,9 @@ ehcCmdLineOpts
          oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
          oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
          oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
-                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_ExposePkg [s]
+                                        , ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter parsePkgKey PackageSearchFilter_ExposePkg [s]
                                         }
-         oHidePackage         s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter PackageSearchFilter_HidePkg [s]
+         oHidePackage         s o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ pkgSearchFilter parsePkgKey PackageSearchFilter_HidePkg [s]
                                         }
          oHideAllPackages       o   = o { ehcOptPackageSearchFilter         = ehcOptPackageSearchFilter o ++ [PackageSearchFilter_HideAll]
                                         -- , ehcOptHideAllPackages             = True
