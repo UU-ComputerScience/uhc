@@ -422,7 +422,7 @@ SEM GrAlt
 %%[(8 codegen grin).fetch
 SEM GrExpr
   | FetchNode    lhs . equations =  case @lhs.targetInfo of
-                                      InVar tvar  -> [ IsEvaluation tvar (getNr @nm) tvar ]   -- TODO: third parameter is not sensible when exceptions are really used
+                                      InVar tvar  -> [ IsFetch tvar (getNr @nm) ]
                                       _           -> error "HPT: FetchNode target should be a variable"
   | FetchUpdate  lhs . equations =  [ IsEqual (getNr @dst) (getNr @src) ]
   | FetchField   lhs . equations =  case @lhs.targetInfo of

@@ -181,6 +181,7 @@ data Equation
   | IsEnumeration         Variable  Variable
   | IsEvaluation          Variable  Variable                     Variable
   | IsApplication         Variable  [Variable]                   Variable
+  | IsFetch               Variable  Variable
     deriving (Show, Eq)
 
 

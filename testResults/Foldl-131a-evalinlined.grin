@@ -1,0 +1,1561 @@
+module $Foldl
+{ $global_x_14_UHC.Base.showChar <- store (#0/P/2/$fun_x_845_UHC.Base.$:)
+; $global_x_15_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@0 <- store (#0/P/2/$fun_x_647_UHC.Base.primMulInt)
+; $global_x_16_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@1 <- store (#0/P/2/$fun_x_710_UHC.Base.primAddInt)
+; $global_x_17_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@2 <- store (#0/P/2/$fun_x_595_UHC.Base.primSubInt)
+; $global_x_18_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@5 <- store (#0/P/1/$fun_x_820_UHC.Base.id)
+; $global_x_19_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@6 <- store (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+; $global_x_20_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@7 <- store (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+; $global_x_21_UHC.Base.Num_@1DCT_@92_103_0 <- store (#0/C{9,9}/$UHC.Base.$$Dict$-Num $global_x_15_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@0 $global_x_16_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@1 $global_x_17_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@2 $global_x_82_UHC.Base.Eq_@1DCT_@92_90_0 $global_x_90_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.abs $global_x_18_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@5 $global_x_19_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@6 $global_x_20_UHC.Base.Num_@1DCT_@92_103_0_@1UND_@7 $global_x_91_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.signum)
+; $global_x_72_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@0 <- store (#0/P/2/$fun_x_791_UHC.Base.primLtInt)
+; $global_x_73_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@1 <- store (#0/P/2/$fun_x_784_UHC.Base.primLeInt)
+; $global_x_74_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@2 <- store (#0/P/2/$fun_x_777_UHC.Base.primGtInt)
+; $global_x_75_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@3 <- store (#0/P/2/$fun_x_770_UHC.Base.primGeInt)
+; $global_x_76_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@5 <- store (#0/P/2/$fun_x_737_UHC.Base.primCmpInt)
+; $global_x_77_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@6 <- store (#0/P/2/$fun_x_1591_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.max $global_x_79_UHC.Base.Ord_@1DCT_@92_93_0)
+; $global_x_78_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@7 <- store (#0/P/2/$fun_x_1581_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.min $global_x_79_UHC.Base.Ord_@1DCT_@92_93_0)
+; $global_x_79_UHC.Base.Ord_@1DCT_@92_93_0 <- store (#0/C{8,8}/$UHC.Base.$$Dict$-Ord $global_x_72_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@0 $global_x_73_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@1 $global_x_74_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@2 $global_x_75_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@3 $global_x_82_UHC.Base.Eq_@1DCT_@92_90_0 $global_x_76_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@5 $global_x_77_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@6 $global_x_78_UHC.Base.Ord_@1DCT_@92_93_0_@1UND_@7)
+; $global_x_80_UHC.Base.Eq_@1DCT_@92_90_0_@1UND_@0 <- store (#0/P/2/$fun_x_798_UHC.Base.primNeInt)
+; $global_x_81_UHC.Base.Eq_@1DCT_@92_90_0_@1UND_@1 <- store (#0/P/2/$fun_x_756_UHC.Base.primEqInt)
+; $global_x_82_UHC.Base.Eq_@1DCT_@92_90_0 <- store (#0/C{2,2}/$UHC.Base.$$Dict$-Eq $global_x_80_UHC.Base.Eq_@1DCT_@92_90_0_@1UND_@0 $global_x_81_UHC.Base.Eq_@1DCT_@92_90_0_@1UND_@1)
+; $global_x_88_UHC.Base.96_460 <- store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_135_UHC.Base.95_616_0)
+; $global_x_89_UHC.Base.Num_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC <- store (#0/F/$fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $global_x_89_UHC.Base.Num_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $global_x_90_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.abs $global_x_91_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.signum)
+; $global_x_90_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.abs <- store (#0/P/1/$fun_x_1051_UHC.Base.absReal $global_x_79_UHC.Base.Ord_@1DCT_@92_93_0 $global_x_89_UHC.Base.Num_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC)
+; $global_x_91_UHC.Base.Num_@1DCT_@92_103_0_@1DFL_@UHC.Base.signum <- store (#0/F/$fun_x_1066_UHC.Base.signumReal $global_x_79_UHC.Base.Ord_@1DCT_@92_93_0 $global_x_89_UHC.Base.Num_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC)
+; $global_x_104_UHC.Base.showString <- store (#0/P/2/$fun_x_1272_UHC.Base.$+$+)
+; $global_x_110_UHC.OldIO.primStdout <- store (#0/F/$fun_x_2302_UHC.OldIO.fun0~primStdout)
+; $global_x_111_UHC.OldIO.stdout <- store (#0/F/$fun_x_2299_UHC.IOBase.OldHandle $global_x_110_UHC.OldIO.primStdout)
+; $global_x_113_Foldl.Z <- store (#1/C{0,1}/$Foldl.Z)
+; $global_x_114_Foldl.one <- store (#0/F/$fun_x_2372_Foldl.Suc $global_x_113_Foldl.Z)
+; $global_x_115_Foldl.two <- store (#0/F/$fun_x_2372_Foldl.Suc $global_x_114_Foldl.one)
+; $global_x_116_Foldl.Ni <- store (#1/C{0,2}/$Foldl.Ni)
+; $global_x_117_Foldl.5_47 <- store (#0/F/$fun_x_2388_Foldl.Con $global_x_115_Foldl.two $global_x_116_Foldl.Ni)
+; $global_x_118_Foldl.5_45 <- store (#0/F/$fun_x_2388_Foldl.Con $global_x_114_Foldl.one $global_x_117_Foldl.5_47)
+; $global_x_119_Foldl.x1 <- store (#0/F/$fun_x_2361_Foldl.foldy $global_x_201_Foldl.4_82_0 $global_x_113_Foldl.Z $global_x_118_Foldl.5_45)
+; $global_x_120_Foldl.x2 <- store (#0/F/$fun_x_2398_Foldl.fun0~x2)
+; $global_x_121_Foldl.5_68 <- store (#0/F/$fun_x_2388_Foldl.Con $global_x_115_Foldl.two $global_x_116_Foldl.Ni)
+; $global_x_122_Foldl.5_66 <- store (#0/F/$fun_x_2377_Foldl.plus $global_x_113_Foldl.Z $global_x_114_Foldl.one)
+; $global_x_123_Foldl.x3 <- store (#0/F/$fun_x_2361_Foldl.foldy $global_x_203_Foldl.4_149_0 $global_x_122_Foldl.5_66 $global_x_121_Foldl.5_68)
+; $global_x_124_Foldl.1_0_0_@1UND_@0 <- store (#0/P/1/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $global_x_127_Foldl.1_0_0)
+; $global_x_125_Foldl.1_0_0_@1UND_@1 <- store (#0/P/1/$fun_x_2265_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.showList $global_x_127_Foldl.1_0_0)
+; $global_x_126_Foldl.1_0_0_@1UND_@2 <- store (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $global_x_127_Foldl.1_0_0)
+; $global_x_127_Foldl.1_0_0 <- store (#0/C{3,3}/$UHC.Base.$$Dict$-Show $global_x_124_Foldl.1_0_0_@1UND_@0 $global_x_125_Foldl.1_0_0_@1UND_@1 $global_x_126_Foldl.1_0_0_@1UND_@2)
+; $global_x_128_Foldl.5_112 <- store (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $global_x_127_Foldl.1_0_0 $global_x_123_Foldl.x3)
+; $global_x_129_Foldl.5_110 <- store (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $global_x_127_Foldl.1_0_0 $global_x_120_Foldl.x2)
+; $global_x_130_Foldl.5_108 <- store (#0/F/$fun_x_1272_UHC.Base.$+$+ $global_x_129_Foldl.5_110 $global_x_128_Foldl.5_112)
+; $global_x_131_Foldl.5_106 <- store (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $global_x_127_Foldl.1_0_0 $global_x_119_Foldl.x1)
+; $global_x_132_Foldl.5_104 <- store (#0/F/$fun_x_1272_UHC.Base.$+$+ $global_x_131_Foldl.5_106 $global_x_130_Foldl.5_108)
+; $global_x_135_UHC.Base.95_616_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "Prelude.undefined")
+; $global_x_139_UHC.Base.95_1043_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "0")
+; $global_x_140_UHC.Base.95_1071_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "FAIL 93_118_0")
+; $global_x_149_UHC.Base.95_1874_0 <- store (#0/P/2/$fun_x_647_UHC.Base.primMulInt)
+; $global_x_150_UHC.Base.95_1874_1 <- store (#0/P/2/$fun_x_710_UHC.Base.primAddInt)
+; $global_x_151_UHC.Base.95_1874_2 <- store (#0/P/2/$fun_x_595_UHC.Base.primSubInt)
+; $global_x_152_UHC.Base.95_1874_5 <- store (#0/P/1/$fun_x_820_UHC.Base.id)
+; $global_x_153_UHC.Base.95_1874_6 <- store (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+; $global_x_154_UHC.Base.95_1874_7 <- store (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+; $global_x_158_UHC.Base.95_2741_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "FAIL 93_20_0")
+; $global_x_159_UHC.Base.95_2773_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "FAIL 93_19_0")
+; $global_x_166_UHC.Base.95_3171_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "0")
+; $global_x_167_UHC.Base.95_3195_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "0")
+; $global_x_168_UHC.Base.95_3223_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "FAIL 93_119_0")
+; $global_x_169_UHC.Base.95_3232_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "1")
+; $global_x_170_UHC.Base.95_3252_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "1")
+; $global_x_171_UHC.Base.95_3265_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "0")
+; $global_x_190_UHC.Base.95_8752_0 <- store (#0/C{1,1}/$Char 41)
+; $global_x_191_UHC.Base.95_8762_0 <- store (#0/C{1,1}/$Char 40)
+; $global_x_192_UHC.Base.95_8780_1 <- store (#0/C{1,1}/$Int 0)
+; $global_x_193_UHC.Base.95_12441_0 <- store (#0/C{1,1}/$Char 91)
+; $global_x_194_UHC.Base.95_12452_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "[]")
+; $global_x_195_UHC.Base.95_12486_0 <- store (#0/C{1,1}/$Char 44)
+; $global_x_196_UHC.Base.95_12498_0 <- store (#0/C{1,1}/$Char 93)
+; $global_x_197_UHC.Base.95_12503_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "")
+; $global_x_198_UHC.Base.95_12506_1 <- store (#0/C{1,1}/$Int 0)
+; $global_x_199_UHC.OldIO.245_234_1 <- store (#0/C{0,0}/$$,0)
+; $global_x_200_UHC.OldIO.245_242_1 <- store (#0/C{1,1}/$Char 10)
+; $global_x_201_Foldl.4_82_0 <- store (#0/P/2/$fun_x_2377_Foldl.plus)
+; $global_x_202_Foldl.4_118_0 <- store (#0/P/2/$fun_x_2377_Foldl.plus)
+; $global_x_203_Foldl.4_149_0 <- store (#0/P/2/$fun_x_2377_Foldl.plus)
+; $global_x_204_Foldl.4_202_1 <- store (#0/C{1,1}/$Int 11)
+; $global_x_205_Foldl.4_211_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "Suc ")
+; $global_x_207_Foldl.4_240_0 <- store (#0/C{1,1}/$UHC.Base.PackedString "Z")
+} 
+{ $fun_x_3_evaluate  $x_5
+    = { fetchnode $x_5 ; \$x_2990 ->
+        case $x_2990 of
+          { ident (#0/C{0,0}/$$,0)
+              -> { unit $x_2990} 
+          ; ident (#0/C{2,2}/$$,2 $x_3173 $x_3174)
+              -> { unit $x_2990} 
+          ; ident (#0/C{1,1}/$Char $x_3172)
+              -> { unit $x_2990} 
+          ; ident (#0/C{1,1}/$Int $x_3171)
+              -> { unit $x_2990} 
+          ; ident (#0/C{2,2}/$Foldl.Con $x_3169 $x_3170)
+              -> { unit $x_2990} 
+          ; ident (#1/C{0,2}/$Foldl.Ni)
+              -> { unit $x_2990} 
+          ; ident (#0/C{1,1}/$Foldl.Suc $x_3168)
+              -> { unit $x_2990} 
+          ; ident (#1/C{0,1}/$Foldl.Z)
+              -> { unit $x_2990} 
+          ; ident (#0/C{2,2}/$UHC.Base.$$Dict$-Eq $x_3166 $x_3167)
+              -> { unit $x_2990} 
+          ; ident (#0/C{9,9}/$UHC.Base.$$Dict$-Num $x_3157 $x_3158 $x_3159 $x_3160 $x_3161 $x_3162 $x_3163 $x_3164 $x_3165)
+              -> { unit $x_2990} 
+          ; ident (#0/C{8,8}/$UHC.Base.$$Dict$-Ord $x_3149 $x_3150 $x_3151 $x_3152 $x_3153 $x_3154 $x_3155 $x_3156)
+              -> { unit $x_2990} 
+          ; ident (#0/C{3,3}/$UHC.Base.$$Dict$-Show $x_3146 $x_3147 $x_3148)
+              -> { unit $x_2990} 
+          ; ident (#0/C{2,2}/$UHC.Base.$: $x_3144 $x_3145)
+              -> { unit $x_2990} 
+          ; ident (#0/C{0,0}/$UHC.Base.False)
+              -> { unit $x_2990} 
+          ; ident (#0/C{1,1}/$UHC.Base.PackedString $x_3143)
+              -> { unit $x_2990} 
+          ; ident (#1/C{0,0}/$UHC.Base.True)
+              -> { unit $x_2990} 
+          ; ident (#1/C{0,2}/$UHC.Base.[])
+              -> { unit $x_2990} 
+          ; ident (#2/C{1,3}/$UHC.IOBase.OldHandle $x_3142)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_595_UHC.Base.primSubInt $x_3141)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_595_UHC.Base.primSubInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_647_UHC.Base.primMulInt $x_3140)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_647_UHC.Base.primMulInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_710_UHC.Base.primAddInt $x_3139)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_710_UHC.Base.primAddInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_737_UHC.Base.primCmpInt $x_3138)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_737_UHC.Base.primCmpInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_756_UHC.Base.primEqInt $x_3137)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_756_UHC.Base.primEqInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_770_UHC.Base.primGeInt $x_3136)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_770_UHC.Base.primGeInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_777_UHC.Base.primGtInt $x_3135)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_777_UHC.Base.primGtInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_784_UHC.Base.primLeInt $x_3134)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_784_UHC.Base.primLeInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_791_UHC.Base.primLtInt $x_3133)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_791_UHC.Base.primLtInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_798_UHC.Base.primNeInt $x_3132)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_798_UHC.Base.primNeInt)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_810_UHC.Base.primretIO $x_3131)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_814_UHC.Base.ioFromPrim $x_3130)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_820_UHC.Base.id)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_845_UHC.Base.$: $x_3129)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_857_UHC.Base.. $x_3127 $x_3128)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_1051_UHC.Base.absReal $x_3125 $x_3126)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_3124)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_1272_UHC.Base.$+$+)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_1581_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.min $x_3122 $x_3123)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_1581_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.min $x_3121)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_1591_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.max $x_3119 $x_3120)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_1591_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.max $x_3118)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_1706_UHC.Base.96_1605_0 $x_3115 $x_3116 $x_3117)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2203_UHC.Base.96_1965_0 $x_3114)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2219_UHC.Base.primbindIO $x_3112 $x_3113)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2265_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.showList $x_3111)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_3110)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2324_UHC.OldIO.246_32_0 $x_3109)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2329_UHC.OldIO.246_35_0 $x_3107 $x_3108)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2377_Foldl.plus $x_3106)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_2377_Foldl.plus)
+              -> { unit $x_2990} 
+          ; ident (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_3104 $x_3105)
+              -> { unit $x_2990} 
+          ; ident (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_3103)
+              -> { unit $x_2990} 
+          ; ident (#U $x_3102)
+              -> { unit $x_2990} 
+          ; ident (#0/H/_)
+              -> { unit $x_2990} 
+          ; calling 1 x_5 (#0/F/$fun_x_698_UHC.Base.primCharToInt $x_3100)
+              -> { call (insideCase = True) $fun_x_698_UHC.Base.primCharToInt $x_3100 ; \$x_3101 ->
+                   updateunit $x_3101 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_722_UHC.Base.packedStringHead $x_3098)
+              -> { call (insideCase = True) $fun_x_722_UHC.Base.packedStringHead $x_3098 ; \$x_3099 ->
+                   updateunit $x_3099 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_727_UHC.Base.packedStringTail $x_3096)
+              -> { call (insideCase = True) $fun_x_727_UHC.Base.packedStringTail $x_3096 ; \$x_3097 ->
+                   updateunit $x_3097 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $x_3094)
+              -> { call (insideCase = True) $fun_x_732_UHC.Base.packedStringToInteger $x_3094 ; \$x_3095 ->
+                   updateunit $x_3095 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_893_UHC.Base.stringSum $x_3092)
+              -> { call (insideCase = True) $fun_x_893_UHC.Base.stringSum $x_3092 ; \$x_3093 ->
+                   updateunit $x_3093 $x_5} 
+          ; calling 0 x_5 (#0/F/$fun_x_927_UHC.Base.fromInteger $x_3090)
+              -> { call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_3090 ; \$x_3091 ->
+                   updateunit $x_3091 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_3088)
+              -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_3088 ; \$x_3089 ->
+                   updateunit $x_3089 $x_5} 
+          ; calling 3 x_5 (#0/F/$fun_x_1066_UHC.Base.signumReal $x_3085 $x_3086)
+              -> { call (insideCase = True) $fun_x_1066_UHC.Base.signumReal $x_3085 $x_3086 ; \$x_3087 ->
+                   updateunit $x_3087 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_3082 $x_3083)
+              -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_3082 $x_3083 ; \$x_3084 ->
+                   updateunit $x_3084 $x_5} 
+          ; calling 9 x_5 (#0/F/$fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_3078 $x_3079 $x_3080)
+              -> { call (insideCase = True) $fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_3078 $x_3079 $x_3080 ; \$x_3081 ->
+                   updateunit $x_3081 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6 $x_3076)
+              -> { call (insideCase = True) $fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6 $x_3076 ; \$x_3077 ->
+                   updateunit $x_3077 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2207_UHC.Base.head $x_3074)
+              -> { call (insideCase = True) $fun_x_2207_UHC.Base.head $x_3074 ; \$x_3075 ->
+                   updateunit $x_3075 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2248_UHC.Base.showsPrec $x_3072)
+              -> { call (insideCase = True) $fun_x_2248_UHC.Base.showsPrec $x_3072 ; \$x_3073 ->
+                   updateunit $x_3073 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2255_UHC.Base.shows $x_3070)
+              -> { call (insideCase = True) $fun_x_2255_UHC.Base.shows $x_3070 ; \$x_3071 ->
+                   updateunit $x_3071 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2259_UHC.Base.tail $x_3068)
+              -> { call (insideCase = True) $fun_x_2259_UHC.Base.tail $x_3068 ; \$x_3069 ->
+                   updateunit $x_3069 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_3065 $x_3066)
+              -> { call (insideCase = True) $fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_3065 $x_3066 ; \$x_3067 ->
+                   updateunit $x_3067 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_3062 $x_3063)
+              -> { call (insideCase = True) $fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_3062 $x_3063 ; \$x_3064 ->
+                   updateunit $x_3064 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2299_UHC.IOBase.OldHandle $x_3060)
+              -> { call (insideCase = True) $fun_x_2299_UHC.IOBase.OldHandle $x_3060 ; \$x_3061 ->
+                   updateunit $x_3061 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2302_UHC.OldIO.fun0~primStdout)
+              -> { call (insideCase = True) $fun_x_2302_UHC.OldIO.fun0~primStdout ; \$x_3059 ->
+                   updateunit $x_3059 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2314_UHC.OldIO.hPutChar $x_3057)
+              -> { call (insideCase = True) $fun_x_2314_UHC.OldIO.hPutChar $x_3057 ; \$x_3058 ->
+                   updateunit $x_3058 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2334_UHC.OldIO.hPutStr $x_3054 $x_3055)
+              -> { call (insideCase = True) $fun_x_2334_UHC.OldIO.hPutStr $x_3054 $x_3055 ; \$x_3056 ->
+                   updateunit $x_3056 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2361_Foldl.foldy $x_3050 $x_3051 $x_3052)
+              -> { call (insideCase = True) $fun_x_2361_Foldl.foldy $x_3050 $x_3051 $x_3052 ; \$x_3053 ->
+                   updateunit $x_3053 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2372_Foldl.Suc $x_3048)
+              -> { call (insideCase = True) $fun_x_2372_Foldl.Suc $x_3048 ; \$x_3049 ->
+                   updateunit $x_3049 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2377_Foldl.plus $x_3045 $x_3046)
+              -> { call (insideCase = True) $fun_x_2377_Foldl.plus $x_3045 $x_3046 ; \$x_3047 ->
+                   updateunit $x_3047 $x_5} 
+          ; calling 2 x_5 (#0/F/$fun_x_2388_Foldl.Con $x_3042 $x_3043)
+              -> { call (insideCase = True) $fun_x_2388_Foldl.Con $x_3042 $x_3043 ; \$x_3044 ->
+                   updateunit $x_3044 $x_5} 
+          ; calling 1 x_5 (#0/F/$fun_x_2398_Foldl.fun0~x2)
+              -> { call (insideCase = True) $fun_x_2398_Foldl.fun0~x2 ; \$x_3041 ->
+                   updateunit $x_3041 $x_5} 
+          ; calling 0 x_5 (#0/A/$fun_x_212_app2_1 $x_3038 $x_3039)
+              -> { call (insideCase = True) $fun_x_212_app2_1 $x_3038 $x_3039 ; \$x_3040 ->
+                   updateunit $x_3040 $x_5} 
+          ; calling 2 x_5 (#0/A/$fun_x_222_app2_3 $x_3035 $x_3036)
+              -> { call (insideCase = True) $fun_x_222_app2_3 $x_3035 $x_3036 ; \$x_3037 ->
+                   updateunit $x_3037 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_247_app2_8 $x_3032 $x_3033)
+              -> { call (insideCase = True) $fun_x_247_app2_8 $x_3032 $x_3033 ; \$x_3034 ->
+                   updateunit $x_3034 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_307_app2_28 $x_3029 $x_3030)
+              -> { call (insideCase = True) $fun_x_307_app2_28 $x_3029 $x_3030 ; \$x_3031 ->
+                   updateunit $x_3031 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_312_app2_29 $x_3026 $x_3027)
+              -> { call (insideCase = True) $fun_x_312_app2_29 $x_3026 $x_3027 ; \$x_3028 ->
+                   updateunit $x_3028 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_317_app2_30 $x_3023 $x_3024)
+              -> { call (insideCase = True) $fun_x_317_app2_30 $x_3023 $x_3024 ; \$x_3025 ->
+                   updateunit $x_3025 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_422_app2_61 $x_3020 $x_3021)
+              -> { call (insideCase = True) $fun_x_422_app2_61 $x_3020 $x_3021 ; \$x_3022 ->
+                   updateunit $x_3022 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_427_app2_62 $x_3017 $x_3018)
+              -> { call (insideCase = True) $fun_x_427_app2_62 $x_3017 $x_3018 ; \$x_3019 ->
+                   updateunit $x_3019 $x_5} 
+          ; calling 2 x_5 (#0/A/$fun_x_432_app2_63 $x_3014 $x_3015)
+              -> { call (insideCase = True) $fun_x_432_app2_63 $x_3014 $x_3015 ; \$x_3016 ->
+                   updateunit $x_3016 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_437_app2_64 $x_3011 $x_3012)
+              -> { call (insideCase = True) $fun_x_437_app2_64 $x_3011 $x_3012 ; \$x_3013 ->
+                   updateunit $x_3013 $x_5} 
+          ; calling 2 x_5 (#0/A/$fun_x_442_app2_65 $x_3008 $x_3009)
+              -> { call (insideCase = True) $fun_x_442_app2_65 $x_3008 $x_3009 ; \$x_3010 ->
+                   updateunit $x_3010 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_447_app2_66 $x_3005 $x_3006)
+              -> { call (insideCase = True) $fun_x_447_app2_66 $x_3005 $x_3006 ; \$x_3007 ->
+                   updateunit $x_3007 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_452_app2_67 $x_3002 $x_3003)
+              -> { call (insideCase = True) $fun_x_452_app2_67 $x_3002 $x_3003 ; \$x_3004 ->
+                   updateunit $x_3004 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_462_app2_71 $x_2999 $x_3000)
+              -> { call (insideCase = True) $fun_x_462_app2_71 $x_2999 $x_3000 ; \$x_3001 ->
+                   updateunit $x_3001 $x_5} 
+          ; calling 1 x_5 (#0/A/$fun_x_569_app3_69 $x_2995 $x_2996 $x_2997)
+              -> { call (insideCase = True) $fun_x_569_app3_69 $x_2995 $x_2996 $x_2997 ; \$x_2998 ->
+                   updateunit $x_2998 $x_5} 
+          ; calling 2 x_5 (#0/A/$fun_x_575_app3_70 $x_2991 $x_2992 $x_2993)
+              -> { call (insideCase = True) $fun_x_575_app3_70 $x_2991 $x_2992 $x_2993 ; \$x_2994 ->
+                   updateunit $x_2994 $x_5} 
+          } } 
+; $fun_x_1_mainFullProg  
+    = { store (#0/H/_) ; \$x_210_world ->
+        call (insideCase = False) $fun_x_2334_UHC.OldIO.hPutStr $global_x_111_UHC.OldIO.stdout $global_x_132_Foldl.5_104 ; \$x_6_UHC.Base.94_1918_0_@1UNQ_@165_@1EVL ->
+        case $x_6_UHC.Base.94_1918_0_@1UNQ_@165_@1EVL of
+          { (#0/P/1/$fun_x_810_UHC.Base.primretIO $x_2537)
+              -> { call (insideCase = True) $fun_x_810_UHC.Base.primretIO $x_2537 $x_210_world} 
+          ; (#0/P/1/$fun_x_2219_UHC.Base.primbindIO $x_2535 $x_2536)
+              -> { call (insideCase = True) $fun_x_2219_UHC.Base.primbindIO $x_2535 $x_2536 $x_210_world} 
+          }  ; \$x_7_UHC.Base.94_1946_0_@1UNQ_@171_0 ->
+        unit $x_7_UHC.Base.94_1946_0_@1UNQ_@171_0 ; \(#0/C{2,2}/$$,2 $x_9_UHC.Base.w'_@1UNQ_@175_2 $x_10_UHC.Base.x_@1UNQ_@175_4) ->
+        fetchnode $x_10_UHC.Base.x_@1UNQ_@175_4 ; \$x_2538 ->
+        case $x_2538 of
+          { ident (#0/C{0,0}/$$,0)
+              -> { unit $x_2538} }  ; \$x_0__ ->
+        store (#0/P/1/$fun_x_2329_UHC.OldIO.246_35_0 $global_x_110_UHC.OldIO.primStdout $global_x_200_UHC.OldIO.245_242_1) ; \$x_8_UHC.OldIO.247_56 ->
+        store (#0/A/$fun_x_212_app2_1 $x_8_UHC.OldIO.247_56 $x_9_UHC.Base.w'_@1UNQ_@175_2) ; \$x_11_UHC.Base.x_@1UNQ_@161_0 ->
+        fetchnode $x_11_UHC.Base.x_@1UNQ_@161_0 ; \$x_2539 ->
+        case $x_2539 of
+          { ident (#0/C{0,0}/$$,0)
+              -> { unit $x_2539} 
+          ; calling 0 x_11_UHC.Base.x_@1UNQ_@161_0 (#0/A/$fun_x_212_app2_1 $x_2540 $x_2541)
+              -> { call (insideCase = True) $fun_x_212_app2_1 $x_2540 $x_2541 ; \$x_2542 ->
+                   updateunit $x_2542 $x_11_UHC.Base.x_@1UNQ_@161_0} 
+          }  ; \$x_0__ ->
+        unit (#0/C{2,2}/$$,2 $x_9_UHC.Base.w'_@1UNQ_@175_2 $x_11_UHC.Base.x_@1UNQ_@161_0)} 
+; $fun_x_212_app2_1  $x_214_app2_1x0 $x_215_app2_1x1
+    = { fetchnode $x_214_app2_1x0 ; \$x_2543 ->
+        case $x_2543 of
+          { ident (#0/P/1/$fun_x_2329_UHC.OldIO.246_35_0 $x_2544 $x_2545)
+              -> { unit $x_2543} }  ; \$x_216_app2_1f ->
+        case $x_216_app2_1f of
+          { (#0/P/1/$fun_x_2329_UHC.OldIO.246_35_0 $x_2546 $x_2547)
+              -> { call (insideCase = True) $fun_x_2329_UHC.OldIO.246_35_0 $x_2546 $x_2547 $x_215_app2_1x1} } } 
+; $fun_x_222_app2_3  $x_224_app2_3x0 $x_225_app2_3x1
+    = { fetchnode $x_224_app2_3x0 ; \$x_2548 ->
+        case $x_2548 of
+          { ident (#0/P/1/$fun_x_845_UHC.Base.$: $x_2562)
+              -> { unit $x_2548} 
+          ; ident (#0/P/1/$fun_x_857_UHC.Base.. $x_2560 $x_2561)
+              -> { unit $x_2548} 
+          ; ident (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2559)
+              -> { unit $x_2548} 
+          ; calling 2 x_224_app2_3x0 (#0/F/$fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_2556 $x_2557)
+              -> { call (insideCase = True) $fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_2556 $x_2557 ; \$x_2558 ->
+                   updateunit $x_2558 $x_224_app2_3x0} 
+          ; calling 1 x_224_app2_3x0 (#0/A/$fun_x_422_app2_61 $x_2553 $x_2554)
+              -> { call (insideCase = True) $fun_x_422_app2_61 $x_2553 $x_2554 ; \$x_2555 ->
+                   updateunit $x_2555 $x_224_app2_3x0} 
+          ; calling 2 x_224_app2_3x0 (#0/A/$fun_x_575_app3_70 $x_2549 $x_2550 $x_2551)
+              -> { call (insideCase = True) $fun_x_575_app3_70 $x_2549 $x_2550 $x_2551 ; \$x_2552 ->
+                   updateunit $x_2552 $x_224_app2_3x0} 
+          }  ; \$x_226_app2_3f ->
+        case $x_226_app2_3f of
+          { (#0/P/1/$fun_x_845_UHC.Base.$: $x_2566)
+              -> { call (insideCase = True) $fun_x_845_UHC.Base.$: $x_2566 $x_225_app2_3x1} 
+          ; (#0/P/1/$fun_x_857_UHC.Base.. $x_2564 $x_2565)
+              -> { call (insideCase = True) $fun_x_857_UHC.Base.. $x_2564 $x_2565 $x_225_app2_3x1} 
+          ; (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2563)
+              -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2563 $x_225_app2_3x1} 
+          } } 
+; $fun_x_247_app2_8  $x_249_app2_8x0 $x_250_app2_8x1
+    = { fetchnode $x_249_app2_8x0 ; \$x_2567 ->
+        case $x_2567 of
+          { ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { unit $x_2567} 
+          ; calling 0 x_249_app2_8x0 (#0/F/$fun_x_927_UHC.Base.fromInteger $x_2568)
+              -> { call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_2568 ; \$x_2569 ->
+                   updateunit $x_2569 $x_249_app2_8x0} 
+          }  ; \$x_251_app2_8f ->
+        case $x_251_app2_8f of
+          { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_250_app2_8x1} } } 
+; $fun_x_307_app2_28  $x_309_app2_28x0 $x_310_app2_28x1
+    = { fetchnode $x_309_app2_28x0 ; \$x_2570 ->
+        case $x_2570 of
+          { ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { unit $x_2570} 
+          ; calling 0 x_309_app2_28x0 (#0/F/$fun_x_927_UHC.Base.fromInteger $x_2571)
+              -> { call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_2571 ; \$x_2572 ->
+                   updateunit $x_2572 $x_309_app2_28x0} 
+          }  ; \$x_311_app2_28f ->
+        case $x_311_app2_28f of
+          { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_310_app2_28x1} } } 
+; $fun_x_312_app2_29  $x_314_app2_29x0 $x_315_app2_29x1
+    = { fetchnode $x_314_app2_29x0 ; \$x_2573 ->
+        case $x_2573 of
+          { ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { unit $x_2573} 
+          ; calling 0 x_314_app2_29x0 (#0/F/$fun_x_927_UHC.Base.fromInteger $x_2574)
+              -> { call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_2574 ; \$x_2575 ->
+                   updateunit $x_2575 $x_314_app2_29x0} 
+          }  ; \$x_316_app2_29f ->
+        case $x_316_app2_29f of
+          { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_315_app2_29x1} } } 
+; $fun_x_317_app2_30  $x_319_app2_30x0 $x_320_app2_30x1
+    = { fetchnode $x_319_app2_30x0 ; \$x_2576 ->
+        case $x_2576 of
+          { ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { unit $x_2576} 
+          ; calling 0 x_319_app2_30x0 (#0/F/$fun_x_927_UHC.Base.fromInteger $x_2577)
+              -> { call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_2577 ; \$x_2578 ->
+                   updateunit $x_2578 $x_319_app2_30x0} 
+          }  ; \$x_321_app2_30f ->
+        case $x_321_app2_30f of
+          { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+              -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_320_app2_30x1} } } 
+; $fun_x_422_app2_61  $x_424_app2_61x0 $x_425_app2_61x1
+    = { fetchnode $x_424_app2_61x0 ; \$x_2579 ->
+        case $x_2579 of
+          { ident (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit $x_2579} }  ; \$x_426_app2_61f ->
+        case $x_426_app2_61f of
+          { (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit (#0/P/1/$fun_x_845_UHC.Base.$: $x_425_app2_61x1)} } } 
+; $fun_x_427_app2_62  $x_429_app2_62x0 $x_430_app2_62x1
+    = { fetchnode $x_429_app2_62x0 ; \$x_2580 ->
+        case $x_2580 of
+          { ident (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit $x_2580} }  ; \$x_431_app2_62f ->
+        case $x_431_app2_62f of
+          { (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit (#0/P/1/$fun_x_845_UHC.Base.$: $x_430_app2_62x1)} } } 
+; $fun_x_432_app2_63  $x_434_app2_63x0 $x_435_app2_63x1
+    = { fetchnode $x_434_app2_63x0 ; \$x_2581 ->
+        case $x_2581 of
+          { ident (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2584 $x_2585)
+              -> { unit $x_2581} 
+          ; calling 2 x_434_app2_63x0 (#0/F/$fun_x_2255_UHC.Base.shows $x_2582)
+              -> { call (insideCase = True) $fun_x_2255_UHC.Base.shows $x_2582 ; \$x_2583 ->
+                   updateunit $x_2583 $x_434_app2_63x0} 
+          }  ; \$x_436_app2_63f ->
+        case $x_436_app2_63f of
+          { (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2586 $x_2587)
+              -> { call (insideCase = True) $fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2586 $x_2587 $x_435_app2_63x1} } } 
+; $fun_x_437_app2_64  $x_439_app2_64x0 $x_440_app2_64x1
+    = { fetchnode $x_439_app2_64x0 ; \$x_2588 ->
+        case $x_2588 of
+          { ident (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit $x_2588} }  ; \$x_441_app2_64f ->
+        case $x_441_app2_64f of
+          { (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit (#0/P/1/$fun_x_845_UHC.Base.$: $x_440_app2_64x1)} } } 
+; $fun_x_442_app2_65  $x_444_app2_65x0 $x_445_app2_65x1
+    = { fetchnode $x_444_app2_65x0 ; \$x_2589 ->
+        case $x_2589 of
+          { ident (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2592 $x_2593)
+              -> { unit $x_2589} 
+          ; calling 2 x_444_app2_65x0 (#0/F/$fun_x_2255_UHC.Base.shows $x_2590)
+              -> { call (insideCase = True) $fun_x_2255_UHC.Base.shows $x_2590 ; \$x_2591 ->
+                   updateunit $x_2591 $x_444_app2_65x0} 
+          }  ; \$x_446_app2_65f ->
+        case $x_446_app2_65f of
+          { (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2594 $x_2595)
+              -> { call (insideCase = True) $fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2594 $x_2595 $x_445_app2_65x1} } } 
+; $fun_x_447_app2_66  $x_449_app2_66x0 $x_450_app2_66x1
+    = { fetchnode $x_449_app2_66x0 ; \$x_2596 ->
+        case $x_2596 of
+          { ident (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit $x_2596} }  ; \$x_451_app2_66f ->
+        case $x_451_app2_66f of
+          { (#0/P/2/$fun_x_845_UHC.Base.$:)
+              -> { unit (#0/P/1/$fun_x_845_UHC.Base.$: $x_450_app2_66x1)} } } 
+; $fun_x_452_app2_67  $x_454_app2_67x0 $x_455_app2_67x1
+    = { fetchnode $x_454_app2_67x0 ; \$x_2597 ->
+        case $x_2597 of
+          { ident (#0/P/1/$fun_x_2324_UHC.OldIO.246_32_0 $x_2601)
+              -> { unit $x_2597} 
+          ; ident (#U $x_2600)
+              -> { unit $x_2597} 
+          ; calling 1 x_454_app2_67x0 (#0/F/$fun_x_2314_UHC.OldIO.hPutChar $x_2598)
+              -> { call (insideCase = True) $fun_x_2314_UHC.OldIO.hPutChar $x_2598 ; \$x_2599 ->
+                   updateunit $x_2599 $x_454_app2_67x0} 
+          }  ; \$x_456_app2_67f ->
+        case $x_456_app2_67f of
+          { (#0/P/1/$fun_x_2324_UHC.OldIO.246_32_0 $x_2602)
+              -> { call (insideCase = True) $fun_x_2324_UHC.OldIO.246_32_0 $x_2602 $x_455_app2_67x1} } } 
+; $fun_x_462_app2_71  $x_464_app2_71x0 $x_465_app2_71x1
+    = { fetchnode $x_464_app2_71x0 ; \$x_2603 ->
+        case $x_2603 of
+          { ident (#0/P/2/$fun_x_1272_UHC.Base.$+$+)
+              -> { unit $x_2603} }  ; \$x_466_app2_71f ->
+        case $x_466_app2_71f of
+          { (#0/P/2/$fun_x_1272_UHC.Base.$+$+)
+              -> { unit (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_465_app2_71x1)} } } 
+; $fun_x_569_app3_69  $x_571_app3_69x0 $x_572_app3_69x1 $x_573_app3_69x2
+    = { fetchnode $x_571_app3_69x0 ; \$x_2604 ->
+        case $x_2604 of
+          { ident (#0/P/2/$fun_x_2377_Foldl.plus)
+              -> { unit $x_2604} }  ; \$x_574_app3_69f ->
+        case $x_574_app3_69f of
+          { (#0/P/2/$fun_x_2377_Foldl.plus)
+              -> { call (insideCase = True) $fun_x_2377_Foldl.plus $x_572_app3_69x1 $x_573_app3_69x2} } } 
+; $fun_x_575_app3_70  $x_577_app3_70x0 $x_578_app3_70x1 $x_579_app3_70x2
+    = { fetchnode $x_577_app3_70x0 ; \$x_2605 ->
+        case $x_2605 of
+          { ident (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2608)
+              -> { unit $x_2605} 
+          ; calling 1 x_577_app3_70x0 (#0/F/$fun_x_2248_UHC.Base.showsPrec $x_2606)
+              -> { call (insideCase = True) $fun_x_2248_UHC.Base.showsPrec $x_2606 ; \$x_2607 ->
+                   updateunit $x_2607 $x_577_app3_70x0} 
+          }  ; \$x_580_app3_70f ->
+        case $x_580_app3_70f of
+          { (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2609)
+              -> { call (insideCase = True) $fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2609 $x_578_app3_70x1 $x_579_app3_70x2} } } 
+; $fun_x_595_UHC.Base.primSubInt  $x_597_UHC.Base.95_4_2 $x_598_UHC.Base.95_4_3
+    = { fetchnode $x_597_UHC.Base.95_4_2 ; \$x_2610 ->
+        case $x_2610 of
+          { }  ; \(basicnode 4 word $x_599_UHC.Base.95_4_2_@1FFI) ->
+        fetchnode $x_598_UHC.Base.95_4_3 ; \$x_2611 ->
+        case $x_2611 of
+          { }  ; \(basicnode 4 word $x_600_UHC.Base.95_4_3_@1FFI) ->
+        ffi prim "primSubInt" True $x_599_UHC.Base.95_4_2_@1FFI $x_600_UHC.Base.95_4_3_@1FFI ; \(basicannot 4 word $x_601_UHC.Base.95_4_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_601_UHC.Base.95_4_0)} 
+; $fun_x_635_UHC.Base.primNegInt  $x_637_UHC.Base.95_19_2
+    = { fetchnode $x_637_UHC.Base.95_19_2 ; \$x_2612 ->
+        case $x_2612 of
+          { ident (#0/C{1,1}/$Int $x_2616)
+              -> { unit $x_2612} 
+          ; calling 1 x_637_UHC.Base.95_19_2 (#0/A/$fun_x_317_app2_30 $x_2613 $x_2614)
+              -> { call (insideCase = True) $fun_x_317_app2_30 $x_2613 $x_2614 ; \$x_2615 ->
+                   updateunit $x_2615 $x_637_UHC.Base.95_19_2} 
+          }  ; \(basicnode 4 word $x_638_UHC.Base.95_19_2_@1FFI) ->
+        ffi prim "primNegInt" True $x_638_UHC.Base.95_19_2_@1FFI ; \(basicannot 4 word $x_639_UHC.Base.95_19_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_639_UHC.Base.95_19_0)} 
+; $fun_x_647_UHC.Base.primMulInt  $x_649_UHC.Base.95_23_2 $x_650_UHC.Base.95_23_3
+    = { fetchnode $x_649_UHC.Base.95_23_2 ; \$x_2617 ->
+        case $x_2617 of
+          { }  ; \(basicnode 4 word $x_651_UHC.Base.95_23_2_@1FFI) ->
+        fetchnode $x_650_UHC.Base.95_23_3 ; \$x_2618 ->
+        case $x_2618 of
+          { }  ; \(basicnode 4 word $x_652_UHC.Base.95_23_3_@1FFI) ->
+        ffi prim "primMulInt" True $x_651_UHC.Base.95_23_2_@1FFI $x_652_UHC.Base.95_23_3_@1FFI ; \(basicannot 4 word $x_653_UHC.Base.95_23_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_653_UHC.Base.95_23_0)} 
+; $fun_x_674_UHC.Base.primIntegerToInt  $x_676_UHC.Base.95_47_2
+    = { fetchnode $x_676_UHC.Base.95_47_2 ; \$x_2619 ->
+        case $x_2619 of
+          { ident (#U $x_2622)
+              -> { unit $x_2619} 
+          ; calling 1 x_676_UHC.Base.95_47_2 (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $x_2620)
+              -> { call (insideCase = True) $fun_x_732_UHC.Base.packedStringToInteger $x_2620 ; \$x_2621 ->
+                   updateunit $x_2621 $x_676_UHC.Base.95_47_2} 
+          }  ; \(opaquenode $x_677_UHC.Base.95_47_2_@1FFI) ->
+        ffi prim "primIntegerToInt" True $x_677_UHC.Base.95_47_2_@1FFI ; \(basicannot 4 word $x_678_UHC.Base.95_47_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_678_UHC.Base.95_47_0)} 
+; $fun_x_698_UHC.Base.primCharToInt  $x_700_UHC.Base.95_65_2
+    = { fetchnode $x_700_UHC.Base.95_65_2 ; \$x_2623 ->
+        case $x_2623 of
+          { ident (#0/C{1,1}/$Char $x_2626)
+              -> { unit $x_2623} 
+          ; calling 1 x_700_UHC.Base.95_65_2 (#0/F/$fun_x_722_UHC.Base.packedStringHead $x_2624)
+              -> { call (insideCase = True) $fun_x_722_UHC.Base.packedStringHead $x_2624 ; \$x_2625 ->
+                   updateunit $x_2625 $x_700_UHC.Base.95_65_2} 
+          }  ; \(basicnode 4 word $x_701_UHC.Base.95_65_2_@1FFI) ->
+        ffi prim "primUnsafeId" True $x_701_UHC.Base.95_65_2_@1FFI ; \(basicannot 4 word $x_702_UHC.Base.95_65_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_702_UHC.Base.95_65_0)} 
+; $fun_x_710_UHC.Base.primAddInt  $x_712_UHC.Base.95_69_2 $x_713_UHC.Base.95_69_3
+    = { fetchnode $x_712_UHC.Base.95_69_2 ; \$x_2627 ->
+        case $x_2627 of
+          { ident (#0/C{1,1}/$Int $x_2630)
+              -> { unit $x_2627} 
+          ; calling 1 x_712_UHC.Base.95_69_2 (#0/F/$fun_x_698_UHC.Base.primCharToInt $x_2628)
+              -> { call (insideCase = True) $fun_x_698_UHC.Base.primCharToInt $x_2628 ; \$x_2629 ->
+                   updateunit $x_2629 $x_712_UHC.Base.95_69_2} 
+          }  ; \(basicnode 4 word $x_714_UHC.Base.95_69_2_@1FFI) ->
+        fetchnode $x_713_UHC.Base.95_69_3 ; \$x_2631 ->
+        case $x_2631 of
+          { ident (#0/C{1,1}/$Int $x_2634)
+              -> { unit $x_2631} 
+          ; calling 1 x_713_UHC.Base.95_69_3 (#0/F/$fun_x_893_UHC.Base.stringSum $x_2632)
+              -> { call (insideCase = True) $fun_x_893_UHC.Base.stringSum $x_2632 ; \$x_2633 ->
+                   updateunit $x_2633 $x_713_UHC.Base.95_69_3} 
+          }  ; \(basicnode 4 word $x_715_UHC.Base.95_69_3_@1FFI) ->
+        ffi prim "primAddInt" True $x_714_UHC.Base.95_69_2_@1FFI $x_715_UHC.Base.95_69_3_@1FFI ; \(basicannot 4 word $x_716_UHC.Base.95_69_0) ->
+        unit (basicnode #0/C{1,1}/$Int $x_716_UHC.Base.95_69_0)} 
+; $fun_x_722_UHC.Base.packedStringHead  $x_724_UHC.Base.95_73_2
+    = { fetchnode $x_724_UHC.Base.95_73_2 ; \$x_2635 ->
+        case $x_2635 of
+          { ident (#0/C{1,1}/$UHC.Base.PackedString $x_2638)
+              -> { unit $x_2635} 
+          ; calling 1 x_724_UHC.Base.95_73_2 (#0/F/$fun_x_727_UHC.Base.packedStringTail $x_2636)
+              -> { call (insideCase = True) $fun_x_727_UHC.Base.packedStringTail $x_2636 ; \$x_2637 ->
+                   updateunit $x_2637 $x_724_UHC.Base.95_73_2} 
+          }  ; \(basicnode 4 word $x_725_UHC.Base.95_73_2_@1FFI) ->
+        ffi prim "primPackedStringHead" True $x_725_UHC.Base.95_73_2_@1FFI ; \(basicannot 4 word $x_726_UHC.Base.95_73_0) ->
+        unit (basicnode #0/C{1,1}/$Char $x_726_UHC.Base.95_73_0)} 
+; $fun_x_727_UHC.Base.packedStringTail  $x_729_UHC.Base.95_75_2
+    = { fetchnode $x_729_UHC.Base.95_75_2 ; \$x_2639 ->
+        case $x_2639 of
+          { ident (#0/C{1,1}/$UHC.Base.PackedString $x_2642)
+              -> { unit $x_2639} 
+          ; calling 1 x_729_UHC.Base.95_75_2 (#0/F/$fun_x_727_UHC.Base.packedStringTail $x_2640)
+              -> { call (insideCase = True) $fun_x_727_UHC.Base.packedStringTail $x_2640 ; \$x_2641 ->
+                   updateunit $x_2641 $x_729_UHC.Base.95_75_2} 
+          }  ; \(basicnode 4 word $x_730_UHC.Base.95_75_2_@1FFI) ->
+        ffi prim "primPackedStringTail" True $x_730_UHC.Base.95_75_2_@1FFI ; \(basicannot 4 word $x_731_UHC.Base.95_75_0) ->
+        unit (basicnode #0/C{1,1}/$UHC.Base.PackedString $x_731_UHC.Base.95_75_0)} 
+; $fun_x_732_UHC.Base.packedStringToInteger  $x_734_UHC.Base.95_77_2
+    = { fetchnode $x_734_UHC.Base.95_77_2 ; \$x_2643 ->
+        case $x_2643 of
+          { ident (#0/C{1,1}/$UHC.Base.PackedString $x_2644)
+              -> { unit $x_2643} }  ; \(basicnode 4 word $x_735_UHC.Base.95_77_2_@1FFI) ->
+        ffi prim "packedStringToInteger" True $x_735_UHC.Base.95_77_2_@1FFI ; \(opaqueannot $x_736_UHC.Base.95_77_0) ->
+        unit (opaquenode $x_736_UHC.Base.95_77_0)} 
+; $fun_x_737_UHC.Base.primCmpInt  $x_739_UHC.Base.95_81_2 $x_740_UHC.Base.95_81_3
+    = { fetchnode $x_739_UHC.Base.95_81_2 ; \$x_2645 ->
+        case $x_2645 of
+          { }  ; \(basicnode 4 word $x_741_UHC.Base.95_81_2_@1FFI) ->
+        fetchnode $x_740_UHC.Base.95_81_3 ; \$x_2646 ->
+        case $x_2646 of
+          { }  ; \(basicnode 4 word $x_742_UHC.Base.95_81_3_@1FFI) ->
+        ffi prim "primCmpInt" True $x_741_UHC.Base.95_81_2_@1FFI $x_742_UHC.Base.95_81_3_@1FFI ; \(enumannot $UHC.Base.Ordering $x_743_UHC.Base.95_81_0) ->
+        unit (enumnode $x_743_UHC.Base.95_81_0)} 
+; $fun_x_756_UHC.Base.primEqInt  $x_758_UHC.Base.95_209_2 $x_759_UHC.Base.95_209_3
+    = { fetchnode $x_758_UHC.Base.95_209_2 ; \$x_2647 ->
+        case $x_2647 of
+          { }  ; \(basicnode 4 word $x_760_UHC.Base.95_209_2_@1FFI) ->
+        fetchnode $x_759_UHC.Base.95_209_3 ; \$x_2648 ->
+        case $x_2648 of
+          { ident (#0/C{1,1}/$Int $x_2652)
+              -> { unit $x_2648} 
+          ; calling 1 x_759_UHC.Base.95_209_3 (#0/A/$fun_x_307_app2_28 $x_2649 $x_2650)
+              -> { call (insideCase = True) $fun_x_307_app2_28 $x_2649 $x_2650 ; \$x_2651 ->
+                   updateunit $x_2651 $x_759_UHC.Base.95_209_3} 
+          }  ; \(basicnode 4 word $x_761_UHC.Base.95_209_3_@1FFI) ->
+        ffi prim "primEqInt" True $x_760_UHC.Base.95_209_2_@1FFI $x_761_UHC.Base.95_209_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_762_UHC.Base.95_209_0) ->
+        unit (enumnode $x_762_UHC.Base.95_209_0)} 
+; $fun_x_770_UHC.Base.primGeInt  $x_772_UHC.Base.95_213_2 $x_773_UHC.Base.95_213_3
+    = { fetchnode $x_772_UHC.Base.95_213_2 ; \$x_2653 ->
+        case $x_2653 of
+          { }  ; \(basicnode 4 word $x_774_UHC.Base.95_213_2_@1FFI) ->
+        fetchnode $x_773_UHC.Base.95_213_3 ; \$x_2654 ->
+        case $x_2654 of
+          { ident (#0/C{1,1}/$Int $x_2658)
+              -> { unit $x_2654} 
+          ; calling 1 x_773_UHC.Base.95_213_3 (#0/A/$fun_x_247_app2_8 $x_2655 $x_2656)
+              -> { call (insideCase = True) $fun_x_247_app2_8 $x_2655 $x_2656 ; \$x_2657 ->
+                   updateunit $x_2657 $x_773_UHC.Base.95_213_3} 
+          }  ; \(basicnode 4 word $x_775_UHC.Base.95_213_3_@1FFI) ->
+        ffi prim "primGeInt" True $x_774_UHC.Base.95_213_2_@1FFI $x_775_UHC.Base.95_213_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_776_UHC.Base.95_213_0) ->
+        unit (enumnode $x_776_UHC.Base.95_213_0)} 
+; $fun_x_777_UHC.Base.primGtInt  $x_779_UHC.Base.95_215_2 $x_780_UHC.Base.95_215_3
+    = { fetchnode $x_779_UHC.Base.95_215_2 ; \$x_2659 ->
+        case $x_2659 of
+          { }  ; \(basicnode 4 word $x_781_UHC.Base.95_215_2_@1FFI) ->
+        fetchnode $x_780_UHC.Base.95_215_3 ; \$x_2660 ->
+        case $x_2660 of
+          { ident (#0/C{1,1}/$Int $x_2664)
+              -> { unit $x_2660} 
+          ; calling 1 x_780_UHC.Base.95_215_3 (#0/A/$fun_x_312_app2_29 $x_2661 $x_2662)
+              -> { call (insideCase = True) $fun_x_312_app2_29 $x_2661 $x_2662 ; \$x_2663 ->
+                   updateunit $x_2663 $x_780_UHC.Base.95_215_3} 
+          }  ; \(basicnode 4 word $x_782_UHC.Base.95_215_3_@1FFI) ->
+        ffi prim "primGtInt" True $x_781_UHC.Base.95_215_2_@1FFI $x_782_UHC.Base.95_215_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_783_UHC.Base.95_215_0) ->
+        unit (enumnode $x_783_UHC.Base.95_215_0)} 
+; $fun_x_784_UHC.Base.primLeInt  $x_786_UHC.Base.95_236_2 $x_787_UHC.Base.95_236_3
+    = { fetchnode $x_786_UHC.Base.95_236_2 ; \$x_2665 ->
+        case $x_2665 of
+          { }  ; \(basicnode 4 word $x_788_UHC.Base.95_236_2_@1FFI) ->
+        fetchnode $x_787_UHC.Base.95_236_3 ; \$x_2666 ->
+        case $x_2666 of
+          { }  ; \(basicnode 4 word $x_789_UHC.Base.95_236_3_@1FFI) ->
+        ffi prim "primLeInt" True $x_788_UHC.Base.95_236_2_@1FFI $x_789_UHC.Base.95_236_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_790_UHC.Base.95_236_0) ->
+        unit (enumnode $x_790_UHC.Base.95_236_0)} 
+; $fun_x_791_UHC.Base.primLtInt  $x_793_UHC.Base.95_238_2 $x_794_UHC.Base.95_238_3
+    = { fetchnode $x_793_UHC.Base.95_238_2 ; \$x_2667 ->
+        case $x_2667 of
+          { }  ; \(basicnode 4 word $x_795_UHC.Base.95_238_2_@1FFI) ->
+        fetchnode $x_794_UHC.Base.95_238_3 ; \$x_2668 ->
+        case $x_2668 of
+          { }  ; \(basicnode 4 word $x_796_UHC.Base.95_238_3_@1FFI) ->
+        ffi prim "primLtInt" True $x_795_UHC.Base.95_238_2_@1FFI $x_796_UHC.Base.95_238_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_797_UHC.Base.95_238_0) ->
+        unit (enumnode $x_797_UHC.Base.95_238_0)} 
+; $fun_x_798_UHC.Base.primNeInt  $x_800_UHC.Base.95_240_2 $x_801_UHC.Base.95_240_3
+    = { fetchnode $x_800_UHC.Base.95_240_2 ; \$x_2669 ->
+        case $x_2669 of
+          { }  ; \(basicnode 4 word $x_802_UHC.Base.95_240_2_@1FFI) ->
+        fetchnode $x_801_UHC.Base.95_240_3 ; \$x_2670 ->
+        case $x_2670 of
+          { }  ; \(basicnode 4 word $x_803_UHC.Base.95_240_3_@1FFI) ->
+        ffi prim "primNeInt" True $x_802_UHC.Base.95_240_2_@1FFI $x_803_UHC.Base.95_240_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_804_UHC.Base.95_240_0) ->
+        unit (enumnode $x_804_UHC.Base.95_240_0)} 
+; $fun_x_810_UHC.Base.primretIO  $x_812_UHC.Base.x_@1UNQ_@180 $x_813_UHC.Base.w_@1UNQ_@182
+    = { unit (#0/C{2,2}/$$,2 $x_813_UHC.Base.w_@1UNQ_@182 $x_812_UHC.Base.x_@1UNQ_@180)} 
+; $fun_x_814_UHC.Base.ioFromPrim  $x_816_UHC.Base.f_@1UNQ_@158 $x_817_UHC.Base.w_@1UNQ_@160
+    = { store (#0/A/$fun_x_212_app2_1 $x_816_UHC.Base.f_@1UNQ_@158 $x_817_UHC.Base.w_@1UNQ_@160) ; \$x_818_UHC.Base.x_@1UNQ_@161_0 ->
+        fetchnode $x_818_UHC.Base.x_@1UNQ_@161_0 ; \$x_2671 ->
+        case $x_2671 of
+          { ident (#0/C{0,0}/$$,0)
+              -> { unit $x_2671} 
+          ; calling 0 x_818_UHC.Base.x_@1UNQ_@161_0 (#0/A/$fun_x_212_app2_1 $x_2672 $x_2673)
+              -> { call (insideCase = True) $fun_x_212_app2_1 $x_2672 $x_2673 ; \$x_2674 ->
+                   updateunit $x_2674 $x_818_UHC.Base.x_@1UNQ_@161_0} 
+          }  ; \$x_0__ ->
+        unit (#0/C{2,2}/$$,2 $x_817_UHC.Base.w_@1UNQ_@160 $x_818_UHC.Base.x_@1UNQ_@161_0)} 
+; $fun_x_820_UHC.Base.id  $x_822_UHC.Base.x_@1UNQ_@126
+    = { fetchnode $x_822_UHC.Base.x_@1UNQ_@126 ; \$x_2675 ->
+        case $x_2675 of
+          { } } 
+; $fun_x_833_UHC.Base.fun0~otherwise  
+    = { unit (#1/C{0,0}/$UHC.Base.True)} 
+; $fun_x_845_UHC.Base.$:  $x_847_UHC.Base.x1_@1UNQ_@144 $x_848_UHC.Base.x2_@1UNQ_@145
+    = { unit (#0/C{2,2}/$UHC.Base.$: $x_847_UHC.Base.x1_@1UNQ_@144 $x_848_UHC.Base.x2_@1UNQ_@145)} 
+; $fun_x_857_UHC.Base..  $x_859_UHC.Base.f_@1UNQ_@386 $x_860_UHC.Base.g_@1UNQ_@387 $x_861_UHC.Base.x_@1UNQ_@388
+    = { store (#0/A/$fun_x_222_app2_3 $x_860_UHC.Base.g_@1UNQ_@387 $x_861_UHC.Base.x_@1UNQ_@388) ; \$x_862_UHC.Base.96_376 ->
+        fetchnode $x_859_UHC.Base.f_@1UNQ_@386 ; \$x_2676 ->
+        case $x_2676 of
+          { ident (#0/P/1/$fun_x_845_UHC.Base.$: $x_2698)
+              -> { unit $x_2676} 
+          ; ident (#0/P/1/$fun_x_857_UHC.Base.. $x_2696 $x_2697)
+              -> { unit $x_2676} 
+          ; ident (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2695)
+              -> { unit $x_2676} 
+          ; calling 1 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_427_app2_62 $x_2692 $x_2693)
+              -> { call (insideCase = True) $fun_x_427_app2_62 $x_2692 $x_2693 ; \$x_2694 ->
+                   updateunit $x_2694 $x_859_UHC.Base.f_@1UNQ_@386} 
+          ; calling 2 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_432_app2_63 $x_2689 $x_2690)
+              -> { call (insideCase = True) $fun_x_432_app2_63 $x_2689 $x_2690 ; \$x_2691 ->
+                   updateunit $x_2691 $x_859_UHC.Base.f_@1UNQ_@386} 
+          ; calling 1 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_437_app2_64 $x_2686 $x_2687)
+              -> { call (insideCase = True) $fun_x_437_app2_64 $x_2686 $x_2687 ; \$x_2688 ->
+                   updateunit $x_2688 $x_859_UHC.Base.f_@1UNQ_@386} 
+          ; calling 2 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_442_app2_65 $x_2683 $x_2684)
+              -> { call (insideCase = True) $fun_x_442_app2_65 $x_2683 $x_2684 ; \$x_2685 ->
+                   updateunit $x_2685 $x_859_UHC.Base.f_@1UNQ_@386} 
+          ; calling 1 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_447_app2_66 $x_2680 $x_2681)
+              -> { call (insideCase = True) $fun_x_447_app2_66 $x_2680 $x_2681 ; \$x_2682 ->
+                   updateunit $x_2682 $x_859_UHC.Base.f_@1UNQ_@386} 
+          ; calling 1 x_859_UHC.Base.f_@1UNQ_@386 (#0/A/$fun_x_462_app2_71 $x_2677 $x_2678)
+              -> { call (insideCase = True) $fun_x_462_app2_71 $x_2677 $x_2678 ; \$x_2679 ->
+                   updateunit $x_2679 $x_859_UHC.Base.f_@1UNQ_@386} 
+          }  ; \$x_863_UHC.Base.95_544_0 ->
+        case $x_863_UHC.Base.95_544_0 of
+          { (#0/P/1/$fun_x_845_UHC.Base.$: $x_2702)
+              -> { call (insideCase = True) $fun_x_845_UHC.Base.$: $x_2702 $x_862_UHC.Base.96_376} 
+          ; (#0/P/1/$fun_x_857_UHC.Base.. $x_2700 $x_2701)
+              -> { call (insideCase = True) $fun_x_857_UHC.Base.. $x_2700 $x_2701 $x_862_UHC.Base.96_376} 
+          ; (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2699)
+              -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2699 $x_862_UHC.Base.96_376} 
+          } } 
+; rec
+    { $fun_x_885_UHC.Base.error  $x_887_UHC.Base.s_@1UNQ_@1095
+        = { call (insideCase = False) $fun_x_889_UHC.Base.forceString $x_887_UHC.Base.s_@1UNQ_@1095 ; \(ptrnode $x_209_UHC.Base.95_71_2_@1FFI) ->
+            ffi prim "primError" True $x_209_UHC.Base.95_71_2_@1FFI ; \(opaqueannot $x_2444_UHC.Base.95_71_0) ->
+            unit (opaquenode $x_2444_UHC.Base.95_71_0)} 
+    ; $fun_x_889_UHC.Base.forceString  $x_891_UHC.Base.s_@1UNQ_@1096
+        = { call (insideCase = False) $fun_x_893_UHC.Base.stringSum $x_891_UHC.Base.s_@1UNQ_@1096 ; \$x_0__ ->
+            fetchnode $x_891_UHC.Base.s_@1UNQ_@1096 ; \$x_2703 ->
+            case $x_2703 of
+              { ident (#0/C{2,2}/$UHC.Base.$: $x_2706 $x_2707)
+                  -> { unit $x_2703} 
+              ; ident (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit $x_2703} 
+              ; calling 2 x_891_UHC.Base.s_@1UNQ_@1096 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_2704)
+                  -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_2704 ; \$x_2705 ->
+                       updateunit $x_2705 $x_891_UHC.Base.s_@1UNQ_@1096} 
+              } } 
+    ; $fun_x_893_UHC.Base.stringSum  $x_895_UHC.Base.x1_@1UNQ_@1097
+        = { fetchnode $x_895_UHC.Base.x1_@1UNQ_@1097 ; \$x_2708 ->
+            case $x_2708 of
+              { ident (#0/C{2,2}/$UHC.Base.$: $x_2711 $x_2712)
+                  -> { unit $x_2708} 
+              ; ident (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit $x_2708} 
+              ; calling 2 x_895_UHC.Base.x1_@1UNQ_@1097 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_2709)
+                  -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_2709 ; \$x_2710 ->
+                       updateunit $x_2710 $x_895_UHC.Base.x1_@1UNQ_@1097} 
+              }  ; \$x_896_UHC.Base.94_15484_0_@1UNQ_@1099_0_@1EVL ->
+            case $x_896_UHC.Base.94_15484_0_@1UNQ_@1099_0_@1EVL of
+              { (#0/C{2,2}/$UHC.Base.$: $x_897_UHC.Base.x_@1UNQ_@1100_2 $x_898_UHC.Base.xs_@1UNQ_@1100_4)
+                  -> { store (#0/F/$fun_x_893_UHC.Base.stringSum $x_898_UHC.Base.xs_@1UNQ_@1100_4) ; \$x_899_UHC.Base.96_478 ->
+                       store (#0/F/$fun_x_698_UHC.Base.primCharToInt $x_897_UHC.Base.x_@1UNQ_@1100_2) ; \$x_900_UHC.Base.96_477 ->
+                       call (insideCase = True) $fun_x_903_UHC.Base.$+ $global_x_21_UHC.Base.Num_@1DCT_@92_103_0 ; \$x_902_UHC.Base.95_665_0_@1EVL ->
+                       case $x_902_UHC.Base.95_665_0_@1EVL of
+                         { (#0/P/2/$fun_x_710_UHC.Base.primAddInt)
+                             -> { call (insideCase = True) $fun_x_710_UHC.Base.primAddInt $x_900_UHC.Base.96_477 $x_899_UHC.Base.96_478} } } 
+              ; (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit (#0/C{1,1}/$Int 0)} 
+              } } 
+    ; $fun_x_903_UHC.Base.$+  $x_905_UHC.Base.x_@1UNQ_@721
+        = { fetchnode $x_905_UHC.Base.x_@1UNQ_@721 ; \$x_2713 ->
+            case $x_2713 of
+              { ident (#0/C{9,9}/$UHC.Base.$$Dict$-Num $x_2714 $x_2715 $x_2716 $x_2717 $x_2718 $x_2719 $x_2720 $x_2721 $x_2722)
+                  -> { unit $x_2713} }  ; \$x_906_UHC.Base.x_@1UNQ_@722_0_@1EVL ->
+            unit $x_906_UHC.Base.x_@1UNQ_@722_0_@1EVL ; \(#0/C{9,9}/$UHC.Base.$$Dict$-Num _ $x_908_UHC.Base.$+_@1UNQ_@723_4 _ _ _ _ _ _ _) ->
+            fetchnode $x_908_UHC.Base.$+_@1UNQ_@723_4 ; \$x_2723 ->
+            case $x_2723 of
+              { ident (#0/P/2/$fun_x_710_UHC.Base.primAddInt)
+                  -> { unit $x_2723} } } 
+    ; $fun_x_927_UHC.Base.fromInteger  $x_929_UHC.Base.x_@1UNQ_@733
+        = { fetchnode $x_929_UHC.Base.x_@1UNQ_@733 ; \$x_2724 ->
+            case $x_2724 of
+              { ident (#0/C{9,9}/$UHC.Base.$$Dict$-Num $x_2729 $x_2730 $x_2731 $x_2732 $x_2733 $x_2734 $x_2735 $x_2736 $x_2737)
+                  -> { unit $x_2724} 
+              ; calling 9 x_929_UHC.Base.x_@1UNQ_@733 (#0/F/$fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2725 $x_2726 $x_2727)
+                  -> { call (insideCase = True) $fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2725 $x_2726 $x_2727 ; \$x_2728 ->
+                       updateunit $x_2728 $x_929_UHC.Base.x_@1UNQ_@733} 
+              }  ; \$x_930_UHC.Base.x_@1UNQ_@734_0_@1EVL ->
+            unit $x_930_UHC.Base.x_@1UNQ_@734_0_@1EVL ; \(#0/C{9,9}/$UHC.Base.$$Dict$-Num _ _ _ _ _ _ $x_937_UHC.Base.fromInteger_@1UNQ_@735_14 _ _) ->
+            fetchnode $x_937_UHC.Base.fromInteger_@1UNQ_@735_14 ; \$x_2738 ->
+            case $x_2738 of
+              { ident (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+                  -> { unit $x_2738} } } 
+    ; $fun_x_953_UHC.Base.negate  $x_955_UHC.Base.x_@1UNQ_@736
+        = { fetchnode $x_955_UHC.Base.x_@1UNQ_@736 ; \$x_2739 ->
+            case $x_2739 of
+              { ident (#0/C{9,9}/$UHC.Base.$$Dict$-Num $x_2744 $x_2745 $x_2746 $x_2747 $x_2748 $x_2749 $x_2750 $x_2751 $x_2752)
+                  -> { unit $x_2739} 
+              ; calling 9 x_955_UHC.Base.x_@1UNQ_@736 (#0/F/$fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2740 $x_2741 $x_2742)
+                  -> { call (insideCase = True) $fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2740 $x_2741 $x_2742 ; \$x_2743 ->
+                       updateunit $x_2743 $x_955_UHC.Base.x_@1UNQ_@736} 
+              }  ; \$x_956_UHC.Base.x_@1UNQ_@737_0_@1EVL ->
+            unit $x_956_UHC.Base.x_@1UNQ_@737_0_@1EVL ; \(#0/C{9,9}/$UHC.Base.$$Dict$-Num _ _ _ _ _ _ _ $x_964_UHC.Base.negate_@1UNQ_@738_16 _) ->
+            fetchnode $x_964_UHC.Base.negate_@1UNQ_@738_16 ; \$x_2753 ->
+            case $x_2753 of
+              { ident (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+                  -> { unit $x_2753} } } 
+    ; $fun_x_986_UHC.Base.$>$=  $x_988_UHC.Base.x_@1UNQ_@1008
+        = { fetchnode $x_988_UHC.Base.x_@1UNQ_@1008 ; \$x_2754 ->
+            case $x_2754 of
+              { ident (#0/C{8,8}/$UHC.Base.$$Dict$-Ord $x_2755 $x_2756 $x_2757 $x_2758 $x_2759 $x_2760 $x_2761 $x_2762)
+                  -> { unit $x_2754} }  ; \$x_989_UHC.Base.x_@1UNQ_@1009_0_@1EVL ->
+            unit $x_989_UHC.Base.x_@1UNQ_@1009_0_@1EVL ; \(#0/C{8,8}/$UHC.Base.$$Dict$-Ord _ _ _ $x_993_UHC.Base.$>$=_@1UNQ_@1010_8 _ _ _ _) ->
+            fetchnode $x_993_UHC.Base.$>$=_@1UNQ_@1010_8 ; \$x_2763 ->
+            case $x_2763 of
+              { ident (#0/P/2/$fun_x_770_UHC.Base.primGeInt)
+                  -> { unit $x_2763} } } 
+    ; $fun_x_998_UHC.Base.$<$=  $x_1000_UHC.Base.x_@1UNQ_@1002
+        = { fetchnode $x_1000_UHC.Base.x_@1UNQ_@1002 ; \$x_2764 ->
+            case $x_2764 of
+              { ident (#0/C{8,8}/$UHC.Base.$$Dict$-Ord $x_2765 $x_2766 $x_2767 $x_2768 $x_2769 $x_2770 $x_2771 $x_2772)
+                  -> { unit $x_2764} }  ; \$x_1001_UHC.Base.x_@1UNQ_@1003_0_@1EVL ->
+            unit $x_1001_UHC.Base.x_@1UNQ_@1003_0_@1EVL ; \(#0/C{8,8}/$UHC.Base.$$Dict$-Ord _ $x_1003_UHC.Base.$<$=_@1UNQ_@1004_4 _ _ _ _ _ _) ->
+            fetchnode $x_1003_UHC.Base.$<$=_@1UNQ_@1004_4 ; \$x_2773 ->
+            case $x_2773 of
+              { ident (#0/P/2/$fun_x_784_UHC.Base.primLeInt)
+                  -> { unit $x_2773} } } 
+    ; $fun_x_1010_UHC.Base.packedStringToString  $x_1012_UHC.Base.p_@1UNQ_@297
+        = { fetchnode $x_1012_UHC.Base.p_@1UNQ_@297 ; \$x_2774 ->
+            case $x_2774 of
+              { ident (#0/C{1,1}/$UHC.Base.PackedString $x_2777)
+                  -> { unit $x_2774} 
+              ; calling 1 x_1012_UHC.Base.p_@1UNQ_@297 (#0/F/$fun_x_727_UHC.Base.packedStringTail $x_2775)
+                  -> { call (insideCase = True) $fun_x_727_UHC.Base.packedStringTail $x_2775 ; \$x_2776 ->
+                       updateunit $x_2776 $x_1012_UHC.Base.p_@1UNQ_@297} 
+              }  ; \(basicnode 4 word $x_2446_UHC.Base.95_201_2_@1FFI) ->
+            ffi prim "primPackedStringNull" True $x_2446_UHC.Base.95_201_2_@1FFI ; \(enumannot $UHC.Base.Bool $x_2447_UHC.Base.95_201_0) ->
+            case (enumnode $x_2447_UHC.Base.95_201_0) of
+              { (#0/C{0,0}/$UHC.Base.False)
+                  -> { store (#0/F/$fun_x_727_UHC.Base.packedStringTail $x_1012_UHC.Base.p_@1UNQ_@297) ; \$x_1014_UHC.Base.96_493 ->
+                       store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_1014_UHC.Base.96_493) ; \$x_1015_UHC.Base.96_492 ->
+                       store (#0/F/$fun_x_722_UHC.Base.packedStringHead $x_1012_UHC.Base.p_@1UNQ_@297) ; \$x_1016_UHC.Base.96_491 ->
+                       unit (#0/C{2,2}/$UHC.Base.$: $x_1016_UHC.Base.96_491 $x_1015_UHC.Base.96_492)} 
+              ; (#1/C{0,0}/$UHC.Base.True)
+                  -> { unit (#1/C{0,2}/$UHC.Base.[])} 
+              } } 
+    ; $fun_x_1017_UHC.Base.$=$=  $x_1019_UHC.Base.x_@1UNQ_@524
+        = { fetchnode $x_1019_UHC.Base.x_@1UNQ_@524 ; \$x_2778 ->
+            case $x_2778 of
+              { ident (#0/C{2,2}/$UHC.Base.$$Dict$-Eq $x_2781 $x_2782)
+                  -> { unit $x_2778} 
+              ; calling 2 x_1019_UHC.Base.x_@1UNQ_@524 (#0/F/$fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6 $x_2779)
+                  -> { call (insideCase = True) $fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6 $x_2779 ; \$x_2780 ->
+                       updateunit $x_2780 $x_1019_UHC.Base.x_@1UNQ_@524} 
+              }  ; \$x_1020_UHC.Base.x_@1UNQ_@525_0_@1EVL ->
+            unit $x_1020_UHC.Base.x_@1UNQ_@525_0_@1EVL ; \(#0/C{2,2}/$UHC.Base.$$Dict$-Eq _ $x_1022_UHC.Base.$=$=_@1UNQ_@526_4) ->
+            fetchnode $x_1022_UHC.Base.$=$=_@1UNQ_@526_4 ; \$x_2783 ->
+            case $x_2783 of
+              { ident (#0/P/2/$fun_x_756_UHC.Base.primEqInt)
+                  -> { unit $x_2783} } } 
+    ; $fun_x_1051_UHC.Base.absReal  $x_1053_UHC.Base.94_14399_2_0_@1UNQ_@987 $x_1054_UHC.Base.94_14399_5_0_@1UNQ_@988 $x_1055_UHC.Base.x_@1UNQ_@990
+        = { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_139_UHC.Base.95_1043_0) ; \$x_1056_UHC.Base.96_1589 ->
+            store (#0/F/$fun_x_927_UHC.Base.fromInteger $x_1054_UHC.Base.94_14399_5_0_@1UNQ_@988) ; \$x_1057_UHC.Base.95_1045_0 ->
+            store (#0/A/$fun_x_247_app2_8 $x_1057_UHC.Base.95_1045_0 $x_1056_UHC.Base.96_1589) ; \$x_1058_UHC.Base.96_1587 ->
+            call (insideCase = False) $fun_x_986_UHC.Base.$>$= $x_1053_UHC.Base.94_14399_2_0_@1UNQ_@987 ; \$x_1060_UHC.Base.95_1052_0_@1EVL ->
+            case $x_1060_UHC.Base.95_1052_0_@1EVL of
+              { (#0/P/2/$fun_x_770_UHC.Base.primGeInt)
+                  -> { call (insideCase = True) $fun_x_770_UHC.Base.primGeInt $x_1055_UHC.Base.x_@1UNQ_@990 $x_1058_UHC.Base.96_1587} }  ; \$x_1061_UHC.Base.94_14404_0_@1UNQ_@991_0 ->
+            case $x_1061_UHC.Base.94_14404_0_@1UNQ_@991_0 of
+              { (#0/C{0,0}/$UHC.Base.False)
+                  -> { call (insideCase = True) $fun_x_833_UHC.Base.fun0~otherwise ; \$x_1062_UHC.Base.94_14441_0_@1UNQ_@995_0_@1EVL ->
+                       case $x_1062_UHC.Base.94_14441_0_@1UNQ_@995_0_@1EVL of
+                         { (#0/C{0,0}/$UHC.Base.False)
+                             -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_140_UHC.Base.95_1071_0) ; \$x_1063_UHC.Base.96_1595 ->
+                                  call (insideCase = True) $fun_x_885_UHC.Base.error $x_1063_UHC.Base.96_1595} 
+                         ; (#1/C{0,0}/$UHC.Base.True)
+                             -> { call (insideCase = True) $fun_x_953_UHC.Base.negate $x_1054_UHC.Base.94_14399_5_0_@1UNQ_@988 ; \$x_1065_UHC.Base.95_1079_0_@1EVL ->
+                                  case $x_1065_UHC.Base.95_1079_0_@1EVL of
+                                    { (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+                                        -> { call (insideCase = True) $fun_x_635_UHC.Base.primNegInt $x_1055_UHC.Base.x_@1UNQ_@990} } } 
+                         } } 
+              ; (#1/C{0,0}/$UHC.Base.True)
+                  -> { fetchnode $x_1055_UHC.Base.x_@1UNQ_@990 ; \$x_2784 ->
+                       case $x_2784 of
+                         { } } 
+              } } 
+    ; $fun_x_1066_UHC.Base.signumReal  $x_1068_UHC.Base.94_15863_2_0_@1UNQ_@1140 $x_1069_UHC.Base.94_15863_5_0_@1UNQ_@1141
+        = { store (#0/F/$fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6 $x_1069_UHC.Base.94_15863_5_0_@1UNQ_@1141) ; \$x_1070_UHC.Base.94_15883_2_0_@1UNQ_@1142_6 ->
+            unit (#0/P/1/$fun_x_1706_UHC.Base.96_1605_0 $x_1068_UHC.Base.94_15863_2_0_@1UNQ_@1140 $x_1069_UHC.Base.94_15863_5_0_@1UNQ_@1141 $x_1070_UHC.Base.94_15883_2_0_@1UNQ_@1142_6)} 
+    ; $fun_x_1071_UHC.Base.$>  $x_1073_UHC.Base.x_@1UNQ_@1005
+        = { fetchnode $x_1073_UHC.Base.x_@1UNQ_@1005 ; \$x_2785 ->
+            case $x_2785 of
+              { ident (#0/C{8,8}/$UHC.Base.$$Dict$-Ord $x_2786 $x_2787 $x_2788 $x_2789 $x_2790 $x_2791 $x_2792 $x_2793)
+                  -> { unit $x_2785} }  ; \$x_1074_UHC.Base.x_@1UNQ_@1006_0_@1EVL ->
+            unit $x_1074_UHC.Base.x_@1UNQ_@1006_0_@1EVL ; \(#0/C{8,8}/$UHC.Base.$$Dict$-Ord _ _ $x_1077_UHC.Base.$>_@1UNQ_@1007_6 _ _ _ _ _) ->
+            fetchnode $x_1077_UHC.Base.$>_@1UNQ_@1007_6 ; \$x_2794 ->
+            case $x_2794 of
+              { ident (#0/P/2/$fun_x_777_UHC.Base.primGtInt)
+                  -> { unit $x_2794} } } 
+    ; $fun_x_1272_UHC.Base.$+$+  $x_1274_UHC.Base.x1_@1UNQ_@389 $x_1275_UHC.Base.x2_@1UNQ_@391
+        = { fetchnode $x_1274_UHC.Base.x1_@1UNQ_@389 ; \$x_2795 ->
+            case $x_2795 of
+              { ident (#0/C{2,2}/$UHC.Base.$: $x_2807 $x_2808)
+                  -> { unit $x_2795} 
+              ; ident (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit $x_2795} 
+              ; calling 2 x_1274_UHC.Base.x1_@1UNQ_@389 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_2805)
+                  -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_2805 ; \$x_2806 ->
+                       updateunit $x_2806 $x_1274_UHC.Base.x1_@1UNQ_@389} 
+              ; calling 2 x_1274_UHC.Base.x1_@1UNQ_@389 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2802 $x_2803)
+                  -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2802 $x_2803 ; \$x_2804 ->
+                       updateunit $x_2804 $x_1274_UHC.Base.x1_@1UNQ_@389} 
+              ; calling 2 x_1274_UHC.Base.x1_@1UNQ_@389 (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_2799 $x_2800)
+                  -> { call (insideCase = True) $fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_2799 $x_2800 ; \$x_2801 ->
+                       updateunit $x_2801 $x_1274_UHC.Base.x1_@1UNQ_@389} 
+              ; calling 2 x_1274_UHC.Base.x1_@1UNQ_@389 (#0/A/$fun_x_222_app2_3 $x_2796 $x_2797)
+                  -> { call (insideCase = True) $fun_x_222_app2_3 $x_2796 $x_2797 ; \$x_2798 ->
+                       updateunit $x_2798 $x_1274_UHC.Base.x1_@1UNQ_@389} 
+              }  ; \$x_1276_UHC.Base.x1_@1UNQ_@392_0_@1EVL ->
+            case $x_1276_UHC.Base.x1_@1UNQ_@392_0_@1EVL of
+              { (#0/C{2,2}/$UHC.Base.$: $x_1277_UHC.Base.x_@1UNQ_@393_2 $x_1278_UHC.Base.xs_@1UNQ_@393_4)
+                  -> { store (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_1278_UHC.Base.xs_@1UNQ_@393_4 $x_1275_UHC.Base.x2_@1UNQ_@391) ; \$x_1279_UHC.Base.96_952 ->
+                       unit (#0/C{2,2}/$UHC.Base.$: $x_1277_UHC.Base.x_@1UNQ_@393_2 $x_1279_UHC.Base.96_952)} 
+              ; (#1/C{0,2}/$UHC.Base.[])
+                  -> { fetchnode $x_1275_UHC.Base.x2_@1UNQ_@391 ; \$x_2809 ->
+                       case $x_2809 of
+                         { ident (#0/C{2,2}/$UHC.Base.$: $x_2821 $x_2822)
+                             -> { unit $x_2809} 
+                         ; ident (#1/C{0,2}/$UHC.Base.[])
+                             -> { unit $x_2809} 
+                         ; calling 2 x_1275_UHC.Base.x2_@1UNQ_@391 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_2819)
+                             -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_2819 ; \$x_2820 ->
+                                  updateunit $x_2820 $x_1275_UHC.Base.x2_@1UNQ_@391} 
+                         ; calling 2 x_1275_UHC.Base.x2_@1UNQ_@391 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2816 $x_2817)
+                             -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2816 $x_2817 ; \$x_2818 ->
+                                  updateunit $x_2818 $x_1275_UHC.Base.x2_@1UNQ_@391} 
+                         ; calling 2 x_1275_UHC.Base.x2_@1UNQ_@391 (#0/F/$fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_2813 $x_2814)
+                             -> { call (insideCase = True) $fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show $x_2813 $x_2814 ; \$x_2815 ->
+                                  updateunit $x_2815 $x_1275_UHC.Base.x2_@1UNQ_@391} 
+                         ; calling 2 x_1275_UHC.Base.x2_@1UNQ_@391 (#0/A/$fun_x_222_app2_3 $x_2810 $x_2811)
+                             -> { call (insideCase = True) $fun_x_222_app2_3 $x_2810 $x_2811 ; \$x_2812 ->
+                                  updateunit $x_2812 $x_1275_UHC.Base.x2_@1UNQ_@391} 
+                         } } 
+              } } 
+    } 
+; $fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC DICTOVERLOADED{ {  } } $x_1459_UHC.Base.Num_@1NEW_@96_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_1460_UHC.Base.Num_@1NEW_@97_@1DCT_@92_103_0_@1DFL_@UHC.Base.abs $x_1461_UHC.Base.Num_@1NEW_@98_@1DCT_@92_103_0_@1DFL_@UHC.Base.signum
+    = { unit (#0/C{9,9}/$UHC.Base.$$Dict$-Num $global_x_149_UHC.Base.95_1874_0 $global_x_150_UHC.Base.95_1874_1 $global_x_151_UHC.Base.95_1874_2 $global_x_82_UHC.Base.Eq_@1DCT_@92_90_0 $x_1460_UHC.Base.Num_@1NEW_@97_@1DCT_@92_103_0_@1DFL_@UHC.Base.abs $global_x_152_UHC.Base.95_1874_5 $global_x_153_UHC.Base.95_1874_6 $global_x_154_UHC.Base.95_1874_7 $x_1461_UHC.Base.Num_@1NEW_@98_@1DCT_@92_103_0_@1DFL_@UHC.Base.signum)} 
+; $fun_x_1581_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.min DICTOVERLOADED{ {  } } $x_1583_UHC.Base.Ord_@1NEW_@40_@1UNQ_@1020_@1CLS_@92_4_0_@1SDC $x_1584_UHC.Base.x_@1UNQ_@1054 $x_1585_UHC.Base.y_@1UNQ_@1055
+    = { call (insideCase = False) $fun_x_998_UHC.Base.$<$= $x_1583_UHC.Base.Ord_@1NEW_@40_@1UNQ_@1020_@1CLS_@92_4_0_@1SDC ; \$x_1587_UHC.Base.95_2722_0_@1EVL ->
+        case $x_1587_UHC.Base.95_2722_0_@1EVL of
+          { (#0/P/2/$fun_x_784_UHC.Base.primLeInt)
+              -> { call (insideCase = True) $fun_x_784_UHC.Base.primLeInt $x_1584_UHC.Base.x_@1UNQ_@1054 $x_1585_UHC.Base.y_@1UNQ_@1055} }  ; \$x_1588_UHC.Base.94_15038_0_@1UNQ_@1056_0 ->
+        case $x_1588_UHC.Base.94_15038_0_@1UNQ_@1056_0 of
+          { (#0/C{0,0}/$UHC.Base.False)
+              -> { call (insideCase = True) $fun_x_833_UHC.Base.fun0~otherwise ; \$x_1589_UHC.Base.94_15067_0_@1UNQ_@1060_0_@1EVL ->
+                   case $x_1589_UHC.Base.94_15067_0_@1UNQ_@1060_0_@1EVL of
+                     { (#0/C{0,0}/$UHC.Base.False)
+                         -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_158_UHC.Base.95_2741_0) ; \$x_1590_UHC.Base.96_1330 ->
+                              call (insideCase = True) $fun_x_885_UHC.Base.error $x_1590_UHC.Base.96_1330} 
+                     ; (#1/C{0,0}/$UHC.Base.True)
+                         -> { fetchnode $x_1585_UHC.Base.y_@1UNQ_@1055 ; \$x_2823 ->
+                              case $x_2823 of
+                                { } } 
+                     } } 
+          ; (#1/C{0,0}/$UHC.Base.True)
+              -> { fetchnode $x_1584_UHC.Base.x_@1UNQ_@1054 ; \$x_2824 ->
+                   case $x_2824 of
+                     { } } 
+          } } 
+; $fun_x_1591_UHC.Base.Ord_@1CLS_@92_4_0_@1DFL_@UHC.Base.max DICTOVERLOADED{ {  } } $x_1593_UHC.Base.Ord_@1NEW_@41_@1UNQ_@1020_@1CLS_@92_4_0_@1SDC $x_1594_UHC.Base.x_@1UNQ_@1044 $x_1595_UHC.Base.y_@1UNQ_@1045
+    = { call (insideCase = False) $fun_x_998_UHC.Base.$<$= $x_1593_UHC.Base.Ord_@1NEW_@41_@1UNQ_@1020_@1CLS_@92_4_0_@1SDC ; \$x_1597_UHC.Base.95_2754_0_@1EVL ->
+        case $x_1597_UHC.Base.95_2754_0_@1EVL of
+          { (#0/P/2/$fun_x_784_UHC.Base.primLeInt)
+              -> { call (insideCase = True) $fun_x_784_UHC.Base.primLeInt $x_1594_UHC.Base.x_@1UNQ_@1044 $x_1595_UHC.Base.y_@1UNQ_@1045} }  ; \$x_1598_UHC.Base.94_14975_0_@1UNQ_@1046_0 ->
+        case $x_1598_UHC.Base.94_14975_0_@1UNQ_@1046_0 of
+          { (#0/C{0,0}/$UHC.Base.False)
+              -> { call (insideCase = True) $fun_x_833_UHC.Base.fun0~otherwise ; \$x_1599_UHC.Base.94_15004_0_@1UNQ_@1050_0_@1EVL ->
+                   case $x_1599_UHC.Base.94_15004_0_@1UNQ_@1050_0_@1EVL of
+                     { (#0/C{0,0}/$UHC.Base.False)
+                         -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_159_UHC.Base.95_2773_0) ; \$x_1600_UHC.Base.96_1345 ->
+                              call (insideCase = True) $fun_x_885_UHC.Base.error $x_1600_UHC.Base.96_1345} 
+                     ; (#1/C{0,0}/$UHC.Base.True)
+                         -> { fetchnode $x_1594_UHC.Base.x_@1UNQ_@1044 ; \$x_2825 ->
+                              case $x_2825 of
+                                { } } 
+                     } } 
+          ; (#1/C{0,0}/$UHC.Base.True)
+              -> { fetchnode $x_1595_UHC.Base.y_@1UNQ_@1045 ; \$x_2826 ->
+                   case $x_2826 of
+                     { } } 
+          } } 
+; $fun_x_1693_UHC.Base.94_15883_2_0_@1NEW_@572_@1UNQ_@1142_6  $x_1695_UHC.Base.94_15863_5_0_@1NEW_@573_@1UNQ_@1141
+    = { fetchnode $x_1695_UHC.Base.94_15863_5_0_@1NEW_@573_@1UNQ_@1141 ; \$x_2827 ->
+        case $x_2827 of
+          { ident (#0/C{9,9}/$UHC.Base.$$Dict$-Num $x_2832 $x_2833 $x_2834 $x_2835 $x_2836 $x_2837 $x_2838 $x_2839 $x_2840)
+              -> { unit $x_2827} 
+          ; calling 9 x_1695_UHC.Base.94_15863_5_0_@1NEW_@573_@1UNQ_@1141 (#0/F/$fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2828 $x_2829 $x_2830)
+              -> { call (insideCase = True) $fun_x_1457_UHC.Base.Num_@1NEW_@95_@1UNQ_@3869_0_@1DCT_@92_103_0_@1RDC $x_2828 $x_2829 $x_2830 ; \$x_2831 ->
+                   updateunit $x_2831 $x_1695_UHC.Base.94_15863_5_0_@1NEW_@573_@1UNQ_@1141} 
+          }  ; \$x_1696_UHC.Base.Eq_@1UNQ_@1143_0_@1EVL_@1SUP_@1 ->
+        unit $x_1696_UHC.Base.Eq_@1UNQ_@1143_0_@1EVL_@1SUP_@1 ; \(#0/C{9,9}/$UHC.Base.$$Dict$-Num _ _ _ $x_1700_UHC.Base.Eq_@1UNQ_@1144_8_@1SUP_@1 _ _ _ _ _) ->
+        fetchnode $x_1700_UHC.Base.Eq_@1UNQ_@1144_8_@1SUP_@1 ; \$x_2841 ->
+        case $x_2841 of
+          { ident (#0/C{2,2}/$UHC.Base.$$Dict$-Eq $x_2842 $x_2843)
+              -> { unit $x_2841} } } 
+; $fun_x_1706_UHC.Base.96_1605_0  $x_1708_UHC.Base.94_15863_2_0_@1NEW_@54_@1UNQ_@1140 $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141 $x_1710_UHC.Base.94_15883_2_0_@1NEW_@56_@1UNQ_@1142_6 $x_1711_UHC.Base.x_@1UNQ_@1145
+    = { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_166_UHC.Base.95_3171_0) ; \$x_1712_UHC.Base.96_1613 ->
+        store (#0/F/$fun_x_927_UHC.Base.fromInteger $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141) ; \$x_1713_UHC.Base.95_3173_0 ->
+        store (#0/A/$fun_x_307_app2_28 $x_1713_UHC.Base.95_3173_0 $x_1712_UHC.Base.96_1613) ; \$x_1714_UHC.Base.96_1611 ->
+        call (insideCase = False) $fun_x_1017_UHC.Base.$=$= $x_1710_UHC.Base.94_15883_2_0_@1NEW_@56_@1UNQ_@1142_6 ; \$x_1716_UHC.Base.95_3180_0_@1EVL ->
+        case $x_1716_UHC.Base.95_3180_0_@1EVL of
+          { (#0/P/2/$fun_x_756_UHC.Base.primEqInt)
+              -> { call (insideCase = True) $fun_x_756_UHC.Base.primEqInt $x_1711_UHC.Base.x_@1UNQ_@1145 $x_1714_UHC.Base.96_1611} }  ; \$x_1717_UHC.Base.94_15868_0_@1UNQ_@1146_0 ->
+        case $x_1717_UHC.Base.94_15868_0_@1UNQ_@1146_0 of
+          { (#0/C{0,0}/$UHC.Base.False)
+              -> { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_167_UHC.Base.95_3195_0) ; \$x_1718_UHC.Base.96_1622 ->
+                   store (#0/F/$fun_x_927_UHC.Base.fromInteger $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141) ; \$x_1719_UHC.Base.95_3197_0 ->
+                   store (#0/A/$fun_x_312_app2_29 $x_1719_UHC.Base.95_3197_0 $x_1718_UHC.Base.96_1622) ; \$x_1720_UHC.Base.96_1620 ->
+                   call (insideCase = True) $fun_x_1071_UHC.Base.$> $x_1708_UHC.Base.94_15863_2_0_@1NEW_@54_@1UNQ_@1140 ; \$x_1722_UHC.Base.95_3204_0_@1EVL ->
+                   case $x_1722_UHC.Base.95_3204_0_@1EVL of
+                     { (#0/P/2/$fun_x_777_UHC.Base.primGtInt)
+                         -> { call (insideCase = True) $fun_x_777_UHC.Base.primGtInt $x_1711_UHC.Base.x_@1UNQ_@1145 $x_1720_UHC.Base.96_1620} }  ; \$x_1723_UHC.Base.94_15913_0_@1UNQ_@1149_0 ->
+                   case $x_1723_UHC.Base.94_15913_0_@1UNQ_@1149_0 of
+                     { (#0/C{0,0}/$UHC.Base.False)
+                         -> { call (insideCase = True) $fun_x_833_UHC.Base.fun0~otherwise ; \$x_1724_UHC.Base.94_15958_0_@1UNQ_@1153_0_@1EVL ->
+                              case $x_1724_UHC.Base.94_15958_0_@1UNQ_@1153_0_@1EVL of
+                                { (#0/C{0,0}/$UHC.Base.False)
+                                    -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_168_UHC.Base.95_3223_0) ; \$x_1725_UHC.Base.96_1628 ->
+                                         call (insideCase = True) $fun_x_885_UHC.Base.error $x_1725_UHC.Base.96_1628} 
+                                ; (#1/C{0,0}/$UHC.Base.True)
+                                    -> { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_169_UHC.Base.95_3232_0) ; \$x_1726_UHC.Base.96_1633 ->
+                                         store (#0/F/$fun_x_927_UHC.Base.fromInteger $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141) ; \$x_1727_UHC.Base.95_3234_0 ->
+                                         store (#0/A/$fun_x_317_app2_30 $x_1727_UHC.Base.95_3234_0 $x_1726_UHC.Base.96_1633) ; \$x_1728_UHC.Base.96_1631 ->
+                                         call (insideCase = True) $fun_x_953_UHC.Base.negate $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141 ; \$x_1730_UHC.Base.95_3241_0_@1EVL ->
+                                         case $x_1730_UHC.Base.95_3241_0_@1EVL of
+                                           { (#0/P/1/$fun_x_635_UHC.Base.primNegInt)
+                                               -> { call (insideCase = True) $fun_x_635_UHC.Base.primNegInt $x_1728_UHC.Base.96_1631} } } 
+                                } } 
+                     ; (#1/C{0,0}/$UHC.Base.True)
+                         -> { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_170_UHC.Base.95_3252_0) ; \$x_1731_UHC.Base.96_1636 ->
+                              call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141 ; \$x_1733_UHC.Base.95_3254_0_@1EVL ->
+                              case $x_1733_UHC.Base.95_3254_0_@1EVL of
+                                { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+                                    -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_1731_UHC.Base.96_1636} } } 
+                     } } 
+          ; (#1/C{0,0}/$UHC.Base.True)
+              -> { store (#0/F/$fun_x_732_UHC.Base.packedStringToInteger $global_x_171_UHC.Base.95_3265_0) ; \$x_1734_UHC.Base.96_1639 ->
+                   call (insideCase = True) $fun_x_927_UHC.Base.fromInteger $x_1709_UHC.Base.94_15863_5_0_@1NEW_@55_@1UNQ_@1141 ; \$x_1736_UHC.Base.95_3267_0_@1EVL ->
+                   case $x_1736_UHC.Base.95_3267_0_@1EVL of
+                     { (#0/P/1/$fun_x_674_UHC.Base.primIntegerToInt)
+                         -> { call (insideCase = True) $fun_x_674_UHC.Base.primIntegerToInt $x_1734_UHC.Base.96_1639} } } 
+          } } 
+; $fun_x_2203_UHC.Base.96_1965_0  $x_2205_UHC.Base.q_@1NEW_@69_@1UNQ_@1768 $x_2206_UHC.Base.94_24210_0_@1UNQ_@1769
+    = { fetchnode $x_2205_UHC.Base.q_@1NEW_@69_@1UNQ_@1768 ; \$x_2844 ->
+        case $x_2844 of
+          { ident (#0/P/1/$fun_x_810_UHC.Base.primretIO $x_2850)
+              -> { unit $x_2844} 
+          ; ident (#0/P/1/$fun_x_2219_UHC.Base.primbindIO $x_2848 $x_2849)
+              -> { unit $x_2844} 
+          ; calling 2 x_2205_UHC.Base.q_@1NEW_@69_@1UNQ_@1768 (#0/F/$fun_x_2334_UHC.OldIO.hPutStr $x_2845 $x_2846)
+              -> { call (insideCase = True) $fun_x_2334_UHC.OldIO.hPutStr $x_2845 $x_2846 ; \$x_2847 ->
+                   updateunit $x_2847 $x_2205_UHC.Base.q_@1NEW_@69_@1UNQ_@1768} 
+          } } 
+; $fun_x_2207_UHC.Base.head  $x_2209_UHC.Base.94_4928_0_@1UNQ_@266
+    = { fetchnode $x_2209_UHC.Base.94_4928_0_@1UNQ_@266 ; \$x_2851 ->
+        case $x_2851 of
+          { ident (#0/C{2,2}/$UHC.Base.$: $x_2858 $x_2859)
+              -> { unit $x_2851} 
+          ; ident (#1/C{0,2}/$UHC.Base.[])
+              -> { unit $x_2851} 
+          ; ident (#U $x_2857)
+              -> { unit $x_2851} 
+          ; calling 2 x_2209_UHC.Base.94_4928_0_@1UNQ_@266 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2854 $x_2855)
+              -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2854 $x_2855 ; \$x_2856 ->
+                   updateunit $x_2856 $x_2209_UHC.Base.94_4928_0_@1UNQ_@266} 
+          ; calling 2 x_2209_UHC.Base.94_4928_0_@1UNQ_@266 (#0/F/$fun_x_2259_UHC.Base.tail $x_2852)
+              -> { call (insideCase = True) $fun_x_2259_UHC.Base.tail $x_2852 ; \$x_2853 ->
+                   updateunit $x_2853 $x_2209_UHC.Base.94_4928_0_@1UNQ_@266} 
+          }  ; \$x_2210_UHC.Base.94_4928_0_@1UNQ_@267_0_@1EVL ->
+        case $x_2210_UHC.Base.94_4928_0_@1UNQ_@267_0_@1EVL of
+          { (#0/C{2,2}/$UHC.Base.$: $x_2211_UHC.Base.x_@1UNQ_@268_2 $x_0__)
+              -> { fetchnode $x_2211_UHC.Base.x_@1UNQ_@268_2 ; \$x_2860 ->
+                   case $x_2860 of
+                     { ident (#0/C{1,1}/$Char $x_2863)
+                         -> { unit $x_2860} 
+                     ; calling 1 x_2211_UHC.Base.x_@1UNQ_@268_2 (#0/F/$fun_x_722_UHC.Base.packedStringHead $x_2861)
+                         -> { call (insideCase = True) $fun_x_722_UHC.Base.packedStringHead $x_2861 ; \$x_2862 ->
+                              updateunit $x_2862 $x_2211_UHC.Base.x_@1UNQ_@268_2} 
+                     } } 
+          ; (#1/C{0,2}/$UHC.Base.[])
+              -> { call (insideCase = True) $fun_x_885_UHC.Base.error $global_x_88_UHC.Base.96_460} 
+          } } 
+; $fun_x_2219_UHC.Base.primbindIO  $x_2221_UHC.Base.94_1918_0_@1UNQ_@165 $x_2222_UHC.Base.f_@1UNQ_@168 $x_2223_UHC.Base.w_@1UNQ_@170
+    = { fetchnode $x_2221_UHC.Base.94_1918_0_@1UNQ_@165 ; \$x_2864 ->
+        case $x_2864 of
+          { ident (#0/P/1/$fun_x_814_UHC.Base.ioFromPrim $x_2868)
+              -> { unit $x_2864} 
+          ; calling 1 x_2221_UHC.Base.94_1918_0_@1UNQ_@165 (#0/A/$fun_x_452_app2_67 $x_2865 $x_2866)
+              -> { call (insideCase = True) $fun_x_452_app2_67 $x_2865 $x_2866 ; \$x_2867 ->
+                   updateunit $x_2867 $x_2221_UHC.Base.94_1918_0_@1UNQ_@165} 
+          }  ; \$x_2224_UHC.Base.94_1918_0_@1UNQ_@165_@1EVL ->
+        case $x_2224_UHC.Base.94_1918_0_@1UNQ_@165_@1EVL of
+          { (#0/P/1/$fun_x_814_UHC.Base.ioFromPrim $x_2869)
+              -> { call (insideCase = True) $fun_x_814_UHC.Base.ioFromPrim $x_2869 $x_2223_UHC.Base.w_@1UNQ_@170} }  ; \$x_2225_UHC.Base.94_1946_0_@1UNQ_@171_0 ->
+        unit $x_2225_UHC.Base.94_1946_0_@1UNQ_@171_0 ; \(#0/C{2,2}/$$,2 $x_2226_UHC.Base.w'_@1UNQ_@175_2 $x_2227_UHC.Base.x_@1UNQ_@175_4) ->
+        fetchnode $x_2227_UHC.Base.x_@1UNQ_@175_4 ; \$x_2870 ->
+        case $x_2870 of
+          { ident (#0/C{0,0}/$$,0)
+              -> { unit $x_2870} 
+          ; calling 0 x_2227_UHC.Base.x_@1UNQ_@175_4 (#0/A/$fun_x_212_app2_1 $x_2871 $x_2872)
+              -> { call (insideCase = True) $fun_x_212_app2_1 $x_2871 $x_2872 ; \$x_2873 ->
+                   updateunit $x_2873 $x_2227_UHC.Base.x_@1UNQ_@175_4} 
+          }  ; \$x_0__ ->
+        fetchnode $x_2222_UHC.Base.f_@1UNQ_@168 ; \$x_2874 ->
+        case $x_2874 of
+          { ident (#0/P/1/$fun_x_2203_UHC.Base.96_1965_0 $x_2875)
+              -> { unit $x_2874} }  ; \$x_2229_UHC.Base.f_@1UNQ_@168_@1EVL ->
+        case $x_2229_UHC.Base.f_@1UNQ_@168_@1EVL of
+          { (#0/P/1/$fun_x_2203_UHC.Base.96_1965_0 $x_2876)
+              -> { call (insideCase = True) $fun_x_2203_UHC.Base.96_1965_0 $x_2876 $x_2227_UHC.Base.x_@1UNQ_@175_4} }  ; \$x_2230_UHC.Base.94_1984_0_@1UNQ_@177_0 ->
+        case $x_2230_UHC.Base.94_1984_0_@1UNQ_@177_0 of
+          { (#0/P/1/$fun_x_810_UHC.Base.primretIO $x_2879)
+              -> { call (insideCase = True) $fun_x_810_UHC.Base.primretIO $x_2879 $x_2226_UHC.Base.w'_@1UNQ_@175_2} 
+          ; (#0/P/1/$fun_x_2219_UHC.Base.primbindIO $x_2877 $x_2878)
+              -> { call (insideCase = True) $fun_x_2219_UHC.Base.primbindIO $x_2877 $x_2878 $x_2226_UHC.Base.w'_@1UNQ_@175_2} 
+          } } 
+; $fun_x_2248_UHC.Base.showsPrec  $x_2250_UHC.Base.x_@1UNQ_@2312
+    = { fetchnode $x_2250_UHC.Base.x_@1UNQ_@2312 ; \$x_2880 ->
+        case $x_2880 of
+          { ident (#0/C{3,3}/$UHC.Base.$$Dict$-Show $x_2881 $x_2882 $x_2883)
+              -> { unit $x_2880} }  ; \$x_2251_UHC.Base.x_@1UNQ_@2313_0_@1EVL ->
+        unit $x_2251_UHC.Base.x_@1UNQ_@2313_0_@1EVL ; \(#0/C{3,3}/$UHC.Base.$$Dict$-Show _ _ $x_2254_UHC.Base.showsPrec_@1UNQ_@2314_6) ->
+        fetchnode $x_2254_UHC.Base.showsPrec_@1UNQ_@2314_6 ; \$x_2884 ->
+        case $x_2884 of
+          { ident (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2885)
+              -> { unit $x_2884} } } 
+; $fun_x_2255_UHC.Base.shows  $x_2257_UHC.Base.94_30978_2_0_@1UNQ_@2333
+    = { fetchnode $x_2257_UHC.Base.94_30978_2_0_@1UNQ_@2333 ; \$x_2886 ->
+        case $x_2886 of
+          { ident (#0/C{3,3}/$UHC.Base.$$Dict$-Show $x_2887 $x_2888 $x_2889)
+              -> { unit $x_2886} }  ; \$x_2517_UHC.Base.x_@1UNQ_@2313_0_@1EVL ->
+        unit $x_2517_UHC.Base.x_@1UNQ_@2313_0_@1EVL ; \(#0/C{3,3}/$UHC.Base.$$Dict$-Show _ _ $x_2520_UHC.Base.showsPrec_@1UNQ_@2314_6) ->
+        fetchnode $x_2520_UHC.Base.showsPrec_@1UNQ_@2314_6 ; \$x_2890 ->
+        case $x_2890 of
+          { ident (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2891)
+              -> { unit $x_2890} }  ; \$x_2258_UHC.Base.95_8779_0 ->
+        case $x_2258_UHC.Base.95_8779_0 of
+          { (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2892)
+              -> { unit (#0/P/1/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2892 $global_x_192_UHC.Base.95_8780_1)} } } 
+; $fun_x_2259_UHC.Base.tail  $x_2261_UHC.Base.94_6263_0_@1UNQ_@347
+    = { fetchnode $x_2261_UHC.Base.94_6263_0_@1UNQ_@347 ; \$x_2893 ->
+        case $x_2893 of
+          { ident (#0/C{2,2}/$UHC.Base.$: $x_2900 $x_2901)
+              -> { unit $x_2893} 
+          ; ident (#1/C{0,2}/$UHC.Base.[])
+              -> { unit $x_2893} 
+          ; ident (#U $x_2899)
+              -> { unit $x_2893} 
+          ; calling 2 x_2261_UHC.Base.94_6263_0_@1UNQ_@347 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2896 $x_2897)
+              -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2896 $x_2897 ; \$x_2898 ->
+                   updateunit $x_2898 $x_2261_UHC.Base.94_6263_0_@1UNQ_@347} 
+          ; calling 2 x_2261_UHC.Base.94_6263_0_@1UNQ_@347 (#0/F/$fun_x_2259_UHC.Base.tail $x_2894)
+              -> { call (insideCase = True) $fun_x_2259_UHC.Base.tail $x_2894 ; \$x_2895 ->
+                   updateunit $x_2895 $x_2261_UHC.Base.94_6263_0_@1UNQ_@347} 
+          }  ; \$x_2262_UHC.Base.94_6263_0_@1UNQ_@348_0_@1EVL ->
+        case $x_2262_UHC.Base.94_6263_0_@1UNQ_@348_0_@1EVL of
+          { (#0/C{2,2}/$UHC.Base.$: $x_0__ $x_2264_UHC.Base.xs_@1UNQ_@349_4)
+              -> { fetchnode $x_2264_UHC.Base.xs_@1UNQ_@349_4 ; \$x_2902 ->
+                   case $x_2902 of
+                     { ident (#0/C{2,2}/$UHC.Base.$: $x_2911 $x_2912)
+                         -> { unit $x_2902} 
+                     ; ident (#1/C{0,2}/$UHC.Base.[])
+                         -> { unit $x_2902} 
+                     ; calling 2 x_2264_UHC.Base.xs_@1UNQ_@349_4 (#0/F/$fun_x_1010_UHC.Base.packedStringToString $x_2909)
+                         -> { call (insideCase = True) $fun_x_1010_UHC.Base.packedStringToString $x_2909 ; \$x_2910 ->
+                              updateunit $x_2910 $x_2264_UHC.Base.xs_@1UNQ_@349_4} 
+                     ; calling 2 x_2264_UHC.Base.xs_@1UNQ_@349_4 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2906 $x_2907)
+                         -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2906 $x_2907 ; \$x_2908 ->
+                              updateunit $x_2908 $x_2264_UHC.Base.xs_@1UNQ_@349_4} 
+                     ; calling 2 x_2264_UHC.Base.xs_@1UNQ_@349_4 (#0/A/$fun_x_222_app2_3 $x_2903 $x_2904)
+                         -> { call (insideCase = True) $fun_x_222_app2_3 $x_2903 $x_2904 ; \$x_2905 ->
+                              updateunit $x_2905 $x_2264_UHC.Base.xs_@1UNQ_@349_4} 
+                     } } 
+          ; (#1/C{0,2}/$UHC.Base.[])
+              -> { call (insideCase = True) $fun_x_885_UHC.Base.error $global_x_88_UHC.Base.96_460} 
+          } } 
+; $fun_x_2265_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.showList DICTOVERLOADED{ {  } } $x_2267_UHC.Base.Show_@1NEW_@211_@1UNQ_@2315_@1CLS_@92_41_0_@1SDC $x_2268_UHC.Base.x1_@1UNQ_@2318
+    = { fetchnode $x_2268_UHC.Base.x1_@1UNQ_@2318 ; \$x_2913 ->
+        case $x_2913 of
+          { }  ; \$x_2269_UHC.Base.94_30720_0_@1UNQ_@2320_0_@1EVL ->
+        case $x_2269_UHC.Base.94_30720_0_@1UNQ_@2320_0_@1EVL of
+          { (#0/C{2,2}/$UHC.Base.$: $x_2270_UHC.Base.x_@1UNQ_@2321_2 $x_2271_UHC.Base.xs_@1UNQ_@2321_4)
+              -> { store (#0/F/$fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_2267_UHC.Base.Show_@1NEW_@211_@1UNQ_@2315_@1CLS_@92_41_0_@1SDC $x_2271_UHC.Base.xs_@1UNQ_@2321_4) ; \$x_2272_UHC.Base.96_4873 ->
+                   store (#0/F/$fun_x_2255_UHC.Base.shows $x_2267_UHC.Base.Show_@1NEW_@211_@1UNQ_@2315_@1CLS_@92_41_0_@1SDC) ; \$x_2273_UHC.Base.95_12426_0 ->
+                   store (#0/A/$fun_x_432_app2_63 $x_2273_UHC.Base.95_12426_0 $x_2270_UHC.Base.x_@1UNQ_@2321_2) ; \$x_2274_UHC.Base.96_4871 ->
+                   store (#0/P/1/$fun_x_857_UHC.Base.. $x_2274_UHC.Base.96_4871 $x_2272_UHC.Base.96_4873) ; \$x_2275_UHC.Base.96_4869 ->
+                   store (#0/A/$fun_x_437_app2_64 $global_x_14_UHC.Base.showChar $global_x_193_UHC.Base.95_12441_0) ; \$x_2276_UHC.Base.96_4868 ->
+                   unit (#0/P/1/$fun_x_857_UHC.Base.. $x_2276_UHC.Base.96_4868 $x_2275_UHC.Base.96_4869)} 
+          ; (#1/C{0,2}/$UHC.Base.[])
+              -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_194_UHC.Base.95_12452_0) ; \$x_2277_UHC.Base.96_4876 ->
+                   unit (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2277_UHC.Base.96_4876)} 
+          } } 
+; rec
+    { $fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1  $x_2281_UHC.Base.94_30753_1_0_@1UNQ_@2323 $x_2282_UHC.Base.x1_@1UNQ_@2325
+        = { fetchnode $x_2282_UHC.Base.x1_@1UNQ_@2325 ; \$x_2914 ->
+            case $x_2914 of
+              { }  ; \$x_2283_UHC.Base.94_30766_0_@1UNQ_@2327_0_@1EVL ->
+            case $x_2283_UHC.Base.94_30766_0_@1UNQ_@2327_0_@1EVL of
+              { (#0/C{2,2}/$UHC.Base.$: $x_2284_UHC.Base.x_@1UNQ_@2328_2 $x_2285_UHC.Base.xs_@1UNQ_@2328_4)
+                  -> { store (#0/F/$fun_x_2279_UHC.Base.showl_@1UNQ_@2322_1 $x_2281_UHC.Base.94_30753_1_0_@1UNQ_@2323 $x_2285_UHC.Base.xs_@1UNQ_@2328_4) ; \$x_2286_UHC.Base.96_4863 ->
+                       store (#0/F/$fun_x_2255_UHC.Base.shows $x_2281_UHC.Base.94_30753_1_0_@1UNQ_@2323) ; \$x_2287_UHC.Base.95_12471_0 ->
+                       store (#0/A/$fun_x_442_app2_65 $x_2287_UHC.Base.95_12471_0 $x_2284_UHC.Base.x_@1UNQ_@2328_2) ; \$x_2288_UHC.Base.96_4861 ->
+                       store (#0/P/1/$fun_x_857_UHC.Base.. $x_2288_UHC.Base.96_4861 $x_2286_UHC.Base.96_4863) ; \$x_2289_UHC.Base.96_4859 ->
+                       store (#0/A/$fun_x_447_app2_66 $global_x_14_UHC.Base.showChar $global_x_195_UHC.Base.95_12486_0) ; \$x_2290_UHC.Base.96_4858 ->
+                       unit (#0/P/1/$fun_x_857_UHC.Base.. $x_2290_UHC.Base.96_4858 $x_2289_UHC.Base.96_4859)} 
+              ; (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit (#0/P/1/$fun_x_845_UHC.Base.$: $global_x_196_UHC.Base.95_12498_0)} 
+              } } } 
+; $fun_x_2293_UHC.Base.Show_@1CLS_@92_41_0_@1DFL_@UHC.Base.show DICTOVERLOADED{ {  } } $x_2295_UHC.Base.Show_@1NEW_@212_@1UNQ_@2315_@1CLS_@92_41_0_@1SDC $x_2296_UHC.Base.x_@1UNQ_@2317
+    = { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_197_UHC.Base.95_12503_0) ; \$x_2297_UHC.Base.96_4884 ->
+        fetchnode $x_2295_UHC.Base.Show_@1NEW_@212_@1UNQ_@2315_@1CLS_@92_41_0_@1SDC ; \$x_2915 ->
+        case $x_2915 of
+          { ident (#0/C{3,3}/$UHC.Base.$$Dict$-Show $x_2916 $x_2917 $x_2918)
+              -> { unit $x_2915} }  ; \$x_2521_UHC.Base.x_@1UNQ_@2313_0_@1EVL ->
+        unit $x_2521_UHC.Base.x_@1UNQ_@2313_0_@1EVL ; \(#0/C{3,3}/$UHC.Base.$$Dict$-Show _ _ $x_2524_UHC.Base.showsPrec_@1UNQ_@2314_6) ->
+        fetchnode $x_2524_UHC.Base.showsPrec_@1UNQ_@2314_6 ; \$x_2919 ->
+        case $x_2919 of
+          { ident (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2920)
+              -> { unit $x_2919} }  ; \$x_2298_UHC.Base.95_12505_0 ->
+        case $x_2298_UHC.Base.95_12505_0 of
+          { (#0/P/2/$fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2921)
+              -> { call (insideCase = True) $fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec $x_2921 $global_x_198_UHC.Base.95_12506_1 $x_2296_UHC.Base.x_@1UNQ_@2317 ; \$x_2922 ->
+                   case $x_2922 of
+                     { (#0/P/1/$fun_x_857_UHC.Base.. $x_2924 $x_2925)
+                         -> { call (insideCase = True) $fun_x_857_UHC.Base.. $x_2924 $x_2925 $x_2297_UHC.Base.96_4884} 
+                     ; (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2923)
+                         -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2923 $x_2297_UHC.Base.96_4884} 
+                     } } } } 
+; $fun_x_2299_UHC.IOBase.OldHandle  $x_2301_UHC.IOBase.x1_@1UNQ_@116
+    = { unit (#2/C{1,3}/$UHC.IOBase.OldHandle $x_2301_UHC.IOBase.x1_@1UNQ_@116)} 
+; $fun_x_2302_UHC.OldIO.fun0~primStdout  
+    = { ffi prim "primStdout" True ; \(opaqueannot $x_2304_UHC.OldIO.245_0_0) ->
+        unit (opaquenode $x_2304_UHC.OldIO.245_0_0)} 
+; $fun_x_2314_UHC.OldIO.hPutChar  $x_2316_UHC.OldIO.244_526_0_@1UNQ_@46
+    = { fetchnode $x_2316_UHC.OldIO.244_526_0_@1UNQ_@46 ; \$x_2926 ->
+        case $x_2926 of
+          { ident (#2/C{1,3}/$UHC.IOBase.OldHandle $x_2929)
+              -> { unit $x_2926} 
+          ; calling 1 x_2316_UHC.OldIO.244_526_0_@1UNQ_@46 (#0/F/$fun_x_2299_UHC.IOBase.OldHandle $x_2927)
+              -> { call (insideCase = True) $fun_x_2299_UHC.IOBase.OldHandle $x_2927 ; \$x_2928 ->
+                   updateunit $x_2928 $x_2316_UHC.OldIO.244_526_0_@1UNQ_@46} 
+          }  ; \$x_2317_UHC.OldIO.244_526_0_@1UNQ_@47_0_@1EVL ->
+        case $x_2317_UHC.OldIO.244_526_0_@1UNQ_@47_0_@1EVL of
+          { (#0/C{3,3}/$UHC.IOBase.DuplexHandle $x_0__ $x_0__ $x_0__)
+              -> { call (insideCase = True) $fun_x_885_UHC.Base.error $global_x_88_UHC.Base.96_460} 
+          ; (#1/C{2,3}/$UHC.IOBase.FileHandle $x_0__ $x_0__)
+              -> { call (insideCase = True) $fun_x_885_UHC.Base.error $global_x_88_UHC.Base.96_460} 
+          ; (#2/C{1,3}/$UHC.IOBase.OldHandle $x_2323_UHC.OldIO.h_@1UNQ_@50_2)
+              -> { unit (#0/P/1/$fun_x_2324_UHC.OldIO.246_32_0 $x_2323_UHC.OldIO.h_@1UNQ_@50_2)} 
+          } } 
+; $fun_x_2324_UHC.OldIO.246_32_0  $x_2326_UHC.OldIO.h_@1NEW_@2_@1UNQ_@50_2 $x_2327_UHC.OldIO.c_@1UNQ_@51
+    = { store (#0/P/1/$fun_x_2329_UHC.OldIO.246_35_0 $x_2326_UHC.OldIO.h_@1NEW_@2_@1UNQ_@50_2 $x_2327_UHC.OldIO.c_@1UNQ_@51) ; \$x_2328_UHC.OldIO.247_56 ->
+        unit (#0/P/1/$fun_x_814_UHC.Base.ioFromPrim $x_2328_UHC.OldIO.247_56)} 
+; $fun_x_2329_UHC.OldIO.246_35_0  $x_2331_UHC.OldIO.h_@1NEW_@3_@1UNQ_@50_2 $x_2332_UHC.OldIO.c_@1NEW_@4_@1UNQ_@51 $x_2333_UHC.OldIO.244_551_0_@1UNQ_@52
+    = { fetchnode $x_2331_UHC.OldIO.h_@1NEW_@3_@1UNQ_@50_2 ; \$x_2930 ->
+        case $x_2930 of
+          { ident (#U $x_2932)
+              -> { unit $x_2930} 
+          ; calling 1 x_2331_UHC.OldIO.h_@1NEW_@3_@1UNQ_@50_2 (#0/F/$fun_x_2302_UHC.OldIO.fun0~primStdout)
+              -> { call (insideCase = True) $fun_x_2302_UHC.OldIO.fun0~primStdout ; \$x_2931 ->
+                   updateunit $x_2931 $x_2331_UHC.OldIO.h_@1NEW_@3_@1UNQ_@50_2} 
+          }  ; \(opaquenode $x_2525_UHC.OldIO.245_11_2_@1FFI) ->
+        fetchnode $x_2332_UHC.OldIO.c_@1NEW_@4_@1UNQ_@51 ; \$x_2933 ->
+        case $x_2933 of
+          { ident (#0/C{1,1}/$Char $x_2936)
+              -> { unit $x_2933} 
+          ; calling 1 x_2332_UHC.OldIO.c_@1NEW_@4_@1UNQ_@51 (#0/F/$fun_x_2207_UHC.Base.head $x_2934)
+              -> { call (insideCase = True) $fun_x_2207_UHC.Base.head $x_2934 ; \$x_2935 ->
+                   updateunit $x_2935 $x_2332_UHC.OldIO.c_@1NEW_@4_@1UNQ_@51} 
+          }  ; \(basicnode 4 word $x_2526_UHC.OldIO.245_11_3_@1FFI) ->
+        ffi prim "primHPutChar" True $x_2525_UHC.OldIO.245_11_2_@1FFI $x_2526_UHC.OldIO.245_11_3_@1FFI ; \(enumannot $$,0 $x_2527_UHC.OldIO.245_11_0) ->
+        unit (enumnode $x_2527_UHC.OldIO.245_11_0)} 
+; rec
+    { $fun_x_2334_UHC.OldIO.hPutStr  $x_2336_UHC.OldIO.h_@1UNQ_@53 $x_2337_UHC.OldIO.s_@1UNQ_@54
+        = { fetchnode $x_2337_UHC.OldIO.s_@1UNQ_@54 ; \$x_2937 ->
+            case $x_2937 of
+              { ident (#0/C{2,2}/$UHC.Base.$: $x_2944 $x_2945)
+                  -> { unit $x_2937} 
+              ; ident (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit $x_2937} 
+              ; ident (#U $x_2943)
+                  -> { unit $x_2937} 
+              ; calling 2 x_2337_UHC.OldIO.s_@1UNQ_@54 (#0/F/$fun_x_1272_UHC.Base.$+$+ $x_2940 $x_2941)
+                  -> { call (insideCase = True) $fun_x_1272_UHC.Base.$+$+ $x_2940 $x_2941 ; \$x_2942 ->
+                       updateunit $x_2942 $x_2337_UHC.OldIO.s_@1UNQ_@54} 
+              ; calling 2 x_2337_UHC.OldIO.s_@1UNQ_@54 (#0/F/$fun_x_2259_UHC.Base.tail $x_2938)
+                  -> { call (insideCase = True) $fun_x_2259_UHC.Base.tail $x_2938 ; \$x_2939 ->
+                       updateunit $x_2939 $x_2337_UHC.OldIO.s_@1UNQ_@54} 
+              }  ; \$x_2528_UHC.Base.94_5243_0_@1UNQ_@294_0_@1EVL ->
+            case $x_2528_UHC.Base.94_5243_0_@1UNQ_@294_0_@1EVL of
+              { (#0/C{2,2}/$UHC.Base.$: $x_0__ $x_0__)
+                  -> { unit (#0/C{0,0}/$UHC.Base.False)} 
+              ; (#1/C{0,2}/$UHC.Base.[])
+                  -> { unit (#1/C{0,0}/$UHC.Base.True)} 
+              }  ; \$x_2338_UHC.OldIO.244_618_0_@1UNQ_@55_0 ->
+            case $x_2338_UHC.OldIO.244_618_0_@1UNQ_@55_0 of
+              { (#0/C{0,0}/$UHC.Base.False)
+                  -> { store (#0/F/$fun_x_2259_UHC.Base.tail $x_2337_UHC.OldIO.s_@1UNQ_@54) ; \$x_2339_UHC.OldIO.246_96 ->
+                       store (#0/F/$fun_x_2334_UHC.OldIO.hPutStr $x_2336_UHC.OldIO.h_@1UNQ_@53 $x_2339_UHC.OldIO.246_96) ; \$x_2340_UHC.OldIO.246_94 ->
+                       store (#0/F/$fun_x_2207_UHC.Base.head $x_2337_UHC.OldIO.s_@1UNQ_@54) ; \$x_2341_UHC.OldIO.246_93 ->
+                       store (#0/F/$fun_x_2314_UHC.OldIO.hPutChar $x_2336_UHC.OldIO.h_@1UNQ_@53) ; \$x_2342_UHC.OldIO.245_214_0 ->
+                       store (#0/A/$fun_x_452_app2_67 $x_2342_UHC.OldIO.245_214_0 $x_2341_UHC.OldIO.246_93) ; \$x_2343_UHC.OldIO.246_91 ->
+                       store (#0/P/1/$fun_x_2203_UHC.Base.96_1965_0 $x_2340_UHC.OldIO.246_94) ; \$x_22_UHC.Base.97_2692 ->
+                       unit (#0/P/1/$fun_x_2219_UHC.Base.primbindIO $x_2343_UHC.OldIO.246_91 $x_22_UHC.Base.97_2692)} 
+              ; (#1/C{0,0}/$UHC.Base.True)
+                  -> { unit (#0/P/1/$fun_x_810_UHC.Base.primretIO $global_x_199_UHC.OldIO.245_234_1)} 
+              } } } 
+; rec
+    { $fun_x_2361_Foldl.foldy  $x_2363_Foldl.f_@1UNQ_@10 $x_2364_Foldl.a_@1UNQ_@11 $x_2365_Foldl.xs_@1UNQ_@12
+        = { fetchnode $x_2365_Foldl.xs_@1UNQ_@12 ; \$x_2946 ->
+            case $x_2946 of
+              { ident (#0/C{2,2}/$Foldl.Con $x_2950 $x_2951)
+                  -> { unit $x_2946} 
+              ; ident (#1/C{0,2}/$Foldl.Ni)
+                  -> { unit $x_2946} 
+              ; calling 2 x_2365_Foldl.xs_@1UNQ_@12 (#0/F/$fun_x_2388_Foldl.Con $x_2947 $x_2948)
+                  -> { call (insideCase = True) $fun_x_2388_Foldl.Con $x_2947 $x_2948 ; \$x_2949 ->
+                       updateunit $x_2949 $x_2365_Foldl.xs_@1UNQ_@12} 
+              }  ; \$x_2366_Foldl.3_224_0_@1UNQ_@14_0_@1EVL ->
+            case $x_2366_Foldl.3_224_0_@1UNQ_@14_0_@1EVL of
+              { (#0/C{2,2}/$Foldl.Con $x_2367_Foldl.x_@1UNQ_@15_2 $x_2368_Foldl.xs_@1UNQ_@15_4)
+                  -> { store (#0/A/$fun_x_569_app3_69 $x_2363_Foldl.f_@1UNQ_@10 $x_2364_Foldl.a_@1UNQ_@11 $x_2367_Foldl.x_@1UNQ_@15_2) ; \$x_2369_Foldl.5_12 ->
+                       call (insideCase = True) $fun_x_2361_Foldl.foldy $x_2363_Foldl.f_@1UNQ_@10 $x_2369_Foldl.5_12 $x_2368_Foldl.xs_@1UNQ_@15_4} 
+              ; (#1/C{0,2}/$Foldl.Ni)
+                  -> { fetchnode $x_2364_Foldl.a_@1UNQ_@11 ; \$x_2952 ->
+                       case $x_2952 of
+                         { ident (#0/C{1,1}/$Foldl.Suc $x_2960)
+                             -> { unit $x_2952} 
+                         ; ident (#1/C{0,1}/$Foldl.Z)
+                             -> { unit $x_2952} 
+                         ; calling 1 x_2364_Foldl.a_@1UNQ_@11 (#0/F/$fun_x_2377_Foldl.plus $x_2957 $x_2958)
+                             -> { call (insideCase = True) $fun_x_2377_Foldl.plus $x_2957 $x_2958 ; \$x_2959 ->
+                                  updateunit $x_2959 $x_2364_Foldl.a_@1UNQ_@11} 
+                         ; calling 1 x_2364_Foldl.a_@1UNQ_@11 (#0/A/$fun_x_569_app3_69 $x_2953 $x_2954 $x_2955)
+                             -> { call (insideCase = True) $fun_x_569_app3_69 $x_2953 $x_2954 $x_2955 ; \$x_2956 ->
+                                  updateunit $x_2956 $x_2364_Foldl.a_@1UNQ_@11} 
+                         } } 
+              } } } 
+; $fun_x_2372_Foldl.Suc  $x_2374_Foldl.x1_@1UNQ_@3
+    = { unit (#0/C{1,1}/$Foldl.Suc $x_2374_Foldl.x1_@1UNQ_@3)} 
+; rec
+    { $fun_x_2377_Foldl.plus  $x_2379_Foldl.i_@1UNQ_@4 $x_2380_Foldl.j_@1UNQ_@5
+        = { fetchnode $x_2380_Foldl.j_@1UNQ_@5 ; \$x_2961 ->
+            case $x_2961 of
+              { ident (#0/C{1,1}/$Foldl.Suc $x_2964)
+                  -> { unit $x_2961} 
+              ; ident (#1/C{0,1}/$Foldl.Z)
+                  -> { unit $x_2961} 
+              ; calling 1 x_2380_Foldl.j_@1UNQ_@5 (#0/F/$fun_x_2372_Foldl.Suc $x_2962)
+                  -> { call (insideCase = True) $fun_x_2372_Foldl.Suc $x_2962 ; \$x_2963 ->
+                       updateunit $x_2963 $x_2380_Foldl.j_@1UNQ_@5} 
+              }  ; \$x_2381_Foldl.3_96_0_@1UNQ_@7_0_@1EVL ->
+            case $x_2381_Foldl.3_96_0_@1UNQ_@7_0_@1EVL of
+              { (#0/C{1,1}/$Foldl.Suc $x_2382_Foldl.k_@1UNQ_@8_2)
+                  -> { store (#0/C{1,1}/$Foldl.Suc $x_2379_Foldl.i_@1UNQ_@4) ; \$x_2383_Foldl.5_30 ->
+                       call (insideCase = True) $fun_x_2377_Foldl.plus $x_2383_Foldl.5_30 $x_2382_Foldl.k_@1UNQ_@8_2} 
+              ; (#1/C{0,1}/$Foldl.Z)
+                  -> { fetchnode $x_2379_Foldl.i_@1UNQ_@4 ; \$x_2965 ->
+                       case $x_2965 of
+                         { ident (#0/C{1,1}/$Foldl.Suc $x_2973)
+                             -> { unit $x_2965} 
+                         ; ident (#1/C{0,1}/$Foldl.Z)
+                             -> { unit $x_2965} 
+                         ; calling 1 x_2379_Foldl.i_@1UNQ_@4 (#0/F/$fun_x_2377_Foldl.plus $x_2970 $x_2971)
+                             -> { call (insideCase = True) $fun_x_2377_Foldl.plus $x_2970 $x_2971 ; \$x_2972 ->
+                                  updateunit $x_2972 $x_2379_Foldl.i_@1UNQ_@4} 
+                         ; calling 1 x_2379_Foldl.i_@1UNQ_@4 (#0/A/$fun_x_569_app3_69 $x_2966 $x_2967 $x_2968)
+                             -> { call (insideCase = True) $fun_x_569_app3_69 $x_2966 $x_2967 $x_2968 ; \$x_2969 ->
+                                  updateunit $x_2969 $x_2379_Foldl.i_@1UNQ_@4} 
+                         } } 
+              } } } 
+; $fun_x_2388_Foldl.Con  $x_2390_Foldl.x1_@1UNQ_@1 $x_2391_Foldl.x2_@1UNQ_@2
+    = { unit (#0/C{2,2}/$Foldl.Con $x_2390_Foldl.x1_@1UNQ_@1 $x_2391_Foldl.x2_@1UNQ_@2)} 
+; $fun_x_2398_Foldl.fun0~x2  
+    = { store (#0/C{2,2}/$Foldl.Con $global_x_115_Foldl.two $global_x_116_Foldl.Ni) ; \$x_2400_Foldl.5_53 ->
+        store (#0/F/$fun_x_2377_Foldl.plus $global_x_113_Foldl.Z $global_x_114_Foldl.one) ; \$x_2404_Foldl.5_60 ->
+        call (insideCase = False) $fun_x_2361_Foldl.foldy $global_x_202_Foldl.4_118_0 $x_2404_Foldl.5_60 $x_2400_Foldl.5_53} 
+; $fun_x_2411_Foldl.1_0_0_@1DFL_@UHC.Base.showsPrec DICTOVERLOADED{ {  } } $x_2413_Foldl.1_0_0_@1NEW_@0_@1UNQ_@21_0_@1RDC $x_2414_Foldl.d_@1UNQ_@26 $x_2415_Foldl.x_1_@1UNQ_@27
+    = { fetchnode $x_2415_Foldl.x_1_@1UNQ_@27 ; \$x_2974 ->
+        case $x_2974 of
+          { ident (#0/C{1,1}/$Foldl.Suc $x_2987)
+              -> { unit $x_2974} 
+          ; ident (#1/C{0,1}/$Foldl.Z)
+              -> { unit $x_2974} 
+          ; calling 1 x_2415_Foldl.x_1_@1UNQ_@27 (#0/F/$fun_x_2361_Foldl.foldy $x_2983 $x_2984 $x_2985)
+              -> { call (insideCase = True) $fun_x_2361_Foldl.foldy $x_2983 $x_2984 $x_2985 ; \$x_2986 ->
+                   updateunit $x_2986 $x_2415_Foldl.x_1_@1UNQ_@27} 
+          ; calling 1 x_2415_Foldl.x_1_@1UNQ_@27 (#0/F/$fun_x_2377_Foldl.plus $x_2980 $x_2981)
+              -> { call (insideCase = True) $fun_x_2377_Foldl.plus $x_2980 $x_2981 ; \$x_2982 ->
+                   updateunit $x_2982 $x_2415_Foldl.x_1_@1UNQ_@27} 
+          ; calling 1 x_2415_Foldl.x_1_@1UNQ_@27 (#0/F/$fun_x_2398_Foldl.fun0~x2)
+              -> { call (insideCase = True) $fun_x_2398_Foldl.fun0~x2 ; \$x_2979 ->
+                   updateunit $x_2979 $x_2415_Foldl.x_1_@1UNQ_@27} 
+          ; calling 1 x_2415_Foldl.x_1_@1UNQ_@27 (#0/A/$fun_x_569_app3_69 $x_2975 $x_2976 $x_2977)
+              -> { call (insideCase = True) $fun_x_569_app3_69 $x_2975 $x_2976 $x_2977 ; \$x_2978 ->
+                   updateunit $x_2978 $x_2415_Foldl.x_1_@1UNQ_@27} 
+          }  ; \$x_2416_Foldl.x_1_@1UNQ_@28_0_@1EVL ->
+        case $x_2416_Foldl.x_1_@1UNQ_@28_0_@1EVL of
+          { (#0/C{1,1}/$Foldl.Suc $x_2417_Foldl.x_1_1_@1UNQ_@29_2)
+              -> { store (#0/F/$fun_x_2248_UHC.Base.showsPrec $x_2413_Foldl.1_0_0_@1NEW_@0_@1UNQ_@21_0_@1RDC) ; \$x_2418_Foldl.4_201_0 ->
+                   store (#0/A/$fun_x_575_app3_70 $x_2418_Foldl.4_201_0 $global_x_204_Foldl.4_202_1 $x_2417_Foldl.x_1_1_@1UNQ_@29_2) ; \$x_2419_Foldl.5_97 ->
+                   store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_205_Foldl.4_211_0) ; \$x_2420_Foldl.5_96 ->
+                   store (#0/A/$fun_x_462_app2_71 $global_x_104_UHC.Base.showString $x_2420_Foldl.5_96) ; \$x_2421_Foldl.5_95 ->
+                   store (#0/P/1/$fun_x_857_UHC.Base.. $x_2421_Foldl.5_95 $x_2419_Foldl.5_97) ; \$x_2422_Foldl.5_93 ->
+                   fetchnode $x_2414_Foldl.d_@1UNQ_@26 ; \$x_2988 ->
+                   case $x_2988 of
+                     { ident (#0/C{1,1}/$Int $x_2989)
+                         -> { unit $x_2988} }  ; \(basicnode 4 word $x_837_UHC.Base.95_215_2_@1FFI) ->
+                   unit (#0/C{1,1}/$Int 10) ; \(basicnode 4 word $x_838_UHC.Base.95_215_3_@1FFI) ->
+                   ffi prim "primGtInt" True $x_837_UHC.Base.95_215_2_@1FFI $x_838_UHC.Base.95_215_3_@1FFI ; \(enumannot $UHC.Base.Bool $x_839_UHC.Base.95_215_0) ->
+                   case (enumnode $x_839_UHC.Base.95_215_0) of
+                     { (#0/C{0,0}/$UHC.Base.False)
+                         -> { unit (#0/P/1/$fun_x_857_UHC.Base.. $x_2421_Foldl.5_95 $x_2419_Foldl.5_97)} 
+                     ; (#1/C{0,0}/$UHC.Base.True)
+                         -> { store (#0/A/$fun_x_422_app2_61 $global_x_14_UHC.Base.showChar $global_x_190_UHC.Base.95_8752_0) ; \$x_2532_UHC.Base.96_3637 ->
+                              store (#0/P/1/$fun_x_857_UHC.Base.. $x_2422_Foldl.5_93 $x_2532_UHC.Base.96_3637) ; \$x_2533_UHC.Base.96_3635 ->
+                              store (#0/A/$fun_x_427_app2_62 $global_x_14_UHC.Base.showChar $global_x_191_UHC.Base.95_8762_0) ; \$x_2534_UHC.Base.96_3634 ->
+                              unit (#0/P/1/$fun_x_857_UHC.Base.. $x_2534_UHC.Base.96_3634 $x_2533_UHC.Base.96_3635)} 
+                     } } 
+          ; (#1/C{0,1}/$Foldl.Z)
+              -> { store (#0/F/$fun_x_1010_UHC.Base.packedStringToString $global_x_207_Foldl.4_240_0) ; \$x_2424_Foldl.5_101 ->
+                   unit (#0/P/1/$fun_x_1272_UHC.Base.$+$+ $x_2424_Foldl.5_101)} 
+          } } 
+} 
+{ $$,0 = #0/C{0,0}/$$,0
+; $$,10 = #0/C{10,10}/$$,10
+; $$,2 = #0/C{2,2}/$$,2
+; $$,3 = #0/C{3,3}/$$,3
+; $$,4 = #0/C{4,4}/$$,4
+; $$,5 = #0/C{5,5}/$$,5
+; $$,6 = #0/C{6,6}/$$,6
+; $$,7 = #0/C{7,7}/$$,7
+; $$,8 = #0/C{8,8}/$$,8
+; $$,9 = #0/C{9,9}/$$,9
+; $Char = #0/C{1,1}/$Char
+; $Int = #0/C{1,1}/$Int
+; $Foldl.I = #0/C{1,1}/$Foldl.Suc | #1/C{0,1}/$Foldl.Z
+; $Foldl.Lis = #0/C{2,2}/$Foldl.Con | #1/C{0,2}/$Foldl.Ni
+; $UHC.Base.$$Dict$-Bounded = #0/C{2,2}/$UHC.Base.$$Dict$-Bounded
+; $UHC.Base.$$Dict$-Enum = #0/C{8,8}/$UHC.Base.$$Dict$-Enum
+; $UHC.Base.$$Dict$-Eq = #0/C{2,2}/$UHC.Base.$$Dict$-Eq
+; $UHC.Base.$$Dict$-Floating = #0/C{19,19}/$UHC.Base.$$Dict$-Floating
+; $UHC.Base.$$Dict$-Fractional = #0/C{5,5}/$UHC.Base.$$Dict$-Fractional
+; $UHC.Base.$$Dict$-Functor = #0/C{1,1}/$UHC.Base.$$Dict$-Functor
+; $UHC.Base.$$Dict$-Integral = #0/C{10,10}/$UHC.Base.$$Dict$-Integral
+; $UHC.Base.$$Dict$-Monad = #0/C{4,4}/$UHC.Base.$$Dict$-Monad
+; $UHC.Base.$$Dict$-Num = #0/C{9,9}/$UHC.Base.$$Dict$-Num
+; $UHC.Base.$$Dict$-Ord = #0/C{8,8}/$UHC.Base.$$Dict$-Ord
+; $UHC.Base.$$Dict$-Read = #0/C{2,2}/$UHC.Base.$$Dict$-Read
+; $UHC.Base.$$Dict$-Real = #0/C{3,3}/$UHC.Base.$$Dict$-Real
+; $UHC.Base.$$Dict$-RealFloat = #0/C{16,16}/$UHC.Base.$$Dict$-RealFloat
+; $UHC.Base.$$Dict$-RealFrac = #0/C{7,7}/$UHC.Base.$$Dict$-RealFrac
+; $UHC.Base.$$Dict$-Show = #0/C{3,3}/$UHC.Base.$$Dict$-Show
+; $UHC.Base.ArithException = #0/C{0,0}/$UHC.Base.Denormal | #1/C{0,0}/$UHC.Base.DivideByZero | #2/C{0,0}/$UHC.Base.LossOfPrecision | #3/C{0,0}/$UHC.Base.Overflow | #4/C{0,0}/$UHC.Base.Underflow
+; $UHC.Base.ArrayException = #0/C{1,1}/$UHC.Base.IndexOutOfBounds | #1/C{1,1}/$UHC.Base.UndefinedElement
+; $UHC.Base.AsyncException = #0/C{0,1}/$UHC.Base.HeapOverflow | #1/C{1,1}/$UHC.Base.StackOverflow | #2/C{0,1}/$UHC.Base.ThreadKilled
+; $UHC.Base.Bool = #0/C{0,0}/$UHC.Base.False | #1/C{0,0}/$UHC.Base.True
+; $UHC.Base.ByteArray = 
+; $UHC.Base.Double = #0/C{1,1}/$UHC.Base.Double
+; $UHC.Base.Either = #0/C{1,1}/$UHC.Base.Left | #1/C{1,1}/$UHC.Base.Right
+; $UHC.Base.ExitCode = #0/C{1,1}/$UHC.Base.ExitFailure | #1/C{0,1}/$UHC.Base.ExitSuccess
+; $UHC.Base.Float = #0/C{1,1}/$UHC.Base.Float
+; $UHC.Base.Maybe = #0/C{1,1}/$UHC.Base.Just | #1/C{0,1}/$UHC.Base.Nothing
+; $UHC.Base.Ordering = #0/C{0,0}/$UHC.Base.EQ | #1/C{0,0}/$UHC.Base.GT | #2/C{0,0}/$UHC.Base.LT
+; $UHC.Base.PackedString = #0/C{1,1}/$UHC.Base.PackedString
+; $UHC.Base.Ratio = #0/C{2,2}/$UHC.Base.$:%
+; $UHC.Base.RealWorld = #0/C{0,0}/$UHC.Base.RealWorld
+; $UHC.Base.SomeException' = #0/C{1,1}/$UHC.Base.ArithException | #1/C{1,1}/$UHC.Base.ArrayException | #2/C{1,1}/$UHC.Base.AssertionFailed | #3/C{1,1}/$UHC.Base.AsyncException | #4/C{0,1}/$UHC.Base.BlockedOnDeadMVar | #5/C{0,1}/$UHC.Base.Deadlock | #6/C{1,1}/$UHC.Base.ErrorCall | #7/C{1,1}/$UHC.Base.ExitException | #8/C{1,1}/$UHC.Base.IOException | #9/C{1,1}/$UHC.Base.NoMethodError | #10/C{0,1}/$UHC.Base.NonTermination | #11/C{1,1}/$UHC.Base.PatternMatchFail | #12/C{1,1}/$UHC.Base.RecConError | #13/C{1,1}/$UHC.Base.RecSelError | #14/C{1,1}/$UHC.Base.RecUpdError
+; $UHC.Base.[] = #0/C{2,2}/$UHC.Base.$: | #1/C{0,2}/$UHC.Base.[]
+; $UHC.IOBase.Buffer = #0/C{5,5}/$UHC.IOBase.Buffer
+; $UHC.IOBase.BufferList = #0/C{2,2}/$UHC.IOBase.BufferListCons | #1/C{0,2}/$UHC.IOBase.BufferListNil
+; $UHC.IOBase.BufferMode = #0/C{1,1}/$UHC.IOBase.BlockBuffering | #1/C{0,1}/$UHC.IOBase.LineBuffering | #2/C{0,1}/$UHC.IOBase.NoBuffering
+; $UHC.IOBase.BufferState = #0/C{0,0}/$UHC.IOBase.ReadBuffer | #1/C{0,0}/$UHC.IOBase.WriteBuffer
+; $UHC.IOBase.FHandle = 
+; $UHC.IOBase.Handle = #0/C{3,3}/$UHC.IOBase.DuplexHandle | #1/C{2,3}/$UHC.IOBase.FileHandle | #2/C{1,3}/$UHC.IOBase.OldHandle
+; $UHC.IOBase.HandleType = #0/C{0,0}/$UHC.IOBase.AppendHandle | #1/C{0,0}/$UHC.IOBase.ClosedHandle | #2/C{0,0}/$UHC.IOBase.ReadHandle | #3/C{0,0}/$UHC.IOBase.ReadWriteHandle | #4/C{0,0}/$UHC.IOBase.SemiClosedHandle | #5/C{0,0}/$UHC.IOBase.WriteHandle
+; $UHC.IOBase.Handle__ = #0/C{8,8}/$UHC.IOBase.Handle__
+; $UHC.IOBase.IOError = #0/C{5,5}/$UHC.IOBase.IOError
+; $UHC.IOBase.IOErrorType = #0/C{0,0}/$UHC.IOBase.AlreadyExists | #1/C{0,0}/$UHC.IOBase.AlreadyInUse | #2/C{0,0}/$UHC.IOBase.DoesNotExist | #3/C{0,0}/$UHC.IOBase.EOF | #4/C{0,0}/$UHC.IOBase.FullError | #5/C{0,0}/$UHC.IOBase.IllegalOperation | #6/C{0,0}/$UHC.IOBase.InappropriateType | #7/C{0,0}/$UHC.IOBase.InvalidArgument | #8/C{0,0}/$UHC.IOBase.NoSuchThing | #9/C{0,0}/$UHC.IOBase.OtherError | #10/C{0,0}/$UHC.IOBase.PermissionDenied | #11/C{0,0}/$UHC.IOBase.ResourceBusy | #12/C{0,0}/$UHC.IOBase.ResourceExhausted | #13/C{0,0}/$UHC.IOBase.UnsupportedOperation | #14/C{0,0}/$UHC.IOBase.UserError
+; $UHC.IOBase.IOMode = #0/C{0,0}/$UHC.IOBase.AppendBinaryMode | #1/C{0,0}/$UHC.IOBase.AppendMode | #2/C{0,0}/$UHC.IOBase.ReadBinaryMode | #3/C{0,0}/$UHC.IOBase.ReadMode | #4/C{0,0}/$UHC.IOBase.ReadWriteBinaryMode | #5/C{0,0}/$UHC.IOBase.ReadWriteMode | #6/C{0,0}/$UHC.IOBase.WriteBinaryMode | #7/C{0,0}/$UHC.IOBase.WriteMode
+; $UHC.Ix.$$Dict$-Ix = #0/C{7,7}/$UHC.Ix.$$Dict$-Ix
+; $UHC.MutVar.MutVar = 
+; $UHC.ST.STret = #0/C{2,2}/$UHC.ST.STret
+; $UHC.STRef.STRef = #0/C{1,1}/$UHC.STRef.STRef
+; $UHC.Show.FFFormat = #0/C{0,0}/$UHC.Show.FFExponent | #1/C{0,0}/$UHC.Show.FFFixed | #2/C{0,0}/$UHC.Show.FFGeneric
+; $UHC.Types.Addr = #0/C{1,1}/$UHC.Types.Addr
+; $UHC.Types.Int16 = #0/C{1,1}/$UHC.Types.Int16
+; $UHC.Types.Int32 = #0/C{1,1}/$UHC.Types.Int32
+; $UHC.Types.Int64 = #0/C{1,1}/$UHC.Types.Int64
+; $UHC.Types.Int8 = #0/C{1,1}/$UHC.Types.Int8
+; $UHC.Types.Word = #0/C{1,1}/$UHC.Types.Word
+; $UHC.Types.Word16 = #0/C{1,1}/$UHC.Types.Word16
+; $UHC.Types.Word32 = #0/C{1,1}/$UHC.Types.Word32
+; $UHC.Types.Word64 = #0/C{1,1}/$UHC.Types.Word64
+; $UHC.Types.Word8 = #0/C{1,1}/$UHC.Types.Word8
+} 

@@ -55,7 +55,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis,continuedHeapPointsToAnalysis)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
 %%]
@@ -248,9 +248,10 @@ doCompileGrin input opts
          
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131a-evalinlined"
+         -- ; caContinuedHeapPointsTo
          ; caHeapPointsTo                                              ; caWriteHptMap "-131b-hpt"  -- Should be removed  
-         ; inlineCollectionIterated "-132-" True
+         -- ; inlineCollectionIterated "-132-" True
 
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-133-possibleCase"
 
@@ -360,6 +361,16 @@ caHeapPointsTo :: CompileAction Int
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrin
          ; let (iterCount,hptMap) = heapPointsToAnalysis code
+         ; modify (gcsUpdateHptMap hptMap)
+         ; return iterCount
+         }
+     ) (\i -> Just $ show i ++ " iteration(s)")
+
+
+caContinuedHeapPointsTo :: CompileAction Int
+caContinuedHeapPointsTo = task VerboseALot "Heap-points-to analysis"
+    ( do { (a,b)    <- gcsGetCodeHpt
+	 ; let (iterCount,hptMap) = continuedHeapPointsToAnalysis (b,a)
          ; modify (gcsUpdateHptMap hptMap)
          ; return iterCount
          }

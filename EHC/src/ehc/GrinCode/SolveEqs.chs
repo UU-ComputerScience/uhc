@@ -72,6 +72,7 @@ envChanges equat env
       ; IsSelection     d v i t      -> d
       ; IsEvaluation    d v      ev  -> d
       ; IsApplication   d vs     ev  -> d
+      ; IsFetch         d vs         -> d
       } in if True {-d == 222-} then trace ("eq = " ++ show equat) a else a) $                                      
     case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
@@ -121,6 +122,13 @@ envChanges equat env
                                       ;  res <- absEval True av
                                       ;  return [(d,res)]
                                       }
+
+      IsFetch         d v          -> do
+                                      {  (c,_,av) <- readArray env v
+                                      ;  res <- absFetch av
+                                      ;  return [(d,res)]
+                                      }
+                                      
       IsApplication   d vs     ev  -> do 
                                       {  (c,_,absFun)  <-  readArray env (head vs)
                                       ;  (sfx,res) <-  absApply True absFun (tail vs) (Just ev)
@@ -145,7 +153,24 @@ envChanges equat env
          AbsBottom     -> return av
          AbsError _    -> return av
          _             -> return (AbsError ("cannot select " ++ show i ++ " from " ++ show av))
-         
+       
+    -- Introduced by Remy.
+    absFetch av
+      = case av of
+          -- So ptrs are other abstractvalues, that are also AbsPtr and have a ptrs field.
+          -- Does ptrs contain all the ptrs fields of its children?
+          AbsPtr nodes ptrs _ -> (True,const $ "absFetch") >?>
+                                 do { ptrValues <- mapM (readAV2 True env) (Set.toList ptrs)
+                                    ; let ptrNodes = map getNodes ptrValues
+                                    ; return (AbsNodes $ mconcat (nodes:ptrNodes))
+                                    } 
+          AbsBottom    ->  return av
+          AbsError _   ->  return av
+          _            ->  return $ undefined -- AbsError ("Variable passed to absField is not a location: " ++ show av)
+      where
+      getNodes (AbsPtr an _ _) = an    
+
+
     absEval c av
       = case av of
           AbsPtr an vs ws -> do { xw2 <- if c then findFinalValue c av else return AbsBottom
@@ -237,9 +262,10 @@ fixpoint procEqs env
                 }
         ; when debug debugPrint
 
-        ; if    changes>0
-          then  countFixpoint (count+1)
-          else  return count
+        ; (const $ "bloooo") >>>
+          if    changes>0
+          then  (const $ "blar") >>> countFixpoint (count+1)
+          else  (const $ "bleer") >>> return (trace "blieee" count)
         }
 
 procChange :: STArray s Variable (Bool,Bool,AbstractValue) -> (Int,AbstractValue) -> ST s Bool
@@ -322,7 +348,6 @@ solveEquationsBase env eqs lims = do
    ; _ <- mapM procEq eqs1a
               
    ; count <- fixpoint procEqs env
-  
    ; let limsMp = Map.fromList lims
          lims2 = [ (y,z) 
                  | IsEvaluation x y _ <- eqs1b
@@ -334,16 +359,16 @@ solveEquationsBase env eqs lims = do
          lims2Mp = Map.fromList lims2
                  
 
-   --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
-   ; (const $ "count = " ++ show count) >>> return ()
+   ; trace (seq (map show lims2) "jo") $ return ()
    ; mapM (procLimit env) lims2      
+   ; trace (seq (map show lims2) "jo2") $ return ()
 
    --; ae  <- getAssocs env
    --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
   
    ; absEnv0 <- mapArray (\(_,_,a)->a) env
    ; absEnv  <- unsafeFreeze absEnv0
-   ; return (count, absEnv)
+   ; trace ("county = " ++ show count) $ return (trace "countyyyy" count, absEnv)
    }
 
 procLimit env (x,ts)
@@ -359,7 +384,7 @@ limit env ts (AbsNodes (Nodes ns))
               = return (t `elem` ts)
             validTag (t@(GrTag_Fun (HNmNr f _)) , _)
               = do { ans <- readAV env f
-                   ; ls  <- limit env ts ans
+                   ; ls  <- trace ("lim" ++ show f) $ limit env ts ans
                    ; let ns2 = case ls of
                                  AbsNodes (Nodes ns) -> ns
                                  _                   -> Map.empty
