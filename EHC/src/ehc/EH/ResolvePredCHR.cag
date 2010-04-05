@@ -13,7 +13,8 @@ SEM Expr
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, @func.gathCnstrMp, @arg.gathCnstrMp]
   | TypeAs      loc         .   hereCnstrMp         =   foGathCnstrMp @fo_
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp, foGathCnstrMp @fo_fitDown, @expr.gathCnstrMp]
-  | Let         loc         .   gathCnstrMp         =   cnstrMpUnions [@toProveElsewhereCnstrMp,@body.gathCnstrMp]
+  | Let         loc         .   hereCnstrMp         =   gathPredLToAssumeCnstrMp @knPrL
+                loc         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@toProveElsewhereCnstrMp,@body.gathCnstrMp]
   | Lam         loc         .   hereCnstrMp         =   gathPredLToAssumeCnstrMp @knPrL
                 lhs         .   gathCnstrMp         =   cnstrMpUnions [@hereCnstrMp,@arg.gathCnstrMp,@body.gathCnstrMp]
 %%[[12
@@ -234,7 +235,7 @@ SEM Expr
   | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @tyVarMpDeclsL0}
                             .   toProveCnstrMp      =   @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
                             .   (toProveHereCnstrMp,toProveElsewhereCnstrMp)
-                                                    =   let (here,there) = Map.partitionWithKey (\k _ -> isLetProveCandidate @gTyTvS $ cnstrPred k) @toProveCnstrMp
+                                                    =   let (here,there) = Map.partitionWithKey (\k _ -> isLetProveCandidate @noLetQuantTyVarIdS $ cnstrPred k) @toProveCnstrMp
                                                         in  (here, predOccCnstrMpLiftScope @predScope there)
                             .   (toProveHereCnstrMpCanon,chrSolve1RemCnstrMp,cannotRes1CnstrMp,chrSolve1SimpTyVarMp,chrSolve1Errs,chrSimplifyResult1,chrSolve1EvidMp
 %%[[(9 codegen)
@@ -247,7 +248,7 @@ SEM Expr
                                                     =   debugInfo @chrSimplifyResult1
 
                             .   (toAssumeNeverCnstrMp,_)
-                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure @gTyTvS $ cnstrPred k) @chrSolve1RemCnstrMp
+                                                    =   Map.partitionWithKey (\k _ -> isLetProveFailure @noLetQuantTyVarIdS $ cnstrPred k) @chrSolve1RemCnstrMp
                             .   cannotProveCnstrMp  =   cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
                             .   (_,chrSolve2RemCnstrMp,_,chrSolve2SimpTyVarMp,chrSolve2Errs,chrSimplifyResult2,_
@@ -263,11 +264,6 @@ SEM Expr
                 loc         .   lUniq4              :   UNIQUEREF gUniq
                 loc         .   lUniq5              :   UNIQUEREF gUniq
 %%]
-  | Let         loc         .   chrProveFIIn        =   @chrFIIn {fiVarMp = @tyVarMpDeclsL0}
-                            .   toProveCnstrMp      =   (\c -> tr ("Let.toProveCnstrMp " ++ show @lUniq) (pp (show c)) c) $ 
-                                                        @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
-                            .   cannotProveCnstrMp  =   (\c -> tr ("Let.cannotProveCnstrMp " ++ show @lUniq) (pp (show c)) c) $ 
-                                                        cnstrMpUnions [@toAssumeNeverCnstrMp,@cannotRes1CnstrMp]
 
 %%[(9 hmtyinfer)
 SEM Decl
@@ -483,7 +479,7 @@ SEM Decl
                             .   chrAssumeDeclsCtxtBindL =   mkAssumeBindings @chrCtxtArgUIDL @chrEvidBindMp
 
 SEM Expr
-  | AppTop Rec Lam
+  | AppTop Rec Lam Let
 %%[[12
     LamImpl
 %%]]

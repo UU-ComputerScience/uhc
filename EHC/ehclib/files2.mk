@@ -14,7 +14,7 @@ EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
 											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array C/String) \
 											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt Posix/Types) \
 											$(patsubst %,Text/%.hs,ParserCombinators/ReadPrec Read Show Show/Functions) \
-											$(patsubst %,Control/%.hs,Monad Category Monad/Instances)
+											$(patsubst %,Control/%.hs,Monad Category Monad/Instances Arrow)
 EHCLIB_SYNC_ALL_PKG_array_ASIS			:= 
 EHCLIB_SYNC_ALL_PKG_array_C				:= 
 EHCLIB_SYNC_ALL_PKG_array				:=
@@ -128,6 +128,7 @@ EHCLIB_GHCSYNC_FROZEN_DRV_ARCH			:= $(EHCLIB_BLD_SYNC_PREFIX)$(EHCLIB_GHCSYNC_FR
 EHCLIB_BASE_OPTS						= -O2
 
 EHCLIB_DEBUG_OPTS						=
+#EHCLIB_DEBUG_OPTS						= -peh -v3
 #EHCLIB_DEBUG_OPTS						= --no-hi-check
 #EHCLIB_DEBUG_OPTS						= --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1
 #EHCLIB_DEBUG_OPTS						= --target-flavor=debug --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=1 --gen-cmt=1

@@ -47,7 +47,7 @@ SEM Decl
 
 %%[(9 hmtyinfer)
 SEM TyExprs
-  | Cons        hd          .   tyVarWildL          <   hd.clGam
+  | Cons        hd          .   tyVarWildMp         <   hd.clGam
 %%]
 
 %%[(9 hmtyinfer)

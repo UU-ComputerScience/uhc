@@ -89,9 +89,13 @@ mod2pkgMpUnions = foldr mod2pkgMpUnion Map.empty
 %%% Querying a PackageDatabase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(pkgDbSelectOnKey)
-pkgDbSelectOnKey :: PkgKey -> PackageDatabase -> PackageMp
-pkgDbSelectOnKey key@(pkgNm,mbVersion) db
+%%[99 export(pkgDbLookup)
+pkgDbLookup:: PkgKey -> PackageDatabase -> Maybe PackageInfo
+pkgDbLookup key db
+  = pkgMpLookup key $ pkgDbPkgMp db
+
+pkgDbSelectMpOnKey :: PkgKey -> PackageDatabase -> PackageMp
+pkgDbSelectMpOnKey key@(pkgNm,mbVersion) db
   = case mbVersion of
       Just pkgVersion -> case lkup of
                            Just m -> maybe emptyPackageMp (\i -> pkgMpSingletonL key i) $ Map.lookup mbVersion m
@@ -223,7 +227,7 @@ pkgDbSelectBySearchFilter searchFilters fullDb
         one cmb k (mp,e)
           | Map.null s = (mp,[mkErr_NamesNotIntrod emptyRange "package" [mkHNm k]] ++ e)
           | otherwise  = (cmb s mp,e)
-          where s = pkgDbSelectOnKey k fullDb
+          where s = pkgDbSelectMpOnKey k fullDb
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

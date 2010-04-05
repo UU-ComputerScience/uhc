@@ -34,5 +34,8 @@ DATA Ty
 %%[(1 hmtyinfer || hmtyast)
 DATA TyAnn
   | Empty
+%%[[4
+  | Mono		-- enforce predicative binding when matching
+%%]]
 %%]
 
