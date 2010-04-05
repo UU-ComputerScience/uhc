@@ -146,6 +146,7 @@ SEM Expr
 %%[2.Wild.pp
 SEM TyExpr
   | Wild        loc     .   pp      =   pp "..."
+  | Mono        loc     .   pp      =   pp "%..."
 %%]
 
 %%[3
@@ -163,7 +164,7 @@ SEM Decl
 
 %%[(5 hmtyinfer).Wild.pp
 SEM Decl
-  | TySig       loc     .   tyPP    :=  if null @tyExpr.tyVarWildL
+  | TySig       loc     .   tyPP    :=  if Map.null @tyExpr.tyVarWildMp
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
 %%]
@@ -369,7 +370,7 @@ SEM Expr
 %%[1010
 SEM Decl
   | DynVal      loc     .   pp      =   hsnDynVar >|< @nm >#< "=" >#< @expr.pp
-  | DynTySig    loc     .   tyPP    =   if null @tyExpr.tyVarWildL
+  | DynTySig    loc     .   tyPP    =   if Map.null @tyExpr.tyVarWild<p
                                         then  @tyExpr.pp
                                         else  ppTy @finalTy
                         .   pp      =   hsnDynVar >|< @nm >#< "::" >#< @tyPP

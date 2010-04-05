@@ -115,7 +115,8 @@ DATA TyExpr
 
 %%[2.TyExpr
 DATA TyExpr
-  | Wild
+  | Wild											-- wildcard tyvar over which the TyExpr will not quantify, but later let binding will
+  | Mono											-- same as Wild, but no quantification in the let binding either
 %%]
 
 %%[3.TyExpr

@@ -270,13 +270,22 @@ tyFixTyVars uniq t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer || hmtyast) export(setSubst)
+setSubst :: VarMp -> TyVarIdS -> TyVarIdS
+setSubst m s = ftvSet $ (m |=>) $ map mkTyVar $ Set.toList s
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% map VarMp keys to another key, filtering out non-keys.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(6 hmtyinfer || hmtyast) export(varmpMapTyVarKey)
 varmpMapTyVarKey :: VarMp -> VarMp -> VarMp
 varmpMapTyVarKey mMap m
-  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> mMap |=> mkTyVar v) $ varmpToAssocTyL m ]
+  = varmpUnions [ varmpTyUnit v x | (Ty_Var v _,x) <- assocLMapKey (\v -> tyUnAnn $ mMap |=> mkTyVar v) $ varmpToAssocTyL m ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -527,7 +527,8 @@ SEM Expr
                             .   letValBindL =   [(@howToValBind,@decls.valBindL)]
                             .   letValBindOtherL
                                             =   []
-                            .   tcexpr      =   foldr (\(c,b) e -> C.mkExprLet c b e) @letTCBody @letTCValBindRemL
+                            .   tcexprtop   =   foldr (\(c,b) e -> C.mkExprLet c b e) @letTCBody @letTCValBindRemL
+                            .   tcSubstTop  =   @body.tcSubst
   | App AppImpred
 %%[[12
     AppImpl
@@ -556,13 +557,15 @@ SEM Expr
                             .   tcSubstTop  =   @expr.tcSubst
   | Rec         loc         .   tcexprtop   =   @rtcexpr
                             .   tcSubstTop  =   @recExpr.tcSubst
-  | AppTop Rec  loc         .   (tcexpr,tcexprapptopCSubst)
+  | AppTop Rec Let
+                loc         .   (tcexpr,tcexprapptopCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
                                                     (ww,s1)   = C.coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @tcSubstTop [] @lamArgCoeLTC
                                                     (e ,s2)   = C.coeEvalOnAsSubst u2 ww @tcexprtop
                                                 in  (e, s1 `C.cSubstApp` s2)
   | AppTop      lhs         .   tcSubst     =   C.cSubstApp @expr.tcSubst @tcexprapptopCSubst
   | Rec         lhs         .   tcSubst     =   C.cSubstApp @recExpr.tcSubst @tcexprapptopCSubst
+  | Let         lhs         .   tcSubst     =   C.cSubstApp @body.tcSubst @tcexprapptopCSubst
   | Ann         loc         .   tcexpr      =   @tcTyArgLamWrap $ @tcTyArgAppWrap @expr.tcexpr
   | TypeAs      loc         .   (tcexpr,tcexprtypeasCSubst)
                                             :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
@@ -810,7 +813,7 @@ SEM DataFieldExpr
 %%[(8 codegen)
 SEM Expr
   | Sel         loc         .   tcoffset    =   C.tcInt (tyRecOffsetWithLkup (varmpTyLookupCyc2 @lhs.finTyVarMp) @lbl @expr.ty)
-                            .   tcexpr      =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq_fresh
+                            .   tcexpr      =   let  [n1,n2] = map uidHNm . mkNewUIDL 2 $ @lUniq_freshKnTy
                                                      ty n = C.tyErr ("Expr.Sel.fld: " ++ show n)
                                                 in   C.mkExprSelCase @rceEnvTC (Just (n1,ty n1)) @expr.tcexpr CTagRec n2 {- @lbl -} @tcoffset Nothing
 %%]
@@ -1138,7 +1141,7 @@ SEM Expr
                                                         ++
 %%]]
                                                         [C.mkLamCoe1 @arg.topNm @ctyLamArgHere]
-  | AppTop Rec
+  | AppTop Rec Let
 %%[[8
                 loc         .   lamArgCoeLTC        =   []
 %%][9

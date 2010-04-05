@@ -83,6 +83,9 @@
 %%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
 
+%%[(11 hmtyinfer) hs import({%{EH}Ty.Trf.BetaReduce}(tyBetaRedFull))
+%%]
+
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
 %%]
 
@@ -109,7 +112,7 @@
 WRAPPER AGItf
 %%]
 
-%%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
+%%[(1 hmtyinfer) ag import({EH/InferUtils},{EH/Infer},{EH/InferExpr},{EH/InferTyUpDown},{EH/InferPatExpr},{EH/InferTyExpr},{EH/InferInit})
 %%]
 %%[(2 hmtyinfer) ag import({EH/FinalInfo})
 %%]

@@ -854,7 +854,7 @@ tokOpStrsHS9   = [  ]
 %%]
 
 %%[10
-tokOpStrsEH10  = [ show hsnDynVar ]
+tokOpStrsEH10  = [] -- [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 

@@ -759,23 +759,102 @@ SEM ContextedExpression
 %%]
 
 %%[5 hs
+-- original with mono restriction
 ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr -> EH.Expr
 ehGenerator r p mkRes fail e
   = EH.mkLet r
       (Just
-        [rngLift r EH.Decl_Val
-           (rngLift r EH.PatExpr_Var ok)
-           (rngLift r EH.Expr_Lam
-             (rngLift r EH.PatExpr_Var x)
-             (EH.mkCase r
-               (rngLift r EH.Expr_Var x)
-               [(p,e),(rngLift r EH.PatExpr_Var hsnWild,fail)]
-           ) )
-        ])
+         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `mkArrow` mk1App mono mono)
+         , 
+           rngLift r EH.Decl_Val
+             (rngLift r EH.PatExpr_Var ok)
+             (rngLift r EH.Expr_Lam
+               (rngLift r EH.PatExpr_Var x)
+               (EH.mkCase r
+                 (rngLift r EH.Expr_Var x)
+                 [(p,e),(rngLift r EH.PatExpr_Var hsnWild,fail)]
+             ) )
+{-
+         , rngLift r EH.Decl_TySig res mono
+         , rngLift r EH.Decl_Val
+             (rngLift r EH.PatExpr_Var res)
+             (mkRes (rngLift r EH.Expr_Var ok))
+-}
+         ])
+      (mkRes (rngLift r EH.Expr_Var ok))
+      -- (rngLift r EH.Expr_Var res)
+  where ok   = mkHNmHidden "ok"
+        res  = mkHNmHidden "ok_app"
+        x    = mkHNmHidden "x"
+        mono = rngLift r EH.TyExpr_Mono
+%%]
+-- directly inlining
+ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr -> EH.Expr
+ehGenerator r p mkRes fail e
+{-
+  = EH.mkLet r
+      (Just
+         [ rngLift r EH.Decl_Val (rngLift r EH.PatExpr_Var ok) okLam
+         ])
+      (mkRes (rngLift r EH.Expr_Var ok))
+-}
+  = mkRes okLam
+  where ok = mkHNmHidden "ok"
+        x  = mkHNmHidden "x"
+        okLam =
+             (rngLift r EH.Expr_Lam
+               (rngLift r EH.PatExpr_Var x)
+               (EH.mkCase r
+                 (rngLift r EH.Expr_Var x)
+                 [(p,e),(rngLift r EH.PatExpr_Var hsnWild,fail)]
+             ) )
+
+-- original
+ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr -> EH.Expr
+ehGenerator r p mkRes fail e
+  = EH.mkLet r
+      (Just
+         [ rngLift r EH.Decl_Val
+             (rngLift r EH.PatExpr_Var ok)
+             (rngLift r EH.Expr_Lam
+               (rngLift r EH.PatExpr_Var x)
+               (EH.mkCase r
+                 (rngLift r EH.Expr_Var x)
+                 [(p,e),(rngLift r EH.PatExpr_Var hsnWild,fail)]
+             ) )
+         ])
       (mkRes (rngLift r EH.Expr_Var ok))
   where ok = mkHNmHidden "ok"
         x  = mkHNmHidden "x"
-%%]
+
+-- original with mono restriction
+ehGenerator :: Range -> EH.PatExpr -> (EH.Expr -> EH.Expr) -> EH.Expr -> EH.Expr -> EH.Expr
+ehGenerator r p mkRes fail e
+  = EH.mkLet r
+      (Just
+         [ {- -} rngLift r EH.Decl_TySig ok ([mono] `mkArrow` mk1App mono mono)
+         , 
+           rngLift r EH.Decl_Val
+             (rngLift r EH.PatExpr_Var ok)
+             (rngLift r EH.Expr_Lam
+               (rngLift r EH.PatExpr_Var x)
+               (EH.mkCase r
+                 (rngLift r EH.Expr_Var x)
+                 [(p,e),(rngLift r EH.PatExpr_Var hsnWild,fail)]
+             ) )
+{-
+         , rngLift r EH.Decl_TySig res mono
+         , rngLift r EH.Decl_Val
+             (rngLift r EH.PatExpr_Var res)
+             (mkRes (rngLift r EH.Expr_Var ok))
+-}
+         ])
+      (mkRes (rngLift r EH.Expr_Var ok))
+      -- (rngLift r EH.Expr_Var res)
+  where ok   = mkHNmHidden "ok"
+        res  = mkHNmHidden "ok_app"
+        x    = mkHNmHidden "x"
+        mono = rngLift r EH.TyExpr_Mono
 
 %%[9
 ATTR Statements [ | | eh USE {:} {[]}: {[(EH.Expr,EH.Expr -> EH.Expr)]} ]

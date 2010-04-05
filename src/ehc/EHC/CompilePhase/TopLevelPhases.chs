@@ -53,6 +53,8 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 %%[(8 codegen java) import({%{EH}EHC.CompilePhase.CompileJVM})
 %%]
+%%[99 import({%{EH}Base.PackageDatabase})
+%%]
 %%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
 %%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
@@ -340,7 +342,11 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSStart
 %%]]
              -> do { cpEhcHaskellModulePrepareHS1 modNm
-                   ; modNm2 <- cpEhcHaskellImport stnext modNm
+                   ; modNm2 <- cpEhcHaskellImport stnext
+%%[[99
+                                                  (pkgExposedPackages $ ehcOptPkgDb opts)
+%%]]
+                                                  modNm
                    ; cpEhcHaskellModulePrepareHS2 modNm2
                    ; cpMsg modNm2 VerboseNormal ("Imports of " ++ hsstateShowLit st ++ "Haskell")
                    ; when (ehcOptVerbosity opts >= VerboseDebug)
@@ -377,7 +383,11 @@ cpEhcModuleCompile1 targHSState modNm
                || st == LHSOnlyImports
 %%]]
              -> do { cpMsg modNm VerboseMinimal ("Compiling " ++ hsstateShowLit st ++ "Haskell")
-                   ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st modNm
+                   ; cpEhcHaskellModuleAfterImport (ecuIsTopMod ecu) opts st
+%%[[99
+                                                   (pkgExposedPackages $ ehcOptPkgDb opts)
+%%]]
+                                                   modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSHaskell HSAllSem))
                    ; return defaultResult
                    }
@@ -400,7 +410,11 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUSHaskell HSStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Haskell"
                    ; cpEhcHaskellModulePrepare modNm
-                   ; cpEhcHaskellParse True False modNm
+                   ; cpEhcHaskellParse True False
+%%[[99
+                                       (pkgExposedPackages $ ehcOptPkgDb opts)
+%%]]
+                                       modNm
                    ; cpEhcHaskellModuleCommonPhases True True opts modNm
                    ; when (ehcOptFullProgAnalysis opts)
                           (cpEhcCoreGrinPerModuleDoneFullProgAnalysis (ehcOptEarlyModMerge opts) modNm)
@@ -499,9 +513,23 @@ Post module import common phases: Parse + Module analysis + HS common
 %%]
 
 %%[20
-cpEhcHaskellModuleAfterImport :: Bool -> EHCOpts -> HSState -> HsName -> EHCompilePhase ()
-cpEhcHaskellModuleAfterImport isTopMod opts hsst modNm
-  = cpSeq [ cpEhcHaskellParse False (hsstateIsLiteral hsst) modNm
+cpEhcHaskellModuleAfterImport
+  :: Bool -> EHCOpts -> HSState
+%%[[99
+     -> [PkgKey]
+%%]]
+     -> HsName -> EHCompilePhase ()
+cpEhcHaskellModuleAfterImport
+     isTopMod opts hsst
+%%[[99
+     pkgKeyL
+%%]]
+     modNm
+  = cpSeq [ cpEhcHaskellParse False (hsstateIsLiteral hsst)
+%%[[99
+                              pkgKeyL
+%%]]
+                              modNm
           , cpEhcHaskellAnalyseModuleItf modNm
           , cpEhcHaskellModuleCommonPhases isTopMod False opts modNm
           , cpEhcHaskellModulePostlude modNm
@@ -572,13 +600,23 @@ Get import information from module source text.
 %%]
 
 %%[20
-cpEhcHaskellImport :: HSState -> HsName -> EHCompilePhase HsName
-cpEhcHaskellImport hsst modNm
+cpEhcHaskellImport
+  :: HSState
+%%[[99
+     -> [PkgKey]
+%%]]
+     -> HsName -> EHCompilePhase HsName
+cpEhcHaskellImport
+     hsst
+%%[[99
+     pkgKeyL
+%%]]
+     modNm
   = do {
 %%[[20
          cpParseHsImport modNm
 %%][99
-         cpPreprocessWithCPP modNm
+         cpPreprocessWithCPP pkgKeyL modNm
        ; cpParseHsImport (hsstateIsLiteral hsst) modNm
 %%]]
        ; cpStepUID
@@ -592,13 +630,23 @@ Parse a Haskell module
 %%]
 
 %%[8
-cpEhcHaskellParse :: Bool -> Bool -> HsName -> EHCompilePhase ()
-cpEhcHaskellParse doCPP litmode modNm
+cpEhcHaskellParse
+  :: Bool -> Bool
+%%[[99
+     -> [PkgKey]
+%%]]
+     -> HsName -> EHCompilePhase ()
+cpEhcHaskellParse
+     doCPP litmode
+%%[[99
+     pkgKeyL
+%%]]
+     modNm
   = cpSeq (
 %%[[8
              [ cpParseHs modNm ]
 %%][99
-             (if doCPP then [cpPreprocessWithCPP modNm] else [])
+             (if doCPP then [cpPreprocessWithCPP pkgKeyL modNm] else [])
           ++ [ cpParseHs litmode modNm ]
 %%]]
           ++ [ cpMsg modNm VerboseALot "Parsing done"

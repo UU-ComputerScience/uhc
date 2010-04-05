@@ -175,43 +175,6 @@ emptyPredOccId = mkPrId uidStart
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ordered sequence, 'delayed concat' list
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-%%]
-newtype Seq a = Seq ([a] -> [a])
-
-emptySeq :: Seq a
-emptySeq = Seq id
-
-mkSeq :: [a] -> Seq a
-mkSeq l = Seq (l++)
-
-unitSeq :: a -> Seq a
-unitSeq e = Seq (e:)
-
-concatSeq :: Seq a -> Seq a -> Seq a
-concatSeq (Seq s1) (Seq s2) = Seq (s1.s2)
-
-concatSeqs :: [Seq a] -> Seq a
-concatSeqs = foldr (<+>) emptySeq
-
-infixr 5 <+>
-
-(<+>) :: Seq a -> Seq a -> Seq a
-(<+>) = concatSeq
-
-seqToList :: Seq a -> [a]
-seqToList (Seq s) = s []
-
-instance Functor Seq where
-  fmap f = mkSeq . map f . seqToList
-
-filterSeq :: (a -> Bool) -> Seq a -> Seq a
-filterSeq p = mkSeq . filter p . seqToList
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantics classes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
