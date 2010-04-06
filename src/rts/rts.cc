@@ -53,6 +53,7 @@ void globalsSetup(int argc, char** argv)
 WPtr SP, RP ;
 WPtr Stack, ReturnArea, LocalsArea ;
 
+#ifdef __UHC_TARGET_C__
 Word 
   Ret0,  Ret1,  Ret2,  Ret3,  Ret4,  Ret5,  Ret6,  Ret7,  Ret8,  Ret9
 , Ret10, Ret11, Ret12, Ret13, Ret14, Ret15, Ret16, Ret17, Ret18, Ret19
@@ -76,7 +77,7 @@ Word
 , Loc70, Loc71, Loc72, Loc73, Loc74, Loc75, Loc76, Loc77, Loc78, Loc79
 , Loc80, Loc81, Loc82, Loc83, Loc84, Loc85, Loc86, Loc87, Loc88, Loc89
 , Loc90, Loc91, Loc92, Loc93, Loc94, Loc95, Loc96, Loc97, Loc98, Loc99;
-
+#endif
 
 WPtr StackAreaHigh, StackAreaLow ;
 
@@ -88,7 +89,7 @@ WPtr HeapAreaHigh;
 %%]
 
 %%[8
-void memorySetup()
+void memory_Initialization()
 {
 #if USE_BOEHM_GC
     GC_INIT() ;
@@ -117,6 +118,13 @@ void memorySetup()
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
     
+}
+
+void memory_Finalization()
+{
+#	if USE_EHC_MM
+    	mm_exit() ;
+#	endif
 }
 %%]
 
@@ -150,7 +158,7 @@ Word heapalloc(int n)
 
 int main_Sil_Init1(int argc, char** argv)
 {
-	memorySetup() ;
+	memory_Initialization() ;
 %%[[99
 	globalsSetup( argc, argv ) ;
 %%]]
@@ -180,6 +188,7 @@ int main_Sil_Exit(int argc, char** argv)
 		double clockDiff = ((double)clockStop - (double)clockStart) / CLOCKS_PER_SEC ;
 		printf("Time %.3f secs\n", clockDiff ) ;
 #	endif
+	memory_Finalization() ;
     return 0;
 }
 
@@ -211,7 +220,7 @@ extern unsigned long gb_StepCounter;
 
 int main_GB_Init1(int argc, char** argv, int* nRtsOpt)
 {
-	memorySetup() ;
+	memory_Initialization() ;
 %%[[99
 	globalsSetup( argc, argv ) ;
 %%]]
@@ -333,6 +342,7 @@ int main_GB_Exit(int argc, char** argv)
 	// mm_deque_Test() ;
 	// mm_plan_Test() ;
 #endif
+	memory_Finalization() ;
 	return 0 ;
 }
 #endif

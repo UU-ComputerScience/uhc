@@ -26,6 +26,9 @@ typedef struct MM_Plan {
   	// setup with a particular MM_Pages
   	void			 			(*init)( struct MM_Plan* ) ;
   	
+  	// stop
+  	void			 			(*exit)( struct MM_Plan* ) ;
+  	
 #if MM_BYPASS_PLAN
   	// setup bypass for efficiency
   	void			 			(*initBypass)( struct MM_Plan* ) ;
@@ -55,10 +58,11 @@ extern MM_Plan mm_plan ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Initialization
+%%% Initialization, Finalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
 extern void mm_init_plan() ;
+extern void mm_exit_plan() ;
 %%]
 

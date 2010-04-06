@@ -135,6 +135,14 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init C plan=%x plss=%x\n",plan,plss);}) ;
 }
 
+void mm_plan_SS_Exit( MM_Plan* plan ) {
+	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
+	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init plan=%x plss=%x\n",plan,plss);}) ;
+%%[[94
+	plss->weakPtr->finalizeAllWeakPtr( plss->weakPtr ) ;
+%%]]
+}
+
 #if MM_BYPASS_PLAN
 void mm_plan_SS_InitBypass( MM_Plan* plan ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
@@ -231,6 +239,7 @@ MM_Plan mm_plan_SS =
 	{ NULL
 	, NULL
 	, &mm_plan_SS_Init
+	, &mm_plan_SS_Exit
 #if MM_BYPASS_PLAN
 	, &mm_plan_SS_InitBypass
 #endif
