@@ -73,7 +73,7 @@ envChanges equat env
       ; IsEvaluation    d v      ev  -> d
       ; IsApplication   d vs     ev  -> d
       ; IsFetch         d vs         -> d
-      } in if True {-d == 222-} then trace ("eq = " ++ show equat) a else a) $                                      
+      } in if False {-d == 222-} then trace ("eq = " ++ show equat) a else a) $                                      
     case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
       
@@ -159,7 +159,7 @@ envChanges equat env
       = case av of
           -- So ptrs are other abstractvalues, that are also AbsPtr and have a ptrs field.
           -- Does ptrs contain all the ptrs fields of its children?
-          AbsPtr nodes ptrs _ -> (True,const $ "absFetch") >?>
+          AbsPtr nodes ptrs _ -> (False,const $ "absFetch") >?>
                                  do { ptrValues <- mapM (readAV2 True env) (Set.toList ptrs)
                                     ; let ptrNodes = map getNodes ptrValues
                                     ; return (AbsNodes $ mconcat (nodes:ptrNodes))
@@ -183,7 +183,7 @@ envChanges equat env
           _            ->  return $ AbsError ("Variable passed to eval is not a location: " ++ show av)
 
 
-    findFinalValue c v = (True,const $ "findFinalValue, v = " ++ show v) >?>
+    findFinalValue c v = (False,const $ "findFinalValue, v = " ++ show v) >?>
       case v of
         AbsBottom -> return AbsBottom
         (AbsPtr (Nodes nodes) _ ws) -> do 
@@ -262,10 +262,9 @@ fixpoint procEqs env
                 }
         ; when debug debugPrint
 
-        ; (const $ "bloooo") >>>
-          if    changes>0
-          then  (const $ "blar") >>> countFixpoint (count+1)
-          else  (const $ "bleer") >>> return (trace "blieee" count)
+        ; if    changes>0
+          then  countFixpoint (count+1)
+          else  return count
         }
 
 procChange :: STArray s Variable (Bool,Bool,AbstractValue) -> (Int,AbstractValue) -> ST s Bool
@@ -274,7 +273,7 @@ procChange env (i,e1) =
    do { (c,_,e0) <- readArray env i
       ; let e2       =  e0 `mappend` e1
             changed  =  e0 /= e2
-      ; when changed (writeArray env i (c,True,e2) <?< (True,const $ "hptChange = " ++ show (i,e2)))
+      ; when changed (writeArray env i (c,True,e2) <?< (False,const $ "hptChange = " ++ show (i,e2)))
       --; when changed (trace ("change " ++ show i ++ " from " ++ show e0 ++ "\n             to " ++ show e2) (return ()))
       ; return changed
       }
@@ -356,19 +355,16 @@ solveEquationsBase env eqs lims = do
                  , let z=fromJust mbz 
                  ]
                  ++ lims
-         lims2Mp = Map.fromList lims2
-                 
+         lims2Mp = Map.fromList lims2            
 
-   ; trace (seq (map show lims2) "jo") $ return ()
    ; mapM (procLimit env) lims2      
-   ; trace (seq (map show lims2) "jo2") $ return ()
 
    --; ae  <- getAssocs env
    --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
   
    ; absEnv0 <- mapArray (\(_,_,a)->a) env
    ; absEnv  <- unsafeFreeze absEnv0
-   ; trace ("county = " ++ show count) $ return (trace "countyyyy" count, absEnv)
+   ; return (count, absEnv)
    }
 
 procLimit env (x,ts)
@@ -384,7 +380,7 @@ limit env ts (AbsNodes (Nodes ns))
               = return (t `elem` ts)
             validTag (t@(GrTag_Fun (HNmNr f _)) , _)
               = do { ans <- readAV env f
-                   ; ls  <- trace ("lim" ++ show f) $ limit env ts ans
+                   ; ls  <- limit env ts ans
                    ; let ns2 = case ls of
                                  AbsNodes (Nodes ns) -> ns
                                  _                   -> Map.empty

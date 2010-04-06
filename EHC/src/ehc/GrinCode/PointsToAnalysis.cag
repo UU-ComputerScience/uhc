@@ -121,7 +121,7 @@ SEM GrAGItf
 %%]
 
 %%[(8 codegen grin)
-ATTR AllGrVal AllGrTag  [ | | self : SELF ]
+ATTR AllGrVal AllGrTag AllGrPat [ | | self : SELF ]
 %%]
 
 
@@ -373,15 +373,13 @@ SEM GrGlobal
 
 ATTR AllAlt [ | | tags USE {++} {[]} : {[GrTag]} ]
 
-
 ATTR GrExpr [ | | makeLimited : {GrTag->Limitations} ]
-
 
 SEM GrExpr
   | Case         lhs . limitations  =  maybe []
                                              (\v -> [ (v, @altL.tags) ])
                                              @val.var
-                                       ++ @altL.limitations
+                                       ++ @altL.limitations         
 
   | Seq          lhs . limitations  =  (maybe []
                                               (\t -> @expr.makeLimited t)
@@ -398,22 +396,43 @@ SEM GrExpr
 SEM GrAlt
   | Alt          lhs . tags         =  maybe []
                                              (\t -> [t])
-                                             @pat.tag
+                                             @pat.tag                                       
+
+{
+handleIdentException ann targetInfo pat stdEquations = 
+  if ann == GrAltAnnIdent
+  then case pat of
+    (GrPatAlt_Node tag fldL) 
+        -> [IsConstruction targetVar tag (map (Just . getNr) fldL) Nothing]
+    _   -> error ("line 412 PointsToAnalysis.cag"
+                ++ "\npat = " ++ show pat
+                )
+  else stdEquations
+  
+  where
+  targetVar = case targetInfo of
+    InVar var -> var
+    InBasic var -> var
+    _ -> error ("line 412 PointsToAnalysis.cag" ++
+            "\ntargetinfo = " ++ show targetInfo)
+}
 
 {-
 In every alternative,
 a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
 -}
 SEM GrAlt
-  | Alt  lhs . equations  =  case (@pat.patInfo, @lhs.valInfo) of
-                               (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
-                               (InNode ttag tnms, InNode stag snms  ) -> if ttag==stag 
-                                                                         then buildUnifyEquations  snms tnms
-                                                                         else []
-                               (_               , InEnum _ _)  -> []
-                               (pat             , val       )  -> error ("HPT: Alternative scrutinee " ++ show val ++ " must be a variable, pattern " ++ show pat ++ " a node")
-                             ++ @expr.equations
-       
+  | Alt  loc.stdEquations  =  case (@pat.patInfo, @lhs.valInfo) of
+                                      (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
+                                      (InNode ttag tnms, InNode stag snms  ) -> if ttag==stag 
+                                                                                then buildUnifyEquations  snms tnms
+                                                                                else []
+                                      (_               , InEnum _ _)  -> []
+                                      (pat             , val       )  -> error ("HPT: Alternative scrutinee " ++ show val ++ " must be a variable, pattern " ++ show pat ++ " a node")
+                                    ++ @expr.equations
+                             
+         -- Added by Remy Willems.             
+  | Alt  lhs.equations = handleIdentException @ann @lhs.targetInfo @pat.self @loc.stdEquations       
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
