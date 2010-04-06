@@ -9,12 +9,12 @@
 %%% To keep sharing when doing partial applications, this will only raise nested lambdas.
 %%%
 %%% For example:
-%%% > \[x] -> \[y] -> let g = f x y
-%%% >                 in \[z] -> g z
+%%% > \[a] -> \[b] -> let g = f a b
+%%% >                 in \[c] -> [d] -> g c
 %%%
 %%% Becomes:
-%%% > \[x, y] -> let g = f x y
-%%% >            in \[z] -> g z
+%%% > \[a, b] -> let g = f a b
+%%% >            in \[c, d] -> g c
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise}
@@ -26,10 +26,10 @@
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras)
+%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.List)
 %%]
 
-%%[(8 codegen) hs import(Data.Maybe)
+%%[(8 codegen) hs import(qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen) hs import({%{EH}TyCore})
@@ -43,7 +43,7 @@
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
 WRAPPER AGItf
 %%]
 
@@ -60,6 +60,22 @@ cmodTrfDefinitionSiteArityRaise :: Module -> Module
 cmodTrfDefinitionSiteArityRaise tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
+
+-- Status of Worker/Wrapper transformation
+data WorkWrap
+  = Introduced      -- A Worker and Wrapper were introduced
+  | UpdatedWorker   -- Worker was updated
+  | UpdatedWrapper  -- Wrapper was updated
+  | Ignored         -- Nothing was done
+  deriving Show
+
+(|||) :: WorkWrap -> WorkWrap -> WorkWrap
+x              ||| Ignored        = x
+Ignored        ||| y              = y
+Introduced     ||| Introduced     = Introduced
+UpdatedWorker  ||| UpdatedWorker  = UpdatedWorker
+UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
+_              ||| _              = error "(|||): Can't merge arguments."
 %%]
 
 %%[(8 codegen)
@@ -73,81 +89,108 @@ SEM AGItf
 ATTR AllCodeNT
   [
   |
-  | cTrf : SELF
-    worker : SELF
+  | cTrf    : SELF
+    worker  : SELF
     wrapper : SELF
   ]
 ATTR AllExpr
   [
   |
-  | hasWorker USE {||} {False} : {Bool}
+  | hasWorker USE {||}  {False}   : {Bool}
+    workWrap  USE {|||} {Ignored} : {WorkWrap}
+    arrTail  : SELF
   ]
 ATTR Expr
   [
   |
   |
-    lamArgs  : {[Expr]}
-    lamTails : {[Expr]}
+    workerArgs : {[Expr]}
+    nrArgs   : {[Int]}
+    lamArgs  : {[[Expr]]}
     arrArgs  : {[Expr]}
     arrTails : {[Expr]}
   ]
 
 SEM ValBindL
-  | Cons        lhs         .   cTrf        =   if @hd.hasWorker
-                                                then @hd.worker : @hd.wrapper : @tl.cTrf
-                                                else @hd.cTrf : @tl.cTrf
+  | Cons        lhs         .   cTrf        =   case @hd.workWrap of
+                                                  Ignored        -> @hd.cTrf : @tl.cTrf
+                                                  Introduced     -> @hd.worker : @hd.wrapper : @tl.cTrf
+                                                  UpdatedWorker  -> @hd.worker : @tl.cTrf
+                                                  UpdatedWrapper -> @hd.wrapper : @tl.cTrf
+
+-- Worker/Wrapper
+SEM ValBind
+  | Val
+                lhs         .   workWrap    =   case (@isWorker, @isWrapper, @hasWorker) of
+                                                  (True,  False, True) -> UpdatedWorker
+                                                  (False, True,  True) -> UpdatedWrapper
+                                                  (False, False, True) -> Introduced
+                                                  (_,     _,     _)    -> Ignored
+                loc         .   isWorker    =   "_worker" `isSuffixOf` (show @nm)
+                            .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
+                            .   hasWorker   =   list False (\x _ -> length x > 1) @l0.lamArgs
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
 
 -- Worker
 SEM ValBind
   | Val
-                lhs         .   hasWorker   =   isJust @newLamTail
-                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newArr @newLam
-                loc         .   newLam      =   maybe @l0.cTrf
-                                                      (\e -> Expr_Lam (Expr_Seq @newLamSeq) e)
-                                                      @newLamTail
-                loc         .   newArr      =   maybe @l1.cTrf
-                                                      (\e -> Expr_Arrow (Expr_Seq @newArrSeq) e)
-                                                      @newArrTail
-                loc         .   newLamSeq   =   concatMap seqToList @l0.lamArgs
-                            .   newLamTail  =   if @nrArgs > 1
-                                                then Just $ @l0.lamTails !! (@nrArgs - 1)
-                                                else Nothing
-                            .   newArrSeq   =   take (@nrArgs) $ concatMap seqToList @l1.arrArgs
-                            .   newArrTail  =   if @nrArgs > 1
-                                                then Just $ @l1.arrTails !! (@nrArgs - 1)
-                                                else Nothing
-                            .   nrArgs      =   length @loc.newLamSeq
-                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newType @newBody
+                loc         .   newType     =   bar @l0.lamArgs @l1.arrArgs @l1.arrTail
+                            .   newBody     =   foo @l0.workerArgs @l0.worker
 
 -- Wrapper
 SEM ValBind
   | Val
-                lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapLambdas
-                loc         .   wrapLambdas =   foldr Expr_Lam (@wrapBody) @l0.lamArgs
-                            .   wrapBody    =   foldl Expr_App (Expr_Var @workerNm `Expr_App` @fstSeq) @sndSeq
-                            .   fstSeq      =   Expr_Seq . mkTySeqVals . map (mkExprThunk . mkExprUnThunk . Expr_Var)
-                                                  $ take @nrArgs @varNms
-                            .   sndSeq      =   map (Expr_Seq . mkTySeqVals . return . mkExprThunk . mkExprUnThunk . Expr_Var)
-                                                  $ drop @nrArgs @varNms
-                            .   varNms      =   mapMaybe bindNm @newLamSeq
+                lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
+                loc         .   varNms      =   mapMaybe bindNm $ concatMap seqToList (concat @l0.lamArgs)
+                            .   wrapperBody =   foldr Expr_Lam (foldl Expr_App (Expr_Var @workerNm) $ baz @l0.lamArgs @varNms) (concat @l0.lamArgs)
 
 -- Collect lambda args and bodies
 SEM Expr
+  | Let
+                lhs         .   lamArgs     =   [] : @body.lamArgs
+                lhs         .   nrArgs      =   0 : @body.nrArgs
+                            .   worker      =   Expr_Let @categ @vbinds.cTrf (foo @body.workerArgs @body.worker)
   | Lam
-                lhs         .   lamArgs     =   @arg.cTrf : @res.lamArgs
-                            .   lamTails    =   @res.cTrf : @res.lamTails
+                lhs         .   workerArgs  =   @arg.copy : @res.workerArgs
+                lhs         .   lamArgs     =   let (x:xs) = @res.lamArgs
+                                                in (@arg.copy : x) : xs
+                            .   nrArgs      =   list [1] (\x xs -> x+1:xs) @res.nrArgs
+                            .   worker      =   @res.worker
   | Arrow
-                lhs         .   arrArgs     =   @arg.cTrf : @res.arrArgs
-                            .   arrTails    =   @res.cTrf : @res.arrTails
+                lhs         .   arrArgs     =   @arg.copy : @res.arrArgs
+                            .   arrTails    =   @res.copy : @res.arrTails
+                            .   arrTail     =   @res.arrTail
   | * - Lam Arrow
-                lhs         .   lamArgs     =   []
-                            .   lamTails    =   []
+                lhs         .   workerArgs  =   []
                             .   arrArgs     =   []
                             .   arrTails    =   []
+  | * - Lam Let
+                lhs         .   lamArgs     =   [[]]
+                lhs         .   nrArgs      =   []
 
 {
+list :: b -> (a -> [a] -> b) -> [a] -> b
+list b _ []     = b
+list _ f (x:xs) = f x xs
+
+
+foo :: [Expr] -> Expr -> Expr
+foo args body = Expr_Lam (Expr_Seq $ concatMap seqToList args) body
+
+bar :: [[Expr]] -> [Expr] -> Expr -> Expr
+bar []     _    res = res
+bar (x:xs) args res = Expr_Arrow (Expr_Seq $ concatMap seqToList (take (length x) args))
+                                 (bar xs (drop (length x) args) res)
+
+baz :: [[Expr]] -> [HsName]-> [Expr]
+baz []     _    = []
+baz (x:xs) nms = Expr_Seq (mkTySeqVals (map Expr_Var (take (length x) nms))) : baz xs (drop (length x) nms)
+
 bindNm :: ExprSeq1 -> Maybe HsName
 bindNm (ExprSeq1_L0Bind nm _ _) = Just nm
+bindNm (ExprSeq1_L1Bind nm _)   = Just nm
+bindNm (ExprSeq1_L2Bind nm _)   = Just nm
 bindNm _                        = Nothing
 
 seqToList :: Expr -> [ExprSeq1]

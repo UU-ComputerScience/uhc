@@ -1,0 +1,69 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construct a Type Environment, to be used in other AG transformations.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) ag import({TyCore/AbsSyn})
+%%]
+
+%%[(8 codegen)
+ATTR AllExpr
+  [
+  |
+  | copy : SELF
+  ]
+ATTR AllExpr
+  [ tyEnv       : {Map.Map HsName Ty}
+  |
+  | newTyEnv    USE {`Map.union`} {Map.empty} : {Map.Map HsName Ty}
+  ]
+
+{
+lazyElem :: HsName -> Map.Map HsName Ty -> Bool
+lazyElem nm mp = maybe False isLazy $ Map.lookup nm mp
+
+isLazy Expr_Lazy{} = True
+isLazy _           = False
+}
+
+
+-- Top level environment propagation
+
+SEM Module
+  | Mod
+                tbinds      .   tyEnv       =   Map.empty
+                vbinds      .   tyEnv       =   @vbinds.newTyEnv
+
+
+-- Let environment stitching
+
+SEM Expr
+  | Let
+                lhs         .   newTyEnv    =   Map.empty
+                vbinds      .   tyEnv       =   if @categ == ValBindCateg_Rec
+                                                then @extTyEnv
+                                                else @lhs.tyEnv
+                body        .   tyEnv       =   @extTyEnv
+                loc         .   extTyEnv    =   @vbinds.newTyEnv `Map.union` @lhs.tyEnv
+
+SEM ValBind
+  | Val
+                lhs         .   newTyEnv    =   Map.singleton @nm @l1.copy
+
+
+-- Lambda environment stitching
+
+SEM Expr
+  | Lam
+                lhs         .   newTyEnv    =   Map.empty
+                res         .   tyEnv       =   @extTyEnv
+                loc         .   extTyEnv    =   @arg.newTyEnv `Map.union` @lhs.tyEnv
+SEM ExprSeq1
+  | L0Bind
+                lhs         .   newTyEnv    =   Map.singleton @nm @l1.copy
+%%]
+

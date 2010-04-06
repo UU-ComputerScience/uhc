@@ -274,6 +274,7 @@ SEM TyAnn
   | Empty       lhs         .   ann         =   C.ExprAnn_Empty
 %%[[(8 tauphi)
   | Strictness  lhs         .   ann         =   C.ExprAnn_Strictness @s
+  | Uniqueness  lhs         .   ann         =   C.ExprAnn_Uniqueness @s
 %%]]
 
 SEM TyAnn

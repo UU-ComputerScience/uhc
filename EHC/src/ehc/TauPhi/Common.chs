@@ -10,7 +10,7 @@
 %%[8 module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
 %%]
 
-%%[(8 tauphi) hs export(Strictness(..))
+%%[(8 tauphi) hs export(Strictness(..), Uniqueness(..))
 %%]
 
 %%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
@@ -20,13 +20,24 @@
 data Strictness
   = Strict
   | NonStrict
-  | Var HsName
+  | StrictnessVar HsName
   deriving (Eq, Ord)
 
 instance Show Strictness where
-  show Strict    = "strict"
-  show NonStrict = "nonStrict"
-  show (Var n)   = "strictness:" ++ show n
+  show Strict            = "strict"
+  show NonStrict         = "nonStrict"
+  show (StrictnessVar n) = "strictness:" ++ show n
+
+data Uniqueness
+  = Unique
+  | NonUnique
+  | UniquenessVar HsName
+  deriving (Eq, Ord)
+
+instance Show Uniqueness where
+  show Unique            = "unique"
+  show NonUnique         = "nonUnique"
+  show (UniquenessVar n) = "uniqueness:" ++ show n
 
 %%]
 
@@ -38,6 +49,8 @@ instance Show Strictness where
 deriving instance Typeable Strictness
 deriving instance Data Strictness
 
+deriving instance Typeable Uniqueness
+deriving instance Data Uniqueness
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,5 +66,15 @@ instance Serialize Strictness where
             case t of
               0 -> return Strict
               1 -> return NonStrict
-              2 -> liftM Var sget
+              2 -> liftM StrictnessVar sget
+
+instance Serialize Uniqueness where
+  sput (Unique)           = sputWord8 0
+  sput (NonUnique)        = sputWord8 1
+  sput (UniquenessVar nm) = sputWord8 2 >> sput nm
+  sget = do t <- sgetWord8
+            case t of
+              0 -> return Unique
+              1 -> return NonUniqe
+              2 -> liftM UniquenessVar sget
 %%]

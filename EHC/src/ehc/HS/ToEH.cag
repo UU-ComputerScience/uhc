@@ -1181,10 +1181,13 @@ SEM TypeAnnotation
         loc         .   eh          =   case show @name of
                                           "strict"    ->  EH.TyExprAnn_Strictness (Strict)
                                           "nonStrict" ->  EH.TyExprAnn_Strictness (NonStrict)
+                                          "unique"    ->  EH.TyExprAnn_Uniqueness (Unique)
+                                          "nonUnique" ->  EH.TyExprAnn_Uniqueness (NonUnique)
                                           _           -> EH.TyExprAnn_Empty
     | AnnotationVar
         loc         .   eh          =   case show @name of
-                                          "strictness" -> EH.TyExprAnn_Strictness (Var @var)
+                                          "strictness" -> EH.TyExprAnn_Strictness (StrictnessVar @var)
+                                          "uniqueness" -> EH.TyExprAnn_Uniqueness (UniquenessVar @var)
                                           _            -> EH.TyExprAnn_Empty
 %%]]
 %%]

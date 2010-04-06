@@ -182,6 +182,7 @@ DATA ExprAnn
   | Annotation      s           : String
 %%[[(8 tauphi)
   | Strictness      s           : Strictness
+  | Uniqueness      s           : Uniqueness
   | GrinHint        s           : String
 %%]]
 %%]
@@ -395,5 +396,4 @@ SET AllCodeNT
 SET AllNT
   = AllCodeNT
 %%]
-  = AllCodeNT AllTyCore
 

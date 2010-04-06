@@ -15,7 +15,10 @@
 %%[(8 codegen) hs module {%{EH}TyCore.Trf.OptimizeStrictness} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Control.Applicative, Control.Monad, Data.Maybe, qualified Data.Map as Map)
+%%[(8 codegen) hs import(Control.Applicative, Control.Monad)
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe, Data.List, qualified Data.Map as Map)
 %%]
 
 %%[(8 tauphi) hs import({%{EH}TauPhi.Common})
@@ -56,6 +59,25 @@ cmodTrfOptimizeStrictness :: Module -> Module
 cmodTrfOptimizeStrictness tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
+
+-- Status of Wroker/Wrapper transformation
+data WorkerWrapper = Introduced | Updated WorkWrap | Ignored
+data WorkWrap = Work | Wrap
+
+(|||) :: WorkerWrapper -> WorkerWrapper -> WorkerWrapper
+Introduced ||| Introduced = Introduced
+Introduced ||| Updated _  = error "(|||): Can't merge Introduced and Updated"
+Introduced ||| Ignored    = Introduced
+Updated _  ||| Introduced = error "(|||): Can't merge Updated and Introduced"
+Updated x  ||| Updated _  = Updated x
+Updated x  ||| Ignored    = Updated x
+Ignored    ||| Introduced = Introduced
+Ignored    ||| Updated x  = Updated x
+Ignored    ||| Ignored    = Ignored
+
+dropLast :: Int -> [a] -> [a]
+dropLast i xs = let l = length xs
+                in take (l - i) xs
 %%]
 
 %%[(8 tauphi)
@@ -66,36 +88,110 @@ ATTR AllCodeNT
   | cTrf : SELF
     strictWrkr : SELF
     lazyWrppr  : SELF
+    worker : SELF
+    wrapper : SELF
     varNm USE {<|>} {Nothing} : {Maybe HsName}
   ]
 ATTR AllExpr
   [
   |
   | hasStrictW USE {||} {False} : {Bool}
+    workWrap   USE {|||} {Ignored} : {WorkerWrapper}
+    updatedWorker  USE {||} {False} : {Bool}
   ]
 ATTR AllExprBase
   [ strictName : {HsName}
+    strictArgs : {[HsName]}
   |
   |
-    strictArgs USE {++} {[]} : {[Bool]}
     isStrict   USE {||} {False} : {Bool}
+    strictNms  USE {++} {[]}    : {[HsName]}
+  ]
+ATTR AllValBind
+  [ allNms : {[HsName]}
+  |
+  | nms USE {++} {[]} : {[HsName]}
+  ]
+ATTR Expr
+  [
+  |
+  | anns       USE {++} {[]}    : {[ExprAnn]}
+    seqAnns    USE {++} {[]}    : {[[ExprAnn]]}
+    seqExprs   USE {++} {[]}    : {[Expr]}
+  ]
+ATTR ExprSeq1
+  [
+  |
+  | anns       USE {++}  {[]}      : {[ExprAnn]}
+    expr       USE {<|>} {Nothing} : {Maybe Expr}
+  ]
+ATTR ExprSeq1L
+  [
+  |
+  | annss      USE {:} {[]}    : {[[ExprAnn]]}
+    exprs      USE {:} {[]}    : {[Maybe Expr]}
   ]
 
 SEM AGItf
   | AGItf       lhs         .   cTrf        =   @module.cTrf
                 module      .   params      =   Map.empty
 
+SEM Module
+  | Mod         vbinds      .   allNms      =   @vbinds.nms
+
 SEM ValBindL
-  | Cons        lhs         .   cTrf        =   if @hd.hasStrictW
-                                                then @hd.strictWrkr : @hd.lazyWrppr : @tl.cTrf
-                                                else @hd.cTrf : @tl.cTrf
+  | Cons        lhs         .   cTrf        =   case @hd.workWrap of
+                                                  Ignored    -> @hd.cTrf : @tl.cTrf
+                                                  Introduced -> @hd.worker : @hd.wrapper : @tl.cTrf
+                                                  Updated Work -> @hd.worker : @tl.cTrf
+                                                  Updated Wrap -> @hd.wrapper : @tl.cTrf
 
 SEM ValBind
-  | Val         lhs         .   strictWrkr  =   ValBind_Val @loc.strictName @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
+  | Val
+                lhs         .   nms         =   [@nm]
+                lhs         .   workWrap    =   case (@l0.updatedWorker, @isWorker, @isWrapper) of
+                                                  (True, True, False)  -> Updated Work
+                                                  (True, False, True)  -> Updated Wrap
+                                                  (True, False, False) -> Introduced
+                                                  (_,    _,     _)     -> Ignored
+                            .   worker      =   ValBind_Val @workerName @bindMeta.cTrf @mlev
+                                                            @workerType @workerExpr
+                lhs         .   strictWrkr  =   ValBind_Val @loc.strictName @bindMeta.strictWrkr @mlev @l1.strictWrkr @l0.strictWrkr
                 lhs         .   hasStrictW  =   @l1.hasStrictW -- If type isn't strict, neither is body
-                lhs         .   lazyWrppr   =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.lazyWrppr (mkLazyWrapper @loc.strictName @l1.strictArgs @l0.lazyWrppr)
+                -- lhs         .   lazyWrppr   =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.lazyWrppr (mkLazyWrapper @loc.strictName @l1.strictArgs @l0.lazyWrppr)
                 l0          .   strictName  =   @loc.strictName
                 loc         .   strictName  =   hsnFromString (show @nm ++ "_strict")
+                            .   isWorker    =   "_worker" `isSuffixOf` (show @nm)
+                            .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `elem` @lhs.allNms
+                            .   workerName  =   if @isWorker
+                                                then @nm
+                                                else hsnFromString (show @nm ++ "_worker")
+                            .   wrapperName =   if @isWrapper
+                                                then let nm = show @nm
+                                                     in hsnFromString (dropLast (length "_worker") nm)
+                                                else @nm
+                            .   workerType  =   @l1.worker
+                            .   workerExpr  =   @l0.worker
+                l0          .   strictArgs  =   []
+
+SEM Expr
+  | Lazy
+                lhs         .   updatedWorker = @loc.isStrict
+                lhs         .   worker      =   if all (ExprAnn_Strictness Strict `elem`) @expr.seqAnns
+                                                then maybe
+                                                       (error
+                                                          $  "TyCore.Trf.OptimizeStrictness: "
+                                                          ++ "Body of Lazy can't be lifted: "
+                                                          ++ show @expr.seqExprs)
+                                                       (rmAnnotation (ExprAnn_Strictness Strict))
+                                                       (listToMaybe @expr.seqExprs)
+                                                else @original
+                loc         .   original    =   Expr_Lazy @expr.worker
+                lhs         .   wrapper     =   Expr_Lazy $ rmAnnotation (ExprAnn_Strictness Strict) @expr.wrapper
+                loc         .   isStrict    =   all (ExprAnn_Strictness Strict `elem`) @expr.seqAnns
+  | Seq
+                lhs         .   worker      =   @original
+                loc         .   original    =   Expr_Seq @seq.worker
 
 {
 mkLazyWrapper :: HsName -> [Bool] -> Expr -> Expr
@@ -104,35 +200,81 @@ mkLazyWrapper n sas e              = f [] sas e
   where
     f :: [(HsName, Bool)] -> [Bool] -> Expr -> Expr
     f anns (b:sas) (Expr_Lam arg res) = Expr_Lam arg $ f ((paramName arg, b) : anns) sas res
-    f anns _       _                  = foldr g (Expr_Force $ Expr_Var n) anns
+    f anns _       _                  = foldr g (Expr_Var n) anns
     g (n, b) e = Expr_App e (bool singletonSeq Expr_Force b $ Expr_Var n)
+
+rmAnnotation :: ExprAnn -> Expr -> Expr
+rmAnnotation ann (Expr_Seq ss) = Expr_Seq (map (rmAnnSeq1L ann) ss)
+rmAnnotation ann (Expr_Lazy e) = Expr_Lazy (rmAnnotation ann e)
+rmAnnotation ann (Expr_Ann a e)
+  | ann == a  = rmAnnotation ann e
+  | otherwise = Expr_Ann a (rmAnnotation ann e)
+rmAnnotation _   e = e
+
+rmAnnSeq1L :: ExprAnn -> ExprSeq1 -> ExprSeq1
+rmAnnSeq1L ann (ExprSeq1_L0Val e m)     = ExprSeq1_L0Val (rmAnnotation ann e) m
+rmAnnSeq1L ann (ExprSeq1_L0LblVal nm e) = ExprSeq1_L0LblVal nm (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L0TagVal t e)  = ExprSeq1_L0TagVal t (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L0Bind nm m e) = ExprSeq1_L0Bind nm m (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L1Val e)       = ExprSeq1_L1Val (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L1Bind nm e)   = ExprSeq1_L1Bind nm (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L2Val e)       = ExprSeq1_L2Val (rmAnnotation ann e)
+rmAnnSeq1L ann (ExprSeq1_L2Bind nm e)   = ExprSeq1_L2Bind nm (rmAnnotation ann e)
 }
+
+SEM Expr
+  | Ann
+                lhs         .   anns        =   @ann.cTrf : @expr.anns
+  | Seq
+                lhs         .   anns        =   []
+                            .   seqAnns     =   @seq.annss
+                            .   seqExprs    =   catMaybes @seq.exprs
+  | * - Seq
+                lhs         .   seqAnns     =   []
+
+SEM ExprSeq1
+  | L0Val
+                lhs         .   anns        =   @l0.anns
+                            .   expr        =   Just @l0.worker
+  | L0Bind
+                lhs         .   strictNms   =   if @l1.isStrict then [@nm] else []
+
+SEM ExprSeq1L
+  | Cons
+                lhs         .   annss       =   @hd.anns : @tl.annss
+                            .   exprs       =   @hd.expr : @tl.exprs
 
 SEM Expr
   | Var         lhs         .   varNm       =   Just @nm
   | Lam
-                res         .   params      =   maybe @lhs.params
-                                                      (\ann -> Map.insert (paramName @arg.cTrf) ann @lhs.params)
-                                                      (paramAnn @arg.cTrf)
+                -- res         .   params      =   maybe @lhs.params
+                --                                       (\ann -> Map.insert (paramName @arg.cTrf) ann @lhs.params)
+                --                                       (paramAnn @arg.cTrf)
+                res         .   strictArgs  =   @arg.strictNms ++ @lhs.strictArgs
+              --  lhs         .   wrapper     =   trace (show @res.wrapper) (Expr_Lam @arg.wrapper @res.wrapper)
   | Lazy
                 lhs         .   strictWrkr  =   if @loc.isStrict
                                                 then unAnn $ head $ seqToList @expr.strictWrkr
                                                 else Expr_Lazy @expr.strictWrkr
                 lhs         .   isStrict    =   @loc.isStrict
-                loc         .   isStrict    =   isStrictAnn (exprAnn $ headSeq $ @expr.cTrf)
+               -- loc         .   isStrict    =   isStrictAnn (exprAnn $ headSeq $ @expr.cTrf)
                 loc         .   hasStrictW  =   @loc.isStrict || @expr.hasStrictW
                 lhs         .   lazyWrppr   =   Expr_Lazy (unAnn @expr.lazyWrppr)
   | Force
+                lhs         .   worker      =   if maybe False (`elem` @lhs.strictArgs) @expr.varNm
+                                                then singletonSeq @expr.worker
+                                                else Expr_Force @expr.worker
                 lhs         .   strictWrkr  =   if hasStrictAnn @expr.varNm @lhs.params 
                                                 then singletonSeq @expr.strictWrkr
                                                 else Expr_Force @expr.strictWrkr
-  | Arrow
-                lhs         .   strictArgs  =   @arg.isStrict : @res.strictArgs
+  | Delay
+                lhs         .   wrapper     =   if maybe False (`elem` @lhs.strictArgs) @expr.varNm
+                                                then @expr.wrapper
+                                                else Expr_Delay @expr.wrapper
+  -- | Arrow
+  --               lhs         .   strictArgs  =   @arg.isStrict : @res.strictArgs
 
 {
-annTrace :: String -> Expr -> Expr
-annTrace s e = Expr_Ann (ExprAnn_GrinHint s) e
-
 hasStrictAnn :: Maybe HsName -> Map.Map HsName ExprAnn -> Bool
 hasStrictAnn mbNm anns = isStrictAnn (mbNm >>= \l -> Map.lookup l anns)
 
@@ -168,7 +310,6 @@ unAnn (Expr_Seq [ExprSeq1_L0Val (Expr_Ann _ e) m]) = Expr_Seq [ExprSeq1_L0Val e 
 unAnn (Expr_Ann _ e)                               = e
 unAnn e                                            = e
 }
-
 
 %%]
 

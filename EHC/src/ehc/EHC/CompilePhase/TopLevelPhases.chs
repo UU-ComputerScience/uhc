@@ -821,7 +821,6 @@ cpProcessTyCoreBasic modNm
                          "IntroduceExplicitLaziness"
                        , "RemoveLazyFunctions"
                        , "DefinitionSiteArityRaise"
-                       --  "IntroduceExplicitLaziness"
 %%[[(8 tauphi)
                        --, "OptimizeStrictness"
 %%]

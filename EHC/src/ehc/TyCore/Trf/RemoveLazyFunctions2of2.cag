@@ -1,0 +1,107 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Remove lazy bound lambdas, part 2 of 2
+%%%
+%%% Second part of transformation, updates call sites.
+%%% Note that the input to this second part is not a Type Correct program.
+%%% 
+%%% For example:
+%%% > let id = \x -> |x|
+%%% >     id :: {Int} -> Int
+%%% > in |id|
+%%% 
+%%% Becomes:
+%%% > let id = \x -> |x|
+%%% >     id :: {Int} -> Int
+%%% > in id
+%%% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.RemoveLazyFunctions2of2}
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Bool.Extras)
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/Trf/ConstructTypeEnvironment})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).tcmodTrfRemoveLazyFunctions2of2 hs
+cmodTrfRemoveLazyFunctions2of2 :: Module -> Module
+cmodTrfRemoveLazyFunctions2of2 tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf : Module ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf : SELF ]
+
+
+-- Remove laziness
+
+SEM Expr
+  | Force
+                lhs         .   cTrf        =   maybe @original
+                                                      (\n -> if n `lazyElem` @lhs.tyEnv
+                                                             then @original
+                                                             else @expr.cTrf)
+                                                      @expr.mbVarNm
+                loc         .   original    =   Expr_Force @expr.cTrf
+%%]
+
+%%[(8 codegen)
+-- Attributes that are needed because AG doesn't have pattern matching
+
+ATTR Expr
+  [
+  |
+  | mbVarNm     : {Maybe HsName}
+  ]
+
+SEM Expr
+  | Var
+                lhs         .   mbVarNm     =   Just @nm
+  | * - Var
+                lhs         .   mbVarNm     =   Nothing
+%%]
+

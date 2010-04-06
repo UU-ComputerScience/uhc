@@ -407,6 +407,7 @@ SEM ExprAnn
   | Annotation  loc         .   pp          =   pp ("{" ++ @s ++ "}")
 %%[[(8 tauphi)
   | Strictness  loc         .   pp          =   pp (show @s)
+  | Uniqueness  loc         .   pp          =   pp (show @s)
   | GrinHint    loc         .   pp          =   pp ("GrinHint{" ++ @s ++ "}")
 %%]]
 %%]

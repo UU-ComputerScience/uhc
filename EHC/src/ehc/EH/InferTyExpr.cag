@@ -435,6 +435,7 @@ SEM TyExprAnn
   | Empty       lhs         .   ann         =   TyAnn_Empty
 %%[[(8 tauphi)
   | Strictness  lhs         .   ann         =   TyAnn_Strictness @s
+  | Uniqueness  lhs         .   ann         =   TyAnn_Uniqueness @s
 %%]]
 
 SEM TyExprAnn

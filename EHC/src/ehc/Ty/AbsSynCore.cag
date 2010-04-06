@@ -36,6 +36,7 @@ DATA TyAnn
   | Empty
 %%[[(8 tauphi)
   | Strictness      s               : Strictness
+  | Uniqueness      s               : Uniqueness
 %%]]
 %%]
 
