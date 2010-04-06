@@ -18,11 +18,13 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs module {%{EH}GrinCode.PointsToAnalysis}
 %%]
-%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose))
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe, Data.List(transpose, nub), Data.Array(listArray, (!)))
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqs})
+%%]
+%%[(8 codegen grin) hs import(EH.Util.DependencyGraph)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -30,12 +32,65 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs export(heapPointsToAnalysis)
 
+
 {-
-Main module entry point:
+The new code is ugly! I'll describe the idea here, for future reference.
+
+When called with --priv=yes, the HPT analysis
+
+* builds a dependency graph from the equations and variables,
+* topologically sorts these equations,
+* performs an iteration of the solving algorithm, resulting in changes in the
+  HPT table (old situation) and extra dependencies (from Application equations),
+* builds a new dependency graph with these new dependencies and sorts it,
+* etcetera
+
+This should speed up the HPT analysis (in terms of number of iterations).
+
+Suppose we have the following equations (which are collected in an arbitrary
+order):
+  x isEqual y
+  y isEqual z
+  z is A
+(A is some abstract value)
+
+Solving them in the given order would look like this:
+
+  --- iteration 1
+  1. x stays bottom (because y is bottom)
+  2. y stays bottom (because z is bottom)
+  3. z becomes A
+  --- iteration 2
+  1. x stays bottom (because y is bottom)
+  2. y becomes A
+  3. z stays   A
+  --- iteration 3
+  1. x becomes A
+  2. y stays   A
+  3. z stays   A
+
+Sorted according to dependencies, this would look like:
+
+  --- iteration 1
+  1. z becomes A
+  2. y becomes A
+  3. x becomes A
+
+This is much better. However, it doesn't give the expected speedup. Possible
+causes:
+
+* Many circular dependencies (these should be solved in a fix point iteration
+  as a group, before moving on to the equations that dependend on the group).
+* If a big part of the equations is mutually dependent, there isn't really any
+  hope.
+* The IsApplication equation contains a hidden dependency, because it propagates
+  information from apply's arguments to the arguments of the possible called
+  functions
+
 -}
 
-heapPointsToAnalysis :: GrModule -> (Int,HptMap)
-heapPointsToAnalysis grmod
+heapPointsToAnalysis :: Bool -> String -> GrModule -> (Int,HptMap)
+heapPointsToAnalysis sort modNm grmod
   = let -- traverse the tree
         inh = Inh_GrAGItf {  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
@@ -44,9 +99,86 @@ heapPointsToAnalysis grmod
         equations   = equations_Syn_GrAGItf syn
         limitations = limitations_Syn_GrAGItf syn
         lenEnv      = maxVar_Syn_GrAGItf syn + 1
+
+        -- sort the equations
+        improveEqs = if sort then topSortEqs' else const
+        equations' = improveEqs equations []
         
         -- now solve the equations
-    in  solveEquations lenEnv equations limitations
+    in  solveEquations modNm lenEnv equations' improveEqs limitations
+
+
+-- Sort the given equations using the inherent dependencies and the list of
+-- extra dependencies (list of pairs of equation numbers).
+topSortEqs' :: Equations -> [(Int, Int)] -> Equations
+topSortEqs' eqs exdeps
+    | length neqs /= length eqs  =  trace "!! Lost equations" neqs
+    | not $ null muts =  trace ("!! Cycles: " ++ show muts ++ " !!") neqs
+    | otherwise                  =  neqs
+  where gr   = mkDpdEqs eqs exdeps
+        muts = dgSCCMutuals gr
+        neqs = concatMap node2eqs $ dgTopSort gr
+        node2eqs (Eq _ e) = [e]
+        node2eqs _        = []
+
+-- Nodes of the dependency graph (equations and variables).
+data Node
+  = Eq
+    { nodeId :: Int
+    , nodeEq :: Equation
+    }
+  | Var
+    { nodeId :: Int
+    , nodeVar :: Variable
+    }
+  deriving Show
+
+instance Eq Node where
+  n1 == n2 = nodeId n1 == nodeId n2
+
+instance Ord Node where
+  n1 `compare` n2 = nodeId n1 `compare` nodeId n2
+
+eqPrereqs :: Equation -> (Variable, [Variable])
+eqPrereqs eq =
+  case eq of
+    (IsBasic v)               -> nodeps v
+    (IsTags  v _)             -> nodeps v
+    (IsPointer v _ _)         -> nodeps v
+    (IsConstruction v _ _ _)  -> nodeps v
+    (IsUpdate v d)            -> dep v d
+    (IsEqual v d)             -> dep v d
+    (IsSelection v d _ _)     -> dep v d
+    (IsEnumeration v d)       -> dep v d
+    (IsEvaluation  v d _)     -> dep v d
+    (IsApplication v ds _)    -> (v, ds)
+  where nodeps v    = (v, [])
+        dep    v d  = (v, [d])
+
+both f (a, b) = (f a, f b)
+
+-- Make the dependency graph from the list of equations and the extra
+-- dependencies.
+mkDpdEqs :: Equations -> [(Int, Int)] -> DpdGr Node
+mkDpdEqs eqs exdeps = mkDpdGrFromAssocWithMissing [] deps
+  where deps  = concatMap (mkEdges vmp) neqs ++ map (both vmp) exdeps
+        neqs  = zipWith Eq [0..] eqs
+        leqs  = length eqs
+        vars  = nub . map fst $ deps
+        nvars = vars -- zipWith Var [leqs..] vars
+        nds   = neqs ++ nvars
+        vmp v = Var (v + leqs) v
+
+-- Turn a Node into a list of dependencies. It needs a function that turns
+-- variables into nodes (it essentially numbers variable nodes).
+mkEdges :: (Variable -> Node) -> Node -> [(Node, Node)]
+mkEdges _  v@(Var _ _) = []
+mkEdges mp v@(Eq _ eq) = (v, mp vout) : map mkIn vins
+  where (vout, vins) = eqPrereqs eq
+        mkIn   vin   = (mp vin, v)
+
+
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%

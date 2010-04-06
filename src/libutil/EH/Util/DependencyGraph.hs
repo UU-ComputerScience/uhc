@@ -11,6 +11,8 @@ module EH.Util.DependencyGraph
   , dgIsFirst
   , dgCheckSCCMutuals
   , dgSCCToList
+  , dgSCCMutuals
+  , dgSCC
   , mkDpdGrFromEdges
   , mkDpdGrFromEdgesMp, mkDpdGrFromEdgesMpPadMissing
   , mkDpdGrFromAssocWithMissing
