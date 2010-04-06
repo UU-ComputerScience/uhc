@@ -72,7 +72,7 @@ GB_NodePtr gb_ChanGetChar( GB_NodePtr chan, Bool throwExcForEOF, Bool* isEof, in
 		c = getc( f ) ;
 		if ( c == EOF ) {
 			GB_PassExc_GCSafe( gb_getChanEOFOrThrowExc( chan, throwExcForEOF, isEof ) ) ;
-		} else if ( c == '\r' && chan->content.chan.isText ) {
+		} else if ( c == '\r' && (chan->content.chan.flags & GB_Chan_Flag_IsText) ) {
 			int c2 = getc( f ) ;
 			if ( c2 != '\n' && c2 != EOF ) {
 				ungetc( c2, f ) ;
@@ -182,27 +182,28 @@ PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mb
 	}
 	
 	char *mode ;
-	Bool isText = True ;
+	Word isText  = GB_Chan_Flag_IsText ;
+	Word noClose = 0 ;
 	if ( GB_EnumIsEqual( modeEnum, gb_ReadMode ) ) {
 		mode = "r" ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadBinaryMode ) ) {
 		mode = "rb" ;
-		isText = False ;
+		isText = 0 ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteMode ) ) {
 		mode = "w" ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_WriteBinaryMode ) ) {
 		mode = "wb" ;
-		isText = False ;
+		isText = 0 ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteMode ) ) {
 		mode = "r+" ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_ReadWriteBinaryMode ) ) {
 		mode = "r+b" ;
-		isText = False ;
+		isText = 0 ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendMode ) ) {
 		mode = "a" ;
 	} else if ( GB_EnumIsEqual( modeEnum, gb_AppendBinaryMode ) ) {
 		mode = "ab" ;
-		isText = False ;
+		isText = 0 ;
 	}
 	
 	FILE *f = NULL ;
@@ -212,6 +213,7 @@ PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mb
 			case 1: f = stdout ; break ;
 			case 2: f = stderr ; break ;
 		}
+		noClose = GB_Chan_Flag_FinalizerNoClose ;
 	} else {
 		f = fopen( nm, mode ) ;
 	}
@@ -251,7 +253,7 @@ PRIM GB_NodePtr primOpenFileOrStd( GB_NodePtr nmNd, Word modeEnum, GB_NodePtr mb
 	GB_NodeAlloc_Chan_In(chan) ;
 	chan->content.chan.file = f ;
 	chan->content.chan.name = nmNd ;
-	chan->content.chan.isText = isText ;
+	chan->content.chan.flags |= isText | noClose ;
 	
 %%[[99
 	GB_NodePtr handle ;

@@ -92,6 +92,8 @@ typedef struct MM_WeakPtr {
   	Word			 			(*derefWeakPtr)( struct MM_WeakPtr*, Word wp ) ;
   	// finalize, if return /= 0 it is a finalizer (usually a IO ()): finalization should then be done by the mutator
   	Word			 			(*finalizeWeakPtr)( struct MM_WeakPtr*, Word wp ) ;
+  	// finalize all weak pointers, to be done at end of program
+  	Word			 			(*finalizeAllWeakPtr)( struct MM_WeakPtr* ) ;
   	
   	// finding live pointers, return in newAlive, move those to a new list (internally)
   	void			 			(*findLiveObjects)( struct MM_WeakPtr*, MM_WeakPtr_NewAlive* newAlive ) ;

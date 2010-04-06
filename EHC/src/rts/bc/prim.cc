@@ -132,6 +132,21 @@ PRIM Word primGC(  )
 }
 %%]
 
+%%[94
+%%]
+// finalize all weak ptrs
+PRIM Word primGetAllWeakPtrs(  )
+{
+#	if USE_EHC_MM
+		GB_GCSafe_Enter ;
+		// GB_GCSafe_1(*pn) ;
+		GB_GCSafe_Leave ;
+		return gb_Nil ;
+#	else
+		return gb_Nil ;
+#	endif
+}
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -301,32 +301,42 @@ void gb_Node_Finalize( void* p, void* cd )
 {
 	GB_NodePtr n = Cast(GB_NodePtr,p) ;
 	GB_NodeHeader h = n->header ;
+	IF_GB_TR_ON(3,{printf("gb_Node_Finalize BEG  n=%p header=%x\n",n,h) ;}) ;
 	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl )
 	{
 		switch( GB_NH_Fld_Tag(h) )
 		{
 %%[[95
 			case GB_NodeTag_Intl_Malloc :
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Malloc  n=%p header=%x\n",n,h) ;}) ;
 				gb_free( n->content.ptr ) ;
 				break ;
 			case GB_NodeTag_Intl_Malloc2 :
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Malloc2  n=%p header=%x\n",n,h) ;}) ;
 				gb_free( n->content.bytearray.ptr ) ;
 				break ;
 %%]]
 %%[[97
 #			if USE_EHC_MM && USE_GMP
 				case GB_NodeTag_Intl_GMP_mpz :
+					IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_GMP_mpz  n=%p header=%x\n",n,h) ;}) ;
 					gb_Node_FinalizeInteger( n ) ;
 					break ;
 #			endif
 %%]]
 %%[[98
 			case GB_NodeTag_Intl_Chan :
-				fclose( n->content.chan.file ) ;
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Chan A n=%p header=%x\n",n,h) ;}) ;
+				fflush( n->content.chan.file ) ;
+				if ( (n->content.chan.flags & GB_Chan_Flag_FinalizerNoClose) == 0 ) {
+					fclose( n->content.chan.file ) ;
+				}
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Chan B n=%p header=%x\n",n,h) ;}) ;
 				break ;
 %%]]
 		}
 	}
+	IF_GB_TR_ON(3,{printf("gb_Node_Finalize END  n=%p header=%x\n",n,h) ;}) ;
 }
 
 #if USE_BOEHM_GC
