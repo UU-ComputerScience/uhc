@@ -196,7 +196,7 @@ doCompileGrin input opts
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
-         ; transformCodeChgHpt   lateInline         "LateInline"
+         ; transformCodeChgHpt   lateInline         "LateInline"  -- jleeuwes: does not use or alter HPT
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
@@ -298,7 +298,9 @@ caParseGrin
 caHeapPointsTo :: CompileAction ()
 caHeapPointsTo = task VerboseALot "Heap-points-to analysis"
     ( do { code    <- gets gcsGrin
-         ; let (iterCount,hptMap) = heapPointsToAnalysis code
+         ; input  <- gets gcsPath -- HACK
+         ; let modNm = fpathBase input -- HACK
+         ; let (iterCount,hptMap) = heapPointsToAnalysis modNm code -- HACK
          ; modify (gcsUpdateHptMap hptMap)
          ; return iterCount
          }

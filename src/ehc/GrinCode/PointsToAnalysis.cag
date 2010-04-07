@@ -34,8 +34,8 @@ WRAPPER GrAGItf
 Main module entry point:
 -}
 
-heapPointsToAnalysis :: GrModule -> (Int,HptMap)
-heapPointsToAnalysis grmod
+heapPointsToAnalysis :: String -> GrModule -> (Int,HptMap)
+heapPointsToAnalysis modNm grmod
   = let -- traverse the tree
         inh = Inh_GrAGItf {  }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
@@ -46,7 +46,7 @@ heapPointsToAnalysis grmod
         lenEnv      = maxVar_Syn_GrAGItf syn + 1
         
         -- now solve the equations
-    in  solveEquations lenEnv equations limitations
+    in  solveEquations modNm lenEnv equations limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%

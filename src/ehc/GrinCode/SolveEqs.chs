@@ -201,7 +201,7 @@ envChanges equat env
 
 %%[(8 codegen grin)
 
-fixpoint procEqs env
+fixpoint modNm procEqs env
   = countFixpoint 0
     where
     countFixpoint count = do
@@ -209,12 +209,12 @@ fixpoint procEqs env
           changes <- procEqs
         
         ; ae <- getAssocs env
-        --; let s  =  unlines (("SOLUTION": map show ae)) 
-        --; _ <- unsafePerformIO (do { writeFile ("hpt"++ show count++".txt") s
-        --                           ; return (return ())
-        --                           }
-        --                       )
-        --; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
+        ; let s  =  unlines (map show ae)
+        ; _ <- unsafePerformIO (do { writeFile (modNm ++ "-hpt"++ show count++".txt") s
+                                   ; return (return ())
+                                   }
+                               )
+        ; _ <- trace ("fix " ++ show count ++ ": " ++ show changes ++ " changes") (return ())
 
         ; if    changes>0
           then  countFixpoint (count+1)
@@ -233,17 +233,17 @@ procChange env (i,e1) =
       }
 
 
-solveEquations :: Int -> Equations -> Limitations -> (Int,HptMap)
-solveEquations lenEnv eqs lims =
+solveEquations :: String -> Int -> Equations -> Limitations -> (Int,HptMap)
+solveEquations modNm lenEnv eqs lims =
     runST (
     do { 
-       --; let eqsStr = unlines (map show eqs )
-       --; let limsStr = unlines (map show lims)
-       --; _ <- unsafePerformIO (do { writeFile ("eqs.txt") eqsStr
-       --                           ; writeFile ("lims.txt") limsStr
-       --                           ; return (return ())
-       --                           }
-       --                       )
+       ; let eqsStr = unlines (map show eqs )
+       ; let limsStr = unlines (map show lims)
+       ; _ <- unsafePerformIO (do { writeFile (modNm ++ "-eqs.txt") eqsStr
+                                  ; writeFile (modNm ++ "-lims.txt") limsStr
+                                  ; return (return ())
+                                  }
+                              )
 
        -- create arrays
        ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
@@ -288,8 +288,14 @@ solveEquations lenEnv eqs lims =
 
                   
        ; _ <- mapM procEq eqs1a
-                  
-       ; count <- fixpoint procEqs env
+               
+       -- schrijf het resultaat na de once-applicable eqs
+       ; ae <- getAssocs env
+       ; let s  =  unlines (map show ae)
+       ; _ <- unsafePerformIO (do { writeFile (modNm ++ "-hpt-once.txt") s
+                                  ; return (return ()) })
+
+       ; count <- fixpoint modNm procEqs env
       
        ; let limsMp = Map.fromList lims
              lims2 = [ (y,z) 
