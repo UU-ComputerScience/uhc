@@ -118,22 +118,29 @@ doCompileGrin
 %%[(8 codegen grin) -1.doCompileGrin
 
 
-specialize s 
-  =    do{ transformCode         evalStored         "EvalStored"       ; caWriteGrin (s++"a-evalstored")
-         ; transformCode         applyUnited        "ApplyUnited"      
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"b-applyUnited")
-         ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (s++"c-unusedExprDropped")
-         ; transformCode         specConst          "SpecConst"        ; caWriteGrin (s++"d-specConst")
-         ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (s++"e-after-cp")
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
-         ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (s++"g-simpleNullary")
-		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (s++"h-memberSelected")
-         ; transformCode         (dropUnreachableBindings False) 
-                                             "DropUnreachableBindings" ; caWriteGrin (s++"i-reachable")
-         }
+-- specialize s 
+--   =    do{ transformCode         evalStored         "EvalStored"       ; caWriteGrin (s++"a-evalstored")
+--          ; transformCode         applyUnited        "ApplyUnited"      
+--          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"b-applyUnited")
+--          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (s++"c-unusedExprDropped")
+--          ; transformCode         specConst          "SpecConst"        ; caWriteGrin (s++"d-specConst")
+--          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (s++"e-after-cp")
+--          ; transformCode         singleCase         "singleCase"       ; 
+--          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
+--          ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (s++"g-simpleNullary")
+-- 		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (s++"h-memberSelected")
+--          ; transformCode         (dropUnreachableBindings False) 
+--                                              "DropUnreachableBindings" ; caWriteGrin (s++"i-reachable")
+--          }
 
 
+-- doDrive :: Compile () -> Either String (FPath, GrModule) -> EHCOpts -> IO ()
+-- doDrive act input opts = drive (initialState opts input) putErrs act
+-- 
+-- 
+-- doCompileGrinPerMod :: Either String (FPath, GrModule) -> EHCOpts -> IO ()
+-- doCompileGrinPerMod input opts
+--   = doDrive 
 
 
 doCompileGrin :: Either String (FPath,GrModule)  -> EHCOpts -> IO ()
@@ -142,46 +149,46 @@ doCompileGrin input opts
         do 
          { options <- gets gcsOpts
          ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
-         ; transformCode         (dropUnreachableBindings False) 
-                                             "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
-%%[[9                                             
-		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
-		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin "-113-memberSelected"
-		 
-         ; transformCode         (dropUnreachableBindings False) 
-                                             "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
-%%]]
-         ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115b-cleaned"
-         ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin "-115c-simpleNullary"
-%%[[97
-         ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
-%%]]
-         ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
-         ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
-
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
-
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
-         ; checkCode             checkGrinInvariant "CheckGrinInvariant"
-
-         ; specialize "-123-1"
-         ; specialize "-123-2"
-         ; specialize "-123-3"
-         ; specialize "-123-4"
-         ; specialize "-123-5"
-         ; specialize "-123-6"
-         -- ; specialize "-123-7"
-         -- ; specialize "-123-8"
-
-         ; transformCode         (dropUnreachableBindings False) 
-                                             "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
-
-
-         ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-128-invariant"
-         ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+--          ; transformCode         (dropUnreachableBindings False) 
+--                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
+-- %%[[9                                             
+-- 		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
+-- 		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin "-113-memberSelected"
+-- 		 
+--          ; transformCode         (dropUnreachableBindings False) 
+--                                              "DropUnreachableBindings" ; caWriteGrin "-114-reachable"
+-- %%]]
+--          ; transformCode         cleanupPass        "CleanupPass"      ; caWriteGrin "-115b-cleaned"
+--          ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin "-115c-simpleNullary"
+-- %%[[97
+--          ; transformCode         constInt           "ConstInt"         ; caWriteGrin "-116-constint"
+-- %%]]
+--          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
+--          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
+--          ; transformCodeInline                      "Inline" 
+--          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
+-- 
+--          ; transformCode         singleCase         "singleCase"       ; 
+--          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
+-- 
+--          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
+--          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
+-- 
+--          ; specialize "-123-1"
+--          ; specialize "-123-2"
+--          ; specialize "-123-3"
+--          ; specialize "-123-4"
+--          ; specialize "-123-5"
+--          ; specialize "-123-6"
+--          -- ; specialize "-123-7"
+--          -- ; specialize "-123-8"
+-- 
+--          ; transformCode         (dropUnreachableBindings False) 
+--                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"
+-- 
+-- 
+--          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-128-invariant"
+--          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
          
          ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"

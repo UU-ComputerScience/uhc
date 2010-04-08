@@ -8,7 +8,7 @@ Grin transformation
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -36,6 +36,64 @@ Grin transformation
 %%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})
 %%]
 
+-- Heeeel veel Grin-transformaties
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
+%%]
+%%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.GlobalConstants(globalConstants)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.Inline(grInline)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.FlattenSeq(grFlattenSeq)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SetGrinInvariant(setGrinInvariant)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
+%%]
+%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropDeadBindings(dropDeadBindings)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EmptyAlts(emptyAlts)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LateInline(lateInline)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.ImpossibleCase(impossibleCase)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SingleCase(singleCase)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MergeCase(mergeCase)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LowerGrin(lowerGrin)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SplitFetch(splitFetch)})
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: transformations, on grin
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -55,6 +113,22 @@ cpFromGrinTrf modNm trf m
        ; cpMsgGrinTrf modNm m
        ; cpUpdCU modNm $ ecuStoreGrin $ trf $ fromJust $ ecuMbGrin ecu
        }
+
+cpIterGrinTrf :: HsName -> (Grin.GrModule -> (Grin.GrModule, Bool)) -> String -> EHCompilePhase ()
+cpIterGrinTrf modNm trf m = do
+    cr <- get
+    let (_,_,_,fp) = crBaseInfo modNm cr
+    cpMsg' modNm VerboseALot "Local GRIN optim (iterated)" (Just m) fp
+    i <- caFixCount 1
+    cpMsg' modNm VerboseALot ("  done in " ++ show i ++ " iteration(s)") (Just m) fp
+  where caFixCount n = do
+          cr <- get
+          let (ecu,_,_,_) = crBaseInfo modNm cr
+          let code = fromJust $ ecuMbGrin ecu
+          (code, changed) <- return $ trf code
+          cpUpdCU modNm $ ecuStoreGrin $ code
+          if changed then (caFixCount $ n+1) else return n
+
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
@@ -62,49 +136,51 @@ cpTransformGrin :: HsName -> EHCompilePhase ()
 cpTransformGrin modNm
   =  do  {  cr <- get
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
-                 forBytecode = not (ehcOptFullProgAnalysis opts)
+                 fullProg    = ehcOptFullProgAnalysis opts
+                 forBytecode = not fullProg
                  optimizing  = ehcOptOptimise opts >= OptimiseNormal
          
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]
 -}
-                 trafos  =     (if forBytecode               then mk [mte,unb]               else [])
-                           ++  (if optimizing                then mk evel                    else mk [flt])
-                           ++  (if forBytecode && optimizing then inline ++ mk (evel++[cpr]) else [])
-                           ++  (if optimizing                then mk [nme]                   else [])
+                 trafos  =     (if forBytecode               then mk [metaElim, unbox]            else [])
+                           ++  (if optimizing                then mk evel                         else mk [flatten])
+                           ++  (if forBytecode && optimizing then inline : mk (evel++[constProp]) else [])
+                           ++  (if optimizing                then mk [nameElim]                   else [])
+                           ++  (if fullProg                  then grPerModuleFullProg modNm       else [])
 
-                   where mk   = map (\(trf,msg) -> (cpFromGrinTrf modNm trf msg,msg))
-                         inl  = ( grInline True                  , "inline"           )
-                         flt  = ( grFlattenSeq                   , "flatten"          )
-                         ale  = ( grAliasElim                    , "alias elim"       )
-                         nme  = ( grUnusedNameElim               , "unused name elim" )
-                         eve  = ( grEvalElim opts                , "eval elim"        )
-                         mte  = ( grUnusedMetaInfoElim           , "meta info elim"   )
-                         cpr  = ( grConstPropagation             , "const prop"       )
-                         unb  = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
+                   where mk            = map mk1
+                         mk1 (trf,msg) = (cpFromGrinTrf modNm trf msg, msg)
+
+                         flatten    = ( grFlattenSeq                   , "flatten"          )
+                         aliasElim  = ( grAliasElim                    , "alias elim"       )
+                         nameElim   = ( grUnusedNameElim               , "unused name elim" )
+                         evalElim   = ( grEvalElim opts                , "eval elim"        )
+                         metaElim   = ( grUnusedMetaInfoElim           , "meta info elim"   )
+                         constProp  = ( grConstPropagation             , "const prop"       )
+                         unbox      = ( grMayLiveUnboxed (Bytecode.tagAllowsUnboxedLife opts)
                                                                  , "unbox"            )
 %%[[8_2
-                         frm  = ( grPrettyNames                  , "rename uniform"   ) 
+                         uniform    = ( grPrettyNames                  , "rename uniform"   ) 
 %%]]
 %%[[8
-                         evel = [ flt, ale, eve, flt, ale ]
+                         evel = [ flatten, aliasElim, evalElim, flatten, aliasElim ]
 %%][8_2
-                         evel = [ flt, ale, frm, eve, flt, ale ]
+                         evel = [ flatten, aliasElim, uniform, evalElim, flatten, aliasElim ]
 %%]]
 %%[[8                              
-                         inline = mk [inl]
+                         inline = mk1 ( grInline True , "inline" )
 %%][20                                
-                         inline = [ ( do { cr <- get
-                                         ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
-                                               expNmOffMp     = crsiExpNmOffMp modNm crsi
-                                               optim          = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
-                                         ; cpMsgGrinTrf modNm "inline"
-                                         ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
-                                         }
-                                    , "inline" 
-                                    ) 
-                                  ]
+                         inline = ( do { cr <- get
+                                       ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
+                                             expNmOffMp     = crsiExpNmOffMp modNm crsi
+                                             optim          = crsiOptim crsi
+                                             (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
+                                       ; cpMsgGrinTrf modNm "inline"
+                                       ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
+                                       }
+                                  , "inline" 
+                                  ) 
 %%]]                              
                               
                  optGrinNormal = map fst trafos
@@ -113,8 +189,70 @@ cpTransformGrin modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }
+
+
+grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
+grPerModuleFullProg modNm = mk trafos1 ++ invariant ++ grSpecialize modNm ++ mk [dropUnreach] ++ invariant
+  where
+    trafos1 =
+      [ ( dropUnreachableBindings False , "DropUnreachableBindings" )
+%%[[9
+      , ( mergeInstance                 , "MergeInstance"           )
+      , ( memberSelect                  , "MemberSelect"            )
+    
+      , dropUnreach
+%%]]
+      , ( cleanupPass                   , "CleanupPass"             )
+      , ( simpleNullary                 , "SimpleNullary"           )
+%%[[97
+      , ( constInt                      , "ConstInt"                )
+%%]]
+      , ( buildAppBindings              , "BuildAppBindings"        )
+      , ( globalConstants               , "GlobalConstants"         )
+%%[[8
+      , ( grInline False                , "Inline"                  )
+%%][20
+      , ( fst . grInline False Set.empty Map.empty, "Inline"        )
+%%]]
+      , ( grFlattenSeq                  , "Flatten"                 )
+    
+      , ( singleCase                    , "singleCase"              )
+      , ( grFlattenSeq                  , "Flatten"                 )
+    
+      , ( setGrinInvariant              , "SetGrinInvariant"        )
+      ]
+
+    dropUnreach = ( dropUnreachableBindings False , "DropUnreachableBindings" )
+    invariant = mk [(setGrinInvariant, "SetGrinInvariant")] ++ [(checkInvariant, "CheckGrinInvariant")]
+
+    checkInvariant =
+      do { cr <- get
+         ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
+               errors         = checkGrinInvariant $ fromJust $ ecuMbGrin ecu
+         ; cpMsgGrinTrf modNm "CheckGrinInvariant"
+         ; when (not (null errors)) (error (unlines errors))
+         }
+
+    mk            = map mk1
+    mk1 (trf,msg) = (cpFromGrinTrf modNm trf msg, msg)
+    
+
+-- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
+grSpecialize modNm = concat $ replicate 6 $
+    [ once evalStored                        "eval stored"
+    , once applyUnited                       "apply united"
+    , once grFlattenSeq                      "flatten"
+    , iter dropUnusedExpr                    "drop unused"
+    , once specConst                         "spec const"
+    , iter copyPropagation                   "copy prop"
+    , once singleCase                        "single case"
+    , once grFlattenSeq                      "flatten"
+    , once simpleNullary                     "simply nullary"
+    , once memberSelect                      "member select"
+    , once (dropUnreachableBindings False)   "drop unreachable"
+    ]
+  where once trf m = (cpFromGrinTrf modNm trf m, m)
+        iter trf m = (cpIterGrinTrf modNm trf m, m)
+
 %%]
-
-
-
 
