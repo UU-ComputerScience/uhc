@@ -191,7 +191,7 @@ doCompileGrin input opts
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
-
+                                                                       ; caWriteHptMap "-131-hpt"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-132-possibleCase"
 
 
@@ -212,7 +212,7 @@ doCompileGrin input opts
          ; transformCodeChgHptChgMeta   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
                                                                        ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
-         -- ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
+         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-163-singleCase"
 
@@ -495,10 +495,10 @@ transformCodeChgHptChgMeta process message
        ; tup <- gcsGetCodeHpt
        ; opts <- gets gcsOpts
        ; let res = let (trf,tagMap,hptMap) = process tup    
-                       trf2 = if ehcOptMetaClosures opts
-                              then substMeta tagMap trf
-                              else trf
-                   in (trf2,hptMap)
+                       (trf2,hptMap2) = if ehcOptMetaClosures opts
+                                        then substMeta tagMap (trf,hptMap)
+                                        else (trf,hptMap)
+                   in (trf2,hptMap2)
        ; gcsPutCodeHpt res
        }
 

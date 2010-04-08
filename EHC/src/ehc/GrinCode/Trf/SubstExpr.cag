@@ -24,6 +24,7 @@ substExpr env expr  = let t = wrap_GrExpr (sem_GrExpr expr)
 
 %%[(8 codegen grin)
 ATTR AllExpr   [ env : Env | | grTrf: SELF ]
+ATTR AllGrVarOffset [ | | self : SELF ]
 %%]
 
 
@@ -50,11 +51,12 @@ SEM GrVar
   | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.env @nm)
 
 SEM GrExpr
-  | App Eval FetchNode FetchField Throw UpdateUnit
+  | App Eval FetchNode FetchField Throw UpdateUnit FetchVar
                 loc  .  newName  =  findNewVar @lhs.env @nm
   | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
   | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
   | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
+  | FetchVar    lhs  .  grTrf    =  GrExpr_FetchVar @newName @varos.self 
   | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
   | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
   | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.env @src) (findNewVar @lhs.env @dst)

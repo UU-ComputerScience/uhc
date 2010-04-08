@@ -2,12 +2,16 @@
 
 This transformation substitutes meta-tags globally. Also the corresponding VarOffsets are substituted.
 
+The meta-tags in HPT table are also substituted
+
 Currently run after SplitFetch and LowerGrin, if meta-closures are enabled.
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Array as Array)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -21,10 +25,19 @@ WRAPPER GrAGItf
 type TagMap = Map.Map GrTag GrTag
 type OffsetMap = Map.Map GrVarOffset GrVarOffset
 
-substMeta :: TagMap -> GrModule -> GrModule
-substMeta tagmap input= let inh = Inh_GrAGItf {tagMap_Inh_GrAGItf=tagmap}
-                            syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-                        in  grTrf_Syn_GrAGItf syn
+substMeta :: TagMap -> (GrModule, HptMap) -> (GrModule, HptMap)
+substMeta tagmap (input,hpt)= let inh = Inh_GrAGItf {tagMap_Inh_GrAGItf=tagmap}
+                                  syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+                              in  (grTrf_Syn_GrAGItf syn, substMetaHpt tagmap hpt)
+
+substMetaHpt tagmap hpt = 
+    Array.array (Array.bounds hpt) $ map (\(i,e) -> (i,substTags e))  (Array.assocs hpt)
+    where
+    substTags (AbsTags tagSet)       = AbsTags $ Set.map substTag tagSet
+    substTags (AbsUnion map)         = AbsUnion $ Map.map substTags $ Map.mapKeys substTag map
+    substTags (AbsNodes (Nodes map)) = AbsNodes $ Nodes $ Map.mapKeys substTag map
+    substTags a                      = a
+    substTag tag = Map.findWithDefault tag tag tagmap
 
 %%]
 
