@@ -61,12 +61,12 @@ data TrfTyCore
       , trftycoreTyCoreStages  	:: [(String,Module)]
       , trftycoreUniq         	:: !UID
 %%[[20
-      , trftycoreExpNmOffMp       :: !HsName2OffsetMp
+      , trftycoreExpNmOffMp     :: !HsName2OffsetMp
 %%]]
 %%[[99
-      , trftycoreInhLamMp         :: !LamMp       -- from context
-      , trftycoreGathLamMp        :: !LamMp       -- gathered anew
-      , trftycoreExtraExports     :: !FvS             -- extra exported names, introduced by transformations
+      , trftycoreInhLamMp       :: !LamMp       -- from context
+      , trftycoreGathLamMp      :: !LamMp       -- gathered anew
+      , trftycoreExtraExports   :: !FvS         -- extra exported names, introduced by transformations
 %%]]
       }
 
@@ -80,7 +80,7 @@ emptyTrfTyCore = TrfTyCore emptyModule [] uidStart
                        Set.empty
 %%]]
 
--- type TrfCoreState x = State TrfCore x
+-- type TrfTyCoreState x = State TrfTyCore x
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -92,8 +92,7 @@ trfTyCore :: EHCOpts -> HsName -> TrfTyCore -> TrfTyCore
 trfTyCore opts modNm trftycore
   = snd $ runState trf trftycore
   where trf
-          = do { -- initial is just to obtain TyCore for dumping stages
-                 t_initial
+          = do { t_initial
                ; t_introduceExplicitLaziness
                ; t_removeLazyFunctions
                ; t_definitionSiteArityRaise
@@ -118,7 +117,8 @@ trfTyCore opts modNm trftycore
         uniq s@(TrfTyCore{trftycoreUniq=u})
           = (h,s {trftycoreUniq = n})
           where (n,h) = mkNewLevUID u
-        t_initial                    = liftTyTrf  "initial"                  $ id
+
+        t_initial                    = liftTyTrf "initial"                   $ id
         t_definitionSiteArityRaise   = liftTyTrf "DefinitionSiteArityRaise"  $ cmodTrfDefinitionSiteArityRaise
         t_eliminateExplicitLaziness  = liftTyTrf "EliminateExplicitLaziness" $ cmodTrfEliminateExplicitLaziness
         t_introduceExplicitLaziness  = liftTyTrf "IntroduceExplicitLaziness" $ cmodTrfIntroduceExplicitLaziness

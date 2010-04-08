@@ -861,20 +861,7 @@ cpProcessTyCoreBasic modNm
                                  errs   = C.tcCheck opts C.emptyCheckEnv cMod
                            ; cpSetLimitErrsWhen 500 "Check TyCore" errs
                            }
-       ; cpSeq [
-                 cpTransformTyCore
-                   modNm
-                    --  (
-                    --    [
-                    --      "IntroduceExplicitLaziness"
-                    --    , "RemoveLazyFunctions"
-                    --    , "DefinitionSiteArityRaise"
-%%[[(8 tauphi)
-                    --    --, "OptimizeStrictness"
-%%]
-                    --    , "EliminateExplicitLaziness"
-                    --    ]
-                    --  )
+       ; cpSeq [ cpTransformTyCore modNm
                , when (ehcOptTyCore opts)
                       (do { cpOutputTyCore "tycore" modNm
                           ; check modNm
