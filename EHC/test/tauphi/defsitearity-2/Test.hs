@@ -1,15 +1,54 @@
-foo :: Int -> Char -> Char -> Int -> Char -> Int
-foo x y z = let const :: Int -> Char -> Int
-                const x y = x
-                bar       = id x
-            in \a b -> const bar y
-
-const :: Int -> Char -> Int
-const x y = let id x = x
-            in id x
-
-id :: Int -> Int
+--id :: a -> a
 id x = x
 
-main = foo 1 'x' 'y' 2 'z'
+main = id 3
 
+-- Compiling Haskell                        Test                   (defsitearity-2/Test.hs)
+-- Check TyCore
+-- In `id
+--       :: [$1_8_0 :: *] -> [[] -> [$1_8_0]] -> [$1_8_0]
+--       = \[@ $1_18_0_0 :: *] [x :: [] -> [$1_18_0_0]] ->
+--           (id_worker)
+--             [@ $1_18_0_0, x]':
+--   TyCore type mismatch:
+--     between          : [$1_18_0_0, [] -> [$1_18_0_0]]
+--     and              : [$1_8_0 :: *, [] -> [$1_8_0]]
+--     in detail between: $1_18_0_0
+--     and              : $1_8_0
+-- %module Test
+-- { }
+-- { id_worker
+--     :: [$1_8_0 :: *, {[$1_8_0]}] -> [$1_8_0]
+--     = \[@ $1_18_0_0 :: *, x :: {[$1_18_0_0]}] ->
+--         |x| ;
+--   id
+--     :: [$1_8_0 :: *] -> [{[$1_8_0]}] -> [$1_8_0]
+--     = \[@ $1_18_0_0 :: *] [x :: {[$1_18_0_0]}] ->
+--         (id_worker)
+--           [@ $1_18_0_0, x] ;
+--   main
+--     :: {[Int]}
+--     = {(id)
+--          [@ Int]
+--          [{(3 :: [Int])}]} ;
+-- }
+
+-- Compiling Haskell                        Test                   (defsitearity-2/Test.hs)
+-- %module Test
+-- { }
+-- { f
+--     :: [$1_8_1 :: *] -> [{[$1_8_1]}] -> [$1_8_1]
+--     = \[@ $1_8_1 :: *] [x :: {[$1_8_1]}] ->
+--         |x| ;
+--   id
+--     :: [$1_24_0 :: *] -> [{[$1_24_0]}] -> [$1_24_0]
+--     = \[@ $1_34_0_0 :: *] [x :: {[$1_34_0_0]}] ->
+--         (f)
+--           [@ $1_34_0_0]
+--           [{|x|}] ;
+--   main
+--     :: {[Int]}
+--     = {(id)
+--          [@ Int]
+--          [{(3 :: [Int])}]} ;
+-- }

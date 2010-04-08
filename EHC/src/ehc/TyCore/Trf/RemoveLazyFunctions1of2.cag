@@ -75,19 +75,13 @@ SEM AGItf
 
 %%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf : SELF ]
-ATTR AllExpr
-  [ boundLazy : {Bool}
-  |
-  |
-  ]
-
+ATTR AllExpr   [ boundLazy : {Bool} | | ]
 
 -- Top level environment propagation
 
 SEM Module
   | Mod
-                tbinds      .   boundLazy   =   False
-                vbinds      .   boundLazy   =   False
+                loc         .   boundLazy   =   False
 
 SEM ValBind
   | Val
@@ -99,14 +93,12 @@ SEM Expr
   | Delay
                 lhs         .   cTrf        =   if @isDelayLam
                                                 then @expr.cTrf
-                                                else @original
-                loc         .   original    =   Expr_Delay @expr.cTrf
+                                                else @cTrf
 
   | Lazy
                 lhs         .   cTrf        =   if @lhs.boundLazy
                                                 then @expr.cTrf
-                                                else @original
-                loc         .   original    =   Expr_Lazy @expr.cTrf
+                                                else @cTrf
                 expr        .   boundLazy   =   False
 %%]
 
@@ -126,7 +118,6 @@ SEM Expr
   | * - Lam
                 lhs         .   isLam       =   False
   | Delay
-                lhs         .   isDelayLam  =   @isDelayLam
                 loc         .   isDelayLam  =   @expr.isLam
   | * - Delay
                 lhs         .   isDelayLam  =   False

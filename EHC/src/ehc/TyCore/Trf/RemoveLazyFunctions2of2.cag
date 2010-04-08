@@ -81,12 +81,11 @@ ATTR AllCodeNT [ | | cTrf : SELF ]
 
 SEM Expr
   | Force
-                lhs         .   cTrf        =   maybe @original
+                lhs         .   cTrf        =   maybe @cTrf
                                                       (\n -> if n `lazyElem` @lhs.tyEnv
-                                                             then @original
+                                                             then @cTrf
                                                              else @expr.cTrf)
                                                       @expr.mbVarNm
-                loc         .   original    =   Expr_Force @expr.cTrf
 %%]
 
 %%[(8 codegen)

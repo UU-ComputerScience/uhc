@@ -105,17 +105,15 @@ ATTR Expr
   |
   |
     workerArgs : {[Expr]}
-    nrArgs   : {[Int]}
     lamArgs  : {[[Expr]]}
     arrArgs  : {[Expr]}
-    arrTails : {[Expr]}
   ]
 
 SEM ValBindL
   | Cons        lhs         .   cTrf        =   case @hd.workWrap of
-                                                  Ignored        -> @hd.cTrf : @tl.cTrf
-                                                  Introduced     -> @hd.worker : @hd.wrapper : @tl.cTrf
-                                                  UpdatedWorker  -> @hd.worker : @tl.cTrf
+                                                  Ignored        -> @hd.cTrf    : @tl.cTrf
+                                                  Introduced     -> @hd.worker  : @hd.wrapper : @tl.cTrf
+                                                  UpdatedWorker  -> @hd.worker  : @tl.cTrf
                                                   UpdatedWrapper -> @hd.wrapper : @tl.cTrf
 
 -- Worker/Wrapper
@@ -134,40 +132,33 @@ SEM ValBind
 -- Worker
 SEM ValBind
   | Val
-                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @newType @newBody
-                loc         .   newType     =   bar @l0.lamArgs @l1.arrArgs @l1.arrTail
-                            .   newBody     =   foo @l0.workerArgs @l0.worker
+                lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @workerType @workerBody
+                loc         .   workerType  =   workerType @l0.lamArgs @l1.arrArgs @l1.arrTail
+                            .   workerBody  =   workerBody @l0.workerArgs @l0.worker
 
 -- Wrapper
 SEM ValBind
   | Val
                 lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
-                loc         .   varNms      =   mapMaybe bindNm $ concatMap seqToList (concat @l0.lamArgs)
-                            .   wrapperBody =   foldr Expr_Lam (foldl Expr_App (Expr_Var @workerNm) $ baz @l0.lamArgs @varNms) (concat @l0.lamArgs)
+                loc         .   wrapperBody =   foldr Expr_Lam (foldl Expr_App (Expr_Var @workerNm) $ wrapperBody @l0.lamArgs) (concat @l0.lamArgs)
 
 -- Collect lambda args and bodies
 SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
-                lhs         .   nrArgs      =   0 : @body.nrArgs
-                            .   worker      =   Expr_Let @categ @vbinds.cTrf (foo @body.workerArgs @body.worker)
+                            .   worker      =   Expr_Let @categ @vbinds.cTrf (workerBody @body.workerArgs @body.worker)
   | Lam
                 lhs         .   workerArgs  =   @arg.copy : @res.workerArgs
-                lhs         .   lamArgs     =   let (x:xs) = @res.lamArgs
-                                                in (@arg.copy : x) : xs
-                            .   nrArgs      =   list [1] (\x xs -> x+1:xs) @res.nrArgs
+                lhs         .   lamArgs     =   list [[@arg.copy]] (\x xs -> (@arg.copy : x) : xs) @res.lamArgs
                             .   worker      =   @res.worker
   | Arrow
                 lhs         .   arrArgs     =   @arg.copy : @res.arrArgs
-                            .   arrTails    =   @res.copy : @res.arrTails
                             .   arrTail     =   @res.arrTail
   | * - Lam Arrow
                 lhs         .   workerArgs  =   []
                             .   arrArgs     =   []
-                            .   arrTails    =   []
   | * - Lam Let
-                lhs         .   lamArgs     =   [[]]
-                lhs         .   nrArgs      =   []
+                lhs         .   lamArgs     =   []
 
 {
 list :: b -> (a -> [a] -> b) -> [a] -> b
@@ -175,17 +166,24 @@ list b _ []     = b
 list _ f (x:xs) = f x xs
 
 
-foo :: [Expr] -> Expr -> Expr
-foo args body = Expr_Lam (Expr_Seq $ concatMap seqToList args) body
+workerType :: [[Expr]] -> [Expr] -> Expr -> Expr
+workerType []     _    res = res
+workerType (x:xs) args res = let (args1, args2) = splitAt (length x) args
+                             in Expr_Arrow (Expr_Seq $ concatMap seqToList args1)
+                                           (workerType xs args2 res)
 
-bar :: [[Expr]] -> [Expr] -> Expr -> Expr
-bar []     _    res = res
-bar (x:xs) args res = Expr_Arrow (Expr_Seq $ concatMap seqToList (take (length x) args))
-                                 (bar xs (drop (length x) args) res)
+workerBody :: [Expr] -> Expr -> Expr
+workerBody args body = Expr_Lam (Expr_Seq $ concatMap seqToList args) body
 
-baz :: [[Expr]] -> [HsName]-> [Expr]
-baz []     _    = []
-baz (x:xs) nms = Expr_Seq (mkTySeqVals (map Expr_Var (take (length x) nms))) : baz xs (drop (length x) nms)
+wrapperBody :: [[Expr]] -> [Expr]
+wrapperBody []           = []
+wrapperBody (args:argss) = Expr_Seq (map f (concatMap seqToList args)) : wrapperBody argss
+  where
+    f :: ExprSeq1 -> ExprSeq1
+    f (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
+    f (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
+    f (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
+    f e                       = e
 
 bindNm :: ExprSeq1 -> Maybe HsName
 bindNm (ExprSeq1_L0Bind nm _ _) = Just nm
