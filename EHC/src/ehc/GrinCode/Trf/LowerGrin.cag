@@ -26,12 +26,13 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
 
-lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
+lowerGrin :: (GrModule,HptMap) -> (GrModule,TagMap,HptMap)
 lowerGrin (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+    in  (grTrf_Syn_GrAGItf syn, tagMap_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
 
+type TagMap         = Map.Map GrTag GrTag
 %%]
 
 %%[(8 codegen grin)
@@ -44,6 +45,8 @@ ATTR GrPatLam
      AllBind
      GrModule  [ | | newItems USE {++} {[]} : HptItems ]
 ATTR GrAGItf   [ | | hptMap: HptMap ]
+
+ATTR AllNT GrAGItf [ | | tagMap USE {`Map.union`} {Map.empty} : {TagMap} ] 
 
 ATTR GrAGItf 
      GrModule
@@ -220,6 +223,7 @@ SEM GrExpr
     FetchField 
     UpdateUnit
     Eval 
+    FetchVar
     Throw      loc  . newName   = maybe @nm 
                                         -- (\(GrVal_Var nm) -> nm) 
                                         (\v -> case v of (GrVal_Var nm) -> nm
@@ -228,9 +232,32 @@ SEM GrExpr
                                         (Map.lookup @nm @lhs.subst)
   | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
   | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
+  | FetchVar   lhs  . grTrf     = GrExpr_FetchVar @newName @varos.grTrf
   | UpdateUnit lhs  . grTrf     = GrExpr_UpdateUnit @newName @val.grTrf
   | Eval       lhs  . grTrf     = GrExpr_Eval  @newName
   | Throw      lhs  . grTrf     = GrExpr_Throw @newName
+
+
+-- this is necessary for meta-closures
+
+ATTR GrTag GrVarOffset GrVarOffsetL   [ | | self   : SELF     ] 
+
+SEM GrTag
+  | Meta          lhs . tagMap = if @loc.self == @loc.grTrf
+                                 then Map.empty
+                                 else Map.singleton @loc.self @loc.grTrf
+
+SEM GrVarOffset 
+  | GrVarOffset   lhs . grTrf = GrVarOffset_GrVarOffset 
+                                    @inFrameOf 
+                                    $ maybe @var 
+                                        -- (\(GrVal_Var nm) -> nm) 
+                                        (\v -> case v of (GrVal_Var nm) -> nm
+                                                         _ -> error $ "LowerGrin: not a GrVal_Var: " ++ show v ++ " as replacement of " ++ show @var
+                                        )
+                                        (Map.lookup @var @lhs.subst)
+
+
 %%]
 
 

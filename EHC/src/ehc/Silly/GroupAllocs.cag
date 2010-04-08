@@ -2,6 +2,8 @@
 %% Group together the allocations in a list of statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%
+%% This transformation is obsolete and disabled... 
+%%
 %% In silly, often trees of closures are created. This results in code as
 %% follows:
 %%
@@ -57,11 +59,12 @@ groupAllocs :: EHCOpts -> SilModule -> SilModule
 groupAllocs options input   
   = let t = wrap_SilModule (sem_SilModule input)
                            (Inh_SilModule {}) 
-    in trf_Syn_SilModule t
+    in input -- trf_Syn_SilModule t
 %%]
 
 
 %%[(8 codegen grin)
+{-
 -- Result of the AG transformation.
 ATTR AllNT [ | | trf: SELF ]
 
@@ -128,4 +131,6 @@ SEM Statement
                                             @source.allocWordCount
                                       then Just @dest.trf
                                       else @lhs.ptrToAlloc
+
+-}
 %%]

@@ -3,8 +3,10 @@
 If an expression is bound to a variable which is never used,
 it is removed (if the expression has no side effect).
 Variable bindings that are never used are replaced by wildcards.
-Global variables and functions thar are never used are removed.
+Global variables and functions that are never used are removed.
 Alternatives with tags that involve functions that do no longer exist are removed.
+
+
 
 %%]
 
@@ -46,10 +48,13 @@ ATTR GrAGItf GrModule AllBind AllGlobal AllGrExpr [ | | changes USE {||} {False}
 -- This includes the use of function names in calls and F, P, and A-tags (but not in C-tags) used in values (but not in patterns and annotations).
 -- Also we collect the free variables in the body of each binding of an global (this will be other function and global names).
 
+
+
 ATTR AllGrExpr
      AllGrVal
      AllGrTag
      AllBind
+     AllGrVarOffset
      AllGlobal   [ | | freeUsed USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 
 
@@ -104,6 +109,7 @@ SEM GrExpr
   | FetchNode     lhs.freeUsed    =  Set.singleton @nm
   | FetchUpdate   lhs.freeUsed    =  Set.insert @src (Set.singleton @dst) -- Note:  although @dst is not a "use", we do regard it as such, so that we won't be updating an eliminated variable
   | FetchField    lhs.freeUsed    =  Set.singleton @nm
+  | FetchVar      lhs.freeUsed    =  Set.singleton @nm
   | Call          lhs.freeUsed    =  Set.insert    @nm @argL.freeUsed
   | Eval          lhs.freeUsed    =  Set.singleton @nm
   | App           lhs.freeUsed    =  Set.insert    @nm @argL.freeUsed
@@ -120,6 +126,10 @@ SEM GrTag
   | Fun
     PApp
     App           lhs.freeUsed    =  Set.singleton @nm
+  | Meta          lhs.freeUsed    =  Set.insert @nm @args.freeUsed
+
+SEM GrVarOffset
+  | GrVarOffset   lhs.freeUsed    = Set.singleton @var                -- Isn't really a use now, but the variable will be used later on when evaluating the meta-closure
 
 
 -- In patterns we collect the variables that are bound
@@ -274,6 +284,8 @@ SEM GrSplit
 -- (before version 1090 we had an additional test which removed code after an expression that always throws an exception.
 -- This needed the HPT map to decide whether a Call always throws: if its result is Bottom, but its throw-result is not Bottom).
 
+
+
 SEM GrExpr
   | Seq  (lhs.grTrf
          ,lhs.changes)   =  -- if @expr.throws then @expr.grTrf else 
@@ -293,12 +305,17 @@ SEM GrVal
 
 -- Bindings, Globals, and Alternatives that are not "life" are deleted.
 
-SEM GrBindL GrGlobalL GrAltL
+-- There is a problem here for meta-closures: we remove alternatives for tags of functions that are no longer used,
+-- however these may introduce a meta-closure tag. If we remove them we have the problem that we have
+-- meta closures which are eliminated but not introduced. Ideally we would also want to destroy meta-closures
+-- tag introduces in these alternative to be deleted. 
+
+SEM GrBindL GrGlobalL 
   | Cons  (lhs.grTrf
           ,lhs.changes)  =  if @hd.life
                             then ( @hd.grTrf : @tl.grTrf, @hd.changes || @tl.changes )
                             else (             @tl.grTrf, True                       )
-
+-- SEM GrAltL
 %%]
 
 
@@ -319,6 +336,8 @@ SEM GrGlobal
 -- C and special tags are always life.
 -- An F, A or P tag is life if the corresponding function exists.
 
+
+
 SEM GrAlt
   | Alt    lhs . life  =  maybe True
                                 (\nm -> Set.member nm @lhs.globalUsed)
@@ -335,7 +354,8 @@ SEM GrPatAlt
 SEM GrTag
   | Fun
     PApp
-    App        lhs.mbTagName = Just @nm
+    App        
+    Meta       lhs.mbTagName = Just @nm
   | Con
     Hole
     Rec
@@ -347,6 +367,9 @@ SEM GrTag
 
 -- Variables bound in patterns which are never used are replaced with wildcards.
 -- (This is only important for the result of expressions that are kept because of their side effects)
+
+-- Updated to not delete variables used by meta-closures (the variables that are used are in the tag of the meta-closure).
+
 
 SEM GrPatLam
   | Var         lhs  .  grTrf  =  GrPatLam_Var                    (mkWildcard @lhs.downstreamUsed  @nm)

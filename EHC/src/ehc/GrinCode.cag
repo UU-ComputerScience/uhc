@@ -25,7 +25,7 @@
 %%[(8 codegen grin) hs export(GrType(..), GrTypeBase(..), GrTypeBaseL)
 %%]
 
-%%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL)
+%%[(8 codegen grin) hs export(GrAlt(..), GrAltL, GrPatAlt(..), GrPatLam(..), GrVal(..), GrValL, GrTag(..), GrTagL, GrVar(..), GrVarL, GrVarOffset(..), GrVarOffsetL)
 %%]
 
 %%[(10 codegen grin) hs export(GrAdapt(..), GrAdaptL, GrSplit(..), GrSplitL)
@@ -92,6 +92,7 @@ data GrTagAnn
 instance Eq GrTag where
   GrTag_Con _ _ x1 == GrTag_Con _ _ x2 = x1==x2
   GrTag_Fun     x1 == GrTag_Fun     x2 = x1==x2
+  GrTag_Meta nm args == GrTag_Meta nm' args' = nm == nm' && args == args'
   GrTag_App     x1 == GrTag_App     x2 = x1==x2
   GrTag_PApp n1 x1 == GrTag_PApp n2 x2 = n1==n2 && x1==x2
   GrTag_Unboxed    == GrTag_Unboxed    = True

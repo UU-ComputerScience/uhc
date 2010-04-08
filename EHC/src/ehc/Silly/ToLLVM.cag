@@ -356,7 +356,7 @@ SEM Variable
                 loc.(uniqNr2,ptrVar,ptrCode) =
                                cast2ptr @loc.uniqNr1 @loc.loadVar @lhs.pointerType  
                 loc.(uniqNr3,offsetVar,offsetCode) =
-                               assign2var @loc.uniqNr2 (LLVMExpression_GetElemPtr @loc.ptrVar [@index], getType @loc.ptrVar)
+                                assign2var @loc.uniqNr2 (LLVMExpression_GetElemPtr @loc.ptrVar [@index], getType @loc.ptrVar)
  
    | * - Global Local Param RP Subs
                 lhs.llvmVar  = error "Variable contains an impossible construct"
@@ -541,8 +541,7 @@ ATTR Functions Function
      [ | | maxRPIndex USE {`max`} {0}: {Int} ]
 
 SEM Variable
-  | Subs        lhs.maxRPIndex =
-                             if @array.isRP then @index else 0  
+  | Subs        lhs.maxRPIndex = if @array.isRP then @index else 0  
 
 ATTR Variable
      [ | | isRP : {Bool} ]

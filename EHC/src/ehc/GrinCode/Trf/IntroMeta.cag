@@ -1,0 +1,77 @@
+%%[doesWhat doclatex
+
+Introduces tag for meta-closures
+
+%%]
+
+
+
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.IntroMeta}  export(introMeta)
+%%]
+
+%%[(8 codegen grin) hs import(Data.Array.IArray, qualified Data.Set as Set, qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}Config})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+introMeta :: GrModule -> GrModule
+introMeta code
+  = let inh = Inh_GrAGItf {}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+%%]
+
+
+%%[(8 codegen grin)
+
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+
+
+SEM GrExpr
+    | Store  lhs.grTrf = GrExpr_Store @val.converted
+
+ATTR AllExpr [ enclosingFun : {HsName} | | ]
+
+SEM GrBind 
+    | Bind            expr.enclosingFun = @nm
+
+ATTR AllExpr [ | | converted : SELF ]
+
+
+ATTR GrVal GrValL [ | | vars USE {++} {[]} : {[HsName]} ]
+
+SEM GrVal
+    | Var           lhs.vars = [@nm]
+
+SEM GrVal
+    | Node lhs.converted = case @tag.converted of
+                            GrTag_Fun nm -> GrVal_Node (makeMetaTag @lhs.enclosingFun nm @fldL.vars) [GrVal_This]
+                            _            -> GrVal_Node @tag.converted @fldL.converted
+
+{
+makeMetaTag encl fun args = 
+    GrTag_Meta fun $ map (GrVarOffset_GrVarOffset encl) args
+}
+    
+%%]

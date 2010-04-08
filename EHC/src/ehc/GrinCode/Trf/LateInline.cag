@@ -89,6 +89,7 @@ SEM GrExpr
                                   ( Map.lookup (getNr @nm) @lhs.finalInfo )
 
 
+
 -- drop the inlined bindings
 
 {-
@@ -112,6 +113,9 @@ SEM GrBind
            lhs . grTrf  =  if   @loc.drop
                            then GrBind_Arity @nm (length @argNmL)
                            else @loc.grTrf
+
+
+
 
 %%]
 

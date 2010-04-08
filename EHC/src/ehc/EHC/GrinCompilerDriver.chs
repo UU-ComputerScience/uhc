@@ -53,6 +53,10 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.IntroMeta(introMeta)})
+%%]
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SubstMeta(substMeta,TagMap)})
+%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.InlineEA(inlineEA)})
@@ -82,8 +86,6 @@
 %%[(8 codegen grin) import({%{EH}Silly.InlineExpr(inlineExpr)})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.ElimUnused(elimUnused)})
-%%]
-%%[(8 codegen grin) import({%{EH}Silly.GroupAllocs(groupAllocs)})
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.EmbedVars(embedVars)})
 %%]
@@ -183,8 +185,9 @@ doCompileGrin input opts
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-128-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
 
-         
          ; transformCode         numberIdents       "NumberIdents"     ; caWriteGrin "-129-numbered"
+         ; when (ehcOptMetaClosures options) 
+             (do transformCode         introMeta          "IntroMeta"        ; caWriteGrin "-129_2-intrometa")         
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131-evalinlined"
@@ -196,8 +199,9 @@ doCompileGrin input opts
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-133-emptyAlts"
          ; transformCode         (dropUnreachableBindings True) 
                                              "DropUnreachableBindings" ; caWriteGrin "-134-reachable"
-         ; transformCodeChgHpt   lateInline         "LateInline"
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-135-lateinlined"
+         ; when (ehcOptMetaClosures options) 
+            ( do transformCodeChgHpt   lateInline         "LateInline"; 
+                 transformCode         grFlattenSeq       "Flatten"      ; caWriteGrin "-135-lateinlined" )
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-136-emptyAlts"
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-141-possibleCase"
          ; transformCode         emptyAlts          "EmptyAlts"        ; caWriteGrin "-142-emptyAlts"
@@ -205,16 +209,16 @@ doCompileGrin input opts
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-143-singleCase"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-144-unusedExprDropped"
 		 ; transformCode         mergeCase          "MergeCase"        ; caWriteGrin "-145-caseMerged"         
-         ; transformCodeChgHpt   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
+         ; transformCodeChgHptChgMeta   lowerGrin          "LowerGrin"        ; caWriteGrin "-151-lowered"
                                                                        ; caWriteHptMap "-152-hpt"
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin "-161-after-cp"
-         ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
+         -- ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-162-possibleCase"
          ; transformCode         singleCase         "singleCase"       ; 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-163-singleCase"
 
 
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-169-unusedExprDropped"
-         ; transformCodeChgHpt   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
+         ; transformCodeChgHptChgMeta   splitFetch         "SplitFetch"       ; caWriteGrin "-171-splitFetch"
                                                                        ; caWriteHptMap "-172-hpt"
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin "-176-unusedExprDropped"
          ; transformCodeIterated copyPropagation    "copyPropagation"  ; caWriteGrin "-179-final"
@@ -483,6 +487,19 @@ transformCodeChgHpt process message
   = do { putMsg VerboseALot message Nothing
        ; tup <- gcsGetCodeHpt
        ; gcsPutCodeHpt (process tup)
+       }
+
+transformCodeChgHptChgMeta :: ((GrModule,HptMap) -> (GrModule,TagMap,HptMap)) -> String -> CompileAction ()
+transformCodeChgHptChgMeta process message 
+  = do { putMsg VerboseALot message Nothing
+       ; tup <- gcsGetCodeHpt
+       ; opts <- gets gcsOpts
+       ; let res = let (trf,tagMap,hptMap) = process tup    
+                       trf2 = if ehcOptMetaClosures opts
+                              then substMeta tagMap trf
+                              else trf
+                   in (trf2,hptMap)
+       ; gcsPutCodeHpt res
        }
 
 transformCodeIterated :: (GrModule->(GrModule,Bool)) -> String -> CompileAction ()

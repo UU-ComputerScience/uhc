@@ -59,14 +59,14 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SplitFetch} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(splitFetch)
 
-splitFetch :: (GrModule,HptMap) -> (GrModule,HptMap)
+splitFetch :: (GrModule,HptMap) -> (GrModule,TagMap,HptMap)
 splitFetch (input,hptMap)
   = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
-    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+    in  (grTrf_Syn_GrAGItf syn, tagMap_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
 
 type HptItems       = [ (Int,AbstractValue) ]
-
+type TagMap         = Map.Map GrTag GrTag
 %%]
 
 
@@ -93,9 +93,10 @@ ATTR GrModule
      AllGrPat  [  | uniq : Int |  ]
 -- strange: uniq is not really needed in AllGrVal and AllGrPat, but if they are omitted we get a induced mutal dependency problem with renameMap
 
-ATTR AllGrExpr
-     AllGrVal
-     AllGrPat  [ renameMap: RenMap  | | ]
+ATTR AllExpr [ renameMap: RenMap  | | ]
+
+ATTR AllNT GrAGItf [ | | tagMap USE {`Map.union`} {Map.empty} : {TagMap} ] 
+
 
 SEM GrAGItf
   | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
@@ -143,7 +144,7 @@ SEM GrVar
  | Ignore Var lhs. mbTag  = Nothing
 
 
-ATTR AllGrTag GrVarL GrVar [ | | self:SELF ]
+ATTR AllGrTag GrVarL GrVar AllGrVarOffset [ | | self:SELF ]
 
 SEM GrExpr [ | | fetchPointer: {Maybe HsName} ]
   | FetchNode     lhs  .  fetchPointer  =  Just @nm  -- Just (Map.findWithDefault @nm (getNr @nm) @lhs.renameMap)
@@ -263,6 +264,18 @@ SEM GrAlt
                                 ++ @expr.newItems
          
          lhs   .  grTrf      =  GrAlt_Alt @ann @pat.grTrf (buildSeqs @expr.grTrf @newExprInfo)
+
+-- this is needed for updating tags an variable offsets globally
+
+SEM GrTag
+  | Meta          lhs . tagMap = if @loc.self == @loc.grTrf
+                                 then Map.empty
+                                 else Map.singleton @loc.self @loc.grTrf
+
+SEM GrVarOffset 
+  | GrVarOffset   lhs . grTrf = GrVarOffset_GrVarOffset @inFrameOf $  Map.findWithDefault @var (getNr @var) @lhs.renameMap
+
+
 %%]
 
 %%[(8 codegen grin).lastFetch
@@ -282,7 +295,7 @@ SEM GrExpr
 
 SEM GrExpr
   | Catch  loc  . hasNext      =  False
-  | FetchNode FetchField
+  | FetchNode FetchField 
            (loc.uniq
            ,lhs.newItems
            ,lhs.grTrf)         =  if not @lhs.hasNext
@@ -308,13 +321,16 @@ SEM GrVal
   | Var        lhs . grTrf       = maybe @grTrf GrVal_Var (Map.lookup (getNr @nm) @lhs.renameMap)
 
 SEM GrExpr
-  | FetchNode FetchField Eval Throw UpdateUnit
+  | FetchNode FetchField FetchVar Eval Throw UpdateUnit
                loc  . newName    = Map.findWithDefault @nm (getNr @nm) @lhs.renameMap
   | FetchNode  loc  . grTrf      = GrExpr_FetchNode  @newName
   | FetchField loc  . grTrf      = GrExpr_FetchField @newName @offset @mbTag
+  | FetchVar   loc  . grTrf      = trace "updated fetchvar" $ GrExpr_FetchVar @newName @varos.grTrf
   | UpdateUnit loc  . grTrf      = GrExpr_UpdateUnit @newName @val.grTrf
   | Eval       loc  . grTrf      = GrExpr_Eval  @newName
   | Throw      loc  . grTrf      = GrExpr_Throw @newName
+
+
 %%]
 
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe, Data.List)
@@ -396,6 +412,7 @@ tagArity :: GrTag -> Map.Map Int Int -> Int
 tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
 tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
 tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_Meta _ _)     _        = 1         -- meta-closure always have 1 argument: the pointer to the frame
 tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
 tagArity  GrTag_Unboxed       _        = 1
 tagArity  GrTag_Hole          _        = 0

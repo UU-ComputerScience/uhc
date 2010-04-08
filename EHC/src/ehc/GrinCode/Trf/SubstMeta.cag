@@ -1,0 +1,54 @@
+%%[doesWhat doclatex
+
+This transformation substitutes meta-tags globally. Also the corresponding VarOffsets are substituted.
+
+Currently run after SplitFetch and LowerGrin, if meta-closures are enabled.
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SubstMeta} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substMeta,TagMap)
+
+type TagMap = Map.Map GrTag GrTag
+type OffsetMap = Map.Map GrVarOffset GrVarOffset
+
+substMeta :: TagMap -> GrModule -> GrModule
+substMeta tagmap input= let inh = Inh_GrAGItf {tagMap_Inh_GrAGItf=tagmap}
+                            syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+                        in  grTrf_Syn_GrAGItf syn
+
+%%]
+
+%%[(8 codegen grin)
+ATTR AllNT                [ tagMap : {TagMap} | | grTrf: SELF     ]
+ATTR GrAGItf              [ tagMap : {TagMap} | | grTrf: GrModule ]
+ATTR GrTag AllGrVarOffset [                   | | self : SELF     ]
+
+ATTR GrTag GrPatAlt    [                         | | offsetMapUp USE {`Map.union`} {Map.empty} : {OffsetMap} ]
+ATTR AllNT             [ offsetMap : {OffsetMap} | |                           ]
+
+SEM GrAGItf
+  | AGItf           module . offsetMap          = Map.empty
+
+SEM GrTag
+  | Meta            lhs . (offsetMapUp, grTrf)  = let makeOffsetMap (GrTag_Meta _ args) = Map.fromList $ zip @args.self args
+                                                  in case Map.lookup @loc.self @lhs.tagMap of
+                                                      Nothing      -> (Map.empty           , @loc.self )
+                                                      Just newTag  -> (makeOffsetMap newTag, newTag    )
+
+SEM GrAlt
+  | Alt             expr . offsetMap            = Map.union @pat.offsetMapUp @lhs.offsetMap -- Map.union prefers left   
+
+SEM GrVarOffset       
+  | GrVarOffset     lhs . grTrf                 = Map.findWithDefault @loc.self @loc.self @lhs.offsetMap                                      
+
+%%]

@@ -1,3 +1,5 @@
+-- kate: indent-mode normal
+
 %%[0
 %include lhs2TeX.fmt
 %include afp.fmt
@@ -35,20 +37,23 @@ embedVars :: EHCOpts -> SilModule -> SilModule
 embedVars options input   
   = let t = wrap_SilModule (sem_SilModule input)
                            (Inh_SilModule {opts_Inh_SilModule = options})
-    in trf_Syn_SilModule t
+    in if (ehcOptMetaClosures options) 
+       then trfMeta_Syn_SilModule t
+       else trf_Syn_SilModule t
+
 %%]
 
 %%[(8 codegen grin)
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
-ATTR AllNT [ | | trf: SELF ]
+ATTR AllNT [ | | trf: SELF  ]
 ATTR Statement Statements Alternative Alternatives Variable Value Values [ numberLocals : {Int} | | ]
 ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
 ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
 ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
 ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
-ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ numberParameters : {Int} | | ]
 ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
 ATTR Function Functions 
      Statement Statements Alternative Alternatives Value Values Variable [ optGenOwn  : {Bool}  optGenLink : {Bool}  optGenLocReg : {Bool}| | ]
@@ -99,7 +104,7 @@ SEM Statement
                                             :
                                             smartAssignment (zip destinations sources)                                          -- do stack-putting in an overlapping fashion with the original stack contents
                                             ++
-                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: increment for original parameters&callinfo&locals, decrement for new parameters&callinfo
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP  adjust)                -- adjust stack: increment for original parameters&callinfo&locals, decrement for new parameters&callinfo
                                             | adjust /= 0                                                                       --   (if necessary)
                                             ]
                                             ++
@@ -119,7 +124,7 @@ SEM Statement
                                                            )
                                                            ++ reverse @args.trf                                                 -- put arguments on stack
                                                            ++ [ Value_Label @loc.label ]                                        -- put return address on the stack
-                                                           ++ [ Value_Cast (Value_Offset Variable_SP nl) True                   -- put dynamic link on the stack
+                                                           ++ [ Value_Cast (Value_Offset Variable_SP  nl) True                   -- put dynamic link on the stack
                                                               | @lhs.optGenLink                                                 --  (if requested)
                                                               ]
                                             destinations = (map (Variable_Subs Variable_SP) (iterate decrement (-1)))
@@ -128,13 +133,13 @@ SEM Statement
                                             :
                                             zipWith Statement_Assignment destinations sources                                   -- do stack-putting by assignments
                                             ++ 
-                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: decrement for new parameters&callinfo
+                                            [ Statement_Assignment Variable_SP (Value_Offset Variable_SP  adjust)                -- adjust stack: decrement for new parameters&callinfo
                                             , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
                                             , Statement_Label @loc.label                                                        -- return here after the call
                                             ]
                                             ++
                                             ( if @lhs.optGenLocReg
-                                              then Statement_Assignment Variable_SP (Value_Offset Variable_SP (length registersToSave))
+                                              then Statement_Assignment Variable_SP (Value_Offset Variable_SP  (length registersToSave))
                                                    :
                                                    zipWith Statement_Assignment registersToSave (map Value_Var destinations)           -- restore registers
                                               else []
@@ -163,8 +168,8 @@ SEM Statement
                                    (  if @lhs.optGenOwn
                                       then let n | @lhs.optGenReturnViaStack = max @vals.length @lhs.numberParameters
                                                  | otherwise                 =                  @lhs.numberParameters
-                                           in  [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (locPar + callInfoSize ))
-                                               , Statement_Return [] (Just (n + 1 ))
+                                           in  [ Statement_Assignment Variable_SP (Value_Offset Variable_SP  (locPar + callInfoSize ))
+                                               , Statement_Return [] (Value_Var $ Variable_Subs Variable_SP (-(n + 1 )))
                                                ]                                    
                                       else []
                                    )
@@ -189,7 +194,7 @@ SEM Function
                                                      then Statement_Comment ["Expects " ++ show (length @parameters) ++ " parameters, uses " ++ show @loc.numberLocals ++ " local variables" ]
                                                           : ( if   @lhs.optGenLocReg || @loc.numberLocals == 0
                                                               then []
-                                                              else [ Statement_Assignment Variable_SP (Value_Offset Variable_SP (- @loc.numberLocals)) ]
+                                                              else [ Statement_Assignment Variable_SP (Value_Offset Variable_SP  (- @loc.numberLocals)) ]
                                                             )
                                                      else []
                                                    )
@@ -199,6 +204,7 @@ SEM Function
 SEM Function
   | Function  body . numberParameters = length @parameters
               body . embedMap = Map.fromList (zipWith (makeEmbedTupel Variable_Param) [1..] @parameters)
+              loc  . numberLocals : Int
               loc  . numberLocals = maxNeededLocal @body.localsSet @body.embedMap
 
 
@@ -223,13 +229,13 @@ SEM Statement
 {
 maxNeededLocal :: Set.Set HsName -> EmbedMap -> Int
 maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m , Set.member v s ]
-                     in  if null ns then 0 else maximum ns
+                     in  {- trace (show $ Set.toList s) $ -} if null ns then 0 else maximum ns
 }
 
 
 
 SEM Function
-  | Function       body . neededSet = Set.empty
+  | Function       body . neededSet = @lhs.persistentVars
   
 SEM Statements
   | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
@@ -258,6 +264,25 @@ SEM Variable
                                        @lhs.embedMap 
                                        @name
 
+-- The needed set is the set of variables that is still used later on the function
+-- this is used to re-use memory location for different variables
+-- For meta-closures however a variable might still be used, even though it is never
+-- referenced again in the function, it might be looked up later on 
+-- through a variable offset (fetch var). To make sure
+-- that these variables aren't overwritten we first built the set 
+-- of "persistent" variables, i.e. variables that should have
+-- their own memory location. 
+-- This is added to the needed set.
+
+ATTR Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value 
+    [ persistentVars : {Set.Set HsName} | | persistentVarsUp USE {`Set.union`} {Set.empty} : {Set.Set HsName} ]
+
+SEM Value
+    | OffsetVar lhs.persistentVarsUp = Set.singleton @var
+
+SEM SilModule
+    | SilModule functions.persistentVars = @functions.persistentVarsUp
+
 %%]
 
 
@@ -285,9 +310,11 @@ strategyLocReg :: Int -> Int -> EmbedStrategy
 strategyLocReg d _            (Variable_Local n _) = Variable_Subs Variable_LP n
 strategyLocReg d callInfoSize (Variable_Param n _) = Variable_Subs Variable_SP (callInfoSize-1+n)
 
+-- new for meta closures
 
-
-
+strategyOnHeapFrame :: Int -> EmbedStrategy
+strategyOnHeapFrame nrParams       (Variable_Local n _) = Variable_Subs Variable_SP (2 + nrParams + n -1 )
+strategyOnHeapFrame _              (Variable_Param n _) = Variable_Subs Variable_SP (2+n -1 )
 
 embedUsing :: EmbedStrategy -> EmbedMap -> EmbedFunction
 embedUsing strat m x@(HNmNr n _) = if n==0
@@ -304,6 +331,8 @@ embedUsing strat m x@(HNmNr n _) = if n==0
 postPad n s = let w = length s
               in  if w>=n then s else s ++ replicate (n-w) ' '
                   
+
+
 
 %%]
 
@@ -405,4 +434,236 @@ smartChain v (SmartTree (Left root) kids, mbindex)
         ]
 
        
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Embedding of parameters and local variables in frames on the heap for Meta closures (new) by Atze van der Ploeg
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+
+
+-- compute frame sizes (new)
+
+ATTR AllNT [ | | frameSizesMapUp USE {`Map.union`} {Map.empty} : {Map.Map HsName Int} ]
+
+SEM Function 
+    | Function lhs.frameSizesMapUp = let callInfoSize = 2 -- 1 for return adress, 1 for dynamic link
+                                         size =  (@loc.numberLocals) + (length @parameters) + callInfoSize
+                                     in  Map.singleton @name size
+
+ATTR Functions Function Statements Statement Alternatives Alternative [ frameSizesMap : {Map.Map HsName Int} || ]
+
+-- reinsert result of up into top of tree
+
+SEM SilModule
+    | SilModule functions.frameSizesMap = @functions.frameSizesMapUp
+    
+{- Here we use a different frame layout:
+
+0: ret addr
+1: dyn link
+2: argument 1
+3: argument 2
+.
+.
+n + 2 : argument n
+n + 3 : local variable 1
+n + 4 : local variable 2
+.
+.
+n + m + 2 : local variable m
+
+-}
+
+
+-- ATTR Function Statement Statements Alternative Alternatives Value Values Variable 
+--     [ | |  realNrLocals USE {+} {0}: {Int} ]
+-- 
+-- -- get the set of locals that is actually used, apperantly the list of @locals of a function is not updated in the last transform...
+-- 
+-- SEM Variable
+--   | Unembedded      lhs . realNrLocals = case @name of
+--                                           HNmNr _ (OrigGlobal _) -> 0 -- apperantly if we can somehow see if it was originally a global
+--                                           _                      -> 1
+  
+-- now make a map from the name of a variable to its position in the frame
+
+-- SEM Function
+--     | Function body.mEmbedMap = 
+--         let  keyValuePairs = zip allNames [callInfoSize..]
+--              allNames      = @parameters ++ (Set.toList @body.realLocals)
+--              callInfoSize  = 2
+--         in   Map.fromList keyValuePairs 
+              
+-- the actual transformation
+    
+ATTR AllNT      [ | | trfMeta : SELF ]    
+ 
+ATTR Statement  [ | | trfMetaStats: {[Statement]} ]    
+SEM Statement
+    | Call      lhs.trfMetaStats
+        = let   allocFrame =
+                    [Statement_Comment ["Going to call", "Allocate new heap frame"],
+                    Statement_Assignment Variable_SPTemp newFramePointer]
+                    where newFramePointer       = Value_Cast (Value_Alloc allocFrameSize GCManaged) False -- for obscure reason heapmalloc returns a word!
+                          Just allocFrameSize   = Map.lookup @name @lhs.frameSizesMap
+                  
+                fillArgumentsAndCallinfoInFrame =
+                    Statement_Comment ["Fill in arguments and params"] :
+                    zipWith Statement_Assignment destinations sources 
+                    where
+                    sources = 
+                        returnAddress ++
+                        dynamicLink ++ 
+                        arguments
+                
+                    returnAddress  = [ Value_Label @loc.label ]
+                    dynamicLink   = [ Value_Cast (Value_Var Variable_SP) True ]
+                    arguments = @args.trfMeta
+                    destinations = map (Variable_Subs Variable_SPTemp) [0..]
+            
+                switchSP = [ Statement_Comment ["Switching SP to new frame"],
+                        Statement_Assignment Variable_SP $ Value_Var Variable_SPTemp ]
+            
+                jump = [ Statement_Call @name False [] ]
+            
+                label = [ Statement_Label @loc.label ] 
+                
+                returnIfTailCall = 
+                    if @tailJumps 
+                    then jumpBackImmediatly
+                    else []
+                    where
+                    jumpBackImmediatly =
+                        -- these are defined below
+                        saveOldFramePtr       ++
+                        restoreDynamicLink    ++
+                        jumpToReturnAdress 
+                                   
+            
+            in  allocFrame ++
+                fillArgumentsAndCallinfoInFrame ++
+                switchSP ++
+                jump ++
+                label ++
+                returnIfTailCall
+          
+         
+          
+    | Return    lhs.trfMetaStats 
+        =   let setReturnValues =
+                    Statement_Comment ["set return values"] :
+                    zipWith Statement_Assignment destinations sources 
+                    where sources       = @vals.trfMeta
+                          destinations  = map returnRegister [0..]
+                          returnRegister i = Variable_Subs Variable_RP i 
+            -- for the last three see below
+            in  setReturnValues       ++
+                saveOldFramePtr       ++
+                restoreDynamicLink    ++
+                jumpToReturnAdress 
+          
+          
+          
+          
+
+  | * - Return
+        Call   lhs . trfMetaStats = [@loc.trfMeta]
+
+SEM Statements
+  | Cons      lhs . trfMeta      = @hd.trfMetaStats ++ @tl.trfMeta
+
+
+-- a problem with frames on the heap is that we need to know the size of the frame of the function before
+-- calling it. This gives us a problem when translating to C, we must call the main silly function from c
+-- but we do not know how big the frame of main is. To get around this we let c alloc a frame of size 2 for main, 
+-- and then let main alloc the actual frame and copy the data (dynamic link, return adress) from the original frame.
+
+SEM Function
+    | Function  lhs.trfMeta
+        = Function_Function
+            @name
+            [] -- no parameters
+            [] -- no locals
+            ( if hsnShowAlphanumeric @name == "fun_fun0tildemain" 
+              then let frameSize = Map.findWithDefault (error "cannot find size of main!") @name @lhs.frameSizesMap
+                   in (makeMainFrame frameSize ) ++ @body.trfMeta
+              else @body.trfMeta
+            )
+            
+{
+
+makeMainFrame frameSize = [ Statement_Assignment Variable_SPTemp ( Value_Cast (Value_Alloc frameSize GCManaged) False )
+                          , Statement_Assignment (Variable_Subs Variable_SPTemp 0) (Value_Var $  Variable_Subs Variable_SP 0)
+                          , Statement_Assignment (Variable_Subs Variable_SPTemp 1) (Value_Var $  Variable_Subs Variable_SP 1)
+                          , Statement_Assignment (Variable_SP) (Value_Var Variable_SPTemp) 
+                          ]
+}
+        
+SEM Variable
+  | Unembedded   lhs.trfMeta =  embedUsing ( strategyOnHeapFrame  @lhs.numberParameters ) 
+                                       @lhs.embedMap 
+                                       @name
+                                       
+SEM Value
+  | This         lhs.trfMeta = Value_Cast (Value_Var Variable_SP) True
+
+ATTR Variable [ | | self : SELF ]
+
+SEM Value
+    | OffsetVar  lhs.trfMeta = let (HNmNr nameNr _) = @var -- note that we use here that nrs are globally unique
+                                   offset = case Map.lookup nameNr @lhs.frameOffsetMap of
+                                                Just off -> off
+                                                Nothing -> error $ "No offset found in map for var with nr:" ++ (show nameNr)
+                               in  Value_Var $ Variable_Subs @frame.trfMeta offset
+
+-- get the offsets of all local variables and parameters
+ATTR Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value  [frameOffsetMap : {Map.Map Int Int} | | frameOffsetMapUp USE {`Map.union`} {Map.empty} : {Map.Map Int Int} ]   
+
+SEM SilModule
+  | SilModule  functions.frameOffsetMap = @functions.frameOffsetMapUp
+-- 
+SEM Function
+  | Function   lhs.frameOffsetMapUp =  let embed x = embedUsing ( strategyOnHeapFrame  (length @parameters) ) 
+                                                        @body.embedMap 
+                                                        x
+                                           offset embedded = case embedded of 
+                                                                Variable_Subs Variable_SP offset -> offset
+                                                                _                                -> error "No offset found"
+                                           allVars = @parameters ++ @locals
+                                           offsets = map (offset . embed) allVars
+                                           nameNr x = case x of
+                                                        (HNmNr nameNr  _) -> nameNr
+                                                        _                 -> error "encountered non nr name when constucting frame offset map"
+                                           nameNrs  = map nameNr allVars
+                                       in  Map.fromList $ zip nameNrs offsets
+                                       
+
+{
+-- shared between call and return
+saveOldFramePtr = 
+    [ Statement_Comment ["save old frame pointer"] ,
+    Statement_Assignment Variable_Aux $ Value_Dereference $ Value_Var Variable_SP  ]
+
+restoreDynamicLink =
+    [ Statement_Comment ["restoring dynamic link"],
+    Statement_Assignment Variable_SP dynamicLinkLocation ] 
+    where dynamicLinkLocation = 
+            Value_Cast (Value_Var $ Variable_Subs Variable_SP dynlinkoffset) False
+          dynlinkoffset = 1
+
+jumpToReturnAdress = 
+    [  Statement_Return [] returnAdressLocation ]
+    where returnAdressLocation = Value_Var Variable_Aux
+    
+}
+
+
+
+
+
+
+        
 %%]

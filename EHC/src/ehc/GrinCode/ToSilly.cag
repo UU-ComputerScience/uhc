@@ -18,7 +18,7 @@ Transforms a Grin program to a Silly program.
 
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
-%%[(8 codegen grin) hs import(Data.List((\\)), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
+%%[(8 codegen grin) hs import(Data.List((\\),intercalate), Data.Maybe, qualified Data.Map as Map, qualified Data.Set as Set, Data.Bits)
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Pretty, EH.Util.Utils)
 %%]
@@ -131,7 +131,7 @@ SEM GrModule
         loc . initFunction  =  Function_Function (hsnFromString "initialize") [] []
                                                     (  @globalL.initStats1
                                                     ++ @globalL.initStats2
-                                                    ++ [ Statement_Return [] Nothing ]
+                                                    ++ [ Statement_Return [] Value_None ]
                                                     )
         loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
         loc . optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
@@ -164,7 +164,7 @@ SEM GrExpr
            lhs.stats   = if not @lhs.hasNext
                           then assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
                                ++ [ Statement_Comment ["Return (Unit after Update)"]
-                                  , Statement_Return @val.values Nothing
+                                  , Statement_Return @val.values Value_None
                                   ]
                           else maybe (assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Updateunit to PtrNode"] : store2 (mkVar t) (length @val.values) (length @val.values) (map (arrayVariab @loc.name) [0..]) @val.values)
@@ -172,7 +172,7 @@ SEM GrExpr
 
  | Unit    lhs.stats  = if not @lhs.hasNext
                          then  [ Statement_Comment ["Return (Unit)"]
-                               , Statement_Return @val.values Nothing
+                               , Statement_Return @val.values Value_None
                                ]
                          else maybe  (assignments "Unit" [] (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
@@ -181,7 +181,7 @@ SEM GrExpr
 
  | FFI     lhs.stats  = if not @lhs.hasNext
                          then  [ Statement_Comment ["Return (FFI)"]
-                               , Statement_Return [@loc.callres] Nothing
+                               , Statement_Return [@loc.callres] Value_None
                                ]
                          else case @lhs.targets
                               of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
@@ -226,6 +226,17 @@ SEM GrExpr
                                                (arrayValue (mkVar @nm) @offset)
                         ]
            lhs.localsSet = Set.fromList @lhs.targets
+           
+
+ | FetchVar lhs.stats = let ph = case @lhs.targets of
+                                   [] -> error ("ToSilly: FetchField has no target in " ++ show @lhs.functionName)
+                                   (x:_) -> x
+                        in    
+                        [ Statement_Comment ["FetchVar"]
+                        , Statement_Assignment (mkVar ph)
+                                               $ Value_OffsetVar (mkVar @nm) @varos.var
+                        ]
+            lhs.localsSet = Set.fromList @lhs.targets
 
  | Case    lhs.stats  = let comm     = Statement_Comment ["Case"]
                             reenters = if  null @altL.reenteralts
@@ -257,6 +268,7 @@ SEM GrExpr
                               )
            lhs.localsSet = Set.fromList @lhs.targets
 
+
  | App     lhs.stats  = [Statement_Comment ["App: SHOULDNT"]]
  | Eval    lhs.stats  = [Statement_Comment ["Eval: SHOULDNT"]]
  | Throw   lhs.stats  = [Statement_Comment ["Throw: TODO"]]
@@ -283,6 +295,8 @@ SEM GrGlobal
            lhs.initStats2  = storePopulate (Variable_Global @globNm) @val.values
 
 SEM GrVal
+ | This    lhs.value  = Value_This
+           lhs.values = error "Values of this in 2silly"
  | LitInt  lhs.value  = Value_Con (Constant_LiteralInt @int)
  | LitStr  lhs.value  = Value_Con (Constant_LiteralStr @str)
  | Var
@@ -335,19 +349,33 @@ SEM GrValL
 SEM GrTag
  | Con     loc.constant = Constant_Alias ("C" ++ hsnShowAlphanumericShort @nm)
  | Fun     loc.constant = Constant_Alias ("F" ++ hsnShowAlphanumericShort @nm)
+ | Meta    loc.constant = Constant_Alias ("M" ++ hsnShowAlphanumericShort @nm ++ "_s_" ++ @args.constantPart) 
  | App     loc.constant = Constant_Alias ("A" ++ hsnShowAlphanumeric @nm)
  | PApp    loc.constant = Constant_Alias ("P" ++ show @needs ++ "_" ++ hsnShowAlphanumericShort @nm)
  | Hole    loc.constant = Constant_Alias ("HOLE")
- | Con Fun App PApp Hole
+ | Con Fun App PApp Hole Meta
            lhs.constant = @loc.constant
            lhs.value    = Value_Con (@loc.constant)
 
  | Unboxed lhs.value    = Value_Con (Constant_Alias "UNBOXED")
  | Unboxed lhs.constant = Constant_Alias "UNBOXED"
 
- | * - Con Fun App PApp Hole Unboxed
+ | * - Con Fun App PApp Hole Unboxed Meta
            lhs.constant = error "GrTag:other constant"
            lhs.value    = error "GrTag:other value"
+
+ATTR AllGrVarOffset [ | | constantPart : {String}]
+ATTR GrVarOffset [ | | var : HsName ] 
+
+SEM GrVarOffset
+    | GrVarOffset lhs.var          =  @var
+
+SEM GrVarOffset
+    | GrVarOffset lhs.constantPart =  hsnShowAlphanumericShort @var
+
+SEM GrVarOffsetL 
+    | Cons        lhs.constantPart = @hd.constantPart ++ (if null @tl.self then [] else "__" ++ @tl.constantPart)
+    | Nil         lhs.constantPart = []
 
 SEM GrPatAlt
  | Tag     lhs.value    = @tag.value
@@ -355,6 +383,7 @@ SEM GrPatAlt
  | * - Tag lhs.value    = error "GrPatAlt:other value"
            lhs.constant = error "GrPatAlt:other constant"
 -- TODO: | LitInt = ...
+
 
 %%]
 
@@ -434,7 +463,7 @@ ATTR GrModule GrBind GrBindL GrExpr GrAlt GrAltL
 
 ATTR AllDef AllExpr [ | | genAllTags USE {`Set.union`} {Set.empty} : {Set.Set GrTag} ]
 
-ATTR GrTag [ | | self : SELF ]
+ATTR GrTag AllGrVarOffset [ | | self : SELF ]
 
 SEM GrTag
   | *     lhs.genAllTags = Set.singleton @loc.self
@@ -594,6 +623,10 @@ tagConstants opts tagset
 showGrTag :: GrTag -> String
 showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm
 showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumericShort nm
+showGrTag (GrTag_Meta nm args) = let name = "M" ++ hsnShowAlphanumericShort nm ++ "_s_" ++ (intercalate "__" (map getArgName args))
+                                 in trace ("tag found: " ++ name) name
+                                 where
+                                 getArgName (GrVarOffset_GrVarOffset _ nm) = hsnShowAlphanumericShort nm
 showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm
 showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
 showGrTag (GrTag_Rec) = "GrTag:Rec"

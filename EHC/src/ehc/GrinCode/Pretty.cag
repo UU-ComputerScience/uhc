@@ -224,6 +224,7 @@ SEM GrExpr
   | FetchNode   lhs         .   pp          =   "fetchnode"  >#<  @lhs.ppGrNm @nm 
   | FetchField  lhs         .   pp          =   "fetchfield" >#<  @lhs.ppGrNm @nm >#< pp @offset >#< maybe empty ppGrTag @mbTag
   | FetchUpdate lhs         .   pp          =   "fetchupdate" >#< @lhs.ppGrNm @src >#< @lhs.ppGrNm @dst
+  | FetchVar    lhs         .   pp          =   "fetchvar" >#< @lhs.ppGrNm @nm>#< @varos.pp
   | Throw       lhs         .   pp          =   "throw" >#< @lhs.ppGrNm @nm
   | Catch       lhs         .   pp          =   "try" >-<
                                                 indent 2 (ppCurlysSemisV [@body.pp]) >-<
@@ -243,6 +244,7 @@ SEM GrVal
   | Var         lhs         .   pp          =   @lhs.ppGrNm @nm
   | Node        lhs         .   pp          =   ppListSep "(" ")" " " (@tag.pp        : @fldL.ppL)
   | VarNode     lhs         .   pp          =   ppListSep "(" ")" " " (                 @fldL.ppL)
+  | This        lhs         .   pp          =   pp "this"
 %%[[8
   | BasicNode   lhs         .   pp          =   ppListSep "(" ")" " " [pp "basicnode", @tag.pp, @lhs.ppGrNm @nm]
   | EnumNode    lhs         .   pp          =   ppListSep "(" ")" " " [pp "enumnode" , @lhs.ppGrNm @nm]
@@ -316,6 +318,7 @@ SEM GrTag
   | Fun         lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "F" >|< "/" >|< @lhs.ppGrNm @nm
   | PApp        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "P" >|< "/" >|< @needs >|< "/" >|< @lhs.ppGrNm @nm
   | Con         lhs         .   pp          =   "#" >|< @int >|< "/" >|< "C" >|< show @grtgAnn >|< "/" >|< @lhs.ppGrNm @nm
+  | Meta        lhs         .   pp          =   "#" >|< "0"  >|< "/" >|< "M" >|< "/" >|< @lhs.ppGrNm @nm >|< "/" >|< ppCurlysSemisV @args.ppL
 %%][8_2
   | Hole        lhs         .   pp          =   pp "Hole" 
   | Rec         lhs         .   pp          =   "R" >|< @lhs.ppGrNm (mkHNm "()")
@@ -323,12 +326,20 @@ SEM GrTag
   | Fun         lhs         .   pp          =   "F" >|< pp @nm
   | PApp        lhs         .   pp          =   "P" >|< pp @nm >|< @needs
   | Con         lhs         .   pp          =   "C" >|< pp @nm
+  | Meta        lhs         .   pp          =   "M" >|< pp @nm >|< ppCurlysSemisV @args.ppL
 %%]]
   | Unboxed     lhs         .   pp          =   pp "#U"
 %%]
 
 %%[(8 codegen grin)
-ATTR GrGlobalL GrBindL GrAltL GrTagL GrValL GrVarL [ | | ppL: {[PP_Doc]} ]
+
+SEM GrVarOffset
+  | GrVarOffset lhs         .   pp          =   cfgppHsName CfgPP_Grin @inFrameOf >|< "/" >|<  cfgppHsName CfgPP_Grin @var
+
+%%]
+
+%%[(8 codegen grin)
+ATTR GrGlobalL GrBindL GrAltL GrTagL GrValL GrVarL GrVarOffsetL [ | | ppL: {[PP_Doc]} ]
 
 SEM GrGlobalL
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
@@ -355,6 +366,10 @@ SEM GrValL
   | Nil         lhs         .   ppL         =   []
 
 SEM GrVarL
+  | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
+  | Nil         lhs         .   ppL         =   []
+
+SEM GrVarOffsetL 
   | Cons        lhs         .   ppL         =   @hd.pp : @tl.ppL
   | Nil         lhs         .   ppL         =   []
 %%]

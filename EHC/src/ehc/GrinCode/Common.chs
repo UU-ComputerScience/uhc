@@ -129,6 +129,7 @@ conNumber GrTag_Hole        = 7
 -- Unevaluated tags last
 conNumber (GrTag_Fun _)     = 8
 conNumber (GrTag_App _)     = 9
+conNumber (GrTag_Meta _ _)     = 10
 
 
 conName :: GrTag -> HsName
@@ -136,6 +137,10 @@ conName (GrTag_App nm) = nm
 conName (GrTag_Fun nm) = nm
 conName (GrTag_PApp _ nm) = nm
 conName (GrTag_Con _ _ nm) = nm
+conName (GrTag_Meta nm _ ) = nm
+
+conArgs (GrTag_Meta _ args) = args
+conArgs _                   = error "Con args called on non-meta tag"
 
 conInt :: GrTag -> Int
 conInt (GrTag_PApp i _ ) = i
@@ -150,14 +155,15 @@ instance Ord GrTag where
                                    EQ
                               else -- App/Fun/PApp/Con, all have a name
                                    case cmpHsNameOnNm (conName t1) (conName t2) of
-                                     EQ -> if  x >= 8
+                                     EQ -> if x == 10 -- is it a meta closure tag? 
+                                           then compare (conArgs t1) (conArgs t2)
+                                           else if  x >= 8
                                            then -- App/Fun
                                                 EQ
                                            else -- Papp/Con, both have an int
                                                 compare (conInt t1) (conInt t2)
                                      a  -> a
                         a  -> a
-
 
 %%]
 

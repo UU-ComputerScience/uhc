@@ -796,6 +796,8 @@ SEM GrExpr
                                                               where (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                                       = GB.gviLd @lhs.opts GB.defaultLoadCtxt @nmEnv @ldStState @expr.gbState gvi
                                                           _   -> nm Seq.empty (GB.ststFromDep 0) @expr.gbState @pat.nmIntro
+   | FetchVar      loc         .   (seqIns,seqStInc,newVaGam,aftLdGBState) = error "Fetchfield is forbidden when translating to GrinByte code" 
+   | FetchVar      loc         .   (valIns,valStInc,retIsDone,scrutineeStInc) = error "Fetchfield is forbidden when translating to GrinByte code" 
 %%]
 
 %%[(8 codegen grin) hs
@@ -981,6 +983,7 @@ SEM GrPatLam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR GrTag [ | | self: SELF ]
+ATTR GrTag AllGrVarOffset [ | | self: SELF ]
+
 %%]
 

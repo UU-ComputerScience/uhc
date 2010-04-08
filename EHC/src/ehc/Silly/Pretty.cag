@@ -37,7 +37,7 @@ WRAPPER SilModule
 %%[(8 codegen grin)
 ATTR SilModule [ opts : {EHCOpts} | | ]
 
-ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
+ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant 
          [ | | pretty USE {>-<} {empty} : PP_Doc ]
 
 
@@ -67,7 +67,7 @@ SEM Statement
   | Assignment2 lhs.pretty = @dest.pretty >#< ":=" >#< @dest2.pretty >#< ":=" >#< @source.pretty >|< ";"
   | Switch      lhs.pretty = "SWITCH" >#< @scrutinee.pretty >-< "{" >-< @body.pretty >-< "}"
   | IfThenElse  lhs.pretty = "IF"     >#< @condition.pretty >-< "THEN {" >-< indent 4 @thenpart.pretty >-< "}" >-< "ELSE {" >-< indent 4 @elsepart.pretty >-< "}"
-  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >#< text (show @mbRetDiff) >|< ";"
+  | Return      lhs.pretty = "RETURN ("  >#< @vals.pretty >|< ")" >#< @retAddrLoc.pretty >|< ";"
   | Label       lhs.pretty = "LABEL"  >#< text @name >|< ";"
   | Voiden      lhs.pretty = "VOIDEN" >#< @val.pretty >|< ";"
 %%[[8
@@ -104,8 +104,9 @@ SEM Variable
 %%]]
   | LP             lhs.pretty = text "LP"  
   | SP             lhs.pretty = text "SP"  
+  | SPTemp             lhs.pretty = text "SPTemp"  
   | RP             lhs.pretty = text "RP"  
-  | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"
+  | Subs           lhs.pretty = @array.pretty >|< "[" ++ show @index ++ "]"
   | Aux            lhs.pretty = text "AUX"
   | Ptr            lhs.pretty = text "PTR"
   | None           lhs.pretty = text "NONE"
@@ -120,13 +121,19 @@ SEM Value
   | Alloc          lhs.pretty = text "allocate(" >|< show @size >|< ") {" >#< show @gcManaged >#< "}"
   | Call           lhs.pretty = "foreign"   >#< @name >|< "(" >|< @args.pretty >|< ")"
 %%]]
-  | Offset         lhs.pretty = @var.pretty >#< "+" >#< show @off
+  | Offset         lhs.pretty = @var.pretty >#< "+" ++ (show @off)
+  | OffsetVar      lhs.pretty = @frame.pretty  >|< "[" ++ hsnShowAlphanumeric @var ++ "]"
   | Label          lhs.pretty = text "LABEL" >#< show @name
   | CompareGT      lhs.pretty = @val.pretty >#< ">" >#< @con.pretty
+  | This           lhs.pretty = text "THIS" 
 
 SEM Values
   | Nil            lhs.pretty = empty
   | Cons           lhs.pretty = @hd.pretty >|< ", " >|< @tl.pretty
+
+-- SEM OffsetDesc
+--   | Number         lhs.pretty = text $ show @n
+--   | Const          lhs.pretty = text $ "O/" ++ hsnShowAlphanumeric @function ++ "/"  ++ hsnShowAlphanumeric @var
 
 %%]
 %%[(8 codegen grin) hs

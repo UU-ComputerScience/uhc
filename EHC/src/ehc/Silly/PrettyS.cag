@@ -20,11 +20,12 @@
 %%[(8 codegen grin) hs
 prettyS :: EHCOpts -> SilModule -> PP_Doc
 prettyS opts silmod
-  = let t = wrap_SilModule (sem_SilModule silmod)
+{-  = let t = wrap_SilModule (sem_SilModule silmod)
                            (Inh_SilModule { opts_Inh_SilModule = opts
                                           }
                            )
-     in  prettyS_Syn_SilModule t
+     in   prettyS_Syn_SilModule t -}
+     = text ""
 
 %%]
 
@@ -32,6 +33,8 @@ prettyS opts silmod
 %%% Options to adapt the structure of the generated code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin)
+
+{- 
 
 WRAPPER SilModule
 
@@ -52,10 +55,10 @@ SEM SilModule
 {
 optTraceAssign = False
 }
-%%]
+%]
 
 
-%%[(8 codegen grin)
+%[(8 codegen grin)
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Variable Constant
          [ | | prettyS USE {>-<} {empty} : PP_Doc ]
          
@@ -306,7 +309,7 @@ SEM Variable
   | SP          lhs.register   = text esp
   | * - SP      lhs.register   = @loc.prettyS
 
-
+-}
 %%]
 
 
@@ -318,6 +321,7 @@ SEM Variable
 
 %%[(8 codegen grin)
 
+{-
 ATTR SilModule Functions Function Statements Statement Alternatives Alternative Value Values Variable Constant
          [ | | pretty USE {>-<} {empty} : PP_Doc ]
 
@@ -372,7 +376,7 @@ SEM Value
 SEM Values
   | Nil            loc.pretty = empty
   | Cons           loc.pretty = @hd.pretty >|< ", " >|< @tl.pretty
-
+-}
 %%]
 
 
@@ -382,6 +386,7 @@ SEM Values
 
 %%[(8 codegen grin) hs
 
+{-
 
 eax = "%eax"
 edx = "%edx"
@@ -467,13 +472,15 @@ returnFromSillyFunction retdiff optGenOwn
  | otherwise   = text ""
 -- | False       = "asm ( " >|< quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)") >|< ");"
 
-
+-}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantic functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
+
+{-
 
 preambule :: PP_Doc
 preambule
@@ -550,5 +557,5 @@ alternative when body
    >|< ":"
    >-< indent 4 (body >-< "break;")
 
-
+-}
 %%]

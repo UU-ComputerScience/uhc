@@ -103,7 +103,9 @@ SEM GrAGItf
 %%]
 
 %%[(8 codegen grin)
-ATTR AllGrVal AllGrTag  [ | | self : SELF ]
+ATTR AllGrVal AllGrTag  AllGrVarOffset [ | | self : SELF ]
+
+
 %%]
 
 
@@ -138,7 +140,8 @@ ATTR GrValL            [ | | valsInfo: {[NodeInfo (Maybe Variable)]}  vars  : {[
 ATTR GrPatAlt GrPatLam [ | | patInfo : { NodeInfo        Variable  }  tag   : { Maybe GrTag}     ]
 ATTR GrVar             [ | | tag     : GrTag                          var   : { Variable }       ]
 ATTR GrVarL            [ | | headTag : GrTag                          vars  : {[Variable]}       ]
-
+ATTR GrVarOffset       [ | |                                          var   : { Variable }       ]
+ATTR GrVarOffsetL      [ | |                                          vars  : {[Variable]}       ]
 
 SEM GrModule
   | Mod        bindL.tagsMp = @tagsMp
@@ -151,10 +154,12 @@ SEM GrVal
   | EnumNode   lhs.valInfo  =  InEnum  (getNr @nm) []
   | OpaqueNode lhs.valInfo  =  InNode  GrTag_Unboxed [Just(getNr @nm)]
   | PtrNode    lhs.valInfo  =  InPtr   (getNr @nm)
+  | This       lhs.valInfo  =  error $ "HPT : valinfo this has no known tag"
   | Empty
     LitInt
     LitStr
     VarNode
+    
 %%[[10
     NodeAdapt 
 %%]]
@@ -217,6 +222,12 @@ SEM GrVar
   | Ignore       lhs.var   =  0
   | KnownTag     lhs.var   =  error "var taken from KnownTag"
 
+SEM GrVarOffset
+  | GrVarOffset  lhs.var   = getNr @var
+
+SEM GrVarOffsetL
+  | Cons     lhs.vars  =  @hd.var : @tl.vars
+  | Nil      lhs.vars  =  []
 %%]
 
 %%[(8 codegen grin) hs
@@ -327,6 +338,7 @@ An equation is generated, which states that the targetvariable is known to be as
 tagFun :: GrTag -> Maybe Int
 tagFun (GrTag_Fun nm)  =  Just (getNr nm)     -- track overwrite results of Fun
 tagFun (GrTag_App nm)  =  Just (getNr nm)     -- also track overwrite results of App
+tagFun (GrTag_Meta nm _ ) =  Just (getNr nm)
 tagFun _               =  Nothing
     
 }
@@ -519,17 +531,24 @@ SEM GrBind
 %%[(8 codegen grin)
 -- Collect all Fun, PApp and App nodes, and all Calls
 
-ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList} ]
-ATTR GrTag                              [ | | mbFPAnr                : {Maybe Int}        ]
+ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList}  ]
+ATTR GrTag                              [ | | mbFPAnr                : {Maybe Int}         ]
+ATTR GrTag                              [ | | call                   : {Maybe AbstractCall}]
 
 
 SEM GrVal
-  |  Node   lhs . allCalls  =  maybe [] (\n->[(n, @fldL.vars)]) @tag.mbFPAnr
+  |  Node   lhs . allCalls  =  case @tag.call of
+                                Just cl -> [cl]
+                                _       -> maybe [] (\n->[(n, @fldL.vars)]) @tag.mbFPAnr
 
 SEM GrExpr
   | Call    lhs . allCalls  =  [ (getNr @nm, @argL.vars) ]
 
 SEM GrTag
-  |     Fun PApp App   lhs . mbFPAnr = Just (getNr @nm)
-  | * - Fun PApp App   lhs . mbFPAnr = Nothing
+  |     Fun PApp App Meta lhs . mbFPAnr = Just (getNr @nm)
+  | * - Fun PApp App Meta lhs . mbFPAnr = Nothing
+
+SEM GrTag 
+  | Meta                  lhs . call   = Just (getNr @nm,map Just @args.vars)
+  | * - Meta              lhs . call   = Nothing
 %%]

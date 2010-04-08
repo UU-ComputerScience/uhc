@@ -74,6 +74,7 @@ GrinCode/Trf/GlobalConstants.cag
 GrinCode/Trf/ImpossibleCase.cag
 GrinCode/Trf/Inline.cag
 GrinCode/Trf/InlineEA.cag
+GrinCode/Trf/IntroMeta.cag
 GrinCode/Trf/LateInline.cag
 GrinCode/Trf/LowerGrin.cag
 GrinCode/Trf/MayLiveUnboxed.cag
@@ -89,13 +90,13 @@ GrinCode/Trf/SingleCase.cag
 GrinCode/Trf/SpecConst.cag
 GrinCode/Trf/SplitFetch.cag
 GrinCode/Trf/SubstExpr.cag
+GrinCode/Trf/SubstMeta.cag
 GrinCode/Trf/UnusedMetaInfoElim.cag
 GrinCode/Trf/UnusedNameElim.cag
 GrinByteCode/ToC.cag
 LLVM/Pretty.cag
 Silly/ElimUnused.cag
 Silly/EmbedVars.cag
-Silly/GroupAllocs.cag
 Silly/InlineExpr.cag
 Silly/Pretty.cag
 Silly/PrettyC.cag

@@ -23,6 +23,10 @@ WRAPPER SilModule
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
 %%]
 
+%%[(8 codegen grin)
+PRAGMA nocycle
+%%]
+
 %%[(8 codegen grin) hs
 elimUnused :: EHCOpts -> SilModule -> SilModule
 elimUnused options input   
@@ -43,6 +47,17 @@ ATTR AllNT [ | | trf: SELF     ]
 --
 ATTR AllNT [ | | self: SELF ]
 
+-- all variables that are used in an offset var context
+ATTR AllNT [ | | offsetVars USE {`Set.union`} {Set.empty}: {Set.Set HsName} ] 
+ATTR  Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value 
+     [ allOffsetVars : {Set.Set HsName} | | ]
+
+SEM Value
+  | OffsetVar lhs.offsetVars = Set.singleton @var
+
+
+SEM SilModule
+  | SilModule functions.allOffsetVars = @functions.offsetVars
 
 ATTR Variable [ multi : {Int} | | ]
 ATTR Statement Statements Alternative Alternatives Variable Value Values [  | useMap : {Map.Map Variable Int} | ]
@@ -54,7 +69,8 @@ ATTR Value          [ | | isntCall : {Bool} ]
 SEM Function
   | Function  body.useMap    =  @loc.startMap
               body.allUseMap =  @body.useMap
-              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+              loc.startMap   =  let startValue nm = if nm `Set.member` @lhs.allOffsetVars then 1 else 0
+                                in Map.fromList  [ (Variable_Unembedded nm, startValue nm) | nm <- @locals ]
 
 -- the "multi" attribute is a bit of a hack:
 -- it makes variables in a Subs context count as a "use"
@@ -62,6 +78,7 @@ SEM Function
 SEM Value
   | Var         var.multi = 1
   | Offset      var.multi = 1
+  | OffsetVar   frame.multi = 1
 
 SEM Variable
   | Subs        array.multi = 1

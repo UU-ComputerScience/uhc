@@ -92,7 +92,7 @@ SEM GrExpr
 
 
 ATTR AllGrVal
-     GrTag    [ | | ptrOnly : SELF ]
+     GrTag   AllGrVarOffset [ | | ptrOnly : SELF ]
 
 SEM GrVal
   | Var       lhs.ptrOnly  =  maybe (GrVal_Var @nm)

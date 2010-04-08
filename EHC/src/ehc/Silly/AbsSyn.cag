@@ -42,7 +42,7 @@ DATA Statement
                  tailJumps  : {Bool}
                  args       : Values
   |  Return      vals       : Values
-                 mbRetDiff  : {Maybe Int}
+                 retAddrLoc : Value
   |  Label       name       : {String}
   |  Comment     comment    : {[String]}
   |  Voiden      val        : Value
@@ -67,6 +67,7 @@ DATA Variable
                  index      : {Int}
   |  LP
   |  SP
+  |  SPTemp
   |  RP
   |  Aux
   |  Ptr
@@ -77,6 +78,8 @@ DATA Value
   |  Var         var        : Variable
   |  Offset      var        : Variable
                  off        : {Int}
+  |  OffsetVar   frame      : Variable
+                 var        : {HsName}
   |  Cast        val        : Value
                  word       : {Bool}
   |  Alloc       size       : {Int}
@@ -86,9 +89,13 @@ DATA Value
                  args       : Values
   |  CompareGT   val        : Value
                  con        : Constant
+  |  Dereference val        : Value -- waarom ? gebruik subs 0?
+  |  This     
+  |  None
 
 
-SET AllNT       =   SilModule Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value
+
+SET AllNT       =   SilModule Functions Function Statements Statement Alternatives Alternative Constant Variable Values Value 
 
 
 DERIVING * : Show, Ord

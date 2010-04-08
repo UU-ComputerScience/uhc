@@ -37,7 +37,7 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 -- collect global constants
 
-ATTR AllGrVal AllGrTag [ | | copy: SELF ]
+ATTR AllGrVal AllGrTag AllGrVarOffset [ | | copy: SELF ]
 
 
 ATTR AllGlobal [ | | genconstMap USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]

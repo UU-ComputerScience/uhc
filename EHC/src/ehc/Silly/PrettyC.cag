@@ -50,6 +50,7 @@ SEM SilModule
                loc.optCaseDefault = ehcOptGenCaseDefault @lhs.opts
                loc.optGenOwn      = ehcOptGenOwn         @lhs.opts
                loc.optGenLink     = ehcOptGenOwn @lhs.opts  &&  ehcOptGenLink @lhs.opts
+               loc.optMeta        = ehcOptMetaClosures @lhs.opts
 
 %%]
 
@@ -66,11 +67,12 @@ ATTR Functions Function [ | | protoC USE {>-<} {empty} : {PP_Doc} ]
 ATTR Values [ | | prettyCs : {[PP_Doc]} ]
 ATTR Values [ | | prettyTXTs : {[PP_Doc]} ]
 
-ATTR Variable
-     Value  [ | | prettyPtr : {PP_Doc}  ]
+-- ATTR Variable
+     -- Value  [ | | prettyPtr : {PP_Doc}  ]
 
 ATTR Variable [ | | isSP : {Bool} ]
   
+ATTR Variable [ | | isPointer : {Bool} ]
 
 ATTR Statements Statement Alternatives Alternative
          [ functionname : String | | ]
@@ -90,6 +92,7 @@ SEM SilModule
                                 >-< comment ["Auxiliary variables"]
                                 >-< text "Word auxVar;"
                                 >-< text "Word auxPtr;"
+                                >-< text "WPtr SPTemp;"
                                 >-< text ""
                                 >-< comment ["Function definitions"]
                                 >-< (if @loc.optGenOwn
@@ -113,13 +116,14 @@ SEM SilModule
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 -- >-< ppWhen False (text "register WPtr SP asm (\"%esp\");")
-                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
+                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink @loc.optMeta 1 "initialize"
 %%[[8
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_fun0tildemain"
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink @loc.optMeta 2 "fun_fun0tildemain"
 %%][99
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_mainFullProg"
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink @loc.optMeta 2 "fun_mainFullProg"
 %%]]                                             
-                                             >-<  "if (Ret1==0) { Ret0 = SP[-1]; Ret1 = SP[-2]; }"
+                                             >-<  (if not @loc.optMeta then "if (Ret1==0) { Ret0 = SP[-1]; Ret1 = SP[-2]; }" else "")
+                                             -- >-<  "printf(\"Done!!!!!!!!!!!!!\"); fflush(stdout);"
                                              >-<  "return 0;"
                                              )
 
@@ -145,11 +149,12 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  -- | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC @source.prettyC @source.prettyTXT
   | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
-  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign (fromJust @mbRetDiff) @lhs.optGenOwn
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign (@retAddrLoc.prettyC) @lhs.optGenOwn
   | Label       lhs.prettyC   = label @lhs.optTraceCall @name
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
@@ -177,7 +182,8 @@ SEM Values
 SEM Value
   | Con         lhs.prettyC   = @con.prettyC
   | Var         lhs.prettyC   = @var.prettyC
-  | Offset      lhs.prettyC   = "(Word)(" >|< @var.prettyPtr >|< "+" ++ show @off ++ ")"
+--  | Offset      lhs.prettyC   = "(Word)(" >|< @var.prettyC >|< "+" ++ show @off ++ ")"
+  | Offset      lhs.prettyC   = @var.prettyC >|< "+" ++ show @off
   | Cast        lhs.prettyC   = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyC >|< "))"
   | Call        lhs.prettyC   = ( maybe (callCfunction @name)
                                         fromSillyPrim
@@ -187,15 +193,15 @@ SEM Value
                                    GCManaged  -> "heapalloc("               >|< show @size >|< ")"
   | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< "))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
+  | Dereference lhs.prettyC   = "*(" >|< @val.prettyC >|< ")"
 
-  | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
-  | *-Offset    lhs.prettyPtr = error "prettyC: called prettyPtr from non-Offset Value"
 
 
 SEM Value
   | Con         lhs.prettyTXT = @con.prettyTXT
   | Var         lhs.prettyTXT = @var.prettyC
-  | Offset      lhs.prettyTXT = @var.prettyPtr >|< "+" ++ show @off
+  -- | Offset      lhs.prettyTXT = @var.prettyPtr >|< "+" >|< @off.prettyC 
+  | Offset      lhs.prettyTXT = @var.prettyC >|< "+"  ++ (show @off)
   | Cast        lhs.prettyTXT = ("((" ++ (if @word then "Word" else "WPtr") ++ ")(") >|< @val.prettyTXT >|< "))"
   | Call        lhs.prettyTXT = ( maybe (callCfunction @name)
                                         fromSillyPrim
@@ -226,37 +232,37 @@ SEM Variable
   | * - LP RP   lhs.isLpRp   = False
 
 SEM Variable
+  | SP
+    SPTemp      lhs.isPointer   = True
+  | * - SP SPTemp   lhs.isPointer   = False
+
+SEM Variable
   | Global
     Local
     Param       lhs.prettyC   = case @name of 
                                   HNmNr n OrigNone -> text ("x" ++ show n)
                                   _                -> text (hsnShowAlphanumeric @name)
-                lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
   | LP          lhs.prettyC   = text "Loc"
-                lhs.prettyPtr = text "Loc"
   | SP          lhs.prettyC   = text "SP"
-                lhs.prettyPtr = text "SP"
+  | SPTemp          lhs.prettyC   = text "SPTemp"
   | RP          lhs.prettyC   = text "Ret"
-                lhs.prettyPtr = text "Ret"
-  | Subs        lhs.prettyC   = if @array.isLpRp
-                                then @array.prettyPtr >|<         show @index
-                                else @array.prettyPtr >|< "[" >|< show @index >|< "]"
-                lhs.prettyPtr = if @array.isLpRp
-                                then "((WPtr)(" >|< @array.prettyPtr         >|< show @index         >|< "))"
-                                else "((WPtr)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
+  | Subs        lhs.prettyC   = case (@array.isLpRp,@array.isPointer) of
+                                    (True ,_    )  -> @array.prettyC >|<         show @index
+                                    (False,True )  -> @array.prettyC >|< "[" >|<  show @index >|< "]"
+                                    (False,False)  -> "((WPtr)( " >|< @array.prettyC >|< "))[" >|<   show @index >|< "]"
   | Aux         lhs.prettyC   = text "auxVar"
-                lhs.prettyPtr = text "((WPtr)auxVar)"
   | Ptr         lhs.prettyC   = text "auxPtr"
-                lhs.prettyPtr = text "((WPtr)auxPtr)"
   | None        lhs.prettyC   = error "attempt to use Variable_None as value"
-                lhs.prettyPtr = error "attempt to use Variable_None as pointer"
   | Unembedded  lhs.prettyC   = text ("UNEMB " ++ hsnShowAlphanumeric @name)  -- error "attempt to use Variable_Unembedded as value"
-                lhs.prettyPtr = error "attempt to use Variable_Unembedded as pointer"
 
 SEM Variable
   | SP          lhs.isSP = True
   | *-SP        lhs.isSP = False
 
+
+-- SEM OffsetDesc
+-- | Number      lhs.prettyC   = text $ show @n
+-- | Const       lhs.prettyC   = error "Offset constant still present in silly2c"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,20 +311,29 @@ callCfunction ::  String -> [PP_Doc] -> PP_Doc
 callCfunction f ps
  = f >|< "(" >|< ppHorizontally (intersperse (text ", ") ps) >|< ")"
 
-callSillyFunctionFromC :: Bool -> Bool -> Bool -> Int -> String -> PP_Doc
-callSillyFunctionFromC tras optGenOwn optGenLink n nm
+callSillyFunctionFromC :: Bool -> Bool -> Bool -> Bool -> Int -> String -> PP_Doc
+callSillyFunctionFromC tras optGenOwn optGenLink optMeta n nm
  | optGenOwn = let lab = "mainlab" ++ show n
-               in  "*--SP = (Word)(&&" >|< lab >|< ");"                   -- return address
-                   >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
-                   >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
-                   >-< "goto" >#< nm >|< ";"                              -- do the call
-                   >-< label tras lab                                     -- return here
+               in  if optMeta
+                   then "SPTemp = ((WPtr)(heapalloc(2)));"       >-<
+                        "SPTemp[0] = (Word)(&&" >|< lab >|< ");"     >-<
+                        "SPTemp[1] = (Word)0;"                       >-<
+                        "SP=SPTemp;"                             >-<
+                        -- "printf(\"going to call from c! frame is now at %d, ret addr at %d\\n\",SP,SP[0]);" >#<
+                        "goto" >#< nm >|< ";"                    >-<                           -- do the call
+                        label tras lab                                     -- return here
+                   else "*--SP = (Word)(&&" >|< lab >|< ");"                   -- return address
+                        >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
+                        >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
+                        >-< "goto" >#< nm >|< ";"                              -- do the call
+                        >-< label tras lab                                     -- return here
  | otherwise = nm >|< "();"
  
  
 callSillyFunctionFromSilly ::  Bool -> String -> [PP_Doc] -> PP_Doc
 callSillyFunctionFromSilly optGenOwn nm pars
- | optGenOwn = "goto" >#< nm >|< ";"
+ | optGenOwn = -- "printf(\"going to call! frame is now at %d, ret addr at %d\\n\",SP,SP[0]);" >#< 
+               "goto" >#< nm >|< ";"
  | otherwise = callCfunction nm pars >|< ";"
 
 
@@ -327,8 +342,11 @@ quoted s = "\"" ++ s ++ "\""
 
 returnFromSillyFunction tras retdiff optGenOwn
  | optGenOwn   = ppWhen tras
-                      (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
- 	             >-< "goto *(SP[-" >|< show retdiff >|< "]);"
+                      -- (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
+                      
+                      (text "printf(\"going to jump! frame is now at %d return adress is %d \\n\",SP,auxVar);")
+                 -- >-< (text "printf(\"going to jump! frame is now at %d return adress is %d \\n\",SP,auxVar);")
+ 	             >-< "goto *((void *)(" >#< retdiff >#< "));"
  | otherwise   = text ""
 -- | False     = "asm ( " >|<  quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)") >|< ");"
 
@@ -398,8 +416,8 @@ assignment2 tras v1 v2 e et
    >#< e
    >|< ";"
    >|< ppWhen tras
-              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
-              --(" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
+              -- (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              ("printf(\"assignment" >#< (show v1) >#< "=" >#<  (show v2)  >#< " at ------ %d = %d\\n\"," >#< (show v1) >#< ","  >#< (show v2) >#< "); fflush(stdout);")
 
 assignment :: Bool -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
 assignment tras v e et
@@ -408,8 +426,8 @@ assignment tras v e et
    >#< e
    >|< ";"
    >|< ppWhen tras
-              (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
-              --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
+              -- (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              ("printf(\"assignment" >#< (show v) >#<  "=" >#< (show e)  >#< " at %d \\n\"," >#< (show v) >#<   "); fflush(stdout);")
 
 
 ifthenelse ::  PP_Doc -> PP_Doc -> Maybe PP_Doc -> PP_Doc
@@ -444,6 +462,8 @@ alternative when body
  = "case"
    >#< when
    >|< ":"
+   -- >|< "printf(\"alternative : " >|< when >|< "\\n\"); fflush(stdout);" 
    >-< indent 4 (body >-< "break;")
 
 %%]
+

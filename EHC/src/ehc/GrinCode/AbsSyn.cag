@@ -60,6 +60,8 @@ DATA GrExpr
   | FetchField  nm              : {HsName}
                 offset          : {Int}
                 mbTag           : {Maybe GrTag}
+  | FetchVar    nm              : {HsName}
+                varos           : GrVarOffset
   | Store       val             : GrVal
   | Call        nm              : {HsName}
                 argL            : GrValL
@@ -96,6 +98,7 @@ DATA GrVal
   | Node        tag             : GrTag
                 fldL            : GrValL
   | OpaqueNode  nm              : {HsName}
+  | This           
 %%[[10
   | NodeAdapt   nm              : {HsName}
                 fldL            : GrAdaptL
@@ -137,9 +140,20 @@ DATA GrTag
   | PApp        needs           : {Int}
                 nm              : {HsName}
   | App         nm              : {HsName}
+  | Meta        nm              : {HsName}
+                args            : GrVarOffsetL
   | Unboxed
   | Hole
   | Rec
+
+DATA GrVarOffset 
+    | GrVarOffset  inFrameOf     : {HsName} -- because names are unique, this is unnecessary
+                   var           : {HsName}
+    
+TYPE GrVarOffsetL    =   [GrVarOffset]
+
+DERIVING GrVarOffsetL GrVarOffset: Eq,Ord
+
 
 TYPE GrTagL     =   [GrTag]
 %%]
@@ -230,8 +244,9 @@ SET AllBind     =   GrBind GrBindL
 SET AllDef      =   AllGlobal AllBind
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
-SET AllGrTag    =   GrTag GrTagL
-SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal AllType
+SET AllGrTag    =   GrTag GrTagL 
+SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal AllType AllGrVarOffset
+SET AllGrVarOffset = GrVarOffset GrVarOffsetL
 %%[[10
 SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL

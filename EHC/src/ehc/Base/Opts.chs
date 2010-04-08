@@ -224,6 +224,7 @@ data EHCOpts
 
       ,  ehcOptGenRTSInfo     ::  Int               -- flags to tell rts to dump internal info, currently: 1=on
       ,  ehcOptDumpGrinStages ::  Bool              -- dump intermediate Grin transformation stages
+      ,  ehcOptMetaClosures   ::  Bool              -- use meta-closures 
       ,  ehcOptEarlyModMerge  ::  Bool              -- produce OneBigCore instead of OneBigGrin; useful for future Core-only optimizations
 %%]]
 %%[[8
@@ -404,7 +405,7 @@ defaultEHCOpts
       ,  ehcOptGenTrace         =   False
       ,  ehcOptGenTrace2        =   False
       ,  ehcOptGenRTSInfo       =   0
-
+      ,  ehcOptMetaClosures     =   True
       ,  ehcOptDumpGrinStages   =   False
       ,  ehcOptEarlyModMerge    =   False
 %%]]
@@ -546,6 +547,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-trace-assign"] (boolArg optSetGenTrace2)            "trace assignments in C (no)"
      ,  Option ""   ["gen-rtsinfo"]      (ReqArg oRTSInfo "<nr>")             "flags for rts info dumping (default=0)"
      ,  Option ""   ["dump-grin-stages"] (boolArg optDumpGrinStages)          "dump intermediate Grin and Silly transformation stages (no)"
+     ,  Option ""   ["meta-closures"]    (boolArg optMetaClosures)            "use meta-closures (yes)"
      ,  Option ""   ["early-mod-merge"]  (boolArg optEarlyModMerge)           "merge modules early, at Core stage (no)"
 %%][100
 %%]]
@@ -869,6 +871,7 @@ optSetGenRVS         o b = o { ehcOptGenRVS         = b }
 optSetGenLink        o b = o { ehcOptGenLink        = b }
 optSetGenLocReg      o b = o { ehcOptGenLocReg      = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
+optMetaClosures      o b = o { ehcOptMetaClosures   = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }
 %%]

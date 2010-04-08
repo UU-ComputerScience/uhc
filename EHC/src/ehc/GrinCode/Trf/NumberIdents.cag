@@ -239,7 +239,11 @@ SEM GrExpr
 SEM GrTag
   | Con         lhs  .  grTrf    =  GrTag_Con @grtgAnn @int @nm
   | Fun         lhs  .  grTrf    =  GrTag_Fun               (findNewVar @lhs.bindMap @nm)
+  | Meta        lhs  .  grTrf    =  GrTag_Meta              (findNewVar @lhs.bindMap @nm)  @args.grTrf
   | PApp        lhs  .  grTrf    =  GrTag_PApp @needs       (findNewVar @lhs.bindMap @nm)
   | App         lhs  .  grTrf    =  GrTag_App               (findNewVar @lhs.bindMap @nm)
+
+SEM GrVarOffset
+  | GrVarOffset lhs  .  grTrf    = GrVarOffset_GrVarOffset (findNewVar @lhs.bindMap @inFrameOf) (findNewVar @lhs.bindMap @var)
 
 %%]

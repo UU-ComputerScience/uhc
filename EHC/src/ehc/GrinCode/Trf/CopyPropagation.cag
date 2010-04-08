@@ -35,7 +35,8 @@ ATTR GrPatLam
      GrVarL
      GrVar
      GrTagL
-     GrTag   [ | | self: SELF ]
+     GrTag   
+     AllGrVarOffset [ | | self: SELF ]
 ATTR GrAGItf GrModule AllBind GrExpr AllAlt [ | | changed USE {||} {False}: Bool ]
 
 SEM GrExpr

@@ -68,8 +68,9 @@ maximum0 [] = 0
 maximum0 xs = maximum xs
 
 unevaluatedName :: GrTag -> Maybe HsName
-unevaluatedName (GrTag_Fun nm) = Just nm
-unevaluatedName (GrTag_App nm) = Just nm
+unevaluatedName (GrTag_Fun nm)  = Just nm
+unevaluatedName (GrTag_App nm)  = Just nm
+unevaluatedName (GrTag_Meta nm _) = Just nm
 unevaluatedName _              = Nothing
 
 isPartialApplication ((GrTag_PApp _ _), _) = True
@@ -202,7 +203,7 @@ SEM GrExpr
 
 ATTR AllDef AllExpr [ | | genAllTags USE {`Map.union`} {Map.empty} : {Map.Map GrTag Int} ]
 
-ATTR GrTag [ | | self : SELF ]
+ATTR GrTag AllGrVarOffset [ | | self : SELF ]
 
 SEM GrVal
   | Node          lhs.genAllTags  =  Map.singleton @tag.self (length @fldL.grTrf)
@@ -249,7 +250,22 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                        resultPat  = GrPatLam_Var resultName
                        emptyPat   = GrPatLam_Empty
                        -- generate code for the call
-                       callExpr0   = GrExpr_Call functName $ map GrVal_Var patNames
+                       (callExpr0,unique4,newItems4)   = 
+                                     case tag of 
+                                       -- here comes the meta closure specific stuff: fetch the variables denoted in the tag before calling
+                                       GrTag_Meta mnm args ->  
+                                                let nrOfArgInTag (GrVarOffset_GrVarOffset _ varNm) = (getNr varNm) 
+                                                    argsInTagAbstractValues        = map (getEnvVar hptMap) $ map nrOfArgInTag args
+                                                    (uniqueM,newItemsM,fetchNames) = trace ("abstractvalues :" ++ show argsInTagAbstractValues) $ newNames unique3 argsInTagAbstractValues
+                                                    fetches           = map (GrExpr_FetchVar (head patNames)) args
+                                                    pats              = map GrPatLam_Var fetchNames
+                                                    call              = GrExpr_Call functName $ map GrVal_Var fetchNames
+                                                    makeSequence (expr:[]) []            = expr
+                                                    makeSequence (expr:exprs) (pat:pats) = GrExpr_Seq expr pat (makeSequence exprs pats)
+                                                    callExpr          = makeSequence (fetches ++ [call]) pats
+                                                in (callExpr,uniqueM,newItemsM)
+                                       _                   -> (GrExpr_Call functName $ map GrVal_Var patNames, unique3,[])
+                       -- this breaks the invariant that the left part of a seq in a single node, but no worries, flatten is the next transform
                        callExpr1   = GrExpr_Seq callExpr0 resultPat  $
                                      GrExpr_Unit resultVal GrType_None
                        callExpr2   = GrExpr_Seq callExpr0 resultPat  $
@@ -258,7 +274,7 @@ buildEvalAlt locatName locatNeedsUpdate nodeName unique hptMap (tag,args)
                                      then callExpr2
                                      else callExpr1
                    in  if  isEmptyAbsVal exceptAbsVal
-                        then (unique3, newItems2++newItems3, codeHead (GrAltAnnCalling resultMaxArity locatName) callExpr )
+                        then (unique4, newItems2++newItems3++newItems4, codeHead (GrAltAnnCalling resultMaxArity locatName) callExpr )
                         else -- handling exceptions below (currently not used)
                              let -- create some more new names
                                  (unique4, newItems4, [throwVar,catchVar]) = newNames unique3 [exceptAbsVal, resultAbsVal]
@@ -496,16 +512,20 @@ ATTR GrTag   [ | | mbFunNr : {Maybe Int} ]
 SEM GrTag
   | Fun
     App
-    PApp       lhs.mbFunNr = Just (getNr @nm)
+    PApp
+    Meta      lhs.mbFunNr = Just (getNr @nm)
   | * - Fun
         App
-        PApp   lhs.mbFunNr = Nothing
+        PApp
+        Meta  lhs.mbFunNr = Nothing
 
 SEM GrTag
   | Fun
-    App        lhs.updateNeeded = True
+    App
+    Meta       lhs.updateNeeded = True
   | * - Fun
-        App    lhs.updateNeeded = False
+        App 
+        Meta   lhs.updateNeeded = False
 
 SEM GrVal
   | Node       lhs.updateNeeded  =  @tag.updateNeeded

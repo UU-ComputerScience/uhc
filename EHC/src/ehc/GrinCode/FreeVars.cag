@@ -40,5 +40,5 @@ WRAPPER GrExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR GrTag [ | | trf: SELF ]
+ATTR GrTag GrVarOffset GrVarOffsetL [ | | trf: SELF ]
 %%]
