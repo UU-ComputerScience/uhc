@@ -26,10 +26,15 @@
 %%[(8 codegen grin) ag import({GrinByteCode/AbsSyn})
 %%]
 
-%%[(20 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)})
+%%[(20 codegen grin) hs import({%{EH}Core(HsName2OffsetMpMp)},{%{EH}LamInfo})
 %%]
 
-%%[(99 codegen grin) hs import({%{EH}Base.ForceEval})
+%%[20 hs import(Control.Monad)
+%%]
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
+
+%%[(9999 codegen grin) hs import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -326,18 +331,37 @@ type CCallEncInfo = CCallEncInfo' [BasicSize]
 %%% Function Info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs export(FunctionInfo'(..),FunctionInfo)
+%%[(8 codegen grin) hs export(FunctionInfoFlag(..),FunctionInfo'(..),FunctionInfo)
+data FunctionInfoFlag
+  = FunctionInfoFlag_None
+  | FunctionInfoFlag_1stArgIsStackTrace					-- 1st arg is explicit stacktrace
+  deriving Show
+
+instance PP FunctionInfoFlag where
+  pp = pp . show
+
 data FunctionInfo' x
   = FunctionInfo
-      { funinfoNm				:: !x					-- name of function
+      { funinfoKey				:: !x					-- name of function, later the index
+      , funinfoNm				:: !HsName				-- name of function, used to build exported/propagated mapping to above index
       , funinfoMaxStackSz		:: !StackDepth			-- max stack size used by function, in words (in final bytecode in bytes)
+      , funinfoFlags			:: [FunctionInfoFlag]	-- optional info, config, etc
       }
-  deriving (Eq,Ord)
+
+instance Eq (FunctionInfo' x) where
+  i1 == i2 = funinfoNm i1 == funinfoNm i2
+
+instance Ord (FunctionInfo' x) where
+  i1 `compare` i2 = funinfoNm i1 `compare` funinfoNm i2
 
 type FunctionInfo = FunctionInfo' String
 
 emptyFunctionInfo :: FunctionInfo
-emptyFunctionInfo = FunctionInfo "" 1
+emptyFunctionInfo = FunctionInfo "" hsnUnknown 1 []
+%%]
+
+%%[(20 codegen grin) hs export(FunctionInfoExportMp)
+type FunctionInfoExportMp = Map.Map HsName GrinByteCodeLamInfo			-- to index into table of FunctionInfos, to be included in HIInfo
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -375,20 +399,22 @@ instance PP CallInfoExtra where
   pp CallInfoExtra_None      = pp "NULL"
 %%]
 
-%%[(8 codegen grin) hs export(CallInfo'(..),CallInfo)
-type MbStrInx = Maybe Int
-type MbCIStr = Maybe String
+%%[(8 codegen grin) hs export(CallInfo'(..),CallInfo,CallInfoCall)
+type MbStrInx  = Maybe Int
+type MbCIStr   = Maybe String
+type MbCIStrNm = Maybe (Maybe String,HsName)
 
 data CallInfo' info str
   = CallInfo
       { ciKind			:: !CallInfoKind
-      , ciMbNmStrInx	:: !(Maybe str)					-- string (or index), if any
+      , ciMbKey	        :: !(Maybe str)					-- string (or index), if any
       , ciGCStackInfo 	:: !info
       , ciExtra			:: !CallInfoExtra
       }
   deriving (Eq,Ord,Show)
 
-type CallInfo = CallInfo' GCStackInfo StringConst
+type CallInfo     = CallInfo' GCStackInfo StringConst
+type CallInfoCall = CallInfo' GCStackInfo (Maybe StringConst,HsName)
 
 %%]
 
@@ -399,11 +425,13 @@ mkCIExtra e k i gc = CallInfo k (fmap StringConst i) gc e
 mkCI :: CallInfoKind -> MbCIStr -> CallInfo
 mkCI k i = mkCIExtra CallInfoExtra_None k i GCStackInfo_None
 
-mkCICall, mkCIEval, mkCITailEval, mkCIApply :: MbCIStr -> CallInfo
-mkCICall       = mkCI                              CallInfoKind_Call  
+mkCIEval, mkCITailEval, mkCIApply :: MbCIStr -> CallInfo
 mkCIEval       = mkCI                              CallInfoKind_Eval  
 mkCITailEval   = mkCI                              CallInfoKind_TailEval  
 mkCIApply      = mkCI                              CallInfoKind_Apply 
+
+mkCICall :: MbCIStrNm -> CallInfoCall
+mkCICall i = CallInfo CallInfoKind_Call (fmap (\(i,n) -> (fmap StringConst i,n)) i) GCStackInfo_None CallInfoExtra_None
 
 mkCICCall :: [BasicSize] -> MbCIStr -> GCStackInfo -> CallInfo
 mkCICCall e    = mkCIExtra (CallInfoExtra_CCall e) CallInfoKind_CCall
@@ -548,13 +576,17 @@ data LinkChainEntry
   = LinkChainEntry
        { lcentryKey		:: !LinkChainKey
        , lcentryInfo	:: !LinkChainKeyInfo
+       -- , lcentryInfo2	:: !LinkChainKeyInfo	-- extra info only for certain LinkChainKinds
        }
   deriving Show
 %%]
 
 %%[(8 codegen grin) hs export(linkChainConst,linkChainCode,linkChainOffset,linkChainOffsets)
+linkChainEntry' :: LinkChainKind -> LabelId -> Int -> Int -> LinkChainEntry
+linkChainEntry' kind lbl inx inx2 = LinkChainEntry (LinkChainKey kind (LinkChainId_Lbl lbl)) inx -- inx2
+
 linkChainEntry :: LinkChainKind -> LabelId -> Int -> LinkChainEntry
-linkChainEntry kind lbl inx = LinkChainEntry (LinkChainKey kind (LinkChainId_Lbl lbl)) inx
+linkChainEntry kind lbl inx = linkChainEntry' kind lbl inx 0
 
 linkChainConst :: LabelId -> Int -> LinkChainEntry
 linkChainConst = linkChainEntry LinkChainKind_Const
@@ -654,13 +686,12 @@ vaAnnotGCPermit = valAccessAnnot grinBasicAnnotGCPermit (flip const)
 
 %%[(8 codegen grin) hs export(ValAccess(..),ValAccessGam)
 data ValAccess
-  = Val_Local           { vaStackDepth :: StackDepth, vaAnnot :: ValAccessAnnot }		-- value on the stack
-  -- | Val_NodeTagLocal    { vaStackDepth :: StackDepth }									-- tag of node on the stack
-  | Val_NodeFldLocal    { vaStackDepth :: StackDepth, vaAnnot :: ValAccessAnnot }		-- field 0 of node on the stack
+  = Val_Local           { vaStackDepth :: !StackDepth, vaAnnot :: !ValAccessAnnot }		-- value on the stack
+  | Val_NodeFldLocal    { vaStackDepth :: !StackDepth, vaAnnot :: !ValAccessAnnot }		-- field 0 of node on the stack
   | Val_Int             Integer
-  | Val_GlobEntry       { vaEntryInx :: Int }
+  | Val_GlobEntry       { vaEntryInx :: !Int }
 %%[[20
-  | Val_ImpEntry        { vaModOff, vaEntryOff :: Int }
+  | Val_ImpEntry        { vaModOff, vaEntryOff :: !Int }
 %%]]
   deriving Show
 
@@ -687,6 +718,7 @@ data NmEnv
       { neVAGam     :: ValAccessGam
 %%[[20
       , neImpNmMp   :: HsName2OffsetMpMp
+      , neLamMp     :: LamMp
 %%]]
       }
 %%]
@@ -704,7 +736,13 @@ nmEnvLookup nm env
         -> do { q <- hsnQualifier nm
               ; (mo,entryMp) <- Map.lookup q $ neImpNmMp env
               ; eo <- Map.lookup nm entryMp
-              ; return (Val_ImpEntry mo eo)
+              ; return (Val_ImpEntry mo eo
+                                     {- (maybe (-1) id
+                                      $ do { li <- Map.lookup nm $ neLamMp env
+                                           ; fi <- laminfoGrinByteCode li
+                                           ; return (gblaminfoFuninfoKey fi)
+                                           }
+                       ) -}            )
               }
       v -> v
 %%]
@@ -1037,7 +1075,7 @@ gviLd opts ldcxt env stState gbState intro
 %%]
 
 %%[(8 codegen grin) hs export(gvCall)
-gvCall :: MbCIStr -> NmEnv -> InsSeq -> StackState -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
+gvCall :: MbCIStrNm -> NmEnv -> InsSeq -> StackState -> StackState -> GBState -> HsName -> (InsSeq,StackState,GBState)
 gvCall i nmEnv ins inc stState gbState nm
   = (ins Seq.:++: fins Seq.:++: Seq.fromList [call i InsOp_LocB_TOS], ststFromDep nrValWords, gbState2)
   where (fins,_,gbState2) = nmLd defaultLoadCtxt nmEnv (stState `ststInc` inc) gbState nm
@@ -1256,7 +1294,7 @@ apply i locB = Instr_Apply locB (mkCIApply i)
 funstart :: FunctionInfo -> Instr
 funstart i = Instr_FunStart i
 
-call :: MbCIStr -> InsOp_LocB -> Instr
+call :: MbCIStrNm -> InsOp_LocB -> Instr
 call i locB = Instr_Call locB (mkCICall i)
 
 rettailcall :: Integral c => (InsOp_ImmSz -> InsOp_ImmSz -> Imm -> Imm -> Instr) -> c -> c -> Instr
@@ -1477,14 +1515,15 @@ halt = Instr_Halt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval instances
+%%% Instances: ForceEval, Serializable
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 codegen grin) hs
+%%[(9999 codegen grin) hs
 instance ForceEval Const
 instance ForceEval LinkChainEntry
 instance ForceEval LocRef
 instance ForceEval CallInfo
+instance ForceEval CallInfoCall
 instance ForceEval EntryInfo
 %%]
 

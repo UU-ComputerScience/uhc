@@ -70,6 +70,7 @@ SEM Module
                                                || @realModuleNm == hsnModPrelude
                                                || hsnIsInPrelude @realModuleNm
                                                || not (ehcOptUseAssumePrelude @lhs.opts)
+                                               || Set.member Pragma.Pragma_NoImplicitPrelude @fileHeaderPragmas
                                             then @body.modImpL
                                             else modImpPrelude : @body.modImpL
 %%]

@@ -196,7 +196,9 @@ DATA Err
   | MustHaveMain
   | ModNameMismatch     nmOfFile   : HsName
                         nmFromSrc  : HsName
-  | AmbiguousNameRef    nm         : HsName
+  | AmbiguousNameRef    kindName   : {String}
+                        kind       : {String}
+                        nm         : HsName
                         nmAlts     : {[HsName]}
   | MutRecModules       mutRecL    : {[[HsName]]}
 %%]
@@ -210,6 +212,14 @@ DATA Err
   | NoDerivForData      ty         : Ty
                         clNm       : HsName
                         reason     : String
+%%]
+
+%%[99
+DATA Err
+  | InconsistentHI      modNm      : String
+                        file       : String
+                        expected   : {[String]}
+                        inHI       : {[String]}
 %%]
 
 

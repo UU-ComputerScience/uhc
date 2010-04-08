@@ -24,6 +24,10 @@
 %%[(94 codegen jazy) hs import({%{EH}Foreign.Extract})
 %%]
 
+-- debug
+%%[(8 jazy) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,8 +160,8 @@ nmVar pkg mod v
 %%][20
   = safeNm $ handleUpper $ hsnQualified v
   where handleUpper v
-          = case v of
-               HNm s@(c:vs) | isUpper c -> HNm (s ++ "_")
+          = case hsnBaseUnpack v of
+               Just (s@(c:vs), mk) | isUpper c -> mk (s ++ "_")
                _ -> v
 %%]]
 
@@ -176,7 +180,7 @@ nmVarToFld v
 %%[[8
   = v
 %%][20
-  = hsnQualified v
+  = {- (\x -> tr "ToJazy.nmVarToFld" (v >#< x) x) $ -} hsnQualified v
 %%]]
 
 -- name of class of data type
@@ -208,7 +212,7 @@ nmSetOrEvlN n = nmEvalN n
 -- ensure a name valid for JVM
 safeNm :: HsName -> HsName
 safeNm
-  = hsnMapQualified (HNm . concatMap safe . show)
+  = hsnMapQualified (concatMap safe) . hsnFixUniqifiers
   where safe '.'  = "_dot"
         safe ':'  = "_colon"
         safe '/'  = "_fslash"
@@ -217,6 +221,7 @@ safeNm
         safe '\\' = "_bslash"
         safe '['  = "_lbrack"
         safe ']'  = "_rbrack"
+        safe '@'  = "_at"
         safe  c   = [c]
 %%]
 
@@ -275,8 +280,8 @@ SEM CBind
 SEM CExpr
   | Var			loc			.	varnm			=	nmVar @lhs.pkgNm @lhs.topClassNm @nm
 
-SEM CPatBind
-  | Bind		loc			.	varnm			=	nmVar @lhs.pkgNm @lhs.topClassNm @nm
+SEM CPatFld
+  | Fld 		loc			.	varnm			=	nmVar @lhs.pkgNm @lhs.topClassNm @fldNm
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -399,17 +404,10 @@ SEM CBind
 %%]
 
 %%[(8 jazy)
-ATTR CPat [ | | patBindNm: HsName ]
-
-SEM CPat
-  | *			lhs			.	patBindNm		=	{- safeNm -} @pnm
-%%]
-
-%%[(8 jazy)
 ATTR AllPat [ | | patCVarMp USE {`Map.union`} {Map.empty} : CVarMp ]
 
-SEM CPatBind
-  | Bind        loc         .   patCVarMp       =   Map.singleton @pat.patBindNm @cviField
+SEM CPatFld
+  | Fld         loc         .   patCVarMp       =   Map.singleton @fldNm @cviField
 %%]
 
 %%[(8 jazy)
@@ -472,7 +470,7 @@ SEM CPat
 %%]
 
 %%[(8 jazy)
-ATTR AllPatBind [ ctag: CTag | | ]
+ATTR AllPatFld [ ctag: CTag | | ]
 
 SEM CPat
   | Con			binds		.	ctag			=	@tag
@@ -578,8 +576,8 @@ ATTR AllPat [ | | offsetBinds USE {++} {[]} : {[(HsName,CVarInfo,J.JInstr)]} ]
 %%]
 
 %%[(8 jazy)
-SEM CPatBind
-  | Bind        (loc.cviField,lhs.offsetOffset,loc.offsetBinds)
+SEM CPatFld
+  | Fld         (loc.cviField,lhs.offsetOffset,loc.offsetBinds)
                                                 =   case @lhs.ctag of
                                                       CTagRec
                                                         -> case @offset.whatBelow of
@@ -593,11 +591,11 @@ SEM CPatBind
                                                       CTag _ cn _ _ _
                                                         -> case @offset.whatBelow of
                                                              ExprIsInt i -> (CVarInfo_DataFld jtyObj @lhs.scrutineeCVarInfo cn' (nmDataFldAt i),@lhs.offsetOffset,[])
-                                                             _           -> panic "Core.ToJazy.CPatBind.Bind.cviField"
+                                                             _           -> panic "Core.ToJazy.CPatFld.Fld.cviField"
                                                         where cn' = nmDataCon @lhs.pkgNm @lhs.topClassNm cn
 %%]
-SEM CPatBind
-  | Bind        (loc.cviOffset,lhs.offsetOffset,loc.offsetBinds)
+SEM CPatFld
+  | Fld         (loc.cviOffset,lhs.offsetOffset,loc.offsetBinds)
                                                 =   case @offset.whatBelow of
                                                       ExprIsInt i -> (Left  i,@lhs.offsetOffset,[])
                                                       ExprIsVar n -> (Right n,@lhs.offsetOffset,[])
@@ -627,8 +625,8 @@ SEM CAlt
 SEM CBind
   | Bind        expr        .   mbLamNm         =   Just @varnm
 
-SEM CPatBind
-  | Bind        offset      .   mbLamNm         =   Nothing
+SEM CPatFld
+  | Fld         offset      .   mbLamNm         =   Nothing
 
 SEM CModule
   | Mod         expr        .   mbLamNm         =   Nothing
@@ -1133,7 +1131,7 @@ SEM CBind
                                                              else dflt
                                                         else dflt
                 lhs         .   subClasses      =   if @isThrowOutMain then Seq.empty else @subClasses
-  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (HNm @impEntNm)
+  | FFI         loc         .   classNm         =   nmVarCls @lhs.pkgNm @lhs.topClassNm (mkHNmBase @impEntNm)
                             .   lkupBuiltin     =   let m = builtinKnownBoxedTyMp @lhs.opts
                                                     in  \n -> Map.lookup n m
                             .   (globClasses,ji)=   let mkxxbox how mbCon

@@ -301,32 +301,42 @@ void gb_Node_Finalize( void* p, void* cd )
 {
 	GB_NodePtr n = Cast(GB_NodePtr,p) ;
 	GB_NodeHeader h = n->header ;
+	IF_GB_TR_ON(3,{printf("gb_Node_Finalize BEG  n=%p header=%x\n",n,h) ;}) ;
 	if ( GB_NH_Fld_NdEv(h) == GB_NodeNdEv_No && GB_NH_Fld_TagCat(h) == GB_NodeTagCat_Intl )
 	{
 		switch( GB_NH_Fld_Tag(h) )
 		{
 %%[[95
 			case GB_NodeTag_Intl_Malloc :
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Malloc  n=%p header=%x\n",n,h) ;}) ;
 				gb_free( n->content.ptr ) ;
 				break ;
 			case GB_NodeTag_Intl_Malloc2 :
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Malloc2  n=%p header=%x\n",n,h) ;}) ;
 				gb_free( n->content.bytearray.ptr ) ;
 				break ;
 %%]]
 %%[[97
 #			if USE_EHC_MM && USE_GMP
 				case GB_NodeTag_Intl_GMP_mpz :
+					IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_GMP_mpz  n=%p header=%x\n",n,h) ;}) ;
 					gb_Node_FinalizeInteger( n ) ;
 					break ;
 #			endif
 %%]]
 %%[[98
 			case GB_NodeTag_Intl_Chan :
-				fclose( n->content.chan.file ) ;
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Chan A n=%p header=%x\n",n,h) ;}) ;
+				fflush( n->content.chan.file ) ;
+				if ( (n->content.chan.flags & GB_Chan_Flag_FinalizerNoClose) == 0 ) {
+					fclose( n->content.chan.file ) ;
+				}
+				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Chan B n=%p header=%x\n",n,h) ;}) ;
 				break ;
 %%]]
 		}
 	}
+	IF_GB_TR_ON(3,{printf("gb_Node_Finalize END  n=%p header=%x\n",n,h) ;}) ;
 }
 
 #if USE_BOEHM_GC
@@ -631,6 +641,35 @@ void gb_prCallInfo( GB_CallInfo* ci )
 	}
 }
 
+// get FunctionInfo belonging to callinfo, if none return NULL
+GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* ci )
+{
+	if ( ci->kind == GB_CallInfo_Kind_Call ) {
+		if ( ci->functionInfoModOff == GB_FunctionInfo_Inx_None || ci->functionInfoOff == GB_FunctionInfo_Inx_None ) {
+			return NULL ;
+		} else {
+			return &allMod[ ci->functionInfoModOff ].functionInfos[ ci->functionInfoOff ] ;
+		}
+	} else {
+		return NULL ;
+	}
+}
+
+// get the name if the thing a CallInfo is about, used for printing/dumping stack traces
+Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, GB_CallInfo* ci )
+{
+	Word8* ciName ;
+
+	GB_FunctionInfo* i = gb_CallInfo_GetFunctionInfo( allMod, ci ) ;
+	if ( i == NULL ) {
+		ciName = ci->name ;
+	} else {
+		ciName = i->nm ;
+	}
+
+	return ciName ;
+}
+
 Bool gb_CallInfo_Kind_IsVisible( Word kind )
 {
 	switch( kind )
@@ -727,7 +766,7 @@ void gb_prTOSAsInt( )
 				  , GB_GBInt2Int(GB_TOS) ) ;
 }
 
-void gb_prStack( int maxStkSz )
+void gb_prStack( WPtr sp, int maxStkSz )
 {
     int i ;
     
@@ -793,7 +832,7 @@ void gb_prState( char* msg, int maxStkSz )
 			, bci->bc
 			) ;
 	}
-	gb_prStack( maxStkSz ) ;
+	gb_prStack( sp, maxStkSz ) ;
 }
 
 #endif
@@ -1604,7 +1643,7 @@ gb_interpreter_InsApplyEntry:
 %%]]
 						WPtr bpNext ;
 %%[[1010
-						printf( "GB_Ins_TailEval" ) ;
+						printf( "GB_Ins_TailEval BEF" ) ;
 						if (bp) { 
 							printf( " k0=%d", GB_FromBPToCallInfo(bp)->kind ) ;
 							bpNext = (WPtr)*bp ;
@@ -1696,6 +1735,34 @@ gb_interpreter_TailEval_Default:
 						}
 %%]]
 						pc = &gb_code_AfterTailEvalCall[sizeof(GB_CallInfo_Inline)] ;			/* ret addr is to taileval cleanup 			*/
+%%[[1010
+						printf( "GB_Ins_TailEval AFT" ) ;
+						if (bp) { 
+							printf( " k0=%d", GB_FromBPToCallInfo(bp)->kind ) ;
+							bpNext = (WPtr)*bp ;
+							if (bpNext) { 
+								printf( " k1=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+								bpNext = (WPtr)*bpNext ;
+								if (bpNext) { 
+									printf( " k2=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+									bpNext = (WPtr)*bpNext ;
+									if (bpNext) { 
+										printf( " k3=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+										bpNext = (WPtr)*bpNext ;
+										if (bpNext) { 
+											printf( " k4=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+											bpNext = (WPtr)*bpNext ;
+											if (bpNext) { 
+												printf( " k5=%d", GB_FromBPToCallInfo(bpNext)->kind ) ;
+												bpNext = (WPtr)*bpNext ;
+											}
+										}
+									}
+								}
+							}
+						}
+						printf( "\n" ) ;
+%%]]
 						goto gb_interpreter_InsEvalEntry ;										/* jump to eval						*/
 		
 					case GB_InsExt_Halt:
@@ -1835,15 +1902,18 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
 	GB_CallInfo* ci ;
+	Bool didEncounterExplicitStackTrace = False ;
 	GB_NodePtr thrownExc ;
-	GB_NodePtr reifiedBackTrace ;
+	GB_NodePtr reifiedBackTrace, explicitStackTrace ;
+	
 	GB_GCSafe_Enter ;
 	GB_GCSafe_1(exc) ;
-	GB_GCSafe_2_Zeroed(thrownExc,reifiedBackTrace) ;
+	GB_GCSafe_3_Zeroed(thrownExc,reifiedBackTrace,explicitStackTrace) ;
 	
 	gb_ThrownException_NrOfEvalWrappers = 0 ;
 	
 	GB_MkListNil(reifiedBackTrace) ;
+	GB_MkListNil(explicitStackTrace) ;
 	
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException bp %p : ", bp) ; printf("\n");}) ;
 	for ( p = bp
@@ -1870,11 +1940,23 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 			GB_NodePtr n1, n2, n3 ;
 			GB_GCSafe_Enter ;
 			GB_GCSafe_3_Zeroed(n1, n2, n3) ;
-			GB_MkCFunNode1In(n1,primCStringToString,ci->name) ;
+			Word8* ciName = gb_CallInfo_GetName( gb_AllMod, ci ) ;
+			// printf("gb_intl_throwException ciNm=%s\n",ciName) ;
+			GB_MkCFunNode1In(n1,primCStringToString,ciName) ;
 			GB_MkTupNode2_In(n2,GB_Int2GBInt(ci->kind),n1) ;
 			n3 = reifiedBackTrace ;
 			GB_MkListCons(reifiedBackTrace,n2,n3) ;
 			GB_GCSafe_Leave ;
+		}
+		if ( ! didEncounterExplicitStackTrace ) {
+			GB_FunctionInfo* fi = gb_CallInfo_GetFunctionInfo( gb_AllMod, ci ) ;
+			// if (fi) {printf("gb_intl_throwException fi->nm=%s fi->flags=%x\n",fi->nm,fi->flags) ;}
+			if ( fi != NULL && fi->flags & GB_FunctionInfoFlag_1stArgIsStackTrace ) {
+				explicitStackTrace = (GB_NodePtr)GB_RegRelx(p,2) ;
+				// gb_prWord( (Word)explicitStackTrace ) ; printf("\n") ;
+				// gb_prStack( p, 10 ) ;
+				didEncounterExplicitStackTrace = True ;
+			}
 		}
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo3: ") ; gb_prCallInfo( ci ); printf("\n");}) ;
@@ -1887,7 +1969,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	}
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException:4: sp=%p bp=%p\n", sp, bp) ;}) ;
 	
-	GB_MkTupNode2_In(thrownExc,reifiedBackTrace,exc) ;																// tuple with backtrace
+	GB_MkTupNode3_In(thrownExc,exc,reifiedBackTrace,explicitStackTrace) ;																// tuple with backtrace
 	GB_GCSafe_Leave ;
 	return (gb_ThrownException = thrownExc) ;
 }
@@ -2017,14 +2099,14 @@ void gb_InitTables
 	// , GB_GCInfo* gcInfos
 	, GB_GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
-	, GB_CallInfo* callinfos
-	, GB_FunctionInfo* functionInfos
+	, GB_CallInfo* callinfos, int callinfosSz
+	, GB_FunctionInfo* functionInfos, int functionInfosSz
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
 	, GB_ImpModEntry* impModules, int impModulesSz
 	, GB_NodePtr* expNode, int expNodeSz, int* expNodeOffs
-	, GB_ModEntry* modTbl
+	, GB_ModEntry* modTbl, Word modTblInx
 %%]]
 	)
 {
@@ -2045,6 +2127,15 @@ void gb_InitTables
 	for ( i = 0 ; i < impModulesSz ; i++ ) {
 		impModules[i].globModInx = gb_lookupModEntry( impModules[i].name, modTbl ) ;
 		IF_GB_TR_ON(3,{printf("imp mod %s globInx %d", impModules[i].name, impModules[i].globModInx) ; printf("\n");}) ;
+	}
+
+	for ( i = 0 ; i < callinfosSz ; i++ ) {
+		GB_FunctionInfo_Inx off = callinfos[i].functionInfoModOff ;
+		if ( off == GB_FunctionInfo_Inx_None ) {
+			callinfos[i].functionInfoModOff = modTblInx ;
+		} else {
+			callinfos[i].functionInfoModOff = impModules[ off ].globModInx ;
+		}
 	}
 %%]]
 

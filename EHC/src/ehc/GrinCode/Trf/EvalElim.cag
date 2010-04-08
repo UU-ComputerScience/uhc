@@ -410,7 +410,7 @@ SEM GrVal
                                                            , Map.empty
                                                            , Just (repl,IsEval_Apply fRepl fs,Map.singleton f (IsEval_EvalToNodeNm f'))
                                                            )
-                                                        where f' = hsnSuffix f "!"
+                                                        where f' = hsnUniqifyEval f
                                                               fRepl = f' -- if optsAllowNodePtrMix @lhs.opts then f' else f
                                                               repl = GrExpr_Seq (GrExpr_Eval f) (GrPatLam_Var f') (GrExpr_App fRepl fs)
                                                       (GrTag_Con _ _ _,_)                               -- constructor node is evaluated
@@ -441,7 +441,7 @@ SEM GrExpr
                                                         @delayedMkSeq $ 
                                                         case a of
                                                           Just e | isEvalEvaluated @lhs.opts e
-                                                            -> GrExpr_Unit (GrVal_Var $ isEvalNm e @nm)
+                                                            -> GrExpr_Unit (GrVal_Var $ isEvalNm e @nm) GrType_None
                                                           _ -> @trf
   | App         loc         .   appTrf          =   case Map.lookup @nm $ Map.union @newDelIsEvalMp @lhs.isEvalMp of
                                                       Just (IsEval_Apply f as) | not $ @nm `Map.member` @lhs.fviMp

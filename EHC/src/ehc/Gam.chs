@@ -91,10 +91,10 @@
 %%[20 export(idDefOccGamByKind)
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Ty.Trf.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -361,7 +361,7 @@ gamDoTyWithVarMp (get,set) f gamVarMp thr gam
                (\(n,gi) (thr,c)
                    -> let t = get gi
                           (t',c',thr') = f n (gamVarMp |==> t) c thr
-                          (tg,cg)      = case (t,t') of
+                          (tg,cg)      = case (tyUnAnn t,tyUnAnn t') of
                                            (Ty_Var v1 _  ,Ty_Var v2 _) | v1 == v2
                                              -> dflt
                                            (Ty_Var v  cat,_          ) | not (tvCatIsFixed cat)
@@ -528,7 +528,7 @@ instance (Ord k, PP k, PP v) => PP (SGam k v) where
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyKiKey
 %%[[102
   where

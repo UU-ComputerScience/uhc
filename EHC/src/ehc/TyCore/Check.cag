@@ -398,7 +398,7 @@ ATTR Expr ExprSeq1 Alt [ | | ty: Ty ]
 
 SEM Expr
   | App         loc         .   (argTy,resTy)       =   tyArrowArgRes @func.ty
-                            .   ty                  =   trace ("whatwhat!\n    arg: " ++ show @arg.ty ++ "\n  fnArg: " ++ show @argTy  ++ "\n  fnRes: " ++ show @resTy ++ "\n") $ moutCSubst @mout `cSubstApp` @resTy
+                            .   ty                  =   moutCSubst @mout `cSubstApp` @resTy
   | Lam         loc         .   ty                  =   Expr_Arrow @arg.ty @res.ty
   | Exists      loc         .   ty                  =   Expr_Exists @arg.ty @expr.ty
   | Int Char String

@@ -145,7 +145,7 @@ evidMpToCore env evidMp
         ann (RedHow_ByInstance   n _ sc) ctxt  = ( C.mkExprAppMeta (mknm n) (map (\c -> (tcrExpr c,(C.MetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = ( C.mkExprSatSelsCaseMeta
                                                      (C.emptyRCEEnv $ feEHCOpts $ fiEnv env)
-                                                     (Just (hsnSuffix n "!",ty n)) (C.MetaVal_Dict (Just o)) (tcrExpr sub) t
+                                                     (Just (hsnUniqifyEval n,ty n)) (C.MetaVal_Dict (Just o)) (tcrExpr sub) t
                                                      [(n,o)] Nothing (C.Expr_Var n)
                                                  , tcrScope sub
                                                  )

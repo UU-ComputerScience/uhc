@@ -36,8 +36,8 @@ The following transformations are performed on each separate module:
 
 \item ElimTrivApp (again):
 
-\item FullLazy:
-%%@EHCoreTrfFullLazy.doesWhat
+\item ANormal:
+%%@EHCoreTrfANormal.doesWhat
 
 \item LamGlobalAsArg:
 

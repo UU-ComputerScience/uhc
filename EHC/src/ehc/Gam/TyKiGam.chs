@@ -26,7 +26,7 @@
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -223,7 +223,7 @@ instance PP TyKiGamInfo where
   pp i = ppTy (tkgiKi i)
 %%]
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance ForceEval TyKiGamInfo where
   forceEval x@(TyKiGamInfo k) | forceEval k `seq` True = x
 %%[[102

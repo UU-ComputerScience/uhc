@@ -275,8 +275,11 @@ mkFreshAppImTy u mkr
         rt = mkr $ mkTyVar r
 %%]
 
+20100403, AD:
+Obsolete comment?
+
 20080228, AD:
-An type at apptop may not introduce an implicits.
+A type at apptop may not introduce an implicits.
 This is to avoid a scope introduction (see implsIsEmpty).
 Consequences are yet unclear.
 - Does not work, that is enforcing empty predicates here: im = mkImplsNil
@@ -284,16 +287,28 @@ Consequences are yet unclear.
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop Rec  loc         .   (imTy,knTopTy,resTy)=   mkFreshAppImTy @lUniq_fresh id
+  | AppTop Rec Let
+                loc         .   (imTy,knTopTy,resTy)=   mkFreshAppImTy @lUniq_freshKnTy id
                             .   doFit               =   \o m -> fitsIn o @fe @lUniq_fit m @resTy @lhs.knTy
                             .   forExprTyVarMp      =   foVarMp @foKnRes |=> @lhs.tyVarMp
                 loc         .   lUniq_fit           :   UNIQUEREF gUniq
+  | Let         loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | AppTop      loc         .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
+  | AppTop Let  loc         .   foKnRes             =   @doFit @lhs.fiOpts @lhs.tyVarMp
   | Rec         loc         .   foKnRes             =   @doFit @recFiOpts @lhs.tyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   knTy                =   @knTopTy
+                            .   ty                  =   @resTy
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -303,9 +318,9 @@ SEM Expr
 -- generated from ruler rules into EHRulerRules, was 2.AppTop
 %%[(5 hmtyinfer).AppTop
 SEM Expr
-  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_fresh @lhs.knTy
+  | AppTop      loc         .   knTy                =   tyEnsureNonAny @lUniq_freshKnTy @lhs.knTy
                             .   ty                  =   @expr.ty
-                loc         .   lUniq_fresh         :   UNIQUEREF gUniq
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
 %%]
 
 %%[(9 hmtyinfer).AppTop
@@ -460,7 +475,7 @@ SEM Expr
 %%][99
                             .   gTyTvS              =   @tyTyUpdFreeTvarS `Set.union` @valTyUpdFreeTvarS
 %%]]
-                            .   tyVarWildS          =   Set.fromList @tyExpr.tyVarWildL
+                            .   tyVarWildS          =   Map.keysSet @tyExpr.tyVarWildMp
                             .   ty_q_               :=  tyQuantifyOuter (const kiStar {- TBD -}) (`Set.member` (@tyVarWildS `Set.union` @gTyTvS)) @tyTy
                             .   fo_                 :=  fitsIn @knTyFIOpts @fe @lUniq @lhs.tyVarMp @ty_q_ @lhs.knTy
                             .   ty_q_2_VarMp        =   foVarMp @fo_ |=> @lhs.tyVarMp
@@ -577,18 +592,18 @@ SEM RecExpr
 
 %%[(7 hmtyinfer)
 SEM Expr
-  | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq_fresh
+  | Sel         (loc.knRowTy,loc.knExprTy)          =   let r = mkNewTyVar @lUniq_freshKnTy
                                                         in  (r, (hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)])
                 expr        .   knTy                =   @knExprTy
                 loc         .   (_,ty)              =   maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl @expr.ty)
-                loc         .   lUniq_fresh         :   UNIQUEREF gUniq
-  | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq_fresh
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
+  | Rec         loc         .   knRecTy             =   let  r = mkNewTyVar @lUniq_freshKnTy
                                                         in   hsnRec `mkConApp` [r]
                             .   fo_                 =   fitsIn @recFiOpts @fe @lUniq2 @lhs.tyVarMp @knRecTy @lhs.knTy
                 recExpr     .   knTy                =   @knRecTy
                             .   tyVarMp             =   foVarMp @fo_ |=> @lhs.tyVarMp
                 loc         .   ty                  =   foTy @fo_
-                loc         .   lUniq_fresh         :   UNIQUEREF gUniq
+                loc         .   lUniq_freshKnTy     :   UNIQUEREF gUniq
                 loc         .   lUniq2              :   UNIQUEREF gUniq
 %%]
 
@@ -602,7 +617,7 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq_fresh
+  | Sel         (loc.knRowTy,loc.knExprTy)          :=  let r = mkNewTyVar @lUniq_freshKnTy
                                                         in  (r, [Ty_Impls Impls_Nil] `mkArrow` ((hsnRec `mkConApp` [r]) `mkTyRecExt` [(@lbl,@lhs.knTy)]))
                 loc         .   (_,ty)              :=  maybe (Ty_Any,Ty_Any) id (tyRecExtrWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @lbl $ snd $ tyArrowImplsResWithLkup (varmpTyLookupCyc2 @expr.tyVarMp) @expr.ty)
 %%]

@@ -77,7 +77,7 @@ instance Serialize Foo where
 
 %%[20 import(qualified {%{EH}Base.Binary} as Bn)
 %%]
-%%[20 import(qualified Data.ByteString.Lazy as L, IO)
+%%[20 import(qualified Data.ByteString.Lazy as L, IO, System.IO(openBinaryFile))
 %%]
 
 %%[20 import(EH.Util.Utils)
@@ -136,7 +136,7 @@ scmdFrom SCmd_ShareRef8  = SCmd_ShareRef
 scmdFrom c               = c
 %%]
 
-%%[20
+%%[20 export(SPut)
 data SerPutMp = forall x . (Typeable x, Ord x) => SerPutMp (Map.Map x Int)
 
 data SPutS
@@ -152,7 +152,7 @@ type SPut = St.State SPutS ()
 
 %%]  
 
-%%[20
+%%[20 export(SGet)
 data SerGetMp = forall x . (Typeable x, Ord x) => SerGetMp (Map.Map Int x)
 
 data SGetS
@@ -323,11 +323,26 @@ sgetWord16 = liftG Bn.getWord16be
 
 %%]
 
+%%[20 export(sputEnum8, sgetEnum8)
+sputEnum8 :: Enum x => x -> SPut
+sputEnum8 x = liftP (Bn.putEnum8 x)
+{-# INLINE sputEnum8 #-}
+
+sgetEnum8 :: Enum x => SGet x
+sgetEnum8 = liftG Bn.getEnum8
+{-# INLINE sgetEnum8 #-}
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default instances, copied & modified from Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
+instance Serialize () where
+  sput _ = return ()
+  sget   = return ()
+
 instance Serialize Int where
   sput = sputPlain
   sget = sgetPlain
@@ -337,6 +352,10 @@ instance Serialize Char where
   sget = sgetPlain
 
 instance Serialize Bool where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Serialize Integer where
   sput = sputPlain
   sget = sgetPlain
 
@@ -383,20 +402,48 @@ instance (Ord k, Serialize k, Serialize e) => Serialize (Map.Map k e) where
 %%% The actual IO
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[20 export(runSPut,runSGet)
+runSPut :: SPut -> Bn.Put
+runSPut x = sputsPut $ snd $ St.runState x emptySPutS
+ 
+runSGet :: SGet x -> Bn.Get x
+runSGet x = St.evalStateT x (SGetS Map.empty)
+
+%%]
+
 %%[20 export(serialize,unserialize)
 serialize :: Serialize x => x -> Bn.Put
-serialize x = sputsPut $ snd $ St.runState (sput x) emptySPutS
+serialize x = runSPut (sput x)
  
 unserialize :: Serialize x => Bn.Get x
-unserialize = St.evalStateT sget (SGetS Map.empty)
+unserialize = runSGet sget
 
+%%]
+
+%%[20 export(putSPutFile,getSGetFile)
+-- | SPut to FilePath
+putSPutFile :: FilePath -> SPut -> IO ()
+putSPutFile fn x
+  = do { h <- openBinaryFile fn WriteMode
+       ; L.hPut h (Bn.runPut $ runSPut x)
+       ; hClose h
+       }
+
+-- | SGet from FilePath
+getSGetFile :: FilePath -> SGet a -> IO a
+getSGetFile fn x
+  = do { h <- openBinaryFile fn ReadMode
+       ; b <- liftM (Bn.runGet $ runSGet x) (L.hGetContents h)
+       -- ; hClose h
+       ; return b ;
+       }
 %%]
 
 %%[20 export(putSerializeFile,getSerializeFile)
 -- | Serialize to FilePath
 putSerializeFile :: Serialize a => FilePath -> a -> IO ()
 putSerializeFile fn x
-  = do { h <- openFile fn WriteMode
+  = do { h <- openBinaryFile fn WriteMode
        ; L.hPut h (Bn.runPut $ serialize x)
        ; hClose h
        }
@@ -404,7 +451,7 @@ putSerializeFile fn x
 -- | Unserialize from FilePath
 getSerializeFile :: Serialize a => FilePath -> IO a
 getSerializeFile fn
-  = do { h <- openFile fn ReadMode
+  = do { h <- openBinaryFile fn ReadMode
        ; b <- liftM (Bn.runGet unserialize) (L.hGetContents h)
        -- ; hClose h
        ; return b ;

@@ -54,8 +54,8 @@ rceEnvDataAlts env t
 %%[(8 codegen) export(mkCPatCon)
 mkCPatCon :: CTag -> Int -> Maybe [HsName] -> CPat
 mkCPatCon ctag arity mbNmL
-  = CPat_Con hsnWild ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
-  where mkB n o = CPatBind_Bind hsnUnknown (CExpr_Int o) n (CPat_Var n)
+  = CPat_Con ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
+  where mkB n o = CPatFld_Fld hsnUnknown (CExpr_Int o) n
         nmL = maybe (repeat hsnWild) id mbNmL
 %%]
 
@@ -81,16 +81,16 @@ caltLSaturate env alts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen)
-cpatBindOffsetL :: [CPatBind] -> ([CPatBind],CBindL)
+cpatBindOffsetL :: [CPatFld] -> ([CPatFld],CBindL)
 cpatBindOffsetL pbL
   =  let  (pbL',obL)
             =  unzip
                .  map
-                    (\b@(CPatBind_Bind l o n p@(CPat_Var pn))
-                        ->  let  offNm = hsnPrefix "off_" pn
+                    (\b@(CPatFld_Fld l o pn)
+                        ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset pn -- hsnPrefix "off_" pn
                             in   case o of
                                    CExpr_Int _  -> (b,[])
-                                   _            -> (CPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
+                                   _            -> (CPatFld_Fld l (CExpr_Var offNm) pn,[mkCBind1 offNm o])
                     )
                $  pbL
      in   (pbL',concat obL)
@@ -98,8 +98,8 @@ cpatBindOffsetL pbL
 caltOffsetL :: CAlt -> (CAlt,CBindL)
 caltOffsetL alt
   =  case alt of
-       CAlt_Alt (CPat_Con n t r b) e
-         ->  (CAlt_Alt (CPat_Con n t r b') e,offBL)
+       CAlt_Alt (CPat_Con t r b) e
+         ->  (CAlt_Alt (CPat_Con t r b') e,offBL)
              where (b',offBL) = cpatBindOffsetL b
        _ ->  (alt,[])
 %%]
@@ -114,7 +114,7 @@ type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
 
 %%[(8 codegen) export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
 mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> CAltL -> CExpr
-mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con _ (CTag tyNm _ _ _ _) CPatRest_Empty [CPatBind_Bind _ _ _ (CPat_Var pnm)]) ae]
+mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _) CPatRest_Empty [CPatFld_Fld _ _ pnm]) ae]
   | dgiIsNewtype dgi
   = mkCExprLet CBindings_Plain
       (  [ mkCBind1Meta {- (panicJust "mkCExprStrictSatCaseMeta.mbNm" mbNm) -} {- -} pnm meta e ]
@@ -140,9 +140,9 @@ mkCExprSelsCasesMeta' :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> [(CTag,[
 mkCExprSelsCasesMeta' env mbNm meta e tgSels
   = mkCExprStrictSatCaseMeta env mbNm meta e alts
   where  alts = [ CAlt_Alt
-                    (CPat_Con (maybe (cexprVar e) id mbNm) ct
+                    (CPat_Con ct
                        (mkRest mbRest ct)
-                       [CPatBind_Bind lbl off n (CPat_Var n) | (n,lbl,off) <- nmLblOffL]
+                       [CPatFld_Fld lbl off n | (n,lbl,off) <- nmLblOffL]
                     )
                     sel
                 | (ct,nmLblOffL,mbRest,sel) <- tgSels
@@ -225,7 +225,7 @@ mkCListComprehenseGenerator env patOk mkOk fail e
         [CAlt_Alt patOk (mkOk e)]
       )
   where x = mkHNmHidden "x"
-        xStrict = hsnSuffix x "!"
+        xStrict = hsnUniqifyEval x -- hsnSuffix x "!"
 %%]
 
 %%[(99 codegen) hs export(mkCListComprehenseTrue)
@@ -239,19 +239,19 @@ mkCMatchString env str ok fail e
   = mkCExprLetPlain x e
     $ foldr (\(c,ns@(_,xh,_)) ok
                -> matchCons ns
-                  $ mkCMatchChar opts (Just $ hsnSuffix xh "!")  c (CExpr_Var xh) ok fail
+                  $ mkCMatchChar opts (Just $ hsnUniqifyEval xh)  c (CExpr_Var xh) ok fail
             )
             (matchNil xt ok)
     $ zip str nms
   where env' = env {rceCaseCont = fail}
-        matchCons (x,xh,xt) e = mkCExprSatSelsCase env' (Just $ hsnSuffix x "!") (CExpr_Var x) constag [(xh,xh,0),(xt,xt,1)] (Just (CPatRest_Empty,2)) e
-        matchNil   x        e = mkCExprSatSelsCase env' (Just $ hsnSuffix x "!") (CExpr_Var x) niltag  []                    (Just (CPatRest_Empty,0)) e
+        matchCons (x,xh,xt) e = mkCExprSatSelsCase env' (Just $ hsnUniqifyEval x) (CExpr_Var x) constag [(xh,xh,0),(xt,xt,1)] (Just (CPatRest_Empty,2)) e
+        matchNil   x        e = mkCExprSatSelsCase env' (Just $ hsnUniqifyEval x) (CExpr_Var x) niltag  []                    (Just (CPatRest_Empty,0)) e
         constag = ctagCons opts
         niltag  = ctagNil  opts
         opts = rceEHCOpts env
         (nms@((x,_,_):_),(xt,_,_))
           = fromJust $ initlast $ snd
-            $ foldr (\n (nt,l) -> (n,(n,hsnSuffix n "h",nt):l)) (hsnUnknown,[])
+            $ foldr (\n (nt,l) -> (n,(n,hsnUniqifyStr HsNameUniqifier_Field "h" n,nt):l)) (hsnUnknown,[])
             $ take (length str + 1) $ hsnLclSupplyWith (mkHNmHidden "l")
 %%]
 
@@ -259,7 +259,7 @@ mkCMatchString env str ok fail e
 mkCMatchTuple :: RCEEnv -> [HsName] -> CExpr -> CExpr -> CExpr
 mkCMatchTuple env fldNmL ok e
   = mkCExprLetPlain x e
-    $ mkCExprSatSelsCase env (Just $ hsnSuffix x "!") (CExpr_Var x) CTagRec (zip3 fldNmL fldNmL [0..]) (Just (CPatRest_Empty,length fldNmL)) ok
+    $ mkCExprSatSelsCase env (Just $ hsnUniqifyEval x) (CExpr_Var x) CTagRec (zip3 fldNmL fldNmL [0..]) (Just (CPatRest_Empty,length fldNmL)) ok
   where x = mkHNmHidden "x"
 %%]
 
@@ -325,19 +325,19 @@ fvsClosure newS lamOuterS varOuterS fvmOuter fvmNew
      in   (Map.map fv fvmNew2,Map.map (`Set.intersection` newS) fvmNew2)
 
 fvsTransClosure :: FvSMp -> FvSMp -> FvSMp
-fvsTransClosure frLamMp frVarMp
-  =  let  frVarMp2 = Map.mapWithKey
+fvsTransClosure lamFvSMp varFvSMp
+  =  let  varFvSMp2 = Map.mapWithKey
                        (\n s -> s `Set.union` (Set.unions
-                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ frVarMp)
+                                               $ map (\n -> panicJust "fvsTransClosure.1" $ Map.lookup n $ varFvSMp)
                                                $ Set.toList
                                                $ panicJust "fvsTransClosure.2"
-                                               $ Map.lookup n frLamMp
+                                               $ Map.lookup n lamFvSMp
                        )                      )
-                       frVarMp
+                       varFvSMp
           sz = sum . map Set.size . Map.elems
-     in   if sz frVarMp2 > sz frVarMp
-          then fvsTransClosure frLamMp frVarMp2
-          else frVarMp
+     in   if sz varFvSMp2 > sz varFvSMp
+          then fvsTransClosure lamFvSMp varFvSMp2
+          else varFvSMp
 %%]
 
 %%[(8 codegen) export(fvLAsArg,mkFvNm,fvLArgRepl,fvVarRepl)
@@ -349,7 +349,7 @@ fvLAsArg cvarIntroMp fvS
      $ Set.toList fvS
 
 mkFvNm :: Int -> HsName -> HsName
-mkFvNm i n = hsnSuffix n ("~" ++ show i)
+mkFvNm i n = hsnUniqifyInt HsNameUniqifier_New i n -- hsnSuffix n ("~" ++ show i)
 
 fvLArgRepl :: Int -> CVarIntroL -> (CVarIntroL,CVarIntroL,CVarReplNmMp)
 fvLArgRepl uniq argLevL
@@ -421,30 +421,30 @@ fsLReorder opts fsL
 %%]
 
 %%[(8 codegen) export(rpbReorder,patBindLOffset)
-rpbReorder :: EHCOpts -> [RPatBind] -> [RPatBind]
+rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
 rpbReorder opts pbL
   =  let  (pbL',_)
             =  foldr
-                 (\(RPatBind_Bind l o n p) (pbL,exts) 
+                 (\(RPatFld_Fld l o p) (pbL,exts) 
                      ->  let  mkOff lbl exts o
                                 =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
                                    in  caddint opts o nrSmaller
-                         in   ((RPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
+                         in   ((RPatFld_Fld l (mkOff l exts o) p):pbL,l:exts)
                  )
                  ([],[])
             $  pbL
-          cmpPB (RPatBind_Bind l1 _ _ _)  (RPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
+          cmpPB (RPatFld_Fld l1 _ _)  (RPatFld_Fld l2 _ _) = rowLabCmp l1 l2
      in   sortBy cmpPB pbL'
 
-patBindLOffset :: [RPatBind] -> ([RPatBind],[CBindL])
+patBindLOffset :: [RPatFld] -> ([RPatFld],[CBindL])
 patBindLOffset
   =  unzip
   .  map
-       (\b@(RPatBind_Bind l o n p@(RPat_Var pn))
-           ->  let  offNm = hsnPrefix "off_" . rpatNmNm $ pn
+       (\b@(RPatFld_Fld l o p@(RPat_Var pn))
+           ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
                in   case o of
                       CExpr_Int _  -> (b,[])
-                      _            -> (RPatBind_Bind l (CExpr_Var offNm) n p,[mkCBind1 offNm o])
+                      _            -> (RPatFld_Fld l (CExpr_Var offNm) p,[mkCBind1 offNm o])
        )
 %%]
 
@@ -504,28 +504,28 @@ rceMatchIrrefutable env (arg:args') alts@[RAlt_Alt (RPat_Irrefutable n b : remPa
   = mkCExprLet CBindings_Plain (rceRebinds False arg alts) $ mkCExprLet CBindings_Plain b remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
-rceMkAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
-rceMkAltAndSubAlts env (arg:args) alts@(alt:_)
+rceMkConAltAndSubAlts :: RCEEnv -> [HsName] -> RCEAltL -> CAlt
+rceMkConAltAndSubAlts env (arg:args) alts@(alt:_)
   = CAlt_Alt altPat (mkCExprLet CBindings_Plain (rceRebinds True arg alts) subMatch)
   where (subAlts,subAltSubNms)
           =  unzip
                [ (RAlt_Alt (pats ++ ps) e f, map (rpatNmNm . rcpPNm) pats)
                | (RAlt_Alt (RPat_Con _ _ (RPatConBind_One _ pbinds) : ps) e f) <- alts
-               , let pats = [ p | (RPatBind_Bind _ _ _ p) <- pbinds ]
+               , let pats = [ p | (RPatFld_Fld _ _ p) <- pbinds ]
                ]
         subMatch
           =  rceMatch env (head subAltSubNms ++ args) subAlts
         altPat
           =  case alt of
                RAlt_Alt (RPat_Con n t (RPatConBind_One r pbL) : _) _ _
-                 ->  CPat_Con (rpatNmNm n) t r pbL'
-                     where  pbL' = [ CPatBind_Bind l o n (CPat_Var (rpatNmNm $ rcpPNm p)) | (RPatBind_Bind l o n p) <- pbL ]
+                 ->  CPat_Con t r pbL'
+                     where  pbL' = [ CPatFld_Fld l o (rpatNmNm $ rcpPNm p) | (RPatFld_Fld l o p) <- pbL ]
 
 rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
   = mkCExprStrictSatCase env (Just arg') (CExpr_Var arg) alts'
-  where arg'   =  hsnSuffix arg "!"
-        alts'  =  map (rceMkAltAndSubAlts env (arg':args))
+  where arg'   =  hsnUniqifyEval arg
+        alts'  =  map (rceMkConAltAndSubAlts env (arg':args))
                   $ groupSortOn (ctagTag . rcaTag)
                   $ filter (not . null . rcaPats)
                   $ alts
@@ -534,7 +534,7 @@ rceMatchConMany :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : ps) e f]
   = mkCExprStrictIn arg' (CExpr_Var arg)
                     (\_ -> foldr (\mka e -> rceMatch env [arg'] (mka e)) (rceMatch env (arg':args) altslast) altsinit)
-  where arg'     = hsnSuffix arg "!"
+  where arg'     = hsnUniqifyEval arg
         altsinit = [ \e -> [RAlt_Alt (RPat_Con n t b     : []) e f] | b <- bsinit ]
         altslast =         [RAlt_Alt (RPat_Con n t blast : ps) e f]
         (bsinit,blast) = panicJust "rceMatchConMany" $ initlast bs
@@ -542,21 +542,34 @@ rceMatchConMany env (arg:args) [RAlt_Alt (RPat_Con n t (RPatConBind_Many bs) : p
 rceMatchConst :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchConst env (arg:args) alts
   = mkCExprStrictIn arg' (CExpr_Var arg) (\n -> mkCExprLet CBindings_Plain (rceRebinds True arg alts) (CExpr_Case n alts' (rceCaseCont env)))
-  where arg' = hsnSuffix arg "!"
+  where arg' = hsnUniqifyEval arg
         alts' = [ CAlt_Alt (rpat2CPat p) (cSubstCaseAltFail (rceEHCOpts env) (rceCaseFailSubst env) e) | (RAlt_Alt (p:_) e _) <- alts ]
 %%]
 
 %%[(97 codegen) hs
 rceMatchBoolExpr :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
-rceMatchBoolExpr env (arg:args) alts
+rceMatchBoolExpr env aargs@(arg:args) alts
+  = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) alts'
+  where alts'  =  map (\(u, alts@(RAlt_Alt (RPat_BoolExpr _ b _ : _) _ _ : _))
+                         -> ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
+                            , mkCExprApp b [CExpr_Var arg]
+                            , rceMatch env args [ RAlt_Alt remPats e f | (RAlt_Alt (RPat_BoolExpr _ _ _ : remPats) e f) <- alts ]
+                            )
+                      )
+                  $ zip [0..]
+                  $ groupSortOn (rcpMbConst . head . rcaPats)
+                  $ filter (not . null . rcaPats)
+                  $ alts
+%%]
+rceMatchBoolExpr2 :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
+rceMatchBoolExpr2 env (arg:args) alts
   = foldr (\(n,c,t) f -> mkCIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) m
-  where m = [ ( hsnSuffix arg $ "!" ++ show u
+  where m = [ ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
               , mkCExprApp b [CExpr_Var arg]
               , rceMatch env args [RAlt_Alt remPats e f]
               )
-            | (u,RAlt_Alt (RPat_BoolExpr _ b : remPats) e f) <- zip [0..] alts
+            | (u,RAlt_Alt (RPat_BoolExpr _ b _ : remPats) e f) <- zip [0..] alts
             ]
-%%]
 
 %%[(8 codegen) hs
 rceMatchSplits :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
@@ -587,7 +600,7 @@ rceMatch env args alts
                      ->  rceMatchSplits (rceUpdEnv e env) args alts
                   _  ->  mkCExprLet CBindings_Plain [mkCBind1 nc e]
                          $ rceMatchSplits (rceUpdEnv (CExpr_Var nc) env) args alts
-                     where nc  = hsnPrefix "_casecont_" (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
+                     where nc  = hsnUniqify HsNameUniqifier_CaseContinuation (rpatNmNm $ rcpPNm $ rcaPat $ head alts)
         )
         (rceCaseCont env)
      $ (rceSplit (\a -> if      raltIsVar           a  then RCESplitVar (raaFailS a)

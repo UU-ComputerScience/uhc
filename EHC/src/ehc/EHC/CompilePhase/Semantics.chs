@@ -129,15 +129,7 @@ cpFoldHs modNm
 %%[[20
                      ; when (ehcOptVerbosity opts >= VerboseDebug)
                             (lift $ putStrLn (show modNm ++ " hasMain=" ++ show hasMain))
-                     ; when hasMain
-                            (do { cr <- get
-                                ; let (crsi,opts) = crBaseInfo' cr
-                                      mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
-                                ; case crsiMbMainNm crsi of
-                                    Just n                   -> mkerr 1 [n]
-                                    _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
-                                      | otherwise            -> mkerr 0 []
-                                })
+                     ; when hasMain (crSetAndCheckMain modNm)
 %%]]
                      })
          }
@@ -158,6 +150,9 @@ cpFoldHsMod modNm
          ;  when (isJust mbHS)
                  (cpUpdCU modNm ( ecuStoreHSSemMod hsSemMod
                                 . ecuSetHasMain hasMain
+%%[[99
+                                . ecuStorePragmas (HSSemMod.fileHeaderPragmas_Syn_AGItf hsSemMod)
+%%]]
                  )              )
          }
 %%]
@@ -198,13 +193,14 @@ cpFoldHIInfo modNm
                  mbHIInfo   = ecuMbPrevHIInfo ecu
                  hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
                  hasMain    = HI.hiiHasMain hiInfo
-         ;  when (isJust mbHIInfo && HI.hiiIsValid hiInfo)
+         ;  when (isJust mbHIInfo && HI.hiiValidity hiInfo == HI.HIValidity_Ok)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
                            mmi'   = mkModMpInfo modNm
                                                 (mmiInscps mmi)
                                                 ({- (\v -> tr "cpFoldHIInfo.hiiExps" (pp v) v) $ -} HI.hiiExps hiInfo)
                                                 (HI.hiiHiddenExps hiInfo)
+                     ; when hasMain (crSetAndCheckMain modNm)
                      ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
                      ; cpUpdCU modNm ( ecuStorePrevHIInfo hiInfo
                                      . ecuStoreHIDeclImpL (HI.hiiHIDeclImpModL hiInfo)

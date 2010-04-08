@@ -31,6 +31,7 @@ AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR)
+AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -139,7 +140,7 @@ AC_SUBST(ENABLE_CLR,$enableClr)
 AC_ARG_ENABLE(tauphi, AS_HELP_STRING([--enable-tauphi],[include TauPhi language extension and analyses]), [enableTauPhi=yes], [enableTauPhi=no])
 AC_SUBST(ENABLE_TAUPHI,$enableTauPhi)
 
-### ar, ranlib, libtool
+### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
 case $HostPlatform in
@@ -154,6 +155,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
+### ar
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 # See remarks about cpp
 case $HostPlatform in
@@ -168,6 +170,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(AR_CMD,$arCmd)
 
+### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
@@ -309,8 +312,12 @@ esac
 AC_SUBST(GHC_CMD1,$ghcCmd1)
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+### assuming we have ghc, check for some of the additional tools
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+AC_PATH_PROG(hsc2hsCmd,hsc2hs)
+AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
 ghcLibNetwork=no
@@ -608,6 +615,10 @@ fi
 AC_PATH_PROG(md5Cmd,md5 md5sum)
 AC_SUBST(MD5_CMD,$md5Cmd)
 
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+AC_CHECK_PROGS(tarCmd,gnutar tar)
+AC_SUBST(TAR_CMD,$tarCmd)
+
 # xxx
 #AC_PATH_PROG(xxxCmd,xxx)
 #echo xxxCmd: $xxxCmd
@@ -892,38 +903,22 @@ AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?
 ### machine dependent code
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
   powerpc-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"lwz r1,0(r1)\\\") ; asm(\\\"lwz r0,8(r1)\\\") ; asm(\\\"mtlr r0\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"lmw r30,-8(r1)\\\") ;"
-        mach_dep_c_for_tailcall_enter="asm( \\\"lwz r2,0(r1)\\\" ) ; asm( \\\"stw r0,8(r2)\\\" ) ;"
         ;;
   i*86-pc-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   *-linux-gnu )
         gcc_ehc_extra_extern_libs="pthread"
         ;;
   x86_64-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
         ;;
   i386-apple-* )
-        mach_dep_c_for_tailcall_leave1="asm(\\\"leave\\\") ;"
-        mach_dep_c_for_tailcall_leave2="asm(\\\"movl -8(%esp), %ebx\\\") ;"
         ;;
   *)
-        mach_dep_c_for_tailcall_leave1=""
-        mach_dep_c_for_tailcall_leave2=""
-        mach_dep_c_for_tailcall_enter=""
         ;;
 esac
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_ENTER,"$mach_dep_c_for_tailcall_enter")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE1,"$mach_dep_c_for_tailcall_leave1")
-AC_SUBST(MACH_DEP_C_FOR_TAILCALL_LEAVE2,"$mach_dep_c_for_tailcall_leave2")
 AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
 
 ### other platform specific stuff

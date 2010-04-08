@@ -14,10 +14,13 @@
 %%[20 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
 %%]
 
-%%[20 hs import(qualified Data.Set as Set)
+%%[20 hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
 %%]
 
 %%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -26,6 +29,9 @@
 
 %%[1 ag import({HS/AbsSyn},{HS/NameLevel},{HS/NameDef},{HS/Module},{HS/Uniq})
 WRAPPER AGItf
+%%]
+
+%%[99 ag import({HS/Pragmas})
 %%]
 
 %%[99

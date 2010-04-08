@@ -175,7 +175,7 @@ mkInOrOutputFPathDirFor inoutputfor opts modNm fp suffix
   = (fpathSetSuff suffix fp', d)
   where (fp',d) = case inoutputfor of
                     OutputFor_Module   -> f ehcOptOutputDir
-                    OutputFor_Pkg      -> f ehcOptOutputPkgLibDir
+                    OutputFor_Pkg      -> f ehcOptOutputDir -- ehcOptOutputPkgLibDir
                     InputFrom_Loc l 
                       | filelocIsPkg l -> f (const Nothing)
                       | otherwise      -> f ehcOptOutputDir

@@ -23,16 +23,16 @@ wildcardNm = hsnFromString "_"
 wildcardNr = HNmNr 0 (OrigLocal wildcardNm)
 
 getNr :: HsName -> Int
-getNr (HNmNr i _) = i
-getNr (HNPos i)   = error $ "getNr tried on HNPos " ++ show i
-getNr a           = error $ "getNr tried on " ++ show a
+getNr (HNmNr i _)      = i
+getNr (HsName_Pos i)   = error $ "getNr tried on HNPos " ++ show i
+getNr a                = error $ "getNr tried on " ++ show a
 
 throwTag      =  GrTag_Fun (hsnFromString "rethrow")
 
 %%[[8
 hsnMainFullProg = hsnPrefix "fun0~" hsnMain
 %%][99
-hsnMainFullProg = hsnSuffix hsnMain "FullProg"
+hsnMainFullProg = hsnSuffix hsnMain "FullProg" -- should be: hsnUniqifyStr HsNameUniqifier_New "FullProg" hsnMain
 %%]]
 
 mainNr     = HNmNr 1 (OrigFunc hsnMainFullProg)

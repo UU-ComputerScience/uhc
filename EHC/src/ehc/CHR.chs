@@ -23,7 +23,7 @@ to avoid explosion of search space during resolution.
 %%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(99 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,7 +156,7 @@ chr |> g = chr {chrGuard = chrGuard chr ++ g}
 %%% Instances: ForceEval, Binary, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer || hmtyast)
+%%[(9999 hmtyinfer || hmtyast)
 instance (ForceEval c, ForceEval g) => ForceEval (CHR c g s) where
   forceEval x@(CHR h sz g b) | forceEval h `seq` forceEval g `seq` forceEval b `seq` True = x
 %%[[102

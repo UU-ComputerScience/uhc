@@ -8,7 +8,7 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -46,11 +46,15 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 
 -- Force evaluation for IO
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
-%%[(99 codegen) import({%{EH}Core.Trf.ForceEval})
+%%[(9999 codegen) import({%{EH}Core.Trf.ForceEval})
 %%]
-%%[(99 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%[(9999 codegen grin) import({%{EH}GrinCode.Trf.ForceEval}, {%{EH}GrinByteCode.Trf.ForceEval})
+%%]
+
+-- pragma
+%%[99 hs import(qualified {%{EH}Base.Pragma} as Pragma)
 %%]
 
 -- debug
@@ -163,6 +167,9 @@ data EHCompileUnit
       , ecuHIInfo            :: !HI.HIInfo
       , ecuDirIsWritable     :: !Bool
 %%]]
+%%[[99
+      , ecuPragmas           :: !(Set.Set Pragma.Pragma)
+%%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      :: ![FPath]
       , ecuSeqNr      		 :: !EHCCompileSeqNr
@@ -242,6 +249,9 @@ emptyECU
       , ecuHIInfo            = HI.emptyHIInfo
       , ecuDirIsWritable     = False
 %%]]
+%%[[99
+      , ecuPragmas           = Set.empty
+%%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
       , ecuSeqNr			 = zeroEHCCompileSeqNr
@@ -303,6 +313,8 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuImports         = ecuImpNmL
 %%]]
 
+instance FPathError Err
+
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
   creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
@@ -360,6 +372,8 @@ ecuStoreCore :: EcuUpdater Core.CModule
 %%[[8
 ecuStoreCore x ecu = ecu { ecuMbCore = Just x }
 %%][99
+ecuStoreCore x ecu | x `seq` True = ecu { ecuMbCore = Just x }
+%%][9999
 ecuStoreCore x ecu | forceEval x `seq` True = ecu { ecuMbCore = Just x }
 %%]]
 %%]
@@ -385,6 +399,8 @@ ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
 %%][99
+ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
+%%][9999
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
 
@@ -392,6 +408,8 @@ ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8
 ecuStoreBytecode x ecu = ecu { ecuMbBytecode = Just x }
 %%][99
+ecuStoreBytecode x ecu | x `seq` True = ecu { ecuMbBytecode = Just x }
+%%][9999
 ecuStoreBytecode x ecu | forceEval x `seq` True = ecu { ecuMbBytecode = Just x }
 %%]]
 
@@ -449,6 +467,8 @@ ecuStoreHIInfo :: EcuUpdater HI.HIInfo
 %%[[8
 ecuStoreHIInfo x ecu = ecu { ecuHIInfo = x }
 %%][99
+ecuStoreHIInfo x ecu | x `seq` True = ecu { ecuHIInfo = x }
+%%][9999
 ecuStoreHIInfo x ecu | forceEval x `seq` True = ecu { ecuHIInfo = x }
 %%]]
 %%]
@@ -466,6 +486,11 @@ ecuStoreGrinTime x ecu = ecu { ecuMbGrinTime = Just x }
 %%[20 export(ecuStoreDirIsWritable)
 ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
+%%]
+
+%%[99 export(ecuStorePragmas)
+ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
+ecuStorePragmas x ecu = ecu { ecuPragmas = x }
 %%]
 
 %%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)
@@ -509,7 +534,7 @@ ecuIsValidHI ecu
 ecuIsValidHIInfo :: EHCompileUnit -> Bool
 ecuIsValidHIInfo ecu
   = case ecuMbPrevHIInfo ecu of
-      Just i -> HI.hiiIsValid i
+      Just i -> HI.hiiValidity i == HI.HIValidity_Ok
       _      -> False
 %%]
 

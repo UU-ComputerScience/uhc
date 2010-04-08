@@ -111,7 +111,8 @@ SEM *
 		loc.gTyTvL  					: {[TyVarId]}
         loc.dataConProdTy       		: Ty
 		loc.dataConTyFv  				: {[TyVarId]}
-		loc.gTyTvS  					: {Set.Set TyVarId}
+		loc.gTyTvS  					: TyVarIdS
+		loc.noLetQuantTyVarIdS  		: TyVarIdS
 		loc.gUniq  						: UID
 		loc.gUniq2  					: UID
 		loc.gUniq3  					: UID
@@ -200,6 +201,7 @@ SEM *
 		loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
 		loc.tqoGam  					: {Gam HsName TyMergePredOut}
 		loc.tv   						: UID
+		loc.tvarv  						: Ty
 		loc.tvarv1_  					: Ty
 		loc.tvarv2_  					: Ty
 		loc.ty 							: Ty

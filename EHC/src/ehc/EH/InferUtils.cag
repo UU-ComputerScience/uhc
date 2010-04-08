@@ -1,0 +1,149 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% General utility attributes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lexical level, 0 == global
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR NTPrf [ lexLev: Int | | ]
+
+SEM AGItf
+  | AGItf       loc         .   lexLev              =   -1
+
+SEM Expr
+  | Let         loc         .   lexLev              =   if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
+                            .   lexLevIsGlobal      =   @lexLev == 0
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   lexLev              =   @lhs.lexLev + 1
+
+SEM CaseAlt
+  | Pat         loc         .   lexLev              =   @lhs.lexLev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has a sequence of let ... in let ... an instance declaration?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR Expr AllDecl [ | | hasInstDecl USE {||} {False}: Bool ]
+
+SEM Decl
+  | Instance InstanceIntro
+                lhs         .   hasInstDecl         =   True
+  | * - Instance InstanceIntro
+                lhs         .   hasInstDecl         =   False
+
+SEM Expr
+  | Let         loc         .   hasInstDecl         =   @decls.hasInstDecl || @body.hasInstDecl
+  | * - Let     lhs         .   hasInstDecl         =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Include binding for pattern var?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).inclVarBind
+ATTR PatExpr [ inclVarBind: Bool | | ]
+
+SEM PatExpr
+  | AppTop      patExpr     .   inclVarBind         =   True
+
+SEM Decl
+  | Val         patExpr     .   inclVarBind         =   False
+
+SEM Expr
+  | Lam         arg         .   inclVarBind         =   True
+%%]
+
+%%[(2 hmtyinfer)
+SEM Decl
+  | Val         patExpr     .   inclVarBind         :=  not @hasTySig
+%%]
+
+%%[(5 hmtyinfer)
+SEM CaseAlt
+  | Pat         patExpr     .   inclVarBind         =   True
+%%]
+
+%%[(7 hmtyinfer)
+SEM RecPatExpr
+  | Ext Expr    patExpr     .   inclVarBind         =   True
+
+SEM DataFieldPatExpr
+  | Ext         patExpr     .   inclVarBind         =   True
+%%]
+
+%%[(12 hmtyinfer)
+SEM Expr
+  | LamImpl     arg         .   inclVarBind         =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% RCEEnv (primarily for ToCore)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer codegen)
+SEM Expr
+  | Lam Sel DataFields
+%%[[12
+    LamImpl
+%%]]
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
+                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
+                                                            , rceCaseIds = @caseIds
+                                                            }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM PatExpr
+  | AppTop Rec DataFields
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM Decl
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(95 hmtyinfer codegen)
+SEM Decl
+  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+%%]
+
+TyCore variant/clone:
+
+%%[(8 hmtyinfer codegen)
+SEM Expr
+  | Lam Sel DataFields
+%%[[12
+    LamImpl
+%%]]
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+  | Case        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts)
+                                                            { C.rceValGam  = @lhs.valGam, C.rceDataGam = @lhs.dataGam
+                                                            , C.rceCaseIds = @caseIds
+                                                            }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM PatExpr
+  | AppTop Rec DataFields
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(8 hmtyinfer codegen)
+SEM Decl
+  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+
+%%[(95 hmtyinfer codegen)
+SEM Decl
+  | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+%%]
+

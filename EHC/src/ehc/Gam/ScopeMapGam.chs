@@ -37,7 +37,7 @@ Conceptually thus the invariant is that no entry is in the map which is not in s
 %%[20 import(Control.Monad, {%{EH}Base.Binary})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -275,7 +275,7 @@ instance (Ord k, Serialize k, Serialize v) => Serialize (SGam k v) where
 %%% Instances: ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval v => ForceEval (SGamElt v) where
   forceEval x@(SGamElt l v) | forceEval v `seq` True = x
 %%[[102

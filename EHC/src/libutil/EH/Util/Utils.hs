@@ -21,6 +21,9 @@ unionMapSet f = Set.unions . map f . Set.toList
 inverseMap :: (Ord k, Ord v') => (k -> v -> (v',k')) -> Map.Map k v -> Map.Map v' k'
 inverseMap mk = Map.fromList . map (uncurry mk) . Map.toList
 
+showStringMapKeys :: Map.Map String x -> String -> String
+showStringMapKeys m sep = concat $ intersperse sep $ Map.keys m
+
 -------------------------------------------------------------------------
 -- List
 -------------------------------------------------------------------------
@@ -92,6 +95,14 @@ spanOnRest p xs@(x:xs')
 	 | p xs      = (x:ys, zs)
 	 | otherwise = ([],xs)
 					   where (ys,zs) = spanOnRest p xs'
+
+-------------------------------------------------------------------------
+-- Tupling, untupling
+-------------------------------------------------------------------------
+
+tup123to1  (a,_,_) = a			-- aka fst3
+tup123to12 (a,b,_) = (a,b)
+tup12to123 c (a,b) = (a,b,c)
 
 -------------------------------------------------------------------------
 -- String

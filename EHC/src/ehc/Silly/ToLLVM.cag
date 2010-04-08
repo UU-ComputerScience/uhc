@@ -138,7 +138,7 @@ SEM Functions
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
                                                          (LLVMExpression_Alloca @lhs.intType 1) ) @locals
-                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode ++ [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
@@ -222,17 +222,12 @@ SEM Statement
                 loc.(uniqNr2, resumeLabel) =
                                newFresh @loc.uniqNr1 Label
 
-  | Jump        lhs.llvmCode = error $ "Generated jump instructions not allowed"
-                                     ++ " in LLVM. Is -g set to 0?"
-  
   | Label       lhs.llvmCode = error $ "Generated label instructions not"
                                      ++ " allowed in LLVM. Is -g set to 0?"
   
   | Return      lhs.llvmCode = [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]  
                                     
-  | Smart       lhs.llvmCode = error "Silly.ToLLVM: Smart should occur only in intermediate Silly"
-                                    
-  | * - Assignment Assignment2 Call Comment Jump Label Return Smart Switch IfThenElse
+  | * - Assignment Assignment2 Call Comment Jump Label Return Switch IfThenElse
                 lhs.llvmCode = error "Unimplemented Statement"
 
 SEM Alternatives
@@ -849,3 +844,4 @@ bool2calltype (True)  = TailCall
 bool2calltype (False) = StdCall 
 }
 %%]
+

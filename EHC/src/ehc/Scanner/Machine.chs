@@ -7,6 +7,12 @@
 %%% Scanning machine
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+Scanner machine, cloned from uulib, adapted for UHC.
+The machinery is configured with |ScanOpts|, so it can be used for all parsers employed by UHC (e.g. also |Core|).
+A |ScanOpts| specifies sets of keywords, variations on identifier parsing, etc etc.
+%%]
+
 %%[5 module {%{EH}Scanner.Machine} import(Data.Char,Data.List,Data.Maybe,IO,UU.Scanner.Position,EH.Util.Utils,EH.Util.ScanUtils,{%{EH}Scanner.Token})
 %%]
 
@@ -59,6 +65,9 @@ scan opts pos input
    isSymbol = (`Set.member` scoSpecChars opts) -- locatein (scoSpecChars opts)
    isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
    isPairSym= (`Set.member` scoSpecPairs opts) -- locatein (scoSpecPairs opts)
+%%[[99
+   isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
+%%]]
 
    isIdStart c = isLower    c || c == '_'
    isIdChar  c = isAlphaNum c || c == '\'' || c == '_'
@@ -90,6 +99,23 @@ scan opts pos input
 %%]
 
 %%[20
+   scanQualified :: String -> ([String],String)
+   scanQualified s
+     = qual [] s
+     where split isX s  = span (\c -> isX c && c /= '.') s
+           validQuald c = isId c || isOpsym c
+           isId       c = isIdStart c || isUpper c
+           qual q s
+             = case s of
+                 (c:s') | isUpper c                         				-- possibly a module qualifier
+                   -> case split isIdChar s' of
+                        (s'',('.':srest@(c':_))) | validQuald c'  			-- something validly qualifiable follows
+                          -> qual (q ++ [[c] ++ s'']) srest
+                        _ -> dflt
+                 (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
+                   -> dflt
+             where dflt = (q,s)
+%%]
    scanQualified :: String -> (String,String)
    scanQualified s
      = qual "" s
@@ -106,7 +132,6 @@ scan opts pos input
                  (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
                    -> dflt
              where dflt = (q,s)
-%%]
 
 %%[99
    scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
@@ -124,7 +149,18 @@ scan opts pos input
                                        in  doScan (foldl adv p (c:sp)) next
 
    doScan p ('-':'-':s)  = doScan p (dropWhile (/= '\n') s)
-   doScan p ('{':'-':s)  = lexNest doScan (advc 2 p) s
+%%[[99
+{-
+-}
+   doScan p ('{':'-':'#':s)
+     | isPragma pragma
+       = reserved "{-#" p : reserved pragma p2 : doScan p3 s3
+       where (w        ,s2) = getWhite s
+             p2             = advc (length w) $ advc 3 p
+             (pragma,p3,s3) = scanIdent isIdChar p2 s2
+   doScan p ('#':'-':'}':s) = reserved "#-}" p : doScan (advc 3 p) s
+%%]]
+   doScan p ('{':'-':s)  = scanNestedComment doScan (advc 2 p) s
    doScan p ('"':ss)
      = let (s,p',rest) = scanString (advc 1 p) ss
        in if null rest || head rest /= '"'
@@ -192,9 +228,15 @@ scan opts pos input
                                                in  valueToken (mktok $ varKind n) n p
                     in  tok : doScan p'' s''
 %%[[20
-               else case doScan (advc (length qualPrefix) p) qualTail of
+               else case doScan (advc (length qualPrefix + sum (map length qualPrefix)) p) qualTail of
                       (tok@(ValToken tp val _):toks)
                          -> ValToken (tokTpQual tp) (qualPrefix ++ val) p : toks
+                      ts -> ts
+%%]]
+%%[[2020
+               else case doScan (advc (length qualPrefix) p) qualTail of
+                      (tok@(ValToken tp [val] _):toks)
+                         -> ValToken (tokTpQual tp) [qualPrefix ++ val] p : toks
                       ts -> ts
 %%]]
 %%]
@@ -243,15 +285,16 @@ varKind (c  :s) | isUpper c = TkConid
                 | otherwise = TkVarid
 varKind []                  = TkVarid
 
-lexNest :: (Pos -> String -> [Token]) 
+scanNestedComment
+        :: (Pos -> String -> [Token]) 
         -> Pos 
         -> String 
         -> [Token]
-lexNest cont pos inp = lexNest' cont pos inp
- where lexNest' c p ('-':'}':s) = c (advc 2 p) s
-       lexNest' c p ('{':'-':s) = lexNest' (lexNest' c) (advc 2 p) s
-       lexNest' c p (x:s)       = lexNest' c (adv p x) s
-       lexNest' _ _ []          = [ errToken "Unterminated nested comment" pos]
+scanNestedComment cont pos inp = nest cont pos inp
+ where nest c p ('-':'}':s) = c (advc 2 p) s
+       nest c p ('{':'-':s) = nest (nest c) (advc 2 p) s
+       nest c p (x:s)       = nest c (adv p x) s
+       nest _ _ []          = [ errToken "Unterminated nested comment" pos]
 
 
 scanString :: Pos -> String -> (String,Pos,String)
@@ -281,7 +324,14 @@ getchar s@('\"':_ ) = (Nothing,0,s)
 getchar   ('\\':xs) = let (c,l,r) = getEscChar xs
                       in (c,l+1,r)
 getchar (x:xs)      = (Just x,1,xs)
+%%]
 
+%%[99
+getWhite :: String -> (String,String)
+getWhite = span (`elem` " \t\r\n")
+%%]
+
+%%[5
 scanDQuoteIdent :: String -> (String,Int,String)
 scanDQuoteIdent []             = ("",0,[])
 scanDQuoteIdent ('\'':'\'':xs) = ("",0,xs)

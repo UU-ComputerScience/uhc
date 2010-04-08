@@ -49,6 +49,12 @@
 DERIVING *     : Show, Eq
 %%]
 
+%%[(8 codegen) hs export(emptyModule)
+emptyModule :: Module
+emptyModule = Module_Mod (hsnFromString "") [] []
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Alias for Ty being also a TySeq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -332,6 +338,17 @@ tyArrowGetExprArg n (as,res)
 tySeq1Ty :: TySeq1 -> Ty
 tySeq1Ty (ExprSeq1_L0Val t _) = t
 tySeq1Ty _                    = tyErr "TyCore.tySeq1Ty"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(97 codegen) hs export(exprMbConst)
+exprMbConst :: Expr -> Maybe Integer
+exprMbConst e@(Expr_Int  i _) = Just i
+exprMbConst e@(Expr_Char c _) = Just $ toInteger $ ord c
+exprMbConst _                 = Nothing
 %%]
 
 

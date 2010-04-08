@@ -118,8 +118,8 @@ SEM CBind
 SEM CModule
   | Mod         expr        .   cmeta       =   CMetaVal_Val
 
-SEM CPatBind
-  | Bind        offset      .   cmeta       =   CMetaVal_Val
+SEM CPatFld
+  | Fld         offset      .   cmeta       =   CMetaVal_Val
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -191,8 +191,8 @@ SEM CModule
 SEM CBind
   | Bind        expr        .   appTrfIsOk  =   AppNoLet
 
-SEM CPatBind
-  | Bind        offset      .   appTrfIsOk  =   AppYesLet
+SEM CPatFld
+  | Fld         offset      .   appTrfIsOk  =   AppYesLet
 
 SEM CExpr
   | App         func        .   appTrfIsOk  =   AppNoLet
@@ -216,8 +216,8 @@ SEM CModule
 SEM CBind
   | Bind        expr        .   lamTrfIsOk  =   LamNoLet
 
-SEM CPatBind
-  | Bind        offset      .   lamTrfIsOk  =   LamNoLet
+SEM CPatFld
+  | Fld         offset      .   lamTrfIsOk  =   LamNoLet
 
 SEM CExpr
   | TupIns TupUpd
@@ -239,8 +239,8 @@ SEM CModule
 SEM CBind
   | Bind        expr        .   letTrfIsOk  =   False
 
-SEM CPatBind
-  | Bind        offset      .   letTrfIsOk  =   True
+SEM CPatFld
+  | Fld         offset      .   letTrfIsOk  =   True
 
 SEM CExpr
   | TupIns TupUpd

@@ -8,7 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GRIN structure
+%%% GRIN structure: global, binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
@@ -37,12 +37,19 @@ DATA GrBind
   | Rec         bindL           : GrBindL
 
 TYPE GrBindL    =   [GrBind]
+%%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
 DATA GrExpr
   | Seq         expr            : GrExpr
                 pat             : GrPatLam
                 body            : GrExpr
   | Unit        val             : GrVal
+                type			: GrType
   | UpdateUnit  nm              : {HsName}
                 val             : GrVal
   | Case        val             : GrVal
@@ -75,14 +82,6 @@ DATA GrExpr
                 arg             : {HsName}
                 handler         : GrExpr
 
-DATA GrAlt
-  | Alt         ann             : {GrAltAnn}
-                pat             : GrPatAlt
-                expr            : GrExpr
-                
-
-TYPE GrAltL     =   [GrAlt]
-
 DATA GrVal
   | Empty
   | Var         nm              : {HsName}
@@ -111,19 +110,6 @@ DATA GrVar
 
 TYPE GrValL     =   [GrVal]
 TYPE GrVarL     =   [GrVar]
-
-
-DATA GrPatAlt
-  | LitInt      int             : {Int}
-  | Tag         tag             : GrTag
-  | Node        tag             : GrTag
-                fldL            : {[HsName]}
-  | Otherwise
-%%[[10
-  | NodeSplit   tag             : GrTag
-                nm              : {HsName}
-                fldL            : GrSplitL
-%%]]
 
 DATA GrPatLam
   | Empty
@@ -158,6 +144,54 @@ DATA GrTag
 TYPE GrTagL     =   [GrTag]
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: case
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+DATA GrAlt
+  | Alt         ann             : {GrAltAnn}
+                pat             : GrPatAlt
+                expr            : GrExpr
+                
+
+TYPE GrAltL     =   [GrAlt]
+
+DATA GrPatAlt
+  | LitInt      int             : {Int}
+  | Tag         tag             : GrTag
+  | Node        tag             : GrTag
+                fldL            : {[HsName]}
+  | Otherwise
+%%[[10
+  | NodeSplit   tag             : GrTag
+                nm              : {HsName}
+                fldL            : GrSplitL
+%%]]
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+DATA GrType
+  | None
+  | Arrow		args			: GrTypeBaseL
+     			res				: GrTypeBase
+
+DATA GrTypeBase
+  | Node
+  | Pointer
+
+TYPE GrTypeBaseL     =   [GrTypeBase]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: extensible record (unimplemented, bitrotting)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(10 codegen grin)
 DATA GrSplit
   | Sel         nm              : {HsName}
@@ -175,20 +209,29 @@ TYPE GrAdaptL   =   [GrAdapt]
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: FFI specific annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(99 codegen grin)
 DATA GrFFIAnnot
   | IsResEval	isEvaluated		: {Bool}		-- is the result already evaluated? Default: yes, but e.g. array primitives may have (and return when indexed) unevaluated elements.
   												-- Whether this is the solution for longterm remains to be seen.
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GRIN structure: sets of nonterminals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[(8 codegen grin)
+SET AllType     =   GrType GrTypeBase GrTypeBaseL
 SET AllGlobal   =   GrGlobal GrGlobalL
 SET AllBind     =   GrBind GrBindL
 SET AllDef      =   AllGlobal AllBind
 SET AllAlt      =   GrAlt GrAltL
 SET AllGrExpr   =   GrExpr AllAlt
 SET AllGrTag    =   GrTag GrTagL
-SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal
+SET AllExpr     =   AllGrExpr AllGrPat AllGrTag AllGrVal AllType
 %%[[10
 SET AllAdapt    =   GrAdapt GrAdaptL
 SET AllSplit    =   GrSplit GrSplitL

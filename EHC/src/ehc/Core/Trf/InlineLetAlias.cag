@@ -7,10 +7,10 @@
 %%% Inline let bindings for variables and constants
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
+%%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev})
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
 WRAPPER CodeAGItf
 %%]
 
@@ -110,8 +110,8 @@ ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
 SEM CAlt
   | Alt         loc         .   noTrfNmS    =   Set.empty
 
-SEM CPatBind
-  | Bind        loc         .   noTrfNmS    =   Set.empty
+SEM CPatFld
+  | Fld         loc         .   noTrfNmS    =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -156,7 +156,11 @@ SEM CExpr
                                                   )
                                                   Map.empty
                                                   @binds.bindNmMp
-                            .   nmMp        =   @nmMpNew `Map.union` @lhs.nmMp
+                            .   nmMp        =   Map.union @nmMpNew $ Map.difference @lhs.nmMp @binds.cvarIntroExprMp
+  | Lam			body		.	nmMp		=	Map.delete @arg @lhs.nmMp
+
+SEM CAlt
+  | Alt         expr        .   nmMp		=	foldr Map.delete @lhs.nmMp @pat.nmL
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -214,8 +218,8 @@ ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
 SEM CModule
   | Mod   expr.allowTrfToCon  =  True
 
-SEM CPatBind
-  | Bind  offset.allowTrfToCon  =  True
+SEM CPatFld
+  | Fld   offset.allowTrfToCon  =  True
 
 %%]
 
@@ -226,8 +230,8 @@ ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
 SEM CModule
   | Mod   expr.noTrfToConNmS  =  Set.empty
 
-SEM CPatBind
-  | Bind  offset.noTrfToConNmS  =  Set.empty
+SEM CPatFld
+  | Fld   offset.noTrfToConNmS  =  Set.empty
 
   
 SEM CBind

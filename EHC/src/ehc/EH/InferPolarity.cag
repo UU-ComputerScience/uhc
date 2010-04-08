@@ -370,7 +370,7 @@ SEM TyExpr
 
 %%[(17 hmtyinfer) ag
 SEM TyExpr
-  | Wild VarWild
+  | Wild Mono VarWild
                 lhs         .   pol                 =   @lhs.knPolCtx
 %%]
 

@@ -38,15 +38,14 @@ ATTR AllBind AllPat [ | | nmL USE {++} {[]}: {[HsName]} ]
 SEM CBind
   | Bind        lhs         .   nmL         =   [@nm]
 
-SEM CPatBind
-  | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
+SEM CPatFld
+  | Fld         lhs         .   nmL         =   {- [@nm] ++ -} [@fldNm] -- @pat.nmL
 
 SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
 
 SEM CPat
-  | Var Con     loc         .   nm          =   @pnm
-  | Var         lhs         .   nmL         =   [@nm]
-  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
+  | Var         lhs         .   nmL         =   [@pnm]
+  | Con         lhs         .   nmL         =   @rest.nmL ++ @binds.nmL
 %%]
 

@@ -1,0 +1,128 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Initializations: Gam, VarMp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of tyKiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This is incomplete for variant 7_2.
+
+%%[(6 hmtyinfer).initTyKiGam
+SEM AGItf
+  | AGItf       loc         .   tyKiGam             =   initTyKiGam
+%%]
+
+%%[(20 hmtyinfer) -6.initTyKiGam
+ATTR AGItf [ tyKiGam: TyKiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   tyKiGam             =   @lhs.tyKiGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of polGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Environment with final polarities for all type constructors that are yet in scope. The
+  final polarities for type construtors of data type declarations of a Let are added to
+  the polGam of the body of the Let.
+  
+  In other words: the polGam changes on the way down!
+
+%%[(17 hmtyinfer).initPolGam
+SEM AGItf
+  | AGItf       loc         .   polGam              =   initPolGam
+%%]
+
+%%[(20 hmtyinfer) -17.initPolGam
+ATTR AGItf [ polGam: PolGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   polGam              =   @lhs.polGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of kiGam (sorts)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer).initKiGam
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   initKiGam       -- fake dependency for uuagc --cycle
+%%]
+
+%%[(20 hmtyinfer) -6.initKiGam
+ATTR AGItf [ kiGam: KiGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   kiGam               =   @lhs.kiGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of tyGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer)
+ATTR AGItf [ tyGam: TyGam | | ]
+%%]
+
+%%[(1 hmtyinfer).initTyGam
+SEM AGItf
+%%[[1
+  | AGItf       loc         .   tyGam               =   initTyGam
+%%][20
+  | AGItf       loc         .   tyGam               =   @lhs.tyGam
+%%]]
+%%]
+
+This is not maintained w.r.t. tyKiGam:
+
+%%[(7_2 hmtyinfer).initTyGam -1.initTyGam
+SEM AGItf
+  | AGItf       loc         .   tyGam               :=  assocLToGam
+                                                          [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
+                                                          , (hsnInt         , mkTGI tyInt kiStar)
+                                                          , (hsnChar        , mkTGI tyChar kiStar)
+                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
+                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
+                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
+                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
+                                                          ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of clGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer).initClGam
+SEM AGItf
+  | AGItf       loc         .   clGam               =   initClGam
+%%]
+
+%%[(20 hmtyinfer) -9.initClGam
+ATTR AGItf [ clGam: ClGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   clGam               =   @lhs.clGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of valGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).initValGam
+SEM AGItf   
+  | AGItf       expr        .   valGam              =   emptyGam
+%%]
+
+%%[(20 hmtyinfer) -1.initValGam
+ATTR AGItf [ valGam: ValGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   valGam              =   @lhs.valGam
+%%]
+

@@ -86,8 +86,11 @@ SEM CExpr
 SEM CModule
   | Mod         expr        .   propDown    =   Prop_None
 
-SEM CPatBind CBind
+SEM CBind
   | Bind        loc         .   propDown    =   Prop_None
+
+SEM CPatFld
+  | Fld         loc         .   propDown    =   Prop_None
 %%]
 
 %%[(8 codegen)

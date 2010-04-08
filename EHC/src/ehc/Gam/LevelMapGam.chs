@@ -25,7 +25,7 @@ See Gam/ScopeMapGam for the next generation of this impl.
 %%[9 import({%{EH}Base.Common})
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -166,7 +166,7 @@ lgamNoDups g
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance ForceEval v => ForceEval (LGamElt v) where
   forceEval x@(LGamElt l v) | forceEval v `seq` True = x
 %%[[102

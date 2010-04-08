@@ -93,6 +93,8 @@ instance CompileUnit RCompileUnit Nm String RCompileUnitState where
   cuUpdKey   nm u   = u {rcuModNm = nm}
   cuImports         = rcuImpNmL
 
+instance FPathError Err
+
 instance CompileRunError Err SPos where
   crePPErrL                 = ppErrPPL
   creMkNotFoundErrL p fp sp = [Err_FileNotFound p fp sp]
@@ -124,10 +126,10 @@ instance PP RCompileUnit where
 -- File suffix
 -------------------------------------------------------------------------
 
-type FileSuffMp = [(String,RCompileUnitState)]
+type FileSuffMp = [(FileSuffix,RCompileUnitState)]
 
 fileSuffMp :: FileSuffMp
-fileSuffMp = [ ( "rul", RCUSRuler ), ( "", RCUSRuler ), ( "*", RCUSRuler ) ]
+fileSuffMp = [ ( Just "rul", RCUSRuler ), ( Just "", RCUSRuler ), ( Just "*", RCUSRuler ) ]
 
 -------------------------------------------------------------------------
 -- Compile run actions

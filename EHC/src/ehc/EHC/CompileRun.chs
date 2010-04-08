@@ -62,7 +62,7 @@ data EHCompileRunStateInfo
       , crsiHSInh       :: !HSSem.Inh_AGItf                     -- current inh attrs for HS sem
       , crsiEHInh       :: !EHSem.Inh_AGItf                     -- current inh attrs for EH sem
 %%[[(8 codegen)
-      , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
+	  , crsiCoreInh     :: !Core2GrSem.Inh_CodeAGItf            -- current inh attrs for Core2Grin sem
 %%]]
 %%[[20
       , crsiMbMainNm    :: !(Maybe HsName)                      -- name of main module, if any
@@ -176,7 +176,7 @@ cpMemUsage
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Update options
+%%% Update: options, additional exports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8 export(cpUpdOpts)
@@ -236,15 +236,19 @@ cpMsg' modNm v m mbInfo fp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Compile actions: step unique counter
+%%% Compile actions: step/set unique counter
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 export(cpStepUID)
+%%[8 export(cpStepUID,cpSetUID)
 cpStepUID :: EHCompilePhase ()
 cpStepUID
   = cpUpdSI (\crsi -> let (n,h) = mkNewLevUID (crsiNextUID crsi)
                       in  crsi {crsiNextUID = n, crsiHereUID = h}
             )
+
+cpSetUID :: UID -> EHCompilePhase ()
+cpSetUID u
+  = cpUpdSI (\crsi -> crsi {crsiNextUID = u})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -340,7 +344,7 @@ crModCanCompile modNm cr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 codegen) export(crPartitionIntoPkgAndOthers)
-crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgName],[HsName])
+crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgKey],[HsName])
 crPartitionIntoPkgAndOthers cr modNmL
   = (nub $ concat ps,concat ms)
   where (ps,ms) = unzip $ map loc modNmL
@@ -350,4 +354,20 @@ crPartitionIntoPkgAndOthers cr modNmL
               where (ecu,_,_,_) = crBaseInfo m cr
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Set 'main'-ness of module, checking whethere there are not too many modules having a main
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(crSetAndCheckMain)
+crSetAndCheckMain :: HsName -> EHCompilePhase ()
+crSetAndCheckMain modNm
+  = do { cr <- get
+       ; let (crsi,opts) = crBaseInfo' cr
+             mkerr lim ns = cpSetLimitErrs 1 "compilation run" [rngLift emptyRange Err_MayOnlyHaveNrMain lim ns modNm]
+       ; case crsiMbMainNm crsi of
+           Just n | n /= modNm      -> mkerr 1 [n]
+           _ | ehcOptDoLinking opts -> cpUpdSI (\crsi -> crsi {crsiMbMainNm = Just modNm})
+             | otherwise            -> mkerr 0 []
+       }
+%%]
 

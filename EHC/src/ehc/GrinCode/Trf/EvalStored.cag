@@ -121,7 +121,7 @@ evaluateNode node@(GrVal_Node tag flds)
   =  case tag of
        GrTag_Fun nm -> GrExpr_Call nm flds
        GrTag_App nm -> GrExpr_Call nm flds
-       _            -> GrExpr_Unit node
+       _            -> GrExpr_Unit node GrType_None
 
 %%]
 

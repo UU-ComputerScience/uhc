@@ -109,7 +109,7 @@ cpTransformGrin modNm
                               
                  optGrinNormal = map fst trafos
                  optGrinDump   = out 0 "from core" : concat [ [o,out n nm] | (n,(o,nm)) <- zip [1..] trafos ]
-                        where out n nm = cpOutputGrin ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
+                        where out n nm = cpOutputGrin False ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          }

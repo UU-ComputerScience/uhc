@@ -118,6 +118,11 @@ module UHC.Base   -- adapted from thye Hugs prelude
     
 -- System
     exitWithIntCode,
+
+-- StackTrace
+    ExplicitStackTrace,
+    ImplicitStackTrace,
+    pushExplicitStackTrace,
     
 ) where
 
@@ -308,8 +313,11 @@ numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
                                        | otherwise = (>= m + (n'-n)/2)
 
 iterate' :: (a -> a) -> a -> [a]        -- strict version of iterate
+#ifdef __UHC_TARGET_C__
 iterate' f x = x : (iterate' f $! f x)
-
+#else
+iterate' f x = x : (letstrict fx = f x in iterate' f fx)
+#endif
 
 --------------------------------------------------------------
 -- Numeric classes: Num, Real, Integral, 
@@ -1504,7 +1512,7 @@ concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
 length           :: [a] -> Int
-length            = foldl' (\n _ -> n + 1) 0
+length            = foldl' (\n _ -> n + (1::Int)) (0::Int)
 
 (!!)             :: [a] -> Int -> a
 xs     !! n | n<0 = error "Prelude.!!: negative index"
@@ -1518,7 +1526,11 @@ foldl f z (x:xs)  = foldl f (f z x) xs
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
+#ifdef __UHC_TARGET_C__
 foldl' f a (x:xs) = (foldl' f $! f a x) xs
+#else
+foldl' f a (x:xs) = letstrict fax = f a x in foldl' f fax xs
+#endif
 
 foldl1           :: (a -> a -> a) -> [a] -> a
 foldl1 f (x:xs)   = foldl f x xs
@@ -2056,6 +2068,9 @@ exitWithIntCode     :: Int -> IO a
 exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 
 
+%%]
+
+%%[99
 
 ----------------------------------------------------------------
 -- main program
@@ -2064,4 +2079,18 @@ exitWithIntCode e   =  ioFromPrim (\_ -> primExitWith e)
 -- see UHC.Run
 
 -- main = return () -- dummy
+%%]
+
+Stacktraces are implicitly referred to from any other module, so must be in the first.
+
+%%[99
+-- For now a stacktrace (i.e. explicit call stack) is simply a list
+type ExplicitStackTrace = [String]
+
+-- and the implicit (i.e. runtime stack) stack trace a list of (kind of stack frame, function name)
+type ImplicitStackTrace = [(Int,String)]
+
+pushExplicitStackTrace :: String -> ExplicitStackTrace -> ExplicitStackTrace
+pushExplicitStackTrace = (:)
+
 %%]

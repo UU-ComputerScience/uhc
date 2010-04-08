@@ -494,7 +494,7 @@ pExprSelSuffix  =    (\lbls e -> foldl (mkEH Expr_Sel) e lbls)
                      <$> pList (pHASH *> pSel)
 
 pSel            ::   EHCParser HsName
-pSel            =    pVar <|> pCon <|> HNPos <$> pInt
+pSel            =    pVar <|> pCon <|> mkHNmPos <$> pInt
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

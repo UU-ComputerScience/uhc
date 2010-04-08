@@ -34,7 +34,7 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 %%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
 %%]
 
-%%[99 import({%{EH}Base.ForceEval})
+%%[9999 import({%{EH}Base.ForceEval})
 %%]
 
 %%[9999 import({%{EH}Base.Hashable})
@@ -375,7 +375,7 @@ delete keys = deleteByKey $ mkTrieKeys keys
 %%% ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99
+%%[9999
 instance (ForceEval k, ForceEval v) => ForceEval (Trie k v) where
   forceEval x | forceEval (trieMbVal x) `seq` forceEval (triePartSubs x) `seq` forceEval (trieSubs x) `seq` True = x
 %%[[102

@@ -34,7 +34,7 @@
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(99 hmtyinfer) import({%{EH}Base.ForceEval})
+%%[(9999 hmtyinfer) import({%{EH}Base.ForceEval})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -94,7 +94,7 @@ initClGam
       ]
 %%]
 
-%%[(99 hmtyinfer)
+%%[(9999 hmtyinfer)
 instance ForceEval ClGamInfo where
   forceEval x@(ClGamInfo e r n) | forceEval e `seq` forceEval r `seq` forceEval n `seq` True = x
 %%[[102

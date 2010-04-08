@@ -38,5 +38,8 @@ DATA TyAnn
   | Strictness      s               : Strictness
   | Uniqueness      s               : Uniqueness
 %%]]
+%%[[4
+  | Mono		-- enforce predicative binding when matching
+%%]]
 %%]
 

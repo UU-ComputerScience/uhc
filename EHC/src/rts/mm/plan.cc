@@ -21,7 +21,7 @@ MM_Plan mm_plan ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Initialization
+%%% Initialization, finalization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
@@ -33,6 +33,10 @@ void mm_init_plan() {
 #if MM_BYPASS_PLAN
 	mm_plan.initBypass( &mm_plan ) ;
 #endif
+}
+
+void mm_exit_plan() {
+	mm_plan.exit( &mm_plan ) ;
 }
 %%]
 
