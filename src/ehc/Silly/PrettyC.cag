@@ -75,6 +75,16 @@ ATTR Variable [ | | isSP : {Bool} ]
 ATTR Statements Statement Alternatives Alternative
          [ functionname : String | | ]
 
+ATTR Value [ | | equalToVar : {Variable->Bool} ]
+
+ATTR Variable [ | | self : SELF ]
+
+SEM Value
+  | Var     lhs.equalToVar  =  (== @var.self)
+  | * -Var  lhs.equalToVar  =  const False
+
+
+
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
@@ -151,7 +161,9 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment  lhs.prettyC   = if @source.equalToVar @dest.self
+                                then comment ["trivial assignment"]
+                                else assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
   | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs

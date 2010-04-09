@@ -65,7 +65,9 @@ data AbstractValue
   | AbsBasic
   | AbsTags  (Set.Set GrTag)
   | AbsNodes AbstractNodes
-  | AbsPtr   AbstractNodes    (Set.Set Variable) (Set.Set Variable)
+  | AbsPtr   AbstractNodes
+  | AbsPtr1  AbstractNodes (Set.Set Variable)
+  | AbsPtr2  AbstractNodes (Set.Set Variable) (Set.Set Variable)
   | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
@@ -87,7 +89,10 @@ instance Show AbstractValue where
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
                   AbsNodes an -> "NODS" ++ show an
-                  AbsPtr   an vs ws -> "PTR"  ++ show an  ++ show vs ++ show ws
+                  -- We allow for three different representation of pointers. They can't be mixed. The choice is made in SolveEqs.
+                  AbsPtr   an -> "PTR"  ++ show an
+                  AbsPtr1  an vs -> "PTR1"  ++ show an  ++ show vs
+                  AbsPtr2  an vs1 vs2 -> "PTR2"  ++ show an  ++ show vs1 ++ show vs2   -- this representation still doesn't work
                   AbsUnion xs -> "UNION" ++ show (Map.assocs xs)
                   AbsError s  -> "ERR: " ++ s
 
@@ -108,7 +113,9 @@ instance Monoid AbstractValue where
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (mappend an bn)
-    mappend   (AbsPtr   an1 vs1 ws1)(AbsPtr an2 vs2 ws2) =  AbsPtr    (mappend an1 an2) (Set.union vs1 vs2) (Set.union ws1 ws2)
+    mappend   (AbsPtr   an)   (AbsPtr   bn) =  AbsPtr       (mappend an bn)
+    mappend   (AbsPtr1  an vs)(AbsPtr1  bn ws)=  AbsPtr1    (mappend an bn) (Set.union vs ws)
+    mappend   (AbsPtr2  an vs vs2)(AbsPtr2  bn ws ws2)=  AbsPtr2    (mappend an bn) (Set.union vs ws) (Set.union vs2 ws2)
     mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
@@ -225,14 +232,17 @@ validTag _  _                          = True
 
 absFetchDirect :: HptMap -> Variable -> AbstractValue
 absFetchDirect a i  = case getEnvVar a i of
-                        AbsPtr an vs ws -> mconcat (AbsNodes an :  map (getEnvVar a) (Set.toList ws))
-                        AbsBottom       -> AbsNodes (Nodes Map.empty)
-                        av              -> error ("AbsFetchDirect i=" ++ show i ++ " av=" ++ show av)
+                        AbsPtr1 an vs   -> AbsNodes an
+                        AbsPtr2 an vs ws-> mconcat (AbsNodes an :  map (getEnvVar a) (Set.toList ws))
+                        AbsBottom    -> AbsNodes (Nodes Map.empty)
+                        av           -> error ("AbsFetchDirect i=" ++ show i ++ " av=" ++ show av)
 
 
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AbsPtr an vs ws -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs) ++ map (getEnvVar a) (Set.toList ws))   -- TODO: ++ inhoud van ws?
+                             AbsPtr  an       -> AbsNodes an
+                             AbsPtr1 an vs    -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs))
+                             AbsPtr2 an vs ws -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs) ++ map (getEnvVar a) (Set.toList ws))
                              AbsBottom     -> AbsNodes (Nodes Map.empty)
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
