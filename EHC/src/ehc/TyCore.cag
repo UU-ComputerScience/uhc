@@ -131,11 +131,21 @@ unTySeq1 (Expr_Seq1 (ExprSeq1_L0Val t _)) = t
 unTySeq1 t                                = t
 %%]
 
-%%[(8 codegen) hs
+%%[(8 codegen) hs export(unSeq, unSeqs, isSeq)
 unSeq :: Expr -> ExprSeq1
 unSeq (Expr_Seq1 s ) = s
 unSeq (Expr_Seq [s]) = s
 unSeq t              = panic "TyCore.unSeq"
+
+unSeqs :: Expr -> [ExprSeq1]
+unSeqs (Expr_Seq1 s) = [s]
+unSeqs (Expr_Seq es) = es
+unSeqs t             = panic "TyCore.unSeqs"
+
+isSeq :: Expr -> Bool
+isSeq Expr_Seq1{} = True
+isSeq Expr_Seq{}  = True
+isSeq _           = False
 %%]
 
 %%[(8 codegen) hs export(mkTySeqVals,mkTySeqNmVals)
@@ -189,6 +199,15 @@ tyUnThunkTySeq t                            = tyErr "TyCore.tyUnThunkTySeq"
 
 tyUnThunkTy :: Ty -> Ty
 tyUnThunkTy = unTySeq . tyUnThunkTySeq
+%%]
+
+%%[(8 codegen) hs export(lazy, unLazy)
+lazy :: Ty -> Ty
+lazy t = Expr_Lazy t
+
+unLazy :: Ty -> Ty
+unLazy (Expr_Lazy t) = t
+unLazy _             = tyErr "TyCore.unLazy"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -262,6 +281,16 @@ mkExprThunk e = Expr_Lam (Expr_Seq []) e
 %%[(8 codegen) hs export(mkExprUnThunk)
 mkExprUnThunk :: Expr -> Expr
 mkExprUnThunk e = Expr_App e (Expr_Seq [])
+%%]
+
+%%[(8 codegen) hs export(delay, force)
+delay :: Expr -> Expr
+delay (Expr_Force e) = e
+delay e              = Expr_Delay e
+
+force :: Expr -> Expr
+force (Expr_Delay e) = e
+force e              = Expr_Force e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

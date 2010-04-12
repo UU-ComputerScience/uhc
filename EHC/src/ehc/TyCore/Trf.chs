@@ -102,6 +102,7 @@ trfTyCore opts modNm trftycore
                ; t_eliminateExplicitLaziness
                }
 
+        liftTyTrf :: String -> (Module -> Module) -> State TrfTyCore ()
         liftTyTrf nm t
           = liftTyTrf2 nm (flip const) (\c -> (t c,()))
 

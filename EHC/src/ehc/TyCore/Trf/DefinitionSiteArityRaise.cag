@@ -60,22 +60,6 @@ cmodTrfDefinitionSiteArityRaise :: Module -> Module
 cmodTrfDefinitionSiteArityRaise tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
-
--- Status of Worker/Wrapper transformation
-data WorkWrap
-  = Introduced      -- A Worker and Wrapper were introduced
-  | UpdatedWorker   -- Worker was updated
-  | UpdatedWrapper  -- Wrapper was updated
-  | Ignored         -- Nothing was done
-  deriving Show
-
-(|||) :: WorkWrap -> WorkWrap -> WorkWrap
-x              ||| Ignored        = x
-Ignored        ||| y              = y
-Introduced     ||| Introduced     = Introduced
-UpdatedWorker  ||| UpdatedWorker  = UpdatedWorker
-UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
-_              ||| _              = error "(|||): Can't merge arguments."
 %%]
 
 %%[(8 codegen)
@@ -98,15 +82,15 @@ ATTR AllExpr
   |
   | hasWorker USE {||}  {False}   : {Bool}
     workWrap  USE {|||} {Ignored} : {WorkWrap}
-    arrTail  : SELF
+    arrTail                       : SELF
   ]
 ATTR Expr
   [
   |
   |
     workerArgs : {[Expr]}
-    lamArgs  : {[[Expr]]}
-    arrArgs  : {[Expr]}
+    lamArgs    : {[[Expr]]}
+    arrArgs    : {[Expr]}
   ]
 
 SEM ValBindL
@@ -127,7 +111,7 @@ SEM ValBind
                 loc         .   isWorker    =   "_worker" `isSuffixOf` (show @nm)
                             .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
                             .   hasWorker   =   list False (\x _ -> length x > 1) @l0.lamArgs
-                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                            .   workerNm    =   if @isWorker then @nm else hsnFromString (show @nm ++ "_worker")
 
 -- Worker
 SEM ValBind
@@ -140,7 +124,7 @@ SEM ValBind
 SEM ValBind
   | Val
                 lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
-                loc         .   wrapperBody =   foldr Expr_Lam (foldl Expr_App (Expr_Var @workerNm) $ wrapperBody @l0.lamArgs) (concat @l0.lamArgs)
+                loc         .   wrapperBody =   wrapperBody @workerNm @l0.lamArgs
 
 -- Collect lambda args and bodies
 SEM Expr
@@ -161,40 +145,31 @@ SEM Expr
                 lhs         .   lamArgs     =   []
 
 {
+-- This function will be in list-extras:Data.List.Extras
 list :: b -> (a -> [a] -> b) -> [a] -> b
 list b _ []     = b
 list _ f (x:xs) = f x xs
 
-
 workerType :: [[Expr]] -> [Expr] -> Expr -> Expr
 workerType []     _    res = res
 workerType (x:xs) args res = let (args1, args2) = splitAt (length x) args
-                             in Expr_Arrow (Expr_Seq $ concatMap seqToList args1)
+                             in Expr_Arrow (Expr_Seq $ concatMap unSeqs args1)
                                            (workerType xs args2 res)
 
 workerBody :: [Expr] -> Expr -> Expr
-workerBody args body = Expr_Lam (Expr_Seq $ concatMap seqToList args) body
+workerBody args body = Expr_Lam (Expr_Seq $ concatMap unSeqs args) body
 
-wrapperBody :: [[Expr]] -> [Expr]
-wrapperBody []           = []
-wrapperBody (args:argss) = Expr_Seq (map f (concatMap seqToList args)) : wrapperBody argss
+wrapperBody :: HsName -> [[Expr]] -> Expr
+wrapperBody nm argss = foldr Expr_Lam (foldl Expr_App (Expr_Var nm) $ map f argss) (concat argss)
   where
-    f :: ExprSeq1 -> ExprSeq1
-    f (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
-    f (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
-    f (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
-    f e                       = e
+    f :: [Expr] -> Expr
+    f args = Expr_Seq (map g (concatMap unSeqs args))
 
-bindNm :: ExprSeq1 -> Maybe HsName
-bindNm (ExprSeq1_L0Bind nm _ _) = Just nm
-bindNm (ExprSeq1_L1Bind nm _)   = Just nm
-bindNm (ExprSeq1_L2Bind nm _)   = Just nm
-bindNm _                        = Nothing
-
-seqToList :: Expr -> [ExprSeq1]
-seqToList (Expr_Seq es) = es
-seqToList e             = error $ "DefinitionSiteArityRaise.seqToList: Expr '"
-                                    ++ show e ++ "' not a Expr_Seq."
+    g :: ExprSeq1 -> ExprSeq1
+    g (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
+    g (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
+    g (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
+    g e                        = e
 }
 %%]
 

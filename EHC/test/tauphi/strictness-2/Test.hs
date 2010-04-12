@@ -4,11 +4,8 @@
 --                 bar       = const x y
 --             in \a b -> const bar y
 -- 
-const :: @nonUnique @strict Int -> Char -> Int
+const :: @strict Int -> Char -> Int
 const x y = x
 
-id :: @strict Int -> Int
-id x = x
-
-main = id 3 -- const 2 'x'
+main = const 2 'x'
 

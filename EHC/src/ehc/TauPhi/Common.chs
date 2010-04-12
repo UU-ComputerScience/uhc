@@ -10,13 +10,10 @@
 %%[8 module {%{EH}TauPhi.Common} import({%{EH}Base.Common})
 %%]
 
-%%[(8 tauphi) hs export(Strictness(..), Uniqueness(..))
-%%]
-
 %%[20 import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
-%%[(8 tauphi)
+%%[(8 tauphi) hs export(Strictness(..), Uniqueness(..))
 data Strictness
   = Strict
   | NonStrict
@@ -38,7 +35,24 @@ instance Show Uniqueness where
   show Unique            = "unique"
   show NonUnique         = "nonUnique"
   show (UniquenessVar n) = "uniqueness:" ++ show n
+%%]
 
+%%[(8 tauphi) export(WorkWrap(..),(|||))
+-- Status of Worker/Wrapper transformation
+data WorkWrap
+  = Introduced      -- A Worker and Wrapper were introduced
+  | UpdatedWorker   -- Worker was updated
+  | UpdatedWrapper  -- Wrapper was updated
+  | Ignored         -- Nothing was done
+  deriving (Eq, Show)
+
+(|||) :: WorkWrap -> WorkWrap -> WorkWrap
+x              ||| Ignored        = x
+Ignored        ||| y              = y
+Introduced     ||| Introduced     = Introduced
+UpdatedWorker  ||| UpdatedWorker  = UpdatedWorker
+UpdatedWrapper ||| UpdatedWrapper = UpdatedWrapper
+_              ||| _              = error "(|||): Can't merge arguments."
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
