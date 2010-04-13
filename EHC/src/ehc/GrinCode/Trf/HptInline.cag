@@ -28,9 +28,16 @@ hptInline allow expNmS inlMp (grMod,hptMap) =
       (_,safeHptMap) = (0,hptMap) -- heapPointsToAnalysis grMod      
   in  fmap (processInline safeHptMap) inlineResult
 
+%%[[8
+processInline :: HptMap -> (GrModule,[(HsName,HsName)]) -> (GrModule,HptMap)
+processInline hptMap (grMod,varSubs) = 
+    (grMod,updatedHpt)          
+%%]]
+%%[[20 -8.processInline
 processInline :: HptMap -> (GrModule,GrInlMp,[(HsName,HsName)]) -> ((GrModule,HptMap),GrInlMp)
 processInline hptMap (grMod,inlMp,varSubs) = 
     ((grMod,updatedHpt),inlMp)          
+%%]]
     <?< (False, const $ "hptExtended = " ++ disp (pp hptBottomExtended) 80 [])
     -- <<< (const $ "hptHPT = " ++ disp (pp updatedHpt) 80 [])
     -- <<< (const $ "diffHpt = " ++ disp (pp diffHpt) 80 [])     

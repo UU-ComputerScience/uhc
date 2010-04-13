@@ -92,14 +92,17 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin).grInline hs export(grInline)
-grInline :: Bool -> GrModule -> (Maybe GrModule)
+grInline :: Bool -> GrModule -> Maybe (GrModule,VarSubs)
 grInline allow grmod
-  = if Map.null (gathInlMp_Syn_GrAGItf t) then Nothing else Just (trf_Syn_GrAGItf t)
+  = if changed_Syn_GrAGItf t 
+    then Just ( trf_Syn_GrAGItf t
+              , varSubs_Syn_GrAGItf t
+              ) 
+    else Nothing 
   where t = wrap_GrAGItf (sem_GrAGItf $ GrAGItf_AGItf grmod)
             $ Inh_GrAGItf
                 { allowOmitBind_Inh_GrAGItf = allow
-                }
-            
+                }            
 %%]
 
 %%[(20 codegen grin) -8.grInline hs export(grInline)
@@ -223,7 +226,9 @@ SEM GrBind
               =  let  isLoopBreaker = elem @nm @lhs.loopBreakers
                       callInline = Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker @loc.idsCreated)
                       cafInline = Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker)
+%%[[20
                       exported = not (@nm `Set.member` @lhs.expNmS)
+%%]]
                       trivialExpr = (  @expr.isFFIWrapper                  -- wrappers are inlined
                                     || @expr.isConWrapper
                                     || @expr.inlineCost <= 10              -- and low cost values as well

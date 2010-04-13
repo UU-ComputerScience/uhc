@@ -98,7 +98,6 @@ SEM GrBind
 SEM GrGlobal
   | Global val.subs = undefined
 
-
 SEM GrExpr
   | Call App Eval FetchNode FetchField UpdateUnit Throw
                 loc.newName = getNewName @nm @lhs.subs
@@ -106,7 +105,7 @@ SEM GrExpr
   | Call        lhs         .   trf             =   GrExpr_Call @loc.newName @argL.trf
   | App         lhs         .   trf             =   GrExpr_App  @loc.newName @argL.trf
 %%[[8
-  | FFI         lhs         .   trf             =   GrExpr_FFI @loc.newName @argL.trf
+  | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf
 %%][94
   | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @argL.trf
 %%][99
@@ -144,7 +143,10 @@ SEM GrVar
   | Var         lhs     . trf       = GrVar_Var (getNewName @nm @lhs.subs)
 
 SEM GrVal
-  | Var BasicNode EnumNode PtrNode OpaqueNode NodeAdapt
+  | Var BasicNode EnumNode PtrNode OpaqueNode 
+%%[[10
+    NodeAdapt
+%%]]
                 loc.newName = getNewName @nm @lhs.subs
      
   | Var         lhs     . trf       = GrVal_Var $ @loc.newName
