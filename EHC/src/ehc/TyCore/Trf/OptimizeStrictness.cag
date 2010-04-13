@@ -125,7 +125,7 @@ SEM ValBind
 SEM Expr
   | Lazy
                 lhs         .   hasWorker   =   @loc.isStrict
-                loc         .   isStrict    =   all (ExprAnn_Strictness Strict `elem`) @expr.seqAnns
+                loc         .   isStrict    =   all (ExprAnn_Strictness Strict `elem`) (anns @expr.copy) && not (null (anns @expr.copy))
 
 -- Worker
 SEM ValBind
@@ -213,7 +213,7 @@ SEM Expr
 wrapperBody :: HsName -> [Expr] -> Ty -> Expr
 wrapperBody nm args t = foldr Expr_Lam body (map rmStrict args)
   where
-    body = foldl Expr_App (Expr_Var nm) $ map f argss
+    body = Expr_Let ValBindCateg_Plain vbinds $ foldl Expr_App (Expr_Var nm) $ map arg argss
 
     nrArgs (Expr_Arrow arg res) = nrArgs arg ++ nrArgs res
     nrArgs (Expr_Seq es)        = [length es]
@@ -223,27 +223,34 @@ wrapperBody nm args t = foldr Expr_Lam body (map rmStrict args)
                     in l : h xs r
     argss = init $ h (nrArgs t) args
 
-    f :: [Expr] -> Expr
-    f args = Expr_Seq (map g (concatMap unSeqs args))
+    vbinds = map hh nmTys
 
-    g :: ExprSeq1 -> ExprSeq1
-    g (ExprSeq1_L0Bind nm _ t) = ExprSeq1_L0Val (gg t nm) Nothing
-    g (ExprSeq1_L1Bind nm t)   = ExprSeq1_L1Val (Expr_Var nm)
-    g (ExprSeq1_L2Bind nm t)   = ExprSeq1_L2Val (Expr_Var nm)
-    g e                        = e
+    hh :: (HsName, Ty) -> ValBind
+    hh (nm, ty) = ValBind_Val nm' Nothing 0 (if b then unTySeq (unLazy ty') else unTySeq ty')
+                    (if b
+                     then (Expr_Lam (Expr_Seq [ExprSeq1_L0Bind xNm Nothing (unTySeq $ unLazy ty')]) (Expr_Var xNm)) `Expr_App` force (Expr_Var nm)
+                     else Expr_Var nm)
+     where
+      ty' = rmStrict ty
+      b   = all (ExprAnn_Strictness Strict `elem`) (anns ty) && not (null (anns ty))
+      nm' = hsnFromString (show nm ++ "_val")
+      xNm = hsnFromString ("x")
+    nmTys = concatMap (map nmTy . unSeqs) args
 
-    gg :: Ty -> HsName -> Expr
-    gg t nm = if all (ExprAnn_Strictness Strict `elem`) (anns t)
-              then ff nm t
-              else Expr_Var nm
+    nmTy :: ExprSeq1 -> (HsName, Ty)
+    nmTy (ExprSeq1_L0Bind nm _ t) = (nm, t)
+    nmTy (ExprSeq1_L1Bind nm t)   = (nm, t)
+    nmTy (ExprSeq1_L2Bind nm t)   = (nm, t)
+    nmTy _                        = error "TyCore.Trf.OptimizeStrictness: h'"
 
-    ff :: HsName -> Ty -> Expr
-    ff nm t = (Expr_Lam (Expr_Seq [ExprSeq1_L0Bind xNm Nothing (unTySeq $ unLazy (rmStrict t))]) (Expr_Var xNm))
-                  `Expr_App` (Expr_Force $ Expr_Var nm)
-      where
-        nm' = show nm
-        xNm = hsnFromString (nm' ++ "_unseqed")
-        intNm = hsnFromString "Int"
+    arg :: [Expr] -> Expr
+    arg args = Expr_Seq (map argSeq (concatMap unSeqs args))
+
+    argSeq :: ExprSeq1 -> ExprSeq1
+    argSeq (ExprSeq1_L0Bind nm _ t) = ExprSeq1_L0Val (Expr_Var $ hsnFromString (show nm ++ "_val")) Nothing
+    argSeq (ExprSeq1_L1Bind nm t)   = ExprSeq1_L1Val (Expr_Var nm)
+    argSeq (ExprSeq1_L2Bind nm t)   = ExprSeq1_L2Val (Expr_Var nm)
+    argSeq e                        = e
 
 -- This function will be in list-extras:Data.List.Extras
 list :: b -> (a -> [a] -> b) -> [a] -> b
