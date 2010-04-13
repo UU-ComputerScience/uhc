@@ -249,8 +249,8 @@ doCompileGrin input opts
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131a-evalinlined"
-         -- ; caContinuedHeapPointsTo
-         ; caHeapPointsTo                                              ; caWriteHptMap "-131b-hpt"  -- Should be removed  
+         ; caContinuedHeapPointsTo
+         -- ; caHeapPointsTo                                              ; caWriteHptMap "-131b-hpt"  -- Should be removed  
          -- ; inlineCollectionIterated "-132-" True
 
          ; transformCodeUseHpt   impossibleCase     "ImpossibleCase"   ; caWriteGrin "-133-possibleCase"

@@ -399,15 +399,15 @@ SEM GrAlt
                                              @pat.tag                                       
 
 {
-handleIdentException ann targetInfo pat stdEquations = 
+handleIdentException ann targetInfo pat patEquations exprEquations = 
   if ann == GrAltAnnIdent
   then case pat of
     (GrPatAlt_Node tag fldL) 
-        -> [IsConstruction targetVar tag (map (Just . getNr) fldL) Nothing]
+        -> IsConstruction targetVar tag (map (Just . getNr) fldL) Nothing : patEquations
     _   -> error ("line 412 PointsToAnalysis.cag"
                 ++ "\npat = " ++ show pat
                 )
-  else stdEquations
+  else patEquations ++ exprEquations
   
   where
   targetVar = case targetInfo of
@@ -422,17 +422,17 @@ In every alternative,
 a select-equation is generated for each variable in the pattern: the values are selected from the scrutinee
 -}
 SEM GrAlt
-  | Alt  loc.stdEquations  =  case (@pat.patInfo, @lhs.valInfo) of
+  | Alt  loc.patEquations  =  case (@pat.patInfo, @lhs.valInfo) of
                                       (InNode ttag tnms, InVar svar)  -> buildSelectEquations svar ttag tnms
                                       (InNode ttag tnms, InNode stag snms  ) -> if ttag==stag 
                                                                                 then buildUnifyEquations  snms tnms
                                                                                 else []
                                       (_               , InEnum _ _)  -> []
                                       (pat             , val       )  -> error ("HPT: Alternative scrutinee " ++ show val ++ " must be a variable, pattern " ++ show pat ++ " a node")
-                                    ++ @expr.equations
+                                    
                              
          -- Added by Remy Willems.             
-  | Alt  lhs.equations = handleIdentException @ann @lhs.targetInfo @pat.self @loc.stdEquations       
+  | Alt  lhs.equations = handleIdentException @ann @lhs.targetInfo @pat.self @loc.patEquations @expr.equations    
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
