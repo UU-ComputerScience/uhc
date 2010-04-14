@@ -931,6 +931,9 @@ cpProcessCoreRest modNm
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr
        ; cpSeq (   [ cpTranslateCore2Grin modNm ]
+                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
+                ++ [ cpTransformGrin modNm ]
+                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
                 ++ (if ehcOptFullProgAnalysis opts then [ cpOutputGrin True "" modNm ] else [])
 %%[[(8 jazy)
                 ++ [ cpTranslateCore2Jazy modNm ]
@@ -948,9 +951,9 @@ cpProcessGrin :: HsName -> EHCompilePhase ()
 cpProcessGrin modNm 
   = do { cr <- get
        ; let (_,opts) = crBaseInfo' cr     -- '
-       ; cpSeq (   (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
-                ++ [cpTransformGrin modNm]
-                ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
+       ; cpSeq ( [] --    (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-000-initial" modNm] else [])
+                 -- ++ [cpTransformGrin modNm]
+                 -- ++ (if ehcOptDumpGrinStages opts then [cpOutputGrin False "-099-final" modNm]  else [])
                 ++ (if ehcOptEmitBytecode opts then [cpTranslateGrin2Bytecode modNm] else [])
                 ++ (if ehcOptFullProgAnalysis opts then [cpTranslateGrin modNm] else [])
                )

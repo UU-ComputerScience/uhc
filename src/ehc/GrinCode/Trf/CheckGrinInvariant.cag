@@ -23,11 +23,18 @@ WRAPPER GrAGItf
 
 %%[(8 codegen grin) hs
 
-checkGrinInvariant :: GrModule -> [String]
-checkGrinInvariant code
-  = let inh = Inh_GrAGItf
+checkGrinInvariant :: [GrModule] -> GrModule -> [String]
+checkGrinInvariant imports code
+  = let (envs, msgs) = unzip $ map extractEnv imports
+        inh  = Inh_GrAGItf envs
+        syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  concat (messages_Syn_GrAGItf syn : msgs)
+
+extractEnv :: GrModule -> (Env, [String])
+extractEnv code
+  = let inh = Inh_GrAGItf []
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  messages_Syn_GrAGItf syn
+    in  (finalEnv_Syn_GrAGItf syn, messages_Syn_GrAGItf syn)
 
 %%]
 
@@ -74,6 +81,9 @@ ATTR GrExpr
 ATTR GrAltL
      GrValL    [ | | derivedModes : {[Mode]} ]
 
+ATTR GrModule
+     GrAGItf   [ startEnvs : {[Env]} | | finalEnv : {Env} ]
+
 ATTR AllBind
      AllGrExpr
      AllGrVal  
@@ -102,7 +112,9 @@ ATTR AllGrExpr
 
 
 SEM GrModule
-  | Mod       bindL.env   =  Map.fromList @globalL.bindings
+  | Mod       bindL.env    = foldr Map.union @loc.finalEnv @lhs.startEnvs
+              lhs.finalEnv = @loc.finalEnv
+              loc.finalEnv = Map.fromList @globalL.bindings
 
 SEM GrBind
   | Bind      loc.inFun  =  "in function " ++ show @nm ++ ": "

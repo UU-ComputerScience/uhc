@@ -132,9 +132,18 @@ cpIterGrinTrf modNm trf m = do
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
+allImports :: HsName -> EHCompilePhase [HsName]
+allImports modNm = do
+  cr <- get
+  let (ecu,_,_,_) = crBaseInfo modNm cr
+  let imps        = ecuImpNmL ecu
+  rec <- mapM allImports imps
+  return $ nub (concat (imps : rec))
+
 cpTransformGrin :: HsName -> EHCompilePhase ()
 cpTransformGrin modNm
   =  do  {  cr <- get
+         ;  imports    <- allImports modNm
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  fullProg    = ehcOptFullProgAnalysis opts
                  forBytecode = not fullProg
@@ -195,7 +204,7 @@ grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
 grPerModuleFullProg modNm = mk trafos1 ++ invariant ++ grSpecialize modNm ++ mk [dropUnreach] ++ invariant
   where
     trafos1 =
-      [ ( dropUnreachableBindings False , "DropUnreachableBindings" )
+      [ dropUnreach
 %%[[9
       , ( mergeInstance                 , "MergeInstance"           )
       , ( memberSelect                  , "MemberSelect"            )
@@ -222,13 +231,14 @@ grPerModuleFullProg modNm = mk trafos1 ++ invariant ++ grSpecialize modNm ++ mk 
       , ( setGrinInvariant              , "SetGrinInvariant"        )
       ]
 
-    dropUnreach = ( dropUnreachableBindings False , "DropUnreachableBindings" )
+    dropUnreach = ( id {- dropUnreachableBindings False -} , "DropUnreachableBindings stub" )
     invariant = mk [(setGrinInvariant, "SetGrinInvariant")] ++ [(checkInvariant, "CheckGrinInvariant")]
 
     checkInvariant =
       do { cr <- get
-         ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
-               errors         = checkGrinInvariant $ fromJust $ ecuMbGrin ecu
+         ; imps <- allImports modNm
+         ; let theGrin nm     = case crBaseInfo nm cr of (ecu,_,_,_) -> fromJust $ ecuMbGrin ecu
+               errors         = checkGrinInvariant (map theGrin imps) $ theGrin modNm
          ; cpMsgGrinTrf modNm "CheckGrinInvariant"
          ; when (not (null errors)) (error (unlines errors))
          }
@@ -242,14 +252,14 @@ grSpecialize modNm = concat $ replicate 6 $
     [ once evalStored                        "eval stored"
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
-    , iter dropUnusedExpr                    "drop unused"
+    -- , iter dropUnusedExpr                    "drop unused"
     , once specConst                         "spec const"
     , iter copyPropagation                   "copy prop"
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
     , once simpleNullary                     "simply nullary"
     , once memberSelect                      "member select"
-    , once (dropUnreachableBindings False)   "drop unreachable"
+    -- , once (dropUnreachableBindings False)   "drop unreachable"
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
         iter trf m = (cpIterGrinTrf modNm trf m, m)
