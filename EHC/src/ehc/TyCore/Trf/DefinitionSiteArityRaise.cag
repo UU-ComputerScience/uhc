@@ -124,7 +124,7 @@ SEM ValBind
 SEM ValBind
   | Val
                 lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
-                loc         .   wrapperBody =   wrapperBody @workerNm @l0.lamArgs
+                loc         .   wrapperBody =   newWrapperBody @workerNm @l0.lamArgs
 
 -- Collect lambda args and bodies
 SEM Expr
@@ -159,17 +159,20 @@ workerType (x:xs) args res = let (args1, args2) = splitAt (length x) args
 workerBody :: [Expr] -> Expr -> Expr
 workerBody args body = Expr_Lam (Expr_Seq $ concatMap unSeqs args) body
 
-wrapperBody :: HsName -> [[Expr]] -> Expr
-wrapperBody nm argss = foldr Expr_Lam (foldl Expr_App (Expr_Var nm) $ map f argss) (concat argss)
+newWrapperBody :: HsName -> [[Expr]] -> Expr
+newWrapperBody nm argss = foldr Expr_Lam body (concat argss)
   where
-    f :: [Expr] -> Expr
-    f args = Expr_Seq (map g (concatMap unSeqs args))
+    body :: Expr
+    body = foldl Expr_App (Expr_Var nm) (map arg argss)
 
-    g :: ExprSeq1 -> ExprSeq1
-    g (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
-    g (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
-    g (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
-    g e                        = e
+    arg :: [Expr] -> Expr
+    arg args = Expr_Seq (map argSeq (concatMap unSeqs args))
+
+    argSeq :: ExprSeq1 -> ExprSeq1
+    argSeq (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
+    argSeq (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
+    argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
+    argSeq e                        = e
 }
 %%]
 

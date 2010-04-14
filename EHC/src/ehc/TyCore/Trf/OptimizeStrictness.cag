@@ -151,7 +151,7 @@ SEM Expr
 SEM ValBind
   | Val
                 lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.wrapper @wrapperBody
-                loc         .   wrapperBody =   wrapperBody @workerNm @l0.lamArgs @wt
+                loc         .   wrapperBody =   newWrapperBody @workerNm @l0.lamArgs @wt
                             .   wt          =   if @workWrap == Introduced
                                                 then @workerType
                                                 else fromJust (@workerNm `Map.lookup` @lhs.tyEnv)
@@ -210,8 +210,8 @@ SEM Expr
   | Var         lhs         .   varNm       =   Just @nm
 
 {
-wrapperBody :: HsName -> [Expr] -> Ty -> Expr
-wrapperBody nm args t = foldr Expr_Lam body (map rmStrict args)
+newWrapperBody :: HsName -> [Expr] -> Ty -> Expr
+newWrapperBody nm args t = foldr Expr_Lam body (map rmStrict args)
   where
     body = Expr_Let ValBindCateg_Plain vbinds $ foldl Expr_App (Expr_Var nm) $ map arg argss
 
