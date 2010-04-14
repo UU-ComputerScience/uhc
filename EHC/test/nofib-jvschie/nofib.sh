@@ -8,8 +8,8 @@
 #
 DEF_TYPE="normal"
 DEF_TARGET="all"
-DEF_HC="../../bin/8/ehc"
-DEF_EHC_FLAGS="-cexe --verbose=0 --optimise=0 -p-"
+DEF_HC="../../install/8/bin/ehc"
+DEF_EHC_FLAGS="-tllvm --verbose=0 --optimise=0 -p-"
 DEF_GHC_FLAGS="-O2"
 DEF_EHC_PRELUDE_FILE="tools/Prelude8.hs"
 

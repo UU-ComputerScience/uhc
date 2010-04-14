@@ -142,8 +142,8 @@ SEM Functions
   | Nil         lhs.llvmCode = []
   
 SEM Function
-  | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
-                                                         (LLVMExpression_Alloca @lhs.intType 1) ) @locals
+  | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) (pLift @lhs.pointerType) )
+                                                         (LLVMExpression_Alloca @lhs.pointerType 1) ) @locals
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode ++ [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -167,12 +167,12 @@ SEM Statement
                                makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar   
                 loc.(uniqNr3,gcfitsVar,gcfitsCode) = let  targetType   = pLift $ pLift i8
                                                           (nr', fresh) = newFresh @loc.uniqNr2 targetType 
-                                                          nt           = LocalVar (getPlainName @loc.lhsptrVar) (pLift $ getType @loc.lhsptrVar) in 
+                                                          nt           = LocalVar (getPlainName @loc.lhsptrVar) (getType @loc.lhsptrVar) in 
                                                                 (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast nt targetType])
                 loc.gcrootCode = 
                                case @source.gcManaged of 
-                                   GCManaged  -> [] -- @loc.gcfitsCode ++ 
-                                                 -- [LLVMStatement_Call gcRootFuncDecl StdCall [@loc.gcfitsVar, (StrConstant "null" (pLift i8))]]
+                                   GCManaged  -> @loc.gcfitsCode ++ 
+                                                 [LLVMStatement_Call gcRootFuncDecl StdCall [@loc.gcfitsVar, (StrConstant "null" (pLift i8))]]
                                    NotManaged -> []                                      
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
@@ -318,13 +318,15 @@ SEM Value
   {-|
     The llvmVar inherited from the @var child needs to be loaded to an integer value
   -}                                                                               
-  | Var         lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @var.llvmCode ++ @loc.llvmCode                
+  | Var         lhs.llvmVar  = @loc.llvmCastVar
+                lhs.llvmCode = @var.llvmCode ++ @loc.llvmCode ++ @loc.llvmCastCode
                 
                 loc.(uniqNr1,llvmVar,llvmCode) =                
                                if getType @var.llvmVar /= @lhs.intType
                                then load @var.gUniq @var.llvmVar
-                               else (@var.gUniq,@var.llvmVar,[])                              
+                               else (@var.gUniq,@var.llvmVar,[])  
+                loc.(uniqNr2,llvmCastVar,llvmCastCode) =
+                               cast2int @loc.uniqNr1 @loc.llvmVar @lhs.intType
 
   {-|
     Compare a value to a constant. The value is cast to an integer
@@ -356,7 +358,7 @@ SEM Variable
   | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType
                 lhs.llvmCode = []
                 
-  | Local       lhs.llvmVar  = LocalVar (hs2str @name) @lhs.pointerType                                        
+  | Local       lhs.llvmVar  = LocalVar (hs2str @name) (pLift @lhs.pointerType)
                 lhs.llvmCode = []               
   
   | Param       lhs.llvmVar  = LocalVar (hs2str @name) @lhs.intType                                       
@@ -440,7 +442,7 @@ SEM Value
   -- Passing to args via copy rule
   | Call        lhs .gUniq   = @loc.uniqNr3
   -- Passing to var via copy rule                         
-  | Var         lhs.gUniq    = @loc.uniqNr1
+  | Var         lhs.gUniq    = @loc.uniqNr2
   -- Passing to val via copy rule.
   | CompareGT   lhs.gUniq    = @loc.uniqNr2
   | Offset      lhs.gUniq    = @loc.uniqNr3
@@ -487,7 +489,7 @@ SEM Function
                 loc.fnDecl : {LLVMFunctionDecl}
                 loc.fnDecl = let prms = mkVarList LocalVar @parameters 
                                                            @lhs.intType
-                              in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms Nothing -- (Just "shadow-stack")
+                              in LLVMFunctionDecl_LLVMFunctionDecl (hs2str @name) Void FixedArgs prms (Just "shadow-stack")
 %%]
   
 %%[(8 codegen grin)
