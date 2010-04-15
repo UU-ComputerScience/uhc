@@ -193,7 +193,7 @@ cpFoldHIInfo modNm
                  mbHIInfo   = ecuMbPrevHIInfo ecu
                  hiInfo     = panicJust "cpFoldHIInfo" mbHIInfo
                  hasMain    = HI.hiiHasMain hiInfo
-         ;  when (isJust mbHIInfo && HI.hiiIsValid hiInfo)
+         ;  when (isJust mbHIInfo && HI.hiiValidity hiInfo == HI.HIValidity_Ok)
                  (do { let mm     = crsiModMp crsi
                            mmi    = Map.findWithDefault emptyModMpInfo modNm mm
                            mmi'   = mkModMpInfo modNm

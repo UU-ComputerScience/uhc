@@ -28,8 +28,9 @@ module Prelude
   , module UHC.Run
   , module UHC.OldIO
   
-  -- UHC.IOBase
-  , unsafePerformIO
+  -- UHC.IOBase:
+    , unsafePerformIO
+    , FilePath
   )
   where
 

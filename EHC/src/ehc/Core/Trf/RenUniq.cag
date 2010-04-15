@@ -143,14 +143,12 @@ SEM CBind
                                                 else [@nm]
 %%]]
 
-SEM CPatBind
-  | Bind        lhs         .   nmL         =   [@nm] ++ @pat.nmL
+SEM CPatFld
+  | Fld         lhs         .   nmL         =   {- [@nm] ++ -} [@fldNm] -- @pat.nmL
 
 SEM CPat
-  | Var Con     loc         .   nm          =   @pnm
-                loc         .   nm          :   {HsName}
-  | Var         lhs         .   nmL         =   [@nm]
-  | Con         lhs         .   nmL         =   [@nm] ++ @rest.nmL ++ @binds.nmL
+  | Var         lhs         .   nmL         =   [@pnm]
+  | Con         lhs         .   nmL         =   @rest.nmL ++ @binds.nmL
 
 SEM CPatRest
   | Var         lhs         .   nmL         =   [@nm]
@@ -191,12 +189,11 @@ SEM CExpr
 SEM CBind
   | Bind        lhs         .   cTrf        =   CBind_Bind (aRenRepl @lhs.aRenMp @nm) @bindMeta.cTrf @expr.cTrf
 
-SEM CPatBind
-  | Bind        lhs         .   cTrf        =   CPatBind_Bind @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @nm) @pat.cTrf
+SEM CPatFld
+  | Fld         lhs         .   cTrf        =   CPatFld_Fld @lbl @offset.cTrf (aRenRepl @lhs.aRenMp @fldNm) -- @pat.cTrf
 
 SEM CPat
-  | Var         lhs         .   cTrf        =   CPat_Var (aRenRepl @lhs.aRenMp $ @nm)
-  | Con         lhs         .   cTrf        =   CPat_Con (aRenRepl @lhs.aRenMp $ @nm) @tag @rest.cTrf @binds.cTrf
+  | Var         lhs         .   cTrf        =   CPat_Var (aRenRepl @lhs.aRenMp $ @pnm)
 
 SEM CPatRest
   | Var         lhs         .   cTrf        =   CPatRest_Var (aRenRepl @lhs.aRenMp @nm)
@@ -217,6 +214,6 @@ SEM CMetaVal
 SEM CModule
   | Mod          expr.protectedBindingNames  =   []
 
-SEM CPatBind
-  | Bind         offset.protectedBindingNames  =   []
+SEM CPatFld
+  | Fld          offset.protectedBindingNames  =   []
 %%]

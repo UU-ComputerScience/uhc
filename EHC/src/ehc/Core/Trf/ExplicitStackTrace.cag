@@ -122,7 +122,7 @@ Only stack trace info is gathered, and assumed to propagate correctly.
 %%[(99 codegen) hs
 mbStackTrace :: EHCOpts -> Bool -> HsName -> StackTraceInfo
 mbStackTrace opts isCand nm
-  | isCand && ehcOptTargetVariant opts == TargetVariant_Debug
+  | isCand && ehcOptTargetFlavor opts == TargetFlavor_Debug
               = StackTraceInfo_HasStackTraceEquiv (hsnSuffix nm "-$explstacktraced")
   | otherwise = StackTraceInfo_None
 %%]

@@ -21,8 +21,6 @@
 typedef Word  GB_Word ;
 typedef SWord GB_SWord ;
 
-#define GB_Word_SizeInBits		Word_SizeInBits
-
 typedef GB_Word* 	GB_WordPtr ;
 typedef GB_WordPtr 	GB_Ptr ;
 typedef GB_Ptr*  	GB_PtrPtr ;
@@ -86,7 +84,6 @@ typedef union GB_WordEquiv {
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define GB_Word_SizeOfWordTag 		2
 #define GB_Word_TagMask 			Bits_Size2LoMask(GB_Word,GB_Word_SizeOfWordTag)
 #define GB_Word_IntMask 			(~ GB_Word_TagMask)
 #define GB_Word_TagPtr 				0
@@ -322,7 +319,6 @@ static inline Bool gb_NH_HasTraceableFields( GB_NodeHeader h ) {
 #if ! USE_EHC_MM
 #	define GB_MkConEnumNode(tg)				{ GB_MkConHeader(0,tg) }
 #endif
-#define GB_MkConEnumNodeAsTag(tg)			(tg /* GB_Int2GBInt(tg) */)
 
 #define GB_FillNodeFlds1(n,x1)				{                                (n)->content.fields[0] = Cast(GB_Word,x1);}
 #define GB_FillNodeFlds2(n,x1,x2)			{GB_FillNodeFlds1(n,x1         );(n)->content.fields[1] = Cast(GB_Word,x2);}
@@ -469,8 +465,11 @@ typedef struct GB_ByteArray {
 typedef struct GB_Chan {
   FILE*				file ;
   struct GB_Node*	name ;
-  Word				isText ;
+  Word				flags ;
 } __attribute__ ((__packed__)) GB_Chan ;
+
+#define GB_Chan_Flag_IsText					0x1
+#define GB_Chan_Flag_FinalizerNoClose		0x2		// when finalized, do not close
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -786,7 +785,7 @@ This breaks when compiled without bgc.
 #define GB_NodeAlloc_Chan_In(n)				{ GB_NodeAlloc_Hdr_In(GB_NodeChanSize, GB_MkChanHeader, n) ; \
 											  (n)->content.chan.file = NULL ; \
 											  (n)->content.chan.name = NULL ; \
-											  (n)->content.chan.isText = False ; \
+											  (n)->content.chan.flags = 0 ; \
 											  GB_Register_Finalizer(n,&((n)->content.chan)) ; \
 											}
 %%]

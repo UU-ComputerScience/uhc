@@ -218,6 +218,7 @@ SEM TyExpr
 %%[2
 SEM TyExpr
   | Wild        lhs     .  ppAST    =   ppNest ["TyExpr","Wild"] [] []
+  | Mono        lhs     .  ppAST    =   ppNest ["TyExpr","Mono"] [] []
 
 %%]
 
@@ -321,7 +322,6 @@ SEM Expr
   | Let         loc     .  info_4   :=  [ mkInfo1 "quValGam_ex_" (ppGam (@quValGam_ex_))
                                         ]
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
-                                        -- , mkInfo1 "foTrace fo" (vlist $ foTrace @foKnRes)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         , mkInfo1 "foVarMp" (pp (foVarMp @fo_))
@@ -534,10 +534,11 @@ SEM TyExpr
 SEM RecExpr
   | Empty       loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Empty"] [] [] @info_7
                         .  info_7   =   []
-  | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] (@info_7 ++ @info_10)
+  | Ext         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Ext"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] (@info_7 ++ @info_10 ++ @info_11)
                         .  info_7   =   [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
                                         ]
                         .  info_10  =   []
+                        .  info_11  =   []
   | Upd         loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Upd"] [ppNm @nm] [@recExpr.ppAST,@expr.ppAST] @info_7
                         .  info_7   =   []
   | Expr        loc     .  ppAST    =   ppNestInfo @lhs.opts ["RecExpr","Expr"] [] [@expr.ppAST] @info_7
@@ -778,7 +779,17 @@ SEM Expr
 %%]]
                                         -- , mkInfo1 "@fe" (pp @fe)
                                         ]
-  | Let         loc     .  info_9   :=  [ mkInfo1 "decls.gathCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @decls.gathCnstrMp)
+  | Let         loc     .  info_9   :=  [ mkInfo1 "resTy" (pp @resTy)
+                                        , mkInfo1 "foVarMp @foKnRes" (pp (foVarMp @foKnRes))
+                                        , mkInfo1 "ty" (pp @ty)
+                                        , mkInfo1 "imTy" (pp @imTy)
+                                        , mkInfo1 "imSubsTy" (ppTyS @body.tyVarMp @imSubsTy)
+                                        , mkInfo1 "knPrL" (ppBracketsCommas @knPrL)
+%%[[(9 codegen)
+                                        , mkInfo1 "lamArgCoeL" (ppBracketsCommas @lamArgCoeL)
+                                        , mkInfo1 "lhs.chrScopeBindMp" (ppAssocLV $ assocLMapElt ppCBindL $ Map.toList @lhs.chrScopeBindMp)
+%%]]
+                                        , mkInfo1 "decls.gathCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @decls.gathCnstrMp)
                                         , mkInfo1 "toProveHereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMp)
                                         , mkInfo1 "toProveHereCnstrMpCanon" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveHereCnstrMpCanon)
                                         , mkInfo1 "toProveElsewhereCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveElsewhereCnstrMp)
@@ -825,6 +836,7 @@ SEM Expr
                                         ]
   | AppTop      loc     .  info_9   :=  [ mkInfo1 "resTy" (pp @resTy)
                                         , mkInfo1 "foVarMp @foKnRes" (pp (foVarMp @foKnRes))
+                                        , mkInfo1 "foTrace foKnRes" (vlist $ foTrace @foKnRes)
                                         , mkInfo1 "ty" (pp @ty)
                                         , mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imSubsTy" (ppTyS @expr.tyVarMp @imSubsTy)
@@ -863,6 +875,10 @@ SEM RecExpr
 SEM TyExpr
   | Lam         lhs     .  ppAST    =   ppNestInfo @lhs.opts ["TyExpr","Lam"] [ppNm @tyVar] [@tyExpr.ppAST] (@info_17)
                 loc     .  info_17  =   []
+
+SEM RecExpr
+  | Ext         loc     .  info_11  :=  [ -- mkInfo1 "foTy foKnRec (betared)" (pp (tyBetaRedFull (emptyFI {fiEnv = @fe}) (foVarMp @foKnRec |=> @lhs.tyVarMp) $ foTy @foKnRec))
+                                        ]
 %%]
 
 %%[12

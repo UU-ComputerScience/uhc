@@ -110,8 +110,8 @@ ATTR CodeAGItf CExpr CModule AllBind [ noTrfNmS: HsNameS | | ]
 SEM CAlt
   | Alt         loc         .   noTrfNmS    =   Set.empty
 
-SEM CPatBind
-  | Bind        loc         .   noTrfNmS    =   Set.empty
+SEM CPatFld
+  | Fld         loc         .   noTrfNmS    =   Set.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -218,8 +218,8 @@ ATTR CExpr AllAlt AllBind [ allowTrfToCon: {Bool} | | ]
 SEM CModule
   | Mod   expr.allowTrfToCon  =  True
 
-SEM CPatBind
-  | Bind  offset.allowTrfToCon  =  True
+SEM CPatFld
+  | Fld   offset.allowTrfToCon  =  True
 
 %%]
 
@@ -230,8 +230,8 @@ ATTR CExpr AllBind AllAlt [ noTrfToConNmS : HsNameS | | ]
 SEM CModule
   | Mod   expr.noTrfToConNmS  =  Set.empty
 
-SEM CPatBind
-  | Bind  offset.noTrfToConNmS  =  Set.empty
+SEM CPatFld
+  | Fld   offset.noTrfToConNmS  =  Set.empty
 
   
 SEM CBind

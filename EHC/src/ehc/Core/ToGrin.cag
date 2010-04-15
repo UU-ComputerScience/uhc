@@ -449,8 +449,8 @@ SEM CModule
 SEM CBind
   | Bind        expr        .   doBox       =   True
 
-SEM CPatBind
-  | Bind        offset      .   doBox       =   True
+SEM CPatFld
+  | Fld         offset      .   doBox       =   True
 
 SEM CAlt
   | Alt         expr        .   doBox       =   True
@@ -710,18 +710,6 @@ SEM CAltL
 %%]
 
 %%[(8 codegen grin)
-ATTR CPat    [ | | patNm: HsName ]
-
-SEM CPat
-  | Var Con Int Char
-%%[[97
-    BoolExpr
-%%]]
-                loc         .   patNm       =   @pnm
-%%]
-  | Undef       loc         .   patNm       =   hsnUnknown
-
-%%[(8 codegen grin)
 ATTR CPat    [ | | grPat: GrPatAlt ]
 -- ATTR CPatL   [ | | grPatL: GrPatL ]    -- obsolete? (JF)
 
@@ -749,17 +737,17 @@ SEM CPat
 %%]
 
 %%[(8 codegen grin)
-ATTR AllPatBind [ | | patNmL USE {++} {[]}: {[HsName]} ]
+ATTR AllPatFld [ | | patNmL USE {++} {[]}: {[HsName]} ]
 
-SEM CPatBind
-  | Bind        lhs         .   patNmL      =   [@pat.patNm]
+SEM CPatFld
+  | Fld         lhs         .   patNmL      =   [@fldNm]
 %%]
 
 %%[(10 codegen grin)
-ATTR AllPatBind [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
+ATTR AllPatFld [ | | grTupFldL USE {++} {[]}: {[(GrVal,GrVal->GrSplit)]} ]
 
-SEM CPatBind
-  | Bind        lhs         .   grTupFldL   =   [(@offset.grVal,\o -> GrSplit_Sel @pat.patNm o)]
+SEM CPatFld
+  | Fld         lhs         .   grTupFldL   =   [(@offset.grVal,\o -> GrSplit_Sel @fldNm o)]
 %%]
 
 %%[(8 codegen grin)

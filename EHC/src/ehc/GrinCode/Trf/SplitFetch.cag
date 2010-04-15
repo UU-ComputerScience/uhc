@@ -337,15 +337,17 @@ buildSeqs body = foldr buildSeq body
 checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
                           let absVal = absFetch hptMap p
                               nodes = getNodes absVal
-                          in  if   isLocs hptMap p && isNode absVal && singleton nodes
+                          in  if   isPtr hptMap p && isNode absVal && singleton nodes
                               then Just (fst $ head nodes)
                               else Nothing
     
 
-isLocs hptMap p = case p of 
+isPtr hptMap p = case p of 
                     (HNmNr i _) -> case getEnvVar hptMap i of
-                                     (AbsPtr _ _ _) -> True
-                                     _ -> False
+                                     (AbsPtr  _    ) -> True
+                                     (AbsPtr1 _ _  ) -> True
+                                     (AbsPtr2 _ _ _) -> True
+                                     _               -> False
                     _ -> False
 
 

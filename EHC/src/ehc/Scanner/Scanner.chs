@@ -3,8 +3,19 @@
 %include afp.fmt
 %%]
 
-%%[5 module {%{EH}Scanner.Scanner}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scanner interface
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
+Scanner interface.
+This is a clone from the one available from the uulib, adapted to suite UHC.
+%%]
+
+%%[5 module {%{EH}Scanner.Scanner}
+%%]
+
+%%[5 import(Data.List)
 %%]
 
 %%[5 export(module {%{EH}Scanner.Machine}, module {%{EH}Scanner.Token}, module {%{EH}Scanner.TokenParser}, module UU.Scanner.Position)
@@ -13,14 +24,19 @@
 %%[5 import({%{EH}Scanner.Machine}, {%{EH}Scanner.Token},{%{EH}Scanner.TokenParser},UU.Scanner.Position,UU.Scanner.GenTokenOrd(),UU.Scanner.GenTokenSymbol())
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[5
 instance Show Token where
   showsPrec _ token
     = showString
        (case token of
          Reserved key      pos -> "symbol "      ++ key ++ maybeshow pos
-         ValToken tp val   pos -> show tp ++ " " ++ val ++ maybeshow pos
+         ValToken tp val   pos -> show tp ++ " " ++ concat (intersperse "." val) ++ maybeshow pos
        )
+       
 instance Show EnumValToken where
  show tp = case tp of       
   TkVarid            -> "lower case identifier" 

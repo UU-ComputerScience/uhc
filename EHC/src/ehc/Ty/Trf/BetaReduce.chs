@@ -52,7 +52,7 @@ betaRedTyLookup fi nm = fmap tgiTy $ tyGamLookup nm $ feTyGam $ fiEnv fi
 %%[(11 hmtyinfer)
 tyBetaRed1 :: FIIn -> TyBetaRedLkup -> Ty -> Maybe (Ty,[PP_Doc])
 tyBetaRed1 fi lkup tp
-  = eval (fiLookupReplaceTyCyc fi fun) args
+  = eval (tyUnAnn $ fiLookupReplaceTyCyc fi fun) args
   where (fun,args) = tyAppFunArgsWithLkup (fiLookupTyVarCyc fi) tp
         eval lam@(Ty_Lam fa b) args
           | lamLen <= argLen
@@ -69,7 +69,7 @@ tyBetaRed1 fi lkup tp
         -- * removes negation on 'basic' polarities
         eval (Ty_Con nm) [arg]
           | nm == hsnPolNegation
-              = case fiLookupReplaceTyCyc fi fun' of
+              = case tyUnAnn $ fiLookupReplaceTyCyc fi fun' of
                   Ty_Con nm
                     | nm == hsnPolNegation   -> mkres (head args')
                     | otherwise              -> mkres (polOpp arg)
@@ -115,6 +115,15 @@ tyBetaRedFullMb fi lkup redSub ty
                       as' = map redSub as
         choose a [] = Nothing
         choose a as = Just (last as)
+%%]
 
+Just expand, recursively, without intermediate external expanding.
+
+%%[(11 hmtyinfer) export(tyBetaRedFull)
+tyBetaRedFull :: FIIn -> VarMp -> Ty -> Ty
+tyBetaRedFull fi varmp ty
+  = maybe ty fst $ sub ty
+  where fi' = fi {fiVarMp = varmp}
+        sub = \t -> tyBetaRedFullMb fi' betaRedTyLookup sub $ varmp |=> t
 %%]
 

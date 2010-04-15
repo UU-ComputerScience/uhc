@@ -230,6 +230,8 @@ SEM Variable
                 loc.prettyPtr = text "SP"
   | RP          loc.prettyS   = text "RP"
                 loc.prettyPtr = text "RP"
+  | LP          loc.prettyS   = text "LP"
+                loc.prettyPtr = text "LP"
   | Subs        loc.prettyS   =                   @array.prettyPtr >|< "[" >|< show @index >|< "]"
                 loc.prettyPtr = "((Pointer)(" >|< @array.prettyPtr >|< "[" >|< show @index >|< "]" >|< "))"
   | Aux         loc.prettyS   = text "auxVar"

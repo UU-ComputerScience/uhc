@@ -42,6 +42,9 @@ CompilePhase building blocks: parsers
 -- serialization
 %%[20 import(qualified {%{EH}Base.Binary} as Bin, {%{EH}Base.Serialize})
 %%]
+-- config
+%%[20 import(qualified {%{EH}Config} as Cfg)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Compile actions: parsing
@@ -179,6 +182,10 @@ cpParseHI modNm
        }
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Compile actions: Binary reading
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[20 export(cpDecodeHIInfo)
 cpDecodeHIInfo :: HsName -> EHCompilePhase ()
 cpDecodeHIInfo modNm
@@ -197,24 +204,47 @@ cpDecodeHIInfo modNm
                             -- Bin.getBinaryFPath fpH
                      ; return i
                      })
-                 (\_ -> return $ HI.emptyHIInfo {HI.hiiIsValid = False})
+                 (\_ -> return $ HI.emptyHIInfo {HI.hiiValidity = HI.HIValidity_Absent})
        ; when (ehcOptVerbosity opts >= VerboseALot)
               (do { lift $ putPPLn (pp hiinfo)
                   })
-       ; cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       ; case HI.hiiValidity hiinfo of
+%%[[99
+           HI.HIValidity_Inconsistent | not canCompile
+             -> cpSetLimitErrsWhen 1 "Read HI (of previous compile) of module"
+                  [rngLift emptyRange Err_InconsistentHI
+                     (show modNm)
+                     (fpathToStr fpH)
+                     [Cfg.verTimestamp Cfg.version, Cfg.installVariant opts]
+                     [HI.hiiSrcTimeStamp hiinfo   , HI.hiiCompiler hiinfo  ]
+                  ]
+             where canCompile = crModCanCompile modNm cr
+%%]]
+           _ -> cpUpdCU modNm (ecuStorePrevHIInfo {- $ HI.hiiPostCheckValidity opts -} hiinfo)
+       }
+%%]
+
+%%[20
+-- | Decode from serialized file and store result in the compileunit for the module modNm
+cpDecode :: Serialize x => String -> EcuUpdater x -> HsName -> EHCompilePhase ()
+cpDecode suff store modNm
+  = do { cr <- get
+       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
+              fpC     = fpathSetSuff suff fp
+       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
+       ; x <- lift $ getSerializeFile (fpathToStr fpC)
+       ; cpUpdCU modNm (store x)
        }
 %%]
 
 %%[20 export(cpDecodeGrin)
 cpDecodeGrin :: HsName -> EHCompilePhase ()
-cpDecodeGrin modNm
-  = do { cr <- get
-       ; let  (ecu,_,opts,fp) = crBaseInfo modNm cr
-              fpC     = fpathSetSuff "grin" fp
-       ; cpMsg' modNm VerboseALot "Decoding" Nothing fpC
-       ; grin <- lift $ getSerializeFile (fpathToStr fpC)
-       ; cpUpdCU modNm (ecuStoreGrin grin)
-       }
+cpDecodeGrin = cpDecode "grin" ecuStoreGrin
+%%]
+
+%%[20 export(cpDecodeCore)
+cpDecodeCore :: HsName -> EHCompilePhase ()
+cpDecodeCore = cpDecode "core" ecuStoreCore
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -239,7 +269,8 @@ cpGetPrevCore modNm
   = do { cr <- get
        ; let  ecu    = crCU modNm cr
        ; when (isJust (ecuMbCoreTime ecu) && isNothing (ecuMbCore ecu))
-              (cpParseCore modNm)
+              (cpDecodeCore modNm)
+              -- (cpParseCore modNm)
        }
 %%]
 

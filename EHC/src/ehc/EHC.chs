@@ -100,7 +100,19 @@ main
          ;  let opts3 = opts2
 %%][99
          ;  userDir <- ehcenvDir (envkey opts2)
-         ;  let opts3 = opts2 {ehcOptUserDir = userDir}
+         ;  let opts3 = opts2 { ehcOptUserDir = userDir
+                              , ehcOptOutputDir =
+                                  let outputDir = maybe "." id (ehcOptOutputDir opts2)
+                                  in  case ehcOptPkg opts2 of
+                                        Just (PkgOption_Build s)
+                                          -> case parsePkgKey s of
+                                               Just k  -> Just $
+                                                          outputDir ++ "/" ++
+                                                          mkInternalPkgFileBase k (Cfg.installVariant opts2)
+                                                                                (ehcOptTarget opts2) (ehcOptTargetFlavor opts2)
+                                               _       -> ehcOptOutputDir opts2
+                                        _ -> ehcOptOutputDir opts2
+                              }
 %%]]
          ;  case ehcOptImmQuit opts3 of
               Just immq     -> handleImmQuitOption immq opts3
@@ -176,8 +188,10 @@ handleImmQuitOption immq opts
         -> putStr (show defaultTarget)
 %%]]
 %%[[99
-      ImmediateQuitOption_NumericVersion
-        -> putStrLn (Cfg.verNumeric Cfg.version)
+      ImmediateQuitOption_VersionDotted
+        -> putStrLn (Cfg.verFull Cfg.version)
+      ImmediateQuitOption_VersionAsNumber
+        -> putStrLn (Cfg.verAsNumber Cfg.version)
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
              (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
@@ -322,36 +336,40 @@ doCompilePrepare fnL@(fn:_) opts
              installVariant         = Cfg.installVariant opts
        -- ; userDir <- ehcenvDir (Cfg.verFull Cfg.version)
        -- ; let opts2 = opts -- {ehcOptUserDir = userDir}
-       ; pkgDb1 <- pkgDbFromDirs
-                    (   [ filePathCoalesceSeparator $ filePathUnPrefix
+       ; pkgDb1 <- pkgDbFromDirs opts
+                    ({-
+                        [ filePathCoalesceSeparator $ filePathUnPrefix
                           $ Cfg.mkDirbasedInstallPrefix (filelocDir d) Cfg.INST_LIB_PKG "" (show (ehcOptTarget opts)) ""
                         | d <- ehcOptPkgdirLocPath opts
                         ]
-                     {-
                      ++ [ filePathUnPrefix
                           $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) ""
                         ]
                      -}
                      {-
                      -}
-                     ++ [ filePathUnPrefix d
-                        | d <- [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
+                        [ filePathUnPrefix d
+                        | d <- ehcOptPkgdirLocPath opts ++ [Cfg.mkInstallPkgdirUser opts, Cfg.mkInstallPkgdirSystem opts]
                         ]
                     )
-       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (ehcOptPackageSearchFilter opts) pkgDb1
+       ; let (pkgDb2,pkgErrs) = pkgDbSelectBySearchFilter (pkgSearchFilter Just PackageSearchFilter_ExposePkg (pkgExposedPackages pkgDb1)
+                                                           ++ ehcOptPackageSearchFilter opts
+                                                          ) pkgDb1
              pkgDb3 = pkgDbFreeze pkgDb2
+       -- ; putStrLn $ "db1 " ++ show pkgDb1
+       -- ; putStrLn $ "db2 " ++ show pkgDb2
+       -- ; putStrLn $ "db3 " ++ show pkgDb3
        -- ; putStrLn (show $ ehcOptPackageSearchFilter opts)
-       -- ; putStrLn (show pkgDb3)
 %%]]
        ; let searchPath     = [emptyFileLoc]
                               ++ ehcOptImportFileLocPath opts
 %%[[99
-                              ++ [ mkPkgFileLoc p $ filePathUnPrefix
+                              {-
+                              ++ [ mkPkgFileLoc (p, Nothing) $ filePathUnPrefix
                                    $ Cfg.mkDirbasedLibVariantTargetPkgPrefix (filelocDir d) "" (show (ehcOptTarget opts)) p
                                  | d <- ehcOptLibFileLocPath opts
                                  , p <- ehcOptLibPackages opts
                                  ]
-                              {-
                               ++ [ mkPkgFileLoc p $ filePathUnPrefix
                                    $ Cfg.mkDirbasedTargetVariantPkgPrefix installRoot installVariant (show (ehcOptTarget opts)) p
                                  | p <- (   ehcOptLibPackages opts
@@ -428,7 +446,7 @@ doCompileRun fnL@(fn:_) opts
                               ; fpsFound <- cpFindFilesForFPath False fileSuffMpHs' searchPath (Just nm) mbFp
 %%][99
                               ; let searchPath' = adaptedSearchPath mbPrev
-                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) const False fileSuffMpHs' searchPath' (Just nm) mbFp
+                              ; fpsFound <- cpFindFilesForFPathInLocations (fileLocSearch opts) (\(x,_,_) -> x) False fileSuffMpHs' searchPath' (Just nm) mbFp
 %%]]
                               ; when (ehcOptVerbosity opts >= VerboseDebug)
                                      (do { lift $ putStrLn $ show nm ++ ": " ++ show (fmap fpathToStr mbFp) ++ ": " ++ show (map fpathToStr fpsFound)

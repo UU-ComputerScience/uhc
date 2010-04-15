@@ -97,15 +97,19 @@ trfCore opts modNm trfcore
           = do { -- initial is just to obtain Core for dumping stages
                  t_initial
                  
-                 -- removal of unnecessary constructs: eta expansions, make names unique, mutual recursiveness, aliases, trival function applications
-               ; t_eta_red
+                 -- removal of unnecessary constructs: simplifications based on annotations (experimential, temporary)
+               ; t_ann_simpl
 
-                 -- removal of unnecessary constructs: mutual recursiveness
-               ; t_let_unrec
+                 -- removal of unnecessary constructs: eta expansions
+               ; t_eta_red
 
                  -- make names unique
                ; t_ren_uniq
                  -- from now on INVARIANT: keep all names globally unique
+                 --             ASSUME   : no need to shadow identifiers
+
+                 -- removal of unnecessary constructs: mutual recursiveness
+               ; t_let_unrec
 
                  -- removal of unnecessary constructs: aliases
                ; t_inl_letali
@@ -115,7 +119,7 @@ trfCore opts modNm trfcore
 
 %%[[99
                  -- optionally modify to include explicit stack trace
-               ; when (ehcOptTargetVariant opts == TargetVariant_Debug)
+               ; when (ehcOptTargetFlavor opts == TargetFlavor_Debug)
                       (do { t_expl_trace
                             -- from now on INVARIANT: renaming of identifiers must also rename additional exported names here introduced
 
@@ -179,6 +183,7 @@ trfCore opts modNm trfcore
 
         t_initial       = liftTrf  "initial"            $ id
         t_eta_red       = liftTrf  "eta-red"            $ cmodTrfEtaRed
+        t_ann_simpl     = liftTrf  "ann-simpl"          $ cmodTrfAnnBasedSimplify opts
         t_ren_uniq      = liftTrf  "ren-uniq"           $ cmodTrfRenUniq
         t_let_unrec     = liftTrf  "let-unrec"          $ cmodTrfLetUnrec
         t_inl_letali    = liftTrf  "inl-letali"         $ inlineLetAlias

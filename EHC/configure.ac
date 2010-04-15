@@ -31,6 +31,7 @@ AC_SUBST(EH_VERSION_MINORMINOR)
 AC_SUBST(EH_VERSION_STABILITY)
 AC_SUBST(EH_VERSION_SHORT,$EH_VERSION_MAJOR.$EH_VERSION_MINOR)
 AC_SUBST(EH_VERSION_FULL,$EH_VERSION_MAJOR.$EH_VERSION_MINOR.$EH_VERSION_MINORMINOR)
+AC_SUBST(EH_VERSION_ASNUMBER,$EH_VERSION_MAJOR$EH_VERSION_MINOR$EH_VERSION_MINORMINOR)
 
 dnl macro for missing program
 AC_DEFUN(MISSING_FOR_EH,
@@ -136,7 +137,7 @@ AC_SUBST(ENABLE_LLVM,$enableLlvm)
 AC_ARG_ENABLE(clr, AS_HELP_STRING([--enable-clr],[include clr code generation]), [enableClr=yes], [enableClr=no])
 AC_SUBST(ENABLE_CLR,$enableClr)
 
-### ar, ranlib, libtool
+### ranlib
 REQUIRED_PROG_FOR_EH(ranlibCmd,ranlib)
 # See remarks about cpp
 case $HostPlatform in
@@ -151,6 +152,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(RANLIB_CMD,$ranlibCmd)
 
+### ar
 REQUIRED_PROG_FOR_EH(arCmd,ar)
 # See remarks about cpp
 case $HostPlatform in
@@ -165,6 +167,7 @@ case $HostPlatform in
 esac  
 AC_SUBST(AR_CMD,$arCmd)
 
+### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
 ### 'with' option for gcc options
@@ -306,8 +309,12 @@ esac
 AC_SUBST(GHC_CMD1,$ghcCmd1)
 
 
-### now we know we have ghc, check for some libraries using ghc-pkg
+### assuming we have ghc, check for some of the additional tools
 AC_PATH_PROG(ghcPkgCmd,ghc-pkg)
+AC_PATH_PROG(hsc2hsCmd,hsc2hs)
+AC_SUBST(HSC2HS_CMD,$hsc2hsCmd)
+
+### now we know we have ghc, check for some libraries using ghc-pkg
 ghcLibUulibExists=no
 ghcLibFglExists=no
 ghcLibNetwork=no
@@ -604,6 +611,10 @@ fi
 # md5
 AC_PATH_PROG(md5Cmd,md5 md5sum)
 AC_SUBST(MD5_CMD,$md5Cmd)
+
+# (gnu)tar; gnutar is required, but sometimes it already is available as tar
+AC_CHECK_PROGS(tarCmd,gnutar tar)
+AC_SUBST(TAR_CMD,$tarCmd)
 
 # xxx
 #AC_PATH_PROG(xxxCmd,xxx)

@@ -83,8 +83,8 @@ SEM CBind
 SEM CAlt
   | Alt         expr        .isTopLvl  = False 
 
-SEM CPatBind
-  | Bind        offset      .isTopLvl  = False
+SEM CPatFld
+  | Fld         offset      .isTopLvl  = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

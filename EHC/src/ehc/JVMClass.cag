@@ -73,7 +73,7 @@ type Label = Int
 
 %%[(8 java) hs export(showClassRef)
 showClassRef :: ClassRef -> String
-showClassRef r = hsnShow "/" r
+showClassRef r = hsnShow "/" "_" r
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

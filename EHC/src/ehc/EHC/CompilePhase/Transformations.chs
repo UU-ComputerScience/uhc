@@ -68,7 +68,7 @@ cpTransformCore modNm
        ; cpUpdCU modNm $! ecuStoreCore (trfcoreCore trfcoreOut)
 
          -- dump intermediate stages, if any
-       ; cpSeq [ cpOutputCoreModule ("-" ++ show n ++ "-" ++ nm) "core" modNm c
+       ; cpSeq [ cpOutputCoreModule False ("-" ++ show n ++ "-" ++ nm) "core" modNm c
                | (n,(nm,c)) <- zip [1..] (trfcoreCoreStages trfcoreOut)
                ]
 

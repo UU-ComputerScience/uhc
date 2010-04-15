@@ -110,10 +110,43 @@ SEM Statement
                                  then Map.insert @dest.self @source.trf env2
                                  else env2
   
--- In each Call-statement, remove the environment-entries of which the RHS uses the RP-register or a negative offset from SP
+-- After each Call-statement, remove the environment-entries of which the RHS uses the RP-register or a negative offset from SP
 
 SEM Statement
   | Call        lhs.env   =  Map.filter (not . isRPValue) @lhs.env
+  
+
+-- Within the values of a Return-statement, remove all the environment-entries of which the RHS uses a RP-register
+
+-- SEM Statement
+--  | Return      vals.env  =  Map.filter (not . isRPValue) @lhs.env
+  
+
+-- Within the values of a Return-statement, remove the environment-entries of which the RHS uses a lower RP-register than the current sequence number
+
+ATTR Value Values [ mbSeqNr : {Maybe Int} | | ]
+
+SEM Values
+    | Cons          tl.mbSeqNr        = maybe Nothing (\n -> Just (n+1)) @lhs.mbSeqNr
+                    hd.env            = maybe @lhs.env (\n -> Map.filter (not . isLowRPValue n) @lhs.env) @lhs.mbSeqNr
+    
+SEM Statement
+    | Call          args.mbSeqNr      = Nothing
+    | Assignment
+      Assignment2   source.mbSeqNr    = Nothing
+    | IfThenElse    condition.mbSeqNr = Nothing
+    | Switch        scrutinee.mbSeqNr = Nothing
+    | Voiden        val.mbSeqNr       = Nothing
+SEM Value
+    | Call          args.mbSeqNr      = Nothing
+    | Cast
+      CompareGT     val.mbSeqNr       = Nothing
+      
+SEM Statement
+    | Return        vals.mbSeqNr      = Just 0
+
+    
+
 
 -- For variables, do the substitution
                                              
@@ -139,6 +172,18 @@ isRP _                      = False
 isRPValue :: Value -> Bool
 isRPValue (Value_Var var)   = isRP var
 isRPValue _                 = False
+
+
+isLowRP :: Int -> Variable -> Bool
+isLowRP _ (Variable_RP)          = True
+isLowRP k (Variable_Subs var n)  = isLowRP k var && n<k
+isLowRP _ _                      = False 
+
+isLowRPValue :: Int -> Value -> Bool
+isLowRPValue k (Value_Var var)   = isLowRP k var
+isLowRPValue _ _                 = False
+
+
 
 isSimpleVariable :: Variable -> Bool
 isSimpleVariable (Variable_Subs Variable_SP _) = True

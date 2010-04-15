@@ -34,6 +34,7 @@ data Version
       , verQuality          :: !String
       , verShort            :: !String
       , verFull             :: !String
+      , verAsNumber         :: !String
       , verProg             :: !String
 %%[[20
       , verTimestamp        :: !String
@@ -53,6 +54,7 @@ version
       , verQuality          = "@EH_VERSION_STABILITY@"
       , verShort            = "@EH_VERSION_SHORT@"
       , verFull             = "@EH_VERSION_FULL@"
+      , verAsNumber         = "@EH_VERSION_ASNUMBER@"
       , verProg             = "@EHC_EXEC_NAME@"
 %%[[20
       , verTimestamp        = Sig.timestamp
@@ -61,15 +63,9 @@ version
       }
 %%]
 
-%%[1 export(verNumeric, verDist, verInfo)
-verNumeric :: Version -> String
-verNumeric v = verShort v ++ "." ++ verMinorMinor v
-
-verDist :: Version -> String
-verDist v = verFull v
-
+%%[1 export(verInfo)
 verInfo :: Version -> String
-verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
+verInfo v = verProg v ++ "-" ++ verFull v ++ ", Revision " ++ verSvnRevision v
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,13 +113,13 @@ mkInstallBindirPrefix opts variant
 %%[(99 codegen) export(mkInstallPkgdirSystem)
 mkInstallPkgdirSystem :: EHCOpts -> String
 mkInstallPkgdirSystem opts
-  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG (installVariant opts) ""
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
 %%]
 
 %%[(99 codegen) export(mkInstallPkgdirUser)
 mkInstallPkgdirUser :: EHCOpts -> String
 mkInstallPkgdirUser opts
-  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG "" (show $ ehcOptTarget opts) ""
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -179,8 +175,8 @@ shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
 mkShellCmdLibtool :: String -> [String] -> [[String]]
 mkShellCmdLibtool archive files
   = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
-    then [ [shellCmdAr,"r",{- "-c", -} archive] ++ files
-         , [shellCmdRanlib,archive]
+    then [ [shellCmdAr,"-r","-s",archive] ++ files
+         -- , [shellCmdRanlib,archive]
          ]
     else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
          ]

@@ -323,6 +323,17 @@ sgetWord16 = liftG Bn.getWord16be
 
 %%]
 
+%%[20 export(sputEnum8, sgetEnum8)
+sputEnum8 :: Enum x => x -> SPut
+sputEnum8 x = liftP (Bn.putEnum8 x)
+{-# INLINE sputEnum8 #-}
+
+sgetEnum8 :: Enum x => SGet x
+sgetEnum8 = liftG Bn.getEnum8
+{-# INLINE sgetEnum8 #-}
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Default instances, copied & modified from Binary
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -341,6 +352,10 @@ instance Serialize Char where
   sget = sgetPlain
 
 instance Serialize Bool where
+  sput = sputPlain
+  sget = sgetPlain
+
+instance Serialize Integer where
   sput = sputPlain
   sget = sgetPlain
 

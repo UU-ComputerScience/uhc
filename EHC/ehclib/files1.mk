@@ -40,8 +40,8 @@ EHCLIB_BLD_SYNC_PREFIX					:= $(BLD_PREFIX)$(EHCLIB_GHCSYNC_PREFIX)
 EHCLIB_BLD_SYNC_SRC_PREFIX				:= $(EHCLIB_BLD_SYNC_PREFIX)frozen/
 
 # install locations
-EHCLIB_INSTALL_VARIANT_TARGET_PREFIX		:= $(INSTALL_VARIANT_PKGLIB_TARGET_PREFIX)
-EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
+#EHCLIB_INSTALL_VARIANT_TARGET_PREFIX		:= $(INSTALL_VARIANT_PKGLIB_TARGET_PREFIX)
+#EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PREFIX)$(EHCLIB_EHCBASE_PREFIX)
 
 ###########################################################################################
 # files which are used outside ehclib as well, in particular for configuration of libraries
@@ -49,5 +49,5 @@ EHCLIB_INSTALL_VARIANT_TARGET_BASE_PREFIX	:= $(EHCLIB_INSTALL_VARIANT_TARGET_PRE
 
 # As C .h include file, as is in svn repo, after configuration.
 # These files are copied into rts as well
-EHCLIB_ASIS_RTS_SRC_ASIS				:= $(addprefix $(EHCLIB_BASE_INC_SRC_PREFIX),MachDeps.h)
+EHCLIB_ASIS_RTS_SRC_ASIS				:= $(addprefix $(EHCLIB_BASE_INC_SRC_PREFIX),MachDeps.h HsBase.h HsBaseConfig.h)
 

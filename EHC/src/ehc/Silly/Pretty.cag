@@ -102,6 +102,7 @@ SEM Variable
   | Param          lhs.pretty = text (hsnShowAlphanumeric @name)
   | Global         lhs.pretty = text (hsnShowAlphanumeric @name)
 %%]]
+  | LP             lhs.pretty = text "LP"  
   | SP             lhs.pretty = text "SP"  
   | RP             lhs.pretty = text "RP"  
   | Subs           lhs.pretty = @array.pretty >|< "[" >|< show @index >|< "]"

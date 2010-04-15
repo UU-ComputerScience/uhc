@@ -317,7 +317,7 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen java)
-ATTR AllPatBind [ tagSz: Int | | ]
+ATTR AllPatFld [ tagSz: Int | | ]
 ATTR PatL Pat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
 
 SEM Pat

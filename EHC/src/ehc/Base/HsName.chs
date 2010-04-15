@@ -177,8 +177,8 @@ hsnBaseUnpack (HsName_Base s    ) = Just (s,HsName_Base)
 %%[[7
 hsnBaseUnpack (HsName_Modf q b u) = fmap (\(bs,mk) -> (bs, \s -> HsName_Modf q (mk s) u)) (hsnBaseUnpack b)
 -- hsnBaseUnpack (HNmQ        ns   ) = do { (i,l) <- initlast ns ; (bs,mk) <- hsnBaseUnpack l ; return (bs, \s -> (HNmQ $ i ++ [mk s])) }
-%%]]
 hsnBaseUnpack _                   = Nothing
+%%]]
 
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String
@@ -244,9 +244,13 @@ hsnShow _    usep (HNmNr n (OrigFunc   hsn))  = "fun_x_"    ++ show n ++ "_" ++ 
 %%]]
 %%]
 
-%%[7
+%%[1
 instance Show HsName where
+%%[[1
+  show (HsName_Base s) = s
+%%][7
   show = hsnShow "." "_@"
+%%]]
 %%]
 
 %%[1
@@ -470,6 +474,16 @@ hsnIsQual = isJust . hsnQualifier
 hsnSetLevQual :: Int -> HsName -> HsName -> HsName
 hsnSetLevQual 0 m n = hsnSetQual m n
 hsnSetLevQual _ _ n = n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fix the uniqifier part by making a string of it, suffixing it to the base part
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(hsnFixUniqifiers)
+hsnFixUniqifiers :: HsName -> HsName
+hsnFixUniqifiers (HsName_Modf qs n us) = HsName_Modf qs (hsnSuffix n (concat $ showHsNameUniqifierMp "_@" us)) Map.empty
+hsnFixUniqifiers n                     = n
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

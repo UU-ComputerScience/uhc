@@ -361,7 +361,7 @@ gamDoTyWithVarMp (get,set) f gamVarMp thr gam
                (\(n,gi) (thr,c)
                    -> let t = get gi
                           (t',c',thr') = f n (gamVarMp |==> t) c thr
-                          (tg,cg)      = case (t,t') of
+                          (tg,cg)      = case (tyUnAnn t,tyUnAnn t') of
                                            (Ty_Var v1 _  ,Ty_Var v2 _) | v1 == v2
                                              -> dflt
                                            (Ty_Var v  cat,_          ) | not (tvCatIsFixed cat)

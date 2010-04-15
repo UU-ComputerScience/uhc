@@ -344,7 +344,7 @@ crModCanCompile modNm cr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(99 codegen) export(crPartitionIntoPkgAndOthers)
-crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgName],[HsName])
+crPartitionIntoPkgAndOthers :: EHCompileRun -> [HsName] -> ([PkgKey],[HsName])
 crPartitionIntoPkgAndOthers cr modNmL
   = (nub $ concat ps,concat ms)
   where (ps,ms) = unzip $ map loc modNmL

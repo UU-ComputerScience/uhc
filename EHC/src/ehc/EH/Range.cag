@@ -14,9 +14,9 @@ SEM Decl
   | *           loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM TyExpr
-  | Con Var VarWild Impls NoImpls Wild
+  | Con Var VarWild Impls NoImpls Wild Mono
   				loc         .   range          		=   @hsrange
-  | * - Con Var VarWild Impls NoImpls Wild
+  | * - Con Var VarWild Impls NoImpls Wild Mono
   				loc         .   range          		=   rangeUnions [@hsrange, @first__.range, @last__.range]
 
 SEM KiExpr

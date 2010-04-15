@@ -313,6 +313,8 @@ instance CompileUnit EHCompileUnit HsName FileLoc EHCompileUnitState where
   cuImports         = ecuImpNmL
 %%]]
 
+instance FPathError Err
+
 instance CompileRunError Err () where
   crePPErrL                 = ppErrL
   creMkNotFoundErrL _ fp sp = [rngLift emptyRange Err_FileNotFound fp sp]
@@ -532,7 +534,7 @@ ecuIsValidHI ecu
 ecuIsValidHIInfo :: EHCompileUnit -> Bool
 ecuIsValidHIInfo ecu
   = case ecuMbPrevHIInfo ecu of
-      Just i -> HI.hiiIsValid i
+      Just i -> HI.hiiValidity i == HI.HIValidity_Ok
       _      -> False
 %%]
 
