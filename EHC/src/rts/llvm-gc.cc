@@ -1,5 +1,7 @@
 %%[8
+
 #include <inttypes.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <locale.h>
 //#include <unistd.h>
@@ -78,6 +80,100 @@ void llvmc_print_statistics( )
         , ((double) GC_get_total_bytes()) / (prog_time + gc_time) );
     #endif /* GC_TIMING */
   #endif /* USE_BOEHM_GC */
+}
+
+// -----------------------------------------------------------------------------
+// Shadow-stack debugging
+// -----------------------------------------------------------------------------
+
+typedef unsigned char byte;
+typedef unsigned short ushort;
+
+struct FrameMap
+{
+    int32_t NumRoots;               //< Number of roots in stack frame.
+    int32_t NumMeta;                //< Number of metadata entries. May be < NumRoots.
+    const void *Meta[0];            //< Metadata for each root.
+};
+
+struct StackEntry
+{
+    struct StackEntry *Next;        //< Link to next stack entry (the caller's).
+    const struct FrameMap *Map;     //< Pointer to constant FrameMap.
+    void *Roots[0];                 //< Stack roots (in-place array).
+};
+
+struct StackEntry *llvm_gc_root_chain;
+
+// -----------------------------------------------------------------------------
+
+static byte *f_heap, *f_limit;
+static byte *t_heap, *t_limit;
+static byte *t_alloc;
+
+void gc_ss_init() {
+
+    unsigned int heapsz = 1024;
+
+    printf("Initializing semi-space heap (%d bytes per space)\n", heapsz);
+
+    f_heap = (byte*)malloc(heapsz);
+    memset(f_heap, 0, heapsz);
+    f_limit = f_heap + heapsz - 1;
+
+    t_heap = (byte*)malloc(heapsz);
+    memset(t_heap, 0, heapsz);
+    t_limit = t_heap + heapsz - 1;
+    t_alloc = t_heap;
+}
+
+void* gc_ss_alloc(unsigned int sz) {
+
+    printf("gc_alloc(%d)", sz);
+
+    byte *res;
+
+    if (t_alloc + sz > t_limit)
+    {
+        // Need to collect
+        printf(" - not enough free heap space, forcing a collection ...\n");
+        gc_collect();
+
+        if (t_alloc + sz > t_limit)
+        {
+            printf("Fatal: not enough heap space after collection. Available space is %d bytes, need %d bytes\n", t_limit-t_alloc+1, sz);
+            exit(-1);
+        }
+    }
+
+    res = t_alloc;
+    t_alloc += sz;
+    printf(" - new object at 0x%08x, heap size now %d bytes\n", (unsigned int)res, t_alloc-t_heap);
+
+    return res;
+}
+
+void gc_collect(){
+    return;
+}
+
+// Shadow-stack walker function
+void sswalker() {
+
+    int32_t             i, num_roots;
+    struct StackEntry   *entry = llvm_gc_root_chain;
+
+    //printf("| [0x%08x] %d llvm_gc_root_chain\n", (unsigned int)entry, num_roots);
+    
+    
+    while (entry)
+    {
+        num_roots = entry->Map->NumRoots;
+        // printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
+        entry = entry->Next;
+    }
+    
+
 }
 
 %%]

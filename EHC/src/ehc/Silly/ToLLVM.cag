@@ -103,6 +103,12 @@ SEM SilModule
                                                      : gcMallocUncollectableFuncDecl @lhs.intType
                                                      : primPatternMatchFailureFuncDecl 
                                                      : gcRootFuncDecl
+
+                                                     -- semispace collector
+                                                     : sswalkerFuncDecl
+                                                     : gcssInitFuncDecl
+                                                     : gcssAllocFuncDecl @lhs.intType
+
                                                      : @functions.externFuncs 
                                                      )
                                                      ( @loc.main : @functions.llvmCode )
@@ -115,7 +121,7 @@ SEM SilModule
                                   else "%d\n"
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
-                                 [ LLVMStatement_Call gcInitFuncDecl StdCall []
+                                 [ LLVMStatement_Call gcssInitFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
@@ -130,10 +136,11 @@ SEM SilModule
                                      (LLVMExpression_GetElemPtr @loc.globalResStr [0,0])  
                                  , LLVMStatement_Call stdlibPrintfFuncDecl TailCall
                                      [ LocalVar "cast.str.res" (pLift i8), LocalVar "rp.1.val" @lhs.intType ]
+                                 , LLVMStatement_Call sswalkerFuncDecl StdCall []
 %%][99
                                  , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
 %%]]                                 
-                                 , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
+                                 -- , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
                                  
@@ -144,7 +151,10 @@ SEM Functions
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) (pLift @lhs.pointerType) )
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) @locals
-                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode ++ [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
+                                   @body.llvmCode ++  
+                                   -- [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
+                                   [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
   | Cons        lhs.llvmCode = @hd.llvmCode ++ @tl.llvmCode
@@ -699,6 +709,19 @@ gcRootFuncDecl :: LLVMFunctionDecl
 gcRootFuncDecl = 
   LLVMFunctionDecl_LLVMFunctionDecl "llvm.gcroot" Void FixedArgs [(LocalVar "ptrloc" (pLift $ pLift i8)), (LocalVar "metadata" (pLift i8))] Nothing
 
+sswalkerFuncDecl :: LLVMFunctionDecl
+sswalkerFuncDecl = 
+  LLVMFunctionDecl_LLVMFunctionDecl "sswalker" Void FixedArgs [] Nothing
+
+gcssInitFuncDecl :: LLVMFunctionDecl
+gcssInitFuncDecl = 
+  LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_init" Void FixedArgs [] Nothing
+
+gcssAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcssAllocFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
+
+
 }
 %%]
 
@@ -829,8 +852,8 @@ mkMalloc manageType intType nr =
   if rtsUseGC
   then let size = nr * sizeofPointer
         in case manageType of
-           NotManaged -> LLVMExpression_Call (gcMallocUncollectableFuncDecl intType) StdCall [Constant size intType]
-           GCManaged  -> LLVMExpression_Call (gcMallocFuncDecl intType) StdCall [Constant size intType]
+           NotManaged -> LLVMExpression_Call (gcssAllocFuncDecl intType) StdCall [Constant size intType]
+           GCManaged  -> LLVMExpression_Call (gcssAllocFuncDecl intType) StdCall [Constant size intType]
   else LLVMExpression_Malloc intType nr
 }
 %%]
