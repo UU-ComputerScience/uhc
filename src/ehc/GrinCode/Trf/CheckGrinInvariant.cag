@@ -44,7 +44,7 @@ type Env = Map.Map HsName Mode
 
 
 checkMd :: String -> Mode -> Mode -> [String]
-checkMd s m1 m2 = if m1==m2 then [] else [s ++ ": expected " ++ show m1 ++ " found " ++ show m2  ]
+checkMd s m1 m2 = if m1==m2 || (m1==ModeNode && m2==ModeFFIRes) then [] else [s ++ ": expected " ++ show m1 ++ " found " ++ show m2  ]
 
 check :: Env -> HsName -> Mode -> [String]
 check env nm mode

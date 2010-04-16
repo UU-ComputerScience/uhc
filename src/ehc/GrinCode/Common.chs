@@ -76,6 +76,7 @@ data AbstractNodes
 data AbstractValue
   = AbsBottom
   | AbsBasic
+  | AbsImposs
   | AbsTags  (Set.Set GrTag)
   | AbsNodes AbstractNodes
   -- We allow for three different representation of pointers. They can't be mixed. The choice is made in SolveEqs.
@@ -101,6 +102,7 @@ instance Show AbstractNodes where
 instance Show AbstractValue where
     show av = case av of
                   AbsBottom   -> "BOT"
+                  AbsImposs   -> "IMP"
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
                   AbsNodes an -> "NODS" ++ show an
@@ -125,6 +127,8 @@ instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
     mappend  a                 AbsBottom    =  a
     mappend    AbsBottom    b               =  b
+    mappend  a                 AbsImposs    =  a
+    mappend    AbsImposs    b               =  b
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (mappend an bn)
@@ -193,6 +197,7 @@ instance Ord GrTag where
 
 data Equation
   = IsBasic               Variable
+  | IsImpossible          Variable
   | IsTags                Variable  [GrTag]
   | IsPointer             Variable  GrTag [Maybe Variable]
   | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
@@ -274,6 +279,7 @@ getTags av = case av of
 getNodes av = case av of
                  AbsNodes (Nodes n)  -> Map.toAscList n
                  AbsBottom   -> []
+                 AbsImposs   -> []
                  AbsError s  -> error $ "analysis error getNodes2: " ++  s
                  _           -> error $ "not a node2: " ++ show av
 
