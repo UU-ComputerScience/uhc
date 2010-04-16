@@ -101,7 +101,7 @@ SEM SilModule
                                                      )
                                                      ( @loc.main : @functions.llvmCode )
                                                      
-                loc.comment  = map (\(s,i) -> s ++ "->" ++ show i) @constants  
+                loc.comment  = map (\(s,i,ts) -> s ++ "->" ++ show i ++ " arity " ++ show (length ts)) @constants  
                 loc.(globalResStr,resConst) = 
                                 string2LLVMString @lhs.gUniq $
                                   if sizeofPointer == 8
@@ -136,8 +136,8 @@ SEM Functions
   | Nil         lhs.llvmCode = []
   
 SEM Function
-  | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
-                                                         (LLVMExpression_Alloca @lhs.intType 1) ) @locals
+  | Function    lhs.llvmCode = let locals = map (\(nm,tp) -> LLVMStatement_Assignment (LocalVar (hs2str nm) @lhs.pointerType)
+                                                                 (LLVMExpression_Alloca @lhs.intType 1) ) @locals
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ @body.llvmCode ++ [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -511,7 +511,7 @@ ATTR Functions Function
      [ constantMap : {Data.Map.Map String Int} | | ]
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList @constants
+  | SilModule   functions.constantMap = Data.Map.fromList (map (\(x,y,z)->(x,y)) @constants)
 %%]
 
 %%[(8 codegen grin)

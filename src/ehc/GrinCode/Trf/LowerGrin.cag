@@ -56,19 +56,12 @@ ATTR GrModule
      AllGrExpr
      GrPatLam  [ | uniq : Int | ]
 
-ATTR AllBind AllGrExpr GrPatLam [ maxConstrParameters : {Int} | | ]
-
-
 SEM GrAGItf
   | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
               lhs    . hptMap  =  let newitems = @module.newItems
                                       sorteditems = sort newitems
                                       filleditems = fillgaps sorteditems
                                   in  addEnvElems @lhs.hptMap (map snd filleditems)
-
-SEM GrModule
-  | Mod loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
-
 
 %%]
 
@@ -113,8 +106,8 @@ vsetLookup hptMap vset
          zs = map (getEnvVar hptMap) vs
      in if Set.null vset then AbsBasic else mconcat zs
 
-newNames :: HptMap -> Int -> Int -> HsName -> (Int, [HsName], HptItems)
-newNames hptMap maxConstrParameters uniq (HNmNr v _) 
+newNames :: HptMap -> Int -> HsName -> (Int, [HsName], HptItems)
+newNames hptMap uniq (HNmNr v _) 
   = if v==0
     then (uniq, [], [])
     else let absval = getEnvVar hptMap v
@@ -135,6 +128,7 @@ isSingleVar :: HptMap -> HsName -> Bool
 isSingleVar hptMap (HNmNr nr _) 
   = case getEnvVar hptMap nr of
       AbsPtr  _     -> True
+      AbsPtr0 _ _   -> True
       AbsPtr1 _ _   -> True
       AbsPtr2 _ _ _ -> True
       AbsNodes  _ -> False
@@ -162,7 +156,7 @@ SEM GrPatLam
                                                              , @loc.grTrf
                                                              , @lhs.subst 
                                                              )
-                                                        else let  (uniq2, names, newItems) = newNames @lhs.hptMap @lhs.maxConstrParameters @lhs.uniq @nm
+                                                        else let  (uniq2, names, newItems) = newNames @lhs.hptMap @lhs.uniq @nm
                                                                   newPat  =  GrPatLam_VarNode (map GrVar_Var names)
                                                                   newNode =  GrVal_VarNode    (map GrVal_Var names)
                                                              in ( uniq2

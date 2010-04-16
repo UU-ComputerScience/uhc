@@ -12,7 +12,7 @@
 %%]
 %%[(8 codegen grin) hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Values )
 %%]
-%%[(8 codegen grin) hs export(SillyAllocManageType(..))
+%%[(8 codegen grin) hs export(SillyAllocManageType(..), SilTp(..) )
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
@@ -36,3 +36,26 @@ data SillyAllocManageType
   | GCManaged
   deriving( Eq, Show, Ord )  
 %%]
+
+%%[(8 codegen grin) hs
+data SilTp
+  = SilTpTag
+  | SilTpWord
+  | SilTpPtr
+  | SilTpUnknown
+  | SilTpUnion
+  | SilTpOther
+  deriving( Eq, Ord )  
+  
+instance Show SilTp where
+  show SilTpTag   = "Tag"
+  show SilTpWord  = "Word"
+  show SilTpPtr   = "Ptr"
+  show SilTpUnknown   = "Unknown"
+  show SilTpUnion   = "Union"
+  show SilTpOther = "Other"  
+  
+%%]
+
+
+
