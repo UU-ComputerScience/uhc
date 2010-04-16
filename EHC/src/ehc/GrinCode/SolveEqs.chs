@@ -34,6 +34,7 @@ type AbstractEnv s  = STArray s Variable AbstractValue
 
 eqOnceApplicable :: Equation -> Bool
 eqOnceApplicable (IsBasic _) = True
+eqOnceApplicable (IsImpossible _) = True
 eqOnceApplicable (IsTags _ _) = True
 eqOnceApplicable (IsPointer _ _ _) = True
 eqOnceApplicable (IsConstruction _ _ _ _) = True
@@ -84,6 +85,7 @@ envChanges :: Equation -> STArray s Variable (Bool,Bool,AbstractValue) -> ST s [
 envChanges equat env
   = case equat of
       IsBasic         d            -> return [(d, AbsBasic)]
+      IsImpossible    d            -> return [(d, AbsImposs)]
       
       IsTags          d ts         -> return [(d, AbsTags (Set.fromList ts))]
       
@@ -104,6 +106,7 @@ envChanges equat env
                                                                      -- AbsNodes ns -> AbsPtr1 ns Set.empty
                                                                      -- AbsNodes ns -> AbsPtr2 (Nodes Map.empty) Set.empty (Set.singleton v)
                                                                      AbsBottom   -> AbsBottom
+                                                                     AbsImposs   -> AbsBottom
                                                                      _           -> error ("IsUpdate v=" ++ show v ++ " av=" ++ show av)
                                                         )] 
                                                    else []

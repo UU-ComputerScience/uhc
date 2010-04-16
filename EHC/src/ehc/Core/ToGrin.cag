@@ -593,7 +593,8 @@ SEM CBind
                                             =   let  (nmRes:nmEvalRes:nmArgL) = take (length @argTyL + 2) (map (uidQualHNm @lhs.modNm) (iterate uidNext @lUniq))
                                                      nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
                                                 in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
-                lhs         .   grBindL     =   let  isOpaque tn   = maybe True null (dataGamTagsOfTy tn @lhs.dataGam)
+                lhs         .   grBindL     =   let  isOpaque tn   = maybe False null (dataGamTagsOfTy tn @lhs.dataGam)
+                                                     isError  tn   = maybe True (const False)  (dataGamTagsOfTy tn @lhs.dataGam)
                                                      isEnumable tn = maybe False dgiIsEnumable (dataGamLookup tn @lhs.dataGam)
                                                      mbAnnot tn    = tyNmIsUnboxedForFFIRes @lhs.opts tn
                                                      annotOfUnboxed box annot t
@@ -643,6 +644,9 @@ SEM CBind
                                                                                          (GrExpr_Unit (GrVal_EnumNode v) GrType_None)
                                                                        else GrExpr_Seq e (GrPatLam_PtrAnnot nm @nmRes)
                                                                                          (GrExpr_Unit (GrVal_PtrNode v) GrType_None)
+                                                              -- Error
+                                                              else if isError resTy
+                                                              then e
                                                               -- Opaque
                                                               else if isOpaque resTy
                                                               then GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)
