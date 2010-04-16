@@ -96,11 +96,13 @@ ATTR Value
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
                                                      ( (@loc.globalResStr,@loc.resConst) : @functions.constants ) 
+                                                     [NamedTy "strty" (Struct [@lhs.intType, @lhs.intType])]
                                                      @loc.globals 
-                                                     ( stdlibPrintfFuncDecl : gcInitFuncDecl
-                                                     : gcPrintStatsFuncDecl
-                                                     : gcMallocFuncDecl @lhs.intType
-                                                     : gcMallocUncollectableFuncDecl @lhs.intType
+                                                     ( stdlibPrintfFuncDecl 
+                                                     -- : gcInitFuncDecl
+                                                     -- : gcPrintStatsFuncDecl
+                                                     -- : gcMallocFuncDecl @lhs.intType
+                                                     -- : gcMallocUncollectableFuncDecl @lhs.intType
                                                      : primPatternMatchFailureFuncDecl 
                                                      : gcRootFuncDecl
 

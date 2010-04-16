@@ -17,6 +17,7 @@
 DATA LLVMModule
   |  LLVMModule  comments   : {[String]}
                  constants  : {[(LLVMVar,LLVMVar)]}
+                 namedTys   : {[LLVMVar]}
                  globals    : {[LLVMVar]} 
                  fwdDecls   : LLVMFunctionDecls
                  funcs      : LLVMFunctions

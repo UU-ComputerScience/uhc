@@ -60,6 +60,9 @@ SEM LLVMModule
                                        ppAssignment dst ("internal constant" >#< show src)
                                      ) @constants
                                  )
+                             >-< ""
+                             >-< ppNamedTyList @namedTys
+                             >-< ""
                              >-< ppGlobalList @globals
                              >-< ""
                              >-< ppPrependList "declare" @fwdDecls.prettySigs
@@ -129,10 +132,20 @@ SEM LLVMExpression
 --------------------------------------------------------------------------------
 -- Print functions
 --------------------------------------------------------------------------------
+
+ppNamedTy :: LLVMVar -> PP_Doc
+ppNamedTy var =
+      getName var >#< "= type" 
+                 >#< show (getType var)
+
+ppNamedTyList :: [LLVMVar] -> PP_Doc
+ppNamedTyList = 
+  vlist.(map ppNamedTy)
+
 ppGlobal :: LLVMVar -> PP_Doc
-ppGlobal var =
-  getName var >#< "= internal global" 
-              >#< show (pLower $ getType var) >#< "zeroinitializer"
+ppGlobal var            =
+      getName var >#< "= internal global" 
+                  >#< show (pLower $ getType var) >#< "zeroinitializer"
 
 ppGlobalList :: [LLVMVar] -> PP_Doc
 ppGlobalList = 
