@@ -73,8 +73,6 @@ ATTR GrExpr GrAlt GrAltL [ numberParameters : {Int}
                          | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName}
                          ]
 
-ATTR AllBind AllGrExpr AllGlobal [ maxConstrParameters : {Int} | | ]
-
 %%]
 
 %%[(8 codegen grin)
@@ -123,8 +121,7 @@ SEM GrBind
 
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagAliases @lhs.opts)                       -- aliases
-                                (tagConstants @lhs.opts (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
+                                (tagConstants @lhs.opts @bindL.genArities (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names                               -- variables
                                 ( @loc.initFunction : @bindL.functions )     -- functions
 
@@ -133,7 +130,6 @@ SEM GrModule
                                                     ++ @globalL.initStats2
                                                     ++ [ Statement_Return [] Nothing ]
                                                     )
-        loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
         loc . optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
 
 
@@ -152,8 +148,8 @@ SEM GrBind
                                  ]
 
           expr . numberParameters = length @argNmL
-          loc  . locals  = filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet)
-          
+          loc  . locals  = map (\nm -> (nm, getSilTp @lhs.hptMap nm))
+                               ( filter (\(HNmNr n _)->n/=0) (Set.toList @expr.localsSet) )
 
 SEM GrExpr
  | Seq     lhs.stats  = @expr.stats
@@ -196,7 +192,6 @@ SEM GrExpr
                             vs = @val.values
                             n  = length vs
                             absval = absFetch @lhs.hptMap ph
-                            -- n2 = @lhs.maxConstrParameters   -- always a safe approximation
                             -- n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))  -- wrong, because H-tags can be overwritten with non-final tags
                             n2 = 1 +  maximum0 (map (length . snd) (getNodes absval))
                         in Statement_Comment ["Store"]
@@ -313,13 +308,13 @@ SEM GrVal
  | LitInt     lhs.values = error ("ToSilly: LitInt values" ++ show @int)
  | LitStr     lhs.values = error ("ToSilly: LitStr values" ++ show @str)
  -- | Tag        lhs.values = error ("ToSilly: Tag values" ++ show @tag.value)
-
+ 
  | BasicNode  lhs.value  = error "ToSilly: BasicNode value"
 -- | EnumNode   lhs.value  = error "ToSilly: EnumNode value"
  | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
  | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
 -- | Empty      lhs.value  = error "ToSilly: Empty value"
- | Empty      lhs.value  = Value_Label ""
+ | Empty      lhs.value  = Value_Label [] 0
 %%[[10
  | NodeAdapt  lhs.value  = error "ToSilly: NodeAdapt value"
               lhs.values = error "ToSilly: NodeAdapt values"
@@ -441,14 +436,26 @@ SEM GrTag
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Collect tag arities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin)
+
+ATTR AllBind [ | | genArities USE {`Map.union`} {Map.empty}: {Map.Map Int Int}  ]
+
+SEM GrBind
+  | Bind   lhs.genArities = Map.singleton (getNr @nm) (length @argNmL)
+  | Arity  lhs.genArities = Map.singleton (getNr @nm) @arity
+
+%%]
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Auxiliary Haskell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
 
-
-tagArity (GrTag_Con ann _ _) = gtannArity ann
 
 assignments :: String -> [Variable] -> [Variable] -> [Value] -> [Statement]
 assignments what vars1 vars2 values
@@ -476,11 +483,8 @@ switchStatement gendef scrut alts
 
 
 
-
-
-
-isRealVal (Value_Label []) = False
-isRealVal _                = True
+isRealVal (Value_Label [] _) = False
+isRealVal _                  = True
 
 
 
@@ -546,58 +550,64 @@ arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
 
-
+neededTags :: EHCOpts -> [(String,[SilTp])]
 neededTags opts 
   =  let nameSupplier = ehcOptBuiltinNames opts
-     in  [ (ehbnBoolFalse          nameSupplier, "False")
-         , (ehbnBoolTrue           nameSupplier, "True" )
-         , (ehbnDataListAltCons    nameSupplier, "Cons" )
-         , (ehbnDataListAltNil     nameSupplier, "Nil"  )
-         , (ehbnDataOrderingAltEQ  nameSupplier, "EQ"   )
-         , (ehbnDataOrderingAltGT  nameSupplier, "GT"   )
-         , (ehbnDataOrderingAltLT  nameSupplier, "LT"   )
+     in  [ ("Ccomma0"                                                           , [])
+         , ('C' : hsnShowAlphanumericShort (ehbnBoolFalse          nameSupplier), [])
+         , ('C' : hsnShowAlphanumericShort (ehbnBoolTrue           nameSupplier), [])
+         , ('C' : hsnShowAlphanumericShort (ehbnDataListAltCons    nameSupplier), [SilTpPtr,SilTpPtr])
+         , ('C' : hsnShowAlphanumericShort (ehbnDataListAltNil     nameSupplier), [])
+         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltEQ  nameSupplier), [])
+         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltGT  nameSupplier), [])
+         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltLT  nameSupplier), [])
          ]
-
-tagAliases :: EHCOpts -> [(String,String)]
-tagAliases opts
-  =  ( "Ccomma0", "RTS_Unit" )
-     : [ ("C" ++ hsnShowAlphanumericShort x, "RTS_"++y)
-       | (x,y) <- neededTags opts
-       ]
-
-
-tagConstants :: EHCOpts -> Set.Set GrTag -> [(String,Int)]
-tagConstants opts tagset
- = let f ((t,_),_) = showGrTag t
-       predef = -- Make sure these are the same as in src/rts/C/prim-const.ch
-                [ "Ccomma0"
-                ]
-                ++
-                [ "C" ++ hsnShowAlphanumericShort x
-                | (x,y) <- neededTags opts
-                ]
 %%[[98
-                ++
-                [ "CUHC_IOBase_AppendBinaryMode"
-                , "CUHC_IOBase_AppendMode"                
-                , "CUHC_IOBase_ReadBinaryMode"                
-                , "CUHC_IOBase_ReadMode"                
-                , "CUHC_IOBase_ReadWriteBinaryMode"                
-                , "CUHC_IOBase_ReadWriteMode"                
-                , "CUHC_IOBase_WriteBinaryMode"                
-                , "CUHC_IOBase_WriteMode"
-                ]
+         ++
+         [ ("CUHC_IOBase_AppendBinaryMode"   , [])
+         , ("CUHC_IOBase_AppendMode"         , [])
+         , ("CUHC_IOBase_ReadBinaryMode"     , [])
+         , ("CUHC_IOBase_ReadMode"           , [])
+         , ("CUHC_IOBase_ReadWriteBinaryMode", [])
+         , ("CUHC_IOBase_ReadWriteMode"      , [])
+         , ("CUHC_IOBase_WriteBinaryMode"    , [])
+         , ("CUHC_IOBase_WriteMode"          , [])
+         ]
 %%]]
-       inprog = map showGrTag (Set.toAscList (Set.insert GrTag_Hole tagset))
-   in  zip (inprog \\ predef) [length predef..]
 
-showGrTag :: GrTag -> String
-showGrTag (GrTag_Con a i nm) = "C" ++ hsnShowAlphanumericShort nm
-showGrTag (GrTag_Fun nm) = "F" ++ hsnShowAlphanumericShort nm
-showGrTag (GrTag_PApp n nm) = "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm
-showGrTag (GrTag_App nm) = "A" ++ hsnShowAlphanumeric nm
-showGrTag (GrTag_Rec) = "GrTag:Rec"
-showGrTag (GrTag_Hole) = "HOLE"
-showGrTag (GrTag_Unboxed) = "UNBOXED"
+
+tagConstants :: EHCOpts -> Map.Map Int Int -> Set.Set GrTag -> [(String,Int,[SilTp])]
+tagConstants opts aritymap tagset
+ = let predef = neededTags opts
+       inprog = map (showGrTag aritymap) (Set.toAscList (Set.insert GrTag_Hole tagset))
+-- in  zip (inprog \\ predef) [length predef..]
+   in  zip23 (predef ++ (inprog \\ predef)) [0..]
+
+zip23 :: [(a,b)] -> [c] -> [(a,c,b)]
+zip23 [] _ = []
+zip23 ((x,y):xys) (z:zs) = (x,z,y) : zip23 xys zs
+
+showGrTag :: Map.Map Int Int -> GrTag -> (String, [SilTp])
+showGrTag _ (GrTag_Con a i nm)   =  let nameRepr = 'C' : hsnShowAlphanumericShort nm 
+                                    in  ( nameRepr, replicate (gtannArity a) (if nameRepr=="CInt" || nameRepr=="CChar" then SilTpWord else SilTpPtr))
+showGrTag m t@(GrTag_Fun nm)     =  ( "F" ++ hsnShowAlphanumericShort nm                   , replicate (tagArity t m) SilTpPtr )
+showGrTag m t@(GrTag_PApp n nm)  =  ( "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm  , replicate (tagArity t m) SilTpPtr )
+showGrTag m t@(GrTag_App nm)     =  ( "A" ++ hsnShowAlphanumeric nm                        , replicate (tagArity t m) SilTpPtr )
+showGrTag m t@(GrTag_Rec)        =  ( "GrTag:Rec"                                          , [] )
+showGrTag m t@(GrTag_Hole)       =  ( "HOLE"                                               , [] )
+showGrTag m t@(GrTag_Unboxed)    =  ( "UNBOXED"                                            , [SilTpWord] )
+
+
+getSilTp hptMap (HNmNr n _)
+  =  case getEnvVar hptMap n
+     of   (AbsBasic)       -> SilTpWord
+          (AbsTags _ )     -> SilTpTag
+          (AbsPtr  _ )     -> SilTpPtr
+          (AbsPtr0  _ _)   -> SilTpPtr
+          (AbsPtr1  _ _)   -> SilTpPtr
+          (AbsPtr2  _ _ _) -> SilTpPtr
+          (AbsBottom)      -> SilTpUnknown
+          (AbsUnion _)     -> SilTpUnion
+          _                -> SilTpOther
 
 %%]

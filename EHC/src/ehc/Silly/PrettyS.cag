@@ -146,7 +146,7 @@ SEM SilModule
                                 
 
                                 
-                loc.constantMap = Map.fromList (("UNBOXED",1) : ("ANY",0) : @constants)
+                loc.constantMap = Map.fromList (map (\(x,y,z)->(x,y))(("UNBOXED",1,[]) : ("ANY",0,[]) : @constants))
 
 
 
@@ -327,7 +327,7 @@ SEM SilModule
 SEM Function
   | Function   loc.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
                             >-< "{"
-                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map (hsnShowAlphanumeric . fst) @locals) >#< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
 

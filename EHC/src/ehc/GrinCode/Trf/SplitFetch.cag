@@ -345,6 +345,7 @@ checkSingleTag hptMap p = -- trace ("checkSingle " ++ show p) $
 isPtr hptMap p = case p of 
                     (HNmNr i _) -> case getEnvVar hptMap i of
                                      (AbsPtr  _    ) -> True
+                                     (AbsPtr0 _ _  ) -> True
                                      (AbsPtr1 _ _  ) -> True
                                      (AbsPtr2 _ _ _) -> True
                                      _               -> False
@@ -391,19 +392,6 @@ absFetchField hptmap nm i = let j = i-1
 
 %%]
 
-
-%%[(8 codegen grin) hs
-
-tagArity :: GrTag -> Map.Map Int Int -> Int
-tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
-tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
-tagArity  GrTag_Unboxed       _        = 1
-tagArity  GrTag_Hole          _        = 0
-tagArity t                    _        = error ("SplitFetch: tagArity " ++ show t)
-
-%%]
 
 %%[(8 codegen grin)
 

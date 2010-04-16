@@ -40,6 +40,11 @@ eqOnceApplicable (IsConstruction _ _ _ _) = True
 eqOnceApplicable _ = False
 
 
+ptrOrigins :: AbstractValue -> [Int]
+ptrOrigins (AbsPtr0 _ xs) = Set.toList xs
+ptrOrigins _              = []
+
+
 -- During the fixed point iteration, we maintain an array that for each Variable stores:
 --   * A boolean that indicates whether the value was changed during the previous step
 --   * A boolean that indicates whether the value was changed during the current step
@@ -70,7 +75,7 @@ readAVifChanged env v
 -- When no changes are necessary, the list is empty.
 -- Only for the IsApplication equation, there list can contain multiple elements: the chage proper, and the "side-effects".
 --
--- Note that this function chooses the representation of Pointers: AbsPtr, AbsPtr1 or AbsPtr2.
+-- Note that this function chooses the representation of Pointers: AbsPtr, AbsPtr0, AbsPtr1 or AbsPtr2.
 -- When changing this, do so consistently in the IsPointer, IsUpdate and IsEqual case.
 -- When AbsPtr2 is chosen, also enable a line in the procEqs function further below, but this representation currently doesn't work.
 
@@ -83,6 +88,7 @@ envChanges equat env
       IsTags          d ts         -> return [(d, AbsTags (Set.fromList ts))]
       
       IsPointer       d t as       -> return [(d, AbsPtr (Nodes (Map.singleton t (map (maybe Set.empty Set.singleton) as))))]
+                                      -- return [(d, AbsPtr0 (Nodes (Map.singleton t (map (maybe Set.empty Set.singleton) as))) (if isFinalTag t then Set.empty else Set.singleton d) )]
                                       -- return [(d, AbsPtr1 (Nodes (Map.singleton t (map (maybe Set.empty Set.singleton) as))) Set.empty)]
                                       -- return [(d, AbsPtr2 (Nodes (Map.singleton t (map (maybe Set.empty Set.singleton) as))) Set.empty Set.empty)]
 
@@ -94,6 +100,7 @@ envChanges equat env
                                       ;  return (  if c1||c2 
                                                    then [(d, case av of
                                                                      AbsNodes ns -> AbsPtr ns
+                                                                     -- AbsNodes ns -> AbsPtr0 ns Set.empty
                                                                      -- AbsNodes ns -> AbsPtr1 ns Set.empty
                                                                      -- AbsNodes ns -> AbsPtr2 (Nodes Map.empty) Set.empty (Set.singleton v)
                                                                      AbsBottom   -> AbsBottom
@@ -108,6 +115,7 @@ envChanges equat env
                                       ;  return (  if c1||c2 
                                                    then [(d,  --  case av of
                                                               --       AbsPtr  _       -> 
+                                                              --       AbsPtr0 _ _     -> 
                                                                                           av
                                                               --       AbsPtr1 _ vs    -> AbsPtr1 (Nodes Map.empty) (Set.insert v vs)          -- not: Set.singleton v, bacause we want to maintain the transitive closure
                                                               --       AbsPtr2 _ vs ws -> AbsPtr2 (Nodes Map.empty) (Set.insert v vs) ws
@@ -166,6 +174,9 @@ envChanges equat env
           AbsPtr an        -> do { xw2 <- findFinalValue av
                                  ; return xw2
                                  } 
+          AbsPtr0 an _     -> do { xw2 <- findFinalValue av
+                                 ; return xw2
+                                 } 
           AbsPtr1 an vs    -> do { xw2 <- findFinalValue av
                                  ; zs <- mapM (readAV env) (Set.toList vs)
                                  ; avs <- mapM findFinalValue zs
@@ -179,6 +190,10 @@ envChanges equat env
     findFinalValue AbsBottom
       = return AbsBottom
     findFinalValue (AbsPtr (Nodes nodes))
+      = do { r <- findFinalValueForNodes nodes
+           ; return r
+           }
+    findFinalValue (AbsPtr0 (Nodes nodes) _)
       = do { r <- findFinalValueForNodes nodes
            ; return r
            }
@@ -272,8 +287,12 @@ procChange env (i,e1) =
       }
 
 
-solveEquations :: Int -> Equations -> Limitations -> (Int,HptMap)
-solveEquations lenEnv eqs lims =
+ttt :: STArray s Variable Bool -> ST s [(Variable,Bool)]
+ttt a = getAssocs a
+
+
+solveEquations :: Int -> [Int] -> Equations -> Limitations -> (Int,HptMap)
+solveEquations lenEnv multiplyUsed eqs lims =
     runST (
     do { 
        --; let eqsStr = unlines (map show eqs )
@@ -286,6 +305,9 @@ solveEquations lenEnv eqs lims =
 
        -- create array
        ; env     <- newArray (0, lenEnv-1) (True,False,AbsBottom)
+       -- ; shared  <- newArray (0, lenEnv-1) False
+
+       -- ; trace (show multiplyUsed) $ return ()
 
        ; let dependentsChanged (AbsPtr2 an vs ws)
                 =  do { cs <- mapM (readC env) ({- Set.toList vs ++ -} Set.toList ws)
@@ -317,12 +339,19 @@ solveEquations lenEnv eqs lims =
                   ; return ()
                   }
 
+       --; let procShare v
+       --        = do
+       --          { av <- readAV env v
+       --          ; mapM_ (\x -> writeArray shared x True) (ptrOrigins av)
+       --          }
+
        ; let (eqs1a, eqs1b) = partition eqOnceApplicable eqs
 
 
        ; let procEqs = do { mapM_ procEq eqs1b
                           -- ; mapM close [0..lenEnv-1]            -- enbable this line if the AbsPtr2 representation is chosen
                           ; r <- foldM shift 0 [0..lenEnv-1]
+                          -- ; mapM_ procShare multiplyUsed
                           ; return r
                           }
 
@@ -344,10 +373,15 @@ solveEquations lenEnv eqs lims =
 
        --; trace (unlines ("EXTENDED LIMITATIONS"   : map show lims2)) $ return ()
 
+
        ; mapM (procLimit env) lims2      
 
        --; ae  <- getAssocs env
        --; _ <- trace (unlines ("SOLUTION"      : map show (ae)))  $ return ()
+
+       -- ; ash  <- ttt shared
+       -- ; _ <- trace (unlines ("SHARED"      : map show ash))  $ return ()
+
       
        ; absEnv0 <- mapArray (\(_,_,a)->a) env
        ; absEnv  <- unsafeFreeze absEnv0
