@@ -58,7 +58,7 @@ SEM Function
               body.env       =  Map.empty
               body.allUseMap =  @body.useMap
               body.allDefMap =  @body.defMap
-              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | (nm,tp) <- @locals ]
 
 -- For each local variable, count
 --  * how often it is assigned to
