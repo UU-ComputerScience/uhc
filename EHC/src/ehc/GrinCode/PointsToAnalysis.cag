@@ -514,7 +514,7 @@ SEM GrExpr
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
                              InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
-                             _          -> error "HPT: Apply target should be a variable"
+                             _          -> [] <<< (const  $ "HPT: Apply target should be a variable. Nm = " ++ show @nm)
 %%]
 
 

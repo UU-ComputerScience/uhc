@@ -3,6 +3,7 @@
 %%% usedIds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
 %%[(8 codegen grin)
 
 ATTR AllNT [ | | gathUsedIds USE {++} {[]} : {[Int]} ]
@@ -27,7 +28,7 @@ SEM GrModule
           bindL.usedIds   = @loc.gathUsedIds
   
 SEM GrBind
-  | Bind  lhs.gathUsedIds = if (not @loc.omitBind) 
+  | Bind  lhs.gathUsedIds = if True -- (not @loc.omitBind) 
                             then ((\i -> [i,i+1]) $ getNr @nm)
                                   ++ @expr.gathUsedIds ++ map getNr @argNmL
                             else []

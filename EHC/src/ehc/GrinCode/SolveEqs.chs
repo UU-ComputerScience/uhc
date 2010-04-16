@@ -242,7 +242,7 @@ envChanges equat env
 
 %%[(8 codegen grin)
 
-debug = True
+debug = False
 
 fixpoint procEqs env
   = countFixpoint 0

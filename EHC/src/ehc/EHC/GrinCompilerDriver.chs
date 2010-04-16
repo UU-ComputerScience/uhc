@@ -149,10 +149,11 @@ inlineCollectionIterated s useHpt = loop 0
         else transformAndWrite (flatten (fmap (\(a,b,c) -> a) . (grInline False Set.empty Map.empty)) ) (si ++ "a-Inline")
         
 %%]]  
+    -- ; let inChange = False
     ; esChange <- transformAndWrite evalStored (si ++ "b-EvalStored")
     ; auChange <- transformAndWrite (flatten applyUnited) (si ++ "c-ApplyUnited")
     ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (si ++ "d-unusedExprDropped")
-    -- ; transformCode         specConst          "SpecConst"        ; caWriteGrin (si ++"e-specConst")
+    ; transformCode         specConst          "SpecConst"        ; caWriteGrin (si ++"e-specConst")
     ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (si ++ "f-copyPropagation")
     ; ecChange <- transformAndWrite evalCase (si ++"g-evalCase")
     ; scChange <- transformAndWrite (flatten singleCase) (si ++ "h-singleCase")
@@ -249,7 +250,7 @@ doCompileGrin input opts
          ; caHeapPointsTo                                              ; caWriteHptMap "-130-hpt"
          ; transformCodeChgHpt   (inlineEA False)   "InlineEA" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-131a-evalinlined"
-         ; caContinuedHeapPointsTo
+         -- ; caContinuedHeapPointsTo
          -- ; caHeapPointsTo                                              ; caWriteHptMap "-131b-hpt"  -- Should be removed  
          -- ; inlineCollectionIterated "-132-" True
 
