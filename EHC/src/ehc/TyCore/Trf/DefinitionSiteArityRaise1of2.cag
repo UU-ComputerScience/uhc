@@ -17,7 +17,7 @@
 %%% >            in \[c, d] -> g c
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise}
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.DefinitionSiteArityRaise1of2}
 %%]
 
 %%[(8 tauphi) hs import({%{EH}TauPhi.Common})
@@ -56,8 +56,8 @@ PRAGMA nocycle
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen).tcmodTrfDefinitionSiteArityRaise hs
-cmodTrfDefinitionSiteArityRaise :: Module -> Module
-cmodTrfDefinitionSiteArityRaise tcmod
+cmodTrfDefinitionSiteArityRaise1of2 :: Module -> Module
+cmodTrfDefinitionSiteArityRaise1of2 tcmod
   =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
      in   cTrf_Syn_AGItf t
 %%]
@@ -75,13 +75,11 @@ ATTR AllCodeNT
   |
   | cTrf    : SELF
     worker  : SELF
-    wrapper : SELF
   ]
 ATTR AllExpr
-  [ updTyEnv      : {Map.Map HsName Ty}  -- New type environment (after updating/introduction of workers and wrappers)
+  [
   |
-  | updNewTyEnv   USE {`Map.union`} {Map.empty} : {Map.Map HsName Ty}
-    workWrap      USE {|||} {Ignored}           : {WorkWrap}
+  | workWrap      USE {|||} {Ignored}           : {WorkWrap}
     arrTail                                     : SELF
   ]
 ATTR Expr
@@ -90,26 +88,25 @@ ATTR Expr
   |
     workerArgs : {[Expr]}
     lamArgs    : {[[Expr]]}
+    nrArgs     : {[Int]}
     arrArgs    : {[Expr]}
-    appArgs    : {[Expr]}
   ]
 
 SEM ValBindL
   | Cons        lhs         .   cTrf        =   case @hd.workWrap of
-                                                  Ignored        -> @hd.cTrf    : @tl.cTrf
-                                                  Introduced     -> @hd.worker  : @hd.wrapper : @tl.cTrf
+                                                  Introduced     -> @hd.worker  : @hd.cTrf : @tl.cTrf
                                                   UpdatedWorker  -> @hd.worker  : @tl.cTrf
-                                                  UpdatedWrapper -> @hd.wrapper : @tl.cTrf
+                                                  _              -> @hd.cTrf    : @tl.cTrf
 
 -- Worker/Wrapper
 SEM ValBind
   | Val
                 loc         .   workWrap    =   case (@isWorker, @isWrapper, @hasWorker) of
                                                   (True,  False, True) -> UpdatedWorker
-                                                  (False, True,  True) -> UpdatedWrapper
                                                   (False, False, True) -> Introduced
                                                   (_,     _,     _)    -> Ignored
-                            .   hasWorker   =   list False (\x _ -> length x > 1) @l0.lamArgs
+                            -- .   hasWorker   =   list False (\x _ -> length x > 1) @l0.lamArgs
+                            .   hasWorker   =   list False (const . (> 1)) @l0.nrArgs
                             .   isWorker    =   "_worker" `isSuffixOf` (show @nm)
                             .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
                             .   workerNm    =   if @isWorker then @nm else hsnFromString (show @nm ++ "_worker")
@@ -117,17 +114,20 @@ SEM ValBind
 SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
+                lhs         .   nrArgs      =   0 : @body.nrArgs
   | Lam
                 lhs         .   lamArgs     =   list [[@arg.copy]] (\x xs -> (@arg.copy : x) : xs) @res.lamArgs
+                lhs         .   nrArgs      =   list [1] (\x xs -> (x + 1) : xs) @res.nrArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
+                lhs         .   nrArgs      =   []
 
 
 -- Worker
 SEM ValBind
   | Val
                 lhs         .   worker      =   ValBind_Val @workerNm @bindMeta.cTrf @mlev @workerType @workerBody
-                loc         .   workerType  =   workerType @l0.lamArgs @l1.arrArgs @l1.arrTail
+                loc         .   workerType  =   workerType @l0.nrArgs @l1.arrArgs @l1.arrTail
                             .   workerBody  =   workerBody @l0.workerArgs @l0.worker
 
 SEM Expr
@@ -143,45 +143,20 @@ SEM Expr
                 lhs         .   workerArgs  =   []
                             .   arrArgs     =   []
 
-
--- Wrapper
-SEM ValBind
-  | Val
-                lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
-                loc         .   wrapperBody =   if @workWrap == UpdatedWrapper then @l0.wrapper else newWrapperBody @workerNm @l0.lamArgs
-  | App
-                lhs         .   wrapper     =   @func.wrapper
-                loc         .   wt          =   @workerNm `Map.lookup` @lhs.tyEnv
-
 {
 -- This function will be in list-extras:Data.List.Extras
 list :: b -> (a -> [a] -> b) -> [a] -> b
 list b _ []     = b
 list _ f (x:xs) = f x xs
 
-workerType :: [[Expr]] -> [Expr] -> Expr -> Expr
+workerType :: [Int] -> [Expr] -> Expr -> Expr
 workerType []     _    res = res
-workerType (x:xs) args res = let (args1, args2) = splitAt (length x) args
+workerType (x:xs) args res = let (args1, args2) = splitAt x args
                              in Expr_Arrow (Expr_Seq $ concatMap unSeqs args1)
                                            (workerType xs args2 res)
 
 workerBody :: [Expr] -> Expr -> Expr
 workerBody args body = Expr_Lam (Expr_Seq $ concatMap unSeqs args) body
-
-newWrapperBody :: HsName -> [[Expr]] -> Expr
-newWrapperBody nm argss = foldr Expr_Lam body (concat argss)
-  where
-    body :: Expr
-    body = foldl Expr_App (Expr_Var nm) (map arg argss)
-
-    arg :: [Expr] -> Expr
-    arg args = Expr_Seq (map argSeq (concatMap unSeqs args))
-
-    argSeq :: ExprSeq1 -> ExprSeq1
-    argSeq (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
-    argSeq (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
-    argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
-    argSeq e                        = e
 }
 %%]
 

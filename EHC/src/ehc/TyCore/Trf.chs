@@ -25,7 +25,9 @@
 -- TyCore transformations
 %%[(8 codegen) import({%{EH}TyCore.Trf.EliminateExplicitLaziness})
 %%]
-%%[(8 codegen) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise})
+%%[(8 codegen) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise1of2})
+%%]
+%%[(8 codegen) import({%{EH}TyCore.Trf.DefinitionSiteArityRaise2of2})
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.IntroduceExplicitLaziness})
 %%]
@@ -33,7 +35,7 @@
 %%]
 %%[(8 codegen) import({%{EH}TyCore.Trf.RemoveLazyFunctions2of2})
 %%]
-%%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness})
+%%[(8 tauphi) import({%{EH}TyCore.Trf.OptimizeStrictness1of2}, {%{EH}TyCore.Trf.OptimizeStrictness2of2})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -95,7 +97,7 @@ trfTyCore opts modNm trftycore
           = do { t_initial
                ; t_introduceExplicitLaziness
                ; t_removeLazyFunctions
-               ; t_definitionSiteArityRaise
+              -- ; t_definitionSiteArityRaise
 %%[[(8 tauphi)
                ; t_optimizeStrictness
 %%]]
@@ -120,12 +122,12 @@ trfTyCore opts modNm trftycore
           where (n,h) = mkNewLevUID u
 
         t_initial                    = liftTyTrf "initial"                   $ id
-        t_definitionSiteArityRaise   = liftTyTrf "DefinitionSiteArityRaise"  $ cmodTrfDefinitionSiteArityRaise
+        t_definitionSiteArityRaise   = liftTyTrf "DefinitionSiteArityRaise"  $ cmodTrfDefinitionSiteArityRaise2of2 . cmodTrfDefinitionSiteArityRaise1of2
         t_eliminateExplicitLaziness  = liftTyTrf "EliminateExplicitLaziness" $ cmodTrfEliminateExplicitLaziness
         t_introduceExplicitLaziness  = liftTyTrf "IntroduceExplicitLaziness" $ cmodTrfIntroduceExplicitLaziness
         t_removeLazyFunctions        = liftTyTrf "RemoveLazyFunctions"       $ cmodTrfRemoveLazyFunctions2of2 . cmodTrfRemoveLazyFunctions1of2
 %%[[(8 tauphi)
-        t_optimizeStrictness         = liftTyTrf "OptimizeStrictness"        $ cmodTrfOptimizeStrictness
+        t_optimizeStrictness         = liftTyTrf "OptimizeStrictness"        $ cmodTrfOptimizeStrictness2of2 . cmodTrfOptimizeStrictness1of2
 %%]]
 %%]
 
