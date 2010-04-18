@@ -80,8 +80,8 @@ data IdAspect
   | IdAsp_Class_Def     {iaspDecl   :: !EH.Decl, iaspDeclInst :: !EH.Decl}
   | IdAsp_Inst_Inst
   | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
-  | IdAsp_Dflt_Def      -- for now defaults are ignored
-                        -- {iaspDecl   :: !EH.Decl                         }
+  | IdAsp_Dflt_Def      -- for now defaults without explicit class name are ignored
+                        {iaspDecl   :: !EH.Decl, iaspIgnore   :: !Bool  }
 %%]]
   | IdAsp_Any
 %%]
@@ -182,7 +182,7 @@ instance PP IdAspect where
   pp (IdAsp_Class_Def _ _)  = pp "class"
   pp  IdAsp_Inst_Inst       = pp "instance"
   pp (IdAsp_Inst_Def  _ _)  = pp "instance"
-  pp (IdAsp_Dflt_Def     )  = pp "default"
+  pp (IdAsp_Dflt_Def  _ _)  = pp "default"
 %%]]
   pp  IdAsp_Any             = pp "ANY"
 %%]
@@ -224,6 +224,12 @@ instance PP IdDefOcc where
 %%[[20
          >|< maybe empty (\ns -> "/" >|< ppBracketsCommas ns) (doccNmAlts o)
 %%]
+%%]
+
+%%[20 hs export(doccStrip)
+-- | Strip positional info
+doccStrip :: IdDefOcc -> IdDefOcc
+doccStrip o = o {doccRange = emptyRange}
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

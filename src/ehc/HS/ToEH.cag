@@ -206,8 +206,9 @@ SEM Declaration
                                         in  rngLift @range EH.Decl_InstanceIntro (Just @instancerefname) @expression.eh h
         lhs         .   eh          =   [@eh]
     | Default
-        loc         .   eh          =   undefined
-        lhs         .   eh          =   []
+        loc         .	ignoredecl	=	null @classrefnames
+                    .   eh          =   rngLift @range EH.Decl_Default @classrefname @types.eh
+        lhs         .   eh          =   [@eh]
 %%]
 %%[11
     | Type

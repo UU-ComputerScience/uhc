@@ -69,8 +69,8 @@ On ValBind
 
 %%[(8 codegen) hs export(cSubstAppValBind)
 cSubstAppValBind :: Bool -> CSubst -> ValBind -> ValBind
-cSubstAppValBind doDeepSubst cs (ValBind_Val n m l t e)
-  = ValBind_Val n m l t (cSubstAppExpr (defaultCSubstOpts {csoptsDoDeepSubst = doDeepSubst}) cs e Nothing)
+cSubstAppValBind doDeepSubst cs (ValBind_Val b m l e)
+  = ValBind_Val b m l (cSubstAppExpr (defaultCSubstOpts {csoptsDoDeepSubst = doDeepSubst}) cs e Nothing)
 %%]
 
 %%[(8 codegen) hs export(cAppCoeArg)

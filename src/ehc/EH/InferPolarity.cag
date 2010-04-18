@@ -257,6 +257,11 @@ SEM Decl
   | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
   | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
                 loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | InstanceIntro
+                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | Default     tyExprs     .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM Expr PatExpr
   | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
@@ -264,11 +269,6 @@ SEM Expr PatExpr
 SEM Expr
   | AppImpl LamImpl
                 argPr       .   knPolCtx            =   polContravariant
-
-SEM Decl
-  | InstanceIntro
-                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
-                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
 
 SEM TyExprs
   | Cons        hd          .   knPolCtx            =   @polCtxVar

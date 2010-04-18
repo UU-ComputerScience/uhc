@@ -291,10 +291,17 @@ data SimplifyResult p i g s
   = SimplifyResult
       { simpresSolveState		:: SolveState p i g s
       , simpresRedGraph			:: RedGraph p i
+
+      -- for debugging only:
+      , simpresRedAlts			:: [HeurAlts p i]
+      , simpresRedTrees			:: [[(i, Evidence p i)]]
       }
 
 emptySimplifyResult :: Ord p => SimplifyResult p i g s
-emptySimplifyResult = SimplifyResult emptySolveState emptyRedGraph
+emptySimplifyResult
+  = SimplifyResult
+      emptySolveState emptyRedGraph
+      [] []
 %%]
 
 %%[(9 hmtyinfer) export(simplifyResultResetForAdditionalWork)
@@ -312,25 +319,29 @@ mkEvidence
   :: ( Ord p, Ord i
      , PP i, PP p -- for debugging
      ) => Heuristic p i -> ConstraintToInfoMap p i -> RedGraph p i
-          -> (ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err])
+          -> ( ConstraintToInfoMap p i,InfoToEvidenceMap p i
+             , [Err]
+             , [(HeurAlts p i, [(i, Evidence p i)])]		-- debug info
+             )
 mkEvidence heur cnstrMp redGraph
-  = ( (cnstrMp `Map.intersection` remCnstrMp) `Map.union` remCnstrMp
-    , evidMp
+  = ( (cnstrMp `Map.intersection` remCnstrMp) `Map.union` remCnstrMp, evidMp
     , err
+    , dbg -- redAlts, redTrees									-- debug info
     )
-  where (remCnstrMp,evidMp,err)
-          = foldl (\(cm,em,err) c -> let (cm',em',err') = mk c in (cnstrMpUnion cm' cm, evidMpUnion em' em, err' ++ err))
-                  (Map.empty,Map.empty,[])
+  where (remCnstrMp,evidMp,err,dbg)
+          = foldl (\(cm,em,err,dbg) c -> let (cm',em',err',dbg') = mk c in (cnstrMpUnion cm' cm, evidMpUnion em' em, err' ++ err, dbg' ++ dbg))
+                  (Map.empty,Map.empty,[],[])
             $ Map.toList cnstrMp
         mk (Prove p, infos)
-          = (remCnstrMp,evidMp,[])
-          where redTrees   = heur infos $ redAlternatives redGraph p
+          = (remCnstrMp,evidMp,[],[(redAlts,redTrees)])
+          where redAlts    = redAlternatives redGraph p
+                redTrees   = heur infos redAlts
                 evidMp     = foldr (uncurry evidMpInsert) Map.empty redTrees
                 remCnstrMp = cnstrMpFromList
                              $ concatMap (\(i,t) -> zip (map Prove (evidUnresolved t)) (repeat i))
                              $ redTrees
         mk (c, infos)
-          = (cnstrMpFromList $ zip (repeat c) infos,Map.empty,[])
+          = (cnstrMpFromList $ zip (repeat c) infos,Map.empty,[],[])
 %%]
           where (redTrees,err) = heur infos $ (\v -> trp "XX" (p >#< ":" >#< v) v) $ redAlternatives redGraph p
 
@@ -381,9 +392,11 @@ chrSimplifyToEvidence
      , PP g, PP i, PP p -- for debugging
      ) => FIIn -> CHRStore p i g s -> Heuristic p i -> ConstraintToInfoMap p i -> ConstraintToInfoMap p i
           -> SimplifyResult p i g s
-          -> ((ConstraintToInfoMap p i,InfoToEvidenceMap p i,[Err]),SimplifyResult p i g s)
+          -> ( ( ConstraintToInfoMap p i, InfoToEvidenceMap p i, [Err] )
+             , SimplifyResult p i g s
+             )
 chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
-  = (mkEvidence heur cnstrInfoMpAll redGraph,SimplifyResult solveState redGraph)
+  = ((chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs),SimplifyResult solveState redGraph dbg1 dbg2)
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
         solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)
         cnstrInfoMpAll = cnstrMpUnion cnstrInfoMp cnstrInfoMpPrev
@@ -391,4 +404,7 @@ chrSimplifyToEvidence env chrStore heur cnstrInfoMpPrev cnstrInfoMp prevRes
           = addToRedGraphFromReductions (chrSolveStateDoneConstraints solveState)
             $ addToRedGraphFromAssumes cnstrInfoMpAll
             $ simpresRedGraph prevRes
+        (chrSolveRemCnstrMp,chrSolveEvidMp,chrSolveErrs,dbg)
+          = mkEvidence heur cnstrInfoMpAll redGraph
+        (dbg1,dbg2) = unzip dbg
 %%]

@@ -631,7 +631,10 @@ pDeclarationInstance
 %%[9
 pDeclarationDefault :: HSParser Declaration
 pDeclarationDefault
-  = (Declaration_Default . mkRange1) <$> pDEFAULT <*> pParens (pListSep pCOMMA pType)
+  = (Declaration_Default . mkRange1) <$> pDEFAULT <*> pMb (tokMkQName <$> qtycon)
+    <*> (   (:[]) <$> pTypeBaseCon
+        <|> pParens (pListSep pCOMMA pTypeBaseCon)
+        )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -687,9 +690,13 @@ pKindPrefix
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
+pTypeBaseCon :: HSParser Type
+pTypeBaseCon
+  =   mkRngNm Type_Constructor <$> gtycon_no_delims_commas -- gtycon_no_delims -- qtycon -- 
+
 pTypeBase :: HSParser Type
 pTypeBase
-  =   mkRngNm Type_Constructor <$> gtycon_no_delims_commas -- gtycon_no_delims -- qtycon -- 
+  =   pTypeBaseCon
 %%[[2
   <|> (Type_Wildcard . mkRange1) <$> pTDOT
 %%]]

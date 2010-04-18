@@ -207,9 +207,12 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
 fixedFtv mp = ftvSet $ map cnstrPred $ Map.keys mp
 
 debugInfo chrSimplifyResult
-  = (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s)
+  = (s,rg,chrSolveStateDoneConstraints s,chrSolveStateTrace s,redAlts,redTrees)
   where s  = simpresSolveState chrSimplifyResult
         rg = simpresRedGraph chrSimplifyResult
+        redAlts  = simpresRedAlts	chrSimplifyResult
+        redTrees = simpresRedTrees	chrSimplifyResult
+
 %%]
 
 %%[(9 hmtyinfer)
@@ -224,7 +227,7 @@ SEM AGItf
 %%]]
                                 )
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq_9_simplify}) @chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
-                            .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace)
+                            .   (chrSolveMainState,chrSolveMainRedGraph,chrSolveMainDoneConstraints,chrSolveMainTrace,_,_)
                                                     =   debugInfo @chrSimplifyResult
                             .   cannotProveCnstrMp  =   @chrSolveMainRemCnstrMp
                 loc         .   lUniq_9_simplify    :   UNIQUEREF gUniq
@@ -244,7 +247,7 @@ SEM Expr
 %%]]
                                 )
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveHereCnstrMp emptySimplifyResult
-                            .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace)
+                            .   (chrSolve1State,chrSolve1RedGraph,chrSolve1DoneConstraints,chrSolve1Trace,_,_)
                                                     =   debugInfo @chrSimplifyResult1
 
                             .   (toAssumeNeverCnstrMp,_)
@@ -259,7 +262,7 @@ SEM Expr
                                 )
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq4}) @lhs.chrStore (heurScopedEHC @chrProveFIIn) @toProveHereCnstrMpCanon @quantCnstrMp
                                                         $ simplifyResultResetForAdditionalWork @chrSimplifyResult1
-                            .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace)
+                            .   (chrSolve2State,chrSolve2RedGraph,chrSolve2DoneConstraints,chrSolve2Trace,chrSolve2RedAlts,chrSolve2RedTrees)
                                                     =   debugInfo @chrSimplifyResult2
                 loc         .   lUniq4              :   UNIQUEREF gUniq
                 loc         .   lUniq5              :   UNIQUEREF gUniq
@@ -276,7 +279,7 @@ SEM Decl
 %%]]
                                 )
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq7}) @lhs.chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveDeclsCnstrMp emptySimplifyResult
-                            .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace)
+                            .   (chrSolveDeclsState,chrSolveDeclsRedGraph,chrSolveDeclsDoneConstraints,chrSolveDeclsTrace,_,_)
                                                     =   debugInfo @chrDeclsSimplifyResult
 
                             .   toProveSuperCnstrMp =   cnstrMpUnions [@chrCtxtAssumeCnstrMp,@chrSuperProveCnstrMp]
@@ -287,7 +290,7 @@ SEM Decl
 %%]]
                                 )
                                                     =   simplify (@chrProveFIIn {fiUniq = @lUniq5}) @lhs.chrStore (heurScopedEHC @chrProveFIIn) Map.empty @toProveSuperCnstrMp emptySimplifyResult
-                            .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace)
+                            .   (chrSolveSuperState,chrSolveSuperRedGraph,chrSolveSuperDoneConstraints,chrSolveSuperTrace,_,_)
                                                     =   debugInfo @chrSuperSimplifyResult
 
                             .   toAssumeNeverCnstrMp

@@ -74,6 +74,14 @@ mentIsCon e = mentKind e == IdOcc_Data || mentKind e == IdOcc_Class
 
 %%]
 
+%%[20 export(mentrelStrip)
+mentStrip :: ModEnt -> ModEnt
+mentStrip e = e {mentRange = emptyRange}
+
+mentrelStrip :: ModEntRel -> ModEntRel
+mentrelStrip = Rel.mapDomRng (\(n,e) -> (n,mentStrip e))
+%%]
+
 %%[20
 deriving instance Typeable ModEnt
 deriving instance Data ModEnt

@@ -9,9 +9,18 @@
 
 %%[doesWhat doclatex
 Translate to untyped Core, erasing types.
+
+TBD:
+\begin{itemize}
+\item no body for Let.
+\item Let bindings only bind 1 Expr, not a sequence.
+\end{itemize}
 %%]
 
 %%[(8 codegen) hs module {%{EH}TyCore.ToCore} import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(EH.Util.Utils)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe)
@@ -29,7 +38,7 @@ Translate to untyped Core, erasing types.
 %%% Wrapping
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
 WRAPPER AGItf
 %%]
 

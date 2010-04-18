@@ -83,6 +83,7 @@ import Hugs.Array
 import Array
 #elif defined(__UHC__)
 import UHC.Array
+import UHC.Ix
 #endif
 
 -- | Data structures that can be folded.

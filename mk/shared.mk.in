@@ -139,6 +139,12 @@ SVN_REVISION			:= @SVN_REVISION@
 # Locations in source, build and install
 ###########################################################################################
 
+# suffix for build + (temporary) install locations + package names
+EHC_BUILD_SUFFIX	:= @EHC_BUILD_SUFFIX@
+ifneq ($(EHC_BUILD_SUFFIX),)
+EHC_BUILD_SUFFIX_DASH					:= -$(EHC_BUILD_SUFFIX)
+endif
+
 # location for binaries
 BIN_PREFIX			:= $(TOP_PREFIX)bin/
 BINABS_PREFIX		:= $(TOPABS_PREFIX)bin/
@@ -151,17 +157,17 @@ HDOCABS_PREFIX		:= $(TOPABS_PREFIX)hdoc/
 LIB_PREFIX			:= $(TOP_PREFIX)lib/
 
 # location for cabal installed stuff (mainly libraries), and other build time installs, used when building ehc
-INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
-INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
-INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)@INPLACE_INSTALLFORBLD_DIR@/
+INSTALLFORBLD_PREFIX			:= $(TOP_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS_PREFIX			:= $(TOPABS_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
+INSTALLFORBLDABS2_PREFIX		:= $(TOPABS2_PREFIX)@INPLACE_INSTALLFORBLD_DIR@$(EHC_BUILD_SUFFIX_DASH)/
 INSTALLFORBLDABS_FLAG_PREFIX	:= $(INSTALLFORBLDABS2_PREFIX)ins-flg-
 INSTALLFORBLDABS_LIB_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)lib/
 INSTALLFORBLDABS_INC_PREFIX		:= $(INSTALLFORBLDABS_PREFIX)include/
 
 # location installed stuff, used when running ehc
-INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@
-INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@
-INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)@INPLACE_INSTALL_DIR@
+INSTALL_DIR						:= $(TOP_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS_DIR					:= $(TOPABS_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
+INSTALLABS2_DIR					:= $(TOPABS2_PREFIX)@INPLACE_INSTALL_DIR@$(EHC_BUILD_SUFFIX_DASH)
 
 INSTALL_PREFIX					:= $(INSTALL_DIR)/
 INSTALLABS_PREFIX				:= $(INSTALLABS_DIR)/
@@ -178,13 +184,13 @@ INSTALL_UHC_LIB_PREFIX	:= $(INSTALL_UHC_PREFIX)lib/
 INSTALL_UHC_INC_PREFIX	:= $(INSTALL_UHC_PREFIX)include/
 
 # location for building
-BLD_PREFIX			:= $(TOP_PREFIX)build/
-BLDABS_PREFIX		:= $(TOPABS_PREFIX)build/
+BLD_PREFIX			:= $(TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
+BLDABS_PREFIX		:= $(TOPABS_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
 BLD_BIN_PREFIX		:= $(BLD_PREFIX)bin/
 BLD_LIBUTIL_PREFIX	:= $(BLD_PREFIX)libutil/
 
 # location for barebones
-BARE_PREFIX			:= $(TOP_PREFIX)bare/
+BARE_PREFIX			:= $(TOP_PREFIX)bare$(EHC_BUILD_SUFFIX_DASH)/
 
 # location for doc (end products)
 DOC_PREFIX			:= $(TOP_PREFIX)doc/
@@ -195,8 +201,7 @@ TEST_REGRESS_SRC_PREFIX				:= $(TEST_SRC_PREFIX)regress/
 
 # location for testing, is done after cd to test src dir, hence these relative paths, must correspond to above dirs w.r.t. nr of dir levels
 TEST_TOP_PREFIX						:= ../../
-#TEST_BIN_PREFIX						:= $(TEST_TOP_PREFIX)bin/
-TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build/
+TEST_BLD_PREFIX						:= $(TEST_TOP_PREFIX)build$(EHC_BUILD_SUFFIX_DASH)/
 
 # name of subdirectory for shared ehc library artifacts
 EHCLIB_SHARED						:= @EHCLIB_SHARED@
@@ -459,6 +464,7 @@ FUN_GEN_CABAL		= \
 					echo   "Extensions:			$(subst $(space),$(comma),$(strip RankNTypes MultiParamTypeClasses FunctionalDependencies $(4)))" ; \
 					echo   "Synopsis:			$(strip $(5))" ; \
 					echo   "Exposed-Modules:	$(subst $(space),$(comma),$(strip $(6)))" ; \
+					echo   "Exposed:			False" ; \
 					echo   "C-Sources:			$(subst $(space),$(comma),$(strip $(7)))" ; \
 					echo   "Ghc-Options:		$(GHC_OPTS_WHEN_EHC) -fglasgow-exts" \
 					)

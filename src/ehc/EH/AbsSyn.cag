@@ -546,6 +546,8 @@ DATA Decl
   | InstanceIntro   mbNmElim        : {Maybe (HsName)}
                     expr            : Expr
                     prExpr          : PrExpr
+  | Default         nm              : HsName
+                    tyExprs         : TyExprs
 %%]
 
 %%[15

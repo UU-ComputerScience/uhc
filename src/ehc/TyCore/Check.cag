@@ -35,7 +35,7 @@ Matching of types to
 %%[(8 codegen) hs import(qualified {%{EH}Gam.Full} as G)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn},{TyCore/CommonSELF},{TyCore/CommonNm})
 WRAPPER
   AGItf
 %%]
@@ -269,7 +269,7 @@ Gather:
 ATTR AllValBind AllTyBind AllExprSeq1 AllPat Expr [ | | gathEnv USE {`envUnion`} {emptyEnv} : Env ]
 
 SEM ValBind
-  | Val         loc         .   gathEnv             =   envSingleton @nm @mlevHere @l1.t
+  | Val         loc         .   gathEnv             =   @bind.gathEnv -- envSingleton @nm @mlevHere @l1.t
 
 SEM ExprSeq1
   | L0Bind      loc         .   gathEnv             =   envSingleton @nm @mlevHere @l1.t
@@ -327,8 +327,9 @@ SEM Module
 
 SEM ValBind
   | Val         loc         .   mlevHere            =   @lhs.mlev + @mlev
+                bind        .   mlev                =   @mlevHere
                 l0          .   mlev                =   @mlevHere
-                l1          .   mlev                =   @mlevHere + 1
+                -- l1          .   mlev                =   @mlevHere + 1
 
 SEM Pat
   | Var         loc         .   mlevHere            =   @lhs.mlev
@@ -369,9 +370,9 @@ ATTR AllNT [ | | errs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 ATTR AllNT AGItf [ | | gathErrs USE {`Seq.union`} {Seq.empty} : ErrSq ]
 
 SEM ValBind
-  | Val         lhs         .   gathErrs            =   let e = Seq.unions [@l1.errs,@l0.errs,moutErrs @mout]
+  | Val         lhs         .   gathErrs            =   let e = Seq.unions [@bind.errs,@l0.errs,moutErrs @mout,Seq.fromList @seqLevelsErrL]
                                                         in  Seq.unions
-                                                              [ @l1.gathErrs, @l0.gathErrs
+                                                              [ @bind.gathErrs, @l0.gathErrs
                                                               , Seq.fromList $ rngLift emptyRange mkNestErr (ppValBind @t) $ Seq.toList e
                                                               ]
                             .   errs                =   Seq.empty
@@ -454,7 +455,7 @@ SEM Expr
                                                               (ts@(t:_),_     ) -> (t,match ts)
   
 SEM ValBind
-  | Val         loc         .   mout                =   tyMatch @mlevHere @l0.ty @l1.t
+  | Val         loc         .   mout                =   tyMatch @mlevHere @l0.ty @bind.ty -- @l1 -- .t
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -473,6 +474,34 @@ ATTR Expr [ | | doCast: DoCast ]
 SEM Expr
   | Unsafe      loc         .   doCast              =   \t -> (@toTy.t,moutErrs $ tyMatch @lhs.mlev t @fromTy.t)
   | * - Unsafe  loc         .   doCast              =   \t -> (tyErr "Check.Expr",Seq.empty)                                -- TBD: the rest
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type checking: extra checks
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Let bindings must be sequences, only 1 level of sequencing (i.e. flattened).
+
+%%[(8 codegen)
+ATTR Expr AllExprSeq1 [ | | seqLevels: Int ]
+
+SEM Expr
+  -- | Seq1        lhs         .   seqLevels           =   1 + @seq1.seqLevels
+  | * - Seq Seq1
+                lhs         .   seqLevels           =   0
+
+SEM ExprSeq1L
+  | Nil         lhs         .   seqLevels           =   1
+  | Cons        lhs         .   seqLevels           =   1 + @hd.seqLevels
+
+SEM ValBind
+  | Val         loc         .   seqLevelsErrL       =   (if   @bind.seqLevels > 1
+                                                         then [rngLift emptyRange Err_TyCoreSeqLevels @bind.seqLevels 1 (ppTy @bind.ty)]
+                                                         else [])
+                                                        ++
+                                                        (if   @l0.seqLevels > 1
+                                                         then [rngLift emptyRange Err_TyCoreSeqLevels @l0.seqLevels 1 (ppTy @l0.t)]
+                                                         else [])
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -519,10 +548,6 @@ SEM MbExpr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Type checking: type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR AllExpr [ | | t: SELF ]
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% AG specific: Ordering dependencies + type defs

@@ -114,6 +114,7 @@ data HIInfo
       , hiiPolGam               :: !PolGam
       , hiiDataGam              :: !DataGam
       , hiiClGam                :: !Pr.ClGam
+      , hiiClDfGam              :: !ClassDefaultGam
       , hiiCHRStoreL            :: !ScopedPredStoreL
 %%]]
 %%[[(20 codegen)
@@ -134,7 +135,7 @@ emptyHIInfo
            [] []
            -- emptyHiSettings
 %%[[(20 hmtyinfer)
-           emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam []
+           emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam emptyGam []
 %%]]
 %%[[(20 codegen)
            Map.empty
@@ -256,6 +257,7 @@ sgetHIInfo opts = do
             ; pg        <- sget
             ; dg        <- sget
             ; cg        <- sget
+            ; cdg       <- sget
             ; cs        <- sget
 %%]]
 %%[[(99 codegen)
@@ -291,6 +293,7 @@ sgetHIInfo opts = do
                   , hiiPolGam               = pg
                   , hiiDataGam              = dg
                   , hiiClGam                = cg
+                  , hiiClDfGam              = cdg
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
@@ -344,6 +347,7 @@ instance Serialize HIInfo where
                   , hiiPolGam               = pg
                   , hiiDataGam              = dg
                   , hiiClGam                = cg
+                  , hiiClDfGam              = cdg
                   , hiiCHRStoreL            = cs
 %%]]
 %%[[(99 codegen)
@@ -376,6 +380,7 @@ instance Serialize HIInfo where
                 >> sput (gamFlatten pg)
                 >> sput (gamFlatten dg)
                 >> sput (gamFlatten cg)
+                >> sput (gamFlatten cdg)
                 >> sput cs
 %%]]
 %%[[(99 codegen)

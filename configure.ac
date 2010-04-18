@@ -170,6 +170,17 @@ AC_SUBST(AR_CMD,$arCmd)
 ### libtool
 REQUIRED_OPTIONAL_PROG_FOR_EH(libtoolStaticCmd,libtool)
 
+### 'with' option for build suffix
+AC_ARG_WITH(build-suffix,
+[AC_HELP_STRING([--with-build-suffix=<suffix for build locations>],
+                [Suffix for build locations and library names of globally visible cabal managed libraries.])],
+[ ehcBuildSuffix="$withval" ],)
+#if test "x$ehcBuildSuffix" != "x"
+#then
+#  ehcBuildSuffix="-$ehcBuildSuffix"
+#fi
+AC_SUBST(EHC_BUILD_SUFFIX, "$ehcBuildSuffix")
+
 ### 'with' option for gcc options
 AC_ARG_WITH(gcc-ehc-options,
 [AC_HELP_STRING([--with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>],
@@ -1061,6 +1072,7 @@ AC_CONFIG_FILES([test/benchmark/runbenchmark.pl])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
 AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h])
+AC_CONFIG_FILES([src/text2text/text2text.cabal])
 AC_OUTPUT
 
 echo
@@ -1068,6 +1080,7 @@ echo "Version: ${EH_VERSION_FULL}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
+echo "  build suffix                  : $ehcBuildSuffix"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
