@@ -330,6 +330,14 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
+  | TyCoreSeqLevels     lhs     .  pp   :=  ppMsgErr    "TyCore sequence nr of levels error"
+                                                        (    "#levels        :" >#< @hereLev
+                                                         >-< "must be #levels:" >#< @mustLev
+                                                         >-< "in             :" >#< @ty
+                                                        )
+%%[[99
+                                                        @range
+%%]]
   | NoCoerceDerivation  lhs     .  pp   =   ppMsgErr    "Cannot derive coercion for type application"
                                                         (    "type function:" >#< pp @func
                                                          >-< "type arg     :" >#< pp @arg

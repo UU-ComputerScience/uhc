@@ -86,6 +86,7 @@ initialEHSem opts fp
       , EHSem.polGam_Inh_AGItf          = initPolGam
       , EHSem.kiGam_Inh_AGItf           = initKiGam
       , EHSem.clGam_Inh_AGItf           = Pr.initClGam
+      , EHSem.clDfGam_Inh_AGItf         = emptyGam
       , EHSem.chrStore_Inh_AGItf        = initScopedPredStore
 %%]]
       }

@@ -181,7 +181,7 @@ evidMpToCore env evidMp
 
 %%[(9 codegen)
 getMetaDictMbPos :: C.Expr -> Maybe Int
-getMetaDictMbPos (C.Expr_Let _ (C.ValBind_Val _ (Just (_,C.MetaVal_Dict m)) _ _ _ : _) _) = m
+getMetaDictMbPos (C.Expr_Let _ (C.ValBind_Val _ (Just (_,C.MetaVal_Dict m)) _ _ : _) _) = m
 getMetaDictMbPos _ = Nothing
 %%]
 

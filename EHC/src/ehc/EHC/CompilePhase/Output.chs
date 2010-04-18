@@ -164,8 +164,8 @@ cpOutputHI suff modNm
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hiinfo = (ecuHIInfo ecu)
-                               { HI.hiiExps                 = mmiExps       mmi
-                               , HI.hiiHiddenExps           = mmiHiddenExps mmi
+                               { HI.hiiExps                 = {- mentrelStrip $ -} mmiExps       mmi
+                               , HI.hiiHiddenExps           = {- mentrelStrip $ -}  mmiHiddenExps mmi
                                , HI.hiiHasMain              = ecuHasMain ecu
                                , HI.hiiTargetFlavor         = ehcOptTargetFlavor opts
                                , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version

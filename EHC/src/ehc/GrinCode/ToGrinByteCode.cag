@@ -634,7 +634,7 @@ ATTR GrExpr [ | | primNrArgForIntl: Int ]
 
 SEM GrExpr
   | FFI         loc         .   mbGbPrim        =   lookupPrim BackendGrinByteCode @impEntNm
-                            .   optimForIntlPrim=   maybe False (\p -> gbprimNrArgs p == @argL.length {- && ehcOptOptimise @lhs.opts >= OptimiseNormal -}) @mbGbPrim
+                            .   optimForIntlPrim=   maybe False (\p -> gbprimNrArgs p == @argL.length {- && ehcOptOptimizationLevel @lhs.opts >= OptimizationLevel_Normal -}) @mbGbPrim
                 lhs         .   primNrArgForIntl=   if @optimForIntlPrim then @argL.length else 0
   | Seq         pat         .   primArgForIntl  =   @body.primNrArgForIntl > 0
                 lhs         .   primNrArgForIntl=   if @expr.primNrArgForIntl > 0 then @expr.primNrArgForIntl else @body.primNrArgForIntl - 1
@@ -657,7 +657,7 @@ SEM GrExpr
 %%[(8 codegen grin)
 SEM GrExpr
   | Unit        loc         .   (valIns,valStInc,retIsDone,mbUnitIntro,aftLdGBState)
-                                                =   case GB.gviLd @lhs.opts (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimise @lhs.opts >= OptimiseNormal -} }) @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
+                                                =   case GB.gviLd @lhs.opts (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimizationLevel @lhs.opts >= OptimizationLevel_Normal -} }) @nmEnv @ldStState @aftLblGBState @val.grvalIntro of
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState) | not @lhs.isSeqArgCtxt
                                                         -> (ins,inc,False,Nothing, gbState)
                                                       _ -> (Seq.empty,GB.ststFromDep 0,True,Just (UnitIntro @val.grvalIntro), @aftLblGBState)
@@ -713,7 +713,7 @@ SEM GrExpr
                                                       (GB.GrValIntroAlt_OnTOS ins inc _ _, gbState)
                                                         -> (ins Seq.:++: Seq.fromList [GB.fetchupdate], GB.ststFromDep 0, False, gbState)
   | Eval        loc         .   (valIns,valStInc,retIsDone,aftLdGBState)
-                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimise @lhs.opts >= OptimiseNormal -} }) @nmEnv @ldStState @aftLblGBState @nm
+                                                =   let (ins,inc,gbState) = GB.nmLd (GB.defaultLoadCtxt {GB.lcxOmitTOSLd = True {- ehcOptOptimizationLevel @lhs.opts >= OptimizationLevel_Normal -} }) @nmEnv @ldStState @aftLblGBState @nm
                                                     in  case @lhs.returnCtxt of
                                                           ReturnCtxt_Returns nrArgsOuter
                                                             -> (ins Seq.:++: eins, GB.ststFromDep 0, True, gbState)
@@ -788,7 +788,7 @@ SEM GrExpr
                                                           where inc = GB.ststDepth incSt 
                                                     in  case (@expr.mbUnitIntro,@pat.nmIntro) of
                                                           (Just (UnitIntro (GB.GrValIntro_Int i)),NmIntro_Single nmp annot)
-                                                            | {- ehcOptOptimise @lhs.opts >= OptimiseNormal && -} bsz <= Cfg.sizeofGrWord
+                                                            | {- ehcOptOptimizationLevel @lhs.opts >= OptimizationLevel_Normal && -} bsz <= Cfg.sizeofGrWord
                                                               -> (Seq.empty,GB.ststFromDep 0,Map.singleton nmp (GB.Val_Int i),@expr.gbState)
                                                               where bsz = grinBasicAnnotSizeInBytes annot
                                                           (Just (UnitIntro gvi),nmi)

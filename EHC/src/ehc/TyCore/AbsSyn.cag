@@ -293,10 +293,11 @@ SET AllMeta		= MetaVal MbMetaVal MetaBind Metas MbMetas
 
 %%[(8 codegen)
 DATA ValBind
-  | Val         nm              : {HsName}
+  | Val         -- nm              : {HsName}
+                bind			: Expr
                 bindMeta        : MbMetas
                 mlev			: MetaLev		-- the meta level of this def
-                l1              : Expr			-- its meta info/def/type 1 level higher
+                -- l1              : Expr			-- its meta info/def/type 1 level higher
                 l0              : Expr			-- the def on mlev level
 
 TYPE ValBindL   =   [ValBind]

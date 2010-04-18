@@ -12,6 +12,7 @@ SEM *
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
 		loc.tyVarMpDeclsL01				: {VarMp}
+		loc.gathTvKiVarMp1				: {VarMp}
 		loc.tyVarMpDeclsQuant			: {VarMp}
 		loc.chrSolve1SimpTyVarMp		: {VarMp}
 		loc.exTyKiVarMp2				: {VarMp}

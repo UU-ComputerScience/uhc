@@ -474,7 +474,7 @@ SEM GrExpr
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
                               InPtr   tvar       -> [ IsPointer tvar GrTag_Hole []  ]
                               InVar   tvar       -> [ IsImpossible tvar ]
-                              ti                 -> error ("FFI - unknown targetinfo " ++ show ti)
+                              -- ti                 -> error ("FFI - unknown targetinfo " ++ show ti)
 
 
 %%]

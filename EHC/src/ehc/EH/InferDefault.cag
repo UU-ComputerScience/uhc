@@ -1,0 +1,18 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Default declarations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Gather the declarations
+
+%%[(9 hmtyinfer)
+ATTR AllDecl [ | | gathClDfGam USE {`gamUnion`} {emptyGam}: ClassDefaultGam ]
+
+SEM Decl
+  | Default     lhs         .   gathClDfGam         =   gamSingleton @nm (ClassDefaultGamInfo @tyExprs.tyL)
+%%]
+
+Distribute the declarations
+
+%%[(9 hmtyinfer)
+ATTR NTPrf [ clDfGam: ClassDefaultGam | | ]
+%%]

@@ -1,0 +1,26 @@
+Text2Text documentation processing
+==================================
+
+See:
+
+http://www.cs.uu.nl/wiki/bin/view/Ehc/Text2TextDocumentation
+(part of http://www.cs.uu.nl/wiki/bin/view/Ehc/Documentation)
+
+
+Cabal installation
+==================
+
+In the UHC installation root directory:
+
+# configure UHC, and the cabal file for text2text
+> ./configure
+> make text2text
+
+Source files are now generated and ready for use by cabal.
+
+In this directory:
+
+> cabal configure
+> cabal build
+> cabal install
+> cabal clean

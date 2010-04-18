@@ -232,7 +232,7 @@ SEM FldBind
 
 SEM ValBind
   | Val			l0  		.	ppHow		=	howVert
-  				l1			.	ppHow		=	howHor
+  				bind		.	ppHow		=	howHor
 %%]
 
 %%[(8 codegen)
@@ -397,11 +397,11 @@ SEM Expr
 
 %%[(8 codegen)
 SEM ValBind
-  | Val         lhs         .   pp          =   ppDef (   ppNm @nm
+  | Val         lhs         .   pp          =   ppDef (   @bind.pp -- ppNm @nm
                                                       >|< (if @mlev == 0 then empty else " @" >|< @mlev)
                                                       >|< (maybe empty (\m -> " :" >#< m) @bindMeta.ppMb)
                                                       )
-                                                      ("::" >#< @l1.pp >-< "=" >#< @l0.pp)
+                                                      ({- "::" >#< @l1.pp >-< -} "=" >#< @l0.pp)
 
 SEM Alt
   | Alt         lhs         .   pp          =   ppDef (@pat.pp) (sym @lhs.symMp Sym_RArrow >#< @expr.pp)

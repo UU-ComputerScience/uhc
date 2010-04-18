@@ -688,6 +688,7 @@ RANLIB_CMD
 arCmd
 AR_CMD
 libtoolStaticCmd
+EHC_BUILD_SUFFIX
 GCC_EHC_OPTIONS
 CPP_EHC_OPTIONS
 GHC_EHC_OPTIONS
@@ -1364,6 +1365,9 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-build-suffix=<suffix for build locations>
+                          Suffix for build locations and library names of
+                          globally visible cabal managed libraries.
   --with-gcc-ehc-options=<gcc compiler options for compiling runtime and ehc's gcc invocation>
                           Additional options to pass to GCC when compiling
                           with EHC.
@@ -2564,6 +2568,20 @@ echo "$as_me: WARNING:
      Perhaps libtool is already installed, but not in your PATH?" >&2;}
 
   fi
+
+
+### 'with' option for build suffix
+
+# Check whether --with-build-suffix was given.
+if test "${with_build_suffix+set}" = set; then
+  withval=$with_build_suffix;  ehcBuildSuffix="$withval"
+fi
+
+#if test "x$ehcBuildSuffix" != "x"
+#then
+#  ehcBuildSuffix="-$ehcBuildSuffix"
+#fi
+EHC_BUILD_SUFFIX="$ehcBuildSuffix"
 
 
 ### 'with' option for gcc options
@@ -29270,6 +29288,8 @@ ac_config_files="$ac_config_files src/ehc/Config.chs src/helium/Utils/OSSpecific
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver])
 ac_config_headers="$ac_config_headers src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h"
 
+ac_config_files="$ac_config_files src/text2text/text2text.cabal"
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -29832,6 +29852,7 @@ do
     "src/rts/mm/config.ch") CONFIG_HEADERS="$CONFIG_HEADERS src/rts/mm/config.ch" ;;
     "ehclib/base/include/MachDeps.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/MachDeps.h" ;;
     "ehclib/base/include/HsBaseConfig.h") CONFIG_HEADERS="$CONFIG_HEADERS ehclib/base/include/HsBaseConfig.h" ;;
+    "src/text2text/text2text.cabal") CONFIG_FILES="$CONFIG_FILES src/text2text/text2text.cabal" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
@@ -29966,6 +29987,7 @@ RANLIB_CMD!$RANLIB_CMD$ac_delim
 arCmd!$arCmd$ac_delim
 AR_CMD!$AR_CMD$ac_delim
 libtoolStaticCmd!$libtoolStaticCmd$ac_delim
+EHC_BUILD_SUFFIX!$EHC_BUILD_SUFFIX$ac_delim
 GCC_EHC_OPTIONS!$GCC_EHC_OPTIONS$ac_delim
 CPP_EHC_OPTIONS!$CPP_EHC_OPTIONS$ac_delim
 GHC_EHC_OPTIONS!$GHC_EHC_OPTIONS$ac_delim
@@ -29989,7 +30011,6 @@ OPT_GHC_STANDARD_PACKAGES!$OPT_GHC_STANDARD_PACKAGES$ac_delim
 CABAL_BASE_LIB_DEPENDS!$CABAL_BASE_LIB_DEPENDS$ac_delim
 CABAL_EXTRA_LIB_DEPENDS!$CABAL_EXTRA_LIB_DEPENDS$ac_delim
 CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES!$CABAL_OPT_ALLOW_UNDECIDABLE_INSTANCES$ac_delim
-uuagcCmd!$uuagcCmd$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -30031,6 +30052,7 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
+uuagcCmd!$uuagcCmd$ac_delim
 UUAGC_CMD!$UUAGC_CMD$ac_delim
 gccCmd!$gccCmd$ac_delim
 GCC_CMD!$GCC_CMD$ac_delim
@@ -30094,7 +30116,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 61; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 62; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -30524,6 +30546,7 @@ echo "Version: ${EH_VERSION_FULL}"
 echo "Installation/build summary."
 echo "  host                          : $host"
 echo "  prefix                        : $prefix"
+echo "  build suffix                  : $ehcBuildSuffix"
 
 echo "Required:"
 echo "  uuagc is available?           : $uuagcExists"
