@@ -55,13 +55,13 @@ ATTR LLVMFunctionDecl
 SEM LLVMModule
   | LLVMModule  lhs.pretty = ppPrependList ";" @comments
                              >-< ""
+                             >-< ppNamedTyList @namedTys
+                             >-< ""
                              >-< vlist (
                                  map (\(dst,src) ->
                                        ppAssignment dst ("internal constant" >#< show src)
                                      ) @constants
                                  )
-                             >-< ""
-                             >-< ppNamedTyList @namedTys
                              >-< ""
                              >-< ppGlobalList @globals
                              >-< ""

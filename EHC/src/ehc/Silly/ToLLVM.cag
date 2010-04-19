@@ -95,8 +95,8 @@ ATTR Value
      
 SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
-                                                     ( (@loc.globalResStr,@loc.resConst) : @functions.constants ) 
-                                                     [NamedTy "strty" (Struct [@lhs.intType, @lhs.intType])]
+                                                     @loc.namedTys
+                                                     @loc.constants
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl 
                                                      -- : gcInitFuncDecl
@@ -121,6 +121,51 @@ SEM SilModule
                                   if sizeofPointer == 8
                                   then "%lld\n"
                                   else "%d\n"
+                loc.constants = (@loc.globalResStr,@loc.resConst) :
+
+                                 (GlobalVar "abc1" i8 , ArrayConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 @lhs.intType] (Array 3 @lhs.intType)) : 
+
+                                 (GlobalVar "abc2" i8 , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 @lhs.intType] (Struct [@lhs.intType,@lhs.intType,@lhs.intType ])) : 
+
+                                 (GlobalVar "abc3" i8 , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")  ) : 
+
+                                                                             -- Ccomma0 0 []
+                                                                             -- CFalse 1 []
+                                                                             -- CTrue 2 []
+                                                                             -- Ccolon 3 [Ptr,Ptr]
+                                                                             -- Csubbus 4 []
+                                                                             -- CEQ 5 []
+                                                                             -- CGT 6 []
+                                                                             -- CLT 7 []
+                                                                             -- CInt 8 [Word]
+                                                                             -- HOLE 9 []
+                                                                             -- Fplustildespec1 10 [Ptr]
+                                                                             -- Fplustildespec1tildespec1 11 []
+                                                                             -- Fuptotildespec2 12 [Ptr]
+                                                                             -- Fuptotildespec1 13 []
+                                 (GlobalVar "FDESCR" i8 , ArrayConstant [ StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 2 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
+                                 @functions.constants
+                
+                
+                                                                             -- example:                
+                                                                             -- @descrb = constant [3 x %struct.Descrb] [ %struct.Descrb { i32 2, i8 1 }
+                                                                             --                                         , %struct.Descrb { i32 3, i8 0 }
+                                                                             --                                         , %struct.Descrb { i32 4, i8 1 }]
+                                        
+                loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, i8])]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
                                  [ LLVMStatement_Call gcssInitFuncDecl StdCall []
@@ -184,8 +229,18 @@ SEM Statement
                 loc.gcrootCode = 
                                case @source.gcManaged of 
                                    GCManaged  -> @loc.gcfitsCode ++ 
-                                                 [LLVMStatement_Call gcRootFuncDecl StdCall [@loc.gcfitsVar, (StrConstant "null" (pLift i8))]]
-                                   NotManaged -> []                                      
+                                                 [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
+                                                                                            , (StrConstant "null" (pLift i8))
+                                                                                            -- , (StrConstant "null" (pLift i8))
+                                                                                            ] 
+                                                 ]
+
+                                                    -- example:                                                 
+                                                    --    call void @llvm.gcroot( i8** %fresh152
+                                                    --                          , i8* bitcast (%struct.Descrb* getelementptr ([3 x %struct.Descrb]* @descrb, i32 0, i32 1) to i8*) )     ; at index 1
+
+                                   NotManaged -> []       
+
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
                                [ LLVMStatement_Store @loc.fits1Var @loc.destptrVar ] ++

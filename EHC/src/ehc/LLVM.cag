@@ -107,6 +107,10 @@ data LLVMVar
   | Constant    Int    LLVMType
   -- | defines a string as global constant.
   | StrConstant String LLVMType
+  -- | defines an array constant.
+  | ArrayConstant [LLVMVar] LLVMType
+  -- | defines a struct constant.
+  | StructConstant [LLVMVar] LLVMType
   -- | defines a named type
   | NamedTy    String LLVMType
   deriving (Eq)
@@ -130,7 +134,9 @@ getName (GlobalVar x _)    = "@" ++ x
 getName (LocalVar  x _)    = "%" ++ x
 getName (Constant  x _)    = show x
 getName (StrConstant  x _) = x 
-getName (NamedTy  x _)    = "%" ++ x
+getName (ArrayConstant xs _) = "[ " ++ (concat $ Data.List.intersperse ", " (map show xs)) ++ " ]"
+getName (StructConstant xs _) = "{ " ++ (concat $ Data.List.intersperse ", " (map show xs)) ++ " }"
+getName (NamedTy  x _)     = "%" ++ x
 
 
 {-|
@@ -142,7 +148,9 @@ getPlainName (GlobalVar x _)    = x
 getPlainName (LocalVar  x _)    = x
 getPlainName (Constant  x _)    = show x
 getPlainName (StrConstant  x _) = x   
-getPlainName (NamedTy  x _)    = x
+getPlainName (ArrayConstant xs _) = "[ " ++ (concat $ Data.List.intersperse ", " (map show xs)) ++ " ]"
+getPlainName (StructConstant xs _) = "{ " ++ (concat $ Data.List.intersperse ", " (map show xs)) ++ " }"
+getPlainName (NamedTy  x _)     = x
 
 
 {-|
@@ -153,6 +161,8 @@ getType (GlobalVar _ y)    = y
 getType (LocalVar _ y)     = y
 getType (Constant _ y)     = y  
 getType (StrConstant _ y)  = y  
+getType (ArrayConstant _ y) = y
+getType (StructConstant _ y) = y
 getType (NamedTy _ y)     = y  
 
 
@@ -200,7 +210,7 @@ instance Show LLVMType where
   show (Pointer x)        = show x ++ "*"
   show (Array nr tp)      = "[ " ++ show nr ++ " x " ++ show tp ++ "]"       
   show (Struct tys)       = "{ " ++ (concat $ Data.List.intersperse ", " (map show tys)) ++ " }"
-  show (TyVar n)          = n
+  show (TyVar n)          = "%" ++ n
   show Label              = "label"
   show Void               = "void"
   
