@@ -2040,12 +2040,14 @@ instance Serialize CHRPredOcc where
 %%[[20
   sput (CHRPredOcc a b  ) = sput a >> sput b
 %%][99
-  sput (CHRPredOcc a b c) = sput a >> sput b >> sput c
+  -- Range info is stripped on the fly
+  sput (CHRPredOcc a b _) = sput a >> sput b
 %%]]
 %%[[20
   sget = liftM2 CHRPredOcc sget sget
 %%][99
-  sget = liftM3 CHRPredOcc sget sget sget
+  -- Range info is stripped on the fly
+  sget = liftM2 (\a b -> CHRPredOcc a b emptyRange) sget sget
 %%]]
 
 instance Serialize Impls where

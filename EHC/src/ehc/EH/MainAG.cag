@@ -176,10 +176,10 @@ WRAPPER AGItf
 %%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
 %%]
 
-%%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%[9 ag import({EH/GatherGam})
 %%]
 
-%%[20 ag import({EH/GatherGam})
+%%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
 %%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})

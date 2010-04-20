@@ -47,7 +47,7 @@
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
 %%]
 
-%%[97 hs import({%{EH}Base.Debug} as Debug, Debug.Trace)
+%%[97 hs import({%{EH}Base.Debug} as Debug)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

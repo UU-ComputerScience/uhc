@@ -150,6 +150,8 @@ contextBinChoice order = contextChoice (const local)
 %%% Determine whether ambiguous really is ambiguous
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+This should be merged with similar choices made at callsites.
+
 %%[(9 hmtyinfer)
 reallyAmbigEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
 reallyAmbigEvid p evs
@@ -278,7 +280,7 @@ cmpEqReds _                             RedHow_ByEqTrans                = P_LT
 cmpEqReds RedHow_ByEqSymmetry           _                               = P_GT
 cmpEqReds _                             RedHow_ByEqSymmetry             = P_LT
 %%]]
-cmpEqReds r1                            r2                              = error ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
+cmpEqReds r1                            r2                              = panic ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
 %%]
 
 %%[(9 hmtyinfer)
@@ -304,7 +306,7 @@ anncmpEHCScoped env ann1 ann2
       (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByScope _) [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
       (HeurRed (RedHow_ByScope _) _             , _                                        )  ->  P_LT
       (_                                        , HeurRed (RedHow_ByScope _) _             )  ->  P_GT
-      _                                                                                       ->  error ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
+      _                                                                                       ->  panic ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
 %%]
 
 If no full solution is possible, we just use the superclass relationship.
@@ -312,11 +314,12 @@ If no full solution is possible, we just use the superclass relationship.
 - We also allow for ambiguity here, randomly picking an alternative, the first. This is not good, but will work for now...
 
 %%[(9 hmtyinfer)
+ehcAllowForGeneralization :: HeurRed CHRPredOcc RedHowAnnotation -> Bool
+ehcAllowForGeneralization (HeurRed (RedHow_BySuperClass _ _ _) _) = True
+ehcAllowForGeneralization _                                       = False
+
 ehcOnlySuperReduce :: a -> [HeurRed CHRPredOcc RedHowAnnotation] -> [HeurRed CHRPredOcc RedHowAnnotation]
-ehcOnlySuperReduce _  reds
-  = take 1 $ filter p reds
-  where p (HeurRed (RedHow_BySuperClass _ _ _) _)  = True
-        p _                                        = False
+ehcOnlySuperReduce _  reds = take 1 $ filter ehcAllowForGeneralization reds
 %%]
 
 %%[(9 hmtyinfer) export(heurScopedEHC)
