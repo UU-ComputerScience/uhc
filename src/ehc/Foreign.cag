@@ -38,7 +38,7 @@ DERIVING AllForeign
 instance ForceEval ForeignEnt
 %%]
 
-%%[99 hs
+%%[94 hs
 instance Serialize ForeignEnt where
   sput (ForeignEnt_CCall     a) = sputWord8 0 >> sput a
   sput (ForeignEnt_PlainCall a) = sputWord8 1 >> sput a

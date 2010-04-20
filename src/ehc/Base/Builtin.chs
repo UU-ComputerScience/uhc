@@ -720,6 +720,7 @@ data EHBuiltinNames
 %%]]
 %%[[95
       , ehbnMap                         :: HsName
+      , ehbnDataList                    :: HsName
       , ehbnDataBool                    :: HsName
       , ehbnBoolAnd                     :: HsName
       , ehbnBoolOr                      :: HsName
@@ -766,7 +767,6 @@ data EHBuiltinNames
       , ehbnPackedStringToInteger       :: HsName
       , ehbnPrimIntToInteger            :: HsName
       , ehbnFromInteger                 :: HsName
-      , ehbnDataList                    :: HsName
 %%]]
 %%[[98
       , ehbnIO                          :: HsName
@@ -818,6 +818,7 @@ mkEHBuiltinNames f
 %%[[95
       , ehbnMap                         = f IdOcc_Type      hsnMap
       , ehbnDataBool                    = f IdOcc_Type      hsnBool
+      , ehbnDataList                    = f IdOcc_Type      hsnDataList
       , ehbnBoolAnd                     = f IdOcc_Val       hsnBoolAnd
       , ehbnBoolOr                      = f IdOcc_Val       hsnBoolOr
       , ehbnClassEq                     = f IdOcc_Class     hsnClassEq
@@ -863,7 +864,6 @@ mkEHBuiltinNames f
       , ehbnPackedStringToInteger       = f IdOcc_Val       hsnPackedStringToInteger
       , ehbnPrimIntToInteger            = f IdOcc_Val       hsnPrimIntToInteger
       , ehbnFromInteger                 = f IdOcc_Val       hsnFromInteger
-      , ehbnDataList                    = f IdOcc_Type      hsnDataList
 %%]]
 %%[[98
       , ehbnIO                          = f IdOcc_Type      hsnIO

@@ -1304,30 +1304,6 @@ SEM KindAnnotation
 ATTR Literal [ | | eh: SELF ]
 %%]
 
-%%[99
-%%]
-ATTR Literal [ | | base: Int ]
-
-SEM Literal
-    | Int
-        lhs         .   base        =   @base
-    | * - Int
-        lhs         .   base        =   0
-
-SEM Literal
-    | Int
-        lhs         .   eh          =   @value
-    | Char
-        lhs         .   eh          =   @value
-%%[55
-    | Float
-        lhs         .   eh          =   rngLift @range EH.Expr_IConst @value
-        value                    : String
-    | String
-        lhs         .   eh          =   rngLift @range XX
-        value                    : String -- without the quotes
-%%]
-
 %%[1
 ATTR Strings [ | | eh USE {:} {[]}: {[String]} ]
 %%]

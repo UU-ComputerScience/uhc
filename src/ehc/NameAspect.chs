@@ -49,6 +49,11 @@ data IdEH
 %%% Aspects
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Absence of strictness is essential, as some declarations are harmlessly cyclic,
+e.g. Data in:
+  class Data a where
+    gfoldl :: (forall d. Data d => d) -> a
+
 %%[1 hs export(IdAspect(..))
 data IdAspect
   = IdAsp_Val_Var
@@ -77,7 +82,7 @@ data IdAspect
 %%]]
 %%[[9
   | IdAsp_Class_Class
-  | IdAsp_Class_Def     {iaspDecl   :: !EH.Decl, iaspDeclInst :: !EH.Decl}
+  | IdAsp_Class_Def     {iaspDecl   ::  EH.Decl, iaspDeclInst ::  EH.Decl}
   | IdAsp_Inst_Inst
   | IdAsp_Inst_Def      {iaspDecl   ::  EH.Decl, iaspClassNm  :: !HsName}
   | IdAsp_Dflt_Def      -- for now defaults without explicit class name are ignored

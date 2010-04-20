@@ -159,7 +159,6 @@ ATTR
   AllDeriving
 %%]]
     [ | | idDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
-          -- idDefAspGam USE {`gamAddGam`} {emptyGam} : IdDefAspGam
     ]
 %%]
 
@@ -209,7 +208,8 @@ SEM Declaration
         loc             .   idDefOccGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idDefOccGamSigAsVar
-                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
+                                        -- =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
+                                        =   @where.idTySigDefOccGam
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
@@ -346,12 +346,29 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier def's: special case, only type signature names as variable, used inside class def only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR
+  AllDeclaration
+    [ | | idTySigDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
+    ]
+%%]
+
+%%[9
+SEM Declaration
+    | TypeSignature
+        loc             .   idTySigDefOccGam
+        								=   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifiers in scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 ATTR AllNT [ idGam: IdDefOccGam
-             -- idAspGam: IdDefAspGam
            | | ]
 %%]
 
@@ -362,7 +379,6 @@ ATTR
   Statement
 %%]
     [ | | idGam: IdDefOccGam
-          -- idAspGam: IdDefAspGam
     ]
 %%]
 
@@ -509,6 +525,7 @@ SEM Declaration
 %%]]
 %%[[9
     | Class
+        -- simpletype		.	idGam		=	@lhs.idGam		-- avoid cycles
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
                         .   idDefOccGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam

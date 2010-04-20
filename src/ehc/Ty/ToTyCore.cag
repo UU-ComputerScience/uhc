@@ -153,7 +153,7 @@ tyString opts = tyToTyCoreBase T.tyString
 tyString opts = tyBuiltinCon opts ehbnPrelString
 %%]
 
-%%[(97 codegen) hs export(tyBool)
+%%[(95 codegen) hs export(tyBool)
 tyBool opts = tyBuiltinCon opts ehbnDataBool
 %%]
 

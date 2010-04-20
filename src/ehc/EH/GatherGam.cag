@@ -42,8 +42,13 @@ SEM Expr
   | * - Let     lhs         .   gathClGam           =   emptyGam
 %%]
 
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathClDfGam: ClassDefaultGam ]
+%%[(9 hmtyinfer)
+ATTR
+  Expr
+%%[[20
+  AGItf
+%%]]
+    [ | | gathClDfGam: ClassDefaultGam ]
 
 SEM Expr
   | Let         lhs         .   gathClDfGam         =   @body.gathClDfGam `gamUnion` @decls.gathClDfGam
