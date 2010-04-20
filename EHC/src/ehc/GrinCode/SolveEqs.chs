@@ -192,6 +192,8 @@ envChanges equat env
 
     findFinalValue AbsBottom
       = return AbsBottom
+    findFinalValue AbsImposs
+      = return AbsImposs
     findFinalValue (AbsPtr (Nodes nodes))
       = do { r <- findFinalValueForNodes nodes
            ; return r
