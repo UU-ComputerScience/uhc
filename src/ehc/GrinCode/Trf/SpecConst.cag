@@ -25,13 +25,12 @@ specConst :: [GrModule] -> GrModule -> GrModule
 specConst imports grmod
   = let ext    = existingSpecs grmod
         exts   = Map.unionsWith Map.union (ext : map existingSpecs imports)
-        maxNr  = maximum (0 : concatMap Map.elems (Map.elems ext))
         consts = Map.unionsWith (panic "SpecConst.specConst: constants")  $ map allConsts   (grmod : imports)
         binds  = Map.unionsWith (\a b -> panic $ "SpecConst.specConst: bindings: " ++ show a ++ " " ++ show b ++ " | " ++ show grmod ++ "/" ++ show imports)   $ map allBindings (grmod : imports)
         t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
                          (Inh_GrAGItf
                           { startExisting_Inh_GrAGItf = exts
-                          , startSpecNmbr_Inh_GrAGItf = maxNr + 1
+                          , startSpecNmbr_Inh_GrAGItf = maxExisting ext + 1
                           , startConstMap_Inh_GrAGItf = consts
                           })
         toBeSpec   = toBeSpec_Syn_GrAGItf t
@@ -50,11 +49,14 @@ plakBindings :: GrModule -> [GrBind] -> GrModule
 plakBindings (GrModule_Mod nm globl bindl iets) binds
   = GrModule_Mod nm globl (bindl ++ binds) iets
 
+maxExisting :: Existing -> Int
+maxExisting = maximum . (0 :) . map fst . concatMap Map.elems . Map.elems
+
 existingSpecs :: GrModule -> Existing
 existingSpecs (GrModule_Mod _ _ bindl _) = Map.unionsWith Map.union $ map ex bindl
   where ex (GrBind_Bind nm ann args bod)
           = case ann of
-              GrBindAnnSpecialized nmOrig num argsSpec -> Map.singleton nm (Map.singleton argsSpec num)
+              GrBindAnnSpecialized nmOrig num argsSpec -> Map.singleton nmOrig (Map.singleton argsSpec (num,nm))
               _                                        -> Map.empty
         ex _
           = Map.empty
@@ -72,7 +74,7 @@ allConsts (GrModule_Mod _ globl _ _) = Map.unionsWith (panic "SpecConst.allConst
   where cs (GrGlobal_Global nm val)  = Map.singleton nm val
 
 
-type Existing  = Map.Map HsName (Map.Map [Maybe HsName] Int)
+type Existing  = Map.Map HsName (Map.Map [Maybe HsName] (Int, HsName))
 type Constants = Map.Map HsName GrVal
 type Specialized = Existing
 type Specializable = Map.Map HsName (Set.Set [Maybe HsName])
@@ -149,8 +151,7 @@ SEM GrExpr
                                           
           lhs.grTrf              =   if hasJust @loc.args2
                                      then let m = fromJust (Map.lookup @nm   @lhs.specializedCalls)
-                                              i = fromJust (Map.lookup @loc.args2 m)
-                                              nm2 = hsnSuffix @nm ("~spec" ++ show i)
+                                              (_, nm2) = fromJust (Map.lookup @loc.args2 m)
                                               args3 = [ a | (a,Nothing) <- zip @argL.grTrf @loc.args2 ]
                                           in  GrExpr_Call nm2 args3
                                      else  @loc.grTrf
@@ -175,8 +176,7 @@ SEM GrVal
           lhs.grTrf               =  maybe @loc.grTrf
                                            (\(nm,con,needs) -> if  hasJust @loc.args2
                                                                then let m = fromJust (Map.lookup  nm        @lhs.specializedCalls)
-                                                                        i = fromJust (Map.lookup (@loc.args2++replicate needs Nothing) m)
-                                                                        nm2 = hsnSuffix nm ("~spec" ++ show i)
+                                                                        (_,nm2) = fromJust (Map.lookup (@loc.args2++replicate needs Nothing) m)
                                                                         args3 = [ a | (a,Nothing) <- zip @fldL.grTrf @loc.args2 ]
                                                                     in  GrVal_Node (con nm2) args3
                                                                else @loc.grTrf
@@ -200,7 +200,7 @@ SEM GrModule
   | Mod   globalL.specializedCalls = @loc.allSpec
           bindL  .specializedCalls = @loc.allSpec
           loc.specializable = mapUnionWithSetUnion @globalL.specializableCalls @bindL.specializableCalls
-          loc.toBeSpec      = numberSpecs @lhs.startSpecNmbr $ specNonExisting @loc.specializable @loc.allExist
+          loc.toBeSpec      = numberSpecs @moduleNm @lhs.startSpecNmbr $ specNonExisting @loc.specializable @loc.allExist
           loc.allExist      = @lhs.startExisting
           loc.allSpec       = mapUnionWithMapUnion @loc.allExist @loc.toBeSpec
           lhs.toBeSpec      = @loc.toBeSpec
@@ -217,12 +217,13 @@ specNonExisting = Map.differenceWith diff
 
 -- mapAccum :: (a -> b -> (a, c)) -> a -> Map k b -> (a, Map k c)
 
-numberSpecs :: Int -> Specializable -> Existing
-numberSpecs start1 = snd . Map.mapAccum nrSet start1
-  where nrSet start set
+numberSpecs :: HsName -> Int -> Specializable -> Existing
+numberSpecs modNm start1 = snd . Map.mapAccumWithKey nrSet start1
+  where nrSet start nm set
           = let list          = Set.toList set
                 (nrs, (nw:_)) = splitAt (length list) [start..]
-            in  (nw, Map.fromList $ zip list nrs)
+                names         = map (\i -> (i, hsnSuffix nm ("~spec~" ++ show modNm ++ "~" ++ show i))) nrs
+            in  (nw, Map.fromList $ zip list names)
 
 -- numberSpecs start = number . concatMap (uncurry one) . Map.toList
 --   where one nm = zip (repeat nm) . Set.toList
@@ -261,10 +262,9 @@ numberset exi nm s =  let p = Map.findWithDefault Map.empty nm exi
 --           ]
 -- makeDuplics existing infomap b@(GrBind_Rec bs) = []
 
-makeDuplic :: GrBind -> [Maybe HsName] -> Int -> [GrBind]
-makeDuplic b@(GrBind_Bind nm ann args body) mbargs i
-  = let nm2 = hsnSuffix nm ("~spec" ++ show i)
-        argPairs = zip args mbargs
+makeDuplic :: GrBind -> [Maybe HsName] -> (Int, HsName) -> [GrBind]
+makeDuplic b@(GrBind_Bind nm ann args body) mbargs (i, nm2)
+  = let argPairs = zip args mbargs
         args2    = [ a     | (a,Nothing) <- argPairs ]
         substi = Map.fromList [ (a,b) | (a,Just b ) <- argPairs ] 
         body2  = substExpr substi body
