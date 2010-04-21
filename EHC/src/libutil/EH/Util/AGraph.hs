@@ -7,13 +7,14 @@ module EH.Util.AGraph
   , insertEdge
   , insertEdges
   , deleteEdge
+  , deleteNode
   , successors
   , predecessors
   , emptyAGraph
   )
   where
 
-import Data.Graph.Inductive.Graph     (empty, insNodes, gelem, lab, lpre, lsuc, delEdge)
+import Data.Graph.Inductive.Graph     (empty, insNodes, gelem, lab, lpre, lsuc, delEdge, delNode)
 import Data.Graph.Inductive.NodeMap   (NodeMap, new, mkNodes, mkNode_, insMapEdge)
 import Data.Graph.Inductive.Tree      (Gr)
 import Data.Graph.Inductive.Graphviz  (graphviz')
@@ -35,6 +36,10 @@ insertEdge e@(p, q, _) gr = let (AGr nm' gr') = insMapNodes (p:[q]) gr
 
 deleteEdge :: Ord a => (a, a) -> AGraph a b -> AGraph a b
 deleteEdge (p, q) (AGr nm gr) = AGr nm (delEdge (getId p, getId q) gr)
+  where getId nd = fst $ mkNode_ nm nd
+
+deleteNode :: Ord a => a -> AGraph a b -> AGraph a b
+deleteNode p (AGr nm gr) = AGr nm (delNode (getId p) gr)
   where getId nd = fst $ mkNode_ nm nd
 
 insMapNodes :: Ord a => [a] -> AGraph a b -> AGraph a b

@@ -71,7 +71,9 @@ ppGrPatAlt tg
 %%[(20 codegen grin) hs
 instance PP GrExpr where
   pp = ppGrExpr2 CfgPP_Plain
+%%]
 
+%%[(2020 codegen grin) hs
 instance PPForHI GrExpr where
   ppForHI = ppGrExpr2 CfgPP_HI
 %%]

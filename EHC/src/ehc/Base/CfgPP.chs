@@ -148,7 +148,7 @@ ppCTagsMp x
   where mkl pe = ppCurlysSemisBlock . map (\(n,e) -> cfgppHsName x n >-< indent 1 ("=" >#< pe e))
 %%]
 
-%%[20
+%%[2020
 instance PPForHI CTag where
   ppForHI = ppCTag' CfgPP_HI
 %%]
@@ -157,14 +157,14 @@ instance PPForHI CTag where
 %%% PP variants for: HI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[20 export(PPForHI(..))
+%%[2020 export(PPForHI(..))
 class (PP x) => PPForHI x where
   ppForHI :: x -> PP_Doc
 
   ppForHI = pp
 %%]
 
-%%[20
+%%[2020
 instance PPForHI UID where
   ppForHI = cfgppUID CfgPP_HI
 
@@ -180,7 +180,7 @@ instance PPForHI a => PPForHI (AlwaysEq a) where
   ppForHI (AlwaysEq x) = ppForHI x
 %%]
 
-%%[20
+%%[2020
 instance PPForHI VarUIDHsName where
   ppForHI (VarUIDHs_Name i n) = "varuidnmname" >#< ppCurlysCommasBlock [ppForHI i, ppForHI n]
   ppForHI (VarUIDHs_UID  i  ) = "varuidnmuid"  >#< ppForHI i

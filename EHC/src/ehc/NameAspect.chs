@@ -304,7 +304,7 @@ instance PP IdOcc where
   pp = ppIdOcc CfgPP_Plain
 %%]
 
-%%[20
+%%[2020
 instance PPForHI IdOcc where
   ppForHI = ppIdOcc CfgPP_HI
 %%]

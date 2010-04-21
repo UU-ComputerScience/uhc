@@ -114,7 +114,7 @@ instance PP ModEntRel where
   pp = ppModEntRel' CfgPP_Plain
 %%]
 
-%%[20
+%%[2020
 instance PPForHI ModEnt where
   ppForHI = ppModEnt CfgPP_HI
 
