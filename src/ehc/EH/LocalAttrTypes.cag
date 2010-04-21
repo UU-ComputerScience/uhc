@@ -21,6 +21,7 @@ SEM *
 		loc.altsFiOpts 					: FIOpts
 		loc.arity  						: Int
 		loc.arityErrs  					: ErrL
+		loc.chrSolve1RemPrOccL 			: {[CHRPredOcc]}
 		loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
 		loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
 		loc.chrFIIn  					: FIIn

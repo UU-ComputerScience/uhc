@@ -283,7 +283,7 @@ instance PP Guard where
   pp = ppGuard
 %%]
 
-%%[(20 hmtyinfer)
+%%[(2020 hmtyinfer)
 instance PPForHI Guard where
   ppForHI (HasStrictCommonScope   sc1 sc2 sc3) = "HasStrictCommonScope"  >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])
   ppForHI (IsStrictParentScope    sc1 sc2 sc3) = "IsStrictParentScope"   >#< (ppCurlysCommas $ map ppForHI [sc1,sc2,sc3])

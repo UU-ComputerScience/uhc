@@ -68,7 +68,7 @@ instance (PP c,PP g) => PP (CHR c g s) where
           ppChr l = vlist l -- ppCurlysBlock
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(2020 hmtyinfer || hmtyast)
 instance (PPForHI c, PPForHI g) => PPForHI (CHR c g s) where
   ppForHI chr
     = ppCurlysSemisBlock

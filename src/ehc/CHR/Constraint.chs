@@ -119,7 +119,7 @@ instance (PP p, PP info) => PP (Constraint p info) where
   pp (Reduction p i ps) = "Red"    >#< p >#< "<" >#< i >#< "<" >#< ppBracketsCommas ps
 %%]
 
-%%[(20 hmtyinfer || hmtyast)
+%%[(2020 hmtyinfer || hmtyast)
 instance (PPForHI p, PPForHI info) => PPForHI (Constraint p info) where
   ppForHI (Prove     p     ) = "Prove"     >#< ppCurlysCommasBlock [ppForHI p]
   ppForHI (Assume    p     ) = "Assume"    >#< ppCurlysCommasBlock [ppForHI p]
