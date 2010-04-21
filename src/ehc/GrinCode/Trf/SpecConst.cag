@@ -13,7 +13,7 @@ Specialize functions that are called with constant arguments
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]
-%%[(8 codegen grin) hs import(Debug.Trace)
+%%[(8 codegen grin) hs import(EH.Util.Utils)
 %%]
 
 %%[(8 codegen grin)
@@ -21,10 +21,62 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SpecConst} export(specConst)
-specConst :: GrModule -> GrModule
-specConst grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                       (Inh_GrAGItf)
-                  in grTrf_Syn_GrAGItf t
+specConst :: [GrModule] -> GrModule -> GrModule
+specConst imports grmod
+  = let ext    = existingSpecs grmod
+        exts   = Map.unionsWith Map.union (ext : map existingSpecs imports)
+        maxNr  = maximum (0 : concatMap Map.elems (Map.elems ext))
+        consts = Map.unionsWith (panic "SpecConst.specConst: constants")  $ map allConsts   (grmod : imports)
+        binds  = Map.unionsWith (\a b -> panic $ "SpecConst.specConst: bindings: " ++ show a ++ " " ++ show b ++ " | " ++ show grmod ++ "/" ++ show imports)   $ map allBindings (grmod : imports)
+        t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                         (Inh_GrAGItf
+                          { startExisting_Inh_GrAGItf = exts
+                          , startSpecNmbr_Inh_GrAGItf = maxNr + 1
+                          , startConstMap_Inh_GrAGItf = consts
+                          })
+        toBeSpec   = toBeSpec_Syn_GrAGItf t
+        duplicates = concatMap (uncurry dupl) $ Map.toList toBeSpec
+        dupl nm mp = concatMap (uncurry $ makeDuplic (fakeBind nm $ Map.lookup nm binds)) $ Map.toList mp
+    in plakBindings (grTrf_Syn_GrAGItf t) duplicates
+
+
+fakeBind :: HsName -> Maybe GrBind -> GrBind
+fakeBind _ (Just b) = b
+fakeBind nm Nothing = GrBind_Bind fakenm GrBindAnnNormal (map fakearg [0..]) (GrExpr_Throw fakenm)
+  where fakenm    = hsnSuffix nm "~fake"
+        fakearg i = hsnSuffix nm ("~fakearg!" ++ show i)
+
+plakBindings :: GrModule -> [GrBind] -> GrModule
+plakBindings (GrModule_Mod nm globl bindl iets) binds
+  = GrModule_Mod nm globl (bindl ++ binds) iets
+
+existingSpecs :: GrModule -> Existing
+existingSpecs (GrModule_Mod _ _ bindl _) = Map.unionsWith Map.union $ map ex bindl
+  where ex (GrBind_Bind nm ann args bod)
+          = case ann of
+              GrBindAnnSpecialized nmOrig num argsSpec -> Map.singleton nm (Map.singleton argsSpec num)
+              _                                        -> Map.empty
+        ex _
+          = Map.empty
+  -- GrBind_Rec ?
+
+allBindings :: GrModule -> Map.Map HsName GrBind
+allBindings (GrModule_Mod _ _ bindl _) = allBindings' bindl
+  where allBindings' = Map.unionsWith (panic "SpecConst.allBindings") . map al
+        al b@(GrBind_Bind nm _ _ _) = Map.singleton nm b
+        al b@(GrBind_Rec  bl      ) = allBindings' bl
+        al _                        = Map.empty
+
+allConsts :: GrModule -> Constants
+allConsts (GrModule_Mod _ globl _ _) = Map.unionsWith (panic "SpecConst.allConsts") $ map cs globl
+  where cs (GrGlobal_Global nm val)  = Map.singleton nm val
+
+
+type Existing  = Map.Map HsName (Map.Map [Maybe HsName] Int)
+type Constants = Map.Map HsName GrVal
+type Specialized = Existing
+type Specializable = Map.Map HsName (Set.Set [Maybe HsName])
+
 %%]
 
 
@@ -37,23 +89,13 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 -- collect global constants
 
-ATTR AllGrVal AllGrTag [ | | copy: SELF ]
+ATTR AllBind AllExpr AllGlobal [ constMap : {Constants} | | ]
 
-
-ATTR AllGlobal [ | | genconstMap USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
-
-SEM GrGlobal 
-  | Global  lhs.genconstMap = Map.singleton @nm @val.copy
-
--- distribute global constants
-
-ATTR AllBind AllExpr AllGlobal [ constMap : {Map.Map HsName GrVal} | | ]
+ATTR GrAGItf GrModule [ startConstMap : {Constants} | | ]
 
 SEM GrModule
-  | Mod   globalL.constMap = -- trace ("Constmap1: " ++ show @globalL.genconstMap) 
-                             @globalL.genconstMap
-          bindL.constMap   = -- trace ("Constmap2: " ++ show @globalL.genconstMap)
-                             @globalL.genconstMap
+  | Mod   globalL.constMap  = @lhs.startConstMap
+          bindL.constMap    = @lhs.startConstMap
 
 
 -- find the variables in a value list
@@ -70,24 +112,11 @@ SEM GrValL
   | Cons  lhs.mbVars = @hd.mbVar : @tl.mbVars 
   
 
--- collect existing specializations
-
-ATTR AllBind [ | | collExisting USE {`mapUnionWithMapUnion`} {Map.empty} : {Map.Map HsName (Map.Map [Maybe HsName] Int)} ]
-
-SEM GrBind
-  | Bind   lhs.collExisting  =  case @annot of
-                                  GrBindAnnSpecialized nm i xs -> Map.singleton nm (Map.singleton xs i)
-                                  _                            -> Map.empty
-
 -- distribute existing specializations
 
-ATTR AllBind [ existing : {Map.Map HsName (Map.Map [Maybe HsName] Int)} | | ]
+ATTR AllBind [ existing : {Existing} | | ]
 
-SEM GrModule
-  | Mod   bindL.existing = @bindL.collExisting
-
-
-
+ATTR GrAGItf GrModule [ startExisting : {Existing} | | ]
 
 
 -- collect specializable calls
@@ -104,7 +133,7 @@ hasJust (Nothing : xs) = hasJust xs
 }
 
 
-ATTR AllBind AllExpr AllGlobal [ | | specializableCalls USE {`mapUnionWithSetUnion`} {Map.empty} : {Map.Map HsName (Set.Set [Maybe HsName])} ]
+ATTR AllBind AllExpr AllGlobal [ | | specializableCalls USE {`mapUnionWithSetUnion`} {Map.empty} : {Specializable} ]
 
 SEM GrExpr
   | Call  loc.args2 :                {[Maybe HsName]}
@@ -163,17 +192,46 @@ SEM GrTag
 
 
 
-ATTR AllBind AllExpr AllGlobal [ specializedCalls : {Map.Map HsName (Map.Map [Maybe HsName] Int)} | | ]
+ATTR AllBind AllExpr AllGlobal [ specializedCalls : {Specialized} | | ]
+
+ATTR GrAGItf GrModule [ startSpecNmbr : {Int} | | toBeSpec : {Specialized} ]
 
 SEM GrModule
-  | Mod   loc.spc  = let m =  mapUnionWithSetUnion  @globalL.specializableCalls  @bindL.specializableCalls  
-                     in  Map.mapWithKey (numberset @bindL.collExisting) m
-          globalL.specializedCalls = @loc.spc
-          bindL  .specializedCalls = @loc.spc
+  | Mod   globalL.specializedCalls = @loc.allSpec
+          bindL  .specializedCalls = @loc.allSpec
+          loc.specializable = mapUnionWithSetUnion @globalL.specializableCalls @bindL.specializableCalls
+          loc.toBeSpec      = numberSpecs @lhs.startSpecNmbr $ specNonExisting @loc.specializable @loc.allExist
+          loc.allExist      = @lhs.startExisting
+          loc.allSpec       = mapUnionWithMapUnion @loc.allExist @loc.toBeSpec
+          lhs.toBeSpec      = @loc.toBeSpec
+
           lhs.grTrf = -- trace ("existing: " ++ show @bindL.collExisting ++ "\nspecializable: " ++ show @loc.spc) 
                       @loc.grTrf
 
 {
+specNonExisting :: Specializable -> Existing -> Specializable
+specNonExisting = Map.differenceWith diff
+  where diff s mp | Set.null ns = Nothing
+                  | otherwise   = Just ns
+                  where ns = s Set.\\ Map.keysSet mp
+
+-- mapAccum :: (a -> b -> (a, c)) -> a -> Map k b -> (a, Map k c)
+
+numberSpecs :: Int -> Specializable -> Existing
+numberSpecs start1 = snd . Map.mapAccum nrSet start1
+  where nrSet start set
+          = let list          = Set.toList set
+                (nrs, (nw:_)) = splitAt (length list) [start..]
+            in  (nw, Map.fromList $ zip list nrs)
+
+-- numberSpecs start = number . concatMap (uncurry one) . Map.toList
+--   where one nm = zip (repeat nm) . Set.toList
+--         number = zipWith (\(a,b) i -> (a,(b,i))) [start..]
+-- 
+-- numberSpecs start = Map.map toMap
+--   where toMap = Map.fromList . flip zip [start..] . Set.toList
+
+
 numberset :: (Ord a, Show a) => (Map.Map HsName (Map.Map a Int)) -> HsName -> Set.Set a -> Map.Map a Int	
 numberset exi nm s =  let p = Map.findWithDefault Map.empty nm exi
                           q = Set.filter (\e -> maybe True (const False) (Map.lookup e p)) s
@@ -184,30 +242,36 @@ numberset exi nm s =  let p = Map.findWithDefault Map.empty nm exi
 }
 
 
--- At each binding, make duplicates
-
-SEM GrBindL
-  | Cons   lhs.grTrf = makeDuplics @lhs.existing @lhs.specializedCalls @hd.grTrf ++ @tl.grTrf
-
 {
-makeDuplics :: Map.Map HsName (Map.Map [Maybe HsName] Int) ->Map.Map HsName (Map.Map [Maybe HsName] Int) -> GrBind -> [GrBind]
-makeDuplics existing infomap b@(GrBind_Bind nm ann args body)
-  =  let  -- mbmap = Map.lookup nm infomap
-          -- pairs  = maybe [] Map.toAscList mbmap
-          pairs = Map.toAscList (Map.findWithDefault Map.empty nm infomap)
-          exi   = Map.findWithDefault Map.empty nm existing
-     in   b : [  let nm2   = hsnSuffix nm ("~spec" ++ show i)
-                     argPairs = zip args mbargs
-                     args2  =              [ a     | (a,Nothing) <- argPairs ]
-                     substi = Map.fromList [ (a,b) | (a,Just b ) <- argPairs ] 
-                     body2  = substExpr substi body
-                     ann2   = GrBindAnnSpecialized nm i mbargs
-                 in  GrBind_Bind nm2 ann2 args2 body2
-              |  (mbargs, i) <- pairs
-              ,  Map.notMember mbargs exi 
-              ]
-makeDuplics existing infomap b@(GrBind_Rec bs) = [b]
-	
+-- makeDuplics :: Existing -> Specialized -> GrBind -> [GrBind]
+-- makeDuplics existing infomap b@(GrBind_Bind nm ann args body)
+--   =  let  -- mbmap = Map.lookup nm infomap
+--           -- pairs  = maybe [] Map.toAscList mbmap
+--           pairs = Map.toAscList (Map.findWithDefault Map.empty nm infomap)
+--           exi   = Map.findWithDefault Map.empty nm existing
+--      in   [  let nm2   = hsnSuffix nm ("~spec" ++ show i)
+--                  argPairs = zip args mbargs
+--                  args2  =              [ a     | (a,Nothing) <- argPairs ]
+--                  substi = Map.fromList [ (a,b) | (a,Just b ) <- argPairs ] 
+--                  body2  = substExpr substi body
+--                  ann2   = GrBindAnnSpecialized nm i mbargs
+--              in  GrBind_Bind nm2 ann2 args2 body2
+--           |  (mbargs, i) <- pairs
+--           ,  Map.notMember mbargs exi 
+--           ]
+-- makeDuplics existing infomap b@(GrBind_Rec bs) = []
+
+makeDuplic :: GrBind -> [Maybe HsName] -> Int -> [GrBind]
+makeDuplic b@(GrBind_Bind nm ann args body) mbargs i
+  = let nm2 = hsnSuffix nm ("~spec" ++ show i)
+        argPairs = zip args mbargs
+        args2    = [ a     | (a,Nothing) <- argPairs ]
+        substi = Map.fromList [ (a,b) | (a,Just b ) <- argPairs ] 
+        body2  = substExpr substi body
+        ann2   = GrBindAnnSpecialized nm i mbargs
+    in  [GrBind_Bind nm2 ann2 args2 body2]
+makeDuplic _ _ _ = []
+
 }
 
 

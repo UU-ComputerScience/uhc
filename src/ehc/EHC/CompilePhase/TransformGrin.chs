@@ -129,6 +129,15 @@ cpIterGrinTrf modNm trf m = do
           cpUpdCU modNm $ ecuStoreGrin $ code
           if changed then (caFixCount $ n+1) else return n
 
+cpFullGrinTrf :: HsName -> ([Grin.GrModule] -> Grin.GrModule -> Grin.GrModule) -> String -> EHCompilePhase ()
+cpFullGrinTrf modNm trf m
+  = do { cr <- get
+       ; imps <- allImports modNm
+       ; cpMsgGrinTrf modNm m
+       ; let theGrin nm = case crBaseInfo nm cr of (ecu,_,_,_) -> fromJust $ ecuMbGrin ecu
+       ; cpUpdCU modNm $ ecuStoreGrin $ trf (map theGrin imps) $ theGrin modNm
+       }
+
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
@@ -253,7 +262,7 @@ grSpecialize modNm = concat $ replicate 6 $
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
     -- , iter dropUnusedExpr                    "drop unused"
-    , once specConst                         "spec const"
+    , full specConst                         "spec const"
     , iter copyPropagation                   "copy prop"
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
@@ -263,6 +272,7 @@ grSpecialize modNm = concat $ replicate 6 $
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
         iter trf m = (cpIterGrinTrf modNm trf m, m)
+        full trf m = (cpFullGrinTrf modNm trf m, m)
 
 %%]
 
