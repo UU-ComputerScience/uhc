@@ -2,5 +2,7 @@ module Main where
 
 import Lib
 
-main = id $ number
+succ = (+) (S Z)
+
+main = succ number
 -- main = id number
