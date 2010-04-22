@@ -95,6 +95,8 @@
 #endif
 %%]]
 
+#include "base/types.h"
+
 #ifdef __UHC_TARGET_BC__
 #include "bc/types.h"
 #endif

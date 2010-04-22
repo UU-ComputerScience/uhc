@@ -455,7 +455,7 @@ SEM Instr
                                                   _      -> (@lhs.stringConstMp,@bytePoolMp1,Nothing)
   | Call        (lhs.stringConstMp,loc.bytePoolMp2,loc.stringConstInx,loc.functionInfoModOff,loc.functionInfoOff)
                                             =   let dflt@(x,y,z,_,_)  = (@lhs.stringConstMp,@bytePoolMp1,Nothing,noInx,noInx)
-                                                    noInx = (-1)::Int		-- must be same as GB_FunctionInfo_Inx_None
+                                                    noInx = (-1)::Int		-- must be same as FunctionInfo_Inx_None
                                                 in  case ciMbKey @callInfo of
                                                       Just (ms,nm) -> ( a, b, c, d, e )
                                                                    where (a,b,c) = (x,y,z) -- maybe (x,y,z) (\s -> stringConstMpAdd s @lhs.stringConstMp @bytePoolMp1) ms
@@ -728,8 +728,8 @@ SEM Module
 %%]]
                                                                            )  )
                                                     callinfos
-                                                            = ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
-                                                                [ "GB_MkCallInfoWith"
+                                                            = ppTbl' "CallInfo" @ppNmCallInfoTbl
+                                                                [ "MkCallInfoWith"
                                                                   >|< ppParensCommas
                                                                         [ genc $ fromEnum $ ciKind ci
                                                                         , ppCommas $ mkci $ ciMbKey ci
@@ -745,7 +745,7 @@ SEM Module
                                                                   mkci Nothing               = [gencNULL                       , none, none]
                                                                   mkci (Just (s,Nothing   )) = [gencAddrArrayAt @ppNmBytePool s, none, none]
                                                                   mkci (Just (s,Just (m,o))) = [gencAddrArrayAt @ppNmBytePool s, genc m, genc o]
-                                                                  none = genc "GB_FunctionInfo_Inx_None"
+                                                                  none = genc "FunctionInfo_Inx_None"
                                                     consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts) @constL )
                                                     bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
@@ -793,12 +793,12 @@ SEM Module
                                                     nrCafs = length @cafEntryL
                                                     glEntries = ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ gencAddrArrayAt @ppNmByteCodeTbl c | c <- Map.elems glEntryMp ]
                                                     gcStackInfoL = sortOn snd $ Map.toList $ snd @instrs.gcStackInfoMp
-                                                    gcStackInfosTbl = ppTbl' "GB_GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
+                                                    gcStackInfosTbl = ppTbl' "GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
                                                               where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [genc sz, genc len, gencAddrArrayAt @ppNmBytePool (bytePoolLocOff loc)]
-                                                    functionInfosTbl = ppTbl' "GB_FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
+                                                    functionInfosTbl = ppTbl' "FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
                                                               where mk (FunctionInfo (_,loc) _ sz flgs,_)
                                                                       = ppCurlysCommas [ genc (Cfg.sizeofWord * sz)
-                                                                                       , ppListSep "" "" " || " $ map ("GB_" >|<) $ maybeNull [FunctionInfoFlag_None] id flgs
+                                                                                       , ppListSep "" "" " || " $ maybeNull [FunctionInfoFlag_None] id flgs
                                                                                        , gencAddrArrayAt @ppNmBytePool (bytePoolLocOff loc)
                                                                                        ]
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"

@@ -9,7 +9,7 @@
 
 %%[8
 #include "rtsbase.h"
-#include "base/types.h"
+#include "base/trace.h"
 #include "event/event.h"
 #include "mm/mm.h"
 %%]

@@ -356,6 +356,10 @@ mkEvidence heur cnstrMp redGraph
 %%% Split unresolved's into those which can be assumed via qualification, and the rest
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+Unresolved predicates can be resolved by assuming them.
+This can be done for those predicates of which evidence can be passed as a function argument,
+and for which no ambiguity exists.
+
 %%[(9 hmtyinfer) export(partitionUnresolved2AssumableAndOthers)
 partitionUnresolved2AssumableAndOthers :: CHRPredOccCnstrMp -> ([(CHRPredOcc,PredScope)],CHRPredOccCnstrMp)
 partitionUnresolved2AssumableAndOthers unresCnstrMp
