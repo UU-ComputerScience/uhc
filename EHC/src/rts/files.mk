@@ -96,6 +96,7 @@ RTS_SRC_CH_SHARED := \
         base/sysalloc \
         base/basictypes \
         base/types \
+        base/trace \
         event/event \
         mm/mmitf \
         mm/mm \

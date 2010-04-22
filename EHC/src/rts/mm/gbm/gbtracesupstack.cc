@@ -37,14 +37,14 @@ void mm_traceSupply_GBStack_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt
 
 void mm_traceSupply_GBStack_Reset( MM_TraceSupply* traceSupply, Word gcStackInfo ) {
 	MM_TraceSupply_GBStack_Data* trsup = (MM_TraceSupply_GBStack_Data*)traceSupply->data ;
-	trsup->gcStackInfo = (GB_GCStackInfo*)gcStackInfo ;
+	trsup->gcStackInfo = (GCStackInfo*)gcStackInfo ;
 	// trsup->gcInfo = (GB_GCInfo*)gcStackInfo ;
 }
 %%]
 
 %%[8
 // deal with part covered/ruled by gc stack info
-static inline WPtr mm_traceSupply_GBStack_RunWithStackInfo( MM_TraceSupply_GBStack_Data* trsup, GB_GCStackInfo* info, WPtr bptr ) {
+static inline WPtr mm_traceSupply_GBStack_RunWithStackInfo( MM_TraceSupply_GBStack_Data* trsup, GCStackInfo* info, WPtr bptr ) {
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_RunWithStackInfo BEF gcStackInfo=%p b=%p\n",info,bptr);}) ;
 	if ( info != NULL ) {
 		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_RunWithStackInfo A gcStackInfo=%p, sz=%x ndesc=%x\n",info,info->sz,info->nrDescrs);}) ;
@@ -88,8 +88,8 @@ void mm_traceSupply_GBStack_Run4( MM_TraceSupply* traceSupply ) {
 	// initial part, todo: check for b == NULL
 	WPtr bptr = mm_traceSupply_GBStack_RunWithStackInfo( trsup, trsup->gcStackInfo, b ) ;
 	s = mm_traceSupply_GBStack_RunStack( trsup, s, bptr ) ;
-	for ( ; *b != NULL ; ) {
-		GB_CallInfo* ci = GB_FromBPToCallInfo(b) ;
+	for ( ; (WPtr)*b != NULL ; ) {
+		CallInfo* ci = GB_FromBPToCallInfo(b) ;
 		IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run3 A callinfo=%p(%s) s=%p b=%p\n",ci,ci->name,s,b);}) ;
 		// skip ret info
 		// s = b + 2 ;
