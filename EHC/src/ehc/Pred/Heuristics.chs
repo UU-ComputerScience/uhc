@@ -336,9 +336,12 @@ heurScopedEHC env
 {-
         defaultHeuristic
 -}
+{-
         $ heurTry (contextBinChoice (anncmpEHCScoped True  env))
                   -- (contextBinChoice (anncmpEHCScoped False env))
                   (contextChoice ehcOnlySuperReduce)
+-}
+        $ contextBinChoice (anncmpEHCScoped True  env)
   where
 %%[[16
     isEqHeuristic (CHRPredOcc (Pred_Eq _ _) _) = True
