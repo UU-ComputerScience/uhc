@@ -105,6 +105,13 @@ struct StackEntry
 
 struct StackEntry *llvm_gc_root_chain;
 
+struct FDescr
+{
+    int32_t  fsize;
+    unsigned char isPrim;
+};
+
+
 // -----------------------------------------------------------------------------
 
 static byte *f_heap, *f_limit;
@@ -161,6 +168,8 @@ void gc_collect(){
 void sswalker() {
 
     int32_t             i, num_roots;
+    void                *root;
+    struct FDescr       *meta;
     struct StackEntry   *entry = llvm_gc_root_chain;
 
     //printf("| [0x%08x] %d llvm_gc_root_chain\n", (unsigned int)entry, num_roots);
@@ -169,7 +178,17 @@ void sswalker() {
     while (entry)
     {
         num_roots = entry->Map->NumRoots;
-        // printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
+        printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
+        for (i = 0; i < num_roots; i++)
+        {
+            root = (void *)          entry->Roots[i];
+            meta = (struct FDescr *) entry->Map->Meta[i];
+            printf("| ... [%d] 0x%08x, meta s: %i, prim: %u \n", i, (unsigned int)root, meta->fsize, meta->isPrim );
+
+        }
+        printf("\n");
+
+
         entry = entry->Next;
     }
     

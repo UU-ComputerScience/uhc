@@ -80,6 +80,7 @@ DATA Value
   |  Cast        val        : Value
                  word       : {Bool}
   |  Alloc       size       : {Int}
+                 con        : Constant
                  gcManaged  : {SillyAllocManageType}
   |  Label       name       : {String}
                  offset     : {Int}

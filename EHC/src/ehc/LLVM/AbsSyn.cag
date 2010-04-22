@@ -145,6 +145,14 @@ DATA LLVMStatement
   -}
   | Unreachable
 
+  {-
+    GCRoot
+  -}
+  | GCRoot       val       : {LLVMVar}
+                 fdescSize : {Int}
+                 fdescIx   : {Int}
+
+
 TYPE LLVMStatements = [LLVMStatement]
 %%]
 
@@ -238,6 +246,9 @@ DATA LLVMExpression
   -}               
   | Phi          tp         : {LLVMType}
                  precessors : {[(LLVMVar,LLVMVar)]} 
+
+
+
                  
 DERIVING * : Show, Eq
 %%]

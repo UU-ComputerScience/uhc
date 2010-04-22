@@ -90,7 +90,11 @@ ATTR Alternative
      [ | | jumpTarget : {(LLVMVar,LLVMVar)} ]  
 
 ATTR Value
-     [ | | gcManaged : {SillyAllocManageType} ]
+     [ | | gcManaged : {SillyAllocManageType}
+           gcCon     : Constant ]
+
+ATTR Constant 
+     [ | | kopie : SELF]
 
      
 SEM SilModule
@@ -123,12 +127,6 @@ SEM SilModule
                                   else "%d\n"
                 loc.constants = (@loc.globalResStr,@loc.resConst) :
 
-                                 (GlobalVar "abc1" i8 , ArrayConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 @lhs.intType] (Array 3 @lhs.intType)) : 
-
-                                 (GlobalVar "abc2" i8 , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 @lhs.intType] (Struct [@lhs.intType,@lhs.intType,@lhs.intType ])) : 
-
-                                 (GlobalVar "abc3" i8 , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")  ) : 
-
                                                                              -- Ccomma0 0 []
                                                                              -- CFalse 1 []
                                                                              -- CTrue 2 []
@@ -143,20 +141,20 @@ SEM SilModule
                                                                              -- Fplustildespec1tildespec1 11 []
                                                                              -- Fuptotildespec2 12 [Ptr]
                                                                              -- Fuptotildespec1 13 []
-                                 (GlobalVar "FDESCR" i8 , ArrayConstant [ StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 2 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
+                                 (GlobalVar "FDESCR" i8 , ArrayConstant [ StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 2 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 i32, Constant 0 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 1 i32, Constant 1 i8] (TyVar "FDESCR")
+                                                                        , StructConstant [Constant 0 i32, Constant 1 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
                                  @functions.constants
                 
                 
@@ -165,7 +163,7 @@ SEM SilModule
                                                                              --                                         , %struct.Descrb { i32 3, i8 0 }
                                                                              --                                         , %struct.Descrb { i32 4, i8 1 }]
                                         
-                loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, i8])]
+                loc.namedTys = [NamedTy "FDESCR" (Struct [i32, i8])]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
                                  [ LLVMStatement_Call gcssInitFuncDecl StdCall []
@@ -200,7 +198,7 @@ SEM Function
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
                                    @body.llvmCode ++  
-                                   -- [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
+                                   [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -228,17 +226,11 @@ SEM Statement
                                                                 (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast nt targetType])
                 loc.gcrootCode = 
                                case @source.gcManaged of 
-                                   GCManaged  -> @loc.gcfitsCode ++ 
-                                                 [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
-                                                                                            , (StrConstant "null" (pLift i8))
-                                                                                            -- , (StrConstant "null" (pLift i8))
-                                                                                            ] 
-                                                 ]
-
-                                                    -- example:                                                 
-                                                    --    call void @llvm.gcroot( i8** %fresh152
-                                                    --                          , i8* bitcast (%struct.Descrb* getelementptr ([3 x %struct.Descrb]* @descrb, i32 0, i32 1) to i8*) )     ; at index 1
-
+                                   GCManaged  -> let size                   = Data.Map.size @lhs.constantMap
+                                                     (Constant_Alias sname) = @source.gcCon 
+                                                     name                   = findConVal sname @lhs.constantMap in
+                                                                                 @loc.gcfitsCode ++ 
+                                                                                 [LLVMStatement_GCRoot @loc.gcfitsVar size name]
                                    NotManaged -> []       
 
 
@@ -331,11 +323,13 @@ SEM Values
   | Nil         lhs.llvmVar  = [] 
                 lhs.llvmCode = []       
 
--- gcManaged spul
+-- gcManaged 
 
 SEM Value
     | Alloc     lhs.gcManaged = @gcManaged
+                lhs.gcCon     = @con.kopie
     | * - Alloc lhs.gcManaged = NotManaged
+                lhs.gcCon     = Constant_Alias "undefined"
 
        
 SEM Value
@@ -456,9 +450,7 @@ SEM Variable
 SEM Constant
   | LiteralInt  lhs.llvmVar  = Constant @value @lhs.intType
   | LiteralStr  lhs.llvmVar  = @loc.globStrVar
-  | Alias       lhs.llvmVar  = let value = Data.Map.findWithDefault
-                                             (error ("Alias \'" ++ @name ++ "\' not in constantMap"))
-                                             @name @lhs.constantMap 
+  | Alias       lhs.llvmVar  = let value = findConVal @name @lhs.constantMap 
                                 in Constant value @lhs.intType                                                                 
 %%]
 
@@ -599,11 +591,11 @@ ATTR Functions Function
      Values Value
      Variable
      Constant
-     [ constantMap : {Data.Map.Map String Int} | | ]
+     [ constantMap : {Data.Map.Map String (Int, [SilTp])} | | ]
 
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList (map (\(x,y,z)->(x,y)) @constants)
+  | SilModule   functions.constantMap = Data.Map.fromList (map (\(x,y,z)->(x,(y, z))) @constants)
 %%]
 
 %%[(8 codegen grin)
@@ -952,6 +944,12 @@ value indicates 'StdCall'
 bool2calltype :: Bool -> LLVMCallType
 bool2calltype (True)  = TailCall
 bool2calltype (False) = StdCall 
+
+findConVal :: String -> Data.Map.Map String (Int, [SilTp]) -> Int
+findConVal name constantMap = fst $ Data.Map.findWithDefault
+                                     (error ("Alias \'" ++ name ++ "\' not in constantMap"))
+                                     name constantMap 
+
 }
 %%]
 
