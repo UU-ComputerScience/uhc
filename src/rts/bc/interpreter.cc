@@ -2063,7 +2063,10 @@ void gb_Initialize()
 %%[[99
 	// GB_InitPatch_gb_code_Startup ;
 %%]]
+	// stack grows from high to low, so initialize with high address
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
+	
+	// first bp link terminates the bp list link; also assumed to be 0 by the garbage collector
 	bp = Cast(GB_Ptr,0) ;
 
 #	if USE_EHC_MM
