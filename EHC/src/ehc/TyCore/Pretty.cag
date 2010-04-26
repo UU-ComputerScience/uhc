@@ -321,9 +321,9 @@ SEM Module
 													>-< ppCurlysBlock (semic @vbinds.ppL)
 
 SEM Expr
-  | Int         loc         .   pp          =   ppParens (show @int  >#< "::" >#< @ty.pp)
-  | Char        loc         .   pp          =   ppParens (show @char >#< "::" >#< @ty.pp)
-  | String      loc         .   pp          =   ppParens (show @str  >#< "::" >#< @ty.pp)
+  | Int         loc         .   pp          =   show @int  >#< "::" >#< @ty.pp -- ppParens (show @int  >#< "::" >#< @ty.pp)
+  | Char        loc         .   pp          =   show @char >#< "::" >#< @ty.pp -- ppParens (show @char >#< "::" >#< @ty.pp)
+  | String      loc         .   pp          =   show @str  >#< "::" >#< @ty.pp -- ppParens (show @str  >#< "::" >#< @ty.pp)
   | Var         loc         .   pp          =   ppNm @nm
   | App         loc         .   pp          =   let isUnThunk (Nothing:_) = True
                                                     isUnThunk _           = False
