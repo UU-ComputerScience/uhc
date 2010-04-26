@@ -1,5 +1,0 @@
-(\x.x)
-\x.\y.x
-\x.\y.\z.z
-\x.(x x)
-let f = \x.x in f

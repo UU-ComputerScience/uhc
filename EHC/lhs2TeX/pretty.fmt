@@ -1,6 +1,0 @@
-%if style == poly
-%format >-< = "> \hspace*{-4pt} - \hspace*{-4pt}<"
-%format >|< = "> \hspace*{-4pt} \| \hspace*{-4pt}<"
-%format >#< = "> \hspace*{-4pt} \# \hspace*{-4pt}<"
-%format `ppBesideSp` = >#<
-%endif

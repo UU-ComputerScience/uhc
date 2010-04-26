@@ -1,6 +1,0 @@
-digraph fgl {
-	0 [label = "(Eq Int,<3>)"]
-	1 [label = "True"]
-	0 -> 1 [label = " (I2,<3>) "]
-	0 -> 1 [label = " (I1,< >)  "]
-}

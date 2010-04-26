@@ -1,9 +1,0 @@
-let  f   ::  (       (Int -> Int) -> Int            -- from g2 h
-               =&&=  (forall a . a -> a) -> Int     -- from g1 h
-               =&&=  (forall a . a -> a) -> ...     -- from h id
-             ) -> ...
-         =   \h  ->  let  x1  =  g1 h
-                       ;  x2  =  g2 h
-                       ;  h1  =  h id
-                     in   h1
-in   f (\h -> h id)

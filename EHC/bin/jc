@@ -1,3 +1,0 @@
-#!/bin/sh
-P=/usr/local/lib/uust/jar/jazy.jar
-javac -nowarn -classpath $P $1.java
