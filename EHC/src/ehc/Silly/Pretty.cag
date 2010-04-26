@@ -115,7 +115,7 @@ SEM Variable
 SEM Value
 %%[[8
   | Con            lhs.pretty = text "CON" >#< @con.pretty
-  | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< @con.pretty >#< "(" >#< show @gcManaged >#< ")"
+  | Alloc          lhs.pretty = text "ALLOC" >#< show @size >#< "(" >#< show @gcManaged >#< ")"
   | Call           lhs.pretty = "FFICALL"   >#< @name >|< "(" >|< @args.pretty >|< ")"
 %%][8_2
   | Con            lhs.pretty = @con.pretty

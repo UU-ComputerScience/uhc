@@ -111,8 +111,7 @@ SEM LLVMStatement
   | Switch      lhs.pretty = ppSwitch @scrutinee @default @targets
   | Return      lhs.pretty = ppReturn @result
   | Unreachable lhs.pretty = text "unreachable"
-  | GCRoot      lhs.pretty = ppGCRoot @val @fdescSize @fdescIx
-  | * - Assignment Branch BranchIf Comment Call Label Store Switch Return Unreachable GCRoot
+  | * - Assignment Branch BranchIf Comment Call Label Store Switch Return Unreachable
                 lhs.pretty = error "Undefined Stmt"
                 
 SEM LLVMExpression
@@ -243,13 +242,6 @@ ppPhi tp preds =
   let ppPreds (val,label) = "[" >#< getName val >|< "," >#< getName label >#< "]"  
    in "phi" >#< show tp 
        >#< (hlist $ Data.List.intersperse (text ",") (map ppPreds preds)) 
-
--- Should not print LLVM instructions this way, but it needs large changes in LLVM AST to make this possible,
--- and it is only needed for gcroots, and the code is always the same.
-ppGCRoot :: LLVMVar -> Int -> Int -> PP_Doc
-ppGCRoot var sz ix = "call void @llvm.gcroot( i8**" >#< getName var >|<
-                     ", i8* bitcast (%FDESCR* getelementptr ([" >#< show sz >#< "x %FDESCR]* @FDESCR, i32 0, i32" >#< show ix >#< ") to i8*) )"
-     
        
 ppSwitch :: LLVMVar -> LLVMVar -> [(LLVMVar,LLVMVar)] -> PP_Doc
 ppSwitch scrut dflt targets =

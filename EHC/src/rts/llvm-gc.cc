@@ -83,8 +83,10 @@ void llvmc_print_statistics( )
 }
 
 // -----------------------------------------------------------------------------
-// Shadow-stack debugging
+// Shadow-stack semispace collector
 // -----------------------------------------------------------------------------
+
+// LLVM shadow stack definitions
 
 typedef unsigned char byte;
 typedef unsigned short ushort;
@@ -105,21 +107,44 @@ struct StackEntry
 
 struct StackEntry *llvm_gc_root_chain;
 
-struct FDescr
+struct FDescr 
 {
-    int32_t  fsize;
-    unsigned char isPrim;
+   int32_t num_fields;
+   unsigned char is_prim;
 };
 
-
 // -----------------------------------------------------------------------------
+// semispace code 
+
+#if SIZEOF_INTPTR_T == 8
+typedef int64_t payload_field;
+#else
+typedef int32_t payload_field;
+#endif
+
+
 
 static byte *f_heap, *f_limit;
 static byte *t_heap, *t_limit;
 static byte *t_alloc;
 
-void gc_ss_init() {
+static int32_t fdescr_sz;
+static struct FDescr *fdescr;
 
+void gc_ss_init(int32_t fsz, struct FDescr *fd) { //  struct FDescr *fd
+
+    #if SIZEOF_INTPTR_T == 8
+    printf("Garbage collector running in 64 bit mode \n");
+    #else
+    printf("Garbage collector running in 32 bit mode \n");
+    #endif
+
+    fdescr_sz = fsz;
+    fdescr    = fd;
+
+    printFDescr();    
+        
+    
     unsigned int heapsz = 1024;
 
     printf("Initializing semi-space heap (%d bytes per space)\n", heapsz);
@@ -168,12 +193,13 @@ void gc_collect(){
 void sswalker() {
 
     int32_t             i, num_roots;
-    void                *root;
-    struct FDescr       *meta;
+    payload_field       *root;
+    payload_field       con;
     struct StackEntry   *entry = llvm_gc_root_chain;
 
-    //printf("| [0x%08x] %d llvm_gc_root_chain\n", (unsigned int)entry, num_roots);
-    
+    printf("|*****************************************************************\n");
+    printf("|** Running a stack walk \n");
+    printf("| [0x%08x] llvm_gc_root_chain\n", (unsigned int)entry);
     
     while (entry)
     {
@@ -181,9 +207,14 @@ void sswalker() {
         printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
         for (i = 0; i < num_roots; i++)
         {
-            root = (void *)          entry->Roots[i];
-            meta = (struct FDescr *) entry->Map->Meta[i];
-            printf("| ... [%d] 0x%08x, meta s: %i, prim: %u \n", i, (unsigned int)root, meta->fsize, meta->isPrim );
+            root = (payload_field *) entry->Roots[i];
+   
+            if (root == NULL) {
+                printf("| ... [%d] 0x%08x\n", i, (unsigned int)root );
+
+            } else {
+                printf("| ... [%d] 0x%08x, con: %lld \n", i, (unsigned int)root, *root );
+            }
 
         }
         printf("\n");
@@ -191,8 +222,80 @@ void sswalker() {
 
         entry = entry->Next;
     }
+
+    printf("|*****************************************************************\n");
     
 
 }
+
+void heapwalker() {
+
+    printf("|*****************************************************************\n");
+    printf("|** Running a heap walk \n");
+
+    payload_field * scanptr = t_heap;
+    
+    while (scanptr < t_alloc) {
+        // printf("| [0x%08x]: 0x%08x\n", scanptr, *scanptr);
+
+        struct FDescr cur_descr = fdescr[*scanptr];
+        
+        printf("Con: %lld, fields: %i, isPrim: %i \n", *scanptr, cur_descr.num_fields, cur_descr.is_prim );
+
+        scanptr++;
+
+        int field_counter;
+        for(field_counter = 0; field_counter < cur_descr.num_fields; field_counter++){
+            printf("TEST\n");
+            // printf("Field: 0x%08x\n", *scanptr);
+            scanptr++;
+        }
+        
+
+    }
+
+    printf("|*****************************************************************\n");
+}
+
+
+void rawheapwalker() {
+
+    printf("|*****************************************************************\n");
+    printf("|** Running a RAW heap walk \n");
+
+    payload_field * scanptr = t_heap;
+    
+    while (scanptr < t_alloc) {
+        printf("| [0x%08x]: 0x%08x\n", scanptr, *scanptr);
+        scanptr++;
+    }
+
+    printf("|*****************************************************************\n");
+}
+
+
+printFDescr() {
+    
+    // static int32_t fdescr_sz;
+    // static struct FDescr *fdescr;
+
+    if (fdescr){
+        printf("************************************************\n"); 
+        printf("*** FDescr table: \n"); 
+
+        int32_t i = 0;    
+        struct FDescr cur;
+        while (i < fdescr_sz){
+            cur = fdescr[i];
+            
+            printf("Con: %i | fields: %i | isPrim: %i \n", i, cur.num_fields , cur.is_prim);
+            
+            i++;
+        }
+        printf("************************************************\n"); 
+    }
+
+}
+
 
 %%]

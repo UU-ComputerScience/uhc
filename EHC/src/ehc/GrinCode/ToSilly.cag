@@ -503,14 +503,9 @@ maximum0 xs = maximum xs
 -- that are actually possible for this function.
 -- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
 
-allocate :: Char -> Constant -> SillyAllocManageType -> Int -> Int -> Value
-allocate 'C' con tp n1 _  = Value_Alloc      n1     con tp
-allocate _   con tp n1 n2 = Value_Alloc (max n1 n2) con tp
-
-extractAlias :: [Value] -> Constant
-extractAlias (Value_Con alias@(Constant_Alias _):_) = alias
-extractAlias _                                      = error "DEBUG plz: no alias found but expected. (ToSilly extractAlias() )"
-
+allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
+allocate 'C' tp n1 _  = Value_Alloc      n1     tp
+allocate _   tp n1 n2 = Value_Alloc (max n1 n2) tp
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char
@@ -519,7 +514,7 @@ tagcat _ = ' '
 
 storeAlloc :: SillyAllocManageType -> Variable -> Int -> Int -> [Value] -> Statement
 storeAlloc tp v n1 n2 vs
-       =  Statement_Assignment v (allocate (tagcat vs) (extractAlias vs) tp n1 n2)
+       =  Statement_Assignment v (allocate (tagcat vs) tp n1 n2)
 
 storePopulate :: Variable -> [Value] -> Statements
 storePopulate v vs
