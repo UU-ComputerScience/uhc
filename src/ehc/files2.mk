@@ -123,16 +123,17 @@ ehc-clean-variant:
 	@if test -x $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) ; \
 	then \
 	  variant=`$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-variant` ; \
-	  if test $${variant} -ge $(EHC_PREL_VARIANT) ; \
-	  then \
-	    rm -rf `$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-dir-env` ; \
-	  fi \
 	fi
 	@rm -rf $(EHC_INSTALL_VARIANT_ASPECTS_EXEC) \
 	        $(EHC_BLD_VARIANT_ASPECTS_PREFIX) \
 	        $(INSTALLFORBLD_EHC_LIB_PREFIX) $(LIB_EHC_INS_FLAG) \
 	        $(INSTALLFORBLD_VARIANT_ASPECTS_PREFIX) \
 	        $(INSTALL_VARIANT_PREFIX)
+
+#	  if test $${variant} -ge $(EHC_PREL_VARIANT) ; \
+#	  then \
+#	    rm -rf `$(EHC_INSTALL_VARIANT_ASPECTS_EXEC) --meta-dir-env` ; \
+#	  fi \
 
 ###########################################################################################
 # rules for barebones distribution
