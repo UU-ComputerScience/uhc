@@ -133,7 +133,8 @@ cpFullGrinTrf :: HsName -> ([Grin.GrModule] -> Grin.GrModule -> Grin.GrModule) -
 cpFullGrinTrf modNm trf m
   = do { cr <- get
        ; imps <- allImports modNm
-       ; cpMsgGrinTrf modNm m
+       ; let (_,_,_,fp) = crBaseInfo modNm cr
+       ; cpMsg' modNm VerboseALot ("Full GRIN optim, using " ++ show imps) (Just m) fp
        ; let theGrin nm = case crBaseInfo nm cr of (ecu,_,_,_) -> fromJust $ ecuMbGrin ecu
        ; cpUpdCU modNm $ ecuStoreGrin $ trf (map theGrin imps) $ theGrin modNm
        }
