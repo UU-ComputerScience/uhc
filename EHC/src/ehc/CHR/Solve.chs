@@ -507,7 +507,7 @@ chrSolve'' env chrStore cnstrs prevState
           | otherwise         = ( r5
                                 , foldr lqUnion lastQuery [ lqSingleton ck wks histCount | (_,(_,(ck,wks))) <- r23 ]
 %%[[9
-                                , pp2 >-< {- pp2b >-< pp2c >-< -} pp3
+                                , Pretty.empty -- pp2 >-< {- pp2b >-< pp2c >-< -} pp3
                                 , mkStats Map.empty [("(1) lookup sz",pp (length r2)), ("(2) cand sz",pp (length r3)), ("(3) unused cand sz",pp (length r4)), ("(4) final cand sz",pp (length r5))]
 %%][100
                                 , Pretty.empty
@@ -523,10 +523,10 @@ chrSolve'' env chrStore cnstrs prevState
                 r4  = filter (not . isUsedByPropPart wlUsedIn) r3
                 r5  = mapMaybe (\r@(chr,kw@(_,works)) -> fmap (\s -> (r,s)) $ match chr (map workCnstr works)) r4
 %%[[9
-                pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
+                -- pp2  = "lookups"    >#< ("for" >#< ppTrieKey workHdKey >-< ppBracketsCommasV r2)
                 -- pp2b = "cand1"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV . map (\(k,w) -> ppTrieKey k >#< w)) . fst . candidate) r2)
                 -- pp2c = "cand2"      >#< (ppBracketsCommasV $ map (ppBracketsCommasV . map (ppBracketsCommasV) . combineToDistinguishedElts . fst . candidate) r2)
-                pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
+                -- pp3  = "candidates" >#< (ppBracketsCommasV $ map (\(chr,(ks,ws)) -> "chr" >#< chr >-< "keys" >#< ppBracketsCommas (map ppTrieKey ks) >-< "works" >#< ppBracketsCommasV ws) $ r3)
 %%][100
 %%]]
                 -- util functions

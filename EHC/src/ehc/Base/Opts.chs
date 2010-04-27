@@ -59,10 +59,10 @@ data ImmediateQuitOption
 %%[[99
   | ImmediateQuitOption_Meta_Pkgdir_System                  -- print system package dir
   | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
-  | ImmediateQuitOption_VersionDotted                      -- print version in dotted style, for external version comparison
+  | ImmediateQuitOption_VersionDotted                       -- print version in dotted style, for external version comparison
   | ImmediateQuitOption_VersionAsNumber                     -- print version as number, for external version comparison
-  | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
-  | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
+  -- | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
+  -- | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
 %%]]
 %%]
 
@@ -599,8 +599,8 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
      ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
 %%[[99
-     ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
-     ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
+     -- ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
+     -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
      ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
      ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
@@ -806,8 +806,8 @@ ehcCmdLineOpts
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
-         oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
-         oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
+         -- oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
+         -- oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
          oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
          oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
          oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
