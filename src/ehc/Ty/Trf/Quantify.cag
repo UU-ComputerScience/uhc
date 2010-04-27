@@ -87,14 +87,20 @@ tyQuantifyOuter tvKi tvIsBound ty
 
 %%[(6 hmtyinfer || hmtyast) -3.valTyQuantify hs export(tyKiQuantify,valTyQuantify)
 tyKiQuantify :: TvIsBound -> Ty -> Ty
-tyKiQuantify tvIsBound ty = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
+tyKiQuantify tvIsBound ty -- = tyQuantify' tvIsBound tyQu_Forall {- tyQu_KiForall -} ty
+  = tqoTy $ tyQuantifyWithOpts opts ty
+  where opts = defaultTyQuOpts
+                  { tqoptAllowInnerQuant = False
+                  , tqoptTvIsBound       = tvIsBound
+                  , tqoptBaseQuant       = tyQu_Forall
+                  }
 
 valTyQuantify :: (TyVarId -> Ty) -> TvIsBound -> Ty -> Ty
 valTyQuantify tvKi tvIsBound ty
   = tqoTy $ tyQuantifyWithOpts opts ty
   where opts = defaultTyQuOpts
-                  { tqoptTvIsBound      = tvIsBound
-                  , tqoptTvL1       	= tvKi
+                  { tqoptTvIsBound       = tvIsBound
+                  , tqoptTvL1       	 = tvKi
                   }
 %%]
 

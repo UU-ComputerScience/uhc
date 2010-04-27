@@ -75,7 +75,7 @@
 %%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
 %%]
 
-%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}Pred.RedGraph}(redPruneReductionsUntil),{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
@@ -173,7 +173,10 @@ WRAPPER AGItf
 %%[(8 codegen) ag import({EH/ToTyCore})
 %%]
 
-%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
+%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR},{EH/InferDefault})
+%%]
+
+%%[9 ag import({EH/GatherGam})
 %%]
 
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
@@ -211,59 +214,6 @@ ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
 %%[95
 %%]
 ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
-%%% Note: will move to AG files where attr's are actually defined/used
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathValGam: ValGam ]
-
-SEM Expr
-  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
-  | * - Let     lhs         .   gathValGam          =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathTyGam: TyGam ]
-
-SEM Expr
-  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
-  | * - Let     lhs         .   gathTyGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
-
-SEM Expr
-  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam_ex_subst -- @lQuTyKiGam 
-  | * - Let     lhs         .   gathTyKiGam         =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathKiGam: KiGam ]
-
-SEM Expr
-  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
-  | * - Let     lhs         .   gathKiGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathClGam: ClGam ]
-
-SEM Expr
-  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGamNoDups
-  | * - Let     lhs         .   gathClGam           =   emptyGam
-%%]
-
-%%[(20 hmtyinfer)
-ATTR AGItf Expr [ | | gathPolGam: PolGam ]
-
-SEM Expr
-  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
-  | * - Let     lhs         .   gathPolGam          =   emptyGam
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is toplevel mod?

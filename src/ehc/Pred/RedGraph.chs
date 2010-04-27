@@ -13,7 +13,7 @@ Derived from work by Gerrit vd Geest.
 %%[(9 hmtyinfer) import({%{EH}Pred.Heuristics})
 %%]
 
-%%[(9 hmtyinfer) import(qualified Data.Map as Map, Data.Map(Map), Data.Set(Set), qualified Data.Set as Set)
+%%[(9 hmtyinfer) import(qualified Data.Map as Map, qualified Data.Set as Set)
 %%]
 
 %%[(9 hmtyinfer) import(EH.Util.AGraph,EH.Util.Pretty) export(module EH.Util.AGraph)
@@ -36,8 +36,16 @@ data RedNode p
   |  Red_And  { rednodePreds 	::  ![p] 	}
   deriving (Eq, Ord)
 
+mkRedNode :: [p] -> RedNode p
+mkRedNode [p] = Red_Pred p
+mkRedNode ps  = Red_And ps
+
+redNodePreds :: RedNode p -> [p]
+redNodePreds (Red_Pred  q) = [q]
+redNodePreds (Red_And  qs) = qs
+
 true  ::  RedNode p
-true  =   Red_And []
+true  =   mkRedNode []
 %%]
 
 %%[(9 hmtyinfer) export(RedGraph,emptyRedGraph)
@@ -99,23 +107,39 @@ addReduction _                    =  id
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pruning a reduction graph
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+- prune backwards from a set of leaves
+- until stop nodes are reached.
+
+%%[(9 hmtyinfer) export(redPruneReductionsUntil)
+redPruneReductionsUntil :: (Ord p) => [p] -> (p -> Bool) -> RedGraph p info -> RedGraph p info
+redPruneReductionsUntil leaves stop gr
+  = dels (map Red_Pred leaves) gr
+  where dels leaves g = foldr del g leaves
+        del  leaf   g | all (not . stop)
+                        $ redNodePreds leaf = dels (map snd pres)
+                                              $ deleteNode leaf
+                                              $ foldr (\(_,from) g -> deleteEdge (from,leaf) g) g pres
+                      | otherwise           = g
+          where pres = predecessors g leaf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Generating alternatives from a reduction graph
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(redAlternatives)
 redAlternatives :: (Ord p {-, PP p, PP info debug -}) => RedGraph p info -> p -> HeurAlts p info
-redAlternatives gr = recOr Set.empty
+redAlternatives gr
+  = recOr Set.empty
   where  recOr visited p = HeurAlts p (mapMaybe (recAnd visited') (successors gr (Red_Pred p)))
            where visited' = Set.insert p visited
 
          recAnd visited (i, n)
            | any (`Set.member` visited) qs = Nothing
            | otherwise = return $ HeurRed i (map (recOr visited) qs)
-           where qs = preds n
-
-         preds  n  = case n of
-                       Red_Pred  q   -> [q]
-                       Red_And   qs  -> qs
+           where qs = redNodePreds n
 %%]
-  where  recOr   p       = HeurAlts  p  (map recAnd  ((\v -> trp "AA" (ppRedGraph gr >-< p >#< v) v) $ successors gr (Red_Pred p))) 
 

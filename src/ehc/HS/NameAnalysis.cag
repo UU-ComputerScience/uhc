@@ -159,7 +159,6 @@ ATTR
   AllDeriving
 %%]]
     [ | | idDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
-          -- idDefAspGam USE {`gamAddGam`} {emptyGam} : IdDefAspGam
     ]
 %%]
 
@@ -209,7 +208,8 @@ SEM Declaration
         loc             .   idDefOccGamType
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
                         .   idDefOccGamSigAsVar
-                                        =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
+                                        -- =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
+                                        =   @where.idTySigDefOccGam
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
@@ -220,7 +220,7 @@ SEM Declaration
     | InstanceUseImplicitly
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @classrefname) @idOccDefs
     | Default
-        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Dflt_Def {- @eh -}) @idOccDefs
+        loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Dflt_Def @eh @ignoredecl) @idOccDefs
 %%]
 %%[11
     | Type
@@ -346,12 +346,29 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Identifier def's: special case, only type signature names as variable, used inside class def only
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR
+  AllDeclaration
+    [ | | idTySigDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
+    ]
+%%]
+
+%%[9
+SEM Declaration
+    | TypeSignature
+        loc             .   idTySigDefOccGam
+        								=   mkDefOccGam' @lhs.nmLev @range (\o -> IdAsp_Val_Var) @idOccDefs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Identifiers in scope
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
 ATTR AllNT [ idGam: IdDefOccGam
-             -- idAspGam: IdDefAspGam
            | | ]
 %%]
 
@@ -362,7 +379,6 @@ ATTR
   Statement
 %%]
     [ | | idGam: IdDefOccGam
-          -- idAspGam: IdDefAspGam
     ]
 %%]
 
@@ -509,6 +525,7 @@ SEM Declaration
 %%]]
 %%[[9
     | Class
+        -- simpletype		.	idGam		=	@lhs.idGam		-- avoid cycles
         loc             .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
                         .   idDefOccGamInstForClass
                                         =   fst $ gamPartition (\_ d -> case doccAsp d of {IdAsp_Inst_Def _ n | n == @classrefname -> True ; _ -> False}) $ @lhs.idGam
@@ -595,7 +612,7 @@ litNames lit isPat sign
 %%[1.mkUseOccGam hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ _ [] _ _ _
-  = (undefined,[],emptyGam,[])
+  = (hsnUnknown,[],emptyGam,[])
 mkUseOccGam _ idGam names@(fstName:_) kind asp rng
   = (fstName,names,gamUnions [ mkUse idGam n kind asp rng | n <- names ],[])
   where mkUse idGam name kind asp rng
@@ -608,7 +625,7 @@ mkUseOccGam _ idGam names@(fstName:_) kind asp rng
 %%[20 -1.mkUseOccGam hs
 mkUseOccGam :: EHCOpts -> IdDefOccGam -> [HsName] -> IdOccKind -> IdAspect -> Range -> (HsName,[HsName],IdUseOccGam,[Err])
 mkUseOccGam _ _ [] _ _ _
-  = (undefined,[],emptyGam,[])
+  = (hsnUnknown,[],emptyGam,[])
 mkUseOccGam opts idGam names kind asp rng
   = (n, ns, gamUnions g, concat e)
   where (ns@(n:_),g,e) = unzip3 [ mkUse idGam n kind asp rng | n <- names ]
@@ -853,6 +870,9 @@ SEM Declaration
     | Instance InstanceUseImplicitly
         loc             .   (classrefname,_,idUseOccGamInst,errIdUse)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Class IdAsp_Class_Class @range
+    | Default
+        loc             .   (classrefname,classrefnames,idUseOccGamDflt,errIdUse)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam (catMaybes [@name]) IdOcc_Class IdAsp_Class_Class @range
 %%]
 
 %%[95
@@ -1057,8 +1077,10 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
     | Default
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
-                                        =   splitIdUseOccGam @lhs.nmLev @types.idUseOccGam
+                                        =   splitIdUseOccGam @lhs.nmLev
+                                                (gamUnions [@idUseOccGamDflt,@types.idUseOccGam])
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
+        lhs             .   undefOccGam =   gamUnions [@undefOccGam,@types.undefOccGam]
 %%]]
 %%[[11
     | Type
@@ -1245,8 +1267,8 @@ mkIdDefEH def
         -> [decl,declInst]
       IdAsp_Inst_Def decl _
         -> [decl]
-      IdAsp_Dflt_Def -- decl
-        -> [] -- [decl]
+      IdAsp_Dflt_Def decl ignore | not ignore
+        -> [decl]
 %%]]
       _ -> []
 %%]

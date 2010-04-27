@@ -171,7 +171,7 @@ instance PP LabelOffset where
   pp = pp . show
 %%]
 
-%%[(20 hmtyinfer || hmtyast) hs
+%%[(2020 hmtyinfer || hmtyast) hs
 instance PPForHI Ty where
   -- ppForHI = ppTyWithCfg' CfgPP_HI
   ppForHI = ppTyWithCfg (cfgPPTyExtraForHI $ cfgPPTy CfgPP_HI)

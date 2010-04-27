@@ -134,6 +134,7 @@ cpFlowEHSem1 modNm
                  pg       = prepFlow $! EHSem.gathPolGam_Syn_AGItf     ehSem
                  kg       = prepFlow $! EHSem.gathKiGam_Syn_AGItf      ehSem
                  clg      = prepFlow $! EHSem.gathClGam_Syn_AGItf      ehSem
+                 dfg      = prepFlow $! EHSem.gathClDfGam_Syn_AGItf    ehSem
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
 %%[[20
@@ -147,6 +148,7 @@ cpFlowEHSem1 modNm
                               , EHSem.polGam_Inh_AGItf     = pg  `gamUnionFlow`  EHSem.polGam_Inh_AGItf     ehInh
                               , EHSem.kiGam_Inh_AGItf      = kg  `gamUnionFlow`  EHSem.kiGam_Inh_AGItf      ehInh
                               , EHSem.clGam_Inh_AGItf      = clg `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
+                              , EHSem.clDfGam_Inh_AGItf    = dfg `gamUnionFlow`  EHSem.clDfGam_Inh_AGItf    ehInh
                               , EHSem.chrStore_Inh_AGItf   = cs  `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                               }
 %%]]
@@ -158,6 +160,7 @@ cpFlowEHSem1 modNm
                               , HI.hiiPolGam     	= pg
                               , HI.hiiDataGam       = dg
                               , HI.hiiClGam         = clg
+                              , HI.hiiClDfGam       = dfg
                               , HI.hiiCHRStoreL     = HI.hiiScopedPredStoreToList cs
                               }
 %%]]
@@ -220,6 +223,7 @@ cpFlowHISem modNm
                             , EHSem.polGam_Inh_AGItf     = (HI.hiiPolGam     hiInfo) `gamUnionFlow`  EHSem.polGam_Inh_AGItf     ehInh
                             , EHSem.dataGam_Inh_AGItf    = (HI.hiiDataGam    hiInfo) `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
                             , EHSem.clGam_Inh_AGItf      = (HI.hiiClGam      hiInfo) `gamUnionFlow`  EHSem.clGam_Inh_AGItf      ehInh
+                            , EHSem.clDfGam_Inh_AGItf    = (HI.hiiClDfGam    hiInfo) `gamUnionFlow`  EHSem.clDfGam_Inh_AGItf    ehInh
                             , EHSem.chrStore_Inh_AGItf   = (HI.hiiCHRStore   hiInfo) `chrStoreUnion` EHSem.chrStore_Inh_AGItf   ehInh
                             }
 %%]]

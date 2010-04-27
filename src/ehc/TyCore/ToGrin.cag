@@ -560,7 +560,7 @@ SEM CBind
 The default is to evaluate arguments, and assume the primitive returns an evaluated result.
 These defaults are overridden by a table in BuiltinPrims, used here.
 
-%%[(99 codegen grin) hs
+%%[(96 codegen grin) hs
 evalArg :: Bool -> HsName -> GrExpr
 evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm) GrType_None
 
@@ -568,7 +568,7 @@ evalRes :: Bool -> HsName -> GrExpr -> GrExpr
 evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm) else e
 %%]
 
-%%[(99 codegen grin)
+%%[(96 codegen grin)
 SEM CBind
   | FFI         loc         .   mbPrimNeedEval
                                             =   lookupPrimNeedsEval @impEntNm

@@ -791,44 +791,6 @@ This breaks when compiled without bgc.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% GC specific information
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Descriptor of what can and cannot be traced during GC, only known to the interpreter or other execution machine
-
-%%[8
-typedef struct GB_GCStackInfo {
-  Word16	sz ;	// size of stack fragment described by this info, in words
-  Word8		nrDescrs ; 
-  Word8*	descrs ; 
-} __attribute__ ((__packed__)) GB_GCStackInfo ;
-
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Function specific information
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-Descriptor of info about functions
-
-%%[8
-typedef struct GB_FunctionInfo {
-  Word16	szStack ;	// size of stack required by function, in bytes
-  Word8		flags ;
-  Word8*	nm ; 		// name of function
-} __attribute__ ((__packed__)) GB_FunctionInfo ;
-
-typedef SHalfWord		GB_FunctionInfo_Inx ;
-
-#define GB_FunctionInfo_Inx_None						(-1)
-%%]
-
-%%[8
-#define GB_FunctionInfoFlag_None						0x0
-#define GB_FunctionInfoFlag_1stArgIsStackTrace			0x1
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Link Chain kinds
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

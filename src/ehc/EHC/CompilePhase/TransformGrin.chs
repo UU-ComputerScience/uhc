@@ -157,7 +157,7 @@ cpTransformGrin modNm
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  fullProg    = ehcOptFullProgAnalysis opts
                  forBytecode = not fullProg
-                 optimizing  = ehcOptOptimise opts >= OptimiseNormal
+                 optimizing  = ehcOptOptimizationLevel opts >= OptimizationLevel_Normal
          
 {- for debugging 
                  trafos  =     mk [mte,unb,flt,cpr,nme]

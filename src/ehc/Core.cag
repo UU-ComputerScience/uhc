@@ -603,7 +603,7 @@ ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ 
 
 In the following, note the hardcodedness!!!!!
 
-%%[(97 codegen) hs export(ctagCons,ctagNil)
+%%[(95 codegen) hs export(ctagCons,ctagNil)
 ctagCons, ctagNil :: EHCOpts -> CTag
 ctagCons opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltCons $ ehcOptBuiltinNames opts) 0 2 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
 ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNil  $ ehcOptBuiltinNames opts) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!

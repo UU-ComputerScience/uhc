@@ -18,6 +18,8 @@ WRAPPER SilModule
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
+%%[(8 codegen grin) hs import(Data.Bits)
+%%]
 %%[(8 codegen grin) hs import(qualified Data.Map as Map)
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set)
@@ -116,13 +118,17 @@ SEM Statement
                                                           | Variable_Local n v <- Map.elems @lhs.embedMap
                                                           , Set.member v @lhs.neededSet
                                                           ]
+                                            worthyBits  = sum [ 1 `shiftL` (n-1)         -- TODO: what if n>28 ?
+                                                              | n <- worthyNames
+                                                              ]
+                                            descriptor = nl : [worthyBits] 
                                             registersToSave = map (Variable_Subs Variable_LP) worthyNames
                                             sources     =  ( if @lhs.optGenLocReg
                                                              then map Value_Var registersToSave                                        -- saveRegisters
                                                              else []
                                                            )
                                                            ++ reverse @args.trf                                                 -- put arguments on stack
-                                                           ++ [ Value_Label @loc.label ]                                        -- put return address on the stack
+                                                           ++ [ Value_Label @loc.label (length descriptor)]                     -- put return address on the stack
                                                            ++ [ Value_Cast (Value_Offset Variable_SP nl) True                   -- put dynamic link on the stack
                                                               | @lhs.optGenLink                                                 --  (if requested)
                                                               ]
@@ -134,7 +140,7 @@ SEM Statement
                                             ++ 
                                             [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: decrement for new parameters&callinfo
                                             , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
-                                            , Statement_Label @loc.label                                                        -- return here after the call
+                                            , Statement_Label @loc.label descriptor                                             -- return here after the call
                                             ]
                                             ++
                                             ( if @lhs.optGenLocReg
@@ -189,7 +195,7 @@ SEM Function
                                                 -- parameters
                                                 (if @lhs.optGenOwn then [] else @parameters)
                                                 -- locals
-                                                (if @lhs.optGenOwn then [] else Set.toList (Set.difference @body.localsSet (Set.fromList @parameters)))
+                                                (if @lhs.optGenOwn then [] else @locals)    -- Set.toList (Set.difference @body.localsSet (Set.fromList @parameters)))
                                                 -- body
                                                 (  ( if   @lhs.optGenOwn
                                                      then Statement_Comment ["Expects " ++ show (length @parameters) ++ " parameters, uses " ++ show @loc.numberLocals ++ " local variables" ]

@@ -111,7 +111,7 @@ int gb_ThrownException_NrOfEvalWrappers ;
 #define GB_PCExt				GB_PCImm(GB_Byte)
 
 %%[8
-#define GB_Skip_CallInfoPtr		pc += sizeof(GB_CallInfo_Inline) ;
+#define GB_Skip_CallInfoPtr		pc += sizeof(CallInfo_Inline) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -144,13 +144,13 @@ GB_Ptr gb_HeapAlloc_Bytes_Traced( GB_Word nBytes )
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-static GB_CallInfo gb_callinfo_EvalWrap 		= GB_MkCallInfo(GB_CallInfo_Kind_EvalWrap		, "evalwrap"		) ;
-static GB_CallInfo gb_callinfo_EvalTopWrap 		= GB_MkCallInfo(GB_CallInfo_Kind_EvalTopWrap	, "evaltopwrap"		) ;
-static GB_CallInfo gb_callinfo_EvCont   		= GB_MkCallInfo(GB_CallInfo_Kind_EvCont  		, "evalcont"		) ;
-static GB_CallInfo gb_callinfo_TailEvalCont   	= GB_MkCallInfo(GB_CallInfo_Kind_TailEvalCont  	, "tailevalcont"	) ;
-static GB_CallInfo gb_callinfo_EvAppFunCont   	= GB_MkCallInfo(GB_CallInfo_Kind_EvAppFunCont  	, "evalappfuncont"	) ;
-static GB_CallInfo gb_callinfo_EvAppFunEvCont   = GB_MkCallInfo(GB_CallInfo_Kind_EvAppFunEvCont , "evalappfunevcont") ;
-static GB_CallInfo gb_callinfo_PEvCont  		= GB_MkCallInfo(GB_CallInfo_Kind_PApCont 		, "pappcont"		) ;
+static CallInfo gb_callinfo_EvalWrap 			= MkCallInfo(CallInfo_Kind_EvalWrap			, "evalwrap"		) ;
+static CallInfo gb_callinfo_EvalTopWrap 		= MkCallInfo(CallInfo_Kind_EvalTopWrap		, "evaltopwrap"		) ;
+static CallInfo gb_callinfo_EvCont   			= MkCallInfo(CallInfo_Kind_EvCont  			, "evalcont"		) ;
+static CallInfo gb_callinfo_TailEvalCont   		= MkCallInfo(CallInfo_Kind_TailEvalCont  	, "tailevalcont"	) ;
+static CallInfo gb_callinfo_EvAppFunCont   		= MkCallInfo(CallInfo_Kind_EvAppFunCont  	, "evalappfuncont"	) ;
+static CallInfo gb_callinfo_EvAppFunEvCont   	= MkCallInfo(CallInfo_Kind_EvAppFunEvCont 	, "evalappfunevcont") ;
+static CallInfo gb_callinfo_PEvCont  			= MkCallInfo(CallInfo_Kind_PApCont 			, "pappcont"		) ;
 %%]
 
 %%[8
@@ -206,7 +206,7 @@ GB_Byte gb_code_Eval[] =
 #define GB_InitPatch_gb_code_AfterEvalApplyFunCall 				\
 									{ \
 												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[0]								) = Cast(GB_Word,&gb_callinfo_EvAppFunCont  ) ; \
-												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[1+sizeof(GB_CallInfo_Inline)]	) = Cast(GB_Word,&gb_callinfo_EvAppFunEvCont  ) ; \
+												*Cast(GB_Ptr,&gb_code_AfterEvalApplyFunCall[1+sizeof(CallInfo_Inline)]		) = Cast(GB_Word,&gb_callinfo_EvAppFunEvCont  ) ; \
 									}
 #define GB_InitPatch_gb_code_AfterCallInApplyWithTooManyArgs	\
 												*Cast(GB_Ptr,&gb_code_AfterCallInApplyWithTooManyArgs[0]) = Cast(GB_Word,&gb_callinfo_PEvCont  )
@@ -214,11 +214,11 @@ GB_Byte gb_code_Eval[] =
 %%]
 
 %%[96
-static GB_CallInfo gb_callinfo_ExcHdl_EvalValue  					= GB_MkCallInfo(GB_CallInfo_Kind_Call 		, "exception handler value eval"	) ;
-static GB_CallInfo gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler  = GB_MkCallInfo(GB_CallInfo_Kind_Hdlr 		, "exception handler"				) ;
-static GB_CallInfo gb_callinfo_ExcHdl_ThrowReturn  					= GB_MkCallInfo(GB_CallInfo_Kind_Call 		, "exception handler throw eval"	) ;
-static GB_CallInfo gb_callinfo_Apply 								= GB_MkCallInfo(GB_CallInfo_Kind_Apply		, "apply"							) ;
-static GB_CallInfo gb_callinfo_IntlCCall							= GB_MkCallInfo(GB_CallInfo_Kind_IntlCCall	, "internal C call"							) ;
+static CallInfo gb_callinfo_ExcHdl_EvalValue  						= MkCallInfo(CallInfo_Kind_Call 		, "exception handler value eval"	) ;
+static CallInfo gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler  	= MkCallInfo(CallInfo_Kind_Hdlr 		, "exception handler"				) ;
+static CallInfo gb_callinfo_ExcHdl_ThrowReturn  					= MkCallInfo(CallInfo_Kind_Call 		, "exception handler throw eval"	) ;
+static CallInfo gb_callinfo_Apply 									= MkCallInfo(CallInfo_Kind_Apply		, "apply"							) ;
+static CallInfo gb_callinfo_IntlCCall								= MkCallInfo(CallInfo_Kind_IntlCCall	, "internal C call"							) ;
 %%]
 
 %%[96
@@ -273,14 +273,14 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 
 #define GB_InitPatch_gb_code_ExcHdl_EvalValue \
 									{ *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_EvalValue) ; \
-									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(GB_CallInfo_Inline)]  	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_EvalValue[1+sizeof(CallInfo_Inline)]  		) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
 									}
 #define GB_InitPatch_gb_code_ExcHdl_NormalReturn_MarkedAsHandler \
 									*Cast(GB_Ptr,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[0]         		) = Cast(GB_Word,&gb_callinfo_ExcHdl_NormalReturn_MarkedAsHandler)
 #define GB_InitPatch_gb_code_ExcHdl_ThrowReturn \
 									{ *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[0]         						) = Cast(GB_Word,&gb_callinfo_ExcHdl_ThrowReturn) ; \
-									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[7+sizeof(GB_CallInfo_Inline)]    ) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
-									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[8+2*sizeof(GB_CallInfo_Inline)]  ) = Cast(GB_Word,&gb_callinfo_Apply) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[7+sizeof(CallInfo_Inline)]    	) = Cast(GB_Word,&gb_callinfo_EvalWrap) ; \
+									  *Cast(GB_Ptr,&gb_code_ExcHdl_ThrowReturn[8+2*sizeof(CallInfo_Inline)]  	) = Cast(GB_Word,&gb_callinfo_Apply) ; \
 									}
 
 %%]
@@ -610,7 +610,7 @@ void gb_prModEntries( GB_ModEntry* modTbl )
 %%]
 
 %%[8
-void gb_prCallInfoName( GB_CallInfo* ci )
+void gb_prCallInfoName( CallInfo* ci )
 {
 	if ( ci->name )
 	{
@@ -618,17 +618,17 @@ void gb_prCallInfoName( GB_CallInfo* ci )
 	}
 }
 
-void gb_prCallInfo( GB_CallInfo* ci )
+void gb_prCallInfo( CallInfo* ci )
 {
 	printf( "(ci=%p", ci ) ;
 	if ( ci != NULL ) {
 		printf( ", kind=%d) ", ci->kind ) ;
 		switch ( ci->kind ) {
-			case GB_CallInfo_Kind_Eval :
+			case CallInfo_Kind_Eval :
 				printf( "eval " ) ;
 				gb_prCallInfoName( ci ) ;
 				break ;
-			case GB_CallInfo_Kind_Apply :
+			case CallInfo_Kind_Apply :
 				printf( "apply " ) ;
 				gb_prCallInfoName( ci ) ;
 				break ;
@@ -642,10 +642,10 @@ void gb_prCallInfo( GB_CallInfo* ci )
 }
 
 // get FunctionInfo belonging to callinfo, if none return NULL
-GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* ci )
+FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, CallInfo* ci )
 {
-	if ( ci->kind == GB_CallInfo_Kind_Call ) {
-		if ( ci->functionInfoModOff == GB_FunctionInfo_Inx_None || ci->functionInfoOff == GB_FunctionInfo_Inx_None ) {
+	if ( ci->kind == CallInfo_Kind_Call ) {
+		if ( ci->functionInfoModOff == FunctionInfo_Inx_None || ci->functionInfoOff == FunctionInfo_Inx_None ) {
 			return NULL ;
 		} else {
 			return &allMod[ ci->functionInfoModOff ].functionInfos[ ci->functionInfoOff ] ;
@@ -656,11 +656,11 @@ GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* 
 }
 
 // get the name if the thing a CallInfo is about, used for printing/dumping stack traces
-Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, GB_CallInfo* ci )
+Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, CallInfo* ci )
 {
 	Word8* ciName ;
 
-	GB_FunctionInfo* i = gb_CallInfo_GetFunctionInfo( allMod, ci ) ;
+	FunctionInfo* i = gb_CallInfo_GetFunctionInfo( allMod, ci ) ;
 	if ( i == NULL ) {
 		ciName = ci->name ;
 	} else {
@@ -674,22 +674,22 @@ Bool gb_CallInfo_Kind_IsVisible( Word kind )
 {
 	switch( kind )
 	{
-		case GB_CallInfo_Kind_Call :
-		case GB_CallInfo_Kind_Eval :
-		case GB_CallInfo_Kind_Apply :
-		case GB_CallInfo_Kind_CCall :
+		case CallInfo_Kind_Call :
+		case CallInfo_Kind_Eval :
+		case CallInfo_Kind_Apply :
+		case CallInfo_Kind_CCall :
 /*
 */
 #	if TRACE
-		case GB_CallInfo_Kind_Tail :
-		case GB_CallInfo_Kind_EvalWrap :
-		case GB_CallInfo_Kind_Hdlr :
-		case GB_CallInfo_Kind_EvCont :
-		case GB_CallInfo_Kind_TailEvalCont :
-		case GB_CallInfo_Kind_TailEv :
-		case GB_CallInfo_Kind_ApCont :
-		case GB_CallInfo_Kind_PApCont :
-		case GB_CallInfo_Kind_TailEval :
+		case CallInfo_Kind_Tail :
+		case CallInfo_Kind_EvalWrap :
+		case CallInfo_Kind_Hdlr :
+		case CallInfo_Kind_EvCont :
+		case CallInfo_Kind_TailEvalCont :
+		case CallInfo_Kind_TailEv :
+		case CallInfo_Kind_ApCont :
+		case CallInfo_Kind_PApCont :
+		case CallInfo_Kind_TailEval :
 #	endif
 			return True ;
 			break ;
@@ -700,7 +700,7 @@ Bool gb_CallInfo_Kind_IsVisible( Word kind )
 	return False ;
 }
 
-Bool gb_prCallInfoIsVisible( GB_CallInfo* ci )
+Bool gb_prCallInfoIsVisible( CallInfo* ci )
 {
 	if ( ci != NULL )
 	{
@@ -1001,7 +1001,7 @@ The code is split up in preamble + call + postamble, where call is only necessar
 
 #define GB_Check_StackSize(pc)																					\
 				{																								\
-					GB_FunctionInfo* functionInfo = GB_FromPCToFunctionInfo(pc) ;								\
+					FunctionInfo* functionInfo = GB_FromPCToFunctionInfo(pc) ;								\
 					if ( ! GB_Stack_SzIsAvailable( functionInfo->szStack ) ) {									\
 %%[[9696
 						gb_intl_throwStackOverflow( functionInfo ) ;											\
@@ -1293,7 +1293,7 @@ gb_interpreter_InsCallEntry:
 				GB_PCImmIn(GB_Word,x) ;										/* call encoding wrapper function						*/
 				x = *Cast(GB_Word*,x) ;
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-enc: wrapper=%x TOS(func)=%x\n", x, GB_TOS) ;}) ;
-				GB_CallInfoPtr pCI = *Cast(GB_CallInfoPtr*,pc) ;
+				CallInfoPtr pCI = *Cast(CallInfoPtr*,pc) ;
 				GB_Skip_CallInfoPtr ;
 				IF_GB_TR_ON(3,{printf("GB_Ins_CallC-ty: pCI.ty=%s\n", pCI->ccall.type) ;}) ;
 				// p = GB_SPRel(1) ;										/* args													*/
@@ -1350,7 +1350,7 @@ gb_interpreter_InsEvalEntry:
 									MemCopyBackward(p2,p,sp) ;										/* push args on stack 				*/
 									pc = Cast(GB_BytePtr,n->content.fields[0]) ;					/* jump to function 				*/
 									GB_Check_StackSize(pc) ;
-									GB_Push(&gb_code_AfterEvalCall[sizeof(GB_CallInfo_Inline)]) ;	/* ret addr is to update 			*/
+									GB_Push(&gb_code_AfterEvalCall[sizeof(CallInfo_Inline)]) ;		/* ret addr is to update 			*/
 									GB_BP_Link ;													/* and bp							*/
 									n->header = GB_NH_SetFld_NdEv(h,GB_NodeNdEv_BlH) ;				/* may not be eval'd when eval'd	*/
 									break ;
@@ -1385,7 +1385,7 @@ gb_interpreter_InsEvalEntry:
 									GB_Push(pc) ;													/* save ret for after eval 			*/
 									GB_BP_Link ;													/* and bp							*/
 									GB_Push(x = n->content.fields[0]) ;								/* push function to eval 			*/
-									pc = &gb_code_AfterEvalApplyFunCall[sizeof(GB_CallInfo_Inline)] ;
+									pc = &gb_code_AfterEvalApplyFunCall[sizeof(CallInfo_Inline)] ;
 									goto gb_interpreter_InsEvalEntry ;								/* evaluate							*/
 									break ;
 								case GB_NodeTagCat_Ind :
@@ -1482,7 +1482,7 @@ gb_interpreter_InsApplyEntry:
 							GB_SPRelx(nMiss+1) = nLeftOver ;
 							GB_PushNodeArgs(n,h,p,p2) ;									/* copy arguments from partial app							*/
 							pc = Cast(GB_BytePtr,n->content.fields[0]) ;						/* call function									*/
-							GB_Push( Cast(GB_Word,&gb_code_AfterCallInApplyWithTooManyArgs[sizeof(GB_CallInfo_Inline)]) ) ;  /* with continuation set to another apply			*/
+							GB_Push( Cast(GB_Word,&gb_code_AfterCallInApplyWithTooManyArgs[sizeof(CallInfo_Inline)]) ) ;  /* with continuation set to another apply			*/
 							GB_BP_Link ;
 						} else if ( nLeftOver == 0 ) {
 							sp = Cast(GB_Ptr,GB_SPRel(2)) ;								/* remove node+size from stack 								*/
@@ -1535,7 +1535,7 @@ gb_interpreter_InsApplyEntry:
 				MemCopyForward(sp,p3,p) ;
 				GB_Push(p2) ;
 				// IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCInfo*,x2)->nrOfTOS_No_GCTrace, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
-				IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GB_GCStackInfo*,x2)->sz, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
+				IF_GB_TR_ON(3,{printf( "alloc sz=%d gcinfo=%x->%x p=%p:", x, x2, Cast(GCStackInfo*,x2)->sz, p2 );gb_prWordAsNode(Cast(GB_NodePtr,p2));printf("\n");}) ;
 #				if USE_EHC_MM
 					IF_GB_TR_ON(3,{printf( "alloc space=%p\n", mm_Spaces_GetSpaceForAddress( (Word)p2 ) );}) ;
 #				endif
@@ -1672,8 +1672,8 @@ gb_interpreter_InsApplyEntry:
 %%]]
 						switch ( GB_FromBPToCallInfo(bp)->kind ) {
 %%[[1010
-							case GB_CallInfo_Kind_EvAppFunEvCont :
-								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) {
+							case CallInfo_Kind_EvAppFunEvCont :
+								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == CallInfo_Kind_TailEvalCont ) {
 									bpNext = (WPtr)*bpNext ;										/* remove the intermediate update admin */
 									goto gb_interpreter_TailEval_ElimCont ;
 								} else {
@@ -1681,15 +1681,15 @@ gb_interpreter_InsApplyEntry:
 								}
 								break ;
 %%]]
-							case GB_CallInfo_Kind_EvCont :
-								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) {
+							case CallInfo_Kind_EvCont :
+								if ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == CallInfo_Kind_TailEvalCont ) {
 									bpNext = (WPtr)*bpNext ;										/* remove the intermediate update admin */
 									goto gb_interpreter_TailEval_ElimCont ;
 								} else {
 									goto gb_interpreter_TailEval_Default ;
 								}
 								break ;
-							case GB_CallInfo_Kind_TailEvalCont :
+							case CallInfo_Kind_TailEvalCont :
 gb_interpreter_TailEval_ElimCont:
 %%[[1010
 								do {
@@ -1700,7 +1700,7 @@ gb_interpreter_TailEval_ElimCont:
 									GB_UpdWithIndirection_Code_Ind(nOld,x,h,;) ;						/* and let it indirect to the thing to be tailevaluated */
 									GB_SetTOS(x) ;														/* go on evaluating with the new value */
 %%[[1010
-								} while ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == GB_CallInfo_Kind_TailEvalCont ) ;
+								} while ( (bpNext = (WPtr)*bp) != NULL && GB_FromBPToCallInfo(bpNext)->kind == CallInfo_Kind_TailEvalCont ) ;
 %%]]
 								break ;
 							default :
@@ -1715,9 +1715,9 @@ gb_interpreter_TailEval_Default:
 						// acting as forward indirection to the new evaluation
 						WPtr bpEvUpd ;
 						if (  bp != NULL
-						   && GB_FromBPToCallInfo(bp)->kind == GB_CallInfo_Kind_EvCont
+						   && GB_FromBPToCallInfo(bp)->kind == CallInfo_Kind_EvCont
 						   && (bpEvUpd = (WPtr)*bp) != NULL
-						   && GB_FromBPToCallInfo(bpEvUpd)->kind == GB_CallInfo_Kind_TailEvalCont
+						   && GB_FromBPToCallInfo(bpEvUpd)->kind == CallInfo_Kind_TailEvalCont
 						   )
 						{			
 							bp = (WPtr)*bpEvUpd ;												/* remove the intermediate update admin */
@@ -1734,7 +1734,7 @@ gb_interpreter_TailEval_Default:
 							GB_Push( x ) ;														/* value to eval as arg to eval			*/
 						}
 %%]]
-						pc = &gb_code_AfterTailEvalCall[sizeof(GB_CallInfo_Inline)] ;			/* ret addr is to taileval cleanup 			*/
+						pc = &gb_code_AfterTailEvalCall[sizeof(CallInfo_Inline)] ;			/* ret addr is to taileval cleanup 			*/
 %%[[1010
 						printf( "GB_Ins_TailEval AFT" ) ;
 						if (bp) { 
@@ -1880,20 +1880,20 @@ GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException1 bp %p\n", bp) ;}) ;
 	GB_Push( e ) ;																							// build stack frame which just returns the value
 	GB_Push( 1 ) ;
-	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(GB_CallInfo_Inline)]) ) ;		// return, marked as handler
+	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_NormalReturn_MarkedAsHandler[sizeof(CallInfo_Inline)]) ) ;		// return, marked as handler
 	GB_BP_Link ;
 	
 	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException2 bp %p\n", bp) ;}) ;
-	IF_GB_TR_ON(3,{GB_CallInfo* ci ;ci = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci );printf("\n");}) ;
+	IF_GB_TR_ON(3,{CallInfo* ci ;ci = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci );printf("\n");}) ;
 	
 	GB_Push( handler ) ;																					// build adapted copy of primitive stack frame
 	GB_Push( e ) ;
 	GB_Push( 2 ) ;
-	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(GB_CallInfo_Inline)]) ) ;						// with return to evaluation code
+	GB_Push( Cast(GB_Word,&gb_code_ExcHdl_EvalValue[sizeof(CallInfo_Inline)]) ) ;						// with return to evaluation code
 	GB_BP_Link ;
 	
 	IF_GB_TR_ON(3,{printf("gb_intl_primCatchException3 bp %p\n", bp) ;}) ;
-	IF_GB_TR_ON(3,{GB_CallInfo* ci2 ;ci2 = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci2 );printf("\n");}) ;
+	IF_GB_TR_ON(3,{CallInfo* ci2 ;ci2 = GB_FromBPToCallInfo(bp) ;gb_prCallInfo( ci2 );printf("\n");}) ;
 	
 	return e ;
 }
@@ -1901,7 +1901,7 @@ GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler )
 GB_NodePtr gb_intl_throwException( GB_Word exc )
 {
 	GB_Ptr p ;
-	GB_CallInfo* ci ;
+	CallInfo* ci ;
 	Bool didEncounterExplicitStackTrace = False ;
 	GB_NodePtr thrownExc ;
 	GB_NodePtr reifiedBackTrace, explicitStackTrace ;
@@ -1917,15 +1917,15 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	
 	IF_GB_TR_ON(3,{printf("gb_intl_throwException bp %p : ", bp) ; printf("\n");}) ;
 	for ( p = bp
-	    ; p != NULL && ((ci = GB_FromBPToCallInfo(p))->kind) != GB_CallInfo_Kind_Hdlr
+	    ; p != NULL && ((ci = GB_FromBPToCallInfo(p))->kind) != CallInfo_Kind_Hdlr
 	    ; p = Cast(GB_Ptr,*p)
 	    )
 	{
 		IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo1: p %p : ", p) ; gb_prCallInfo( ci ); printf("\n");}) ;
 		GB_Ptr p2 ;
-		if ( ci->kind == GB_CallInfo_Kind_EvCont && (p2 = Cast(GB_Ptr,*p)) != NULL ) {						// if we are in a continuation of an eval then patch it
-			GB_CallInfo* ci2 = GB_FromBPToCallInfo(p2) ;
-			if ( ci2->kind == GB_CallInfo_Kind_Eval || ci2->kind == GB_CallInfo_Kind_EvalWrap || ci2->kind == GB_CallInfo_Kind_EvalTopWrap ) {
+		if ( ci->kind == CallInfo_Kind_EvCont && (p2 = Cast(GB_Ptr,*p)) != NULL ) {						// if we are in a continuation of an eval then patch it
+			CallInfo* ci2 = GB_FromBPToCallInfo(p2) ;
+			if ( ci2->kind == CallInfo_Kind_Eval || ci2->kind == CallInfo_Kind_EvalWrap || ci2->kind == CallInfo_Kind_EvalTopWrap ) {
 				if ( thrownExc == NULL ) {
 					GB_MkCFunNode1In(thrownExc,&gb_intl_throwException,exc) ;									// if not done already, construct exception throwing thunk
 				}
@@ -1933,7 +1933,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 				IF_GB_TR_ON(3,{printf("gb_intl_throwException:callInfo2: p %p p2 %p nOld %p: ", p, p2, nOld) ; gb_prCallInfo( ci2 ); printf("\n");}) ;
 				GB_UpdWithIndirection_Code_Tmp(nOld,Cast(GB_Word,thrownExc)) ;											// update node under evaluation with exception throwing thunk
 			}
-		} else if ( ci->kind == GB_CallInfo_Kind_EvalTopWrap ) {
+		} else if ( ci->kind == CallInfo_Kind_EvalTopWrap ) {
 			gb_ThrownException_NrOfEvalWrappers++ ;
 		}
 		if ( gb_prCallInfoIsVisible(ci) && ci->name ) {
@@ -1949,9 +1949,9 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 			GB_GCSafe_Leave ;
 		}
 		if ( ! didEncounterExplicitStackTrace ) {
-			GB_FunctionInfo* fi = gb_CallInfo_GetFunctionInfo( gb_AllMod, ci ) ;
+			FunctionInfo* fi = gb_CallInfo_GetFunctionInfo( gb_AllMod, ci ) ;
 			// if (fi) {printf("gb_intl_throwException fi->nm=%s fi->flags=%x\n",fi->nm,fi->flags) ;}
-			if ( fi != NULL && fi->flags & GB_FunctionInfoFlag_1stArgIsStackTrace ) {
+			if ( fi != NULL && fi->flags & FunctionInfoFlag_1stArgIsStackTrace ) {
 				explicitStackTrace = (GB_NodePtr)GB_RegRelx(p,2) ;
 				// gb_prWord( (Word)explicitStackTrace ) ; printf("\n") ;
 				// gb_prStack( p, 10 ) ;
@@ -1963,7 +1963,7 @@ GB_NodePtr gb_intl_throwException( GB_Word exc )
 	
 	if ( p != NULL ) {
 		sp = bp = p ;																						// stack is unwound to handler frame
-		GB_SetSPRel( 1, Cast(GB_Word,&gb_code_ExcHdl_ThrowReturn[sizeof(GB_CallInfo_Inline)]) ) ;			// patch return address so primitive returns to handler calling code
+		GB_SetSPRel( 1, Cast(GB_Word,&gb_code_ExcHdl_ThrowReturn[sizeof(CallInfo_Inline)]) ) ;			// patch return address so primitive returns to handler calling code
 	} else {
 		gb_panic( "uncaught exception" ) ;
 	}
@@ -2000,7 +2000,7 @@ GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type
 
 static char gb_intl_throwStackOverflow_Buffer[100] ;
 
-GB_NodePtr gb_intl_throwStackOverflow( GB_FunctionInfo* functionInfo )
+GB_NodePtr gb_intl_throwStackOverflow( FunctionInfo* functionInfo )
 {
 	GB_NodePtr exc, stk, str ;
 	GB_GCSafe_Enter ;
@@ -2028,7 +2028,7 @@ void gb_exit( int i )
 	GB_Ptr p = bp ;
 	while ( p != NULL )
 	{
-		GB_CallInfo* ci = GB_FromBPToCallInfo(p) ;
+		CallInfo* ci = GB_FromBPToCallInfo(p) ;
 		if ( gb_prCallInfoIsVisible( ci ) )
 		// if ( True )
 		{
@@ -2063,8 +2063,11 @@ void gb_Initialize()
 %%[[99
 	// GB_InitPatch_gb_code_Startup ;
 %%]]
+	// stack grows from high to low, so initialize with high address
 	sp = Cast(GB_Ptr,StackAreaHigh) ;
-	bp = Cast(GB_Ptr,0) ;
+	
+	// first bp link terminates the bp list link; also assumed to be NULL by the garbage collector
+	bp = Cast(GB_Ptr,NULL) ;
 
 #	if USE_EHC_MM
 		GB_MkConNodeN_Rooted(gb_Nil,0,GB_Tag_List_Nil) ;
@@ -2097,10 +2100,10 @@ void gb_InitTables
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	// , GB_GCInfo* gcInfos
-	, GB_GCStackInfo* gcStackInfos
+	, GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
-	, GB_CallInfo* callinfos, int callinfosSz
-	, GB_FunctionInfo* functionInfos, int functionInfosSz
+	, CallInfo* callinfos, int callinfosSz
+	, FunctionInfo* functionInfos, int functionInfosSz
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20
@@ -2130,8 +2133,8 @@ void gb_InitTables
 	}
 
 	for ( i = 0 ; i < callinfosSz ; i++ ) {
-		GB_FunctionInfo_Inx off = callinfos[i].functionInfoModOff ;
-		if ( off == GB_FunctionInfo_Inx_None ) {
+		FunctionInfo_Inx off = callinfos[i].functionInfoModOff ;
+		if ( off == FunctionInfo_Inx_None ) {
 			callinfos[i].functionInfoModOff = modTblInx ;
 		} else {
 			callinfos[i].functionInfoModOff = impModules[ off ].globModInx ;

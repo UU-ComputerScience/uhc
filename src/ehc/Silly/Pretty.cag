@@ -43,21 +43,23 @@ ATTR SilModule Functions Function Statements Statement Alternatives Alternative 
 
 
 SEM SilModule
-  | SilModule  lhs.pretty = @functions.pretty
+  | SilModule  lhs.pretty = prettyConstants @constants
+                            >-< prettyVariables @variables
+                            >-< @functions.pretty
   
   
 %%[[8
 SEM Function
   | Function   lhs.pretty = "FUNCTION" >#< (hsnShowAlphanumeric @name) >#< "(" >#< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >#< ")"
                             >-< "{"
-                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >#< ";")
+                            >-< indent 4 ("DECLARE" >#< foldr (>#<) empty (map showNameWithType @locals) >#< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
 %%][8_2
 SEM Function
   | Function   lhs.pretty = "function" >#< (hsnShowAlphanumeric @name) >|< "(" >|< foldr (>#<) empty (map hsnShowAlphanumeric @parameters) >|< ")"
                             >-< "{"
-                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map hsnShowAlphanumeric @locals) >|< ";")
+                            >-< indent 4 ("locals" >#< foldr (>#<) empty (map showNameWithType @locals) >|< ";")
                             >-< indent 4 (@body.pretty)
                             >-< "}"
 %%]]
@@ -134,4 +136,23 @@ comment :: [String] -> PP_Doc
 comment []  = text ""
 comment [s] = text ("// " ++ s)
 comment xs  = text "/* " >#< foldr1 (>-<) (map text xs) >-< text "*/"
+
+
+showNameWithType :: (HsName, SilTp) -> PP_Doc
+showNameWithType (nm,tp) = hsnShowAlphanumeric nm >|< ":" >|< show tp
+
+
+prettyConstants :: [(String,Int,[SilTp])] -> PP_Doc
+prettyConstants xs 
+   = foldr1 (>-<) (text "CONSTANTS" : map prettyConstant xs)
+ 
+prettyConstant :: (String,Int,[SilTp]) -> PP_Doc
+prettyConstant (s,n,ps)
+  =  text s >#< text (show n) >#< text (show ps)
+
+
+prettyVariables :: [HsName] -> PP_Doc
+prettyVariables xs
+  = text "GLOBALS" >#< foldr (>#<) empty (map hsnShowAlphanumeric xs) >#< ";"
+
 %%]

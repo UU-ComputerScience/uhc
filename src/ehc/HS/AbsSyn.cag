@@ -231,6 +231,7 @@ DATA Declaration                                  {- *** -}
         types                    : Types
     | Default
         range                    : Range
+        name                     : MaybeName
         types                    : Types        -- should be instances of Num
 %%]
 %%[11

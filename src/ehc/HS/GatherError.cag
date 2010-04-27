@@ -197,6 +197,8 @@ SEM Declaration
         loc         .   errSq       =   Seq.firstNotEmpty [Seq.fromList @errIdUse, @context.errSq, @types.errSq, @where.errSq, Seq.fromList @errReorder]
     | InstanceUseImplicitly
         loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @expression.errSq, @types.errSq]
+    | Default
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errIdUse, @types.errSq]
 %%]
 
 %%[11

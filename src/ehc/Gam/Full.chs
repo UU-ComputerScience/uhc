@@ -19,6 +19,8 @@
 %%]
 %%[7 hs import ({%{EH}Gam.DataGam}) export(module {%{EH}Gam.DataGam})
 %%]
+%%[9 hs import ({%{EH}Gam.ClassDefaultGam}) export(module {%{EH}Gam.ClassDefaultGam})
+%%]
 %%[17 hs import ({%{EH}Gam.PolGam}) export(module {%{EH}Gam.PolGam})
 %%]
 

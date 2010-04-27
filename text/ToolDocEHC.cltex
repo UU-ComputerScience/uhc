@@ -12,7 +12,7 @@
 %%@ToolDocEHC.testRegress
 
 \section{Shoot trouble (hopefully optional)}
-See the troubleshooting FAQ in the \eref{EhcUserDocumentation}{UHC manual}.
+See the troubleshooting FAQ in the \eref{UhcUserDocumentation}{UHC manual}.
 
 %%]
 
@@ -97,6 +97,10 @@ hence no documentation is currently available.
 \subsection{Absence of monomorphism restriction}
 \label{absence-monomorphism-restriction}
 %%@ToolDocEHC.absenceMonomorphismRestriction
+
+\subsection{Default for ambiguous overloading}
+\label{default-ambiguous-overloading}
+%%@ToolDocEHC.defaultAmbiguousOverloading
 
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
@@ -907,6 +911,29 @@ Existential types do not work with:
 \item Class instances to be hidden together with the existential.
 \end{itemize}
 
+%%]
+
+%%[defaultAmbiguousOverloading doclatex
+Defaults can only be defined per class,
+following a \href{http://hackage.haskell.org/trac/haskell-prime/wiki/Defaulting}{Haskell prime defaulting} proposal.
+\begin{pre}
+class C a where
+  c :: a -> a
+
+instance C Int where
+  c = id
+
+default C Int
+\end{pre}
+The Haskell98 form of @default@ is syntactically allowed, but silently ignored.
+Multiple types may be specified, currently only the first one is used:
+
+\begin{pre}
+default C (Int,Integer)
+\end{pre}
+
+The scope of @default@ declarations is the same as for instances: a default definition is silently imported when an import declaration.
+Defaults cannot be turned off.
 %%]
 
 %%[absenceMonomorphismRestriction doclatex
