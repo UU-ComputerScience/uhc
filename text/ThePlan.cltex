@@ -53,12 +53,20 @@
 %%@ThePlan.workPackages.backends
 
 \newpage
+\subsection{Optimizations}
+%%@ThePlan.workPackages.optimizations
+
+\newpage
 \subsection{Library, tool environment, UHC as a tool}
 %%@ThePlan.workPackages.library
 
 \newpage
 \subsection{Measuring UHC}
 %%@ThePlan.workPackages.measure
+
+\newpage
+\subsection{Metatooling}
+%%@ThePlan.workPackages.metatooling
 
 \section{Work package dependency graph}
 \pagestyle{empty}
@@ -85,13 +93,17 @@
 \the\toks0 \relax
 
 % dpd: the .dot file holding the dependencies
+% done: the .dot file holding the done jobs
 \newwrite\DpdFile
+\newwrite\DoneFile
 \openout\DpdFile=\jobname.dot\relax
+\openout\DoneFile=\jobname-done.dot\relax
 
-% write to dpd
+% write to dpd/done
 \def\writeDpd#1{\write\DpdFile{#1}}
+\def\writeDone#1{\write\DoneFile{#1}}
 
-% init dpd
+% init dpd/done
 \writeDpd{digraph}
 \writeDpd\curlyopenchar
 \writeDpd{rankdir=LR; node [shape=none, height=0.3];}
@@ -162,13 +174,15 @@
 }
 
 % enumeration for activity kind
-\define@@choicekey{dpd}{activity}[\val\nr]{research,maint}{%
+\define@@choicekey{dpd}{activity}[\val\nr]{research,maint,ongoing,finished}{%
  \ifcase\nr\relax
-  %\gdef\dpdActivityOpts{,style=filled,fillcolor=indianred1}
   \gdef\dpdActivityLabelTDOpts{ BGCOLOR="indianred1"}
  \or
-  %\gdef\dpdActivityOpts{,style=filled,fillcolor=chartreuse1}
   \gdef\dpdActivityLabelTDOpts{ BGCOLOR="chartreuse1"}
+ \or
+  \gdef\dpdActivityLabelTDOpts{ BGCOLOR="yellow"}
+ \or
+  \gdef\dpdActivityLabelTDOpts{ BGCOLOR="green"}
  \fi
 }
 
@@ -296,7 +310,7 @@
  {topgoal}% options
  {Perf.Exec}% ident
  {UHC generated executable performance}% descr
- {ConfigGC,Perf.ExecSz,Fusion,Perf.ExecSpd,Perf.ExecMem,Par.UHC,OptShare}% prerequisites (, separated)
+ {ConfigGC,Perf.ExecSz,Fusion,Perf.ExecSpd,Perf.ExecMem,Par.UHC,OptShare,TypeIso}% prerequisites (, separated)
  {}% required time
  {perf}% kind of work
  {Goal}% categorization, area to which this applies
@@ -322,7 +336,7 @@ Placeholder for goal general performance of UHC itself.
  {topgoal}% options
  {Feature}% ident
  {General desirable features}% descr
- {GADT,ExtRec,FunDep,ExistPred,GHC.lib,GC.Extra,Conc,Generic,MutRec,ModSys,ExplImpl,MetaProg,DpdTyped,PersState}% prerequisites (, separated)
+ {1stClassAG,GADT,ExtRec,FunDep,ExistPred,GHC.lib,GC.Extra,Conc,Generic,MutRec,ModSys,ExplImpl,MetaProg,DpdTyped,PersState}% prerequisites (, separated)
  {}% required time
  {Compat}% kind of work
  {Goal,CompatGHC}% categorization, area to which this applies
@@ -348,7 +362,7 @@ Placeholder for goal Haskell platform compatibility.
  {topgoal}% options
  {Backend}% ident
  {Various backends}% descr
- {Backend.C,Backend.BC,Backend.Jazy,Backend.LLVM,Backend.PartWhole}% prerequisites (, separated)
+ {Backend.SAPL,Backend.C,Backend.BC,Backend.Jazy,Backend.LLVM,Backend.PartWhole}% prerequisites (, separated)
  {}% required time
  {Backend}% kind of work
  {Goal,Backend}% categorization, area to which this applies
@@ -400,7 +414,7 @@ UHC can be used as a tool (not as a subject of investigation).
  {topgoal}% options
  {MetaTool}% ident
  {Tools to make UHC}% descr
- {Ruler}% prerequisites (, separated)
+ {Ruler,1stClassAG}% prerequisites (, separated)
  {}% required time
  {MetaTool}% kind of work
  {Goal}% categorization, area to which this applies
@@ -426,7 +440,7 @@ Compiletime detection of correctness aspects, varying from typing to runtime beh
  {topgoal}% options
  {RealWorld}% ident
  {Support for specific real world programming needs}% descr
- {PersState}% prerequisites (, separated)
+ {PersState,Backend.SAPL}% prerequisites (, separated)
  {}% required time
  {Correct}% kind of work
  {Goal}% categorization, area to which this applies
@@ -779,7 +793,8 @@ Support for dependently typed programming
  {Lang}% categorization, area to which this applies
  {}% startdate
  {}% worker
-For web-based programming.
+For web-based programming: reading/writing of heap state by GC when starting/exiting program.
+Meant for CGI style programming state persistence.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
@@ -813,7 +828,7 @@ n+k patterns will not be done (is removed in Haskell 2010).
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {Default}% ident
  {Haskell 98 defaulting mechanism}% descr
  {}% prerequisites (, separated)
@@ -879,7 +894,7 @@ Pattern guards.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {Pragma}% ident
  {Language pragmas}% descr
  {}% prerequisites (, separated)
@@ -1158,7 +1173,7 @@ UHC regression tests.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {TyCore}% ident
  {Typed core}% descr
  {}% prerequisites (, separated)
@@ -1171,7 +1186,7 @@ Type core, based on GHC's core, Henk (|lambda|-cube), and calling conventions as
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {Pkg}% ident
  {Package support}% descr
  {}% prerequisites (, separated)
@@ -1184,7 +1199,7 @@ Use and build of versioned packages. Mostly done.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {Cabal.lib}% ident
  {UHC use via Cabal for building packages}% descr
  {Pkg}% prerequisites (, separated)
@@ -1197,9 +1212,26 @@ Adapting cabal so it can invoke UHC.
 \end{WorkPackage}
 %%]
 
-%%[workPackages.backends
+%%[workPackages.optimizations
 \begin{WorkPackage}%
  {}% options
+ {TypeIso}% ident
+ {Transforming code following type isomorphisms}% descr
+ {1stClassAG}% prerequisites (, separated)
+ {}% required time
+ {optimization}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Transform according to type isomorphisms like |(,(,)) = (,,)|, that is, remove a level of indirection.
+Such optimizations are necessary when using |HList| like libraries.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.backends
+\begin{WorkPackage}%
+ {activity=ongoing}% options
  {Backend.BC}% ident
  {Interpreter backend}% descr
  {}% prerequisites (, separated)
@@ -1213,7 +1245,7 @@ Per module compilation until object code, then linked to whole program.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=ongoing}% options
  {Backend.C}% ident
  {Whole program analysis backend}% descr
  {WholeAna.+HPT,WholeAna.-HPT}% prerequisites (, separated)
@@ -1224,6 +1256,19 @@ Per module compilation until object code, then linked to whole program.
  {JF}% worker
 Whole program analysis backend.
 Per module compilation until GRIN code, then linked to whole program, followed by HPT analyses and optimizations, finally one C module generated.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Backend.SAPL}% ident
+ {Martin Jansen's SAPL backend}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {}% startdate
+ {Martin Jansen}% worker
+Backend created by Martin Jansen, for javascript (I think?), for client side part of web applications.
 \end{WorkPackage}
 
 \begin{WorkPackage}%
@@ -1350,7 +1395,7 @@ Compiler driver based on Nix (\& Camera) ideas. Dependent values are described b
 \end{WorkPackage}
 
 \begin{WorkPackage}%
- {}% options
+ {activity=finished}% options
  {UHC.BinFile}% ident
  {Binary represented intermediate files}% descr
  {}% prerequisites (, separated)
@@ -1374,6 +1419,22 @@ Binary representation of .hi files instead of readable and parseable (and time c
  {}% worker
 Helium using UHC as a backend.
 To get rid of current backend but keep the frontend.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.metatooling
+\begin{WorkPackage}%
+ {}% options
+ {1stClassAG}% ident
+ {First class AG and syntax macros in UHC}% descr
+ {TypeIso}% prerequisites (, separated)
+ {}% required time
+ {MetaUHC}% kind of work
+ {Tooling}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Incorporation into UHC of Marcos Viera work on first class AG, syntax macros.
 \end{WorkPackage}
 
 %%]
