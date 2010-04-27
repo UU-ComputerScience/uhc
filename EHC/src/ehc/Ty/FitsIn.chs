@@ -1575,7 +1575,7 @@ fitPredIntoPred fi pr1 pr2
 %%]]
         f pr1                   pr2
           = if foHasErrs fo
-            then Nothing
+            then {- tr "fitPredIntoPred" (pr1 >-< pr2 >-< ppErrL (foErrL fo) >-< fiVarMp fi) $ -} Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
           where fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)})
                             (fiEnv fi) (fiUniq fi) (fiVarMp fi)
