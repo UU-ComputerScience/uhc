@@ -93,9 +93,9 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
   | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
-                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
+                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp
                                                             , rceCaseIds = @caseIds
                                                             }
 %%]
@@ -103,17 +103,17 @@ SEM Expr
 %%[(8 hmtyinfer codegen)
 SEM PatExpr
   | AppTop Rec DataFields
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 %%[(8 hmtyinfer codegen)
 SEM Decl
-  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 %%[(95 hmtyinfer codegen)
 SEM Decl
-  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
+  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 TyCore variant/clone:
@@ -124,9 +124,9 @@ SEM Expr
 %%[[12
     LamImpl
 %%]]
-                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
   | Case        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts)
-                                                            { C.rceValGam  = @lhs.valGam, C.rceDataGam = @lhs.dataGam
+                                                            { C.rceValGam  = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp
                                                             , C.rceCaseIds = @caseIds
                                                             }
 %%]
@@ -134,16 +134,16 @@ SEM Expr
 %%[(8 hmtyinfer codegen)
 SEM PatExpr
   | AppTop Rec DataFields
-                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 %%[(8 hmtyinfer codegen)
 SEM Decl
-  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
 %%[(95 hmtyinfer codegen)
 SEM Decl
-  | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
+  | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
