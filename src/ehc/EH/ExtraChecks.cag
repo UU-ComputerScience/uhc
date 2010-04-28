@@ -164,16 +164,18 @@ SEM Expr
 %%][99
   | Let         loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
 %%]]
-                            .   predAmbigErrs       =   let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts @tqoGam
-                                                            amb = [ poPr o | o <- @quantPrOccL, not (poPoi o `Set.member` assumedByQuant) ]
+                            .   predAmbigCheck      =   \tqoGam prOccL
+                                                           -> let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+                                                              in  [ o | o <- prOccL, not (poPoi o `Set.member` assumedByQuant) ]
+                            .   predAmbigErrs       =   let amb = @predAmbigCheck @tqoGam @quantPrOccL
                                                             mkg = assocLMapElt (ppTy . vgiTy) . gamToAssocL
                                                         in  if null amb
                                                             then []
                                                             else [rngLift @range Err_AmbigPreds
 %%[[9
-                                                                    amb
+                                                                    (map poPr amb)
 %%][99
-                                                                    (map (mkRangedPred @lhs.rangeMp) amb)
+                                                                    (map (mkRangedPred @lhs.rangeMp . poPr) amb)
 %%]]
                                                                     (mkg @quValGam_ex_subst) (mkg $ @tyVarMpDeclsL0 |=> @valGam_l_)
                                                                  ]

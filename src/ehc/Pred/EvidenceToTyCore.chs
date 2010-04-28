@@ -63,6 +63,7 @@ data ToCoreState p info
   = ToCoreState
       { tcsMp       :: !(Map.Map UID ToCoreRes)
       , tcsEvMp     :: !(Map.Map (Evidence p info) ToCoreRes)
+      , tcsPrMp     :: !(Map.Map p HsName)						-- map for recursive proof, names for predicates to be introduced
       , tcsUniq     :: !UID
       }
 
@@ -102,7 +103,7 @@ predScopeToValBindMapUnion = Map.unionWith (++)
 evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[AmbigEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrExpr r,tcrUsed r,tcrScope r)) $ tcsMp
-      $ foldr mke (ToCoreState Map.empty Map.empty (fiUniq env))
+      $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))
       $ evidMp'
     , concat ambigs
     )
@@ -110,7 +111,7 @@ evidMpToCore env evidMp
         mke (RedHow_ProveObl i _,ev) st = fst $ mk1 st (Just i) ev
         mk1 st mbevk ev@(Evid_Proof p info evs)
                       = dbg "evidMpToCore.mk1.a" $ ins (insk || isJust mbevk) evk evnm ev c sc (Set.unions (uses : map tcrUsed rs)) (st' {tcsUniq=u'})
-                      where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn st evs
+                      where (st'@(ToCoreState {tcsUniq=u}),rs) = mkn (st {tcsPrMp = Map.insert p evnm $ tcsPrMp st}) evs
                             (c,sc)          = ann info rs
                             (u',evk,insk,evnm,uses)
                                             = case info of
@@ -121,6 +122,13 @@ evidMpToCore env evidMp
                                                                         where (u1,u2) = mkNewUID u
                             choosek k = maybe k id mbevk
                             choosen n = maybe n mkHNm mbevk
+        mk1 st@(ToCoreState {tcsUniq=u}) mbevk ev@(Evid_Recurse p)
+                      = ins True
+                            u2 (mkHNm u2) ev (mknm recnm) (cpoScope p)
+                            Set.empty
+                            (st {tcsUniq=u1})
+                      where (u1,u2) = mkNewUID u
+                            recnm = panicJust "(TyCore)evidMpToCore.Evid_Recurse" $ Map.lookup p $ tcsPrMp st
         mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (C.tcUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
         mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x

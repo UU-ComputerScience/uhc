@@ -202,7 +202,10 @@ simplify env chrStore heur toProveHereCnstrMpPrev toProveHereCnstrMp prevRes
                                     (let m = Set.map cnstrPred $ Map.keysSet toProveHereCnstrMpCanon in \p -> Set.member p m)
                                     (simpresRedGraph chrSimplifyResult2)
         chrSimplifyResult3
-          = chrSimplifyResult2 {simpresRedGraph = redGraphPruned}
+          = chrSimplifyResult2
+              { simpresRedGraph  = redGraphPruned
+              , simpresRedGraphs = ("simplify pruned",redGraphPruned) : simpresRedGraphs chrSimplifyResult2
+              }
         
         -- (2nd time) RedGraph to Evidence
         ((chrSolveRemCnstrMp2,chrSolveEvidMp,chrSolveErrs),chrSimplifyResult4)

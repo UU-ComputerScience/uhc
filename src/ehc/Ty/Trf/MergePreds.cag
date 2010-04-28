@@ -22,7 +22,7 @@ what the context to be passed will be. To solve this, each possible location for
 %%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.Trf.MergePreds} import(EH.Util.Utils,{%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable})
+%%[(9 hmtyinfer || hmtyast) hs import({%{EH}Ty},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam})
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,qualified Data.Map as Map,Data.List as List,Data.Maybe)
@@ -71,6 +71,10 @@ instance Show TyMergePredOut where
 
 instance PP TyMergePredOut where
   pp tmpo = pp (tmpoImplsVarMp tmpo) >-< ppAssocLV (assocLMapElt ppBracketsCommas $ tmpoImplsPrvReq tmpo)
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs export(TQOGam)
+type TQOGam = Gam HsName TyMergePredOut
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

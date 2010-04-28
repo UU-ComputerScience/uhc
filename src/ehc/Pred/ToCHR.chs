@@ -303,13 +303,14 @@ data SimplifyResult p i g s
       -- for debugging only:
       , simpresRedAlts			:: [HeurAlts p i]
       , simpresRedTrees			:: [[(i, Evidence p i)]]
+      , simpresRedGraphs		:: [(String,RedGraph p i)]
       }
 
 emptySimplifyResult :: Ord p => SimplifyResult p i g s
 emptySimplifyResult
   = SimplifyResult
       emptySolveState emptyRedGraph
-      [] []
+      [] [] []
 %%]
 
 %%[(9 hmtyinfer) export(simplifyResultResetForAdditionalWork)
@@ -418,7 +419,11 @@ chrSimplifySolveToRedGraph
              )
 chrSimplifySolveToRedGraph env chrStore cnstrInfoMpPrev cnstrInfoMp prevRes
   = ( cnstrInfoMpAll
-    , emptySimplifyResult {simpresSolveState = solveState, simpresRedGraph = redGraph}
+    , emptySimplifyResult
+        { simpresSolveState = solveState
+        , simpresRedGraph   = redGraph
+        , simpresRedGraphs  = ("chrSimplifySolveToRedGraph",redGraph) : simpresRedGraphs prevRes
+        }
     )
   where (_,u1,u2) = mkNewLevUID2 $ fiUniq env
         solveState = chrSolve'' (env {fiUniq = u1}) chrStore (Map.keys $ cnstrInfoMp `Map.difference` cnstrInfoMpPrev) (simpresSolveState prevRes)

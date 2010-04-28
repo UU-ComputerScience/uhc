@@ -87,8 +87,9 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
-                loc         .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @quantPrOccL @valGam_l_
+                loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
+                            .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
+                                                    :=  @doValGamQuantify True @tyVarMpDeclsQuant @quantPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 

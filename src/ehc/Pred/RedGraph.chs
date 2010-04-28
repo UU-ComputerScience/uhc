@@ -134,6 +134,18 @@ redPruneReductionsUntil leaves stop gr
 redAlternatives :: (Ord p {-, PP p, PP info debug -}) => RedGraph p info -> p -> HeurAlts p info
 redAlternatives gr
   = recOr Set.empty
+  where  recOr visited p = HeurAlts p (map (recAnd visited') (successors gr (Red_Pred p)))
+           where visited' = Set.insert p visited
+
+         recAnd visited (i, n)
+           = HeurRed i (map mk qs)
+           where qs = redNodePreds n
+                 mk q | Set.member q visited = HeurAlts q [HeurRed_Rec q]
+                      | otherwise            = recOr visited q
+%%]
+redAlternatives :: (Ord p {-, PP p, PP info debug -}) => RedGraph p info -> p -> HeurAlts p info
+redAlternatives gr
+  = recOr Set.empty
   where  recOr visited p = HeurAlts p (mapMaybe (recAnd visited') (successors gr (Red_Pred p)))
            where visited' = Set.insert p visited
 
@@ -141,5 +153,4 @@ redAlternatives gr
            | any (`Set.member` visited) qs = Nothing
            | otherwise = return $ HeurRed i (map (recOr visited) qs)
            where qs = redNodePreds n
-%%]
 
