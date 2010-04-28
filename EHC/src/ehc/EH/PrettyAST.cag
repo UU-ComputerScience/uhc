@@ -823,7 +823,7 @@ SEM Expr
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
-                                        -- , mkInfo1 "chrSolve1RedGraph (prune)" (pp $ show $ redPruneReductionsUntil @chrSolve1RemPrOccL (let m = Set.map cnstrPred $ Map.keysSet @toProveHereCnstrMpCanon in \p -> Set.member p m) $ @chrSolve1RedGraph)
+                                        , mkInfo1 "chrSimplifyResult1 redgraphs" (ppAssocLV $ assocLMapElt show $ simpresRedGraphs @chrSimplifyResult1)
                                         , mkInfo1 "chrSolve2Trace" (ppSolveTrace @chrSolve2Trace)
                                         , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
                                         , mkInfo1 "chrSolve2RedAlts"  (ppBracketsCommasV @chrSolve2RedAlts )

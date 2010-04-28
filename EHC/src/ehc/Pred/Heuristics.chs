@@ -26,8 +26,20 @@ type SHeuristic p info = HeurAlts p info -> Evidence p info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(HeurAlts(..),HeurRed(..))
-data HeurAlts  p  info = HeurAlts  { redaltsPredicate  :: p,       redaltsAlts  :: [HeurRed p info]    }
-data HeurRed   p  info = HeurRed   { redInfo           :: info,    redContext   :: [HeurAlts p info]   }
+data HeurAlts  p  info
+  = HeurAlts
+     { redaltsPredicate  	:: p
+     , redaltsAlts  		:: [HeurRed p info]
+     }
+
+data HeurRed   p  info
+  = HeurRed
+     { redInfo           	:: info
+     , redContext   		:: [HeurAlts p info]
+     }
+  | HeurRed_Rec
+     { redRecPred           :: p
+     }
 %%]
 
 %%[(9 hmtyinfer)
@@ -43,7 +55,8 @@ instance (PP p, PP info) => PP (HeurAlts  p  info) where
   pp x = "HeurAlts" >#< redaltsPredicate x >#< ppBracketsCommasV (redaltsAlts x)
 
 instance (PP p, PP info) => PP (HeurRed  p  info) where
-  pp x = "HeurRed" >#< redInfo x >#< ppBracketsCommasV (redContext x)
+  pp (HeurRed     i subs) = "HeurRed" >#< i >#< ppBracketsCommasV subs
+  pp (HeurRed_Rec p     ) = "HeurRec" >#< p
 %%]
  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -72,14 +85,15 @@ heurTry f g a  | null (evidUnresolved ev) = ev
 %%% Conversion to evidence
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(toEvidence)
+%%[(9999 hmtyinfer) export(toEvidence)
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = evd (f a)
-  where  evd (HeurAlts p [])                 =  Evid_Unresolved p
-         evd (HeurAlts p [r@(HeurRed i _)])  =  Evid_Proof p i (snd $ red r)
-         evd (HeurAlts p rs)                 =  reallyAmbigEvid p (reds rs)
-         red (HeurRed i alts)                =  (i,map evd alts)
-         reds rs                             =  map red rs
+  where  evd (HeurAlts p [])                   =  Evid_Unresolved p
+         evd (HeurAlts p [r@(HeurRed_Rec p)])  =  Evid_Recurse p
+         evd (HeurAlts p [r@(HeurRed i   _)])  =  Evid_Proof   p i (snd $ red r)
+         evd (HeurAlts p rs)                   =  reallyAmbigEvid p (reds rs)
+         red (HeurRed i alts)                  =  (i,map evd alts)
+         reds rs                               =  map red rs
 %%]
 toEvidence :: (HeurAlts p info -> HeurAlts p info) -> SHeuristic p info
 toEvidence f a = evd (f a)
@@ -97,9 +111,10 @@ toEvidence f a = evd (f a)
 localChoice :: Eq info => (p -> [info] -> [info]) -> SHeuristic p info  
 localChoice choose (HeurAlts p reds) = 
   case filter ((`elem` redinfos) . redInfo) reds of
-    []                  -> Evid_Unresolved p
-    [r@(HeurRed i _)]   -> Evid_Proof p i (snd $ ch r)
-    rs                  -> reallyAmbigEvid p (chs rs)
+    []                    -> Evid_Unresolved p
+    [r@(HeurRed_Rec p)]   -> Evid_Recurse p
+    [r@(HeurRed i   _)]   -> Evid_Proof p i (snd $ ch r)
+    rs                    -> reallyAmbigEvid p (chs rs)
   where redinfos          = choose p (map redInfo reds)
         ch (HeurRed i rs) = (i,map (localChoice choose) rs)
         chs rs            = map ch rs
@@ -132,9 +147,10 @@ heurMaximumBy cmp (x:xs)
 contextChoice :: (p -> [HeurRed p info] -> [HeurRed p info]) -> SHeuristic p info
 contextChoice choose (HeurAlts p reds) = 
   case choose p reds of
-         []                 -> Evid_Unresolved p
-         [r@(HeurRed i _)]  -> Evid_Proof p i (snd $ ch r)
-         rs                 -> reallyAmbigEvid p (chs rs)
+         []                   -> Evid_Unresolved p
+         [r@(HeurRed_Rec p)]  -> Evid_Recurse p
+         [r@(HeurRed i   _)]  -> Evid_Proof p i (snd $ ch r)
+         rs                   -> reallyAmbigEvid p (chs rs)
   where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
@@ -168,9 +184,10 @@ reallyAmbigEvid p evs
 %%[(9 hmtyinfer) export(solvable)
 solvable :: HeurAlts p info -> HeurAlts p info
 solvable (HeurAlts p rs) = HeurAlts p (catMaybes (map heu rs))
-   where heu (HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
-                                  | otherwise          = Nothing
-                                  where reds' = map solvable reds
+   where heu h@(HeurRed info reds)  | all hasAlts reds'  = Just (HeurRed info  reds') 
+                                    | otherwise          = Nothing
+                                    where reds' = map solvable reds
+         heu h@(HeurRed_Rec p    )                       = Just h
 
 hasAlts :: HeurAlts p info -> Bool
 hasAlts (HeurAlts _ [])  = False
@@ -292,6 +309,8 @@ anncmpEHCScoped preferInst env ann1 ann2
       (HeurRed (RedHow_ByScope ByScopeRedHow_Assume) _
                                                 , _                                        )              ->  P_GT
       (_                                        , HeurRed (RedHow_ByScope ByScopeRedHow_Assume) _)        ->  P_LT
+      (HeurRed_Rec _                            , _                                        )              ->  P_GT
+      (_                                        , HeurRed_Rec _                            )              ->  P_LT
       (HeurRed (RedHow_ByInstance  _ p  s) _    , HeurRed (RedHow_ByInstance  _ q  t) _    )              ->  case pscpCmpByLen s t of
                                                                                                                 EQ   -> cmpSpecificness env p q
                                                                                                                 ord  -> toPartialOrdering ord
@@ -318,7 +337,7 @@ If no full solution is possible, we just use the superclass relationship.
 - This relationship is fixed, so closed world choice works here.
 - We also allow for ambiguity here, randomly picking an alternative, the first. This is not good, but will work for now...
 
-%%[(9 hmtyinfer)
+%%[(9999 hmtyinfer)
 ehcAllowForGeneralization :: HeurRed CHRPredOcc RedHowAnnotation -> Bool
 ehcAllowForGeneralization (HeurRed (RedHow_BySuperClass _ _ _) _) = True
 ehcAllowForGeneralization _                                       = False
@@ -370,7 +389,7 @@ heurScopedEHC env
         defaultHeuristic
 
 
-%%[(9 hmtyinfer)
+%%[(9999 hmtyinfer)
 btHeuristic :: Heuristic p RedHowAnnotation
 btHeuristic = toHeuristic $ toEvidence solvable
 %%]

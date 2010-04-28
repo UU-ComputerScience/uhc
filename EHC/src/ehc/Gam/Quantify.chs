@@ -54,7 +54,7 @@ valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS gam
 %%]
 
 %%[(9 hmtyinfer || hmtyast).valGamQuantify -3.valGamQuantify export(valGamQuantify)
-valGamQuantify :: TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,Gam HsName TyMergePredOut)
+valGamQuantify :: TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,TQOGam)
 valGamQuantify globTvS prL g
   =  let  g' = gamMapElts  (\vgi ->  let  tmpo = tyMergePreds prL (vgiTy vgi)
                                           ty   = valTyQuantify (const kiStar) (`Set.member` globTvS) (tmpoTy tmpo)
@@ -64,17 +64,21 @@ valGamQuantify globTvS prL g
 %%]
 
 %%[(9 hmtyinfer || hmtyast).valGamQuantifyWithVarMp -8.valGamQuantifyWithVarMp export(valGamQuantifyWithVarMp)
-valGamQuantifyWithVarMp :: TyKiGam -> VarMp -> VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,Gam HsName TyMergePredOut))
-valGamQuantifyWithVarMp tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
+valGamQuantifyWithVarMp :: Bool -> TyKiGam -> VarMp -> VarMp -> TyVarIdS -> [PredOcc] -> ValGam -> (ValGam,VarMp,(VarMp,TQOGam))
+valGamQuantifyWithVarMp doQuant tyKiGam tvKiVarMp gamVarMp globTvS prL valGam
   = valGamDoWithVarMp quant gamVarMp (emptyVarMp,emptyGam) valGam
   where quant nm (t,tyCycVarMp) newVarMp (cycVarMp,tmpoGam)
-          = (ty,newVarMp',(cycVarMp', tmpoGam'))
+          = ( ty
+            , newVarMp
+            , (tyCycVarMp |=> cycVarMp
+              , gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
+            ) )
           where tmpo        = tyMergePreds prL t
                 ty          = valTyQuantify (tvarKi tyKiGam tvKiVarMp gamVarMp) (`Set.member` globTvS) (tmpoTy tmpo)
+%%]
                 newVarMp'   = newVarMp -- tmpoImplsVarMp tmpo `varmpPlus` m
                 tmpoGam'    = gamAdd nm (tmpo {tmpoTy = ty}) tmpoGam
                 cycVarMp'   = tyCycVarMp |=> cycVarMp
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% For TyKiGam
