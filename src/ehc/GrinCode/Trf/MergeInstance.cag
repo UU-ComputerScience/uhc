@@ -13,11 +13,28 @@ WRAPPER GrAGItf
 
 %%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
 
-mergeInstance :: GrModule -> GrModule
-mergeInstance code
-  = let inh = Inh_GrAGItf
-        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+mergeInstance :: [GrModule] -> GrModule -> GrModule
+mergeInstance impsCode code
+  = let imps = map grSem impsCode
+        inh  = Inh_GrAGItf
+                 { startClassMaps_Inh_GrAGItf = map finalClassMap_Syn_GrAGItf imps
+                 , startDictMaps_Inh_GrAGItf  = map finalDictMap_Syn_GrAGItf  imps
+                 , startArityMaps_Inh_GrAGItf = map finalArityMap_Syn_GrAGItf imps
+                 , startSynoMaps_Inh_GrAGItf  = map finalSynoMap_Syn_GrAGItf  imps
+                 }
+        syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
     in  grTrf_Syn_GrAGItf syn
+
+grSem :: GrModule -> Syn_GrAGItf
+grSem code
+  = let inh = Inh_GrAGItf
+                { startClassMaps_Inh_GrAGItf = []
+                , startDictMaps_Inh_GrAGItf  = []
+                , startArityMaps_Inh_GrAGItf = []
+                , startSynoMaps_Inh_GrAGItf  = []
+                }
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  syn
 
 %%]
 
@@ -57,10 +74,35 @@ ATTR AllGlobal [ dictMap  :  {DictMap}
 ATTR GrTag GrVal [ | | mbFunNm : {Maybe HsName} ]
 
 
+ATTR GrAGItf GrModule
+  [ startDictMaps  : {[DictMap]}
+    startClassMaps : {[ClassMap]}
+    startArityMaps : {[ArityMap]}
+    startSynoMaps  : {[SynoMap]}
+  |
+  | finalDictMap  : {DictMap}
+    finalClassMap : {ClassMap}
+    finalArityMap : {ArityMap}
+    finalSynoMap  : {SynoMap}
+  ]
+
+
 SEM GrModule
-  | Mod    globalL.dictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error ("MergeInstance: no synonym for" ++ show k ++ " in " ++ show @globalL.collectSynoMap)) k @globalL.collectSynoMap)) @bindL.collectDictMap 
-           globalL.classMap = @bindL.collectClassMap
-           globalL.arityMap = @bindL.collectArityMap
+  | Mod    globalL.dictMap   = @loc.dictMap
+           globalL.classMap  = @loc.classMap
+           globalL.arityMap  = @loc.arityMap
+
+           loc.classMap      = Map.unions (@loc.finalClassMap : @lhs.startClassMaps)
+           loc.finalClassMap = @bindL.collectClassMap
+
+           loc.arityMap      = Map.unions (@loc.finalArityMap : @lhs.startArityMaps)
+           loc.finalArityMap = @bindL.collectArityMap
+           
+           loc.dictMap       = Map.unions (@loc.finalDictMap : @lhs.startDictMaps)
+           loc.finalDictMap  = Map.mapKeys (\k -> (Map.findWithDefault (error ("MergeInstance: no synonym for" ++ show k ++ " in " ++ show @loc.synoMap)) k @loc.synoMap)) @bindL.collectDictMap
+
+           loc.synoMap       = Map.unions (@loc.finalSynoMap : @lhs.startSynoMaps)
+           loc.finalSynoMap  = @globalL.collectSynoMap
 
 
 SEM GrBind

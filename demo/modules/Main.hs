@@ -2,7 +2,9 @@ module Main where
 
 import Lib
 
-succ = (+) (S Z)
-
 main = succ number
+
+instance Succ N where
+  succ n = S n
+
 -- main = id number

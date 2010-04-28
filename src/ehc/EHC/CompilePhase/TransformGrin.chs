@@ -211,38 +211,38 @@ cpTransformGrin modNm
 
 
 grPerModuleFullProg :: HsName -> [(EHCompilePhase (), String)]
-grPerModuleFullProg modNm = mk trafos1 ++ invariant ++ grSpecialize modNm ++ mk [dropUnreach] ++ invariant
+grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropUnreach] ++ invariant
   where
     trafos1 =
       [ dropUnreach
 %%[[9
-      , ( mergeInstance                 , "MergeInstance"           )
-      , ( memberSelect                  , "MemberSelect"            )
+      , full mergeInstance      "MergeInstance"
+      , once memberSelect       "MemberSelect"
     
       , dropUnreach
 %%]]
-      , ( cleanupPass                   , "CleanupPass"             )
-      , ( simpleNullary                 , "SimpleNullary"           )
+      , once cleanupPass        "CleanupPass"
+      , once simpleNullary      "SimpleNullary"
 %%[[97
-      , ( constInt                      , "ConstInt"                )
+      , once constInt           "ConstInt"
 %%]]
-      , ( buildAppBindings              , "BuildAppBindings"        )
-      , ( globalConstants               , "GlobalConstants"         )
+      , once buildAppBindings   "BuildAppBindings"
+      , once globalConstants    "GlobalConstants"
 %%[[8
-      , ( grInline False                , "Inline"                  )
+      , once grInline False     "Inline"
 %%][20
-      , ( fst . grInline False Set.empty Map.empty, "Inline"        )
+      , once (fst . grInline False Set.empty Map.empty) "Inline"
 %%]]
-      , ( grFlattenSeq                  , "Flatten"                 )
+      , once grFlattenSeq       "Flatten"
     
-      , ( singleCase                    , "singleCase"              )
-      , ( grFlattenSeq                  , "Flatten"                 )
+      , once singleCase         "singleCase"
+      , once grFlattenSeq       "Flatten"
     
-      , ( setGrinInvariant              , "SetGrinInvariant"        )
+      , once setGrinInvariant   "SetGrinInvariant"
       ]
 
-    dropUnreach = ( id {- dropUnreachableBindings False -} , "DropUnreachableBindings stub" )
-    invariant = mk [(setGrinInvariant, "SetGrinInvariant")] ++ [(checkInvariant, "CheckGrinInvariant")]
+    dropUnreach = ( once id {- dropUnreachableBindings False -} "DropUnreachableBindings stub" )
+    invariant = [once setGrinInvariant "SetGrinInvariant", (checkInvariant, "CheckGrinInvariant")]
 
     checkInvariant =
       do { cr <- get
@@ -255,6 +255,10 @@ grPerModuleFullProg modNm = mk trafos1 ++ invariant ++ grSpecialize modNm ++ mk 
 
     mk            = map mk1
     mk1 (trf,msg) = (cpFromGrinTrf modNm trf msg, msg)
+    
+    once trf m = (cpFromGrinTrf modNm trf m, m)
+    iter trf m = (cpIterGrinTrf modNm trf m, m)
+    full trf m = (cpFullGrinTrf modNm trf m, m)
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
