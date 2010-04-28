@@ -188,7 +188,7 @@ envChanges equat env
         AbsBottom -> return AbsBottom
         (AbsPtr (Nodes nodes) _ ws) -> do 
               { ans <- mapM (readAV2 c env) (Set.toList ws)
-              ; aws <- mapM (findFinalValue undefined) ans
+              ; aws <- mapM (findFinalValue (error "findFinalValue")) ans
               ; r <- findFinalValueIntern nodes
               ; return (mconcat (r:aws))
               }
@@ -200,7 +200,7 @@ envChanges equat env
         do { let x = AbsNodes (Nodes (Map.filterWithKey (const . isFinalTag) nodes))
            --; zs <- mapM (readAV2 False env) [ getNr (trace (show nm ++ " = " ++ show f ++ "\n") nm)  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
            ; zs <- mapM (readAV2 False env) [ getNr nm  | (GrTag_App nm, (f:_)) <- Map.toList nodes ]
-           ; avs <- mapM (findFinalValue undefined) zs
+           ; avs <- mapM (findFinalValue (error "findFInalValueIntern")) zs
            --; qs <- mapM (readAV2 False env) (concat [ Set.toList f | (GrTag_App nm, (f:_)) <- Map.toList nodes ])
            --; avs <- mapM (findFinalValue undefined) qs
            ; return (mconcat (x:avs))           

@@ -324,6 +324,13 @@ TBD: Needs cleaning up, correct partitioning in variants
       [ "enumFromThenTo", "enumFromThen", "enumFromTo", "enumFrom" ]
 %%]
 
+%%[99
+[hsnClassIx, hsnClassIxFldRange, hsnClassIxFldIndex, hsnClassIxFldInRange]
+  = map
+      (mkRV hsnModIntlIx) -- (mkRV hsnModIntlEnum)
+      [ "Ix", "range", "index", "inRange" ]
+%%]
+
 %%[5 export(hsnBool,hsnTrue,hsnFalse,hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnClassEqFldEq,hsnPrelConcatMap)
 [hsnDataList,hsnDataListAltCons,hsnDataListAltNil,hsnPrelConcatMap
  , hsnBool,hsnTrue,hsnFalse
@@ -647,6 +654,7 @@ hsnIsInPrelude n
 -- hsnModIntlFractional                    =   hsnPrefixQual hsnUHC (hsnFromString "Fractional")
 hsnModIntlBase                          =   hsnPrefixQual hsnUHC (hsnFromString "Base")
 hsnModIntlEnum                          =   hsnPrefixQual hsnUHC (hsnFromString "Enum")
+hsnModIntlIx                            =   hsnPrefixQual hsnUHC (hsnFromString "Ix")
 hsnModIntlNum                           =   hsnPrefixQual hsnUHC (hsnFromString "Num")
 hsnModIntlRead                          =   hsnPrefixQual hsnUHC (hsnFromString "Read")
 hsnModIntlShow                          =   hsnPrefixQual hsnUHC (hsnFromString "Show")
@@ -767,7 +775,10 @@ data EHBuiltinNames
       , ehbnRealWorld                   :: HsName
 %%]]
 %%[[99
-      -- , ehbnEhcRunMain                  :: HsName
+      , ehbnClassIx                     :: HsName
+      , ehbnClassIxFldRange             :: HsName
+      , ehbnClassIxFldIndex             :: HsName
+      , ehbnClassIxFldInRange           :: HsName
       , ehbnClassRead                   :: HsName
       , ehbnClassReadFldRead            :: HsName
       , ehbnClassReadFldReadsPrec       :: HsName
@@ -861,7 +872,10 @@ mkEHBuiltinNames f
       , ehbnRealWorld                   = f IdOcc_Type      hsnRealWorld
 %%]]
 %%[[99
-      -- , ehbnEhcRunMain                  = f IdOcc_Val       hsnEhcRunMain
+      , ehbnClassIx                     = f IdOcc_Class     hsnClassIx
+      , ehbnClassIxFldRange             = f IdOcc_Val       hsnClassIxFldRange  
+      , ehbnClassIxFldIndex             = f IdOcc_Val       hsnClassIxFldIndex  
+      , ehbnClassIxFldInRange           = f IdOcc_Val       hsnClassIxFldInRange
       , ehbnClassRead                   = f IdOcc_Class     hsnClassRead
       , ehbnClassReadFldRead            = f IdOcc_Val       hsnClassReadFldRead
       , ehbnClassReadFldReadsPrec       = f IdOcc_Val       hsnClassReadFldReadsPrec

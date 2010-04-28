@@ -632,7 +632,7 @@ mkUseOccGam opts idGam names kind asp rng
                 idUseOccGam = gamSingleton occOfDef (IdUseOcc occOfDef asp rng (doccForUse mbDef))
                 errs        = case mbDef of
                                 Just d | isJust (doccNmAlts d) && length alts > 1
-                                  -> [rngLift rng Err_AmbiguousNameRef name alts]
+                                  -> [rngLift rng Err_AmbiguousNameRef "name" "name" name alts]
                                   where alts = fromJust (doccNmAlts d)
                                 _ -> []
 %%]

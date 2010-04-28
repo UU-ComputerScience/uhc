@@ -16,13 +16,13 @@ Datatype LamInfo holds the implementation info to be exported from a module.
 %%[(8 codegen) hs module {%{EH}Core} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
-%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetVariant(..))) export(module {%{EH}Base.Target})
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..),TargetFlavor(..))) export(module {%{EH}Base.Target})
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
 %%]
 
-%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatBind(..), CPatBindL) 
+%%[(8 codegen) hs export(CodeAGItf(..), CModule(..), CExpr(..), CBind(..), CMetaVal(..), CExprAnn(..), CMetaBind(..), CMetas, CBindL, CPatRest(..), CAlt(..), CAltL, CPat(..), CPatL, CPatFld(..), CPatFldL) 
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
@@ -50,6 +50,11 @@ DERIVING *
 %%]]
 %%]
 
+%%[(20 codegen) ag
+DERIVING CMetaBind
+  : Enum
+%%]
+
 -- for debug only
 %%[(8 codegen) hs import({%{EH}Base.Debug})
 %%]
@@ -58,7 +63,7 @@ DERIVING *
 %%% Abstract syntax for encoding case+pattern rewrite info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatBind(..))
+%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatFld(..))
 data RAlt
   = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !CExpr, raaFailS :: UIDS }
 
@@ -69,15 +74,15 @@ data RPat
   | RPat_Char			{ rcpPNm :: !RPatNm, rcpChar :: !Char }
   | RPat_Irrefutable	{ rcpPNm :: !RPatNm, rcpCBindL :: ![CBind] }
 %%[[97
-  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpExpr :: !CExpr }
+  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpExpr :: !CExpr, rcpMbConst :: Maybe SrcConst }
 %%]]
 
 data RPatConBind
-  = RPatConBind_One		{ rpcbRest :: !CPatRest, rpcbBinds :: ![RPatBind] }
+  = RPatConBind_One		{ rpcbRest :: !CPatRest, rpcbBinds :: ![RPatFld] }
   | RPatConBind_Many	{ rpcbConBinds :: ![RPatConBind] }
 
-data RPatBind
-  = RPatBind_Bind		{ rpbLbl :: !HsName, rpbOffset :: !CExpr, rpbNm :: !HsName, rpbPat :: !RPat }
+data RPatFld
+  = RPatFld_Fld		{ rpbLbl :: !HsName, rpbOffset :: !CExpr, {- rpbNm :: !HsName, -} rpbPat :: !RPat }
 %%]
 
 %%[(8 codegen) hs export(rcaPat,raltLPatNms)
@@ -123,10 +128,13 @@ raltIsIrrefutable (RAlt_Alt (RPat_Irrefutable _ _ : _) _ _) = True
 raltIsIrrefutable _                                         = False
 %%]
 
-%%[(97 codegen) hs export(raltIsBoolExpr)
+%%[(97 codegen) hs export(raltMbBoolExpr,raltIsBoolExpr)
+raltMbBoolExpr :: RAlt -> Maybe (Maybe SrcConst)
+raltMbBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ e : _) _ _)  = Just e
+raltMbBoolExpr _                                         = Nothing
+
 raltIsBoolExpr :: RAlt -> Bool
-raltIsBoolExpr (RAlt_Alt (RPat_BoolExpr _ _ : _) _ _)  = True
-raltIsBoolExpr _                                       = False
+raltIsBoolExpr = isJust . raltMbBoolExpr
 %%]
 
 Flatten bindings, delaying the handling of many bindings to the rewriting of case patterns.
@@ -147,24 +155,24 @@ rpat2CPat :: RPat -> CPat
 rpat2CPat p
   = case p of
       RPat_Var      n       -> CPat_Var (rpatNmNm n)
-      RPat_Con      n t b   -> CPat_Con (rpatNmNm n) t r bs
+      RPat_Con      n t b   -> CPat_Con       t r bs
                             where (r,bs) = rpatConBind2CPatConBind b
-      RPat_Int      n v     -> CPat_Int (rpatNmNm n) v
-      RPat_Char     n v     -> CPat_Char (rpatNmNm n) v
+      RPat_Int      n v     -> CPat_Int       v
+      RPat_Char     n v     -> CPat_Char      v
 %%[[97
-      RPat_BoolExpr n v     -> CPat_BoolExpr (rpatNmNm n) v
+      RPat_BoolExpr n v _   -> CPat_BoolExpr  v
 %%]]
 %%]
 
-%%[(8 codegen) hs export(rpatConBind2CPatConBind,rpatBind2CPatBind)
-rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatBind])
+%%[(8 codegen) hs
+rpatConBind2CPatConBind :: RPatConBind -> (CPatRest,[CPatFld])
 rpatConBind2CPatConBind b
   = case b of
-  	  RPatConBind_One 	r bs 	-> (r,map rpatBind2CPatBind bs)
+  	  RPatConBind_One 	r bs 	-> (r,map rpatBind2CPatFld bs)
   	  RPatConBind_Many 	bs 		-> head (map rpatConBind2CPatConBind bs)
 
-rpatBind2CPatBind :: RPatBind -> CPatBind
-rpatBind2CPatBind (RPatBind_Bind l o n p) = CPatBind_Bind l o n (rpat2CPat p)
+rpatBind2CPatFld :: RPatFld -> CPatFld
+rpatBind2CPatFld (RPatFld_Fld l o p@(RPat_Var n)) = CPatFld_Fld l o (rpatNmNm n)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,6 +287,14 @@ cexprIsLam _                 = False
 cbindNm :: CBind -> HsName
 cbindNm (CBind_Bind      n _ _) = n
 cbindNm (CBind_FFI _ _ _ n _  ) = n
+%%]
+
+%%[(97 codegen) hs export(cexprMbConst)
+cexprMbConst :: CExpr -> Maybe Integer
+cexprMbConst e@(CExpr_Int     i) = Just $ toInteger i
+cexprMbConst e@(CExpr_Char    c) = Just $ toInteger $ ord c
+cexprMbConst e@(CExpr_Integer i) = Just i
+cexprMbConst _                   = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -440,8 +456,8 @@ mkCIf :: EHCOpts -> Maybe HsName -> CExpr -> CExpr -> CExpr -> CExpr
 mkCIf opts cn c t f
   = mkCExprMbStrictIn cn c
     $ (\c -> CExpr_Case c
-               [ CAlt_Alt (CPat_Con hsnUnknown (ctagFalse opts) CPatRest_Empty []) f
-               , CAlt_Alt (CPat_Con hsnUnknown (ctagTrue  opts) CPatRest_Empty []) t
+               [ CAlt_Alt (CPat_Con (ctagFalse opts) CPatRest_Empty []) f
+               , CAlt_Alt (CPat_Con (ctagTrue  opts) CPatRest_Empty []) t
                ]
                (cundefined opts)
       )
@@ -539,19 +555,28 @@ cundefined opts = cbuiltinApp opts ehbnUndefined []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name extraction (temporary, 20100330)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(cpatVarNm) 
+cpatVarNm :: CPat -> HsName
+cpatVarNm (CPat_Var n) = n
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags, in general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(caltConTag,caltIntTag) 
 cpatConTag :: CPat -> CTag
-cpatConTag (CPat_Con  _ t _ _)  = t
-cpatConTag (CPat_Int  _ _    )  = ctagInt
-cpatConTag (CPat_Char _ _    )  = ctagChar
+cpatConTag (CPat_Con    t _ _)  = t
+cpatConTag (CPat_Int    _    )  = ctagInt
+cpatConTag (CPat_Char   _    )  = ctagChar
 
 cpatIntTag :: CPat -> Int
-cpatIntTag (CPat_Con  _ t _ _)  = ctagTag t
-cpatIntTag (CPat_Int  _ i    )  = i
-cpatIntTag (CPat_Char _ c    )  = ord c
+cpatIntTag (CPat_Con    t _ _)  = ctagTag t
+cpatIntTag (CPat_Int    i    )  = i
+cpatIntTag (CPat_Char   c    )  = ord c
 
 caltConTag :: CAlt -> CTag
 caltConTag (CAlt_Alt p _) = cpatConTag p
@@ -755,9 +780,148 @@ instance Serialize StackTraceInfo where
            2 -> liftM  StackTraceInfo_IsStackTraceEquiv  sget
 %%]
 
-%%[(9999 codegen) hs
-instance ForceEval LamInfo where
-  forceEval x@(LamInfo a b c) = x
+%%[(20 codegen grin) hs
+instance Serialize CModule where
+  sput (CModule_Mod   a b c   ) = sputWord8 0 >> sput a >> sput b >> sput c
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM3 CModule_Mod         sget sget sget
+
+instance Serialize CExpr where
+  sput (CExpr_Let       a b c       ) = sputWord8  0 >> sput a >> sput b >> sput c
+  sput (CExpr_App       a b c       ) = sputWord8  1 >> sput a >> sput b >> sput c
+  sput (CExpr_Lam       a b c       ) = sputWord8  2 >> sput a >> sput b >> sput c
+  sput (CExpr_Case      a b c       ) = sputWord8  3 >> sput a >> sput b >> sput c
+  sput (CExpr_Var       a           ) = sputWord8  4 >> sput a
+  sput (CExpr_Int       a           ) = sputWord8  5 >> sput a
+  sput (CExpr_Char      a           ) = sputWord8  6 >> sput a
+  sput (CExpr_String    a           ) = sputWord8  7 >> sput a
+  sput (CExpr_Tup       a           ) = sputWord8  8 >> sput a
+  sput (CExpr_TupDel    a b c d     ) = sputWord8  9 >> sput a >> sput b >> sput c >> sput d
+  sput (CExpr_TupIns    a b c d e   ) = sputWord8 10 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sput (CExpr_TupUpd    a b c d e   ) = sputWord8 11 >> sput a >> sput b >> sput c >> sput d >> sput e
+  sput (CExpr_CaseAltFail
+                        a b         ) = sputWord8 12 >> sput a >> sput b
+  sput (CExpr_Hole      a           ) = sputWord8 13 >> sput a
+  sput (CExpr_HoleLet   a b         ) = sputWord8 14 >> sput a >> sput b
+  sput (CExpr_ImplsApp  a b         ) = sputWord8 15 >> sput a >> sput b
+  sput (CExpr_ImplsLam  a b         ) = sputWord8 16 >> sput a >> sput b
+  sput (CExpr_CoeArg                ) = sputWord8 17
+%%[[97
+  sput (CExpr_Integer   a           ) = sputWord8 18 >> sput a
+%%]]
+  sput (CExpr_Ann       a b         ) = sputWord8 19 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+           0  -> liftM3 CExpr_Let           sget sget sget
+           1  -> liftM3 CExpr_App           sget sget sget
+           2  -> liftM3 CExpr_Lam           sget sget sget
+           3  -> liftM3 CExpr_Case          sget sget sget
+           4  -> liftM  CExpr_Var           sget
+           5  -> liftM  CExpr_Int           sget
+           6  -> liftM  CExpr_Char          sget
+           7  -> liftM  CExpr_String        sget
+           8  -> liftM  CExpr_Tup           sget
+           9  -> liftM4 CExpr_TupDel        sget sget sget sget
+           10 -> liftM5 CExpr_TupIns        sget sget sget sget sget
+           11 -> liftM5 CExpr_TupUpd        sget sget sget sget sget
+           12 -> liftM2 CExpr_CaseAltFail   sget sget
+           13 -> liftM  CExpr_Hole          sget
+           14 -> liftM2 CExpr_HoleLet       sget sget
+           15 -> liftM2 CExpr_ImplsApp      sget sget
+           16 -> liftM2 CExpr_ImplsLam      sget sget
+           17 -> return CExpr_CoeArg    
+%%[[97
+           18 -> liftM  CExpr_Integer       sget
+%%]]
+           19 -> liftM2 CExpr_Ann           sget sget
+
+instance Serialize CMetaVal where
+  sput (CMetaVal_Val                ) = sputWord8 0
+  sput (CMetaVal_Dict           a   ) = sputWord8 1 >> sput a
+  sput (CMetaVal_DictClass      a   ) = sputWord8 2 >> sput a
+  sput (CMetaVal_DictInstance   a   ) = sputWord8 3 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> return CMetaVal_Val                    
+            1 -> liftM  CMetaVal_Dict               sget
+            2 -> liftM  CMetaVal_DictClass          sget
+            3 -> liftM  CMetaVal_DictInstance       sget
+
+instance Serialize CExprAnn where
+  sput (CExprAnn_Ty a) = sputWord8 0 >> sput a
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  CExprAnn_Ty         sget            
+
+instance Serialize CBind where
+  sput (CBind_Bind a b c    ) = sputWord8 0 >> sput a >> sput b >> sput c
+  sput (CBind_FFI  a b c d e) = sputWord8 1 >> sput a >> sput b >> sput c >> sput d >> sput e
+%%[[94
+  sput (CBind_FFE  a b c d e) = sputWord8 2 >> sput a >> sput b >> sput c >> sput d >> sput e
+%%]]
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM3 CBind_Bind          sget sget sget
+            1 -> liftM5 CBind_FFI           sget sget sget sget sget
+%%[[94           
+            2 -> liftM5 CBind_FFE           sget sget sget sget sget
+%%]]
+
+instance Serialize CAlt where
+  sput (CAlt_Alt   a b      ) = sputWord8 0 >> sput a >> sput b
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM2 CAlt_Alt         sget sget         
+
+instance Serialize CPat where
+  sput (CPat_Var       a        ) = sputWord8 0 >> sput a
+  sput (CPat_Con       a b c    ) = sputWord8 1 >> sput a >> sput b >> sput c
+  sput (CPat_Int       a        ) = sputWord8 2 >> sput a
+  sput (CPat_Char      a        ) = sputWord8 3 >> sput a
+%%[[97
+  sput (CPat_BoolExpr  a        ) = sputWord8 4 >> sput a
+%%]]
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  CPat_Var         sget         
+            1 -> liftM3 CPat_Con         sget sget sget      
+            2 -> liftM  CPat_Int         sget         
+            3 -> liftM  CPat_Char        sget         
+%%[[97
+            4 -> liftM  CPat_BoolExpr    sget         
+%%]]
+
+instance Serialize CPatRest where
+  sput (CPatRest_Var   a        ) = sputWord8 0 >> sput a
+  sput (CPatRest_Empty          ) = sputWord8 1
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM  CPatRest_Var           sget         
+            1 -> return CPatRest_Empty  
+
+instance Serialize CPatFld where
+  sput (CPatFld_Fld   a b c   ) = sputWord8 0 >> sput a >> sput b >> sput c
+  sget
+    = do t <- sgetWord8
+         case t of
+            0 -> liftM3 CPatFld_Fld         sget sget sget
+
+instance Serialize CBindingsCateg where
+  sput = sputEnum8
+  sget = sgetEnum8
+
+instance Serialize CMetaBind where
+  sput = sputEnum8
+  sget = sgetEnum8
 %%]
 
 

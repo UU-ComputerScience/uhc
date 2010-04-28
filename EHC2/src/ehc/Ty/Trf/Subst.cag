@@ -330,12 +330,17 @@ ATTR LabelAGItf        [               | | repl: Label    ]
 
 %%[(2 hmtyinfer || hmtyast)
 SEM Ty
-  | Var             lhs     .   repl        =   maybe @repl id (@lhs.lkup 0 @tv)
+  | Ann             lhs     .   repl        =   tyCanonAnn @repl
+%%]
+
+%%[(2 hmtyinfer || hmtyast)
+SEM Ty
+  | Var             lhs     .   repl        =   tyCanonAnn $ maybe @repl id (@lhs.lkup 0 @tv)
 %%]
 
 %%[(3 hmtyinfer || hmtyast)
 SEM Ty
-  | Var             lhs     .   repl        :=  tvRepl @tv @lhs.lkup @lhs.tvUseMp @repl
+  | Var             lhs     .   repl        :=  tyCanonAnn $ tvRepl @tv @lhs.lkup @lhs.tvUseMp @repl
 %%]
 
 %%[(4 hmtyinfer || hmtyast)

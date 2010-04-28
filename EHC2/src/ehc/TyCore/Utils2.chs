@@ -419,14 +419,14 @@ fvVarRepl nMp n = maybe (Expr_Var n) (Expr_Var . vreplRepl) $ Map.lookup n nMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% RPatBind -> ValBind
+%%% RPatFld -> ValBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(rpatBindL2ValBindL)
-rpatBindL2ValBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbPatRest -> AssocL RPatBind (Maybe Int) -> [ValBind]
+rpatBindL2ValBindL :: RCEEnv -> Bool -> HsName -> CTag -> MbPatRest -> AssocL RPatFld (Maybe Int) -> [ValBind]
 rpatBindL2ValBindL env hasSub parNm ct rest pbL 
   = concat
-    $  map  (\(RPatBind_Bind l o _ p,mbOff)
+    $  map  (\(RPatFld_Fld l o _ p,mbOff)
                 -> let  b n = [mkValBind1 n tyInt (mkc n mbOff)]
                         pn  = parNm
                         pn' = hsnUniqifyEval pn
@@ -475,8 +475,8 @@ type FieldSplitL = AssocL FldOffset RPat
 fsL2PatL :: FieldSplitL -> [RPat]
 fsL2PatL = assocLElts
 
-fsL2PatOffsetL :: FieldSplitL -> AssocL RPatBind (Maybe Int)
-fsL2PatOffsetL l = [ (RPatBind_Bind n oe (rpatNmNm $ rcpPNm p) p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
+fsL2PatOffsetL :: FieldSplitL -> AssocL RPatFld (Maybe Int)
+fsL2PatOffsetL l = [ (RPatFld_Fld n oe (rpatNmNm $ rcpPNm p) p,Just oi) | (o,(foff,p)) <- zip [0..] l, let (oi,oe) = foffMkOff foff o, let n = foffLabel foff ]
 %%]
 
 -- Reordering compensates for the offset shift caused by predicate computation, which is predicate by predicate
@@ -498,30 +498,30 @@ fsLReorder opts fsL
 %%]
 
 %%[(8 codegen) export(rpbReorder,patBindLOffset)
-rpbReorder :: EHCOpts -> [RPatBind] -> [RPatBind]
+rpbReorder :: EHCOpts -> [RPatFld] -> [RPatFld]
 rpbReorder opts pbL
   =  let  (pbL',_)
             =  foldr
-                 (\(RPatBind_Bind l o n p) (pbL,exts) 
+                 (\(RPatFld_Fld l o n p) (pbL,exts) 
                      ->  let  mkOff lbl exts o
                                 =  let nrSmaller = length . filter (\e -> rowLabCmp e lbl == LT) $ exts
                                    in  tcAddInt opts o nrSmaller
-                         in   ((RPatBind_Bind l (mkOff l exts o) n p):pbL,l:exts)
+                         in   ((RPatFld_Fld l (mkOff l exts o) n p):pbL,l:exts)
                  )
                  ([],[])
             $  pbL
-          cmpPB (RPatBind_Bind l1 _ _ _)  (RPatBind_Bind l2 _ _ _) = rowLabCmp l1 l2
+          cmpPB (RPatFld_Fld l1 _ _ _)  (RPatFld_Fld l2 _ _ _) = rowLabCmp l1 l2
      in   sortBy cmpPB pbL'
 
-patBindLOffset :: [RPatBind] -> ([RPatBind],[ValBindL])
+patBindLOffset :: [RPatFld] -> ([RPatFld],[ValBindL])
 patBindLOffset
   =  unzip
   .  map
-       (\b@(RPatBind_Bind l o n p@(RPat_Var pn _))
+       (\b@(RPatFld_Fld l o n p@(RPat_Var pn _))
            ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset $ rpatNmNm pn
                in   case o of
                       Expr_Int _ _ -> (b,[])
-                      _            -> (RPatBind_Bind l (Expr_Var offNm) n p,[mkValBind1 offNm tyInt o])
+                      _            -> (RPatFld_Fld l (Expr_Var offNm) n p,[mkValBind1 offNm tyInt o])
        )
 %%]
 
@@ -581,14 +581,14 @@ rceMatchIrrefutable env (argty@(arg,ty):args') alts@[RAlt_Alt (RPat_Irrefutable 
   = mkExprLet ValBindCateg_Plain (rceRebinds False argty alts) $ mkExprLet ValBindCateg_Plain b remMatch
   where remMatch  = rceMatch env args' [RAlt_Alt remPats e f]
 
-rceMkAltAndSubAlts :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Alt
-rceMkAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
+rceMkConAltAndSubAlts :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Alt
+rceMkConAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
   = Alt_Alt altPat (mkExprLet ValBindCateg_Plain (rceRebinds True (arg,ty) alts) subMatch)
   where (subAlts,subAltSubs)
           =  unzip
                [ (RAlt_Alt (pats ++ ps) e f, map (\p -> let n = rpatNmNm (rcpPNm p) in (n,rcpTy p)) pats)
                | (RAlt_Alt (RPat_Con _ _ _ (RPatConBind_One _ pbinds) : ps) e f) <- alts
-               , let pats = [ p | (RPatBind_Bind _ _ _ p) <- pbinds ]
+               , let pats = [ p | (RPatFld_Fld _ _ _ p) <- pbinds ]
                ]
         subMatch
           =  rceMatch env (head subAltSubs ++ args) subAlts
@@ -596,14 +596,14 @@ rceMkAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
           =  case alt of
                RAlt_Alt (RPat_Con n _ t (RPatConBind_One r pbL) : _) _ _
                  ->  Pat_Con {- (rpatNmNm n) -} t r pbL'
-                     where  pbL' = [ {- FldBind_Fld l o n (Pat_Var (rpatNmNm $ rcpPNm p)) -} FldBind_Fld n (rcpTy p) o | (RPatBind_Bind l o n p) <- pbL ]
-        tyerr n = tyErr ("rceMkAltAndSubAlts: " ++ show n)
+                     where  pbL' = [ {- FldBind_Fld l o n (Pat_Var (rpatNmNm $ rcpPNm p)) -} FldBind_Fld n (rcpTy p) o | (RPatFld_Fld l o n p) <- pbL ]
+        tyerr n = tyErr ("rceMkConAltAndSubAlts: " ++ show n)
 
 rceMatchCon :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
 rceMatchCon env ((arg,ty):args) alts
   = mkExprStrictSatCase env (Just (arg',ty)) (Expr_Var arg) alts'
   where arg'   =  hsnUniqifyEval arg
-        alts'  =  map (rceMkAltAndSubAlts env ((arg',ty):args))
+        alts'  =  map (rceMkConAltAndSubAlts env ((arg',ty):args))
                   $ groupSortOn (ctagTag . rcaTag)
                   $ filter (not . null . rcaPats)
                   $ alts
@@ -626,16 +626,29 @@ rceMatchConst env ((arg,ty):args) alts
 
 %%[(97 codegen) hs
 rceMatchBoolExpr :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
-rceMatchBoolExpr env ((arg,ty):args) alts
+rceMatchBoolExpr env aargs@((arg,ty):args) alts
+  = foldr (\(n,c,t) f -> mkIf (rceEHCOpts env) (Just n) c t f) (rceCaseCont env) alts'
+  where alts'  =  map (\(u, alts@(RAlt_Alt (RPat_BoolExpr _ b _ _ : _) _ _ : _))
+                         -> ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg
+                            , mkExprApp b [Expr_Var arg]
+                            , rceMatch env args [ RAlt_Alt remPats e f | (RAlt_Alt (RPat_BoolExpr _ _ _ _ : remPats) e f) <- alts ]
+                            )
+                      )
+                  $ zip [0..]
+                  $ groupSortOn (rcpMbConst . head . rcaPats)
+                  $ filter (not . null . rcaPats)
+                  $ alts
+%%]
+rceMatchBoolExpr2 :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
+rceMatchBoolExpr2 env ((arg,ty):args) alts
   = foldr (\(n,c,t) f -> mkIf opts (Just n) c t f) (rceCaseCont env) m
   where m = [ ( hsnUniqifyInt HsNameUniqifier_Evaluated u arg -- hsnSuffix arg $ "!" ++ show u
               , mkExprApp b [Expr_Var arg]
               , rceMatch env args [RAlt_Alt remPats e f]
               )
-            | (u,RAlt_Alt (RPat_BoolExpr _ _ b : remPats) e f) <- zip [0..] alts
+            | (u,RAlt_Alt (RPat_BoolExpr _ _ b _ : remPats) e f) <- zip [0..] alts
             ]
         opts = rceEHCOpts env
-%%]
 
 %%[(8 codegen) hs
 rceMatchSplits :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr

@@ -31,7 +31,7 @@ to a loop.
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.InlineNumber}
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.InlineNumbered}
 %%]
 
 %%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)
@@ -91,9 +91,9 @@ to a loop.
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin).grInline hs export(grInline)
-grInline :: Bool -> GrModule -> Maybe (GrModule,VarSubs)
-grInline allow grmod
+%%[(8 codegen grin).grInline hs export(inlineNumbered)
+inlineNumbered :: Bool -> GrModule -> Maybe (GrModule,VarSubs)
+inlineNumbered allow grmod
   = if changed_Syn_GrAGItf t 
     then Just ( trf_Syn_GrAGItf t
               , varSubs_Syn_GrAGItf t
@@ -105,9 +105,9 @@ grInline allow grmod
                 }            
 %%]
 
-%%[(20 codegen grin) -8.grInline hs export(grInline)
-grInline :: Bool -> HsNameS -> GrInlMp -> GrModule -> Maybe (GrModule,GrInlMp,VarSubs)
-grInline allow expNmS inlMp grmod
+%%[(20 codegen grin) -8.grInline hs export(inlineNumbered)
+inlineNumbered :: Bool -> HsNameS -> GrInlMp -> GrModule -> Maybe (GrModule,GrInlMp,VarSubs)
+inlineNumbered allow expNmS inlMp grmod
   = if changed_Syn_GrAGItf t 
     then Just ( trf_Syn_GrAGItf t
               , gathInlMp_Syn_GrAGItf t
@@ -223,7 +223,8 @@ ATTR AllGrExpr AllBind [ inlMp: GrInlMp | | ]
 
 SEM GrBind
   | Bind  (lhs.gathInlMp,loc.omitBind)    
-              =  let  isLoopBreaker = elem @nm @lhs.loopBreakers
+              =  let  isSpec = case @annot of { GrBindAnnSpecialized _ _ _ -> True; _ -> False }
+                      isLoopBreaker = elem @nm @lhs.loopBreakers
                       callInline = Map.singleton @nm (GrInl_Call @argNmL @expr.trf isLoopBreaker @loc.idsCreated)
                       cafInline = Map.singleton @nm (GrInl_CAF @expr.trf isLoopBreaker)
 %%[[20
@@ -233,7 +234,11 @@ SEM GrBind
                                     || @expr.isConWrapper
                                     || @expr.inlineCost <= 10              -- and low cost values as well
                                     )
-                 in   case Map.lookup @nm @lhs.fviMp of
+                      
+                 in   if   isLoopBreaker || isSpec
+                      then (Map.empty,False)
+                      else
+                      case Map.lookup @nm @lhs.fviMp of
                         -- a once used function can be inlined and its binding removed
                         Just (FvInfo 1 use)
                           -- once used, not CAF and not exported
@@ -243,7 +248,7 @@ SEM GrBind
                             && not exported         -- only inline if not exported as global value
                             -- inline possible but keep the bind. (Code duplication).
 %%]]                                                          
-                            -> (callInline, False {-True-}) -- Should be true.
+                            -> (callInline, True) -- Should be true.
                         Just (FvInfo 1 use)                               -- a once used, evaluated value can be inlined and its binding removed
                           | @isCAF
                             && willUseForEval @nm @expr.willUseForMp
@@ -251,7 +256,7 @@ SEM GrBind
 %%[[20
                             && not exported         -- only inline if not exported as global value
 %%]]
-                            -> (cafInline, False {- True -}) -- Must be True
+                            -> (cafInline, True) -- Must be True
                         Just _ 
                           | -- Code duplication because bind is used more than once.
                             not @isCAF
@@ -347,8 +352,8 @@ SEM GrBind
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllNTNoMod [ | | inlinedCallIds USE {+} {0} : Int ]
-ATTR AllNTNoMod [ | | idsCreated USE {+} {0} : Int ]
+ATTR AllGrExpr [ | | inlinedCallIds USE {+} {0} : Int ]
+ATTR AllGrExpr [ | | idsCreated USE {+} {0} : Int ]
 ATTR AllBind [ | | remIds USE {++} {[]} : {[Int]} ]
 
 SEM GrExpr
@@ -363,7 +368,7 @@ SEM GrBind
   | Bind  (expr.uniqueIds,lhs.uniqueIds) =  (False,\(a,b) -> "bind " ++ show @nm 
                                               ++ " idsCreated = " ++ show @expr.idsCreated 
                                               ++ " uniqueIds = " ++ show a) >?>
-                                            splitAt @expr.inlinedCallIds @lhs.uniqueIds
+                                            {-([0..],[]) -- -} splitAt @expr.inlinedCallIds @lhs.uniqueIds
           loc.idsCreated = @expr.idsCreated + @expr.inlinedCallIds
           lhs.remIds = @expr.uniqueIds
                                       
@@ -376,6 +381,10 @@ SEM GrBind
 %%[(8 codegen grin)
 ATTR GrAGItf [ | | trf: GrModule ]
 ATTR AllNT [ | | trf: SELF ]
+ATTR AllGrExpr [ inBind: HsName | |  ]
+
+SEM GrBind
+  | Bind expr.inBind = @nm
 
 { 
 type VarSubs = [(HsName,HsName)] 
@@ -388,14 +397,15 @@ ATTR GrAGItf GrModule AllBind AllGrExpr  [ | | changed USE {||} {False} : {Bool}
 
 %%[(8 codegen grin) hs
 
-showInlines = False
+showInlines = True
 
 inlGrVar :: GrInlMp -> [HsName] -> (GrExpr -> GrExpr,FvS,Bool)
 inlGrVar inlMp nmL
   = (foldr (.) id mks,Set.unions inls,or changes)
   where inl nm = case Map.lookup nm inlMp of
-                   Just (GrInl_CAF e _) -> (showInlines,const $ "inlining caf " ++ show nm ++ "\nval = " ++ show e) >?>
-                                           (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm,True)
+                   Just (GrInl_CAF e lb) 
+                     | not lb -> (showInlines,const $ "inlining caf " ++ show nm ++ "\nval = " ++ show e) >?>
+                                 (GrExpr_Seq e (GrPatLam_Var nm),Set.singleton nm,True)
                    _ -> (id,Set.empty,False)
         (mks,inls,changes) = unzip3 $ map inl nmL
 
@@ -421,7 +431,8 @@ SEM GrExpr
                 Just (GrInl_Call as e lb idsCreated) 
                   | not (lb {-&& @lhs.insideCase-})
                     && inlNmsAreInlineable @argL.asNmL ->  
-                        (showInlines,const $ "inlining call " ++ show @nm) >?>
+                        (showInlines,const $ "inlining call " ++ show @nm 
+                                     ++ " from " ++ show @lhs.inBind) >?>
                         let argumentSubstitutions = Map.fromList (zip as (map fromJust @argL.asNmL))
                             argumentedCallBody = substExpr argumentSubstitutions e
                             (finalInlinableCode,remUniqueIds,varSubs) = mkUniqueBindings @lhs.uniqueIds argumentedCallBody
@@ -451,8 +462,7 @@ SEM GrExpr
 ATTR AllBind [ | | trfSq USE {Seq.:++:} {Seq.empty}: {Seq.FastSeq GrBind} ]
 
 SEM GrModule
-  | Mod         lhs         .   trf             =   (False,const $ "remIds = " ++ show @bindL.remIds ++ 
-                                                      "\ntotalIdsRenamed = " ++ show @bindL.inlinedCallIds) >?> 
+  | Mod         lhs         .   trf             =   (False,const $ "remIds = " ++ show @bindL.remIds) >?> 
                                                     GrModule_Mod @moduleNm @globalL.trf (Seq.toList @bindL.trfSq) @tagsMp
 
 SEM GrBind

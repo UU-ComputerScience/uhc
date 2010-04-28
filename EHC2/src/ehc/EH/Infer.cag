@@ -38,12 +38,13 @@ SEM Expr
                 loc         .   gTyTvS              =   @valTyUpdFreeTvarS `Set.union` @tyTyUpdFreeTvarS
                             .   gSubsValGam_        =   @valGam_g_
 %%]]
+                			.	noLetQuantTyVarIdS	=	setSubst @tyVarMpDeclsL0 @decls.noLetQuantTyVarIdS `Set.union` @gTyTvS
                             .   (quValGam_qu_,cycTyVarMp_l)
                                                     =   let (g,cycMp) = @tyVarMpDeclsQuant |==> @valGam_l_
 %%[[5
-                                                        in  (valGamQuantify @gTyTvS g,cycMp)
+                                                        in  (valGamQuantify @noLetQuantTyVarIdS g,cycMp)
 %%][6
-                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS g,cycMp)
+                                                        in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
                 body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
@@ -72,7 +73,7 @@ SEM Expr
                                                     :=  (valGamInst1Exists {- WithVarMp @lhs.tyVarMp -} @lUniq @decls.gathTySigGam,emptyVarMp)
                 decls       .   patTyVarMp          :=  @exTyVarMp1 |=> @lhs.tyVarMp
                 loc         .   (quValGam_qu_,quTyVarMp, cycTyVarMp_l)
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS @valGam_l_
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @valGam_l_
                             .   bodyVarMp1          =   @quTyVarMp |=> @tyVarMpDeclsL0
                             .   (quValGam_ex_,exTyVarMp2)
                                                     :=  (valGamInst1Exists {- WithVarMp @bodyVarMp1 -} @lUniq2 (@quTyVarMp |=> @quValGam_qu_), emptyVarMp)
@@ -85,8 +86,9 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Expr
-  | Let         loc         .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @gTyTvS @quantPrOccL @valGam_l_
+  | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
+                loc         .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
+                                                    :=  valGamQuantifyWithVarMp @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS @quantPrOccL @valGam_l_
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 
@@ -201,18 +203,6 @@ ATTR
 
 %%[(1 hmtyinfer).PatExpr.valGam
 ATTR AllPatExpr [ | valGam: ValGam | ]
-%%]
-
-%%[(1 hmtyinfer).initValGam
-SEM AGItf   
-  | AGItf       expr        .   valGam              =   emptyGam
-%%]
-
-%%[(20 hmtyinfer) -1.initValGam
-ATTR AGItf [ valGam: ValGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   valGam              =   @lhs.valGam
 %%]
 
 %%[(1 hmtyinfer).patValGam
@@ -415,146 +405,6 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% RCEEnv (primarily for ToCore)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 hmtyinfer codegen)
-SEM Expr
-  | Lam Sel DataFields
-%%[[12
-    LamImpl
-%%]]
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-  | Case        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts)
-                                                            { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam
-                                                            , rceCaseIds = @caseIds
-                                                            }
-%%]
-
-%%[(8 hmtyinfer codegen)
-SEM PatExpr
-  | AppTop Rec DataFields
-                loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-%%]
-
-%%[(8 hmtyinfer codegen)
-SEM Decl
-  | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-%%]
-
-%%[(95 hmtyinfer codegen)
-SEM Decl
-  | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam }
-%%]
-
-TyCore variant/clone:
-
-%%[(8 hmtyinfer codegen)
-SEM Expr
-  | Lam Sel DataFields
-%%[[12
-    LamImpl
-%%]]
-                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
-  | Case        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts)
-                                                            { C.rceValGam  = @lhs.valGam, C.rceDataGam = @lhs.dataGam
-                                                            , C.rceCaseIds = @caseIds
-                                                            }
-%%]
-
-%%[(8 hmtyinfer codegen)
-SEM PatExpr
-  | AppTop Rec DataFields
-                loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
-%%]
-
-%%[(8 hmtyinfer codegen)
-SEM Decl
-  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
-%%]
-
-%%[(95 hmtyinfer codegen)
-SEM Decl
-  | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam }
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Init of tyGam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(20 hmtyinfer)
-ATTR AGItf [ tyGam: TyGam | | ]
-%%]
-
-%%[(1 hmtyinfer).initTyGam
-SEM AGItf
-%%[[1
-  | AGItf       loc         .   tyGam               =   initTyGam
-%%][20
-  | AGItf       loc         .   tyGam               =   @lhs.tyGam
-%%]]
-%%]
-
-This is not maintained w.r.t. tyKiGam:
-
-%%[(7_2 hmtyinfer).initTyGam -1.initTyGam
-SEM AGItf
-  | AGItf       loc         .   tyGam               :=  assocLToGam
-                                                          [ (hsnArrow       , mkTGI (Ty_Con hsnArrow) ([kiStar,kiStar] `mkArrow` kiStar))
-                                                          , (hsnInt         , mkTGI tyInt kiStar)
-                                                          , (hsnChar        , mkTGI tyChar kiStar)
-                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
-                                                          , (hsnRow         , mkTGI (Ty_Con hsnUnknown) kiRow)
-                                                          , (hsnRec         , mkTGI (Ty_Con hsnRec) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnSum         , mkTGI (Ty_Con hsnSum) ([kiRow] `mkArrow` kiStar))
-                                                          , (hsnRowEmpty    , mkTGI (Ty_Con hsnRowEmpty) kiRow)
-                                                          ]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Init of tyKiGam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-This is incomplete for variant 7_2.
-
-%%[(6 hmtyinfer).initTyKiGam
-SEM AGItf
-  | AGItf       loc         .   tyKiGam             =   initTyKiGam
-%%]
-
-%%[(20 hmtyinfer) -6.initTyKiGam
-ATTR AGItf [ tyKiGam: TyKiGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   tyKiGam             =   @lhs.tyKiGam
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Init of polGam
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  Environment with final polarities for all type constructors that are yet in scope. The
-  final polarities for type construtors of data type declarations of a Let are added to
-  the polGam of the body of the Let.
-  
-  In other words: the polGam changes on the way down!
-
-%%[(17 hmtyinfer).initPolGam
-SEM AGItf
-  | AGItf       loc         .   polGam              =   initPolGam
-%%]
-
-%%[(20 hmtyinfer) -17.initPolGam
-ATTR AGItf [ polGam: PolGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   polGam              =   @lhs.polGam
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Sort, but no inferencing && etc
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -565,18 +415,6 @@ ATTR AllExpr AllTyExpr AllPatExpr AllData AllCase AllDecl [ kiGam: KiGam | | ]
 %%[(6 hmtyinfer)
 SEM AGItf
   | AGItf       loc         .   kiVarMp             =   emptyVarMp
-%%]
-
-%%[(6 hmtyinfer).initKiGam
-SEM AGItf
-  | AGItf       loc         .   kiGam               =   initKiGam       -- fake dependency for uuagc --cycle
-%%]
-
-%%[(20 hmtyinfer) -6.initKiGam
-ATTR AGItf [ kiGam: KiGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   kiGam               =   @lhs.kiGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -638,14 +476,14 @@ SEM Decl
 -- generated from ruler rules into EHRulerRules, was 3.TySig
 %%[(5 hmtyinfer).TySig
 SEM Decl
-  | TySig       loc         .   ty_sig_             =   tyQuantifyOuter (`elem` @tyExpr.tyVarWildL) @tyExpr.ty
+  | TySig       loc         .   ty_sig_             =   tyQuantifyOuter (`Map.member` @tyExpr.tyVarWildMp) @tyExpr.ty
                             .   gamSigTy            :=  @ty_sig_
 %%]
 
 %%[(6 hmtyinfer)
 SEM Decl
   | TySig       loc         .   gTyTvS              =   ftvSet . map (tgiTy.snd) . gamToAssocL $ @lhs.tyGam
-                            .   ty_sig_             :=  let fv  = Set.fromList @tyExpr.tyVarWildL `Set.union` @gTyTvS
+                            .   ty_sig_             :=  let fv  = Map.keysSet @tyExpr.tyVarWildMp `Set.union` @gTyTvS
                                                             t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
                                                             tkg = gamUnion @lhs.finTyKiGam @tyExpr.intlTyKiGam
                                                             t2k = tvarKi tkg @lhs.finKiVarMp emptyVarMp
@@ -723,64 +561,12 @@ SEM Decl
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Include binding for pattern var?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(1 hmtyinfer).inclVarBind
-ATTR PatExpr [ inclVarBind: Bool | | ]
-
-SEM PatExpr
-  | AppTop      patExpr     .   inclVarBind         =   True
-
-SEM Decl
-  | Val         patExpr     .   inclVarBind         =   False
-
-SEM Expr
-  | Lam         arg         .   inclVarBind         =   True
-%%]
-
-%%[(2 hmtyinfer)
-SEM Decl
-  | Val         patExpr     .   inclVarBind         :=  not @hasTySig
-%%]
-
-%%[(5 hmtyinfer)
-SEM CaseAlt
-  | Pat         patExpr     .   inclVarBind         =   True
-%%]
-
-%%[(7 hmtyinfer)
-SEM RecPatExpr
-  | Ext Expr    patExpr     .   inclVarBind         =   True
-
-SEM DataFieldPatExpr
-  | Ext         patExpr     .   inclVarBind         =   True
-%%]
-
-%%[(12 hmtyinfer)
-SEM Expr
-  | LamImpl     arg         .   inclVarBind         =   True
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Predicate env, for intro of predicates
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer)
 ATTR AllDecl [ | patClGam1: ClGam  patClGam2: ClGam | ]
 ATTR NTPrf AllPrExpr AllTyExpr AllData AllPatExpr [ clGam: ClGam | | ]
-%%]
-
-%%[(9 hmtyinfer).initClGam
-SEM AGItf
-  | AGItf       loc         .   clGam               =   initClGam
-%%]
-
-%%[(20 hmtyinfer) -9.initClGam
-ATTR AGItf [ clGam: ClGam | | ]
-
-SEM AGItf
-  | AGItf       loc         .   clGam               =   @lhs.clGam
 %%]
 
 %%[(9 hmtyinfer)
@@ -791,46 +577,5 @@ SEM Expr
                             .   lClGamNoDups        =   gamNoDups @lClGam
                 decls       .   clGam               =   gamPushGam @lClGamNoDups @lhs.clGam
                 body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Has a sequence of let ... in let ... an instance declaration?
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(9 hmtyinfer)
-ATTR Expr AllDecl [ | | hasInstDecl USE {||} {False}: Bool ]
-
-SEM Decl
-  | Instance InstanceIntro
-                lhs         .   hasInstDecl         =   True
-  | * - Instance InstanceIntro
-                lhs         .   hasInstDecl         =   False
-
-SEM Expr
-  | Let         loc         .   hasInstDecl         =   @decls.hasInstDecl || @body.hasInstDecl
-  | * - Let     lhs         .   hasInstDecl         =   False
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Lexical level, 0 == global
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[9
-ATTR NTPrf [ lexLev: Int | | ]
-
-SEM AGItf
-  | AGItf       loc         .   lexLev              =   -1
-
-SEM Expr
-  | Let         loc         .   lexLev              =   if @lhs.isFirstLet then @lhs.lexLev + 1 else @lhs.lexLev
-                            .   lexLevIsGlobal      =   @lexLev == 0
-  | Lam
-%%[[12
-    LamImpl
-%%]]
-                loc         .   lexLev              =   @lhs.lexLev + 1
-
-SEM CaseAlt
-  | Pat         loc         .   lexLev              =   @lhs.lexLev + 1
 %%]
 

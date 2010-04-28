@@ -31,7 +31,7 @@ to a loop.
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.InlineOld}
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.Inline}
 %%]
 
 %%[(8 codegen grin) hs import(qualified EH.Util.FastSeq as Seq,qualified Data.Set as Set,qualified Data.Map as Map,Data.Maybe)

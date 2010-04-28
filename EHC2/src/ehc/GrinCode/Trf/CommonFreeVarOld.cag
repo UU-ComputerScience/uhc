@@ -1,0 +1,38 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var map
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR AllNTNoMod [ | | gathFviMp USE {`fviMpUnion`} {Map.empty}: FvInfoMp ]
+
+SEM GrTag
+  | Fun PApp    lhs         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
+
+SEM GrVal
+  | Var         lhs         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
+%%[[10
+  | NodeAdapt   lhs         .   gathFviMp       =   fviMpUnions [fviMpSingleton @nm, @fldL.gathFviMp]
+%%]]
+
+SEM GrExpr
+  | Seq         loc         .   gathBodyFviMp   :   {FvInfoMp}
+                loc         .   gathBodyFviMp   =   @body.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
+                            .   gathFviMp       =   fviMpUnions [@expr.gathFviMp, @gathBodyFviMp]
+  | Call App    loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton' FvUse_Call @nm, @argL.gathFviMp]
+  | FFI         loc         .   gathFviMp       =   @argL.gathFviMp
+  | Eval FetchNode FetchField Throw
+                loc         .   gathFviMp       =   fviMpSingleton' FvUse_Val @nm
+  | FetchUpdate loc         .   gathFviMp       =   fviMpFromList [@src,@dst]
+  | Catch       loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton @arg, @body.gathFviMp, @handler.gathFviMp]
+  | Store       loc         .   gathFviMp       =   @val.gathFviMp
+  | Unit        loc         .   gathFviMp       =   @val.gathFviMp
+  | UpdateUnit  loc         .   gathFviMp       =   fviMpUnions [fviMpSingleton @nm, @val.gathFviMp]
+  | Case        loc         .   gathFviMp       =   fviMpUnions [@val.gathFviMp, @altL.gathFviMp]
+
+SEM GrAlt
+  | Alt         lhs         .   gathFviMp       =   @expr.gathFviMp `fviMpDifference` fviMpFromList @pat.introNmL
+
+SEM GrBind
+  | Bind        lhs         .   gathFviMp       =   @expr.gathFviMp `fviMpDifference` fviMpFromList @argNmL
+%%]
+

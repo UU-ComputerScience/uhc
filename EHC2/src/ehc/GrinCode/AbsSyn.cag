@@ -28,10 +28,10 @@ DATA GrGlobal
 TYPE GrGlobalL    =   [GrGlobal]
 
 DATA GrBind
-  | Bind        nm              : {HsName}   -- name of the binding
+  | Bind        nm              : {HsName}
                 annot           : GrBindAnn
-                argNmL          : {[HsName]} -- argument names
-                expr            : GrExpr     -- the body
+                argNmL          : {[HsName]}
+                expr            : GrExpr
   | Arity       nm              : {HsName}
                 arity           : {Int}
   | Rec         bindL           : GrBindL
@@ -49,7 +49,7 @@ DATA GrExpr
                 pat             : GrPatLam
                 body            : GrExpr
   | Unit        val             : GrVal
-                type			      : GrType
+                type			: GrType
   | UpdateUnit  nm              : {HsName}
                 val             : GrVal
   | Case        val             : GrVal
@@ -61,7 +61,7 @@ DATA GrExpr
                 offset          : {Int}
                 mbTag           : {Maybe GrTag}
   | Store       val             : GrVal
-  | Call        nm              : {HsName}  -- A function call always returns a whnf, however suspended computations may still be hidden inside it.
+  | Call        nm              : {HsName}
                 argL            : GrValL
   | FFI
 %%[[8
@@ -74,8 +74,8 @@ DATA GrExpr
                 ffiAnnot        : {GrFFIAnnot}
 %%]]
                 argL            : GrValL
-  | Eval        nm              : {HsName}  -- The binding of nm has type pointer.
-  | App         nm              : {HsName}  -- The binding of nm has type PApp Node.
+  | Eval        nm              : {HsName}
+  | App         nm              : {HsName}
                 argL            : GrValL
   | Throw       nm              : {HsName}
   | Catch       body            : GrExpr
@@ -247,4 +247,3 @@ SET AllGrPat    =   GrPatAlt GrPatLam GrVar GrVarL
 SET AllNTNoMod  =   AllExpr AllGlobal AllBind
 SET AllNT       =   GrModule AllNTNoMod
 %%]
-

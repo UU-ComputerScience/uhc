@@ -262,6 +262,7 @@ ATTR TyAGItf AllTyAndFlds [ | | isReplaced USE {||} {False}: Bool ]
 SEM Ty
   | App             loc     .   isReplaced      =   isJust @mbReplNoImplNil || isJust @mbRepl
   | Con Ext         loc     .   isReplaced      =   isJust @mbRepl
+  | Ann				loc		.	isReplaced		=	True
 
 SEM Ty
   | App             lhs     .   isReplaced      =   @isReplaced || @func.isReplaced || @arg.isReplaced
@@ -289,7 +290,7 @@ SEM Ty
 %%[(10 hmtyinfer)
 SEM Ty
   | Ext             loc     .   mbRepl          =   if @isSpineRoot
-                                                    then let (row,exts) = tyRowExts @repl
+                                                    then let (row,exts) = tyRowExtsUnAnn $ tyRowExts @repl
                                                          in  if tyRowIsCanonOrdered exts
                                                              then Nothing
                                                              else Just $ mkTyRow row $ tyRowCanonOrder exts
@@ -321,6 +322,7 @@ ATTR TyAGItf  [ | | repl: Ty ]
 SEM Ty
   | App             loc     .   replNoImplNil   =   maybe @repl id @mbReplNoImplNil
                     lhs     .   repl            =   @replNoImplNil
+  | Ann             lhs     .   repl			= 	@ty.repl
 %%]
 
 %%[(10 hmtyinfer)

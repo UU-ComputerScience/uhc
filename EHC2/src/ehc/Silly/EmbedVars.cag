@@ -94,10 +94,14 @@ SEM Statement
                                                            ++ [ Value_Var (Variable_Subs Variable_SP (nl   ))                   -- put original link on the stack (if there is one), or otherwise the original return address
                                                               ]
                                             destinations = iterate decrement (locPar+ (if @lhs.optGenLink then 2 else 1) -1)
+                                            -- dests        = map (Variable_Subs Variable_SP) destinations
+                                            -- auxs         = take (length sources) (map (Variable_Subs Variable_RP) [50..])
                                             adjust       = locPar - @args.length
                                         in  Statement_Comment ["Tailcall"]
                                             :
                                             smartAssignment (zip destinations sources)                                          -- do stack-putting in an overlapping fashion with the original stack contents
+                                            --    zipWith Statement_Assignment auxs sources
+                                            -- ++ zipWith Statement_Assignment dests (map Value_Var auxs)                       -- (or, alternatively, do the overlapping in a radical safe way)
                                             ++
                                             [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: increment for original parameters&callinfo&locals, decrement for new parameters&callinfo
                                             | adjust /= 0                                                                       --   (if necessary)
@@ -140,7 +144,9 @@ SEM Statement
                                               else []
                                             )
                                      )
-           lhs.retNr     = @lhs.retNr + 1
+           lhs.retNr     = if @tailJumps
+                           then @lhs.retNr
+                           else @lhs.retNr + 1       -- increment the return label counter if necessary
            loc.label     = "retlab"++show @lhs.retNr
 
                                 

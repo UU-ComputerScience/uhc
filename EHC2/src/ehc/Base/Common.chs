@@ -175,43 +175,6 @@ emptyPredOccId = mkPrId uidStart
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Ordered sequence, 'delayed concat' list
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[7
-%%]
-newtype Seq a = Seq ([a] -> [a])
-
-emptySeq :: Seq a
-emptySeq = Seq id
-
-mkSeq :: [a] -> Seq a
-mkSeq l = Seq (l++)
-
-unitSeq :: a -> Seq a
-unitSeq e = Seq (e:)
-
-concatSeq :: Seq a -> Seq a -> Seq a
-concatSeq (Seq s1) (Seq s2) = Seq (s1.s2)
-
-concatSeqs :: [Seq a] -> Seq a
-concatSeqs = foldr (<+>) emptySeq
-
-infixr 5 <+>
-
-(<+>) :: Seq a -> Seq a -> Seq a
-(<+>) = concatSeq
-
-seqToList :: Seq a -> [a]
-seqToList (Seq s) = s []
-
-instance Functor Seq where
-  fmap f = mkSeq . map f . seqToList
-
-filterSeq :: (a -> Bool) -> Seq a -> Seq a
-filterSeq p = mkSeq . filter p . seqToList
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantics classes
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -886,6 +849,13 @@ nmLevModule  =  0
 %%% Token related
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[1.tokenVal hs export(tokenVal)
+tokenVal = genTokVal
+%%]
+
+%%[5 -1.tokenVal hs
+%%]
+
 %%[1 hs
 -- Assumption: tokTpIsInt (genTokTp t) == True
 tokMkInt :: Token -> Int
@@ -893,15 +863,15 @@ tokMkInt t
   = case genTokTp t of
       Just TkInteger10 -> read v
       _                -> 0
-  where v = genTokVal t
+  where v = tokenVal t
 
 tokMkStr :: Token -> String
-tokMkStr = genTokVal
+tokMkStr = tokenVal
 %%]
 
 %%[1.tokMkQName hs
 tokMkQName :: Token -> HsName
-tokMkQName = hsnFromString . genTokVal
+tokMkQName = hsnFromString . tokenVal
 %%]
 
 %%[7 -1.tokMkQName hs
@@ -909,7 +879,7 @@ tokMkQName :: Token -> HsName
 tokMkQName t
   = case genTokTp t of
       Just tp | tokTpIsInt tp -> mkHNmPos $ tokMkInt t
-      _                       -> mkHNm $ genTokVal t
+      _                       -> mkHNm $ map hsnFromString $ tokenVals t
 %%]
 
 %%[1 hs
@@ -1439,4 +1409,16 @@ instance Serialize Range where
 instance Binary Pos where
   put (Pos a b c) = put a >> put b >> put c
   get = liftM3 Pos get get get
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constants as appearing directly from the source text, without class related toInteger (etc) interpretation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[97 export(SrcConst(..))
+data SrcConst
+  = SrcConst_Int	Integer
+  | SrcConst_Char	Char
+  | SrcConst_Ratio	Integer Integer
+  deriving (Eq,Show,Ord)
 %%]

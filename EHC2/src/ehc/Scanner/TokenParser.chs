@@ -7,18 +7,48 @@
 %%% Main
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[5 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser(pReserved, pValToken))
+%%[doesWhat doclatex
+Basic token parsers, for constants and other simple stuff.
+
+Note that everything is exported.
 %%]
 
-%%[5 import({%{EH}Scanner.Token})
+%%[1 module {%{EH}Scanner.TokenParser} import(UU.Parsing.Interface(IsParser(..)),UU.Parsing.Derived(pListSep, pPacked),UU.Scanner.Position(Pos),UU.Scanner.GenTokenParser)
 %%]
 
-Everything is exported.
+%%[1.Token import(UU.Scanner.GenToken)
+%%]
+
+%%[5 -1.Token import({%{EH}Scanner.Token})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Token parser wrappers
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.pHsValToken
+pHsValToken :: IsParser p (GenToken key tp val) => tp -> val -> p (val,Pos)
+pHsValToken = pValToken
+
+pHsCostValToken'          :: IsParser p (GenToken key tp val) => Int -> tp -> val -> p (GenToken key tp val)
+pHsCostValToken' = pCostValToken'
+%%]
+
+%%[5 -1.pHsValToken
+pHsValToken :: IsParser p Token => EnumValToken -> String -> p (String,Pos)
+pHsValToken t s = valTokenStringRes <$> pValToken t [s]
+
+pHsCostValToken'          :: IsParser p Token => Int -> EnumValToken -> String -> p Token
+pHsCostValToken' c tp val =  pCostValToken' c tp [val]
+%%]
 
 %%[5
 -------------------------------------------------------------------------
 -- IsParsers for  Symbols
 -------------------------------------------------------------------------
+
+valTokenStringRes :: (ValTokenVal,Pos) -> (String,Pos)
+valTokenStringRes (l,p) = (concat l,p)
 
 pKeyPos           :: IsParser p Token => String -> p Pos
 pKeyPos  keyword  =  pReserved keyword
@@ -41,24 +71,24 @@ pStringPos, pCharPos,
 %%]]
   pTextnmPos, pTextlnPos, pIntegerPos  :: IsParser p Token => p (String,Pos)
 
-pStringPos            =   pValToken TkString           ""        
-pCharPos              =   pValToken TkChar             "\NUL"    
-pInteger8Pos          =   pValToken TkInteger8         "0"       
-pInteger10Pos         =   pValToken TkInteger10        "0"       
-pInteger16Pos         =   pValToken TkInteger16        "0"
-pFractionPos          =   pValToken TkFraction         "0.0"
-pVaridPos             =   pValToken TkVarid            "<identifier>" 
-pConidPos             =   pValToken TkConid            "<Identifier>" 
-pConsymPos            =   pValToken TkConOp 	       "<conoperator>"
-pVarsymPos            =   pValToken TkOp               "<operator>" 
+pStringPos            =   pHsValToken TkString           ""        
+pCharPos              =   pHsValToken TkChar             "\NUL"    
+pInteger8Pos          =   pHsValToken TkInteger8         "0"       
+pInteger10Pos         =   pHsValToken TkInteger10        "0"       
+pInteger16Pos         =   pHsValToken TkInteger16        "0"
+pFractionPos          =   pHsValToken TkFraction         "0.0"
+pVaridPos             =   pHsValToken TkVarid            "<identifier>" 
+pConidPos             =   pHsValToken TkConid            "<Identifier>" 
+pConsymPos            =   pHsValToken TkConOp 	       "<conoperator>"
+pVarsymPos            =   pHsValToken TkOp               "<operator>" 
 %%[[18
-pVaridUnboxedPos      =   pValToken TkVaridUnboxed     "<identifier#>" 
-pConidUnboxedPos      =   pValToken TkConidUnboxed     "<Identifier#>" 
-pConsymUnboxedPos     =   pValToken TkConOpUnboxed 	   "<conoperator#>"
-pVarsymUnboxedPos     =   pValToken TkOpUnboxed        "<operator#>" 
+pVaridUnboxedPos      =   pHsValToken TkVaridUnboxed     "<identifier#>" 
+pConidUnboxedPos      =   pHsValToken TkConidUnboxed     "<Identifier#>" 
+pConsymUnboxedPos     =   pHsValToken TkConOpUnboxed 	   "<conoperator#>"
+pVarsymUnboxedPos     =   pHsValToken TkOpUnboxed        "<operator#>" 
 %%]]
-pTextnmPos            =   pValToken TkTextnm           "<name>"       
-pTextlnPos            =   pValToken TkTextln           "<line>"     
+pTextnmPos            =   pHsValToken TkTextnm           "<name>"       
+pTextlnPos            =   pHsValToken TkTextln           "<line>"     
 pIntegerPos           =   pInteger10Pos
 
 pString, pChar,

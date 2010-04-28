@@ -75,6 +75,16 @@ ATTR Variable [ | | isSP : {Bool} ]
 ATTR Statements Statement Alternatives Alternative
          [ functionname : String | | ]
 
+ATTR Value [ | | equalToVar : {Variable->Bool} ]
+
+ATTR Variable [ | | self : SELF ]
+
+SEM Value
+  | Var     lhs.equalToVar  =  (== @var.self)
+  | * -Var  lhs.equalToVar  =  const False
+
+
+
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
@@ -113,7 +123,8 @@ SEM SilModule
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 -- >-< ppWhen False (text "register WPtr SP asm (\"%esp\");")
-                                >-< indent 4 (    callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
+                                >-< indent 4 (    --  @loc.extraInit >-< 
+                                                  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
 %%[[8
                                              >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_fun0tildemain"
 %%][99
@@ -123,6 +134,7 @@ SEM SilModule
                                              >-<  "return 0;"
                                              )
 
+
                 loc.silMain2 =  text "}"
 
                 loc.mainFun  =  text "int main(int argc, char** argv)"
@@ -131,7 +143,11 @@ SEM SilModule
                                 >-< text "    main_Sil_Run(argc, argv, &silly_main);"
                                 >-< text "    return main_Sil_Exit(argc, argv);"
                                 >-< text "}"
-
+                                
+                loc.extraInit = foldr1 (>-<) (map (\k -> text  ("printf(\"label retlab%d = %d\" ," ++ show k ++ ", &&retlab" ++ show k ++ " - &&mainlab1 );")
+                                                  ) 
+                                                  [3..1376]
+                                             )
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
@@ -145,11 +161,13 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment  lhs.prettyC   = if @source.equalToVar @dest.self
+                                then comment ["trivial assignment"]
+                                else assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
   | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
-  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign (fromJust @mbRetDiff) @lhs.optGenOwn
+  | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @lhs.functionname (fromJust @mbRetDiff) @lhs.optGenOwn
   | Label       lhs.prettyC   = label @lhs.optTraceCall @name
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
@@ -270,7 +288,7 @@ label :: Bool -> String -> PP_Doc
 label tras nm 
  = nm >|< ":"
    >|< ppWhen tras
-              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< "); fflush(stdout);")
+              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
 
 commaSeparated :: [String] -> String
 commaSeparated = concat . intersperse ", "
@@ -325,9 +343,9 @@ callSillyFunctionFromSilly optGenOwn nm pars
 quoted :: String -> String
 quoted s = "\"" ++ s ++ "\""
 
-returnFromSillyFunction tras retdiff optGenOwn
+returnFromSillyFunction tras name retdiff optGenOwn
  | optGenOwn   = ppWhen tras
-                      (" printf(\"goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "]); fflush(stdout);")
+                      (" printf(\"in" >#< name >#< "goto %d * %d\\n\", &SP[-" >#< show retdiff >#< "] ,SP[-" >#< show retdiff >#< "] - ((Word)(&&mainlab1))); fflush(stdout);")
  	             >-< "goto *(SP[-" >|< show retdiff >|< "]);"
  | otherwise   = text ""
 -- | False     = "asm ( " >|<  quoted ("jmp\\t*-" ++ show (4*retdiff) ++ "(%esp)") >|< ");"

@@ -175,7 +175,7 @@ cpCompileJazyJVM how othModNmL modNm
                                 where mkl1 l = Cfg.mkInstallFilePrefix opts Cfg.INST_LIB      variant ""
                                                ++ "lib" ++ l ++ ".jar"
                                       mkl2 l = Cfg.mkInstallFilePrefix opts Cfg.INST_LIB_PKG2 variant (showPkgKey l)
-                                               ++ "/" ++ mkInternalPkgFileBase l (Cfg.installVariant opts) (ehcOptTarget opts) (ehcOptTargetVariant opts)
+                                               ++ "/" ++ mkInternalPkgFileBase l (Cfg.installVariant opts) (ehcOptTarget opts) (ehcOptTargetFlavor opts)
                                                ++ "/" ++ "lib" ++ (showPkgKey l) ++ ".jar"
                               manifest 
                                  = [ ( "Manifest-Version", "1.0" )

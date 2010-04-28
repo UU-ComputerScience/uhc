@@ -91,13 +91,6 @@ ATTR AllExpr [ | | trf: SELF ]
 getNewName name subs = Map.findWithDefault name name subs
 }
 
-SEM GrBind
-  | Bind expr.subs = undefined
-         expr.uniqueIds = undefined
-  
-SEM GrGlobal
-  | Global val.subs = undefined
-
 SEM GrExpr
   | Call App Eval FetchNode FetchField UpdateUnit Throw
                 loc.newName = getNewName @nm @lhs.subs

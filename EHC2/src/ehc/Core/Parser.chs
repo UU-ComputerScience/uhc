@@ -170,22 +170,20 @@ pCAlt
 
 pCPat :: CParser CPat
 pCPat
-  =   pDollNm
-      <**> (   pNUMBER
-				*> (   (   (\s n -> CPat_Int  n (read s)) <$ pKeyTk "Int"
-					   <|> (\s n -> CPat_Char n (head s)) <$ pKeyTk "Char"
-					   )
-				       <*> (tokMkStr <$> pStringTk)
-				   <|> (\t r bs n -> CPat_Con n t r bs)
-				       <$  pKeyTk "Tag" <*> pCTag
-				       <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatBind <* pCCURLY
-				   )
-           <|> pSucceed CPat_Var
-           )
+  =   pNUMBER
+       *> (   (   (CPat_Int  . read) <$ pKeyTk "Int"
+              <|> (CPat_Char . head) <$ pKeyTk "Char"
+              )
+              <*> (tokMkStr <$> pStringTk)
+          <|> CPat_Con
+              <$  pKeyTk "Tag" <*> pCTag
+              <*  pOCURLY <*> pCPatRest <* pVBAR <*> pListSep pCOMMA pCPatFld <* pCCURLY
+          )
+  <|> CPat_Var <$> pDollNm
   where -- pRPatNm = RPatNmOrig <$> pDollNm <|> RPatNmUniq <$ pKeyTk "uniq" <*> pDollNm
         pCPatRest = pMaybe CPatRest_Empty CPatRest_Var pDollNm
 
-pCPatBind :: CParser CPatBind
-pCPatBind
-  = CPatBind_Bind <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCOMMA <*> pDollNm <* pCCURLY <* pEQUAL <*> pCPat
+pCPatFld :: CParser CPatFld
+pCPatFld
+  = CPatFld_Fld <$ pOCURLY <*> pDollNm <* pCOMMA <*> pCExpr <* pCCURLY <* pEQUAL <*> pDollNm -- pCPat
 %%]

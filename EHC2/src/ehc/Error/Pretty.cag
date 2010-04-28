@@ -458,9 +458,10 @@ SEM Err
 %%[[99
                                                         @range
 %%]]
-  | AmbiguousNameRef    lhs     .  pp   =   ppMsgErr    "Ambiguous name reference"
-                                                        (    "name        :" >#< @nm
-                                                         >-< "may refer to:" >#< vlist (map pp @nmAlts)
+  | AmbiguousNameRef    lhs     .  pp   =   ppMsgErr    ("Ambiguous " ++ @kind ++ " name reference")
+                                                        (    (take 12 (@kindName ++ repeat ' ') ++
+                                                                         ":") >#< @nm
+                                                         >-< "may refer to:"  >#< vlist (map pp @nmAlts)
                                                         )
 %%[[99
                                                         @range
@@ -491,6 +492,19 @@ SEM Err
                                                         (    "data type :" >#< @ty
                                                          >-< "class name:" >#< @clNm
                                                          >-< "because   :" >#< @reason
+                                                        )
+%%[[99
+                                                        @range
+%%]]
+%%]
+
+%%[99
+SEM Err
+  | InconsistentHI      lhs     .  pp   =   ppMsgErr    (".hi file cannot be used with this compiler")
+                                                        (    "module              :" >#< @modNm
+                                                         >-< "file                :" >#< @file
+                                                         >-< "this compiler       :" >#< (concat $ intersperse " / " @expected)
+                                                         >-< "compiler of .hi file:" >#< (concat $ intersperse " / " @inHI    )
                                                         )
 %%[[99
                                                         @range

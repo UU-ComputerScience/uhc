@@ -96,15 +96,18 @@ tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
 -- generated from ruler rules into EHRulerRules, was 2.tyVarGather
 %%[(5 hmtyinfer).tyVarGather
 SEM TyExpr
-  | Wild        loc         .   tyVarId             =   @lUniq
-                            .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+  | Wild Mono   loc         .   tyVarId             =   @lUniq
+                            .   tvarv               =   mkNewTyVar @tyVarId
                 loc         .   lUniq               :   UNIQUEREF gUniq
+  | Wild        loc         .   tgi_                =   TyGamInfo @tvarv
+  | Mono        loc         .   tgi_                =   TyGamInfo @tvarv -- (Ty_Ann TyAnn_Mono @tvarv)
 %%]
 
 %%[(6 hmtyinfer)
 SEM TyExpr
-  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
-                            .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
+  | Wild        loc         .   tgi_                :=  mkTGI @tvarv
+  | Mono        loc         .   tgi_                :=  mkTGI (Ty_Ann TyAnn_Mono @tvarv)
+  | Wild Mono   loc         .   tkgi_               =   TyKiGamInfo @tvarv
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.tyVarGather
@@ -209,7 +212,7 @@ SEM TyExpr
 
 -- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
 %%[(5 hmtyinfer).tyVarWildL
-ATTR AllTyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+ATTR AllTyExpr [ | | tyVarWildMp USE {`Map.union`} {Map.empty}: TyVarWildMp ]
 %%]
 
 %%[(3 hmtyinfer).tyWildL
@@ -219,18 +222,27 @@ ATTR TyExpr [ | | tyWildL USE {++} {[]}: TyL ]
 -- generated from ruler rules into EHRulerRules, was 2.Wild
 %%[(5 hmtyinfer).Wild
 SEM TyExpr
-  | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
+  | Wild        lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
+  | Mono        lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_NoQuantLetBinding
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.Wild
 %%[(5 hmtyinfer).Wild
 SEM TyExpr
-  | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
+  | VarWild     lhs         .   tyVarWildMp         =   Map.singleton @tyVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
 %%]
 
 %%[(9 hmtyinfer).Wild
 SEM TyExpr
-  | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
+  | Impls       lhs         .   tyVarWildMp         =   Map.singleton @implsVarId TyVarWild_NoQuantTyExpr_YesQuantLetBinding
+%%]
+
+-- gather tvars over which explicitly is declared not to quantify, thus enforcing monomorphism
+%%[(2 hmtyinfer)
+ATTR AllDecl [ | | noLetQuantTyVarIdS USE {`Set.union`} {Set.empty} : TyVarIdS ]
+
+SEM Decl
+  | TySig		lhs			.	noLetQuantTyVarIdS	=	Map.keysSet $ Map.filter (== TyVarWild_NoQuantTyExpr_NoQuantLetBinding) @tyExpr.tyVarWildMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -278,7 +290,7 @@ ATTR TyExprs TyVars [ | | kiL: TyL ]
 %%[(6 hmtyinfer)
 SEM TyExpr
   | Var VarWild loc         .   ki                  =   tkgiKi @tkgi_
-  | Wild        loc         .   ki                  =   tkgiKi @tkgi_
+  | Wild Mono   loc         .   ki                  =   tkgiKi @tkgi_
   | Con         loc         .   ki                  =   tkgiKi @tkgi_
   | App         loc         .   knResKi             =   mkNewTyVar @lUniq
                             .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
@@ -369,7 +381,7 @@ SEM TyExpr
 -- generated from ruler rules into EHRulerRules, was 2.ty
 %%[(5 hmtyinfer).ty
 SEM TyExpr
-  | Wild        loc         .   ty                  =   tgiTy @tgi_
+  | Wild Mono   loc         .   ty                  =   tgiTy @tgi_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 3.ty

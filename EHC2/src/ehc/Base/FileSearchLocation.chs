@@ -98,7 +98,8 @@ filelocIsPkg (FileLoc  FileLocKind_PkgDb  _) = True
 filelocIsPkg _                               = False
 %%]
 
-%%[8 export(FileLocPath)
+%%[8 export(StringPath,FileLocPath)
+type StringPath  = [String]
 type FileLocPath = [FileLoc]
 %%]
 
@@ -130,7 +131,7 @@ instance HSNM PkgKey where
 
 %%[99
 pPkgKey :: P PkgKey
-pPkgKey = (pVarid <|> pConid) <+> pMb (pMINUS *> pVersion)
+pPkgKey = (concat <$> pList1_ng (pVarid <|> pConid <|> ("-" <$ pMINUS))) <+> pMb (pMINUS *> pVersion)
 
 pVersion :: P Version
 pVersion = (\v -> Version (map read v) []) <$> pList1Sep pDOT pInteger10
@@ -161,10 +162,10 @@ data PackageSearchFilter
 %%]
 
 %%[99 export(pkgSearchFilter)
-pkgSearchFilter :: ([PkgKey] -> PackageSearchFilter) -> [String] -> [PackageSearchFilter]
-pkgSearchFilter mk ss
+pkgSearchFilter :: (x -> Maybe PkgKey) -> ([PkgKey] -> PackageSearchFilter) -> [x] -> [PackageSearchFilter]
+pkgSearchFilter mkKey mk ss
   = if null ps then [] else [mk ps]
-  where ps = catMaybes $ map parsePkgKey ss
+  where ps = catMaybes $ map mkKey ss
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -180,6 +181,7 @@ data PackageInfo
       , pkginfoOrder				:: !Int							-- for multiple packages the relative order
       -- , pkginfoKeyVals				:: PackageCfgKeyVals			-- key/value pairs of pkg config info
       , pkginfoExposedModules		:: !(Set.Set HsName)			-- exposed modules
+      , pkginfoIsExposed		    :: !Bool						-- pkg is exposed?
       }
       deriving Show
 
@@ -212,7 +214,7 @@ emptyPackageDatabase = PackageDatabase emptyPackageMp Map.empty
 
 %%[99 export(mkInternalPkgFileBase)
 
-mkInternalPkgFileBase :: PkgKey -> String {- compiler name/version -} -> Target -> TargetVariant -> FilePath
+mkInternalPkgFileBase :: PkgKey -> String {- compiler name/version -} -> Target -> TargetFlavor -> FilePath
 mkInternalPkgFileBase pkgKey compversion tgt tgtv =
   Cfg.mkInternalPkgFileBase (showPkgKey pkgKey) compversion (show tgt) (show tgtv)
 

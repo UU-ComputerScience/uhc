@@ -108,7 +108,7 @@ extern WPtr HeapAreaHigh;
 %%]
 
 %%[8
-#define STACKSIZE 					0x400000 // 0x400000
+#define STACKSIZE 					0x400000
 #define STACKSIZE_SPARE_UNUSED 		0x100		/* part of stack which is left as unused spare, but can be used by exception handling */
 #define RETURNSIZE 100
 #define LOCALSSIZE 1000
@@ -117,6 +117,7 @@ extern WPtr SP, RP;
 extern WPtr Stack, ReturnArea, LocalsArea;
 extern WPtr StackAreaHigh, StackAreaLow ;
 
+#ifdef __UHC_TARGET_C__
 extern Word 
   Ret0,  Ret1,  Ret2,  Ret3,  Ret4,  Ret5,  Ret6,  Ret7,  Ret8,  Ret9
 , Ret10, Ret11, Ret12, Ret13, Ret14, Ret15, Ret16, Ret17, Ret18, Ret19
@@ -140,7 +141,7 @@ extern Word
 , Loc70, Loc71, Loc72, Loc73, Loc74, Loc75, Loc76, Loc77, Loc78, Loc79
 , Loc80, Loc81, Loc82, Loc83, Loc84, Loc85, Loc86, Loc87, Loc88, Loc89
 , Loc90, Loc91, Loc92, Loc93, Loc94, Loc95, Loc96, Loc97, Loc98, Loc99;
-
+#endif
 
 
 %%]

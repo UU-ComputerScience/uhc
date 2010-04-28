@@ -22,7 +22,7 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqs})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common}, {%{EH}GrinCode.SolveEqsNew})
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
@@ -51,6 +51,7 @@ heapPointsToAnalysis grmod
         -- now solve the equations
     in  solveEquations lenEnv equations limitations
   
+debug = False
 continuedHeapPointsToAnalysis :: (HptMap,GrModule) -> (Int,HptMap)
 continuedHeapPointsToAnalysis (hptMap,grmod)
   = let -- traverse the tree
@@ -63,7 +64,7 @@ continuedHeapPointsToAnalysis (hptMap,grmod)
         
         -- now solve the equations
     in  solveEquationsAgain hptMap equations limitations
-        <<< (const $ "continuedHptAnalysis, hptMap = " ++ show hptMap)
+        <?< (debug, const $ "continuedHptAnalysis, hptMap = " ++ show hptMap)
     
 %%]
 
@@ -514,7 +515,7 @@ SEM GrExpr
 SEM GrExpr
   | App  lhs . equations = case @lhs.targetInfo of
                              InVar tvar -> [ IsApplication tvar (getNr @nm : map fromInVar @argL.valsInfo) @lhs.exceptVar ]
-                             _          -> [] <<< (const  $ "HPT: Apply target should be a variable. Nm = " ++ show @nm)
+                             _          -> [] <<< (const  $ "warn: HPT: Apply target should be a variable. Nm = " ++ show @nm)
 %%]
 
 

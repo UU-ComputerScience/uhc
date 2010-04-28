@@ -8,7 +8,7 @@ C + CPP compilation
 %%]
 
 -- general imports
-%%[8 import(Data.Char)
+%%[8 import(Data.Char,Data.Maybe)
 %%]
 %%[8 import({%{EH}EHC.Common})
 %%]
@@ -22,6 +22,8 @@ C + CPP compilation
 %%[8 import({%{EH}EHC.Environment})
 %%]
 %%[(8 codegen) import({%{EH}Base.Target})
+%%]
+%%[(99 codegen) import({%{EH}Base.FileSearchLocation},{%{EH}Base.PackageDatabase})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,12 +47,14 @@ gccDefs opts builds
 %%]
 
 %%[(99 codegen)
-gccInclDirs :: EHCOpts -> [String]
-gccInclDirs opts 
-  = [ mk kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
-  where mk (FileLocKind_Dir  ) d = d
-        mk (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
-        mk  FileLocKind_PkgDb  d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+gccInclDirs :: EHCOpts -> [PkgKey] -> [String]
+gccInclDirs opts pkgs
+  =            [ mki kind dir | FileLoc kind dir <- ehcOptImportFileLocPath opts, not (null dir) ]
+  ++ catMaybes [ mkp p        | p                <- pkgs                                         ]
+  where mki (FileLocKind_Dir  ) d = d
+        mki (FileLocKind_Pkg _) d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+        mki  FileLocKind_PkgDb  d = Cfg.mkPkgIncludeDir $ filePathMkPrefix d
+        mkp k = fmap (Cfg.mkPkgIncludeDir . filePathMkPrefix . filelocDir . pkginfoLoc) $ pkgDbLookup k $ ehcOptPkgDb opts
 %%]
 
 %%[(8 codegen) export(cpCompileWithGCC)
@@ -77,7 +81,8 @@ cpCompileWithGCC how othModNmL modNm
                         = case how of
                             FinalCompile_Exec
                               -> ( fpExec
-                                 , [ Cfg.gccOpts, if ehcOptOptimise opts >= OptimiseALot then "-O2" else "-O1", "-o", fpathToStr fpExec ]
+                                 ,    ( if ehcOptOptimise opts >= OptimiseALot then ["-O2"] else if ehcOptOptimise opts >= OptimiseNormal then ["-O1"] else [] )
+                                   ++ [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
                                  ,
 %%[[99
@@ -98,7 +103,7 @@ cpCompileWithGCC how othModNmL modNm
 %%[[99
                                     mkl2 how l = Cfg.mkCLibFilename (Cfg.mkInstallFilePrefix opts how variant (showPkgKey l) ++ "/" ++
                                                                        mkInternalPkgFileBase l (Cfg.installVariant opts)
-                                                                         (ehcOptTarget opts) (ehcOptTargetVariant opts) ++ "/")
+                                                                         (ehcOptTarget opts) (ehcOptTargetFlavor opts) ++ "/")
                                                                     (showPkgKey l)
 %%]]
                             FinalCompile_Module
@@ -118,7 +123,7 @@ cpCompileWithGCC how othModNmL modNm
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE variant "" ]
                                  ++ [ "-I" ++ Cfg.mkInstallFilePrefix opts Cfg.INST_INCLUDE_SHARED variant "" ]
 %%[[(99 codegen)
-                                 ++ [ "-I" ++ d | d <- gccInclDirs opts ]
+                                 ++ [ "-I" ++ d | d <- gccInclDirs opts pkgKeyL ]
 %%]]
                                  ++ linkOpts
                                  ++ targOpt
@@ -144,8 +149,8 @@ cpCompileWithGCC how othModNmL modNm
 %%]
 
 %%[99 export(cpPreprocessWithCPP)
-cpPreprocessWithCPP :: HsName -> EHCompilePhase ()
-cpPreprocessWithCPP modNm
+cpPreprocessWithCPP :: [PkgKey] -> HsName -> EHCompilePhase ()
+cpPreprocessWithCPP pkgKeyL modNm 
   = do { cr <- get
        ; let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
               fpCPP = fpathSetSuff {- mkOutputFPath opts modNm fp -} (maybe "" (\s -> s ++ "-") (fpathMbSuff fp) ++ "cpp") fp
@@ -156,12 +161,13 @@ cpPreprocessWithCPP modNm
 %%[[(99 codegen grin)
                                   ++ (if ehcOptFullProgAnalysis opts then ["UHC_FULL_PROGRAM_ANALYSIS"] else [])
 %%]]
+                        -- (pkgKeyL,_) = crPartitionIntoPkgAndOthers cr othModNmL
                         preCPP  = mkShellCmd
                                     (  [ Cfg.shellCmdCpp ]
                                     ++ [ Cfg.cppOpts ] ++ gccDefs opts ["CPP"]
                                     ++ [ "-traditional-cpp", {- "-std=gnu99", -} "-fno-show-column", "-P" ]
 %%[[(99 codegen)
-                                    ++ [ "-I" ++ d | d <- gccInclDirs opts ]
+                                    ++ [ "-I" ++ d | d <- gccInclDirs opts pkgKeyL ]
 %%]]
                                     ++ [ fpathToStr fp, fpathToStr fpCPP ]
                                     )

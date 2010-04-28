@@ -66,7 +66,7 @@ void mm_weakPtr_List_Init( MM_WeakPtr* weakPtr, MM_Mutator* mutator, MM_Collecto
 }
 
 Word mm_weakPtr_List_NewWeakPtr( MM_WeakPtr* weakPtr, Word key, Word val, Word finalizer ) {
-	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x finalizer\n", key, val, finalizer) ;}) ;
+	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x finalizer=%x\n", key, val, finalizer) ;}) ;
 	// printf("mm_weakPtr_List_NewWeakPtr key=%x val=%x finalizer=%x\n", key, val, finalizer) ;
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
 	
@@ -101,7 +101,9 @@ Word mm_weakPtr_List_FinalizeWeakPtr( MM_WeakPtr* weakPtr, Word wp ) {
 	MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)wp ) ;
 	Word finalizer = w->finalizer ;
 	
+	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizeWeakPtr key=%x val=%x finalizer=%x wpObj=%x w=%p\n", w->key, w->val, w->finalizer, wp, w) ;}) ;
 	if ( w->val == 0 ) {
+		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizeWeakPtr val==0\n") ;}) ;
 		// internal (RTS) finalization, only of the key, done directly, no allocation done, only deallocation
 		Word key = w->key ;
 		
@@ -109,8 +111,10 @@ Word mm_weakPtr_List_FinalizeWeakPtr( MM_WeakPtr* weakPtr, Word wp ) {
 		w->finalizer = 0 ;
 			
 		if ( finalizer != 0 && finalizer != MM_Itf_WeakPtr_NoFinalizer ) {
+			IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizeWeakPtr bef finalizer call\n") ;}) ;
 			(*(MM_WeakPtr_Finalizer)finalizer)( key ) ;
 			finalizer = 0 ;
+			IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizeWeakPtr aft finalizer call\n") ;}) ;
 		} else {
 			rts_panic1_1( "mm_weakPtr_List_FinalizeWeakPtr: finalizer == 0 || .. == NoFinalizer", wp ) ;
 		}
@@ -126,6 +130,32 @@ Word mm_weakPtr_List_FinalizeWeakPtr( MM_WeakPtr* weakPtr, Word wp ) {
 %%]]
 	}
 	return ( finalizer == MM_Itf_WeakPtr_NoFinalizer ? 0 : finalizer ) ;
+}
+
+// forced finalization takes place at the end of a program.
+// things to keep in mind:
+//   gc may be triggered
+//   stack is used
+Word mm_weakPtr_List_FinalizAlleWeakPtr( MM_WeakPtr* weakPtr ) {
+	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
+
+	MM_FreeListArray* list = weakPtrList->ptrList ;
+	MM_Iterator iter ;
+	IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizAlleWeakPtr\n") ;}) ;
+	for ( mm_freeListArray_Iterator( list, &iter ) ; iter.hasData ; iter.step( &iter ) ) {
+		// the admin for a weak ptr
+		MM_WeakPtr_ObjectAdmin* admin = (MM_WeakPtr_ObjectAdmin*)iter.data ;
+		// holds the object
+		Word wpObj = ((MM_WeakPtr_ObjectAdmin*)iter.data)->obj ;
+		// which we finalize
+		MM_WeakPtr_Object* w = mm_weakPtr_List_WeakPtrOfObject( weakPtrList, (BPtr)wpObj ) ;
+		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizAlleWeakPtr A key=%x val=%x finalizer=%x wpObj=%x w=%p\n", w->key, w->val, w->finalizer, wpObj, w) ;}) ;
+		Word finalizer = weakPtr->finalizeWeakPtr( weakPtr, wpObj ) ;
+		IF_GB_TR_ON(3,{printf("mm_weakPtr_List_FinalizAlleWeakPtr B key=%x val=%x finalizer=%x wpObj=%x w=%p\n", w->key, w->val, finalizer, wpObj, w) ;}) ;
+		if ( finalizer != 0 ) {
+			weakPtrList->mutator->runFinalizer( weakPtrList->mutator, finalizer ) ;
+		}
+	}
 }
 
 void mm_weakPtr_List_StartFindLiveObjects( MM_WeakPtr* weakPtr ) {
@@ -232,6 +262,7 @@ MM_WeakPtr mm_weakPtr_List =
 	, &mm_weakPtr_List_NewWeakPtr
 	, &mm_weakPtr_List_DerefWeakPtr
 	, &mm_weakPtr_List_FinalizeWeakPtr
+	, &mm_weakPtr_List_FinalizAlleWeakPtr
 	, &mm_weakPtr_List_FindLiveObjects
 	, &mm_weakPtr_List_StartFindLiveObjects
 	, &mm_weakPtr_List_EndFindLiveObjects

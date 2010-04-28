@@ -32,7 +32,7 @@
 
 %%[1
 tokConcat :: Token -> Token -> Token
-tokConcat t1 t2 = Reserved (genTokVal t1 ++ genTokVal t2) (position t1)
+tokConcat t1 t2 = Reserved (tokenVal t1 ++ tokenVal t2) (position t1)
 
 tokEmpty :: Token
 tokEmpty = Reserved "" noPos
@@ -103,27 +103,6 @@ pImpls = pPacked pOIMPL pCIMPL
 pApp            ::   SemApp ep => HSParser ep -> HSParser ep
 pApp p          =    mkApp <$> pList1 p
 %%]
-
-%%[1
-%%]
-block items
-  =    pOCURLY   *>  items <* pCCURLY
-  <|>  pVOCURLY  *>  items <* close
-
-close :: HSParser Token
-close = pVCCURLY
-
-close :: HParser () 
-close = pWrap f g (pVCCURLY)
-  where g state steps1 k = (state,ar,k)
-          where ar = if not (hasSuccess steps1) 
-                       then case unP popContext state of
-                             POk state' _   -> let steps2 = k state'
-                                               in  if  hasSuccess steps2 then steps2 else steps1                      
-                             _              -> steps1  
-                       else steps1                             
-        f acc state steps k = let (stl,ar,str2rr) = g state (val snd steps)  k
-                              in (stl ,val (acc (return ())) ar , str2rr )
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Pragma
@@ -471,10 +450,10 @@ pDeclarationValue
                            <$> pPatternOp <*> varop <*> pPatternOp
                        )
                      <*> pLhsTail
-        mkP  p       rhs = Declaration_PatternBinding emptyRange (p2p p) rhs'
-                         where (p2p,rhs') = mkTyPat rhs
-        mkF  lhs     rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (l2l lhs) rhs']
-                         where (l2l,rhs') = mkTyLhs rhs
+        mkP  p     rhs = Declaration_PatternBinding emptyRange (p2p p) rhs'
+                       where (p2p,rhs') = mkTyPat rhs
+        mkF  lhs   rhs = Declaration_FunctionBindings emptyRange [FunctionBinding_FunctionBinding emptyRange (l2l lhs) rhs']
+                       where (l2l,rhs') = mkTyLhs rhs
         mkLI l o r     = LeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r
         mkLP r l t     = LeftHandSide_Parenthesized r l t
 %%[[1
@@ -1554,16 +1533,6 @@ pBlock1Try open sep close p =  pOffsideTry open close explicit implicit
 %%% Pattern
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[1
-pPatternConSuffix :: HSParser (Token -> Pattern)
-pPatternConSuffix
-  =   pSucceed (\c -> mkRngNm Pattern_Constructor c [])
-%%[[7
-  <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
-%%]]
-  <?> "pPatternConSuffix"
-%%]
-
 %%[1.pPatternBaseInParens
 pPatternBaseInParens :: HSParser (Range -> Pattern)
 pPatternBaseInParens
@@ -1602,6 +1571,11 @@ pPatternBaseInParens
 %%]]
 %%]
 
+%%[1
+pPatternBaseMinusLiteral :: HSParser Pattern
+pPatternBaseMinusLiteral = (\m n -> Pattern_Literal (mkRange1 m) (-1) n) <$> pMINUS <*> pLiteralNumber
+%%]
+
 %%[1.pPatternBaseNoParens
 pPatternBaseNoParens :: HSParser Pattern
 pPatternBaseNoParens
@@ -1610,7 +1584,6 @@ pPatternBaseNoParens
            <|> pSucceed (mkRngNm Pattern_Variable)
            )
   <|> Pattern_Literal emptyRange 1 <$> pLiteral
-  <|> (\m n -> Pattern_Literal (mkRange1 m) (-1) n) <$> pMINUS <*> pLiteralNumber
 %%[[5
   <|> pBracks' (flip Pattern_List <$> pListSep pCOMMA pPattern)
 %%]]
@@ -1626,6 +1599,16 @@ pPatternBase
   =   pPatternBaseNoParens
   <|> pParens' pPatternBaseInParens
   <?> "pPatternBase"
+%%]
+
+%%[1
+pPatternConSuffix :: HSParser (Token -> Pattern)
+pPatternConSuffix
+  =   pSucceed (\c -> mkRngNm Pattern_Constructor c [])
+%%[[7
+  <|> pCurlys' ((\bs _ c -> mkRngNm Pattern_Record c bs) <$> pListSep pCOMMA pRecordPatternBinding)
+%%]]
+  <?> "pPatternConSuffix"
 %%]
 
 %%[1
@@ -1650,6 +1633,7 @@ pRecordPatternBinding
 pPatternApp :: HSParser Pattern
 pPatternApp
   =   pPatternBase
+  <|> pPatternBaseMinusLiteral
   <|> qconid
       <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBaseCon
            <|> pPatternConSuffix
@@ -1660,16 +1644,16 @@ pPatternApp
 %%[1
 pPatternOp :: HSParser Pattern
 pPatternOp
-  =   pChainr_ng
-%%[[1
-        ((\o l r -> mkRngNm Pattern_Constructor o [l,r]) <$> qconop)
-%%][5
-        ((\o l r -> Pattern_InfixConstructor (mkRange1 o) l (tokMkQName o) r) <$> qconop)
-%%]]
-        pPatternApp
+  -- =   (\l rs -> foldr (\(o,r) mk -> \l -> o l (mk r)) id rs l) <$> pPatternApp <*> pList_ng (pOp <+> pPatternApp)
+  = pChainr_ng pOp pPatternApp
   <?> "pPatternOp"
+  where pOp = 
+%%[[1
+			((\o l r -> mkRngNm Pattern_Constructor o [l,r]) <$> qconop)
+%%][5
+			((\o l r -> Pattern_InfixConstructor (mkRange1 o) l (tokMkQName o) r) <$> qconop)
+%%]]
 %%]
-
 
 %%[1.pPattern
 pPattern :: HSParser Pattern
@@ -1714,7 +1698,12 @@ commas' :: HSParser [Token]
 commas' = pList1 pCOMMA
 
 commas :: HSParser Token
-commas =  (genTokMap (\s -> strProd (length s + 1)) . foldr tokConcat tokEmpty) <$> commas'
+commas =  (map (\s -> strProd (length s + 1)) . foldr tokConcat tokEmpty) <$> commas'
+%%[[1
+  where map = genTokMap
+%%][5
+  where map = tokenMap
+%%]]
 %%]
 
 The separator used for after conditional+then expressions in an if-then-else in a do.
@@ -1814,10 +1803,16 @@ qcon
   <|> pParens qconsym
   <?> "qcon"
 
+varop_no_minus   :: HSParser Token
+varop_no_minus
+  =   varsym_no_minus 
+  <|> pBACKQUOTE *> varid <* pBACKQUOTE
+  <?> "varop_no_minus"
+       
 varop   :: HSParser Token
 varop
-  =   varsym 
-  <|> pBACKQUOTE *> varid <* pBACKQUOTE
+  =   varop_no_minus
+  <|> pMINUS       
   <?> "varop"
        
 qvarop :: HSParser Token

@@ -4,8 +4,8 @@ Specialize functions that are called with constant arguments
 
 %%]
 
-%%[(8 codegen grin) hs import(EH.Util.Debug)
-%%]
+
+
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
@@ -14,10 +14,6 @@ Specialize functions that are called with constant arguments
 %%[(8 codegen grin) hs import(qualified Data.Map as Map, qualified Data.Set as Set, Data.Maybe)
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
-%%]
-%%[(8 codegen grin) ag import({GrinCode/Trf/UniqueIds})
-%%]
-%%[(8 codegen grin) hs import(Data.List)
 %%]
 
 %%[(8 codegen grin)
@@ -122,20 +118,13 @@ SEM GrExpr
                                      then Map.singleton @nm (Set.singleton @loc.args2)
                                      else Map.empty
                                           
-          (lhs.grTrf,lhs.uniqueIds)
-             =  if hasJust @loc.args2
-                then let m = fromJust (Map.lookup @nm   @lhs.specializedCalls)
-                         i = fromJust (Map.lookup @loc.args2 m)
-                        
-                         origName = case @nm of
-                                      HNmNr _ origName -> origName
-                                      _ -> error "specConst encountered a non HNmNr name"
-                                      
-                         (uniqueId:remUniqueIds) = @lhs.uniqueIds
-                         newName = HNmNr uniqueId (mapOrigName (\hs -> hsnSuffix hs ("~spec" ++ show i)) origName)
-                         args3 = [ a | (a,Nothing) <- zip @argL.grTrf @loc.args2 ]
-                     in  (GrExpr_Call newName args3,remUniqueIds)
-                else (@loc.grTrf,@lhs.uniqueIds)
+          lhs.grTrf              =   if hasJust @loc.args2
+                                     then let m = fromJust (Map.lookup @nm   @lhs.specializedCalls)
+                                              i = fromJust (Map.lookup @loc.args2 m)
+                                              nm2 = hsnSuffix @nm ("~spec" ++ show i)
+                                              args3 = [ a | (a,Nothing) <- zip @argL.grTrf @loc.args2 ]
+                                          in  GrExpr_Call nm2 args3
+                                     else  @loc.grTrf
                                           
 
 SEM GrVal

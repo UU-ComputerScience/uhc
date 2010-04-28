@@ -21,7 +21,7 @@ Note: everything is exported.
 %%[1 import(EH.Util.ScanUtils)
 %%]
 
-%%[1.Scanner import(UU.Scanner) export(module UU.Scanner)
+%%[1.Scanner import(UU.Scanner, {%{EH}Scanner.TokenParser}) export(module UU.Scanner)
 %%]
 
 %%[1 export(module {%{EH}Scanner.Common})
@@ -520,33 +520,33 @@ pStringTk, pCharTk,
   pTextnmTk, pTextlnTk, pIntegerTk, pVarsymTk, pConsymTk
     :: IsParser p Token => p Token
 
-pStringTk     =   pCostValToken' 7 TkString    ""        
-pCharTk       =   pCostValToken' 7 TkChar      "\NUL"    
-pInteger8Tk   =   pCostValToken' 7 TkInteger8  "0"       
-pInteger10Tk  =   pCostValToken' 7 TkInteger10 "0"       
-pInteger16Tk  =   pCostValToken' 7 TkInteger16 "0"
-pFractionTk   =   pCostValToken' 7 TkFraction  "0.0"
-pVaridTk      =   pCostValToken' 7 TkVarid     "<identifier>" 
-pVaridTk'     =   pCostValToken' 6 TkVarid     "<identifier>" 
-pConidTk      =   pCostValToken' 7 TkConid     "<Identifier>" 
-pConidTk'     =   pCostValToken' 6 TkConid     "<Identifier>" 
-pConsymTk     =   pCostValToken' 7 TkConOp     "<conoperator>"
-pVarsymTk     =   pCostValToken' 7 TkOp        "<operator>" 
-pTextnmTk     =   pCostValToken' 7 TkTextnm    "<name>"       
-pTextlnTk     =   pCostValToken' 7 TkTextln    "<line>"     
+pStringTk     =   pHsCostValToken' 7 TkString    ""        
+pCharTk       =   pHsCostValToken' 7 TkChar      "\NUL"    
+pInteger8Tk   =   pHsCostValToken' 7 TkInteger8  "0"       
+pInteger10Tk  =   pHsCostValToken' 7 TkInteger10 "0"       
+pInteger16Tk  =   pHsCostValToken' 7 TkInteger16 "0"
+pFractionTk   =   pHsCostValToken' 7 TkFraction  "0.0"
+pVaridTk      =   pHsCostValToken' 7 TkVarid     "<identifier>" 
+pVaridTk'     =   pHsCostValToken' 6 TkVarid     "<identifier>" 
+pConidTk      =   pHsCostValToken' 7 TkConid     "<Identifier>" 
+pConidTk'     =   pHsCostValToken' 6 TkConid     "<Identifier>" 
+pConsymTk     =   pHsCostValToken' 7 TkConOp     "<conoperator>"
+pVarsymTk     =   pHsCostValToken' 7 TkOp        "<operator>" 
+pTextnmTk     =   pHsCostValToken' 7 TkTextnm    "<name>"       
+pTextlnTk     =   pHsCostValToken' 7 TkTextln    "<line>"     
 pIntegerTk    =   pInteger10Tk
 %%]
 %%[18
-pVaridUnboxedTk      =   pCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
-pConidUnboxedTk      =   pCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
-pConsymUnboxedTk     =   pCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
-pVarsymUnboxedTk     =   pCostValToken' 7 TkOpUnboxed        "<operator#>" 
+pVaridUnboxedTk      =   pHsCostValToken' 7 TkVaridUnboxed     "<identifier#>" 
+pConidUnboxedTk      =   pHsCostValToken' 7 TkConidUnboxed     "<Identifier#>" 
+pConsymUnboxedTk     =   pHsCostValToken' 7 TkConOpUnboxed     "<conoperator#>"
+pVarsymUnboxedTk     =   pHsCostValToken' 7 TkOpUnboxed        "<operator#>" 
 %%]
 %%[20
-pQVaridTk     =   pCostValToken' 7 TkQVarid     "<identifier>" 
-pQConidTk     =   pCostValToken' 7 TkQConid     "<Identifier>" 
-pQConsymTk    =   pCostValToken' 7 TkQConOp     "<conoperator>"
-pQVarsymTk    =   pCostValToken' 7 TkQOp        "<operator>" 
+pQVaridTk     =   pHsCostValToken' 7 TkQVarid     "<identifier>" 
+pQConidTk     =   pHsCostValToken' 7 TkQConid     "<Identifier>" 
+pQConsymTk    =   pHsCostValToken' 7 TkQConOp     "<conoperator>"
+pQVarsymTk    =   pHsCostValToken' 7 TkQOp        "<operator>" 
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -589,9 +589,13 @@ pQVARSYM         = pQVarsymTk
 %%[1
 tokGetVal :: Token -> String
 tokGetVal x
+%%[[1
   = case x of
       ValToken _ v p -> v
       Reserved v p   -> v
+%%][5
+  = tokenVal x
+%%]]
 
 pV :: (IsParser p Token) => p Token -> p String
 pV p = tokGetVal <$> p
@@ -850,7 +854,7 @@ tokOpStrsHS9   = [  ]
 %%]
 
 %%[10
-tokOpStrsEH10  = [ show hsnDynVar ]
+tokOpStrsEH10  = [] -- [ show hsnDynVar ]
 tokOpStrsHS10  = [  ]
 %%]
 

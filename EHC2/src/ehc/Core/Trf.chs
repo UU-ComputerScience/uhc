@@ -119,7 +119,7 @@ trfCore opts modNm trfcore
 
 %%[[99
                  -- optionally modify to include explicit stack trace
-               ; when (ehcOptTargetVariant opts == TargetVariant_Debug)
+               ; when (ehcOptTargetFlavor opts == TargetFlavor_Debug)
                       (do { t_expl_trace
                             -- from now on INVARIANT: renaming of identifiers must also rename additional exported names here introduced
 

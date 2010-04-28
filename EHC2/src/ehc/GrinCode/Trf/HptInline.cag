@@ -1,8 +1,8 @@
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.InlineNumber(grInline)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.InlineNumbered(inlineNumbered)})
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}GrinCode.PointsToAnalysis(continuedHeapPointsToAnalysis,heapPointsToAnalysis)})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.PointsToAnalysisNew(continuedHeapPointsToAnalysis,heapPointsToAnalysis)})
 %%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
@@ -20,11 +20,10 @@
 %%[(8 codegen grin) hs import(Data.Array)
 %%]
 
-
 %%[(20 codegen grin) -8.grInline hs export(hptInline)
 hptInline :: Bool -> HsNameS -> GrInlMp -> (GrModule,HptMap) -> Maybe ((GrModule,HptMap),GrInlMp)
 hptInline allow expNmS inlMp (grMod,hptMap) = 
-  let inlineResult = grInline allow  expNmS inlMp grMod
+  let inlineResult = inlineNumbered allow  expNmS inlMp grMod
       (_,safeHptMap) = (0,hptMap) -- heapPointsToAnalysis grMod      
   in  fmap (processInline safeHptMap) inlineResult
 %%]

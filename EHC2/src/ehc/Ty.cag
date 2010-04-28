@@ -21,25 +21,19 @@ used by EHC. The AST is described in Ty/AbsSyn.
 %%[(1 hmtyinfer || hmtyast) hs export(tyLHdAndTl, tyArrowArgRes, tyArrowArgsRes, tyArrowArgs, tyArrowRes, tyAppFunArgs, tyProdArgs, tyAppArgs) 
 %%]
 
+%%[(1 hmtyinfer || hmtyast) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map) 
+%%]
+
 %%[(2 hmtyinfer || hmtyast) hs export(TyVarId, mkTyVar, mkNewTyVar, mkNewUIDTyVarL, mkNewTyVarL, mkTyFreshProd, mkTyFreshProdFrom, tyEnsureNonAny) 
 %%]
 
-%%[(2 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set) 
-%%]
-
 %%[(3 hmtyinfer || hmtyast) hs export(mkTyQu, TyVarCateg(..))
-%%]
-
-%%[(3 hmtyinfer || hmtyast) hs import(Data.Maybe) export(tyVar) 
 %%]
 
 %%[4 hs export(TyQu(..)) 
 %%]
 
 %%[(4 hmtyinfer || hmtyast) hs export(tyConNm) 
-%%]
-
-%%[(4 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
 %%]
 
 %%[(4_2 hmtyinfer || hmtyast) hs export(tyMbQu,tyIsQu,tyIsAlts) 
@@ -164,6 +158,21 @@ type TyPlusId      = UID
 
 %%[(10 hmtyinfer || hmtyast) hs export(LabelVarId)
 type LabelVarId      = UID
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(2 hmtyinfer) hs export(TyVarWild(..),TyVarWildMp)
+-- | tyvars may act as wildcard, that is, they act as placeholders inside partial type signatures, providing
+--   some structure. Such wildcards come in flavors:
+data TyVarWild
+  = TyVarWild_NoQuantTyExpr_YesQuantLetBinding		-- quantify: not in TyExpr, yes in let binding
+  | TyVarWild_NoQuantTyExpr_NoQuantLetBinding		-- quantify: not in TyExpr, not in let binding (enforce monomorphism)
+  deriving Eq
+
+type TyVarWildMp = Map.Map TyVarId TyVarWild
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -641,6 +650,57 @@ tyIsA (Ty_Impls a      ) = "IMPLS"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ann removal, construction, addition
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast) hs export(tyUnAnn)
+-- | Remove TyAnn's
+tyUnAnn :: Ty -> Ty
+tyUnAnn (Ty_Ann _ t) = tyUnAnn t
+tyUnAnn t            = t
+{-# INLINE tyUnAnn #-}
+%%]
+
+%%[(7 hmtyinfer || hmtyast) hs export(tyRowUnAnn,tyRowExtsUnAnn)
+tyRowUnAnn :: AssocL HsName Ty -> AssocL HsName Ty
+tyRowUnAnn = assocLMapElt tyUnAnn
+
+tyRowExtsUnAnn :: (Ty,AssocL HsName Ty) -> (Ty,AssocL HsName Ty)
+tyRowExtsUnAnn (x,y) = (tyUnAnn x,tyRowUnAnn y)
+%%]
+
+%%[(1 hmtyinfer || hmtyast) hs export(tyCanonAnn)
+-- | Canonicalize TyAnn's
+tyCanonAnn :: Ty -> Ty
+tyCanonAnn t
+  = c [] t
+  where c seen t@(Ty_Ann a ta) | a `elem` seen = c seen ta
+                               | otherwise     = Ty_Ann a $ c (a:seen) ta
+        c _    t                               = t
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs export(tyAnnMono)
+-- | Add TyAnn
+tyAnn :: TyAnn -> Ty -> Ty
+tyAnn a t@(Ty_Ann a' _) | a == a' = t
+tyAnn a t                         = Ty_Ann a t
+
+-- | Add TyAnn_Mono
+tyAnnMono :: Ty -> Ty
+tyAnnMono = tyAnn TyAnn_Mono
+%%]
+
+%%[(4 hmtyinfer || hmtyast) hs export(tyAnnDecomposeMk)
+-- | Decompose type for annotation into unannotated type + reconstruction
+tyAnnDecomposeMk    :: Ty -> (Ty, [TyAnn], Ty -> Ty)
+tyAnnDecomposeMk t
+  = case t of
+      Ty_Ann a t'       -> (ta,as,\ta' -> tyAnn a $ mk ta')
+                        where (ta,as,mk) = tyAnnDecomposeMk t'
+      _                 -> (t ,[],id)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Properties of type
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -653,7 +713,7 @@ tyIsCon = isJust . tyMbCon
 
 tyMbQu :: Ty -> Maybe TyQu
 tyMbQu t
-  = case t of
+  = case tyUnAnn t of
 %%[[4
       Ty_Quant q _ _
 %%][6
@@ -875,11 +935,19 @@ tyLHdAndTl      :: [Ty] -> (Ty,TyL)
 %%]
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyArrowArgRes hs
-tyArrowArgRes t
-  =  case t of
-       Ty_App (Ty_App (Ty_Con nm) a) r
-         | hsnIsArrow nm  -> (a,r)
-       _                  -> (Ty_Any,t)
+tyMbArrowArgRes   :: Ty -> Maybe (Ty,Ty)
+tyMbArrowArgRes t
+  =  case tyUnAnn t of
+       Ty_App a1 r
+         -> case tyUnAnn a1 of
+              Ty_App a2 a
+                -> case tyUnAnn a2 of
+                     Ty_Con nm | hsnIsArrow nm  -> Just (a,r)
+                     _                          -> Nothing
+              _ -> Nothing
+       _ -> Nothing
+
+tyArrowArgRes t = maybe (Ty_Any,t) id $ tyMbArrowArgRes t
 %%]
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyArrowArgResWithLkup)
@@ -889,20 +957,20 @@ tyArrowArgResWithLkup lookup = tyVarChkVisitLift lookup tyArrowArgRes tyArrowArg
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyArrowArgsRes hs
 tyArrowArgsRes t
-  =  case t of
+  =  case tyUnAnn t of
 %%[[7
        Ty_Quant _ _ _ t   -> tyArrowArgsRes t
 %%]]
-       Ty_App (Ty_App (Ty_Con nm) a) r
-         | hsnIsArrow nm  -> let (as,r') = tyArrowArgsRes r in (a:as,r')
-       _                  -> ([],t)
+       t | isJust mbAR    -> let (as,r') = tyArrowArgsRes r in (a:as,r')
+         | otherwise      -> ([],t)
+         where mbAR@(~(Just (a,r))) = tyMbArrowArgRes t
 %%]
 
 %%[(1 hmtyinfer || hmtyast).unMkTy.tyAppFunArgs hs
 tyAppFunArgs
   =  extr []
   where  extr as t
-           =  case t of
+           =  case tyUnAnn t of
 %%[[6
                 Ty_Quant _ qv _ t -> extr as t
 %%]]
@@ -921,7 +989,7 @@ tyAppFunArgsWithLkup lookup = tyVarChkVisitLift lookup tyAppFunArgs tyAppFunArgs
 tyAppFunArgsWithLkup lookup
   =  extr []
   where  extr as t
-           =  case t of
+           =  case tyUnAnn t of
                 Ty_Quant _ qv _ t -> tyAppFunArgsWithLkup (\v -> if qv == v then Nothing else lookup v) t
                 Ty_App f a        -> extr (a:as) f
                 _                 -> tyVarLift lookup (extr as) (flip (,) as) t
@@ -934,7 +1002,7 @@ tyAppFunArgsMk    :: Ty -> (Ty, TyL, Ty -> TyL -> Ty)
 tyAppFunArgsMk
   =  extr []
   where  extr as t
-           =  case t of
+           =  case tyUnAnn t of
                 Ty_Quant q v k t  -> (f,as,\f as -> Ty_Quant q v k $ mk f as)
                                   where (f,as,mk) = tyAppFunArgsMk t
                 Ty_App f a        -> extr (a:as) f
@@ -957,18 +1025,23 @@ tyLHdAndTl   = hdAndTl' Ty_Any
 
 %%[(4 hmtyinfer || hmtyast).unMkTy.tyConNm hs export(tyMbCon)
 tyMbCon :: Ty -> Maybe HsName
-tyMbCon t = case t of {Ty_Con nm -> Just nm ; _ -> Nothing}
+tyMbCon t = case tyUnAnn t of {Ty_Con nm -> Just nm ; _ -> Nothing}
 
 tyConNm :: Ty -> HsName
 tyConNm = maybe hsnUnknown id . tyMbCon
 %%]
 
-%%[(3 hmtyinfer || hmtyast).unMkTy.tyMbVar hs export(tyMbVar)
-tyMbVar :: Ty -> Maybe TyVarId
-tyMbVar t = case t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+%%[(7 hmtyinfer || hmtyast) hs export(tyMbConWithLkup)
+tyMbConWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe HsName
+tyMbConWithLkup lookup = tyVarChkVisitLift lookup tyMbCon tyMbCon
 %%]
 
-%%[(3 hmtyinfer || hmtyast).unMkTy.tyVar hs
+%%[(3 hmtyinfer || hmtyast).unMkTy.tyMbVar hs export(tyMbVar)
+tyMbVar :: Ty -> Maybe TyVarId
+tyMbVar t = case tyUnAnn t of {Ty_Var v _ -> Just v ; _ -> Nothing}
+%%]
+
+%%[(3 hmtyinfer || hmtyast).unMkTy.tyVar hs export(tyVar)
 tyVar :: Ty -> TyVarId
 tyVar = maybe uidStart id . tyMbVar
 %%]
@@ -989,7 +1062,7 @@ tyProdArgs ty = let (t,al) = tyRecExts ty in map snd al
 
 %%[(7 hmtyinfer || hmtyast) hs
 tyAppFunArg :: Ty -> (Ty,Ty)
-tyAppFunArg t =  case t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
+tyAppFunArg t =  case tyUnAnn t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
 %%[(98 hmtyinfer || hmtyast) hs export(tyAppConArgs)
@@ -1007,7 +1080,7 @@ tyAppFunConNm = tyConNm . fst . tyAppFunArgs
 %%[(9 hmtyinfer || hmtyast) hs
 tyQuant :: Ty -> Ty
 tyQuant t
-  =  case t of
+  =  case tyUnAnn t of
        Ty_Quant _ _ _ t'  -> tyQuant t'
        _                  -> t
 
@@ -1027,11 +1100,12 @@ tyArrowImplsArgResWithLkup lookup t
 tyArrowImplsResWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (TyL,Ty)
 tyArrowImplsResWithLkup lookup t
   = extr t
-  where extr t = case t of
-                   (Ty_App (Ty_App (Ty_Con nm) a) r)
-                     | hsnIsArrow nm && isImpls a
-                       -> let (as,r') = extr r in (a:as,r')
-                     where  isImpls (Ty_Pred  _)  = True
+  where extr t = case tyMbArrowArgRes t of
+                   Just (a,r)
+                     | isImpls a'
+                       -> let (as,r') = extr r in (a':as,r')
+                     where  a' = tyUnAnn a
+                            isImpls (Ty_Pred  _)  = True
                             isImpls (Ty_Impls _)  = True
                             isImpls _             = False
                    _   -> tyVarLift lookup extr ((,) []) t
@@ -1045,7 +1119,7 @@ tyArrowImplsArgRes  :: Ty -> (TyL,Ty,Ty)
 tyArrowImplsArgRes = tyArrowImplsArgResWithLkup (const Nothing)
 
 tyLImplsPreds :: TyL -> ([Pred],Impls)
-tyLImplsPreds = foldr (\t (ps,i) -> case t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
+tyLImplsPreds = foldr (\t (ps,i) -> case tyUnAnn t of {Ty_Pred p -> (p:ps,i); Ty_Impls i -> (ps,i)}) ([],Impls_Nil)
 %%]
 
 %%[(11 hmtyinfer || hmtyast) hs
@@ -1053,7 +1127,7 @@ tyLamArgsRes :: Ty -> ([TyVarId],Ty)
 tyLamArgsRes
   =  extr
   where  extr t
-           =  case t of
+           =  case tyUnAnn t of
                 Ty_Lam a r  -> (a:as',r')
                             where (as',r') = extr r
                 _           -> ([],t)
@@ -1086,7 +1160,7 @@ mkTySum al = hsnSum `mkConApp` [tyRowEmpty `mkTyRow` al]
 %%[(6 hmtyinfer || hmtyast) hs
 tyVarChkVisitLift :: (TyVarId -> Maybe Ty) -> (Ty -> x) -> (Ty -> x) -> Ty -> x
 tyVarChkVisitLift
-  = withLkupChkVisitLift tyMbVar noVisit
+  = withLkupChkVisitLift tyMbVar (noVisit . tyUnAnn)
   where noVisit (Ty_Quant _ qv _ _) = Set.singleton qv
         noVisit _                   = Set.empty
 
@@ -1110,9 +1184,9 @@ tyRowExtsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,AssocL HsName Ty)
 tyRowExtsWithLkup lookup
   =  extr []
   where  extr as t
-           =  case t of
+           =  case tyUnAnn t of
                 (Ty_Ext r l e) -> extr ((l,e):as) r
-                _              -> tyVarLift lookup (extr as) (flip (,) as) t
+                t'             -> tyVarLift lookup (extr as) (flip (,) as) t'
 
 tyRecExtsWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> (Ty,AssocL HsName Ty)
 tyRecExtsWithLkup lookup t
@@ -1121,22 +1195,32 @@ tyRecExtsWithLkup lookup t
        row     -> tyRowExtsWithLkup lookup row
 
 tyRecRowWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Ty
-tyRecRowWithLkup lookup = tyVarLift lookup tyRecRow tyRecRow
+tyRecRowWithLkup lookup = maybe Ty_Any id . tyMbRecRowWithLkup lookup
 
 tyRowExtrWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Maybe (Ty,Ty)
 tyRowExtrWithLkup lookup lbl t
   = extr t
   where extr t 
-          = case t of
+          = case tyUnAnn t of
               (Ty_Ext r l e) | lbl == l   -> Just (r,e)
-                             | otherwise  -> maybe Nothing (\(r',e') -> Just (Ty_Ext r' l e,e')) (tyRowExtr lbl r)
-              _                           -> tyVarLift lookup extr (const Nothing) t
+                             | otherwise  -> maybe Nothing (\(r',e') -> Just (Ty_Ext r' l e,e')) (extr r)
+              t'                          -> tyVarLift lookup extr (const Nothing) t'
 
 tyRecExtrWithLkup :: (TyVarId -> Maybe Ty) -> HsName -> Ty -> Maybe (Ty,Ty)
 tyRecExtrWithLkup lookup lbl t
   =  case tyRowExtrWithLkup lookup lbl (tyRecRowWithLkup lookup t) of
        Nothing    -> Nothing
        Just (r,e) -> Just (hsnRec `mkConApp` [r],e)
+
+tyMbRecRowWithLkup :: (TyVarId -> Maybe Ty) -> Ty -> Maybe Ty
+tyMbRecRowWithLkup lookup t
+  =  case tyAppFunArgsWithLkup lookup t of
+       (f,[row])
+         -> case tyMbConWithLkup lookup f of
+              Just n | hsnIsRec n || hsnIsSum n -> Just row
+              _                                 -> Nothing
+       _                                        -> Nothing
+
 %%]
 
 %%[(8 hmtyinfer || hmtyast) hs
@@ -1144,13 +1228,15 @@ tyRecExtrWithLkup lookup lbl t
 
 %%[(7 hmtyinfer || hmtyast) hs export(tyRowExtr,tyRecExtr,tyRecExts,tyMbRecRow,tyRecRow,tyRowExts)
 tyMbRecRow :: Ty -> Maybe Ty
-tyMbRecRow t
+tyMbRecRow = tyMbRecRowWithLkup (const Nothing)
+{-
   =  case tyAppFunArgs t of
        (Ty_Con n,[row]) | hsnIsRec n || hsnIsSum n -> Just row
        _                                           -> Nothing
+-}
 
 tyRecRow :: Ty -> Ty
-tyRecRow = maybe Ty_Any id . tyMbRecRow
+tyRecRow = tyRecRowWithLkup (const Nothing) -- maybe Ty_Any id . tyMbRecRow
 
 tyRowExts :: Ty -> (Ty,AssocL HsName Ty)
 tyRowExts = tyRowExtsWithLkup (const Nothing)
@@ -1190,7 +1276,10 @@ tyDecomposeMk t
                         where (f,as) = tyAppFunArgs t
       Ty_Ext _ _ _      -> (r,assocLElts e,\r' e' -> mkTyRow r' $ zip (assocLKeys e) e')
                         where (r,e) = tyRowExts t
-      _                 -> (t,[],const)
+      _ | not (null an) -> (t2,as,\f' as' -> mk1 $ mk2 f' as')
+        | otherwise     -> (t,[],const)
+                        where (t1,an,mk1) = tyAnnDecomposeMk t
+                              (t2,as,mk2) = tyDecomposeMk    t1
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1256,7 +1345,7 @@ tyRecOffsetWithLkup lookup nm
 %%[(9 hmtyinfer || hmtyast) hs
 tyPred :: Ty -> Pred
 tyPred t
-  =  case t of
+  =  case tyUnAnn t of
        Ty_Pred pt  -> pt
        _           -> Pred_Pred t
 
@@ -1348,7 +1437,9 @@ implsPrIdsWithLkup lookup = map poPoi . fst . implsPredsTailWithLkup lookup init
 
 %%[(9 hmtyinfer || hmtyast) hs export(tyImpls,implsPredsTail,implsPredsMbTail,implsIsTail,tyIsImplsTail,tyImplsPreds,implsPrIds)
 tyImpls :: Ty -> Impls
-tyImpls (Ty_Impls i) = i
+tyImpls
+  = extr . tyUnAnn
+  where extr (Ty_Impls i) = i
 
 implsPredsTail' :: PredScope -> Impls -> ([(PredOcc,[ImplsProveOcc])],Impls)
 implsPredsTail' = implsPredsTailWithLkup' (const Nothing)
@@ -1397,7 +1488,7 @@ implsIsEmpty _                        = True
 tyIsPredicated :: Ty -> Bool
 tyIsPredicated (Ty_Impls i) = not $ implsIsEmpty i
 tyIsPredicated t            = isPr a
-                            where a = tyArrowArgs t
+                            where a = map tyUnAnn $ tyArrowArgs t
                                   isPr (Ty_Pred p:_) = True
                                   isPr _             = False
 
@@ -1873,9 +1964,11 @@ instance Serialize Ty where
 
 instance Serialize TyAnn where
   sput (TyAnn_Empty) = sputWord8 0
+  sput (TyAnn_Mono ) = sputWord8 1
   sget = do tag <- sgetWord8
             case tag of
               0 -> return TyAnn_Empty
+              1 -> return TyAnn_Mono
 
 instance Binary TyVarCateg where
   put = putEnum8

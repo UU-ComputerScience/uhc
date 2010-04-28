@@ -186,13 +186,14 @@ SEM Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Predicates
+%%% Deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(95 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
                                                             hasFlds = any (\t -> ctagArity t > 0)
+                                                            builtinNms = ehcOptBuiltinNames @lhs.opts
                                                         in  case ( Map.lookup @instClsNm @derivMp
                                                                  , @instVariant
                                                                  , panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
@@ -203,11 +204,16 @@ SEM Decl
                                                               (_,InstDeriving,[])
                                                                 -> mke "has no constructors"
                                                               (_,InstDeriving,ctags)
-                                                                | @instClsNm == ehbnClassEnum (ehcOptBuiltinNames @lhs.opts)
+                                                                | @instClsNm `elem`
+                                                                     [ ehbnClassEnum builtinNms
+%%[[99
+                                                                     , ehbnClassIx   builtinNms
+%%]]
+                                                                     ]
                                                                   && hasFlds ctags
                                                                   -> mke "has a constructor with >0 fields"
                                                               (_,InstDeriving,ctags@(_:_:_))
-                                                                | @instClsNm == ehbnClassBounded (ehcOptBuiltinNames @lhs.opts)
+                                                                | @instClsNm == ehbnClassBounded builtinNms
                                                                   && hasFlds ctags
                                                                   -> mke "has >1 constructors, of which >0 with fields"
                                                               _ -> []

@@ -12,15 +12,9 @@ Use the left law if both are applicable.
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, Data.Maybe, qualified Data.Map as Map)
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Pretty})
-%%]
-%%[(8 codegen grin) hs import(EH.Util.Pretty)
-%%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
-%%]
-%%[(8 codegen grin) hs import(EH.Util.Pretty,EH.Util.Utils,EH.Util.Debug)
 %%]
 %%[(8 codegen grin).wrapper
 WRAPPER GrAGItf
@@ -124,16 +118,13 @@ testL :: GrPatLam -> GrVal -> Maybe SubstTrafoPair
 testL pat val
   = case pat of
       GrPatLam_Empty      -> case val of
-                              GrVal_Empty         -> Nothing
+                              GrVal_Empty         -> Just (id,id)
                               _                   -> Nothing -- error "CopyProp: left: empty-pattern does not match"
       GrPatLam_Var     v  ->                         Just (Map.insert v val, id)
-                                                      <?< (False,const $ "putting " ++ show val ++ " in " ++ show v)
       GrPatLam_VarNode vs -> case val of
                               GrVal_Var      _    -> Nothing
                               GrVal_Node     t xs -> Just (unifyNodes vs (GrVal_Tag t:xs))
-                                                      <?< (False,const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
                               GrVal_VarNode    xs -> Just (unifyNodes vs              xs )
-                                                      <?< (False,const $ "unifyNodes pat = " ++ show pat ++ " val = " ++ show val)
                               GrVal_EnumNode    n -> Nothing
                               GrVal_BasicNode t n -> Nothing -- error $ "CopyProp: left: node-pattern does not match BasicNode" ++ show n
                               GrVal_OpaqueNode  n -> Nothing -- error $ "CopyProp: left: node-pattern does not match OpaqueNode" ++ show n
@@ -158,10 +149,8 @@ unifyVars GrVar_Ignore        _                            =  (id, id)
 unifyVars (GrVar_KnownTag t1) (GrVal_Tag t2)  | t1==t2     =  (id, id)
                                               | otherwise  =  error $ "CopyProp: unify: tags do not match: " ++ show t1 ++ " and " ++ show t2
 unifyVars (GrVar_KnownTag t1) (GrVal_Var v2)               =  (id, Map.insert v2 (GrVal_Tag t1))
-                                                                <?< (False,const $ "putting " ++ show v2 ++ " in tag" ++ show t1)
 unifyVars (GrVar_KnownTag _ ) _                            =  (id,id)
 unifyVars (GrVar_Var v1)      x                            =  (Map.insert v1 x, id)
-                                                                <?< (False,const $ "putting2 " ++ show x ++ " in var" ++ show v1)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%
@@ -198,12 +187,8 @@ getHsName nm subst
   =  case Map.lookup nm subst of
       Nothing    -> nm
       Just repl  -> case repl of
-        GrVal_Var v -> v
-        _           -> error ("Warning: CopyPropagation cannot substitute for name " ++ show nm ++ "\nvalue " 
-                               ++ disp (ppGrExpr (GrExpr_Unit repl GrType_None)) 0 ""
-                               ++ "\nvalue2 = " ++ show repl
-                               ++ "\nsubst = " ++ show subst)
-                              nm
+                      GrVal_Var v -> v
+                      _           -> error ("CopyPropagation cannot substitute " ++ show repl)
 
 mbSubstTag nm subst 
   =  case Map.lookup nm subst of

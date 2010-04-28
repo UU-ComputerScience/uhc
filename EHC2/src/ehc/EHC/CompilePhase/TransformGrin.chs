@@ -31,13 +31,9 @@ Grin transformation
 -- Grin transformations
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.UnusedMetaInfoElim}, {%{EH}GrinCode.Trf.UnusedNameElim}, {%{EH}GrinCode.Trf.AliasElim}, {%{EH}GrinCode.Trf.MayLiveUnboxed})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.ConstPropagation}, {%{EH}GrinCode.Trf.FlattenSeq}, {%{EH}GrinCode.Trf.EvalElim}, {%{EH}GrinCode.Trf.InlineOld})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.ConstPropagation}, {%{EH}GrinCode.Trf.FlattenSeq}, {%{EH}GrinCode.Trf.EvalElim}, {%{EH}GrinCode.Trf.Inline})
 %%]
-%%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})                                                                                                                                          
-%%]
-
---Added
-%%[(8 codegen grin) hs import(Data.Graph.Inductive.Query.Monad)
+%%[(8_2 codegen grin) hs import({%{EH}GrinCode.Trf.PrettyVarNames})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,11 +95,10 @@ cpTransformGrin modNm
                          inline = mk [inl]
 %%][20                                
                          inline = [ ( do { cr <- get
-                                         ; let (ecu,crsi,_,_)   = crBaseInfo modNm cr
-                                               expNmOffMp       = crsiExpNmOffMp modNm crsi
-                                               optim            = crsiOptim crsi
-                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim)
-                                                                   $ fromJust $ ecuMbGrin ecu
+                                         ; let (ecu,crsi,_,_) = crBaseInfo modNm cr
+                                               expNmOffMp     = crsiExpNmOffMp modNm crsi
+                                               optim          = crsiOptim crsi
+                                               (g,gathInlMp)  = grInline True (Map.keysSet expNmOffMp) (optimGrInlMp optim) $ fromJust $ ecuMbGrin ecu
                                          ; cpMsgGrinTrf modNm "inline"
                                          ; cpUpdCU modNm (ecuStoreOptim (defaultOptim {optimGrInlMp = gathInlMp}) . ecuStoreGrin g)
                                          }
