@@ -152,7 +152,7 @@ void mm_traceSupply_GBStack_Run4( MM_TraceSupply* traceSupply ) {
     // Show sp and bp for debuggung
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_GBStack_Run3 BEF sp=%p(lo=%p, hi=%p, used=%x, unused=%x) bp=%p\n",sp,(WPtr)StackAreaLow,(WPtr)StackAreaHigh,(BPtr)StackAreaHigh-(BPtr)sp,(BPtr)sp-(BPtr)StackAreaLow,bp);}) ;
 
-    // First, the local variables and working of g are processed.
+    // First, the local variables and working area of g are processed.
     // It is the only part of the stack that is not described by the stack itself.
     // Therefore, its descriptor is retrieved from the stackData structure where it luckily resides.
     // Also, we pass the position where this area starts, i.e., bp.
