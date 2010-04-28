@@ -180,7 +180,7 @@ int main_Sil_Run(int argc, char** argv, int (*sillymainfunction)() )
 int main_Sil_Exit(int argc, char** argv)
 {
 %%[[8
-     printf("%d\n", (int)RP[1] );
+     printf("%d\n", (int)Ret1 );
 %%][99
 %%]]
 	

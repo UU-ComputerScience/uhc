@@ -7,7 +7,7 @@ LIBUTIL_MKF						:= $(patsubst %,$(SRC_LIBUTIL_PREFIX)%.mk,files)
 # lib/cabal config
 LIB_EH_UTIL_QUAL				:= EH.Util
 LIB_EH_UTIL_QUAL_PREFIX			:= $(LIB_EH_UTIL_QUAL).
-LIB_EH_UTIL_PKG_NAME			:= $(GHC_PKG_NAME_PREFIX)$(subst .,-,$(LIB_EH_UTIL_QUAL))
+LIB_EH_UTIL_PKG_NAME			:= $(GHC_PKG_NAME_PREFIX)$(subst .,-,$(LIB_EH_UTIL_QUAL))$(EHC_BUILD_SUFFIX)
 LIB_EH_UTIL_HS_PREFIX			:= $(SRC_LIBUTIL_PREFIX)$(subst .,$(PATH_SEP),$(LIB_EH_UTIL_QUAL_PREFIX))
 LIB_EH_UTIL_HS_SRC				:= $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*.hs) $(wildcard $(LIB_EH_UTIL_HS_PREFIX)*/*.hs)
 LIB_EH_UTIL_HS_MOD				:= $(subst $(PATH_SEP),.,$(patsubst $(LIB_EH_UTIL_HS_PREFIX)%.hs,%,$(LIB_EH_UTIL_HS_SRC)))

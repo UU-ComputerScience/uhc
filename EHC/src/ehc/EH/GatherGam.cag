@@ -1,0 +1,65 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering of environments (Gam), to be used in other modules
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathValGam: ValGam ]
+
+SEM Expr
+  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
+  | * - Let     lhs         .   gathValGam          =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathTyGam: TyGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
+  | * - Let     lhs         .   gathTyGam           =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam_ex_subst -- @lQuTyKiGam 
+  | * - Let     lhs         .   gathTyKiGam         =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathKiGam: KiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
+  | * - Let     lhs         .   gathKiGam           =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathClGam: ClGam ]
+
+SEM Expr
+  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGamNoDups
+  | * - Let     lhs         .   gathClGam           =   emptyGam
+%%]
+
+%%[(9 hmtyinfer)
+ATTR
+  Expr
+%%[[20
+  AGItf
+%%]]
+    [ | | gathClDfGam: ClassDefaultGam ]
+
+SEM Expr
+  | Let         lhs         .   gathClDfGam         =   @body.gathClDfGam `gamUnion` @decls.gathClDfGam
+  | * - Let     lhs         .   gathClDfGam         =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathPolGam: PolGam ]
+
+SEM Expr
+  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
+  | * - Let     lhs         .   gathPolGam          =   emptyGam
+%%]
+

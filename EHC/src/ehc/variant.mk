@@ -70,7 +70,7 @@ RTS_GCC_CC_OPTS_VARIANT_TARGET			:= -D$(EHC_VARIANT_TARGET_UHC_DEFINE1) -D$(EHC_
 ###########################################################################################
 
 LIB_EHC_BASE							:= EH
-LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))$(EHC_ASPECTS_SUFFIX2)
+LIB_EHC_QUAL							:= $(subst _,x,$(LIB_EHC_BASE)$(EHC_VARIANT))$(EHC_BUILD_SUFFIX)$(EHC_ASPECTS_SUFFIX2)
 LIB_EHC_QUAL_PREFIX						:= $(LIB_EHC_QUAL).
 LIB_EHC_HS_PREFIX						:= $(subst .,$(PATH_SEP),$(LIB_EHC_QUAL_PREFIX))
 LIB_EHC_PKG_NAMEBASE					:= $(GHC_PKG_NAME_PREFIX)$(subst .,-,$(LIB_EHC_QUAL))

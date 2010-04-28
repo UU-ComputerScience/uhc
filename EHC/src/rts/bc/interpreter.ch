@@ -315,7 +315,7 @@ typedef struct GB_ModEntry {
   GB_NodePtr*				expNode ;
 %%]]
   GB_ByteCodeModule*		bcModule ;
-  GB_FunctionInfo*			functionInfos ;
+  FunctionInfo*			functionInfos ;
 } GB_ModEntry ;
 
 extern int gb_lookupModEntry( char* modNm, GB_ModEntry* modTbl ) ;
@@ -350,96 +350,32 @@ extern void gb_prModEntries( GB_ModEntry* modTbl ) ;
 %%% Function information
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Before each bytecode function start 'function information' is stored, a GB_FunctionInfo*.
+Before each bytecode function start 'function information' is stored, a FunctionInfo*.
 
 %%[8
-#define GB_FunctionInfo_Inline				Word		// A GB_FunctionInfo*
+#define FunctionInfo_Inline				Word		// A FunctionInfo*
 %%]
 
 Retrieval of function info given a pc
 
 %%[8
-#define GB_FromPCToFunctionInfo(p)			Cast(GB_FunctionInfo*,GB_Deref((Word)(p) - sizeof(GB_FunctionInfo_Inline)))
+#define GB_FromPCToFunctionInfo(p)			Cast(FunctionInfo*,GB_Deref((Word)(p) - sizeof(FunctionInfo_Inline)))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Call information
+%%% Call information retrieval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-After each call 'call information' is stored.
-Invariant is that a return address points to the address immediately after this information.
-The type and size used should agree with the code generation part.
-
-%%[8
-typedef struct GB_CallInfo_CCall {
-  char*		type ;
-} GB_CallInfo_CCall ;
-
-typedef struct GB_CallInfo {
-	Word8	 				kind ;
-	Word8*   				name ;					// name of called function (to become obsolete when functionInfo works)
-	// GB_FunctionInfo*		functionInfo ;			// info about the called function (20100301 AD: under implementation)
-	GB_FunctionInfo_Inx		functionInfoModOff ;	// offset in imported module table, replaced at linking time with index into global module table
-	GB_FunctionInfo_Inx		functionInfoOff ;		// offset in per module FunctionInfo table
-	GB_GCStackInfo*			gcStackInfo ;
-#if TRACE
-	GB_CallInfo_CCall		ccall ;
-#endif
-} __attribute__ ((__packed__)) GB_CallInfo ;
-
-typedef GB_CallInfo* GB_CallInfoPtr ;
-
-#define GB_CallInfo_Inline				GB_Word		// A GB_CallInfoPtr, inlined after instruction, to be skipped by interpreter, used by exception handling & debugging
-
-#if TRACE
-#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc,w}		// make CallInfo
-#else
-#define GB_MkCallInfoWith(k,n,mo,fo,gc,w)		{k,(BPtr)n,mo,fo,gc}		// make CallInfo
-#endif
-#define GB_MkCallInfo(k,n)				GB_MkCallInfoWith(k,n,-1,-1,NULL,NULL)
-
-#define GB_CallInfo_Fld_Kind(i)    		i
-
-// the order must correspond to alternatives of CallInfoKind in ehc/GrinByteCode, extra ones may be at the end
-#define GB_CallInfo_Kind_Call    		0			// normal call
-#define GB_CallInfo_Kind_Tail    		1			// tail call
-#define GB_CallInfo_Kind_Eval    		2			// eval call
-#define GB_CallInfo_Kind_EvalWrap  		3			// eval call wrapper
-#define GB_CallInfo_Kind_TailEv  		4			// tail eval call
-#define GB_CallInfo_Kind_Apply   		5			// apply call
-#define GB_CallInfo_Kind_CCall   		6			// C call
-#define GB_CallInfo_Kind_EvCont  		7			// eval update continuation
-#define GB_CallInfo_Kind_ApCont  		8			// apply continuation
-#define GB_CallInfo_Kind_PApCont  		9			// partial apply continuation
-#define GB_CallInfo_Kind_Hdlr    		10			// exception handler installment
-#define GB_CallInfo_Kind_TailEval		11			// tail eval
-// following may be defined freely
-#define GB_CallInfo_Kind_EvAppFunCont  	12			// apply fun eval update continuation
-#define GB_CallInfo_Kind_EvAppFunEvCont 13			// apply fun eval update eval continuation
-#define GB_CallInfo_Kind_EvalTopWrap  	14			// top level eval call wrapper
-#define GB_CallInfo_Kind_TailEvalCont  	15			// return/cleanup after taileval
-%%[[96
-#define GB_CallInfo_Kind_IntlCCall		16			// internal C call which must look like foreign function call (for exception handling)
-%%]]
-%%]
-
-Flags
-
-%%[8
-%%]
-#define GB_CallInfo_Flag_None				0			// nothing, nada
-#define GB_CallInfo_Flag_ExplStackTrace		1			// this function takes as its first arg
 
 Retrieval of call info given a bp
 
 %%[8
-#define GB_FromBPToCallInfo(p)			Cast(GB_CallInfo*,GB_Deref(GB_RegRelx(p,1) - sizeof(GB_CallInfo_Inline)))
+#define GB_FromBPToCallInfo(p)			Cast(CallInfo*,GB_Deref(GB_RegRelx(p,1) - sizeof(CallInfo_Inline)))
 %%]
 
 %%[8
 extern Bool gb_CallInfo_Kind_IsVisible( Word kind ) ;
-extern GB_FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
-extern Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, GB_CallInfo* ci ) ;
+extern FunctionInfo* gb_CallInfo_GetFunctionInfo( GB_ModEntry* allMod, CallInfo* ci ) ;
+extern Word8* gb_CallInfo_GetName( GB_ModEntry* allMod, CallInfo* ci ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -652,7 +588,7 @@ extern GB_Word gb_intl_primCatchException( GB_Word e, GB_Word handler ) ;
 extern GB_NodePtr gb_intl_throwException( GB_Word exc ) ;
 extern GB_NodePtr gb_intl_throwExceptionFromPrim( GB_NodePtr exc ) ;
 extern GB_NodePtr gb_intl_throwIOErrorFromPrim( GB_NodePtr ioe_handle, GB_Word ioe_type, GB_NodePtr ioe_filename, char* strErr ) ;
-extern GB_NodePtr gb_intl_throwStackOverflow( GB_FunctionInfo* functionInfo ) ;
+extern GB_NodePtr gb_intl_throwStackOverflow( FunctionInfo* functionInfo ) ;
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -680,10 +616,10 @@ extern void gb_InitTables
 	, GB_BytePtr* globalEntries, int globalEntriesSz
 	, GB_Word* consts
 	// , GB_GCInfo* gcInfos
-	, GB_GCStackInfo* gcStackInfos
+	, GCStackInfo* gcStackInfos
 	, GB_LinkChainResolvedInfo* linkChainInds
-	, GB_CallInfo* callinfos, int callinfosSz
-	, GB_FunctionInfo* functionInfos, int functionInfosSz
+	, CallInfo* callinfos, int callinfosSz
+	, FunctionInfo* functionInfos, int functionInfosSz
 	, BPtr bytePool
 	, Word linkChainOffset
 %%[[20

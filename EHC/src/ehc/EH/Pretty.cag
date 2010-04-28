@@ -356,6 +356,7 @@ SEM Decl
                                                     >-< @errInstPP
 %%][102
 %%]]
+  | Default     loc     .   pp      =   "default"  >#< @nm >#< ppParensCommas' @tyExprs.ppL
 %%]
 
 %%[10

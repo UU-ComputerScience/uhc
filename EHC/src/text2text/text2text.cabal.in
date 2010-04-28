@@ -1,0 +1,29 @@
+cabal-version: >=1.2
+build-type: Simple
+name: text2text
+version: 0.1.1
+license: GPL
+license-file: LICENSE
+maintainer: Atze Dijkstra <atze@cs.uu.nl>
+homepage: http://www.cs.uu.nl/wiki/Uhc
+description: Documentation preprocessor
+synopsis: Text to Text transformation
+category: Development
+stability: Unstable
+copyright: Universiteit Utrecht
+extra-source-files: README
+
+executable text2text
+
+  build-depends: base >= 4, base < 5, haskell98, containers, uulib>=0.9.12, EH-Util
+  main-is: Text2Text.hs
+  other-modules: Text2Text
+    , Text
+    , Plugin
+    , Common
+    , Text.Parser
+    , Text.To.DocLaTeX
+    , Text.To.TWiki
+  extensions: TypeSynonymInstances, MultiParamTypeClasses, Rank2Types, FlexibleContexts, ImpredicativeTypes
+  hs-source-dirs: @TOP_ABS@/build/text2text
+

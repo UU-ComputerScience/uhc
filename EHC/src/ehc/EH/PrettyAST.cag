@@ -502,8 +502,11 @@ SEM Expr
                                         , mkInfo1 "tyKiGam_l_" (ppGam @tyKiGam_l_)
                                         , mkInfo1 "valQuTyKiGam" (ppGam @valQuTyKiGam)
                                         , mkInfo1 "lQuTyGam" (ppGam @lQuTyGam)
+                                        , mkInfo1 "lhs.tvKiVarMp" (pp @lhs.tvKiVarMp)
+                                        , mkInfo1 "gathTvKiVarMp1" (pp @gathTvKiVarMp1)
                                         , mkInfo1 "quTvKiVarMp" (pp @quTvKiVarMp)
                                         , mkInfo1 "decls.kiVarMp" (pp @decls.kiVarMp)
+                                        , mkInfo1 "tyVarMpDeclsL0" (pp @tyVarMpDeclsL0)
                                         , mkInfo1 "tyVarMpDeclsL01" (pp @tyVarMpDeclsL01)
                                         ]
   | Var Con     loc     .  info_6   :=  [ -- mkInfo1 "foTvKiVarMp @fo_" (pp (foTvKiVarMp @fo_))
@@ -733,6 +736,8 @@ SEM Decl
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info_9
                         .  info_9   =   []
+  | Default     loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Default"] [ppNm @nm] [@tyExprs.ppAST] @info_9
+                        .  info_9   =   []
 %%]
 
 %%[(9 hmtyinfer)
@@ -797,6 +802,7 @@ SEM Expr
                                         , mkInfo1 "predScope" (pp @predScope)
                                         -- , if @lhs.isFirstLet then mkInfo1 "chrStore" (ppCHRStore @chrStore) else ("",empty)
                                         , mkInfo1 "chrSolve1DoneConstraints" (ppBracketsCommasV @chrSolve1DoneConstraints)
+                                        , mkInfo1 "chrSolve1RemPrOccL" (ppBracketsCommasV @chrSolve1RemPrOccL)
                                         , mkInfo1 "chrSolve1RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve1RemCnstrMp)
                                         , mkInfo1 "chrSolve2DoneConstraints" (ppBracketsCommasV @chrSolve2DoneConstraints)
                                         , mkInfo1 "chrSolve2RemCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @chrSolve2RemCnstrMp)
@@ -817,8 +823,11 @@ SEM Expr
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)
                                         , mkInfo1 "chrSolve1Trace" (ppSolveTrace @chrSolve1Trace)
                                         , mkInfo1 "chrSolve1RedGraph" (pp $ show @chrSolve1RedGraph)
+                                        -- , mkInfo1 "chrSolve1RedGraph (prune)" (pp $ show $ redPruneReductionsUntil @chrSolve1RemPrOccL (let m = Set.map cnstrPred $ Map.keysSet @toProveHereCnstrMpCanon in \p -> Set.member p m) $ @chrSolve1RedGraph)
                                         , mkInfo1 "chrSolve2Trace" (ppSolveTrace @chrSolve2Trace)
                                         , mkInfo1 "chrSolve2RedGraph" (pp $ show @chrSolve2RedGraph)
+                                        , mkInfo1 "chrSolve2RedAlts"  (ppBracketsCommasV @chrSolve2RedAlts )
+                                        , mkInfo1 "chrSolve2RedTrees" (ppBracketsCommasV $ map ppAssocLV $ @chrSolve2RedTrees)
                                         ]
   | Lam         loc     .  info_9   :=  [ mkInfo1 "imTy" (pp @imTy)
                                         , mkInfo1 "imTy+subst" (pp (@body.tyVarMp |=> @imTy))

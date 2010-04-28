@@ -10,6 +10,7 @@ module EH.Util.Rel
   , intersection, difference, union, unions
   , apply
   , toDomMap, toRngMap
+  , mapDomRng
   )
   where
 
@@ -78,4 +79,7 @@ toDomMap r = Map.unionsWith (++) [ Map.singleton a [b] | (a,b) <- toList r ]
 
 toRngMap :: Ord b => Rel a b -> Map.Map b [a]
 toRngMap r = Map.unionsWith (++) [ Map.singleton b [a] | (a,b) <- toList r ]
+
+mapDomRng :: (Ord a, Ord b, Ord a', Ord b') => ((a,b) -> (a',b')) -> Rel a b -> Rel a' b'
+mapDomRng = Set.map
 

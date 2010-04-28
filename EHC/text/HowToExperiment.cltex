@@ -20,7 +20,7 @@
 %%]
 
 %%[introduction doclatex
-\textit(Make sure you have read the \eref{EhcUserDocumentation}{UHC manual} and have ensured uhc can be build.}
+\textit(Make sure you have read the \eref{UhcUserDocumentation}{UHC manual} and have ensured uhc can be build.}
 
 For those who want to use EHC as a starting point for experimentation EHC offers various ways of using the source code:
 

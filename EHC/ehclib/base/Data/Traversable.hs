@@ -54,6 +54,7 @@ import Hugs.Array
 import Array
 #elif defined(__UHC__)
 import UHC.Array
+import UHC.Ix
 #endif
 
 -- | Functors representing data structures that can be traversed from

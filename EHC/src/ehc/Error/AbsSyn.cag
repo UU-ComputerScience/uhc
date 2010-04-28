@@ -145,6 +145,9 @@ DATA Err
                         ty2        : {PP_Doc}
                         ty1detail  : {PP_Doc}
                         ty2detail  : {PP_Doc}
+  | TyCoreSeqLevels     hereLev    : {Int}
+                        mustLev    : {Int}
+                        ty         : {PP_Doc}
   | NoCoerceDerivation  func       : {Ty}
                         arg        : {Ty}
 %%]

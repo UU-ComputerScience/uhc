@@ -43,6 +43,19 @@ evaluateArgNr = HNmNr 5 (OrigNone)
 %%]
 
 
+%%[(8 codegen grin) export(tagArity)
+
+tagArity :: GrTag -> Map.Map Int Int -> Int
+tagArity (GrTag_Fun       nm) arityMap = maybe (error ("Fun " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_App       nm) arityMap = maybe (error ("App " ++ show nm ++ "not in aritymap " ++ show arityMap)) id        (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_PApp n    nm) arityMap = maybe (error ("Pap " ++ show nm ++ "not in aritymap " ++ show arityMap)) (\x->x-n) (Map.lookup (getNr nm) arityMap)
+tagArity (GrTag_Con ann _ nm) _        = gtannArity ann
+tagArity  GrTag_Unboxed       _        = 1
+tagArity  GrTag_Hole          _        = 0
+tagArity t                    _        = error ("tagArity " ++ show t)
+
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Abstract interpretation domain %%
@@ -63,9 +76,14 @@ data AbstractNodes
 data AbstractValue
   = AbsBottom
   | AbsBasic
+  | AbsImposs
   | AbsTags  (Set.Set GrTag)
   | AbsNodes AbstractNodes
-  | AbsPtr   AbstractNodes    (Set.Set Variable) (Set.Set Variable)
+  -- We allow for three different representation of pointers. They can't be mixed. The choice is made in SolveEqs.
+  | AbsPtr   AbstractNodes                                             -- this is a direct representation
+  | AbsPtr0  AbstractNodes (Set.Set Variable)                          -- the variables that stored this value for the first time is recorded
+  | AbsPtr1  AbstractNodes (Set.Set Variable)                          -- the values of those variables are not joined anymore in the AbstractNodes, so all variables in the list should be queried when doing absFetch
+  | AbsPtr2  AbstractNodes (Set.Set Variable) (Set.Set Variable)       -- this representation still doesn't work
   | AbsUnion (Map.Map GrTag  AbstractValue )
   | AbsError String
     deriving (Eq, Ord)
@@ -84,10 +102,14 @@ instance Show AbstractNodes where
 instance Show AbstractValue where
     show av = case av of
                   AbsBottom   -> "BOT"
+                  AbsImposs   -> "IMP"
                   AbsBasic    -> "BAS"
                   AbsTags  ts -> "TAGS" ++ show (Set.elems ts)
                   AbsNodes an -> "NODS" ++ show an
-                  AbsPtr   an vs ws -> "PTR"  ++ show an  ++ show vs ++ show ws
+                  AbsPtr   an -> "PTR"  ++ show an
+                  AbsPtr0  an vs -> "PTR0"  ++ show an  ++ show vs
+                  AbsPtr1  an vs -> "PTR1"  ++ show an  ++ show vs
+                  AbsPtr2  an vs1 vs2 -> "PTR2"  ++ show an  ++ show vs1 ++ show vs2
                   AbsUnion xs -> "UNION" ++ show (Map.assocs xs)
                   AbsError s  -> "ERR: " ++ s
 
@@ -105,10 +127,15 @@ instance Monoid AbstractValue where
     mempty                                  =  AbsBottom
     mappend  a                 AbsBottom    =  a
     mappend    AbsBottom    b               =  b
+    mappend  a                 AbsImposs    =  a
+    mappend    AbsImposs    b               =  b
     mappend    AbsBasic        AbsBasic     =  AbsBasic
     mappend   (AbsTags  at)   (AbsTags  bt) =  AbsTags      (Set.union at bt)
     mappend   (AbsNodes an)   (AbsNodes bn) =  AbsNodes     (mappend an bn)
-    mappend   (AbsPtr   an1 vs1 ws1)(AbsPtr an2 vs2 ws2) =  AbsPtr    (mappend an1 an2) (Set.union vs1 vs2) (Set.union ws1 ws2)
+    mappend   (AbsPtr   an)   (AbsPtr   bn) =  AbsPtr       (mappend an bn)
+    mappend   (AbsPtr0  an vs)(AbsPtr0  bn ws)=  AbsPtr0    (mappend an bn) (Set.union vs ws)
+    mappend   (AbsPtr1  an vs)(AbsPtr1  bn ws)=  AbsPtr1    (mappend an bn) (Set.union vs ws)
+    mappend   (AbsPtr2  an vs vs2)(AbsPtr2  bn ws ws2)=  AbsPtr2    (mappend an bn) (Set.union vs ws) (Set.union vs2 ws2)
     mappend   (AbsUnion am)   (AbsUnion bm) =  AbsUnion     (Map.unionWith          mappend  am bm)
     mappend a@(AbsError _ ) _               =  a
     mappend _               b@(AbsError _ ) =  b
@@ -170,6 +197,7 @@ instance Ord GrTag where
 
 data Equation
   = IsBasic               Variable
+  | IsImpossible          Variable
   | IsTags                Variable  [GrTag]
   | IsPointer             Variable  GrTag [Maybe Variable]
   | IsConstruction        Variable  GrTag [Maybe Variable]       (Maybe Variable)
@@ -225,14 +253,18 @@ validTag _  _                          = True
 
 absFetchDirect :: HptMap -> Variable -> AbstractValue
 absFetchDirect a i  = case getEnvVar a i of
-                        AbsPtr an vs ws -> mconcat (AbsNodes an :  map (getEnvVar a) (Set.toList ws))
-                        AbsBottom       -> AbsNodes (Nodes Map.empty)
-                        av              -> error ("AbsFetchDirect i=" ++ show i ++ " av=" ++ show av)
+                        AbsPtr1 an vs   -> AbsNodes an
+                        AbsPtr2 an vs ws-> mconcat (AbsNodes an :  map (getEnvVar a) (Set.toList ws))
+                        AbsBottom    -> AbsNodes (Nodes Map.empty)
+                        av           -> error ("AbsFetchDirect i=" ++ show i ++ " av=" ++ show av)
 
 
 absFetch :: HptMap -> HsName -> AbstractValue
 absFetch a (HNmNr i _) = case getEnvVar a i of
-                             AbsPtr an vs ws -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs) ++ map (getEnvVar a) (Set.toList ws))   -- TODO: ++ inhoud van ws?
+                             AbsPtr  an       -> AbsNodes an
+                             AbsPtr0 an vs    -> AbsNodes an
+                             AbsPtr1 an vs    -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs))
+                             AbsPtr2 an vs ws -> mconcat (AbsNodes an :  map (absFetchDirect a) (Set.toList vs) ++ map (getEnvVar a) (Set.toList ws))
                              AbsBottom     -> AbsNodes (Nodes Map.empty)
                              AbsError s     -> error $ "analysis error absFetch: " ++ show a ++ s
                              AbsBasic       -> error $ "variable " ++ show i ++ " is a basic value"
@@ -247,6 +279,7 @@ getTags av = case av of
 getNodes av = case av of
                  AbsNodes (Nodes n)  -> Map.toAscList n
                  AbsBottom   -> []
+                 AbsImposs   -> []
                  AbsError s  -> error $ "analysis error getNodes2: " ++  s
                  _           -> error $ "not a node2: " ++ show av
 
@@ -272,7 +305,7 @@ isPAppTag (GrTag_PApp _ _) = True
 isPAppTag _                = False
 
 isFinalTag :: GrTag -> Bool
-isFinalTag  GrTag_Hole       = True
+isFinalTag  GrTag_Hole       = False
 isFinalTag  GrTag_Unboxed    = True
 isFinalTag (GrTag_PApp _ _)  = True
 isFinalTag (GrTag_Con _ _ _) = True

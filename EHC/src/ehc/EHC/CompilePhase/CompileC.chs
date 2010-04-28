@@ -81,7 +81,7 @@ cpCompileWithGCC how othModNmL modNm
                         = case how of
                             FinalCompile_Exec
                               -> ( fpExec
-                                 ,    ( if ehcOptOptimise opts >= OptimiseALot then ["-O2"] else if ehcOptOptimise opts >= OptimiseNormal then ["-O1"] else [] )
+                                 ,    ( if ehcOptOptimizationLevel opts >= OptimizationLevel_Much then ["-O2"] else if ehcOptOptimizationLevel opts >= OptimizationLevel_Normal then ["-O1"] else [] )
                                    ++ [ Cfg.gccOpts, "-o", fpathToStr fpExec ]
                                  , Cfg.ehcGccOptsStatic
                                  ,

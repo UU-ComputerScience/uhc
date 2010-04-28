@@ -54,7 +54,7 @@ ATTR Value          [ | | isntCall : {Bool} ]
 SEM Function
   | Function  body.useMap    =  @loc.startMap
               body.allUseMap =  @body.useMap
-              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | nm <- @locals ]
+              loc.startMap   =  Map.fromList  [ (Variable_Unembedded nm, 0) | (nm,tp) <- @locals ]
 
 -- the "multi" attribute is a bit of a hack:
 -- it makes variables in a Subs context count as a "use"
@@ -88,7 +88,7 @@ SEM Statement
 SEM Function
   |  Function   lhs.trf    =  Function_Function @name
                                                 @parameters 
-                                                [ nm | nm <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
+                                                [ (nm,tp) | (nm,tp) <- @locals , Map.lookup (Variable_Unembedded nm) @body.useMap /= Just 0 ]
                                                 @body.trf
   
 SEM Value

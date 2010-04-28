@@ -75,12 +75,19 @@ ATTR Variable [ | | isSP : {Bool} ]
 ATTR Statements Statement Alternatives Alternative
          [ functionname : String | | ]
 
+ATTR Value [ | | equalToVar : {Variable->Bool} ]
+
+ATTR Variable [ | | self : SELF ]
+
+SEM Value
+  | Var     lhs.equalToVar  =  (== @var.self)
+  | * -Var  lhs.equalToVar  =  const False
+
+
+
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
-                                >-< comment ["Tag aliases"]
-                                >-< ppVertically (map aliasDefinition @aliases)
-                                >-< text ""
                                 >-< comment ["Tag constants"]
                                 >-< ppVertically (map constantDefinition @constants)
                                 >-< text ""
@@ -141,7 +148,7 @@ SEM SilModule
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
-                                >-< indent 4 (   methodLocals (map hsnShowAlphanumeric @locals)
+                                >-< indent 4 (   methodLocals (map (hsnShowAlphanumeric . fst) @locals)
                                              >-< @body.prettyC
                                              )
                                 >-< methodFooter @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name)
@@ -151,12 +158,14 @@ SEM Function
 
 SEM Statement
   | Comment     lhs.prettyC   = comment @comment
-  | Assignment  lhs.prettyC   = assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
+  | Assignment  lhs.prettyC   = if @source.equalToVar @dest.self
+                                then comment ["trivial assignment"]
+                                else assignment  @lhs.optTraceAssign @dest.prettyC (if @dest.isSP then @source.prettyPtr else @source.prettyC) @source.prettyTXT
   | Assignment2 lhs.prettyC   = assignment2 @lhs.optTraceAssign @dest.prettyC @dest2.prettyC @source.prettyC  @source.prettyTXT
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @lhs.functionname (fromJust @mbRetDiff) @lhs.optGenOwn
-  | Label       lhs.prettyC   = label @lhs.optTraceCall @name
+  | Label       lhs.prettyC   = label @lhs.optTraceCall @name (Just @descript)
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
@@ -191,7 +200,7 @@ SEM Value
   | Alloc       lhs.prettyC   =  case @gcManaged of
                                    NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
                                    GCManaged  -> "heapalloc("               >|< show @size >|< ")"
-  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< "))"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + " >|< show @offset >|< " * sizeof(long))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
   | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
@@ -272,9 +281,11 @@ SEM Variable
 %%[(8 codegen grin) hs
 
 
-label :: Bool -> String -> PP_Doc
-label tras nm 
+label :: Bool -> String -> Maybe [Int] -> PP_Doc
+label tras nm mbDescr
  = nm >|< ":"
+   >-< ppWhen (isJust mbDescr)
+              (  foldr1 (>-<) (map (\n -> text ("asm( \".long " ++ show n ++ "\" );" )) (reverse (fromJust mbDescr))) )
    >|< ppWhen tras
               (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
 
@@ -318,7 +329,7 @@ callSillyFunctionFromC tras optGenOwn optGenLink n nm
                    >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
                    >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
                    >-< "goto" >#< nm >|< ";"                              -- do the call
-                   >-< label tras lab                                     -- return here
+                   >-< label tras lab Nothing                             -- return here
  | otherwise = nm >|< "();"
  
  
@@ -351,8 +362,8 @@ preambule
  = text "#include \"rts.h\""
    >-< text ""
 
-constantDefinition :: (String,Int) -> PP_Doc
-constantDefinition (x,n)
+constantDefinition :: (String,Int,[SilTp]) -> PP_Doc
+constantDefinition (x,n,_)
  = macroDefinition (text x) (text (show n))
 
 aliasDefinition :: (String,String) -> PP_Doc
@@ -376,7 +387,7 @@ paramTrace x = text ("printf(\"    " ++  x ++            " = %d\\n\" , " ++ x ++
 
 methodHeader :: Bool -> Bool -> Bool -> String -> [String] -> PP_Doc
 methodHeader tras optGenOwn optTrace nm params
- | optGenOwn = label tras nm
+ | optGenOwn = label tras nm Nothing
                 >-< ppWhen optTrace (trace ("enter " ++ init (tail (show nm))))
  | otherwise =  methodHead nm params
                 >#< "{"

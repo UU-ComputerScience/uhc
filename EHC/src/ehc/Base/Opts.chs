@@ -59,10 +59,10 @@ data ImmediateQuitOption
 %%[[99
   | ImmediateQuitOption_Meta_Pkgdir_System                  -- print system package dir
   | ImmediateQuitOption_Meta_Pkgdir_User                    -- print user package dir
-  | ImmediateQuitOption_VersionDotted                      -- print version in dotted style, for external version comparison
+  | ImmediateQuitOption_VersionDotted                       -- print version in dotted style, for external version comparison
   | ImmediateQuitOption_VersionAsNumber                     -- print version as number, for external version comparison
-  | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
-  | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
+  -- | ImmediateQuitOption_Meta_ExportEnv (Maybe String)       -- export (write) environmental info of installation
+  -- | ImmediateQuitOption_Meta_DirEnv                         -- print dir of environmental info of installation
 %%]]
 %%]
 
@@ -206,7 +206,10 @@ data EHCOpts
       ,  ehcOptUniqueness     ::  Bool
 %%]]
 %%[[(8 codegen)
-      ,  ehcOptOptimise       ::  Optimise          -- optimisation level
+      ,  ehcOptOptimizationLevel
+      						  ::  OptimizationLevel          -- optimisation level
+      ,  ehcOptOptimizationScope
+      						  ::  OptimizationScope          -- optimisation scope
       ,  ehcOptDumpCoreStages ::  Bool              -- dump intermediate Core transformation stages
       ,  ehcOptTarget         ::  Target            -- code generation target
       ,  ehcOptTargetFlavor   ::  TargetFlavor      -- code generation target flavor
@@ -297,7 +300,9 @@ These are there for (temporary) backwards compatibility.
 %%[(8 codegen grin) export(ehcOptFullProgAnalysis)
 -- do full GRIN program analysis
 ehcOptFullProgAnalysis :: EHCOpts -> Bool
-ehcOptFullProgAnalysis = targetIsFullProgAnal . ehcOptTarget
+ehcOptFullProgAnalysis opts
+  =  targetIsFullProgAnal (ehcOptTarget opts)
+  || ehcOptOptimizationScope opts >= OptimizationScope_WholeProgram
 %%]
 
 %%[(8 codegen grin) export(ehcOptErrAboutBytecode)
@@ -394,7 +399,8 @@ defaultEHCOpts
 %%]]
 %%[[(8 codegen)
       ,  ehcOptDumpCoreStages   =   False
-      ,  ehcOptOptimise         =   OptimiseNormal
+      ,  ehcOptOptimizationLevel=   OptimizationLevel_Normal
+      ,  ehcOptOptimizationScope=   OptimizationScope_PerModule
       ,  ehcOptTarget           =   defaultTarget
       ,  ehcOptTargetFlavor     =   defaultTargetFlavor
       ,  ehcOptUseTyCore        =   Nothing
@@ -536,7 +542,7 @@ ehcCmdLineOpts
      ,  Option ""   ["nounique"]         (NoArg oUnique)                      "do not compute uniqueness solution"
 %%]]
 %%[[(8 codegen)
-     ,  Option "O"  ["optimise"]         (OptArg oOptimise "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
+     ,  Option "O"  ["optimise"]         (OptArg oOptimization "0|1|2")           "optimise, 0=none 1=normal 2=more, default=1"
 %%]]
 %%[[(8 codegen)
      ,  Option ""   ["code"]             (OptArg oCode "hs|eh|exe[c]|lexe[c]|bexe[c]|-")  "write code to file, default=bexe (will be obsolete and/or changed, use --target)"
@@ -603,8 +609,8 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
      ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
 %%[[99
-     ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
-     ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
+     -- ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
+     -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
      ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
      ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
@@ -675,7 +681,11 @@ ehcCmdLineOpts
 %%[[1
          oTarget        _ o =  o
 %%][(8 codegen)
-         oTarget        s o =  o { ehcOptTarget        = Map.findWithDefault defaultTarget        s supportedTargetMp }
+         oTarget        s o =  o { ehcOptTarget            = target
+                                 , ehcOptOptimizationScope = if targetIsFullProgAnal target then OptimizationScope_WholeProgram else oscope
+                                 }
+                            where target = Map.findWithDefault defaultTarget s supportedTargetMp
+                                  oscope = ehcOptOptimizationScope o
          oTargetFlavor  s o =  o { ehcOptTargetFlavor  = Map.findWithDefault defaultTargetFlavor  s allTargetFlavorMp }
 %%]]
 %%[[1
@@ -760,11 +770,26 @@ ehcCmdLineOpts
                                 Nothing     -> o { ehcOptVerbosity     = succ (ehcOptVerbosity o)}
                                 _           -> o
 %%[[(8 codegen grin)
-         oOptimise   ms  o =  case ms of
-                                Just "0"    -> o { ehcOptOptimise      = OptimiseNone       }
-                                Just "1"    -> o { ehcOptOptimise      = OptimiseNormal     }
-                                Just "2"    -> o { ehcOptOptimise      = OptimiseALot       }
-                                Nothing     -> o { ehcOptOptimise      = OptimiseALot       }
+         oOptimization   ms  o =  case ms of
+                                Just olevel | l >= 0 && l < (maxsc * maxlev)
+                                            -> o { ehcOptOptimizationLevel = toEnum lev
+                                                 , ehcOptOptimizationScope = toEnum sc
+                                                 }
+                                            where l = read olevel :: Int
+                                                  (sc,lev) = quotRem l maxlev
+                                                  maxlev = fromEnum (maxBound :: OptimizationLevel) + 1
+                                                  maxsc  = fromEnum (maxBound :: OptimizationScope) + 1
+{-
+                                Just "0"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Off        }
+                                Just "1"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Normal     }
+                                Just "2"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }
+                                Just "3"    -> o { ehcOptOptimizationLevel      = OptimizationLevel_Full       }
+                                Just olevel | l >= 4 && l < 8
+                                               oOptimization (Just $ show $ l - 4)
+                                               $ o { ehcOptOptimizationScope    = OptimizationScope_WholeProgram       }
+                                            where l = read olevel :: Int
+-}
+                                Nothing     -> o { ehcOptOptimizationLevel      = OptimizationLevel_Much       }
                                 _           -> o
 %%]]
 %%]]
@@ -794,8 +819,8 @@ ehcCmdLineOpts
          oCPP                   o   = o { ehcOptCPP                         = True    }
          oLimitTyBetaRed        o l = o { ehcOptTyBetaRedCutOffAt           = l }
          oLimitCtxtRed          o l = o { ehcOptPrfCutOffAt                 = l }
-         oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
-         oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
+         -- oExportEnv          ms o   = o { ehcOptImmQuit                     = Just (ImmediateQuitOption_Meta_ExportEnv ms) }
+         -- oDirEnv                o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_DirEnv }
          oMetaPkgdirSys         o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_System }
          oMetaPkgdirUser        o   = o { ehcOptImmQuit                     = Just ImmediateQuitOption_Meta_Pkgdir_User }
          oExposePackage       s o   = o { ehcOptLibPackages                 = ehcOptLibPackages   o ++ [s]
@@ -909,7 +934,7 @@ optsDiscrRecompileRepr opts
       -- , o "exec"            (ehcOptEmitExecC        opts)
       -- , o "bexec"           (ehcOptEmitExecBytecode opts)
       , show (ehcOptTarget opts)
-      , show (ehcOptOptimise opts)
+      , show (ehcOptOptimizationLevel opts)
 %%]]
       ]
   where o m v = if v then m else ""

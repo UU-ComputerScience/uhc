@@ -543,7 +543,7 @@ unit2store e                                   =  error $ "unit2store applied to
 The default is to evaluate arguments, and assume the primitive returns an evaluated result.
 These defaults are overridden by a table in BuiltinPrims, used here.
 
-%%[(99 codegen grin) hs
+%%[(96 codegen grin) hs
 evalArg :: Bool -> HsName -> GrExpr
 evalArg need nm = if need then GrExpr_Eval nm else GrExpr_Unit (GrVal_Var nm) GrType_None
 
@@ -551,7 +551,7 @@ evalRes :: Bool -> HsName -> GrExpr -> GrExpr
 evalRes need nm e = if need then GrExpr_Seq e (GrPatLam_Var nm) (GrExpr_Eval nm) else e
 %%]
 
-%%[(99 codegen grin)
+%%[(96 codegen grin)
 SEM CBind
   | FFI         loc         .   mbPrimNeedEval
                                             =   lookupPrimNeedsEval @impEntNm
@@ -594,6 +594,7 @@ SEM CBind
                                                      nmArgPatL = map (hsnUniqify HsNameUniqifier_FFIArg) nmArgL
                                                 in   (nmRes,nmEvalRes,nmArgL,nmArgPatL)
                 lhs         .   grBindL     =   let  isOpaque tn   = maybe True null (dataGamTagsOfTy tn @lhs.dataGam)
+                                                     isError  tn   = maybe True (const False)  (dataGamTagsOfTy tn @lhs.dataGam)
                                                      isEnumable tn = maybe False dgiIsEnumable (dataGamLookup tn @lhs.dataGam)
                                                      mbAnnot tn    = tyNmIsUnboxedForFFIRes @lhs.opts tn
                                                      annotOfUnboxed box annot t
@@ -643,6 +644,9 @@ SEM CBind
                                                                                          (GrExpr_Unit (GrVal_EnumNode v) GrType_None)
                                                                        else GrExpr_Seq e (GrPatLam_PtrAnnot nm @nmRes)
                                                                                          (GrExpr_Unit (GrVal_PtrNode v) GrType_None)
+                                                              -- Error
+                                                              -- else if isError resTy
+                                                              -- then e
                                                               -- Opaque
                                                               else if isOpaque resTy
                                                               then GrExpr_Seq e (GrPatLam_OpaqueAnnot @nmRes)

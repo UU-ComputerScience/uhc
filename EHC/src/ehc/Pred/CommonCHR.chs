@@ -31,7 +31,7 @@ This file exists to avoid module circularities.
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Reduction info
+%%% Reduction info: how reduction was done
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(RedHowAnnotation(..))
@@ -40,7 +40,7 @@ data RedHowAnnotation
   |  RedHow_BySuperClass  !HsName  !Int   !CTag				-- field name, offset, tag info of dict
   |  RedHow_ProveObl      !UID  !PredScope
   |  RedHow_Assumption    !VarUIDHsName  !PredScope
-  |  RedHow_ByScope		  (AlwaysEq String)						-- variant, for distinguishing during debugging
+  |  RedHow_ByScope		  !ByScopeRedHow					-- variant, for distinguishing during debugging
 %%[[10
   |  RedHow_ByLabel       !Label !LabelOffset !PredScope
 %%]]
@@ -100,7 +100,7 @@ instance PP RedHowAnnotation where
 %%]
   pp (RedHow_ByInstance   s p sc)  =    "inst"   >#< s >|< sc >#< "::" >#< p
 
-%%[(20 hmtyinfer)
+%%[(2020 hmtyinfer)
 instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_ByInstance   s p sc)  =    "redhowinst"   >#< ppCurlysCommasBlock [ppForHI s, ppForHI p, ppForHI sc]
   ppForHI (RedHow_BySuperClass s o tg)  =    "redhowsuper"  >#< ppCurlysCommasBlock [ppForHI s, pp o, ppForHI tg]
@@ -109,6 +109,40 @@ instance PPForHI RedHowAnnotation where
   ppForHI (RedHow_ByScope      v     )  =    "redhowscope"  >#< ppCurlysCommasBlock [ppForHI v]
   ppForHI (RedHow_ByLabel      l o sc)  =    "redhowlabel"  >#< ppCurlysCommasBlock [ppForHI l, ppForHI o, ppForHI sc]
   ppForHI (RedHow_Lambda       i   sc)  =    "redhowlambda" >#< ppCurlysCommasBlock [ppForHI i, ppForHI sc]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Reduction info: specifically, how scope reduction was done, (1) for comparison (2) for debugging
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) export(ByScopeRedHow(..))
+data ByScopeRedHow
+  = ByScopeRedHow_Prove							-- scope reduction based on Prove
+  | ByScopeRedHow_Assume						-- scope reduction based on Assume
+  | ByScopeRedHow_Other (AlwaysEq String)		-- other reason
+  deriving
+    ( Eq, Ord
+%%[[20
+    , Typeable, Data
+%%]]
+    )
+
+-- equality plays no role ??
+{-
+instance Eq ByScopeRedHow where
+  _ == _ = True
+
+instance Ord ByScopeRedHow where
+  _ `compare` _ = EQ
+-}
+
+instance Show ByScopeRedHow where
+  show ByScopeRedHow_Prove     = "prv"
+  show ByScopeRedHow_Assume    = "ass"
+  show (ByScopeRedHow_Other s) = show s
+
+instance PP ByScopeRedHow where
+  pp = pp . show
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -216,6 +250,17 @@ instance ForceEval RedHowAnnotation where
 %%]
 
 %%[(20 hmtyinfer)
+instance Serialize ByScopeRedHow where
+  sput (ByScopeRedHow_Prove          ) = sputWord8 0
+  sput (ByScopeRedHow_Assume         ) = sputWord8 1
+  sput (ByScopeRedHow_Other a        ) = sputWord8 2 >> sput a
+  sget = do
+    t <- sgetWord8
+    case t of
+      0 -> return ByScopeRedHow_Prove
+      1 -> return ByScopeRedHow_Assume
+      2 -> liftM  ByScopeRedHow_Other   sget
+
 instance Serialize RedHowAnnotation where
   sput (RedHow_ByInstance       a b c) = sputWord8 0  >> sput a >> sput b >> sput c
   sput (RedHow_BySuperClass     a b c) = sputWord8 1  >> sput a >> sput b >> sput c

@@ -9,7 +9,7 @@ EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils consUtils)
 EHCLIB_SYNC_ALL_PKG_base_C				:= $(patsubst %,cbits/%.c,)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,%.hs,Foreign) \
-											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Complex Ix Dynamic) \
+											$(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio List String Complex Dynamic) \
 											$(patsubst %,Unsafe/%.hs,Coerce) \
 											$(patsubst %,Foreign/%.hs,C Marshal Marshal/Utils Marshal/Array C/String) \
 											$(patsubst %,System/%.hs,IO/Unsafe Console/GetOpt Posix/Types) \
@@ -146,7 +146,7 @@ ehclib-variant-dflt: \
 			$(EHC_INSTALL_VARIANT_ASPECTS_EXEC)
 	$(if $(EHC_CFG_USE_PRELUDE) \
 	     ,pkgs="" ; \
-	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) --meta-export-env ; \
+	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
 	        mkdir -p $(call FUN_INSTALL_PKG_PREFIX,$${pkg}) ;\

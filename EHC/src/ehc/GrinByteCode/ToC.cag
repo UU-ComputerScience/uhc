@@ -18,7 +18,7 @@
 %%]
 
 %%[(8 codegen grin).gbmod2C hs export(gbmod2C)
-gbmod2C :: EHCOpts -> Module -> PP_Doc
+gbmod2C :: EHCOpts -> Module -> GenC
 gbmod2C opts m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf {opts_Inh_AGItf = opts}
@@ -27,7 +27,7 @@ gbmod2C opts m
 %%]
 
 %%[(20 codegen grin) -8.gbmod2C hs export(gbmod2C)
-gbmod2C :: EHCOpts -> LookupGrinByteCodeLamInfo -> Module -> (PP_Doc,PP_Doc,FunctionInfoExportMp)
+gbmod2C :: EHCOpts -> LookupGrinByteCodeLamInfo -> Module -> (GenC,GenC,FunctionInfoExportMp)
 gbmod2C opts lkupGrinByteCodeLamInfo m
   = let t = wrap_AGItf (sem_AGItf (AGItf_AGItf m))
                        (Inh_AGItf
@@ -89,17 +89,17 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-ppCmtC :: PP a => EHCOpts -> a -> PP_Doc
-ppCmtC opts x | ehcOptGenCmt opts = "/*" >#< pp x >#< "*/"
+ppCmtC :: PP a => EHCOpts -> a -> GenC
+ppCmtC opts x | ehcOptGenCmt opts = gencCmt x
               | otherwise         = empty
 
-ppHex :: Integral a => Int -> a -> PP_Doc
+ppHex :: Integral a => Int -> a -> GenC
 ppHex prec x = head $ ppHex' Nothing prec x
 
-ppHex' :: Integral a => Maybe Int -> Int -> a -> [PP_Doc]
+ppHex' :: Integral a => Maybe Int -> Int -> a -> [GenC]
 ppHex' = ppHex'' "0x"
 
-ppHex'' :: Integral a => String -> Maybe Int -> Int -> a -> [PP_Doc]
+ppHex'' :: Integral a => String -> Maybe Int -> Int -> a -> [GenC]
 ppHex'' prefix split prec x
   = case split of
       Nothing  -> [prefix >|< h]
@@ -317,13 +317,13 @@ bytePoolEntrySize (BytePool_String s) = length s + 1
 bytePoolEntrySize (BytePool_Bytes  b) = length b
 bytePoolEntrySize _                   = 0
 
-bytePoolEntryEncoding :: BytePoolEntry -> [PP_Doc]
+bytePoolEntryEncoding :: BytePoolEntry -> [GenC]
 bytePoolEntryEncoding (BytePool_String s) = [ppCommas $ ppStringAsHex' s]
 bytePoolEntryEncoding (BytePool_Bytes  b) = [ppCommas $ ppIntsAsHex' b]
 bytePoolEntryEncoding _                   = []
 
-bytePoolEntryComment :: BytePoolEntry -> PP_Doc
-bytePoolEntryComment (BytePool_String s) = pp s
+bytePoolEntryComment :: BytePoolEntry -> GenC
+bytePoolEntryComment (BytePool_String s) = genc s
 bytePoolEntryComment _                   = empty
 
 type BytePoolLoc = (Int,Int)    -- mp key, bytepool offset
@@ -455,7 +455,7 @@ SEM Instr
                                                   _      -> (@lhs.stringConstMp,@bytePoolMp1,Nothing)
   | Call        (lhs.stringConstMp,loc.bytePoolMp2,loc.stringConstInx,loc.functionInfoModOff,loc.functionInfoOff)
                                             =   let dflt@(x,y,z,_,_)  = (@lhs.stringConstMp,@bytePoolMp1,Nothing,noInx,noInx)
-                                                    noInx = (-1)::Int		-- must be same as GB_FunctionInfo_Inx_None
+                                                    noInx = (-1)::Int		-- must be same as FunctionInfo_Inx_None
                                                 in  case ciMbKey @callInfo of
                                                       Just (ms,nm) -> ( a, b, c, d, e )
                                                                    where (a,b,c) = (x,y,z) -- maybe (x,y,z) (\s -> stringConstMpAdd s @lhs.stringConstMp @bytePoolMp1) ms
@@ -501,7 +501,7 @@ SEM Module
                                                 in  [ gencBasicSizeFunTyDef tyPre bs
                                                       >-< gencFunDef "static void" (gencBasicSizeGBFunTyNm gencBasicSizeFunPrefix bs) []
                                                             (  gencWrapperCFunDef tyPre Nothing
-                                                                                  (pp nArgs) [res] (Left bs)
+                                                                                  (genc nArgs) [res] (Left bs)
                                                             )
                                                     | Const_CCallEncWrapper bs@(res:args) <- @constL
                                                     , let nArgs = length args
@@ -626,67 +626,55 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-nl :: PP_Doc
+nl :: GenC
 nl = text " "
 
-ppHexL :: [PP_Doc] -> PP_Doc
+ppHexL :: [GenC] -> GenC
 ppHexL
   = ppCommas . cvt
   where cvt = if Cfg.machineIsBigEndian then id else reverse
 
-ppArr :: PP a => [a] -> PP_Doc
-ppArr l = indent 2 (ppCurlysCommasBlock l >#< ";")
+ppArr :: PP a => [a] -> GenC
+ppArr l = indent 2 (gencEndsemic $ gencArray l)
 
-ppArr' :: PP a => [a] -> [PP_Doc]
-ppArr' = ppBlock' "{ " "} ;" ", "
+ppArr' :: PP a => [a] -> [GenC]
+ppArr' = gencArrayV' ";"
 
-ppCast :: String -> PP_Doc -> PP_Doc
-ppCast t v = ppParens $ ppParens t >|< ppParens v
-
-ppNodeFlds :: PP n => n -> PP_Doc
+ppNodeFlds :: PP n => n -> GenC
 ppNodeFlds n = n >|< ".content.fields"
 
-ppNodeFld :: (PP n,PP o) => n -> o -> PP_Doc
-ppNodeFld n o = ppArrAt (ppNodeFlds n) o
+ppNodeFld :: (PP n,PP o) => n -> o -> GenC
+ppNodeFld n o = gencArrayAt (ppNodeFlds n) o
 
-ppCnst :: EHCOpts -> Const -> PP_Doc
+ppCnst :: EHCOpts -> Const -> GenC
 ppCnst opts (Const_CFunction n)
-  = ppCast "GB_Word" $ ppAddrOf (pref ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
+  = gencCast "GB_Word" $ gencAddrOf (pref ++ {- (if ehcOptPriv opts then "priv_" else "") ++ -} n)
   where pref = ""  -- if take 4 n == "prim" then "gb_" else ""
 ppCnst opts (Const_CCallEncWrapper szs)
   = ppCnst opts (Const_CFunction $ gencBasicSizeGBFunTyNm gencBasicSizeFunPrefix szs)
 
-ppLine :: PP_Doc -> PP_Doc
+ppLine :: GenC -> GenC
 ppLine p = p >-< text ""
 
-ppFun :: (PP h, PP b) => h -> b -> PP_Doc
+ppFun :: (PP h, PP b) => h -> b -> GenC
 ppFun h b = h >#< "{" >-< indent 2 b >-< "}"
-
-ppArrAt :: (PP a,PP o) => a -> o -> PP_Doc
-ppArrAt a o = a >|< "[" >|< o >|< "]"
-
-ppAddrOf :: PP a => a -> PP_Doc
-ppAddrOf a = "&" >|< ppParens a
-
-ppAddrArrAt :: (PP a,PP o) => a -> o -> PP_Doc
-ppAddrArrAt a o = ppAddrOf $ ppArrAt a o
 
 mkPre :: String -> String
 mkPre = (++ "_")
 
-ppTbl :: String -> PP_Doc -> [PP_Doc] -> PP_Doc
-ppTbl tp nm tbl = ppLine $ "static" >#< tp >#< nm >|< "[] =" >-< ppArr tbl
+ppTbl :: String -> GenC -> [GenC] -> GenC
+ppTbl tp nm tbl = ppLine $ gencStatic $ tp >#< nm >|< "[] =" >-< ppArr tbl
 
-ppTbl' :: String -> PP_Doc -> [PP_Doc] -> [PP_Doc]
-ppTbl' tp nm tbl = [nl, "static" >#< tp >#< nm >|< "[] ="] ++ ppArr' tbl
+ppTbl' :: String -> GenC -> [GenC] -> [GenC]
+ppTbl' tp nm tbl = [nl, gencStatic $ tp >#< nm >|< "[] ="] ++ ppArr' tbl
 %%]
 
 %%[(8 codegen grin)
-ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: PP_Doc ]
+ATTR AllNT AGItf [ | | pp USE {>-<} {empty}: GenC ]
 %%]
 
 %%[(20 codegen grin)
-ATTR Module AGItf [ | | ppMain: PP_Doc ]
+ATTR Module AGItf [ | | ppMain: GenC ]
 %%]
 
 %%[(8 codegen grin)
@@ -733,31 +721,31 @@ SEM Module
 %%]]
                                             =   -- 20091002, the below expr is growing too large, need to reorg someday
                                                 let top     = ppLine $ ppCmtC @lhs.opts ("bytecode in C encoding for module" >#< @moduleNm)
-                                                                       >-< vlist [ "#include" >#< pp (show i)
-                                                                                 | i <- ["rts.h", "bc/interpreter.h"]
+                                                                       >-< (vlist $ map gencInclude $
+                                                                              (  ["rts.h", "bc/interpreter.h"]
 %%[[94
-                                                                                        ++ @includeL
+                                                                              ++ @includeL
 %%]]
-                                                                                 ]
+                                                                           )  )
                                                     callinfos
-                                                            = ppTbl' "GB_CallInfo" @ppNmCallInfoTbl
-                                                                [ "GB_MkCallInfoWith"
+                                                            = ppTbl' "CallInfo" @ppNmCallInfoTbl
+                                                                [ "MkCallInfoWith"
                                                                   >|< ppParensCommas
-                                                                        [ pp $ fromEnum $ ciKind ci
+                                                                        [ genc $ fromEnum $ ciKind ci
                                                                         , ppCommas $ mkci $ ciMbKey ci
                                                                         , gcref
-                                                                        , pp (ciExtra ci)                                                                                
+                                                                        , genc (ciExtra ci)                                                                                
                                                                         ]
                                                                   >#< ppCmtC @lhs.opts (show ci)
                                                                 | (gcref,ci,i) <- cis
                                                                 ]
-                                                            where cis = [ (maybe (pp "NULL") (ppAddrArrAt @ppNmGCStackInfosTbl) $ ciGCStackInfo ci, ci, i)
+                                                            where cis = [ (maybe gencNULL (gencAddrArrayAt @ppNmGCStackInfosTbl) $ ciGCStackInfo ci, ci, i)
                                                                         | (ci,i) <- sortOn snd $ Map.toList $ snd @instrs.callInfoMp
                                                                         ]
-                                                                  mkci Nothing               = [pp "NULL"                  , none, none]
-                                                                  mkci (Just (s,Nothing   )) = [ppAddrArrAt @ppNmBytePool s, none, none]
-                                                                  mkci (Just (s,Just (m,o))) = [ppAddrArrAt @ppNmBytePool s, pp m, pp o]
-                                                                  none = pp "GB_FunctionInfo_Inx_None"
+                                                                  mkci Nothing               = [gencNULL                       , none, none]
+                                                                  mkci (Just (s,Nothing   )) = [gencAddrArrayAt @ppNmBytePool s, none, none]
+                                                                  mkci (Just (s,Just (m,o))) = [gencAddrArrayAt @ppNmBytePool s, genc m, genc o]
+                                                                  none = genc "FunctionInfo_Inx_None"
                                                     consts  = ppTbl' "GB_Word" @ppNmConstTbl (map (ppCnst @lhs.opts) @constL )
                                                     bcTrL   = tail @instrs.bcTrL
                                                     bcode   = ppTbl' "GB_Byte" @ppNmByteCodeTbl @instrs.ppL
@@ -769,52 +757,49 @@ SEM Module
                                                                      ]
                                                     bcodetrace
                                                             = ppTbl' "GB_ByteCodeInstrEntry" @ppNmByteCodeTraceTbl
-                                                                (map (\(l,sz,c) -> ppCurlysCommas [ppAddrArrAt @ppNmByteCodeTbl l,pp sz,ppPacked "\"" "\"" c])
+                                                                (map (\(l,sz,c) -> ppCurlysCommas [gencAddrArrayAt @ppNmByteCodeTbl l,genc sz,ppPacked "\"" "\"" c])
                                                                  $ concat bcTrL
                                                                 )
                                                     bcodeentries
                                                             = ppTbl' "GB_ByteCodeEntryPoint" @ppNmByteCodeEntry
                                                                 (zipWith3 (\i l e
-                                                                            -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (ppAddrArrAt @ppNmByteCodeTraceTbl i, l) else (pp "NULL",0)
+                                                                            -> let (bc,bcs) = if ehcOptGenTrace @lhs.opts then (gencAddrArrayAt @ppNmByteCodeTraceTbl i, l) else (gencNULL,0)
                                                                                in  ppCurlysCommas
-                                                                                     [ (maybe (pp "NULL") (ppAddrArrAt @ppNmBytePool) (eiMbNmStr e)) >#< ppCmtC @lhs.opts (eiNm e)
-                                                                                     , bc, pp bcs
+                                                                                     [ (maybe gencNULL (gencAddrArrayAt @ppNmBytePool) (eiMbNmStr e)) >#< ppCmtC @lhs.opts (eiNm e)
+                                                                                     , bc, genc bcs
                                                                                      ]
                                                                           ) (scanl (+) 0 bcTrLengthL) bcTrLengthL @allEntryBPedL
                                                                 )
                                                             where bcTrLengthL = map length bcTrL
                                                     bcodemodtrace
-                                                            = "GB_ByteCodeModule" >#< @ppNmByteCodeModule >#< "="
-                                                               >-< indent 2
+                                                            = gencVarDeclInitV "GB_ByteCodeModule" @ppNmByteCodeModule
                                                                      (ppCurlysCommasBlock
-                                                                        (  [ ppStr @moduleNm ]
+                                                                        (  [ gencStr @moduleNm ]
                                                                         ++ (if ehcOptGenTrace @lhs.opts
-                                                                            then [ @ppNmByteCodeEntry, pp $ length @allEntryL ]
-                                                                            else [ pp "NULL", pp "0" ]
+                                                                            then [ @ppNmByteCodeEntry, genc $ length @allEntryL ]
+                                                                            else [ gencNULL, genc "0" ]
                                                                            )
                                                                         ++ [ @ppNmByteCodeTbl
-                                                                           , pp @instrs.cLoc
+                                                                           , genc @instrs.cLoc
                                                                            ]
-                                                                        )
-                                                                      >#< ";"
-                                                                      )
+                                                                     )  )
                                                     linkChainInds
                                                             = ppTbl' "GB_LinkChainResolvedInfo" @ppNmLinkChainIndTbl
-                                                                (map (\(LinkChainResolvedInfo kind info off) -> ppCurlysCommasBlock $ map pp [info, off, fromEnum kind]) $ reverse inds
+                                                                (map (\(LinkChainResolvedInfo kind info off) -> ppCurlysCommasBlock $ map genc [info, off, fromEnum kind]) $ reverse inds
                                                                 )
                                                             where (_,inds) = @instrs.linkChainResolvedIndInfoSet
                                                     glEntryMp= Map.fromList [ (i,c) | (LocRef_CodeEntry i,c) <- Seq.toList @instrs.locRefs ]
-                                                    cafGlEntryIndices = ppTbl' "HalfWord" @ppNmCafGlEntryIndicesTbl [ pp i | i <- @cafEntryL ]
+                                                    cafGlEntryIndices = ppTbl' "HalfWord" @ppNmCafGlEntryIndicesTbl [ genc i | i <- @cafEntryL ]
                                                     nrCafs = length @cafEntryL
-                                                    glEntries = ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ ppAddrArrAt @ppNmByteCodeTbl c | c <- Map.elems glEntryMp ]
+                                                    glEntries = ppTbl' "GB_BytePtr" @ppNmGlobEntriesTbl [ gencAddrArrayAt @ppNmByteCodeTbl c | c <- Map.elems glEntryMp ]
                                                     gcStackInfoL = sortOn snd $ Map.toList $ snd @instrs.gcStackInfoMp
-                                                    gcStackInfosTbl = ppTbl' "GB_GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
-                                                              where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [pp sz, pp len, ppAddrArrAt @ppNmBytePool (bytePoolLocOff loc)]
-                                                    functionInfosTbl = ppTbl' "GB_FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
+                                                    gcStackInfosTbl = ppTbl' "GCStackInfo" @ppNmGCStackInfosTbl [ mk i | (i,_) <- gcStackInfoL ]
+                                                              where mk (GCStackInfo sz (len,loc)) = ppCurlysCommasBlock [genc sz, genc len, gencAddrArrayAt @ppNmBytePool (bytePoolLocOff loc)]
+                                                    functionInfosTbl = ppTbl' "FunctionInfo" @ppNmFunctionInfoTbl $ map mk $ sortOn snd $ Map.toList $ snd @instrs.functionInfoMp
                                                               where mk (FunctionInfo (_,loc) _ sz flgs,_)
-                                                                      = ppCurlysCommas [ pp (Cfg.sizeofWord * sz)
-                                                                                       , ppListSep "" "" " || " $ map ("GB_" >|<) $ maybeNull [FunctionInfoFlag_None] id flgs
-                                                                                       , ppAddrArrAt @ppNmBytePool (bytePoolLocOff loc)
+                                                                      = ppCurlysCommas [ genc (Cfg.sizeofWord * sz)
+                                                                                       , ppListSep "" "" " || " $ maybeNull [FunctionInfoFlag_None] id flgs
+                                                                                       , gencAddrArrayAt @ppNmBytePool (bytePoolLocOff loc)
                                                                                        ]
                                                     initf   = ppLine $ ppCmtC @lhs.opts "Initialization"
                                                                        >-< ppFun ("void" >#< @ppNmInitF >|<
@@ -826,82 +811,82 @@ SEM Module
                                                                                  )
                                                                                  ("gb_InitTables" >|< ppParensCommasBlock args >#< ";")
                                                             where args = [ @ppNmByteCodeTbl, pp @instrs.cLoc
-                                                                         , @ppNmCafGlEntryIndicesTbl, pp nrCafs
-                                                                         , @ppNmGlobEntriesTbl, pp (Map.size glEntryMp)
+                                                                         , @ppNmCafGlEntryIndicesTbl, genc nrCafs
+                                                                         , @ppNmGlobEntriesTbl, genc (Map.size glEntryMp)
                                                                          , @ppNmConstTbl
                                                                          , @ppNmGCStackInfosTbl
                                                                          , @ppNmLinkChainIndTbl
-                                                                         , @ppNmCallInfoTbl, pp (Map.size $ snd @instrs.callInfoMp)
-                                                                         , @ppNmFunctionInfoTbl, pp (Map.size $ snd @instrs.functionInfoMp)
+                                                                         , @ppNmCallInfoTbl, genc (Map.size $ snd @instrs.callInfoMp)
+                                                                         , @ppNmFunctionInfoTbl, genc (Map.size $ snd @instrs.functionInfoMp)
                                                                          , @ppNmBytePool
-                                                                         , pp $ maybe 0 id @mbLinkChainCodeLoc
+                                                                         , genc $ maybe 0 id @mbLinkChainCodeLoc
 %%[[20
-                                                                         , @ppImpModTbl, pp (length @impModNmL)
-                                                                         , ppAddrOf @ppNmExpNode
+                                                                         , @ppImpModTbl, genc (length @impModNmL)
+                                                                         , gencAddrOf @ppNmExpNode
                                                                          , @ppNmExpNodeSz, @ppNmExpNodeOffs
-                                                                         , pp "modTbl", pp "modTblInx"
+                                                                         , genc "modTbl", genc "modTblInx"
 %%]]
                                                                          ]
-                                                    maincaf = ppLine $ "static GB_BytePtr*" >#< @ppNmMainCAFEntry >#< "="
-                                                                       >#< ppAddrArrAt @ppNmGlobEntriesTbl @mainCafEntry >#< ";"
+                                                    maincaf = ppLine $ gencStatic $ gencVarDeclInit "GB_BytePtr*" @ppNmMainCAFEntry (gencAddrArrayAt @ppNmGlobEntriesTbl @mainCafEntry)
                                                     mainf   = ppLine $ ppCmtC @lhs.opts "Main entry point"
                                                                        >-< ppFun "int main(int argc, char** argv)"
                                                                                  (vlist
-                                                                                  $  [ pp "int nRtsOpts = 0 ;"
-                                                                                     , pp "main_GB_Init1( argc, argv, &nRtsOpts ) ;"
-                                                                                     , "gb_Opt_TraceSteps =" >#< ehcOptGenTrace @lhs.opts >#< ";"
-                                                                                     , "gb_Opt_Info =" >#< ehcOptGenRTSInfo @lhs.opts >#< ";"
-                                                                                     , pp "argc -= nRtsOpts ; argv += nRtsOpts ;"
+                                                                                  $  [ gencVarDeclInit "int" "nRtsOpts" (0::Int)
+                                                                                     , genc "main_GB_Init1( argc, argv, &nRtsOpts ) ;"
+                                                                                     , gencAssign "gb_Opt_TraceSteps" (ehcOptGenTrace @lhs.opts)
+                                                                                     , gencAssign "gb_Opt_Info" (ehcOptGenRTSInfo @lhs.opts)
+                                                                                     , gencUpdAssign "-" "argc" "nRtsOpts"
+                                                                                     , gencUpdAssign "+" "argv" "nRtsOpts"
                                                                                      ]
                                                                                   ++ (if ehcOptGenTrace @lhs.opts then ["IF_GB_TR_ON(3,{gb_prModEntries" >|< ppParens @ppNmModEntriesTbl >#< ";});"] else [])
 %%[[8
                                                                                   ++ [ @ppNmInitF >|< "()" >#< ";" ]
-                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp (1::Int)] >#< ";" ]
+                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,genc (1::Int)] >#< ";" ]
 %%][20
                                                                                   ++ [ "GB_MkExpNodeIn(" >#< mkPre m >|< @strNmExpNode >|< ", " >|< mkPre m >|< @strNmExpNodeSz >|< " ) ;"
                                                                                      | (_,m) <- @allImpModNmL
                                                                                      ]
-                                                                                  ++ [ mkPre m >|< @strNmInitF >|< ppParensCommas [@ppNmModEntriesTbl,pp minx] >#< ";"
+                                                                                  ++ [ mkPre m >|< @strNmInitF >|< ppParensCommas [@ppNmModEntriesTbl,genc minx] >#< ";"
                                                                                      | (minx,(_,m)) <- zip [0::Int ..] @allImpModNmL
                                                                                      ]
-                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,pp $ length @allImpModNmL] >#< ";" ]
+                                                                                  ++ [ "gb_SetModTable" >|< ppParensCommas [@ppNmModEntriesTbl,genc $ length @allImpModNmL] >#< ";" ]
 %%]]
                                                                                   ++ [ "main_GB_Run( argc, argv, gb_code_Eval, Cast(GB_Word,*" >|< @ppNmMainCAFEntry >|< ") ) ;"
-                                                                                     , pp "return main_GB_Exit( argc, argv) ;"
+                                                                                     , genc "return main_GB_Exit( argc, argv) ;"
                                                                                      ]
                                                                                  )
 %%[[20
-                                                    expnd   = ppLine $ "GB_NodePtr" >#< @ppNmExpNode >#< ";"
-                                                                       >-< "static int" >#< @ppNmExpNodeOffs >|< "[] ="
+                                                    expnd   = ppLine $ gencVarDecl "GB_NodePtr" @ppNmExpNode
+                                                                       >-< (gencStatic $ "int" >#< @ppNmExpNodeOffs >|< "[] =")
                                                                        >-< ppArr [ eiEntryNr e >#< ppCmtC @lhs.opts (eiNm e) | e <- @expEntryL ]
-                                                                       >-< "int" >#< @ppNmExpNodeSz >#< "=" >#< length @expEntryL >#< ";"
-                                                    externs = nl : map (\(_,m) -> "extern void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*,Word)" >#< ";"
-                                                                                      >-< "extern GB_NodePtr" >#< mkPre m >|< @strNmExpNode >#< ";"
-                                                                                      >-< "extern int" >#< mkPre m >|< @strNmExpNodeSz >#< ";"
-                                                                                      >-< "extern GB_ByteCodeModule" >#< mkPre m >|< @strNmByteCodeModule >#< ";"
+                                                                       >-< gencVarDeclInit "int" @ppNmExpNodeSz (length @expEntryL)
+                                                    externs = nl : map (\(_,m) -> (gencExtern $ gencEndsemic $ "void" >#< mkPre m >|< @strNmInitF >|< "(GB_ModEntry*,Word)")
+                                                                              >-< (gencExtern $ gencVarDecl "GB_NodePtr" (mkPre m >|< @strNmExpNode))
+                                                                              >-< (gencExtern $ gencVarDecl "int" (mkPre m >|< @strNmExpNodeSz))
+                                                                              >-< (gencExtern $ gencVarDecl "GB_ByteCodeModule" (mkPre m >|< @strNmByteCodeModule))
                                                                        ) @allImpModNmL
 %%]]
 %%[[8
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
-                                                                ( [ ppCurlysCommasBlock [ pp $ show @moduleNm, ppAddrOf @ppNmByteCodeModule, @ppNmFunctionInfoTbl ] ]
-                                                                  ++ [ppCurlysCommasBlock (replicate 3 $ pp $ "NULL")]
+                                                                ( [ ppCurlysCommasBlock [ gencStr @moduleNm, gencAddrOf @ppNmByteCodeModule, @ppNmFunctionInfoTbl ] ]
+                                                                  ++ [ppCurlysCommasBlock (replicate 3 gencNULL)]
                                                                 )
 %%][20
                                                     impmods = ppTbl "GB_ImpModEntry" @ppImpModTbl
-                                                                ( [ ppCurlysCommasBlock [ ppStr (show n), pp "0" >#< ppCmtC @lhs.opts "filled during linking" ]
+                                                                ( [ ppCurlysCommasBlock [ gencStr (show n), genc "0" >#< ppCmtC @lhs.opts "filled during linking" ]
                                                                   | (n,_) <- @impModNmL
                                                                   ]
                                                                 )
                                                     mods    = ppTbl "GB_ModEntry" @ppNmModEntriesTbl
                                                                 ( [ ppCurlysCommasBlock
-                                                                      [ ppStr (show n)
-                                                                      , ppAddrOf $ mkPre m >|< @strNmExpNode
-                                                                      , ppAddrOf $ mkPre m >|< @strNmByteCodeModule
+                                                                      [ gencStr (show n)
+                                                                      , gencAddrOf $ mkPre m >|< @strNmExpNode
+                                                                      , gencAddrOf $ mkPre m >|< @strNmByteCodeModule
                                                                       , @ppNmFunctionInfoTbl
                                                                       ]
                                                                   | (n,m) <- @allImpModNmL
                                                                   ]
-                                                                  ++ [ppCurlysCommasBlock (replicate 4 $ pp $ "NULL")]
+                                                                  ++ [ppCurlysCommasBlock (replicate 4 gencNULL)]
                                                                 )
 %%]]
                                                 in  ( vlist
@@ -947,33 +932,31 @@ SEM Module
 %%]
 
 %%[(8 codegen grin) hs
-ppIntsAsHex' :: [Int] -> [PP_Doc]
+ppIntsAsHex' :: [Int] -> [GenC]
 ppIntsAsHex' xx = [ hlist $ ppHex' (Just 2) 2 x | x <- xx ]
 
-ppIntsAsHex :: [Int] -> PP_Doc
+ppIntsAsHex :: [Int] -> GenC
 ppIntsAsHex = ppCurlysCommas . ppIntsAsHex'
 
-ppBytesAsString :: [Int] -> PP_Doc
+ppBytesAsString :: [Int] -> GenC
 ppBytesAsString xx = "\"" >|< hlist [ ppHex'' "\\x" (Just 2) 2 x | x <- xx ] >|< "\""
 
-ppStringAsHex' :: String -> [PP_Doc]
+ppStringAsHex' :: String -> [GenC]
 ppStringAsHex' s = ppIntsAsHex' [ ord c | c <- s ++ [chr 0] ]
 
-ppStringAsHex :: String -> PP_Doc
+ppStringAsHex :: String -> GenC
 ppStringAsHex = ppCurlysCommas . ppStringAsHex'
 -- ppStringAsHex s = ppCurlysCommas [ ppHex' (Just 2) 2 (ord c) | c <- s ++ [chr 0] ]
 
-ppStr :: String -> PP_Doc
-ppStr s = pp $ show s
-
-ppWord :: (Integral c) => c -> PP_Doc
+ppWord :: (Integral c) => c -> GenC
 ppWord = ppHexL . ppHex' (Just 2) (Cfg.sizeofWord * 2)
 
-ppLinkChain :: Integer -> PP_Doc
+ppLinkChain :: Integer -> GenC
 ppLinkChain = ppWord
 
-ppStaticDef :: String -> PP_Doc -> String -> PP_Doc -> PP_Doc
-ppStaticDef ty nm modf def = "static" >#< ty >#< nm >|< modf >#< "=" >-< indent 2 (def >#< ";")
+ppStaticDef :: String -> GenC -> String -> GenC -> GenC
+ppStaticDef ty nm modf def -- = "static" >#< ty >#< nm >|< modf >#< "=" >-< indent 2 (def >#< ";")
+  = gencStatic $ gencVarDeclInitV ty (nm >|< modf) def
 %%]
 
 %%[(8 codegen grin)
@@ -1013,7 +996,7 @@ SEM Imm
 %%]
 
 %%[(8 codegen grin)
-ATTR Instrs [ | | ppL : {[PP_Doc]} ]
+ATTR Instrs [ | | ppL : {[GenC]} ]
 
 SEM Instrs
   | Nil         lhs         .   ppL         =   []
@@ -1030,7 +1013,7 @@ SEM Instrs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type BCTrL = [(Int,Int,PP_Doc)]
+type BCTrL = [(Int,Int,GenC)]
 %%]
 
 %%[(8 codegen grin)
@@ -1066,8 +1049,8 @@ SEM Instr
 
 %%[(8 codegen grin)
 %%]
-ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: PP_Doc ]
-ATTR Instrs [ ppExtra: PP_Doc | | ]
+ATTR Instr Meta [ | | ppExtra USE {>|<} {empty}: GenC ]
+ATTR Instrs [ ppExtra: GenC | | ]
 
 SEM Meta
   | CmtHeader   lhs         .   ppExtra     =   indent 40 (ppCmtC @lhs.opts ("[" >#< @ann >#< "]"))
@@ -1086,7 +1069,7 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs
-type AnnL = [(AnnKind,PP_Doc)]
+type AnnL = [(AnnKind,GenC)]
 %%]
 
 %%[(8 codegen grin)
@@ -1094,12 +1077,12 @@ ATTR Instr Meta [ | | gathAnnL USE {++} {[]}: AnnL ]
 ATTR Instrs Instr Meta [ annL: AnnL | | ]
 
 SEM Meta
-  | CmtHeader   lhs         .   gathAnnL    =   [(@kind,pp @ann)]
+  | CmtHeader   lhs         .   gathAnnL    =   [(@kind,genc @ann)]
 
 SEM Instr
-  | Label       lhs         .   gathAnnL    =   [(AnnLabel,pp @locRef)]
-  | LabelRef    lhs         .   gathAnnL    =   [(AnnLabelRef,pp @locRef)]
-  | Ann         lhs         .   gathAnnL    =   (@kind,pp @ann) : @instr.gathAnnL
+  | Label       lhs         .   gathAnnL    =   [(AnnLabel,genc @locRef)]
+  | LabelRef    lhs         .   gathAnnL    =   [(AnnLabelRef,genc @locRef)]
+  | Ann         lhs         .   gathAnnL    =   (@kind,genc @ann) : @instr.gathAnnL
 
 SEM Instrs
   | Cons        (loc.annL,tl.annL)          =   let m = @lhs.annL ++ @hd.gathAnnL
@@ -1116,7 +1099,7 @@ SEM Module
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin)
-ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: PP_Doc ]
+ATTR AllInsOp Instr Imm [ | | mn USE {>|<} {empty}: GenC ]
 %%]
 
 %%[(8 codegen grin)
@@ -1129,28 +1112,28 @@ SEM Instr
   | TailCall    lhs         .   mn          =   "tailcall"      >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | TailApply   lhs         .   mn          =   "tailapply"     >|< @locSrc.mn >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | TailEval    lhs         .   mn          =   "taileval"      >|< @locSrc.mn >|< @nArgSurrSz.mn >#< @nArgSurr.mn 
-  | CaseCall    lhs         .   mn          =   pp "casecall"
-  | FetchUpdate lhs         .   mn          =   pp "fetchupd"
-  | LdNodeTag   lhs         .   mn          =   pp "lnt"
+  | CaseCall    lhs         .   mn          =   genc "casecall"
+  | FetchUpdate lhs         .   mn          =   genc "fetchupd"
+  | LdNodeTag   lhs         .   mn          =   genc "lnt"
   | CallC       lhs         .   mn          =   "callc"         >|< @nArgSz.mn >#< @nArg.mn
   | RetCall     lhs         .   mn          =   "retcall"       >|< @nArgMineSz.mn >|< @nArgSurrSz.mn >#< @nArgMine.mn >#< @nArgSurr.mn
   | RetCase     lhs         .   mn          =   "retcase"       >|< @nResSz.mn >|< @retOffSurrSz.mn >#< @nRes.mn >#< @retOffSurr.mn
   | Eval        lhs         .   mn          =   "eval"          >|< @locSrc.mn
   | Apply       lhs         .   mn          =   "apply"         >|< @locSrc.mn
-  | Halt        lhs         .   mn          =   pp "halt"
-  | TagInt2Word lhs         .   mn          =   pp "tagi2w"
+  | Halt        lhs         .   mn          =   genc "halt"
+  | TagInt2Word lhs         .   mn          =   genc "tagi2w"
   | UntagWord2Int
-                lhs         .   mn          =   pp "untagw2i"
+                lhs         .   mn          =   genc "untagw2i"
   | TagWord2Word
-                lhs         .   mn          =   pp "tagw2w"
+                lhs         .   mn          =   genc "tagw2w"
   | UntagWord2Word
-                lhs         .   mn          =   pp "untagw2w"
+                lhs         .   mn          =   genc "untagw2w"
   | LdGlobal    lhs         .   mn          =   "ldg"           >|< @locDst.mn
   | LdString    lhs         .   mn          =   "ldstr"         >|< @locDst.mn
   | Op          lhs         .   mn          =   "o"             >|< @op.mn >|< @locDst.mn >|< @opndTy.mn >|< @ind.mn >|< @locSrc.mn >|< @immSz.mn >#< @imm.mn
   | LabelRef    lhs         .   mn          =   ".ref"          >#< lrefId @locRef
-  | LinkChain   lhs         .   mn          =   pp ".lnk"
-  | FunStart    lhs         .   mn          =   pp ".fun"
+  | LinkChain   lhs         .   mn          =   genc ".lnk"
+  | FunStart    lhs         .   mn          =   genc ".fun"
 
 SEM Imm
   | Int         lhs         .   mn          =   case @lhs.immSz of
@@ -1160,47 +1143,47 @@ SEM Imm
                                                   InsOp_ImmSz_Bits64 -> ppHex 16 @int
 
 SEM InsOp_LocE
-  | SP          lhs         .   mn          =   pp "s"
-  | Reg         lhs         .   mn          =   pp "r"
-  | Imm         lhs         .   mn          =   pp "i"
-  | PC          lhs         .   mn          =   pp "p"
+  | SP          lhs         .   mn          =   genc "s"
+  | Reg         lhs         .   mn          =   genc "r"
+  | Imm         lhs         .   mn          =   genc "i"
+  | PC          lhs         .   mn          =   genc "p"
 
 SEM InsOp_LocB
-  | TOS         lhs         .   mn          =   pp "t"
-  | Reg         lhs         .   mn          =   pp "r"
+  | TOS         lhs         .   mn          =   genc "t"
+  | Reg         lhs         .   mn          =   genc "r"
 
 SEM InsOp_LocODst
-  | TOS         lhs         .   mn          =   pp "t"
-  | Reg         lhs         .   mn          =   pp "r"
+  | TOS         lhs         .   mn          =   genc "t"
+  | Reg         lhs         .   mn          =   genc "r"
 
 SEM InsOp_LocOSrc
-  | SP          lhs         .   mn          =   pp "s"
-  | Reg         lhs         .   mn          =   pp "r"
-  | Imm         lhs         .   mn          =   pp "i"
-  | TOS         lhs         .   mn          =   pp "t"
+  | SP          lhs         .   mn          =   genc "s"
+  | Reg         lhs         .   mn          =   genc "r"
+  | Imm         lhs         .   mn          =   genc "i"
+  | TOS         lhs         .   mn          =   genc "t"
 
 SEM InsOp_TyOp
-  | Add         lhs         .   mn          =   pp "a"
-  | Sub         lhs         .   mn          =   pp "s"
-  | Mul         lhs         .   mn          =   pp "m"
-  | Quot        lhs         .   mn          =   pp "q"
+  | Add         lhs         .   mn          =   genc "a"
+  | Sub         lhs         .   mn          =   genc "s"
+  | Mul         lhs         .   mn          =   genc "m"
+  | Quot        lhs         .   mn          =   genc "q"
 
 SEM InsOp_DataOp
-  | IntWord     lhs         .   mn          =   pp "iw"
-  | IntInf      lhs         .   mn          =   pp "ii"
-  | FloatWord   lhs         .   mn          =   pp "fw"
+  | IntWord     lhs         .   mn          =   genc "iw"
+  | IntInf      lhs         .   mn          =   genc "ii"
+  | FloatWord   lhs         .   mn          =   genc "fw"
 
 SEM InsOp_ImmSz
-  | Bits08      lhs         .   mn          =   pp "08"
-  | Bits16      lhs         .   mn          =   pp "16"
-  | Bits32      lhs         .   mn          =   pp "32"
-  | Bits64      lhs         .   mn          =   pp "64"
+  | Bits08      lhs         .   mn          =   genc "08"
+  | Bits16      lhs         .   mn          =   genc "16"
+  | Bits32      lhs         .   mn          =   genc "32"
+  | Bits64      lhs         .   mn          =   genc "64"
 
 SEM InsOp_Deref
-  | Zero        lhs         .   mn          =   pp "0"
-  | One         lhs         .   mn          =   pp "1"
-  | Two         lhs         .   mn          =   pp "2"
-  | Int         lhs         .   mn          =   pp "i"
+  | Zero        lhs         .   mn          =   genc "0"
+  | One         lhs         .   mn          =   genc "1"
+  | Two         lhs         .   mn          =   genc "2"
+  | Int         lhs         .   mn          =   genc "i"
 
 %%]
 

@@ -1138,7 +1138,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c1 && c1 == c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
+                where  -- decompose
+                       -- the work
+                       (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        prfPredScope     = fePredScope (fiEnv fi)
                        mbfp             = fVarPred2 fP (fi {fiUniq = u'}) tpr1 tpr2
                        mberr            = Just (errClash fi t1 t2)
@@ -1227,7 +1229,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2@(Ty_App (Ty_App (Ty_Con c2) tpr2) tr2)
                     | hsnIsArrow c2 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1)          = mkNewLevUID (fiUniq fi)
+                where  -- decompose
+                       -- the work
+                       (u',u1)          = mkNewLevUID (fiUniq fi)
                        mbfp             = fVarPred1 fP (fi {fiUniq = u'}) tpr2
                        mkPrTy pr2 fo    = [Ty_Pred ({- foVarMp fo |=> -} pr2)] `mkArrow` foTy fo
                        fSub fi updTy pr2v pr2 tr2
@@ -1289,7 +1293,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2
                     | hsnIsArrow c1 && not (fioPredAsTy (fiFIOpts fi)) && isJust mbfp
                 = fromJust mbfp
-                where  (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
+                where  -- decompose
+                       -- the work
+                       (u',u1,u2,u3)    = mkNewLevUID3 (fiUniq fi)
                        prfPredScope     = fePredScope (fiEnv fi)
                        mbfp             = fVarPred1 fP (fi {fiUniq = u'}) tpr1
                        fSub fi updTy pv1 psc1 pr1 tr1
@@ -1356,10 +1362,25 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                            t2@(Ty_App (Ty_Con n2) tr2)
                 | n1 == n2 && (isRec || isSum)
                 = foUpdTy (updTy $ n1 `mkConApp` [foTy fo]) fo
-                where  isRec = hsnIsRec n1
+                where  -- decompose
+                       -- the work
+                       isRec = hsnIsRec n1
                        isSum = hsnIsSum n1
                        fo = fRow fi tr1 tr2 isRec isSum
 %%]
+            fUpd fi updTy  t1@(Ty_App ta1 tr1)
+                           t2@(Ty_App ta2 tr2)
+                | isJust mbC1 && isJust mbC2 && n1 == n2 && (isRec || isSum)
+                = foUpdTy (updTy $ n1 `mkConApp` [foTy fo]) fo
+                where  -- decompose
+                       mbC1 = tyMbCon ta1
+                       mbC2 = tyMbCon ta2
+                       n1 = fromJust mbC1
+                       n2 = fromJust mbC2
+                       -- the work
+                       isRec = hsnIsRec n1
+                       isSum = hsnIsSum n1
+                       fo = fRow fi tr1 tr2 isRec isSum
 
 %%[(4 hmtyinfer).fitsIn.Var2
             fUpd fi updTy t1                     t2
@@ -1368,13 +1389,16 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]
 
 %%[(4 hmtyinfer).fitsIn.App
-            fUpd fi updTy t1@(Ty_App tf1 ta1)    t2@(Ty_App tf2 ta2)
+            fUpd fi updTy t1@(Ty_App tf1 ta1)
+                          t2@(Ty_App tf2 ta2)
                 = manyFO [ ffo, afo
                          , dtfo "app" fi t1 t2 [(ffo,"l"),(afo,"r")] emptyVarMp
                            $ trfo "comp" ("ty:" >#< ppTyWithFIFO fi rfo (foTy rfo))
                            $ foUpdTy (updTy $ foTy rfo) rfo
                          ]
-                where  fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
+                where  -- decompose
+                       -- the work
+                       fi2    = trfi "decomp" ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2) fi
                        ffo    = fVar' fUpd fi2 id tf1 tf2
                        spine  = asgiSpine $ foAppSpineInfo ffo
 %%[[4
@@ -1572,7 +1596,7 @@ fitPredIntoPred fi pr1 pr2
 %%]]
         f pr1                   pr2
           = if foHasErrs fo
-            then Nothing
+            then {- tr "fitPredIntoPred" (pr1 >-< pr2 >-< ppErrL (foErrL fo) >-< fiVarMp fi) $ -} Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
           where fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)})
                             (fiEnv fi) (fiUniq fi) (fiVarMp fi)

@@ -150,6 +150,8 @@ contextBinChoice order = contextChoice (const local)
 %%% Determine whether ambiguous really is ambiguous
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+This should be merged with similar choices made at callsites.
+
 %%[(9 hmtyinfer)
 reallyAmbigEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
 reallyAmbigEvid p evs
@@ -278,33 +280,38 @@ cmpEqReds _                             RedHow_ByEqTrans                = P_LT
 cmpEqReds RedHow_ByEqSymmetry           _                               = P_GT
 cmpEqReds _                             RedHow_ByEqSymmetry             = P_LT
 %%]]
-cmpEqReds r1                            r2                              = error ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
+cmpEqReds r1                            r2                              = panic ("cmpEqReds: don't know how to deal with: " ++ show (pp r1) ++ " and " ++ show (pp r2))
 %%]
 
 %%[(9 hmtyinfer)
-anncmpEHCScoped :: FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
-anncmpEHCScoped env ann1 ann2
+anncmpEHCScoped :: Bool -> FIIn -> HeurRed CHRPredOcc RedHowAnnotation -> HeurRed CHRPredOcc RedHowAnnotation -> PartialOrdering
+anncmpEHCScoped preferInst env ann1 ann2
   = case (ann1,ann2) of
-      (HeurRed (RedHow_Assumption     _ _) _    , _                                        )  ->  P_GT
-      (_                                        , HeurRed (RedHow_Assumption     _ _) _    )  ->  P_LT
-      (HeurRed (RedHow_ByInstance  _ p  s) _    , HeurRed (RedHow_ByInstance  _ q  t) _    )  ->  case pscpCmpByLen s t of
-                                                                                                    EQ   -> cmpSpecificness env p q
-                                                                                                    ord  -> toPartialOrdering ord
-      (HeurRed (RedHow_ByInstance  _ _  s) _    , HeurRed (RedHow_ByScope _) [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen s (cpoScope q)
-      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByInstance  _ _  t) _    )  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) t
-      (HeurRed (RedHow_ByInstance  _ _  _) _    , _                                        )  ->  P_GT
-      (_                                        , HeurRed (RedHow_ByInstance  _ _  _) _    )  ->  P_LT
+      (HeurRed (RedHow_Assumption     _ _) _    , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_Assumption     _ _) _    )              ->  P_LT
+      (HeurRed (RedHow_ByScope ByScopeRedHow_Assume) _
+                                                , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_ByScope ByScopeRedHow_Assume) _)        ->  P_LT
+      (HeurRed (RedHow_ByInstance  _ p  s) _    , HeurRed (RedHow_ByInstance  _ q  t) _    )              ->  case pscpCmpByLen s t of
+                                                                                                                EQ   -> cmpSpecificness env p q
+                                                                                                                ord  -> toPartialOrdering ord
+      (HeurRed (RedHow_ByInstance  _ _  s) _    , HeurRed (RedHow_ByScope _) [HeurAlts q _])              ->  toPartialOrdering $ pscpCmpByLen s (cpoScope q)
+      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByInstance  _ _  t) _    )              ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) t
+      (HeurRed (RedHow_ByInstance  _ _  _) _    , _                                        ) | preferInst ->  P_GT
+      (_                                        , HeurRed (RedHow_ByInstance  _ _  _) _    ) | preferInst ->  P_LT
 %%[[10
-      (HeurRed (RedHow_ByLabel     _ _  s) _    , HeurRed (RedHow_ByLabel     _ _  t) _    )  ->  toPartialOrdering $ pscpCmpByLen s t
-      (HeurRed (RedHow_ByLabel     _ _  _) _    , _                                        )  ->  P_GT
-      (_                                        , HeurRed (RedHow_ByLabel     _ _  _) _    )  ->  P_LT
+      (HeurRed (RedHow_ByLabel     _ _  s) _    , HeurRed (RedHow_ByLabel     _ _  t) _    )              ->  toPartialOrdering $ pscpCmpByLen s t
+      (HeurRed (RedHow_ByLabel     _ _  _) _    , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_ByLabel     _ _  _) _    )              ->  P_LT
 %%]]
-      (HeurRed (RedHow_BySuperClass _ _ _) _    , _                                        )  ->  P_GT
-      (_                                        , HeurRed (RedHow_BySuperClass _ _ _) _    )  ->  P_LT
-      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByScope _) [HeurAlts q _])  ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
-      (HeurRed (RedHow_ByScope _) _             , _                                        )  ->  P_LT
-      (_                                        , HeurRed (RedHow_ByScope _) _             )  ->  P_GT
-      _                                                                                       ->  error ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
+      (HeurRed (RedHow_BySuperClass _ _ _) _    , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_BySuperClass _ _ _) _    )              ->  P_LT
+      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByScope _) [HeurAlts q _])              ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
+      (HeurRed (RedHow_ByScope _) _             , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_ByScope _) _             )              ->  P_LT
+      (HeurRed (RedHow_ByInstance  _ _  _) _    , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_ByInstance  _ _  _) _    )              ->  P_LT
+      _                                                                                                   ->  panic ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
 %%]
 
 If no full solution is possible, we just use the superclass relationship.
@@ -312,11 +319,12 @@ If no full solution is possible, we just use the superclass relationship.
 - We also allow for ambiguity here, randomly picking an alternative, the first. This is not good, but will work for now...
 
 %%[(9 hmtyinfer)
+ehcAllowForGeneralization :: HeurRed CHRPredOcc RedHowAnnotation -> Bool
+ehcAllowForGeneralization (HeurRed (RedHow_BySuperClass _ _ _) _) = True
+ehcAllowForGeneralization _                                       = False
+
 ehcOnlySuperReduce :: a -> [HeurRed CHRPredOcc RedHowAnnotation] -> [HeurRed CHRPredOcc RedHowAnnotation]
-ehcOnlySuperReduce _  reds
-  = take 1 $ filter p reds
-  where p (HeurRed (RedHow_BySuperClass _ _ _) _)  = True
-        p _                                        = False
+ehcOnlySuperReduce _  reds = take 1 $ filter ehcAllowForGeneralization reds
 %%]
 
 %%[(9 hmtyinfer) export(heurScopedEHC)
@@ -328,16 +336,22 @@ heurScopedEHC env
 {-
         defaultHeuristic
 -}
-        $ heurTry (contextBinChoice (anncmpEHCScoped env))
+{-
+        $ heurTry (contextBinChoice (anncmpEHCScoped True  env))
+                  -- (contextBinChoice (anncmpEHCScoped False env))
                   (contextChoice ehcOnlySuperReduce)
+-}
+        $ contextBinChoice (anncmpEHCScoped True  env)
   where
 %%[[16
     isEqHeuristic (CHRPredOcc (Pred_Eq _ _) _) = True
 %%]]
     isEqHeuristic _                            = False
     eqHeuristic = binChoice cmpEqReds . solvable
+{-
     defaultHeuristic
       = contextBinChoice (anncmpEHCScoped env)
+-}
 
 ifthenelseSHeuristic :: (p -> Bool) -> SHeuristic p info -> SHeuristic p info -> SHeuristic p info
 ifthenelseSHeuristic g t e alts

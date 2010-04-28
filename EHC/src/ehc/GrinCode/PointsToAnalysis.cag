@@ -1,6 +1,6 @@
 %%[doesWhat doclatex
 
-Traverse a Grin-program it and collect constraint equations which ccharacterize the abstract values of all variables.
+Traverse a Grin-program it and collect constraint equations which characterize the abstract values of all variables.
 Then solve the equations, and return the resulting abstract environment: the \emph{HptMap}.
 As an additional Int result, return the number of iterations that it took to solve the equations.
 
@@ -44,9 +44,11 @@ heapPointsToAnalysis grmod
         equations   = equations_Syn_GrAGItf syn
         limitations = limitations_Syn_GrAGItf syn
         lenEnv      = maxVar_Syn_GrAGItf syn + 1
+        useCountMap = Map.filter (>1) (useCountMap_Syn_GrAGItf syn)
+        multiplyUsed = map fst (Map.toList useCountMap)
         
         -- now solve the equations
-    in  solveEquations lenEnv equations limitations
+    in  solveEquations lenEnv multiplyUsed equations limitations
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -61,6 +63,29 @@ what constraints variables satisfy.
 ATTR GrAGItf GrModule AllDef AllGrExpr [ | | equations   USE {++} {[]} : {Equations}
                                              limitations USE {++} {[]} : {Limitations}
                                        ]
+
+
+{
+mapUnionWithPlus :: Map.Map Int Int -> Map.Map Int Int -> Map.Map Int Int
+mapUnionWithPlus = Map.unionWith (+)
+}
+
+ATTR GrAGItf GrModule AllDef AllExpr   [ | | useCountMap USE {`mapUnionWithPlus`} {Map.empty} : {Map.Map Int Int} ]
+
+ATTR GrExpr [ | | isEval : {Bool} ]
+
+SEM GrExpr
+   | Eval   lhs.isEval = True
+   | *-Eval lhs.isEval = False
+
+SEM GrVal
+  | Var      lhs.useCountMap = Map.singleton (getNr @nm) 1
+  
+SEM GrExpr
+  | Eval     lhs.useCountMap = Map.singleton (getNr @nm) 1
+  | Seq      lhs.useCountMap = if @expr.isEval
+                               then Map.unionWith const @expr.useCountMap @body.useCountMap
+                               else Map.unionWith (+)   @expr.useCountMap @body.useCountMap
 
 
 ATTR AllGrPat
@@ -448,6 +473,8 @@ SEM GrExpr
                               InBasic tvar       -> [ IsBasic tvar ]
                               InEnum  tvar ttags -> [ IsTags tvar ttags ]
                               InPtr   tvar       -> [ IsPointer tvar GrTag_Hole []  ]
+                              InVar   tvar       -> [ IsImpossible tvar ]
+                              -- ti                 -> error ("FFI - unknown targetinfo " ++ show ti)
 
 
 %%]

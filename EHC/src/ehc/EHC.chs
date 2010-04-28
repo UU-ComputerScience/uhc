@@ -121,11 +121,11 @@ main
                                doCompileRun (if null n then "" else head n) opts3
 %%][8
                                unless (null n) (doCompileRun n opts3)
-%%][99
+%%][9999
                                do { mbEnv <- importEHCEnvironment (envkey opts3)
-                                  ; let opts4 = maybe opts3 (\e -> opts3 {ehcOptEnvironment = e}) mbEnv
+                                  ; let opts4 = opts3 -- maybe opts3 (\e -> opts3 {ehcOptEnvironment = e}) mbEnv
                                   -- ; putStrLn (show mbEnv)
-                                  ; unless (null n) (doCompileRun n opts4)
+                                  ; unless (null n) (doCompileRun n opts3)
                                   }
 %%]]
                 | otherwise -> do { putStr (head errs)
@@ -192,6 +192,7 @@ handleImmQuitOption immq opts
         -> putStrLn (Cfg.verFull Cfg.version)
       ImmediateQuitOption_VersionAsNumber
         -> putStrLn (Cfg.verAsNumber Cfg.version)
+{-
       ImmediateQuitOption_Meta_ExportEnv mvEnvOpt
         -> exportEHCEnvironment
              (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
@@ -206,6 +207,7 @@ handleImmQuitOption immq opts
         -> do { d <- ehcenvDir (mkEhcenvKey (Cfg.verFull Cfg.version) (fpathToStr $ ehcProgName opts) Cfg.ehcDefaultVariant)
               ; putStrLn d
               }
+-}
       ImmediateQuitOption_Meta_Pkgdir_System
         -> do { let d = Cfg.mkInstallPkgdirSystem opts
               ; putStrLn d
