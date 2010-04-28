@@ -1,0 +1,425 @@
+%%[main
+\section{Roadmap}
+
+\begin{tabular}{p{0.12\linewidth}p{0.2\linewidth}p{0.2\linewidth}lp{0.12\linewidth}lll}
+\textbf{Name}
+  & \textbf{Topic}
+  & \textbf{Comment}
+  & \textbf{By}
+  & \textbf{Prequisites}
+  & \textbf{Kind}
+  & \textbf{Size}
+  & \textbf{Scheduled}
+  \\
+GADT
+  & Generalized Algebraic Data Type
+  & Partly done by AM
+  & 
+  & 
+  & Compat
+  & 
+  & 
+  \\
+GC-base
+  & Garbage Collector basics
+  & Almost done by AD
+  & 
+  & 
+  & Perf
+  & 
+  & 
+  \\
+GC-rest
+  & Weak/Stable ptr, finalizer
+  & 
+  & 
+  & 
+  & Compat
+  & 
+  & 
+  \\
+FunDep
+  & Functional dependencies
+  & 
+  & 
+  & 
+  & Compat
+  & 
+  & 
+  \\
+Unbox
+  & Unboxed types
+  & 
+  & 
+  & 
+  & Perf
+  & 
+  & 
+  \\
+TyCore
+  & Typed Core
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+PrimLang
+  & More detailed spec language for primitives
+  & To express: map to operator, unboxed, already evaluated
+  & 
+  & 
+  & Perf
+  & 
+  & 
+  \\
+BC-compact
+  & More compact encoding of bytecode
+  & 
+  & 
+  & 
+  & Perf
+  & 
+  & 
+  \\
+Pkg
+  & Package support
+  & 
+  & 
+  & 
+  & Dist
+  & 
+  & 
+  \\
+Cabal-build
+  & Build UHC with Cabal
+  & 
+  & 
+  & 
+  & Dist
+  & 
+  & 
+  \\
+Cabal-lib
+  & Build libraries with Cabal using UHC as H compiler
+  & 
+  & 
+  & Pkg, HsLib-cabal
+  & Dist
+  & 
+  & 
+  \\
+FitsIn
+  & FitsIn maintenance: use ST monad
+  & 
+  & 
+  & 
+  & Maint
+  & 
+  & 
+  \\
+H98-libs
+  & Completion of H98 libraries (Time, Locale, ..)
+  & 
+  & 
+  & 
+  & Compat98, CompatLib
+  & 
+  & 
+  \\
+H98-default
+  & H98 defaulting mechanism
+  & 
+  & 
+  & 
+  & Compat98
+  & 
+  & 
+  \\
+H98-n+k
+  & H98 n+k patterns
+  & Should we do this?
+  & 
+  & 
+  & Compat98
+  & 
+  & 
+  \\
+H98-derive
+  & H98 derivings
+  & for Ix, Bounded (partly done), tuples (partly done)
+  & 
+  & 
+  & Compat98
+  & 
+  & 
+  \\
+HPrime
+  & Support Haskell Prime
+  & 
+  & 
+  & H98-libs, FunDep
+  & CompatPrime
+  & 
+  & 
+  \\
+HsLib-selfUHC
+  & Hackage libraries necessary for UHC build
+  & 
+  & 
+  & H98-libs
+  & CompatLib
+  & 
+  & 
+  \\
+HsLib-cabal
+  & Hackage libraries necessary for Cabal library build
+  & 
+  & 
+  & H98-libs
+  & CompatLib
+  & 
+  & 
+  \\
+HsLib-ghc
+  & Hackage libraries using GHC specifics
+  & 
+  & 
+  & GHC-libs
+  & CompatLib
+  & 
+  & 
+  \\
+GHC-exc
+  & Extensible exceptions a la GHC
+  & 
+  & 
+  & 
+  & CompatGHC
+  & 
+  & 
+  \\
+GHC-libs
+  & libraries a la GHC
+  & 
+  & 
+  & H98-*, GHC-exc, HsLib-selfUHC
+  & CompatGHC
+  & 
+  & 
+  \\
+ErrMsg-basic
+  & Improve error reporting, by better formatting/tracing messages
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+ErrMsg-top
+  & Improve error reporting, using TOP like approaches
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+Typeable
+  & Class Typeable support
+  & 
+  & 
+  & 
+  & CompatGHC
+  & 
+  & 
+  \\
+64bit-lib
+  & 64 bit platform libraries
+  & 
+  & 
+  & 
+  & Run
+  & 
+  & 
+  \\
+nofib
+  & Setup testing with nofib
+  & 
+  & 
+  & H98-*
+  & Test
+  & 
+  & 
+  \\
+Jazy
+  & Complete Java/Jazy support
+  & 
+  & 
+  & 
+  & Run
+  & 
+  & 
+  \\
+Thread-bc
+  & Concurrency with threads in bc backend
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+Thread-C
+  & Concurrency with threads in C backend
+  & 
+  & 
+  & 
+  & Compat
+  & 
+  & 
+  \\
+Exc-C
+  & Exceptions in C backend
+  & 
+  & 
+  & 
+  & Compat
+  & 
+  & 
+  \\
+Analyse-framework
+  & Framework for analyses
+  & 
+  & TL
+  & TyCore
+  & 
+  & 
+  & 
+  \\
+Analyse-strict
+  & Strictness analysis
+  & 
+  & JC, TL
+  & TyCore
+  & 
+  & 
+  & 
+  \\
+Analyse-uniq
+  & Uniqueness analysis
+  & 
+  & HF, TL
+  & TyCore
+  & 
+  & 
+  & 
+  \\
+Runtime-prim
+  & Sharing of primitives + GC for bc + C backend
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+Runtime
+  & Splitting up toplevel runtime for backends
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+UHC-driver
+  & Database organisation of .hi info, binary representation
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+UHC-selfcompile
+  & Self compilation of UHC by UHC
+  & 
+  & 
+  & FunDep, H98-*, HsLib-selfUHC, Cabal-lib
+  & 
+  & 
+  & 
+  \\
+Ruler-manual
+  & Manual typerule implementation using Ruler ideas
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+Ruler-automatic
+  & Automatic typerule implementation via Ruler
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+XXX
+  & XXX
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+XXX
+  & XXX
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+XXX
+  & XXX
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+XXX
+  & XXX
+  & 
+  & 
+  & 
+  & 
+  & 
+  & 
+  \\
+\end{tabular}
+
+\section{People}
+
+In alphabetical order:
+
+\begin{tabular}{ll}
+AD & Atze Dijkstra \\
+AM & Arie Middelkoop \\
+HF & Henrique Ferreiro \\
+JC & Juan Cardona \\
+JF & Jeroen Fokker \\
+TL & Tom Lokhorst \\
+\end{tabular}
+%%]
+

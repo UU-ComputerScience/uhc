@@ -1,0 +1,100 @@
+%%[doesWhat doclatex
+
+Remove alternatives that, according to HPT, cannot happen.
+
+The user program may distinguish more cases than necessary.
+Removal of impossible cases saves time.
+When only one alternative remains, a subsequent SingleCase transformation
+will remove the scrutinization alltogether.
+This transformation is particularly effective after the LateInline transformation,
+as in a particular context more cases might be impossible.
+In that situation, also alternatives introduced by InlineEA might be
+removed in a particular context.
+
+Inspects the HPT table, but does not change it.
+
+%%]
+
+When:
+must be done after HPT-Analysis
+most effective after LateInline
+most effective before SingleCase
+
+Assumptions:
+- HPT table is available
+- scrutinizer is a simple variable
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.ImpossibleCase} export(impossibleCase)
+%%]
+
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common(HsName, CTagsMp)})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Common(HptMap, getTags, getNr, getEnvVar)})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+impossibleCase :: (GrModule,HptMap) -> GrModule
+impossibleCase (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  grTrf_Syn_GrAGItf syn
+%%]
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+ATTR AllNT     [ | | grTrf: SELF     ]
+
+-- bring the HPT map down to the Expression level
+ATTR GrAGItf
+     GrModule
+     AllBind
+     AllGrExpr [ hptMap: HptMap | | ]
+
+-- decide which alternatives are possible
+ATTR GrAlt     [ | | isPossible: Bool        ]
+ATTR AllAlt    [ possibleTags: {Maybe [GrTag]} | | ]
+
+SEM GrAlt
+  | Alt      lhs.isPossible     =  -- trace ("tag: " ++ show @pat.tag ++ " possible: " ++ show @lhs.possibleTags) $
+                                   maybe True (@pat.tag `elem`) @lhs.possibleTags
+
+SEM GrExpr
+  | Case     altL.possibleTags  =  case @val.varId of
+                                     Left n -> getTags (getEnvVar @lhs.hptMap n)
+                                     Right t -> Just [t]
+
+-- remove the impossible alternatives
+SEM GrAltL
+  | Cons     lhs.grTrf          =  if   @hd.isPossible 
+                                   then @hd.grTrf : @tl.grTrf 
+                                   else             @tl.grTrf
+%%]
+
+%%[(8 codegen grin)
+ATTR GrPatAlt [ | | tag: GrTag ]
+ATTR GrVal    [ | | varId: {Either Int GrTag} ]
+
+SEM GrPatAlt 
+  | Tag 
+    Node           lhs.tag  =  @tag.grTrf
+  | * - Node Tag   lhs.tag  =  error "ImpossibleCase: alternative without a tag"
+
+
+SEM GrVal
+  | Var EnumNode       lhs.varId  =  Left (getNr @nm)
+  | Tag Node           lhs.varId  =  Right @tag.grTrf
+  | * - Var Tag 
+        Node EnumNode  lhs.varId  =  error ("ImpossibleCase: not a simple variable as scrutinizer: " ++ show @loc.grTrf)
+%%]

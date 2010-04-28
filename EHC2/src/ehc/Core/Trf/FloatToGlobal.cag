@@ -1,0 +1,207 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+Some bindings are floated to the module level:
+* lambdas
+* CAFs that are "closurable"
+We assume that the moved bindings have no free variables.
+This is ensured by previous transformations:
+* LamGlobalAsArg (for lambdas)
+* CAFGlobalAsArg (for closurable CAFs)
+
+Lambda bindings always float up all the way to the module level.
+CAF bindings may be intercepted on their way up if they encounter a *strict* Let.
+The meaning of a "closurable" CAF binding is defined in CommonFloat.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Float lambdas to global level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.FloatToGlobal} import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFloatToGlobal)
+%%]
+
+
+%%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List(partition) )
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/Trf/CommonFv},{Core/CommonLev},{Core/Trf/CommonFloat})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfFloatToGlobal :: CModule -> CModule
+cmodTrfFloatToGlobal cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(8 codegen)
+ATTR CodeAGItf [ | | cTrf: CModule ]
+ATTR AllCodeNT [ | | cTrf: SELF    ]
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | Let         binds . lev  =  @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The bindings in a binding list are partitioned into three sequences:
+* bindings to a lambda-expression
+* bindings to a "large" CAF (Let, Case, or TupDel/-Ins/-Upd expression)
+* bindings to a "small" CAF (App, Var, Int, Char, String, Tup expression, and FFI/FFE binding)
+
+In a Let-expression, some of these are kept as the bindings to be Let,
+others grouped together, labelled with the @categ of the Let, and floated upwards.
+What is passed upwards, and what is consumed, depends on the situation:
+
+  IN CASE OF:               FLOATED UPWARDS:                                   KEPT HERE:
+* Let at the module-level:  nothing                                            everything
+* in a strict Let:          the lambda bindings                                all CAF bindings
+* in other Let bindings:    the lambda bindings and large CAF bindings         small CAF bindings             
+
+Groups of bindings floated upwards are inserted when a particular Let is encountered:
+* Let at the module-level   always
+* Let at lower level:       
+
+
+%%[(8 codegen)
+
+ATTR AllBind CExpr    [ isLocalInInstance : {Bool} | | ]
+ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
+
+%%[[9
+SEM CMetaVal
+  | DictInstance   lhs.isInstance = True
+  | *-DictInstance lhs.isInstance = False
+%%]]
+
+SEM CBind
+  | Bind   expr . isLocalInInstance = -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
+                                      @bindMeta.isInstance || @lhs.isLocalInInstance
+  
+  
+SEM CExpr
+  | Let    body  . isLocalInInstance = -- trace ("Let passes to body " ++ show @lhs.isLocalInInstance)  $
+                                       @lhs.isLocalInInstance
+           binds . isLocalInInstance = -- trace ("Let passes to binds " ++ show @lhs.isLocalInInstance)  $
+                                       @lhs.isLocalInInstance
+  | *-Let  loc   . isLocalInInstance = False
+SEM CAlt
+  | Alt    expr  . isLocalInInstance = False
+SEM CModule
+  | Mod    expr  . isLocalInInstance = False
+SEM CPatBind
+  | Bind   offset. isLocalInInstance = False
+
+
+ATTR AllBind   [ | | cLamBinds, 
+                     cLargeCAFBinds, 
+                     cSmallCAFBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
+
+
+ATTR AllCodeNT [ | | cFloatedBinds USE {++} {[]}: {[(CBindingsCateg,Seq.FastSeq CBind)]} ]
+
+SEM CBind
+  | Bind        lhs . ( cLamBinds
+                      , cLargeCAFBinds
+                      , cSmallCAFBinds
+                      )             =   if @expr.isLam
+                                        then ( Seq.singleton @cTrf
+                                             , Seq.empty
+                                             , Seq.empty
+                                             )
+                                        else if @loc.isClosurableBind   ||  @lhs.isLocalInInstance
+                                        then ( Seq.empty
+                                             , Seq.singleton @cTrf
+                                             , Seq.empty
+                                             )
+                                        else ( Seq.empty
+                                             , Seq.empty
+                                             , Seq.singleton @cTrf
+                                             )
+  | FFI
+%%[[94
+    FFE
+%%]]
+                lhs . cSmallCAFBinds   =   Seq.singleton @cTrf
+
+
+
+SEM CExpr
+  | Let         loc.bindingsToKeep    = if @lhs.lev == cLevModule
+                                        then  @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds `Seq.union` @binds.cLamBinds
+                                        else if  @categ == CBindings_Strict 
+                                        then  @binds.cLargeCAFBinds `Seq.union` @binds.cSmallCAFBinds
+                                        else  @binds.cSmallCAFBinds
+
+                loc.bindingsToFloat   = if @lhs.lev == cLevModule
+                                        then  Seq.empty
+                                        else if  @categ == CBindings_Strict 
+                                        then  @binds.cLamBinds
+                                        else  (@binds.cLamBinds `Seq.union` @binds.cLargeCAFBinds)
+
+SEM CExpr
+  | Let         loc.bindingGroupsToCertainlyInsert  =  (@categ, @loc.bindingsToKeep) :
+                                                       if @lhs.lev == cLevModule
+                                                       then @binds.cFloatedBinds
+                                                       else []
+
+SEM CExpr
+  | Let         loc.bindingGroupsToPossiblyFloat   =  if @lhs.lev == cLevModule
+                                                      then []
+                                                      else ((@categ, @loc.bindingsToFloat) :  ( @binds.cFloatedBinds ++ @body.cFloatedBinds ))
+
+SEM CExpr
+  | Let         loc.(bindingGroupsToInsert
+                    ,bindingGroupsToFloat
+                    )                           =  move (@loc.bindingGroupsToCertainlyInsert, @loc.bindingGroupsToPossiblyFloat)
+
+{
+move insflt@(ins,flt)
+  =  let (g1,g2) = partition p flt
+     in  case g1 of
+              [] -> insflt
+              _  -> move (ins++g1, g2)
+     where p f = False    
+    
+}
+
+
+SEM CExpr
+  | Let         lhs . cFloatedBinds   =  if @lhs.lev == cLevModule
+                                         then []
+                                         else @loc.bindingGroupsToFloat
+
+SEM CExpr
+  | Let         lhs . cTrf           =   foldr (\(c,b) r -> mkCExprLet c (Seq.toList b) r)  @body.cTrf  @loc.bindingGroupsToInsert
+
+
+%%]

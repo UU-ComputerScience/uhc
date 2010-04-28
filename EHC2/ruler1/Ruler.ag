@@ -1,0 +1,847 @@
+imports
+{
+import System
+import System.Console.GetOpt
+import Data.Maybe
+import Data.Char
+import IO
+import Data.List
+import qualified Data.Set as Set
+import qualified Data.Map as Map
+import EH.Util.FPath
+import EH.Util.Utils
+import EH.Util.Pretty
+import EH.Util.PrettyUtils
+import UU.Parsing
+import UU.Scanner
+import UU.Scanner.Position( initPos, Pos )
+}
+
+{
+-------------------------------------------------------------------------
+-- Main
+-------------------------------------------------------------------------
+
+main :: IO ()
+main
+  = do { args <- getArgs
+       ; let oo@(o,n,errs)  = getOpt Permute cmdLineOpts args
+             opts           = foldr ($) defaultOpts o
+       ; if optHelp opts
+         then putStrLn (usageInfo "Usage ruler [options] [file]\n\noptions:" cmdLineOpts)
+         else if null errs
+              then  doCompile (if null n then emptyFPath else mkFPath (head n)) opts
+              else  putStr (head errs)
+       }
+
+doCompile :: FPath -> Opts -> IO ()
+doCompile fp opts
+  = do { (fn,fb,fh)
+             <- if fpathIsEmpty fp
+                then return ("<stdin>","<stdin>",stdin)
+                else do { let fn = fpathToStr fp
+                        ; h <- openFile fn ReadMode
+                        ; return (fn,fpathToStr (fpathRemoveSuff fp),h)
+                        }
+       ; tokens <- scanHandle keywordsText keywordsOps specialChars opChars fn fh
+       ; pres <- parseIO (pAGItf) tokens
+       ; let res = wrap_AGItf pres
+                     (Inh_AGItf
+                        { opts_Inh_AGItf = opts
+                        })
+       ; putBld (optLaTeX opts) (ppLaTeX_Syn_AGItf res) 
+       ; return ()
+       }
+  where putBld f b
+          = if f
+            then putStrLn (disp b 2000 "")
+            else return ()
+
+-------------------------------------------------------------------------
+-- Options
+-------------------------------------------------------------------------
+
+data Opts 
+  = Opts
+      { optLaTeX        :: Bool
+      , optHelp         :: Bool
+      , optWrapLhs2tex  :: Bool
+      , optBaseNm       :: String
+      }
+
+defaultOpts
+  = Opts
+      { optLaTeX        =  False
+      , optHelp         =  False
+      , optWrapLhs2tex  =  True
+      , optBaseNm       =  rulesCmdPre
+      }
+
+cmdLineOpts  
+  =  [ Option "l"  ["latex"]     (NoArg oLaTeX)
+          "generate code for latex, default=no"
+     , Option ""   ["help"]      (NoArg oHelp)
+          "output this help"
+     , Option "b"  ["base"]      (ReqArg oBase "<name>")
+          "base name, default = 'rules'"
+     , Option ""   ["lhs2tex"]   (OptArg oLhs2tex "yes|no")
+          "wrap chunks in lhs2tex's code environment, default=yes (not implemented)"
+     ]
+  where  oLaTeX          o =  o {optLaTeX = True}
+         oLhs2tex    ms  o =  yesno (\f o -> o {optWrapLhs2tex = f}) ms o
+         oHelp           o =  o {optHelp = True}
+         oBase       s   o =  o {optBaseNm = s}
+         yesno updO  ms  o =  case ms of
+                                Just "yes"  -> updO True o
+                                Just "no"   -> updO False o
+                                _           -> o
+
+
+-------------------------------------------------------------------------
+-- Scanning
+-------------------------------------------------------------------------
+
+specialChars  =  "().`"
+opChars       =  "!#$%&*+/<=>?@\\^|-:;,[]{}~"
+
+keywordsTextEscapable
+  =  [ "judge", "rule", "rules", "cond", "preamble", "scheme", "view", "viewset", "let", "in" ]
+keywordsText
+  =  [ "viewas" ] ++ keywordsTextEscapable
+keywordsOps   =  [ "=", "-", "&", "\\\\" ]
+
+scanHandle :: [String] -> [String] -> String -> String -> FilePath -> Handle -> IO [Token]
+scanHandle keywordstxt keywordsops specchars opchars fn fh
+  = do  {  txt <- hGetContents fh
+        ;  return (scan keywordstxt keywordsops specchars opchars (initPos fn) txt) 
+        }
+
+-------------------------------------------------------------------------
+-- Parser
+-------------------------------------------------------------------------
+
+type MkConAppAlg t = (String -> t,t -> t -> t,t -> t)
+
+mkApp :: MkConAppAlg t -> [t] -> t
+mkApp (_,app,top) ts
+  = case ts of
+      [t]  -> t
+      _    -> top t
+  where t = foldl1 app ts
+
+pAGItf :: (IsParser p Token) => p T_AGItf
+pAGItf
+  = let alg                 =   (undefined,sem_JExpr_App,sem_JExpr_AppTop)
+        pAGItf              =   sem_AGItf_AGItf <$ pKey "preamble" <*> pString <*> pDecls
+        pDecls              =   pFoldr (sem_Decls_Cons,sem_Decls_Nil) pDecl
+        pDecl               =   sem_Decl_Scheme <$  pKey "scheme" <*> pNm <* pKey "="
+                                                <*> pJExpr <* pKey "="
+                                                <*> pJExpr
+                                                <*> pViews
+                            <|> sem_Decl_Rules <$  pKey "rules" <*> pNmSuff
+                                               <*> pString <*> pOptViewSels
+                                               <*  pKey "=" <*> pViews <*> pRules
+                            <|> sem_Decl_ViewSet <$  pKey "viewset" <*> pNm
+                                                 <*  pKey "=" <*> pViewSels
+                            <|> sem_Decl_View <$> pView
+        pViews              =   pFoldr (sem_Views_Cons,sem_Views_Nil) pView
+        pView               =   sem_View_View <$ pKey "view" <*> pViewSels <* pKey "=" <*> pJExprLet
+        pViewSel            =   sem_ViewSel_One <$> pNm'
+        pViewSels           =   pFoldr (sem_ViewSels_Cons,sem_ViewSels_Nil) pViewSel
+        pViewAsSels         =   pKey "viewas" *> pViewSels
+        pOptViewSels        =   pViewAsSels `opt` sem_ViewSels_Nil
+        pRules              =   pFoldr (sem_Rules_Cons,sem_Rules_Nil) pRule
+        pRule               =   ((,,) <$> (True <$ pKey "&" <|> pSucceed False) <*  pKey "rule" <*> pNm <*> pOptViewSels <* pKey "=")
+                                <**> (   (\pre post (hor,nm,vsel) -> sem_Rule_Rule hor nm vsel pre post) <$> pRExprViews <* pKey "-" <*> pRExprViews
+                                     <|> (\alias (hor,nm,vsel) -> sem_Rule_RuleUse hor nm vsel alias) <$ pKey "rule" <*> pNmSuff
+                                     )
+        pNm                 =   pVarid <|> pConid
+        pNm'                =   pNm <|> pInteger
+        pNmSuff             =   (:) <$> pNm <*> pList (pKey "." *> pNm')
+        pSym                =   pVarsym <|> pConsym <|> (\q n -> q ++ n ++ q) <$> pKey "`" <*> pNm <* pKey "`"
+        pRExpr              =   sem_RExpr_Judge <$> pJudge
+                            <|> sem_RExpr_Cond <$ pKey "cond" <*> pJExpr
+        pRExprViews         =   pFoldr (sem_RExprViews_Cons,sem_RExprViews_Nil) pRExprView
+        pRExprView          =   sem_RExprView_RExpr <$> pRExpr <*> pOptViewSels
+        pJudge              =   sem_Judge_Judge <$ pKey "judge" <*> pNm <*> pJExpr
+        pJExprLet           =   (\d b -> foldr (\(n,v) b -> sem_JExpr_Let n v b) b d) <$ pKey "let" <*> pListSep (pKey "&") ((,) <$> pNm <* pKey "=" <*> pJExpr) <* pKey "in" <*> pJExpr
+                            <|> pJExpr
+        pJExpr              =   pChainr pOp pJExprApp
+                            where pOp = (\s ss -> sem_JExpr_Op s (ss (sem_JExpr_Var s))) <$> pSym <*> pJExprSel
+        pJExprApp           =   mkApp alg <$> pList1 (pJExprBase <**> pJExprSel) <|> pSucceed sem_JExpr_Empty
+        pJExprBase          =   sem_JExpr_Paren <$> pParens pJExpr
+                            <|> sem_JExpr_Var <$> pNm'
+                            <|> sem_JExpr_Str <$> pString
+                            <|> pParens (pJExprEsc <|> pJExprViewAs)
+        pJExprViewAs        =   mkApp alg <$> pList1 (sem_JExpr_ViewAs <$> pViewAsSels <* pKey "=" <*> pJExpr)
+        pJExprEsc           =   (sem_JExpr_StrAsIs . concat) <$> pList1 (foldr1 (<|>) . map pKey $ (["."] ++ keywordsOps ++ keywordsTextEscapable))
+        pJExprMbBase        =   sem_MbJExpr_Just <$> pJExprBase <|> pSucceed sem_MbJExpr_Nothing
+        pJExprSel           =   pJExprSel1 <|> pSucceed id
+        pJExprSel1          =   (\ss s -> \e -> sem_JExpr_SelTop (sem_JExpr_Sel (ss e) (sem_MbJExpr_Just s))) <$> pDots <*> pJExprBase
+                            where pSel' = flip sem_JExpr_Sel <$> pJExprMbBase
+                                  pDots = pChainr_ng ((\s -> \_ r -> \e -> r (s e)) <$> pSel') (id <$ pKey ".")
+     in pAGItf
+}
+
+-------------------------------------------------------------------------
+-- Utils
+-------------------------------------------------------------------------
+
+{-
+hdAndTl :: [a] -> (a,[a])
+hdAndTl (x:xs) = (x,xs)
+-}
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf AGRuleItf
+
+ATTR AllNT AGItf AGRuleItf [ opts: {Opts} | | ]
+
+{
+ruleEval :: Rule -> String -> Opts -> JGlobViewGam -> JViewSetGam -> JScmGam -> JFmtGam -> JVarGam -> (PP_Doc,Bool)
+ruleEval r vw o gvwg vwsg sg fg vg
+  = let r1 = sem_AGRuleItf (AGRuleItf_AGItf r)
+        r2 = wrap_AGRuleItf r1 (Inh_AGRuleItf {opts_Inh_AGRuleItf = o,view_Inh_AGRuleItf = vw,jGlobViewGam_Inh_AGRuleItf = gvwg,jViewSetGam_Inh_AGRuleItf = vwsg,jFmtGam_Inh_AGRuleItf = fg,jScmGam_Inh_AGRuleItf = sg,jVarGam_Inh_AGRuleItf = vg})
+    in  (ppLaTeX_Syn_AGRuleItf r2,viewIsSel_Syn_AGRuleItf r2)
+}
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+DATA AGItf
+  | AGItf               preamble    : {String}
+                        decls       : Decls
+
+DATA AGRuleItf
+  | AGItf               rule        : Rule
+
+DATA Decl
+  | Scheme              nm          : {String}
+                        jExpr       : JExpr
+                        jExprRepl   : JExpr
+                        views       : Views
+  | Rules               nmL         : {[String]}
+                        info        : {String}
+                        viewSels    : ViewSels
+                        views       : Views
+                        rules       : Rules
+  | ViewSet             nm          : {String}
+                        viewSels    : ViewSels
+  | View                view        : View
+
+TYPE Decls = [Decl]
+
+SET AllDecl = Decl Decls
+
+DATA View
+  | View                viewSels    : ViewSels
+                        jExprRepl   : JExpr
+
+TYPE Views = [View]
+
+SET AllView = View Views
+
+DATA ViewSel
+  | One                 nm          : {String}
+  | Many                viewSels    : ViewSels
+
+TYPE ViewSels = [ViewSel]
+
+SET AllViewSel = ViewSel ViewSels
+
+DATA Rule
+  | Rule                layoutHor   : {Bool}
+                        nm          : {String}
+                        viewSels    : ViewSels
+                        pre         : RExprViews
+                        post        : RExprViews
+  | RuleUse             layoutHor   : {Bool}
+                        nm          : {String}
+                        viewSels    : ViewSels
+                        aliasNmL    : {[String]}
+
+TYPE Rules = [Rule]
+
+SET AllRule = Rule Rules
+
+DATA Judge
+  | Judge               nm          : {String}
+                        jExpr       : JExpr
+
+DATA JExpr
+  | Op                  nm          : {String}
+                        nmExpr      : JExpr
+                        lExpr       : JExpr
+                        rExpr       : JExpr
+  | AppTop              jExpr       : JExpr
+  | Let                 nm          : {String}
+                        vExpr       : JExpr
+                        bExpr       : JExpr
+  | App                 lExpr       : JExpr
+                        rExpr       : JExpr
+  | Var                 nm          : {String}
+  | Str                 str         : {String}
+  | StrAsIs             str         : {String}
+  | Paren               jExpr       : JExpr
+  | SelTop              jExpr       : JExpr
+  | Sel                 jExpr       : JExpr
+                        selMbJExpr  : MbJExpr
+  | ViewAs              viewSels    : ViewSels
+                        jExpr       : JExpr
+  | Empty
+
+DATA MbJExpr
+  | Nothing
+  | Just                jExpr       : JExpr
+
+SET AllJudge = Judge JExpr
+
+DATA RExpr
+  | Judge               judge       : Judge
+  | Cond                jExpr       : JExpr
+
+DATA RExprView
+  | RExpr               rExpr       : RExpr
+                        viewSels    : ViewSels
+
+TYPE RExprViews = [RExprView]
+
+SET AllRExpr = RExpr RExprView RExprViews
+
+SET AllNT = AllRExpr AllJudge AllRule AllView AllDecl MbJExpr
+
+-------------------------------------------------------------------------
+-- Name of ...
+-------------------------------------------------------------------------
+
+SEM Decl
+  | Rules       loc     .   (nm,nmSuff) =   hdAndTl @nmL
+
+SEM Rule
+  | RuleUse     loc     .   (aliasNm,aliasNmSuff)
+                                        =   hdAndTl @aliasNmL
+
+-------------------------------------------------------------------------
+-- Ty of JExpr
+-------------------------------------------------------------------------
+
+{
+data JTy
+  = JTy_Op      String JTy JTy JTy
+  | JTy_Paren   JTy
+  | JTy_Var     String
+  | JTy_PP      PP_Doc
+  | JTy_Any
+  deriving Show
+
+ppJTy :: JTy -> PP_Doc
+ppJTy t
+  = case t of
+      JTy_Op _ p l r    -> ppJTy l >#< ppJTy p >#< ppJTy r
+      JTy_Paren t'      -> ppParens (ppJTy t')
+      JTy_Var n         -> text (mkLhs2TeXSafe n)
+      JTy_PP p          -> p
+      JTy_Any           -> text "*"
+
+jtyUnPPify :: JTy -> JTy
+jtyUnPPify t
+  = case t of
+      JTy_Op nm p l r   -> JTy_Op nm (jtyUnPPify p) (jtyUnPPify l) (jtyUnPPify r)
+      JTy_Paren t'      -> JTy_Paren (jtyUnPPify t')
+      JTy_PP p          -> JTy_Any
+      _                 -> t
+
+type Binds = Map.Map String JTy
+data FIOut = FIOut {foTy :: JTy, foErrL :: PP_DocL, foCoe :: JTy -> JTy, foBinds :: Binds}
+
+emptyFIOut = FIOut {foTy = JTy_Any, foErrL = [], foCoe = id, foBinds = Map.empty}
+
+foHasErrs :: FIOut -> Bool
+foHasErrs = not . null . foErrL
+
+jtyFitsIn :: JTy -> JTy -> FIOut
+jtyFitsIn ty1 ty2
+  = let res t = emptyFIOut {foTy = t}
+        err p = emptyFIOut {foErrL = [p]}
+        coe fo c = fo {foCoe = c}
+        bnd fo n t = fo {foBinds = Map.insert n t (foBinds fo)}
+        bnds fo fo1 fo2 = fo {foBinds = foBinds fo2 `Map.union` foBinds fo1 `Map.union` foBinds fo}
+        f t1 JTy_Any
+            = res t1
+        f (JTy_Paren t1) (JTy_Paren t2)
+            = f t1 t2
+        f t1 (JTy_Paren t2)
+            = f t1 t2
+        f t1 (JTy_Var v2)
+            = bnd (res t1) v2 t1
+        f (JTy_Op n1 p1 l1 r1) (JTy_Op n2 _ l2 r2)
+            | n1 == n2
+            = foldr1 (\fo1 fo2 -> if foHasErrs fo1 then fo1 else fo2) [lfo,rfo,bnds (coe (res rt) c) lfo rfo]
+            where lfo = f l1 l2
+                  rfo = f r1 r2
+                  rt  = JTy_Op n1 p1 (foTy lfo) (foTy rfo)
+                  c   = \(JTy_Op n p l r) -> JTy_Op n p (foCoe lfo l) (foCoe rfo r)
+        f t1 t2
+            = err ("RULER error, fitsin:" >#< ppJTy ty1 >#< "<=" >#< ppJTy ty2 >|< ", detail:" >#< ppJTy t1 >#< "<=" >#< ppJTy t2)
+     in f ty1 ty2
+
+jtyAppBinds :: Binds -> JTy -> JTy
+jtyAppBinds b jt
+  = let app t = case t of
+                  JTy_Op nm p l r   -> JTy_Op nm (app p) (app l) (app r)
+                  JTy_Paren t'      -> JTy_Paren (app t')
+                  JTy_Var nm        -> maybe t id (Map.lookup nm b)
+                  _                 -> t
+     in app jt
+}
+
+
+ATTR JExpr [ | | ty: JTy ]
+
+SEM JExpr
+  | Op          lhs     .   ty          =   JTy_Op @nm @nmExpr.ty @lExpr.ty @rExpr.ty
+  | Paren       lhs     .   ty          =   JTy_Paren @jExpr.ty
+  | Var         lhs     .   ty          =   JTy_Var @nm
+  | AppTop SelTop Str Empty StrAsIs
+                lhs     .   ty          =   JTy_PP @ppLaTeX
+
+-------------------------------------------------------------------------
+-- Declared stuff (View sets)
+-------------------------------------------------------------------------
+
+{
+data JViewSetGamInfo = JViewSetGamInfo {vwsgiViewNmS :: Set.Set String}
+type JViewSetGam = Map.Map String JViewSetGamInfo
+}
+
+ATTR AllDecl [ | gathJViewSetGam: JViewSetGam | ]
+ATTR AllDecl AllRule AllRExpr AllJudge MbJExpr AllViewSel AllView AGRuleItf [ jViewSetGam: JViewSetGam | | ]
+
+SEM Decl
+  | ViewSet     lhs     .   gathJViewSetGam     =   Map.insert @nm
+                                                        (JViewSetGamInfo {vwsgiViewNmS = @viewSels.viewS})
+                                                        @lhs.gathJViewSetGam
+
+SEM AGItf
+  | AGItf       decls   .   gathJViewSetGam     =   Map.empty
+                        .   jViewSetGam         =   @decls.gathJViewSetGam
+
+-------------------------------------------------------------------------
+-- Declared stuff (Global views)
+-------------------------------------------------------------------------
+
+{
+data JGlobViewGamInfo = JGlobViewGamInfo {gvwgiVarGam :: JVarGam }
+type JGlobViewGam = Map.Map String JGlobViewGamInfo
+}
+
+ATTR AllDecl [ | gathJGlobViewGam: JGlobViewGam | ]
+ATTR AllDecl AllRule AllRExpr AllJudge MbJExpr AGRuleItf AllView [ jGlobViewGam: JGlobViewGam | | ]
+
+SEM Decl
+  | View        view    .   viewJFmtMp          =   []
+                        .   schemeTy            =   JTy_Any
+                lhs     .   gathJGlobViewGam    =   foldr (\n g
+                                                            -> (\v -> Map.insert n v g) . JGlobViewGamInfo
+                                                               . maybe @view.jVarGam ((@view.jVarGam `Map.union`) . gvwgiVarGam)
+                                                               . Map.lookup n $ g
+                                                          )
+                                                          @lhs.gathJGlobViewGam
+                                                          (viewExpandNmL @lhs.jViewSetGam @view.nmL)
+
+SEM AGItf
+  | AGItf       decls   .   gathJGlobViewGam    =   Map.empty
+                        .   jGlobViewGam        =   @decls.gathJGlobViewGam
+
+-------------------------------------------------------------------------
+-- Declared stuff (Scheme views)
+-------------------------------------------------------------------------
+
+{
+data JScmGamInfo = JScmGamInfo {sgiAllViewNmL :: [String], sgiViewNmL :: [String] }
+type JScmGam = Map.Map String JScmGamInfo
+}
+
+ATTR AllDecl [ | gathJScmGam: JScmGam | ]
+ATTR AllDecl AllRule AllRExpr Judge AllView AGRuleItf [ jScmGam: JScmGam | | ]
+
+SEM Decl
+  | Scheme      lhs     .   gathJScmGam =   Map.insert @nm
+                                                (JScmGamInfo {sgiAllViewNmL= Map.keys @viewJFmtGam, sgiViewNmL= map fst @allJFmtMp})
+                                                @lhs.gathJScmGam
+
+SEM AGItf
+  | AGItf       decls   .   gathJScmGam =   Map.empty
+                        .   jScmGam     =   @decls.gathJScmGam
+
+-------------------------------------------------------------------------
+-- Declared stuff (Judgement fmt)
+-------------------------------------------------------------------------
+
+{
+data JFmtGamInfo = JFmtGamInfo {fgiTy :: JTy, fgiFullTy :: JTy, fgiReplTy :: JTy, fgiVarGam :: JVarGam }
+type JFmtGam = Map.Map String JFmtGamInfo
+
+fmtAscL2JFmtGam :: String -> [(String,JFmtGamInfo)] -> JFmtGam
+fmtAscL2JFmtGam prefix = Map.fromList . map (\(n,f) -> (prefix ++ n,f))
+}
+
+ATTR AllDecl [ | gathJFmtGam: JFmtGam | ]
+ATTR AllView [ | viewJFmtMp: {[(String,JFmtGamInfo)]} | ]
+ATTR AllDecl AllRule AllRExpr Judge AllView AGRuleItf [ jFmtGam: JFmtGam | | ]
+ATTR AllView [ schemeTy: JTy | | ]
+
+SEM Decl
+  | Scheme      loc     .   schemeTy    =   @jExpr.ty
+                        .   dfltJFmtMp  =   [("",JFmtGamInfo (jtyUnPPify @schemeTy) @schemeTy @jExprRepl.ty Map.empty)]
+                views   .   viewJFmtMp  =   []
+                loc     .   allJFmtMp   =   @dfltJFmtMp ++ @views.viewJFmtMp
+                        .   viewJFmtGam =   fmtAscL2JFmtGam @nm @allJFmtMp
+                lhs     .   gathJFmtGam =   Map.union @viewJFmtGam @lhs.gathJFmtGam
+
+SEM Decl
+  | Rules       views   .   viewJFmtMp  =   []
+                loc     .   jFmtGam     =   fmtAscL2JFmtGam @nm @views.viewJFmtMp `Map.union` @lhs.jFmtGam
+
+SEM View
+  | View        jExprRepl
+                        .   jVarGam     =   Map.empty
+                lhs     .   viewJFmtMp  =   zip (viewExpandNmL @lhs.jViewSetGam @nmL) (repeat (JFmtGamInfo (jtyUnPPify @lhs.schemeTy) @lhs.schemeTy @jExprRepl.ty @jExprRepl.jVarGam))
+                                            ++ @lhs.viewJFmtMp
+
+
+SEM AGItf
+  | AGItf       decls   .   gathJFmtGam =   Map.empty
+                        .   jFmtGam     =   @decls.gathJFmtGam
+
+-------------------------------------------------------------------------
+-- Checking, retrieving, etc
+-------------------------------------------------------------------------
+
+{
+mkScmFmt :: String -> (JFmtGamInfo -> JTy) -> JFmtGam -> (JTy,[PP_Doc])
+mkScmFmt n t g
+  = case Map.lookup n g of
+      Nothing  -> (JTy_Any,["RULER error, undefined:" >#< n])
+      Just fgi -> let fo = jtyFitsIn (t fgi) (fgiTy fgi)
+                   in (foBinds fo `jtyAppBinds` fgiReplTy fgi,foErrL fo)
+}
+
+SEM Judge
+  | Judge       loc     .   (ty,errs)   =   mkScmFmt (@nm ++ @lhs.view) (const @jExpr.ty) @lhs.jFmtGam
+
+SEM Decl
+  | Rules       loc     .   (schemeTy,errs)
+                                        =   case Map.lookup @nm @lhs.jFmtGam of
+                                              Nothing -> (JTy_Any,["RULER error, no scheme for:" >#< @nm])
+                                              Just fgi -> (fgiTy fgi,[])
+                        .   scmViewNmL  =   maybe [] sgiViewNmL (Map.lookup @nm @lhs.jScmGam)
+
+-------------------------------------------------------------------------
+-- Environment for let bound redefs
+-------------------------------------------------------------------------
+
+{
+data JVarGamInfo = JVarGamInfo {vgiPP :: PP_Doc, vgiIsEmpty :: Bool}
+type JVarGam = Map.Map String JVarGamInfo
+}
+
+ATTR AllNT AGRuleItf [ jVarGam: JVarGam | | ]
+ATTR JExpr View [ | | jVarGam: JVarGam ]
+
+SEM AGItf
+  | AGItf       decls   .   jVarGam     =   Map.empty
+
+SEM JExpr
+  | Let         bExpr   .   jVarGam     =   Map.insert @nm (JVarGamInfo @vExpr.ppLaTeX @vExpr.isEmpty) @lhs.jVarGam
+  | Var         loc     .   (ppLaTeX,isEmpty)
+                                        =   case Map.lookup @nm @lhs.jVarGam of
+                                              Nothing -> (text (mkLhs2TeXSafe @nm),False)
+                                              Just v -> (vgiPP v,vgiIsEmpty v)
+
+-------------------------------------------------------------------------
+-- Selections
+-------------------------------------------------------------------------
+
+ATTR JExpr [ | | selL: {[Maybe (String,PP_Doc)]}]
+
+SEM JExpr
+  | Sel         lhs     .   selL        =   @selMbJExpr.mbPPLaTeX : @jExpr.selL
+  | * - Sel     lhs     .   selL        =   []
+
+-------------------------------------------------------------------------
+-- Depth of selection
+-------------------------------------------------------------------------
+
+ATTR MbJExpr JExpr [ needToParen: Bool | | ]
+
+SEM JExpr
+  | Sel         selMbJExpr  .   needToParen =   False
+                jExpr       .   needToParen =   case @selMbJExpr.mbPPLaTeX of
+                                                  Just ("_",_) -> False
+                                                  _            -> @lhs.needToParen
+  | Paren App Op AppTop SelTop Sel
+                loc         .   needToParen =   True
+
+SEM Decl
+  | Scheme      jExpr       .   needToParen =   True
+                jExprRepl   .   needToParen =   True
+  
+SEM Judge
+  | Judge       jExpr       .   needToParen =   True
+  
+SEM View
+  | View        jExprRepl   .   needToParen =   True
+  
+SEM RExpr
+  | Cond        jExpr       .   needToParen =   True
+  
+-------------------------------------------------------------------------
+-- LaTeX/Lhs2TeX
+-------------------------------------------------------------------------
+
+{
+rulesCmdPre = "rules"
+
+mkLaTeXNm :: String -> String
+mkLaTeXNm = map (\c -> if isAlphaNum c then c else '-')
+
+mkLhs2TeXSafe :: String -> String
+mkLhs2TeXSafe = concat . map (\c -> if c == '|' then "||" else [c])
+
+mkMBox :: PP a => a -> PP_Doc
+mkMBox p = "\\;\\mbox" >|< ppCurly p
+
+mkRuleNm :: String -> String -> PP_Doc
+mkRuleNm r v = "\\textsc" >|< ppCurly (mkLaTeXNm r) >|< (if null v then empty else "_" >|< ppCurly v)
+-- mkRuleNm r v = mkMBox (mkLaTeXNm r ++ if null v then "" else ("$_{" ++ v ++ "}$"))
+
+mkVerb :: PP_Doc -> PP_Doc
+mkVerb p = ppPacked "@" "@" p
+
+switchLaTeXLhs :: PP a => a -> PP_Doc
+switchLaTeXLhs p = ppVBar (" " >|< p >|< " ")
+
+mkInLhs2Tex :: PP_Doc -> PP_Doc
+mkInLhs2Tex p = ppVBar (p >|< " ")
+
+ensureTeXMath :: PP_Doc -> PP_Doc
+ensureTeXMath = mkTexCmdUse "ensuremath"
+
+ppArg :: PP p => p -> PP_Doc
+ppArg p = ppCurly p >|< "%"
+
+mkCmdNmDef :: PP_Doc -> PP_Doc -> PP_Doc
+mkCmdNmDef = mkTexCmdDef "rulerCmdDef"
+
+mkCmdNmUse :: PP_Doc -> PP_Doc
+mkCmdNmUse = mkTexCmdUse "rulerCmdUse"
+
+}
+
+ATTR AGItf AllDecl AllJudge RExpr RExprView AGRuleItf Rule [ | | ppLaTeX USE {>-<} {empty} : PP_Doc ]
+ATTR RExprViews [ | | ppLaTeXL: PP_DocL ]
+ATTR MbJExpr [ | | mbPPLaTeX: {Maybe (String,PP_Doc)} ]
+ATTR JExpr [ | | txt USE {`const`} {""}: String ]
+
+SEM AGItf
+  | AGItf       lhs     .   ppLaTeX     =   (vlist . map text . lines $ @preamble) >-< @decls.ppLaTeX
+
+SEM Decl
+  | Scheme      loc     .   ppScmCmt    =   vlist
+                                            . map (\(n,j) -> "%%" >#< n >#< ", template=" >#< ppJTy (fgiFullTy j) >#< ", view=" >#< ppJTy (fgiReplTy j))
+                                            . Map.toList
+                                            $ @viewJFmtGam
+                lhs     .   ppLaTeX     =   @ppScmCmt
+  | Rules       loc     .   mkNmBase    =   \n -> ppDots ([pp (optBaseNm @lhs.opts),n] ++ map pp @nmSuff)
+                        .   mkNmScm     =   \n -> ppDots [@mkNmBase n,pp "scheme"]
+                        .   mkPP        =   \vw
+                                                ->  let scm = @nm ++ vw
+                                                        nBase = @mkNmBase (pp scm)
+                                                        nScm = @mkNmScm (pp scm)
+                                                        varGam
+                                                          = maybe Map.empty fgiVarGam (Map.lookup scm @jFmtGam)
+                                                            `Map.union` maybe Map.empty gvwgiVarGam (Map.lookup vw @lhs.jGlobViewGam)
+                                                            `Map.union` @lhs.jVarGam
+                                                        rs = [ (ppDots [nBase,n],h,rPP)
+                                                             | (n,h,r) <- @rules.rules
+                                                             , let (rPP,rSel) = ruleEval r vw @lhs.opts @lhs.jGlobViewGam @lhs.jViewSetGam @lhs.jScmGam @jFmtGam varGam
+                                                             , rSel
+                                                             ]
+                                                        ru = concat . map (\(n,h,_) -> [text (if h then "\\qquad" else "\\\\"),mkCmdNmUse n]) $ rs
+                                                        ppSc = mkCmdNmDef nScm (ensureTeXMath . mkInLhs2Tex . ppJTy . fst . mkScmFmt scm fgiFullTy $ @jFmtGam)
+                                                        ppRs = vlist (map (\(n,_,c) -> mkCmdNmDef n c) rs)
+                                                        ppRu = mkCmdNmDef nBase
+                                                                    (    "\\begin{RulesFigure}" >|< ppCurly (mkCmdNmUse nScm) >|< ppCurly (text @info) >|< ppCurly nBase
+                                                                     >-< (if null ru then empty else vlist (tail ru))
+                                                                     >-< "\\end{RulesFigure}"
+                                                                    )
+                                                     in ppRs >-< ppSc >-< ppRu
+                lhs     .   ppLaTeX     =   vlist [ @mkPP v
+                                                  | v <- @scmViewNmL
+                                                  , Set.null @viewSels.viewS || v `Set.member` viewExpandNm @lhs.jViewSetGam (Set.toList @viewSels.viewS)
+                                                  ]
+
+SEM Judge
+  | Judge       lhs     .   ppLaTeX     =   if null @errs then mkInLhs2Tex (ppJTy @ty) else mkInLhs2Tex (ppListSep "" "" "," @errs)
+
+SEM JExpr
+  | Let         loc     .   ppLaTeX     =   @bExpr.ppLaTeX
+  | Str         loc     .   ppLaTeX     =   switchLaTeXLhs (mkMBox (text @str))
+  | StrAsIs     loc     .   ppLaTeX     =   text @str
+  | Paren       loc     .   ppLaTeX     =   (if @lhs.needToParen then ppParens else id) @jExpr.ppLaTeX
+  | AppTop      loc     .   ppLaTeX     =   @jExpr.ppLaTeX
+  | App         loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< @rExpr.ppLaTeX
+  | SelTop      loc     .   ppLaTeXSel  =   let sw = (" " >|<) . switchLaTeXLhs
+                                                over n s = case n of
+                                                             "_" -> sw (text "\\overline{")
+                                                             _   -> sw ("\\stackrel{" >|< sw s >|< "}{")
+                                             in case (@jExpr.ppLaTeX,reverse @jExpr.selL) of
+                                                  (x,[Nothing,Nothing,Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw (text "}")
+                                                  (x,[Nothing,Just (_,s2),Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("^{" >|< sw s2 >|< "}}")
+                                                  (x,[Just (_,s1),Nothing,Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("_{" >|< sw s1 >|< "}}")
+                                                  (x,[Just (_,s1),Just (_,s2),Just (n3,s3)])
+                                                    -> over n3 s3
+                                                       >|< x
+                                                       >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}}")
+                                                  (x,(Just (_,s1):Just (_,s2):_))
+                                                    -> x >|< sw ("_{" >|< sw s1 >|< "}^{" >|< sw s2 >|< "}")
+                                                  (x,(Nothing:Just (_,s2):_))
+                                                    -> x >|< sw ("^{" >|< sw s2 >|< "}")
+                                                  (x,(Just (_,s1):_))
+                                                    -> x >|< sw ("_{" >|< sw s1 >|< "}")
+                                                  (x,_)
+                                                    -> x
+                loc     .   ppLaTeX     =   if @jExpr.isEmpty then empty else @ppLaTeXSel
+  | Op          loc     .   ppLaTeX     =   @lExpr.ppLaTeX >#< mkLhs2TeXSafe @nm >#< @rExpr.ppLaTeX
+  | ViewAs      loc     .   ppLaTeX     =   if @viewIsSel then @jExpr.ppLaTeX else empty
+  | Empty       loc     .   ppLaTeX     =   empty
+
+SEM JExpr
+  | Var         lhs     .   txt         =   @nm
+  | Str StrAsIs lhs     .   txt         =   @str
+  | App SelTop AppTop Op
+                lhs     .   txt         =   ""
+
+SEM MbJExpr
+  | Nothing     lhs     .   mbPPLaTeX   =   Nothing
+  | Just        lhs     .   mbPPLaTeX   =   Just (@jExpr.txt,@jExpr.ppLaTeX)
+
+SEM RExpr
+  | Cond        loc     .   ppLaTeX     =   mkInLhs2Tex @jExpr.ppLaTeX
+
+SEM RExprViews
+  | Nil         lhs     .   ppLaTeXL    =   []
+  | Cons        lhs     .   ppLaTeXL    =   if @hd.viewIsSel then @hd.ppLaTeX : @tl.ppLaTeXL else @tl.ppLaTeXL
+
+SEM Rule
+  | Rule        lhs     .   ppLaTeX     =   "\\ehinfrule" >|< ppCurly (mkLaTeXNm @nm) >|< ppCurly @lhs.view
+                                            >-< ppListSepVV "{%" "}" "\\\\" @pre.ppLaTeXL
+                                            >-< ppListSepVV "{%" "}" "\\\\"  @post.ppLaTeXL
+  | RuleUse     lhs     .   ppLaTeX     =   mkCmdNmUse (ppDots (optBaseNm @lhs.opts : mkLaTeXNm (@aliasNm ++ @lhs.view) : map mkLaTeXNm @aliasNmSuff))
+
+-------------------------------------------------------------------------
+-- Rules to be shown
+-------------------------------------------------------------------------
+
+ATTR AllRule [ | | rules USE {++} {[]}: {[(PP_Doc,Bool,Rule)]} ]
+
+SEM Rule
+  | Rule        lhs     .   rules       =   [(pp (mkLaTeXNm @nm),@layoutHor,@self)]
+  | RuleUse     lhs     .   rules       =   [(pp (mkLaTeXNm @nm),@layoutHor,@self)]
+
+-------------------------------------------------------------------------
+-- Is view selected, according to view selection?
+-------------------------------------------------------------------------
+
+{
+viewIsInSel :: JViewSetGam -> String -> String -> Bool
+viewIsInSel g vw selVw = selVw `Set.member` viewExpandNm g [vw]
+
+viewExpandNm :: JViewSetGam -> [String] -> Set.Set String
+viewExpandNm g
+  = Set.unions . map e
+  where e v = maybe (Set.singleton v) (Set.unions . map e . Set.toList . vwsgiViewNmS) (Map.lookup v g)
+  
+viewExpandNmL :: JViewSetGam -> [String] -> [String]
+viewExpandNmL g = Set.toList . viewExpandNm g
+}
+
+ATTR AllViewSel RExprView Rule AGRuleItf [ | | viewIsSel USE {||} {False}: Bool ]
+ATTR ViewSels [ | | isEmpty USE {||} {True}: Bool ]
+
+SEM ViewSel
+  | One         lhs     .   viewIsSel   =   viewIsInSel @lhs.jViewSetGam @nm @lhs.view
+
+SEM ViewSels
+  | Cons        lhs     .   isEmpty     =   False
+
+SEM RExprView
+  | RExpr       lhs     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
+
+SEM JExpr
+  | ViewAs      loc     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
+
+SEM Rule
+  | *           lhs     .   viewIsSel   =   @viewSels.isEmpty || @lhs.view == "" || @viewSels.viewIsSel
+
+-------------------------------------------------------------------------
+-- All views
+-------------------------------------------------------------------------
+
+ATTR AllViewSel [ | | viewS USE {`Set.union`} {Set.empty}: {Set.Set String} ]
+
+SEM ViewSel
+  | One         lhs     .   viewS       =   Set.singleton @nm
+
+-------------------------------------------------------------------------
+-- Empty expr?
+-------------------------------------------------------------------------
+
+ATTR JExpr [ | | isEmpty USE {&&} {False}: Bool ]
+
+SEM JExpr
+  | Empty       lhs     .   isEmpty     =   True
+  | Sel         lhs     .   isEmpty     =   @jExpr.isEmpty
+  | Let         lhs     .   isEmpty     =   @bExpr.isEmpty
+  | ViewAs      lhs     .   isEmpty     =   not @viewIsSel
+
+-------------------------------------------------------------------------
+-- Self
+-------------------------------------------------------------------------
+
+ATTR Rule AllRExpr AllJudge MbJExpr AllViewSel [ | | self: SELF ]
+
+-------------------------------------------------------------------------
+-- Which view
+-------------------------------------------------------------------------
+
+ATTR AGRuleItf AllRule AllRExpr AllJudge MbJExpr AllViewSel [ view: String | | ]
+
+SEM Decl
+  | *           loc     .   view        =   ""
+
+SEM View
+  | *           loc     .   view        =   ""
+
+-------------------------------------------------------------------------
+-- Names of view
+-------------------------------------------------------------------------
+
+SEM View [ | | nmL: {[String]} ]
+  | View        loc     .   nmL         =   Set.toList @viewSels.viewS
+
+

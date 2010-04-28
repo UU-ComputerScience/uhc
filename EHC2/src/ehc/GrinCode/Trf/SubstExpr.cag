@@ -1,0 +1,79 @@
+This is a transformation on GrExpr, not on a complete GrModule.
+It substitutes variable names by other names (names of variables only, not function names).
+Used in LateInline and MergeCase.
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen grin)
+WRAPPER GrExpr
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SubstExpr} import(qualified Data.Map as Map, {%{EH}GrinCode.Common}, {%{EH}Base.Common}, {%{EH}GrinCode}) export(substExpr)
+
+type Env = Map.Map HsName HsName
+
+substExpr :: Env -> GrExpr -> GrExpr
+substExpr env expr  = let t = wrap_GrExpr (sem_GrExpr expr) 
+                                          (Inh_GrExpr { env_Inh_GrExpr = env })
+                      in grTrf_Syn_GrExpr t
+
+%%]
+
+%%[(8 codegen grin)
+ATTR AllExpr   [ env : Env | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin) hs
+
+findNewVar fm e             = Map.findWithDefault e e fm
+
+findNewAltAnn fm (GrAltAnnCalling a nm) = GrAltAnnCalling a (findNewVar fm nm)
+findNewAltAnn fm ann                    = ann
+
+%%]
+
+
+%%[(8 codegen grin)
+
+SEM GrVal
+  | Var         lhs  .  grTrf  = GrVal_Var                  (findNewVar @lhs.env @nm)
+  | BasicNode   lhs  .  grTrf  = GrVal_BasicNode @tag.grTrf (findNewVar @lhs.env @nm)
+  | EnumNode    lhs  .  grTrf  = GrVal_EnumNode             (findNewVar @lhs.env @nm)
+  | OpaqueNode  lhs  .  grTrf  = GrVal_OpaqueNode           (findNewVar @lhs.env @nm)
+  | PtrNode     lhs  .  grTrf  = GrVal_PtrNode              (findNewVar @lhs.env @nm)
+
+SEM GrVar
+  | Var         lhs  .  grTrf  = GrVar_Var (findNewVar @lhs.env @nm)
+
+SEM GrExpr
+  | App Eval FetchNode FetchField Throw UpdateUnit
+                loc  .  newName  =  findNewVar @lhs.env @nm
+  | App         lhs  .  grTrf    =  GrExpr_App     @newName @argL.grTrf
+  | Eval        lhs  .  grTrf    =  GrExpr_Eval    @newName
+  | FetchNode   lhs  .  grTrf    =  GrExpr_FetchNode  @newName
+  | FetchField  lhs  .  grTrf    =  GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit  lhs  .  grTrf    =  GrExpr_UpdateUnit @newName @val.grTrf
+  | FetchUpdate lhs  .  grTrf    =  GrExpr_FetchUpdate (findNewVar @lhs.env @src) (findNewVar @lhs.env @dst)
+  | Throw       lhs  .  grTrf    =  GrExpr_Throw   @newName
+
+SEM GrAlt
+  | Alt         lhs  .  grTrf    =  GrAlt_Alt (findNewAltAnn @lhs.env @ann) @pat.grTrf @expr.grTrf
+
+
+%%]
+
+%%[(8 codegen grin)
+-- The transformation is meant to be performed on GrExpr.
+-- The following definitions just serve to keep UUAGC from complaining about missing definitions.
+
+SEM GrGlobal
+  | Global      val  .  env    = Map.empty
+
+SEM GrBind
+  | Bind        expr .  env    = Map.empty
+
+%%]

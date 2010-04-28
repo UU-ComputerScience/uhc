@@ -1,0 +1,204 @@
+%%[posterLDL
+\small\sf
+\def\ColNodeBg{yellow}
+\def\ColNodeFg{black}
+\def\ColNodeWhite{white}
+\newcommand{\Node}[4]{node[fill=#1!10,text=#2!80,anchor=north,shape=rectangle,rounded corners,draw] {#4}}
+\newcommand{\PNode}[4]{\Node{#1}{#2}{#3}{\parbox{#3cm}{\begin{center}#4\end{center}}}}
+\newcommand{\PTitle}[1]{{\huge\textbf{#1}}}
+%%[[exportedMacros
+\newcommand{\NTitle}[1]{{\Large\textbf{#1}}}
+\newcommand{\Dots}{\NTitle{...}}
+%%]]
+\let\NL=\\
+\noindent
+\begin{tikzpicture}
+
+% grid & reserve the space
+\draw[step=1cm,white,very thin] (0,0) grid (21,29.6);
+
+% title
+\draw (10.5,29.3) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\FigScaledJPEG{0.3}{MicrosoftResearch}
+\PTitle{%
+ \parbox{.5\linewidth}{\centering LDL\\
+                      {\Large Language Description Language\\
+                              Coping with compiler complexity\\
+                              Arie Middelkoop}}
+}
+\FigScaledPDF{0.7}{UULogoSolRight}
+}
+};
+
+\draw (10.5,25.5) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\NTitle{Observations:}
+\begin{itemize}
+\item Programmers: want programming languages to do as much as possible of their programming job
+\item Users: want guarantees of resulting programs, e.g. no errors
+\end{itemize}
+\vspace{0.4cm}
+\NTitle{Resulting problem:}
+\begin{itemize}
+\item Programming language + compiler: become more complex
+\end{itemize}
+}
+};
+
+% research
+\draw (10.5,21.1) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\NTitle{Research: how to cope with this complexity}
+\begin{itemize}
+\item Generate an efficient implementation from a high-level specification
+\item Generate documentation from the high-level specification
+\item Compose a high-level specification from isolated pieces of specification
+\end{itemize}
+\vspace{0.4cm}
+\NTitle{Outcome:}
+\begin{itemize}
+\item Reduced complexity of the implementation of a compiler
+\item Reduced time-to-marked of language and compiler features
+\item Increased productivity of compiler builders and maintainers
+\end{itemize}
+}
+};
+
+% background of implementation part
+\draw (10.5,14.76) \PNode{\ColNodeBg}{\ColNodeFg}{20.5}{%
+{\large
+\NTitle{From formal specification to implementation:}
+}
+
+  \vspace{9.6 cm}
+};
+
+% type rule column
+\draw (3.7,13.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
+{\large
+\NTitle{Specification:}
+}
+
+  \vspace{1cm}
+  
+  {\tiny
+%%[[wrap=safecode
+scheme expr "Expr" =
+  view E =
+    holes  [ node e: Expr, valGam: ValGam, tyGam: TyGam
+           , kiGam: KiGam,  ty: Ty ]
+  view K =
+    holes [ knTy: Ty | | retain ty: Ty ]
+
+rule e.app "App" =
+    view E =
+      judge F : expr
+        | e = eFun
+        | ty = ty.a -> (ty|Ty)
+      judge A : expr
+        | e  = eArg
+        | ty = ty.a
+      ---
+      judge R : expr
+        | e  = eFun eArg
+        | ty = ty
+    view K =
+      judge F : expr
+          | knTy = ANY -> knTy
+      judge A : expr
+          | knTy = ty.a
+          | ty = _
+%%]
+  }
+  
+  \(\rulerCmdUse{rules3.K.expr.base.e.app}\)
+};
+
+% attribute grammars
+\draw (10.5,13.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
+{\large
+\NTitle{Attribute grammars:}
+}
+
+  \vspace{1cm}
+  {\tiny
+%%@EHRulerRules.2.expr.e.app wrap=boxcode{0.95}
+  }
+};
+
+% naive implementation
+\draw (17.3,13.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
+{\large
+\NTitle{Naive Haskell:}
+}
+{\tiny
+%%[[wrap=boxcode{0.95}
+sem_Expr_App func_ arg_ =
+  (\ _lhsIfinTyCnstr _lhsIgUniq _lhsIknTy _lhsIopts->
+    (let _funcOknTy = [ mkTyVar _uniq1 ] `mkArrow` _lhsIknTy
+         __tup4 = tyArrowArgRes _funcIty
+         _ty = _argItyCnstr |=> _ty_
+         _funcOtyCnstr = _lhsItyCnstr
+         _funcOtyGam = _lhsItyGam
+         _funcOvalGam = _lhsIvalGam
+         _argOfinTyCnstr = _lhsIfinTyCnstr
+         ( _funcIappArgPPL,_funcIappFunNm,_funcIappFunPP) =
+         (func_ _funcOfinTyCnstr _funcOgUniq )
+         ( _argIappArgPPL,_argIappFunNm,_argIappFunPP) =
+         (arg_ _argOfinTyCnstr _argOgUniq _argOknTy)
+     in  (_lhsOty,_lhsOtyCnstr)))
+%%]
+}
+};
+
+% efficient implementation
+\draw (17.3,8.7) \PNode{\ColNodeWhite}{\ColNodeFg}{6}{%
+{\large
+\NTitle{Efficient Haskell:}
+}
+{\tiny
+%%[[wrap=boxcode{0.95}
+sem_Expr_App_1 func_1 arg_1 =
+  (\ _lhsIknTy _lhsItyCnstr ->
+    (case (_lhsItyGam) of
+     { _funcOtyGam | _funcOtyGam `seq` True ->
+      (case (_lhsItyCnstr) of
+       { _funcOtyCnstr | _funcOtyCnstr `seq` True ->
+        (case ([ mkTyVar _uniq1 ] `mkArrow` _lhsIknTy) of
+         { _funcOknTy | _funcOknTy `seq` True ->
+          (let internalCps_ (#  _argIty,_argItyCnstr,arg_2 #) =
+           (case (_argItyCnstr |=> _ty_) of
+            { _ty | _ty `seq` True ->
+             (case ((sem_Expr_App_2 _ty _funcIty _lhsItyCnstr)) of
+              { ( sem_Expr_2) ->
+                (#  _lhsOty,_lhsOtyCnstr,sem_Expr_2 #) }) }) }) }) })
+           in  (internalCps_ (arg_1 _argOknTy _argOtyCnstr)))
+%%]
+}
+};
+
+
+% state of research
+\draw (6,3.63) \PNode{\ColNodeBg}{\ColNodeFg}{11.5}{%
+{%\large
+\NTitle{Current state of the research}\\
+\begin{Itemize}
+\item Investigated complexity problems of compiler construction
+\item Implemented different code generation strategies for attribute grammars
+\item Currently, focus on generation of an efficient implementation
+\end{Itemize}
+}};
+
+% more info
+\draw (16.76,3.63) \PNode{\ColNodeBg}{\ColNodeFg}{8}{%
+{%\large
+\NTitle{More information}\\
+\begin{Itemize}
+\item Promotor: Prof. Dr. S. Doaitse Swierstra
+\item Copromotor: Dr. Atze Dijkstra
+\item Part of the EH project, see\\\texttt{http://www.cs.uu.nl/wiki/Ehc/WebHome}
+\end{Itemize}
+}};
+
+\end{tikzpicture}
+%%]

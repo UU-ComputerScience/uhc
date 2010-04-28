@@ -1,0 +1,129 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Incremental computation of global ftv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+For generalization the free type variables (tvar) of the global environment are required.
+Presence of a tvar in this set means no generalization can take place over that tvar.
+Straightforward computation -compute this set for every def- does not scale up.
+Here the global ftv is computed separately and incrementally.
+
+Although this file is separated, it should be considered part of EH/Infer, and care should be taken
+that modifications to the update of environments (valGam, tyGam, ...) are accompanied by changes in
+the corresponding free var admin here.
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of free tvars
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Assumption:
+outside modules, environments have no free tvars.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utilities
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99 hs
+setSubst :: VarMp -> TyVarIdS -> TyVarIdS
+setSubst m s = ftvSet $ (m |=>) $ map mkTyVar $ Set.toList s
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of free tvars: for types of values
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 hmtyinfer)
+ATTR AllNT [ valTyGlobFreeTvarS: TyVarIdS | | ]
+%%]
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   valTyGlobFreeTvarS  =   Set.empty
+
+SEM Expr
+  | Let         loc         .   valTyUpdFreeTvarS   =   setSubst @tyVarMpDeclsL0 @lhs.valTyGlobFreeTvarS
+                decls       .   valTyGlobFreeTvarS  =   ftvSet @valGam_l_ `Set.union` @lhs.valTyGlobFreeTvarS
+                body        .   valTyGlobFreeTvarS  =   ftvSet @quValGam_ex_subst `Set.union` @valTyUpdFreeTvarS
+  | Lam			body		.	valTyGlobFreeTvarS  =   ftvSet (gamTop @arg.valGam) `Set.union` @lhs.valTyGlobFreeTvarS
+  | TypeAs      loc         .   valTyUpdFreeTvarS   =   setSubst @lhs.tyVarMp @lhs.valTyGlobFreeTvarS
+
+SEM CaseAlt
+  | Pat			expr		.	valTyGlobFreeTvarS  =   ftvSet (gamTop @patExpr.valGam) `Set.union` @lhs.valTyGlobFreeTvarS
+
+SEM Decl
+  | Instance
+  				decls		.	valTyGlobFreeTvarS  =   ftvSet (gamTop @decls.patValGam) `Set.union` @lhs.valTyGlobFreeTvarS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of free tvars: for types of types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 hmtyinfer)
+ATTR AllNT [ tyTyGlobFreeTvarS: TyVarIdS | | ]
+%%]
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   tyTyGlobFreeTvarS   =   Set.empty
+
+SEM Expr
+  | Let         loc         .   tyTyUpdFreeTvarS    =   setSubst @tyVarMpDeclsL0 @lhs.tyTyGlobFreeTvarS
+                decls       .   tyTyGlobFreeTvarS   =   ftvSet @tyGam_l_ `Set.union` @lhs.tyTyGlobFreeTvarS
+                body        .   tyTyGlobFreeTvarS   =   ftvSet @lQuTyGam `Set.union` @tyTyUpdFreeTvarS
+  | Lam			body		.	tyTyGlobFreeTvarS   =   ftvSet (gamTop @arg.tyGam) `Set.union` @lhs.tyTyGlobFreeTvarS
+  | TypeAs      loc         .   tyTyUpdFreeTvarS    =   setSubst @lhs.tyVarMp @lhs.tyTyGlobFreeTvarS
+                expr        .   tyTyGlobFreeTvarS   =   @tyVarWildS `Set.union` @lhs.tyTyGlobFreeTvarS
+
+SEM CaseAlt
+  | Pat			expr		.	tyTyGlobFreeTvarS   =   ftvSet (gamTop @patExpr.tyGam) `Set.union` @lhs.tyTyGlobFreeTvarS
+
+SEM Decl
+  | Class Instance
+  				decls		.	tyTyGlobFreeTvarS   =   ftvSet (gamTop @tyPrExpr.tyGam) `Set.union` @lhs.tyTyGlobFreeTvarS
+%%]
+
+%%[(99 hmtyinfer)
+ATTR AllNT [ tyTyTySigFreeTvarS: TyVarIdS | | ]		-- specifically for Decl_TySig, to avoid dependence on pattern intro'd stuff
+
+SEM AGItf
+  | AGItf       expr        .   tyTyTySigFreeTvarS  =   Set.empty
+
+SEM Expr
+  | Let         decls       .   tyTyTySigFreeTvarS  =   @lhs.tyTyTySigFreeTvarS
+                body        .   tyTyTySigFreeTvarS  =   ftvSet @lQuTyGam `Set.union` @lhs.tyTyTySigFreeTvarS
+
+SEM Decl
+  | TySig       loc         .   tyTyUpdFreeTvarS    =   @lhs.tyTyTySigFreeTvarS
+  | Class Instance
+  				decls		.	tyTyTySigFreeTvarS  =   ftvSet (gamTop @tyPrExpr.tyGam) `Set.union` @lhs.tyTyTySigFreeTvarS
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of free tvars: for kinds of types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(99 hmtyinfer)
+ATTR AllNT [ tyKiGlobFreeTvarS: TyVarIdS | | ]
+%%]
+
+%%[(99 hmtyinfer)
+SEM AGItf
+  | AGItf       expr        .   tyKiGlobFreeTvarS   =   Set.empty
+
+SEM Expr
+  | Let         loc         .   tyKiUpdFreeTvarS    =   setSubst @decls.kiVarMp @lhs.tyKiGlobFreeTvarS
+                decls       .   tyKiGlobFreeTvarS   =   ftvSet @tyKiGam_l_ `Set.union` @lhs.tyKiGlobFreeTvarS
+                body        .   tyKiGlobFreeTvarS   =   ftvSet @lQuTyKiGam_ex_subst `Set.union` setSubst @bodyTyKiVarMp2 @tyKiUpdFreeTvarS
+  | Lam			body		.	tyKiGlobFreeTvarS   =   ftvSet (@arg.kiVarMp |=> gamTop @arg.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+--  | TypeAs      loc         .   tyKiUpdFreeTvarS    =   setSubst @lhs.kiVarMp @lhs.tyKiGlobFreeTvarS
+
+SEM CaseAlt
+  | Pat			expr		.	tyKiGlobFreeTvarS   =   ftvSet (@patExpr.kiVarMp |=> gamTop @patExpr.tyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+
+SEM Decl
+  | Instance
+  				decls		.	tyKiGlobFreeTvarS   =   ftvSet ({- @decls.kiVarMp |=> -} gamTop @decls.patTyKiGam) `Set.union` @lhs.tyKiGlobFreeTvarS
+%%]
+

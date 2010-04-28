@@ -1,0 +1,17 @@
+% the `doubleequals' macro is due to Jeremy Gibbons
+% \def\doubleequals{\mathrel{\unitlength 0.01em
+%   \begin{picture}(78,40)
+%     \put(7,34){\line(1,0){25}} \put(45,34){\line(1,0){25}}
+%     \put(7,14){\line(1,0){25}} \put(45,14){\line(1,0){25}}
+%   \end{picture}}}
+
+% This is a test for an ``alternative'' double equals symbol.
+% The symbol provided by Jeremy looks good in print, but is
+% rendered quite differently on screen from the normal equality
+% symbol. Here, we use a different approach, resizing the
+% original symbol.
+\newcommand*{\doubleequals}{%
+  \mathrel{%
+    \scalebox{.425}[1]{=}%
+    \scalebox{.15}[1]{\phantom{=}}%
+    \scalebox{.425}[1]{=}}}

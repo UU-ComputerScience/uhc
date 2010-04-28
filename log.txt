@@ -82,4 +82,16 @@ ids 1272 refers to itself in a GrTag_Fun.
 6527, 2809 gets GrTag_Fun_1272
 
 
+16/04:
+With 124 on and specConst, FoldlTestSimple gives no output.
+With 124 off it does give output.
+With 124 on and specConst off, FoldlTestSimple gives output.
 
+
+19/04:
+SpecConst cannot be used with the new inlining. I'm not sure why but all the relevant code dissappears.
+
+23/04:
+undefined reference errors during make99/ehc mean a shuffle error.
+
+throw away build and remake to get module Pretty not found error. make 99/ehc output log contains the shuffle error

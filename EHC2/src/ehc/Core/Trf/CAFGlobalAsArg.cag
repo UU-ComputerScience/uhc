@@ -1,0 +1,151 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Globals as args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Similar to Trf/LamGlobalAsArg, but for CAFs.
+Assumes:
+- lambdas are already treated by Trf/LamGlobalAsArg, so no free vars of lambdas need to be taken care of.
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.CAFGlobalAsArg} import(EH.Util.Utils,Data.Maybe,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfCAFGlobalAsArg)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Core.Utils})
+%%]
+
+
+%%[(8 codegen) hs import(qualified EH.Util.FastSeq as Seq)
+%%]
+
+-- for debug
+%%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+%%[(8 codegen) hs import(Debug.Trace)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev},{Core/Trf/CommonGlobalAsArg},{Core/Trf/CommonFloat})
+WRAPPER CodeAGItf
+%%]
+
+%%[(9 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfCAFGlobalAsArg :: CModule -> CModule
+cmodTrfCAFGlobalAsArg cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf)
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | gUniq: Int | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   gUniq       =   0
+
+SEM CBind
+  | Bind        loc         .   lUniq1      =   @lhs.gUniq
+                            .   lUniq2      =   @lUniq1 + 1
+                expr        .   gUniq       =   @lUniq2 + Map.size @argMpNew
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Free var of CAFs for which arg lifting is done
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ fvSCafMp: FvSMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   fvSCafMp    =   Map.empty
+
+SEM CExpr
+  | Let         loc         .   fvSCafMp    =   (let  start varS = fvsClosure @binds.bindVarS Set.empty varS @lhs.fvSCafMp @binds.fvSMp
+                                                 in   case @categ of
+                                                        CBindings_Rec
+                                                          ->  fvsTransClosure lm m
+                                                          where (m,lm)  = start (@lhs.varS `Set.union` @binds.bindVarS)
+                                                        _ ->  m
+                                                          where (m,_)   = start @lhs.varS
+                                                )
+                                                `Map.union` @lhs.fvSCafMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of argument names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ argMp: CVarReplNmMp | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   argMp       =   Map.empty
+
+SEM CBind
+  | Bind        expr        .   argMp       =   @argMpNew `Map.union` @lhs.argMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBind
+  | Bind        loc         .   (argOldL,argNewL,argMpNew)
+                                            =   if @loc.isClosurableBind
+                                                then  let  mbvs      = Map.lookup @nm @lhs.fvSCafMp
+                                                           vs        = panicJust ("CAFGlobalAsArg.CBind.Bind.argLevL: " ++ show @nm ++ " not found in " ++ show @lhs.fvSCafMp) mbvs  -- maybe Set.empty id mbvs
+                                                           argLevL   = fvLAsArg @lhs.introCVarIntroMp vs
+                                                      in   fvLArgRepl @lUniq2 argLevL
+                                                else  ([], [], Map.empty)
+%%]
+
+%%[(8 codegen)
+ATTR AllBind   [ | | varBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
+                     lamBindSq USE {`Seq.union`} {Seq.empty}: {Seq.Seq CBind}
+               ]
+
+SEM CBind
+  | Bind        loc         .   nmLam       =   mkFvNm @lUniq1 @nm
+                            .   cTrfVar     =   mkCBind1Metas @nm @bindMeta.cTrf
+                                                $ mkCExprAppMeta (CExpr_Var @nmLam)
+                                                $ map (\(n,cvi) -> (fvVarRepl @lhs.argMp n,cviMeta cvi)) @argOldL
+                            .   cTrfLam     =   mkCBind1 @nmLam
+                                                $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf
+                lhs         .   (varBindSq,lamBindSq)
+                                            =   if null @argNewL
+                                                then (Seq.singleton @cTrf    , Seq.empty             )
+                                                else (Seq.singleton @cTrfVar , Seq.singleton @cTrfLam)
+  | FFI
+%%[[94
+    FFE
+%%]]
+                lhs         .   varBindSq   =   Seq.singleton @cTrf
+
+SEM CExpr
+  | Var         lhs         .   cTrf        =   fvVarRepl @lhs.argMp @nm
+  | Let         lhs         .   cTrf        =   mkCExprLet CBindings_Plain (Seq.toList @binds.lamBindSq)
+                                                $ mkCExprLet @categ (Seq.toList @binds.varBindSq)
+                                                $ @body.cTrf
+%%]

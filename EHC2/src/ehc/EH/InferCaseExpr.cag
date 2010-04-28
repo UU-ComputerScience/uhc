@@ -1,0 +1,68 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type inferencing for Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern type of Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5 hmtyinfer)
+ATTR AllCase [ knPatTy: Ty | | patTy: Ty ]
+
+SEM Expr
+  | Case        alts        .   knPatTy             =   @expr.ty
+                            .   patTyVarMp          =   @expr.tyVarMp
+                            .   tyVarMp             =   @alts.patTyVarMp
+
+SEM CaseAlt
+  | Pat         patExpr     .   patTyVarMp          =   @lhs.patTyVarMp
+                            .   knTy                =   @lhs.knPatTy
+                            .   valGam              =   gamPushNew @lhs.valGam
+                lhs         .   patTyVarMp          =   @patExpr.patTyVarMp
+                            .   patTy               =   @patExpr.ty
+
+SEM CaseAlts
+  | Nil         lhs         .   patTy               =   @lhs.knPatTy
+  | Cons        tl          .   knPatTy             =   @lhs.knPatTy
+%%]
+
+%%[(6 hmtyinfer)
+SEM CaseAlt
+  | Pat         patExpr     .   tyGam               =   gamPushNew @lhs.tyGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of Case Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(5 hmtyinfer)
+ATTR AllCase [ knTy: Ty | | ty: Ty ]
+
+SEM Expr
+  | Case        expr        .   knTy                =   mkTyVar @lUniq2
+                alts        .   knTy                =   @lhs.knTy
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+
+SEM CaseAlt
+  | Pat         expr        .   tyVarMp             =   @lhs.tyVarMp
+                lhs         .   ty                  =   @expr.ty
+                            .   tyVarMp             =   @expr.tyVarMp
+
+SEM CaseAlts
+  | Nil         lhs         .   ty                  =   @lhs.knTy
+  | Cons        hd          .   knTy                =   @lhs.knTy
+                tl          .   knTy                =   @lhs.knTy -- @hd.ty
+%%]
+                lhs			.	ty					=	@hd.ty
+
+%%[(97 hmtyinfer)
+SEM CaseAlt
+  | Pat         patExpr     .   tyVarMp             =   @lhs.tyVarMp
+                expr        .   tyVarMp             :=  @patExpr.tyVarMp
+%%]
+

@@ -1,0 +1,69 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique id per AST node
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT [ | gUniq: UID | ]
+%%]
+
+%%[8
+ATTR AGItf [ gUniq: UID | | ]
+%%]
+
+%%[1.AGItf
+SEM AGItf
+    | AGItf
+        loc             .   gUniq       =   uidStart
+%%]
+
+%%[8 -1.AGItf
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique generation, obsolete because replaced by UNIQUEREF mechanism of AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 obsolete)
+SEM Declaration
+    | PatternBinding
+        (pattern.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
+
+SEM Expression
+    | SectionApplication
+        (leftExpression.gUniq,loc.lUniq_1_nm)
+                                        =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[(1 obsolete)
+SEM FunctionBinding
+    | FunctionBinding
+        (lefthandside.gUniq,loc.lUniq)  =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[(8 obsolete)
+SEM Expression
+  | Case
+        (expression.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[(9 obsolete)
+SEM Declaration
+    | Class Instance
+        (context.gUniq,loc.lUniq)       =   mkNewLevUID @lhs.gUniq
+    | InstanceUseImplicitly
+        (expression.gUniq,loc.lUniq)    =   mkNewLevUID @lhs.gUniq
+    | Default
+        (types.gUniq,loc.lUniq)         =   mkNewLevUID @lhs.gUniq
+%%]
+
+%%[(95 obsolete)
+SEM Deriving
+    | Deriving
+        (lhs.gUniq,loc.lUniq)           =   mkNewLevUID @lhs.gUniq
+%%]
+

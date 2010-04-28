@@ -1,0 +1,771 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pretty printed source
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT AGItf [ | | pp USE {>-<} {empty} : PP_Doc ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Body
+SEM Body
+    | Body
+        lhs         .   pp          =  
+%%[[20
+                                        @importdeclarations.pp >-< 
+%%]]
+                                        @declarations.pp >-< @ppExtra
+        loc         .   ppExtra     =   empty
+%%]
+
+%%[20
+SEM AGItf
+	| AGItf
+		lhs			.	pp			=	@ppExtra >-< @module.pp
+		loc			.	ppExtra		=	empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Declarations    
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+ppInstNm :: Bool -> Maybe HsName -> PP_Doc
+ppInstNm useimplicitly maybeinstancename
+  = maybe empty (\n -> " " >|< n >#< (if useimplicitly then "<:" else "::")) maybeinstancename
+%%]
+
+%%[1
+SEM MaybeDeclarations
+    | Just
+        loc         .   pp          =   "where" >#< @just.pp
+%%]
+
+%%[1
+SEM Declaration
+    | PatternBinding
+        loc         .   pp          =   @pattern.pp >#< @righthandside.pp
+        righthandside
+                    .   sepPP       =   pp "="
+    | TypeSignature
+        loc         .   pp          =   ppCommas' @names >#< "::" >#< @type.pp
+    | Fixity
+        loc         .   pp          =   @fixity >#< maybe empty pp @priority >#< ppCommas' @operators
+    | Empty
+        loc         .   pp          =   empty
+%%]
+%%[5
+    | Data
+        loc         .   pp          =   "data" >#< @simpletype.pp
+                                               >#< "=" >#< @constructors.pp
+%%[[95
+                                               >-< ppParensCommas @derivings.ppL
+%%]]
+    | Newtype
+        loc         .   pp          =   "newtype" >#< @simpletype.pp
+                                                  >#< "=" >#< @constructors.pp
+%%[[95
+                                                  >-< ppParensCommas @derivings.ppL
+%%]]
+%%]
+%%[6
+    | KindSignature
+        loc         .   pp          =   ppCommas' @names >#< "::" >#< @kind.pp
+%%]
+%%[(8 codegen)
+    | ForeignImport
+        loc         .   pp          =   "foreign import" >#< @callconvention >#< @safety >#< maybe empty (pp.show) @importname >#< @name >#< "::" >#< @type.pp
+%%]
+%%[9
+    | Class
+        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @simpletype.pp
+%%[[15
+                                        >#< "|" >#< @dependencies.pp
+%%]]
+                                        >-< indent 2 @where.pp
+    | Instance
+        loc         .   pp          =   "instance" >|< ppInstNm @useimplicitly @maybeinstancename
+                                        >#< ppParens @context.pp >#< "=>" >#< @name >#< ppSpaces @types.ppL
+                                        >-< indent 2 @where.pp
+    | InstanceUseImplicitly
+        loc         .   pp          =   "instance" >#< @expression.pp >#< "<:" >#< @name >#< ppSpaces @types.ppL
+    | Default
+        loc         .   pp          =   "default" >#< ppParensCommas @types.ppL
+%%]
+%%[11
+    | Type
+        loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
+%%]
+%%[99
+    | Pragma
+        loc         .   pp          =   "{-#" >#< @pragma.pp >#< "#-}"
+%%]
+
+%%[15
+SEM FunctionalDependency
+    | Dependency
+        loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
+%%]
+
+%%[(94 codegen)
+SEM Declaration
+    | ForeignExport
+        loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        loc         .   pp          =   ppInstNm @useimplicitly @maybeinstancename >#< @name
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pragms          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+SEM Pragma
+  | Language
+  		loc			.	pp			=	"LANGUAGE" >#< ppCommas @pragmas
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kinds          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+SEM Kind
+    | NormalApplication
+        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
+                                                  @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+    | InfixApplication
+        loc         .   pp          =   let args = [@leftKind.pp,@rightKind.pp]
+        								in	ppAppTop  (@operator.conNm,@operator.pp)
+                                                  	  args (@operator.pp >#< ppSpaces args)
+    | Constructor
+        loc         .   pp          =   ppCon @name
+    | Parenthesized
+        loc         .   pp          =   ppParens @kind.pp
+    | Variable
+        loc         .   pp          =   pp @name
+    | Forall
+        loc         .   pp          =   "forall" >#< ppSpaces @kindvariables >#< "." >#< @kind.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Types           
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Type
+    | NormalApplication
+        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
+                                                  @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+    | InfixApplication
+        loc         .   pp          =   let args = [@leftType.pp,@rightType.pp]
+        								in	ppAppTop  (@operator.conNm,@operator.pp)
+                                                  	  args (@operator.pp >#< ppSpaces args)
+    | Constructor
+        loc         .   pp          =   ppCon @name
+    | Parenthesized
+        loc         .   pp          =   ppParens @type.pp
+%%]
+%%[2
+    | Wildcard
+        loc         .   pp          =   pp "..."
+%%]
+%%[3
+    | Variable
+        loc         .   pp          =   pp @name
+    | NamedWildcard
+        loc         .   pp          =   "%" >|< @name
+%%]
+%%[4
+    | Forall
+        loc         .   pp          =   "forall" >#< ppSpaces @typevariables >#< "." >#< @type.pp
+    | Exists
+        loc         .   pp          =   "exists" >#< ppSpaces @typevariables >#< "." >#< @type.pp
+%%]
+%%[77
+    | Rowtype
+        loc         .   pp          =   EH.mkRngEH @range XX
+        rowtype                  : RowType
+%%]
+%%[7
+    | RowUpdate
+        loc         .   pp          =   ppAppTop  (hsnRow,mkPPAppFun hsnRowEmpty @type.pp)
+                                                  @rowTypeUpdates.ppL @type.pp
+    | RowEmpty
+        loc         .   pp          =   hsnORow >|< hsnCRow
+    | RowRecUpdate
+        loc         .   pp          =   ppAppTop  (hsnRec,mkPPAppFun hsnRowEmpty @type.pp)
+                                                  @rowTypeUpdates.ppL @type.pp
+    | RowRecEmpty
+        loc         .   pp          =   pp hsnRec
+    | RowSumUpdate
+        loc         .   pp          =   ppAppTop  (hsnSum,mkPPAppFun hsnRowEmpty @type.pp)
+                                                  @rowTypeUpdates.ppL @type.pp
+    | RowSumEmpty
+        loc         .   pp          =   pp hsnSum
+%%]
+%%[9
+    | Qualified
+        loc         .   pp          =   @context.pp >#< "=>" >#< @type.pp
+%%]
+    | Implicits
+        loc         .   pp          =   EH.mkRngEH @range EH.TyExpr_Impls
+    | NoImplicits
+        loc         .   pp          =   EH.mkRngEH @range EH.TyExpr_NoImpls
+
+%%[5
+SEM SimpleType
+    | SimpleType
+        loc         .   pp          =   @name >#< ppSpaces @typevariables
+%%]
+
+%%[9
+SEM ContextItem
+    | Class
+        loc         .   pp          =   @name >#< ppSpaces @types.ppL
+    | Implicits
+        loc         .   pp          =   pp "..."
+    | NoImplicits
+        loc         .   pp          =   empty
+%%]
+%%[10
+SEM ContextItem
+    | RowLacksLabel
+        loc         .   pp          =   @name >|< "\\" >|< @rowvariable
+%%]
+%%[13
+SEM ContextItem
+    | Arrow
+        loc         .   pp          =   @argument.pp >#< "->" >#< @result.pp
+    | Forall
+        loc         .   pp          =   "forall" >#< ppSpaces @typevariables >#< "." >#< @context.pp
+%%]
+
+%%[5.Constructor
+SEM Constructor
+    | Constructor 
+        loc         .   pp          =   @constructor >#< ppSpaces @types.ppL
+    | Infix
+        loc         .   pp          =   @leftType.pp >#< @constructorOperator >#< @rightType.pp
+%%]
+%%[7.Constructor -5.Constructor
+SEM Constructor
+    | Constructor 
+        loc         .   pp          =   @constructor >#< ppSpaces @types.ppL
+    | Infix
+        loc         .   pp          =   @leftType.pp >#< @constructorOperator >#< @rightType.pp
+    | Record
+        loc         .   pp          =   @constructor >#< ppCurlysCommas' @fieldDeclarations.ppL
+%%]
+%%[9
+  	| Contexted
+  		loc			.	pp			=	@context.pp >#< "=>" >#< @constructor.pp
+%%]
+
+%%[7
+SEM FieldDeclaration
+    | FieldDeclaration
+        loc         .   pp          =   ppCommas' @names >#< "::" >#< @type.pp
+%%]
+
+%%[5
+SEM AnnotatedType
+    | Type -- ToDo: or _Type?
+        loc         .   pp          =   (if @strict then pp "!" else empty) >|< @type.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expressions     
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Expression
+    | Variable
+        loc         .   pp          =   pp @name
+    | Constructor
+        loc         .   pp          =   ppCon @name
+    | TupleConstructor
+        loc         .   pp          =   ppParens (replicate (@arity - 1) (','))
+    | Parenthesized
+        loc         .   pp          =   ppParens @expression.pp
+    | NormalApplication
+        loc         .   pp          =   ppAppTop  (@function.conNm,@function.pp)
+                                                  @arguments.ppL (@function.pp >#< ppSpaces @arguments.ppL)
+    | InfixApplication
+        loc         .   pp          =   @leftExpression.pp >#< @operator.pp >#< @rightExpression.pp
+    | SectionApplication
+        loc         .   pp          =   let e = case (@leftExpression.ppMb,@rightExpression.ppMb) of
+                                                  (Just l ,Nothing) -> l >#< @operator.pp
+                                                  (Nothing,Just r ) ->       @operator.pp >#< r
+                                                  (Nothing,Nothing) ->       @operator.pp
+                                        in  ppParens e
+    | Lambda
+        loc         .   pp          =   "\\" >|< ppSpaces @patterns.ppL >#< "->" >#< @expression.pp
+    | Let
+%%[[1
+        loc         .   pp          =   "let" >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%][8
+        loc         .   pp          =   "let" >|< (if @isStrict then pp "!" else empty) >#< (@declarations.pp >-< @ppExtra) >#< "in" >#< @expression.pp
+%%]]
+		loc			.	ppExtra		=	empty
+    | Tuple
+        loc         .   pp          =   ppParensCommas @expressions.ppL
+    | Typed
+        loc         .   pp          =   @expression.pp >#< "::" >#< @type.pp
+    | Negate
+        loc         .   pp          =   "-" >#< @expression.pp
+%%]
+%%[4
+    | ImpredicativeApplication
+        loc         .   pp          =   @function.pp >#< "~" >|< @arguments.pp
+%%]
+%%[5
+    | If
+        loc         .   pp          =   "if" >#< @guardExpression.pp >-< "then" >#< @thenExpression.pp >-< "else" >#< @elseExpression.pp
+    | Case
+        loc         .   pp          =   "case" >#< @expression.pp >#< "of" >-< indent 2 @alternatives.pp
+    | List
+        loc         .   pp          =   ppBracketsCommas @expressions.ppL
+    | Enum
+        loc         .   pp          =   case (@from.pp,@then.ppMb,@to.ppMb) of
+                                          (fr,Just th,Just to) -> ppBrackets (fr >|< ","  >#< th >#< ".." >#< to)
+                                          (fr,Just th,Nothing) -> ppBrackets (fr >|< ","  >#< th >#< ".."       )
+                                          (fr,Nothing,Just to) -> ppBrackets (fr >#< ".." >#< to                )
+                                          (fr,Nothing,Nothing) -> ppBrackets (fr >#< ".."                       )
+    | Comprehension
+        loc         .   pp          =   ppBrackets (@expression.pp >#< "|" >#< ppCommas' @qualifiers.ppL)
+%%]
+%%[7
+    | RecordConstruction
+        loc         .   pp          =   @name >#< ppCurlysCommas' @recordExpressionBindings.ppL
+    | RecordUpdate
+        loc         .   pp          =   @expression.pp >#< ppCurlysCommas' @recordExpressionBindings.ppL
+    | RowRecordUpdate
+        loc         .   pp          =   ppAppTop  (hsnRec,mkPPAppFun hsnRowEmpty @expression.pp)
+                                                  @rowRecordExpressionUpdates.ppL @expression.pp
+    | RowRecordEmpty
+        loc         .   pp          =   hsnORec >|< hsnCRec
+    | RowRecordSelect
+        loc         .   pp          =   @expression.pp >|< "->" >|< @name
+%%]
+%%[77
+    | RecordConstruction
+        loc         .   pp          =   EH.mkRngEH @range XX
+        name                     : Name
+        recordExpressionBindings : RecordExpressionBindings
+    | RecordUpdate
+        loc         .   pp          =   EH.mkRngEH @range XX
+        expression               : Expression
+        recordExpressionBindings : RecordExpressionBindings
+%%]
+%%[9
+    | Do
+        loc         .   pp          =   "do" >#< vlist @statements.ppL
+%%]
+%%[12
+    | ImplicitApplication
+        loc         .   pp          =   @function.pp >#< ppListSep hsnOImpl hsnCImpl ", " @arguments.ppL
+    | ImplicitLambda
+        loc         .   pp          =   "\\" >|< ppListSep hsnOImpl hsnCImpl ", " @patterns.ppL >#< "->" >#< @expression.pp
+%%]
+-- Helium
+%%[55
+    | NegateFloat
+        loc         .   pp          =   EH.mkRngEH @range XX
+        expression               : Expression
+%%]
+
+%%[12
+SEM ContextedExpression
+    | Contexted
+        loc         .   pp          =   @expression.pp >#< "<:" >#< @context.pp
+%%]
+
+%%[9
+SEM Statement
+    | Let
+        loc         .   pp          =   "let" >#< @declarations.pp
+    | Generator
+        loc         .   pp          =   @pattern.pp >#< "<-" >#< @expression.pp
+%%]
+    | Empty
+        loc         .   pp          =   EH.mkRngEH @range XX
+
+%%[5
+SEM Qualifier
+    | Let
+        loc         .   pp          =   "let" >#< @declarations.pp
+    | Generator
+        loc         .   pp          =   @pattern.pp >#< "<-" >#< @expression.pp
+%%]
+
+%%[5
+SEM Alternative
+    | Alternative
+        loc         .   pp          =   @pattern.pp >#< @righthandside.pp
+        righthandside
+                    .   sepPP       =   pp "->"
+
+SEM GuardedExpression -- ToDo: or _Guard?
+    | GuardedExpression
+        loc         .   pp          =   "|" >#< @guard.pp >#< @lhs.sepPP >#< @expression.pp
+%%]
+
+%%[7
+SEM RecordExpressionBinding
+    | Binding
+        loc         .   pp          =   @name >|< "=" >|< @expression.pp
+%%]
+
+%%[7
+SEM RowRecordExpressionUpdate
+    | Extends
+        loc         .   pp          =   @name >|< "=" >|< @expression.pp
+    | Update
+        loc         .   pp          =   @name >|< ":=" >|< @expression.pp
+
+SEM RowRecordPatternBinding
+    | Binding
+        loc         .   pp          =   case @name of
+                                          Just n  -> n >|< "=" >|< @pattern.pp
+                                          Nothing -> @pattern.pp
+
+SEM RowTypeUpdate
+    | Extends
+        loc         .   pp          =   @name >|< "::" >|< @type.pp
+%%]
+
+%%[7
+SEM RecordPatternBinding
+    | Binding
+        loc         .   pp          =   @name >|< "=" >|< @pattern.pp
+    | Pun
+        loc         .   pp          =   pp @name
+%%]
+
+%%[1
+SEM FunctionBinding
+    | FunctionBinding
+        loc         .   pp          =   @lefthandside.pp >#< @righthandside.pp
+        righthandside
+                    .   sepPP       =   pp "="
+%%]
+
+%%[1
+SEM LeftHandSide
+    | Function
+        loc         .   pp          =   @name >#< ppSpaces @patterns.ppL
+    | Infix
+        loc         .   pp          =   @leftPattern.pp >#< @operator >#< @rightPattern.pp
+    | Parenthesized
+        loc         .   pp          =   ppParens @lefthandside.pp >#< ppSpaces @patterns.ppL
+%%]
+%%[4
+    | Typed
+        loc         .   pp          =   @lefthandside.pp >#< "::" >#< @type.pp
+%%]
+
+%%[1
+SEM RightHandSide
+    | Expression
+        loc         .   pp          =   @lhs.sepPP >#< @expression.pp >-< @where.pp
+%%]
+%%[5
+    | Guarded
+        loc         .   pp          =   @guardedexpressions.pp >-< @where.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Pattern
+    | Variable
+        loc         .   pp          =   pp @name       
+    | Constructor
+        loc         .   pp          =   @name >#< ppSpaces @patterns.ppL
+    | Parenthesized
+        loc         .   pp          =   ppParens @pattern.pp
+    | Tuple
+        loc         .   pp          =   ppParensCommas' $ @patterns.ppL
+    | As
+        loc         .   pp          =   @name >|< "@" >|< @pattern.pp
+    | Wildcard
+        loc         .   pp          =   pp hsnWild
+%%]
+    | Negate
+        loc         .   pp          =   "-" >#< @literal.pp
+%%[4
+    | Typed
+        loc         .   pp          =   @pattern.pp >#< "::" >#< @type.pp
+%%]
+%%[5
+    | InfixConstructor
+        loc         .   pp          =   @leftPattern.pp >#< @constructorOperator >#< @rightPattern.pp
+    | List
+        loc         .   pp          =   ppBracketsCommas @patterns.ppL
+%%]
+%%[7
+    | Record
+        loc         .   pp          = 	@name >#< ppCurlysCommas' @recordPatternBindings.ppL
+    | RowRecordBinding
+        loc         .   pp          =   ppAppTop  (hsnRec,mkPPAppFun hsnRowEmpty @pattern.pp)
+                                                  @rowRecordPattternBindings.ppL @pattern.pp
+    | RowRecordEmpty
+        loc         .   pp          =   hsnORec >|< hsnCRec
+%%]
+%%[8
+    | Irrefutable
+        loc         .   pp          =   "~" >|< @pattern.pp
+%%]
+%%[55
+    | Successor                    -- n+k patterns        
+        loc         .   pp          =   EH.mkRngEH @range XX
+        name                     : Name
+        literal                  : Literal -- only integers allowed here
+-- Helium
+    | NegateFloat
+        loc         .   pp          =   EH.mkRngEH @range XX
+        literal                  : Literal -- only numbers allowed here
+%%]
+
+%%[12
+SEM ContextedPattern
+    | Contexted
+        loc         .   pp          =   @pattern.pp >#< "<:" >#< @context.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Basics          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Literal
+    | Int
+        loc         .   pp          =   pp @value
+    | Char
+        loc         .   pp          =   pp ("'" ++ @value ++ "'")
+%%]
+%%[5
+    | String
+        loc         .   pp          =   pp (show @value)
+%%]
+%%[97
+    | Float
+        loc         .   pp          =   pp @value
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Separator of rhs       
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR RightHandSide [ sepPP: PP_Doc | | ]
+%%]
+
+%%[5
+ATTR AllGuardedExpression [ sepPP: PP_Doc | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe of pp          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR MaybeExpression MaybeType [ | | ppMb: {Maybe PP_Doc} ]
+
+SEM MaybeExpression
+    | Just
+        lhs         .   ppMb        =   Just @just.pp
+    | Nothing
+        lhs         .   ppMb        =   Nothing
+
+SEM MaybeType
+    | Just
+        lhs         .   ppMb        =   Just @just.pp
+    | Nothing
+        lhs         .   ppMb        =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% List of pp          
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Patterns Expressions Types [ | | ppL: {[PP_Doc]} ]
+
+SEM Types
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM Expressions
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM Patterns
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
+%%[5
+ATTR Qualifiers AnnotatedTypes [ | | ppL: {[PP_Doc]} ]
+
+SEM AnnotatedTypes
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM Qualifiers
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
+%%[6
+ATTR Kinds [ | | ppL: {[PP_Doc]} ]
+
+SEM Kinds
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
+%%[7
+ATTR
+  RecordExpressionBindings RecordPatternBindings
+  RowRecordExpressionUpdates RowRecordPatternBindings
+  FieldDeclarations RowTypeUpdates
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM RowTypeUpdates
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM RecordExpressionBindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM RecordPatternBindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM FieldDeclarations
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM RowRecordExpressionUpdates
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM RowRecordPatternBindings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
+%%[9
+ATTR
+  Statements
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM Statements
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+%%]
+
+%%[12
+ATTR
+  ContextedExpressions ContextedPatterns
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM ContextedExpressions
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM ContextedPatterns
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+%%]
+
+%%[95
+ATTR
+  Derivings
+    [ | | ppL: {[PP_Doc]} ]
+
+SEM Derivings
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra info for pp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+%%]
+SEM AGItf
+	| AGItf
+		loc			.	ppExtra		:=	ppCmt (pp @module.mod)
+
+%%[1
+%%]
+SEM Body
+    | Body
+        loc         .   ppExtra     :=  ppCmt
+        								  (   "declarations.idDefOccGam:" >#< ppGamDup @declarations.idDefOccGam
+        								  -- >-< "loc.idGam:" >#< ppGam @idGam
+        								  >-< "declarations.idUseOccGam:" >#< ppGamDup @declarations.idUseOccGam
+        								  >-< "declarations.idDpdMp:" >#< (pp $ mkDpdGrFromEdgesMp $ @declarations.idDpdMp)
+        								  >-< "sccOrder:" >#< (ppBracketsCommas $ map ppBracketsCommas $ @sccOrder)
+        								  -- >-< ppGamDup @declarations.undefOccGam
+        								  )
+
+%%[1
+%%]
+SEM Expression
+    | Let
+        loc         .   ppExtra     :=  ppCmt (ppGamDup @declarations.idDefOccGam >-< ppGamDup @declarations.idUseOccGam)
+

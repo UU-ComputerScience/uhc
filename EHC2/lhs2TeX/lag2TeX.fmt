@@ -1,0 +1,32 @@
+%if style == newcode
+% format mytype = "type"
+
+%elif style == poly
+%format mytype = "\mathit{type}"
+%format imports = "\mathbf{imports}"
+%format ATTR = "\mathbf{attr}"
+%format SEM = "\mathbf{sem}"
+%format INCLUDE = "\mathbf{include}"
+%format WRAPPER = "\mathbf{wrapper}"
+%format DERIVING = "\mathbf{deriving}"
+%format SELF = "\mathbf{self}"
+%format SET = "\mathbf{set}"
+%format USE = "\mathbf{use}"
+%format DATA = "\mathbf{data}"
+%format TYPE = "\mathbf{type}"
+%format SYN = "\mathbf{syn}"
+%format INH = "\mathbf{inh}"
+%format lhs = "\mathbf{lhs}"
+%format loc = "\mathbf{loc}"
+%format . = "."
+% format * = "\times "
+%format @ = "\spacecorrection @"
+%format [          = "[\mskip1.5mu\allowforspacecorrection "
+%format (          = "(\allowforspacecorrection "
+%subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
+% subst inline a  	= "\ensuremath{{}\allowforspacecorrection " a "}"
+% subst varid a  	= a "{}\allowforspacecorrection "
+
+%endif
+
+

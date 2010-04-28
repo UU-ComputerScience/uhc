@@ -1,0 +1,104 @@
+%%[1 hs module {%{EH}Ty.Expand}
+%%]
+
+%%[7_2 hs import({%{EH}Base.Common}, {%{EH}Ty}, qualified Data.Map as Map, Data.Map(Map), Data.Maybe, qualified Data.Set as Set, Data.Set(Set))
+%%]
+
+%%[7_2 hs import({%{EH}EH})
+%%]
+
+%%[7_2 ag import({Ty/AbsSyn})
+%%]
+
+%%[7_2 hs export(expandTruncTyCons)
+%%]
+
+
+Expand all trunctated type constructors: no truncated type constructors remain. Truncated type constructors that are
+already expanded once, are never expanded twice, and truncated type constructors without trunc-annotations are not
+expaned, but just converted into a normal type constructor.
+
+This expansion is used to reconstruct the place where the trunc-annotations on a type constructor belonged. For
+example, to infer co/contra-variance for those annotations.
+
+%%[7_2 hs
+
+expandTruncTyCons :: ([Annotation Ty] -> [Ty] -> HsName -> Map HsName [Ty]) -> Ty -> Ty
+expandTruncTyCons expF
+  = expand Set.empty
+  where
+    expand :: Set (HsName, Set (Annotation Ty)) -> Ty -> Ty
+    expand expSet ty
+      = let itf = TyAGItf_AGItf ty
+            inh = Inh_TyAGItf { expF_Inh_TyAGItf   = expandRepeated
+                              , expSet_Inh_TyAGItf = expSet
+                              }
+            syn = wrap_TyAGItf (sem_TyAGItf itf) inh
+         in exp_Syn_TyAGItf syn
+
+    expandRepeated :: Set (HsName, Set (Annotation Ty)) -> Ty -> [Annotation Ty] -> [Ty] -> HsName -> Ty
+    expandRepeated expSet ty anns arg nm = expand expSet (expandTrunc ty anns arg nm)
+
+    expandTrunc :: Ty -> [Annotation Ty] -> [Ty] -> HsName -> Ty
+    expandTrunc ty anns args nm
+      = let conMap = expF anns args nm
+            constrs = [ TyExpConstr_Constr n (map TyExpField_Field ts) | (n,ts) <- Map.assocs conMap ]
+            ty' = Ty_ExpTyCon constrs [] ty
+         in ty'
+
+%%]
+
+
+%%[7_2
+WRAPPER TyAGItf
+%%]
+
+
+%%[7_2
+ATTR TyAGItf AllTy [ expF : {Set (HsName, Set (Annotation Ty)) -> Ty -> [Annotation Ty] -> [Ty] -> HsName -> Ty} ||]
+ATTR TyAGItf AllTy [ expSet : {Set (HsName, Set (Annotation Ty))} ||]
+ATTR TyAGItf [|| exp : Ty ]
+ATTR AllTyAndFlds [|| exp : SELF ]
+%%]
+
+
+%%[7_2
+SEM Ty
+  | TruncTyCon
+      loc.emptyAnns = Set.null @anns
+      loc.alreadyExpanded = (@ty.nm, @anns) `Set.member` @lhs.expSet
+      loc.expSet = Set.insert (@ty.nm, @anns) @lhs.expSet
+      loc.annL = Set.toList @anns
+      loc.doExpand = not (@loc.emptyAnns || @loc.alreadyExpanded)
+      lhs.exp = if @loc.doExpand
+                then @lhs.expF @loc.expSet @ty.exp @annL (seqToList @lhs.args) @ty.nm
+                else @ty.exp
+
+ATTR Ty [|| nm : HsName ]
+SEM Ty
+  | Con      lhs.nm = @nm
+  | * - Con  lhs.nm = error "expand:not a type constructor"
+
+ATTR AllTyTy [ args : {Seq Ty} ||]
+SEM TyAGItf
+  | AGItf  ty.args = emptySeq
+SEM Ty
+  | App  func.args = unitSeq @arg.exp <+> @lhs.args
+
+%%]
+
+
+Remove arguments to an expanded type constructor, since they are already taken
+care of in the expanded version.
+
+%%[7_2
+
+ATTR Ty [|| doExpand : Bool ]
+SEM Ty
+  | Con Any Var ExpTyCon  lhs.doExpand = False
+  | App  loc.doExpand = @func.doExpand
+         lhs.exp = if @loc.doExpand
+                   then @func.exp
+                   else @loc.exp
+
+%%]

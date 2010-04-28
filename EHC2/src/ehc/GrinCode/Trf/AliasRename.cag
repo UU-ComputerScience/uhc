@@ -1,0 +1,71 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation meant for GBM (bytecode machine) codegen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eliminate name aliases, to avoid unnecessary variable introductions, hence runtime loads
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Rename names to other names.
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.AliasRename}
+%%]
+
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe)
+%%]
+
+%%[(8 codegen grin) hs import({%{EH}Base.Builtin}, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+
+%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/Trf/CommonRenameAG})
+%%]
+
+%%[(8 codegen grin) hs export(grAliasRename)
+grAliasRename :: Maybe (HsName -> HsName) -> NmAliasMp -> GrExpr -> GrExpr
+grAliasRename mbMkNewNm m e
+  = trf_Syn_GrExpr t
+  where t = wrap_GrExpr (sem_GrExpr e)
+            $ Inh_GrExpr
+                { nmAliasMp_Inh_GrExpr = m
+                , mkNewNm_Inh_GrExpr = maybe id id mbMkNewNm
+                }
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrExpr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Defaults for imported code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrAGItf
+  | AGItf		loc			.	mkNewNm			=	id
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+SEM GrExpr
+  | Seq         loc         .   newAliasMp      =   @patAliasMp `Map.union` @lhs.nmAliasMp
+                pat         .   nmAliasMp       =   @newAliasMp
+                body        .   nmAliasMp       =   @newAliasMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation: map names, delegated to GrinCode/Trf/CommonRenameAG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+

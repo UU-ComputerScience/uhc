@@ -1,0 +1,334 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to AG generated code for compiler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[1 hs module {%{EH}HS.MainAG} import(Data.Char,Data.Maybe,Data.List as List,qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}HS}, {%{EH}NameAspect}, EH.Util.DependencyGraph)
+%%]
+
+%%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%]
+
+%%[1 hs import(qualified {%{EH}EH} as EH)
+%%]
+
+%%[1 hs export(Inh_AGItf(..),Syn_AGItf(..),sem_AGItf,wrap_AGItf)
+%%]
+
+%%[3 hs import(qualified Data.Set as Set)
+%%]
+
+%%[4 hs import({%{EH}Ty}(tyQu_Forall,tyQu_Exists))
+%%]
+
+%%[8 hs export(tyGam2IdDefOccGam,kiGam2IdDefOccGam)
+%%]
+
+%%[(8 codegen) hs import ({%{EH}Base.Target})
+%%]
+
+%%[9 hs export(clGam2IdDefOccGam)
+%%]
+
+%%[9 hs import({%{EH}Pred})
+%%]
+
+%%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
+%%]
+
+%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
+%%]
+
+%%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
+%%]
+
+%%[97 hs import({%{EH}Base.Debug} as Debug, Debug.Trace)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 ag import({HS/AbsSyn},{HS/ToEH},{HS/Fixity},{HS/Pretty},{HS/GatherError},{HS/ExtraChecks},{HS/NameLevel},{HS/NameDef},{HS/NameAnalysis},{HS/Uniq})
+WRAPPER AGItf
+%%]
+
+%%[3
+PRAGMA novisit nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AGItf AllNT [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying together gam's, combining with imported info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
+%%]
+
+%%[20
+SEM Body
+    | Body
+        lhs             .   gathIdGam   =   @declarations.idDefOccGam
+                                            `gamUnion` assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
+                                                                   | (o,d) <- gamToAssocL @lhs.idGam
+                                                                   , n <- Map.findWithDefault [] o @lhs.modEntToOrig
+                                                                   ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Kind internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6
+ATTR Kind [ | | conNm: Name ]
+
+SEM Kind
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+%%]
+
+%%[6
+ATTR AllKind [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
+
+SEM Kind
+    | Variable
+        lhs         .   freeTvarS   =   Set.singleton @name
+    | Forall
+        lhs         .   freeTvarS   =   @kind.freeTvarS `Set.difference` Set.fromList @kindvariables
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Misc: Type internal info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Type Expression [ | | conNm: Name ]
+
+SEM Type
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+
+SEM Expression
+    | Constructor
+        lhs         .   conNm       =   @name
+    | * - Constructor
+        lhs         .   conNm       =   hsnUnknown
+%%]
+
+%%[3
+ATTR
+  AllType
+%%[[9
+  AllContextItem
+%%]]
+%%[[12
+  AllContextedPattern
+%%]]
+    [ | | freeTvarS USE {`Set.union`} {Set.empty}: HsNameS ]
+
+SEM Type
+    | Variable NamedWildcard
+        lhs         .   freeTvarS   =   Set.singleton @name
+%%[[4
+    | Forall Exists
+        lhs         .   freeTvarS   =   @type.freeTvarS `Set.difference` Set.fromList @typevariables
+%%]]
+%%]
+
+%%[10
+SEM ContextItem
+%%[[13
+    | Forall
+        lhs         .   freeTvarS   =   @context.freeTvarS `Set.difference` Set.fromList @typevariables
+%%]]
+%%[[10
+    | RowLacksLabel
+        lhs         .   freeTvarS   =   Set.singleton @rowvariable
+%%]]
+%%]
+
+%%[9
+ATTR Type [ | | mbRefConNm: {Maybe Name} ]
+
+SEM Type
+    | Constructor
+        lhs         .   mbRefConNm  =   Just @refname
+    | * - Constructor
+        lhs         .   mbRefConNm  =   Nothing
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Info required to determine whether type application is actually a type context prefix
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+ATTR Type [ | | isPrArrow: Bool ]
+
+SEM Type
+    | Constructor
+        lhs         .   isPrArrow   =   hsnIsPrArrow @name
+    | * - Constructor
+        lhs         .   isPrArrow   =   False
+%%]
+
+%%[9
+ATTR Types Type MaybeType AllRowTypeUpdate [ isAsPred: Bool | | ]
+
+SEM Type
+    | InfixApplication
+        leftType    .   isAsPred    =   @operator.isPrArrow
+    | NormalApplication
+        arguments   .   isAsPred    =   False
+
+SEM AnnotatedType
+    | *
+        loc         .   isAsPred    =   False
+
+SEM Declaration
+    | *
+        loc         .   isAsPred    =   False
+
+SEM Pattern
+    | *
+        loc         .   isAsPred    =   False
+
+SEM Expression
+    | *
+        loc         .   isAsPred    =   False
+
+SEM ContextItem
+    | Class
+        loc         .   isAsPred    =   False
+
+SEM LeftHandSide
+    | Typed
+        loc         .   isAsPred    =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generate either a plain type variable or a wildcard
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4
+ATTR
+  Type MaybeType
+%%[[7
+  AllRowTypeUpdate
+%%]]
+    [ doGenVarWild: Bool | | ]
+
+SEM LeftHandSide
+    | Typed
+        loc         .   doGenVarWild=   True
+
+SEM Types
+    | Cons
+        loc         .   doGenVarWild=   False
+
+SEM Pattern
+    | Typed
+        loc         .   doGenVarWild=   False
+
+SEM Expression
+    | Typed
+        loc         .   doGenVarWild=   False
+
+SEM Declaration
+    | *
+        loc         .   doGenVarWild=   False
+%%]
+%%[5
+SEM AnnotatedType
+    | Type
+        loc         .   doGenVarWild=   False
+%%]
+
+SEM Type
+    | InfixApplication
+        leftType    .   doGenVarWild=   @operator.isPrArrow
+    | NormalApplication
+        arguments   .   doGenVarWild=   False
+
+
+SEM Pattern
+    | *
+        loc         .   doGenVarWild=   False
+
+SEM ContextItem
+    | Class
+        loc         .   doGenVarWild=   False
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data decl has fields?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllConstructor [ | | hasFlds USE {||} {False}: Bool ]
+
+SEM Constructor
+    | Record
+        lhs         .   hasFlds     =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod? Is main mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AllModule AGItf [ isTopMod : Bool | | ]
+ATTR AllModule       [ isMainMod: Bool | | ]
+%%]
+
+%%[20
+SEM AGItf
+	| AGItf
+		loc			.	isMainMod	=	@module.mainValExists
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level instance names, propagated from prev phase -- a hack :-(
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 hs
+extrTopInstanceNm :: [HsName] -> (Maybe HsName,[HsName])
+extrTopInstanceNm nms
+  = case nms of
+      (n:t) -> (Just n,t)
+      _     -> (Nothing,[])
+%%]
+
+%%[20
+ATTR AllNT [ | topInstanceNmL: {[HsName]} | ]
+ATTR AGItf [ topInstanceNmL: {[HsName]} | | ]
+
+SEM Declaration
+    | Class Instance InstanceUseImplicitly
+        (loc.mbPrevInstancename,lhs.topInstanceNmL)
+                                        =   extrTopInstanceNm @lhs.topInstanceNmL
+%%]
+
+%%[95
+SEM Deriving
+    | Deriving
+        (loc.mbPrevInstancename,lhs.topInstanceNmL)
+                                        =   extrTopInstanceNm @lhs.topInstanceNmL
+%%]
+

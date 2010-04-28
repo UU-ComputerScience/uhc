@@ -1,0 +1,394 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code's Java gen
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java) hs module {%{EH}Core.ToJava} import(EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Ty},{%{EH}Core},Char) export(cmodJavaSrc)
+%%]
+
+%%[(8 codegen java) hs import(Data.Maybe)
+%%]
+
+%%[(94 codegen java) hs import({%{EH}Foreign.Extract})
+%%]
+
+%%[(8 codegen java).WRAPPER ag import({Core/CommonLev},{Core/CommonToXX},{Core/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen java) hs
+cmodJavaSrc :: CModule -> (String,PP_Doc)
+cmodJavaSrc cmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
+     in   (jvBasename_Syn_AGItf t,jvSrc_Syn_AGItf t)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Convenience functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java) hs
+jvInd :: PP_Doc -> PP_Doc
+jvInd = indent 1
+
+jvNm :: HsName -> String
+jvNm hn
+  = if    n `elem` jKeyw
+    then  surr n
+    else  concat . map (\c -> maybe [c] (\f -> surr (f c)) (lookup c jSymChs)) $ (if isDigit (head n) then "_" ++ n else n)
+  where  n        =  show hn
+         jKeyw    =  [ "const" ]
+         jSymChs  =  [ ((=='\''), const "squot")
+                     , ((=='-' ), const "dash" )
+                     , ((=='!' ), const "bang" )
+                     , ((=='$' ), const "doll" )
+                     , ((=='~' ), const "tilde")
+                     , ((==':' ), const "colon")
+                     ]
+         surr x   =  "_" ++ x ++ "_"
+         lookup v [] = Nothing
+         lookup v ((f,r):ls) | f v = Just r
+                             | otherwise = lookup v ls
+
+jvNmPP :: HsName -> PP_Doc
+jvNmPP
+  = text . jvNm
+
+jvRet :: PP_Doc -> PP_Doc
+jvRet r = "return" >-< jvInd r >#< ";"
+
+jvBody :: String -> String -> [PP_Doc] -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
+jvBody cl f as d1 d2 b
+  = (cl >#< "{")
+    >-< jvInd
+            (   d1
+            >-< "public" >#< (f >-< jvInd as') >#< "{"
+            >-< jvInd (d2 >-< b)
+            >-< "}"
+            )
+    >-< "}"
+  where as' = jvArgs as
+
+jvArgs :: [PP_Doc] -> PP_Doc
+jvArgs = ppBlock "(" ")" ","
+
+jvCall :: PP a => a -> [PP_Doc] -> PP_Doc
+jvCall f as = let as' = jvArgs as
+              in  pp f >-< jvInd as'
+
+jvCast :: String -> PP_Doc -> PP_Doc
+jvCast c o = ppParens (ppParens (pp c) >|< o)
+
+jvForceEval :: PP a => a -> PP_Doc
+jvForceEval e = "eval" >|< ppParens (pp e)
+
+jvForceCast :: PP a => String -> a -> PP_Doc
+jvForceCast c e = jvCast c (jvForceEval e)
+
+jvForceInt :: PP a => a -> PP_Doc
+jvForceInt e = jvForceCast "Int" e >|< ".intValue()"
+
+jvApp :: PP_Doc -> [PP_Doc] -> PP_Doc
+jvApp f as
+  =  let  n = length as
+     in   if n <= 5
+          then jvCall (jvCast "Eval" f >|< ".apply" ++ show n) as
+          else jvCall (jvCast "Eval" f >|< ".applyN") [jvTupApp as]
+
+jvTupApp :: [PP_Doc] -> PP_Doc
+jvTupApp as = "new Object[]" >-< jvInd (ppBlock "{" "}" "," as)
+
+jvLam :: HsName -> [HsName] -> PP_Doc -> PP_Doc
+jvLam fNm as b
+  =  let  n = length as
+     in   if n <= 5
+          then jvBody ("new Function" ++ show n ++ "(\"" ++ show fNm ++ "\")") ("Object eval" ++ show n) (map (\a -> "final Object" >#< jvNmPP a) as) empty empty b
+          else jvBody ("new FunctionN(" ++ show n ++ ",\"" ++ show fNm ++ "\")") ("Object evalN") [pp "Object[] _x_"] empty empty
+                    (vlist (zipWith (\i a -> jvBind "Object" a (jvInx "_x_" i)) [(0::Int)..] as) >-< b)
+
+jvAssign :: HsName -> PP_Doc -> PP_Doc
+jvAssign nm val = (jvNmPP nm >#< "=") >-< jvInd val >#< ";"
+
+jvDeclare :: String -> HsName -> PP_Doc
+jvDeclare jvtp nm = jvtp >#< jvNmPP nm >#< ";"
+
+jvBind :: PP a => String -> HsName -> a -> PP_Doc
+jvBind jvtp nm val = "final" >#< jvtp >-< jvInd (jvAssign nm (pp val))
+
+jvInx :: (PP a,PP i) => a -> i -> PP_Doc
+jvInx ar i = pp ar >|< ppBrackets (pp i)
+
+jvCAF :: (PP a, PP b) => a -> b -> PP_Doc
+jvCAF stats body = jvBody "new Apply0()" "void evalSet" [] empty (pp stats) (jvCall "setValue" [pp body] >#< ";")
+
+jvSelNm   = mkHNm "_sel"
+jvSel1Nm  = mkHNm "_sel1"
+jvUpdNm   = mkHNm "_upd"
+jvUpd1Nm  = mkHNm "_upd1"
+jvInsNm   = mkHNm "_ins"
+jvIns1Nm  = mkHNm "_ins1"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR AGItf AllCodeNT [ | | jvSrc USE {>-<} {empty} : PP_Doc ]
+ATTR CBind ValBindL [ | | jvSrcInd USE {>-<} {empty} : PP_Doc  jvSrcSetInd USE {>-<} {empty} : PP_Doc  jvSrcStrict USE {>-<} {empty} : PP_Doc ]
+ATTR AGItf CModule [ | | jvBasename: String ]
+
+SEM CModule
+  | Mod         loc         .   jvBasename  =   jvNm @moduleNm
+                expr        .   jvBuiltin   =   let primCmpIntNm = mkHNm "primCmpInt"
+                                                in  jvBind "Function2" jvSelNm
+                                                        (jvLam jvSelNm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< ppBrackets (jvForceInt "off"))))
+                                                    >-< jvBind "Function2" jvSel1Nm
+                                                        (jvLam jvSel1Nm [mkHNm "tup",mkHNm "off"] (jvRet (jvForceCast "Object[]" "tup" >|< ppBrackets ("1+" >|< jvForceInt "off"))))
+                                                    >-< jvBind "Function3" jvUpdNm
+                                                        (jvLam jvUpdNm [mkHNm "tup",mkHNm "off",mkHNm "val"]
+                                                            (   jvBind "Object[]" (mkHNm "_t") (jvForceCast "Object[]" "tup")
+                                                            >-< jvBind "Object[]" (mkHNm "_nt") ("new Object[_t.length]")
+                                                            >-< jvBind "int" (mkHNm "_o") (jvForceInt "off")
+                                                            >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","0","_nt","0","_t.length"]) >#< ";"
+                                                            >-< "_nt[_o] = val ;"
+                                                            >-< jvRet (pp "_nt")
+                                                            ))
+                                                    >-< jvBind "Function3" jvInsNm
+                                                        (jvLam jvInsNm [mkHNm "tup",mkHNm "off",mkHNm "val"]
+                                                            (   jvBind "Object[]" (mkHNm "_t") (jvForceCast "Object[]" "tup")
+                                                            >-< jvBind "Object[]" (mkHNm "_nt") ("new Object[_t.length + 1]")
+                                                            >-< jvBind "int" (mkHNm "_o") (jvForceInt "off")
+                                                            >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","0","_nt","0","_o"]) >#< ";"
+                                                            >-< jvCall "java.lang.System.arraycopy" (map pp ["_t","_o","_nt","_o+1","_t.length - _o"]) >#< ";"
+                                                            >-< "_nt[_o] = val ;"
+                                                            >-< jvRet (pp "_nt")
+                                                            ))
+                                                    >-< jvBind "Object" hsnUndefined "null"
+                                                    >-< jvBind "Function2" primCmpIntNm
+                                                            (jvLam primCmpIntNm [mkHNm "i1",mkHNm "i2"]
+                                                                (   jvBind "int" (mkHNm "_i1") (jvForceInt "i1")
+                                                                >-< jvBind "int" (mkHNm "_i2") (jvForceInt "i2")
+                                                                >-< "if (_i1 < _i2) return new Object[]{new Int(2)} ; else if (_i1 > _i2) return new Object[]{new Int(1)}; else return new Object[]{new Int(0)} ;"
+                                                                ))
+                lhs         .   jvSrc       =   "import uu.jazy.core.* ;"
+                                                >-< "import uu.jazy.prelude.* ;"
+                                                >-< "import uu.jazy.gui.* ;"
+                                                >-< jvBody ("public class " ++ @jvBasename) "static void main" [text "String args[]"]
+                                                      empty empty
+                                                      (   "// EvalFollower.setupVisualTrace() ;"
+                                                      >-< jvCall "IO.nrEvalNShowln" [@expr.jvSrc] >#< ";")
+%%]
+
+%%[(8 codegen java)
+SEM Expr
+  | Int         loc         .   jvSrc       =   "new Int" >|< ppParens (pp @int)
+  | Char        loc         .   jvSrc       =   "new Char" >|< ppParens (pp (show @char))
+  | String      loc         .   jvSrc       =   pp (show @str)
+  | Var         loc         .   jvSrc       =   jvNmPP @nm
+  | App         loc         .   jvSrc       =   let  (f:as) = reverse @jvSrcL
+  												in   case @func.mbTupApp of
+  												       Just (CTag _ l t _ _)  -> jvTupApp (("new Int" >|< ppParens (pp t)) : as)
+  												       Just CTagRec           -> jvTupApp (as)
+  												       Nothing                -> jvApp f as
+  | Let         loc         .   jvBinds     =   case @categ of
+                                                    ValBindCateg_FFI     -> @binds.jvSrc
+%%[[94
+                                                    ValBindCateg_FFE     -> @binds.jvSrc
+%%]]
+                                                    ValBindCateg_Plain   -> @binds.jvSrc
+                                                    ValBindCateg_Strict  -> @binds.jvSrcStrict
+                                                    ValBindCateg_Rec     -> @binds.jvSrcInd >-< @binds.jvSrcSetInd
+                            .   jvSrc       =   jvCAF (@lhs.jvBuiltin >-< @jvBinds) @body.jvSrc
+  | Lam         loc         .   jvSrc       =   jvLam (maybe hsnUnknown id @lhs.mbLamNm) @jvArgL (jvRet @jvBody)
+  | Case        loc         .   jvSrc       =   jvCAF
+                                                    (    jvBind "Object[]" @jvCaseScrutinee (jvCast "Object[]" @expr.jvSrc)
+                                                     >-< jvDeclare "Object" @jvCaseResult
+                                                     >-< "switch"
+                                                     >|< ppParens
+                                                            (if @alts.tagSz > 0
+                                                             then jvForceInt (jvInx (jvNmPP @jvCaseScrutinee) (0::Int))
+                                                             else ppCTagInt CTagRec
+                                                            )
+                                                     >-< ppCurlys
+                                                            (   @alts.jvSrc
+                                                            >-< "default :"
+                                                            >-< jvAssign @jvCaseResult @dflt.jvSrc
+                                                            )
+                                                    )
+                                                    (jvNmPP @jvCaseResult)
+                            .   jvCaseScrutinee
+                                            =   mkHNm (show @expr.varNm ++ "_scrutinee")
+                            .   jvCaseResult
+                                            =   mkHNm (show @expr.varNm ++ "_result")
+  | Tup         loc         .   jvSrc       =   ctag (pp "new Object[0]") (\_ _ t _ _ -> jvTupApp ["new Int" >|< ppParens (pp t)]) @tag
+  | TupDel      loc         .   jvSrc       =   empty
+  | TupIns      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvInsNm) (\_ _ _ _ _ -> jvIns1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | TupUpd      loc         .   jvSrc       =   jvApp (jvNmPP (ctag (jvUpdNm) (\_ _ _ _ _ -> jvUpd1Nm) @tag)) [@expr.jvSrc,@offset.jvSrc,@fldExpr.jvSrc]
+  | CaseAltFail loc			.	jvSrc		=	empty -- cannot happen
+
+SEM ValBind
+  | Val         lhs         .   jvSrcInd    =   jvBind "Indirection" @nm "new Indirection()"
+                            .   jvSrcSetInd =   jvCall (jvNmPP @nm >|< ".set") [@expr.jvSrc] >#< ";"
+                            .   jvSrc       =   jvBind "Object" @nm @expr.jvSrc
+                            .   jvSrcStrict =   jvBind "Object" @nm (jvForceEval @expr.jvSrc)
+  | FFI         lhs         .   jvSrc       =   jvBind "Object" @nm . maybe (jvNmPP hsnUnknown) (jvNmPP) . lookup @impEntNm $ primToJavaMp
+%%[[94
+  | FFE         lhs         .   jvSrc       =   pp "ffe not implemented"
+%%]]
+
+ATTR AllAlt AllPat [ jvCaseScrutinee: HsName  jvCaseResult: HsName | | ]
+ATTR Pat [ | | fldNm: HsName ]
+
+SEM Pat
+  | Var Con Int Char
+%%[[97
+    BoolExpr
+%%]]
+                lhs         .   fldNm       =   @pnm
+
+SEM FldBind
+  | Fld         lhs         .   jvSrc       =   jvBind  "Object" @pat.fldNm
+                                                        (jvInx  (jvNmPP @lhs.jvCaseScrutinee)
+                                                                (jvForceInt @offset.jvSrc >|< (if @lhs.tagSz == 0 then empty else ("+" >|< pp @lhs.tagSz))))
+
+SEM Alt
+  | Alt         lhs         .   jvSrc       =   @pat.jvSrc
+                                                >-< jvAssign @lhs.jvCaseResult @expr.jvSrc
+                                                >-< "break ;"
+
+SEM Pat
+  | Con         lhs         .   jvSrc       =   "case" >#< ppCTagInt @tag >#< ":"
+                                                >-< @binds.jvSrc
+%%]
+
+%%[(9 codegen java)
+SEM Expr
+  | Hole        loc         .   jvSrc       =   jvNmPP (uidHNm @uid)
+  | HoleLet     loc         .   jvSrc       =   @body.jvSrc
+  | CoeArg      loc         .   jvSrc       =   jvNmPP hsnUnknown
+  | ImplsApp    loc         .   jvSrc       =   @func.jvSrc
+  | ImplsLam    loc         .   jvSrc       =   @body.jvSrc
+%%]
+
+%%[(97 codegen java)
+SEM Expr
+  | Integer     loc         .   jvSrc       =   "new Int" >|< ppParens (pp (show @integer))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin distr to outer let
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR Expr [ jvBuiltin: PP_Doc | | ]
+
+SEM Expr
+  | Let         body        .   jvBuiltin   =   empty
+
+SEM ValBind
+  | Val         expr        .   jvBuiltin   =   empty
+
+SEM FldBind
+  | Fld         offset      .   jvBuiltin   =   empty
+
+SEM Alt
+  | Alt         expr        .   jvBuiltin   =   empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Var name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR Expr [ | | varNm: HsName ]
+
+SEM Expr
+  | Var         lhs         .   varNm       =   @nm
+  | * - Var     lhs         .   varNm       =   hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Has tag?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR AllPatBind [ tagSz: Int | | ]
+ATTR PatL Pat AllAlt [ | | tagSz USE {`const`} {0}: Int ]
+
+SEM Pat
+  | Con         loc         .   tagSz       =   ctag 0 (\_ _ _ _ _ -> 1) @tag
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% As args ++ func
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR Expr [ | | jvSrcL: {[PP_Doc]} ]
+
+SEM Expr
+  | App         loc         .   jvSrcL      =   @arg.jvSrc : @func.jvSrcL
+  | * - App     lhs         .   jvSrcL      =   [@jvSrc]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% As body + args
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR Expr [ | | jvArgL: {[HsName]}  jvBody: PP_Doc ]
+
+SEM Expr
+  | Lam         loc         .   jvArgL      =   @arg : @body.jvArgL
+                            .   jvBody      =   @body.jvBody
+  | * - Lam     lhs         .   jvArgL      =   []
+                            .   jvBody      =   @jvSrc
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mapping of 'prim' functions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java) hs
+primToJavaMp :: AssocL String HsName
+primToJavaMp
+  =  [ ( "primAddInt", hsnFromString "uu.jazy.prelude.Int.add" )
+     , ( "primDivInt", hsnFromString "uu.jazy.prelude.Int.div" )
+     , ( "primMulInt", hsnFromString "uu.jazy.prelude.Int.mul" )
+     , ( "primSubInt", hsnFromString "uu.jazy.prelude.Int.sub" )
+     , ( "primCmpInt", hsnFromString "primCmpInt" )
+     ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Distribution of name of lambda, if any is available
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen java)
+ATTR Expr [ mbLamNm: {Maybe HsName} | | ]
+
+SEM Expr
+  | App Lam     loc         .   mbLamNm     =   Nothing
+
+SEM Alt
+  | Alt         loc         .   mbLamNm     =   Nothing
+
+SEM ValBind
+  | Val         expr        .   mbLamNm     =   Just @nm
+
+SEM FldBind
+  | Fld         offset      .   mbLamNm     =   Nothing
+
+SEM CModule
+  | Mod         expr        .   mbLamNm     =   Nothing
+%%]
+
+
+
+
+

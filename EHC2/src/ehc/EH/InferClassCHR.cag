@@ -1,0 +1,253 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Classes via CHR's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHR store
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR NTPrf [ chrStore: ScopedPredStore | | ]
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf [ chrStore: ScopedPredStore | | gathChrStore: ScopedPredStore ]
+%%]
+
+%%[(9 hmtyinfer).initChrStore
+SEM AGItf
+  | AGItf       loc         .   initChrStore        =   initScopedPredStore
+%%]
+
+%%[(20 hmtyinfer) -9.initChrStore
+SEM AGItf
+  | AGItf       loc         .   initChrStore        =   @lhs.chrStore
+%%]
+
+%%[(9 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   (instsOuter,instsInner)
+                                                    =   partition (\(_,_,_,sc) -> sc == initPredScope) $ Seq.toList @expr.chrInstDeclSq
+                            .   (chrStoreOuterScope,gathChrStore)
+                                                    =   mkScopedCHR2 @chrFIIn (Seq.toList @expr.chrClassDeclSq) @instsOuter @initChrStore
+                            .   (chrStore,_)        =   mkScopedCHR2 @chrFIIn [] @instsInner @chrStoreOuterScope
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scope for predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR NTPrf [ predScope: PredScope | | ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   predScope           =   initPredScope
+
+SEM Expr
+  | AppTop      loc			.	predScope			=   pscpMk' @mustEnterNewPredScope @lhs.predSameScopeCounter @lhs.predScope
+                (loc.predSameScopeCounterTop,expr.predSameScopeCounter)
+                                                    =   pscpEnter' @mustEnterNewPredScope @lhs.predSameScopeCounter
+                lhs			.	predSameScopeCounter
+                                                    =   pscpLeave' @mustEnterNewPredScope @predSameScopeCounterTop @expr.predSameScopeCounter
+  | Rec         loc			.	predScope			=   pscpMk' @mustEnterNewPredScope @lhs.predSameScopeCounter @lhs.predScope
+                (loc.predSameScopeCounterTop,recExpr.predSameScopeCounter)
+                                                    =   pscpEnter' @mustEnterNewPredScope @lhs.predSameScopeCounter
+                lhs			.	predSameScopeCounter
+                                                    =   pscpLeave' @mustEnterNewPredScope @predSameScopeCounterTop @recExpr.predSameScopeCounter
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                loc			.	predScope			=   pscpMk' @mustEnterNewPredScope @lhs.predSameScopeCounter @lhs.predScope
+                (loc.predSameScopeCounterLam,body.predSameScopeCounter)
+                                                    =   pscpEnter' @mustEnterNewPredScope @lhs.predSameScopeCounter
+                lhs			.	predSameScopeCounter
+                                                    =   pscpLeave' @mustEnterNewPredScope @predSameScopeCounterLam @body.predSameScopeCounter
+  | Lam
+  | * - Lam AppTop Rec Let {- -}
+%%[[12
+    LamImpl
+%%]]
+                loc         .   predScope           =   @lhs.predScope
+%%]
+                loc         .   (_,predScope)       =   if @mustEnterNewPredScope
+                                                        then pscpEnter @lhs.predSameScopeCounter @lhs.predScope
+                                                        else (@lhs.predSameScopeCounter,@lhs.predScope)
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec
+                loc         .   mustEnterNewPredScope
+  													=   False -- not @implsIsEmpty -- True -- False -- not @implsIsEmpty -- not (null @knPrL) -- otherwise AG depends on @lhs.knTy, creating a cycle
+  | Lam 		loc         .   mustEnterNewPredScope
+  													=   True -- otherwise AG depends on @lhs.knTy, creating a cycle
+%%[[12
+  | LamImpl	    loc         .   mustEnterNewPredScope
+  													=   True
+%%]]
+%%]
+
+%%[(16 hmtyinfer)
+-- Each branch in a case expr has it's own predicate scope
+ATTR CaseAlts [ predScopeCounter : Int | | ]
+
+SEM Expr
+  | Case
+      alts.predScopeCounter                         = 	0
+
+SEM CaseAlts
+  | Cons
+      (tl.predScopeCounter, hd.predScope)           = 	pscpEnter @lhs.predScopeCounter @lhs.predScope
+%%]
+
+%%% Counter per scope
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR
+  AllCase AllExpr AllDecl
+%%[[97
+  AllPatExpr
+%%]]
+    [ | predSameScopeCounter: Int | ]
+%%]
+
+%%[(9999 hmtyinfer)
+ATTR
+  AllCase AllExpr
+%%[[97
+  AllPatExpr
+%%]]
+    [ predSameScopeCounter: Int | | ]
+ATTR AllDecl [ | predSameScopeCounter: Int | ]
+ATTR AllExpr [ | | predSameScopeCounter: Int ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   predSameScopeCounter
+                            						=   0
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   mustEnterNewPredScope
+                                                    =   not @lexLevIsGlobal && @lhs.isFirstLet && @hasInstDecl
+                loc			.	predScope			=   pscpMk' @mustEnterNewPredScope @lhs.predSameScopeCounter @lhs.predScope
+                (loc.predSameScopeCounterLet,decls.predSameScopeCounter)
+                                                    =   pscpEnter' @mustEnterNewPredScope @lhs.predSameScopeCounter
+                lhs			.	predSameScopeCounter
+                                                    =   pscpLeave' @mustEnterNewPredScope @predSameScopeCounterLet @body.predSameScopeCounter
+
+SEM Decl
+  | Val         expr        .   predSameScopeCounter
+                									=   0
+  | Class Instance
+                decls       .   predSameScopeCounter
+                									=   0
+  
+SEM Decl
+  | Val Class Instance
+                lhs			.	predSameScopeCounter
+                									=	@lhs.predSameScopeCounter+1
+                loc			.	predScope           :=  snd $ pscpEnter @lhs.predSameScopeCounter @lhs.predScope
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Scopes of introduced bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer) hs
+type ScopeGam = Gam HsName PredScope
+%%]
+
+%%[(9 hmtyinfer)
+ATTR AllDecl AllPatExpr [ | | scopeGam USE {`gamUnion`} {emptyGam}: ScopeGam ]
+
+SEM PatExpr
+  | Var         lhs         .   scopeGam            =   gamSingleton @nm @lhs.predScope
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CHREnv
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The env from the bottom of a let sequence is required because we need (e.g.) type synonyms info.
+
+%%[(9 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   chrFIIn             =   @expr.chrFIIn {fiUniq = @lUniq}
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
+%%]
+
+%%[(9 hmtyinfer)
+ATTR Expr [ | | chrFIIn: FIIn ]
+
+SEM Expr
+  | Let         loc         .   chrFIIn             =   @body.chrFIIn
+  | * - Let     loc         .   chrFIIn             =   emptyFI {fiEnv = @fe}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class to CHR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRClassDecl Pred RedHowAnnotation)} ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
+                                                        in  ( map tyPred @ctxtPrTyL
+                                                            , tyPred @hdPrTy
+                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) @ctxtPrTyL @supClsFldL
+                                                            )
+                lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
+
+SEM Expr
+  | Let         loc         .   chrClassDeclSq      =   @decls.chrClassDeclSq `Seq.union` @body.chrClassDeclSq
+  | * - Let     lhs         .   chrClassDeclSq      =   Seq.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instance to CHR
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR NTPrf [ | | chrInstDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq (CHRScopedInstanceDecl Pred RedHowAnnotation PredScope)} ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Decl
+  | Instance    loc         .   chrInstDecl         =   let cx = @unfixPrTyVarMp |=> @ctxtPrTyFixL
+                                                            hd = @unfixPrTyVarMp |=> @hdPrTyFix
+                                                            hdPr = tyPred hd
+                                                        in  ( map tyPred cx
+                                                            , hdPr
+                                                            , RedHow_ByInstance @dictNm hdPr @lhs.predScope
+                                                            , @lhs.predScope
+                                                            )
+                lhs         .   chrInstDeclSq       =   if @inclForElim then Seq.singleton @chrInstDecl else Seq.empty
+  | InstanceIntro
+                loc         .   chrInstDecl         =   let pr = tyPred @prExpr.ty
+                                                        in  ( []
+                                                            , pr
+                                                            , RedHow_ByInstance @dictNm pr @lhs.predScope
+                                                            , @lhs.predScope
+                                                            )
+                lhs         .   chrInstDeclSq       =   Seq.singleton @chrInstDecl
+%%]

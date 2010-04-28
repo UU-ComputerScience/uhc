@@ -1,0 +1,495 @@
+%% configuration
+
+%if acm
+%let useSigplanconfSty = True
+%endif
+
+%if False %% storyPHD || storyAfpTRUU1 || onlyCurrentWork
+%let inclChunkMarks	= True
+%else
+%let inclChunkMarks	= False
+%endif
+
+%if storyExplImpl || storyImpred || storyRuler
+%let chapAsArticle  = True
+%else
+%let chapAsArticle  = False
+%endif
+
+%% end of configuration
+
+%if inclOmitted
+%% CONFIG: Omitted material included
+%else
+%% CONFIG: Omitted material excluded
+%endif
+
+%if asSlides
+%% CONFIG: As slides
+%else
+%endif
+
+%if asArticle
+%% CONFIG: As article
+%else
+%endif
+
+%if yesBeamer
+%% CONFIG: Beamer pkg used
+%else
+%endif
+
+%if omitlag2TeX
+%else
+%include lag2TeX.fmt
+%endif
+
+%include spacing.fmt
+
+%if style == poly
+
+%include greek.fmt
+%include parsing.fmt
+%include pretty.fmt
+
+%% handling of `
+
+%format `   = "\backtick "
+
+%format forall      = "{\forall}"
+%format exists      = "{\exists}"
+%format nexists     = "{\not\exists}"
+
+%format ^ 			= " "
+%format ^^ 			= "\;"
+
+%format (Overl(x))    	= "\overline{" x "}"
+%format (Vec(x))    	= "\overline{" x "}"
+%format (Vecr(x))    	= "\overline{" x "}^{\leftarrow}"
+%format (VecI(x)(i))    = x "^{\{" i "\}}"
+
+%format (Dot(x)(y)(z))	= "{" x "}_{" y "}^{" z "}"
+%format (Delta(x)) = "{\delta_{" x "}}"
+%format (Annot(x)(y)) = "{{" x "}^{\delta_{" y "}}}"
+%format (Sup(x)(y)) = "{{" x "}^{" y "}}"
+%format (Sub(x)(y)) = "{{" x "}_{" y "}}"
+%format (Supb(x)(y)(z)) = "{{" x "}^{" y "}_{" z "}}"
+%format (Subp(x)(y)(z)) = "{{" x "}_{" y "}^{" z "}}"
+%format (Card(x)(y)) = "{{" x "} \bowtie {" y "}}"
+%format (SCard(x)(z)(y)) = "{{" x "} \bowtie^{" z "} {" y "}}"
+
+% various keywords
+%format letrec 	= "\mathbf{letrec}"
+
+%format restr		= "\backslash "
+
+%format Gammap      = Gamma "_{p}"
+%format Gammat      = Gamma "_{t}"
+%format Gammaq      = Gamma "^{q}"
+%format Gammab      = Gamma "^{b}"
+%format Gammasig    = Gamma "_{sig}"
+
+%format TGamma      = Delta
+%format KGamma      = Theta
+
+%format taua        = tau "_{a}"
+%format utau        = "\widetilde{" tau "}"
+%format kappa       = "\kappa"
+%format ukappa      = "\widetilde{\kappa}"
+
+%format Forall		= "{\nabla}"
+
+%format pred		= pi
+%format predn		= pi "_n"
+%format pred1
+%format pred2
+%format pred3
+%format scope		= "\xi"
+%format scope'
+%format predscope	= pred "^{" scope "}"
+%format preds		= "\overline{" pi "}"
+
+%format predschemes1	= preds
+%format predschemes2	= preds
+%format predschemes1sc	= preds "^{" scope "}"
+%format predschemes2sc	= preds "^{" scope "}"
+
+%format prenv		= Gamma
+
+%format subst		= S
+
+%format sigmak      = sigma "^{k}"
+%format sigman      = sigma "_{n}"
+%format sigmam      = sigma "_{m}"
+%format sigmapk     = sigma "_{p}^{k}"
+%format sigmapf     = sigma "_{pf}"
+%format sigmaq      = sigma "^{q}"
+%format sigmab      = sigma "^{b}"
+%format sigmae      = sigma "_{e}"
+%format sigmal      = sigma "^{l}"
+%format sigmar      = sigma "^{r}"
+%format sigma_r 	= sigma "_{r}"
+%format sigmag 		= sigma "_{g}"
+%format sigmai     	= sigma "_{i}"
+%format sigmaa      = sigma "_{a}"
+%format sigmaaa     = sigma "^{a}"
+%format sigmaaa1
+%format sigma'
+%format sigma1
+%format sigma2
+%format sigma3
+%format sigma4
+%format sigma1a		= sigma "^{a}_{1}"
+%format sigma2a		= sigma "^{a}_{2}"
+%format sigma1r		= sigma "^{r}_{1}"
+%format sigma2r		= sigma "^{r}_{2}"
+%format sigmaQu     = sigma "_{" Qu "}"
+%format sigmaNQu    = sigma "_{" nQu "}"
+%format sigmaHard   = sigma "_{" thardH "}"
+%format sigmaSoft   = sigma "_{" thardS "}"
+
+%format isigma      = "\mathbb{\bbsigma}"
+%format isigmaf     = isigma "_{f}"
+
+%format bsigma      = sigma "_{" w/ "}"
+
+%format Cnstr       = "\mathcal{C}"
+%format Cnstre		= Cnstr "_{e}"
+%format Cnstra		= Cnstr "_{a}"
+%format Cnstrr		= Cnstr "_{r}"
+%format Cnstrp		= Cnstr "_{p}"
+%format Cnstrk		= Cnstr "^{k}"
+%format CnstrEq		= Cnstr "^{eq}"
+%format CnstrAss	= Cnstr "^A"
+%format CnstrVarpi(x)	= varpi "(" x ")"
+% format CnstrVarpi	= Cnstr "^{" varpi "}"
+%format `cnstrTyUnit`	= :->
+
+%format ICnstr      = "\mathbb{C}"
+%format ICnstrk		= ICnstr "^{k}"
+
+%format VarMp       = "\mathcal{C}"
+%format VarMpk		= VarMp "^{k}"
+
+%format IVarMp      = "\mathbb{C}"
+
+%format CHR				= "CHR"
+%format CHRorig			= CHR "^{i+c}"
+
+%format Qu          = "\mathcal{Q}"
+%format nQu         = "\neg" Qu
+
+%format ident       = "i"
+%format identv      = "i"
+%format identc      = "I"
+
+%format tvar        = "{\nu}"
+%format tvarv       = v
+%format tvarv'
+%format tvare       = tvarv
+%format tvarf       = f
+%format tvarf'
+%format tvarf1
+%format tvarf2
+%format tvarf3
+%format tvari       = tvarv "_i"
+%format tvar1
+%format tvar2
+%format tvar3
+%format tvar4
+%format tvarv1
+%format tvarv2
+%format tvarv3
+%format tvarv4
+%format tvarv5
+%format tvarv6
+
+%format tcon        = c
+
+%format talt			= phi
+%format taltcx(cx)		= talt "_{" cx "}"
+
+%format thard			= "\mathbb{H}"
+%format thardH			= thard "_{h}"
+%format thardS			= thard "_{s}"
+
+%format tneed			= "\mathbb{N}"
+%format tneedO			= tneed "_{o}"
+%format tneedR			= tneed "_{r}"
+
+%format pvar        = "{\varpi}"
+%format varpi       = "\varpi"
+%format varpi1
+%format varpin      = varpi "_n"
+%format pivar       = p
+%format pempty      = emptyset
+
+%format rvar        = "{\varrho}"
+
+%format rulerUndefinedExtern	= "{\cdot}"
+%format rulerPrePostSep	= "\mbox{---}"
+
+%format inst		= "inst"
+%format instv		= inst "_{" tvar  "}"
+%format instf		= inst "_{" tvarf "}"
+%format instc		= inst "_{" tvarc "}"
+%format instE		= inst "^{" exists "}"
+%format instWith(v)(x)	= inst "_{" v "}(" x ")"
+
+%format lbl			= l
+%format lbln		= lbl "_{n}"
+%format lbl1
+
+%format red				= "\color{red}"
+%format black			= "\color{black}"
+%format rcOMark			= "\color{blue}"
+%format rcCMark			= "\color{black}"
+%format rsOMark			= "\color{lightgray}"
+%format rsCMark			= "\color{black}"
+
+%format \\ 	    		= "{\backslash}"
+%format // 	    		= "/"
+%format /= 				= "\not= "
+%format /^/ 	    	= "/"
+%format /=/ 	    	= "{\eqcirc}"
+%format |=>     		= "\oplus "
+%format |>>     		= "\ogreaterthan "
+%format |\>     		= "\backslash "
+%format :->         	= "\mapsto "
+%format ~>	         	= "\leadsto "
+%format :-  			= "\vdash "
+%format **  			= ".."
+%format ::- 			= "\Vdash "
+%format :~>   			= "\rightsquigarrow "
+%format <~:   			= "\leftsquigarrow "
+%format :>   			= "\rightsquigarrow "
+%format .    			= "."
+%format === 			= "\equiv "
+%format =/= 			= "\not\equiv "
+%format =&&= 			= &&
+%format =||= 			= ||
+%format =@= 			= "{\varparallel}"
+% format <=> 			= "\mathrel{\cong}"
+%format <=> 			= "\cong "
+%format <==>  			= "\Longleftrightarrow "
+%format  ==>  			= "\Longrightarrow "
+%format <+-> 			= "\mathrel{\vartriangle}\hspace{-.25em}\mathrel{\triangledown}"
+% format <+-> 			= "\setbox0=\hbox{\ensuremath{\mathrel{\vartriangle}}}\copy0\kern-.4\wd0\mathrel{\triangledown}"
+%format <+> 			= "\mathrel{\vartriangle}"
+%format <-> 			= "\mathrel{\triangledown}"
+%format <-->    		= "\leftrightarrow"
+% format +	 			= ","
+% format ++	 			= ","
+%if asSlides
+%format ::= 			= "::="
+%format :=	 			= ":="
+%format <:   			= "<:"
+%else
+%format ::= 			= "\mathrel{\Coloneqq}"
+%format :=	 			= "\coloneqq "
+%format <:   			= "\leftsquigarrow "
+%endif
+
+%format cdot			= "{\cdot}"
+%format downarrow		= "{\downarrow}"
+%format uparrow			= "{\uparrow}"
+%format updownarrow		= "{\updownarrow}"
+%format isPre			= "{\div}"
+%format Pre				= "{\dotdiv}"
+%format Post			= "{\divdot}"
+
+%format isbydef			= "{=_{def}}"
+
+% format fiopt			= "{\xi}"
+%format fiopt			= "o"
+%format strongFIOpts	= fiopt "_{str}"
+%format weakFIOpts		= fiopt "_{wk}"
+%format instFIOpts		= fiopt "_{inst}"
+%format instLFIOpts		= fiopt "_{inst-l}"
+%format instLRFIOpts	= fiopt "_{inst-lr}"
+%format predFIOpts		= fiopt "_{pred}"
+%format implFIOpts		= fiopt "_{impl}"
+%format unifyFIOpts		= fiopt "_{unify}"
+%format meetFIOpts		= fiopt "_{meet}"
+%format joinFIOpts		= fiopt "_{join}"
+%format impredFIOpts	= fiopt "_{im}"
+
+%format	fioptBase		= "\textit{fi}"
+%format fioptO			= "\langle "
+%format fioptC			= "\rangle "
+%format fioptOY			= fioptO "\hskip0mm+\relax "
+%format fioptCY			= "+\relax\hskip0mm " fioptC
+%format fioLeaveRInst	= fioptBase "_{r-inst}"
+%format fioLeaveRInstY	= fioLeaveRInst "^{+}"
+%format fioLeaveRInstN	= fioLeaveRInst "^{-}"
+%if infer2pass
+%format fioBindRFirst	= 
+%format fioBindRFirstY	= 
+%format fioBindRFirstN	= 
+%format fioBindLFirst	= 
+%format fioBindLFirstY	= 
+%format fioBindLFirstN	= 
+%else
+%format fioBindRFirst	= fioptBase "_{r-bind}"
+%format fioBindRFirstY	= fioBindRFirst "^{+}"
+%format fioBindRFirstN	= fioBindRFirst "^{-}"
+%format fioBindLFirst	= fioptBase "_{l-bind}"
+%format fioBindLFirstY	= fioBindLFirst "^{+}"
+%format fioBindLFirstN	= fioBindLFirst "^{-}"
+%endif
+%format fioBindToTyBind		= fioptBase "_{delay-bind}"
+%format fioBindToTyBindY	= fioBindToTyBind "^{+}"
+%format fioBindToTyBindN	= fioBindToTyBind "^{-}"
+%if infer2pass
+%format fioFit			= fioptO <= fioptC
+%format fioFitY			= fioptO <= "^{+}" fioptC
+%format fioFitN			= fioptO <= "^{-}" fioptC
+%format fioMeet			= fioptO <+> fioptC
+%format fioMeetY		= fioptO <+> "^{+}" fioptC
+%format fioMeetN		= fioptO <+> "^{-}" fioptC
+%format fioJoin			= fioptO <-> fioptC
+%format fioJoinY		= fioptO <-> "^{+}" fioptC
+%format fioJoinN		= fioptO <-> "^{-}" fioptC
+%else
+%format fioFit			= fioptBase "_{" <= "}"
+%format fioFitY			= fioFit "^{+}"
+%format fioFitN			= fioFit "^{-}"
+%format fioMeet			= fioptBase "_{" <+> "}"
+%format fioMeetY		= fioMeet "^{+}"
+%format fioMeetN		= fioMeet "^{-}"
+%format fioJoin			= fioptBase "_{" <-> "}"
+%format fioJoinY		= fioJoin "^{+}"
+%format fioJoinN		= fioJoin "^{-}"
+%endif
+%format fioAllowEqOpen	= fioptBase "_{eq-open}"
+%format fioAllowEqOpenY	= fioAllowEqOpen "^{+}"
+%format fioAllowEqOpenN	= fioAllowEqOpen "^{-}"
+%if infer2pass
+%format fioBindToTyAlts		= fioptO :-> fioptC
+%format fioBindToTyAltsY	= fioptO :-> "^{+}" fioptC
+%format fioBindToTyAltsN	= fioptO :-> "^{-}" fioptC
+%else
+%format fioBindToTyAlts		= fioptBase "_{alt}"
+%format fioBindToTyAltsY	= fioBindToTyAlts "^{+}"
+%format fioBindToTyAltsN	= fioBindToTyAlts "^{-}"
+%endif
+%format fioBindLBeforeR	= fioptBase "_{l,r}"
+%format fioBindLBeforeRY	= fioBindLBeforeR "^{+}"
+%format fioBindLBeforeRN	= fioBindLBeforeR "^{-}"
+%format fioDontBind		= fioptBase "_{bv}"
+
+%format CoCo        	= "\mathcal{V}"
+%format coco        	= CoCo
+%format cocov	     	= coco
+%format cocoY			= coco "^{+}"
+%format cocoN			= coco "^{-}"
+%format cocoNo			= coco "^{.}"
+%format cocovar     	= coco
+
+%format CoVrCoOpp       = "\neg "
+
+%format CoVariant		= "\oplus "
+%format ContraVariant	= "\ominus "
+%format CoContraVariant	= "\odot "
+
+%format Top         	= "\top "
+%format Bot         	= "\bot "
+% format ANY				= "\makebox[0cm][l]{\(\top\)}\bot{}"
+%format ANY				= "{\Box}"
+
+%format `union`			= "\cup "
+%format `subset`		= "{\subset}"
+%format `minusset`		= "-"
+%format `intersect`		= "\cap "
+%format emptyset		= "\emptyset "
+%format not		        = "not"
+%format ==		        = "=="
+%format frac(n)(d)		= "\frac{" n "}{" d "}"
+%format `supseteq`		= "\supseteq"
+%format supseteq		= "\supseteq"
+
+
+%format InstUnExists    = "inst^{" exists "}"
+
+% format ftv				= "\ftv "
+
+%format `gamUnit`		= :->
+%format `fitsIn`		= <=
+%format </=				= "\not" <=
+
+%format Transl			= "{\vartheta}"
+%format Transl2
+%format Transl2pi		= Transl2 "^{" pi "}"
+%format Transla			= Transl "_{a}"
+%format lacks			= "\backslash "
+
+%format Coe         	= "{\delta}"
+%format coe         	= Coe
+
+%format NYI				= "\mbox{\color{red}[Not yet implemented]}"
+
+%format AGFeature		= "\mathcal{AG}"
+
+%format redOn			= "\color{red}"
+%format blueOn			= "\color{blue}"
+%format blackOn			= "\color{black}"
+%format red(x)			= "{\color{red}" x "}"
+
+%format name1
+%format name2
+%format attr1
+%format attr2
+%format node1
+%format node2
+
+%format v10
+%format v22
+%format v23
+
+%format at				= "@"
+%format at1
+%format at2
+%format at3
+
+%% acronyms
+%format MLF				= "\textsf{ML}^{\textsf{F}}"
+
+%elif style == newcode
+%format ^ =
+%format ^^ = 
+%endif
+
+%format bullet = "\!\bullet"
+%format =>= = "\triangleright"
+%format \+/ = "\oplus"
+%format \-/ = "\ominus"
+%format \*/ = "\odot"
+%format tyx = "{\tau_{x}}"
+%format sumi = "\sum_{i}"
+%format opplus = "+"
+%format hsnameFormat = "\hbar"
+%format compFormat = "\Im"
+%format oneplus = "{1^{+}}"
+%format onemin  = "{1^{-}}"
+%format Usage = "\jmath"
+%format UpperBound = "\imath"
+%format LowerBound = "\ell"
+%format leq  = "\sqsubseteq"
+%format leqB = "\sqsubseteq_B"
+%format leqBL = "\sqsubseteq_{BL}"
+%format leqL = "\sqsubseteq_L"
+%format leqU = "\sqsubseteq_U"
+%format leqC = "\sqsubseteq_C"
+%format leqS = "\sqsubseteq_S"
+%format leqX = "\sqsubseteq_X"
+%format leqZ = "\sqsubseteq_Z"
+%format leqM = "\sqsubseteq_M"
+%format leqP = "\sqsubseteq_P"
+%format leqQ = "\sqsubseteq_Q"
+%format leqV = "\sqsubseteq_V"
+%format join = "\sqcup"
+%format ConstrSet = zeta
+%format bottom = "\bot"
+%format Phi = "\Phi"
+%format Psi = "\Psi"
+%format Cs = zeta

@@ -1,0 +1,142 @@
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include experimentsubst.fmt\n"
+
+viewhierarchy = D < A
+
+format tex env = Gamma
+format tex Env = Gamma
+format tex Subst.inh = Subst.in
+format tex Subst.syn = Subst.out
+
+external c
+
+data Tree [tree]
+  view D =
+      Constant [t.con]
+    | Tuple    [t.tup]         x  :: Tree
+                               y  :: Tree
+    | First    [t.fst]         x  :: Tree
+    | Second   [t.snd]         x  :: Tree
+    | DefBind  [t.defb]        n  :: String
+                               x  :: Tree
+                               y  :: Tree
+    | UseBind  [t.useb]        n  :: String
+
+scheme tree =
+  view D  =
+    holes [ node Tree: Tree, Env: Env, Val: Val ]
+    judgespec Env :- Tree : Val
+  view A =
+    holes [ inh Env: Env, thread Subst: Subst, syn Val: Val ]
+    judgespec Subst.inh ; Env :- Tree : Val ~> Subst.syn
+
+ruleset tree.basic scheme tree "Rules for Val of Tree" =
+  rule t.con =
+    view D =
+      ---
+      judge R : tree = env :- C : c
+    view A =
+      ---
+      judge R : tree
+        | Subst.syn = Subst
+        | Subst.inh = Subst
+
+  rule t.useb =
+    view D =
+      judge V : isInEnv = env :- n : v
+      ---
+      judge R : tree = env :- n : v
+    view A =
+      ---
+      judge R : tree
+        | Subst.syn = Subst
+        | Subst.inh = Subst
+        | Val = Subst v
+
+  rule t.defb =
+    view D =
+      judge B : tree = env :- x : v
+      judge V : tree = (n :-> v, env) :- y : w
+      ---
+      judge R : tree = env :- (bind n `=` x in y) : w
+    view A =
+      judge B : tree
+        | Subst.inh = Subst
+        | Subst.syn = Subst.x
+      judge V : tree
+        | Subst.inh = Subst.x
+        | Subst.syn = Subst.y
+      ---
+      judge R : tree
+        | Subst.syn = Subst.y
+        | Subst.inh = Subst
+
+  rule t.tup =
+    view D =
+      judge F : tree = env :- x : v
+      judge S : tree = env :- y : w
+      ---
+      judge R : tree = env :- ((x,y)) : ((v,w))
+    view A =
+      judge F : tree
+        | Subst.inh = Subst
+        | Subst.syn = Subst.x
+      judge S : tree
+        | Subst.inh = Subst.x
+        | Subst.syn = Subst.y
+      ---
+      judge R : tree
+        | Subst.syn = Subst.y
+        | Subst.inh = Subst
+        | Val = (Subst.y v,w)
+
+  rule t.fst =
+    view D =
+      judge P : tree = env :- x : ((v,w))
+      ---
+      judge R : tree = env :- (fst x) : v
+    view A =
+      judge P : tree
+        | Val = vw
+        | Subst.inh = Subst
+        | Subst.syn = Subst.x
+      judge F : newVar2 =  v, w
+      judge M : valMatch = ((v,w)) === vw ~> Subst.m
+      ---
+      judge R : tree
+        | Val = Subst.m Subst.x v
+        | Subst.syn = Subst.m Subst.x
+        | Subst.inh = Subst
+
+  rule t.snd : t.fst =
+    view D =
+      ---
+      judge R : tree
+        | Val = w
+        | Tree = snd x
+    view A =
+      ---
+      judge R : tree
+        | Val = Subst.m Subst.x w
+
+relation isInEnv =
+  view D =
+    holes [ n: String, Env: Env, Val: Val ]
+    judgespec Env :- n : Val
+    judgeuse tex (n :-> Val) `elem` Env
+
+relation newVar =
+  view A =
+    holes [ x: Val ]
+    judgespec x
+    judgeuse tex x (text "fresh")
+
+relation newVar2 =
+  view A =
+    holes [ x: Val, y: Val ]
+    judgespec x, y
+    judgeuse tex x, y (text "fresh")
+
+relation valMatch =
+  view A =
+    holes [ x: Val, y: Val, Subst: Subst ]
+    judgespec x === y ~> Subst

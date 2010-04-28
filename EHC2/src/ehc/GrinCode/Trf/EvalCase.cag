@@ -1,0 +1,119 @@
+%%[doesWhat doclatex
+Transforms Case (Node (Cons ..)) AltL to Expr. Evaluates a case if it contains the node.
+
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)
+%%]
+%%[(8 codegen grin) hs import ({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}, {%{EH}Base.HsName} )
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalCase} export(evalCase)
+                    
+evalCase :: GrModule -> Maybe GrModule
+evalCase grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                         (Inh_GrAGItf)
+                     in  if   (changed_Syn_GrAGItf t)
+                         then Just (grTrf_Syn_GrAGItf t)
+                         else Nothing
+%%]
+
+
+%%[(8 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+
+%%[(8 codegen grin)
+
+-- Environment passes information about variables that hold a P-node.
+
+ATTR AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
+
+ATTR GrExpr [  | | mbUnitCNode : {Maybe GrVal} ]
+                   
+ATTR GrPatLam [ | | mbName : {Maybe HsName} ]
+
+ATTR AllNT GrAGItf [ | | changed USE {||} {False} : {Bool} ]
+
+ATTR GrVal [ | | hasCAppTag : {Bool} ]
+
+ATTR GrVal    [ | | varId: {Either HsName GrTag} ]
+
+SEM GrVal
+  | Var EnumNode       lhs.varId  =  Left @nm
+  | Tag Node           lhs.varId  =  Right @tag.grTrf
+  | * - Var Tag 
+        Node EnumNode  lhs.varId  =  error ("EvalCase: not a simple variable as scrutinizer: " ++ show @loc.grTrf)
+        
+SEM GrPatLam
+  | Var       lhs.mbName  =  Just @nm
+  | * - Var   lhs.mbName  =  Nothing
+
+SEM GrVal
+  | Node      lhs.hasCAppTag  =  isCAppTag @tag.grTrf
+  | * - Node  lhs.hasCAppTag  =  False
+
+{
+isCAppTag :: GrTag -> Bool
+isCAppTag (GrTag_Con _ _ _)   = True
+isCAppTag _                   = False
+}
+
+SEM GrBind
+  | Bind      expr.env     =  Map.empty 
+
+SEM GrExpr
+  | Seq       body.env                 =  case (@pat.mbName,@expr.mbUnitCNode) of
+                                                (Just name, Just val) -> Map.insert name val @lhs.env
+                                                _                     -> @lhs.env  
+                                 
+  | Unit            lhs.mbUnitCNode    =  if   @val.hasCAppTag
+                                          then Just @val.grTrf
+                                          else Nothing
+  | * - Unit        lhs.mbUnitCNode    =  Nothing
+ 
+  | Case            (altL.possibleTag,lhs.changed)
+                                       =  case @val.varId of
+                                             Left n ->  (Nothing,False) --
+                                                        {-
+                                                        maybe (Nothing,False)
+                                                        (\(GrVal_Node t _) -> (Just t,True))
+                                                        (Map.lookup n @lhs.env) 
+                                                        -}
+                                             Right t -> (Just t,True)                                     
+%%]
+
+
+%%[(8 codegen grin)
+
+
+-- decide which alternatives are possible
+ATTR GrAlt     [ | | isPossible: Bool        ]
+ATTR AllAlt    [ possibleTag: {Maybe GrTag} | | ]
+
+ATTR GrPatAlt [ | | tag: GrTag ]
+
+SEM GrPatAlt 
+  | Tag 
+    Node           lhs.tag  =  @tag.grTrf
+  | * - Node Tag   lhs.tag  =  error "ImpossibleCase: alternative without a tag"
+  
+SEM GrAlt
+  | Alt      lhs.isPossible     =  maybe True (\tag -> @pat.tag == tag) @lhs.possibleTag
+                                   -- trace ("tag: " ++ show @pat.tag ++ " possible: " ++ show @lhs.possibleTags) $
+                                   
+
+-- remove the impossible alternatives
+SEM GrAltL
+  | Cons     lhs.grTrf          =  if   @hd.isPossible 
+                                   then @hd.grTrf : @tl.grTrf 
+                                   else             @tl.grTrf                  
+%%]

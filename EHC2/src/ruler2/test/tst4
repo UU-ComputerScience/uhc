@@ -1,0 +1,9 @@
+scheme Y =
+  hole [ a: A, b: B  | | ]
+  judgeshape tex a `=` b
+
+rules y scheme Y "" =
+  rule y =
+    judge Y = a `=` b
+    -
+    judge Y = b `=` a

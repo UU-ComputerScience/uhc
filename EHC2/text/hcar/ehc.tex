@@ -1,0 +1,125 @@
+\documentclass{article}
+
+\usepackage{hcar}
+
+\begin{document}
+
+\begin{hcarentry}{EHC, `Essential Haskell' Compiler}
+\report{Atze Dijkstra}
+\status{active development}
+\participants{%
+  Jeroen Fokker,
+  Doaitse S. Swierstra,
+  Arie Middelkoop,
+  Luc\'ilia Camar\~ao de Figueiredo,
+  Carlos Camar\~ao de Figueiredo
+}% optional
+\label{ehc}
+\makeheader
+
+\paragraph{What is EHC?}
+The EHC project provides a Haskell compiler as well as a description of the
+compiler which is as understandable as possible so it can be used for
+education as well as research.
+
+For its description an Attribute Grammar system (AG) is used as well as other
+formalisms allowing compact notation like parser combinators.  For the
+description of type rules, and the generation of an AG implementation for
+those type rules, we use the Ruler system.
+For source code management we use Shuffle, which allows partitioning the system into a sequence of steps and aspects.
+(Both Ruler and Shuffle are included in the EHC project).
+
+The EHC project also tackles other issues:
+\begin{itemize}
+\item
+   In order to avoid overwhelming the innocent reader,
+   the description of the compiler is organised as a series of
+   increasingly complex steps.
+   Each step corresponds to a Haskell subset which itself is an extension
+   of the previous step.
+   The first step starts with the essentials, namely typed lambda
+   calculus; the last step corresponds to full Haskell.
+
+\item
+   Independent of each step the implementation is organised into a set of aspects.
+   Currently the type system and code generation are defined as aspects,
+   which can then be left out so the remaining part can be used as a barebones starting point.
+
+\item
+   Each combination of step + aspects corresponds to an actual, that is, an executable compiler.
+   Each of these compilers is a compiler in its own right.
+
+\item
+   The description of the compiler uses code fragments which are
+   retrieved from the source code of the compilers.
+   In this way the description and source code are kept synchronized.
+\end{itemize}
+
+Currently EHC offers experimental implementation of more advanced features like
+higher-ranked polymorphism, partial type signatures, and kind polymorphism.
+Part of the description of the series of EH compilers is available
+as a PhD thesis.
+
+\paragraph{What is EHC's status, what is new?}
+\begin{itemize}
+\item
+   A Haskell frontend plus Prelude has been made, compiled code runs with an interpreter.
+   The compiler has an acceptable memory + resource footprint.
+   (done by Atze Dijkstra).
+\item
+   A GRIN (Graph Reduction Intermediate Notation \cite{boquist99phd-optim-lazy}) based backend is available,
+   offering global program optimization and code generation to C (done by Jeroen Fokker) as well as LLVM (done by John van Schie).
+\item
+   Work has started on formalizing EHC's type system; extending our Ruler system will be part of this effort
+   (by Luc\'ilia Camar\~ao de Figueiredo, Carlos Camar\~ao de Figueiredo, Arie Middelkoop, Atze Dijkstra).
+\item
+   The organisation of EHC into aspects, allowing better partial reuse of EHC.
+\item
+   Though not a direct part of EHC, its supporting tools (AG, Shuffle) are regularly adapted to allow a cleaner EHC code base.
+%\item
+%   Arie Middelkoop will continue with the development of the Ruler system~\cref{ruler}. 
+\end{itemize}
+
+\paragraph{Is EHC used, can I use EHC?}
+Yes, but the answer also depends for what purpose.
+Although it compiles a Prelude, we have yet to prepare a release of EHC as a Haskell compiler.
+Also, the first release will definitively be a alpha release, meant for play and experimentation,
+not for compiling real world programs.
+
+EHC is used as a platform for experimentation, see EHC's webpage for various projects related to EHC.
+EHC can be downloaded from our svn repository.
+
+\paragraph{What will happen with EHC in the near future?}
+We plan to do the following:
+
+\begin{itemize}
+\item
+  Make the variant for full Haskell available as a Haskell compiler.
+  For this we will stabilize the implementation and add proper documentation.
+\item
+  Rework the type system to have a more formal underpinning.
+  Our intent is to use and extend our Ruler system for this.
+\end{itemize}
+
+\FurtherReading
+\begin{itemize}
+\item Homepage:\\
+\url{http://www.cs.uu.nl/wiki/Ehc/WebHome}
+
+\item Attribute grammar system:\\
+\url{http://www.cs.uu.nl/wiki/HUT/AttributeGrammarSystem}
+
+\item Parser combinators:\\
+\url{http://www.cs.uu.nl/wiki/HUT/ParserCombinators}
+
+\item Shuffle:\\
+\url{http://www.cs.uu.nl/wiki/Ehc/Shuffle}
+
+\item Ruler:\\
+\url{http://www.cs.uu.nl/wiki/Ehc/Ruler}
+\end{itemize}
+
+\end{hcarentry}
+
+\end{document}
+

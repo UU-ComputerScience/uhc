@@ -1,0 +1,12 @@
+module "duplicate-var" 
+{ }
+{ main 
+	= {
+		unit (#U 3); \(#U a) ->
+		unit (#U 4); \(#U a) ->
+		unit (#0/C/$Int 1 a)
+	}
+}
+ctags {}
+evalmap { }
+applymap { }

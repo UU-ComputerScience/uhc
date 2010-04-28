@@ -1,0 +1,1912 @@
+%%[abstract
+Some type systems are first described formally,
+to be sometimes followed by an implementation.
+Other type systems are first implemented as language extensions,
+to be sometimes retrofitted with a formal description.
+In neither case it is an easy task to keep both artefacts consistent.
+In \thischapt\ we introduce |Ruler|, a domain specific language for describing type rules.
+Type rules can be incrementally described, thus providing a means for building complex type systems on top of simpler ones.
+Besides checking well-formedness of |Ruler| programs we use them to generate
+(1) a visual \LaTeX\ rendering, suitable for use in the presentation of formal aspects,
+and (2) an attribute grammar based implementation.
+Combining these two aspects
+in |Ruler| contributes to bridging the gap between theory and practice:
+mutually consistent representations can be generated for use in both theoretical and practical settings.
+%%]
+
+%%[motivationSmall
+\subsection{Introduction}
+
+Theory and practice of type systems often seem to be miles apart.
+For example, for the programming language Haskell there exists a language definition
+\cite{peytonjones03has98-rev-rep},
+a formal description of most of the static semantics
+\cite{faxen02semantics-haskell},
+a Haskell description of type inferencing
+\cite{jones00thih},
+several implementations \cite{www04ghc,www03hugs},
+and, on top of this, experimental language features like the class system
+\cite{jones94phd-qual-types,peytonjones97typecl-explore,duggan02check-multipclass}.
+However, the relationship between these artefacts is unclear with respect to their mutual consistency and the mutual effect of a change or extension.
+%%]
+
+%%[motivationLarge
+\subsection{Introduction}
+
+Theory and practice of type systems often seem to be miles apart.
+For example, for the programming language Haskell the following artefacts exist:
+\begin{Itemize}
+\item
+A language definition for the Haskell98 standard \cite{peytonjones03has98-rev-rep},
+which defines Haskell's syntax and
+its meaning in informal terms.
+Part of this is specified in the form of a translation to a subset of Haskell.
+\item
+A formal description of the static semantics of most of Haskell98 \cite{faxen02semantics-haskell}.
+\item
+Several implementations, of which we mention GHC \cite{www04ghc} and Hugs \cite{www03hugs}.
+\item
+Experimental language features, of which some have
+been formally described in isolation,
+and some of them
+found their way into Haskell,
+or are available as non-standard features.
+As an example we mention Haskell's class system
+\cite{jones94phd-qual-types},
+and multi-parameter type classes 
+\cite{peytonjones97typecl-explore,duggan02check-multipclass}
+present in extensions
+\cite{www04ghc,www03hugs}
+to Haskell98.
+\item
+A Haskell description of type inferencing for Haskell98
+\cite{jones00thih},
+serving at the same time as a description and an implementation.
+\end{Itemize}
+
+We thus can ask ourselves the following questions:
+
+\begin{Itemize}
+\item
+What is the relationship between all the descriptions (i.e language definition and static semantics)
+of Haskell and available implementations?
+\item
+What is the effect of a change or extension which is first implemented and subsequently described?
+\item
+What is the effect of a change or extension which is first described and subsequently implemented?
+\end{Itemize}
+%%]
+
+%%[introProblem
+\subsubsection{The problem}
+For example,
+if we were to extend Haskell with a new feature, we may start by exploring the feature
+in isolation from its context by creating a minimal type system for the feature,
+or an algorithmic variant of such a type system,
+or a proof of the usual properties (soundness, completeness), or perhaps a prototype.
+Upto this point the extension process is fairly standard;
+however, when we start to integrate the feature into a working implementation this process and the preservation of proven
+properties becomes less clear.
+Whatever route we take, that is, 
+either retrofitting an implementation with a description or the other way around,
+there is little help in guaranteeing that the formal description and the implementation are mutually consistent.
+Even worse, we cannot be sure that an extension preserves the possibility to prove desirable properties.
+%if not shortStory
+As a example, it has already been shown that Haskell does not have principal types,
+due to a combination of language features and seemingly innocent extensions
+\cite{faxen03hask-princ-types}.
+%endif
+
+Based on these observations we can identify the following problems:
+
+\begin{description}
+\item[Problem 1.]
+It is difficult, if not impossible, to keep separate (formal) descriptions and implementations
+of a complex modern programming language consistent.
+\end{description}
+
+Our approach to this problem is to
+maintain a single description of the static semantics of a programming language.
+from which we generate both the material which can be used as a starting point for a formal treatment as well as the implementation.
+
+\begin{description}
+\item[Problem 2.]
+The extension of a language with a new feature means that the interaction between new and old features
+needs to be examined with respect to the preservation of desirable properties,
+where a property may be formal (e.g. soundness) or practical (e.g. sound implementation). 
+\end{description}
+
+The |Ruler| language that we introduce in this paper makes
+it easy to describe language features in relative isolation.
+The separate descriptions for these features,
+however, can be combined into a description of the complete language.
+Note that traditional programming language solutions, like the use of modules and abstract data types to factor code, are not sufficient:
+a language extension often requires changes in the data types representing the abstract syntax and the required implementation may require changes across
+multiple modules.
+Usually, an additional language feature requires textual changes to numerous parts of the language description and implementation.
+
+The feature interactions seem to be inescapable,
+no matter how much we try to keep language definitions orthogonal.
+Unfortunately we cannot give simple descriptions of complicated languages,
+but at least we can try to describe the various aspects in relative isolation.
+We do this by providing tools that help in building incremental,
+modular and stratified language descriptions.
+
+The need for the |Ruler| system arose in the context of the
+Essential Haskell (EH) project
+\cite{dijkstra04ehc-web%
+%if not (storyPHD || storyEhcBook)
+,dijkstra05phd%
+%endif
+}.
+The design goal of EH is to construct a compiler for an extended version of Haskell,
+and to (simultaneously) build an explanation of its implementation,
+while keeping both versions consistent 
+by generating corresponding parts from a single source.
+This approach resembles the one taken by Pierce \cite{typing:types-prog-lang:pierce,levin99tinkertype} who
+explains both non-algorithmic and algorithmic variants of type systems.
+The EH project starts with the description and implementation of a very simple language,
+and extends it in a sequence of steps by adding features like higher ranked polymorphism,
+mechanisms for explicitly passing implicit parameters \cite{dijkstra05explimpl}, and
+higher order kinds.
+Each step corresponds to a working compiler.
+In this context, |Ruler| allows the description of a type system to be partitioned as a sequence of steps.
+In \thischapt\ we demonstrate our approach on a very small example, stepping from the declarative view on a type system towards its implementation view.
+Of these steps, the final one corresponds to a working implementation.
+
+%if False
+Our approach is similar to, but also different from literate programming.
+We emphasize that |Ruler| provides a solution for the abovementioned problems;
+in the conclusion (\secRef{ruler-conclude}) we will further discuss additional desirable features of the |Ruler| system.
+%endif
+%%]
+
+%%[introExampleOverview
+\subsubsection{Running example}
+
+\rulerCmdUse{rulerDemo.E.expr.base}
+
+\rulerCmdUse{rulerDemo.A.expr.base}
+
+\begin{CodeFigure}{}{Part of the generated implementation for \ruleRef{e.app}}{ruler-demo-impl}
+%%[[wrap=code
+ %%@RulerDemoMain.3.AST.Expr.App
+%%@rulerDemoAG.3.expr.DATA
+
+%%@rulerDemoAG.3.expr.ATTR
+
+%%@rulerDemoAG.3.expr.e.app
+%%]
+\end{CodeFigure}
+
+%if not shortStory
+\Paragraph{How our approach contributes to solving the problems}
+%endif
+
+We explore the above problems and our solution
+by looking at the final products that are generated by the |Ruler| system, in figures~\ref{rulerDemo.E.expr.base} through~\ref{ruler-demo-impl}.
+We emphasize at this point that a full understanding of these figures is not required nor intended.
+The focus of \thischapt\ is on the construction of the figures, not on their meaning:
+|Ruler| only tackles the problem of \emph{consistency} between such figures and the corresponding implementation.
+Our aim is to look at these figures from a metalevel
+and to see how type rules can be specified and how their content can be generated using our |Ruler| system.
+Nevertheless, we have chosen a small, well known, and realistic
+%if not shortStory
+running
+%endif
+example: the Hindley-Milner (HM) type system.
+\figRef{rulerDemo.E.expr.base} gives the well-known equational rules, \figRef{rulerDemo.A.expr.base} the algorithmic variant and \figRef{ruler-demo-impl} part of
+the generated implementation.
+In this section these figures demonstrate the general idea of |Ruler| and the artefacts generated by |Ruler|;
+later sections discuss the involved technicalities.
+%%]
+
+%%[introExampleExplain
+%if shortStory
+Both type rules and their implementation can be used to explain a type system.
+This is what we have done
+within the context of the EH project.
+For example, rules similar to \ruleRef{e.app} from \figRef{rulerDemo.A.expr.base}
+and the corresponding attribute grammar (AG) implementation from
+\figRef{ruler-demo-impl} are jointly explained, each strengthening the understanding of the other.
+%else
+Both type rules and fragments of corresponding source code are used in the explanation of the compiler.
+For example, \ruleRef{e.app} from \figRef{rulerDemo.A.expr.base} and the corresponding attribute grammar (AG) implementation from
+\figRef{ruler-demo-impl} are jointly explained, each strengthening the understanding of the other.
+%endif
+However, when features are combined, this inevitably leads to the following problems:
+
+\begin{Itemize}
+\item
+Type rules and AG source code both become quite complex and increasingly difficult to understand.
+\item
+A proper understanding may require explanation of a feature both in isolation as well as in its context.
+These are contradictory requirements.
+\item
+With increasing complexity comes increasing likeliness of inconsistencies between type rules and AG source code.
+\end{Itemize}
+
+Part of our solution to these problems is the use of the concept of \IxAsDef{views} on both the type
+rules and AG source code.
+Views are ordered in the sense that later views are built on top of earlier views.
+Each view is defined in terms of its differences and extensions to its ancestor view;
+the resulting view on the artefact is the accumulation of all these incremental definitions.
+
+This, of course, is not a new idea: version managment systems use similar mechanisms,
+and object-oriented systems use the notion of inheritance.
+However, the difference lies in our focus on a whole sequence of versions as well as the changes between versions:
+in the context of version management only the latest version is of interest, whereas for a class hierarchy we aim
+for encapsulation of changes.
+We need simultaneous
+access to all versions,
+which we call views,
+in order to build both the explanation and the sequence
+of compilers.
+A version management systems uses versions as a mechanism for evolution,
+whereas we use views as a mechanism for explaining and maintaining EH's sequence of compilers.
+We may e.g. change the very first view, and have these changes automatically included in all subsequent views.
+
+For example, \figRef{rulerDemo.E.expr.base} displays view |E| (equational),
+and \figRef{rulerDemo.A.expr.base} displays view |A| (algorithmic)
+on the set of type rules, where each rule consists of judgements (premises and a single conclusion).
+View |A| is built on top of view |E| by specifying the differences with respect to view |E|.
+%if targetForPaper
+In the electronic version of \thispaper, the
+%else
+The
+%endif
+incremental definition of these views is exploited by using a color scheme to visualise the differences.
+The part which has been changed with respect to a previous view is displayed in blue,
+the unchanged part is displayed in grey (however, in the printed version all is black).
+In this way we address ``Problem~2''.
+
+Independently from the view concept we exploit the similarity between type rules and AG based implementations.
+To our knowledge this similarity has never been crystallized into a working system.
+We use this similarity by specifying type rules using a single notation,
+which contains enough information to
+generate both the sets of type rules
+(in \figRef{rulerDemo.E.expr.base} and \figRef{rulerDemo.A.expr.base})
+as well as part of the AG implementation
+(in \figRef{ruler-demo-impl}).
+\figRef{ruler-demo-impl} shows the generated implementation for \ruleRef{e.app}.
+In this way we address ``Problem~1''.
+
+The main goal of our |Ruler| system is to have one integrated definition of type rules, views on those rules,
+and the specification of information directing the generation of a partial implementation.
+As an additional benefit, |Ruler| allows one to describe the ``type of the judgements''
+and checks whether the rules are ``well-typed''.
+
+In the course of the EH project the Ruler system  has become indispensable for us:
+
+\begin{Itemize}
+\item
+|Ruler| is a useful
+tool for describing type rules and keeping type rules consistent with their implementation.
+In subsequent sections we will see how this is accomplished.
+\item
+It is relatively easy to extend the system to generate output to be used as input for other targets (besides \LaTeX\ and AG).
+This makes |Ruler| suitable for other goals while at the same time maintaining a single source for type rules.
+\item
+We also feel that it may be a starting point for a discussion about how to deal with the complexities of
+modern programming languages: both their formal and practical aspects.
+In this light, \thischapt\ also is an invitation to the readers to improve on these aspects.
+In our conclusion (\secRef{ruler-conclude}) we will discuss some developments we foresee
+and directions of further research.
+\end{Itemize}
+
+We summarize |Ruler|'s strong points,
+such that we can refer to these points from the technical part of \thischapt:
+
+\begin{description}
+\item[Single source.]
+Type rules are described by a single notation;
+all required type rule related artefacts are generated from this.
+\item[Consistency.]
+Consistency between the various type rule related artefacts is automatically guaranteed
+as a consequence of being generated from a single source.
+\item[Incrementality.]
+It is (relatively) easy to incrementally describe type rules.
+\item[Well-formedness checks.]
+Judgements are checked against the `type' of a judgement.
+\end{description}
+
+The remainder of \thischapt\ is organised as follows:
+in \secRef{ruler-overview} we present an overview of the |Ruler| system.
+This overview gives the reader an intuition of what |Ruler| can do
+and how it interacts with
+other tools.
+Preliminaries for the example language and type systems are given
+in \secRef{ruler-prelim}.
+In \secRef{ruler-basics} we specify the contents of
+%if shortStory
+\figRef{rulerDemo.E.expr.base}.
+%else
+\figRef{rulerDemo.E.expr.base},
+in \secRef{ruler-hm-infer} we extend this specification for
+the contents of
+\figRef{rulerDemo.A.expr.base}.
+%if not (storyPHD || storyEhcBook)
+In \secRef{ruler-ag-basics} we explain the AG (attribute grammar) system.
+%endif
+In \secRef{ruler-ag-infer} we extend the example |Ruler| specification so that
+|Ruler| can generate AG code.
+%endif %% shortStory
+In \secRef{ruler-extendinitial} we continue with the extension towards an algorithmic version from which attribute grammar (AG) code can be generated.
+Finally, we discuss related work in \secRef{ruler-relatedwork}, and experiences and future work in \secRef{ruler-conclude}.
+%%]
+
+%%[rulerOverview
+\subsection{|Ruler| overview}
+\label{ruler-overview}
+
+%if not shortStory
+\begin{XFigFigure}{}{ruler-overview}{Ruler overview}{ruler-fig-overview}
+\end{XFigFigure}
+
+%%[[highLevelStructure
+\begin{CodeFigure}{t}{High level structure of Ruler source}{ruler-src-template}
+%%@TopicRuler.rulerSrcTemplate wrap=code
+\end{CodeFigure}
+%%]
+%endif
+
+%if shortStory
+%else
+\Paragraph{Infrastructure around Ruler}
+Although the |Ruler| system allows us to generate part of an implementation, it is by no means the only
+tool we use in the construction of our compilers.
+\figRef{ruler-fig-overview} gives an overview of the tools used to construct the example compiler for the
+type rules presented in \thischapt.
+In the left branch we generate an executable compiler using the following sources:
+
+\begin{Itemize}
+\item
+|Ruler| code (in box `Ruler') for type rules, out of which AG code is generated by |Ruler|.
+\item
+AG code (in box `AG main') for the specification of a pretty printed representation of the input and error handling.
+The AG compiler generates Haskell.
+\item
+Haskell code (in box `HS main') for the specification of a parser, interaction with the outside world and remaining functionality.
+\end{Itemize}
+
+In the right branch we generate \LaTeX\ commands for |Ruler| type rules which can be used in a \LaTeX\ document (in box `latex main').
+The major part of generating \LaTeX\ is delegated to |lhs2TeX|
+\cite{loh04lhs2tex-www}.
+
+The use of tools for the EH compilers is slightly more complicated because we need to specify different views on AG and Haskell code as well.
+A separate fragment management tool, called |shuffle| (part of the EH project \cite{dijkstra04ehc-web}),
+is used to generate AG and Haskell code from code fragments describing the view inheritance chains for
+AG and Haskell code.
+Because we do not discuss this any further, this part has been omitted (from \figRef{ruler-fig-overview}).
+%endif %% shortStory
+%%]
+
+%%[designOfRuler.Concepts
+A |Ruler| specification consists of rules organized into rulesets.
+Each rule consists of judgements which must comply with a scheme which describes the structure of a judgement.
+We make this more precise in the remainder of this section.
+
+The structure of a judgement is described by a (judgement) \IxAsDef{scheme}.
+A scheme is the signature of a judgement.
+For each scheme we specify multiple \IxAsDef{views}.
+A view on a scheme consists of named \IxAsDef{holes} and judgeshapes, which come in the following varieties:
+
+\begin{Itemize}
+\item One \IxAsDef{judgespec}, used to specify the template for judgements.
+\item For each output target a \IxAsDef{judgeuse}, used to specify how to map a judgement to an output format.
+\end{Itemize}
+
+Holes are the parameters of a scheme and are given concrete values when instantiated as a judgement by means of a judgespec template.
+
+%if shortStory
+%%@TopicRuler.highLevelStructure
+%endif
+
+Rules are grouped into \IxAsDef{rulesets}.
+From a ruleset a figure like \figRef{rulerDemo.E.expr.base} is generated,
+so it specifies of a set of rules,
+the scheme for which the rules specify a conclusion,
+and additional information like the text for the caption of the figure.
+
+A \IxAsDef{rule} consists of a set of judgement instances (syntactically denoted by keyword |judge|)
+for the premises, and a judgement for the conclusion.
+Just as we specify views for schemes, we specify views for rules.
+For each view, each of the judgements of a rule should comply with the corresponding view of the scheme of the judgement.
+%if False
+Each of these judgements is of a specified scheme,
+and its definition must comply with the structure defined by the corresponding view on the scheme.
+%endif
+A judgement is defined by binding hole names to |Ruler| expressions.
+
+Views are ordered by a \IxAsDef{view hierarchy}.
+A view hierarchy specifies which view inherits from which other (ancestor) view.
+Both schemes and rules contain a collection of views.
+A view on a scheme inherits the holes and judgeshapes.
+A view on a rule inherits the hole bindings to |Ruler| expressions.
+Only new holes have to be given a binding to a |Ruler| expression;
+existing holes may be updated.
+This is how |Ruler| supports the incremental definition of views.
+
+%if False
+\figRef{ruler-src-template} presents a schematic, high-level |Ruler| specification.
+The syntactic structure of a |Ruler| specification reflects the relationships between the aforementioned concepts.
+%endif
+The incremental definition of views on a rule is supported by two different variants of specifying a judgement:
+
+\begin{Itemize}
+\item
+A judgement in a (view on a) rule can be specified by using a judgespec as a macro where the values of the holes are defined by filling
+in the corresponding positions in the judgespec.
+This variant is useful for the first view in a view hierarchy, because all holes need to be bound to a |Ruler| expression.
+\item
+A judgement in a (view on a) rule can be specified by individually specifying |Ruler| expressions for each hole.
+This variant is useful for views which are built on top of other views,
+because only holes for which the value differs relative to the ancestor view need to be given a new value.
+\end{Itemize}
+
+The |Ruler| system is open-ended in the sense that some judgements can be expressed in a less structured form,
+for which an implementation is defined externally.
+For example, the premises of \ruleRef{e.var} consist of conditions specified elsewhere.
+These arbitrary (i.e. as far as |Ruler| is concerned unstructured)
+conditions are treated like regular judgements, but their
+implementation has to be specified explicitly.
+We call the scheme of such a judgement variant a \IxAsDef{relation}.
+%%]
+
+%%[designOfRuler
+%if shortStory
+%else
+\Paragraph{The design of |Ruler|}
+In the remainder of this section we discuss the concepts used in |Ruler| by inspecting elements of
+figures~\ref{rulerDemo.E.expr.base}, \ref{rulerDemo.A.expr.base} and \ref{ruler-demo-impl}.
+%endif %% shortStory
+
+The design of |Ruler| is driven by the need to check the following \emph{properties} of type rules:
+\begin{Itemize}
+\item
+All judgements match an explicitly specified structure for the judgement.
+For example, in \figRef{rulerDemo.E.expr.base} all judgements for an expression should match the structure of the expression judgement in the box at the top of the same figure.
+\item
+If an identifier is used for the generation of an implementation, it must be defined before it can be used.
+%if shortStory
+%else
+The meaning of this will be explained later.
+%endif
+\end{Itemize}
+%if False
+Other properties can be added to this list,
+but we limit ourselves to this list and the requirement of output generation for different targets.
+%endif
+
+In the remainder of this section we give a high-level overview of the concepts manipulated by |Ruler|.
+\figRef{ruler-src-template} gives a schematic |Ruler| specification, showing how the concepts relate syntactically.
+%if not shortStory
+\figRef{ruler-legenda-syntax} provides an overview of the full concrete syntax of |Ruler|.
+
+%{
+%%@AppxNotation.rulerSyntaxSetup
+
+%if llncs
+
+%%@TopicRuler.rulerSyntaxFullFig
+
+%else
+
+%%@TopicRuler.rulerSyntaxPart1Fig
+
+%%@TopicRuler.rulerSyntaxPart2Fig
+
+%endif
+
+%}
+
+%endif %% not shortStory
+
+%%]
+
+%%[preliminariesForTypeSystem
+\subsection{Our example language}
+\label{ruler-prelim}
+
+In this section we explain notation in our 
+%if not shortStory
+running
+%endif
+example,
+that is, the set of type rules to be specified with |Ruler|.
+There should be no surprises here as we use
+a standard term language based on the |lambda|-calculus (see \figRef{ruler-demo-lang-terms}).
+%if not shortStory
+An overview of the type related notation is included in
+\figRef{ruler-legenda-ty-symbols}.
+%endif
+Our example language contains the following program:
+
+%% ruler2/demo/tst5
+%%[[wrap=code
+let  id = \x -> x
+in   let  v1 = id 3
+     in   let  v2 = id id
+          in   v2 v1
+%%]
+
+The type language for our example term language is given in
+%if shortStory
+\figRef{ruler-demo-lang-terms}.
+%else
+\figRef{ruler-demo-hm-lang-types}.
+%endif
+Types are either monomorphic types |tau|,
+called \IxAsDef{monotypes},
+or universally quantified types |sigma|, called \IxAsDef{polymorphic types} or \IxAsDef{polytypes}.
+A monotype either is a type constant |Int|, a function type |tau -> tau|,
+or an unknown type represented by a type variable |tvarv|.
+We discuss the use of these types when we introduce the type rules for our term language
+in the following sections.
+
+%if shortStory
+\begin{TabularCenterFigure}{}{Terms and types}{ruler-demo-lang-terms}{c||c}
+\begin{tabular}
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.rulerExpr
+\end{tabular}
+&
+\begin{tabular}
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.typeHeader
+%%@AppxNotation.monoBasicTy
+\end{tabular}
+\end{TabularCenterFigure}
+%else
+\begin{TabularCenterFigure}{th}{Terms}{ruler-demo-lang-terms}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.exprHeader
+%%@AppxNotation.rulerExpr
+\end{TabularCenterFigure}
+
+\begin{TabularCenterFigure}{th}{Types}{ruler-demo-hm-lang-types}%
+%%@AppxNotation.termTableFormat
+%%@AppxNotation.typeHeader
+%%@AppxNotation.monoBasicTy
+\end{TabularCenterFigure}
+%endif
+
+The type rules use an environment |Gamma|,
+holding bindings for program identifiers with their typings:
+
+%%[[wrap=code
+Gamma   ::=  Vec(i :-> sigma)
+%%]
+
+%if not shortStory
+During HM type inferencing, type variables
+will be bound to monotypes:
+
+%%[[wrap=code
+Cnstr   ::=  Vec(tvarv :-> tau)
+%%]
+
+A |Cnstr| represents constraints on type variables, usually called a \IxAsDef{substitution}.
+Its application to a type, denoted by juxtapositioning, has the usual meaning;
+it replaces type variables with types.
+
+\begin{TabularCenterFigure}{th}{Legenda of type related notation}{ruler-legenda-ty-symbols}{ll}
+%%@AppxNotation.notationTableHeader
+%%@AppxNotation.notationRulerDemoBasic
+%if not shortStory
+%%@AppxNotation.notationRulerDemoCnstr
+%endif
+\end{TabularCenterFigure}
+%endif %% not shortStory
+%%]
+
+%%[rulesByRulerBasics
+\subsection{Describing type rules using |Ruler| notation}
+\label{ruler-basics}
+
+In this section we make the use of |Ruler| more precise.
+%if shortStory
+We describe
+|Ruler| notation, and explain
+%else
+We start by describing 
+%endif
+how to specify the content of \figRef{rulerDemo.E.expr.base}.
+The transition (instantiation) from polytypes to monotypes is performed by |inst|,
+whereas the transition (generalisation) from monotypes to polytypes is described in \ruleRef{e.let}.
+
+%if False
+Because the rules implicitly state that certain equalities between types (of terms) should hold,
+we call this the equational view;
+the subscript |E| is used throughout \thischapt\ to identify equational views.
+%endif
+
+The use of an equational version of type rules usually serves to explain a type system and to prove properties about the type system.
+An algorithmic version is introduced subsequently to specify an implementation for such a type system.
+In \thischapt\ we follow the same pattern,
+but use it to show how |Ruler| can be used to describe
+%if shortStory
+the equational version
+%else
+both type systems
+%endif
+in such a way
+that its type rule representation can be included in the documentation
+(read here: \thischapt).
+%if shortStory
+In the extended version of \thischapt\ \cite{dijkstra05phd} we also describe how to extend the equational version to an algorithmic one,
+and a version from which a partial implementation can be generated.
+%else
+ and its partial implementation can be integrated into a full implementation.
+%endif
+
+\Paragraph{The basics: judgement schemes}
+A typing rule consists of judgements describing the conclusion and premises of the rule.
+A judgement has a structure of its own, described by a \IxAsDef{scheme}.
+A scheme plays the same role in rules as a type does for an expression in our example term language.
+In our example, we want to specify a judgement for terms (expressions).
+We introduce such a judgement by a |scheme| declaration,
+which is immediately followed by the views on this scheme%
+\footnote{%
+The text for |Ruler| program fragments already appears in pretty printed form throughout \thischapt, but in the original source code
+the |judgespec| appears as: ``@judgespec gam :- e : ty@''
+}:
+
+%%[[wrap=code
+%%@rulerDemoRL.1.expr.scm
+%%@rulerDemoRL.1.expr.scm.E
+
+%%@rulerDemoRL.1.expr.base.rls
+%%@rulerDemoRL.1.rl.e.int
+%%@rulerDemoRL.1.rl.e.int.E
+%%]
+
+We first examine the |scheme| definition in detail, and then the |ruleset| definition for the type rules themselves.
+The operator |:-.."e"| forms a single operator in which the dot notation expresses subscripting and superscripting when pretty printed;
+the part after the first dot is used as a subscript, the part after the second dot as a superscript.
+Here the turnstyle symbol is superscripted with |e|.
+%if shortStory
+We refer to the extended version of \thischapt\ \cite{dijkstra05phd} for further explanation about the dot notation.
+%else
+We will come back to this later.
+%endif
+
+Here we have only a single, equational, view |E|,
+which defines three holes: |e|, |gam|, and |ty|.
+This scheme is instantiated in the conclusion of \ruleRef{e.int}
+by using the judgespec of the scheme.
+In later views, we will (re)define individual holes.
+Each hole has an associated hole type, for instance |e| has type |Expr|;
+%if shortStory
+we will not discuss this further.
+%else
+we postpone the discussion of hole types until \secRef{ruler-ag-infer}.
+%endif
+
+Judgeshapes are introduced by the keyword |judgespec| or |judgeuse|.
+A |judgespec| introduces a distfix operator template (here: |... :- ... : ...|) used
+for specifying instances of this judgement in a |rule|.
+A |judgeuse| judgement shape introduces the expression to be used for the generation for a \IxAsDef{target}.
+The target |tex| indicates that the shape is to be used to generate \LaTeX;
+the |ag| target is meant for attribute grammar generation.
+We will refer to these three shapes as the |spec|, |tex| and |ag| judgement shapes.
+The |spec| shape is used as the input template, the |tex| and |ag| shapes are used as output templates.
+
+%if shortStory
+%else
+The shape of a judgespec is defined by a |Ruler| expression,
+which effectively introduces a distfix operator,
+which is denoted by combinations of operator symbols such as `:' and `-'.
+A simple expression may be the (possibly empty) juxtapositioning of a mixture of identifiers%
+, parenthesized expressions or one of the other |<rexpr_base>| alternatives in
+%if llncs
+\figRef{ruler-legenda-syntax}.
+%else
+\figRef{ruler-legenda-syntax2}.
+%endif
+%endif
+
+The identifiers in |Ruler| expressions should refer to the introduced hole names or externally defined identifiers.
+The |spec| shape of the scheme of a judgement is used to extract |Ruler| expressions from a judgement instance
+(defined by |judge|) and bind these to the corresponding hole identifiers.
+
+%%[[selNotation
+%if shortStory
+%else
+The dot character `.' has a special role in |Ruler| expressions and names for the |tex| target output generation.
+It is used to specify subscripts, superscripts and stacking.
+So, |x.1.2.3| pretty prints as:
+\[\stackrel{3}{x_1^2}\]
+The part after the first dot is used as a subscript, the part after the second dot is used as a superscript, and the part
+after the third dot is stacked on top.
+In this context the underscore identifier `|_|' denotes a horizontal line for use in vector like notations,
+so @v..._@ pretty prints as |Vec(v)|.
+Additional dots are ignored.
+
+Names, |Ruler| expressions and operators all may be immediately followed by this dot notation.
+For names however, the dots and their related information form part of the name.
+%endif
+%%]
+
+Since the judgespec and an associated |judgeuse tex| are usually quite similar,
+we have decided to make the latter default to the first.
+For this reason we allow the dot notatation to be used in the judgespec too,
+although it only will play a role in its defaulted uses.
+
+
+\Paragraph{The basics: rulesets}
+Rules are grouped in rulesets to be displayed together in a figure:
+the description of \figRef{rulerDemo.E.expr.base} starts with the |ruleset|.
+A ruleset specifies the name |expr.base| of the ruleset,
+the scheme |expr| for the conclusion of its contained rules,
+and text to be displayed as part of the caption of the figure.
+The judgespec of (a view on) the scheme is used to provide the boxed scheme representation in
+\figRef{rulerDemo.E.expr.base}.
+The ruleset name |expr.base| is used to uniquely identify this figure,
+so it can be included in text such as \thischapt.
+We do not discuss this further;
+we only note that part of the \LaTeX\ formatting
+is delegated to external \LaTeX\ commands.
+
+%if not shortStory
+The ruleset heading is immediately followed by a list of rules, of
+which only one is shown here (|e.int| is pretty printed in small caps as \textsc{e.int})%
+%if ((storyPHD || storyEhcBook) && targetForPaper) || shortStory
+.
+%else
+;
+for a complete description see \appRef{ruler-app-demo-src}.
+%endif
+%endif
+
+Before discussing its components,
+we repeat the \LaTeX\ rendering of \ruleRef{e.int} together with its |Ruler| definition
+to emphasize the similarities
+between the rule specification and its visual appearance:
+
+%%@AppxNotation.rulerRulerAsideRuleBegin
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.int
+%%@rulerDemoRL.1.rl.e.int.E
+%%]
+%%@AppxNotation.rulerRulerAsideRuleSep
+\rulerCmdUse{rulerDemo.E.expr.base.e.int}
+%%@AppxNotation.rulerRulerAsideRuleEnd
+
+All views of a rule are jointly defined,
+although we present the various views separately throughout \thischapt.
+For an individual figure and a particular view, the |Ruler| system extracts the relevant view of the rules present in a ruleset.
+We will come back to this in our discussion.
+
+Each view for a rule specifies premises and a conclusion, separated by
+a `-'.
+The \ruleRef{e.int} for integer constants only has a single judgement for the conclusion.
+The judgement is named |R|, follows scheme |expr|,
+and is specified using the |spec| judgement shape for view |E|.
+The name of the judgement is used to refer to the judgement from later views, either to
+overwrite it completely or to redefine the values of the individual holes.
+%if not shortStory
+Later, when we introduce subsequent views we will see examples of this.
+%endif
+
+The rule for integer constants refers to |Ty_Int|.
+This is an identifier which is not introduced as part of the rule,
+and its occurrence generates an
+error message unless we specify it to be external%
+%if shortStory
+~(we do not discuss this nor its proper \LaTeX\ formatting further).
+%else
+:
+
+%%@rulerDemoRL.1.ext wrap=code
+
+Additionally we also have to specify the way |Ty_Int| will be typeset as |Ruler| does not make
+any assumptions here.
+|Ruler| outputs identifiers as they are and delegates formatting to |lhs2TeX| \cite{loh04lhs2tex-www}.
+A simple renaming facility however is available as some renaming may be necessary, depending on the kind of
+output generated.
+Formatting declarations introduce such renamings:
+
+%%@rulerDemoRL.1.fmt.Ty_Int wrap=code
+
+Here the keyword |tex| specifies that this renaming is only used when \LaTeX\ (i.e. the |tex| target)
+is generated.
+The formatting for the names |gam| and |ty| are treated similarly.
+%endif
+
+The \ruleRef{e.app} for the application of a function to an argument is defined similar to \ruleRef{e.int}.
+Premises now relate the type of the function and its argument:
+
+%%@AppxNotation.rulerRulerAsideRuleBegin
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.app
+%%@rulerDemoRL.1.rl.e.app.E
+%%]
+%%@AppxNotation.rulerRulerAsideRuleSep
+\rulerCmdUse{rulerDemo.E.expr.base.e.app}
+%%@AppxNotation.rulerRulerAsideRuleEnd
+
+%if not shortStory
+The dot notation allows us to treat @ty.a@ as a single identifier, which is at the same time rendered as
+the subscripted representation |taua|.
+Also note that we parenthesize |(ty.a -> ty)| such that |Ruler| treats it
+as a single expression.
+The outermost layer of parentheses are stripped when an expression is matched against a judgement shape.
+%endif
+%%]
+
+%%[extendToAlgorithmicSmall
+\subsection{Extending the initial version}
+\label{ruler-extendinitial}
+
+The above demonstrates the basic features of |Ruler|.
+We continue with highlighting |Ruler| features.
+We construct an algorithmic view |A|, which is built upon the equational view |E|.
+The final attribute grammar view |AG| adds further implementation details required for the attribute grammar translation.
+We assume familiarity with the terminology of attribute grammar systems.
+
+\Paragraph{Algorithmic version}
+The following extends the scheme definition:
+
+%%[[wrap=code
+%%@rulerDemoRL.2.expr.scm.A
+%%]
+
+The algorithmic view introduces computation order.
+|Ruler| assumes that a derivation tree corresponds to an abstract syntax tree (AST): rule conclusions correspond to parent (tree) nodes,
+rule premises to children nodes.
+An attribute grammar for such an AST specifies attributes traveling down the tree, called \IxAsDef{inherited attributes},
+and attributes traveling upwards, called \IxAsDef{synthesized attributes}.
+Inherited attributes correspond to the assumptions of the conclusion of a type rule, and are usually propagated from the conclusion towards the premises of a rule.
+Synthesized attributes correspond to results.
+The |holes| declaration specifies its holes as inherited, inherited + synthesized, and synthesized,
+indicated by their respective positions between vertical bars `| || |'.
+
+For example, |gam| is inherited because it provides the assumptions under which a type rule is satisfied.
+In our example we treat |gam| as given, not as something to be computed.
+In terms of a computation, |gam| provides an argument which may be used to compute synthesized values such as the type |ty| of the type rule.
+In addition to these attributes, a new hole |cnstr| is declared as inherited + synthesized, and is threaded through the type rule as indicated by the optional keyword |thread|.
+The inherited |cnstr| (referred to by |cnstr.inh|) represents already known assumptions about types, in particular about type variables;
+the synthesized |cnstr| (referred to by |cnstr.syn|) represents the combination of newfound and known information about type variables.
+These holes generate the |attr| declarations in \figRef{ruler-demo-impl}.
+
+For \ruleRef{e.int} we extend its definition with values for |cnstr.inh| and |cnstr.syn|:
+
+%%@AppxNotation.rulerRulerAsideRuleBegin
+%%[[wrap=code
+%%@rulerDemoRL.2.rl.e.int.A
+%%]
+%%@AppxNotation.rulerRulerAsideRuleSep
+\rulerCmdUse{rulerDemo.A.expr.base.e.int}
+%%@AppxNotation.rulerRulerAsideRuleEnd
+
+The difference between holes and the values bound to holes lies in the computation order assigned to the holes and its use in
+the mapping onto an attribute grammar.
+Both |cnstr.inh| and |cnstr.syn| are bound to |cnstr..k|,
+which appears as |Cnstrk| in \ruleRef{e.int}.
+However, within the context of a type rule the values bound to inherited holes of the conclusion and synthesized holes of the premises correspond to input values,
+that is, values which may be used further to define the synthesized holes of the conclusion and the inherited holes of the premises.
+For example, |cnstr..k| is the value bound to the inherited hole |cnstr.inh| and the synthesized hole |cnstr.syn| of the conclusion.
+In terms of the type rule this means that both must be equal; in terms of the computation |cnstr.inh| is passed to |cnstr.syn| via |cnstr..k|.
+The identifier |cnstr..k| is an argument to the judgements of the type rule, whereas for the computation it is the name (or pattern when more complicated)
+to which the value of the attribute associated with |cnstr.inh| is bound.
+It is subsequently used for the computation of |cnstr.syn|.
+This leads to the following AG code for \ruleRef{e.int}\footnote{The actual AG code is optimized w.r.t. the elimination of straightforward copies like |lhs.c = @lhs.c|:
+the AG system provides a copy rule mechanism which automatically inserts copy rules for attributes when explicit attribute rules are absent.}:
+
+%%[[wrap=code
+%%@rulerDemoAGWithCopy.3.expr.e.int
+%%]
+
+|Ruler| supports a renaming mechanism which is used to rename identifiers when generating output.
+Strictly, this is not necessary, but in practice it is convenient to have such a mechanism to glue |Ruler| generated code non-|Ruler| implementation fragments more easily.
+For instance, in the full |Ruler| specification for the example |cnstr| is renamed to |c|; this shows in the attribute declaration
+in \figRef{ruler-demo-impl}.
+The keyword |lhs| refers to the parent node of a AST fragment, |@lhs.c| to its inherited |c| attribute; the parent corresponds to the conclusion of a rule.
+The translation also assumes an infrastructure of AG and Haskell definitions, for example for the constant |Ty_Int| representing the |Int| type.
+We will not discuss such details further, and assume the reader is familiar enough with attribute grammars and Haskell to guess the semantics of the provided translation.
+A more detailed treatment of these features can be found elsewhere \cite{dijkstra05phd,dijkstra04ehc-web}.
+
+More complex |Ruler| expressions can be bound to holes, as shown by the following extension to view |A| for \ruleRef{e.app}:
+
+%%@AppxNotation.rulerRulerAsideRuleBegin
+%%[[wrap=code
+%%@rulerDemoRL.2.rl.e.app.A
+%%]
+%%@AppxNotation.rulerRulerAsideRuleSep
+\rulerCmdUse{rulerDemo.A.expr.base.e.app}
+%%@AppxNotation.rulerRulerAsideRuleEnd
+
+The hole |cnstr.syn| for the conclusion (judgement |R|) is defined in terms of |cnstr| and |cnstr.a|.
+In the type rule this shows as a juxtaposition, which one may read as the first constraint |cnstr| applied to the second |cnstr.a|.
+However, for the AG code additional rewriting (specified by means of rewrite rules) is required to a form which is more explicit in how the juxtaposition is to be computed.
+Again, we omit further discussion of this feature, and show the translation to AG code instead:
+
+%%[[wrap=code
+%%@rulerDemoAGWithCopy.3.expr.e.app
+%%]
+
+This translation is not yet optimized in order to show the correspondence with the type rule.
+\figRef{ruler-demo-impl} shows the optimized version.
+The overloaded operator | ||=> | applies a constraint by substituting type variables with types in the usual way.
+The dataconstructors, of which the name starts with |Ty| represent the various type encodings.
+
+Of the remaining judgements |V| and |M| we discuss jugement |M| in the next paragraph.
+Both judgements use the same mechanism for specifying arbitrary judgements.
+
+\Paragraph{External schemes: relations}
+\RuleRef{e.app} also demonstrates the use of judgements which are not directly related to the structure of the AST.
+For example, the freshness of a type variable (judgement |V|) and type unification (judgement |M|) are expressed in terms of attribute values,
+not children nodes of a parent node in an AST.
+|Ruler| automatically derives an implementation for judgements related to children nodes,
+but for the remaining judgements the |Ruler| programmer has to provide an implementation.
+
+For example, type unification (or matching), is declared as a \IxAsDef{relation}, which is a judgement scheme for which we have to define the AG implementation ourselves.
+Such an implementation is defined using |judgeuse| for target |ag|:
+
+%%@rulerDemoRL.2.match wrap=code
+
+The scheme of |match| specifies how the judgement is to be translated to attribute grammar code by means of
+a |judgeuse ag|.
+It is the responsibility of the programmer to provide the correct form (an attribute rule) and translation,
+so the attribute grammar translation of |match| is expressed in terms of the Haskell function |<=>|,
+returning both additional constraints as well as (possibly zero) errors.
+It is the responsibility of the surrounding infrastructure to do something useful with reported errors as these are not part of the result of the relation.
+As such, a relation in |Ruler| has the same role as a foreign function in Haskell.
+
+\Paragraph{The rest}
+The expanded version of \thispaper\
+\cite{dijkstra05phd}
+describes view |A| and the following additional aspects:
+
+\begin{Itemize}
+%if False
+\item
+Judgements representing arbitrary conditions (called \IxAsDef{relation}, e.g. |tvFresh|).
+\item
+The definition of additional views building upon view |E| (algorithmic view |A| and attribute grammar view |AG| (omitted)).
+\item
+Specifying the direction of computation for holes (e.g. adapted scheme for view |A| for |expr|).
+%endif
+\item
+The third (AG) view, which extends the specification of view |A| on \ruleRef{e.int} and \ruleRef{e.app} with information binding the type rules to the abstract syntax.
+\item
+Additional datastructures (e.g. substitutions/constraints |Cnstr|) required for an algorithmic version of the type rules,
+further surrounding infrastructure (error handling, parsing, commandline invocation)
+\item
+The creation and handling of fresh (or unique) values,
+as required by judgement |V| of scheme |tvFresh|.
+\item
+The use of rewrite rules and identifier formatting.
+\end{Itemize}
+
+%%]
+
+%%[relationsExternalSchemes
+\Paragraph{Relations: external schemes}
+The \ruleRef{e.var} for variables is less straightforward as it requires premises which do not follow an introduced scheme:
+\[
+\rulerCmdUse{rulerDemo.E.expr.base.e.var}
+\]
+
+This rule requires a binding of the variable |i| with type |sigma| to be present in |Gamma|;
+the instantiation |tau| of |sigma| then is the type of the occurrence of |i|.
+These premises are specified by judgements |G| and |I| respectively:
+
+%%[[wrap=code
+%%@rulerDemoRL.1.rl.e.var 
+%%@rulerDemoRL.1.rl.e.var.E
+%%]
+
+Judgements |G| and |I| use a variation of a scheme, called a \IxAsDef{relation}.
+For example, the judgement |G| must match the template for relation |gamLookupIdTy|
+representing the truth of the existence of an identifier |i| with type |ty| in a |gam|:
+
+%%@rulerDemoRL.1.gamLookupIdTy wrap=code
+
+A relation differs only from a scheme in that we will not define rules for it.
+It acts as the boundary of our type rule specification.
+As such it has the same role as the foreign function interface in Haskell (or any other programming language interfacing with an outside world).
+As a consequence we have
+to specify an implementation for it elsewhere.
+The relation |tyInst| is defined similarly:
+
+%%@rulerDemoRL.1.tyInst wrap=code
+
+%%]
+
+%%[extendToAlgorithmicLarge
+\subsection{Extending to an algorithm}
+\label{ruler-hm-infer}
+
+In this section we demonstrate the usefulness of views and incremental extension
+by adapting the equational rules from \figRef{rulerDemo.E.expr.base} to
+the algorithmic variant in \figRef{rulerDemo.A.expr.base}.
+We call this the |A| view.
+We only need to specify the differences between two views.
+This minimises our specification work;
+|Ruler| emphasises the differences using color.
+The resulting type rules are shown in
+\figRef{rulerDemo.A.expr.base}.
+
+\FigRef{rulerDemo.A.expr.base} not only shows the adapted rules but also shows the differences with
+the previous view by using colors.
+%if targetForPaper
+In the electronic version of \thispaper\ the
+%else
+The
+%endif
+unchanged parts of the previous view (E) are shown in grey,
+whereas the changed parts are shown in black (blue, if seen in color).
+%if targetForPaper
+The paper version typesets the rules in black for better readability.
+%else
+%endif
+In our opinion,
+clearly indicating differences while still maintaining an overview of the complete picture, contributes
+to the understandability of the type rules when the complexity of the rules increases.
+
+For this to work, we specify which view is built on top of which other view:
+
+%%@rulerDemoRL.1.viewhierarchy wrap=code
+
+The view hierarchy declaration defines the |A| view to be built on top of view |E|, and |AG| again on top of |A|.
+We can also specify branches, for example |E < X| specifies |X| to be built on top of |E|, independently of other views;
+because we do not use this feature, will will not discuss it further.
+A view inherits the hole structure and the judgement shapes from its predecessor.
+Similarly, for each rule the bindings of hole names to their values are preserved as well.
+As a consequence we only have to define the differences.
+
+In order to turn the equational specification into an algorithmic one based on HM type inference,
+we need to:
+\begin{Itemize}
+\item
+Specify the direction in which values in the holes flow through a rule.
+This specifies the computation order.
+\item
+Represent yet unknown types by type variables and knowledge about those type variables by constraints.
+\end{Itemize}
+
+Both modifications deserve some attention, because they are both instances of a more general phenomenon
+which occurs when we shift from the equational to the algorithmic realm:
+we need to specify a computation order.
+
+\Paragraph{From relationships to functions}
+In an equational view we simply relate two values.
+In an algorithmic view this relation is replaced by a function
+mapping input values to output values.
+For example, \ruleRef{e.app} from \figRef{rulerDemo.E.expr.base} specifies that
+the type of |a| and the argument part of the type of |f| must be equal.
+The use of the same identifier |taua| expresses this equality.
+To compute |taua| however we either need to:
+\begin{Itemize}
+\item
+compute information about |a|'s type first and use it to construct |f|'s type,
+\item
+compute information about |f|'s type first and use it to deconstruct and extract |a|'s type,
+\item
+compute information about both and then try to find out whether they are equal
+(or remember they should be equal).
+\end{Itemize}
+The last approach is taken for hole |ty|,
+because it allows us to compute types compositionally in terms
+of the types of the children of an |Expr|.
+
+\Paragraph{Using yet unknown information}
+In an equational view we simply use values without bothering about how they are to be computed.
+However, computation order and reference to a value may conflict if we to refer to a value before its value is computed.
+For example, \ruleRef{e.let} allows reference to the type of |i| (in |e|) before its type has been computed.
+In \ruleRef{e.let} the type of |i| is available only after HM's generalisation of the type of a let-bound variable.
+The standard solution to this problem is to introduce an extra indirection by letting the type of |i| be a placeholder, called a type variable.
+Later, if and when we find more information about this type variable, we gather this information in the form of constraints, which is the information then
+used to replace the content of the placeholder.
+
+\Paragraph{Adding direction to holes}
+In |Ruler| notation, we specify the direction of computation order as follows for view |A| on scheme |expr|:
+
+%%[[wrap=code
+%%@rulerDemoRL.2.expr.scm.A
+%%]
+
+The holes for |expr| are split into three groups, separated by vertical bars `| || |'.
+Holes in the first group are called \IxAsDef{inherited},
+holes in the third group are called \IxAsDef{synthesized}
+and the holes in the middle group are both.
+The type rules now translate to a syntax directed computation over an abstract syntax tree (AST).
+Values for inherited holes are computed in the direction from the root to the leaves of the AST
+providing contextual information;
+values for synthesized holes are computed in the reverse order providing a result.
+We will come back to this in following sections.
+
+In our |A| view on scheme |expr| both |e| and |gam| are inherited,
+whereas |ty| is the result.
+This, by convention, corresponds to the standard visualisation of a judgement in which contextual information
+is positioned at the left of the turnstyle `|:-|' and results are placed after a colon `:'.
+As we will see, the hole |e| plays a special role because it corresponds to the AST.
+
+Besides being declared as both an inherited and a synthesized hole, |cnstr| is also declared to be \IxAsDef{threaded}, indicated by the keyword |thread|.
+For a threaded hole its computation proceeds in a specific order over the AST, thus simulating a global variable.
+For now it suffices to know that for a threaded hole |h| two other holes are introduced instead:
+|h.inh| for the inherited value, |h.syn| for the synthesized value.
+Because |cnstr| is declared threaded, |cnstr.inh| refers to the already gathered information about type variables,
+whereas this and newly gathered information is returned in |cnstr.syn|.
+For example, view |A| on \ruleRef{e.int} fills |cnstr.syn| with |cnstr.inh|.
+
+%%@rulerDemoRL.2.rl.e.int.A wrap=code
+
+Although a definition for |cnstr.inh| is included,
+we may omit the hole binding for |cnstr.inh|, that is |cnstr.inh = cnstr.inh|
+(we will do this in the remainder of \thischapt).
+If a binding for a new hole is omitted, the hole name itself is used as its value.
+
+Instead of using a shape to specify the rule, we may bind individual hole names to their values.
+In this way we only need to define the holes which are new or need a different value.
+The |Ruler| system also uses this to highlight the new or changed parts and grey out the unchanged parts.
+This can be seen from the corresponding rule from \figRef{rulerDemo.A.expr.base}
+(value |cnstr.inh| shows as |Cnstrk| by means of additional formatting information):
+\[
+\rulerCmdUse{rulerDemo.A.expr.base.e.int}
+\]
+
+For \ruleRef{e.app} both the handling of the type (hole |ty|) and the constraints need to be
+adapted.
+The type |ty.a| of the argument is used to construct |ty.a->tv| which is matched against
+the type |ty.f| of the function.
+Constraints are threaded through the rules.
+For example constraints |cnstr.f| constructed by the judgement for the function |f|
+are given to the judgement |a| in the following fragment (which follows view |E| of \ruleRef{e.app} in the |Ruler| source text):
+
+%%@rulerDemoRL.2.rl.e.app.A wrap=code
+
+The \ruleRef{e.app} also requires two additional judgements: a |tvFresh| relation stating that |tv| should be a fresh type variable
+and a |match| relation performing unification of two types, resulting in additional constraints under which the two types are equal.
+The resulting rule (from \figRef{rulerDemo.A.expr.base}) thus becomes:
+\[
+\rulerCmdUse{rulerDemo.A.expr.base.e.app}
+\]
+
+The way this rule is displayed also demonstrates the use of the inherited or synthesized direction associated with a hole
+for ordering judgements.
+The value of a hole in a judgement is either in a position where the identifiers of the value are introduced
+for use elsewhere or in a position where the identifiers of a value are used:
+
+\begin{Itemize}
+\item
+A synthesized hole corresponds to a result of a judgement.
+Its value specifies how this value can be used;
+it specifies the pattern it must match.
+This may be a single identifier or a more complex expression describing
+the decomposition into the identifiers of the hole value.
+For example, |cnstr.f| in the premise judgement |F| for function |f| is in a so called \IxAsDef{defining}
+position because it serves as the
+value of a hole which is defined as synthesized.
+\item
+For an inherited hole the reverse holds:
+the hole corresponds to the context of, or parameters for, a judgement.
+Its value describes the composition in terms of other identifiers introduced by values at defining positions.
+For example, |cnstr.f| in the judgement |A| for argument |a| is in a so called \IxAsDef{use} position because its hole is inherited.
+\item
+For the concluding judgement the reverse of the previous two bullets hold.
+For example,
+|cnstr.inh| of the conclusion judgement |R|, implicitly defined as |cnstr.inh = cnstr.inh|, is on
+a defining position although its hole is inherited.
+This is because it is given by the context of the type rule itself, for use in premise judgements.
+\end{Itemize}
+
+|Ruler| uses this information to order the premise judgements from top to bottom
+such that values in holes are defined before used.
+Because judgements may be mutually dependent this is done in the same way as the binding group mechanism of Haskell:
+the order in a group of mutually dependent judgements cannot be determined and therefore is arbitrary.
+
+Relation |match| represents the unification of two types; it is standard.
+Relation |tvFresh| simply states the existence of a fresh type variable;
+we discuss its implementation in \secRef{ruler-ag-infer}. 
+%%]
+
+%%[explainAG
+\subsection{Target language: attribute grammar}
+\label{ruler-ag-basics}
+
+In this section we give a brief overview of the AG system used as the target language
+for |Ruler| to generate code for.
+|Ruler| generates a partial implementation expressed as an attribute grammar (AG);
+we discuss this in the next section.
+We present as much as is required for an understanding of the next section;
+more can be found elsewhere \cite{swierstra99comb-lang,dijkstra04thag}.
+This section can safely be skipped by those who are familiar with our AG system.
+
+An attribute grammar describes computations over an AST by means of attributes.
+An AST is a data structure similar to data types in Haskell.
+For example, part of the AST required for our type rule implemention is defined as follows:
+
+%%[[wrap=code
+ %%@RulerDemoMain.3.AST.Expr.App
+ %%@RulerDemoMain.3.AST.Expr.IntVar
+%%@rulerDemoAG.3.expr.DATA
+%%]
+
+This AST for an |Expr| node defines \IxAsDef{alternatives} (or \IxAsDef{variants}, \IxAsDef{productions})
+for application, integer constants and use of variables respectively.
+The application alternative |App| has two |Expr| \IxAsDef{children}, whereas |Int| and |Var| have a \IxAsDef{field} holding the integer
+and identifier respectively.
+In the context of an alternative the node itself is called the \IxAsDef{parent}.
+
+An \IxAsDef{attribute} holds the value of a computation; it has a name, a type and is defined as inherited (before the first vertical `| || |'),
+synthesized (after the second vertical `| || |') or both (in between both `| || |').
+In AG code we define attributes for a node, for example for |Expr|:
+
+%%@rulerDemoAG.3.expr.ATTR wrap=code
+
+Our AG system and |Ruler| use similar notation for attribute and hole definitions.
+For example, attribute |ty| is synthesized and has type |Ty|.
+
+We define the value of an attribute for each alternative of a node
+by specifying an \IxAsDef{attribute equation} for the synthesized attributes of the parent
+and the inherited attributes of all children.
+For example, for the |Int| alternative of |Expr| we define the value of the |ty| attribute of the parent (referred to by |lhs|)
+to be |Ty_Int|:
+
+%%@rulerDemoAG.3.expr.e.int wrap=code
+
+Each attribute equation is of the form
+
+%{
+%format node = "node"
+%include lag2TeX.fmt
+
+%%[[wrap=code
+| <alternative> ^^^ <node> . <attr> = <Haskell expr>
+%%]
+
+A |<node>| may be:
+\begin{Itemize}
+\item |lhs|: reference to parent.
+\item |<child>|: reference to child.
+\item |loc|: reference to a local attribute.
+The scope of a local attribute is the alternative it is declared in.
+\end{Itemize}
+
+Our implementation (based on \cite{bird84circ-traverse,johnsson87attr-as-fun})
+uses Haskell expressions to define values for an attribute.
+From within these Haskell expressions we refer to attributes by means of the notation |@ <node> . <attr>|:
+
+\begin{Itemize}
+\item |@ lhs. <attr>|: reference to (inherited) |<attr>| of parent.
+\item |@ <child> . <attr>|: reference (synthesized) |<attr>| of |<child>|.
+\item |@ <attr>|: reference to a local attribute |<attr>|.
+\end{Itemize}
+
+For example, the following combines this notation (where | ||=> | is a Haskell operator for applying constraints as a substitution):
+
+%%[[wrap=code
+SEM Expr
+  | App  (f.uniq,loc.uniq1)
+                         =  rulerMk1Uniq @lhs.uniq
+         loc  .  tv_     =  Ty_Var @uniq1
+         f    .  c       =  @lhs.c          -- may be omitted
+         f    .  g       =  @lhs.g          -- may be omitted
+         a    .  c       =  @f.c            -- may be omitted
+              .  g       =  @lhs.g          -- may be omitted
+         (loc.c_,loc.mtErrs)
+                         =  ((@a.ty) `Ty_Arr` (@tv_)) <=> (@a.c |=> (@f.ty))
+         lhs  .  c       =  @c_ |=> (@a.c)
+              .  ty      =  @c_ |=> @a.c |=> (@tv_)
+%%]
+
+In this fragment
+\begin{Itemize}
+\item
+|@lhs.c| refers to the |c| attribute of the parent which is passed on to the |c| attribute
+of child |f|.
+\item
+|tv_| is defined locally and is referred to by |@tv_| in an expression for |@lhs.ty|.
+\end{Itemize}
+
+Additionally, the AG notation allows the following notational variations:
+\begin{Itemize}
+\item
+For a sequence of attribute equations defining a value for the same |<node>|,
+only the first one needs to mention |<node>|.
+In the example this has been done for |a| but not for |f|.
+\item
+The rules for |f| and |a| may be omitted anyway as the AG system
+uses built-in copy rules for attributes for which no equation has been given.
+We omit the details;
+the intuition is that values of attributes with the same name are
+copied top-to-bottom (if inherited), bottom-to-top (if synthesized) and left-to-right
+(if inherited + synthesized).
+\item
+AG allows pattern matching for tuples.
+For example, |loc.c_| and |loc.mtErrs| are defined via AG's pattern matching notation.
+\item
+AG fragments may be specified at textually different locations.
+The AG system gathers all fragments.
+\end{Itemize}
+
+%}
+
+%%]
+
+%%[extendToAGLarge
+\subsection{Extensions for AG code generation}
+\label{ruler-ag-infer}
+
+In this section we discuss the modifications to our type rule specification required for the generation of a partial implementation,
+and the additional infrastructure required for a working compiler.
+The end result of this section is a translation of type rules to AG code.
+%if (storyPHD || storyEhcBook)
+%%[[hide "app-ruler-demo-ag"="Ruler demo: Generated AG"
+\VerbatimInput[fontsize=\footnotesize]{demo.ag}
+%%]
+%endif
+For example, the following is generated for \ruleRef{e.app};
+the required additional |Ruler| specification and supporting code is discussed in this section:
+
+%%[[wrap=code
+%%@rulerDemoAG.3.expr.ATTR
+
+%%@rulerDemoAG.3.expr.e.app
+%%]
+
+We need to deal with the following issues:
+
+\begin{Itemize}
+\item
+Type rules need to be translated to AG code that describes the computation of hole values.
+We exploit the similarity between type rules and attribute grammars to do this.
+\item
+Fresh type variables require a mechanism for generating unique values.
+\item
+Type rules are positive specifications,
+but do not specify what needs to be done in case of errors.
+\item
+Of course we also need to specify parsing to an AST as well as output generation,
+but we won't treat this here.
+\end{Itemize}
+
+\Paragraph{Type rule structure and AST structure}
+The structure of type rules and an abstract syntax tree are often very similar.
+This should come as no surprise, because type rules are usually syntax directed in their algorithmic
+form so the choice which type rule to apply can be made deterministically.
+We need to tell |Ruler|:
+
+\begin{Itemize}
+\item
+Which hole of a scheme acts as a node from the AST, the \IxAsDef{primary hole}.
+\item
+Which values in this primary hole in the conclusion of a rule are children in the AST.
+\item
+To which AG |DATA| a scheme maps, and for each rule to which alternative.
+\end{Itemize}
+
+%if True
+The AST is defined by a |data| definition which also binds the AST to type rules:
+
+%%@rulerDemoRL.3.data wrap=code
+
+The notation borrows from Haskell and AG.
+Within the square brackets associated type related information is mentioned:
+
+\begin{Itemize}
+\item The data type is bound to a scheme, for example |Expr| is bound to |expr|.
+\item An alternative, or constructor, is bound to a rule, for example |Var| is bound to |e.var|.
+The field names must match those used in the rule.
+\end{Itemize}
+
+Data definitions also vary depending on the view.
+
+%else
+The AST is defined externally relative to |Ruler| (this may change in future versions of |Ruler|).
+For example, the part of the AST for expression application is defined as:
+
+ %%@RulerDemoMain.3.AST.Expr.App wrap=code
+
+The keyword |node| is used to mark the primary hole that corresponds to the AST node for scheme |expr| in the AST:
+
+%%@rulerDemoRL.3.expr.scm.AG wrap=code
+
+For each rule with children we mark the children and simultaneously specify the order of the children as they
+appear in the AST.
+For example, for \ruleRef{e.app} we mark |f| to be the first and |a| to be the second child
+(the ordering is required for AG code generation taking into account AG's copy rules):
+
+ %%@rulerDemoRL.3.rl.e.app.AG wrap=code
+
+The scheme |expr| is mapped to the AST node type |Expr| by adapting the scheme definition to:
+
+%%@rulerDemoRL.3.expr.scm wrap=code
+
+Similarly we adapt the header for \ruleRef{e.app} to include the name |App| as the name
+of the alternative in the AST:
+
+%%@rulerDemoRL.3.rl.e.app wrap=code
+%endif
+
+\Paragraph{|Ruler| expressions and AG expressions}
+Expressions in judgements are defined using a notation to which |Ruler| attaches no meaning.
+In principle, the |Ruler| expression defined for a hole is straightforwardly copied to the generated AG code.
+For example, for \ruleRef{e.app} the expression |ty.a -> tv| would be copied, including the arrow |->|.
+Because AG attribute definitions are expressed in Haskell, the resulting program would be incorrect
+without any further measures taken.
+
+|Ruler| uses rewrite rules to rewrite ruler expressions to Haskell expressions.
+For example, |ty.a -> tv| must be rewritten to a Haskell expression representing the meaning of the
+|Ruler| expression.
+We define additional Haskell datatypes and functions to support the intended meaning;
+unique identifiers |UID| are explained later:
+%if (storyPHD || storyEhcBook)
+%%[[hide "app-ruler-supp-hs"="Ruler demo: Supporting Haskell"
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoUtils.hs}
+%%]
+%endif
+
+%%@RulerDemoUtils.3.Ty wrap=code
+
+A |Ty_All| represents universal quantification |forall|,
+|Ty_Arr| represents the function type |->|,
+|Ty_Var| represents a type variable
+and |Ty_Any| is used internally after an error has been found
+(we come back to this later).
+We define a rewrite rule to rewrite |ty.a -> tv| to |ty.a `Ty_Arr` tv|:
+
+%%[[wrap=code
+rewrite ag def  a -> r = (a) `Ty_Arr` (r)
+%%]
+
+A rewrite declaration specifies a pattern (here: |a -> r|) for an expression containing variables which are bound to the actual values
+of the matching expression.
+These bindings are used to construct the replacement expression (here: |(a) `Ty_Arr` (r)|).
+The target |ag| limits the use of the rewrite rule to code generation for AG.
+The flag |def| limits the use of the rule to defining positions,
+where a \IxAsDef{defining position} is defined as a position in a value for an inherited hole in a premise judgement or
+a synthesized hole in a conclusion judgement.
+This is a position where we construct a value opposed to a position where we deconstruct a value into its constituents.
+Although no example of deconstructing a value is included in \thischapt,
+we mention that in such a situation
+a different rewrite rule expressing the required pattern matching (using AG language constructs) is required.
+The flag |use| is used to mark those rewrite rules.
+
+The rewrite rule used for rewriting |ty.a -> tv| actually is limited further by specifying the required type of the
+value for both pattern and the type of the replacement pattern:
+
+%%@rulerDemoRL.3.rw.TyArr wrap=code
+
+The notion of a type for values in |Ruler| is simple: a type is just a name.
+The type of an expression is deduced from the types specified for a hole or the result expression of
+a rewrite rule.
+This admittedly crude mechanism for checking consistency appears to work quite well in practice.
+
+Limiting rewrite rules based on |Ruler| type information is useful in situations where
+we encounter overloading of a notation;
+this allows the use of juxtapositioning of expressions to
+keep the resulting expression compact.
+We can then specify different rewrite rules based on the types of the arguments.
+The meaning of such an expression usually is evident from its context
+or the choice of identifiers.
+For example, |cnstr cnstr.a tv|
+(\ruleRef{e.app}, \figRef{rulerDemo.A.expr.base})
+means the application of constraints |cnstr| and |cnstr.a| as a substitution to type |tv|.
+Constraints can be applied to constraints as well,
+similar to Haskell's overloading.
+To allow for this flexibility a pattern of a rewrite rule may use (|Ruler|) type variables to propagate an actual type.
+For example, the rewrite rule required to rewrite |cnstr cnstr.a tv| is defined as:
+
+%%@rulerDemoRL.3.rw.Cnstr wrap=code
+
+Rewrite rules are only applied to saturated juxtapositionings or applications of operators.
+Rewrite rules are non-recursively applied in a bottom-up strategy.
+
+The rule assumes the definition of additional Haskell types and class instances defined elsewhere:
+
+%%@RulerDemoUtils.3.Cnstr wrap=code
+
+\Paragraph{Unique values}
+Our implementation of ``freshness'', required for fresh type variables,
+is to simulate a global seed for unique values.
+The global seed is implemented by a threaded attribute |uniq|;
+we have omitted its declaration and initialisation.
+|Ruler| assumes that such an implementation is provided externally.
+From within |Ruler| we use the keyword |unique| to obtain a unique value.
+For example, the relation |tvFresh| has a |ag| judgement shape for the generation of AG
+which contains a reference to |unique|:
+
+%%@rulerDemoRL.2.tvFresh wrap=code
+
+AG code generation inlines the judgement using the |ag| judgement shape:
+
+%%@rulerDemoAG.3.expr.e.app wrap=code
+
+The presence of |unique| in a judgement for a rule triggers the insertion of additional AG code to create
+an unique value and to update the unique seed value.
+|Ruler| automatically translates the reference to |unique| to |uniq1| and
+inserts a call to |rulerMk1Uniq|.
+The function |rulerMk1Uniq| is assumed to be defined externally.
+It must have the following type:
+
+%%[[wrap=code
+rulerMk1Uniq  ::  <X> -> (<X>,<Y>)
+rulerMk1Uniq  =   ...
+%%]
+
+For |<X>| and |<Y>| any suitable type may be chosen,
+where |<X>| is restricted to match the type of the seed for unique values,
+and |<Y>| matches the type of the unique value.
+Our default implementation is a nested counter which allows a unique value itself
+to also act as a seed for an unlimited series of unique values.
+This is required for the instantiation of a quantified type where the number of fresh type variables depends on the type
+(we do not discuss this further):
+
+%%@RulerDemoUtils.3.UID wrap=code
+
+When a rule contains multiple occurrences of |unique|, |Ruler| assumes the presence of |rulerMk<n>Uniq| which returns |<n>| unique values;
+|<n>| is the number of |unique| occurrences.
+
+%if False
+Finally, we need to add some AG for the attribute declaration and initialisation of attribute @uniq@:
+
+%%@RulerDemoMain.3.uniq wrap=code
+%endif
+
+The |Ruler| code for relation |tvFresh| also demonstrates how the |ag| judgement shape for |tvFresh| is inlined as an attribute definition.
+The |ag| shape for a relation must have the form |<attrs> `=` <expr>|.
+
+\Paragraph{Handling errors}
+The generated code for \ruleRef{e.app} also shows how the implementation deals with errors.
+This aspect of an implementation usually is omitted from type rules,
+but it cannot be avoided when building an implementation for those type rules.
+Our approach is to ignore the details related to error handling in the \LaTeX\ rendering of the type rules,
+but to let the generated AG code return two values at locations where an error may occur:
+\begin{Itemize}
+\item
+The value as defined by the type rules.
+If an error occurs, this is a ``does not harm'' value.
+For example, for types this is |Ty_Any|,
+for lists this is an empty list.
+\item
+A list of errors.
+If no error occurs, this list is empty.
+\end{Itemize}
+
+For example, the AG code for relation |match| as it is inlined in the translation for \ruleRef{e.app} is defined as:
+
+%%@rulerDemoRL.2.match wrap=code
+
+The operator |<=>| implementing the matching returns constraints as well as errors.
+The errors are bound to a local attribute which is used by additional AG code for error reporting.
+%if (storyPHD || storyEhcBook)
+%%[[hide "app-ruler-supp-ag"="Ruler demo: Supporting AG"
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoMain.ag}
+%%]
+%endif
+
+%%]
+
+%%[relatedWork
+\subsection{Related work}
+\label{ruler-relatedwork}
+
+\Paragraph{Literate programming}
+Literate programming \cite{www05litprog}
+is a style of programming where the program source text and its documentation are combined
+into a single document.
+So called \IxAsDef{tangling} and \IxAsDef{weaving} tools extract the program source and documentation.
+Our |Ruler| system is different:
+\begin{Itemize}
+\item
+Within a literate programming document program source and documentation are recognizable and identifiable artefacts.
+In |Ruler| there is no such distinction.
+\item
+|Ruler| does not generate documentation; instead it generates fragments for use in documentation.
+\end{Itemize}
+
+\Paragraph{TinkerType}
+TinkerType \cite{levin99tinkertype},
+used for Pierce's book \cite{typing:types-prog-lang:pierce},
+comes closest to |Ruler|.
+Type system features can be combined into type systems.
+The system provides checks for valid combinations, and allows the specification of code fragments.
+The structure of judgements is not checked.
+
+\Paragraph{Twelf}
+The theorem proving environment Twelf \cite{www05twelf}
+is used to describe and prove properties for
+programming languages \cite{harper05lect-mechlangdef},
+thus answering the POPLmark challenge \cite{www05poplmark-chall}.
+Although we intend to generate descriptions for use in such theorem proving tools,
+we emphasize that |Ruler| is meant as a lightweight tool for the construction of well-documented compilers.
+
+\Paragraph{AST based tools}
+Various
+%if shortStory
+abstract syntax tree (AST)
+%else
+AST
+%endif
+based compiler construction tools exist
+\cite{www99croap,www05asf-sdf,visser05stratego-www,www05synth-gen},
+among which our AG system.
+Such tools have in common that they only allow programming on the level of AST's,
+whereas |Ruler| allows a higher form of programming.
+Furthermore, in our experience, stepwise AG descriptions \cite{dijkstra04thag}
+became too complex (which inspired us to design |Ruler| in the first place),
+and we expect this to be the case for similar formalisms as well.
+
+Finally, we also mention 
+the Programmatica project, which
+provides mechanisms and tools for proving properties of Haskell programs.
+
+%%]
+
+%%[discussion
+\subsection{Discussion and future work}
+\label{ruler-conclude}
+
+\Paragraph{Experiences with |Ruler|}
+|Ruler| solves the problem of maintaining consistency and managing type rules.
+Within the context of constructing a documented Haskell compiler
+(EH project,
+\cite{dijkstra04ehc-web%
+%if not (storyPHD || storyEhcBook)
+,dijkstra05phd%
+%endif
+})
+this was an acute problem.
+It is a relief not to have to write \LaTeX\ for type rules by hand,
+to know that the formatted rules correspond directly
+to their implementation,
+and to know several checks have been performed.
+
+
+\Paragraph{Lightweight solution}
+|Ruler| is a lightweight solution to the general problem of maintaining consistency,
+tailored towards the needs of the EH project.
+This is reflected in the following:
+
+\begin{Itemize}
+\item
+|Ruler| uses a few operator symbols for its own purposes,
+leaving available as much as possible to the user of |Ruler|.
+Similarly, judgements have minimal structure, using combinations of operator symbols as distfix operators.
+Both design choices give maximum typographical freedom and avoid a fixed meaning of judgements.
+\item
+The structure provided by holes and judgement schemes allows exactly the translation to AG.
+Although not formally defined, the correspondence between type rules and AG is relatively self-evident and often observed in literature.
+\end{Itemize}
+
+These design decisions ensure that |Ruler| is what it is meant to be: a relatively simple solution for keeping type rules and their implementation consistent.
+However, the desire to check and generate more from a single description surely will motivate further evolution of the |Ruler| formalism (e.g.) to be more
+restrictive (thus allowing more checks) and more expressive (thus allowing more aspects to be specified).
+A more restrictive syntax for |Ruler| expressions would also enable a more concise, but implicit, notation, avoiding the need for keywords like |judge|.
+
+\Paragraph{Views as organizational structure}
+Rules are organized as groups of views;
+|Ruler| enforces all views on a type rule to be specified together.
+This is a consequence of our design paradigm in which we both isolate parts
+of the type rules specification (by using views),
+and need to know the context of these isolated parts (by rendering parts together with their context).
+In practice it works well to devlop all views together,
+to allow for a understandable partitioning into different views, while at the same time keeping an overview.
+
+
+\Paragraph{Emphasizing differences}
+We use colors in the electronic version of \thispaper\ to emphasize differences in type rules.
+For black-and-white print this is hardly a good way to convey information to the reader.
+However, we believe that to understand more complex material,
+more technical means (like colors, hypertext, collapsable/expandable text)
+must be used to manage the complexity of descriptions.
+
+\Paragraph{Future research}
+We foresee the following directions of further research and development of |Ruler|%
+%if (storyPHD || storyEhcBook)
+(see \chapterRef{ehcConcl} for a further elaboration)%
+%else
+%endif
+:
+
+\begin{Itemize}
+\item
+The additional specification required to shift from equational to algorithmic type rules is currently done by hand.
+However, our algorithmic version of the type rules uses a heuristic for dealing with yet unknown information
+and finding this unknown information.
+We expect that this (and other) heuristics
+can be applied to similar problems as an automated strategy.
+%if False
+\item
+|Ruler| currently generates output for two targets: \LaTeX\ and AG.
+We expect the |Ruler| to be useful in many different situations,
+requiring different kinds of output,
+such as material for use in theorem provers.
+%endif
+%if False
+We already have started to develop a plugin architecture for this kind of extensibility.
+%endif
+\item
+%%@TopicReflection.futWorkRulerDifferentStrategies
+\item
+%%@TopicReflection.futWorkRulerSyntaxOrOtherDirected
+\item
+%%@TopicReflection.futWorkRulerTargets
+\item
+Views are built on top of each other by introducing new holes and adapting rules.
+Currently we do not deal with possible conflicts between views.
+However, we expect that a combination with the more aspect oriented approach taken by TinkerType \cite{levin99tinkertype}
+eventually will lead to a more modular approach where type system aspects together with implementation fragments can be combined and checked for inconsistencies.
+\end{Itemize}
+
+%if False
+We think |Ruler| is mature enough to be used by others,
+and we are sure such use will be a source of new requirements.
+Since |Ruler| itself has been produced using the AG system \cite{swierstra99comb-lang}
+new extensions can relatively easily be incorporated.
+%endif
+
+%if False
+\Paragraph{(Random) observations}
+Observation: type rule implementation is just a small part, the bulk is in the environment
+
+\Paragraph{Grouping of views for a rule}
+For a single rule all views are grouped together. Is this necessary?
+Currently |Ruler| enforces this grouping.
+Experience with [...] has shown that the grouping of views in the source code for the rules is benificial to the maintenance
+of the source code.
+However, the explanation of the source code seems to be better of with a gradual introduction.
+In other words, the initial understanding benefits from ... ???
+
+\Paragraph{Future research}
+Translation from equational to algorithmic is done by hand, but systematically done.
+It is likely that this can be automated as well.
+
+Other patterns: interaction between known/inferred info
+
+Generation of HOL strategies/facts (?)
+%endif
+
+%%]
+
+%%[appendix
+\subsection{Source code using |Ruler| notation}
+\label{ruler-app-demo-src}
+
+The preambles are specific to the generation for \thischapt\ because of the need for additional preprocessing
+to include pretty printed fragments of the |Ruler| source code in \thischapt.
+
+\VerbatimInput[fontsize=\small]{demo.rl2}
+
+\subsection{Supporting AG}
+\label{app-ruler-supp-ag}
+
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoMain.ag}
+
+\subsection{Supporting Haskell}
+\label{app-ruler-supp-hs}
+
+Type, unification
+
+\VerbatimInput[fontsize=\footnotesize]{RulerDemoUtils.hs}
+
+\onecolumn
+\subsection{Generated AG}
+\label{app-ruler-demo-ag}
+
+\VerbatimInput[fontsize=\footnotesize]{demo.ag}
+%%]
+
+%%[[rulerSrcTemplate
+scheme X =
+  view A =
+    holes ...
+    judgespec ...
+    judgeuse ...
+    ...
+  view B =
+    holes ...
+    judgespec ...
+    judgeuse ...
+    ...
+
+ruleset x scheme X =
+  rule r =
+    view A =
+      judge ...        -- premises
+      ...
+      -
+      judge ...        -- conclusion
+    view B = ...
+  rule s =
+    view A = ...
+    view B = ...
+%%]
+
+%%[rulerSyntaxFullFig
+{\footnotesize
+\begin{CodeFigure}{}{Syntax of ruler notation}{ruler-legenda-syntax}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxBasic
+%%@AppxNotation.rulerSyntaxLexical
+%%@AppxNotation.rulerSyntaxRest
+%%]
+\end{CodeFigure}
+}
+%%]
+
+%%[rulerSyntaxPart1Fig
+\begin{CodeFigure}{}{Syntax of ruler notation (part I, basics)}{ruler-legenda-syntax}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxBasic
+%%]
+\end{CodeFigure}
+%%]
+
+%%[rulerSyntaxPart2Fig
+\begin{CodeFigure}{}{Syntax of ruler notation (part II, lexical and other)}{ruler-legenda-syntax2}
+%%[[wrap=code
+%%@AppxNotation.rulerSyntaxLexical
+%%@AppxNotation.rulerSyntaxRest
+%%]
+\end{CodeFigure}
+%%]
+
+%%[rulerRules
+\rulerCmdUse{RulerRules.E.prog}
+
+\rulerCmdUse{RulerRules.E.scm}
+
+\rulerCmdUse{RulerRules.E.svw}
+
+\rulerCmdUse{RulerRules.E.shls}
+
+\rulerCmdUse{RulerRules.E.hl}
+
+\rulerCmdUse{RulerRules.E.jspec}
+
+\rulerCmdUse{RulerRules.E.rset}
+
+\rulerCmdUse{RulerRules.E.rul}
+
+\rulerCmdUse{RulerRules.E.rvw}
+
+\rulerCmdUse{RulerRules.E.jd}
+
+\rulerCmdUse{RulerRules.E.jdat}
+
+\rulerCmdUse{RulerRules.E.expr}
+
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

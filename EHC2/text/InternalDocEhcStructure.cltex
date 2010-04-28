@@ -1,0 +1,341 @@
+%%[main doclatex
+%%@TopicEHCStructure.abstractExpReport
+
+\glabel{EhcStructureDocumentation}
+\section{Introduction}
+
+%%@TopicEHCStructure.introduction
+
+\section{Coping with implementation complexity: transform}
+\label{sec-ehcstruct-complexity-implementation}
+
+%%@InternalDocEhcStructure.complexityImplementation
+
+\section{Coping with description complexity: use tools}
+\label{sec-ehcstruct-complexity-description}
+
+%%@InternalDocEhcStructure.complexityDescription
+
+\subsection{UUAGC, a system for specifying tree walks}
+\label{sec-ehcstruct-explainUUAGC}
+%%@InternalDocEhcStructure.explainUUAGC
+
+\subsection{Ruler, a system for specifying type rule implementations}
+\label{sec-ehcstruct-explainRuler}
+%%@InternalDocEhcStructure.explainRuler
+
+\section{Coping with design complexity: grow stepwise}
+\label{sec-ehcstruct-complexity-design}
+
+%%@InternalDocEhcStructure.complexityDesign
+
+\section{Coping with maintenance complexity: generate, generate and generate}
+\label{sec-ehcstruct-complexity-maintenance}
+
+%%@InternalDocEhcStructure.complexityMaintenance
+
+\section{Related work}
+\label{sec-ehcstruct-relatedwork}
+
+%%@TopicEHCStructure.relatedWork
+
+\section{Experiences}
+\label{sec-ehcstruct-experiences}
+
+%%@TopicEHCStructure.experiences
+
+%%]
+
+
+
+%%[complexityImplementation doclatex
+%%@TopicEHCStructure.complexityImplementation1
+
+%%@InternalDocEhcStructure.complexityImplementationFig
+
+%%@TopicEHCStructure.complexityImplementation2
+%%]
+
+%%[complexityImplementationFig doclatex
+\includegraphics[scale=0.65,label=fig-ehcstruct-dataflow,caption=Intermediate languages and transformations in the EHC pipeline]{ehc-dataflow2.pdf}
+%%]
+
+%%[complexityDescription doclatex
+%%@TopicEHCStructure.complexityDescription1
+
+%%@InternalDocEhcStructure.complexityDescriptionFig
+
+%%@TopicEHCStructure.complexityDescription2
+%%]
+
+%%[complexityDescriptionFig doclatex
+\includegraphics[scale=0.45,label=fig-ehcstruct-toolchain,caption=Chain of tools used to build EHC]{toolchain2.pdf}
+%%]
+
+
+%%[explainUUAGC doclatex
+%%@TopicEHCStructure.explainUUAGC01
+
+%%@InternalDocEhcStructure.explainUUAGCExample01
+
+%%@TopicEHCStructure.explainUUAGC02
+
+%%@InternalDocEhcStructure.explainUUAGCExample02
+
+%%@TopicEHCStructure.explainUUAGC03
+
+%%@InternalDocEhcStructure.explainUUAGCExample03
+
+%%@TopicEHCStructure.explainUUAGC04
+
+%%@InternalDocEhcStructure.explainUUAGCExample04
+
+%%@TopicEHCStructure.explainUUAGC05
+
+%%@InternalDocEhcStructure.explainUUAGCExample05
+
+%%@TopicEHCStructure.explainUUAGC06
+
+%%@InternalDocEhcStructure.explainUUAGCExample06
+
+%%@TopicEHCStructure.explainUUAGC07
+
+%%@InternalDocEhcStructure.explainUUAGCExample07
+
+%%@TopicEHCStructure.explainUUAGC08
+
+%%@InternalDocEhcStructure.explainUUAGCExample08
+
+%%@TopicEHCStructure.explainUUAGC09
+
+%%@InternalDocEhcStructure.explainUUAGCExample09
+
+%%@TopicEHCStructure.explainUUAGC10
+
+%%@InternalDocEhcStructure.explainUUAGCExample10
+
+%%@TopicEHCStructure.explainUUAGC11
+
+%%]
+
+%%[explainUUAGCExample01 doclatex
+\begin{pre}
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+product  []      = 1
+product  (x:xs)  = x * product xs
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample02 doclatex
+\begin{pre}
+foldr op e []      = e
+foldr op e (x:xs)  = x `op` foldr op e xs
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample03 doclatex
+\begin{pre}
+sum        =  foldr (+)  0
+product    =  foldr (*)  1
+concat     =  foldr (++) []
+sort       =  foldr insert []
+transpose  =  foldr (zipWith (:)) (repeat [])
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample04 doclatex
+\begin{pre}
+DATA Expr
+  =  Var     name  :: Name
+  |  Let     decl  :: Decl       body  :: Expr
+  |  App     func  :: Expr       arg   :: Expr
+  |  Lam     arg   :: Pat        body  :: Expr
+DATA Decl
+  =  Val     pat   :: Pat        expr :: Expr
+DATA Pat
+  =  Var     name  :: Name
+  |  App     func  :: Expr       arg :: Expr
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample05 doclatex
+\begin{pre}
+ATTR Expr Decl Pat  SYN  listing   :: String
+ATTR Expr           SYN  typ       :: Type
+                         varmap    :: [(Name,Type)]
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample06 doclatex
+\begin{pre}
+SEM Expr | Let
+  lhs.listing =  "let " ++ @decl.listing ++ " in " ++ @body.listing
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample07 doclatex
+\begin{pre}
+SEM Expr
+  | Var  lhs.listing  =  @name
+  | Lam  lhs.typ      =  Type_Arrow (substit @body.varmap @arg.typ) @body.typ
+  | App  lhs.typ      =  case @func.typ of
+                           (Type_Arrow p b) -> substit @arg.varmap b
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample08 doclatex
+\begin{pre}
+ATTR Expr INH env :: [(Name,Type)]
+SEM Expr 
+  | Var  lhs.typ  =  fromJust (lookup @name @lhs.env)
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample09 doclatex
+\begin{pre}
+SEM Expr
+  | Let  body.env  =  @decl.newenv ++ @lhs.env
+\end{pre}
+%%]]
+
+%%[explainUUAGCExample10 doclatex
+\begin{pre}
+SEM Expr
+  |  App  func.env  = @lhs.env
+          arg.env   = @lhs.env
+\end{pre}
+%%]]
+
+
+
+%%[explainRuler doclatex
+%%@TopicEHCStructure.explainRuler1
+
+%%@InternalDocEhcStructure.explainRulerExampleFig1A
+
+and its corresponding AG implementation, for further processing by UUAGC:
+
+%%@InternalDocEhcStructure.explainRulerExampleFig1B
+
+%%@TopicEHCStructure.explainRuler2
+
+%%@InternalDocEhcStructure.explainRulerExample2
+
+%%@TopicEHCStructure.explainRuler3
+
+%%@InternalDocEhcStructure.explainRulerExampleFig3
+
+%%@TopicEHCStructure.explainRuler4
+
+%%@InternalDocEhcStructure.explainRulerExample4
+
+%%@TopicEHCStructure.explainRuler5
+
+%%]
+
+%%[explainRulerExampleFig1A doclatex
+\includegraphics[scale=0.65,label=ruler-exampleoutput-eapphm,caption=Ruler example output]{ruler-exampleoutput-eapphm.pdf}
+%%]
+
+%%[explainRulerExampleFig1B doclatex
+\begin{pre}
+%%@EHRulerRules.3.expr.e.app
+\end{pre}
+%%]
+
+%%[explainRulerExample2 doclatex
+\begin{pre}
+scheme expr =
+    holes  [ node e: Expr, inh valGam: ValGam, inh knTy: Ty
+           , thread tyVarMp: VarMp, syn ty: Ty ]
+    judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    judgespec valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+\end{pre}
+%%]]
+
+%%[explainRulerExample4 doclatex
+\begin{pre}
+rule e.app =
+      judge tvarvFresh
+      judge expr =  tyVarMp.inh ; tyVarMp ; (tvarv -> knTy)
+                    :- eFun : (ty.a -> ty) ~> tyVarMp.fun
+      judge expr =  tyVarMp.fun ; valGam ; ty.a
+                    :- eArg : ty.a ~> tyVarMp.arg
+      -
+      judge expr =  tyVarMp.inh ; valGam ; knTy
+                    :- (eFun  eArg) : (tyVarMp.arg ty) ~> tyVarMp.arg
+\end{pre}
+%%]]
+
+%%[explainRulerExampleFig3 doclatex
+\includegraphics[scale=0.65,label=ruler-exampleoutput-namemap,caption=Ruler name mapping]{ruler-exampleoutput-namemap.pdf}
+%%]
+
+
+
+%%[complexityDesign doclatex
+%%@TopicEHCStructure.complexityDesign1
+
+%%@InternalDocEhcStructure.complexityDesignTable1
+
+%%@TopicEHCStructure.complexityDesign2
+
+%%@InternalDocEhcStructure.complexityDesignTableFig2
+
+%%]
+
+%%[complexityDesignTable1 doclatex
+\label{fig-ehcstruct-alllangvariant}
+\begin{tabular}{lll}
+%%@SlidesIntro.ehVariantsTableLongContent
+\end{tabular}
+%%]
+
+%%[complexityDesignTableFig2 doclatex
+\includegraphics[scale=0.55,label=fig-ehcstruct-langs-shadowed,caption=Examples of created artefacts (rows) for various language variants (columns)]{ruler-exampleoutput-variants.pdf}
+%%]
+
+
+
+%%[complexityMaintenance doclatex
+%%@TopicEHCStructure.complexityMaintenance1
+
+%%@InternalDocEhcStructure.complexityMaintenanceExample1
+
+%%@TopicEHCStructure.complexityMaintenance2
+
+%%@InternalDocEhcStructure.complexityMaintenanceExample2A
+
+These two Haskell fragments are generated from the following |Shuffle| source:
+
+%%@InternalDocEhcStructure.complexityMaintenanceExample2B
+
+%%@TopicEHCStructure.complexityMaintenance3
+
+%%]
+
+%%[complexityMaintenanceExample1 doclatex
+\begin{pre}
+%%@EHTy.2.mkTyVar
+\end{pre}
+%%]]
+
+%%[complexityMaintenanceExample2A doclatex
+\begin{pre}
+%%@EHTy.3.mkTyVar
+\end{pre}
+%%]]
+
+%%[complexityMaintenanceExample2B doclatex
+\begin{pre}
+%%%[2.mkTyVar
+%%@EHTy.2.mkTyVar
+%%%]
+
+%%%[3.mkTyVar -2.mkTyVar
+%%@EHTy.3.mkTyVar
+%%%]
+\end{pre}
+%%]]
+

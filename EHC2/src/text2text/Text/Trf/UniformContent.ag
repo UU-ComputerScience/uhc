@@ -1,0 +1,152 @@
+-------------------------------------------------------------------------
+-- Convert Text to UniformContent
+-------------------------------------------------------------------------
+
+{-
+Text is parsed in 2 steps, the second step is done here by taking all T2T content fragments and parsing them according to the type of it.
+-}
+
+{
+module Text.Trf.UniformContent
+  ( textTrfUniformContent
+  )
+  where
+
+import Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Set as Set
+
+import EH.Util.Utils
+import qualified EH.Util.FastSeq as Seq
+
+import Common
+import Text
+import Text.Parser.Common
+import Plugin
+
+
+}
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+WRAPPER AGItf
+
+{
+textTrfUniformContent :: Opts -> PluginMp -> AGItf -> (AGItf,[Err])
+textTrfUniformContent opts pluginMp txt
+  = (trf_Syn_AGItf t, Seq.toList $ errs_Syn_AGItf t)
+  where t = wrap_AGItf (sem_AGItf txt)
+                       (Inh_AGItf { opts_Inh_AGItf 		= opts
+                                  , pluginMp_Inh_AGItf 	= pluginMp
+                                  })
+}
+
+-------------------------------------------------------------------------
+-- AST
+-------------------------------------------------------------------------
+
+INCLUDE "Text/AbsSyn.ag"
+
+-------------------------------------------------------------------------
+-- Global info
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ opts: Opts  pluginMp: PluginMp | | ]
+
+-------------------------------------------------------------------------
+-- Context TextType
+-------------------------------------------------------------------------
+
+{-
+If a T2T has the same type as its context, parsing is delayed and done as part of the context.
+-}
+
+ATTR AllText AllTable [ cxTextType: TextType | | ]
+
+SEM AGItf
+  | AGItf           loc         .   cxTextType  =   TextType_None
+
+SEM TextItem
+  | T2T             loc         .   cxHasSameTextType
+                                                =   @texttype == @lhs.cxTextType
+                                .   cxTextType  =   @texttype
+
+-------------------------------------------------------------------------
+-- Errors
+-------------------------------------------------------------------------
+
+ATTR AGItf AllText [ | | errs USE {`Seq.union`} {Seq.empty}: {Seq.Seq Err} ]
+
+SEM TextItem
+  | T2T             lhs         .   errs		=	@text.errs `Seq.union` @errs
+
+-------------------------------------------------------------------------
+-- Partial replacement to be fed in parser
+-------------------------------------------------------------------------
+
+ATTR AllText [ | | scInput USE {`Seq.union`} {Seq.empty}: {Seq.Seq ScInput} ]
+
+SEM TextItem
+  | Line            loc         .   scInput     =   Seq.fromList [ScInput_Uninterpreted @str, ScInput_Uninterpreted "\n"]
+  | LineFeed        loc         .   scInput     =   Seq.singleton (ScInput_Uninterpreted "\n")
+  | T2T             loc         .   scInput     =   if @cxHasSameTextType
+                                                    then @text.scInput
+                                                    else Seq.empty
+  | * - T2T Line LineFeed
+                    loc         .   scInput     =   Seq.singleton (ScInput_TextAST [@trf])
+
+-------------------------------------------------------------------------
+-- Replacement, as TextItems
+-------------------------------------------------------------------------
+
+ATTR AllText [ | | trfTextItems USE {`Seq.union`} {Seq.empty}: {Seq.Seq TextItem} ]
+
+SEM TextItem
+  | T2T             loc         .   (trfTextItems,errs)
+                                                =   if @cxHasSameTextType
+                                                    then (Seq.empty,Seq.empty)
+                                                    else case Map.lookup @texttype @lhs.pluginMp of
+                                                           Just plg | isJust mbParse
+                                                             -> (res,Seq.fromList $ map (Err_Out . out . show) $ err)
+                                                             where toks = scan (plgScanOptsMp plg) (plgScanInitState plg) (infpAdv1Line @pos) (Seq.toList @text.scInput)
+                                                                   (res,err) = parseToResMsgs (fromJust mbParse) toks -- (tr "XX" (show $ take 100 toks) toks)
+                                                                   mbParse = plgParseTextItems plg
+                                                           _ -> (Seq.singleton (TextItem_NonSpace ("no uniformification for " ++ show @texttype)),Seq.singleton (Err_NoPlugin @texttype))
+  | * - T2T         loc         .   trfTextItems=   Seq.singleton @trf
+
+-------------------------------------------------------------------------
+-- Replacement, as Text
+-------------------------------------------------------------------------
+
+ATTR AGItf AllNT [ | | trf: SELF ]
+
+SEM AGItf
+  | AGItf			lhs			.	trf			=	AGItf_AGItf (Seq.toList @text.trfTextItems)
+
+SEM TextItem
+  | RefTo	  		loc			.	trf			=   TextItem_RefTo @reftype.trf (Seq.toList @reftext.trfTextItems) (Seq.toList @text.trfTextItems)
+  | Label	  		loc			.	trf			=   TextItem_Label @lbltype.trf (Seq.toList @reftext.trfTextItems)
+  | Header  		loc			.	trf			=   TextItem_Header @level.trf (Seq.toList @text.trfTextItems)
+  | Group  			loc			.	trf			=   TextItem_Group @envtype.trf (Seq.toList @text.trfTextItems)
+  | Table  			loc			.	trf			=   TextItem_Table @tablefmt.trf (Seq.toList @extratext.trfTextItems) @rows.trf
+  | Itemize  		loc			.	trf			=   TextItem_Itemize @itemizestyle.trf (Seq.toList @text.trfTextItems)
+  | ItemizeItem		loc			.	trf			=   TextItem_ItemizeItem (Seq.toList @text.trfTextItems)
+  | Styled  		loc			.	trf			=   TextItem_Styled @style.trf (Seq.toList @text.trfTextItems)
+  | Title			loc			.	trf			=   TextItem_Title (Seq.toList @text.trfTextItems)
+  | Author			loc			.	trf			=   TextItem_Author (Seq.toList @text.trfTextItems)
+  | DocumentHeader	loc			.	trf			=   TextItem_DocumentHeader @mboptions.trf (Seq.toList @text.trfTextItems)
+  | GraphicsInline	loc			.	trf			=   TextItem_GraphicsInline @mboptions.trf (Seq.toList @text.trfTextItems)
+  | Import			loc			.	trf			=   TextItem_Import (Seq.toList @text.trfTextItems)
+  | T2T			  	loc			.	trf			=   TextItem_T2T @pos @texttype []
+
+SEM TableRow
+  | Row				lhs			.	trf			=	TableRow_Row @cols.trf (Seq.toList @extrabrktext.trfTextItems)
+
+SEM TableField
+  | Fld				lhs			.	trf			=	TableField_Fld (Seq.toList @extraseptext.trfTextItems) (Seq.toList @fld.trfTextItems)
+
+SEM GraphicsInlineOption
+  | Scale			lhs			.	trf			=	GraphicsInlineOption_Scale (Seq.toList @text.trfTextItems)
+

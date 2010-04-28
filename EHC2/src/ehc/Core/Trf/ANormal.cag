@@ -1,0 +1,327 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Fully lazy code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+The full lazy transformation gives names to argument subexpressions of an application.
+The purpose is to end up with bindings which (later) directly correspond to a CAF or a closure.
+For that to work, all arguments of an application closure must themselves be bound to names, i.e. be closures themselves.
+%%]
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.ANormal} import(Data.Maybe,qualified Data.Set as Set,EH.Util.FastSeq as Seq,Data.List as List,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfANormal)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Debug})
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
+WRAPPER CodeAGItf
+%%]
+
+We have cycles, but they are there by design:
+
+*** UU.AG warning  ***
+problem  : Direct circular dependency pattern for inherited attribute cvarIntroMp
+            and synthesized attribute levOfMp of nonterminal CBindL
+pattern  : see help
+help     : The following attributes formed the cycle:
+           CExpr.Let, inherited attribute binds.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 9, column 35))
+           CBindL.Cons, inherited attribute lhs.levMp
+           CBindL.Cons, inherited attribute hd.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CBind.Bind, inherited attribute lhs.levMp
+           CBind.Bind, inherited attribute expr.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.App, inherited attribute lhs.levMp
+           CExpr.App, inherited attribute arg.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Case, inherited attribute lhs.levMp
+           CExpr.Case, inherited attribute dflt.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 1, column 18))
+           CExpr.Lam, inherited attribute lhs.levMp
+           CExpr.Lam, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 45, column 33))
+           CExpr.Lam, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.Case, synthesized attribute dflt.levOf
+           CExpr.Case, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 41, column 33))
+           CExpr.Case, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CExpr.App, synthesized attribute arg.levOf
+           CExpr.App, local attribute levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 40, column 33))
+           CExpr.App, synthesized attribute lhs.levOf ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 36, column 22))
+           CBind.Bind, synthesized attribute expr.levOf
+           CBind.Bind, synthesized attribute lhs.levOfMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 54, column 33))
+           CBindL.Cons, synthesized attribute hd.levOfMp
+           CBindL.Cons, synthesized attribute lhs.levOfMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 51, column 20))
+           CExpr.Let, synthesized attribute binds.levOfMp
+           CExpr.Let, inherited attribute binds.levMp ("build/8/lib-ehc/EH8//Core/Trf/CommonLev.ag"(line 9, column 35))
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfANormal :: HsName -> UID -> CModule -> CModule
+cmodTrfANormal modNm uniq cmod
+  =  let  t = wrap_CodeAGItf  (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                              (Inh_CodeAGItf
+                                 { gUniq_Inh_CodeAGItf = uniq
+%%[[20
+                                 , modNm_Inh_CodeAGItf = modNm
+%%]]
+                                 })
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name, required for unique global names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 codegen)
+ATTR AllCodeNT CodeAGItf [ modNm: HsName | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | gUniq: UID | ]
+ATTR CodeAGItf [ gUniq: UID | | ]
+
+SEM CExpr
+  | App         (func.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+  | Lam         (body.gUniq,loc.lUniq,loc.lUniq2)
+                                            =   mkNewLevUID2 @lhs.gUniq
+  | Let         (binds.gUniq,loc.lUniq)     =   mkNewUID @lhs.gUniq
+  | Case TupDel TupIns TupUpd
+                (expr.gUniq,loc.lUniq)      =   mkNewUID @lhs.gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CMetaVal context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr AllAlt [ cmeta: CMetaVal | | ]
+
+SEM CExpr
+  | App         arg         .   cmeta       =   @argMeta.self
+  | Lam         body        .   cmeta       =   CMetaVal_Val
+
+SEM CBind
+  | Bind        expr        .   cmeta       =   cmetasVal @bindMeta.self
+
+SEM CModule
+  | Mod         expr        .   cmeta       =   CMetaVal_Val
+
+SEM CPatBind
+  | Bind        offset      .   cmeta       =   CMetaVal_Val
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering let's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type LevBindSq = Seq.FastSeq (Int,(CBindingsCateg,CBindL))
+
+levBindSplit :: Int -> LevBindSq -> (LevBindSq,LevBindSq)
+levBindSplit lev b
+  =  let (b1,b2) = partition (\(l,_) -> l >= lev) $ Seq.toList b
+     in  (Seq.fromList b1,Seq.fromList b2)
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | levBindSq USE {:++:} {Seq.empty}: LevBindSq ]
+ATTR AllBind [ | | bindL USE {++} {[]}: {AssocL Int CBind} ]
+
+SEM CExpr
+  | App         lhs         .   levBindSq   =   @arg.levBindSq :++: @func.levBindSq :++: @levBindSq
+  | Case        lhs         .   levBindSq   =   @expr.levBindSq :++: @alts.levBindSq :++: @dflt.levBindSq :++: @levBindSq
+  | TupDel      lhs         .   levBindSq   =   @expr.levBindSq :++: @offset.levBindSq :++: @levBindSq
+  | TupIns TupUpd
+                lhs         .   levBindSq   =   @expr.levBindSq :++: @offset.levBindSq :++: @fldExpr.levBindSq :++: @levBindSq
+  | Let         (loc.hereBindSq,loc.remBindSq)
+                                            =   let ((hl,_):_) = @binds.bindL
+                                                    b1  = @binds.levBindSq
+                                                    b2  = Seq.singleton (@strLev hl,(@categ,assocLElts @binds.bindL))
+                                                    b12 = Seq.singleton (@maxBindLev,(CBindings_Rec,concat $ List.map (\(_,(_,b)) -> b) $ Seq.toList $ (b1 :++: b2)))
+                                                    b3  = @body.levBindSq
+                                                    b   = case @categ of 
+                                                            CBindings_Rec -> b12 :++: b3
+                                                            _             -> b1  :++: b2 :++: b3
+                                                in  (b,Seq.empty)
+                lhs         .   levBindSq   =   @remBindSq :++: @levBindSq
+  | Lam         loc         .   (hereBindSq,remBindSq)
+                                            =   (@body.levBindSq,Seq.empty) -- levBindSplit @lev @body.levBindSq
+                lhs         .   levBindSq   =   @remBindSq :++: @levBindSq
+
+SEM CBind
+  | Bind        lhs         .   bindL       =   [(@expr.levOf,@cTrf)]
+  | FFI
+%%[[94
+    FFE
+%%]]
+                lhs         .   bindL       =   [(cLevModule,@cTrf)]
+
+SEM CAlt
+  | Alt         (loc.hereBindSq,lhs.levBindSq)
+                                            =   (@expr.levBindSq,Seq.empty)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Allow trf?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+data AppTop = AppYesLet | AppNoLet deriving (Eq,Ord)
+data LamTop = LamYesLet | LamNoLet deriving (Eq,Ord)
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ appTrfIsOk: AppTop | | ]
+
+SEM CModule
+  | Mod         expr        .   appTrfIsOk  =   AppYesLet
+
+SEM CBind
+  | Bind        expr        .   appTrfIsOk  =   AppNoLet
+
+SEM CPatBind
+  | Bind        offset      .   appTrfIsOk  =   AppYesLet
+
+SEM CExpr
+  | App         func        .   appTrfIsOk  =   AppNoLet
+                arg         .   appTrfIsOk  =   AppYesLet
+  | TupIns TupUpd TupDel
+                loc         .   appTrfIsOk  =   AppYesLet
+  | Lam Let     body        .   appTrfIsOk  =   AppNoLet
+  | * - App Lam Let TupIns TupUpd TupDel Ann
+                loc         .   appTrfIsOk  =   AppYesLet
+
+SEM CAlt
+  | Alt         expr        .   appTrfIsOk  =   AppYesLet
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ lamTrfIsOk: LamTop | | ]
+
+SEM CModule
+  | Mod         expr        .   lamTrfIsOk  =   LamYesLet
+
+SEM CBind
+  | Bind        expr        .   lamTrfIsOk  =   LamNoLet
+
+SEM CPatBind
+  | Bind        offset      .   lamTrfIsOk  =   LamNoLet
+
+SEM CExpr
+  | TupIns TupUpd
+                fldExpr     .   lamTrfIsOk  =   LamYesLet
+  | Lam         body        .   lamTrfIsOk  =   LamNoLet
+  | * - Lam TupIns TupUpd Ann
+                loc         .   lamTrfIsOk  =   LamYesLet
+
+SEM CAlt
+  | Alt         expr        .   lamTrfIsOk  =   LamYesLet
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ letTrfIsOk: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   letTrfIsOk  =   False
+
+SEM CBind
+  | Bind        expr        .   letTrfIsOk  =   False
+
+SEM CPatBind
+  | Bind        offset      .   letTrfIsOk  =   True
+
+SEM CExpr
+  | TupIns TupUpd
+                fldExpr     .   letTrfIsOk  =   True
+  | App         loc         .   letTrfIsOk  =   True
+  | * - App TupIns TupUpd Ann
+                loc         .   letTrfIsOk  =   False
+
+SEM CAlt
+  | Alt         expr        .   letTrfIsOk  =   False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of introduced binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CExpr
+  | App Lam Case TupDel TupIns TupUpd Let
+                loc         .   trNm        =   
+%%[[20
+                                                hsnQualUniqify @lhs.modNm $
+%%]]
+                                                uidHNm @lUniq
+  | Lam         loc         .   trNm2       =   
+%%[[20
+                                                hsnQualUniqify @lhs.modNm $
+%%]]
+                                                uidHNm @lUniq2
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+mkTrf :: Bool -> Int -> Int -> HsName -> CMetaVal -> CExpr -> (CExpr,LevBindSq)
+mkTrf cond outerLev hereLev n m e
+  =  if cond
+     then (CExpr_Var n,Seq.singleton (hereLev,(CBindings_Plain,[mkCBind1Meta n m e])))
+     else (e,Seq.empty)
+%%]
+
+%%[(8 codegen) hs
+mkLetTrf' :: LevBindSq -> CExpr -> (Bool,CExpr)
+mkLetTrf' bs ce
+  =  let  l = Seq.toList bs
+     in   (not (List.null l),foldr (\(_,(c,b)) e -> mkCExprLet c b e) ce l)
+
+mkLetTrf :: LevBindSq -> CExpr -> CExpr
+mkLetTrf bs ce = snd (mkLetTrf' bs ce)
+%%]
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CAlt
+  | Alt         lhs         .   cTrf        =   CAlt_Alt @pat.cTrf (mkLetTrf @hereBindSq @expr.cTrf)
+
+SEM CExpr
+  | TupIns TupUpd TupDel
+                loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopTup
+  | App Case    loc         .   trfIsOk     =   @lhs.appTrfIsOk == AppYesLet && @lhs.isTopApp
+  | Lam         loc         .   trfIsOk     =   @lhs.lamTrfIsOk == LamYesLet
+  | Let         loc         .   trfIsOk     =   @lhs.letTrfIsOk
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | TupIns TupUpd TupDel
+                (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
+  | App Case    (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta @cTrf
+  | Lam         (lhs.cTrf,loc.levBindSq)    =   let mkTLB = mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta
+                                                          . mkCExprLam1Meta @arg @argMeta.cTrf
+                                                          . mkLetTrf @hereBindSq
+                                                in  if cexprIsLam @body.cTrf && not (List.null (Seq.toList @hereBindSq))
+                                                    then mkTLB (CExpr_Let CBindings_Plain [mkCBind1 @trNm2 @body.cTrf] (CExpr_Var @trNm2))
+                                                    else mkTLB @body.cTrf
+  | Let         (lhs.cTrf,loc.levBindSq)    =   mkTrf @trfIsOk @lhs.lev @levOf @trNm @lhs.cmeta $ mkLetTrf @hereBindSq @body.cTrf
+%%]
+
+

@@ -1,0 +1,24 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Is lhs a single name?
+-------------------------------------------------------------------------
+
+ATTR AEqnDest [ | | mbSingleANm: {Maybe ANm} ]
+
+SEM AEqnDest
+  | One             lhs     .   mbSingleANm =   if @lhs.isInComposite then Nothing else Just @anm.self
+  | Many            lhs     .   mbSingleANm =   Nothing
+
+-------------------------------------------------------------------------
+-- Is rhs a single name?
+-------------------------------------------------------------------------
+
+ATTR Expr AExpr [ | | mbSingleANm: {Maybe ANm} ]
+
+SEM Expr
+  | AVar            lhs     .   mbSingleANm =   Just @anm.self
+  | * - AppTop Paren AVar
+                    lhs     .   mbSingleANm =   Nothing
+
+%%]

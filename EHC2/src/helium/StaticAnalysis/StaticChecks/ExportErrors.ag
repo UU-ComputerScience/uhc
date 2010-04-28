@@ -1,0 +1,77 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+-- 
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- !!! CLEAN UP THIS CODE !!!
+--
+-------------------------------------------------------------------------------
+
+{-
+SEM Export
+    | TypeOrClassComplete
+                  lhs . errors =  checkExport ExportTypeConstructor @name.self
+                                    @lhs.tyconsInScope
+    | TypeOrClass lhs . errors =  checkExport ExportTypeConstructor @name.self
+                                    @lhs.tyconsInScope
+                                ++
+                                concatMap
+                                    (\name ->
+                                        checkExport ExportConstructor name
+                                            @lhs.consInScope
+                                    )
+                                    @names.toList
+-}
+SEM Module
+  | Module  exports . namesInScop   = concat [ @body.declVarNames
+                                              , concatMap (M.keys . typeEnvironment) @lhs.importEnvironments
+                                              , map fst @derivedFunctions
+                                              ]
+                    . modulesInScope = (@moduleName : @fileName : @body.importedModules)
+                    . tyconsInScope  = @allTypeConstructors
+                    . consInScope    = @allValueConstructors
+
+SEM Module 
+  | Module    loc . exportErrors = @exports.exportErrors
+                    
+ATTR MaybeExports Exports Export
+    [ namesInScop   : Names
+      modulesInScope : Names
+      tyconsInScope  : Names
+      consInScope    : Names
+    |
+    | exportErrors USE { ++ } { [] } : {[Error]}
+    ]                    
+    
+{
+checkExport entity name inScope =
+    makeUndefined entity
+        (if name `elem` inScope then
+            []
+         else
+            [name]
+        )
+        (nubBy equalName inScope)
+
+equalName x y =
+    getNameName x == getNameName y        
+}
+
+SEM Export
+    | Variable    lhs . exportErrors =  checkExport ExportVariable @name.self
+                                           @lhs.namesInScop
+    | Module      lhs . exportErrors =  checkExport ExportModule @name.self
+                                           @lhs.modulesInScope    
+-------------------------------------------
+-- Collecting the imported modules
+
+ATTR ImportDeclarations ImportDeclaration  [ | importedModules : Names | ]
+ATTR Body                                  [ | | importedModules : Names ]  
+
+SEM Body
+  | Body    importdeclarations . importedModules = []
+    
+SEM ImportDeclaration
+  | Import   lhs . importedModules = @name.self : @lhs.importedModules

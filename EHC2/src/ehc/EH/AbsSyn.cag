@@ -1,0 +1,631 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% EH Abstract syntax
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wildcard extensions: Range, as first field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+DATA AllNT
+  | *               hsrange         : Range
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.AGItf
+DATA AGItf
+  | AGItf           expr            : Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Decl
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Decl
+DATA Decl
+  | TySig           nm              : {HsName}
+                    tyExpr          : TyExpr
+  | Val             patExpr         : PatExpr
+                    expr            : Expr
+
+TYPE Decls          = [Decl]
+
+SET AllDecl         = Decl Decls
+%%]
+
+%%[5
+DATA Decl
+  | Data            isNewtype       : {Bool}
+                    tyNm            : {HsName}
+                    tyVars          : TyVars
+                    constrs         : DataConstrs
+%%]
+
+%%[6.Decl
+DATA Decl
+  | KiSig           nm              : {HsName}
+                    kiExpr          : KiExpr
+%%]
+
+Nonterminals for controlling restrictions on annotations.
+
+%%[7_2
+  | AnnSigExpSeq    pat             : {TyConSeqPat}
+  | AnnSigDtMono    tycons          : AnnDtMonoRestrictions
+%%]
+
+%%[(8 codegen)
+DATA Decl
+  | FFI             callconv        : {FFIWay}
+                    safety          : {String}
+%%[[8
+                    impEnt          : {String}
+%%][94
+                    impEnt          : {ForeignEnt}
+%%]]
+                    nm              : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[11
+DATA Decl
+  | Type            tyNm            : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[(94 codegen)
+DATA Decl
+  | FFE             nm              : {HsName}
+                    callconv        : {FFIWay}
+                    expEnt          : {ForeignEnt}
+                    expr            : Expr
+                    tyExpr          : TyExpr
+%%]
+
+%%[1010.Decl
+DATA Decl
+  | DynTySig        nm              : {HsName}
+                    tyExpr          : TyExpr
+  | DynVal          nm              : {HsName}
+                    expr            : Expr
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.TyExpr
+DATA TyExpr
+  | Con             nm              : {HsName}
+  | App             func            : TyExpr
+                    arg             : TyExpr
+  | AppTop          tyExpr          : TyExpr
+  | Parens          tyExpr          : TyExpr
+  | Ann             ann             : TyExprAnn
+                    tyExpr          : TyExpr
+%%]
+
+%%[2.TyExpr
+DATA TyExpr
+  | Wild
+%%]
+
+%%[3.TyExpr
+DATA TyExpr
+  | Var             nm              : {HsName}
+%%]
+
+%%[3.TyExpr.VarWild
+DATA TyExpr
+  | VarWild         nm              : {HsName}
+%%]
+
+%%[4
+DATA TyExpr
+  | Quant           qu              : {TyQu}
+                    tyVar           : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[7
+DATA TyExpr
+  | Row             rowTyExpr       : RowTyExpr
+%%]
+
+%%[9
+DATA TyExpr
+  | Pred            prExpr          : PrExpr
+  | Impls
+  | NoImpls
+%%]
+
+%%[11
+DATA TyExpr
+  | Lam             tyVar           : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[5
+TYPE TyExprs        = [TyExpr]
+
+DATA TyVar
+  | Var             nm              : {HsName}
+
+TYPE TyVars         = [TyVar]
+
+SET AllTyVar        = TyVar TyVars
+%%]
+
+%%[1.AllTyExpr
+SET AllTyExpr
+    = TyExpr
+      -- TyExprAnn
+%%[[5
+      TyExprs
+%%]]
+%%[[7
+      RowTyExpr
+%%]]
+%%[[9
+      PrExpr PrExprs
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data based record
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA DataFieldExpr
+  | Upd             dataFieldExpr   : DataFieldExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Con             nm              : {HsName}
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+DATA DataFieldPatExpr
+  | Ext             dataFieldPatExpr: DataFieldPatExpr
+                    nm              : {HsName}
+                    patExpr         : PatExpr
+  | Con             nm              : {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records, rows
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+DATA RecExpr
+  | Empty
+  | Ext             recExpr         : RecExpr
+                    mbNm            : {Maybe HsName}
+                    expr            : Expr
+  | Upd             recExpr         : RecExpr
+                    nm              : {HsName}
+                    expr            : Expr
+  | Expr            expr            : Expr
+%%]
+
+%%[7
+DATA RecPatExpr
+  | Empty
+  | Ext             recPatExpr      : RecPatExpr
+                    mbNm            : {Maybe HsName}
+                    patExpr         : PatExpr
+  | Expr            patExpr         : PatExpr
+%%]
+
+%%[7
+DATA RowTyExpr
+  | Empty
+  | Ext             rowTyExpr       : RowTyExpr
+                    mbNm            : {Maybe HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[9
+DATA RowTyExpr
+  | Var             nm              : {HsName}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA PrExpr
+  | Class           nm              : {HsName}
+                    tyExprs         : TyExprs
+  | Arrow           arg             : PrExpr
+                    res             : PrExpr
+  | Forall          tyVar           : {HsName}
+                    prExpr          : PrExpr
+
+TYPE PrExprs        = [PrExpr]
+%%]
+  | Impls
+  | NoImpls
+
+%%[10
+DATA PrExpr
+  | Lacks           rowTyExpr       : RowTyExpr
+                    nm              : {HsName}
+  | DynVar          nm              : {HsName}
+                    tyExpr          : TyExpr
+%%]
+
+%%[9
+SET AllPrExpr       = PrExpr PrExprs
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[6.KiExpr
+DATA KiExpr
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | App             func            : KiExpr
+                    arg             : KiExpr
+  | AppTop          kiExpr          : KiExpr
+  | Parens          kiExpr          : KiExpr
+  | Ann             ann             : KiExprAnn
+                    kiExpr          : KiExpr
+
+SET AllKiExpr
+  = KiExpr
+    -- KiExprAnn
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Expr
+DATA Expr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | App             func            : Expr
+                    arg             : Expr
+%%[[1
+  | Let             decls           : Decls
+%%][8
+  | Let             isStrict        : {Bool}
+                    decls           : Decls
+%%]]
+                    body            : Expr
+  | Lam             arg             : PatExpr
+                    body            : Expr
+  | AppTop          expr            : Expr
+  | Parens          expr            : Expr
+  | TypeAs          tyExpr          : TyExpr
+                    expr            : Expr
+  | Ann             ann             : ExprAnn
+                    expr            : Expr
+%%]
+
+%%[4
+DATA Expr
+  | AppImpred       func            : Expr
+                    arg             : Expr
+%%]
+
+%%[5
+DATA Expr
+  | SConst          str             : {String}
+  | Case            expr            : Expr
+                    alts            : CaseAlts
+%%[[8
+                    mbCaseIds       : {Maybe UIDS}
+                    caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
+                    isTupOfArg      : {Bool}
+%%]]
+%%]
+
+%%[7
+DATA Expr
+  | DataFields      dataFieldExpr   : DataFieldExpr
+  | Rec             recExpr         : RecExpr
+  | Sel             expr            : Expr
+                    lbl             : {HsName}
+%%]
+
+%%[8
+DATA Expr
+  | Undefined
+  | CaseAltFail     caseId          : {UID}
+%%]
+
+%%[12
+DATA Expr
+  | AppImpl         func            : Expr
+                    argPr           : PrExpr
+                    arg             : Expr
+  | LamImpl         argPr           : PrExpr
+                    arg             : PatExpr
+                    body            : Expr
+%%]
+
+%%[10.Expr
+DATA Expr
+  | DynVar          nm              : {HsName}
+%%]
+
+%%[97.Expr
+DATA Expr
+  | IIConst         integer         : {Integer}
+%%]
+
+%%[1.AllExpr
+SET AllExpr
+    = Expr
+      -- ExprAnn
+%%[[7
+      RecExpr DataFieldExpr
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.PatExpr
+DATA PatExpr
+  | IConst          int             : {Int}
+  | CConst          char            : {Char}
+  | Con             nm              : {HsName}
+  | Var             nm              : {HsName}
+  | VarAs           nm              : {HsName}
+                    patExpr         : PatExpr
+  | App             func            : PatExpr
+                    arg             : PatExpr
+  | AppTop          patExpr         : PatExpr
+  | Parens          patExpr         : PatExpr
+  | Ann             ann             : PatExprAnn
+                    patExpr         : PatExpr
+%%]
+      
+%%[4
+DATA PatExpr
+  | TypeAs          tyExpr          : TyExpr
+                    patExpr         : PatExpr
+%%]
+
+%%[5
+DATA PatExpr
+  | SConst          str             : {String}
+%%]
+
+%%[7
+DATA PatExpr
+  | Rec             recPatExpr      : RecPatExpr
+  | DataFields      dataFieldPatExpr: DataFieldPatExpr
+%%]
+
+%%[8
+DATA PatExpr
+  | Irrefutable     patExpr         : PatExpr
+%%]
+
+%%[97
+DATA PatExpr
+  | Expr            expr            : Expr
+%%]
+
+%%[1.AllPatExpr
+SET AllPatExpr
+    = PatExpr
+      -- PatExprAnn
+%%[[7
+      RecPatExpr DataFieldPatExpr
+%%]]
+%%]
+ 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern + guard in case expressions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+DATA CaseAlt
+  | Pat             patExpr         : PatExpr
+                    expr            : Expr
+
+TYPE CaseAlts       = [CaseAlt]
+
+SET AllCase         = CaseAlt CaseAlts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data constructor
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5.DataConstr1
+DATA DataConstr
+  | Constr          conNm           : {HsName}
+%%[[95
+                    mbFixityPrio    : {Maybe Int}       -- Nothing: not infix
+%%]]
+%%[[5
+                    fields          : TyExprs
+%%][7
+                    fields          : DataFields
+%%]]
+%%[[16
+                    eqs             : DataConstrEqs
+%%]]
+%%]
+
+%%[5.DataConstr2
+TYPE DataConstrs    = [DataConstr]
+%%]
+
+%%[7.Data
+DATA DataField
+  | Field           mbLabels        : {Maybe [HsName]}
+                    tyExpr          : TyExpr
+
+TYPE DataFields     = [DataField]
+%%]
+
+%%[16.Data
+DATA DataConstrEq
+  | Eq              tyVar           : TyVar
+                    tyExpr          : TyExpr
+
+TYPE DataConstrEqs  = [DataConstrEq]
+%%]
+
+%%[50.Data
+DATA DataConstrEq
+  | Eq              tyVar           : TyVar
+                    tyExpr          : TyExpr
+
+TYPE DataConstrEqs  = [DataConstrEq]
+%%]
+
+%%[5
+SET AllDataConstr   = DataConstr DataConstrs
+%%]
+
+%%[7
+SET AllDataField    = DataField DataFields
+%%]
+
+%%[16
+SET AllDataConstrEq = DataConstrEq DataConstrEqs
+%%]
+
+%%[5.SetsData
+SET AllData
+    = AllDataConstr
+%%[[7
+      AllDataField
+%%]]
+%%[[16
+      AllDataConstrEq
+%%]]
+%%]
+
+%%[50.SetsData -7.SetsData
+SET AllDataConstrEq = DataConstrEq DataConstrEqs
+SET AllDataField    = DataField DataFields
+SET AllData         = AllDataField AllDataConstr AllDataConstrEq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class & instance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9
+DATA Decl
+  | Class           tyPrExpr        : TyExpr
+%%[[15
+                    funcDeps        : FuncDeps
+%%]]
+                    mbDefaultInstNm : {Maybe HsName}
+                    decls           : Decls
+  | Instance        mbNmElim        : {Maybe (HsName,Bool)}
+                    instVariant     : InstVariant
+                    tyPrExpr        : TyExpr
+                    decls           : Decls
+  | InstanceIntro   mbNmElim        : {Maybe (HsName)}
+                    expr            : Expr
+                    prExpr          : PrExpr
+%%]
+
+%%[15
+DATA FuncDep
+  | Dep             fromTvs         : TyVars
+                    toTvs           : TyVars
+
+TYPE FuncDeps       = [FuncDep]
+
+SET AllFuncDep      = FuncDep FuncDeps
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+DATA ExprAnn
+  | Empty
+
+DATA TyExprAnn
+  | Empty
+
+DATA PatExprAnn
+  | Empty
+%%]
+
+%%[6
+DATA KiExprAnn
+  | Empty
+%%]
+
+%%[1
+SET AllAnn
+    = ExprAnn TyExprAnn PatExprAnn
+%%[[6
+      KiExprAnn
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Mono restrictions on data type annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+TYPE AnnDtMonoRestrictions = [AnnDtMonoRestrict]
+
+DATA AnnDtMonoRestrict
+  | Global          nm              : {HsName}
+  | Local           from            : {HsName}
+                    to              : {HsName}
+
+DERIVING AnnDtMonoRestrict : Eq, Ord
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Groups of nonterminals
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.AllNT
+SET AllNT
+    = AllTyExpr AllDecl AllPatExpr AllExpr
+%%[[5
+      AllData AllCase AllTyVar
+%%]]
+%%[[6
+      AllKiExpr
+%%]]
+%%[[15
+      AllFuncDep
+%%]]
+%%]
+
+%%[8
+SET NTCode
+    = AllDecl AllExpr AllCase AllPatExpr
+%%]
+
+%%[9
+SET NTPrf
+    = NTCode AllData
+%%]
+
+

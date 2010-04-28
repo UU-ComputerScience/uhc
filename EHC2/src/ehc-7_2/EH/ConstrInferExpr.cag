@@ -1,0 +1,372 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraint inferencing for Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Note: The support for records is probably buggy. Todo: check if constraitns are generated
+      for the use of the spine of a record.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotated type synthesize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Synthesize annotated type. This process takes place after type inference has been completed.
+We do not interfere in the type inference process and take types, with the final substitution
+applied to it, as input.
+
+Cases for Int, Char, Con and Var are partially specified in the ruler file.
+
+%%[7_2
+
+ATTR AllExpr [|| annTy : Ty ]
+
+SEM Expr
+  | Var Con IConst CConst SConst
+      loc.annTy = @loc.tyAnnExp
+  | App AppImpred
+      loc.arrowValTy = tyToplevelArrowVal @func.annTy
+      lhs.annTy      = @loc.arrowValTy
+  | Lam
+      -- move to ruler when code is generated for an Expr.Lam
+      (loc.patTyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyVarMp |=> @arg.ty) @loc.annUniq1
+      (loc.patAnnKindMap,_) = inferAnnKindMap @lhs.finTyGam Map.empty @loc.patTyAnnRef @loc.annUniq2
+      (loc.patTyAnnExp,_)   = infuseExp @loc.patAnnKindMap @lhs.exposedAnnEnv @lhs.tyConSeqChkF @lhs.mkExpTyConF @lhs.annMonoRestrictions @loc.patTyAnnRef @loc.annUniq3
+
+      loc.annPatTy = @loc.patTyAnnExp
+      loc.annTy    = addAnn @loc.annUniq4 (@loc.annPatTy `mkTruncArrow` @body.annTy)
+  | Case
+      loc.annPatTy = @expr.annTy
+      loc.annTyL   = seqToList @alts.annTyL
+      loc.annTy    = head @loc.annTyL  -- take any of the branches, the others are constrainted to this one
+  | Sel
+      loc.annTy    = maybe Ty_Any snd (tyRowExtr @lbl (head (tyToplevelConArgs @expr.annTy)))
+
+SEM DataFieldExpr
+  | Con  lhs.annTy = error "!!!not supported: data field expr (ConstrInferExpr.cag)!!!"
+
+SEM Decl
+  | Val  loc.annPatTy = @expr.annTy
+
+ATTR CaseAlts CaseAlt [|| annTyL USE {<+>} {emptySeq} : {Seq Ty} ]
+SEM CaseAlt
+  | Pat  lhs.annTyL = unitSeq @expr.annTy
+
+ATTR CaseAlts CaseAlt [ annPatTy : Ty ||]
+ATTR AllPatExpr [ annPatTy : Ty ||]
+
+%%]
+
+
+Records get the annotations from the types of the expressions inside.
+
+%%[7_2
+
+SEM RecExpr
+  | Empty
+      -- move to ruler when code is generated for an RecExpr.Lam
+      (loc.tyAnnRef,_)   = infuseAnn Map.empty (@lhs.finTyVarMp |=> @loc.ty) @loc.annUniq1
+      (loc.annKindMap,_) = inferAnnKindMap @lhs.finTyGam Map.empty @loc.tyAnnRef @loc.annUniq2
+      (loc.tyAnnExp,_)   = infuseExp @loc.annKindMap @lhs.exposedAnnEnv @lhs.tyConSeqChkF @lhs.mkExpTyConF @lhs.annMonoRestrictions @loc.tyAnnRef @loc.annUniq3
+
+      loc.annTy = @loc.tyAnnExp
+  | Ext    loc.annTy = tyInsertAnnRec  @recExpr.annTy @mbNm @expr.annTy
+  | Upd    loc.annTy = tyReplaceAnnRec @recExpr.annTy @nm   @expr.annTy
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Driving annotation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The driving annotation is the annotation on the value that when evaluated, forces
+evaluation of the outer expression.
+
+%%[7_2
+
+ATTR AGItf -> Expr AGItf -> PatExpr [ drivingAnn : {Annotation Ty} ||]
+
+SEM AGItf
+  | AGItf  loc.drivingAnn = touchAnn
+
+SEM Expr
+  | Let    decls.drivingAnn = tyOutermostAnn @body.annTy
+  | Lam    arg.drivingAnn = tyOutermostAnn @body.annTy
+  | Case   loc.inventedDrivingAnn = Annotation { annUID      = @loc.drivingUID
+                                               , annInstFrom = Nothing
+                                               , annOnRefTp  = Nothing
+                                               }
+           expr.drivingAnn = @loc.inventedDrivingAnn
+
+ATTR Expr -> CaseAlt [ inventedDrivingAnn : {Annotation Ty} ||]
+SEM AGItf
+  | AGItf  expr.inventedDrivingAnn = error "AGItf::inventedDrivingAnn::evaluation, but should not be used."
+
+SEM CaseAlt
+  | Pat    patExpr.drivingAnn = @lhs.inventedDrivingAnn
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraint context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Empty at the moment, but can be used to encode all kinds of context information into
+the constraints. For example, the location of the expression where the constraint
+originated, etc.
+
+%%[7_2
+
+SEM AGItf
+  | AGItf
+      loc.constrCtx = ExprContext
+
+SEM Expr
+  | Var Con Lam Let App AppImpred Case
+      loc.constrCtx = ExprContext
+
+SEM PatExpr
+  | Con
+      loc.constrCtx = ExprContext
+
+SEM CaseAlt
+  | Pat
+      loc.constrCtx = ExprContext
+
+SEM Decl
+  | Val
+     loc.constrCtx  = ExprContext
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Composition map synthesize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+The composition map maintains the current mapping between identifier and its composed
+type. Each time an identifier is instantiated, it gets a fresh type. When an identifier
+occurs sequentially or in parallal, the types are composed together, until we finally
+relate them back to the original type at a Let/Lam/Pat.
+
+%%[7_2
+
+ATTR AllExpr AllDecl CaseAlt [|| annCompMap USE {\+/} {Map.empty} : {Map HsName (AnnComp Ty)} ]
+ATTR CaseAlts                [|| annCompMap USE {\-/} {Map.empty} : {Map HsName (AnnComp Ty)} ]
+
+SEM AGItf
+  | AGItf
+-- note: assume that arrow spine of constructor functions is shared, then these constraints are obsolete
+--      loc.partComp = Map.intersectionWith (<==) @expr.annCompMap @expr.annConstrTyMap
+--      loc.constrUids = mkInfNewLevUIDL @loc.constrUniq2
+--      loc.compConstrSet = wrappedFromList (zipWith (\c u -> u #.. c ..# @loc.constrCtx) (Map.elems @loc.partComp) @loc.constrUids)
+
+SEM Expr
+  | Var Con
+      loc.annCompMap = Map.singleton @nm (Embed @loc.annTy)
+  | Lam
+      loc.partComp   = Map.intersectionWith (<==) @body.annCompMap @arg.decomposedAnns
+      lhs.annCompMap = @body.annCompMap `Map.difference` @arg.decomposedAnns
+  | Let
+      loc.annCompMap = @decls.annCompMap \+/ @body.annCompMap
+      loc.partComp   = Map.intersectionWith (<==) @loc.annCompMap @decls.decomposedAnns
+      lhs.annCompMap = @loc.annCompMap `Map.difference` @decls.decomposedAnns
+  | Lam Let
+      loc.constrUids    = mkInfNewLevUIDL @loc.constrUniq
+      loc.compConstrSet = wrappedFromList (zipWith (\c u -> u #.. c ..# @loc.constrCtx) (Map.elems @loc.partComp) @loc.constrUids)
+
+SEM CaseAlt
+  | Pat
+      loc.constrUids    = mkInfNewLevUIDL @loc.constrUniq
+      loc.partComp      = Map.intersectionWith (<==) @expr.annCompMap @patExpr.decomposedAnns
+      lhs.annCompMap    = @expr.annCompMap `Map.difference` @patExpr.decomposedAnns
+      loc.compConstrSet = wrappedFromList (zipWith (\c u -> u #.. c ..# @loc.constrCtx) (Map.elems @loc.partComp) @loc.constrUids)
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Propagation of identifier information (binding group, annotated type, mono vars)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR AllExpr AllDecl AllCase [ annTypeMap : {Map HsName Ty} ||]
+SEM AGItf
+  | AGItf  expr.annTypeMap = @expr.annConstrTyMap
+SEM Expr
+  | Lam  loc.annTypeMap = @arg.annBindings     `Map.union` @lhs.annTypeMap
+  | Let  loc.annTypeMap = @decls.annBindings   `Map.union` @lhs.annTypeMap
+SEM CaseAlt
+  | Pat  loc.annTypeMap = @patExpr.annBindings `Map.union` @lhs.annTypeMap
+
+ATTR AllPatExpr AllDecl [|| annBindings USE {`Map.union`} {Map.empty} : {Map HsName Ty} ]
+SEM PatExpr
+  | Var    lhs.annBindings = Map.singleton @nm @lhs.annPatTy
+  | VarAs  lhs.annBindings = Map.insert @nm @lhs.annPatTy @patExpr.annBindings
+
+
+ATTR AllExpr AllDecl AllCase [ bndgId : UID | bndgIdThr : UID |]
+ATTR AllData AllDataConstr AllTyExpr AllPatExpr [ bndgId : UID ||]
+SEM AGItf
+  | AGItf  (expr.bndgIdThr, loc.bndgId)       = mkNewUID uidStart
+SEM Expr
+  | Let    (decls.bndgIdThr, loc.declsBndgId) = mkNewUID @lhs.bndgIdThr
+           decls.bndgId = @loc.declsBndgId
+
+ATTR AllExpr AllDecl AllCase [ bndgIdMap : {Map HsName BndgId} ||]
+SEM AGItf
+  | AGItf  expr.bndgIdMap = Map.map (const uidNull) @expr.annConstrTyMap
+SEM Expr
+  | Lam  loc.bndgIdMap  = Map.map (const @lhs.bndgId) @arg.annBindings `Map.union` @lhs.bndgIdMap
+  | Let  loc.bndgIdMap  = Map.map (const @loc.declsBndgId) @decls.annBindings `Map.union` @lhs.bndgIdMap
+SEM CaseAlt
+  | Pat  loc.bndgIdMap  = Map.map (const @lhs.bndgId) @patExpr.annBindings `Map.union` @lhs.bndgIdMap
+
+
+ATTR AllExpr AllDecl AllCase [ funcParams : {Set HsName} ||]
+SEM AGItf
+  | AGItf  expr.funcParams = Set.empty
+SEM Expr
+  | Lam  loc.funcParams = @lhs.funcParams `Set.union` (Map.keysSet @arg.annBindings)
+  | Let  loc.funcParams = @lhs.funcParams `Set.difference` (Map.keysSet @decls.annBindings)
+SEM CaseAlt
+  | Pat  loc.funcParams = @lhs.funcParams `Set.difference` (Map.keysSet @patExpr.annBindings)
+
+
+ATTR AllExpr AllCase AllDecl [|| typeScope USE {`mergeListMap`} {Map.empty} : {Map BndgId [Ty]} ]
+SEM AGItf
+  | AGItf
+      loc.typeScope = Map.singleton uidNull (Map.elems @expr.annConstrTyMap) `mergeListMap` @expr.typeScope
+SEM Expr
+  | Let
+      lhs.typeScope = Map.singleton @loc.declsBndgId [] `mergeListMap` @decls.typeScope `mergeListMap` @body.typeScope
+  | Var Con IConst CConst
+      lhs.typeScope = Map.singleton @lhs.bndgId [@loc.annTy]
+
+
+ATTR AllExpr AllCase AllDecl [|| freevars USE {`mergeListMap`} {Map.empty} : {Map HsName [Ty]} ]
+SEM Expr
+  | Var
+      lhs.freevars = Map.singleton @nm [@loc.tyAnnExp]
+  | Lam
+      lhs.freevars = Map.filterWithKey (\k _ -> not (k `Set.member` Map.keysSet @arg.annBindings)) @body.freevars
+  | Let
+      lhs.freevars = Map.filterWithKey (\k _ -> not (k `Set.member` Map.keysSet @decls.annBindings)) @body.freevars
+SEM CaseAlt
+  | Pat
+      lhs.freevars = Map.filterWithKey (\k _ -> not (k `Set.member` Map.keysSet @patExpr.annBindings)) @expr.freevars
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constraint synthesize
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR AllExpr AllDecl AllCase [|| annConstrs USE {`wrappedSetUnion`} {wrappedSetEmpty} : {WrappedAnnConstrSet ExprContext} ]
+
+SEM Expr
+  | IConst CConst
+      loc.annConstrs     = wrappedSetEmpty
+  | Var Con
+      loc.defSiteBndgId  = Map.findWithDefault (error ("No such identifier: " ++ show @nm ++ " in " ++ show @lhs.bndgIdMap)) @nm @lhs.bndgIdMap
+      loc.defSiteAnnTy   = maybe (error ("No such identifier: " ++ show @nm ++ " in " ++ show @lhs.annTypeMap)) id (Map.lookup @nm @lhs.annTypeMap)
+      loc.instConstr     = Inst @loc.constrUID_ @loc.defSiteBndgId [TyProjection @loc.defSiteAnnTy @loc.annTy] @loc.constrCtx
+  | Var
+      loc.annConstrs     = wrappedSingleton @loc.instConstr
+                           -- if @nm `Set.member` @lhs.funcParams
+                           -- then wrappedSetEmpty -- constraints will flow in/out through applications
+                           -- else wrappedSingleton @loc.instConstr
+  | Con
+      loc.conAnnTy       = Map.findWithDefault (error ("No such identifier: " ++ show @nm ++ " in " ++ show @lhs.annConstrTyMapInh)) @nm @lhs.annConstrTyMapInh
+      loc.refreshedConTy = let allAnns = Set.toList (tyAnnotations @loc.conAnnTy)
+                               uidL = mkInfNewLevUIDL @loc.freshUID_
+                               subst = Map.fromList (zipWith mkFreshAnn allAnns uidL)
+                               mkFreshAnn a u = (a, a { annUID = u, annInstFrom = Just a })
+                           in tyAnnSubst subst @loc.conAnnTy
+      loc.annConstrs     = wrappedFromList [ @loc.constrUID2_ #.. @loc.refreshedConTy =>= @loc.annTy ..# @loc.constrCtx
+                                           -- , @loc.instConstr
+                                           ]
+  | App AppImpred
+      
+      loc.annFlowConstr  = wrappedFromList [ @loc.constrUniq1 #.. tyToplevelArrowArg @func.annTy =>= @arg.annTy ..# @loc.constrCtx
+                                           , @loc.constrUniq2 #.. (tyOutermostAnn @loc.arrowValTy =>=! tyOutermostAnn @func.annTy) softFlowSem ..# @loc.constrCtx ]
+      loc.annConstrs     = @loc.annFlowConstr `wrappedSetUnion` @func.annConstrs `wrappedSetUnion` @arg.annConstrs
+  | Lam
+      loc.annConstrs     = @body.annConstrs `wrappedSetUnion` @loc.compConstrSet `wrappedSetUnion` @arg.annPatConstrs
+  | Let
+      loc.useConstrUIDs  = mkInfNewLevUIDL @loc.useConstrUID
+      -- commented out to remove the assumption that each definition is used at least once
+      -- loc.addUseConstrs  = wrappedFromList (zipWith (\a u -> u #.. Embed touchAnnTy <== a ..# @loc.constrCtx) (Map.elems @decls.annBindings) @loc.useConstrUIDs)
+      loc.bndgConstrs    = @decls.annConstrs `wrappedSetUnion` @loc.compConstrSet
+                                             `wrappedSetUnion` @decls.annPatConstrs
+                                             -- `wrappedSetUnion` @loc.addUseConstrs
+      lhs.annConstrs     = @body.annConstrs
+  | Case
+      loc.annConstrs     = @alts.annConstrs `wrappedSetUnion` @expr.annConstrs
+                                            `wrappedSetUnion` @loc.drivingConstr
+      loc.drivingConstr  = wrappedSingleton (@loc.drivingConstrUID #.. (@loc.inventedDrivingAnn =>=! tyOutermostAnn @expr.annTy) softFlowSem ..# @loc.constrCtx)
+
+SEM CaseAlt
+  | Pat
+      loc.drivingConstr  = @loc.drivingConstrUniq #.. (tyOutermostAnn @expr.annTy =>=! @lhs.inventedDrivingAnn) softFlowSem ..# @loc.constrCtx
+      loc.drivingConstrs = wrappedSingleton @loc.drivingConstr
+      loc.annConstrs     = @expr.annConstrs `wrappedSetUnion` @loc.compConstrSet
+                                            `wrappedSetUnion` @patExpr.annPatConstrs
+                                            `wrappedSetUnion` @loc.drivingConstrs
+
+ATTR AllPatExpr AllDecl [|| annPatConstrs USE {`wrappedSetUnion`} {wrappedSetEmpty} : {WrappedAnnConstrSet ExprContext} ]
+ATTR AllPatExpr [ varAsDrivingAnn : {Annotation Ty} patIsRefutable : Bool ||]
+SEM PatExpr
+  | Con
+      lhs.annPatConstrs = if @lhs.patIsRefutable
+                          then wrappedSingleton (@loc.constrUniq #.. (@lhs.drivingAnn =>=! tyOutermostAnn @lhs.annPatTy) softFlowSem ..# @loc.constrCtx)
+                          else wrappedSingleton (@loc.constrUniq #.. (@lhs.varAsDrivingAnn =>=! tyOutermostAnn @lhs.annPatTy) softFlowSem ..# @loc.constrCtx)
+
+SEM PatExpr
+  | VarAs patExpr.varAsDrivingAnn = tyOutermostAnn @lhs.annPatTy
+          patExpr.patIsRefutable  = False
+SEM Expr
+  | Lam  arg.varAsDrivingAnn     = error "ConstrInferExpr::SEM Expr Lam::no such varAsDrivingAnn"
+         arg.patIsRefutable      = True
+SEM CaseAlt
+  | Pat  patExpr.varAsDrivingAnn = error "ConstrInferExpr::SEM CaseAlt Pat::no such varAsDrivingAnn"
+         patExpr.patIsRefutable  = True
+SEM Decl
+  | Val  patExpr.varAsDrivingAnn = error "ConstrInferExpr::SEM Decls Val::no such varAsDrivingAnn"
+         patExpr.patIsRefutable  = True
+         loc.outerAnn            = tyOutermostAnn @expr.annTy
+         lhs.annConstrs          = wrappedFromList (zipWith (\ty u -> MatchTyAnn u softFlowSem ty @loc.outerAnn @loc.constrCtx) (concat (Map.elems @expr.freevars)) (mkInfNewLevUIDL @loc.constrUniq))
+                                   `wrappedSetUnion` @expr.annConstrs
+SEM RecPatExpr
+  | Ext  patExpr.varAsDrivingAnn = error "ConstrInferExpr::SEM RecPatExpr Ext::no such varAsDrivingAnn"
+         patExpr.patIsRefutable  = True
+  | Expr patExpr.varAsDrivingAnn = error "ConstrInferExpr::SEM RecPatExpr Expr::no such varAsDrivingAnn"
+         patExpr.patIsRefutable  = True
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Collection of constraints in binding-groups
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7_2
+
+ATTR AllExpr AllCase AllDecl [|| annBndgConstrs USE {`Map.union`} {Map.empty} : {Map BndgId (WrappedAnnConstrSet ExprContext)} ]
+SEM Expr
+  | Let    loc.annBndgConstrs = @decls.annBndgConstrs `Map.union` @body.annBndgConstrs `Map.union` Map.singleton @loc.declsBndgId @loc.bndgConstrs
+
+SEM AGItf
+  | AGItf  loc.addUseConstr   = wrappedSingleton (MatchTyAnn @loc.constrUniq SoftFlow @expr.annTy touchAnn @loc.constrCtx)
+           loc.annConstrs     = @loc.addUseConstr `wrappedSetUnion` @expr.annConstrs
+           loc.annBndgConstrs = {- Map.singleton uidNull @loc.compConstrSet
+                                `Map.union` -}
+                                Map.singleton @loc.bndgId @loc.annConstrs
+                                `Map.union` @expr.annBndgConstrs
+
+%%]

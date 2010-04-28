@@ -1,0 +1,38 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type structure: core part, used to represent types in both TyCore and during type inference
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast) haddock
+The basic alternatives encode the following:
+- Con: data type constructors, including tuple constructors
+- App: application to 1 argument, for example 'a -> b' is encoded as (App (App -> a) b)
+- Any: representing Bot/Top depending on context: (1) unknown expected type, (2) error type
+%%[[2
+- Var: type variables
+%%][3
+- Var: type variables, including a category: plain tyvars, fixed tyvars (aka skolems)
+%%]]
+%%]
+
+%%[(1 hmtyinfer || hmtyast).Ty
+DATA Ty
+  | Con         nm              : {HsName}
+  | App         func            : Ty
+                arg             : Ty
+%%]
+
+%%[(1 hmtyinfer || hmtyast)
+DATA Ty
+  | Ann         ann             : TyAnn
+                ty              : Ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast)
+DATA TyAnn
+  | Empty
+%%]
+

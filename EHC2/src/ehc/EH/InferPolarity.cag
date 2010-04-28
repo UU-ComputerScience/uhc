@@ -1,0 +1,520 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Polarities:
+
+  Polarities are similar to polymorphic kinds, except that instead of 'star' there are
+  three basic polarities (covariant, contravariant and invariant), and there is a negation
+  operator.
+
+  Pol ::=   Covariant
+        |   Contravariant
+        |   Invariant
+        |   Var
+        |   Forall var . Pol
+        |   Pol -> Pol
+        |   Negate Pol
+
+  A polarity is inferred for each type constructor by traversing the data type declarations. Such a
+  polarity does not contain the Covariant and Contravariant alternative.
+  
+  A polarity is normalized after applying the following rules exhaustively to each sub-structure:
+  
+    Negate (Negate p)    = p
+    Negate Covariant     = Contravariant
+    Negate Contravariant = Covariant
+    Negate Invariant     = Invariant
+    
+  Polarities are required to be normalized after generalization; in the intermediate time they are
+  only normalized 'just-in-time'.
+  
+  The build-in type constructors have the following polarities:
+  
+    Int, Bool, Char, Float  ::: Forall Delta . Delta
+    Maybe, ([]) ::: Forall Delta . Delta -> Delta
+    (->) ::: Forall Delta . Negate Delta -> Delta
+
+
+Unify rules:
+
+    mgu p1 p2
+      | p1 == p2     = emptySubst
+    mgu (Var v) p
+      | v `occurs` p = singleSubst v Invariant
+      | otherwise    = singleSubst v p
+    mgu p (Var v)
+      | v `occurs` p = singleSubst v Invariant
+      | otherwise    = singleSubst v p
+    mgu (p1 -> p2) (p3 -> p4)
+      = mgu p1 p3 ++ mgu p2 p4
+    mgu (Negate p1) (Negate p2)
+      = mgu p1 p2
+  
+  And some subtyping rules:
+      
+    mgu Covariant Invariant     = Invariant
+    mgu Contravariant Invariant = Invariant
+  
+  At first sight, the following cases seem reasonable as well, but should not be added:
+
+    mgu Covariant Contravariant = Invariant
+    mgu Contravariant Covariant = Invariant
+
+  Adding these cases breaks the invariant that bindings discovered for polarity variables may only
+  be changed into something more specific.
+  
+  Other cases are considered to be an error. Features such as polarity signatures or kind polymorphism will likely
+  cause such cases to exist.
+
+Encoding of polarities:
+
+  The polarities are internally encoded using the Ty Abstract Syntax, to allow reuse of functionality that is already
+  available for types.
+  The type synomym Polarity is used to indicate its use.
+
+  Covariant, Invariant, Contravariant:
+
+    Ty_Con "Covariant", Ty_Con "Invariant", Ty_Con "Contravariant"
+
+  Var, Forall:
+  
+    Ty_Var, Ty_Quant
+  
+  Arrow:
+
+    Ty_App (Ty_App (Ty_Con "->"))
+  
+  Negate:
+  
+    Ty_App (Ty_Con "Negate")
+  
+  With this encoding, fitsIn satisfies the above mgu-definition, except for the negation
+  magic. That is to be placed in the part that combines subsitutions.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Usage
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Lookup the inferred signatures for type constructors in @lhs.polGam.
+  Instantiate this signature and match it up with the known polarity of the context to get
+  the polarities of arguments to this type constructor.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Examples
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Some examples.
+
+    data GRose f a = Branch a (f (GRose f a))
+
+  After a number of inference steps:
+
+    f ::: v1 -> v2
+    a ::: v2
+
+  Which gives the current (yet incomplete) type for GRose:
+
+    GRose ::: (v1 -> v2) -> v2 -> v2
+
+  A couple of steps later, we infer for f:
+
+    f ::: v2 -> v2
+
+  Which a couple of steps later gives:
+
+    GRose ::: (v2 -> v2) -> v2 -> v2
+
+  And after generalization:
+
+    GRose ::: forall d . (d -> d) -> d -> d
+
+
+  Slightly more interesting:
+
+    data GRose' f a = Branch (f a (GRose' f a))
+
+  And after a couple of steps:
+
+    f ::: v2 -> v1 -> v1
+    a ::: v2
+
+    GRose' ::: forall d1 d2 . (d2 -> d1 -> d1) -> d2 -> d1
+
+  Suppose we are then going to type the following type expression:
+
+    GRose' (->) Int
+
+  Instantiations:
+
+    GRose' ::: (Negate v1 -> v1 -> v1) -> Negate v1 -> v1
+    (->)   ::: Negate v1 -> v1 -> v1
+    Int    ::: Negate v1
+
+  Assuming the type expression occurs in a Covariant context, i.e. v1 = Covariant:
+
+    GRose' ::: (Contra -> Co -> Co) -> Contra -> Co
+    (->)   ::: Contra -> Co -> Co
+    Int    ::: Contra
+
+  And for:
+
+    GRose' (,) Int
+
+  Instantiations:
+
+    GRose' ::: (v1 -> v1 -> v1) -> v1 -> v1
+    (,)    ::: v1 -> v1 -> v1
+    Int    ::: v1
+
+  Causing everything to be Covariant.
+
+
+  Finally, a case with a conflict:
+
+    data C a = Con (a -> a)
+
+  After some steps:
+
+    a    ::: v2
+    C    ::: v2 -> v1
+    (->) ::: Negate v1 -> v1 -> v1
+
+  Such that:
+
+    a ::: v1
+    a ::: Negate v1
+
+  Which causes an 'occurrence-check' failure, such that we map v1 to Invariant:
+
+    a :: Invariant
+    C :: Invariant -> Invariant
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Inferencing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Inferencing procedure: assume for each type expression that there is some known polarity
+  context. This context is Covariant for the outermost type expression of type signatures,
+  and some polarity variable delta for the outermost type expression of fields of a
+  data constructor (whose actual context is known only at places where the corresponding
+  type constructor is used). For subexpressions, the context is inferred from the known
+  context and polarity signatures of type constructors.
+  
+  The inference here is performed on Ty_Exprs. A similar procedure is required to use the
+  results for Tys. However, this procedure is less complicated since type variables do not
+  have to be taken into account and the signature for each type constructor is known
+  (available through polGam).
+  
+  Essentially, the inference process is just regular 'kind' inference, with a very basic
+  subtyping. The key difference is the Negation-construct and normalization.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Polarity propagation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(17 hmtyinfer) ag
+ATTR AllData AllTyExpr [ knPolCtx : Polarity | | ]
+%%]
+
+  First the polarity as known at the root of a type expression. As mentioned before, for
+  the roots of type expressions in a data type, this is some polarity variable. This will
+  be the result-part of the polarity of the type constructor. For other type expressions in
+  the AST, the context is covariant at the root of the type expression.
+
+%%[(17 hmtyinfer) ag
+SEM Decl
+  | Data Class TySig
+                loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+  | Type        loc         .   (polCtxVar,polTypeVar)
+                                                    =   let [v1,v2] = mkNewUIDL 2 @lUniq_17_seed_pol
+                                                        in  (mkPolVar v1,mkPolVar v2)
+                loc         .   lUniq_17_seed_pol   :   UNIQUEREF gUniq
+
+SEM TyExprs
+  | Cons        loc         .   polCtxVar           =   mkPolVar @lUniq_17_polCtx
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+%%]
+
+%%[(17 hmtyinfer) ag
+SEM Decl
+  | Data        constrs     .   knPolCtx            =   @polCtxVar
+  | Type        tyExpr      .   knPolCtx            =   @polCtxVar
+
+SEM Decl
+  | TySig       tyExpr      .   knPolCtx            =   maybe @polCtxVar id @lhs.mbKnPolCtx
+  | FFI
+%%[[94
+    FFE
+%%]]
+                tyExpr      .   knPolCtx            =   polCovariant
+  | Class       tyPrExpr    .   knPolCtx            =   @polCtxVar -- polCovariant
+  | Instance    tyPrExpr    .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+
+SEM Expr PatExpr
+  | TypeAs      tyExpr      .   knPolCtx            =   polCovariant
+
+SEM Expr
+  | AppImpl LamImpl
+                argPr       .   knPolCtx            =   polContravariant
+
+SEM Decl
+  | InstanceIntro
+                prExpr      .   knPolCtx            =   mkPolVar @lUniq_17_polCtx -- polCovariant
+                loc         .   lUniq_17_polCtx     :   UNIQUEREF gUniq
+
+SEM TyExprs
+  | Cons        hd          .   knPolCtx            =   @polCtxVar
+%%]
+
+%%[(17 hmtyinfer) ag
+ATTR AllDecl [ mbKnPolCtx : {Maybe Polarity} | | ]
+%%]
+
+%%[(17 hmtyinfer) ag
+SEM Expr
+  | Let         decls       .   mbKnPolCtx          =   Nothing
+
+SEM Decl
+  | Class       decls       .   mbKnPolCtx          =   Just @polCtxVar
+  | * - Class   loc         .   mbKnPolCtx          =   Nothing
+%%]
+
+  Now we can define the polarity for sub expressions based on the above defined context.
+
+  For applications, we proceed as follows. The left hand side of a type application is
+  a function, so we pass as known polarity context a function. The argument part of this
+  known polarity context is passed as the context for right right hand side of the
+  type application. So, shape information is passed from top to the bottom left. Each
+  type expression returns an inferred polarity 'pol', originally obtained at the
+  bottom left from the polarity signature of type constructors or variables, and
+  decomposed from left to right through function applications. During this process more
+  information about polarity variables becomes available and is stored in substitutions
+  along the way.
+
+%%[(17 hmtyinfer) ag
+ATTR TyExpr [ | | pol : Polarity ]
+%%]
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | App     -- known polarity shape for the function part of the type application
+                loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
+                            .   knFuncPol           =   [@polArgVar] `mkArrow` @lhs.knPolCtx
+      
+                func        .   knPolCtx            =   @knFuncPol
+                arg         .   knPolCtx            =   @polArgVar
+                lhs         .   pol                 =   @lhs.knPolCtx
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
+%%]
+
+  Type variable or type constructor: perform a lookup in the environment and match with
+  the known context to instantiate the polarity signature.
+  
+  Name errors do not need to be reported. They are already reported by the kind inferencer.
+
+%%[(17 hmtyinfer) hs
+polGamLookupOrAdd :: UID -> HsName -> PolGam -> PolGam -> (PolGamInfo,PolGam)
+polGamLookupOrAdd uniq nm polGamLkup polGam
+  =  case polGamLookup nm polGamLkup of
+       Nothing    ->  let  t    =  mkPolVar uniq
+                           pgi  =  mkPGI t
+                      in   (pgi,gamAdd nm pgi polGam)
+       Just pgi   ->  (pgi,polGam)
+%%]
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | Con Var     loc         .   (pgi_,nmPolErrs)    =   polGamLookupErr @nm @lhs.polGam
+
+%%]
+SEM TyExpr
+  | Var VarWild (loc.pgi_,lhs.polGam)               =   polGamLookupOrAdd @lUniq @nm @lhs.polGam @lhs.polGam
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | Con Var     loc         .   polFromEnv          =   pgiPol @pgi_
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp @polFromEnv @lhs.knPolCtx
+                lhs         .   pol                 =   foTy @foPol
+                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+%%]
+
+  A type level lambda binds polarity to its argument, propagating it via the environment.
+  This is standard.
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | Lam         loc         .   polArgVar           =   mkPolVar @lUniq_17_polArg
+                            .   polResVar           =   mkPolVar @lUniq_17_polRes
+                            .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @lhs.polVarMp ([@polArgVar] `mkArrow` @polResVar) @lhs.knPolCtx
+                tyExpr      .   knPolCtx            =   @polResVar
+                            .   polGam              =   gamAdd @tyVar (mkPGI @polArgVar) @lhs.polGam
+                            .   polVarMp            =   foVarMp @foPol |=> @lhs.polVarMp
+                lhs         .   pol                 =   [@polArgVar] `mkArrow` @tyExpr.pol
+                loc         .   lUniq_17_polArg     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_polRes     :   UNIQUEREF gUniq
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+%%]
+  
+  An analysis of the actual type expression of a wild card is needed to properly deal with
+  it. To bypass this analysis, we assume that wildcards have kind star. Wildcards of higher
+  kind are not supported by the code below.
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | Wild VarWild
+                lhs         .   pol                 =   @lhs.knPolCtx
+%%]
+
+  For row types, the polarity of each member is the polarity of the entire row. The copy
+  rule takes care of that.
+  
+  The Row, Impls and Pred cases have a zero-order kind. Therefore, the resulting polarity
+  is the same as the context it appears in.
+
+%%[(17 hmtyinfer) ag
+SEM TyExpr
+  | Row Impls NoImpls Pred
+                lhs         .   pol                 =   @lhs.knPolCtx
+%%]
+  
+  The same story is not the case for predicate expressions due to the arrow. The polarity
+  switches for the argument. This is the only place where we have to introduce the
+  negation explicitly. Normally, it is the instantiation of the polarity signature of the
+  arrow type constructor that causes the introduction of negations.
+
+%%[(17 hmtyinfer) ag
+SEM PrExpr
+  | Arrow       arg         .   knPolCtx            =   mkPolNegate @lhs.knPolCtx
+                res         .   knPolCtx            =   @lhs.knPolCtx
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  Thread a substitution through the type expressions. A single substitution is threaded
+  through an entire declaration group. This substitution can go through multiple
+  data type declarations, type declarations, and other constructs containing type
+  expressions. The polarity variables are chosen uniquely enough to not cause conflicts.
+  
+%%[(17 hmtyinfer) ag
+ATTR AllDecl AllData AllTyExpr AllExpr AllPatExpr AllCase [ | polVarMp : VarMp | ]
+
+SEM AGItf
+  | AGItf       expr        .   polVarMp            =   emptyVarMp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Environments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+  For a declaration group: gather an environment with signatures for each type constructor.
+
+%%[(17 hmtyinfer) ag
+ATTR AllDecl [ | patPolGam : PolGam | ]
+
+-- signature
+SEM Decl
+  | Data        loc         .   polSig              =   @tyVars.polVarL `mkArrow` @polCtxVar
+  | Type        loc         .   polSig              =   @polTypeVar
+  | Class       loc         .   polSig              =   @tyPrExpr.polVarL `mkArrow` @polCtxVar
+
+-- in environment
+SEM Decl
+  | Data Type   lhs         .   patPolGam           =   gamAdd @tyNm (mkPGI @polSig) @lhs.patPolGam
+  | Class       lhs         .   patPolGam           =   gamAdd (hsnClass2Polarity @clsNm) (mkPGI @polSig) @lhs.patPolGam
+  | Instance    lhs         .   patPolGam           =   @lhs.patPolGam
+
+-- inferencing
+SEM Decl
+  | Type        loc         .   foPol               =   fitsIn weakFIOpts defaultFIEnv @lUniq_17_fitsIn_pol @tyExpr.polVarMp @tyExpr.pol @polSig
+                lhs         .   polVarMp            =   foVarMp @foPol |=> @tyExpr.polVarMp
+                loc         .   lUniq_17_fitsIn_pol :   UNIQUEREF gUniq
+%%]
+
+
+%%[(17 hmtyinfer) ag
+ATTR AllTyVar TyExprs [ | | polVarL USE {++} {[]} : {[Polarity]} ]
+ATTR TyExpr PrExpr [ | | polVarL: {[Polarity]} ]
+
+SEM TyVar
+  | Var         loc         .   polVar              =   mkPolVar @lUniq_17_pol
+                lhs         .   polVarL             =   [@polVar]
+                loc         .   lUniq_17_pol        :   UNIQUEREF gUniq
+
+SEM PrExpr
+  | Lacks       lhs         .   polVarL             =   []
+
+SEM TyExpr
+  | Var         lhs         .   polVarL             =   [@lhs.knPolCtx]
+  | * - Var Pred
+                lhs         .   polVarL             =   []
+%%]
+
+  For each data type: gather an environment for its type parameters.
+
+%%[(17 hmtyinfer) ag
+ATTR AllTyVar TyExprs TyExpr PrExpr [ | | gathTyVarPolGam USE {`gamUnion`} {emptyGam}: PolGam ]
+
+SEM TyVar
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @polVar)
+  
+SEM TyExpr
+  | Var         lhs         .   gathTyVarPolGam     =   gamSingleton @nm (mkPGI @lhs.knPolCtx)
+%%]
+
+  Distribute gathered environments.
+
+%%[(17 hmtyinfer) ag
+ATTR AllDecl AllData AllExpr AllPatExpr AllCase [ polGam : PolGam | | ]
+ATTR AllTyExpr [ polGam : PolGam | | ]
+
+SEM Decl
+  | Data        constrs     .   polGam              =   gamPushGam @tyVars.gathTyVarPolGam @lhs.polGam
+  | Class       decls       .   polGam              =   gamPushGam @tyPrExpr.gathTyVarPolGam @lhs.polGam
+  | Instance    decls       .   polGam              =   gamPushNew @lhs.polGam
+%%]
+  
+  Combine substitutions. For cyclic occurrences of v such that v = negate(v), v is mapped
+  to invariant (instead of returning an error).
+
+  For each declaration group:
+    * Apply the substitution to incorporate the latest information in the gathered environment
+    * generalize the gathered environment and add the the final environment
+  Note that no new information will be available for type constructors from the inherited
+  environment (a.k.a. the polGam), because data type declarations are not nested.
+  
+%%[(17 hmtyinfer) ag
+SEM Expr
+  | Let         decls       .   patPolGam           =   gamPushNew @lhs.polGam
+                            .   polGam              =   @decls.patPolGam
+                loc         .   (polGam_l,_)        =   gamPop @decls.patPolGam
+                (loc.lSubsPolGam1, loc.polVarMpCyc) =   @decls.polVarMp |==> @polGam_l
+                (loc.polOkCyc, loc.polErrCyc)       =   partition
+                                                            (\(v,p) -> let v' = mkPolVar v
+                                                                           p' = varmpDel [v] @decls.polVarMp |=> p
+                                                                       in  mkPolNegate v' == p'
+                                                            )
+                                                            (varmpToAssocTyL @polVarMpCyc)
+                loc         .   polInvVarMp         =   assocTyLToVarMp [(v, polInvariant) | (v,_) <- @polOkCyc ]
+                            .   lSubsPolGam2        =   @polInvVarMp |=> @lSubsPolGam1
+                            .   cycVarMp            =   assocTyLToVarMp @polErrCyc
+                            .   cycErrSq            =   Seq.fromList $ rngLift @range varmpOccurErr @decls.polVarMp @cycVarMp
+      
+                            .   finGathPolGam       =   quantifyPolGam
+                                                        $ mapPolGam (tyCanonic (emptyFI {fiEnv = @fe}))
+                                                        $ @lSubsPolGam2
+                body        .   polGam              =   gamAddGam @finGathPolGam @lhs.polGam
+%%]
+
+

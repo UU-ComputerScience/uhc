@@ -1,0 +1,184 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Ruler AST, pass 1
+-------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+-- Declarations
+-------------------------------------------------------------------------
+
+DATA Decl
+  | Preamble            fmKind      : {FmKind}
+                        preamble    : {String}
+  | Extern              nms         : {[Nm]}
+  | Include             pos         : {SPos}
+                        nm          : {Nm}
+  | Scheme              pos         : {SPos}
+                        scKind      : {ScKind}
+                        nm          : {Nm}
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
+  | SchemeDeriv         pos         : {SPos}
+                        scKind      : {ScKind}
+                        nm          : {Nm}
+                        scDeriv     : {ScDeriv}
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
+  | Fmt                 fmKind      : {FmKind}
+                        atIO        : {AtDir}
+                        matchExpr   : Expr
+                        expr        : Expr
+  | Rules               pos         : {SPos}
+                        nm          : {Nm}
+                        schemeNm    : {Nm}
+                        viewSel     : ViewSel
+                        info        : {String}
+                        decls       : Decls
+  | RulesGroup          pos         : {SPos}
+                        nm          : {Nm}
+                        schemeNm    : {Nm}
+                        viewSel     : ViewSel
+                        info        : {String}
+                        rlNms       : {[(Nm,Nm)]}
+  | Rule                pos         : {SPos}
+                        nm          : {Nm}
+                        mbBasedOnNm : {Maybe Nm}
+                        viewSel     : {Maybe ViewSel}
+                        mbAGNm      : {Maybe String}
+                        decls       : Decls
+  | RulView             pos         : {SPos}
+                        nm          : {Nm}
+                        jdIntros    : RuleJudgeIntros
+                        group       : {[[Nm]]}
+  | ShpJudge            pos         : {SPos}
+                        fmKind      : {FmKind}
+                        expr        : Expr
+  | ShpDel              pos         : {SPos}
+                        fmKinds     : {[FmKind]}
+  | ScmView             nm          : {Nm}
+                        decls       : Decls
+  | ViewHierarchy       nmOrder     : {[[Nm]]}
+  | Attr                intros      : AttrIntroDecls
+  | Explain             mbNm        : {Maybe Nm}
+                        expr        : Expr
+  | DataAST             pos         : {SPos}
+                        nm          : Nm
+                        schemeNms   : {[Nm]}
+                        decls       : Decls
+  | DataASTView         pos         : {SPos}
+                        nm          : Nm
+                        decls       : Decls
+  | DataASTAlt          pos         : {SPos}
+                        nm          : Nm
+                        ruleNm      : Nm
+                        mbBasedOnNm : {Maybe Nm}
+                        fldIntros   : FldIntros
+
+TYPE Decls = [Decl]
+
+SET AllDecl = Decl Decls
+
+-------------------------------------------------------------------------
+-- Data/AST decl
+-------------------------------------------------------------------------
+
+DATA FldIntro
+  | Intro               nm          : {Nm}
+                        ty          : Ty
+
+TYPE FldIntros = [FldIntro]
+
+SET AllFldIntro = FldIntros FldIntro
+
+-------------------------------------------------------------------------
+-- Attr intro decl
+-------------------------------------------------------------------------
+
+DATA AttrIntroDecl
+  | Attrs               inhs        : AttrIntros
+                        inhsyns     : AttrIntros
+                        syns        : AttrIntros
+  | AttrsProp           intros      : AttrIntros
+  | Scheme              pos         : {SPos}
+                        nm          : {Nm}
+                        renames     : AttrRenames
+
+TYPE AttrIntroDecls = [AttrIntroDecl]
+
+DATA AttrRename
+  | Rename              pos         : {SPos}
+                        nmNew       : {Nm}
+                        nmOld       : {Nm}
+  | EqualTo             pos         : {SPos}
+                        nmLeft      : {Nm}
+                        nmRight     : {Nm}
+
+TYPE AttrRenames = [AttrRename]
+
+DATA AttrIntro
+  | Intro               props       : {[AtProp]}
+                        nm          : {Nm}
+                        ty          : {Nm}
+
+TYPE AttrIntros = [AttrIntro]
+
+SET AllAttrIntro = AttrIntro AttrIntros
+SET AllAttrRename = AttrRename AttrRenames
+SET AllAttrIntroDecl = AllAttrIntro AllAttrRename AttrIntroDecl AttrIntroDecls 
+
+-------------------------------------------------------------------------
+-- Rule judgement intro
+-------------------------------------------------------------------------
+
+DATA RuleJudgeIntro
+  | PrePost             extNms      : {[Nm]}
+                        pre         : RExprs
+                        post        : RExprs
+  | RulesetRule         pos         : {SPos}
+                        rsNm        : {Nm}
+                        rlNm        : {Nm}
+                        schemeRnmL	: {[BldRename]}
+
+TYPE RuleJudgeIntros = [RuleJudgeIntro]
+
+SET AllRuleJudgeIntro = RuleJudgeIntros RuleJudgeIntro
+SET AllRuleJudgeIntroDecl = AllRuleJudgeIntro
+
+-------------------------------------------------------------------------
+-- Rule expr's
+-------------------------------------------------------------------------
+
+DATA RExpr
+  | Judge               pos         : {SPos}
+                        mbRNm       : {Maybe Nm}
+                        schemeNm    : {Nm}
+                        eqns        : RExprEqn
+                        isSmallExpr : {Bool}
+  | Del                 pos         : {SPos}
+                        nms         : {[Nm]}
+
+DATA RExprEqn
+  | Attrs               eqns        : AttrEqns
+  | Expr                expr        : Expr
+
+TYPE RExprs = [RExpr]
+
+SET AllRExpr = RExpr RExprs
+
+DATA AttrEqn
+  | Eqn                 nm          : {Nm}
+                        expr        : Expr
+  | Del                 nm          : {Nm}
+
+TYPE AttrEqns = [AttrEqn]
+
+SET AllAttrEqn = RExprEqn AttrEqn AttrEqns
+
+-------------------------------------------------------------------------
+-- Sets of AST data's
+-------------------------------------------------------------------------
+
+SET AllAS1 = AllRExpr AllAttrEqn AllAttrIntroDecl AllRuleJudgeIntroDecl AllFldIntro AllDecl
+
+%%]

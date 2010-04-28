@@ -1,0 +1,47 @@
+%%[main
+Over time this document will describe the UHC build structure.
+
+\section{Overview}
+
+\section{EHC variant building}
+
+\section{@make@ defines}
+%%@InternalDocBuildSystem.makeDefines
+
+\section{Release checklist}
+%%@InternalDocBuildSystem.releaseChecklist
+
+%%]
+
+%%[makeDefines
+These defines are all passed to make (or a submake via \verb|$(MAKE)|) by @<name>=<value>@.
+
+\begin{itemize}
+\item \verb|INCLUDE_DERIVED_MK|, values: @yes|...@, use: internal \\
+ Compute the dependencies between chunked source code using shuffle, and include these.
+ This is necessary for building any ehc variant and other make targets using the content of these chunked files,
+ for example for text targets including source code.
+ If such a flag were not used, make would complain about the absence of derived makefiles, build them (using shuffle, which has to be build then as well), etc.
+ This is confusing for make targets which do not require this.
+\end{itemize}
+%%]
+
+%%[releaseChecklist
+\begin{itemize}
+\item ensure the version nr in \sref{VERSION}{VERSION} is right.
+\item run @make release-prepare@, to build expected regression test output.
+\item @svn commit@ this plus other changes.
+\item check whether @make uhc; make install; make test@ works on as many platforms as possible.
+\item repeat this until it works...
+\item ensure all is committed.
+\item @svn co@ a fresh copy, do a configure in there, and proceed from this dir.
+\item @make release@
+\item @svn commit@ the release from the top of the svn repository working copy.
+\item make @release/version@ available as tarball download on the @svn.cs.uu.nl@.
+\item update the \uref{Download}{download} page.
+\item update the \uref{WebNews}{news} page.
+\end{itemize}
+
+Yes, I know, this way it is crap and way too much work...
+%%]
+

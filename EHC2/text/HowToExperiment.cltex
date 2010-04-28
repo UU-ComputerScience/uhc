@@ -1,0 +1,286 @@
+%%[main doclatex
+\section{Introduction}
+%%@HowToExperiment.introduction
+
+\section{Building and using a particular variant + aspect combination}
+%%@HowToExperiment.building
+
+\section{Building and using a barebones version}
+%%@HowToExperiment.buildingBarebones
+
+\section{Regression testing}
+%%@HowToExperiment.regressionTesting
+
+\section{EHC Makefile reference}
+\label{EhcMakefileReference}
+\glabel{EhcMakefileReference}
+%%@HowToExperiment.ehcMakefile
+
+
+%%]
+
+%%[introduction doclatex
+\textit(Make sure you have read the \eref{EhcUserDocumentation}{UHC manual} and have ensured uhc can be build.}
+
+For those who want to use EHC as a starting point for experimentation EHC offers various ways of using the source code:
+
+\begin{itemize}
+\item For those who want to incorporate a feature into EHC with the intention that it will be incorporated into the main development line of EHC: use the chunked sources (see Ehc.Shuffle). Variants and aspects are visible when editing text. One has the choice to omit aspects, possibly replacing an aspect by their own implementation.
+\item For those who do not want their write own parser + syntax tree + pretty printing and are not (yet) interested in putting back their results in EHC: use a generated barebones version. Such a version contains generated AG + Haskell source code and has all variant+aspect information stripped. This is a oneway only route because generated text will be edited instead of the original. Because no other variants and aspects of EHC are visible one can also not be distracted by them.
+\end{itemize}
+
+In the following \sref{}{EHCHOME} denotes the root of the ehc source directory, and uppercase identifiers like \verb=VARIANT= represent meta variables used during the discussion.
+%%]
+
+%%[building doclatex
+A variant including the default set of aspects is built by the following commandline invocation of make:
+
+\begin{verbatim}
+make VARIANT/ehc
+\end{verbatim}
+
+This will build the compiler executable for variant \verb=VARIANT= in \sref{install/VARIANT/bin/ehc}{ehc}. The \verb=--help= option to \sref{install/VARIANT/bin/ehc}{ehc} displays a list of allowed options which can be passed to \sref{install/VARIANT/bin/ehc}{ehc}.
+
+Variants 8 and higher require a runtime system and variant 99 and higher a library; these are compiled (for the default code generation target) with:
+
+\begin{verbatim}
+make VARIANT/ehclib
+\end{verbatim}
+
+The location of the path is baked into the executable. Additional import search locations can be specified with the option @--import-path@.
+
+\subsection{Variants}
+
+Currently (as of 20081023) one can choose from the following variants (see also \sref{mk/shared.mk.in}{shared configuration}):
+
+\begin{verbatim}
+1 : explicitly typed lambda calculus
+2 : + type inference (implicit typing)
+3 : + polymorphism
+4 : + quantifiers everywhere, existentials
+5 : + datatypes
+6 : + kinds (+inference)
+7 : + fixed size records
+8 : + code gen
+9 : + CHR, class system, local instances
+10: + (extensible) records (lack predicates)
+11: + type synonyms
+12: + explicit passing of implicit parameters (partially done)
+13: + higher order predicates (dict trafo's) (partially done)
+14: + existentially quantified class predicates (TBD)
+15: + functional dependencies (TBD)
+16: + GADT (TBD)
+17: + Polarity inference (co/contravariance)
+20: + module system
+94: + full FFI (foreign function interface) (TBD)
+95: + deriving construct
+96: + exception handling
+97: + numbers: Integer, Float, Double
+98: + IO
+99: + the rest to make uhc
+100: - debugging/tracing stuff
+101: same as 100, but built for installation
+102: - removal of necessary stuff (i.e. error messages) to play with AG dependencies, mem usage
+103: 99 + Holgers debugger work
+\end{verbatim}
+
+In the above overview the main feature for each variant is briefly summarized. A '+' indicates it is built on top of the immediately preceding variant; a '-' indicates the same but features are omitted. Not all features have been finished or fully integrated, these are marked with TBD (to be done).
+Invocation of \verb=make= without any target gives a list of all possible targets, including the allowed variants.
+
+\subsection{Aspects}
+
+Independently of variants the codebase is organized into the following aspects (please first look at the \eref{TheStructureOfTheEssentialHaskellCompiler}{EHC structure}):
+
+\begin{itemize}
+\item \verb=base=: AST (Abstract Syntax Tree) for Haskell + EH (desugared/essential Haskell) + errors. Parsing + pretty printing of these ASTs. Name+dependency analysis for Haskell and desugaring to EH.
+\item \verb=hmtyinfer=: Full type system.
+\item \verb=hmtyast=: A subset of \verb=hmtyinfer= where type inference + checking is omitted, but the required datatypes are present: Ty AST (+ parsing + pretty printing + utilities).
+\item \verb=codegen=: Code generation from EH to an untyped lambda-calculus representation named \verb=Core=.
+\item \verb=grin=: Code generation from \verb=Core= to \verb=GRIN= based backends, including a bytecode interpreter and a full program analysis C backend.
+\end{itemize}
+
+When no aspects are defined when building EHC the combination \verb=base hmtyinfer codegen grin= is used. Currently (as of 20081023) an additional aspect \verb=noHmTyRuler= is used to switch off the use of Ruler for variant 8 and higher when \verb=hmtyinfer= is requested but \verb=codegen= is not; Ruler does not yet has mechanisms available to deal with aspects as they are defined and used in EHC. Aspect \verb=noHmTyRuler= only is influencing variant 5 and higher, and is a temporary solution only.
+
+Given these aspects, the two following make invocations are equivalent:
+
+\begin{verbatim}
+make VARIANT/ehc
+make VARIANT/ehc ASPECTS="base hmtyinfer codegen grin noHmTyRuler"
+\end{verbatim}
+
+When ASPECTS is defined as above, subdirectories in the build system, names of libraries, names of toplevel module naming are derived from ASPECTS. In particular, when possible, spaces are replaced by dashes '-', or simply removed (as for module naming).
+
+Although ideally we would like to be able to turn on and off the various aspects independently of eachother, in EHC only the following combinations are valid (for variant 99 as of time of writing 20081023):
+
+\begin{itemize}
+\item \verb=base=
+\item \verb=base hmtyast=
+\item \verb=base hmtyinfer=
+\item \verb=base hmtyinfer codegen noHmTyRuler=
+\item \verb=base hmtyinfer codegen grin noHmTyRuler=
+\end{itemize}
+
+In the source code aspect \verb=base= is not marked as such, by default this is equivalent to all unmarked code. This may change.
+
+\subsection{Build structure}
+%%]
+
+%%[buildingBarebones doclatex
+The EHC development cycle involves editing chunked source code, in which all possible variants and aspects are simultaneously visible. Because this may be too overwhelming or too distractive barebone versions may be build. A barebones version has all variant and aspect information stripped. This is a good starting point for -say- a oneshot experiment. For example, the following creates a barebones version without any type infrastructure for variant 3:
+
+\begin{verbatim}
+make 3/bare ASPECTS=base
+\end{verbatim}
+
+The bare version is found in directory \verb=bare/3-base=, together with a tailored \verb=Makefile=.
+
+At the time of this writing (20081025) note the following:
+\begin{itemize}
+\item Barebones versions can only be build without inclusion of the runtime system + external libraries.
+\item Any documentation available is also stripped.
+\item Other libraries (like uulib, EHC's EH-Util) must be installed. This is usually no problem as these are either already a prerequisite for using EHC or built as part of building EHC.
+\item Regression testing is not supported.
+\end{itemize}
+%%]
+
+%%[regressionTesting doclatex
+Full variants, that is variants including the default set of aspects, can be regress tested. Regression testing requires a set of outputs against which can be compared.
+These expected outputs must be generated when in a stable development state, for example before making any modifications.
+The @make@ targets which generate both the expected test output and do the regression testing, the appropriate compiler variant \sref{bin/VARIANT/ehc}{ehc} and \sref{bin/VARIANT/ehclib}{library} (if required) must be present.
+The following example generates the expected outputs for variant 3:
+
+\begin{verbatim}
+make test-expect TEST_VARIANTS=3
+\end{verbatim}
+
+When \verb=TEST_VARIANTS= is omitted all variants will be tested. It is assumed that the compiled ehc's for the specified variants are available. Test files are located in test/regress/VARIANT, either in \verb=.hs= files or \verb=.eh= files. Haskell files with suffix \verb=.hs= follow Haskell syntax, \verb=.eh= files follow EHC's syntax for EH (Essential Haskell, desugared Haskell). All files assume no Prelude, except for ehc variants starting with variant 99. Files are tested accumulative, that is, testing files for VARIANT also tests files of earlier variants, starting at variant 1. For variant 99 and higher this accumulative behaviour starts with variant 99. Expected output is stored in files suffixed by \verb=expVARIANT=, regression output is suffixed by \verb=regVARIANT=. A regression test is done by:
+
+\begin{verbatim}
+make test-regress TEST_VARIANTS=3
+\end{verbatim}
+
+An individual file may be regress tested via make parameter \verb=TEST_FILES=:
+
+\begin{verbatim}
+make test-regress TEST_VARIANTS=3 TEST_FILES=3/all-ok.eh
+\end{verbatim}
+
+Multiple variants and test files may be tested by passing multiple arguments to \verb=TEST_VARIANTS= and \verb=TEST_FILES= respectively:
+
+\begin{verbatim}
+make test-regress TEST_VARIANTS="3 4" TEST_FILES="2/all-ok.eh 3/all-ok.eh"
+\end{verbatim}
+
+Finally, to do full regression testing on the full Haskell compiler, assuming the presence of the expected output,
+additionally ensuring the presence of both compiler and library, use the following:
+
+\begin{verbatim}
+make 100/ehc
+make 100/ehclib
+make test-regress TEST_VARIANTS=100
+\end{verbatim}
+%%]
+
+%%[ehcMakefile doclatex
+EHC's makefile offers a set of targets for building EHC variants and other artefacts.
+The following overview is printed by using the command \verb=make=, without specifying a make target:
+
+\begin{pre}
+%%@[exec:make%%]
+\end{pre}
+
+In general, EHC make targets follow these conventions:
+
+\begin{itemize}
+\item
+ If a target @<target>@ also exists for a variant @<variant>@, the target is named @<variant>/<target>@.
+ For example, @make 1/ehc@ builds EHC for variant @1@.
+ The existence of a target @<target>@ does not imply the existence of a target @<variant>/<target>@, nor vice versa.
+\item
+ If a variant specific target @<variant>/<target>@ exists, sometimes a target @<target>s@ also exists, which builds @<variant>/<target>@ for all available variants.
+\end{itemize}
+
+If a target is not mentioned in the following overview it may or may not work, but is not used on a regular basis anymore.
+
+\subsection{Building and installing UHC}
+
+\begin{itemize}
+\item @make uhc@:
+ Build variant 101 and libraries, which after installation can be invoked by @uhc@.
+ Variant 101 only differs from 100 in its number, functionality is all the same.
+ Variant 100 differs from 99 in the absence of debugging facilities.
+\item @make install@:
+ Install @uhc@ and libraries, possibly requiring proper permissisions.
+\end{itemize}
+
+\subsection{Building EHC variants and corresponding libraries}
+
+\begin{itemize}
+\item @make <variant>/ehc@:
+ Build the compiler \sref{install/<variant>/bin/ehc}{executable}.
+\item @make <variant>/ehclib@:
+ Build the library (if any) in the \sref{install/<variant>/lib}{library install directory} for the default code generation target.
+\item @make <variant>/ehclibs@:
+ Build the libraries (if any) in the \sref{install/<variant>/lib}{library install directory} for all code generation targets.
+\item @make <variant>/rts@:
+ Build the C runtime system (if any) in the \sref{install/<variant>/lib}{library install directory}.
+ Depending on the code generation target this is part of the make target @<variant>/ehclib@.
+\end{itemize}
+
+\subsection{Regression testing}
+
+\begin{itemize}
+\item \verb|make test-regress [TEST_VARIANTS=<variant>] [TEST_FILES=<variantdir>/<file>]|:
+ Regress test \sref{regress/<variantdir>/<file>}{file} for @<variant>@.
+ Differences with the expected output are reported.
+ If \verb|TEST_VARIANTS| is not specified, all variants will be regress tested.
+ If \verb|TEST_FILES| is not specified, all available files will be regress tested.
+ The use of test files is accumulative, files for all earlier variants are also tested.
+ This behavior changes slightly tarting at variant 99 because a prelude is used.
+ Variants 98 and earlier are then not included in the tests.
+\item \verb|make test-expect [TEST_VARIANTS=<variant>] [TEST_FILES=<variantdir>/<file>]|:
+ See @make test-regress@.
+ The difference is that the expected output is created instead of compared to.
+\end{itemize}
+
+\subsection{Building barebones versions}
+
+\begin{itemize}
+\item @make <variant>/bare@:
+ Build the barebones for @<variant>@ in ... .
+\end{itemize}
+
+\subsection{Building documentation}
+
+\begin{itemize}
+\item @make www@:
+ Build documentation in pdf and twiki format to be put onto the EHC web.
+ All is put into the \sref{www}{local www directory}.
+\item @make www-sync@:
+ Synchronize (install) the www documentation.
+ Location and permission are hardcoded into the makefile.
+ Permissions on the server are set such that UU staff members should be able to do this.
+\end{itemize}
+
+Remaining make targets for documentation only partly work. No guarantees here.
+
+\subsection{Miscellaneous}
+\begin{itemize}
+\item @make <variant>/clean@:
+ Cleanup for @<variant>@. This means:
+ \begin{itemize}
+ \item Unregister libraries created and registered for @<variant>@.
+ \item Remove most of the \sref{build/<variant>}{build directory}, apart from some generated makefiles (which would then be immediately be remade after removing).
+ \item Remove the \sref{install/<variant>}{install directory}.
+ \end{itemize}
+ Caveat: cleaning asks the compiler executable for some meta information (like location of configuration/environment file). If -for whatever reason- the executable does not exist or cannot execute, the cleaning depending on it will not be done.
+\item @make clean@:
+ \emph{Not implemented yet}, but will clean up for variants and also (e.g.) libraries shared between variants.
+ Cleaning with @make <variant>/clean@ only does per variant cleaning, not global cleaning.
+\item @make ruler@:
+ build the @Ruler@ \sref{bin/ruler}{tool}.
+\item @make shuffle@:
+ build the \eref{Shuffle}{Shuffle} \sref{bin/shuffle}{tool}.
+\end{itemize}
+
+%%]

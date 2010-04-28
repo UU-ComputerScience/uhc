@@ -1,0 +1,265 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Configuration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 module {%{EH}Config}
+%%]
+
+%%[1 import({%{EH}ConfigInstall}) export(module {%{EH}ConfigInstall})
+%%]
+
+%%[8 import(Data.Maybe,Data.List,EH.Util.Utils,EH.Util.FPath)
+%%]
+
+%%[8 import({%{EH}ConfigDefines}, {%{EH}Base.Opts}) export(module {%{EH}ConfigDefines})
+%%]
+
+%%[8 import({%{EH}EHC.Environment})
+%%]
+
+%%[20 import(qualified {%{EH}SourceCodeSig} as Sig)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Version
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 export(Version(..))
+data Version
+  = Version
+      { verSvnRevision      :: !String
+      , verMajor            :: !String
+      , verMinor            :: !String
+      , verMinorMinor       :: !String
+      , verQuality          :: !String
+      , verShort            :: !String
+      , verFull             :: !String
+      , verAsNumber         :: !String
+      , verProg             :: !String
+%%[[20
+      , verTimestamp        :: !String
+      , verSig              :: !String
+%%]
+      }
+%%]
+
+%%[1 export(version)
+version :: Version
+version
+  = Version
+      { verSvnRevision      = ehcSvnRevision
+      , verMajor            = "@EH_VERSION_MAJOR@"
+      , verMinor            = "@EH_VERSION_MINOR@"
+      , verMinorMinor       = "@EH_VERSION_MINORMINOR@"
+      , verQuality          = "@EH_VERSION_STABILITY@"
+      , verShort            = "@EH_VERSION_SHORT@"
+      , verFull             = "@EH_VERSION_FULL@"
+      , verAsNumber         = "@EH_VERSION_ASNUMBER@"
+      , verProg             = "@EHC_EXEC_NAME@"
+%%[[20
+      , verTimestamp        = Sig.timestamp
+      , verSig              = Sig.sig
+%%]
+      }
+%%]
+
+%%[1 export(verNumeric, verDist, verInfo)
+verNumeric :: Version -> String
+verNumeric v = verShort v ++ "." ++ verMinorMinor v
+
+verDist :: Version -> String
+verDist v = verFull v
+
+verInfo :: Version -> String
+verInfo v = verProg v ++ "-" ++ verDist v ++ ", Revision " ++ verSvnRevision v
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Install locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(installRoot)
+installRoot :: EHCOpts -> String
+installRoot opts
+%%[[8
+  = envroot
+%%][99
+  = maybe envroot id (ehcOptCfgInstallRoot opts)
+%%]]
+  where envroot = ehcenvInstallRoot $ ehcOptEnvironment opts
+%%]
+
+%%[(8 codegen) export(installVariant)
+installVariant :: EHCOpts -> String
+installVariant opts
+%%[[8
+  = envvariant
+%%][99
+  = maybe envvariant id (ehcOptCfgInstallVariant opts)
+%%]]
+  where envvariant = ehcenvVariant $ ehcOptEnvironment opts
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% File locations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) export(mkInstallFilePrefix)
+mkInstallFilePrefix :: EHCOpts -> WhatInstallFile -> String -> String -> String
+mkInstallFilePrefix opts whatfile variant pkg
+  = mkDirbasedInstallPrefix (installRoot opts) whatfile variant (show $ ehcOptTarget opts) pkg
+%%]
+
+%%[(8 codegen) export(mkInstallBindirPrefix)
+mkInstallBindirPrefix :: EHCOpts -> String -> String
+mkInstallBindirPrefix opts variant
+  = mkDirbasedInstallPrefix (installRoot opts) INST_BIN variant "" ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirSystem)
+mkInstallPkgdirSystem :: EHCOpts -> String
+mkInstallPkgdirSystem opts
+  = filePathUnPrefix $ mkInstallFilePrefix opts INST_LIB_PKG2 (installVariant opts) ""
+%%]
+
+%%[(99 codegen) export(mkInstallPkgdirUser)
+mkInstallPkgdirUser :: EHCOpts -> String
+mkInstallPkgdirUser opts
+  = filePathCoalesceSeparator $ filePathUnPrefix $ mkDirbasedInstallPrefix (ehcOptUserDir opts) INST_LIB_PKG2 "" (show $ ehcOptTarget opts) ""
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Cmds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(shellCmdGcc)
+shellCmdGcc :: String
+shellCmdGcc = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@GCC_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[8 export(shellCmdLLVMC)
+shellCmdLLVMC :: EHCOpts -> String -> [String]
+shellCmdLLVMC opts variant = [mkInstallBindirPrefix opts variant ++ "llvmc", "@LLVM_AS_CMD@", "@LLVM_OPT_CMD@", "@LLVM_LLC_CMD@", "@GCC_CMD@"]
+%%]
+
+%%[8888 export(shellCmdLLVM)
+shellCmdLLVM :: String
+shellCmdLLVM = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@SHELLRUN@" ++ "@TOP_ABS@/bin/llvm-compilerdriver"
+%%]
+
+%%[(8 java || jazy) export(shellCmdJar)
+shellCmdJar :: String
+shellCmdJar = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@JAR_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdCpp)
+shellCmdCpp :: String
+shellCmdCpp = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@CPP_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdAr)
+shellCmdAr :: String
+shellCmdAr = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@AR_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdRanlib)
+shellCmdRanlib :: String
+shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdLibtoolStatic)
+shellCmdLibtoolStatic :: String
+shellCmdLibtoolStatic = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@LIBTOOL_STATIC_CMD@@SUFFIX_EXEC@"
+%%]
+
+%%[99 export(shellCmdLibtoolStaticOpts)
+shellCmdLibtoolStaticOpts :: String
+shellCmdLibtoolStaticOpts = "@LIBTOOL_STATIC_OPTS@"
+%%]
+
+%%[99 export(mkShellCmdLibtool)
+mkShellCmdLibtool :: String -> [String] -> [[String]]
+mkShellCmdLibtool archive files
+  = if True -- "@LIBTOOL_STATIC_CMD@" == "no"
+    then [ [shellCmdAr,"-r","-s",archive] ++ files
+         -- , [shellCmdRanlib,archive]
+         ]
+    else [ [shellCmdLibtoolStatic,shellCmdLibtoolStaticOpts,archive] ++ files
+         ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Libraries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+prefixLib :: String
+prefixLib = "@PREFIX_LIB@"
+%%]
+
+%%[8 export(libnamesGcc)
+libnamesGcc :: EHCOpts -> [String]
+libnamesGcc opts
+  = [ ]
+    ++ (if useBoehmGC opts
+        then [ "@EXTLIBS_BGC_PKG_NAME@" ]
+        else []
+       )
+%%[[97
+    ++ (if mpLib == MPLib_GMP
+        then [ "@EXTLIBS_GMP_PKG_NAME@" ]
+        else []
+       )
+%%]]
+%%]
+
+%%[8 export(libnamesGccPerVariant)
+libnamesGccPerVariant :: [String]
+libnamesGccPerVariant
+  = [ prefixLib ++ "@RTS_PKG_NAME@"]
+%%]
+
+%%[8 export(ehcGccOptsStatic)
+ehcGccOptsStatic :: [String]
+ehcGccOptsStatic = [ "@EHC_GCC_OPTS_STATIC@" ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GCC options
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+%%]
+gccOpts :: String
+gccOpts = "@GCC_EHC_OPTIONS@"
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% GCC additional external libraries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(libnamesGccEhcExtraExternalLibs)
+libnamesGccEhcExtraExternalLibs :: [String]
+libnamesGccEhcExtraExternalLibs
+  = words
+      (  "@GCC_EHC_EXTRA_EXTERN_LIBS@"
+%%[[97
+      ++ " m"
+%%]]
+      )
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% File suffixes
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(mbSuffixExec)
+suffixExec :: String
+suffixExec = "@SUFFIX_EXEC@"
+
+mbSuffixExec :: Maybe String
+mbSuffixExec
+  = case suffixExec of
+      ('.':s) -> Just s
+      ""      -> Nothing
+      s       -> Just s
+%%]

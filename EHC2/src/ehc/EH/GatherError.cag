@@ -1,0 +1,455 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Errors are firstly gathered in errSq, occasionally wrapped in a nesting construct for inclusion in pretty printing.
+These errors are included at typical declaration sites: let bindings, instance declarations.
+
+Errors are also gathered in allErrSq for usage outside, by the compiler driver.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Conversion
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[4.gamErrToL hs
+gamErrToL :: Gam HsName ErrL -> ErrL 
+gamErrToL = concat . map (\(n,e) -> mkNestErr (pp n) e) . gamToAssocL
+%%]
+%%[99 -4.gamErrToL hs
+gamErrToL :: Range -> Gam HsName ErrL -> ErrL 
+gamErrToL r = concat . map (\(n,e) -> mkNestErr r (pp n) e) . gamToAssocL
+%%]
+
+%%[1 hs
+ppErrsSq :: ErrSq -> PP_Doc
+ppErrsSq = ppErrs . Seq.toList
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather errors
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.GatherExpr
+ATTR AllNT [ | | errSq USE {`Seq.union`} {Seq.empty} : ErrSq ]
+%%]
+
+%%[1
+SEM AGItf
+  | AGItf       loc         .   lErrSq    	=   Seq.empty
+%%]
+
+%%[1
+SEM Expr
+  | Let         loc         .   letErrL     =   Seq.empty
+%%]
+
+%%[1
+SEM Expr
+%%[[(1 hmtyinfer)
+  | Let         loc         .   letErrL     :=  Seq.fromList @dupErrs
+%%]]
+  | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@func.errSq, @arg.errSq]
+%%[[(1 hmtyinfer)
+  | Lam         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
+  | TypeAs      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@expr.errSq, @tyExpr.errSq, foErrSq @fo_]
+%%][1
+  | TypeAs      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@expr.errSq, @tyExpr.errSq]
+  | Lam         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@arg.errSq, @body.errSq]
+%%]]
+%%[[(1 hmtyinfer)
+  | Var         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
+  | IConst CConst
+                lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+%%]]
+  | AppTop      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@expr.errSq]
+%%]
+
+%%[(1 hmtyinfer)
+SEM TyExpr
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs]
+
+SEM PatExpr
+  | IConst CConst
+                lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+%%]
+
+%%[1.GatherRest
+SEM PatExpr
+  | AppTop      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @patExpr.errSq
+%%[[(1 hmtyinfer)
+                                                                              , Seq.fromList @arityErrs
+%%]]
+                                                                              ]
+
+SEM Decl
+  | Val         lhs         .   errSq       =   Seq.unions [ @patExpr.errSq, @expr.errSq
+%%[[(1 hmtyinfer)
+                                                           , Seq.fromList @sigMissErrs
+%%]]
+                                                           ]
+%%]
+
+%%[(2 hmtyinfer)
+SEM Expr
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+%%]
+
+%%[2
+SEM PatExpr
+  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @patExpr.errSq
+%%[[(1 hmtyinfer)
+                                                                              , Seq.fromList @arityErrs, foErrSq @fo_fitR_
+%%]]
+                                                                              ]
+
+SEM Decl
+  | Val         lhs         .   errSq       :=  Seq.unions [@patExpr.errSq, @expr.errSq]
+%%]
+
+%%[4
+SEM Expr
+%%[[(4 hmtyinfer)
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs ]
+%%][4
+  | Let         loc         .   letErrL     :=  Seq.empty
+%%]]
+%%]
+
+%%[4
+SEM PatExpr
+  | TypeAs      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @patExpr.errSq, @tyExpr.errSq
+%%[[(4 hmtyinfer)
+                                                                              , foErrSq @fo_
+%%]]
+                                                                              ]
+%%[[(4 hmtyinfer)
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_fitR_]
+  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @arityErrs, foErrSq @fo_fitR_]
+%%]]
+%%]
+
+%%[4_2
+SEM Expr
+  | Lam         loc         .   gamErrL     =   rngLift @range gamErrToL @errGam
+                lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq, Seq.fromList @gamErrL]
+%%]
+
+-- should be removed later 
+%%[5
+SEM PatExpr
+  | IConst CConst
+                lhs         .   errSq       :=  Seq.empty
+%%]
+
+%%[(5 hmtyinfer)
+SEM Expr
+  | SConst      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+  | TypeAs      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @expr.errSq, @tyExpr.errSq, foErrSq @fo_, foErrSq @fo_fitDown
+%%[[5
+                                                                              , Seq.fromList @occCycTyErrs
+%%][99
+%%]]
+                                                                              ]
+%%]
+
+%%[5_1
+SEM Expr
+  | Case        lhs         .   errSq       =   Seq.unions [@expr.errSq, @alts.errSq, rngLift @range mkNestErr' @expr.pp @ebErrs]
+%%]
+
+%%[(6 hmtyinfer)
+SEM Expr
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs, Seq.fromList @occCycTyKiErrs ]
+
+SEM TyExpr
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2]]
+
+SEM KiExpr
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs]
+%%]
+
+%%[6
+SEM TyExpr
+  | App         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @func.errSq, @arg.errSq
+%%[[(6 hmtyinfer)
+                                                                              , foErrSq @fo_
+%%]]
+                                                                              ]
+  | AppTop      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@tyExpr.errSq]
+
+SEM Decl
+  | TySig       lhs         .   errSq       =   rngLift @range mkNestErr' @tyExpr.pp [ @tyExpr.errSq
+%%[[(6 hmtyinfer)
+                                                                                     , foErrSq @fo_
+%%]]
+                                                                                     ]
+  | Data        lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @tyVars.errSq, @constrs.errSq
+%%[[(6 hmtyinfer)
+                                                                              , foErrSq @fo_
+%%]]
+%%[[(7 hmtyinfer)
+                                                                              , Seq.fromList @inconsistFldErrs
+%%]]
+                                                                              ]
+
+SEM DataConstr
+  | Constr      lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @fields.errSq
+%%[[(7 hmtyinfer)
+                                                                              , Seq.fromList @dupErrs
+%%]]
+%%[[(6 hmtyinfer)
+                                                                              , foErrSq @fo_
+%%]]
+                                                                              ]
+%%]
+
+%%[(7 hmtyinfer)
+SEM RecExpr
+  | Empty       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+
+SEM RecPatExpr
+  | Empty       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+
+SEM DataFieldPatExpr
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
+
+SEM DataFieldExpr
+  | Con         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [Seq.fromList @nmErrs, foErrSq @fo_]
+%%]
+
+%%[7
+SEM PatExpr
+  | Rec         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [@recPatExpr.errSq]
+
+SEM RecPatExpr
+  | Ext         lhs         .   errSq       =   Seq.unions [ @recPatExpr.errSq
+%%[[(7 hmtyinfer)
+                                                           , rngLift @range mkNestErr' @pp [@patExpr.errSq, foErrSq @fo_]
+%%][7
+                                                           , @patExpr.errSq
+%%]]
+                                                           ]
+
+SEM DataFieldPatExpr
+  | Ext         lhs         .   errSq       =   Seq.unions [ @dataFieldPatExpr.errSq
+%%[[(7 hmtyinfer)
+                                                           , rngLift @range mkNestErr' @pp [@patExpr.errSq, Seq.fromList @nmErrs, foErrSq @fo_]
+%%][7
+                                                           , @patExpr.errSq
+%%]]
+                                                           ]
+
+SEM Expr
+  | Rec         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @recExpr.errSq
+%%[[(7 hmtyinfer)
+                                                                              , foErrSq @fo_
+%%]]
+                                                                              ]
+  | DataFields  lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @dataFieldExpr.errSq
+%%[[(7 hmtyinfer)
+                                                                              , Seq.fromList @fldMissErrs, Seq.fromList @fldDupErrs, Seq.fromList @dfErrs
+%%]]
+                                                                              ]
+
+SEM RecExpr
+  | Ext Upd     lhs         .   errSq       =   Seq.unions [ @recExpr.errSq
+%%[[(7 hmtyinfer)
+                                                           , rngLift @range mkNestErr' @pp [@expr.errSq, foErrSq @foKnRec]
+%%][7
+                                                           , @expr.errSq
+%%]]
+                                                           ]
+
+SEM DataFieldExpr
+  | Upd         lhs         .   errSq       =   Seq.unions [ @dataFieldExpr.errSq
+%%[[(7 hmtyinfer)
+                                                           , rngLift @range mkNestErr' @pp [@expr.errSq, Seq.fromList @nmErrs, foErrSq @fo_]
+%%][7
+                                                           , @expr.errSq
+%%]]
+                                                           ]
+
+%%]
+
+%%[(9 hmtyinfer)
+SEM AGItf
+  | AGItf       loc         .   lErrSq      :=  Seq.unions [ Seq.fromList @predNotPrfErrs
+                                                           , Seq.fromList @chrSolveMainErrs
+%%[[98
+                                                           , Seq.fromList @nmErrs
+                                                           , foErrSq @foMain
+%%]]
+                                                           ]
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | Let         loc         .   letErrL     :=  Seq.unions [ Seq.fromList @dupErrs, Seq.fromList @occCycTyErrs, Seq.fromList @occCycTyKiErrs
+                                                           , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @predAmbigErrs, firstNotEmpty [@chrSolve1Errs, @chrSolve2Errs]]
+%%[[17
+                                                           , @loc.cycErrSq
+%%]]
+                                                           ]
+  | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
+  | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
+%%]
+
+%%[(9 hmtyinfer)
+SEM RowTyExpr
+  | Var         lhs         .   errSq       =   rngLift @range mkNestErr' @pp [foErrSq @fo_]
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty
+                                                  [ Seq.unions [ @tyPrExpr.errSq
+%%[[(9 hmtyinfer)
+                                                               , Seq.fromList @valNoSigErrs
+%%]]
+                                                               ]
+%%[[(95 codegen hmtyinfer)
+                                                  , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
+%%]]
+%%[[(9 hmtyinfer)
+                                                  , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]
+%%]]
+                                                  ]
+  | InstanceIntro
+                loc         .   lErrSq      =   Seq.unions [ @expr.errSq, @prExpr.errSq
+%%[[(9 hmtyinfer)
+                                                           , foErrSq @foPr, Seq.fromList @predErrs
+%%]]
+                                                           ]
+%%]
+
+%%[9
+SEM PrExpr
+  | Class       lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @tyExprs.errSq
+%%[[(9 hmtyinfer)
+                                                                              , Seq.fromList $ firstNotEmpty [@nmErrs,@clKiNmErrs], foErrSq @fo_
+%%]]
+                                                                              ]
+%%]
+
+%%[11
+SEM Decl
+  | Type        lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @tyExpr.errSq
+%%[[(11 hmtyinfer)
+                                                                              , foErrSq @foTy_, foErrSq @foKi_
+%%]]
+                                                                              ]
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @func.errSq, @arg.errSq, @argPr.errSq
+%%[[(12 hmtyinfer)
+                                                                              , Seq.fromList @nmErrs, foErrSq @foPr
+%%]]
+                                                                              ]
+  | LamImpl     lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @arg.errSq, @argPr.errSq, @body.errSq
+%%[[(12 hmtyinfer)
+                                                                              , Seq.fromList @nmErrs, foErrSq @fo_fitF_, foErrSq @foPr
+%%]]
+                                                                              ]
+%%]
+
+%%[97
+SEM PatExpr
+  | Expr        lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @expr.errSq
+%%[[(97 hmtyinfer)
+                                                                              , Seq.fromList @nmErrs, foErrSq @fo_
+%%]]
+                                                                              ]
+%%]
+
+%%[(16 hmtyinfer)
+SEM DataConstr
+  | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @fields.errSq, @eqs.errSq, foErrSq @fo_
+                                                                              , Seq.fromList @loc.occErrL, @loc.undefVarsErrSq
+                                                                              ]
+%%]
+
+%%[16
+SEM DataConstrEq
+  | Eq          lhs         .   errSq       =   rngLift @range mkNestErr' @pp [ @tyVar.errSq, @tyExpr.errSq
+%%[[(16 hmtyinfer)
+                                                                              , foErrSq @loc.fo_, foErrSq @loc.foRhsTy
+%%]]
+                                                                              ]
+%%]
+
+%%[(17 hmtyinfer)
+SEM Decl
+  | Type        lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [ @tyExpr.errSq, foErrSq @foKi_, foErrSq @foPol]
+
+SEM TyExpr
+  | Con         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [Seq.fromList $ firstNotEmpty [@nmErrs,@nmErrs2,@nmPolErrs], foErrSq @loc.foPol]
+
+SEM TyExpr
+  | Var         lhs         .   errSq        =  rngLift @range mkNestErr' @pp [foErrSq @loc.foPol]
+%%]
+
+%%[50
+SEM DataConstr
+  | Constr      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@fields.errSq, @eqs.errSq, foErrSq @fo_]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP of error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.PP
+SEM Decls
+  | Cons        loc         .   errPP       =   ppErrsSq @hd.errSq
+                lhs         .   errSq       =   Seq.empty
+
+SEM Expr
+  | Let         loc         .   errLetPP    =   ppErrsSq @letErrL
+                            .   errBodyPP   =   ppErrsSq @body.errSq
+                lhs         .   errSq       =   Seq.empty
+
+SEM AGItf
+  | AGItf       loc         .   errTopPP    =   ppErrsSq @lErrSq
+%%]
+
+%%[9
+SEM Decl
+  | Instance    loc         .   errInstPP   =   ppErrsSq @lErrSq
+                            .   errDeclsPP  =   ppErrsSq @decls.errSq
+                lhs         .   errSq       =   Seq.empty
+  | InstanceIntro
+                loc         .   errInstPP   =   ppErrsSq @lErrSq
+                lhs         .   errSq       =   Seq.empty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gather all errors, for further processing elsewhere
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+ATTR AllNT AGItf [ | | allErrSq USE {`Seq.union`} {Seq.empty} : ErrSq ]
+
+SEM Decls
+  | Cons        lhs         .   allErrSq    =   Seq.unions [@hd.errSq, @hd.allErrSq, @tl.allErrSq]
+
+SEM Expr
+  | Let         lhs         .   allErrSq    =   Seq.unions [@letErrL, @body.errSq, @decls.allErrSq, @body.allErrSq]
+%%]
+
+%%[9
+SEM Decl
+  | Instance    lhs         .   allErrSq    =   Seq.unions [@lErrSq, @decls.allErrSq]
+  | InstanceIntro
+                lhs         .   allErrSq    =   @lErrSq
+
+SEM AGItf
+  | AGItf       lhs         .   allErrSq    =   Seq.unions [@lErrSq, @expr.allErrSq]
+%%]
+

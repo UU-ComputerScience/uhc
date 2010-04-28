@@ -1,0 +1,3223 @@
+-------------------------------------------------------------------------
+-- Preliminaries
+-------------------------------------------------------------------------
+
+preamble tex "%include lhs2TeX.fmt\n%include afp.fmt\n%include ehrules.fmt"
+preamble ag "%%[0\n%include lhs2TeX.fmt\n%include afp.fmt\n%%]\n"
+
+external _ instTyFixed ftv ftvSet alpha tvarv exists forall
+
+-------------------------------------------------------------------------
+-- View hierarchy
+-------------------------------------------------------------------------
+
+viewhierarchy = E < K < C < HM < I1 < EX < DT < CG < P < TS < EP < MD < NUM < HS, I1 < I2, DT < ANN
+
+-------------------------------------------------------------------------
+-- Rewriting
+-------------------------------------------------------------------------
+
+-- Ty for expr
+format ag def  (a | Ty) -> (r | t) = ([a] `mkArrow` (r) | t)
+format ag def  (p | Ty) => (a | Ty) -> (r | t) = ([p,a] `mkArrow` (r) | t)
+format ag def  (a | TyL) -> (r | t) = ((a) `mkArrow` (r) | t)
+
+format ag use ((a|Ty) -> r) `=` v = (a,r) `=` tyArrowArgRes (v)
+format ag use ((...) -> r) `=` v = r `=` tyArrowRes (v)
+format ag use (p => a -> r) `=` v = (p,a,r) `=` tyArrowImplsArgRes (v)
+
+-- VarMp
+format ag def  (c | VarMp, IVarMp) (v | a) = (((c) |=> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (c3) |+> (v) | a))
+format ag def  (c1 | VarMp, IVarMp) (c2 | VarMp, IVarMp) (c3 | VarMp, IVarMp) (c4 | VarMp, IVarMp) (v | a) = (((c1) |+> (c2) |+> (c3) |+> (c4) |+> (v) | a))
+-- format ag def  (c1) (c2) (c3) (v) = c1 |=> c2 |=> c3 |=> v
+
+-- Gam
+format ag def  (g1 | ValGam, TyGam) +  (g2 | ValGam, TyGam) = (gamAddGam (g1) (g2) | ValGam, TyGam)
+format ag def  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) = (gamPushGam (g1) (g2) | ValGam, TyGam)
+format ag def  (i :-> (t|Ty)) = (gamSingleton i (ValGamInfo (t)) | ValGam, TyGam)
+
+format ag use  (g1 | ValGam, TyGam) ++ (g2 | ValGam, TyGam) `=` (g | ValGam, TyGam) = ((g1|ValGam, TyGam),(g2|ValGam, TyGam)) `=` (gamPop (g) | ValGam, TyGam)
+
+-- Coercion
+format ag def  (coe | Coe) (transl | TranslExpr) = (foAppLRCoe' "@lhs.opts" (coe) "@lhs.finTyVarMp" "@lhs.cSubst" (transl) | TranslExpr)
+
+-- Nm
+format ag def `|` (nm | Nm) `|` = (hsnProdArity (nm) | Int)
+
+-- FIOpts
+format ag def f, (o|FIOpts) = ((o {f})|FIOpts)
+format ag def f1, f2, (o|FIOpts) = ((o {f1, f2})|FIOpts)
+
+-- Ty for tyexpr
+format ag def (t1 | Ty) (t2 | Ty) = (Ty_App (t1) (t2) | Ty)
+format ag def Ty_Quant q v `.` t = (Ty_Quant (q) (tyVar (v)) (t) | Ty)
+
+-- TyVarIdS
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) = (l1 "`Set.union`" l2 | TyVarIdS)
+format ag def  (l1 | TyVarIdS) + (l2 | TyVarIdS) + (l3 | TyVarIdS) = (l1 "`Set.union`" l2 "`Set.union`" l3 | TyVarIdS)
+
+-------------------------------------------------------------------------
+-- Formatting
+-------------------------------------------------------------------------
+
+-- Nm
+external hsnUn
+
+format tex hsnUn = "\"un\""
+
+-- matching
+external
+  strongFIOpts weakFIOpts instLFIOpts instLRFIOpts instFIOpts
+  impredFIOpts
+  meetFIOpts joinFIOpts
+  implFIOpts predFIOpts
+  fioBindToTyAltsY fioBindToTyAltsN
+  fioLeaveRInstY fioLeaveRInstN
+  fioBindLFirstY fioBindLFirstN
+  fioBindRFirstY fioBindRFirstN
+  fioBindLBeforeRY fioBindLBeforeRN
+  fioJoinY fioMeetY fioFitY
+  fioDontBind
+  emptyFO
+  foCSubst foTCSubst foLRCoe foLRTCoe
+
+format tex howToMatch = <=>
+format ag  fiopt = fiOpts
+
+format ag  fioBindRFirstY = fioBindRFirst `=` True
+format ag  fioBindRFirstN = fioBindRFirst `=` False
+format ag  fioBindLFirstY = fioBindLFirst `=` True
+format ag  fioBindLFirstN = fioBindLFirst `=` False
+format ag  fioBindToTyAltsY = fioBindToTyAlts `=` True
+format ag  fioBindToTyAltsN = fioBindToTyAlts `=` False
+format ag  fioBindLBeforeRY = fioBindLBeforeR `=` True
+format ag  fioBindLBeforeRN = fioBindLBeforeR `=` False
+
+-- Gam
+external emptyGam
+
+format tex emptyGam = []
+format tex valGam = Gamma
+format tex valGam.inh = Gamma..k
+format tex valGam.syn = Gamma
+format tex gathTySigGam = Gamma.t
+format tex gathTySigGam.ex = Gamma.t.nexists
+format tex tySigGam = Gamma.t.k
+format tex patValGam = Gamma.p
+format tex patValGam.inh = Gamma.p.k
+format tex patValGam.syn = Gamma.p
+format tex quValGam = Gamma.q
+format tex quValGam.ex = Gamma.q.nexists
+
+format tex tyGam = TGamma
+format tex tyGam.inh = TGamma..k
+format tex tyGam.syn = TGamma
+
+format tex kiGam = KGamma
+
+format tex predGam = Gamma
+format tex PredGam = Gamma
+
+-- Type
+external tyInt tyChar tyFloat tyInteger tyDouble tyString tyString2 ANY thardS thardH tneedR tneedO
+
+format tex ity = isigma
+format tex lty = sigma.l
+format tex rty = sigma.r
+format tex ty = sigma
+format tex knTy = sigma..k
+format tex knTy.1 = sigma.1.k
+format tex knTy.2 = sigma.2.k
+format tex pred = pi
+format tex tyInt = Int
+format tex tyChar = Char
+format tex instTyFixed = inst.f
+format tex patFunTy = sigma.pf
+format tex ty.sig = ty.s
+format tex ty.q = sigma.q
+format tex ty.elim = sigma.e
+format tex ty.tboth = sigma./=/
+format tex tboth =  /=/
+format tex ty' = sigma'
+
+format ag tvarv..._ = tvars
+format ag ty..._ = tys
+format ag ANY = (Ty_Any|Ty)
+format ag ity = imprTy
+format ag ty.ident = gTy
+
+format ag  tyString2 = "(Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts))"
+format tex tyString2 = tyString
+
+-- tvars
+external tyLVar tySVar
+
+format tex tyLVar =
+format tvars.f = tvarv.f.._
+format tvars.g = tvarv.g.._
+
+format ag tyLVar = map tyVar
+format ag tySVar = ((Set.fromList . map tyVar))
+
+-- Impred VarMp
+format tex ityVarMp = IVarMp
+format tex ityVarMp.in = IVarMp..k
+format tex ityVarMp.inh = IVarMp..k
+format tex ityVarMp.syn = IVarMp
+format tex ityVarMp.fitA = IVarMp.A
+format tex ityVarMp.fitF = IVarMp.F
+format tex ityVarMp.valGam = ityVarMp.Gamma
+format tex ityVarMp.elim = tyVarMp.Gamma
+
+format ag ityVarMp = imprTyVarMp
+
+-- Plain VarMp
+external emptyVarMp'
+external emptyVarMp
+
+format tex cnstr = VarMp
+format tex emptyVarMp = []
+format tex emptyVarMp' =
+format tex patTyVarMp.syn = VarMp.p
+format tex patTyVarMp.inh = VarMp.p.k
+format tex tyVarMp = VarMp
+format tex tyVarMp.inh = VarMp..k
+format tex tyVarMp.syn = VarMp
+format tex tySigTyVarMp.inh = VarMp.t.k
+format tex tySigTyVarMp.syn = VarMp.t
+format tex tyVarMp.r = VarMp.r
+format tex tyVarMp.fun = VarMp.f
+format tex tyVarMp.fitP = VarMp.P
+format tex tyVarMp.fitF = VarMp.F
+format tex tyVarMp.fitE = VarMp.E
+format tex tyVarMp.arg = VarMp.a
+
+format ag emptyVarMp' = emptyVarMp
+
+-- Decl
+format tex declExpr = e
+format tex declTyExpr = t
+format tex declPat = p
+
+format ag declExpr = expr
+format ag declTyExpr = tyExpr
+format ag declPat = patExpr
+
+-- Expr
+format tex letDecls = d
+format tex letBody = b
+format tex lamPat = p
+format tex lamBody = e
+format tex eFun = e.1
+format tex eArg = e.2
+format tex eAnn = e
+format tex eTop = eFun ^^ (eArg)..._
+
+format ag letDecls = decls
+format ag letBody = body
+format ag eFun = func
+format ag eArg = arg
+format ag eAnn = expr
+format ag eTop = expr
+format ag lamPat = arg
+format ag lamBody = body
+format ag ident = nm
+format ag identv = nm
+format ag identc = nm
+format ag uniq = gUniq
+format fmtcmd rulerMk1Uniq = mkNewLevUID
+format fmtcmd rulerMk2Uniq = mkNewLevUID2
+format fmtcmd rulerMk3Uniq = mkNewLevUID3
+format fmtcmd rulerMk4Uniq = mkNewLevUID4
+format fmtcmd rulerMk5Uniq = mkNewLevUID5
+format fmtcmd rulerMk6Uniq = mkNewLevUID6
+format fmtcmd rulerMk7Uniq = mkNewLevUID7
+format fmtcmd rulerMk8Uniq = mkNewLevUID8
+
+format ag decls.hd = hd
+format ag decls.tl = tl
+
+format tex decls.hd = d
+format tex decls.tl = ds
+
+-- Type expr
+external tyexprCon tyexprQuant
+
+format tex tQu = Qu
+format tex tVar = identv
+format tex tAnn = t
+format tex tExpr = t
+format tex tFun = t.1
+format tex tArg = t.2
+
+format tex tyexprCon = 
+format tex tyexprQuant = 
+
+format ag tQu = qu
+format ag tVar = tyVar
+format ag tAnn = tyExpr
+format ag tExpr = tyExpr
+format ag tFun = func
+format ag tArg = arg
+
+-- Ty wildcard
+format tex tyWildL =  tvarv.w.._
+
+format ag tvarv.w.._ = tyWildL
+
+-- Pat expr
+format tex pFun = p.1
+format tex pArg = p.2
+format tex pAsPat = p
+format tex pTopPatK = p
+format tex pExpr = p
+
+format ag pFun = func
+format ag pArg = arg
+format ag pAsPat = patExpr
+format ag pTopPatK = patExpr
+format ag pExpr = patExpr
+
+-- Translation from TyExpr to Ty
+format ag tyexprCon = Ty_Con
+format ag tyexprQuant = Ty_Quant
+
+-- Translation to core (CExpr)
+external translInt translChar translString translFloat translDouble translInteger translVar emptyTranslBind
+
+format tex translExpr = Transl
+format tex TranslExpr = Transl
+format tex translBind = Transl
+format tex TranslBind = Transl
+format tex emptyTranslBind = []
+
+format ag translExpr = cexpr
+
+format tex translInt = Transl
+format ag  translInt = CExpr_Int
+format tex translChar = Transl
+format ag  translChar = CExpr_Char
+format tex translString = Transl
+format ag  translString = "cstring @lhs.opts"
+format tex translFloat = Transl
+format ag  translFloat = CExpr_Float
+format tex translDouble = Transl
+format ag  translDouble = CExpr_Double
+format tex translInteger = Transl
+format ag  translInteger = "cinteger @lhs.opts"
+format tex translVar = Transl
+format ag  translVar = CExpr_Var
+
+-- Coercion
+external coeId
+
+format tex coe = Coe
+
+-- Co-, Contravariance
+external cocoY cocoN cocoNo
+
+-- Errors
+external Err_PatArity
+
+-- Global attributes from AG
+format ag  finTyVarMp          = "@lhs.finTyVarMp"
+format ag  finKiVarMp          = "@lhs.finKiVarMp"
+format ag  finTyGam            = "@lhs.finTyGam"
+format ag  annMonoRestrictions = "@lhs.annMonoRestrictions"
+format ag  tyConSeqChkF        = "@lhs.tyConSeqChkF"
+format ag  mkExpTyConF         = "@lhs.mkExpTyConF"
+format ag  exposedAnnEnv       = "@lhs.exposedAnnEnv"
+
+-------------------------------------------------------------------------
+-- Expr
+-------------------------------------------------------------------------
+
+scheme expr "Expr" =
+  view E =
+    holes [ node e: Expr, valGam: ValGam, tyGam: TyGam, kiGam: KiGam | ty: Ty | ]
+    judgespec kiGam ; tyGam ; valGam :- e : ty
+    judgeuse tex valGam :-.."e" e : ty
+    explain (Within environment |valGam| , expression |e| has type |ty| .)
+    explain ty = (Type of expression)
+    explain e = (Expression)
+    explain valGam = (Environment | (ident :-> ty)..._ | for value identifiers)
+  view K =
+    holes [ knTy: Ty | | retain ty: Ty ]
+    judgespec kiGam ; tyGam; valGam; knTy :- e : ty
+    judgeuse tex valGam; knTy :-.."e" e : ty
+    explain (Within environment |valGam| , expecting the type of expression |e| to be |knTy| , |e| has type |ty| .)
+    explain knTy = ("Expected/known" type of expression)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
+  view C =
+    holes [ | thread retain tyVarMp: VarMp | ]
+    judgespec kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    explain (Within environment |valGam| , expecting the type of expression |e| to be |tyVarMp.inh knTy| , |e| has type |ty| , under constraints |tyVarMp.syn| .)
+    explain tyVarMp.inh = (Already known constraints)
+    explain tyVarMp.syn = (|tyVarMp.inh| + new constraints)
+  view I1 =
+    holes [ fiopt: FIOpts | | ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn
+    explain (Within environment |valGam| and context |fiopt| , expecting the type of expression |e| to be |tyVarMp.inh knTy| , |e| has type |ty| , under constraints |tyVarMp.syn| .)
+    explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
+  view I2 =
+    holes [ | thread ityVarMp: IVarMp | retain ity: Ty ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :- e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :-.."e" e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+    explain (Within environment |valGam| and context |fiopt| , expecting the types of expression |e| to be |ityVarMp.inh knTy| (and |tyVarMp.inh knTy|)
+            , |e| has type |ity| (and |ty|) , under constraints |ityVarMp.syn| (and |tyVarMp.syn|) .
+            )
+    explain ityVarMp.inh = (Already known constraints (for quantifier propagation))
+    explain ityVarMp.syn = (|ityVarMp.inh| + new constraints (for quantifier propagation))
+    explain ity = (Type (with type alternatives |talt|) of expression (for quantifier propagation))
+  view ANN =
+    holes [ | | retain tyAnnRef : Ty, retain annKindMap : AnnKindMap, retain tyAnnExp : Ty ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :- e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+    judgeuse tex fiopt ; valGam ; ityVarMp.inh ; tyVarMp.inh ; knTy :-.."e" e : ity ; ty ~> ityVarMp.syn ; tyVarMp.syn
+  view CG =
+    holes [ | | retain translExpr: TranslExpr ]
+    judgespec fiopt ; kiGam ; tyGam ; valGam ; tyVarMp.inh ; knTy :- e : ty ~> tyVarMp.syn ; translExpr
+    judgeuse tex fiopt ; valGam ; tyVarMp.inh ; knTy :-.."e" e : ty ~> tyVarMp.syn ; translExpr
+    explain translExpr = (Translated expression)
+
+rulesgroup expr.scratch scheme expr "Expression type rules (scratch)" =
+  rule expr.base e.let
+
+rulesgroup expr.baseForEH1 scheme expr "Expression type rules" =
+  rule expr.base e.int
+  rule expr.base e.char
+  rule expr.base e.var
+  rule expr.base e.app
+  rule expr.onlyE e.prod
+  rule expr.base e.lam
+  rule expr.base e.ann
+  rule expr.base e.let
+
+rulesgroup expr.baseForEH2 scheme expr "Expression type rules" =
+  rule expr.base e.int
+  rule expr.base e.char
+  rule expr.base e.var
+  rule expr.base e.con
+  rule expr.base e.app
+  rule expr.base e.lam
+  rule expr.base e.ann
+  rule expr.base e.let
+
+rulesgroup expr.baseForEH3 scheme expr "Expression type rules" =
+  rule expr.base e.var
+  rule expr.base e.ann
+  rule expr.base e.let
+
+rulesgroup expr.baseForEH4 scheme expr "Expression type rules" =
+  rule expr.base e.var
+  rule expr.base e.app
+  rule expr.base e.lam
+  -- rule expr.base e.ann
+
+rulesgroup expr.eh4B1 scheme expr "Expression type rules, part I" =
+  rule expr.base e.int
+  -- rule expr.base e.char
+  rule expr.base e.var
+  rule expr.base e.app
+  -- rule expr.base e.app.f
+  -- rule expr.base e.ann
+
+rulesgroup expr.eh4B2 scheme expr "Expression type rules, part II" =
+  rule expr.base e.lam
+  rule expr.base e.let
+
+rulesgroup expr.baseForEH9 scheme expr "Expression type rules" =
+  rule expr.base e.iapp
+  rule expr.base e.ilam
+  rule expr.base e.apptop
+
+rulesgroup expr.baseExplImpl scheme expr "Expression type rules" =
+  rule expr.base e.int
+  rule expr.base e.var
+  rule expr.base e.app
+  rule expr.base e.lam
+  rule expr.base e.let
+  rule expr.onlyE e.pred
+
+ruleset expr.base scheme expr "Expression type rules" =
+  rule e.int "IConst" =
+    view E =
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- int : tyInt
+    view K =
+      judge F : fit = :- tyInt <= knTy : fo : ty
+      ---
+      judge R : expr
+          | ty = ty
+    view C =
+      judge F : fit
+          | cnstr = tyVarMp
+          | gVarMp = tyVarMp.inh
+          | rty = tyVarMp.inh knTy
+      ---
+      judge R : expr
+          | tyVarMp.syn = tyVarMp tyVarMp.inh
+    view I1 = 
+      judge F : fit
+          | rty = knTy
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyInt
+          | ityVarMp.syn = ityVarMp.inh
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translInt (int)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translInt (int) | TranslExpr)
+
+  rule e.char : e.int "CConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = char
+          | ty = tyChar
+    view K =
+      judge F : fit
+          | lty = tyChar
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyChar
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translChar (char)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translChar (char) | TranslExpr)
+
+  rule e.str : e.int "SConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = str
+          | ty = tyString
+    view K =
+      judge F : fit
+          | lty = tyString
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyString
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translString (str)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translString (str) | TranslExpr)
+    view TS =
+      judge F : fit
+          | lty = tyString2
+      ---
+
+{-
+  rule e.float : e.int "FConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = float
+          | ty = tyFloat
+    view K =
+      judge F : fit
+          | lty = tyFloat
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyFloat
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translFloat (float)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translFloat (float) | TranslExpr)
+-}
+
+  rule e.iint : e.int "IIConst" =
+    view E =
+      ---
+      judge R : expr
+          | e = integer
+          | ty = tyInteger
+    view K =
+      judge F : fit
+          | lty = tyInteger
+      ---
+    view I2 =
+      ---
+      judge R : expr
+          | ity = tyInteger
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V2 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translInteger (integer)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translInteger (integer) | TranslExpr)
+
+  rule e.var "Var" =
+    view E =
+      judge G : valGamLookupIdTy = ident :-> ty `elem` valGam
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- ident : ty
+    view K =
+      judge G : valGamLookupIdTy
+          | ty = ty.g
+      judge F : fit
+          | lty = ty.g
+          | rty = knTy
+      ---
+    view C =
+      judge F : fit
+          | lty = tyVarMp.inh ty.g
+          | rty = tyVarMp.inh knTy
+          | cnstr = tyVarMp
+          | gVarMp = tyVarMp.inh
+      ---
+      judge R : expr
+          | tyVarMp.syn = tyVarMp tyVarMp.inh
+    view HM =
+      judge I : inst.tvar = ty.i, tvarv.i === forall, ty.g, tvarv, "tyInst"
+      judge F : fit
+          | lty = tyVarMp.inh ty.i
+      ---
+      judge R : expr
+          | tyVarMp.syn = tyVarMp tyVarMp.inh
+    view I1 =
+      judge - I
+      judge F : fit
+          | lty = ty.g
+          | rty = knTy
+      -          
+    view I2 =
+      -          
+      judge R : expr
+          | ity = ityVarMp.inh ty.g
+          | ityVarMp.syn = ityVarMp.inh
+    view ANN =
+      judge A : annotateTyRef = ty ~> tyAnnRef
+      judge K : infAnnKindMap = tyAnnRef ~> annKindMap
+      judge E : annotateTyExp = annKindMap :- tyAnnRef ~> tyAnnExp
+      judge V1 : createUID
+          | uid = (retain constrUID)
+      judge V2 : createUID
+          | uid = (retain constrUID2)
+      judge V3 : createUID
+          | uid = (retain freshUID)
+      judge V4 : createUID
+          | uid = (retain ppHtmlBlockUID)
+      ---
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translVar (ident)
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translVar (ident) | TranslExpr)
+
+  rule e.con : e.var viewsel K - * "Con" =
+    view K =
+      judge O: tyOpenProd = ty.p.._, n === ty.r
+      judge - G F
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam ; ((...) -> ty.r) :- "(,)" : (ty.p.._ -> ty.r)
+
+    view C =
+      judge - G O
+      judge V : tvarvFreshN = (`|` (identc | Nm) `|`) : tvarv..._
+      judge P : mkProdTy = ty.p === tvarv..._
+      judge F : fit
+          | lty = (tvarv..._ -> ty.p)
+          | rty = tyVarMp.inh knTy
+          | ty = ty
+          | gVarMp = tyVarMp.inh
+      ---
+      judge R : expr
+          | e = identc
+          | knTy = knTy
+          | ty = ty
+
+    view HM =
+      judge - G I
+      judge F : fit
+          | lty = (tvarv..._ -> ty.p)
+      ---
+
+    view I1 =
+      judge - V P
+      judge G : valGamLookupIdTy = identc :-> ty.g `elem` valGam
+      judge F : fit
+          | lty = ty.g
+          | rty = knTy
+      ---
+      judge R : expr
+          | e = identc
+          | ty = ty
+          | knTy = knTy
+          | tyVarMp.syn = tyVarMp tyVarMp.inh
+
+    view CG =
+      ---
+      judge R : expr
+          | translExpr = translVar (identc)
+
+    view P =
+      ---
+      judge R : expr
+          | translExpr = coe (translVar (identc) | TranslExpr)
+
+  rule e.app "App" =
+    view E =
+      judge F : expr = kiGam ; tyGam ; valGam :- eFun : (ty.a -> (ty|Ty))
+      judge A : expr = kiGam ; tyGam ; valGam :- eArg : ty.a
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- ((node 1 = eFun) ^^ (node 2 = eArg)) : ty
+    view K =
+      judge F : expr
+          | knTy = ANY -> knTy
+      judge A : expr
+          | knTy = ty.a
+          | ty = _
+      ---
+    view C =
+      judge V : tvarvFresh
+      judge F : expr
+          | knTy = tvarv -> knTy
+          | tyVarMp.syn = tyVarMp.fun
+      judge A : expr
+          | tyVarMp.inh = tyVarMp.fun
+          | tyVarMp.syn = tyVarMp.arg
+      ---
+      judge R : expr
+          | ty = tyVarMp.arg ty
+          | tyVarMp.syn = tyVarMp.arg
+    view I1 =
+      judge F : expr
+          | ty = (_|Ty) -> (ty|Ty)
+      judge A : expr
+          | knTy = tvarv
+          | fiopt = instLRFIOpts
+      ---
+      judge R : expr
+          | ty = knTy
+    view I2 =
+      judge F : expr
+          | ity = ity.f
+          | ityVarMp.syn = ityVarMp.f
+      judge A : expr
+          | ity = ity.a
+          | ityVarMp.inh = ityVarMp.fitF ityVarMp.f
+          | ityVarMp.syn = ityVarMp.a
+      judge fitA : fit = (fioBindToTyAltsY,(instLFIOpts|FIOpts)) ; ityVarMp.a :- ity.a <= (ityVarMp.a tvarv) : fo.fitA : _ ~> ityVarMp.fitA
+      judge fitF : fit = impredFIOpts ; ityVarMp.f :- ity.f <= (ityVarMp.f (tvarv -> knTy)) : fo.fitF : _ ~> ityVarMp.fitF
+      judge E1 : eqRLVarMp = ityVarMp.1 =<= ityVarMp.fitA ityVarMp.a
+      ---
+      judge R : expr
+          | ity = ityVarMp.1 knTy
+          | ityVarMp.syn = ityVarMp.1
+{-
+    view I3 =
+      judge fitF : fit
+          | lty = ityVarMp.a ity.f
+          | rty = ityVarMp.a (tvarv -> knTy)
+      judge E1 : eqRLVarMp = ityVarMp.1 =<= ityVarMp.fitF ityVarMp.a
+      judge fitA : fit
+          | lty = ityVarMp.1 ity.a
+          | rty = ityVarMp.1 tvarv
+      judge E2 : eqRLVarMp = ityVarMp.2 =<= ityVarMp.fitA ityVarMp.1
+      ---
+-}
+    view DT =
+      judge A : expr
+          | fiopt = instLFIOpts
+      ---
+    view CG =
+      judge F : expr
+          | translExpr = translExpr.f
+      judge A : expr
+          | translExpr = translExpr.a
+      ---
+      judge R : expr
+          | translExpr = translExpr.f ^^ translExpr.a
+    view P =
+      judge V : tpvarvFresh2
+          | tvarv1 = tvarv
+          | tvarv2 = pvar
+      judge F : expr
+          | knTy = pvar => tvarv -> knTy
+          | ty = _ => ty.a -> ty
+      judge P : pred = valGam :- (tyVarMp.arg pvar) ~> translExpr.a.._ : _
+      ---
+      judge R : expr
+          | translExpr = \translExpr.f ^^ translExpr.a.._ ^^ translExpr.a
+
+  rule e.app.f : e.app viewsel I1 - * "AppImpred" =
+    view I1 = 
+      judge A : expr
+          | fiopt = strongFIOpts
+      ---
+    view I2 = 
+      judge fitA : fit
+          | fiopt = impredFIOpts
+      ---
+      judge R : expr
+          | e = (node 1 = eFun) ^^ ~ (node 2 = eArg)
+
+  rule e.iapp viewsel EP - * "AppImpl" =
+    view EP =
+      judge F : expr = implFIOpts ; kiGam ; tyGam ; valGam ; tyVarMp.inh ; (pred.2 => knTy) :- eFun : (pred.a => ty) ~> tyVarMp.fun ; translExpr.f
+      judge G : predGamLookupPrTyEv = pred.a :> _ : ty.a `elem` valGam
+      judge A : expr = strongFIOpts ; kiGam ; tyGam ; valGam ; tyVarMp.fun ; ty.a :- eArg : _ ~> tyVarMp.arg ; translExpr.a
+      ---
+      judge R : expr
+          | e = eFun ^^ (! eArg <: pred.2 !)
+          | tyVarMp.syn = tyVarMp.arg
+          | translExpr = translExpr.f ^^ translExpr.a
+          | ty = tyVarMp.arg ty
+
+  rule e.apptop viewsel C - * "AppTop" =
+    view C =
+      judge A : tyEnsureNonAny = ty.e.k : knTy
+      judge E : expr
+          | knTy = ty.e.k
+          | e = eTop
+      ---
+      judge R : expr
+          | e = (node 1 = eTop)
+    view P =
+      judge V : tvarvFresh2 = tvarv, pvar
+      judge fitE : match = fiopt ; tyVarMp.inh :- (pvar => tvarv) <=>.(<=) (tyVarMp.inh ty.e.k) : (pred.a.._ => ty.e) ~> tyVarMp.fitE ; coe.lam
+      judge instP : inst.pred = predGam.i === inst.pred(pred.a.._)
+      judge openP : predGamOpenIdTy = [_ :~> translExpr.i.._] === predGam.i
+      judge E : expr
+          | e = eFun ^^ (eArg)..._
+          | knTy = ty.e
+          | valGam = predGam.i,valGam
+          | translExpr = translExpr.e
+          | tyVarMp.inh = tyVarMp.fitE tyVarMp.inh
+          | tyVarMp.syn = tyVarMp.e
+      ---
+      judge R : expr
+          | e = eFun ^^ (eArg)..._
+          | translExpr = \translExpr.i.._ -> translExpr.e
+          | ty = tyVarMp.e pred.a.._ -> ty
+          | tyVarMp.syn = tyVarMp.e
+
+  rule e.lam "Lam" =
+    view E =
+      judge B : expr = kiGam ; tyGam ; ((identv :-> ty.identv) + valGam) :- lamBody : ty.e
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- (\identv -> (node 2 = lamBody)) : (ty.identv -> ty.e)
+
+    view K =
+      judge P : patexpr = emptyGam ; ty.p :- lamPat : patValGam
+      judge fitF : fit = :- (ANY -> ANY) <= knTy : fo.fitF : (ty.p -> ty.r)
+      judge B : expr
+          | knTy = ty.r
+          | valGam = patValGam + valGam
+      ---
+      judge R : expr
+          | e = \(node 1 = lamPat) -> (node 2 = lamBody)
+          | ty = ty.p -> ty.e
+    view C =
+      judge V : tvarvFresh2
+      judge P : patexpr
+          | patTyVarMp.inh = tyVarMp.fitF tyVarMp.inh
+          | patTyVarMp.syn = tyVarMp.p
+          | knTy = tvarv1
+          | ty = ty.p
+          | patFunTy = _
+      judge fitF : fit
+          | lty = tvarv1 -> tvarv2
+          | rty = tyVarMp.inh knTy
+          | cnstr = tyVarMp.fitF
+          | gVarMp = tyVarMp.inh
+          | ty = _
+      judge B : expr
+          | tyVarMp.inh = tyVarMp.p
+          | tyVarMp.syn = tyVarMp.e
+          | knTy = tvarv2
+          | ty = ty.e
+      ---
+      judge R : expr
+          | ty = tyVarMp.e ty.p -> ty.e
+          | tyVarMp.syn = tyVarMp.e
+    view I1 =
+      judge P : patexpr
+          | valGam.inh = (emptyGam|ValGam) ++ valGam
+          | tyGam.inh = tyGam
+          | tyGam.syn = tyGam.p
+      judge B : expr
+          | valGam = patValGam
+          | tyGam = tyGam.p
+      judge fitF : fit
+          | fiopt = fioBindRFirstY, fiopt
+          | rty = knTy
+      ---
+      judge R : expr
+          | ty = ty.p -> ty.e
+    view I2 =
+      judge P : patexpr
+          | patTyVarMp.inh = emptyVarMp
+          | knTy = ityVarMp.fitF tvarv1
+          -- | fiopt = strongFIOpts
+      judge ifitF : fit = (fioBindRFirstY, fiopt) ; elimVarMp :- (tvarv1 -> tvarv2) <= ty.e.k : fo.ifitF : _ ~> ityVarMp.fitF
+      judge fitF : fit
+          | lty = tyVarMp.inh (tvarv1 -> tvarv2)
+          | rty = tyVarMp.inh knTy
+          | fiopt = fioBindRFirstY, fioBindLBeforeRN, fiopt
+          -- | fiopt = fioBindRFirstY, (fioDontBind `=` ftv(tyVarMp.inh (tvarv1 -> tvarv2))), fiopt
+      judge B : expr
+          | tyVarMp.inh = tyVarMp.3
+          | ityVarMp.inh = tyVarMp.p ityVarMp.fitF ityVarMp.inh
+          | ityVarMp.syn = ityVarMp.e
+          | ity = ity.e
+      judge split : valGamPop = valGam.l ++ (_|ValGam) === patValGam
+      judge ftvG : valGamFtv = tvarv.g.._ === valGam
+      judge elimK : tyAltTyElim = meetFIOpts ; ityVarMp.inh ; tvarv.g.._ :- knTy : ty.e.k ~> elimVarMp
+      judge elimG : valElimExprAlts = meetFIOpts; ityVarMp.e; tvarv.g.._ :- valGam.l : ityVarMp.elim
+      judge E1 : eqRLVarMp = ityVarMp.1 =<= ityVarMp.elim ityVarMp.e
+      judge E2 : eqRLVarMp = tyVarMp.2 =<= (tyVarMp.fitF |\> ftv(tyVarMp.inh (tvarv1 -> tvarv2)))
+      judge E3 : eqRLVarMp = tyVarMp.3 =<= (ityVarMp.elim tyVarMp.p
+                                             tyVarMp.2
+                                             ((tyVarMp.inh |>> ityVarMp.fitF | VarMp))
+                                            | VarMp)
+                                           tyVarMp.inh
+      ---
+      judge R : expr
+          | ity = ityVarMp.1 ty.p -> ityVarMp.elim ity.e
+          | ityVarMp.syn = ityVarMp.1
+{-
+    view I2 =
+      judge P : patexpr
+          | tyVarMp.inh = emptyVarMp
+          | knTy = tyVarMp.fitF tvarv1
+          -- | fiopt = strongFIOpts
+      judge fitF : fit
+          | rty = ty.e.k -- ityVarMp.inh knTy
+      judge B : expr
+          | tyVarMp.inh = tyVarMp.2
+          | ityVarMp.inh = tyVarMp.p tyVarMp.fitF ityVarMp.inh
+          | ityVarMp.syn = ityVarMp.e
+          | ity = ity.e
+      judge split : valGamPop = valGam.l ++ (_|ValGam) === patValGam
+      judge ftvG : valGamFtv = tvarv.g.._ === valGam
+      judge elimK : tyAltTyElim = meetFIOpts ; ityVarMp.inh ; tvarv.g.._ :- knTy : ty.e.k ~> _
+      judge elimG : valElimExprAlts = meetFIOpts; ityVarMp.e; tvarv.g.._ :- valGam.l : ityVarMp.elim
+      judge E1 : eqRLVarMp = ityVarMp.1 =<= ityVarMp.elim ityVarMp.e
+      judge E2 : eqRLVarMp = tyVarMp.2 =<= (ityVarMp.elim tyVarMp.p ((tyVarMp.inh |>> tyVarMp.fitF | VarMp)) | VarMp) tyVarMp.inh
+      ---
+      judge R : expr
+          | ity = ityVarMp.1 ty.p -> ityVarMp.elim ity.e
+          | ityVarMp.syn = ityVarMp.1
+-}
+{-
+    view I2 =
+      judge P : patexpr
+          | tyVarMp.inh = emptyVarMp
+          | knTy = ityVarMp.fitF tvarv1
+      judge ifitF : fit = (fioBindRFirstY, fiopt) :- (tvarv1 -> tvarv2) <= (ityVarMp.inh knTy) : fo.ifitF : _ ~> ityVarMp.fitF
+      judge fitF : fit
+          | lty = tyVarMp.2 (tvarv1 -> tvarv2)
+          | rty = tyVarMp.2 knTy
+      judge B : expr
+          | tyVarMp.inh = tyVarMp.fitF tyVarMp.2
+          | ityVarMp.inh = tyVarMp.p ityVarMp.fitF ityVarMp.inh
+          | ityVarMp.syn = ityVarMp.e
+          | ity = ity.e
+      judge split : valGamPop = valGam.l ++ (_|ValGam) === patValGam
+      judge ftvG : valGamFtv = tvarv.g.._ === valGam
+      judge elimG : valElimExprAlts = meetFIOpts; ityVarMp.e; tvarv.g.._ :- valGam.l : ityVarMp.elim
+      judge E1 : eqRLVarMp = ityVarMp.1 =<= ityVarMp.elim ityVarMp.e
+      judge E2 : eqRLVarMp = tyVarMp.2 =<= ityVarMp.elim tyVarMp.p tyVarMp.inh ityVarMp.fitF
+      ---
+      judge R : expr
+          | ity = ityVarMp.1 ty.p -> ityVarMp.elim ity.e
+          | ityVarMp.syn = ityVarMp.1
+-}
+
+    view DT =
+      judge P : patexpr
+          | valGam.inh = (emptyGam|ValGam) ++ valGam
+      judge B : expr
+          | valGam = patValGam
+      ---
+
+    view CG =
+      judge B : expr
+          | translExpr = translExpr.e
+      ---
+      judge R : expr
+          | translExpr = \lamPat -> translExpr.e
+
+    view P =
+      judge V : tvarvFresh3
+          | tvarv3 = pvar
+      judge fitF : fit
+          | lty = pvar => tvarv1 -> tvarv2
+          | ty = pred.a.._ => ty.p -> ty.r
+      judge instP : inst.pred = predGam.i === inst.pred(pred.a.._)
+      judge openP : predGamOpenIdTy = [_ :~> translExpr.i.._] === predGam.i
+      judge B : expr
+          | valGam = predGam.i,valGam
+      ---
+      judge R : expr
+          | ty = tyVarMp.e pred.a.._ => tyVarMp.e ty.p -> ty.e
+          | translExpr = translExpr.i.._ -> \lamPat -> translExpr.e
+
+  rule e.ilam viewsel EP - * "LamImpl" =
+    view EP =
+      judge V : tvarvFresh
+      judge fitP : match = implFIOpts ; tyVarMp.inh :- (pred => tvarv) <=>.(<=) (tyVarMp.inh knTy) : (pred.a => ty.r) ~> tyVarMp.fitP ; coe.lam
+      judge G : predGamLookupPrTyEv = pred.a :> _ : ty.a `elem` valGam
+      judge prG : bind1PredToTy = predGam.i === [pred.a :> lamPat : ty.a]
+      judge P : patexpr = fiopt ; tyGam ; emptyGam ; emptyVarMp ; ty.a :- lamPat : _ ; tyGam.p ; patValGam ~> patTyVarMp ; _
+      judge B : expr 
+          | knTy = ty.r
+          | valGam = predGam.i , patValGam , valGam
+          | e = lamBody
+          | tyVarMp.inh = patTyVarMp tyVarMp.fitP tyVarMp.inh
+          | tyVarMp.syn = tyVarMp.e
+          | translExpr = translExpr.e
+      ---
+      judge R : expr
+          | e = \(! lamPat <: pred !) -> lamBody
+          | tyVarMp.syn = tyVarMp.e
+          | translExpr = \lamPat -> translExpr.e
+
+  rule e.let "Let" =
+    view E =
+      judge D : decl = kiGam ; tyGam ; (gathTySigGam ++ valGam) :- letDecls : gathTySigGam
+      judge B : expr = kiGam ; tyGam ; (gathTySigGam ++ valGam) :- letBody : ty
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- (let (node 1 = letDecls) in (node 2 = letBody)) : ty
+
+    view K =
+      judge D : decl
+          | valGam = patValGam.syn
+          | tySigGam = gathTySigGam
+          | patValGam.inh = gathTySigGam ++ valGam
+      judge B : expr
+          | valGam = patValGam.syn
+      ---
+
+    view C =
+      judge D : decl
+          | patTyVarMp.inh = tyVarMp.inh
+          | tyVarMp.inh = patTyVarMp.syn
+          | tyVarMp.syn = tyVarMp.d
+      judge B : expr
+          | tyVarMp.inh = tyVarMp.d
+          | tyVarMp.syn = tyVarMp.e
+      ---
+      judge R : expr
+          | tyVarMp.syn = tyVarMp.e
+
+    view HM =
+      judge split : valGamPop = valGam.l ++ valGam.g === patValGam.syn
+      judge B : expr
+          | valGam = quValGam + valGam.g
+      judge Q : valGamQuantify = quValGam, gTyTvS, lSubsValGam, gSubsValGam === valGam.l, valGam.g, tyVarMp.d
+      ---
+
+{-
+    view EX =
+      judge ED : valGamInst1Exists = gathTySigGam.ex === gathTySigGam
+      judge EP : valGamInst1Exists = patValGam.ex === (patTyVarMp.syn valGam.l)
+      judge EB : valGamInst1Exists = quValGam.ex === quValGam
+      judge D : decl
+          | patValGam.inh = gathTySigGam.ex ++ valGam
+          | valGam = patValGam.ex
+      judge B : expr
+          | valGam = quValGam.ex + valGam.g
+      ---
+-}
+    view EX =
+      judge ED : valGamInst1Exists = gathTySigGam.ex === gathTySigGam
+      judge EB : valGamInst1Exists = quValGam.ex === quValGam
+      judge D : decl
+          | patValGam.inh = gathTySigGam.ex ++ valGam
+      judge B : expr
+          | valGam = quValGam.ex + valGam.g
+      ---
+
+    view I2 =
+      judge ED : valGamInst1Exists = _, tyVarMp.t.ex === gathTySigGam, tyVarMp.t
+      judge D : decl
+          | patTyVarMp.inh = tyVarMp.t.ex tyVarMp.t
+          | tyVarMp.inh = ityVarMp.elim patTyVarMp.syn tyVarMp.inh
+          | ityVarMp.inh = patTyVarMp.syn ityVarMp.inh
+          | ityVarMp.syn = ityVarMp.d
+          | tySigTyVarMp.inh = emptyVarMp
+          | tySigTyVarMp.syn = tyVarMp.t
+          | tySigGam = tyVarMp.t gathTySigGam
+      judge ftvG : valGamFtv = tvarv.g.._ === valGam
+      judge elimG : valElimExprAlts = joinFIOpts; ityVarMp.d; tvarv.g.._ :- valGam.l : ityVarMp.elim
+      judge Q : valGamQuantify
+          | cnstr.q = tyVarMp.q
+      judge EB : valGamInst1Exists = quValGam.ex, tyVarMp.l.ex === valGam.l, (tyVarMp.q tyVarMp.d)
+      judge B : expr
+          | ityVarMp.inh = ityVarMp.elim ityVarMp.d
+          | ityVarMp.syn = ityVarMp.e
+          | tyVarMp.inh = tyVarMp.l.ex tyVarMp.q tyVarMp.d
+          | valGam = patValGam.syn
+      ---
+      judge R : expr
+          | ityVarMp.syn = ityVarMp.e
+
+    view CG =
+      judge B : expr
+          | translExpr = translExpr.e
+      judge D : decl
+          | translBind = translBind.d.._
+      ---
+      judge R : expr
+          | translExpr = let translBind.d.._ ^^ in translExpr.e
+
+  rule e.ann "TypeAs" =
+    view E =
+      judge E : expr = kiGam ; tyGam ; valGam :- eAnn : ty
+      judge T : tyexpr = :- tAnn : ty
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- (((node 2 = eAnn) :: (node 1 = tAnn))) : ty
+    view K =
+      judge E : expr
+          | ty = ty.e
+          | knTy = ty.a
+      judge T : tyexpr
+          | ty = ty.a
+      judge F : fit = :- ty.a <= knTy : fo : _
+      ---
+      judge R : expr
+          | ty = ty.e
+    view C =
+      judge E : expr
+          | tyVarMp.inh = tyVarMp.F tyVarMp.inh
+          | tyVarMp.syn = tyVarMp.e
+      judge F : fit
+          | rty = tyVarMp.inh knTy
+          | cnstr = tyVarMp.F
+          | gVarMp = tyVarMp.inh
+      ---
+      judge R : expr
+          | tyVarMp.syn = tyVarMp.e
+    view HM =
+      -- judge Q : tyQuantify = tAnn: ty.q === ty.a, tvarv.t.._
+      judge Q : tyQuantify = (tySVar tvarv.t.._) :- ty.a : ty.q
+      judge instKnown : inst.known = ty.i === inst.K(ty.q)
+      judge T : tyexpr
+          | tyWildL = tvarv.t.._
+          | tyGam.inh = tyGam
+          | tyGam.syn = tyGam.t
+      judge F : fit
+          | lty = ty.i
+      judge E : expr
+          | knTy = ty.i
+      ---
+      judge R : expr
+          | ty = ty.a
+    view I1 =
+      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, tyVarMp.inh
+      judge GFtv : valGamFtv = tvarv.Gamma.._ === tyVarMp.inh valGam
+      judge Q : tyQuantify
+          | gtvars = (tySVar tvarv.t.._ | TyVarIdS) + tvarv.Gamma.._ + tvarv.TGamma.._
+          | ty = tyVarMp.inh ty.a
+      judge - instKnown
+      judge F : fit
+          | lty = ty.q
+          | rty = knTy
+      judge E : expr
+          | knTy = ty.q
+          | tyGam = tyGam.t
+      ---
+      judge R : expr
+          | ty = tyVarMp.e ty.q
+    view I2 =
+      judge TGFtv : tyGamTyFtv
+          | tyVarMp = ityVarMp.inh
+      judge GFtv : valGamFtv
+          | g = ityVarMp.inh valGam
+      judge Q : tyQuantify
+          | ty = ityVarMp.inh ty.a
+      judge - instKnown
+      judge F : fit
+          | lty = tyVarMp.inh ty.q
+      judge E : expr
+          | ityVarMp.syn = ityVarMp.e
+          | ity = ity.e
+      judge FI : fit = (fioBindToTyAltsY, fiopt) ; ityVarMp.e :- ity.e <= ty.q : fo_fitI : ity ~> ityVarMp
+      ---
+      judge R : expr
+          | ityVarMp.syn = ityVarMp ityVarMp.e
+
+ruleset expr.onlyE scheme expr "Expression type rules" =
+  rule e.prod viewsel E - K =
+    view E =
+      judge F : expr = kiGam ; tyGam ; valGam :- e.1 : ty.1
+      judge S : expr = kiGam ; tyGam ; valGam :- e.2 : ty.2
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- ((e.1,e.2)) : ((ty.1,ty.2))
+    view K =
+      judge F : expr
+          | knTy = knTy.1
+      judge S : expr
+          | knTy = knTy.2
+      ---
+      judge R : expr
+          | knTy = (knTy.1,knTy.2)
+      
+  rule e.pred viewsel E - K =
+    view E =
+      judge P : pred = valGam :- pred
+      judge E : expr = kiGam ; tyGam ; valGam :- e : (pred -> ty)
+      ---
+      judge R : expr = kiGam ; tyGam ; valGam :- e : ty
+
+-------------------------------------------------------------------------
+-- Declaration
+-------------------------------------------------------------------------
+
+scheme decl "Decl" =
+  view E =
+    holes [ kiGam: KiGam, tyGam: TyGam, valGam: ValGam, node d: Decl | | gathTySigGam: ValGam ]
+    judgespec kiGam ; tyGam ; valGam :-.."d" d : gathTySigGam
+    judgeuse tex valGam :-.."d" d : gathTySigGam
+    explain (Within environment |valGam| , declaration |d| has type signature bindings |gathTySigGam| .)
+    explain valGam = (Environment with known bindings)
+    explain gathTySigGam = (Environment with type signature bindings)
+    explain d = (Declaration)
+  view K =
+    holes [ tySigGam: ValGam | thread patValGam: ValGam | ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam :- d : gathTySigGam ; patValGam.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam :-.."d" d : gathTySigGam ; patValGam.syn
+    explain (Declaration |d| has explicit type bindings |gathTySigGam| ,
+             within explicit bindings |tySigGam| and implicit type bindings |patValGam.inh| ,
+             and type checks within |valGam| ,
+             yielding additional bindings |patValGam.syn| .
+            )
+    explain gathTySigGam = (Environment with new type signature bindings)
+    explain tySigGam = (Collected |gathTySigGam| , used by patterns to extract bindings for pattern variables)
+    explain patValGam.inh = ("Known/gathered" pattern variable bindings)
+    explain patValGam.syn = (|patValGam.inh| + new bindings)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers, cannot be modified (hence treated as a global constant in "\\ruleRef{e.ann}"))
+  view C =
+    holes [ | thread tyVarMp: VarMp, thread patTyVarMp: VarMp | ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn
+    explain (Declaration |d| has explicit type bindings |gathTySigGam| ,
+             within explicit bindings |tySigGam| and implicit type bindings |patTyVarMp.inh patValGam.inh| ,
+             and type checks within |tyVarMp.inh valGam| ,
+             yielding additional bindings |patValGam.syn| ,
+             under constraints |patTyVarMp.syn| (for |patValGam.syn|) and
+             |tyVarMp.syn| (for |valGam|).
+            )
+    explain patTyVarMp.inh = ("Known/gathered" constraints during type inference of patterns (i.e. use of type signatures and pattern structure))
+    explain patTyVarMp.syn = (|patTyVarMp.inh| + new constraints)
+    explain tyVarMp.inh = ("Known/gathered" constraints during type inference of expressions bound to patterns)
+    explain tyVarMp.syn = (|tyVarMp.inh| + new constraints)
+  view I2 =
+    holes [ | thread ityVarMp: IVarMp, thread tySigTyVarMp: VarMp | ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; tySigTyVarMp.inh ; patTyVarMp.inh ; ityVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> tySigTyVarMp.syn ; patTyVarMp.syn ; ityVarMp.syn ; tyVarMp.syn
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; tySigTyVarMp.inh ; patTyVarMp.inh ; ityVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> tySigTyVarMp.syn ; patTyVarMp.syn ; ityVarMp.syn ; tyVarMp.syn
+    explain tySigTyVarMp.inh = (Type signature information represented as constraint for binding to type variable in |gathTySigGam|)
+    explain tySigTyVarMp.syn = (|tySigTyVarMp.inh| + new constraints)
+    explain ityVarMp.inh = ("Known/gathered" constraints during quantifier propagation)
+    explain ityVarMp.syn = (|ityVarMp.inh| + new constraints)
+  view CG =
+    holes [ | | translBind: TransDecl ]
+    judgespec tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam ; patTyVarMp.inh ; tyVarMp.inh :- d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
+    judgeuse tex tySigGam ; patValGam.inh ; valGam ; patTyVarMp.inh ; tyVarMp.inh :-.."d" d : gathTySigGam ; patValGam.syn ~> patTyVarMp.syn ; tyVarMp.syn ; translBind
+
+-- scheme decls : [decl] "Decls"
+
+ruleset decl.base scheme decl "Declaration type rules" =
+  rule d.tysig viewsel K - * "TySig" =
+    view K =
+      judge B : bind1ValIdToTy = valGam.i === [identv :-> ty.i]
+      judge T : tyexpr = tyGam :- declTyExpr : ty.i
+      ---
+      judge R : decl = _ ; patValGam ; kiGam ; tyGam ; _ :- ((identv :: (node 1 = declTyExpr))) : valGam.i ; patValGam
+    view C =
+      ---
+      judge R : decl
+          | patTyVarMp.syn = patTyVarMp.inh
+          | tyVarMp.syn = tyVarMp.inh
+    view HM =
+      judge T : tyexpr
+          | tyWildL = tvarv.t.._
+          | tyGam.inh = tyGam
+          | tyGam.syn = _
+      -- judge Q : tyQuantify = declTyExpr: ty.q === ty.i, tvarv.t.._
+      judge Q : tyQuantifyOuter = (tySVar tvarv.t.._) :- ty.i : ty.q
+      judge B : bind1ValIdToTy
+          | ty = ty.q
+      ---
+    view I1 =
+      judge TGFtv : tyGamTyFtv = tvarv.TGamma.._ === tyGam, emptyVarMp'
+      judge Q : tyQuantifyOuter
+          | gtvars = (tySVar tvarv.t.._ | TyVarIdS) + tvarv.TGamma.._
+      ---
+    view I2 =
+      judge V : tyEnsureTVar = ty.v, tyVarMp.v, tvarv.v === ty.q
+      judge B : bind1ValIdToTy
+          | ty = ty.v
+      ---
+      judge R : decl
+          | tySigTyVarMp.syn = tyVarMp.v tySigTyVarMp.inh
+          | ityVarMp.syn = ityVarMp.inh
+    view CG =
+      ---
+      judge R : decl
+          | translBind = emptyTranslBind
+
+  rule d.sig.val viewsel E = 
+    view E =
+      judge E : expr = kiGam ; tyGam ; valGam :- e.identv : ty.identv
+      judge B : bind1ValIdToTy = valGam.identv === [identv :-> ty.identv]
+      ---
+      judge R : decl = kiGam ; tyGam ; valGam :- ((identv :: ty.identv ; identv `=` e.identv)) : valGam.identv
+
+  rule d.val viewsel K - * "Val" = 
+    view K =
+      judge L : valGamLookupPatTy = declPat :-> ty.sig `elem` tySigGam
+      judge P : patexpr = patValGam.inh ; ty.sig :- declPat : patValGam.syn
+      judge E : expr = kiGam ; tyGam ; valGam ; ty.sig :- declExpr : _
+      ---
+      judge R : decl = tySigGam ; patValGam.inh ; kiGam ; tyGam ; valGam :- (((node 1 = declPat) `=` (node 2 = declExpr))) : emptyGam ; patValGam.syn
+    view C =
+      judge V : tvarvFresh
+      judge C : chooseKnownOrOther = ty.p.k, ty.e.k === tvarv, ty.sig, ty.p
+      judge P : patexpr
+          | patTyVarMp.syn = patTyVarMp.syn
+          | patTyVarMp.inh = patTyVarMp.inh
+          | ty = ty.p
+          | knTy = ty.p.k
+          | patFunTy = _
+      judge E : expr
+          | tyVarMp.syn = tyVarMp.e
+          | knTy = ty.e.k
+      -    
+      judge R : decl
+          | tyVarMp.syn = tyVarMp.e
+    view HM =
+      judge instKnown : inst.known = ty.i === inst.K(ty.sig)
+      judge C : chooseKnownOrOther
+          | ty.s = ty.i
+      ---
+    view I1 =
+      judge - instKnown
+      judge C : chooseKnownOrOther
+          | ty.s = ty.sig
+      judge E : expr
+          | fiopt = strongFIOpts
+      judge P : patexpr
+          | fiopt = strongFIOpts
+          | tyGam.inh = tyGam
+          | tyGam.syn = _
+      ---
+    view I2 =
+      judge E : expr
+          | ity = ity.e
+          | ityVarMp.syn = ityVarMp.e
+      judge fitE : fit = impredFIOpts ; ityVarMp.e :- ity.e <= (ityVarMp.e ty.p) : fo_fitE : _ ~> ityVarMp.E
+      ---
+      judge R : decl
+          | tySigTyVarMp.syn = tySigTyVarMp.inh
+          | ityVarMp.syn = ityVarMp.E ityVarMp.e
+    view DT =
+      judge C : chooseKnownOrOther
+          | fiopt.str = strongFIOpts
+          | fiopt.wk = weakFIOpts
+          | fiopt = fiopt.e
+      judge E : expr
+          | fiopt = fiopt.e
+      ---
+    view CG =
+      judge E : expr
+          | translExpr = translExpr.e
+      ---
+      judge R : decl
+          | translBind = [declPat :-> translExpr.e]
+
+-------------------------------------------------------------------------
+-- Pattern Expr
+-------------------------------------------------------------------------
+
+scheme patexpr "PatExpr" =
+  view K =
+    holes [ knTy: Ty, node p: PatExpr | thread valGam: ValGam |  ]
+    judgespec valGam.inh ; knTy :-.."p" p : valGam.syn
+    explain (Knowing the type of pattern |p| to be |knTy| , yielding additional bindings |valGam.syn| (for identifiers introduced by |p|))
+    explain knTy = (Known type of pattern)
+    explain valGam.inh = (Already gathered bindings (for this EH version initially | [] |))
+    explain valGam.syn = (|valGam.inh| + new bindings)
+  view C =
+    holes [ | thread patTyVarMp: VarMp | retain ty: Ty, patFunTy: Ty ]
+    judgespec patTyVarMp.inh ; valGam.inh ; knTy :-.."p" p : ty ; valGam.syn ~> patTyVarMp.syn ; patFunTy
+    explain (Knowing the type of pattern |p| to be |patTyVarMp.inh knTy| ,
+             |p| has type |ty| and bindings |valGam.syn| (for identifiers introduced by |p|) ,
+             under constraints |patTyVarMp.syn|
+            )
+    explain patTyVarMp.inh = (Already known constraints)
+    explain patTyVarMp.syn = (|patTyVarMp.inh| + new constraints)
+    explain ty = (Type of pattern |p|)
+    -- explain patFunTy = (The type which encodes the value dissection as a function type, from value to tuple (holding the constituents of the value))
+    explain patFunTy = ((Internal use only) Encoding of the value dissection as a type of the form |ty.v -> ty.e| ,
+                        where a value of type |ty.v| is dissected, yielding a tuple type |ty.e| with the elements (of the dissection)
+                       )
+  view I1 =
+    holes [ fiopt: FIOpts | thread tyGam: TyGam | ]
+    judgespec fiopt ; tyGam.inh ; valGam.inh ; patTyVarMp.inh ; knTy :- p : ty ; tyGam.syn ; valGam.syn ~> patTyVarMp.syn ; patFunTy
+    judgeuse tex fiopt ; valGam.inh ; patTyVarMp.inh ; knTy :-.."p" p : ty ; valGam.syn ~> patTyVarMp.syn ; patFunTy
+    explain (Knowing the type of pattern |p| to be |knTy| , |valGam.syn| hold bindings for identifiers introduced by |p| , |tyGam.syn| holds bindings for lexically scoped type variables .)
+    explain fiopt = (|fitsIn| options, additional contextual information for | <= |)
+    explain tyGam.inh = (Already gathered type variable bindings)
+    explain tyGam.syn = (|tyGam.inh| + new bindings)
+
+rulesgroup patexpr.baseForEH1 scheme patexpr "Pattern expression type rules" =
+  rule patexpr.base p.int
+  rule patexpr.base p.char
+  rule patexpr.base p.var
+  rule patexpr.base p.varas
+  rule patexpr.base p.apptop
+  rule patexpr.base p.app
+
+rulesgroup patexpr.baseForEH2 scheme patexpr "Pattern expression type rules" =
+  rule patexpr.base p.int
+  rule patexpr.base p.con
+  rule patexpr.base p.var
+  rule patexpr.base p.varas
+  rule patexpr.base p.apptop
+  rule patexpr.base p.app
+
+rulesgroup patexpr.eh4 scheme patexpr "Pattern expression type rules" =
+  rule patexpr.base p.var
+  rule patexpr.base p.varas
+
+ruleset patexpr.base scheme patexpr viewsel K - * "Pattern expression type rules" =
+  rule p.int "IConst" =
+    view K =
+      judge F : fit = :- knTy <= tyInt : fo : _
+      ---
+      judge R : patexpr = valGam ; knTy :- int : valGam
+    view C =
+      judge F : fit
+          | cnstr = tyVarMp.f
+          | lty = patTyVarMp.inh knTy
+          | gVarMp = patTyVarMp.inh
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = tyVarMp.f patTyVarMp.inh
+          | ty = tyInt
+          | patFunTy = ANY
+    view I1 =
+      judge F : fit
+          | lty = knTy
+      ---
+      judge R : patexpr
+          | tyGam.syn = tyGam.inh
+
+  rule p.char : p.int "CConst" =
+    view K =
+      judge F : fit
+          | rty = tyChar
+      ---
+      judge R : patexpr 
+          | p = char
+    view C =
+      ---
+      judge R : patexpr
+          | ty = tyChar
+          | patFunTy = ANY
+
+  rule p.str : p.int "SConst" =
+    view K =
+      judge F : fit
+          | rty = tyString
+      ---
+      judge R : patexpr 
+          | p = str
+    view C =
+      ---
+      judge R : patexpr
+          | ty = tyString
+          | patFunTy = ANY
+    view TS =
+      judge F : fit
+          | rty = tyString2
+      ---
+      judge R : patexpr
+          | ty = tyString2
+
+{-
+  rule p.float : p.int "FConst" =
+    view K =
+      judge F : fit
+          | rty = tyFloat
+      ---
+      judge R : patexpr 
+          | p = float
+    view C =
+      ---
+      judge R : patexpr
+          | ty = tyFloat
+          | patFunTy = ANY
+-}
+
+  rule p.con "Con" =
+    view K =
+      ---
+      judge R : patexpr = valGam ; knTy :- _ : valGam
+    view C =
+      judge P : mkProdTy = ty.p === tvarv..._
+      judge V : tvarvFreshN = (`|` (identc | Nm) `|`) : (retain tvarv..._)
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = patTyVarMp.inh
+          | ty = ANY
+          | p = identc
+          | patFunTy = ty.p -> ty.p
+    view I1 =
+      judge - P
+      judge G : valGamLookupIdTy = (hsnUn identc) :-> ty.g `elem` valGam
+      judge V : tvarvFresh2
+      judge fitP : fit = instLRFIOpts ; emptyVarMp :- ty.g <= (tvarv1 -> tvarv2) : fo.fitP : ty.pf ~> tyVarMp.p
+      judge fitR : fit = fiopt ; (tyVarMp.p patTyVarMp.inh) :- knTy <= tvarv1 : fo.fitR : (retain ty.r) ~> tyVarMp.r
+      ---
+      judge R : patexpr
+          | tyGam.syn = tyGam.inh
+          | ty = ty.r
+          | patTyVarMp.syn = tyVarMp.r tyVarMp.p patTyVarMp.inh
+          | patFunTy = tyVarMp.p ty.pf
+    view DT =
+      judge fitP : fit
+          | fiopt = instFIOpts
+      ---
+
+  rule p.var "Var" =
+    view K =
+      judge B : bind1PatIdToTy = valGam.i === [identv :-> knTy]
+      ---
+      judge R : patexpr = valGam ; knTy :- identv : (valGam.i + valGam)
+    view C =
+      judge B : bind1PatIdToTy
+          | ty = ty.p
+      judge A : tyEnsureNonAny = ty.p : knTy
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = patTyVarMp.inh
+          | ty = ty.p
+          | patFunTy = ANY
+    view I1 =
+      judge O : inst.tvar = ty.p, tvarf.i === exists, ty.v, tvarv, "tyInst1Exists"
+      judge A : tyEnsureNonAny
+          | ty.a = ty.v
+      ---
+      judge R : patexpr
+          | tyGam.syn = tyGam.inh
+    view I2 =
+      judge O : inst.tvar
+          | ty.i = ty.i
+      judge V : tyEnsureTVar = ty.p, tyVarMp.v, tvarv.v === ty.i
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = tyVarMp.v patTyVarMp.inh
+
+  rule p.varas "VarAs" =
+    view K =
+      judge B : bind1PatIdToTy = valGam.i === [identv :-> knTy]
+      judge P : patexpr = valGam ; knTy :- pAsPat : valGam.p
+      ---
+      judge R : patexpr = valGam ; knTy :- (identv @ (node 1 = pAsPat)) : (valGam.i + valGam.p)
+    view C =
+      judge A : tyEnsureNonAny = ty.p : knTy
+      judge B : bind1PatIdToTy
+          | ty = ty.p
+      judge P : patexpr
+          | knTy = ty.p
+          | patTyVarMp.syn = tyVarMp.p
+          | ty = _
+          | patFunTy = _
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = tyVarMp.p
+          | ty = tyVarMp.p ty.p
+          | patFunTy = ANY
+    view I1 =
+      judge O : inst.tvar = ty.p, tvarf.i === exists, ty.v, tvarv, "tyInst1Exists"
+      judge A : tyEnsureNonAny
+          | ty.a = ty.v
+      judge P : patexpr
+          | tyGam.syn = tyGam.p
+      ---
+      judge R : patexpr
+          | ty = ty.p
+          | tyGam.syn = tyGam.p
+    view I2 =
+      judge O : inst.tvar
+          | ty.i = ty.i
+      judge V : tyEnsureTVar = ty.p, tyVarMp.v, tvarv.v === ty.i
+      judge P : patexpr
+          | patTyVarMp.inh = tyVarMp.v patTyVarMp.inh
+      ---
+
+  rule p.apptop "AppTop" =
+    view K =
+      judge P : patexpr = valGam ; knTy :- pTopPatK : valGam.p
+      judge open : tyOpenProd = ty..._, n === knTy
+      judge arity : chkProdArity = pTopPatK : knTy , ty..._, n
+      ---
+      judge R : patexpr = valGam ; knTy :- (node 1 = pTopPatK) : valGam.p
+    view C =
+      judge F : fit = patTyVarMp.inh :- (patTyVarMp.inh knTy) <= ty.a : fo_fitR : ty ~> tyVarMp.f
+      judge P : patexpr
+          | patFunTy = ty.a -> ty.r
+          | patTyVarMp.inh = tyVarMp.f patTyVarMp.inh
+      judge open : tyOpenProd
+          | typ = ty.r
+      ---
+      judge R : patexpr
+          | patFunTy = ANY   
+          | ty = patTyVarMp.syn ty
+    view I1 =
+      judge P : patexpr
+          | tyGam.syn = tyGam.p
+      judge F : fit
+          | lty = knTy
+      ---
+      judge R : patexpr
+          | ty = ty
+          | tyGam.syn = tyGam.p
+
+  rule p.app "App" =
+    view K =
+      judge F : patexpr = valGam ; ty.f :- pFun : valGam.f
+      judge A : patexpr = valGam.f ; ty.a :- pArg : valGam.a
+      judge open: tyInitLastProd = pFun: ty.f, ty.a === knTy
+      ---
+      judge R : patexpr = valGam ; knTy :- ((node 1 = pFun) ^^ (node 2 = pArg)) : valGam.a
+    view C =
+      judge F : patexpr
+          | patTyVarMp.syn = tyVarMp.f
+      judge A : patexpr
+          | patFunTy = _ 
+          | knTy = ty.a -- tyVarMp.f ty.a
+          | patTyVarMp.syn = tyVarMp.a
+          | patTyVarMp.inh = tyVarMp.f
+      ---
+      judge R : patexpr
+          | patTyVarMp.syn = tyVarMp.a
+    view I1 =
+      judge F : patexpr
+          | tyGam.syn = tyGam.f
+      judge A : patexpr
+          | tyGam.inh = tyGam.f
+          | tyGam.syn = tyGam.a
+      ---
+      judge R : patexpr
+          | tyGam.syn = tyGam.a
+
+  rule p.ann viewsel I1 - * "TypeAs" =
+    view I1 =
+      judge T : tyexpr = tyGam.inh :- tAnn : ty.t ~> tyGam.t ; _
+      judge F : fit = fiopt ; patTyVarMp.inh :- knTy <= ty.t : fo : ty ~> tyVarMp.f
+      judge P : patexpr = fiopt ; tyGam.t ; valGam.inh ; (tyVarMp.f patTyVarMp.inh) ; knTy :- pExpr : ty.p ; tyGam.p ; valGam.p ~> tyVarMp.p ; _
+      ---
+      judge R : patexpr = fiopt ; tyGam.inh ; valGam.inh ; patTyVarMp.inh ; knTy :- (((node 2 = pExpr) :: (node 1 = tAnn))) : ty.p ; tyGam.p ; valGam.p ~> tyVarMp.p ; ANY
+      
+-------------------------------------------------------------------------
+-- Type Expr
+-------------------------------------------------------------------------
+
+scheme tyexpr "TyExpr" =
+  view E =
+    holes [ node t: TyExpr | | retain ty: Ty ]
+    judgespec :-.."t" t : ty
+    explain (Type expression |t| has a corresponding type signature |ty| .)
+    explain ty = (Type signature)
+    explain t = (Type expression)
+  view K =
+    holes [ tyGam: TyGam | | ]
+    judgespec tyGam :-.."t" t : ty
+    explain (Within environment |tyGam| , type expression |t| has a (replica) type signature |ty| .)
+    explain tyGam = (Environment | (ident :-> ty)..._ | for type identifiers)
+  view HM =
+    holes [ | thread tyGam: TyGam | tyWildL: TyL ]
+    judgespec tyGam.inh :-.."t" t : ty ~> tyGam.syn ; tyWildL
+    explain (Within environment |tyGam.inh| , type expression |t| has a (replica) type signature |ty|
+            , yielding additional bindings |tyGam.syn| and wild type variables |tyWildL|
+            .)
+    explain tyGam.inh = (Environment | (ident :-> ty)..._ | with known bindings for type identifiers)
+    explain tyGam.syn = (Environment with |tyGam.inh| + new bindings)
+    explain tyWildL = (Type variables which occur as wildcard)
+
+rulesgroup tyexpr.eh2 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.wild
+
+rulesgroup tyexpr.eh3 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.con
+  rule tyexpr.base t.app
+  rule tyexpr.base t.var
+  rule tyexpr.base t.var.w
+
+rulesgroup tyexpr.eh4 scheme tyexpr "Type expression type rules" =
+  rule tyexpr.base t.quant
+
+ruleset tyexpr.base scheme tyexpr viewsel E - * "Type expression type rules" =
+  rule t.con "Con" =
+    view E =
+      ---
+      judge R : tyexpr = :- identc : (tyexprCon identc)
+    view K =
+      judge G : tyGamLookupId = identc :-> tgi, ty `elem` tyGam
+      ---
+      judge R : tyexpr
+          | ty = ty
+    view HM =
+      judge G : tyGamLookupId
+          | tyGam = tyGam.inh
+      ---
+      judge R : tyexpr
+          | tyWildL = []
+          | tyGam.syn  = tyGam.inh
+    
+  rule t.app "App" =
+    view E =
+      judge F : tyexpr = :- tFun : ty.f
+      judge A : tyexpr = :- tArg : ty.a
+      ---
+      judge R : tyexpr = :- ((node 1 = tFun) ^^ (node 2 = tArg)) : (ty.f ty.a)
+    view HM =
+      judge F : tyexpr
+          | tyGam.syn  = tyGam.f
+          | tyWildL = tvarv.f.._
+      judge A : tyexpr
+          | tyWildL = tvarv.a.._
+          | tyGam.inh  = tyGam.f
+          | tyGam.syn  = tyGam.a
+      ---
+      judge R : tyexpr
+          | tyWildL = tvarv.a.._ ++ tvarv.f.._
+          | tyGam.syn  = tyGam.a
+
+  rule t.wild viewsel C - * "Wild" =
+    view C =
+      judge V : kvarvFresh = tgi, tvarv
+      ---
+      judge R : tyexpr = tyGam :- (...) : tvarv
+    view HM =
+      ---
+      judge R : tyexpr
+          | tyWildL = [tvarv]
+          | tyGam.syn  = tyGam.inh
+
+  rule t.var viewsel HM - * "Var" =
+    view HM =
+      judge G : tyGamLookupOrNewId = tgi, ty, tvarv, tyGam.i === identv, tyGam.inh
+      ---
+      judge R : tyexpr = tyGam.inh :- identv : ty ~> (tyGam.i + tyGam.inh) ; ([])
+
+  rule t.var.w : t.var viewsel HM - * "VarWild" =
+    view HM =
+      ---
+      judge R : tyexpr
+          | t = % identv
+          | tyWildL = [tvarv]
+
+  rule t.quant viewsel I1 - * "Quant" =
+    view I1 =
+      judge V : tvarvFresh
+      judge G : bind1TyIdToTy = tyGam.i, tgi === tVar, tvarv
+      judge T : tyexpr = ((emptyGam|TyGam) ++ (tyGam.i ++ tyGam.inh)) :- tExpr : ty.t ~> tyGam.t ; tvarv.t.._
+      judge split : valGamPop = tyGam.l ++ _ === tyGam.t
+      ---
+      judge R : tyexpr = tyGam.inh :- ((tQu|TyQu) tVar (.) (node 1 = tExpr)) : (tyexprQuant tQu tvarv `.` ty.t) ~> (tyGam.l + tyGam.inh) ; tvarv.t.._
+
+-------------------------------------------------------------------------
+-- Predicates (proving of)
+-------------------------------------------------------------------------
+
+scheme pred "Pred" =
+  view E =
+    holes [ predGam: PredGam, node pred: Pred | |  ]
+    judgespec predGam :-.."pi" pred
+  view P =
+    holes [ | | ty: Ty, translExpr: TranslExpr ]
+    judgespec predGam :-.."pi" pred ~> translExpr : ty
+
+-------------------------------------------------------------------------
+-- Ty alternative elimination
+-------------------------------------------------------------------------
+
+relation tyAltTyElim =
+  view I2 =
+    holes [ fiopt: FIOpts, ity: Ty, ityVarMp.in: IVarMp, tvarv.g.._: TyVarIdS | | ty: Ty, ityVarMp: IVarMp ]
+    judgespec fiopt; ityVarMp.in; tvarv.g.._ :-..."talt elim" ity : ty ~> ityVarMp
+    judgeuse ag (retain fo_altElim) `=` tyElimAlts (mkFitsInWrap' "@fe") fiopt tvarv.g.._ unique ityVarMp.in (ityVarMp.in ity)
+              | (retain ityVarMp  ) `=` tyElimAltsCleanup ityVarMp.in (foVarMp "@fo_altElim")
+              | (retain ty        ) `=` foTy "@fo_altElim"
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityVarMp.in| for |ity| , 
+             |ty| equals |ity| in which all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
+             under |ityVarMp| constraining the type alternative variables to their type alternive eliminated type.
+            )
+    explain ity = (Type with type alternatives |talt|)
+    explain ty = (Result type, without type alternatives |talt| (for non global type variables))
+    explain ityVarMp.in =  (Known constraints for type variables in |ity|)
+    explain ityVarMp =  (New constraints, constraining the type alternative variables to their type alternive eliminated type)
+    explain tvarv.g.._ = (Global variables (which are not eliminated))
+    explain fiopt = (Options to matching, in particular indicating meet/join)
+
+ruleset tyAltTyElim scheme tyAltTyElim viewsel I2 - * "Type alternative elimination" =
+  rule ty.ae.alts =
+    view I2 =
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> ty]
+      judge NE : notIsEmpty = `|` (ty.thardH.._, ty.Qu.._) `|` > 0
+      judge EQ : eqRLTy = (tvarv [ talt..._ ]) =<= ity
+      judge tysH : tyAltSelect = ty.thardH.._ === talt..._ , ty, thardH, tneed
+      judge tysS : tyAltSelect = ty.thardS.._ === talt..._ , ty.nQu, thardS, tneed
+      judge tysQ : tyAltSelect = ty.Qu.._ === talt..._ , ty.Qu, thardS, tneed
+      judge H : match = fiopt ; emptyVarMp :- ((ty.thardH.._, ty.Qu.._)) <=>.(<=>) ANY : ity.thardH ~> ityVarMp.h
+      judge S : match = fiopt ; ityVarMp.h :- (ityVarMp.h ty.thardS.._) <=>.(<=>) ity.thardH : ity.thardS ~> _
+      judge AE : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ity.thardS : ty ~> tyVarMp.e
+      judge need : fioptMkNeed = tneed === fiopt
+      judge glob : notElemTyVarIdS = tvarv `notElem` tvarv.g.._
+      ---
+      judge R : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ity : ty ~> (tyVarMp tyVarMp.e)
+
+  rule ty.ae.var =
+    view I2 =
+      judge P : tyAltPartition = (tvarv [ _ ]) === ity
+      judge glob : notElemTyVarIdS = tvarv `notElem` tvarv.g.._
+      ---
+      judge R : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ity : tvarv ~> emptyVarMp
+
+  rule ty.ae.ty =
+    view I2 =
+      ---
+      judge R : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ty : ty ~> emptyVarMp
+
+  rule ty.ae.arrow =
+    view I2 =
+      judge Res : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ity.r : ty.r ~> tyVarMp.r
+      judge Arg : tyAltTyElim = fiopt.a ; ityVarMp.in; tvarv.g.._ :- ity.a : ty.a ~> tyVarMp.a
+      judge S : fioptSwapMeetJoin = fiopt.a === fiopt
+      ---
+      judge R : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- (ity.a -> ity.r) : (ty.a -> ty.r) ~> (tyVarMp.a tyVarMp.r)
+
+-------------------------------------------------------------------------
+-- Gam Ty alternative elimination
+-------------------------------------------------------------------------
+
+relation valElimExprAlts =
+  view I2 =
+    holes [ fiopt: FIOpts, valGam: ValGam, ityVarMp.in: IVarMp, tvarv.g.._: TyVarIdS | | ityVarMp: IVarMp ]
+    judgespec fiopt; ityVarMp.in; tvarv.g.._ :-..."Gamma talt elim" valGam : ityVarMp
+    judgeuse ag (lArgElimValGam,ityVarMp,errGam)
+                    `=` valElimExprAlts (fiopt) "@fe" (tvarv.g.._) unique (ityVarMp.in) (valGam)
+    explain (Within a meet/join context (indicated by |fiopt|), known constraints |ityVarMp.in| for types in |valGam| , 
+             all type alternatives (except for global type variables |tvarv.g.._|) are eliminated,
+             under constraints |ityVarMp| .
+            )
+
+ruleset valElimExprAlts scheme valElimExprAlts viewsel I2 - * "Type alternative elimination (for a |Gamma|)" =
+  rule g.ae.cons =
+    view I2 =
+      judge G : valElimExprAlts = fiopt ; ityVarMp.in; tvarv.g.._ :- (ityVarMp.a valGam) : ityVarMp.g
+      judge A : tyAltTyElim = fiopt ; ityVarMp.in; tvarv.g.._ :- ityVarMp.in ity : _ ~> ityVarMp.a
+      ---
+      judge R : valElimExprAlts = fiopt ; ityVarMp.in; tvarv.g.._ :- ((_ :-> ity, valGam)) : (ityVarMp.g ityVarMp.a)
+
+-------------------------------------------------------------------------
+-- 'Both' alternative elimination
+-------------------------------------------------------------------------
+
+scheme tyBtTyElim =
+  view I2 =
+    holes [ bv: TyVarIdS, ty.tboth: Ty | | ty: Ty, ty.elim: Ty, tyVarMp: VarMp ]
+    judgespec bv :-...("/=/ elim") ty.tboth : ty ~> ty.elim ; tyVarMp
+    explain (Split |ty.tboth| holding |tboth| types into |ty| holding type variables (of |tboth| types) and |tyVarMp| holding constraints on those type variables.)
+    explain ty.tboth = (Type to be |tboth| type eliminated)
+    explain ty = (Result type, |tboth| types replaced by their original type variable)
+    explain ty.elim = (Type where |tboth| types are replaced by their |tboth| type (if not |ANY|), only used internally)
+    explain tyVarMp = (Constraints for |tboth| type variables, mapping to their |tboth| type)
+    explain bv = (Already bound variables for which no elimination takes place)
+
+ruleset tyBtTyElim scheme tyBtTyElim viewsel I2 - * "Type `both' elimination" =
+  rule ty.eb.any =
+    view I2 =
+      judge E : tvarsHasTvar = tvarv `elem` bv
+      ---
+      judge R : tyBtTyElim = bv :- (tvarv /=/ ANY) : tvarv ~> tvarv; ([])
+
+  rule ty.eb.var =
+    view I2 =
+      judge T : tyBtTyElim = bv :- ty.b : ty ~> tvarv.e ; tyVarMp
+      judge E : tvarsHasTvar = tvarv `elem` bv
+      ---
+      judge R : tyBtTyElim = bv :- (tvarv /=/ ty.b) : tvarv ~> tvarv; ([tvarv.e :-> tvarv] tyVarMp)
+
+  rule ty.eb.ty =
+    view I2 =
+      judge T : tyBtTyElim = bv :- ty.b : ty ~> ty.e ; tyVarMp
+      judge E : tvarsHasTvar = tvarv `elem` bv
+      ---
+      judge R : tyBtTyElim = bv :- (tvarv /=/ ty.b) : tvarv ~> ty.e ; ([tvarv :-> ty.e] tyVarMp)
+
+-------------------------------------------------------------------------
+-- Match of types
+-------------------------------------------------------------------------
+
+relation match =
+  view K =
+    holes [ lty: Ty, rty: Ty | howToMatch: HowToMatch | ty: Ty ]
+    judgespec :-..howToMatch lty <=>.howToMatch rty : ty
+    judgeuse tex :-..howToMatch lty howToMatch rty : ty
+    explain (|lty| matches |rty| , |ty === rty| with |ANY| eliminated from |ty|)
+    explain lty = (Type to match)
+    explain rty = (Type to match)
+    explain ty = (Result type)
+  view C =
+    holes [ gVarMp: VarMp | | cnstr: VarMp ]
+    judgespec gVarMp :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr
+    judgeuse tex gVarMp :-..howToMatch lty howToMatch rty : ty ~> cnstr
+    explain cnstr = (Additional constraints under which matching succeeds)
+    explain (|lty| matches |rty| under constraints |cnstr| , |ty === cnstr rty|)
+  view I1 =
+    holes [ fiopt: FIOpts | | ]
+    judgespec fiopt ; gVarMp :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr
+    judgeuse tex fiopt ; gVarMp :-..howToMatch lty howToMatch rty : ty ~> cnstr
+    explain fiopt = (Options to steer | <=> | , encodes matching variants as well)
+  view EX =
+    explain (|lty| matches |rty| under constraints |cnstr| , |ty| equals |cnstr rty| , where |ty| may have its quantifiers instantiated, depending on |fiopt|)
+  view P =
+    holes [ | | coe: Coe ]
+    judgespec fiopt ; gVarMp :-..howToMatch lty <=>.howToMatch rty : ty ~> cnstr ; coe
+    judgeuse tex fiopt ; gVarMp :-..howToMatch lty howToMatch rty : ty ~> cnstr ; coe
+    explain coe = (Coercion (from |lty| to |rty| values) required for | <=> | to hold (currently only meaningful for | <= |))
+
+rulesgroup match.base scheme match "Type matching (basic |<=>|, part I)" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.var.l1
+  rule match.all m.var.l2
+  rule match.all m.arrow
+  rule match.all m.prod
+
+rulesgroup match.onlyK scheme match "Type matching" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.arrow
+  rule match.all m.prod
+  rule match.all m.any.l
+  rule match.all m.any.r
+
+rulesgroup match.eh4 scheme match "Type matching (related to |forall|)" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.var.l1
+  rule match.all m.var.r1
+  rule match.all m.forall.l
+  rule match.all m.forall.r
+  rule match.all m.forall.r2
+  rule match.all m.var.l2
+  rule match.all m.var.r2
+  rule match.all m.arrow
+  rule match.all m.prod
+
+rulesgroup match.eh4B scheme match "Type alternative related matching (finding possible quantified types)" =
+  rule match.all m.var.l1
+  -- rule match.all m.var.l2
+  rule match.all m.var.l3
+  -- rule match.all m.var.l4
+  rule match.all m.var.r1
+  -- rule match.all m.var.r2
+  rule match.all m.var.r3
+  -- rule match.all m.var.r4
+  rule match.all m.alt
+  rule match.all m.alt.l1
+  rule match.all m.alt.r1
+
+rulesgroup match.eh4C scheme match "Type matching (related to |exists|)" =
+  rule match.all m.exists.l
+  rule match.all m.exists.r
+  rule match.all m.exists.r2
+
+rulesgroup match.eh4Bmeetjoin scheme match "Type meet/join" =
+  rule match.all m.forall.l2
+  rule match.all m.forall.l3
+  rule match.all m.alt.l2
+  rule match.all m.alt.l3
+
+rulesgroup match.eh4Cmeetjoin scheme match "Type meet/join (|exists| specific)" =
+  rule match.all m.exists.l2
+  rule match.all m.exists.l3
+
+rulesgroup match.forall scheme match "Type matching (|<=| on |forall|)" =
+  rule match.all m.forall.l
+  rule match.all m.forall.r
+  rule match.all m.forall.r2
+
+rulesgroup match.exists scheme match "Type matching (|<=| on |exists|)" =
+  rule match.all m.exists.l
+  rule match.all m.exists.r
+
+rulesgroup match.meet scheme match "Type matching (|<+>| specific)" =
+  rule match.all m.forall.l2
+  rule match.all m.exists.l2
+
+rulesgroup match.join scheme match "Type matching (|<->| specific)" =
+  rule match.all m.forall.l3
+  rule match.all m.exists.l3
+
+rulesgroup match.tyBt scheme match "Type matching (|<=>| on |/=/|)" =
+  rule match.all m.both
+  rule match.all m.both.l1
+  rule match.all m.both.l2
+
+ruleset match.all scheme match viewsel K - * "Type matching rules" =
+  rule m.any.l =
+    view K =
+      ---
+      judge R : match = :- ANY <=>.(<=>) ty : ty
+
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.any.r =
+    view K =
+      ---
+      judge R : match = :- ty <=>.(<=>) ANY : ty
+
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.con =
+    view K =
+      judge E : eqTy = identc.1 === identc.2
+      ---
+      judge R : match = :- identc.1 <=>.(<=>) identc.2 : identc.2
+
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var viewsel C - * =
+    view C =
+      judge E : eqTy = tvar.1 === tvar.2
+      ---
+      judge R : match = gVarMp :- tvar.1 <=>.(<=>) tvar.2 : tvar.2 ~> ([])
+
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var.l1 viewsel C - * =
+    view C =
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> ty]
+      ---
+      judge R : match = gVarMp :- tvarv <=>.(<=>) ty : ty ~> tyVarMp
+    view I1 =
+      judge O : fioptHasOpt = fioBindLFirstY `elem` fiopt
+      ---
+    view I2 =
+      judge O : fioptHasOpt 
+          | opt = fioBindToTyAltsN, fioBindLFirstY
+      ---
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var.l2 : m.var.l1 viewsel I1 - * =
+    view I1 =
+      judge O : fioptHasOpt = fioBindLFirstN `elem` fiopt
+      ---
+    view I2 =
+      judge O : fioptHasOpt = (fioBindToTyAltsN, fioBindLFirstN) `elem` fiopt
+      ---
+
+  rule m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge NE : neqTy = ty.2 =/= (_[_])
+      judge M : tyAltMk = ty === tvarv.1 [ (ty.2 :: thardS / tneedR) ]
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv.1 :-> ty]
+      judge O : fioptHasOpt = (fioBindToTyAltsY, fioBindLFirstY) `elem` fiopt
+      ---
+      judge R : match = fiopt ; gVarMp :- tvarv.1 <=>.(<=>) ty.2 : ty ~> tyVarMp
+
+  rule m.var.l4 : m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge O : fioptHasOpt = (fioBindToTyAltsY, fioBindLFirstN) `elem` fiopt
+      ---
+
+  rule m.var.r1 : m.var.l1 viewsel C - * =
+    view C =
+      ---
+      judge R : match
+          | lty = ty
+          | rty = tvarv
+    view I1 =
+      judge O : fioptHasOpt
+          | opt = fioBindRFirstY
+      ---
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsN, fioBindRFirstY
+      ---
+
+  rule m.var.r2 : m.var.l1 viewsel I1 - * =
+    view I1 =
+      judge O : fioptHasOpt
+          | opt = fioBindRFirstN
+      ---
+      judge R : match
+          | lty = ty
+          | rty = tvarv
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsN, fioBindRFirstN
+      ---
+
+  rule m.var.r3 : m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge NE : neqTy
+          | lty = ty.1
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsY, fioBindRFirstY
+      judge M : tyAltMk
+          | tys = ty.1 :: thardS / tneedO
+          | tvarv = tvarv.2
+      judge C : bind1TyVarToTy
+          | tvarv = tvarv.2
+      ---
+      judge R : match
+          | lty = ty.1
+          | rty = tvarv.2
+
+  rule m.var.r4 : m.var.r3 viewsel I2 - * =
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsY, fioBindRFirstN
+      ---
+
+  rule m.forall.l viewsel I1 - * =
+    view I1 =
+      judge F : match = fiopt ; gVarMp :- ty.i <=>.(<=) ty.2 : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.1, alpha
+      ---
+      judge R : match = fiopt ; gVarMp :- (forall ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyVarMp
+    
+  rule m.forall.r viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt ; gVarMp :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarf, tvarf..._ === ty.2, alpha
+      ---
+      judge R : match = fiopt ; gVarMp :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyVarMp (forall ^ alpha..._ `.` ty.2)) ~> tyVarMp
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
+      ---
+    
+  rule m.forall.r2 viewsel DT - * =
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstY `elem` fiopt
+      judge F : match = fiopt ; gVarMp :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.2, alpha
+      ---
+      judge R : match = fiopt ; gVarMp :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : ty ~> tyVarMp
+    
+  rule m.exists.l viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt ; gVarMp :- ty.i <=>.(<=) ty.2 : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tcon, tcon..._ === ty.1, alpha
+      ---
+      judge R : match = fiopt ; gVarMp :- (exists ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyVarMp
+    
+  rule m.exists.r viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt ; gVarMp :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp.f
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.2, alpha
+      judge C : bindDelTyVarIds = tyVarMp === tyVarMp.f \\ tvarv..._
+      ---
+      judge R : match = fiopt ; gVarMp :- ty.1 <=>.(<=) (exists ^ alpha..._ `.` ty.2) : (tyVarMp (exists ^ alpha..._ `.` ty.2)) ~> tyVarMp
+    view DT =
+      judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
+      ---
+
+  rule m.exists.r2 viewsel DT - * =
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstY `elem` fiopt
+      judge F : match = fiopt ; gVarMp :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.exists = ty.i === inst.exists(exists ^ alpha..._ `.` ty.2)
+      ---
+      judge R : match = fiopt ; gVarMp :- ty.1 <=>.(<=) (exists ^ alpha..._ `.` ty.2) : ty ~> tyVarMp
+    
+  rule m.arrow =
+    view K =
+      judge Arg : match = :- ty.2.a <=>.(<=>) ty.1.a : ty.a
+      judge Res : match = :- ty.1.r <=>.(<=>) ty.2.r : ty.r
+      ---
+      judge R : match = :- (ty.1.a -> ty.1.r) <=>.(<=>) (ty.2.a -> ty.2.r) : (ty.a -> ty.r)
+    view C =
+      judge Arg : match
+          | cnstr = tyVarMp.a
+      judge Res : match
+          | cnstr = tyVarMp.r
+          | lty = tyVarMp.a ty.1.r
+          
+          | rty = tyVarMp.a ty.2.r
+      ---
+      judge R : match
+          | cnstr = tyVarMp.r tyVarMp.a
+          | ty = tyVarMp.r ty.a -> ty.r
+    view I1 =
+      judge Arg : match
+          | fiopt = fioBindRFirstY, fioBindLFirstY, fiopt
+      ---
+    view DT =
+      judge Arg : match
+          | fiopt = fioLeaveRInstN, fioBindRFirstY, fioBindLFirstY, fiopt
+      ---
+    
+  rule m.prod =
+    view K =
+      judge Arg : match = :- ty.1.l <=>.(<=>) ty.2.l : ty.l
+      judge Res : match = :- ty.1.r <=>.(<=>) ty.2.r : ty.r
+      ---
+      judge R : match = :- ((ty.1.l,ty.1.r)) <=>.(<=>) ((ty.2.l,ty.2.r)) : ((ty.l,ty.r))
+
+    view C =
+      judge Arg : match
+          | cnstr = tyVarMp.l
+      judge Res : match
+          | cnstr = tyVarMp.r
+          | lty = tyVarMp.l ty.1.r
+          | rty = tyVarMp.l ty.2.r
+      ---
+      judge R : match
+          | cnstr = tyVarMp.r tyVarMp.l
+          | ty = (tyVarMp.r ty.l,ty.r)
+    
+  rule m.alt viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk = ty === tvarv.2 [ (talt.1.._, talt.2.._) ]
+      judge C : bind2TyVarToTy = tyVarMp === [tvarv.1, tvarv.2 :-> ty]
+      ---
+      judge R : match = fiopt ; gVarMp :- (tvarv.1 [ talt.1.._ ]) <=>.(<=) (tvarv.2 [ talt.2.._ ]) : ty ~> tyVarMp
+
+  rule m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk = ty === tvarv.1 [ (ty.2 :: thardS / tneedR, talt.1.._) ]
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv.1 :-> ty]
+      ---
+      judge R : match = fiopt ; gVarMp :- (tvarv.1 [ talt.1.._ ]) <=>.(<=) ty.2 : ty ~> tyVarMp
+
+  rule m.alt.r1 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.1 :: thardS / tneedO, talt.2.._
+          | tvarv = tvarv.2
+      judge C : bind1TyVarToTy
+          | tvarv = tvarv.2
+      ---
+      judge R : match
+          | lty = ty.1
+          | rty = tvarv.2 [ talt.2.._ ]
+
+  rule m.forall.l2 viewsel I2 - * =
+    view I2 =
+      judge I : inst.tvarb' = ty.i, (tvarv./=/), tvarv./=/.._ === ty.1, alpha, _
+      judge M : match = fiopt ; gVarMp :- ty.i <=>.(<+>) ty.2 : ty.m ~> tyVarMp.m
+      judge BE : tyBtTyElim = tvarv./=/.._ :- ty.m : ty ~> _ ; tyVarMp.e
+      ---
+      judge R : match = fiopt ; gVarMp :- (forall ^ alpha..._ `.` ty.1) <=>.(<+>) ty.2 : (forall ^ tvarv./=/.._ `.` ty) ~> (tyVarMp.e tyVarMp.m)
+
+  rule m.exists.l2 viewsel I2 - * =
+    view I2 =
+      judge I : inst.tvarb' = ty.i, (tvarv./=/), tvarv./=/.._ === ty.1, alpha, _
+      judge M : match = fiopt ; gVarMp :- ty.i <=>.(<+>) ty.2 : ty.m ~> tyVarMp.m
+      judge BE : tyBtTyElim = tvarv./=/.._ :- ty.m : ty ~> _ ; tyVarMp.e
+      ---
+      judge R : match = fiopt ; gVarMp :- (exists ^ alpha..._ `.` ty.1) <=>.(<+>) ty.2 : (exists ^ tvarv./=/.._ `.` tyVarMp.e ty) ~> (tyVarMp.e tyVarMp.m)
+
+  rule m.forall.l3 : m.forall.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | howToMatch = <->
+      ---
+      judge R : match
+          | howToMatch = <->
+          | ty = forall ^ tvarv./=/.._ `.` tyVarMp.e ty
+
+  rule m.exists.l3 : m.exists.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | howToMatch = <->
+      ---
+      judge R : match
+          | howToMatch = <->
+          | ty = exists ^ tvarv./=/.._ `.` ty
+
+  rule m.both viewsel I2 - * =
+    view I2 =
+      judge M : match = fiopt ; gVarMp :- ty.1 <=>.(<+->) ty.2 : ty ~> tyVarMp.m
+      judge C : bind1TyVarToTy = tyVarMp === [(tvarv.1, tvarv.2) :-> (tvarv.2 /=/ ty)]
+      ---
+      judge R : match = fiopt ; gVarMp :- (tvarv.1 /=/ ty.1) <=>.(<+->) (tvarv.2 /=/ ty.2) : (tvarv.2 /=/ ty) ~> (tyVarMp tyVarMp.m)
+
+  rule m.both.l1 viewsel I2 - * =
+    view I2 =
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> (tvarv /=/ ty)]
+      ---
+      judge R : match = fiopt ; gVarMp :- (tvarv /=/ ANY) <=>.(<+->) ty : (tvarv /=/ ty) ~> tyVarMp
+
+  rule m.both.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match = fiopt ; gVarMp :- ty.1 <=>.(<+->) ty.2 : ty ~> tyVarMp.m
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> (tvarv /=/ ty)]
+      ---
+      judge R : match = fiopt ; gVarMp :- (tvarv /=/ ty.1) <=>.(<+->) ty.2 : (tvarv /=/ ty) ~> (tyVarMp tyVarMp.m)
+
+  rule m.alt.l2 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.2 :: thardH / tneedR, talt.1.._
+      ---
+      judge R : match
+          | howToMatch = <+>
+
+  rule m.alt.l3 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.2 :: thardH / tneedO, talt.1.._
+      ---
+      judge R : match
+          | howToMatch = <->
+
+{-
+    judge fit fiopt ; Gamma :- (tvarv.1 [ talt.1.._ ]) <= (tvarv.2 [ talt.2.._ ])
+        : sigma
+        ~> ([tvarv.(1,2) :-> sigma]) ; VarMpEq ; coe
+-}
+
+-------------------------------------------------------------------------
+-- Fit
+-------------------------------------------------------------------------
+
+relation fit =
+  view K =
+    holes [ lty: Ty, rty: Ty | | fo: FIOut, ty: Ty ]
+    judgespec :-.."<=" lty <= rty : fo : ty
+    judgeuse tex :-.."<=" lty <= rty : ty
+    judgeuse ag (retain fo) `=` (lty) `fitsIn` (rty)
+           | ty `=` foTy (fo)
+    explain (| <= | delegates to | <=> | .)
+    explain lty = (Type to fit in |rty|)
+    explain rty = (Type in which |lty| must fit)
+    explain ty = (Result type, (in general) equals |rty| , but differs slightly in later versions)
+  view C =
+    holes [ gVarMp: VarMp | | cnstr: VarMp ]
+    judgespec gVarMp :-.."<=" lty <= rty : fo : ty ~> cnstr
+    judgeuse tex gVarMp :-.."<=" lty <= rty : ty ~> cnstr
+    judgeuse ag (retain fo) `=` fitsIn ^ ((lty) - (rty))
+           | ty `=` foTy (fo)
+           | cnstr `=` foVarMp (fo)
+    explain ty = (|ty === cnstr rty|)
+  view I1 =
+    holes [ fiopt: FIOpts | | ]
+    judgespec fiopt ; gVarMp :-.."<=" lty <= rty : fo : ty ~> cnstr
+    judgeuse tex fiopt ; gVarMp :-.."<=" lty <= rty : ty ~> cnstr
+    judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (gVarMp) (lty) (rty)
+           | ty `=` foTy (fo)
+           | cnstr `=` foVarMp (fo)
+    explain fiopt = (Options to | <=> |)
+  view EX =
+    explain ty = (|ty === cnstr rty| , where quantifiers in |rty| may be left instantiated in |ty| (depending on |fiopt|))
+  view P =
+    holes [ | | coe: Coe ]
+    judgespec fiopt ; gVarMp :-.."<=" lty <= rty : fo : ty ~> cnstr ; coe
+    judgeuse tex fiopt ; gVarMp :-.."<=" lty <= rty : ty ~> cnstr ; coe
+    judgeuse ag (retain fo) `=` fitsIn (fiopt) "@fe" unique (gVarMp) (lty) (rty)
+           | ty `=` foTy fo
+           | cnstr `=` foVarMp (fo)
+           | coe `=` (foCSubst (fo),foLRCoe (fo))
+    explain coe = (Coercion (from |lty| to |rty| values) required for | <= | to hold)
+
+ruleset fit scheme fit viewsel K - * "Fitting of types" =
+  rule fit =
+    view K =
+      judge M : match
+      ---
+      judge R : fit
+          | fo = emptyFO
+
+    view I2 =
+      judge M : match
+          | fiopt = fioFitY, fiopt
+      ---
+
+-------------------------------------------------------------------------
+-- Join
+-------------------------------------------------------------------------
+
+relation join =
+  view I2 =
+    holes [ fiopt: FIOpts, lty: Ty, rty: Ty, gVarMp: VarMp | | ty: Ty, cnstr: VarMp ]
+    judgespec fiopt ; gVarMp :-.."<->" lty <-> rty : ty ~> cnstr
+    explain (| <-> | delegates to | <=> | .)
+    explain lty = (Type to join)
+    explain rty = (Type to join)
+    explain ty = (Result type: |lty <= ty && rty <= ty|)
+
+ruleset join scheme join "Join of types" =
+  rule join viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | fiopt = fioJoinY, fiopt
+      ---
+      judge R : join
+
+-------------------------------------------------------------------------
+-- Meet
+-------------------------------------------------------------------------
+
+relation meet =
+  view I2 =
+    holes [ fiopt: FIOpts, lty: Ty, rty: Ty, gVarMp: VarMp | | ty: Ty, cnstr: VarMp ]
+    judgespec fiopt ; gVarMp :-.."<+>" lty <+> rty : ty ~> cnstr
+    explain (| <+> | delegates to | <=> | .)
+    explain lty = (Type to meet)
+    explain rty = (Type to meet)
+    explain ty = (Result type: |ty <= lty && ty <= rty|)
+
+ruleset meet scheme meet "Join of types" =
+  rule meet viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | fiopt = fioMeetY, fiopt
+      ---
+      judge R : meet
+
+-------------------------------------------------------------------------
+-- Binding from a Gamma
+-------------------------------------------------------------------------
+
+relation valGamLookupIdTy =
+  view E =
+    holes [ nm: Nm, valGam: ValGam | | ty: Ty ]
+    judgespec nm :-> ty `elem` valGam
+    judgeuse ag  (ty,nmErrs) `=` valGamLookupTy (nm) (valGam)
+
+relation tyGamLookupId =
+  view K =
+    holes [ nm: Nm, tyGam: TyGam | | ty: Ty, tgi: TyGamInfo ]
+    judgespec nm :-> tgi, ty `elem` tyGam
+    judgeuse tex nm :-> ty `elem` tyGam
+    judgeuse ag  (tgi,nmErrs) `=` tyGamLookupErr nm tyGam
+              |  ty           `=` tgiTy tgi
+{-
+    judgeuse ag  (tgi,nmErrs) `=` case ( tyGamLookup nm tyGam of
+                                       - Nothing    ->  (TyGamInfo Ty_Any,[mkErr_NamesNotIntrod "\"type\"" [nm]])
+                                       - Just tgi   ->  (tgi,[])
+                                       )
+              |  ty           `=` tgiTy tgi
+-}
+
+relation tyGamLookupOrNewId =
+  view HM =
+    holes [ nm: Nm, tyGam: TyGam | | ty: Ty, tvarv: Ty, tgi: TyGamInfo, tyGam.i: TyGam ]
+    judgespec tgi, ty, tvarv, tyGam.i === nm, tyGam
+    judgeuse tex nm :-> ty `elem` tyGam ^^ || ^^ tyGam.i === (nm :-> tvarv) && ty === tvarv && tvarv (text "fresh")
+    judgeuse ag  (tgi,tyGam.i) `=` case ( tyGamLookup nm tyGam of
+                                        - Nothing    ->  ( let  t `=` TyGamInfo (mkTyVar unique)
+                                                         - in   (t,gamSingleton nm t)
+                                                         )
+                                        - Just t     ->  (t,emptyGam)
+                                        )
+              |  (retain ty)   `=` tgiTy tgi
+              |  tvarv         `=` ty
+
+relation valGamLookupPatTy =
+  view K =
+    holes [ pat: PatExpr, valGam: ValGam | | pty: Ty ]
+    judgespec pat :-> pty `elem` valGam
+    judgeuse tex pat :-> pty `elem` valGam
+    judgeuse ag  (pty,nmErrs)
+                    `=` ( let ^ ( e `=` ["rngLift @range Err_MissingSig" (pat).pp]
+                                - l n `=` gamLookup n (valGam)
+                                )
+                        - in case ^ ( ((pat).mbTopNm) of
+                                    - Nothing ->  ((ANY, e))
+                                    - Just nm ->  case ^ ( l nm of
+                                                         - Nothing   -> ((ANY, e))
+                                                         - Just vgi  -> ((vgiTy vgi, []))
+                                                         )
+                                    )
+                        )
+                        
+  view C =
+    judgeuse ag  (pty,hasTySig)
+                    `=` case ( ((pat).mbTopNm) of
+                             - Nothing ->  ((ANY,False))
+                             - Just nm ->  case ( gamLookup nm (valGam) of
+                                                - Nothing   -> ((ANY,False))
+                                                - Just vgi  -> ((vgiTy vgi,True))
+                                                )
+                             )
+
+relation predGamLookupPrTyEv =
+  view P =
+    holes [ pred: Pred, predGam: PredGam | | ty: Ty, evid: Transl ]
+    judgespec pred :> evid : ty `elem`.pi predGam
+    judgeuse ag (ty,evid) `=` fitPredToEvid (pred) (predGam)
+
+-------------------------------------------------------------------------
+-- Choose quantifier based on coco variance
+-------------------------------------------------------------------------
+
+relation quForCoCo =
+  view I1 =
+    holes [ coco: CoCo | | qu: TyQu ]
+    judgespec qu === coco
+    judgeuse tex qu === if coco === cocoY then forall else exists
+
+-------------------------------------------------------------------------
+-- Choose between known and other type
+-------------------------------------------------------------------------
+
+relation chooseKnownOrOther =
+  view C =
+    holes [ tvarv: Ty, ty.s: Ty, ty.p: Ty | | ty.p.k: Ty, ty.e.k: Ty ]
+    judgespec ty.p.k, ty.e.k === tvarv, ty.s, ty.p
+    judgeuse tex ty.p.k === ty.s && ty.e.k === ty.s ^^ || ^^ ty.p.k === tvarv && ty.e.k === ty.p
+    judgeuse ag ty.p.k `=` if "@hasTySig" then ty.s else tvarv
+              | ty.e.k `=` if "@hasTySig" then ty.s else ty.p
+  view DT =
+    holes [ fiopt.str: FIOpts, fiopt.wk: FIOpts | | fiopt: FIOpts ]
+    judgespec ty.p.k, ty.e.k, fiopt === tvarv, ty.s, ty.p, fiopt.str, fiopt.wk
+    judgeuse tex ty.p.k === ty.s && ty.e.k === ty.s && fiopt === fiopt.str ^^ || ^^ ty.p.k === tvarv && ty.e.k === ty.p && fiopt === fiopt.wk
+    judgeuse ag ty.p.k `=` if "@hasTySig" then ty.s else tvarv
+              | ty.e.k `=` if "@hasTySig" then ty.s else ty.p
+              | fiopt `=` if "@hasTySig" then fiopt.str else fiopt.wk
+
+-------------------------------------------------------------------------
+-- Split gam
+-------------------------------------------------------------------------
+
+relation valGamPop =
+  view K =
+    holes [ g: ValGam | | g.l: ValGam, g.g: ValGam ]
+    judgespec g.l ++ g.g === g
+    judgeuse ag (g.l,g.g) `=` gamPop (g)
+
+-------------------------------------------------------------------------
+-- Bindings from a PredGam, deconstruction
+-------------------------------------------------------------------------
+
+relation predGamOpenIdTy =
+  view P =
+    holes [ predGam: PredGam | | nm: Nm, pred: Pred ]
+    judgespec [nm :~> pred] === predGam
+
+-------------------------------------------------------------------------
+-- Make a singleton Gamma
+-------------------------------------------------------------------------
+
+relation bind1ValIdToTy =
+  view E =
+    holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
+    judgespec valGam === [nm :-> ty]
+    judgeuse ag  valGam `=` {- agFakeDependOn "@lhs.opts" $ -} gamSingleton (nm) (ValGamInfo (ty))	-- fake dependency for uuagc
+
+relation bind1TyIdToTy =
+  view I1 =
+    holes [ nm: Nm, ty: Ty | | tyGam: TyGam, tgi: TyGamInfo ]
+    judgespec tyGam, tgi === nm, ty
+    judgeuse tex tyGam === [nm :-> ty]
+    judgeuse ag  (retain tgi) `=` TyGamInfo (ty)
+              |  tyGam        `=` gamSingleton (nm) (tgi)
+
+relation bind1PatIdToTy =
+  view E =
+    holes [ nm: Nm, ty: Ty | | valGam: ValGam ]
+    judgespec valGam === [nm :-> ty]
+    judgeuse ag  (retain valGam)
+                        `=` ( if "@lhs.inclVarBind" && nm /= hsnWild
+                            - then  gamSingleton nm (ValGamInfo ty)
+                            - else  emptyGam
+                            )
+
+relation bind1PredToTy =
+  view E =
+    holes [ pred: Pred, ty: Ty, evid: TranslExpr | | predGam: PredGam ]
+    judgespec predGam === [pred :> evid : ty ]
+
+-------------------------------------------------------------------------
+-- Make a VarMp
+-------------------------------------------------------------------------
+
+relation bind1TyVarToTy =
+  view C =
+    holes [ tvarv: TyVarId, ty: Ty | | tyVarMp: VarMp ]
+    judgespec tyVarMp === [tvarv :-> ty]
+    judgeuse ag  tyVarMp `=` varmpTyUnit (tvarv) (ty)
+
+relation bind2TyVarToTy =
+  view C =
+    holes [ tvarv.1: TyVarId, tvarv.2: TyVarId, ty: Ty | | tyVarMp: VarMp ]
+    judgespec tyVarMp === [tvarv.1, tvarv.2 :-> ty]
+    judgeuse tex tyVarMp === [tvarv.1 :-> ty, tvarv.2 :-> ty]
+    judgeuse ag  tyVarMp `=` assocTyLToVarMp [(tvarv.1,ty),(tvarv.2,ty)]
+
+-------------------------------------------------------------------------
+-- Remove keys from VarMp
+-------------------------------------------------------------------------
+
+relation bindDelTyVarIds =
+  view I1 =
+    holes [ tvars: TyVarIdS | thread tyVarMp: VarMp | ]
+    judgespec tyVarMp.syn === tyVarMp.inh \\ tvars
+    judgeuse tex tyVarMp.syn === tyVarMp.inh \\.tvars."dom"
+
+-------------------------------------------------------------------------
+-- Free type variables
+-------------------------------------------------------------------------
+
+relation ftv =
+  view HM =
+    holes [ ty: Ty | | tvars: TyVarIdS ]
+    judgespec tvars === ftv (ty)
+    judgeuse ag  tvars `=` ftvSet (ty)
+
+-------------------------------------------------------------------------
+-- Preds on coco
+-------------------------------------------------------------------------
+
+relation elemCoCoS =
+  view I1 =
+    holes [ coco: CoCo, cocos: CoCoS | | ]
+    judgespec coco `elem` cocos
+
+-------------------------------------------------------------------------
+-- Preds on type variables
+-------------------------------------------------------------------------
+
+relation elemTyVarIdS =
+  view I1 =
+    holes [ tvarv: TyVarId, tvars: TyVarIdS | | ]
+    judgespec tvarv `elem` tvars
+
+relation notElemTyVarIdS =
+  view I1 =
+    holes [ tvarv: TyVarId, tvars: TyVarIdS | | ]
+    judgespec tvarv `notElem` tvars
+
+-------------------------------------------------------------------------
+-- Fresh type/... variables
+-------------------------------------------------------------------------
+
+relation tvarvFresh =
+  view C =
+    holes [ | | tvarv: Ty ]
+    judgespec tvarv
+    judgeuse tex tvarv (text "fresh")
+    judgeuse ag tvarv `=` mkTyVar unique
+
+relation tvarvFresh2 =
+  view C =
+    holes [ | | tvarv1: Ty, tvarv2: Ty ]
+    judgespec tvarv1, tvarv2
+    judgeuse tex tvarv1, tvarv2 (text "fresh")
+    judgeuse ag tvarv1 `=` mkTyVar unique | tvarv2 `=` mkTyVar unique
+
+relation tpvarvFresh2 =
+  view C =
+    holes [ | | tvarv1: Ty, tvarv2: Ty ]
+    judgespec tvarv1, tvarv2 (text "fresh")
+    judgeuse ag tvarv1 `=` mkTyVar unique | tvarv2 `=` mkImplsVar unique
+
+relation tvarvFresh3 =
+  view P =
+    holes [ | | tvarv1: Ty, tvarv2: Ty, tvarv3: Ty ]
+    judgespec tvarv1, tvarv2, tvarv3 (text "fresh")
+    judgeuse ag tvarv1 `=` mkTyVar unique | tvarv2 `=` mkTyVar unique | tvarv3 `=` mkTyVar unique
+
+relation tvarvFresh4 =
+  view P =
+    holes [ | | tvarv1: Ty, tvarv2: Ty, tvarv3: Ty, tvarv4: Ty ]
+    judgespec tvarv1, tvarv2, tvarv3, tvarv4 (text "fresh")
+    judgeuse ag tvarv1 `=` mkTyVar unique | tvarv2 `=` mkTyVar unique | tvarv3 `=` mkTyVar unique | tvarv4 `=` mkTyVar unique
+
+relation tvarvFreshN =
+  view C =
+    holes [ sz: Int | | tvarvs: TyL ]
+    judgespec sz : tvarvs
+    judgeuse tex tvarvs (text "fresh"), ^^ sz === `|` tvarvs `|`
+    judgeuse ag tvarvs `=` map mkTyVar (mkNewUIDL (sz) unique)
+
+relation kvarvFresh =
+  view C =
+    holes [ | | tgi: TyGamInfo, tvarv: Ty ]
+    judgespec tgi, tvarv
+    judgeuse tex tvarv (text "fresh")
+    judgeuse ag (retain tgi) `=` TyGamInfo (mkTyVar unique)
+              | tvarv        `=` tgiTy tgi
+
+-------------------------------------------------------------------------
+-- Free tvars of ...
+-------------------------------------------------------------------------
+
+relation valGamFtv =
+  view I1 =
+    holes [ g: ValGam | | tvars: TyVarIdS ]
+    judgespec tvars === g
+    judgeuse tex tvars === ftv(g)
+    judgeuse ag tvars `=` ftvSet(g)
+
+-------------------------------------------------------------------------
+-- Binding from a Gamma
+-------------------------------------------------------------------------
+
+{-
+relation properLetPat =
+  view C =
+    holes [ p: PatExpr, identv: Nm | | ]
+    judgespec p === identv || p === identv@
+-}
+
+-------------------------------------------------------------------------
+-- Quantification of type
+-------------------------------------------------------------------------
+
+relation tyQuantify =
+  view HM =
+    holes [ ty: Ty, gtvars: TyVarIdS | | ty.q: Ty ]
+    judgespec gtvars :- ty : ty.q
+    -- judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+    judgeuse ag (retain ty.q) `=` tyQuantify ("`Set.member`" (gtvars)) ty
+{-
+  view I1 =
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+-}
+
+relation tyQuantifyOuter =
+  view HM =
+    holes [ ty: Ty, gtvars: TyVarIdS | | ty.q: Ty ]
+    judgespec gtvars :- ty : ty.q
+    -- judgeuse tex ty.q === forall ^ (ftv(ty)) (.) ty
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+    judgeuse ag (retain ty.q) `=` tyQuantifyOuter ("`Set.member`" (gtvars)) ty
+{-
+  view I1 =
+    judgeuse tex ty.q === forall ^ (ftv(ty) \\ (gtvars)) `.` ty
+-}
+
+scheme tyqu =
+  view I1 =
+    holes [ node ty: Ty, tvars.g: TyVarIdS, coco: CoCo | | ty.q: Ty, tvars.f: TyVarIdS ]
+    judgespec tvars.g; coco :-.."Qu" ty : ty.q ~> tvars.f
+    -- explain (Type |ty.q| equals |ty| , with quantifiers for type variables in |ty.q| not in |tvars.g|)
+    explain (Type |ty.q| has quantified type |ty| , with quantifiers for type variables | `elem` (ftv(ty.q) \\ tvars.g)|)
+    explain coco = ("Co/contravariance" context, used internally)
+    explain ty =  (Type to be quantified)
+    explain ty.q = (Quantified type)
+    explain tvars.g = (Global type  variables, are not quantified)
+    explain tvars.f = (Free type variables of |ty| , used internally)
+
+ruleset tyqu.base scheme tyqu viewsel I1 - * "Type quantification rules" =
+  rule ty.qu.var =
+    view I1 =
+      judge B : notElemTyVarIdS = tvarv `notElem` tvars.g
+      judge Q : quForCoCo = tQu === coco
+      ---
+      judge R : tyqu = tvars.g; coco :- tvarv : (tQu tvarv `.` tvarv) ~> ([tvarv])
+
+  rule ty.qu.arrow =
+    view I1 =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.a.f._ `intersect` tvarv.r.f._) \\ tvars.g)
+      judge Arg : tyqu = (tvarv + tvars.g); cocoY :- ty.a : ty.a.q ~> tvarv.a.f._
+      judge Res : tyqu = (tvarv + tvars.g); cocoN :- ty.r : ty.r.q ~> tvarv.r.f._
+      ---
+      judge R : tyqu = tvars.g; _ :- (ty.a -> ty.r) : (forall ^ tvarv `.` ty.a.q -> ty.r.q) ~> (tvarv.a.f._ `union` tvarv.r.f._)
+      
+  rule ty.qu.prod =
+    view I1 =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.l.f._ `intersect` tvarv.r.f._) \\ tvars.g)
+      judge T1 : tyqu = (tvarv + tvars.g); cocoY :- ty.l : ty.l.q ~> tvarv.l.f._
+      judge T2 : tyqu = (tvarv + tvars.g); cocoY :- ty.r : ty.r.q ~> tvarv.r.f._
+      ---
+      judge R : tyqu = tvars.g; _ :- ((ty.l, ty.r)) : (exists ^ tvarv `.` (ty.l.q, ty.r.q)) ~> (tvarv.l.f._ `union` tvarv.r.f._)
+      
+  rule ty.qu.app viewsel DT - * =
+    view DT =
+      judge V : elemTyVarIdS = tvarv `elem` ((tvarv.f.f._ `intersect` tvarv.a.f._) \\ tvars.g)
+      judge F : tyqu = (tvarv + tvars.g); cocoNo :- ty.f : ty.f.q ~> tvarv.f.f._
+      judge A : tyqu = (tvarv + tvars.g); cocoNo :- ty.a: ty.a.q ~> tvarv.a.f._
+      judge Q : quForCoCo = tQu === coco
+      judge C : elemCoCoS = coco `elem` ([cocoY,cocoN])
+      ---
+      judge R : tyqu = tvars.g; coco :- (ty.f ^^ ty.a) : (tQu tvarv `.` (ty.f.q ^^ ty.a.q)) ~> (tvarv.f.f._ `union` tvarv.a.f._)
+      
+  rule ty.qu.quant =
+    view I1 =
+      judge V : notElemTyVarIdS = tvarv `notElem` tvars.g
+      judge T : tyqu = (tvarv + tvars.g); coco :- ty : ty..q ~> tvarv..f._
+      ---
+      judge R : tyqu = tvars.g; coco :- (Qu tvarv `.` ty) : (Qu tvarv `.` ty..q) ~> (tvarv..f._ \\ [tvarv])
+      
+
+-------------------------------------------------------------------------
+-- Quantification of gamma
+-------------------------------------------------------------------------
+
+relation valGamQuantify =
+  view HM =
+    holes [ valGam.l: ValGam, valGam.g: ValGam, tyVarMp: VarMp | | valGam.q: ValGam, valGam.l.subs: ValGam, valGam.g.subs: ValGam, gtvars: TyVarIdS ]
+    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs === valGam.l, valGam.g, tyVarMp
+    judgeuse tex valGam.q
+                   ===  [   i :-> forall alpha..._ (.) sigma
+                       `|`  (i :-> sigma) <- tyVarMp valGam.l
+                        ,   alpha..._ === ftv(sigma) `-` ftv(tyVarMp valGam.g)
+                        ]
+    judgeuse ag (retain valGam.l.subs) `=` (tyVarMp |=> (valGam.l))
+              | (retain valGam.g.subs) `=` (tyVarMp |=> (valGam.g))
+              | (retain gtvars       ) `=` ftvSet (valGam.g.subs)
+              | (retain valGam.q     ) `=` valGamQuantify gtvars valGam.l.subs
+  view I1 =
+    judgeuse ag (valGam.l.subs,cycTyVarMp.l) `=` (tyVarMp |==> (valGam.l))
+              | (valGam.g.subs,cycTyVarMp.g) `=` (tyVarMp |==> (valGam.g))
+              | (retain gtvars       ) `=` ftvSet (valGam.g.subs)
+              | (retain valGam.q     ) `=` valGamQuantify gtvars valGam.l.subs
+  view I2 =
+    holes [ | | cnstr.q: VarMp ]
+    judgespec valGam.q, gtvars, valGam.l.subs, valGam.g.subs, cnstr.q === valGam.l, valGam.g, tyVarMp
+    judgeuse tex cnstr.q
+                   ===  [   tvarv.g :-> forall alpha..._ (.) sigma
+                       `|`  (i :-> tvarv.g) <- valGam.l
+                        ,   sigma === tyVarMp tvarv.g
+                        ,   alpha..._ === ftv(sigma) \\ ftv(tyVarMp valGam.g)
+                        ]
+    judgeuse ag (retain valGam.l.subs) `=` tyVarMp (valGam.l)
+              | (retain valGam.g.subs) `=` tyVarMp (valGam.g)
+              | (retain gtvars       ) `=` ftvSet (valGam.g.subs)
+              | (valGam.q,cnstr.q    ) `=` valGamQuantifyWithVarMp (tyVarMp) gtvars (valGam.l)
+
+-------------------------------------------------------------------------
+-- Open top level existential types in gamma
+-------------------------------------------------------------------------
+
+relation valGamInst1Exists =
+  view I1 =
+    holes [ valGam: ValGam | | valGam.e: ValGam ]
+    judgespec valGam.e === valGam
+    judgeuse tex valGam.e
+                   ===  [   i :-> VarMp sigma
+                       `|`  (i :-> exists ^ tvarv..._ (.) sigma) <- valGam
+                        ,   VarMp === (tvarv :-> tvarf)..._
+                        ,   tvarf (text "fresh")
+                        ]
+    judgeuse ag (retain valGam.e) `=` valGamInst1Exists unique (valGam)
+  view I2 =
+    holes [ cnstr: VarMp | | cnstr.e: VarMp ]
+    judgespec valGam.e, cnstr.e === valGam, cnstr
+    judgeuse tex cnstr.e
+                   ===  [   tvarv.g :-> VarMp sigma
+                       `|`  (i :-> tvarv.g) <- valGam
+                        ,   exists ^ tvarv..._ (.) sigma === cnstr tvarv.g
+                        ,   VarMp === (tvarv :-> tvarf)..._
+                        ,   tvarf (text "fresh")
+                        ]
+    judgeuse ag (valGam.e,cnstr.e) `=` valGamInst1ExistsWithVarMp (cnstr) unique (valGam)
+
+-------------------------------------------------------------------------
+-- Ftv of ty part of tyGam
+-------------------------------------------------------------------------
+
+relation tyGamTyFtv =
+  view I1 =
+    holes [ tyGam: TyGam, tyVarMp: VarMp | | tvars: TyVarIdS ]
+    judgespec tvars === tyGam, tyVarMp
+    judgeuse tex tvars === ftv (tyVarMp tyGam)
+    judgeuse ag (retain tvars) `=` ftvSet `.` (tyVarMp |=>) `.` map (tgiTy `.` snd) `.` gamToAssocL $ tyGam
+
+-------------------------------------------------------------------------
+-- Filtering out ty alt constraints
+-------------------------------------------------------------------------
+
+{-
+relation varmpDelTyAlt =
+  view I2 =
+  holes [ ityVarMp: IVarMp | | ityVarMp.elim: IVarMp ]
+  judgespec ityVarMp.elim === [c `|` c@(_ :-> ity) <- ityVarMp, ity =/= _ [_] && ity =/= tvarv ]
+-}
+
+-------------------------------------------------------------------------
+-- Structural equality of ...
+-------------------------------------------------------------------------
+
+relation eqTy =
+  view K =
+    holes [ ty.1: Ty, ty.2: Ty | | ]
+    judgespec ty.1 === ty.2
+
+relation eqLRTy =
+  view K =
+    holes [ lty: Ty | | rty: Ty ]
+    judgespec lty =>= rty
+    judgeuse tex lty === rty
+
+relation eqRLTy =
+  view K =
+    holes [ rty: Ty | | lty: Ty ]
+    judgespec lty =<= rty
+    judgeuse tex lty === rty
+
+relation eqRLVarMp =
+  view I2 =
+    holes [ r: VarMp | | l: VarMp ]
+    judgespec l =<= r
+    judgeuse tex l === r
+    judgeuse ag l `=` r
+
+relation neqTy =
+  view I2 =
+    holes [ lty: Ty, rty: Ty | | ]
+    judgespec lty =/= rty
+
+-------------------------------------------------------------------------
+-- Predicates on tvars
+-------------------------------------------------------------------------
+
+relation tvarsHasTvar =
+  view I2 =
+    holes [ tvars: TyVarIdS, tvar: TyVarId | | ]
+    judgespec tvar `elem` tvars
+
+-------------------------------------------------------------------------
+-- Predicates on fiopt
+-------------------------------------------------------------------------
+
+relation fioptHasOpt =
+  view I1 =
+    holes [ fiopt: FIOpts, opt: Opt | | ]
+    judgespec opt `elem` fiopt
+
+relation fioptSwapMeetJoin =
+  view I2 =
+    holes [ fiopt: FIOpts | | fiopt.s: FIOpts ]
+    judgespec fiopt.s === fiopt
+    -- judgeuse tex fiopt.s === (text "toggle") ^^ fioMeetY (text "and") ^^ fioJoinY (text "in") ^^ fiopt
+    judgeuse tex fiopt.s === if ^^ fiopt `=` fioMeetY ^^ then ^^ fioJoinY ^^ else ^^ fioMeetY
+
+relation fioptMkNeed =
+  view I2 =
+    holes [ fiopt: FIOpts | | tneed: TyNeed ]
+    judgespec tneed === fiopt
+    judgeuse tex tneed === if fioMeetY `elem` fiopt then tneedR else tneedO
+
+-------------------------------------------------------------------------
+-- Instantiation of type (with tvars)
+-------------------------------------------------------------------------
+
+relation inst.tvar =
+  view HM =
+    holes [ ty: Ty, q: TyQu, tvar: TyVarId, mk: String | | ty.i: Ty, tvar.i: TyVarId ]
+    judgespec ty.i, tvar.i === q, ty, tvar, mk
+    judgeuse tex ty.i === VarMp.i ty', ^^ q ^ (tvar)..._ (.) ty' === ty, ^^ VarMp.i === ([tvar :-> tvar.i])..._, ^^ (tvar.i)..._ (text "fresh")
+    judgeuse ag ty.i `=` mk unique (ty)
+
+relation inst.tvarv' =
+  view HM =
+    holes [ ty: Ty, tvar: TyVarId | | ty.i: Ty, tvar.i: TyVarId, tvars.i: TyVarIdS ]
+    judgespec ty.i, tvar.i, tvars.i === ty, tvar
+    judgeuse tex ty.i === (VarMp).(tvar) ty, ^^ (VarMp).(tvar) === (tvar :-> tvar.i)..._, ^^ tvars.i (text "fresh")
+
+-------------------------------------------------------------------------
+-- Instantiation of type (with `both` vars)
+-------------------------------------------------------------------------
+
+relation inst.tvarb =
+  view I1 =
+    holes [ ty: Ty | | ty.i: Ty, tvars: TyVarIdS ]
+    judgespec (tvars,ty.i) === inst.tvarb(ty)
+    judgeuse tex ty.i === VarMp.i ty', tvars === (tvarv')..._, | forall ^ tvarv..._ (.) ty' === ty, | VarMp.i === ([tvarv :-> (tvarv' /=/ ANY)])..._, | (tvarv')..._ (text "fresh")
+
+relation inst.tvarb' =
+  view HM =
+    holes [ ty: Ty, tvar: TyVarId, mk: String | | ty.i: Ty, tvar.i: TyVarId, tvars.i: TyVarIdS ]
+    judgespec ty.i, tvar.i, tvars.i === ty, tvar, mk
+    judgeuse tex ty.i === (VarMp).(tvar) ty, ^^ (VarMp).(tvar) === (tvar :-> (tvar.i /=/ ANY))..._, ^^ tvars.i (text "fresh")
+    judgeuse ag ty.i `=` mk unique (ty)
+
+-------------------------------------------------------------------------
+-- Instantiation of type for HM checking
+-------------------------------------------------------------------------
+
+relation inst.known =
+  view HM =
+    holes [ ty: Ty | | ty.i: Ty ]
+    judgespec ty.i === inst.K(ty)
+    judgeuse tex ty.i === VarMp.i ty', ^^ forall ^ tvarv..._ (.) ty' === ty, ^^ VarMp.i === ([tvarv :-> tvarf])..._, ^^ (tvarf)..._ (text "fresh")
+    judgeuse ag ty.i `=` tyInstKnown unique (ty)
+
+-------------------------------------------------------------------------
+-- Instantiation of type (with existential tvars, i.e. constants), only 1/top level
+-------------------------------------------------------------------------
+
+relation inst.exists1 =
+  view I1 =
+    holes [ ty: Ty | | ty.i: Ty ]
+    judgespec ty.i === inst.exists(ty)
+    judgeuse ag ty.i `=` tyInst1Exists unique (ty)
+
+-------------------------------------------------------------------------
+-- Instantiation of type (with existential tvars, i.e. constants)
+-------------------------------------------------------------------------
+
+relation inst.exists =
+  view I1 =
+    holes [ ty: Ty | | ty.i: Ty ]
+    judgespec ty.i === inst.exists(ty)
+
+-------------------------------------------------------------------------
+-- Instantiation of predicate
+-------------------------------------------------------------------------
+
+relation inst.pred =
+  view P =
+    holes [ pred: Pred | | pred.i: Pred ]
+    judgespec pred.i === inst.pred(pred)
+    judgeuse tex pred.i === inst.pi(pred)
+
+-------------------------------------------------------------------------
+-- Non emptiness of ...
+-------------------------------------------------------------------------
+
+relation notIsEmpty =
+  view I2 =
+    holes [ set: Set | | ]
+    judgespec `|` set `|` > 0
+
+-------------------------------------------------------------------------
+-- Ensure non equality to Ty_Any
+-------------------------------------------------------------------------
+
+relation tyEnsureNonAny =
+  view C =
+    holes [ ty.e: Ty | | ty.a: Ty ]
+    judgespec ty.a : ty.e
+    judgeuse tex ty.a === ty.e, ^^^ ty.a =/= ANY
+    judgeuse ag ty.a `=` tyEnsureNonAny unique (ty.e)
+
+-------------------------------------------------------------------------
+-- Ensure quality to tvar
+-------------------------------------------------------------------------
+
+relation tyEnsureTVar =
+  view I1 =
+    holes [ ty.e: Ty | | ty.v: Ty, cnstr: VarMp, tvarv: TyVarId ]
+    judgespec ty.v, cnstr, tvarv === ty.e
+    judgeuse tex ty.v === tvarv ^^ && ^^ cnstr === [tvarv :-> ty.e] ^^ && ^^ tvarv (text "fresh")
+    judgeuse ag (ty.v,cnstr) `=` tyAsVarMp unique (ty.e)
+
+-------------------------------------------------------------------------
+-- Partitioning of alt ty
+-------------------------------------------------------------------------
+
+relation tyAltPartition =
+  view I2 =
+    holes [ ty: Ty | | partitionTy: Ty ]
+    judgespec partitionTy === ty
+
+relation tyAltSelect =
+  view I2 =
+    holes [ tyAlts: TyPlusL, thard: TyHardness, tneed: TyNeed | | tys: TyL, tyElt: Ty ]
+    judgespec tys === tyAlts, tyElt, thard, tneed
+    judgeuse tex tys === [ tyElt `|` (tyElt :: thard / tneed) <- tyAlts ]
+
+-------------------------------------------------------------------------
+-- Construction of alt ty
+-------------------------------------------------------------------------
+
+relation tyAltMk =
+  view I2 =
+    holes [ tvarv: TyVarId, tys: TyL | | ty: Ty ]
+    judgespec ty === tvarv [ tys ]
+
+-------------------------------------------------------------------------
+-- Open prod ty
+-------------------------------------------------------------------------
+
+relation tyOpenProd =
+  view K =
+    holes [ typ: Ty | | n: Int, tyl: TyL ]
+    judgespec tyl, n === typ
+    judgeuse tex tyl === [(ty).1, (...), (ty).(n)], ^^^ ((ty).1, (...), (ty).(n)) === typ
+    judgeuse ag tyl `=` tyProdArgs (typ)
+
+-------------------------------------------------------------------------
+-- Deconstruct into init/last, for use in PatExpr.App combined with chkProdArity
+-------------------------------------------------------------------------
+
+relation tyInitLastProd =
+  view K =
+    holes [ typ: Ty, pat: PatExpr | | tyi: TyL, tyl: Ty ]
+    judgespec pat: tyi, tyl === typ
+    judgeuse tex tyi, tyl === ((ty).1, (...), (ty).(n(-)1)), (ty).n, ^^^ ((ty).1, (...), (ty).(n(-)1), (ty).n) === typ
+    judgeuse ag (tyl,"@loc.tyi_l") `=` tyLHdAndTl "@lhs.knTyL"
+              | (pat).knTyL `=` "@tyi_l"
+              | tyi `=` ANY
+
+-------------------------------------------------------------------------
+-- Construct patfun prod ty
+-------------------------------------------------------------------------
+
+relation mkPatFunProdTy =
+  view C =
+    holes [ nm: Nm | | pty: Ty ]
+    judgespec pty === nm
+    judgeuse tex pty === ((ty).1, (...), (ty).n) -> ((ty).1, (...), (ty).n), ^^^ n === `|` nm `|`
+    judgeuse ag pty `=` ( let  prTy `=` mkTyFreshProdFrom unique (hsnProdArity nm)
+                        - in   ([prTy] `mkArrow` prTy)
+                        )
+    
+-------------------------------------------------------------------------
+-- Construct prod ty
+-------------------------------------------------------------------------
+
+relation mkProdTy =
+  view C =
+    holes [ tyl: TyL | | pty: Ty ]
+    judgespec pty === tyl
+    judgeuse tex pty === ((ty).1, (...), (ty).n), ^^^ [(ty).1, (...), (ty).n] === tyl
+    judgeuse ag pty `=` mkProdApp (tyl)
+    
+-------------------------------------------------------------------------
+-- Construct prod ty, for use in PatExpr.AppTop combined with tyInitLastProd
+-------------------------------------------------------------------------
+
+relation chkProdArity =
+  view K =
+    holes [ ty: Ty, tyl: TyL, pat: PatExpr, n: Int | | ]
+    judgespec pat: ty, tyl, n
+    judgeuse tex `|` tyl `|` ^^ === n
+    judgeuse ag (retain "loc.arityErrs") `=` (if length tyl == (pat).arity - then [] - else ["rngLift @range Err_PatArity" ty (pat).arity])
+              | (pat).knTyL `=` reverse tyl
+
+-------------------------------------------------------------------------
+-- Infuse annotations to Ty
+-------------------------------------------------------------------------
+
+relation annotateTyRef =
+  view ANN =
+    holes [ ty: Ty | | refAnnTy: Ty ]
+    judgespec ty ~> refAnnTy
+    judgeuse ag (refAnnTy, _) `=` infuseAnn "Map.empty" (finTyVarMp |=> ty) unique
+
+-------------------------------------------------------------------------
+-- Infer Annotation Kind Map
+-------------------------------------------------------------------------
+
+relation infAnnKindMap =
+  view ANN =
+    holes [ ty: Ty | | annKindMap : AnnKindMap ]
+    judgespec ty ~> annKindMap
+    judgeuse ag (annKindMap, _) `=` inferAnnKindMap finTyGam "Map.empty" ty unique
+
+-------------------------------------------------------------------------
+-- Infuse expansion and trunc nodes to (annotated) Ty
+-------------------------------------------------------------------------
+
+relation annotateTyExp =
+  view ANN =
+    holes [ tyRef: Ty, tyGam: TyGam, annKindMap: AnnKindMap | | tyExp: Ty ]
+    judgespec annKindMap :- tyRef ~> tyExp
+    judgeuse ag (tyExp, _) `=` infuseExp annKindMap exposedAnnEnv tyConSeqChkF mkExpTyConF annMonoRestrictions tyRef unique
+
+-------------------------------------------------------------------------
+-- Add a unique id to the AST
+-------------------------------------------------------------------------
+
+relation createUID =
+  view ANN =
+    holes [ | | uid : UID ]
+    judgespec uid
+    judgeuse ag uid `=` unique

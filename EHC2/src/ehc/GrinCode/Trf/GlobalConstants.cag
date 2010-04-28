@@ -1,0 +1,106 @@
+%%[doesWhat doclatex
+
+Lift storing constants to the global level:
+replace
+    \verb"SEQ (STORE (C/c n1 n2)) p body"
+by  \verb"body"
+and add
+    \verb"GLOBAL p = (C/c n1 n2)"
+when all n1, n2 etc are literals.
+
+%%]
+
+
+Why: saves out time for local allocations
+
+
+Todo: merge equal constants to be stored only once
+Todo: apart form literals, also other global constants are permitted as n_i
+
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.GlobalConstants} export(globalConstants)
+%%]
+%%[(8 codegen grin) hs import(qualified Data.Map as Map, {%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs 
+globalConstants :: GrModule -> GrModule
+globalConstants grmod 
+   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                          (Inh_GrAGItf)
+     in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(8 codegen grin)
+-- synthesize a modified copy
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT   [ | | grTrf: SELF ]
+
+
+
+ATTR GrExpr    [ | | storedConstant : {Maybe GrVal}  ]
+ATTR GrPatLam  [ | | varName        : {Maybe HsName} ]
+ATTR AllGrExpr
+     AllBind   [ | | newGlobals  USE {++} {[]}   : {[GrGlobal]}  ]
+ATTR GrVal 
+     GrTag     [ | | isConstant     : Bool ]
+ATTR GrValL    [ | | isConstant  USE {&&} {True} : Bool ]
+
+SEM GrExpr
+  | Store     lhs.storedConstant  =  if   @val.isConstant
+                                     then Just @val.grTrf
+                                     else Nothing
+  | *-Store   lhs.storedConstant  =  Nothing
+
+SEM GrPatLam
+  | Var       lhs.varName      =  Just @nm
+  | *-Var     lhs.varName      =  Nothing
+
+SEM GrVal
+  | Empty
+    LitInt
+    LitStr
+    Tag       lhs.isConstant   =  True
+  | Var       lhs.isConstant   =  False   -- TODO: can be True is @nm is another global constant
+  | Node      lhs.isConstant   =  @tag.isConstant && @fldL.isConstant
+  | VarNode   lhs.isConstant   =  @fldL.isConstant
+  | OpaqueNode
+    PtrNode
+    BasicNode
+    EnumNode  lhs.isConstant   =  False
+%%[[10
+  | NodeAdapt lhs.isConstant   =  False
+%%]]
+
+SEM GrTag
+  | Con
+    PApp      lhs.isConstant   =  True
+  | Fun
+    App       lhs.isConstant   =  False
+  | Hole
+    Rec
+    Unboxed   lhs.isConstant   =  False
+
+SEM GrExpr
+  | Seq       (lhs.grTrf
+              ,lhs.newGlobals) =  maybe (@loc.grTrf, @expr.newGlobals ++ @body.newGlobals)
+                                        (\c -> maybe (@loc.grTrf, @expr.newGlobals ++ @body.newGlobals)
+                                                     (\v -> (@body.grTrf, GrGlobal_Global v c : @body.newGlobals))
+                                                     @pat.varName
+                                        )
+                                        @expr.storedConstant
+
+SEM GrModule
+  | Mod       lhs.grTrf        =  GrModule_Mod @moduleNm
+                                               (@globalL.grTrf ++ @bindL.newGlobals)
+                                               @bindL.grTrf
+                                               @tagsMp
+
+%%]

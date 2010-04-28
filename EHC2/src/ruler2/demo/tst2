@@ -1,0 +1,7 @@
+let id = \x -> x
+in
+let v1 = id 3
+in
+let v2 = id id
+in  v1
+

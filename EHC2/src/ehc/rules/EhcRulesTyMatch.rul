@@ -1,0 +1,491 @@
+-------------------------------------------------------------------------
+-- Shared
+-------------------------------------------------------------------------
+
+include EhcRulesShared2
+
+-------------------------------------------------------------------------
+-- Match of types
+-------------------------------------------------------------------------
+
+rulesgroup match.base scheme match "Type matching (basic |<=>|, part I)" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.var.l1
+  rule match.all m.var.l2
+  rule match.all m.arrow
+  rule match.all m.prod
+
+rulesgroup match.baseForImpredPaper scheme match "Type matching |<=>|" =
+  rule match.all m.var
+  rule match.all m.var.l1
+  rule match.all m.var.l2
+  rule match.all m.arrow
+
+rulesgroup match.onlyK scheme match "Type matching" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.arrow
+  rule match.all m.prod
+  rule match.all m.any.l
+  rule match.all m.any.r
+
+rulesgroup match.eh4 scheme match "Type matching (related to |forall|)" =
+  rule match.all m.con
+  rule match.all m.var
+  rule match.all m.var.l1
+  rule match.all m.var.r1
+  rule match.all m.forall.l
+  rule match.all m.forall.r
+  rule match.all m.forall.r2
+  rule match.all m.var.l2
+  rule match.all m.var.r2
+  rule match.all m.arrow
+  rule match.all m.prod
+
+rulesgroup match.forallForPaper scheme match "Type matching (related to |forall|)" =
+  rule match.all m.forall.l
+  rule match.all m.forall.R
+
+rulesgroup match.eh4B scheme match "Type alternative related matching (finding possible quantified types)" =
+  rule match.all m.var.l1
+  -- rule match.all m.var.l2
+  rule match.all m.var.l3
+  -- rule match.all m.var.l4
+  rule match.all m.var.r1
+  -- rule match.all m.var.r2
+  rule match.all m.var.r3
+  -- rule match.all m.var.r4
+  rule match.all m.alt
+  rule match.all m.alt.l1
+  rule match.all m.alt.r1
+
+rulesgroup match.tyAltForPaper scheme match "Type alternative related matching (finding possible quantified types)" =
+  rule match.all m.var.l3
+  rule match.all m.var.r3
+  rule match.all m.alt
+  rule match.all m.alt.l1
+  rule match.all m.alt.r1
+
+rulesgroup match.eh4C scheme match "Type matching (related to |exists|)" =
+  rule match.all m.exists.l
+  rule match.all m.exists.r
+  rule match.all m.exists.r2
+
+rulesgroup match.eh4Bmeetjoin scheme match "Type meet/join" =
+  rule match.all m.forall.l2
+  rule match.all m.forall.l3
+  rule match.all m.alt.l2
+  rule match.all m.alt.l3
+
+rulesgroup match.eh4Cmeetjoin scheme match "Type meet/join (|exists| specific)" =
+  rule match.all m.exists.l2
+  rule match.all m.exists.l3
+
+rulesgroup match.forall scheme match "Type matching (|<=| on |forall|)" =
+  rule match.all m.forall.l
+  rule match.all m.forall.r
+
+rulesgroup match.exists scheme match "Type matching (|<=| on |exists|)" =
+  rule match.all m.exists.l
+  rule match.all m.exists.r
+
+rulesgroup match.meet scheme match "Type matching (|<+>| specific)" =
+  rule match.all m.forall.l2
+  rule match.all m.exists.l2
+
+rulesgroup match.join scheme match "Type matching (|<->| specific)" =
+  rule match.all m.forall.l3
+  rule match.all m.exists.l3
+
+rulesgroup match.tyBt scheme match "Type matching (|<=>| on |/=/|)" =
+  rule match.all m.both
+  rule match.all m.both.l1
+  rule match.all m.both.l2
+
+ruleset match.all scheme match viewsel K - * "Type matching rules" =
+  rule m.any.l =
+    view K =
+      ---
+      judge R : match = :- ANY <=>.(<=>) ty : ty
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.any.r =
+    view K =
+      ---
+      judge R : match = :- ty <=>.(<=>) ANY : ty
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.con =
+    view K =
+      judge E : eqTy = identc.1 === identc.2
+      ---
+      judge R : match = :- identc.1 <=>.(<=>) identc.2 : identc.2
+    view C =
+      ---
+      judge R : match
+          | cnstr = []
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var viewsel C - * =
+    view C =
+      judge E : eqTy = tvar.1 === tvar.2
+      ---
+      judge R : match = :- tvar.1 <=>.(<=>) tvar.2 : tvar.2 ~> ([])
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var.l1 viewsel C - * =
+    view C =
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> ty]
+      ---
+      judge R : match = :- tvarv <=>.(<=>) ty : ty ~> tyVarMp
+    view I1 =
+      judge O : fioptHasOpt = fioBindLFirstY `elem` fiopt
+      ---
+    view I2 =
+      judge O : fioptHasOpt 
+          | opt = fioBindToTyAltsN, fioBindLFirstY
+      ---
+    view P =
+      ---
+      judge R : match
+          | coe = coeId
+
+  rule m.var.l2 : m.var.l1 viewsel I1 - * =
+    view I1 =
+      judge O : fioptHasOpt = fioBindLFirstN `elem` fiopt
+      ---
+    view I2 =
+      judge O : fioptHasOpt = (fioBindToTyAltsN, fioBindLFirstN) `elem` fiopt
+      ---
+
+  rule m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge NE : neqTy = ty.2 =/= (_[_])
+      judge M : tyAltMk = ty === tvarv.1 [ (ty.2 :: thardS / tneedR) ]
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv.1 :-> ty]
+      judge O : fioptHasOpt = (fioBindToTyAltsY, fioBindLFirstY) `elem` fiopt
+      ---
+      judge R : match = fiopt :- tvarv.1 <=>.(<=>) ty.2 : ty ~> tyVarMp
+
+  rule m.var.l4 : m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge O : fioptHasOpt = (fioBindToTyAltsY, fioBindLFirstN) `elem` fiopt
+      ---
+
+  rule m.var.r1 : m.var.l1 viewsel C - * =
+    view C =
+      ---
+      judge R : match
+          | lty = ty
+          | rty = tvarv
+    view I1 =
+      judge O : fioptHasOpt
+          | opt = fioBindRFirstY
+      ---
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsN, fioBindRFirstY
+      ---
+
+  rule m.var.r2 : m.var.l1 viewsel I1 - * =
+    view I1 =
+      judge O : fioptHasOpt
+          | opt = fioBindRFirstN
+      ---
+      judge R : match
+          | lty = ty
+          | rty = tvarv
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsN, fioBindRFirstN
+      ---
+
+  rule m.var.r3 : m.var.l3 viewsel I2 - * =
+    view I2 =
+      judge NE : neqTy
+          | lty = ty.1
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsY, fioBindRFirstY
+      judge M : tyAltMk
+          | tys = ty.1 :: thardS / tneedO
+          | tvarv = tvarv.2
+      judge C : bind1TyVarToTy
+          | tvarv = tvarv.2
+      ---
+      judge R : match
+          | lty = ty.1
+          | rty = tvarv.2
+
+  rule m.var.r4 : m.var.r3 viewsel I2 - * =
+    view I2 =
+      judge O : fioptHasOpt
+          | opt = fioBindToTyAltsY, fioBindRFirstN
+      ---
+
+  rule m.forall.l viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt :- ty.i <=>.(<=) ty.2 : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.1, alpha
+      ---
+      judge R : match = fiopt :- (forall ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyVarMp
+    
+  rule m.forall.r viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarf, tvarf..._ === ty.2, alpha
+      ---
+      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : (tyVarMp (forall ^ alpha..._ `.` ty.2)) ~> tyVarMp  
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
+      ---
+    
+  rule m.forall.R : m.forall.r viewsel I1 - * =
+    view I1 = 
+      ---
+      judge R : match
+          | ty = tyVarMp ty.2
+    
+  rule m.forall.r2 viewsel DT - * =
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstY `elem` fiopt
+      judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.2, alpha
+      ---
+      judge R : match = fiopt :- ty.1 <=>.(<=) (forall ^ alpha..._ `.` ty.2) : ty ~> tyVarMp
+    
+  rule m.exists.l viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt :- ty.i <=>.(<=) ty.2 : ty ~> tyVarMp
+      judge I : inst.tvarv' = ty.i, tcon, tcon..._ === ty.1, alpha
+      ---
+      judge R : match = fiopt :- (exists ^ alpha..._ `.` ty.1) <=>.(<=) ty.2 : ty ~> tyVarMp
+    
+  rule m.exists.r viewsel I1 - * =
+    view I1 = 
+      judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp.f
+      judge I : inst.tvarv' = ty.i, tvarv, tvarv..._ === ty.2, alpha
+      judge C : bindDelTyVarIds = tyVarMp === tyVarMp.f \\ tvarv..._
+      ---
+      judge R : match = fiopt :- ty.1 <=>.(<=) (exists ^ alpha..._ `.` ty.2) : (tyVarMp (exists ^ alpha..._ `.` ty.2)) ~> tyVarMp
+    view DT =
+      judge O : fioptHasOpt = fioLeaveRInstN `elem` fiopt
+      ---
+
+  rule m.exists.r2 viewsel DT - * =
+    view DT = 
+      judge O : fioptHasOpt = fioLeaveRInstY `elem` fiopt
+      judge F : match = fiopt :- ty.1 <=>.(<=) ty.i : ty ~> tyVarMp
+      judge I : inst.exists = ty.i === inst.exists(exists ^ alpha..._ `.` ty.2)
+      ---
+      judge R : match = fiopt :- ty.1 <=>.(<=) (exists ^ alpha..._ `.` ty.2) : ty ~> tyVarMp
+    
+  rule m.arrow =
+    view K =
+      judge Arg : match = :- ty.2.a <=>.(<=>) ty.1.a : ty.a
+      judge Res : match = :- ty.1.r <=>.(<=>) ty.2.r : ty.r
+      ---
+      judge R : match = :- (ty.1.a -> ty.1.r) <=>.(<=>) (ty.2.a -> ty.2.r) : (ty.a -> ty.r)
+    view C =
+      judge Arg : match
+          | cnstr = tyVarMp.a
+      judge Res : match
+          | cnstr = tyVarMp.r
+          | lty = tyVarMp.a ty.1.r
+          
+          | rty = tyVarMp.a ty.2.r
+      ---
+      judge R : match
+          | cnstr = tyVarMp.r tyVarMp.a
+          | ty = tyVarMp.r ty.a -> ty.r
+    view I1 =
+      judge Arg : match
+          | fiopt = fioBindRFirstY, fioBindLFirstY, fiopt
+      ---
+    view DT =
+      judge Arg : match
+          | fiopt = fioLeaveRInstN, fioBindRFirstY, fioBindLFirstY, fiopt
+      ---
+    
+  rule m.prod =
+    view K =
+      judge Arg : match = :- ty.1.l <=>.(<=>) ty.2.l : ty.l
+      judge Res : match = :- ty.1.r <=>.(<=>) ty.2.r : ty.r
+      ---
+      judge R : match = :- ((ty.1.l,ty.1.r)) <=>.(<=>) ((ty.2.l,ty.2.r)) : ((ty.l,ty.r))
+
+    view C =
+      judge Arg : match
+          | cnstr = tyVarMp.l
+      judge Res : match
+          | cnstr = tyVarMp.r
+          | lty = tyVarMp.l ty.1.r
+          | rty = tyVarMp.l ty.2.r
+      ---
+      judge R : match
+          | cnstr = tyVarMp.r tyVarMp.l
+          | ty = (tyVarMp.r ty.l,ty.r)
+    
+  rule m.alt viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk = ty === tvarv.2 [ (talt.1.._, talt.2.._) ]
+      judge C : bind2TyVarToTy = tyVarMp === [tvarv.1, tvarv.2 :-> ty]
+      ---
+      judge R : match = fiopt :- (tvarv.1 [ talt.1.._ ]) <=>.(<=) (tvarv.2 [ talt.2.._ ]) : ty ~> tyVarMp
+
+  rule m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk = ty === tvarv.1 [ (ty.2 :: thardS / tneedR, talt.1.._) ]
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv.1 :-> ty]
+      ---
+      judge R : match = fiopt :- (tvarv.1 [ talt.1.._ ]) <=>.(<=) ty.2 : ty ~> tyVarMp
+
+  rule m.alt.r1 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.1 :: thardS / tneedO, talt.2.._
+          | tvarv = tvarv.2
+      judge C : bind1TyVarToTy
+          | tvarv = tvarv.2
+      ---
+      judge R : match
+          | lty = ty.1
+          | rty = tvarv.2 [ talt.2.._ ]
+
+  rule m.forall.l2 viewsel I2 - * =
+    view I2 =
+      judge I : inst.tvarb' = ty.i, (tvarv./=/), tvarv./=/.._ === ty.1, alpha, _
+      judge M : match = fiopt :- ty.i <=>.(<+>) ty.2 : ty.m ~> tyVarMp.m
+      judge BE : tyBtTyElim = tvarv./=/.._ :- ty.m : ty ~> _ ; tyVarMp.e
+      ---
+      judge R : match = fiopt :- (forall ^ alpha..._ `.` ty.1) <=>.(<+>) ty.2 : (forall ^ tvarv./=/.._ `.` ty) ~> (tyVarMp.e tyVarMp.m)
+
+  rule m.exists.l2 viewsel I2 - * =
+    view I2 =
+      judge I : inst.tvarb' = ty.i, (tvarv./=/), tvarv./=/.._ === ty.1, alpha, _
+      judge M : match = fiopt :- ty.i <=>.(<+>) ty.2 : ty.m ~> tyVarMp.m
+      judge BE : tyBtTyElim = tvarv./=/.._ :- ty.m : ty ~> _ ; tyVarMp.e
+      ---
+      judge R : match = fiopt :- (exists ^ alpha..._ `.` ty.1) <=>.(<+>) ty.2 : (exists ^ tvarv./=/.._ `.` tyVarMp.e ty) ~> (tyVarMp.e tyVarMp.m)
+
+  rule m.forall.l3 : m.forall.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | howToMatch = <->
+      ---
+      judge R : match
+          | howToMatch = <->
+          | ty = forall ^ tvarv./=/.._ `.` tyVarMp.e ty
+
+  rule m.exists.l3 : m.exists.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | howToMatch = <->
+      ---
+      judge R : match
+          | howToMatch = <->
+          | ty = exists ^ tvarv./=/.._ `.` ty
+
+  rule m.both viewsel I2 - * =
+    view I2 =
+      judge M : match = fiopt :- ty.1 <=>.(<+->) ty.2 : ty ~> tyVarMp.m
+      judge C : bind1TyVarToTy = tyVarMp === [(tvarv.1, tvarv.2) :-> (tvarv.2 /=/ ty)]
+      ---
+      judge R : match = fiopt :- (tvarv.1 /=/ ty.1) <=>.(<+->) (tvarv.2 /=/ ty.2) : (tvarv.2 /=/ ty) ~> (tyVarMp tyVarMp.m)
+
+  rule m.both.l1 viewsel I2 - * =
+    view I2 =
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> (tvarv /=/ ty)]
+      ---
+      judge R : match = fiopt :- (tvarv /=/ ANY) <=>.(<+->) ty : (tvarv /=/ ty) ~> tyVarMp
+
+  rule m.both.l2 viewsel I2 - * =
+    view I2 =
+      judge M : match = fiopt :- ty.1 <=>.(<+->) ty.2 : ty ~> tyVarMp.m
+      judge C : bind1TyVarToTy = tyVarMp === [tvarv :-> (tvarv /=/ ty)]
+      ---
+      judge R : match = fiopt :- (tvarv /=/ ty.1) <=>.(<+->) ty.2 : (tvarv /=/ ty) ~> (tyVarMp tyVarMp.m)
+
+  rule m.alt.l2 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.2 :: thardH / tneedR, talt.1.._
+      ---
+      judge R : match
+          | howToMatch = <+>
+
+  rule m.alt.l3 : m.alt.l1 viewsel I2 - * =
+    view I2 =
+      judge M : tyAltMk
+          | tys = ty.2 :: thardH / tneedO, talt.1.._
+      ---
+      judge R : match
+          | howToMatch = <->
+
+{-
+    judge fit fiopt ; Gamma :- (tvarv.1 [ talt.1.._ ]) <= (tvarv.2 [ talt.2.._ ])
+        : sigma
+        ~> ([tvarv.(1,2) :-> sigma]) ; VarMpEq ; coe
+-}
+
+-------------------------------------------------------------------------
+-- Fit
+-------------------------------------------------------------------------
+
+ruleset fit scheme fit viewsel K - * "Fitting of types" =
+  rule fit =
+    view K =
+      judge M : match
+      ---
+      judge R : fit
+          | fo = emptyFO
+
+    view I2 =
+      judge M : match
+          | fiopt = fioFitY, fiopt
+      ---
+
+-------------------------------------------------------------------------
+-- Join
+-------------------------------------------------------------------------
+
+ruleset join scheme join "Join of types" =
+  rule join viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | fiopt = fioJoinY, fiopt
+      ---
+      judge R : join
+
+-------------------------------------------------------------------------
+-- Meet
+-------------------------------------------------------------------------
+
+ruleset meet scheme meet "Join of types" =
+  rule meet viewsel I2 - * =
+    view I2 =
+      judge M : match
+          | fiopt = fioMeetY, fiopt
+      ---
+      judge R : meet
+

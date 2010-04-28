@@ -1,0 +1,64 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% usedIds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+
+
+ATTR AllNT [ | | gathUsedIds USE {++} {[]} : {[Int]} ]
+ATTR AllNT [ usedIds : {[Int]} | | ]
+
+{
+checkUnique :: (Eq a,Show a) => [a] -> Bool
+checkUnique l = case l of
+  [] -> True
+  (x:xs) -> if elem x xs
+            then error (show x ++ " is not unique,\nxs = " ++ show xs)
+            else checkUnique xs
+
+mustCheckUsedUnique = False
+
+getNrSafe (HNmNr i orig) = Just i
+getNrSafe _ = Nothing
+}
+
+SEM GrModule
+  | Mod   loc.gathUsedIds = let removeWildCards = filter (/= 0)
+                            in  ([0..5] ++) $
+                                (\l -> seq (mustCheckUsedUnique && checkUnique l) l) $
+                                removeWildCards (@globalL.gathUsedIds ++ @bindL.gathUsedIds)
+          bindL.usedIds   = @loc.gathUsedIds
+
+SEM GrBind
+  | Bind  lhs.gathUsedIds = if (not @loc.omitBind)
+                            then (maybe [] (\i -> [i,i+1]) $ getNrSafe @nm)
+                                  ++ @expr.gathUsedIds ++ mapMaybe getNrSafe @argNmL
+                            else []
+SEM GrGlobal
+  | Global  lhs.gathUsedIds = (catMaybes [getNrSafe @nm] ++ @val.gathUsedIds)
+
+SEM GrPatLam
+  | Var BasicNode EnumNode PtrNode OpaqueNode BasicAnnot EnumAnnot PtrAnnot OpaqueAnnot
+      lhs.gathUsedIds = catMaybes [getNrSafe @nm]
+
+SEM GrPatAlt
+  | Node lhs.gathUsedIds = mapMaybe getNrSafe @fldL
+
+SEM GrVar
+  | Var lhs.gathUsedIds = catMaybes [getNrSafe @nm]
+
+
+
+ATTR AllNT [ | uniqueIds : {[Int]} | ]
+
+SEM GrAGItf
+  | AGItf module.uniqueIds =  (True, const $ "usedIds = " ++ show @module.gathUsedIds) >?>
+                              (True, \used -> "gaps = " ++ show (gaps @module.gathUsedIds)) >?>
+                              [0..] \\ @module.gathUsedIds
+{
+gaps used = let maxId = foldl max 0 used
+  in [0..maxId] \\ used
+}
+                   
+%%]

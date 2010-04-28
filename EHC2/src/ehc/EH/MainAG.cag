@@ -1,0 +1,548 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell interface to AG generated code for compiler
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}EH.MainAG} import(Data.Char,Data.List as List,EH.Util.Pretty,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Base.Opts}, {%{EH}Gam.Full},{%{EH}Error},{%{EH}Error.Pretty}, {%{EH}EH})
+%%]
+
+%%[(1 hmtyinfer || hmtyast).Ty hs import({%{EH}Ty})
+%%]
+
+%%[4 -1.Ty hs import({%{EH}Ty})
+%%]
+
+%%[(1 hmtyinfer || hmtyast) hs import({%{EH}Ty.Pretty})
+%%]
+
+%%[(1 hmtyinfer) hs import({%{EH}Ty.FitsInCommon},{%{EH}Ty.FitsIn})
+%%]
+
+%%[1 hs import(qualified EH.Util.FastSeq as Seq,EH.Util.Utils)
+%%]
+
+%%[(2 hmtyinfer) hs import({%{EH}VarMp},{%{EH}Substitutable},Data.Maybe,{%{EH}Ty.Utils1})
+%%]
+
+%%[(99 hmtyinfer).LaTeX hs import({%{EH}Base.LaTeX})
+%%]
+
+%%[(100 hmtyinfer) -99.LaTeX
+%%]
+
+%%[(3 hmtyinfer) hs import({%{EH}Ty.Trf.Quantify},{%{EH}Ty.Trf.Instantiate})
+%%]
+
+%%[4 hs import({%{EH}Base.Debug} as Debug,Debug.Trace)
+%%]
+
+%%[(4 hmtyinfer) hs import({%{EH}Ty.FitsInCommon2})
+%%]
+%%[(4 hmtyinfer) hs import({%{EH}Ty.FIEnv2})
+%%]
+%%[4 hs import(qualified Data.Set as Set,qualified Data.Map as Map, Data.Set(Set), Data.Map(Map))
+%%]
+
+%%[(4_2 hmtyinfer) hs import({%{EH}Gam.Utils},{%{EH}Ty.Trf.ElimAlts},{%{EH}Ty.Trf.FreshVar})
+%%]
+
+%%[(7 hmtyinfer) hs import({%{EH}Ty.Trf.FreshVar},{%{EH}Ty.Ftv})
+%%]
+
+ %%[7_2 hs import({%{EH}Ty.AnnCommon},{%{EH}Ty.Trf.InfuseAnn},{%{EH}Ty.TyConPat},{%{EH}Ty.AnnInferKind}, {%{EH}Ty.InferExposedAnns}, {%{EH}Ty.Trf.InfuseExp}, {%{EH}Annotations.Constraints}, {%{EH}Ty.AnnSubst}, {%{EH}Ty.Expand}, {%{EH}EH.ConstrInferTy}, {%{EH}Annotations.ConstraintSolver}, {%{EH}Annotations.BelownessSolver}, {%{EH}Annotations.VarianceSolver}, {%{EH}Annotations.UniquenessSolver}, {%{EH}Ty.InfuseDataTruncs}, {%{EH}Base.HtmlCommon}, {%{EH}Ty.PrettyHTML}, Debug.Trace(trace))
+ %%]
+
+%%[7_2 hs import(qualified Data.Set as Set,Data.Set(Set),qualified Data.Map as Map,Data.Map(Map))
+%%]
+
+%%[8 hs import(EH.Util.Utils(groupSortOn))
+%%]
+
+%%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
+%%]
+%%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
+%%]
+%%[(8 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
+%%]
+
+%%[(9 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds},{%{EH}Ty.Trf.Canonic})
+%%]
+
+%%[(9 hmtyinfer) hs import({%{EH}Pred},{%{EH}CHR},{%{EH}CHR.Constraint},{%{EH}Pred.CHR},{%{EH}Pred.ToCHR},{%{EH}Pred.Heuristics},{%{EH}CHR.Solve})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Pred.EvidenceToCore})
+%%]
+%%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
+%%]
+
+%%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
+%%]
+
+%%[(50 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
+%%]
+
+%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
+%%]
+
+%%[(95 codegen) hs import({%{EH}Deriving})
+%%]
+
+%%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
+%%]
+
+%%[(100 hmtyinfer) -99.DerivationTree
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Import of all separate aspects
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 ag import({EH/AbsSyn},{EH/Range})
+WRAPPER AGItf
+%%]
+
+%%[(1 hmtyinfer) ag import({EH/Infer},{EH/InferExpr},{EH/InferPatExpr},{EH/InferTyExpr})
+%%]
+%%[(2 hmtyinfer) ag import({EH/FinalInfo})
+%%]
+%%[(4 hmtyinfer) ag import({EH/FIOpts})
+%%]
+%%[(4 hmtyinfer) ag import({EH/FIEnv})
+%%]
+%%[(6 hmtyinfer) ag import({EH/TvKiVarMp})
+%%]
+
+%%[(1 hmtyinfer).EHRulerRules ag import(EHRulerRules)
+%%]
+
+%%[(8 noHmTyRuler hmtyinfer) -1.EHRulerRules
+%%]
+
+%%[1.PrettyAST ag import({EH/PrettyAST})
+%%]
+
+%%[99.PrettyLaTeX ag import({EH/PrettyLatexDerivTree})
+%%]
+
+%%[100 -(1.PrettyAST 99.PrettyLaTeX)
+%%]
+
+%%[1.GatherError ag import({EH/GatherError})
+%%]
+
+%%[102 -1.GatherError
+%%]
+
+%%[(1 hmtyinfer).ExtraChecks ag import({EH/ExtraChecks})
+%%]
+
+%%[(102 hmtyinfer) -1.ExtraChecks
+%%]
+
+%%[1.Pretty ag import({EH/Pretty})
+%%]
+
+%%[102 -1.Pretty
+%%]
+
+%%[(2 hmtyinfer) ag import({EH/InferIncrFtv})
+%%]
+
+%%[(5 hmtyinfer) ag import({EH/InferCaseExpr},{EH/InferData})
+%%]
+
+%%[(6 hmtyinfer) ag import({EH/InferKiExpr})
+%%]
+
+ %%[7_2 ag import({Ty/TyConPatCollect},{Annotations/AnnDT},{Ty/AnnDecomposePat},{EH/ConstrInferExpr},{EH/ConstrInferData}, {Annotations/AnnSolvers}, {EH/PrettyHTML})
+ %%]
+
+%%[(8 codegen) ag import({EH/ToCore})
+%%]
+%%[(8 codegen) ag import({EH/ToTyCore})
+%%]
+
+%%[(9 hmtyinfer) ag import({EH/ResolvePred},{EH/InferClass},{EH/InferClassCHR},{EH/ResolvePredCHR})
+%%]
+
+%%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%]
+
+%%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})
+%%]
+
+%%[99
+PRAGMA strictsem
+PRAGMA strictcase
+%%]
+PRAGMA gencostcentres
+
+%%[99
+PRAGMA sepsemmods
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info: options, module name, name mapping, fixity (for deriving)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR AllNT AGItf [ opts: EHCOpts | | ]
+%%]
+
+%%[8
+ATTR AGItf [ moduleNm: HsName | | ]
+%%]
+
+%%[20
+ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
+%%]
+
+%%[95
+%%]
+ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Tying together gam's, combining with imported info, gathering for following modules and/or global use
+%%% Note: will move to AG files where attr's are actually defined/used
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathValGam: ValGam ]
+
+SEM Expr
+  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
+  | * - Let     lhs         .   gathValGam          =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathTyGam: TyGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyGam           =   @body.gathTyGam `gamUnion` @lQuTyGam
+  | * - Let     lhs         .   gathTyGam           =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathTyKiGam: TyKiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathTyKiGam         =   @body.gathTyKiGam `gamUnion` @lQuTyKiGam_ex_subst -- @lQuTyKiGam 
+  | * - Let     lhs         .   gathTyKiGam         =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathKiGam: KiGam ]
+
+SEM Expr
+  | Let         lhs         .   gathKiGam           =   @body.gathKiGam -- `gamUnion` @xxx
+  | * - Let     lhs         .   gathKiGam           =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathClGam: ClGam ]
+
+SEM Expr
+  | Let         lhs         .   gathClGam           =   @body.gathClGam `gamUnion` @lClGamNoDups
+  | * - Let     lhs         .   gathClGam           =   emptyGam
+%%]
+
+%%[(20 hmtyinfer)
+ATTR AGItf Expr [ | | gathPolGam: PolGam ]
+
+SEM Expr
+  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
+  | * - Let     lhs         .   gathPolGam          =   emptyGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is toplevel mod?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+ATTR AGItf [ isMainMod: Bool | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is a lam a top/first lam?
+%%% Is let a first let in a sequence of lets?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+ATTR Expr [ isTopLam: Bool | | ]
+ATTR Expr [ isFirstLet: Bool | | ]
+
+SEM Decl
+  | Val
+%%[[9
+    InstanceIntro
+%%]]
+%%[[94
+    FFE
+%%]]
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM AGItf
+  | AGItf       expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+
+SEM Expr
+  | Let         loc         .   isFirstLet          =   False
+  | * - Let     loc         .   isFirstLet          =   True
+
+SEM Expr
+  | Lam
+%%[[12
+    LamImpl
+%%]]
+                body        .   isTopLam            =   False
+  | * - Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   isTopLam            =   True
+%%]
+
+%%[5
+SEM CaseAlt
+  | Pat         expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+%%]
+
+%%[7
+SEM DataFieldExpr
+  | Upd Expr    expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+
+SEM RecExpr
+  | Upd Expr Ext
+                expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+%%]
+
+%%[97
+SEM PatExpr
+  | Expr        expr        .   isFirstLet          =   True
+                            .   isTopLam            =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% For mem retainment experiments
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[102
+%%]
+ATTR AGItf [ | | dummy: Int ]
+
+SEM AGItf
+  | AGItf       lhs         .   dummy               =   1
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records, default (positional) name if absent
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[7
+ATTR RecPatExpr RowTyExpr RecExpr [ | positionalFldNmL: {[HsName]} | ]
+ATTR RecPatExpr [ matchOnFld: Bool | | hasAFldRef: Bool ]
+
+SEM Expr
+  | Rec         recExpr     .   positionalFldNmL    =   positionalFldNames
+
+SEM TyExpr
+  | Row         rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+
+SEM PatExpr
+  | Rec         recPatExpr  .   positionalFldNmL    =   positionalFldNames
+                            .   matchOnFld          =   @recPatExpr.hasAFldRef
+
+SEM RecPatExpr
+  | Ext         lhs         .   hasAFldRef          =   maybe @recPatExpr.hasAFldRef (const True) @mbNm
+                (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recPatExpr.positionalFldNmL
+                loc         .   nm                  =   case @mbNm of
+                                                          Just nm                     -> nm
+                                                          Nothing  | @lhs.matchOnFld  -> @patExpr.topNm
+                                                                   | otherwise        -> @positionalNm
+  | * - Ext     lhs         .   hasAFldRef          =   False
+ 
+SEM RowTyExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @rowTyExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+
+SEM RecExpr
+  | Ext         (loc.positionalNm,lhs.positionalFldNmL)
+                                                    =   hdAndTl @recExpr.positionalFldNmL
+                loc         .   nm                  =   maybe @positionalNm id @mbNm
+%%]
+
+%%[10
+SEM PrExpr
+  | Lacks       rowTyExpr   .   positionalFldNmL    =   positionalFldNames
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% The XX_App function name of a XX, if any
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.Expr.ConNm
+ATTR Expr [ | | appFunNm: HsName ]
+
+SEM Expr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%[4
+SEM Expr
+  | AppImpred   lhs     .   appFunNm    :=  @func.appFunNm
+%%]
+
+%%[7
+ATTR RecExpr [ | | extNm: HsName ]
+
+SEM RecExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext Upd
+                lhs     .   extNm       =   hsnUnknown
+
+SEM Expr
+  | Rec         loc     .   appFunNm    :=  @recExpr.extNm
+%%]
+
+%%[12
+SEM Expr
+  | AppImpl     lhs     .   appFunNm    :=  @func.appFunNm
+%%]
+
+%%[1
+ATTR TyExpr [ | | appFunNm: HsName ]
+
+SEM TyExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+
+%%]
+
+%%[7
+ATTR RowTyExpr [ | | extNm: HsName ]
+
+SEM RowTyExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM TyExpr
+  | Row         lhs     .   appFunNm    :=  @rowTyExpr.extNm
+%%]
+
+%%[1.PatExpr
+ATTR PatExpr [ | | appFunNm: HsName ]
+
+SEM PatExpr
+  | Con         loc     .   appFunNm    =   @nm
+  | AppTop      loc     .   appFunNm    =   @patExpr.appFunNm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - App Con
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%[7
+ATTR RecPatExpr [ | | extNm: HsName ]
+
+SEM RecPatExpr
+  | Empty       lhs     .   extNm       =   hsnRowEmpty
+  | * - Empty Ext
+                lhs     .   extNm       =   hsnUnknown
+
+SEM PatExpr
+  | Rec         loc     .   appFunNm    :=  @recPatExpr.extNm
+%%]
+
+%%[6
+ATTR KiExpr [ | | appFunNm: HsName ]
+
+SEM KiExpr
+  | Con         lhs     .   appFunNm    =   @nm
+  | App         lhs     .   appFunNm    =   @func.appFunNm
+  | * - Con App
+                lhs     .   appFunNm    =   hsnUnknown
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top name of pattern
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mbTopNm
+ATTR PatExpr [ | | mbTopNm: {Maybe HsName} ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   mbTopNm             =   if @nm == hsnWild then Nothing else Just @nm
+%%[[1
+  | * - Var VarAs
+                loc         .   mbTopNm             =   Nothing
+%%][8
+  | Irrefutable loc         .   mbTopNm             =   @patExpr.mbTopNm
+  | * - Var VarAs Irrefutable
+                loc         .   mbTopNm             =   Nothing
+%%]]
+%%]
+
+%%[7.topNm
+ATTR PatExpr [ | | topNm: HsName ]
+
+SEM PatExpr
+  | Var VarAs   loc         .   topNm               =   if @nm == hsnWild then uidHNm @lUniq else @nm
+  | App         lhs         .   topNm               =   hsnUnknown
+  | AppTop Con Rec CConst IConst DataFields
+%%[[97
+    Expr
+%%]]
+                loc         .   topNm               =   uidHNm @lUniq
+  | SConst      loc         .   topNm               =   uidHNm @lUniq
+%%[[8
+  | Irrefutable loc         .   topNm               =   @patExpr.topNm
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Unique id, required for AG's UNIQUEREF mechanism
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[2.gUniq
+ATTR AllNT [ | gUniq: UID | ]
+%%]
+
+%%[2.AGItf
+SEM AGItf
+  | AGItf           expr        .   gUniq                           =   uidStart
+%%]
+
+Must be chained for UNIQUEREF to work
+
+%%[8 -2.AGItf
+ATTR AGItf [ | gUniq: UID | ]
+%%]
+
+For patterns we need a unique value anyway, so declare it here globally
+
+%%[2.PatExpr.g
+SEM PatExpr
+  | *           loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+
+

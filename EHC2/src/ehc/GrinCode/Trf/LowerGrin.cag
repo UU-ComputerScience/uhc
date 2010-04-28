@@ -1,0 +1,250 @@
+%%[doesWhat doclatex
+
+Vectorisation:
+In a lambda pattern \textit{n}, if HPT says that \textit{n} refers to a node, replace it by  \textit{(t x y)}.
+Also, in Case expressions, scrutinize on tags rather than nodes.
+
+Inspects the HPT table and updates it for introduced fresh variables.
+
+%%]
+
+
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+
+%%[(8 codegen grin).wrapper
+WRAPPER GrAGItf
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
+%%]
+
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.LowerGrin} import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, qualified Data.Set as Set, qualified Data.Map as Map, Data.List, Data.Monoid, Data.Maybe, {%{EH}GrinCode}) export(lowerGrin)
+
+lowerGrin :: (GrModule,HptMap) -> (GrModule,HptMap)
+lowerGrin (input,hptMap)
+  = let inh = Inh_GrAGItf {hptMap_Inh_GrAGItf=hptMap}
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf input)) inh
+    in  (grTrf_Syn_GrAGItf syn, hptMap_Syn_GrAGItf syn)
+
+%%]
+
+%%[(8 codegen grin)
+
+ATTR AllNT     [ | | grTrf: SELF     ]
+ATTR GrAGItf   [ | | grTrf: GrModule ]
+
+ATTR GrPatLam 
+     AllGrExpr
+     AllBind
+     GrModule  [ | | newItems USE {++} {[]} : HptItems ]
+ATTR GrAGItf   [ | | hptMap: HptMap ]
+
+ATTR GrAGItf 
+     GrModule
+     AllBind
+     AllGrExpr
+     GrPatLam  [ hptMap: HptMap | | ]
+
+ATTR GrModule
+     AllBind
+     AllGrExpr
+     GrPatLam  [ | uniq : Int | ]
+
+ATTR AllBind AllGrExpr GrPatLam [ maxConstrParameters : {Int} | | ]
+
+
+SEM GrAGItf
+  | AGItf     module . uniq    =  getEnvSize @lhs.hptMap
+              lhs    . hptMap  =  let newitems = @module.newItems
+                                      sorteditems = sort newitems
+                                      filleditems = fillgaps sorteditems
+                                  in  addEnvElems @lhs.hptMap (map snd filleditems)
+
+SEM GrModule
+  | Mod loc . maxConstrParameters = foldr max 0 (map tagArity (concat (Map.elems @tagsMp)))
+
+
+%%]
+
+%%[(8 codegen grin) hs
+
+tagArity (GrTag_Con ann _ nm)  = gtannArity ann
+
+fillgaps :: HptItems -> HptItems
+fillgaps [] = []
+fillgaps [x] = [x]
+fillgaps (t1@(n1,v1):t2rest@((n2,v2):rest)) = t1 : [(n,AbsBottom) | n<-[n1+1..n2-1] ] ++ fillgaps t2rest
+
+
+
+
+%%]
+
+%%%%%%%%%%%%%%%%%%%
+%% Vectorisation %%
+%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin) hs
+type HptItems       = [ (Int,AbstractValue) ]
+
+containsNonbottom :: [AbstractValue] -> Bool
+containsNonbottom []     = False
+containsNonbottom (x:xs) = x/=AbsBottom || containsNonbottom xs
+
+secondNonbottom (_,AbsBottom) = False
+secondNonbottom (_,_)         = True
+
+smartAbsUnionFromList []      = error "LowerGrin: empty union"
+smartAbsUnionFromList [(_,x)] = x
+smartAbsUnionFromList xs      = AbsUnion (Map.fromList xs)
+
+maximum0 [] = 0
+maximum0 xs = maximum xs
+
+vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
+vsetLookup hptMap vset
+  =  let vs = Set.toList vset
+         zs = map (getEnvVar hptMap) vs
+     in if Set.null vset then AbsBasic else mconcat zs
+
+newNames :: HptMap -> Int -> Int -> HsName -> (Int, [HsName], HptItems)
+newNames hptMap maxConstrParameters uniq (HNmNr v _) 
+  = if v==0
+    then (uniq, [], [])
+    else let absval = getEnvVar hptMap v
+             (tags,fields) = unzip (getNodes absval)
+             maxlen  = maximum0 (map length fields)
+             fields2 = map (map (vsetLookup hptMap)) fields
+             tr      = takeWhile containsNonbottom (transpose ( map (++ repeat AbsBottom) fields2))
+             avArgs  = map (smartAbsUnionFromList . filter secondNonbottom . zip tags) tr
+             avTag   = AbsTags (Set.fromAscList tags)
+             avs     = avTag : avArgs
+             count   = 1 + maxlen
+             uniq2   = uniq+count
+             newNrs = [uniq .. uniq2-1]                                     
+         in  (uniq2, map (\n->HNmNr n OrigNone) newNrs, zip newNrs avs)    
+    
+
+isSingleVar :: HptMap -> HsName -> Bool
+isSingleVar hptMap (HNmNr nr _) 
+  = case getEnvVar hptMap nr of
+      AbsPtr  _ _ _ -> True
+      AbsNodes  _ -> False
+      a           -> if nr==0
+                     then True
+                     else False -- error $ "LowerGrin: variable " ++ show nr ++ " is " ++ show a
+%%]
+
+
+%%[(8 codegen grin)
+ATTR AllNT     [ subst : {Map.Map HsName GrVal} | |  ]
+ATTR GrPatLam  [ | | subst : {Map.Map HsName GrVal}  ]
+
+
+SEM GrAGItf
+  | AGItf    module . subst    = Map.empty
+
+
+-- In a lambda pattern  \n  , if HPT says that n refers to a node, replace it by  (\t x y) 
+-- and add   n -> (\t x y)  to subst
+SEM GrPatLam
+  | Var       lhs . (uniq, newItems, grTrf, subst)    = if isSingleVar @lhs.hptMap @nm
+                                                        then ( @lhs.uniq
+                                                             , []
+                                                             , @loc.grTrf
+                                                             , @lhs.subst 
+                                                             )
+                                                        else let  (uniq2, names, newItems) = newNames @lhs.hptMap @lhs.maxConstrParameters @lhs.uniq @nm
+                                                                  newPat  =  GrPatLam_VarNode (map GrVar_Var names)
+                                                                  newNode =  GrVal_VarNode    (map GrVal_Var names)
+                                                             in ( uniq2
+                                                                , newItems
+                                                                , newPat
+                                                                , Map.insert @nm newNode @lhs.subst
+                                                                )
+
+
+-- At a case with scrutinee n
+-- if n is a simple variable and  n -> (\t x y)  occurs in subst, then replace  n  by  t
+--                                                                let scrutSubst = Just (n [x,y])
+--                           if   n     does not occur in subst,  let scrutSubst = Just (n,[])
+-- if n is compound,                                              let scrutSubst = Nothing
+
+SEM GrExpr
+  | Case     loc . (scrutRepl, scrutSubst) = case @val.scrutName of
+                                               Nothing -> ( @val.grTrf, Nothing )
+                                               Just nm -> case Map.lookup nm @lhs.subst of
+                                                            Nothing                     -> ( @val.grTrf  , Just (nm,[]) )
+                                                            Just (GrVal_VarNode (t:xs)) -> ( t           , Just (nm,xs) )
+             lhs . grTrf      = GrExpr_Case @loc.scrutRepl @altL.grTrf
+  
+ATTR AllAlt [ scrutSubst: {Maybe (HsName,[GrVal])} | | ]
+ATTR GrVal  [ | | scrutName: {Maybe HsName} ]
+
+SEM GrVal
+  | Var      lhs . scrutName = Just @nm
+  | * - Var  lhs . scrutName = Nothing
+
+
+-- in each alternative C p q
+-- add the following subsitutions:  p->x, q->y, n->(C x y)
+-- and change the pattern from (C p q) to C
+SEM GrAlt
+  | Alt        expr . subst  =  case @lhs.scrutSubst of
+                                     Nothing      ->  @lhs.subst
+                                     Just (nm,xs) ->  let mappings = zip @pat.patFieldL xs
+                                                          newNode  = GrVal_Node @pat.patTag (map snd mappings)
+                                                      in  Map.fromList ((nm,newNode) : mappings)  `Map.union`  @lhs.subst
+                                                 
+               lhs . grTrf  =  GrAlt_Alt (substann @lhs.subst @ann) (GrPatAlt_Tag @pat.patTag) @expr.grTrf
+               
+{
+substann subst (GrAltAnnCalling a name) = GrAltAnnCalling a (maybe name (\(GrVal_Var nm) -> nm) (Map.lookup name subst))
+substann _ ann = ann
+}
+
+-- Perform the variable substitution
+
+SEM GrVal
+  | Var        lhs . grTrf       = Map.findWithDefault (GrVal_Var @nm) @nm @lhs.subst
+
+
+SEM GrExpr
+  | FetchNode 
+    FetchField 
+    UpdateUnit
+    Eval 
+    Throw      loc  . newName   = maybe @nm 
+                                        -- (\(GrVal_Var nm) -> nm) 
+                                        (\v -> case v of (GrVal_Var nm) -> nm
+                                                         _ -> error $ "LowerGrin: not a GrVal_Var: " ++ show v ++ " as replacement of " ++ show @nm
+                                        )
+                                        (Map.lookup @nm @lhs.subst)
+  | FetchNode  lhs  . grTrf     = GrExpr_FetchNode  @newName
+  | FetchField lhs  . grTrf     = GrExpr_FetchField @newName @offset @mbTag
+  | UpdateUnit lhs  . grTrf     = GrExpr_UpdateUnit @newName @val.grTrf
+  | Eval       lhs  . grTrf     = GrExpr_Eval  @newName
+  | Throw      lhs  . grTrf     = GrExpr_Throw @newName
+%%]
+
+
+
+%%[(8 codegen grin)
+-- return the fields of pattern and value to the Alternative node
+ATTR GrPatAlt [ | | patFieldL: {[HsName]} patTag: GrTag ]
+
+SEM GrPatAlt
+  | Node          lhs  . patFieldL   = @fldL
+                  lhs  . patTag      = @tag.grTrf
+  | Tag           lhs  . patFieldL   = []
+                  lhs  . patTag      = @tag.grTrf
+  | * - Node Tag  lhs  . patFieldL   = error "Only Node or Tag values expected in a case"
+                  lhs  . patTag      = error "Only Node or Tag values expected in a case"
+
+%%]

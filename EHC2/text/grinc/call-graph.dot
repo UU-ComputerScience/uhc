@@ -1,0 +1,12 @@
+digraph "example" {
+margin = 0
+20 [ shape = diamond ]
+4 [ label = "Tuple"];
+8 [ label = "snd"];
+8 -> 15;
+15 [ label = "mk"];
+15 -> 4 [style="dotted"];
+20 [ label = "main"];
+20 -> 8 [style="dotted"];
+}
+

@@ -1,0 +1,6 @@
+%% making symbols verbatim
+%% E.g. <, > into \langle etc
+
+%format <	=	"{\langle}"
+%format >	=	"{\rangle}"
+%format |	=	"{|}"

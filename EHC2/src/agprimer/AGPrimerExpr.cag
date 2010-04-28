@@ -1,0 +1,109 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[1 hs import(IO,Char,UU.Parsing,UU.Pretty)
+%%]
+
+%%[1.data
+DATA AGItf
+   | AGItf          expr    :  Expr
+
+DATA Expr
+   | IConst         int     :  {Int}
+   | Add            e1      :  Expr
+                    e2      :  Expr
+
+SET AllNT = AGItf Expr
+%%]
+
+%%[1.pp
+ATTR AllNT [ | | pp: PP_Doc ]
+
+SEM Expr
+  | IConst          lhs     .   pp      =   pp @int
+  | Add             lhs     .   pp      =   @e1.pp >|< "+" >|< @e2.pp
+%%]
+
+%%[1.letdata
+DATA Expr
+   | Let            nm      :  {String}
+                    val     :  Expr
+                    body    :  Expr
+   | Var            nm      :  {String}
+%%]
+
+%%[1.letpp
+SEM Expr
+  | Let             lhs     .   pp      =   "[" >|< @nm >|< "=" >|< @val.pp >|<
+                                            ":" >|< @body.pp >|< "]"
+  | Var             lhs     .   pp      =   pp @nm
+%%]
+
+%%[1.env
+ATTR Expr [ env: {[(String,Int)]} | | ]
+
+SEM Expr
+  | Let             body    .   env     =   (@nm,@val.val) : @lhs.env
+
+SEM AGItf
+  | AGItf           expr    .   env     =   []
+%%]
+
+%%[1.val
+ATTR AllNT [ | | val: Int ]
+
+SEM Expr
+  | Var             lhs     .   val     =   maybe 0 id (lookup @nm @lhs.env)
+  | Add             lhs     .   val     =   @e1.val + @e2.val
+  | Let             lhs     .   val     =   @body.val
+  | IConst          lhs     .   val     =   @int
+%%]
+
+%%[1.count
+ATTR AllNT [ | count: Int | ]
+
+SEM Expr
+  | Add             lhs     .   count   =   @e2.count + 1
+%%]
+
+%%[1.parser hs
+instance Symbol Char
+
+pAGItf   ::  IsParser p Char => p T_AGItf
+pAGItf   =   pRoot
+         where  pRoot      =    sem_AGItf_AGItf <$>  pExpr
+                pExpr      =    pChainr (sem_Expr_Add <$ pSym '+') pExprBase
+                pExprBase  =    (sem_Expr_IConst . foldl (\l r -> l*10 + r) 0)
+                                <$> pList1 ((\c -> ord c - ord '0') <$> '0' <..> '9')
+                           <|>  sem_Expr_Let
+                                <$  pSym '['  <*>  pNm <* pSym '=' <*>  pExpr
+                                <*  pSym ':'  <*>                       pExpr
+                                <*  pSym ']'
+                           <|>  sem_Expr_Var <$>  pNm
+                pNm        =    (:"") <$> 'a' <..> 'z'
+%%]
+
+%%[1.wrapper
+WRAPPER AGItf
+%%]
+
+%%[1.main hs
+run ::  Int -> IO ()
+run     count
+  =  do  hPutStr stdout "Enter expression: "
+         hFlush stdout
+         l <- getLine
+         r <- parseIOMessage show pAGItf l
+         let r' = wrap_AGItf r (Inh_AGItf {count_Inh_AGItf = count})
+         putStrLn  (  "Expr='"                 ++ disp (pp_Syn_AGItf r') 40 ""  ++
+                      "', val="                ++ show (val_Syn_AGItf r')       ++
+                      ", add count thus far="  ++ show (count_Syn_AGItf r')
+                   )
+         run (count_Syn_AGItf r')
+
+main  ::  IO ()
+main  =   run 0
+%%]
+

@@ -1,0 +1,1512 @@
+%%[main
+%%@ThePlan.init
+
+\section{Goals \& vision}
+\subsection{Assumptions and directions already taken}
+%%@ThePlan.goalsAndVision.assumptions
+
+\subsection{Vision}
+%%@ThePlan.goalsAndVision.vision
+
+\subsection{SWOT: Opportunities}
+%%@ThePlan.goalsAndVision.swotOpportunities
+
+\section{UHC directions}
+
+\section{Research directions}
+
+\newpage
+\section{Work packages}
+\subsection{Toplevel goals}
+%%@ThePlan.workPackages.goals
+
+\newpage
+\subsection{Subgoals}
+%%@ThePlan.workPackages.subgoals
+
+\newpage
+\subsection{Research}
+%%@ThePlan.workPackages.research
+
+\newpage
+\subsection{Haskell 98 compatibility}
+%%@ThePlan.workPackages.haskell98compatibility
+
+\newpage
+\subsection{Haskell 2010 compatibility}
+%%@ThePlan.workPackages.haskell2010compatibility
+
+\newpage
+\subsection{GHC compatibility \& arbitrary extensions}
+%%@ThePlan.workPackages.extensions
+
+\newpage
+\subsection{Maintenance \& internal changes}
+%%@ThePlan.workPackages.maintenance
+
+\newpage
+\subsection{RTS}
+%%@ThePlan.workPackages.rtssupport
+
+\newpage
+\subsection{Backends}
+%%@ThePlan.workPackages.backends
+
+\newpage
+\subsection{Library, tool environment, UHC as a tool}
+%%@ThePlan.workPackages.library
+
+\newpage
+\subsection{Measuring UHC}
+%%@ThePlan.workPackages.measure
+
+\section{Work package dependency graph}
+\pagestyle{empty}
+\FigurePDF{t}{0.31}{\jobname-dpd}{Work packages, |X -> Y ===| |X| needs |Y| }{fig-workpackages}
+
+%%@ThePlan.exit
+%%]
+
+%%[packages
+\usepackage{xkeyval}
+%%]
+
+%%[init
+% define a macro for {
+\begingroup  \catcode`\[=1 \catcode`\{=12
+\toks0=[\endgroup
+  \def\curlyopenchar[{}}
+\the\toks0 \relax
+
+% define a macro for }
+\begingroup  \catcode`\]=2 \catcode`\}=12
+\toks0={\endgroup
+  \def\curlyclosechar{}]]
+\the\toks0 \relax
+
+% dpd: the .dot file holding the dependencies
+\newwrite\DpdFile
+\openout\DpdFile=\jobname.dot\relax
+
+% write to dpd
+\def\writeDpd#1{\write\DpdFile{#1}}
+
+% init dpd
+\writeDpd{digraph}
+\writeDpd\curlyopenchar
+\writeDpd{rankdir=LR; node [shape=none, height=0.3];}
+% rotate=90 ;
+
+% work package counter
+\newcounter{wpCounter}
+\setcounter{wpCounter}{1}
+
+% work package label/ref
+\def\labelWP#1{\expandafter\edef\csname#1wpLabel\endcsname{\arabic{wpCounter}}}
+\def\refWP#1{\csname#1wpLabel\endcsname}
+
+% BEGIN: definitions using the at symbol
+\makeatletter
+
+% write a node to dpd
+% danger: label usage code is copied from the def of \ref.
+% #1: label
+% #2: dot node options, format: ,opt1=optval1,opt2=optval2 ...
+% #3: label TD opts (html)
+% #4: node Table opts (html)
+\def\writeDpdNode#1#2#3#4{%
+ \edef\l{\csname r@@#1\endcsname}
+ \immediate\writeDpd{%
+   "#1" [ margin=0
+        , label=
+            <<TABLE #4 CELLSPACING="0" CELLPADDING="3">
+              <TR>
+               <TD #3> #1 </TD>
+               <TD CELLPADDING="0">
+                <TABLE BORDER="0" CELLBORDER="0" CELLSPACING="0" CELLPADDING="0">
+                 <TR> <TD> <FONT POINT-SIZE="11" FACE="Italic" COLOR="blue">\refWP{#1}</FONT> </TD> </TR>
+                 <TR> <TD> <FONT POINT-SIZE="11">p\expandafter\@@secondoftwo\l</FONT> </TD> </TR>
+                </TABLE>
+               </TD>
+               % POINT-SIZE="10" 
+              </TR>
+             </TABLE>
+            >
+          #2
+        ] ;
+ }}
+% previous, with swapped args:
+%  shape box      : "#2" [label="#2\string\n\expandafter\@@firstoftwo\l(\expandafter\@@secondoftwo\l:\refWP{#2})" #1] ;
+%  shape record   : "#2" [label="\curlyopenchar #2 || \refWP{#2} \curlyclosechar" #1] ;
+
+%                <TD CELLPADDING="0"> <FONT FACE="Italic" COLOR="blue">\refWP{#1}</FONT> </TD>
+
+% write an edge to dpd
+\def\writeDpdEdges#1#2{%
+ \@@for\@@tmpNode:=#2\do{%
+  \immediate\writeDpd{"#1" -> "\@@tmpNode" ;}
+ }
+}
+
+% options to WorkPackage
+% boolean key for yes/no topnode in dpd
+\global\def\dpdTopgoalNodes{}
+\define@@boolkey{dpd}{topgoal}[true]{%
+ \ifKV@@dpd@@topgoal
+  \gdef\dpdTopgoalOpts{,penwidth=3.0}
+  \gdef\dpdTopgoalNodeTableOpts{ BORDER="0" CELLBORDER="3"}
+ \else
+  \gdef\dpdTopgoalOpts{}
+  \gdef\dpdTopgoalNodeTableOpts{ BORDER="0" CELLBORDER="1"}
+ \fi
+}
+
+% enumeration for activity kind
+\define@@choicekey{dpd}{activity}[\val\nr]{research,maint}{%
+ \ifcase\nr\relax
+  %\gdef\dpdActivityOpts{,style=filled,fillcolor=indianred1}
+  \gdef\dpdActivityLabelTDOpts{ BGCOLOR="indianred1"}
+ \or
+  %\gdef\dpdActivityOpts{,style=filled,fillcolor=chartreuse1}
+  \gdef\dpdActivityLabelTDOpts{ BGCOLOR="chartreuse1"}
+ \fi
+}
+
+% reset internal WorkPackage options passed to dot file
+\def\dpdResetOpts{%
+ \gdef\dpdTopgoalOpts{}
+ \gdef\dpdActivityOpts{}
+ \gdef\dpdTopgoalNodeTableOpts{ BORDER="0" CELLBORDER="1"}
+ \gdef\dpdActivityLabelTDOpts{}
+}
+
+% Work package
+% #1: options: topgoal[=true|false], activity=research|maint
+% #2: unique identifier/label/name
+% #3: short description
+% #4: required predecessors: comma separated list of identifiers
+% #5: required time: <X> year/month
+% #6: worktype: phd, master, expproj, maint
+% #7: areas of interest
+% #8: assigned startdate (optional)
+% #9: assigned worker(s) (optional)
+\newenvironment{WorkPackage}[9]{%
+ \dpdResetOpts
+ \setkeys{dpd}{#1}
+ \ifKV@@dpd@@topgoal
+  \global\edef\dpdTopgoalNodes{"#2" ;\dpdTopgoalNodes}
+ \else
+ \fi
+ \labelWP{#2}
+ \subsubsection{\textit{{\color{blue}\refWP{#2}}} #3 (#2)}
+ \label{#2}
+ \writeDpdNode{#2}{\dpdTopgoalOpts\dpdActivityOpts}{\dpdActivityLabelTDOpts}{\dpdTopgoalNodeTableOpts}
+ \writeDpdEdges{#2}{#4}
+ \def\WPmeta{%
+  \begin{tabular}{||p{.25\linewidth}||p{.65\linewidth}||}
+   \hline
+   \textbf{#2}
+   & \textit{at} \textbf{#8} \textit{by} \textbf{#9}
+   \\ \hline
+  \end{tabular}
+ }
+ \stepcounter{wpCounter}
+ \WPmeta
+ \par
+ \vspace{1ex}
+}{%
+ %\par
+ %\hspace{.07\linewidth}
+ %\WPmeta
+ %\par
+}
+
+%%  \def\WPmeta{%
+%%   \begin{tabular}{||p{.25\linewidth}||p{.5\linewidth}||}
+%%    \hline
+%%    \textbf{#2}
+%%    & \textit{needs}: \textbf{#4}
+%%    \\ \hline
+%%    \textbf{#7}
+%%    & \textit{takes}: \textbf{#5, #6}
+%%    \\ 
+%%    & \textit{start}: at \textbf{#8} by \textbf{#9}
+%%    \\ \hline
+%%   \end{tabular}
+%%  }
+
+
+\makeatother
+% END: definitions using the at symbol
+
+%%]
+
+%%[exit
+% finalize dpd
+%\writeDpd\curlyopenchar
+\writeDpd{\curlyopenchar rank=same ; \dpdTopgoalNodes \curlyclosechar}
+%\writeDpd\curlyclosechar
+\writeDpd\curlyclosechar
+\closeout\DpdFile
+%%]
+
+%%[goalsAndVision.assumptions
+\begin{itemize}
+\item
+ Assumption:
+ we programmers need programming languages + corresponding tools
+ which do as much programming work for us whilst preventing errors as much as possible.
+\item
+ Assumption:
+ Haskell + GHC are a language + compiler which already fulfills this need to a certain degree.
+\item
+ Observation:
+ GHC is sophisticated but also complicated, built without newer tools.
+ UHC intends to remedy this by building from scratch, using compiler specific tools (e.g. AG system).
+ This has been the rationale for UHC's existence until now.
+\end{itemize}
+%%]
+
+%%[goalsAndVision.vision
+\begin{itemize}
+\item
+ If Haskell is to survive and to be used it needs not just one compiler but at least two,
+ based on the notion that users invest effort to learn and use only when second source is available.
+\end{itemize}
+%%]
+
+%%[goalsAndVision.swotOpportunities
+\begin{itemize}
+\item
+ \textbf{Parallelism}:
+ Exploitation of parallelism available in todays multicore processors,
+ because the per processor speed will not increase because of limitations (heat dissipation + energy consumption) imposed by physics.
+\item
+ \textbf{Lightweight}:
+ Low resource usage (energy, runtime memory \& processor cycles consumption, program size).
+ Many processing environments have limited resources available: mobile phones, distributed computing environments (relative low bandwidth).
+\item
+ \textbf{Rapid development} (see assumptions):
+ Rapid development requires tools to take over the job of the programmer.
+\end{itemize}
+%%]
+
+%%[workPackages.goals
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Perf.Exec}% ident
+ {UHC generated executable performance}% descr
+ {ConfigGC,Perf.ExecSz,Fusion,Perf.ExecSpd,Perf.ExecMem,Par.UHC,OptShare}% prerequisites (, separated)
+ {}% required time
+ {perf}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal general performance of programs generated by UHC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Perf.Comp}% ident
+ {UHC performance}% descr
+ {UHC.BinFile,Incr.UHC}% prerequisites (, separated)
+ {}% required time
+ {perf}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal general performance of UHC itself.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Feature}% ident
+ {General desirable features}% descr
+ {GADT,ExtRec,FunDep,ExistPred,GHC.lib,GC.Extra,Conc,Generic,MutRec,ModSys,ExplImpl,MetaProg,DpdTyped,PersState}% prerequisites (, separated)
+ {}% required time
+ {Compat}% kind of work
+ {Goal,CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal GHC compatibility and/or other desirable features.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Platform}% ident
+ {Haskell platform compatibility}% descr
+ {Pkg,Cabal.lib}% prerequisites (, separated)
+ {}% required time
+ {Compat}% kind of work
+ {Goal,CompatPlatform}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal Haskell platform compatibility.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Backend}% ident
+ {Various backends}% descr
+ {Backend.C,Backend.BC,Backend.Jazy,Backend.LLVM,Backend.PartWhole}% prerequisites (, separated)
+ {}% required time
+ {Backend}% kind of work
+ {Goal,Backend}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal Backends.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {SelfComp}% ident
+ {UHC self compilation}% descr
+ {SelfComp.lib,UHC.usable,Cabal.lib}% prerequisites (, separated)
+ {}% required time
+ {Compat}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC can compile itself.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Maint}% ident
+ {UHC longterm maintainability}% descr
+ {Buildfarm,UHC.Driver,UHC.Helium,UHC-GHC,Ruler.TySys}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Maintenance}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Internal (re)structure required to keep internals manageable and maintainable.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {UHC.usable}% ident
+ {UHC usable as a real Haskell compiler}% descr
+ {H98,Backend.BC,UHC.Test,ErrMsg}% prerequisites (, separated)
+ {}% required time
+ {Compat}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC can be used as a tool (not as a subject of investigation).
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {MetaTool}% ident
+ {Tools to make UHC}% descr
+ {Ruler}% prerequisites (, separated)
+ {}% required time
+ {MetaTool}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Tools for building compilers.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {Correct}% ident
+ {Static correctness checks}% descr
+ {ProdAna,TermAna,ErrTop}% prerequisites (, separated)
+ {}% required time
+ {Correct}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Compiletime detection of correctness aspects, varying from typing to runtime behavior which can be predicted.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {topgoal}% options
+ {RealWorld}% ident
+ {Support for specific real world programming needs}% descr
+ {PersState}% prerequisites (, separated)
+ {}% required time
+ {Correct}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Language features which are required to make real world applications.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.subgoals
+\begin{WorkPackage}%
+ {}% options
+ {Perf.ExecSz}% ident
+ {Minimal UHC generated executable size}% descr
+ {Backend.PartWhole}% prerequisites (, separated)
+ {}% required time
+ {perf}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal ``minimal size'' of generated executables.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Perf.ExecSpd}% ident
+ {Minimal UHC generated executable cycle use}% descr
+ {StrictAna,Backend.C}% prerequisites (, separated)
+ {}% required time
+ {perf}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal ``minimal processor cycle use'' by generated executables.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Perf.ExecMem}% ident
+ {Minimal UHC generated executable memory use}% descr
+ {GC.Static}% prerequisites (, separated)
+ {}% required time
+ {perf}% kind of work
+ {Goal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for goal ``minimal memory use'' by generated executables.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Extra}% ident
+ {Full-fledged GC}% descr
+ {GC.Par,GC.Gen,GC.Precise,GC.Stat}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Goal,GC,RTD}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Everything a GC should do, apart from the stuff required for language features.
+\end{WorkPackage}
+%%]
+
+%%[workPackages.research
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Ruler}% ident
+ {Ruler: DSL for type systems}% descr
+ {}% prerequisites (, separated)
+ {4 year}% required time
+ {phd}% kind of work
+ {MetaTool}% categorization, area to which this applies
+ {2006}% startdate
+ {AM}% worker
+Semi-automatic generation of type system implementations.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Ruler.TySys}% ident
+ {Rewrite UHC type system with Ruler}% descr
+ {Ruler}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {TySys}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Re-implement UHC type system using Ruler.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {GC.Static}% ident
+ {Static GC}% descr
+ {UniqAna}% prerequisites (, separated)
+ {}% required time
+ {master,phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Static GC: determine statically when memory can be reused.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Incr.UHC}% ident
+ {Incrementalization of UHC analyses}% descr
+ {Incr.HPT}% prerequisites (, separated)
+ {}% required time
+ {nwo,phd}% kind of work
+ {Analyses,Performance}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Incrementalization of UHC analyses based on their AG description.
+AG generated incrementalized code.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Incr.HPT}% ident
+ {Incrementalization of HPT analysis}% descr
+ {WholeAna.+HPT}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses,Performance}% categorization, area to which this applies
+ {2009}% startdate
+ {Jeroen Leeuwestein}% worker
+Incrementalization of HPT analysis.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Par.UHC}% ident
+ {Optimisations exploiting parallelism}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {nwo,phd}% kind of work
+ {Analyses,Performance}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Optimisations which exploit e.g. SIMD machines.
+Array optimisations.
+Unboxing.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {StrictAna}% ident
+ {Strictness analysis}% descr
+ {TyCore,AnaFrame}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {2009}% startdate
+ {TL}% worker
+Static analyses: strictness.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {UniqAna}% ident
+ {Uniqueness analysis}% descr
+ {TyCore,AnaFrame}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Static analyses: uniqueness.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ProdAna}% ident
+ {Productivity analysis}% descr
+ {TyCore,AnaFrame}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Static analyses: productivity.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {TermAna}% ident
+ {Termination analysis}% descr
+ {TyCore,AnaFrame}% prerequisites (, separated)
+ {}% required time
+ {master}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Static analyses: termination.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {AnaFrame}% ident
+ {Analysis framework}% descr
+ {StrictAna,UniqAna}% prerequisites (, separated)
+ {}% required time
+ {master,phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {2009}% startdate
+ {TL}% worker
+Static analyses framework, of which various other analyses are instances of build upon the framework.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ErrTop}% ident
+ {Error reporting a la Bastiaan's TOP}% descr
+ {ErrMsg}% prerequisites (, separated)
+ {}% required time
+ {phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Integration of Bastiaan's work into UHC, taking into account more complex types.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {WholeAna.+HPT}% ident
+ {HPT based whole program analysis \& transformations}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {2006}% startdate
+ {JF}% worker
+Whole program HPT (Heap Points To) analysis, and its use in transformations.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {WholeAna.-HPT}% ident
+ {Non HPT based whole program analysis \& transformations}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {2006}% startdate
+ {JF}% worker
+Whole program analyses and transformations not requiring the use of HPT.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Fusion}% ident
+ {Incorporation of fusion techniques}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {phd}% kind of work
+ {Analyses}% categorization, area to which this applies
+ {2008}% startdate
+ {Bruno Martinez, Alberto Pardo}% worker
+Incorporation of fusion as investigated by Alberto Pardo.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {Generic}% ident
+ {Support for generic programming}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {?AL}% worker
+Language features required for generic programming.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {ConfigGC}% ident
+ {Configurable GC}% descr
+ {GC.Stableptr,GC.Thread,GC.Extra}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {2008}% startdate
+ {AD}% worker
+Configurable GC, written in C, where one can combine various GC building blocks for allocating, collecting, etc.
+Similar to work done in Java \cite{blackburn02gc-beltway}.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {OptShare}% ident
+ {Realising optimal sharing}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {}% categorization, area to which this applies
+ {2009}% startdate
+ {Jan Rochel, Vincent v Oostrum, Clemens Grabmeyer}% worker
+Application to UHC of techniques for optimal sharing.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {UHC-GHC}% ident
+ {Sharing \& mutual use of GHC \& UHC subsystems}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Sharing functionality between UHC and GHC. E.g. on the Core level.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {ModSys}% ident
+ {1st class module system}% descr
+ {ExistPred,ExplImpl}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Modules which can be properly manipulated: instantiated, used as parameters.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {DpdTyped}% ident
+ {Dependently typed programming}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Support for dependently typed programming
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {PersState}% ident
+ {Persistent execution state}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+For web-based programming.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {activity=research}% options
+ {MetaProg}% ident
+ {Meta programming}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+A la Template Haskell (AST based meta programming) + Meta programming based on computed info (AG Attribute meta programming)
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.haskell98compatibility
+\begin{WorkPackage}%
+ {}% options
+ {H98}% ident
+ {Haskell 98 compatibility}% descr
+ {Default,Deriving,MonoRestr,H98.lib}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Compat98}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for Haskell 98 compatibility.
+n+k patterns will not be done (is removed in Haskell 2010).
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Default}% ident
+ {Haskell 98 defaulting mechanism}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Compat98}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+@default@ language feature.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Deriving}% ident
+ {Deriving mechanism}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Compat98}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Derivings for @Ix@, @Bounded@ (partly done), tuples (done explicitly in library).
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {MonoRestr}% ident
+ {Monomorphism restriction}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Compat98}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+\end{WorkPackage}
+%%]
+
+%%[workPackages.haskell2010compatibility
+\begin{WorkPackage}%
+ {topgoal}% options
+ {H2010}% ident
+ {Haskell 2010 compatibility}% descr
+ {H98,FFI,PatGrd,Pragma}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Compat2010}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Placeholder for Haskell 2010 compatibility.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {PatGrd}% ident
+ {Pattern Guards}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Compat2010}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Pattern guards.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Pragma}% ident
+ {Language pragmas}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Compat2010}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Pragmas inside @{-# ... #-}@ comment.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.extensions
+\begin{WorkPackage}%
+ {}% options
+ {GADT}% ident
+ {Generalized Algebraic Data Types}% descr
+ {}% prerequisites (, separated)
+ {2 month}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Finishing GADTs as already partially done by AM.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ExtRec}% ident
+ {Extensible records}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {FunDep}% ident
+ {Functional dependencies}% descr
+ {TyCase,TyFun}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {TyCase}% ident
+ {Type level extensible case}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Case constructs on type level.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {TyFun}% ident
+ {Type level functions}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Functions on type level.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ExistPred}% ident
+ {Existential quantification over predicates}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Basically: tupling instances with anything else, to be used for opening elsewhere.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Conc}% ident
+ {Concurrency}% descr
+ {Thread}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Concurrency: threads, STM, concurrency aware GC, parallel GC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {MutRec}% ident
+ {Mutual recursive modules}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Language features required for generic programming.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {ExplImpl}% ident
+ {Explicit implicit parameters}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {langfeature}% kind of work
+ {Lang}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Language mechanisms for manipulating explicitly what is by default implicit: dictionary passing.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.rtssupport
+\begin{WorkPackage}%
+ {}% options
+ {GC.Stableptr}% ident
+ {StablePtr}% descr
+ {}% prerequisites (, separated)
+ {0.5 month}% required time
+ {maint}% kind of work
+ {Compat2010}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+StablePtr as required by FFI, supported by the GC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Thread}% ident
+ {Thread aware GC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Thread aware GC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Par}% ident
+ {Parallel GC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+GC itself parallelized.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Gen}% ident
+ {Full generational GC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+GC with: generations, separate areas for large blobs (collected, non-collected + explicit free + finalizer).
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Precise}% ident
+ {Precise GC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Precise GC where GC exactly knows what yes/no to collect.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {FFI}% ident
+ {Foreign Function interface}% descr
+ {GC.Stableptr}% prerequisites (, separated)
+ {0.5 month}% required time
+ {maint}% kind of work
+ {Compat2010}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+FFI, as specified by the Haskell FFI spec. Partly done; extern call, stubs etc do miss.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Thread}% ident
+ {Thread support}% descr
+ {GC.Thread}% prerequisites (, separated)
+ {3 month}% required time
+ {maint}% kind of work
+ {CompatGHC}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Threads. Two levels: OS threads as offered by OS, non-preemptive microthreads within OS threads. Heap based stacks.
+\end{WorkPackage}
+%%]
+
+%%[workPackages.maintenance
+\begin{WorkPackage}%
+ {}% options
+ {UHC.Test}% ident
+ {UHC (regress) tested}% descr
+ {Test.nofib,Test.regress}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC testing against various test suites.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Buildfarm}% ident
+ {UHC daily builds on buildfarm}% descr
+ {Test.regress}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Buildfarm building, testing.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Test.nofib}% ident
+ {Nofib test suite}% descr
+ {H98}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC can deal with nofib test suite.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Test.regress}% ident
+ {Regression test suite}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC regression tests.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {TyCore}% ident
+ {Typed core}% descr
+ {}% prerequisites (, separated)
+ {6 month}% required time
+ {design}% kind of work
+ {Internal}% categorization, area to which this applies
+ {2009}% startdate
+ {AD}% worker
+Type core, based on GHC's core, Henk (|lambda|-cube), and calling conventions as types.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Pkg}% ident
+ {Package support}% descr
+ {}% prerequisites (, separated)
+ {0.5 month}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {2009}% startdate
+ {AD}% worker
+Use and build of versioned packages. Mostly done.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Cabal.lib}% ident
+ {UHC use via Cabal for building packages}% descr
+ {Pkg}% prerequisites (, separated)
+ {0.5 month}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {2009}% startdate
+ {AL}% worker
+Adapting cabal so it can invoke UHC.
+\end{WorkPackage}
+%%]
+
+%%[workPackages.backends
+\begin{WorkPackage}%
+ {}% options
+ {Backend.BC}% ident
+ {Interpreter backend}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {2007}% startdate
+ {AD}% worker
+Interpreter (ByteCode) backend.
+Per module compilation until object code, then linked to whole program.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Backend.C}% ident
+ {Whole program analysis backend}% descr
+ {WholeAna.+HPT,WholeAna.-HPT}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {2006}% startdate
+ {JF}% worker
+Whole program analysis backend.
+Per module compilation until GRIN code, then linked to whole program, followed by HPT analyses and optimizations, finally one C module generated.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Backend.Jazy}% ident
+ {Java backend + jazy interpreter}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {2009}% startdate
+ {AD}% worker
+Java backend, where functions and closures are represented by objects, interpreted by jazy library evaluation methods.
+Per module compilation until set of Java class files, then linked together with @jar@.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Backend.LLVM}% ident
+ {LLVM backend}% descr
+ {Backend.C}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+LLVM backend, as variation of whole program analyses backend.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Backend.PartWhole}% ident
+ {Partial whole program analysis backend}% descr
+ {WholeAna.-HPT}% prerequisites (, separated)
+ {}% required time
+ {design}% kind of work
+ {Internal,Backend}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Whole program analysis backend without the expensive stuff (like HPT).
+Picking the cheapest analyses with most effect, 80/20 rule.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.library
+\begin{WorkPackage}%
+ {}% options
+ {ErrMsg}% ident
+ {Correct and clear error messages}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Error messages pointing correctly to the program location where detection took place.
+Currently this is incomplete.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {H98.lib}% ident
+ {Haskell 98 libraries}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {lib}% kind of work
+ {Internal,Library}% categorization, area to which this applies
+ {2009}% startdate
+ {AD}% worker
+Library modules required for H98. A few are still missing or incomplete: IO (incomplete), Time, Random, ...
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GHC.exc}% ident
+ {GHC extensible exceptions}% descr
+ {ExistPred}% prerequisites (, separated)
+ {}% required time
+ {lib}% kind of work
+ {Internal,Library}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Extensible exceptions as of 2009 present in GHC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GHC.lib}% ident
+ {Full GHC libraries}% descr
+ {GHC.exc}% prerequisites (, separated)
+ {}% required time
+ {lib}% kind of work
+ {Internal,Library}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Base libraries of GHC, usable/compilable without severe modifications.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {SelfComp.lib}% ident
+ {Libraries required for UHC self compilation}% descr
+ {FunDep}% prerequisites (, separated)
+ {}% required time
+ {lib}% kind of work
+ {Internal,Library}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Library modules required for self compilation: parser combinators, various other packages.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {UHC.Driver}% ident
+ {UHC compiler driver}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {design,master}% kind of work
+ {Internal,Driver}% categorization, area to which this applies
+ {}% startdate
+ {?Jeroen Bouwmans, AL, AD}% worker
+Compiler driver based on Nix (\& Camera) ideas. Dependent values are described by function invocations, which are memoized, using a persistent cached mapped onto file system.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {UHC.BinFile}% ident
+ {Binary represented intermediate files}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal,Driver}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Binary representation of .hi files instead of readable and parseable (and time consuming).
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {UHC.Helium}% ident
+ {UHC \& Helium integration}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Helium using UHC as a backend.
+To get rid of current backend but keep the frontend.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages.measure
+\begin{WorkPackage}%
+ {}% options
+ {MetaUHC}% ident
+ {Measuring UHC}% descr
+ {Meas.Exec,Meas.Comp,Debug.Exec,Debug.Comp}% prerequisites (, separated)
+ {}% required time
+ {MetaUHC}% kind of work
+ {Measure}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+UHC measuring in order to be able to reflect better on what is put into UHC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Meas.Exec}% ident
+ {Measure processor resource use of executables}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Like GHC time profiling: cycles + memory.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Meas.Comp}% ident
+ {Measure processor resource use of UHC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Like GHC time profiling on UHC.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Debug.Exec}% ident
+ {Debugging executables}% descr
+ {Log.Exec}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Debugger
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Debug.Comp}% ident
+ {Debugging UHC}% descr
+ {}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Debugger \& dumping tools, AG visualisation
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Log.Exec}% ident
+ {Runtime logging facilities}% descr
+ {Event.Exec}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Logging \& tracing, with 2 dimensions: topic, level.
+To be turned on/off via commandline.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {Event.Exec}% ident
+ {Runtime event framework}% descr
+ {Log.Exec,GC.Stat}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+Runtime events; with instances for log, trace, statistics.
+\end{WorkPackage}
+
+\begin{WorkPackage}%
+ {}% options
+ {GC.Stat}% ident
+ {GC runtime statistics}% descr
+ {Event.Exec}% prerequisites (, separated)
+ {}% required time
+ {maint}% kind of work
+ {Internal}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+GC statistics: e.g. time between GC, size alloc distribution, pause times.
+\end{WorkPackage}
+
+%%]
+
+%%[workPackages
+\begin{WorkPackage}%
+ {}% options
+ {ident}% ident
+ {descr}% descr
+ {pre}% prerequisites (, separated)
+ {time}% required time
+ {worktype}% kind of work
+ {areas}% categorization, area to which this applies
+ {}% startdate
+ {}% worker
+The larger description.
+\end{WorkPackage}
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+
+%%[XX
+%%]
+

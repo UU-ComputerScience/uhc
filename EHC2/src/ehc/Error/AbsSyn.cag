@@ -1,0 +1,215 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Error
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wildcard extensions: Range, as first field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[99
+DATA Err
+  | *               	range      : Range
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Error structure
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer || hmtyast).UnifyClash
+DATA Err
+  | UnifyClash          ty1        : {Ty}
+                        ty2        : {Ty}
+                        ty1detail  : {Ty}
+                        ty2detail  : {Ty}
+%%]
+
+%%[(4 hmtyinfer || hmtyast).UnifyClash -1.UnifyClash
+DATA Err
+  | UnifyClash          ty1        : {Ty}
+                        ty2        : {Ty}
+                        fiMode     : {FIMode}
+                        ty1detail  : {Ty}
+                        ty2detail  : {Ty}
+                        fiModeD    : {FIMode}
+%%]
+
+%%[1.NamesNotIntrod
+DATA Err
+  | NamesNotIntrod      kind       : String
+                        nmL        : {[ThingAndRange PP_Doc]}
+%%]
+
+%%[(1 hmtyinfer || hmtyast)
+DATA Err
+  | PatArity            ty         : {Ty}
+                        arity      : {Int}
+%%]
+
+%%[1.Rest
+DATA Err
+  | NamesDupIntrod      kind       : String
+                        nmL        : {[ThingAndRange HsName]}
+  | NestedIn            wher       : {PP_Doc}
+                        errL       : ErrL
+%%]
+
+%%[1.ErrL
+TYPE ErrL       = [Err]
+%%]
+
+%%[(1 hmtyinfer || hmtyast).MissingSig
+DATA Err
+  | MissingSig          wher       : {PP_Doc}
+%%]
+
+%%[1.HS
+DATA Err
+  | Fixity              op1        : {PP_Doc}
+                        op2        : {PP_Doc}
+%%]
+
+%%[(2 hmtyinfer || hmtyast).UnifyOccurs -1.MissingSig
+DATA Err
+  | UnifyOccurs         ty1        : {Ty}
+                        ty2        : {Ty}
+                        tvar       : {TyVarId}
+                        ty2detail  : {Ty}
+%%]
+
+%%[(4 hmtyinfer || hmtyast) -2.UnifyOccurs
+DATA Err
+  | UnifyOccurs         ty1        : {Ty}
+                        ty2        : {Ty}
+                        fiMode     : {FIMode}
+                        tvar       : {TyVarId}
+                        ty2detail  : {Ty}
+                        fiModeD    : {FIMode}
+  | OccurCycle          tvar       : {TyVarId}
+                        ty         : {Ty}
+%%]
+
+%%[(4_2 hmtyinfer || hmtyast)
+DATA Err
+  | InconsistentAlts    ty         : {Ty}
+                        tvar       : {TyVarId}
+                        tyL        : {TyL}
+                        fiMode     : FIMode
+%%]
+
+%%[5
+DATA Err
+  | Newtype             tyNm       : {HsName}
+%%]
+
+%%[(7 hmtyinfer || hmtyast)
+DATA Err
+  | MissingRowLabels    nmL        : {[HsName]}
+                        ty         : {Ty}
+  | TooManyRowLabels    nmL        : {[HsName]}
+                        ty         : {Ty}
+%%]
+
+%%[7
+DATA Err
+  | InconsistentIntros  kind       : String
+                        nmL        : {[HsName]}
+  | MissingDataFields   nmL        : {[HsName]}
+                        con        : {HsName}
+  | MissingAnyDataField nmL        : {[HsName]}
+                        tyNm       : {HsName}
+  | DuplicateDataFields nmL        : {[HsName]}
+%%]
+
+%%[8
+DATA Err
+  | FileNotFound        fileName   : {String}
+                        locations  : {[String]}
+  | AmbiguousExport     name       : {HsName}
+%%[[8
+                        entities   : {[PP_Doc]}
+%%][99
+                        entities   : {[ThingAndRange HsName]}
+%%]]
+  | PP                  pp         : {PP_Doc}
+%%]
+
+%%[(8 codegen)
+DATA Err
+  | IllegalFFIWay       ffiWay     : {FFIWay}
+  | TyCoreMatchClash    ty1        : {PP_Doc}
+                        ty2        : {PP_Doc}
+                        ty1detail  : {PP_Doc}
+                        ty2detail  : {PP_Doc}
+  | NoCoerceDerivation  func       : {Ty}
+                        arg        : {Ty}
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+DATA Err
+  | PrfCutOffReached    pred       : {PredOcc}
+                        depth      : {Int}
+%%[[9
+  | NotProvenPreds      preds      : {[Pred]}
+%%][99
+  | NotProvenPreds      preds      : {[(Pred,[Range])]}
+%%]]
+%%[[9
+  | AmbigPreds          preds      : {[Pred]}
+%%][99
+  | AmbigPreds          preds      : {[(Pred,[Range])]}
+%%]]
+                        inQBinds   : {AssocL HsName PP_Doc}	-- quantified
+                        inBinds    : {AssocL HsName PP_Doc} -- unquantified
+  | OverlapPreds        overl      : {AssocL Pred [PP_Doc]}
+  | TyHasFreeTVars      ty         : {Ty}
+  | DeclsNotAllowed     inside     : String
+                        decls      : {AssocL IdOccKind [HsName]}
+  | ValWithoutSig       nmL        : {[HsName]}
+  | NoMostSpecificPred  pred1      : {Pred}
+                        pred2      : {Pred}
+  | EvidenceAltsLeft
+%%]
+
+%%[9
+DATA Err
+  | MalformedPred       pp         : {PP_Doc}
+%%]
+
+%%[(11 hmtyinfer || hmtyast)
+DATA Err
+  | TyBetaRedLimit      ty         : {Ty}
+                        tyTo       : {Ty}
+                        limit      : {Int}
+%%]
+
+%%[20
+DATA Err
+  | MayOnlyHaveNrMain   nrAllowed  : Int		-- 0 or 1, depending on option ehcOptDoLinking
+                        prevModNmL : {[HsName]}	-- possible previous modules in which main was defined
+                        modNm      : HsName
+  | MayNotHaveMain      modNm      : HsName
+  | MustHaveMain
+  | ModNameMismatch     nmOfFile   : HsName
+                        nmFromSrc  : HsName
+  | AmbiguousNameRef    nm         : HsName
+                        nmAlts     : {[HsName]}
+  | MutRecModules       mutRecL    : {[[HsName]]}
+%%]
+
+%%[(95 hmtyinfer || hmtyast)
+DATA Err
+  | MalformedTy         kind       : String
+                        purpose    : String
+                        ty         : Ty
+  | NoDerivFor          pred       : PP_Doc
+  | NoDerivForData      ty         : Ty
+                        clNm       : HsName
+                        reason     : String
+%%]
+
+

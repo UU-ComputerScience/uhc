@@ -1,0 +1,526 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty con presence check
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).tyGam
+ATTR AllTyExpr [ tyGam: TyGam | | ]
+%%]
+
+%%[(3 hmtyinfer).tyGam
+ATTR AllTyExpr [ | | tyGam: TyGam ]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 1.check
+%%[(5 hmtyinfer).check
+SEM TyExpr
+  | Con         loc         .   (tgi_,nmErrs)       =   tyGamLookupErr @nm @lhs.tyGam
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Con         loc         .   (tgi_,nmErrs)       :=  tyGamLookupErr @nm @lhs.tyGam
+                loc         .   (tkgi_,nmErrs2)     =   tyKiGamLookupByNameErr @nm @lhs.tyKiGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TyKiGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+ATTR AllTyVar AllTyExpr [ | tyKiGam: TyKiGam | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty var names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 hmtyinfer)
+ATTR TyVar [ | | nm: HsName ]
+
+SEM TyVar
+  | Var         lhs         .   nm                  =   @nm
+%%]
+
+%%[(8 hmtyinfer)
+ATTR TyVars [ | | nmL: {[HsName]} ]
+
+SEM TyVars
+  | Nil         lhs         .   nmL                 =   []
+  | Cons        lhs         .   nmL                 =   @hd.nm : @tl.nmL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Ty var gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer) hs
+tyGamLookupOrAdd :: UID -> HsName -> TyGam -> TyGam -> (TyGamInfo,TyGam)
+tyGamLookupOrAdd uniq nm tyGamLkup tyGam
+  =  case tyGamLookup nm tyGamLkup of
+       Nothing    ->  let  t    =  mkNewTyVar uniq
+                           tgi  =  mkTGI t
+                      in   (tgi,gamAdd nm tgi tyGam)
+       Just tgi   ->  (tgi,tyGam)
+%%]
+
+Type 't' is assumed to be a Ty_Con or Ty_Var.
+Should only be used on result from tyGamLookupOrAdd.
+
+%%[(6 hmtyinfer) hs
+tyKiGamLookupOrAdd :: UID -> Ty -> TyKiGam -> (TyKiGamInfo,TyKiGam,TyKiGam)
+tyKiGamLookupOrAdd uniq t tyKiGam
+  =  case tyKiGamLookup t tyKiGam of
+       Nothing    ->  (tkgi, newg `gamUnion` tyKiGam, newg)
+                  where tkgi  =  TyKiGamInfo (mkNewTyVar uniq) -- t
+                        newg  =  tyKiGamSingleton t tkgi
+       Just tkgi  ->  (tkgi,tyKiGam,emptyGam)
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.tvGathFlow
+%%[(5 hmtyinfer).tvGathFlow hs
+tvGathFlowOut :: Ord k => Gam k v -> Gam k v -> Gam k v
+tvGathFlowOut lhsG insideG
+  = lhsG'
+  where  (l,g)     = gamPop insideG
+         lhsG'     = gamAddGam l lhsG
+
+tvGathFlowIn :: Ord k => Gam k v -> Gam k v -> Gam k v
+tvGathFlowIn newG lhsG = gamPushNew (gamPushGam newG lhsG)
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.tyVarGather
+%%[(5 hmtyinfer).tyVarGather
+SEM TyExpr
+  | Wild        loc         .   tyVarId             =   @lUniq
+                            .   tgi_                =   TyGamInfo (mkNewTyVar @tyVarId)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Wild        loc         .   tgi_                :=  let t = mkNewTyVar @tyVarId in mkTGI t
+                            .   tkgi_               =   TyKiGamInfo (tgiTy @tgi_)
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.tyVarGather
+%%[(5 hmtyinfer).tyVarGather
+SEM TyExpr
+  | Var VarWild loc         .   tyVarId             =   @lUniq
+                (loc.tgi_,lhs.tyGam)                =   case tyGamLookup @nm @lhs.tyGam of
+                                                          Nothing    ->  let  t    =  mkNewTyVar @tyVarId
+                                                                              tgi  =  TyGamInfo t
+                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                          Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Var VarWild (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.tyVarGather
+%%[(5 hmtyinfer).tyVarGather
+SEM TyExpr
+  | Quant       loc         .   (tv,tgi_)           =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,TyGamInfo t)
+                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Quant       loc         .   (tv,tgi_,tkgi_)     :=  let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
+                            .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+%%[(5 hmtyinfer).tyVarGather
+ATTR AllTyVar [ | tyGam: TyGam | ]
+
+SEM TyVar
+  | Var         (loc.tgi_,lhs.tyGam)                =   case tyGamLookup @nm (gamTop @lhs.tyGam) of
+                                                          Nothing    ->  let  t    =  mkNewTyVar @lUniq
+                                                                              tgi  =  TyGamInfo t
+                                                                         in   (tgi,gamAdd @nm tgi @lhs.tyGam)
+                                                          Just tgi   ->  (tgi,@lhs.tyGam)
+                loc         .   tv                  =   tyVar $ tgiTy @tgi_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyVar
+  | Var         (loc.tgi_,lhs.tyGam)                :=  tyGamLookupOrAdd @lUniq @nm (gamTop @lhs.tyGam) @lhs.tyGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer).tyVarGather
+SEM PrExpr
+  | Forall      loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
+                prExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @prExpr.tyGam
+                loc         .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                prExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @prExpr.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer)
+SEM RowTyExpr
+  | Var         (loc.tgi_,lhs.tyGam)                =   tyGamLookupOrAdd @lUniq @nm @lhs.tyGam @lhs.tyGam
+                (loc.tkgi_,lhs.tyKiGam,loc.tyKiGamNew)
+                                                    =   tyKiGamLookupOrAdd @lUniq_ki (tgiTy @tgi_) @lhs.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+%%[(11 hmtyinfer)
+SEM TyExpr
+  | Lam         loc         .   (tv,tgi_,tkgi_)     =   let  t = mkTyVar @lUniq
+                                                        in   (@lUniq,mkTGI t,TyKiGamInfo (mkNewTyVar @lUniq_ki))
+                tyExpr      .   tyGam               =   tvGathFlowIn  (@tyVar `gamSingleton` @tgi_) @lhs.tyGam
+                lhs         .   tyGam               =   tvGathFlowOut @lhs.tyGam @tyExpr.tyGam
+                loc         .   tyKiGamNew          =   tgiTy @tgi_ `tyKiGamSingleton` @tkgi_
+                tyExpr      .   tyKiGam             =   tvGathFlowIn  @tyKiGamNew @lhs.tyKiGam
+                lhs         .   tyKiGam             =   tvGathFlowOut @lhs.tyKiGam @tyExpr.tyKiGam
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq_ki            :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wildcard tvar gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+-- generated from ruler rules into EHRulerRules, was 2.tyVarWildL
+%%[(5 hmtyinfer).tyVarWildL
+ATTR AllTyExpr [ | | tyVarWildL USE {++} {[]}: TyVarIdL ]
+%%]
+
+%%[(3 hmtyinfer).tyWildL
+ATTR TyExpr [ | | tyWildL USE {++} {[]}: TyL ]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.Wild
+%%[(5 hmtyinfer).Wild
+SEM TyExpr
+  | Wild        lhs         .   tyVarWildL          =   [@tyVarId]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.Wild
+%%[(5 hmtyinfer).Wild
+SEM TyExpr
+  | VarWild     lhs         .   tyVarWildL          =   [@tyVarId]
+%%]
+
+%%[(9 hmtyinfer).Wild
+SEM TyExpr
+  | Impls       lhs         .   tyVarWildL          =   [@implsVarId]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering of Ty var -> Ki mapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Required by abstraction, in particular kind of quantified ty var.
+Not used/intended to propagate any further.
+
+%%[(6 hmtyinfer)
+ATTR AllTyExpr AllData AllDecl AllTyVar [ | | intlTyKiGam USE {`gamUnion`} {emptyGam}: TyKiGam ]
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Var VarWild lhs         .   intlTyKiGam         =   @tyKiGamNew
+  | Quant
+%%[[11
+    Lam
+%%]]
+                lhs         .   intlTyKiGam         =   gamUnions [@tyKiGamNew,@tyExpr.intlTyKiGam]
+
+SEM TyVar
+  | Var         lhs         .   intlTyKiGam         =   @tyKiGamNew
+%%]
+
+%%[(9 hmtyinfer)
+SEM PrExpr
+  | Forall      lhs         .   intlTyKiGam         =   gamUnions [@tyKiGamNew,@prExpr.intlTyKiGam]
+
+SEM RowTyExpr
+  | Var         lhs         .   intlTyKiGam         =   @tyKiGamNew
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Kind inferencing for TyExpr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer)
+ATTR AllTyExpr [ | kiVarMp: VarMp | ]
+ATTR TyExpr TyVar [ | | ki: Ty ]
+ATTR TyExprs TyVars [ | | kiL: TyL ]
+%%]
+
+%%[(6 hmtyinfer)
+SEM TyExpr
+  | Var VarWild loc         .   ki                  =   tkgiKi @tkgi_
+  | Wild        loc         .   ki                  =   tkgiKi @tkgi_
+  | Con         loc         .   ki                  =   tkgiKi @tkgi_
+  | App         loc         .   knResKi             =   mkNewTyVar @lUniq
+                            .   knFunKi             =   [@arg.ki] `mkArrow` @knResKi
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp @func.ki @knFunKi
+                            .   fKi                 =   foTy @fo_
+                            .   ki                  =   @knResKi
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @arg.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @arg.kiVarMp (@arg.kiVarMp |=> @func.ki) @knFunKi
+
+%%[(6 hmtyinfer)
+SEM TyExprs
+  | Nil         lhs         .   kiL                 =   []
+  | Cons        lhs         .   kiL                 =   @hd.ki : @tl.kiL
+
+SEM TyVar
+  | Var         loc         .   ki                  =   tkgiKi @tkgi_
+
+SEM TyVars
+  | Nil         lhs         .   kiL                 =   []
+  | Cons        lhs         .   kiL                 =   @hd.ki : @tl.kiL
+%%]
+
+%%[(7 hmtyinfer)
+SEM TyExpr
+  | Row         loc         .   ki                  =   kiRow
+
+SEM RowTyExpr
+  | Ext         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExpr.kiVarMp @tyExpr.ki kiStar
+                            .   ki                  =   foTy @fo_
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExpr.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%[(9 hmtyinfer)
+SEM TyExpr
+  | Impls       loc         .   implsVarId          =   @lUniq
+                            .   tgi_                =   mkTGI (Ty_Impls (Impls_Tail @implsVarId []))
+                            .   tkgi_               =   TyKiGamInfo kiStar
+                            .   ki                  =   tkgiKi @tkgi_
+                loc         .   lUniq               :   UNIQUEREF gUniq
+  | NoImpls     loc         .   tgi_                =   mkTGI (Ty_Impls Impls_Nil)
+                            .   tkgi_               =   TyKiGamInfo kiStar
+                            .   ki                  =   tkgiKi @tkgi_
+
+SEM RowTyExpr
+  | Var         loc         .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq2 @lhs.kiVarMp (tkgiKi @tkgi_) kiRow
+                            .   ki                  =   foTy @fo_
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @lhs.kiVarMp
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+
+%%[(11 hmtyinfer)
+SEM TyExpr
+  | Lam         loc         .   ki                  =   [tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+%%]
+  | Lam         loc         .   ki                  =   [@tyExpr.kiVarMp |=> tkgiKi @tkgi_] `mkArrow` @tyExpr.ki
+
+%%[(9 hmtyinfer)
+ATTR PrExpr [ | | ki: Ty ]
+
+SEM PrExpr
+  | *           lhs         .   ki                  =   kiStar
+  | Class       loc         .   (tkgi_,clKiNmErrs)  =   tyKiGamLookupByNameErr (hsnClass2Kind @nm) @lhs.tyKiGam
+                            .   fo_                 =   fitsIn weakFIOpts defaultFIEnv @lUniq @tyExprs.kiVarMp
+                                                          (@tyExprs.kiL `mkArrow` kiStar) (tkgiKi @tkgi_)
+                lhs         .   kiVarMp             =   foVarMp @fo_ |=> @tyExprs.kiVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type of TyExpr, TyVar
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(1 hmtyinfer).ty
+ATTR TyExpr [ | | ty: Ty ]
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 1.ConApp
+%%[(5 hmtyinfer).ConApp
+SEM TyExpr
+  | Con         loc         .   ty                  =   Ty_Con @nm
+  | App         loc         .   ty                  =   Ty_App @func.ty @arg.ty
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 2.ty
+%%[(5 hmtyinfer).ty
+SEM TyExpr
+  | Wild        loc         .   ty                  =   tgiTy @tgi_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 3.ty
+%%[(5 hmtyinfer).ty
+SEM TyExpr
+  | Var VarWild
+                loc         .   ty                  =   tgiTy @tgi_
+%%]
+
+-- generated from ruler rules into EHRulerRules, was 4.ty
+%%[(5 hmtyinfer).ty
+SEM TyExpr
+  | Quant       loc         .   ty                  =   Ty_Quant @qu @tv
+%%[[6
+                                                                 (tkgiKi @tkgi_)         -- TBD: user specified kind
+%%]]
+                                                                 @tyExpr.ty
+%%]
+
+%%[(5 hmtyinfer)
+ATTR TyExprs [ | | tyL: TyL ]
+
+SEM TyExprs
+  | Nil         lhs         .   tyL                 =   []
+  | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
+%%]
+
+%%[(5 hmtyinfer)
+ATTR TyVar [ | | ty: Ty ]
+ATTR TyVars [ | | tyL: TyL ]
+
+SEM TyVar
+  | Var         lhs         .   ty                  =   tgiTy @tgi_
+
+SEM TyVars
+  | Nil         lhs         .   tyL                 =   []
+  | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
+%%]
+
+%%[(9 hmtyinfer)
+SEM TyExpr
+  | Impls NoImpls
+                loc         .   ty                  =   tgiTy @tgi_
+%%]
+
+%%[(11 hmtyinfer)
+SEM TyExpr
+  | Lam         loc         .   ty                  =   Ty_Lam @tv @tyExpr.ty
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Records
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(7 hmtyinfer)
+ATTR RowTyExpr [ | | tyRow: Ty ]
+
+SEM TyExpr
+  | Row         loc         .   ty                  =   @rowTyExpr.tyRow
+
+SEM RowTyExpr
+  | Empty       lhs         .   tyRow               =   tyRowEmpty
+  | Ext         lhs         .   tyRow               =   Ty_Ext @rowTyExpr.tyRow @nm @tyExpr.ty
+%%]
+
+%%[(9 hmtyinfer)
+SEM RowTyExpr
+  | Var         lhs         .   tyRow               =   tgiTy @tgi_
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Predicates
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+ATTR PrExpr [ | | pr: Pred ]
+
+SEM PrExpr
+  | Class       loc         .   pr                  =   Pred_Class (@nm `mkConApp` @tyExprs.tyL)
+  | Arrow Forall
+                loc         .   pr                  =   Pred_Pred @prTy
+%%]
+
+%%[(9 hmtyinfer)
+ATTR PrExpr [ | | prTy: Ty ]
+
+SEM PrExpr
+  | Arrow       loc         .   prTy                =   [@arg.prTy] `mkArrow` @res.prTy
+  | Forall      loc         .   prTy                =   mkTyQu tyQu_Forall [(@tv,kiStar)] @prExpr.prTy  -- TBD
+  | * - Arrow Forall
+                loc         .   prTy                =   @ty
+%%]
+
+%%[(10 hmtyinfer)
+SEM PrExpr
+  | Lacks       loc         .   pr                  =   Pred_Lacks @rowTyExpr.tyRow (Label_Lab @nm)
+  | DynVar      loc         .   pr                  =   Pred_Class ((hsnDynVar `hsnConcat` @nm) `mkConApp` [@tyExpr.ty])
+%%]
+
+%%[(9 hmtyinfer)
+ATTR PrExprs [ | | prL: {[Pred]} ]
+
+SEM PrExprs
+  | Nil         lhs         .   prL                 =   []
+  | Cons        lhs         .   prL                 =   @hd.pr : @tl.prL
+%%]
+
+%%[(9 hmtyinfer)
+ATTR PrExpr [ | | ty: Ty ]
+ATTR PrExprs [ | | tyL: TyL ]
+
+SEM PrExpr
+  | *           loc         .   ty                  =   Ty_Pred @pr
+
+SEM PrExprs
+  | Nil         lhs         .   tyL                 =   []
+  | Cons        lhs         .   tyL                 =   @hd.ty : @tl.tyL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type declaration
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Type
+
+%%[(11 hmtyinfer)
+SEM Decl
+  | Type        loc         .   typeVar             =   mkTyVar @lUniq
+                            .   typeTgi             =   mkTGI @typeVar
+                lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+                loc         .   foTy_               =   fitsIn  weakFIOpts defaultFIEnv @lUniq2 @lhs.tyTyVarMp
+                                                                @tyExpr.ty (tgiTy @typeTgi)
+                lhs         .   tyTyVarMp           =   foVarMp @foTy_ |=> @lhs.tyTyVarMp
+                loc         .   lUniq               :   UNIQUEREF gUniq
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+%%]
+%%[(11 hmtyinfer)
+%%]
+SEM Decl
+  | Type        tyExpr      .   tyGam               =   @lhs.patTyGam
+                loc         .   typeTgi             =   mkTGI @tyExpr.ty
+                lhs         .   patTyGam            =   gamAdd @tyNm @typeTgi @lhs.patTyGam
+
+Kind
+
+%%[(11 hmtyinfer)
+SEM Decl
+  | Type        loc         .   typeTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
+                lhs         .   patTyKiGam          =   tyKiGamNameSingleton @tyNm @typeTkgi `gamUnion` @lhs.patTyKiGam
+                loc         .   foKi_               =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @tyExpr.kiVarMp
+                                                                @tyExpr.ki (tkgiKi @typeTkgi)
+                lhs         .   kiVarMp             =   foVarMp @foKi_ |=> @tyExpr.kiVarMp
+%%]
+

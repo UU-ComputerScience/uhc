@@ -1,0 +1,52 @@
+-----------------------------------------------------------------------------
+-- |The Helium Compiler : Static Analysis
+--
+-- Maintainer  :  bastiaan@cs.uu.nl
+-- Stability   :  experimental
+-- Portability :  unknown
+--
+-- A datatype to represent the directives.
+--
+-- (directives based on "Scripting the Type Inference Process", ICFP 2003)
+-----------------------------------------------------------------------------
+
+DERIVING Core_TypingStrategy Core_Judgement Core_UserStatement Core_TypeRule : Show, Read
+
+DATA Core_TypingStrategy 
+   | Siblings
+         functions  : {[String]}
+   | TypingStrategy
+        typeEnv     : {[(String, Tp)]}   
+        typerule    : Core_TypeRule
+        statements  : Core_UserStatements
+        
+DATA Core_TypeRule 
+   | TypeRule
+        premises    : Core_Judgements
+        conclusion  : Core_Judgement
+
+TYPE Core_Judgements = [Core_Judgement]
+DATA Core_Judgement
+   | Judgement
+        expression  : String
+        type        : Tp
+        
+TYPE Core_UserStatements = [Core_UserStatement]
+
+DATA Core_UserStatement
+   | Equal
+        leftType    : Tp
+        rightType   : Tp
+        message     : String
+   | Pred
+        predClass   : String
+        predType    : Tp
+        message     : String
+   | MetaVariableConstraints        
+        name        : String
+   | CorePhase 
+        phase       : Int
+
+{
+type Core_TypingStrategies = [Core_TypingStrategy]
+}

@@ -1,0 +1,57 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core LamInfo gathering & propagation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering LamInfo
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR
+  CModule CExpr
+%%[[20
+  CodeAGItf
+%%]]
+    [ | | gathLamMp: LamMp ]
+
+SEM CExpr
+  | Let         lhs         .   gathLamMp =   @binds.bindLamMp `Map.union` @body.gathLamMp
+  | * - Let Ann lhs         .   gathLamMp =   Map.empty
+%%]
+
+%%[(8 codegen)
+ATTR AllBind [ | | bindLamMp USE {`Map.union`} {Map.empty}: LamMp ]
+
+%%]
+
+%%[(8 codegen)
+ATTR
+  AllCodeNT
+%%[[20
+  CodeAGItf
+%%]]
+    [ lamMp: LamMp | | ]
+%%]
+
+%%[(8 codegen).CodeAGItf.lamMp
+SEM CodeAGItf
+  | AGItf       module      .   lamMp  =   @module.gathLamMp
+%%]
+
+%%[(20 codegen) -8.CodeAGItf.lamMp
+SEM CodeAGItf
+  | AGItf       loc         .   gathLamMp
+                                            =   lamMpUpdateWith @lhs.lamMp @module.gathLamMp
+                module      .   lamMp  =   @gathLamMp `Map.union` @lhs.lamMp
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | Lam         body        .   lamMp  =   Map.delete @arg @lhs.lamMp
+%%]
+

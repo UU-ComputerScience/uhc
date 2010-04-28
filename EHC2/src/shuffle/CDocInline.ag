@@ -1,0 +1,101 @@
+-------------------------------------------------------------------------
+-- Inlining files on CDoc
+-------------------------------------------------------------------------
+
+{
+module CDocInline
+  ( cdocInlineCDocIO
+  , InlineCDocSt, InlineCDocIO
+  )
+  where
+
+import qualified Data.Map as Map
+import Network.URI
+import System( system, ExitCode(..) )
+-- import System.Posix.Temp( mkstemp )
+import System.Directory( removeFile )
+import IO
+import Common
+import CDoc
+import CDocCommon
+}
+
+INCLUDE "CDocAbsSyn.ag"
+INCLUDE "CDocCommonAG.ag"
+
+WRAPPER AGCDocItf
+
+{
+wrapAGCDoc_T :: NmChMp -> T_AGCDocItf -> Syn_AGCDocItf
+wrapAGCDoc_T nmChMp d
+  = wrap_AGCDocItf d
+      (Inh_AGCDocItf
+         { nmChMp_Inh_AGCDocItf = nmChMp
+         })
+
+wrapCDoc :: NmChMp -> CDoc -> Syn_AGCDocItf
+wrapCDoc m d = wrapAGCDoc_T m (sem_AGCDocItf (AGCDocItf_AGItf d))
+
+cdocInlineCDocIO :: CDoc -> (CDoc,InlineCDocIO)
+cdocInlineCDocIO d
+  = (ilRepl_Syn_AGCDocItf r,ilIO_Syn_AGCDocItf r)
+  where r = wrapCDoc Map.empty d
+
+type InlineCDocSt = (NmChMp,ErrM)
+type InlineCDocIO = InlineCDocSt -> IO InlineCDocSt
+
+inlineCDocEmp :: InlineCDocIO
+inlineCDocEmp = return
+
+inlineCDocAdd :: InlineCDocIO -> InlineCDocIO -> InlineCDocIO
+inlineCDocAdd i1 i2 s
+  = do { s1@(m1,e1) <- i1 s
+       ; if Map.null e1
+         then i2 (m1,Map.empty)
+         else i2 (Map.empty,e1)
+       }
+}
+
+-------------------------------------------------------------------------
+-- URef (inline) subst in CDoc
+-------------------------------------------------------------------------
+
+ATTR CDoc [ | | ilRepl: SELF ]
+ATTR AGCDocItf [ | | ilRepl: CDoc ]
+ATTR AGCDocItf CDoc [ | | ilIO USE {`inlineCDocAdd`} {inlineCDocEmp}: InlineCDocIO ]
+
+SEM CDoc
+  | Inl         loc         .   ilNm        =   Nm @uref
+                lhs         .   ilRepl      =   CDoc_Ref @ilNm Nothing ChHere
+                            .   ilIO        =   \(m,e)
+                                                    -> let dflt = (m,Map.insert @lhs.cpos (Err_UndefURI @lhs.cpos @uref) e)
+                                                           mkc n c m
+                                                                = Map.insert n (NmChInfo n ChHere res (const res)) m
+                                                                where res = Just (cd c)
+                                                       in  case takeWhile (/= ':') @uref of
+                                                             "file"
+                                                               -> do { let mu = parseURIReference @uref
+                                                                     ; mh <- maybe (return Nothing) openURI mu
+                                                                     ; case mh of
+                                                                         Just h -> do { c <- hGetContents h
+                                                                                      ; return (mkc @ilNm c m,e)
+                                                                                      }
+                                                                         _      -> return dflt
+                                                                     }
+                                                             "exec"
+                                                               -> do { let cmd = drop 5 @uref
+                                                                     -- ; (tmpF,tmpH) <- mkstemp "shuffleXXXXXX.tmp"
+                                                                     -- ; hClose tmpH
+                                                                     ; let tmpF = "shuffleXXXXXX.tmp"
+                                                                     ; exitCode <- system (cmd ++ " > " ++ tmpF)
+                                                                     ; case exitCode of
+                                                                         ExitSuccess -> do { h <- openFile tmpF ReadMode
+                                                                                           ; c <- hGetContents h
+                                                                                           -- ; hClose h
+                                                                                           ; removeFile tmpF
+                                                                                           ; return (mkc @ilNm c m,e)
+                                                                                           }
+                                                                         _           -> return (m,Map.insert @lhs.cpos (Err_Exec @lhs.cpos cmd (show exitCode)) e)
+                                                                     }
+                                                             _ -> return dflt
+                                                       

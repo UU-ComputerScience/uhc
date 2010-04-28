@@ -1,0 +1,161 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Level is not defined for CExpr_Let, as the lexical level is assigned differently for various AGs
+
+%%[(8 codegen)
+ATTR AllCodeNT [ lev: Int | | ]
+
+SEM CodeAGItf
+  | AGItf       module      .   lev         =   cLevModule
+
+SEM CExpr
+  | Lam         loc         .   lev         =   @lhs.lev + 1
+
+SEM CAlt
+  | Alt         loc         .   lev         =   @lhs.lev + 1
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding global?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ isGlobal: Bool | | ]
+
+SEM CExpr
+  | Let         loc	       	.   isGlobal    =   @lhs.lev == cLevModule
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is CExpr the creation of a tuple?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbTupApp: {Maybe CTag} ]
+
+SEM CExpr
+  | Tup         lhs         .   mbTupApp    =   Just @tag
+  | App         lhs         .   mbTupApp    =   @func.mbTupApp
+  | * - Tup App Ann
+                lhs         .   mbTupApp    =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a lam?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | isLam: Bool ]
+
+SEM CExpr
+  | Lam         lhs         .   isLam       =   True
+  | * - Lam Ann lhs         .   isLam       =   False
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is expr a var?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | mbVar: {Maybe HsName} ]
+
+SEM CExpr
+  | Var         loc         .   mbVar       =   Just @nm
+  | * - Var Ann lhs         .   mbVar       =   Nothing
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let context
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllBind [ letBindingsCateg: CBindingsCateg | | ]
+
+SEM CExpr
+  | Let         loc         .   letBindingsCateg    =   @categ
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Is top App? Is top Tup adapt?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ isTopApp: Bool  isTopTup: Bool | | ]
+
+SEM CExpr
+  | App         func        .   isTopApp    =   False
+                arg         .   isTopApp    =   True
+  | * - App Ann loc         .   isTopApp    =   True
+  | TupUpd TupIns TupDel
+                expr        .   isTopTup    =   False
+                loc         .   isTopTup    =   True
+  | * - TupUpd TupIns TupDel Ann
+                loc         .   isTopTup    =   True
+
+SEM CModule
+  | Mod         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CBind
+  | Bind        expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CPatBind
+  | Bind        offset      .   isTopApp    =   True
+                            .   isTopTup    =   True
+
+SEM CAlt
+  | Alt         expr        .   isTopApp    =   True
+                            .   isTopTup    =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Various contextual info, this should replace the above over time
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr [ | | whatBelow: WhatExpr ]
+
+SEM CExpr
+  | Lam         loc         .   whatBelow       =   ExprIsLam
+  | Var         loc         .   whatBelow       =   ExprIsVar @nm
+  | Int         loc         .   whatBelow       =   ExprIsInt @int
+  | * - Lam Var Int Ann
+                loc         .   whatBelow       =   ExprIsOther
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ whatAbove: WhatExpr | | ]
+
+SEM CExpr
+  | Lam			loc			.	whatAbove		=	ExprIsLam
+  | App			loc			.	whatAbove		=	ExprIsApp
+  | * - Lam App Ann
+  				loc			.	whatAbove		=	ExprIsOther
+
+SEM CBind
+  | Bind		loc			.	whatAbove		=	ExprIsOther
+
+SEM CPatBind
+  | Bind		loc			.	whatAbove		=	ExprIsOther
+
+SEM CAlt
+  | Alt			loc			.	whatAbove		=	ExprIsOther
+
+SEM CModule
+  | Mod			loc			.	whatAbove		=	ExprIsOther
+%%]
+
+

@@ -1,0 +1,9 @@
+%%[format
+%format ^ = " "
+%format ^^ = "\;"
+%format ATTR = "\mathbf{ATTR}"
+%format SEM = "\mathbf{SEM}"
+%format lhs = "\mathbf{lhs}"
+%format . = "."
+%format (A(n)(f)) = @ n . f
+%%]

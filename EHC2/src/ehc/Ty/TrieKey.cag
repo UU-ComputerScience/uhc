@@ -1,0 +1,235 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to computation of a TrieKey from a Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A TrieKey for a Ty is a breadthfirst walk through the type structure, where unknown, too complex,
+or unifiable parts (like type variables) are marked as partial.
+In this way search via a Trie proceeds top to bottom, in the same way unification would.
+
+Some examples:
+type                                Ty                                      [TrieKey Key]
+----                                --                                      -------------
+Int                                 Int                                     [Int]
+Int -> Int                          (->) Int Int                            [->,Int,Int]
+(Int -> Int) -> (Int -> Int)        (->) ((->) Int Int) ((->) Int Int)      [->,->,->,Int,Int,Int,Int]
+(a -> b) -> (c -> d)                (->) ((->) a b) ((->) c d)              [->,->,->,a,b,c,d]
+a -> (c -> d)                       (->) a ((->) c d)                       [->,a,->,c,d]
+(a -> b) -> c                       (->) ((->) a b) c                       [->,->,c,a,b]
+
+%%[(9 hmtyinfer || hmtyast) hs module {%{EH}Ty.TrieKey} import({%{EH}Base.Common},{%{EH}Base.HsName},{%{EH}Base.Builtin},{%{EH}Ty})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set,Data.List as Lst,EH.Util.FastSeq as Seq,{%{EH}Base.Trie (TrieKey(..),TrieKeyKind(..))},{%{EH}CHR.Key})
+%%]
+
+%%[(9 hmtyinfer || hmtyast) ag import({Ty/AbsSyn},{Ty/CommonAG})
+WRAPPER TyAGItf
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs
+tyTrieKeyParentChildren :: Ty -> ([TrieKey Key],[TrieKey Key])
+tyTrieKeyParentChildren ty
+  =  let  t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf)
+     in   (toList $ trieKey_Syn_TyAGItf t, toList $ trieKeyNest_Syn_TyAGItf t)
+
+instance Keyable Ty where
+  toKeyParentChildren = tyTrieKeyParentChildren
+
+instance Keyable Pred where
+  toKeyParentChildren pr = toKeyParentChildren $ Ty_Pred pr
+
+instance Keyable PredScope where
+  toKey (PredScope_Var v) = [TK_One TKK_Partial $ Key_UID v]
+  toKey (PredScope_Lev l) = [TK_One TKK_Normal  $ Key_Str $ show l]
+
+instance Keyable CHRPredOccCxt where
+  toKey (CHRPredOccCxt_Scope1 sc) = toKey sc -- for now
+
+instance Keyable PredOcc where
+  toKey po = toKey (poPr po)
+
+instance Keyable CHRPredOcc where
+  toKeyParentChildren po
+    = (ppr ++ toKey (cpoCxt po),cpr)
+    where (ppr,cpr) = toKeyParentChildren $ cpoPr po
+
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs
+instance Keyable PredOccId where
+  toKey (PredOccId     i) = [TK_One TKK_Normal  $ Key_UID i]
+%%]
+  toKey (PredOccId_Var v) = [TK_One TKK_Partial $ Key_UID v]
+
+%%[(10 hmtyinfer || hmtyast)
+WRAPPER LabelAGItf
+%%]
+
+%%[(10 hmtyinfer || hmtyast) hs
+labelTrieKey :: Label -> [TrieKey Key]
+labelTrieKey label
+  =  let  t =  wrap_LabelAGItf
+                 (sem_LabelAGItf (LabelAGItf_AGItf label))
+                 (Inh_LabelAGItf)
+     in   (toList $ trieKey_Syn_LabelAGItf t)
+%%]
+
+%%[(10 hmtyinfer || hmtyast) hs
+instance Keyable LabelOffset where
+  toKey (LabelOffset_Var v) = [TK_One TKK_Partial $ Key_UID v]
+  toKey (LabelOffset_Off l) = [TK_One TKK_Normal  $ Key_Str $ show l]
+
+instance Keyable Label where
+  toKey = labelTrieKey
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% TrieKey
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR
+  TyAGItf Ty Pred
+%%[[10
+  Label LabelAGItf {- RowExts -}
+%%]]
+%%[[13
+  PredSeq
+%%]]
+    [ | | trieKey: {FastSeq (TrieKey Key)} ]
+ATTR
+  TyAGItf Ty Pred
+%%[[13
+  PredSeq
+%%]]
+    [ | | trieKeyNest: {FastSeq (TrieKey Key)} ]
+ATTR Ty [ | | trieKeyFun: {FastSeq (TrieKey Key)} ]
+ATTR Ty [ | | trieKeyArgs, trieKeyArgsNest: {FastSeq (TrieKey Key)} ]
+%%]
+
+%%[(9 hmtyinfer || hmtyast)
+SEM Ty
+  | App             lhs     .   (trieKey,trieKeyNest)
+                                                =   if @isSpineRoot
+                                                    then (@trieKeyFun, @trieKeyArgs :++: @trieKeyArgsNest)
+                                                    else (empty,empty)
+  | Ext             loc     .   (trieKey,trieKeyNest)
+                                                =   if @isSpineRoot
+                                                    then let (_,exts) = tyRowExts @self
+                                                         in  ( singleton
+                                                               $ TK_One
+                                                                   (if @ty.isFixed then TKK_Normal else TKK_Partial)
+                                                                   (Key_Str $ concat $ intersperse "," $ Lst.map show $ assocLKeys exts)
+                                                             , @trieKeyArgs :++: @trieKeyArgsNest
+                                                             )
+                                                    else (empty,empty)
+  | Var             loc     .   trieKey         =   singleton $ TK_One
+                                                                  (if tvCatIsPlain @categ.self then TKK_Partial else TKK_Normal)
+                                                              $ Key_UID @tv
+                            .   trieKeyNest     =   empty
+  | Con             loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_HNm @nm
+                            .   trieKeyNest     =   empty
+  | Quant           loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_TyQu @qu.self
+                            .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+  | Pred            loc     .   trieKey         =   @pr.trieKey
+                            .   trieKeyNest     =   @pr.trieKeyNest
+  | * - App Var Con Quant Ext Pred
+                    loc     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_Ty @self
+                            .   trieKeyNest     =   empty
+
+SEM Ty
+  | * - App Ext     lhs     .   trieKeyFun      =   @trieKey
+                            .   trieKeyArgs     =   empty
+                            .   trieKeyArgsNest =   empty
+  | App             loc     .   trieKeyFun      =   @func.trieKeyFun
+                            .   trieKeyArgs     =   @func.trieKeyArgs     :++: @arg.trieKeyFun
+                            .   trieKeyArgsNest =   @func.trieKeyArgsNest :++: @arg.trieKeyNest
+  | Ext             loc     .   trieKeyFun      =   @trieKey
+                            .   trieKeyArgs     =   @ty.trieKeyArgs     :++: @extTy.trieKeyFun
+                            .   trieKeyArgsNest =   @ty.trieKeyArgsNest :++: @extTy.trieKeyNest
+
+SEM Pred
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @pv
+                            .   trieKeyNest     =   empty
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Pred
+  | Lacks           lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "\\") :++: @lab.trieKey
+                            .   trieKeyNest     =   @ty.trieKey :++: @ty.trieKeyNest
+%%]
+  | RowSplit        lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "|"
+                            .   trieKeyNest     =   @ty.trieKey :++: @exts.trieKey
+
+%%[(16 hmtyinfer || hmtyast)
+SEM Pred
+  | Eq              lhs     .   trieKey         =   (singleton $ TK_One TKK_Normal $ Key_Str "=")
+                            .   trieKeyNest     =   @tyL.trieKey :++: @tyR.trieKey :++: @tyL.trieKeyNest :++: @tyR.trieKeyNest
+%%]
+
+%%[(10 hmtyinfer || hmtyast)
+SEM Label
+  | Lab             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_HNm @nm
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @lv
+
+%%]
+SEM RowExts
+  | Exts            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal  $ Key_Str "exts"
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @ev
+
+%%[(13 hmtyinfer || hmtyast)
+SEM PredSeq
+  | Cons            lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str ":"
+                            .   trieKeyNest     =   @hd.trieKey :++: @tl.trieKey :++: @hd.trieKeyNest :++: @tl.trieKeyNest
+  | Var             lhs     .   trieKey         =   singleton $ TK_One TKK_Partial $ Key_UID @av
+                            .   trieKeyNest     =   empty
+  | Nil             lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "[]"
+                            .   trieKeyNest     =   empty
+
+SEM Pred
+  | Arrow           lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "=>"
+                            .   trieKeyNest     =   @args.trieKey :++: @args.trieKeyNest
+  | Preds           lhs     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_Str "seq"
+                            .   trieKeyNest     =   @seq.trieKey :++: @seq.trieKeyNest
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% (Ext) record info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast)
+ATTR Ty [ | | isFixed: Bool ]
+
+SEM Ty
+  | Ext             lhs     .   isFixed         =   @ty.isFixed
+  | Var             lhs     .   isFixed         =   False
+  | * - Ext Var     lhs     .   isFixed         =   True
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Test
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) hs
+%%]
+(_,u1,u2,u3,u4) = mkNewLevUID4 uidStart
+v1 = mkTyVar u1
+v2 = mkTyVar u2
+v3 = mkTyVar u3
+v4 = mkTyVar u4
+
+t1 = tyInt
+t2 = mkArrow [t1] t1
+t3 = mkArrow [t2] t2
+t4 = mkArrow [v1] v2
+t5 = mkArrow [v3] v4
+t6 = mkArrow [t4] t5
+t7 = mkArrow [v1] t5
+t8 = mkArrow [t4] v3

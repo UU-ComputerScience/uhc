@@ -1,0 +1,226 @@
+%%[(0 codegen)
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for Core code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CodeAGItf
+  | AGItf       module          : CModule
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Top level
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CModule
+  | Mod         moduleNm        : {HsName}
+                expr            : CExpr
+                ctagsMp         : {CTagsMp}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Expression
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CExpr
+  | Let         categ           : {CBindingsCateg}
+                binds           : CBindL
+                body            : CExpr
+  | App         func            : CExpr
+                arg             : CExpr
+                argMeta         : CMetaVal
+  | Lam         arg             : {HsName}
+                argMeta         : CMetaVal
+                body            : CExpr
+  | Var         nm              : {HsName}
+  | Case        expr            : CExpr
+                alts            : CAltL
+                dflt            : CExpr
+  | Int         int             : {Int}
+  | Char        char            : {Char}
+  | String      str             : {String}
+  | Tup         tag             : {CTag}
+  | TupDel      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+  | TupIns      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+  | TupUpd      expr            : CExpr
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldExpr         : CExpr
+  | CaseAltFail caseId          : {UID}
+                errorExpr       : CExpr
+%%]
+
+%%[(9 codegen)
+DATA CExpr
+  | Hole        uid             : {UID}
+  | HoleLet     bindsUid        : {UID}
+                body            : CExpr
+  | CoeArg
+  | ImplsApp    func            : CExpr
+                uid             : {ImplsVarId}
+  | ImplsLam    uid             : {ImplsVarId}
+                body            : CExpr
+%%]
+
+%%[(97 codegen)
+DATA CExpr
+  | Integer     integer         : {Integer}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta information
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+TYPE CMetas 	= (CMetaBind,CMetaVal)
+
+DATA CMetaBind
+  | Plain		-- by default a binding is Plain
+  | Function0   -- special case of Plain, indicating it is a nullary function on top level (that is, the RHS is the computational part for a CAF)
+  | Function1   -- special case of Plain, indicating it is a non-nullary function on top level (that is, the RHS is a lambda)
+  | Apply0	    -- special case of Plain, indicating it is an apply of a Function0 (intended to implement lazy behaviour for a CAF)
+
+DATA CMetaVal
+  | Val
+%%[[9
+  | Dict          mbPos:  {Maybe [Int]}
+  | DictClass     names:  {[Maybe HsName]}
+  | DictInstance  names:  {[[HsName]]}
+%%]]
+
+SET AllMetaVal	= CMetaVal CMetas
+SET AllMetaBind = CMetaBind CMetas
+SET AllMeta		= CMetaVal CMetaBind CMetas
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Annotations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CExpr
+  | Ann         ann             : CExprAnn
+                expr            : CExpr
+%%]
+
+%%[(8 codegen)
+DATA CExprAnn
+  | Ty			ty				: {Ty}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Let binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CBind
+  | Bind        nm              : {HsName}
+                bindMeta        : CMetas
+                expr            : CExpr
+  | FFI         callconv        : {FFIWay}
+                safety          : {String}
+%%[[8
+                impEnt          : {String}
+%%][94
+                impEnt          : {ForeignEnt}
+%%]]
+                nm              : {HsName}
+                ty              : {Ty}
+%%[[94
+  | FFE         nm              : {HsName}
+                callconv        : {FFIWay}
+                expEnt          : {ForeignEnt}
+                expNm           : {HsName}
+                ty              : {Ty}
+%%]]
+
+TYPE CBindL     =   [CBind]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Case alternative + pattern + pattern binding
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+DATA CAlt
+  | Alt         pat             : CPat
+                expr            : CExpr
+
+TYPE CAltL      =   [CAlt]
+%%]
+
+%%[(8 codegen)
+DATA CPat
+  | Var         pnm             : {HsName}
+  | Con         pnm             : {HsName}
+                tag             : {CTag}
+                rest            : CPatRest
+                binds           : CPatBindL
+  | Int         pnm             : {HsName}
+                int             : {Int}
+  | Char        pnm             : {HsName}
+                char            : {Char}
+
+TYPE CPatL      =   [CPat]
+%%]
+
+%%[(8 codegen)
+DATA CPatRest
+  | Var         nm              : {HsName}
+  | Empty
+
+DATA CPatBind
+  | Bind        lbl             : {HsName}
+                offset          : CExpr
+                nm              : {HsName}
+                pat             : CPat
+
+TYPE CPatBindL  =   [CPatBind]
+%%]
+
+%%[(97 codegen)
+DATA CPat
+  | BoolExpr    pnm             : {HsName}
+                cexpr           : {CExpr}
+%%]
+
+  | TupSplit    pnm             : {RPatNm}
+                pat             : CPat
+                tag             : {CTag}
+                nm              : {HsName}
+                offset          : CExpr
+                fldPat          : CPat
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets of NT's
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SET AllAlt      =   CAlt CAltL
+SET AllBind     =   CBind CBindL
+SET AllPatBind  =   CPatBind CPatBindL
+SET AllPat      =   CPatRest CPat CPatL AllPatBind
+SET AllCodeNT   =   CModule AllExpr
+
+SET AllExpr
+  = CExpr CExprAnn AllBind AllAlt AllPat
+    AllMeta
+
+SET AllNT
+  = AllCodeNT
+%%]
+

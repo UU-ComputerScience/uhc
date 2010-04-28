@@ -1,0 +1,743 @@
+{
+module Helium.Syntax.UHA_Pretty
+where
+}
+{
+import Lvm.Common.PPrint as PPrint
+import Char
+import List (intersperse)
+import Top.Types (isTupleConstructor)
+import Helium.Syntax.UHA
+import Helium.Utils.Utils (internalError)
+}
+
+INCLUDE "UHA_Syntax.ag"
+
+{
+intErr = internalError "UHA_Pretty"
+
+opt = maybe empty id
+
+parensIf     p  n  = if p then parens n else n
+backQuotesIf p  n  = if p then text "`" <> n <> text "`" else n
+parensIfList ps ns = map (uncurry parensIf) (zip ps ns)
+
+tupled1 []  = empty
+tupled1 xs  = tupled xs
+
+tupled2 []  = empty
+tupled2 xs  = tupledUnit xs
+
+tupledUnit [x] = x
+tupledUnit xs  = tupled xs
+
+commas :: [Doc] -> Doc
+commas docs =
+    hcat (punctuate (comma <+> empty) docs)
+
+utrechtList :: Doc -> Doc -> [Doc] -> Doc
+utrechtList start end []     = empty
+utrechtList start end (d:ds) =
+    let utrechtList' []     = end
+        utrechtList' (d:ds) = comma <+> d <$> utrechtList' ds
+    in
+        start <+> d <$> utrechtList' ds
+        
+}
+
+ATTR
+    Module Export Body
+    ImportDeclaration ImportSpecification Import Declaration Fixity
+    Type SimpleType ContextItem
+    Constructor
+    FieldDeclaration
+    AnnotatedType
+    Expression
+    Statement
+    Qualifier
+    Alternative
+    RecordExpressionBinding RecordPatternBinding
+    FunctionBinding LeftHandSide
+    Pattern
+    Literal
+    Name
+    Range Position
+    [
+    |
+    | text        :          Doc
+    ]
+
+ATTR GuardedExpression RightHandSide
+    [
+    |
+    | text        : { Doc        -> Doc  }
+    ]
+
+ATTR GuardedExpressions
+    [
+    |
+    | text        USE { : } { [] } : { [        Doc -> Doc  ] }
+    ]
+
+ATTR
+    Constructors Exports ImportDeclarations Imports Declarations Types ContextItems
+    FieldDeclarations AnnotatedTypes Expressions
+    Statements Qualifiers Alternatives RecordExpressionBindings RecordPatternBindings 
+    FunctionBindings Patterns Names Strings
+    [
+    |
+    | text        USE { : } { [] } : { [       Doc ] }
+    ]
+
+ATTR
+    MaybeExports MaybeDeclarations MaybeNames
+    [
+    |
+    | text        : { Maybe [       Doc ] }
+    ]
+
+ATTR
+    MaybeExpression MaybeName MaybeInt MaybeImportSpecification
+    [
+    |
+    | text        : {        Maybe Doc  }
+    ]
+
+ATTR
+    Name 
+    [ | | isOperator, isIdentifier, isSpecial USE { (error "Name has no children!") } { False } : Bool ]
+
+ATTR
+    Names
+    [ | | isOperator, isIdentifier, isSpecial USE { : } { [] } : { [Bool] } ]
+-- ------------------------------------------------------------------------
+-- -- Modules                                                            --
+-- ------------------------------------------------------------------------
+
+SEM Module
+    | Module loc.text =
+        maybe   
+            id
+            ( \name body ->
+                text "module" <+> name <+> 
+                    (maybe
+                        (text "where")
+                        (\x -> indent 4 (utrechtList (text "(") (text ")") x <+> text "where"))
+                        @exports.text
+                    )
+                <$> empty <$>
+                body
+            )
+            @name.text
+            @body.text
+    --  range                    : Range
+    --  name                     : MaybeName
+    --  exports                  : MaybeExports
+    --  body                     : Body
+
+SEM MaybeExports
+    | Nothing          loc.text = Nothing
+    | Just             loc.text = Just @exports.text
+    --  exports                  : Exports
+
+SEM Export
+    | Variable               loc.text = @name.text
+    --  range                    : Range
+    --  name                     : Name
+    | TypeOrClass            loc.text = @name.text <> maybe empty tupled (@names.text)
+    --  range                    : Range
+    --  name                     : Name
+    --  names                    : MaybeNames  -- constructors or field names or class methods
+    | TypeOrClassComplete    loc.text = @name.text
+    --  range                    : Range
+    --  name                     : Name
+    | Module                 loc.text = text "module" <+> @name.text
+    --  range                    : Range
+    --  name                     : Name   -- this is a module name
+
+SEM MaybeNames
+    | Nothing          loc.text = Nothing
+    | Just             loc.text = Just @names.text
+    --  names                    : Names
+
+-- Since the parser cannot distinguish between types or constructors,
+-- or between types and type classes, we do not have different cases (yet?).
+
+SEM Body
+    | Body                     loc.text =  vcat
+                                                    (   @importdeclarations.text
+                                                    ++  {-intersperse empty-} @declarations.text
+                                                    )
+    --  range                    : Range
+    --  importdeclarations       : ImportDeclarations
+    --  declarations             : Declarations
+
+SEM ImportDeclaration
+    | Import      loc.text = text "import" <+> (if @qualified then (text "qualified" <+>) else id) @name.text <+> maybe empty id @importspecification.text 
+    --  range                    : Range
+    --  qualified                : Bool
+    --  name                     : Name
+    --  asname                   : MaybeName
+    --  importspecification      : MaybeImportSpecification
+    | Empty       loc.text = empty
+
+SEM MaybeImportSpecification
+    | Nothing     loc.text = Nothing
+    | Just        loc.text = Just @importspecification.text
+    --  importSpecification      : ImportSpecification
+
+SEM ImportSpecification
+    | Import    loc.text = (if @hiding then (text "hiding" <+>) else id)
+                                                    (tupled @imports.text)
+    --  range                    : Range
+    --  hiding                   : Bool
+    --  imports                  : Imports
+
+SEM Import
+    | Variable                loc.text = @name.text
+    --  range                    : Range
+    --  name                     : Name
+    | TypeOrClass             loc.text = @name.text <> maybe empty tupled1 @names.text
+    --  range                    : Range
+    --  name                     : Name
+    --  names                    : Names  -- constructors or field names or class methods
+    | TypeOrClassComplete     loc.text = @name.text
+    --  range                    : Range
+    --  name                     : Name
+
+-- cf. Export
+
+-- ------------------------------------------------------------------------
+-- -- Declarations                                                       --
+-- ------------------------------------------------------------------------
+
+SEM MaybeDeclarations
+    | Nothing     loc.text = Nothing
+    | Just        loc.text = Just @declarations.text
+    --  declarations             : Declarations
+
+SEM Declaration                                  {- *** -}
+    | Type              loc.text = text "type" <+> @simpletype.text <+> text "=" <+> @type.text
+    --  range                    : Range
+    --  simpletype               : SimpleType
+    --  type                     : Type
+    | Data              loc.text =
+                            text "data" <+>
+                            @contextDoc
+                            <>
+                            @simpletype.text
+                            <$>
+                            (indent 4 $
+                                vcat
+                                    (   text "="
+                                        <+>
+                                        head @constructors.text
+                                    :   map
+                                            (text "|" <+>)
+                                            (tail @constructors.text)
+                                    ++  [@derivingDoc]
+                                    )
+                            )
+                        loc.contextDoc   = case @context.text of
+                                            []  -> empty
+                                            [x] -> x <+> text "=>" <+> empty
+                                            xs  -> tupled xs <+> text "=>" <+> empty
+                        loc.derivingDoc =
+                            if null @derivings.text then
+                                empty
+                            else
+                                (    empty
+                                <+>  text "deriving"
+                                <+>  tupledUnit @derivings.text
+                                )
+    --  range                    : Range        {- *** -}
+    --  context                  : ContextItems
+    --  simpletype               : SimpleType
+    --  constructors             : Constructors
+    --  derivings                : Names
+    | Newtype           loc.text =  text "newtype"
+                                    <+>
+                                    @contextDoc 
+                                    <>
+                                    @simpletype.text
+                                    <+>
+                                    @constructor.text
+                                    <>
+                                    @derivingDoc
+                        loc.contextDoc   = case @context.text of
+                                            []  -> empty
+                                            [x] -> x <+> text "=>" <+> empty
+                                            xs  -> tupled xs <+> text "=>" <+> empty
+                        loc.derivingDoc =
+                            if null @derivings.text then
+                                empty
+                            else
+                                (    empty
+                                <+>  text "deriving"
+                                <+>  tupledUnit @derivings.text
+                                )
+    --  range                    : Range
+    --  context                  : ContextItems
+    --  simpletype               : SimpleType
+    --  constructor              : Constructor  -- has only one field, no strictness
+    --  derivings                : Names
+    | Class             loc.text = text "{- !!! class decl -}"
+    --  range                    : Range
+    --  context                  : ContextItems -- is a "simple" context
+    --  simpletype               : SimpleType   -- Haskell 98 allows only one variable
+    --  where                    : MaybeDeclarations -- cannot have everything
+    | Instance          loc.text = text "{- !!! instance decl -}"
+    --  range                    : Range
+    --  context                  : ContextItems -- is a "simple" context
+    --  name                     : Name
+    --  types                    : Types        -- Haskell 98 allows only one type
+                                                -- that is severely restricted
+    --  where                    : MaybeDeclarations -- cannot have everything
+    | Default           loc.text = text "default" <+> tupled @types.text
+    --  range                    : Range
+    --  types                    : Types        -- should be instances of Num
+    | FunctionBindings  loc.text = foldl1 (<$>) @bindings.text
+    --  range                    : Range          {- *** -}
+    --  bindings                 : FunctionBindings -- should all be for the same function
+    | PatternBinding    loc.text = @pattern.text <+> @righthandside.text (text "=")
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  righthandside            : RightHandSide
+    | TypeSignature     loc.text = commas @namesDocs <+> text "::" <+> @type.text
+             loc.namesDocs   = parensIfList @names.isOperator @names.text
+    --  range                    : Range
+    --  names                    : Names
+    --  type                     : Type   -- may have context
+    | Fixity            loc.text = @fixity.text <+> @ops
+                        loc.ops  =  opt @priority.text <+>
+                                        commas
+                                            (map
+                                                (\(n, p) -> if p then
+                                                    text "`" <> n <> text "`"
+                                                 else
+                                                    n
+                                                )
+                                                (zip @operators.text @operators.isIdentifier)
+                                            )
+    --  range                    : Range
+    --  fixity                   : Fixity
+    --  priority                 : MaybeInt
+    --  operators                : Names
+    | Empty             loc.text = empty
+    --  range                    : Range
+
+SEM Fixity
+    | Infixl                 loc.text = text "infixl"
+    --  range                    : Range
+    | Infixr                 loc.text = text "infixr"
+    --  range                    : Range
+    | Infix                  loc.text = text "infix " -- space for alignment with infixl and infixr
+    --  range                    : Range
+
+-- ------------------------------------------------------------------------
+-- -- Types                                                              --
+-- ------------------------------------------------------------------------
+
+SEM Type                                         {- *** -}
+    | Application              loc.text =   if @prefix then
+                                                foldl (<+>) @function.text @arguments.text
+                                            else if show @function.text == "[]" then
+                                                list @arguments.text
+                                            else if isTupleConstructor (show @function.text) then
+                                                tupled @arguments.text
+                                            else
+                                                case @arguments.text of
+                                                    [a, b] -> a <+> @function.text <+> b
+                                                    as     -> text "{- error: Unknown special application notation -}"
+    --  range                    : Range
+    --  prefix                   : Bool
+    --  function                 : Type
+    --  arguments                : Types
+    | Variable                 loc.text = @name.text {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    | Constructor              loc.text = @name.text              {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    | Qualified                loc.text = case @context.text of
+                                            [ct] -> ct <+> text "=>" <+> @type.text
+                                            cts -> parens (commas cts) <+> text "=>" <+> @type.text
+    --  range                    : Range
+    --  context                  : ContextItems
+    --  type                     : Type
+    | Forall                   loc.text = foldl (<+>) (text "forall") @typevariables.text <> text "." <> @type.text
+    --  range                    : Range
+    --  typevariables            : Names  forall a b . Num a => a
+    --  type                     : Type
+    | Exists                   loc.text = foldl (<+>) (text "exists") @typevariables.text <> text "." <> @type.text
+    --  range                    : Range
+    --  typevariables            : Names
+    --  type                     : Type
+    | Parenthesized            loc.text = parens @type.text
+    --  range                    : Range
+    --  type                     : Type
+
+SEM SimpleType
+    | SimpleType         loc.text = foldl (<+>) @name.text @typevariables.text
+    --  name                     : Name
+    --  typevariables            : Names
+
+SEM ContextItem
+    | ContextItem       loc.text = @name.text <+> head @types.text -- no parens because it is always a var
+    --  range                    : Range
+    --  name                     : Name   -- that is the class
+    --  types                    : Types  -- in Haskell 98, this is only one type
+
+SEM Constructor
+    | Constructor       loc.text = foldl (<+>) (parensIf @constructor.isOperator @constructor.text) @types.text
+    --  range                    : Range
+    --  constructor              : Name
+    --  types                    : AnnotatedTypes
+    | Infix             loc.text = @leftType.text <+> @constructorOperator.text <+> @rightType.text
+    --  range                    : Range
+    --  leftType                 : AnnotatedType
+    --  constructorOperator      : Name
+    --  rightType                : AnnotatedType
+    | Record            loc.text = text "{- !!! record constructor -}"
+    --  range                    : Range
+    --  constructor              : Name
+    --  fieldDeclarations        : FieldDeclarations
+
+SEM FieldDeclaration
+    | FieldDeclaration loc.text = text "{- !!! field declaration -}"
+    --  range                    : Range
+    --  names                    : Names
+    --  type                     : AnnotatedType        
+
+SEM AnnotatedType
+    | AnnotatedType   loc.text = (if @strict then (text "!" <+>) else id) @type.text -- ToDo: or _Type?
+    --  range                    : Range
+    --  strict                   : Bool
+    --  type                     : Type
+
+-- ------------------------------------------------------------------------
+-- -- Expressions                                                        --
+-- ------------------------------------------------------------------------
+
+SEM MaybeExpression
+    | Nothing       loc.text = Nothing
+    | Just          loc.text = Just @expression.text
+    --  expression               : Expression
+
+SEM Expression                                   {- *** -}
+    | Literal            loc.text = @literal.text      {- *** -}
+    --  range                    : Range
+    --  literal                  : Literal
+    | Variable           loc.text = @name.text         {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    | Constructor        loc.text = @name.text         {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    | Parenthesized      loc.text = parens @expression.text
+    --  range                    : Range
+    --  expression               : Expression
+    | NormalApplication  loc.text = foldl (<+>) @function.text @arguments.text              {- *** -}
+    --  range                    : Range
+    --  function                 : Expression
+    --  arguments                : Expressions
+    | InfixApplication   loc.text =  let f []       m = m
+                                         f n@(c:cs) m = if isAlpha c && all (\c -> c == '_' || c == '\'' || isAlphaNum c) cs then char '`' <> m <> char '`' else m
+                                     in
+                                        case (@leftExpression.text, @rightExpression.text) of
+                                            (Nothing, Nothing) ->
+                                                parens @operator.text
+                                            (Just l , Nothing) ->
+                                                parens (l <+> @operator.text)
+                                            (Nothing, Just r ) ->
+                                                parens (@operator.text <+> r)
+                                            (Just l , Just r ) ->
+                                                l
+                                                <+>
+                                                f (show @operator.text) @operator.text
+                                                <+>
+                                                r
+    --  range                    : Range
+    --  leftExpression           : MaybeExpression
+    --  operator                 : Expression
+    --  rightExpression          : MaybeExpression
+    | If                 loc.text =  text "if" <+> @guardExpression.text <$> 
+                                        indent 4 (text "then" <+> @thenExpression.text <$>
+                                                  text "else" <+> @elseExpression.text)
+    --  range                    : Range
+    --  guardExpression          : Expression
+    --  thenExpression           : Expression
+    --  elseExpression           : Expression
+    | Lambda             loc.text = text "\\" <+> foldl1 (<+>) @patterns.text <+> text "->" <+> @expression.text
+    --  range                    : Range
+    --  patterns                 : Patterns
+    --  expression               : Expression
+    | Case               loc.text =  (text "case" <+> @expression.text <+> text "of" <$>
+                                                    (indent 4 $ vcat @alternatives.text) <$> empty
+                                                )
+    --  range                    : Range
+    --  expression               : Expression
+    --  alternatives             : Alternatives
+    | Let                loc.text =  (text "let"<$>
+                                                    (indent 4 $ vcat @declarations.text) <+>
+                                                 text "in" <$>
+                                                    (indent 4 $ @expression.text)
+                                                ) <$> empty
+    --  range                    : Range
+    --  declarations             : Declarations
+    --  expression               : Expression
+    | Do                 loc.text = text "do" <$> (indent 4 $ vcat @statements.text) <$> empty
+    --  range                    : Range
+    --  statements               : Statements
+    | List               loc.text = list @expressions.text
+    --  range                    : Range
+    --  expressions              : Expressions
+    | Tuple              loc.text = tupled @expressions.text
+    --  range                    : Range
+    --  expressions              : Expressions
+    | Comprehension      loc.text = text "[" <+> @expression.text <+> 
+                                    text "|" <+> commas @qualifiers.text <+> text "]"
+    --  range                    : Range
+    --  expression               : Expression
+    --  qualifiers               : Qualifiers
+    | Typed              loc.text = @expression.text <+> text "::" <+> @type.text              {- ??? -}
+    --  range                    : Range
+    --  expression               : Expression
+    --  type                     : Type
+    | RecordConstruction loc.text = intErr "Expression" "record construction"
+    --  range                    : Range
+    --  name                     : Name
+    --  recordExpressionBindings : RecordExpressionBindings
+    | RecordUpdate       loc.text = intErr "Expression" "record update"
+    --  range                    : Range
+    --  expression               : Expression
+    --  recordExpressionBindings : RecordExpressionBindings
+    | Enum   loc.text =
+                text "[" <>
+                @from.text <>
+                maybe empty (text "," <+>)  @then.text <+>
+                text ".." <+>
+                opt @to.text <>
+                text "]"
+    --  range                    : Range
+    --  from                     : Expression
+    --  then                     : MaybeExpression
+    --  to                       : MaybeExpression
+    | Negate             loc.text = text "-"  <> @expression.text
+    | NegateFloat        loc.text = text "-." <> @expression.text
+    --  range                    : Range
+    --  expression               : Expression
+
+SEM Statement
+    | Expression          loc.text = @expression.text
+    --  range                    : Range
+    --  expression               : Expression
+    | Let                 loc.text = text "let" <$> (indent 4 $ vcat @declarations.text)
+    --  range                    : Range
+    --  declarations             : Declarations
+    | Generator           loc.text = @pattern.text <+> text "<-" <+> @expression.text
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+    | Empty               loc.text = empty
+    --  range                    : Range
+
+SEM Qualifier
+    | Guard               loc.text = @guard.text
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+    | Let                 loc.text = text "let" <$> (indent 4 $ vcat @declarations.text) 
+    --  range                    : Range
+    --  declarations             : Declarations
+    | Generator           loc.text = @pattern.text <+> text "<-" <+> @expression.text
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  expression               : Expression
+    | Empty               loc.text = empty
+    --  range                    : Range
+
+SEM Alternative
+    | Alternative       loc.text = @pattern.text <$> indent 2 (@righthandside.text (text "->"))
+    --  range                    : Range
+    --  pattern                  : Pattern
+    --  righthandside            : RightHandSide
+    | Empty             loc.text = empty
+    --  range                    : Range
+
+SEM GuardedExpression -- ToDo: or _Guard?
+    | GuardedExpression loc.text = \assign -> text "|" <+> @guard.text <+> assign <+> @expression.text
+    --  range                    : Range
+    --  guard                    : Expression -- type: Boolean
+    --  expression               : Expression
+
+SEM RecordExpressionBinding
+    | RecordExpressionBinding loc.text = text "{- !!! record expression binding -}" -- ToDo: or _Binding?
+    --  range                    : Range
+    --  name                     : Name
+    --  expression               : Expression
+
+SEM RecordPatternBinding
+    | RecordPatternBinding loc.text = text "{- !!! record pattern binding -}" -- ToDo: or _Binding?
+    --  range                    : Range
+    --  name                     : Name
+    --  pattern                  : Pattern
+
+SEM FunctionBinding
+    | FunctionBinding loc.text = @lefthandside.text <+> @righthandside.text (text "=")
+    --  range                    : Range
+    --  lefthandside             : LeftHandSide
+    --  righthandside            : RightHandSide
+
+SEM LeftHandSide
+    | Function         loc.text = foldl (<+>) (parensIf @name.isOperator @name.text) @patterns.text
+    --  range                    : Range
+    --  name                     : Name
+    --  patterns                 : Patterns
+    | Infix            loc.text = @leftPattern.text <+> backQuotesIf (not @operator.isOperator) @operator.text <+> @rightPattern.text
+    --  range                    : Range
+    --  leftPattern              : Pattern
+    --  operator                 : Name
+    --  rightPattern             : Pattern
+    | Parenthesized    loc.text = foldl (<+>) (parens @lefthandside.text) @patterns.text
+    --  range                    : Range
+    --  lefthandside             : LeftHandSide
+    --  patterns                 : Patterns
+
+SEM RightHandSide
+    | Expression
+             loc.text           = \assign       -> assign <$> @justText
+             loc.justText       =
+                    indent 4
+                        (  @expression.text
+                        <> maybe
+                               empty
+                               (\ds -> PPrint.empty <$> text "where" <$> indent 4 (vcat ds))
+                               @where.text
+                        )
+    --  range                    : Range
+    --  expression               : Expression
+    --  where                    : MaybeDeclarations
+    | Guarded
+             loc.text           =
+                \assign ->
+                    (   PPrint.empty
+                    <$> vsep
+                           (zipWith (\f x -> indent 4 (f x)) @guardedexpressions.text (repeat assign))
+                    <>  maybe
+                           empty
+                           (\ds -> PPrint.empty <$> indent 4 (text "where" <$> indent 4 (vcat ds)))
+                           @where.text
+                    )
+    --  range                    : Range
+    --  guardedexpressions       : GuardedExpressions
+    --  where                    : MaybeDeclarations
+
+-- ------------------------------------------------------------------------
+-- -- Patterns                                                           --
+-- ------------------------------------------------------------------------
+
+SEM Pattern
+    | Literal               loc.text = @literal.text              {- *** -}
+    --  range                    : Range
+    --  literal                  : Literal
+    | Variable              loc.text = parensIf @name.isOperator @name.text {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    | Constructor           loc.text = foldl (<+>) (parensIf @name.isOperator @name.text) @patterns.text {- *** -}
+    --  range                    : Range
+    --  name                     : Name
+    --  patterns                 : Patterns
+    | Parenthesized         loc.text = parens @pattern.text
+    --  range                    : Range
+    --  pattern                  : Pattern
+    | InfixConstructor      loc.text = @leftPattern.text <+> @constructorOperator.text <+> @rightPattern.text
+    --  range                    : Range
+    --  leftPattern              : Pattern
+    --  constructorOperator      : Name
+    --  rightPattern             : Pattern
+    | List                  loc.text = list @patterns.text
+    --  range                    : Range
+    --  patterns                 : Patterns
+    | Tuple                 loc.text = tupled @patterns.text
+    --  range                    : Range
+    --  patterns                 : Patterns
+    | Record                loc.text = text "{- !!! record pattern -}"
+    --  range                    : Range
+    --  name                     : Name
+    --  recordPatternBindings    : RecordPatternBindings
+    | Negate                loc.text = text "-" <> @literal.text
+    --  range                    : Range
+    --  literal                  : Literal -- only numbers allowed here
+    | NegateFloat           loc.text = text "-." <> @literal.text
+    --  range                    : Range
+    --  literal                  : Literal -- only numbers allowed here
+    | As                    loc.text = @name.text <> text "@" <> @pattern.text {- ??? -}
+    --  range                    : Range
+    --  name                     : Name
+    --  pattern                  : Pattern
+    | Wildcard              loc.text = text "_"
+    --  range                    : Range
+    | Irrefutable           loc.text = text "~" <> @pattern.text
+    --  range                    : Range
+    --  pattern                  : Pattern
+    | Successor             loc.text = @name.text <+> text "+" <+> @literal.text -- n+k patterns        
+    --  range                    : Range
+    --  name                     : Name
+    --  literal                  : Literal -- only integers allowed here
+
+-- ------------------------------------------------------------------------
+-- -- Basics                                                             --
+-- ------------------------------------------------------------------------
+
+SEM Literal                                      {- *** -}
+    | Int                   loc.text = text @value              {- *** -}
+    --  range                    : Range
+    --  value                    : String
+    | Char                  loc.text = text ("'" ++ @value ++ "'")
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+    | Float                 loc.text = text @value
+    --  range                    : Range
+    --  value                    : String
+    | String                loc.text = text ("\"" ++ @value ++ "\"")
+    --  range                    : Range
+    --  value                    : String -- without the quotes
+
+SEM MaybeName
+    | Nothing             loc.text = Nothing
+    | Just                loc.text = Just @name.text
+    --  name                     : Name
+
+SEM Name                                         {- *** -}
+    | Identifier               loc.text = text @name             {- *** -}
+                               lhs.isIdentifier = True
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String
+    | Operator                 loc.text = text @name
+                               lhs.isOperator = True
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String
+    | Special                  loc.text = text @name
+                               lhs.isSpecial = True
+    --  range                    : Range
+    --  module                   : Strings
+    --  name                     : String
+
+SEM MaybeInt
+    | Nothing              loc.text = Nothing
+    | Just                 loc.text = Just (int @int) -- int is a pprint util from PPrint.hs
+    --  int                      : Int
+
+SEM Range
+    | Range                   loc.text = text "{-" <+> @start.text <+> text ", " <+> @stop.text <+> text "-}"
+    --  start                    : Position
+    --  stop                     : Position
+
+SEM Position
+    | Position             loc.text = text @filename <> tupled [int @line, int @column]
+    --  filename                 : String
+    --  line                     : Int
+    --  column                   : Int
+    | Unknown              loc.text = text "Unknown"

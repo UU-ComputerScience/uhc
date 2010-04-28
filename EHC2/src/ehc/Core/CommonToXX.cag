@@ -1,0 +1,100 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Common AG for Core: for generation for some target XX
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Utils
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBind
+  | FFI         loc         .   ffiMbTyConNm    =   tyMbCon . fst . tyAppFunArgs        -- possibly get constructor name of type (application)
+                            .   ffiTyConNm      =   maybe hsnUnknown id . @ffiMbTyConNm -- get it, with defaulting
+                                                     
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBind
+%%[[8
+  | FFI         loc         .   impEntNm        =   @impEnt
+%%][94
+  | FFI         loc         .   impEntNm        =   let e = foreignEntExtract @impEnt
+                                                    in  forextractEnt e
+%%]]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBind
+  | FFI         loc         .   argTyLresTy 	:   {( TyL, Ty )}
+                loc         .   argTyLresTy 	=   tyArrowArgsRes @ty
+                loc         .   argTyL      	:   TyL
+                loc         .   argTyL      	=   fst @loc.argTyLresTy
+                loc         .   resTy       	=   snd @loc.argTyLresTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type: derived info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM CBind
+  | FFI         loc         .   argMbConL       =   map @ffiMbTyConNm @argTyL
+                            .   resMbCon        =   @ffiMbTyConNm @resTy
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: strict yes/no, rhs of lam yes/no
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen grin)
+ATTR CExpr AllAlt AllBind [ isStrict, isLamBody: Bool | | ]
+
+SEM CModule
+  | Mod         expr        .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CBind
+  | Bind        expr        .   isStrict    =   @lhs.isStrict || @expr.whatBelow == ExprIsLam
+
+SEM CPatBind
+  | Bind        offset      .   isStrict    =   True
+                            .   isLamBody   =   False
+
+SEM CExpr
+  | Let			binds		.	isStrict	=	@isGlobal || @categ == CBindings_Strict
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Context: evaluation context (to replace isStrict), partially overridden in AG which includes this
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+not used yet as it seems not to be equivalent to isStrict. Can't find out why...
+
+%%[(8 codegen)
+ATTR CExpr AllAlt AllBind [ evalCtx: EvalCtx | | ]
+
+SEM CModule
+  | Mod         expr        .   evalCtx         =   EvalCtx_Eval
+
+SEM CPatBind
+  | Bind        offset      .   evalCtx         =   EvalCtx_Eval
+
+
+SEM CExpr
+  | Let         loc         .   evalCtx         =   if @categ == CBindings_Strict
+                                                    then EvalCtx_Eval
+                                                    else EvalCtx_None
+%%]
+
+SEM CBind
+  | Bind        expr        .   evalCtx         =   if @expr.whatBelow == ExprIsLam
+                                                    then EvalCtx_Eval
+                                                    else @lhs.evalCtx

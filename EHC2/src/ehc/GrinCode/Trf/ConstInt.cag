@@ -1,0 +1,181 @@
+%%[doesWhat doclatex
+
+
+%%]
+
+
+
+
+%%[(97 codegen grin) ag import({GrinCode/AbsSyn})
+%%]
+%%[(97 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(97 codegen grin) hs import(qualified Data.Map as Map, Data.Maybe)
+%%]
+%%[(97 codegen grin) hs import(Debug.Trace)
+%%]
+
+%%[(97 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(97 codegen grin) hs module {%{EH}GrinCode.Trf.ConstInt} export(constInt)
+constInt :: GrModule -> GrModule
+constInt grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
+                                      (Inh_GrAGItf)
+                 in grTrf_Syn_GrAGItf t
+%%]
+
+
+%%[(97 codegen grin)
+ATTR GrAGItf [ | | grTrf: GrModule ]
+ATTR AllNT [ | | grTrf: SELF ]
+%%]
+
+%%[(97 codegen grin)
+
+
+
+-- Are we a single variable or a single LitStr ?
+
+ATTR GrVal GrValL [ | | singleVar : {Maybe HsName} 
+                        singleStr : {Maybe String}
+                  ]
+ATTR GrValL       [ | | empty : Bool ]
+ATTR GrPatLam     [ | | singleVar : {Maybe HsName}
+                  ]
+
+
+-- Are we a tag #C/PackedString, #F/packedstring2integer, or #F/integer2Int ?
+
+ATTR GrTag  [ | | tagPS : Bool
+                  tagPS2I : Bool
+                  tagI2I : Bool
+            ]
+
+-- Are we a node with #C/PackedString, #F/packedstring2integer, or #F/integer2Int ?
+
+ATTR GrVal  [ | | nodePS :   {Maybe String}
+                  nodePS2I : {Maybe HsName}
+                  nodeI2I :  {Maybe HsName} 
+            ]
+
+-- Are we storing a #C/PackedString, #F/packedstring2integer, or #F/integer2Int ?
+
+ATTR GrExpr [ | | storedPS :   {Maybe String}
+                  storedPS2I : {Maybe HsName}
+                  storedI2I :  {Maybe HsName} 
+            ]
+            
+-- Are we a sequence starting with StoredI2I ?
+-- Are we a sequence starting with StoredPS2I and then StoredI2I ?
+
+ATTR GrExpr [ | | storeI2Iseq :       {Maybe (HsName,HsName,GrExpr)}        -- (y,z,r)
+                  storePS2IseqI2Iseq: {Maybe (HsName,HsName,HsName,GrExpr)} -- (x,y,z,r)
+            ]
+
+-- implementation of pattern matching
+
+SEM GrVal
+  | Var      lhs.singleVar  =  Just @nm
+  | *-Var    lhs.singleVar  =  Nothing
+  | LitStr   lhs.singleStr  =  Just @str
+  | *-LitStr lhs.singleStr  =  Nothing
+  
+SEM GrValL
+  | Nil      lhs.empty      =  True
+             lhs.singleVar  =  Nothing
+             lhs.singleStr  =  Nothing
+  | Cons     lhs.empty      =  False
+             lhs.singleVar  =  if @tl.empty
+                               then @hd.singleVar
+                               else Nothing
+             lhs.singleStr  =  if @tl.empty
+                               then @hd.singleStr
+                               else Nothing
+
+SEM GrPatLam
+  | Var      lhs.singleVar  =  Just @nm
+  | *-Var    lhs.singleVar  =  Nothing
+
+SEM GrTag
+  | Con      lhs.tagPS     =  @nm == hsnPackedString
+  | *-Con    lhs.tagPS     =  False
+  | Fun      lhs.tagPS2I   =  @nm == hsnPackedStringToInteger
+             lhs.tagI2I    =  @nm == hsnPrimIntegerToInt
+  | *-Fun    lhs.tagPS2I   =  False
+             lhs.tagI2I    =  False
+                              
+SEM GrVal
+  | Node     lhs.nodePS    =  if @tag.tagPS
+                              then @fldL.singleStr
+                              else Nothing
+             lhs.nodePS2I  =  if @tag.tagPS2I
+                              then @fldL.singleVar
+                              else Nothing
+             lhs.nodeI2I   =  if @tag.tagI2I
+                              then @fldL.singleVar
+                              else Nothing
+  | *-Node   lhs.nodePS    =  Nothing
+             lhs.nodePS2I  =  Nothing
+             lhs.nodeI2I   =  Nothing
+
+SEM GrExpr
+  | Store    lhs.storedPS   =  @val.nodePS
+             lhs.storedPS2I =  @val.nodePS2I
+             lhs.storedI2I  =  @val.nodeI2I
+  | *-Store  lhs.storedPS   =  Nothing
+             lhs.storedPS2I =  Nothing
+             lhs.storedI2I  =  Nothing
+
+SEM GrExpr
+  | Seq      lhs.storeI2Iseq  =  do 
+                                 { y <- @expr.storedI2I
+                                 ; z <- @pat.singleVar
+                                 ; let r = @body.grTrf
+                                 ; return (y,z,r)
+                                 }
+  | *-Seq    lhs.storeI2Iseq  =  Nothing
+  | Seq      lhs.storePS2IseqI2Iseq = do
+                                      { x <- @expr.storedPS2I
+                                      ; y1 <- @pat.singleVar
+                                      ; (y2,z,r) <- @body.storeI2Iseq
+                                      ; y <- maybeEqual y1 y2
+                                      ; return (x,y,z,r)
+                                      }
+  | *-Seq    lhs.storePS2IseqI2Iseq = Nothing
+  
+
+{
+maybeEqual :: HsName -> HsName -> Maybe HsName
+maybeEqual x y | x==y      = Just x
+               | otherwise = Nothing
+}
+
+
+-- Do the transformation
+
+
+SEM GrExpr
+  | Seq    lhs.grTrf  =  maybe @loc.grTrf 
+                               id
+                               (do
+                                { s <- @expr.storedPS
+                                ; x1 <- @pat.singleVar
+                                ; (x2,y,z,r) <- @body.storePS2IseqI2Iseq
+                                ; x <- maybeEqual x1 x2
+                                ; let n = read s
+                                ; let tag   = GrTag_Con (GrTagAnn 1 1) 0 hsnInt
+                                ; let node  = GrVal_Node tag [GrVal_LitInt n]
+                                ; let store = GrExpr_Store node
+                                ; let pat   = GrPatLam_Var z
+                                ; return (GrExpr_Seq store pat r)
+                                }
+                               )
+
+{
+str2int :: String -> Int
+str2int s = read s
+}
+
+%%]

@@ -1,0 +1,34 @@
+-------------------------------------------------------------------------
+-- Scheme dpds
+-------------------------------------------------------------------------
+
+%%[1 ag
+
+ATTR AllDecl AllAttrIntroDecl [ | | gathScDpds USE {++} {[]}: {[(Nm,Nm)]} ]
+
+SEM AttrIntroDecl
+  | Scheme          lhs     .   gathScDpds  =   [(@lhs.scmNm,@nm)]
+
+{-
+SEM Decl
+  | Scheme          lhs     .   gathScDpds  =   [(@nm,@nm)] ++ @decls.gathScDpds
+-}
+
+-------------------------------------------------------------------------
+-- Scheme dpd graph
+-------------------------------------------------------------------------
+
+ATTR AllDecl [ scDpdGr: {DpdGr Nm} | | ]
+
+SEM AGItf
+  | AGItf           loc     .   scDpdGr     =   let missing = gamKeys @decls.gathScGam \\ map fst @decls.gathScDpds
+                                                in  mkDpdGrFromAssocWithMissing missing @decls.gathScDpds
+
+-------------------------------------------------------------------------
+-- Error checks for mutual dependencies
+-------------------------------------------------------------------------
+
+SEM AGItf
+  | AGItf           loc     .   errMutSc    =   dgCheckSCCMutuals (Err_MutDpds emptySPos "toplevel" "scheme") @scDpdGr
+
+%%]

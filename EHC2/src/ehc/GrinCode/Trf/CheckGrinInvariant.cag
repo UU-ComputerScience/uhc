@@ -1,0 +1,276 @@
+%%[doesWhat doclatex
+
+Check how Grin variables are used: as a pointer, or as a node, 
+and whether that is compatible with the way they are created.
+
+This is not a transformation, just an extra check whether SetGrinInvariant worked properly.
+
+%%]
+
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CheckGrinInvariant} export(checkGrinInvariant)
+%%]
+%%[(8 codegen grin) ag import({GrinCode/AbsSyn},{GrinCode/CommonForGen})
+%%]
+%%[(8 codegen grin) hs import(Data.Maybe(fromJust), qualified Data.Map as Map)
+%%]
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin},{%{EH}GrinCode.Common}, {%{EH}GrinCode})
+%%]
+%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%]
+%%[(8 codegen grin)
+WRAPPER GrAGItf
+%%]
+
+%%[(8 codegen grin) hs
+
+checkGrinInvariant :: GrModule -> [String]
+checkGrinInvariant code
+  = let inh = Inh_GrAGItf
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  messages_Syn_GrAGItf syn
+
+%%]
+
+%%[(8 codegen grin) hs
+
+data Mode = ModeWord
+          | ModeNode
+          | ModeEmpty
+          | ModeFFIRes       
+          | ModeUnknown
+     deriving (Eq, Show)
+
+type Env = Map.Map HsName Mode
+
+
+checkMd :: String -> Mode -> Mode -> [String]
+checkMd s m1 m2 = if m1==m2 then [] else [s ++ ": expected " ++ show m1 ++ " found " ++ show m2  ]
+
+check :: Env -> HsName -> Mode -> [String]
+check env nm mode
+   =  maybe [ show nm ++ " not declared"  ]
+            (checkMd (show nm) mode)
+            (Map.lookup nm env) 
+            
+unifyModes :: String -> [Mode] -> (Mode, [String])
+unifyModes s [] = (ModeUnknown, [])
+unifyModes s (m:ms) = (m, concatMap (checkMd ("case alternatives have unbalanced modes " ++ s ++ show (m:ms)) m) ms)
+
+%%]
+
+%%[(8 codegen grin)
+
+ATTR GrAGItf
+     GrModule
+     AllBind
+     AllGrExpr
+     GrPatLam
+     AllGrVal  [ | | messages USE {++} {[]} : {[String]} ]
+
+ATTR GrExpr
+     GrAlt
+     GrVal     [ | | derivedMode : {Mode} ]
+
+ATTR GrAltL
+     GrValL    [ | | derivedModes : {[Mode]} ]
+
+ATTR AllBind
+     AllGrExpr
+     AllGrVal  
+     AllGrPat  [ env : {Env} | | ]
+
+ATTR GrPatLam 
+     GrPatAlt  [ inMode : Mode | | bindings : {[(HsName,Mode)]} ]
+     
+ATTR GrGlobal
+     GrGlobalL [ | | bindings USE {++} {[]} : {[(HsName,Mode)]} ]
+
+ATTR GrVar 
+     GrVarL 
+%%[[10
+     AllSplit
+%%]     
+               [ | | vars USE {++} {[]} : {[HsName]} ]
+
+
+ATTR GrTag
+     GrValL
+     GrVal     [ | | text : {String} ]
+
+ATTR AllGrExpr
+     GrPatLam  [ inFun : {String} | | ]
+
+
+SEM GrModule
+  | Mod       bindL.env   =  Map.fromList @globalL.bindings
+
+SEM GrBind
+  | Bind      loc.inFun  =  "in function " ++ show @nm ++ ": "
+
+
+SEM GrTag
+  | Con       lhs.text = 'C' : show @nm
+  | Fun       lhs.text = 'F' : show @nm
+  | PApp      lhs.text = 'P' : (show @needs ++ ('/' : show @nm))
+  | App       lhs.text = 'A' : show @nm
+  | Unboxed   lhs.text = 'U' : []
+  | Hole      lhs.text = 'H' : []
+  | Rec       lhs.text = 'R' : []
+
+SEM GrVal
+  | Empty      lhs.text = "()"
+  | LitInt     lhs.text = show @int
+  | LitStr     lhs.text = show @str
+  | Tag        lhs.text = @tag.text
+  | Var        lhs.text = show @nm
+  | Node       lhs.text = @tag.text ++ @fldL.text
+  | BasicNode  lhs.text = @tag.text ++ show @nm
+  | OpaqueNode lhs.text = "OPAQUE"  ++ show @nm
+  | PtrNode    lhs.text = "PTR"     ++ show @nm
+  | EnumNode   lhs.text = show @nm
+  | VarNode    lhs.text = @fldL.text
+%%[[10
+  | NodeAdapt lhs.text = "NodeAdapt"
+%%]]
+  
+SEM GrValL
+  | Nil       lhs.text = ""
+  | Cons      lhs.text = @hd.text ++ "," ++ @tl.text
+
+SEM GrExpr
+  | Seq          lhs.derivedMode = @body.derivedMode
+  | Unit         lhs.derivedMode = @val.derivedMode
+  | UpdateUnit   lhs.derivedMode = @val.derivedMode
+  | Case         (lhs.derivedMode
+                 ,loc.mes     )  = unifyModes (@val.text) @altL.derivedModes
+  | FetchNode    lhs.derivedMode = ModeNode
+  | FetchUpdate  lhs.derivedMode = ModeEmpty
+  | FetchField   lhs.derivedMode = ModeUnknown
+  | Store        lhs.derivedMode = ModeWord
+  | Call         lhs.derivedMode = ModeNode
+  | FFI          lhs.derivedMode = ModeFFIRes
+  | Eval         lhs.derivedMode = ModeNode
+  | App          lhs.derivedMode = ModeNode
+  | Throw        lhs.derivedMode = ModeNode
+  | Catch        lhs.derivedMode = ModeNode
+
+SEM GrExpr
+  | Seq          lhs.messages    = @expr.messages ++ @pat.messages ++ @body.messages
+  | Unit         lhs.messages    = []
+  | UpdateUnit   lhs.messages    = check @lhs.env @nm ModeWord
+  | Case         lhs.messages    = checkMd (@lhs.inFun ++ "Case " ++ @val.text) ModeNode @val.derivedMode ++ @loc.mes ++ @altL.messages
+  | FetchNode    lhs.messages    = check @lhs.env @nm ModeWord
+  | FetchUpdate  lhs.messages    = check @lhs.env @src ModeWord ++ check @lhs.env @dst ModeWord
+  | FetchField   lhs.messages    = check @lhs.env @nm ModeNode
+  | Store        lhs.messages    = checkMd "Store" ModeNode @val.derivedMode ++ @val.messages
+  | Call         lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "Call "++show @nm ++ "(" ++ @argL.text ++ ")") ModeWord) @argL.derivedModes
+  | FFI          lhs.messages    = concatMap (checkMd (@lhs.inFun ++ "FFI" ++show @impEntNm) ModeWord) @argL.derivedModes
+  | Eval         lhs.messages    = check @lhs.env @nm ModeWord
+  | App          lhs.messages    = check @lhs.env @nm ModeNode ++
+                                   concatMap (checkMd (@lhs.inFun ++ "App" ++show @nm) ModeWord) @argL.derivedModes
+  | Throw        lhs.messages    = []
+  | Catch        lhs.messages    = []
+
+SEM GrAlt
+  | Alt          lhs.derivedMode = @expr.derivedMode
+
+SEM GrAltL GrValL
+  | Nil          lhs.derivedModes = []
+  | Cons         lhs.derivedModes = @hd.derivedMode : @tl.derivedModes
+
+SEM GrVal
+  | Empty        lhs.derivedMode = ModeEmpty
+  | LitInt       
+    LitStr       
+    Tag          lhs.derivedMode = ModeWord
+  | Var          lhs.derivedMode = maybe ModeUnknown id (Map.lookup @nm @lhs.env)
+  | Node         
+    VarNode      
+    BasicNode    
+    EnumNode
+    OpaqueNode
+    PtrNode      lhs.derivedMode = ModeNode
+%%[[10
+  | NodeAdapt    lhs.derivedMode = ModeNode
+%%]]
+
+
+SEM GrVal
+  | Node         lhs.messages    = concatMap (checkMd ("Node"++ @tag.text ++ " " ++ @fldL.text) ModeWord) @fldL.derivedModes
+
+SEM GrGlobal
+  | Global       val.env       = Map.empty
+
+SEM GrBind
+  | Bind         expr.env      = Map.union (Map.fromList (zip @argNmL (repeat ModeWord))) @lhs.env
+                 lhs.messages  = checkMd (@loc.inFun ++ "Result ") ModeNode @expr.derivedMode ++ @expr.messages
+  
+SEM GrExpr
+  | Seq          expr.env      = @lhs.env 
+                 pat.inMode    = @expr.derivedMode
+                 body.env      = Map.union (Map.fromList @pat.bindings) @lhs.env
+
+SEM GrAlt
+  | Alt          pat.inMode    = ModeUnknown
+                 expr.env      = Map.union (Map.fromList @pat.bindings) @lhs.env
+
+SEM GrGlobal
+  | Global       lhs.bindings  =  [ (@nm, ModeWord) ]
+
+SEM GrPatLam
+  | Empty        lhs.bindings  = []
+  | Var          lhs.bindings  = [(@nm, @lhs.inMode)]
+  | VarNode      lhs.bindings  = zip @fldL.vars (repeat ModeWord)
+  | BasicNode
+    EnumNode
+    OpaqueNode
+    PtrNode
+    BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot
+                 lhs.bindings  = [(@nm,ModeWord)]
+
+SEM GrPatLam
+  | Empty        lhs.messages  = case @lhs.inMode of
+                                  ModeEmpty -> []
+                                  m         -> [@lhs.inFun ++ " expected Empty, got " ++ show m]
+  | Var          lhs.messages  = []
+  | VarNode
+    BasicNode      
+    EnumNode
+    OpaqueNode
+    PtrNode
+                 lhs.messages  = case @lhs.inMode of
+                                  ModeNode  -> []
+                                  m         -> [@lhs.inFun ++ " expected Node, got " ++ show m]
+  | BasicAnnot
+    EnumAnnot
+    OpaqueAnnot
+    PtrAnnot
+                 lhs.messages  = case @lhs.inMode of
+                                  ModeFFIRes -> []
+                                  m          -> [@lhs.inFun ++ " expected FFIRes, got " ++ show m]
+                                  
+
+SEM GrVar
+  | Var         lhs.vars        = [ @nm ]
+  | KnownTag
+    Ignore      lhs.vars        = []
+
+%%[[10
+SEM GrSplit
+  | Sel         lhs.vars        = [ @nm ]
+%%]]
+
+
+SEM GrPatAlt
+  | LitInt
+    Tag         
+    Otherwise   lhs.bindings    = []
+  | Node        lhs.bindings    = zip @fldL (repeat ModeWord)
+%%[[10
+  | NodeSplit   lhs.bindings    = zip (@nm : @fldL.vars) (repeat ModeWord)
+%%]]
+
+%%]

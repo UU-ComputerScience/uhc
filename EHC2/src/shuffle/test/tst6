@@ -1,0 +1,2 @@
+%%[1 hs module A import(B) export(C)
+%%]

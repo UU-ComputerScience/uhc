@@ -1,0 +1,148 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%[doesWhat doclatex
+Simplifies expressions based on their structure & annotation:
+\begin{itemize}
+\item Replace @fromInteger (...) :: Int@ with its @Int@ equivalent.
+\item Replace @fromInteger (...) :: Integer@ with its @Integer@ equivalent.
+\end{itemize}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type based simplifications
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.AnnBasedSimplify} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Bits},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty}) export(cmodTrfAnnBasedSimplify)
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonStructureInfo})
+WRAPPER CodeAGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfAnnBasedSimplify :: EHCOpts -> CModule -> CModule
+cmodTrfAnnBasedSimplify opts cmod
+  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod))
+                             (Inh_CodeAGItf
+                               { opts_Inh_CodeAGItf = opts
+                               })
+     in   cTrf_Syn_CodeAGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Properties used to propagate detected combinations of expr + type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+data Prop
+  = Prop_None
+  | Prop_HasTy              Ty          -- has ty
+  | Prop_IsTyInt                        -- is of type Int
+  | Prop_IsTyInteger                    -- is of type Integer
+  | Prop_IsInteger          CExpr       -- is an Integer
+  | Prop_IsIntegerConst     Integer     -- is an Integer constant
+  | Prop_IsIntConst         Int         -- is an Int constant
+
+type PropS = Set.Set Prop
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT CodeAGItf [ opts: EHCOpts | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR CExpr AllAlt [ propDown: Prop | | ]
+ATTR CExpr [ | | propUp: Prop ]
+ATTR CExprAnn [ | | prop : Prop ]
+
+SEM CExpr
+  | Ann         expr        .   propDown    =   @ann.prop
+  | App         loc         .   propDown    =   Prop_None
+%%]
+
+%%[(8 codegen)
+SEM CModule
+  | Mod         expr        .   propDown    =   Prop_None
+
+SEM CPatBind CBind
+  | Bind        loc         .   propDown    =   Prop_None
+%%]
+
+%%[(8 codegen)
+SEM CExprAnn
+  | Ty          loc         .   prop        =   Prop_HasTy @ty
+
+%%]
+
+%%[(8 codegen)
+SEM CExpr
+  | App         loc         .   propUp      =   if @lhs.isTopApp
+                                                then case (@func.mbFunVar,reverse (zip @argL @propUpL),@lhs.propDown) of
+%%[[97
+                                                       (Just f,[(CExpr_String s,_)],_)
+                                                         |    f == (ehbnPackedStringToInteger $ ehcOptBuiltinNames @lhs.opts)
+                                                         -> Prop_IsIntegerConst $ read s
+                                                       (Just f,[_,(e,Prop_IsIntegerConst i)],Prop_HasTy t)
+                                                         |    f == (ehbnFromInteger $ ehcOptBuiltinNames @lhs.opts)
+                                                         -> if t == tyInt
+                                                            then -- E.g.: fromInteger dict... (packedStringToInteger "123") :: Int
+                                                                 Prop_IsIntConst $ fromInteger i
+                                                            else if t == tyInteger
+                                                            then -- E.g.: fromInteger dict... (packedStringToInteger "123") :: Integer
+                                                                 if signedFitsInBits 30 i
+                                                                 then Prop_IsInteger $ mkCExprApp (CExpr_Var $ ehbnPrimIntToInteger $ ehcOptBuiltinNames @lhs.opts) [CExpr_Int (fromInteger i)]
+                                                                 else Prop_IsInteger e
+                                                            else Prop_None
+%%]]
+                                                       _ -> Prop_None
+                                                else Prop_None
+  | * - App     loc         .   propUp      =   Prop_None
+%%]
+
+%%[(8 codegen)
+ATTR CExpr [ | | propUpL: {[Prop]} ]
+
+SEM CExpr
+  | App         loc         .   propUpL     =   @arg.propUp : @func.propUpL
+  | * - App Ann lhs         .   propUpL     =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR CodeAGItf [ | | cTrf: CModule ]
+
+SEM CExpr
+  | App         lhs         .   cTrf        =   case @propUp of
+                                                  Prop_IsIntConst i
+                                                    -> CExpr_Int i
+                                                  Prop_IsInteger e
+                                                    -> e
+                                                  _ -> @cTrf
+%%]
+

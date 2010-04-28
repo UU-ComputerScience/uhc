@@ -1,0 +1,54 @@
+\ProvidesPackage{infrule}
+
+\newcommand{\ehinfrule}[4]{%
+\begingroup
+%\linespread{1}\selectfont
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+%\linespread{1}\selectfont
+%\vspace{.5\baselineskip}
+\ensuremath{%
+  \frac{%
+    \begin{array}{@{}c@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@{}c@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    #4
+    \end{array}%
+  }%
+  \, \textsc{#1}_{#2}%
+ }%
+}
+\endgroup
+}
+
+\newcommand{\rulerRule}[4]{%
+\begingroup
+%\linespread{1}\selectfont
+\renewcommand{\arraystretch}{1}%
+\mbox{%
+%\linespread{1}\selectfont
+%\vspace*{.5\baselineskip}
+\ensuremath{%
+  \frac{%
+    \begin{array}{@{}c@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    \ \\
+    #3
+    \end{array}%
+  }{%
+    \begin{array}{@{}c@{}}%
+    %\renewcommand{\arraystretch}{1}%
+    #4
+    \end{array}%
+  }%
+  \, \textsc{#1}_{#2}%
+ }%
+%\vspace*{.5\baselineskip}
+}
+\endgroup
+}
+

@@ -1,0 +1,46 @@
+%%[1 ag
+
+-------------------------------------------------------------------------
+-- Interfacing
+-------------------------------------------------------------------------
+
+DATA AGARuleItf
+  | AGItf               rule        : ARule
+
+-------------------------------------------------------------------------
+-- Rule in AG form
+-------------------------------------------------------------------------
+
+DATA ARule
+  | Rule                ndNmL       : {[Nm]}
+                        rlNm        : {Nm}
+                        info        : {[String]}
+                        eqns        : AEqns
+
+TYPE ARules = [ARule]
+
+DATA AEqn
+  | Eqn                 dest        : AEqnDest
+                        val         : AExpr
+  | Err                 expr        : Expr
+
+TYPE AEqns = [AEqn]
+
+DATA AExpr
+  | Expr                expr        : Expr
+
+DATA AEqnDest
+  | One                 anm         : ANm
+  | Many                dests       : AEqnDests
+
+TYPE AEqnDests = [AEqnDest]
+
+SET AllARuleEqn = AEqn AEqns
+
+SET AllARuleRule = ARule ARules
+
+SET AllARuleButARule = AllARuleEqn AExpr AEqnDest AEqnDests
+
+SET AllARule = AllARuleRule AllARuleButARule
+
+%%]

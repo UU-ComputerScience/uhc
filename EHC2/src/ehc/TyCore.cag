@@ -1,0 +1,325 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to Code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
+%%]
+
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,EH.Util.Utils)
+%%]
+
+%%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set) export(FvS,FvSMp)
+%%]
+
+-- import unqualified from Ty only what needs to be exported as part of the AST
+%%[(8 codegen) hs import({%{EH}Ty}(TyVarId)) export(TyVarId)
+%%]
+%%[(9 codegen) hs import({%{EH}Ty}(ImplsVarId)) export(ImplsVarId)
+%%]
+-- the remainder is imported qualified
+%%[(8 codegen) hs import(qualified {%{EH}Ty} as T)
+%%]
+
+%%[(8 codegen) hs export(AGItf(..), Module(..), ValBind(..), ValBindL, TyBind(..), TyBindL, PatRest(..), Alt(..), AltL, Pat(..), PatL, FldBind(..), FldBindL) 
+%%]
+%%[(8888 codegen) hs export(Ty(..), TyL, TySeq1(..), TySeq1L, TyAnn(..), TyFld(..), TyFldL) 
+%%]
+%%[(8 codegen) hs export(ExprSeq1(..), ExprSeq1L) 
+%%]
+%%[(8 codegen) hs export(Expr(..), ExprAnn(..), MbExpr) 
+%%]
+%%[(8 codegen) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
+%%]
+
+%%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%]
+
+%%[(8 codegen) ag import({TyCore/AbsSyn})
+DERIVING *     : Show, Eq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Alias for Ty being also a TySeq
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(Ty,TyL,TySeq,TySeq1,TySeq1L)
+type Ty      = Expr
+type TyL     = [Ty]
+type TySeq   = Ty
+type TySeq1  = ExprSeq1
+type TySeq1L = ExprSeq1L
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Binding category, per group of bindings
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(ValBindCateg(..))
+data ValBindCateg
+  = ValBindCateg_Rec				-- mutually recursive
+  | ValBindCateg_Strict				-- strictly evaluated
+  | ValBindCateg_Plain				-- plain
+  | ValBindCateg_FFI				-- imported function
+%%[[94
+  | ValBindCateg_FFE				-- exported function (not implemented yet)
+%%]]
+  deriving (Show,Eq)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Builtin TyCore types/kinds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyErr)
+-- a for the time being placeholder for yet unresolved/unpropagated type
+tyErr :: String -> Ty
+tyErr = Expr_Err
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting/Constructing Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(mkTySeq,unTySeq)
+-- lift & unlift to TySeq, with mkTySeq . unTySeq == id for singleton sequences
+mkTySeq :: Ty -> TySeq
+mkTySeq   (Expr_Seq1  s  ) = Expr_Seq [s]
+mkTySeq s@(Expr_Seq   _  ) = s
+mkTySeq t@(Expr_Arrow _ _) = t		-- functions cannot be sequenced, they are already supposed to be called
+mkTySeq t                  = Expr_Seq $ mkTySeqVals [t]
+
+unTySeq :: TySeq -> Ty
+unTySeq (Expr_Seq [ExprSeq1_L0Val t _]) = t
+unTySeq t                               = t
+%%]
+
+%%[(8 codegen) hs export(mkTySeq1,unTySeq1)
+mkTySeq1 :: Ty -> TySeq
+mkTySeq1   (Expr_Seq   [s] ) = Expr_Seq1 s
+mkTySeq1 s@(Expr_Seq1   _  ) = s
+mkTySeq1 t@(Expr_Arrow _ _ ) = t		-- functions cannot be thunked, they are already supposed to be called
+mkTySeq1 t                   = Expr_Seq1 $ head $ mkTySeqVals [t]
+
+unTySeq1 :: TySeq -> Ty
+unTySeq1 (Expr_Seq1 (ExprSeq1_L0Val t _)) = t
+unTySeq1 t                                = t
+%%]
+
+%%[(8 codegen) hs
+unSeq :: Expr -> ExprSeq1
+unSeq (Expr_Seq1 s ) = s
+unSeq (Expr_Seq [s]) = s
+unSeq t              = panic "TyCore.unSeq"
+%%]
+
+%%[(8 codegen) hs export(mkTySeqVals,mkTySeqNmVals)
+mkTySeqVals :: [Ty] -> TySeq1L
+mkTySeqVals tl = map (flip ExprSeq1_L0Val Nothing) tl
+
+mkTySeqNmVals :: [(HsName,Ty)] -> TySeq1L
+mkTySeqNmVals tl = [ExprSeq1_L0LblVal n t | (n,t) <- tl]
+%%]
+
+%%[(8 codegen) hs export(mkTyLArrow1Ty,mkTyBareArrow1Ty,mkTyArrow1Ty)
+mkTyBareArrow1Ty :: Ty -> Ty -> Ty
+mkTyBareArrow1Ty = Expr_Arrow
+
+mkTySeqArrow1Ty :: TySeq1L -> TySeq -> Ty
+mkTySeqArrow1Ty a r = Expr_Arrow (Expr_Seq a) r
+
+mkTyArrow1Ty :: TySeq1L -> Ty -> Ty
+mkTyArrow1Ty a r = mkTySeqArrow1Ty a (mkTySeq r)
+
+mkTySeqArrow1TySeq :: TySeq1L -> TySeq -> TySeq
+mkTySeqArrow1TySeq a r = mkTySeq $ mkTyArrow1Ty a r
+
+mkTyLArrow1Ty :: TySeq1L -> TyL -> Ty
+mkTyLArrow1Ty a r = mkTySeqArrow1Ty a (Expr_Seq $ mkTySeqVals r)
+
+mkTySeqArrowNTySeq :: [TySeq1L] -> TySeq -> TySeq
+mkTySeqArrowNTySeq a r = foldr mkTySeqArrow1TySeq r a
+%%]
+
+%%[(8 codegen) hs export(mkTyArrowNTy,mkTyVarKiArrowNTy)
+mkTyArrowNTy :: TyL -> Ty -> TySeq
+mkTyArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Val t Nothing] | t <- a ] (mkTySeq r)
+
+mkTyVarKiArrowNTy :: [(TyVarId,Ty)] -> Ty -> TySeq
+mkTyVarKiArrowNTy a r = mkTySeqArrowNTySeq [ [ExprSeq1_L0Bind (mkHNm n) Nothing k] | (n,k) <- a ] (mkTySeq r)
+%%]
+
+%%[(8 codegen) hs export(mkTyThunk)
+mkTySeqThunk :: TySeq -> Ty
+mkTySeqThunk t = mkTySeqArrow1Ty [] t
+
+mkTyThunk :: Ty -> Ty
+mkTyThunk t = mkTyArrow1Ty [] t
+%%]
+
+%%[(8 codegen) hs export(tyUnThunkTySeq,tyUnThunkTy)
+tyUnThunkTySeq :: Ty -> TySeq
+tyUnThunkTySeq (Expr_Arrow (Expr_Seq []) r) = r
+tyUnThunkTySeq t                            = tyErr "TyCore.tyUnThunkTySeq"
+
+tyUnThunkTy :: Ty -> Ty
+tyUnThunkTy = unTySeq . tyUnThunkTySeq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type manipulation, structure changing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyStripL1Args)
+-- strip L1 argument bindings of an arrow type
+tyStripL1Args :: Ty -> Ty
+tyStripL1Args t
+  = foldr Expr_Arrow r $ filter (\x -> case unSeq x of {ExprSeq1_L0Bind _ _ _ -> False ; _ -> True}) as
+  where (as,r) = tyArrowArgsRes t
+%%]
+
+%%[(8 codegen) hs export(tyL0BindToL1Val)
+-- convert type level l0 binding to l1 argument, used to convert from type signature to value application
+tyL0BindToL1Val :: Ty -> Ty
+tyL0BindToL1Val t
+  = to t
+  where tosq (ExprSeq1_L0Bind n _ _) = ExprSeq1_L1Val (Expr_Var n)
+        tosq (ExprSeq1_L1Bind n   _) = ExprSeq1_L2Val (Expr_Var n)
+        tosq s                       = s
+        to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
+        to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
+        to   t             = t
+%%]
+
+%%[(8 codegen) hs export(tyL0BindToL1Bind)
+-- convert type level l0 binding to l1 binding, used to convert from type signature to value abstraction
+tyL0BindToL1Bind :: Ty -> Ty
+tyL0BindToL1Bind t
+  = to t
+  where tosq (ExprSeq1_L0Bind n _ t) = ExprSeq1_L1Bind n t
+        tosq (ExprSeq1_L1Bind n   t) = ExprSeq1_L2Bind n t
+        tosq s                       = s
+        to   (Expr_Seq  s) = Expr_Seq  (map tosq s)
+        to   (Expr_Seq1 s) = Expr_Seq1 (    tosq s)
+        to   t             = t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Meta defaulting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(dfltMetaVal,metaValIsDflt)
+dfltMetaVal :: MetaVal
+dfltMetaVal = MetaVal_Val
+
+metaValIsDflt :: MetaVal -> Bool
+metaValIsDflt m = m == dfltMetaVal
+%%]
+
+%%[(8 codegen) hs export(dfltMetas,metasIsDflt)
+dfltMetas :: Metas
+dfltMetas = (MetaBind_Plain,MetaVal_Val)
+
+metasIsDflt :: Metas -> Bool
+metasIsDflt (MetaBind_Plain,MetaVal_Val) = True
+metasIsDflt _                            = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting/Constructing Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(mkExprThunk)
+mkExprThunk :: Expr -> Expr
+mkExprThunk e = Expr_Lam (Expr_Seq []) e
+%%]
+
+%%[(8 codegen) hs export(mkExprUnThunk)
+mkExprUnThunk :: Expr -> Expr
+mkExprUnThunk e = Expr_App e (Expr_Seq [])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Deconstructing Ty
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(tyArrowArgsResSeq,tyArrowArgsRes,tyArrowArgRes)
+-- split arrow type into arguments and result as sequences
+tyArrowArgsResSeq :: Ty -> ([TySeq1L],TySeq)
+tyArrowArgsResSeq t
+  = extr t
+  where extr (Expr_Arrow (Expr_Seq  a) r) = let (a',r') = extr r in ( a :a',r')
+        extr (Expr_Arrow (Expr_Seq1 a) r) = let (a',r') = extr r in ([a]:a',r')
+        extr t                            = ([],mkTySeq t)
+
+-- split into single arg + res
+tyArrowArgRes :: Ty -> (Ty,Ty)
+tyArrowArgRes t
+  = extr t
+  where extr (Expr_Arrow a r) = (a,r)
+        extr t                = (tyErr "TyCore.tyArrowArgRes.arg",tyErr "TyCore.tyArrowArgRes.res")
+
+-- split into multiple args (>=0) + res
+tyArrowArgsRes :: Ty -> ([Ty],Ty)
+tyArrowArgsRes t
+  = extr t
+  where extr (Expr_Arrow a r) = let (a',r') = extr r in (a:a',r')
+        extr t                = ([],t)
+%%]
+
+%%[(8 codegen) hs export(ArrowHowDecompose(..),tyArrowInstQuArgsRes)
+data ArrowHowDecompose
+ = ArrowDecompose_InstOnly		-- only ty instantiation
+ | ArrowDecompose_ArgBefore		-- split off arg before
+ | ArrowDecompose_ArgAfter		-- split off arg after
+ 
+-- split type + instantation into multiple type args (>=0) + optional 1 arg + 1 res:
+-- in other words, peel of type application(s) for Sys F, driven by InstTo
+tyArrowInstQuArgsRes :: ArrowHowDecompose -> [T.InstTo] -> Ty -> ([Ty],Ty,Ty)
+tyArrowInstQuArgsRes how instToL t
+  = case how of
+      ArrowDecompose_InstOnly
+        -> (taL,tyErr "TyCore.tyArrowInstQuArgsRes.ArrowDecompose_InstOnly",r)
+        where (taL,r) = extr instToL t
+      ArrowDecompose_ArgBefore
+        -> (taL,a,r')
+        where (a,r) = tyArrowArgRes t
+              (taL,r') = extr instToL r
+      ArrowDecompose_ArgAfter
+        -> (taL,a,r')
+        where (taL,r) = extr instToL t
+              (a,r') = tyArrowArgRes r
+  where extr (T.InstTo_Qu _ _ _ _ : is) (Expr_Arrow a r) = let (a',r') = extr is r in (a:a',r')
+        extr _                          t                = ([],t)
+%%]
+
+%%[(8888 codegen) hs export(tyArrowGetExprArg)
+-- get from a arrow args+res: immediately preceding type args + 1 value arg + and the remainder as a lam result
+tyArrowGetExprArg :: Int -> ([TySeq1L],TySeq) -> ([Ty],TySeq1,TySeq)
+tyArrowGetExprArg n (as,res)
+  = ([ ty t | ts <- reverse tss, t <- ts],a,r)
+  where (tss,a,r) = get [] n as
+        get ts n ((a@(ExprSeq1_L0Val _ _):as):ass) | n == 0    = (reverse ts,a,mkTySeqArrowNTySeq ((if null as then [] else [as]) ++ ass) res)
+                                                   | otherwise = get  []      (n-1) (as:ass)
+        get ts n ((a                     :as):ass)             = get ([a]:ts)  n    (as:ass)
+        get ts n (as                         :ass)             = get (as :ts)  n        ass
+        get ts _ _                                             = ([],ExprSeq1_L0Val (tyErr "TyCore.tyArrowGetExprArg.get") Nothing,res)
+        ty (ExprSeq1_L0Bind n _ _) = Expr_Var n
+        ty _                       = tyErr "TyCore.tyArrowGetExprArg.ty"
+%%]
+
+%%[(8 codegen) hs export(tySeq1Ty)
+-- get the type from a value ty arg
+tySeq1Ty :: TySeq1 -> Ty
+tySeq1Ty (ExprSeq1_L0Val t _) = t
+tySeq1Ty _                    = tyErr "TyCore.tySeq1Ty"
+%%]
+
+

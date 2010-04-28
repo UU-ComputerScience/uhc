@@ -1,0 +1,13 @@
+let  c   ::  Int -> Char -> Int = \x -> \y -> x
+  ;  f   ::  (forall a . a -> a) -> Int = \i -> c (i 3) (i '2')
+  ;  g   =   \h ->  let  v1 = h 3
+                      ;  v2 = h '2'
+                      ;  v3 = f h
+                    in   v1
+  ;  g'  =   \h ->  let  v1 = h 3
+                      ;  v2 = h '2'
+                      ;  v3 = g h
+                    in   v1
+  ;  id  ::  forall a . a -> a = \x -> x
+  ;  v1  =   f id
+in   v1

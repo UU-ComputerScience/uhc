@@ -1,0 +1,225 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Undefined names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+SEM Module
+    | Module
+        loc             .   errUndef    =   let ns = [ (ioccNm o >#< ppParens (ioccKind o),Just (map (\o -> (uoccRange o,Nothing)) os))
+                                                     | (o,os) <- gamToAssocDupL @body.undefOccGam, not $ hsnIsProd $ ioccNm $ o
+                                                     ]
+                                            in  (if null ns then [] else [rngLift @range mkErr_NamesNotIntrod' "" ns])
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ..
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+%%]
+idDefOccGamCheckAllowedKind :: String -> [IdOccKind] -> IdDefOccGam -> [Err]
+idDefOccGamCheckAllowedKind m ks g
+  = case idDefOccGamPartitionByKind ks g of
+      (_,[]) -> []
+      (_,ds) -> [rngLift @range Err_DeclsNotAllowed m [ (ioccKind o,map ioccNm os) | os@(o:_) <- groupSortOn ioccKind (assocLKeys ds)]]
+
+%%[9
+%%]
+SEM Declaration
+    | Class
+        loc             .   errNotAllowed
+                                        =   idDefOccGamCheckAllowedKind "class" [IdOcc_Val] @where.idDefOccGam
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Module name
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+SEM Module
+    | Module
+        loc             .   errModName  =   case @name of
+                                              Just n | n /= @lhs.moduleNm && not @lhs.isTopMod
+                                                -> [rngLift @range Err_ModNameMismatch @lhs.moduleNm n]
+                                              _ -> []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% FFI to not allowed FFIWay
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+SEM Declaration
+    | ForeignImport
+%%[[94
+      ForeignExport
+%%]]
+        loc             .   errFFIWay   =   if maybe False (@callconvention `elem`) $ fmap targiAllowedFFI $ Map.lookup (ehcOptTarget @lhs.opts) allTargetInfoMp
+                                            then []
+                                            else [rngLift @range Err_IllegalFFIWay @callconvention]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Newtype may only have 1 con, 1 fld
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM Declaration
+    | Newtype
+        loc             .   errNewtype  =   case @constructors.eh of
+                                              EH.DataConstr_Constr _
+%%[[99
+                                                                   _
+%%]]
+%%[[95
+                                                                   _
+%%]]
+                                                                   [_]
+%%[[16
+                                                                   _
+%%]]
+                                                -> []
+                                              _ -> [rngLift @range Err_Newtype @simpletype.name]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Duplicate introductions
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+A table of checks for duplicate introductions.
+
+%%[1 hs
+idDupCheckInfo :: AssocL IdOccKind (AssocL String (IdAspect -> Bool))
+idDupCheckInfo
+  = [ ( IdOcc_Val
+      , [ ( "type signature"    , iaspIsValSig )
+        , ( "value"             , (\a -> iaspIsValVar a
+                                         || iaspIsFun a
+%%[[5
+                                         || iaspIsValFld a
+%%]]
+%%[[8
+                                         || iaspIsValForeign a
+%%]]
+          )                       )
+        , ( "operator fixity"   , iaspIsValFix )
+%%[[5
+        , ( "data constructor"  , iaspIsValCon )
+%%]]
+        ]
+      )
+%%[[3
+    , ( IdOcc_Type
+      , [ ( "type variable"     , iaspIsTypeVar )
+%%[[5
+        , ( "type"              , iaspIsTypeDef )
+%%]]
+%%[[6
+        , ( "kind signature"    , iaspIsTypeSig )
+%%]]
+        ]
+      )
+%%]]
+%%[[9
+    , ( IdOcc_Class
+      , [ ( "class"             , iaspIsClassDef )
+        ]
+      )
+%%]]
+    ]
+%%]
+
+%%[1 hs
+idDefOccGamCheckDupNames :: IdDefOccGam -> [Err]
+idDefOccGamCheckDupNames g
+  = case dups of
+      [] -> []
+      es -> map mk es
+         where mk (info,ds@((_,Just ((r,_):_)):_)) = rngLift r Err_NamesDupIntrod info ds
+  where dups
+          = Map.toList
+            $  Map.unionsWith (++)
+            $  [ Map.singleton info [(n,Just [(doccRange d, Just $ pp $ doccAsp d) | d <- defs])]
+               | (IdOcc {ioccKind=k, ioccNm=n},ds) <- gamToAssocDupL g
+               , check <- maybeToList $ lookup k idDupCheckInfo
+               , (info,defs) <- filter (\(_,x) -> length x > 1)
+                                $ assocLMapElt (\c -> filter (\d -> c (doccAsp d)) $ collapse ds) check
+               ]
+        -- Functions and data fields are allowed to have duplicate entries, so they are collapsed into 1.
+        -- For data fields under the provision that the type to which they belong is the same, but the constructor not (another weird language complexity check)
+        collapse ds
+          =    take 1 funs
+%%[[1
+            ++ others1
+%%][5
+            ++ (map head $ filter (\l -> length l > 0) $ map concat flds1PerCon)
+            ++ (concat $ concat fldsManyPerCon)
+            ++ others2
+%%]]
+          where (funs,others1) = partition (iaspIsFun . doccAsp) ds
+%%[[5
+                (flds,others2) = partition (iaspIsValFld . doccAsp) others1
+                fldsGrouped = map (groupOn (iaspConNm . doccAsp)) $ groupOn (iaspDataNm . doccAsp) flds
+                (flds1PerCon,fldsManyPerCon) = unzip $ map (partition (\l -> length l == 1)) $ fldsGrouped
+%%]]
+%%]
+
+%%[1
+SEM Body
+    | Body
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idDefOccGam
+
+SEM Expression
+    | Let
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idDefOccGam
+    | Lambda
+%%[[12
+      ImplicitLambda
+%%]]
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @patterns.idDefOccGam
+
+SEM FunctionBinding
+    | FunctionBinding
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @lefthandside.idDefOccGam
+%%]
+
+%%[4
+SEM Type
+    | Forall Exists
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idDefOccGamInside
+%%]
+
+%%[5
+SEM Declaration
+    | Data Newtype
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idDefOccGamType2
+
+SEM Alternative
+    | Alternative
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idDefOccGam
+
+SEM Qualifier
+    | Generator
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idDefOccGam
+    | Let
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idDefOccGam
+%%]
+
+%%[9
+SEM Declaration
+    | Class
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idDefOccGamType
+
+SEM Statement
+    | Generator
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @pattern.idDefOccGam
+    | Let
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @declarations.idDefOccGam
+%%]
+
+%%[11
+SEM Declaration
+    | Type
+        loc             .   errDupIntro  =   idDefOccGamCheckDupNames @idDefOccGamType
+%%]
+
+

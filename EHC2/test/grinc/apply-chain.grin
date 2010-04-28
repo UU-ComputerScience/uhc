@@ -1,0 +1,33 @@
+module "apply-chain"
+{ main <- store (#0/F/main 0)
+}
+{ $app2 $f $a $b
+    = { eval $f ; \$e ->
+        apply $e $a $b
+      }
+; $id $x
+    = { eval $x
+      } 
+; main 
+    = { store (#0/P/1/$id 0)  ; \$id1 ->
+        store (#0/P/1/$id 0)  ; \$id2 ->
+        store (#0/C/$Int 1 7) ; \$7 ->
+        $app2 $id1 $id2 $7
+      }
+}
+
+ctags
+{ $Int = $Int 0 1
+}
+
+evalmap
+{ #0/C/$Int   1 -> unit
+; #0/P/1/$id  0 -> unit
+; #0/F/$app2  3 -> $app2
+; #0/F/$id    1 -> $id
+; #0/F/main   0 -> main
+}
+
+applymap
+{ #0/P/1/$id    0 -> $id
+}

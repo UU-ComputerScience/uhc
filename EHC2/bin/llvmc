@@ -1,0 +1,61 @@
+#!/bin/sh
+#
+# Compiler driver for generating LLVM Binaries
+# 
+
+###############################################################################
+# Config options
+###############################################################################
+
+# Program to assemble .ll files
+#
+LLVM_AS="$1"
+shift
+
+# Program to optimize .bc files
+#
+LLVM_OPT="$1 -std-compile-opts -dce -globalsmodref-aa -internalize -ipsccp"
+shift
+
+# Binary to compile .bc files to .s files
+#
+LLC="$1 -mtriple=i386-apple-darwin9.8.0"
+shift
+
+# Native linker
+#
+NATIVE_LD="$1"
+shift
+
+# Strip the symbol table
+#
+STRIP="strip"
+
+###############################################################################
+# End of config options
+###############################################################################
+TMP_TEMPLATE="llvm-driver.XXXXXXXX"
+
+LIBS=""
+OUTPUT=""
+# process command-line options
+#
+while getopts "l:o:" opt; do
+    case $opt in 
+        l )    LIBS="$LIBS $OPTARG" ;;
+        o )    OUTPUT="$OPTARG" ;;
+        \? )   echo 'usage: llvmc as-cmd opt-cmd llc-cmd gcc-cmd [-l lib] [-o file] file'
+               exit 1 ;;
+    esac
+done
+shift $(($OPTIND - 1))
+
+INPUT_LL=$1
+OUTPUT_BASE=${OUTPUT%.*}
+INPUT_BASE=${OUTPUT%.*}
+
+$LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
+$LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
+$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
+$STRIP $OUTPUT

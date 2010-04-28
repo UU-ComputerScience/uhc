@@ -1,0 +1,25 @@
+%%[nubAsHSSimplified
+nub                     ::  (Eq a) => [a] -> [a]
+nub (h:t)               =   h : nub (filter (h /=) t)
+%%]
+
+%%[nubUseWithInt1
+t1 = nub [3,3,4,5]
+%%]
+
+%%[nubUseWithInt2
+t1 = nub ? [3,3,4,5]
+%%]
+
+%%[nubByUseWithInt2
+t1 = nubBy ? [3,3,4,5]
+%%]
+
+%%[nubAsHS
+nub                      ::  (Eq a) => [a] -> [a]
+nub                      =   nubBy (==)
+
+nubBy                    ::  (a -> a -> Bool) -> [a] -> [a]
+nubBy eq []              =   []
+nubBy eq (h:t)           =   h : nubBy eq (filter (not . eq h) t)
+%%]

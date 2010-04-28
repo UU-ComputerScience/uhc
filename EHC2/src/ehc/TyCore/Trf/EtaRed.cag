@@ -1,0 +1,80 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Eta reduce
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Note:
+removal of CaseAltFail is done here.
+No special reason except it is the first transformation.
+
+%%[(8 codegen) hs module {%{EH}Core.Trf.EtaRed} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
+%%]
+
+%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfEtaRed)
+%%]
+
+%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})
+WRAPPER AGItf
+%%]
+
+%%[(99 codegen)
+PRAGMA strictcase
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+cmodTrfEtaRed :: CModule -> CModule
+cmodTrfEtaRed cmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf cmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Maybe an app
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs
+type MbApp = Maybe ((Expr,FvS),Expr)
+%%]
+
+%%[(8 codegen)
+ATTR Expr [ | | mbApp: MbApp  mbFunAppL: {[MbApp]} ]
+
+SEM Expr
+  | App         lhs         .   mbApp       =   case @func.mbTupApp of
+                                                  Just _  -> Nothing
+                                                  Nothing -> Just ((@func.cTrf,@func.fvS),@arg.cTrf)
+                            .   mbFunAppL   =   @func.mbApp : @func.mbFunAppL
+  | Lam         lhs         .   (mbApp,mbFunAppL)
+                                            =   case @body.mbFunAppL of
+                                                  (f:fs) | @isMatch
+                                                    -> (f,fs)
+                                                  _ -> (Nothing,@body.mbFunAppL)
+  | * - App Lam lhs         .   mbApp       =   Nothing
+  | * - App Lam lhs         .   mbFunAppL   =   []
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Transformation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+ATTR AllCodeNT [ | | cTrf: SELF ]
+ATTR AGItf [ | | cTrf: CModule ]
+
+SEM Expr
+  | Lam         (loc.cNew,loc.isMatch)      =   case @body.mbApp of
+                                                  Just ((f,fFvS),Expr_Var a) | a == @arg && not (a `Set.member` fFvS)
+                                                    -> (f,True)
+                                                  _ -> (@cTrf,False)
+                lhs         .   cTrf        =   @cNew
+  | CaseAltFail lhs         .   cTrf        =   @errorExpr.cTrf
+%%]
+

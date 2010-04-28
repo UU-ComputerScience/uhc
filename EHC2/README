@@ -1,0 +1,18 @@
+The Utrecht Haskell Compiler (UHC)
+==================================
+
+This is the top directory of the UHC source tree, for the compiler and
+the tools and libraries required to build UHC. UHC grew out of the
+Essential Haskell Compiler (EHC) project, but the name EHC will
+gradually not be used overtime. The web entry point for information
+about UHC is:
+
+	http://www.cs.uu.nl/wiki/UHC/WebHome
+
+Here instructions for getting started and downloading can be found.
+
+More detailed information currently still labeled with EHC can be found
+here:
+
+	http://www.cs.uu.nl/wiki/Ehc/WebHome
+

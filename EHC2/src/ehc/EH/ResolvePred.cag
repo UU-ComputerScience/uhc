@@ -1,0 +1,132 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pred gathering
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(10 hmtyinfer)
+SEM Expr
+  | Sel         loc         .   prUid               =   mkPrIdCHR @lUniq2
+                            .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @lbl)) @prUid @lhs.predScope]
+                loc         .   lUniq2              :   UNIQUEREF gUniq
+
+SEM RecExpr
+  | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+  | Upd         loc         .   prUid               =   mkPrIdCHR @lUniq4
+                loc         .   lUniq4              :   UNIQUEREF gUniq
+  | Ext Upd     loc         .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @knRowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+
+SEM RecPatExpr
+  | Ext         loc         .   prUid               =   mkPrIdCHR @lUniq3
+                            .   prOccL              =   [rngLift @range mkPredOccRng (Pred_Lacks @rowTy (Label_Lab @nm)) @prUid @lhs.predScope]
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Impl prove occurrence
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | App AppImpred
+                loc         .   imPrvOcc            =   mkImplsProveOcc @lUniq3 @lhs.predScope
+                            .   (implsPrvOccTl,prvOccTlVarMp)
+                                                    =   varmpTailAddOcc @imPrvOcc @implsTl
+                loc         .   lUniq3              :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Impl types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec  loc         .   imSubsTy            =   foVarMp @foKnRes |=> @imTy
+  | Lam         loc         .   imSubsTy            =   foVarMp @fo_fitF_ |=> @imTy
+%%]
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec Lam
+                loc         .   (knPrL,knImplsTl)   =   implsPredsTail @predScope $ tyImpls @imSubsTy
+                            .   implsIsEmpty        =   let (knpr,_)
+                                                              = implsPredsTailWithLkup (varmpImplsLookupCyc2 @lhs.tyVarMp) initPredScope
+                                                              $ tyImplsWithLkup (varmpTyLookupCyc2 @lhs.tyVarMp) @lhs.knTy
+                                                        in  null knpr
+%%]
+
+%%[(12 hmtyinfer)
+SEM Expr
+  | LamImpl     loc         .   knPr                =   tyPred $ (@body.tyVarMp |=>) $ @knArgImpl
+                            .   knPrUid             =   mkPrIdCHR @lUniq
+                            .   knPrL               =   [mkPredOcc @knPr @knPrUid @predScope]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Passing back code substitution
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 codegen hmtyinfer)
+ATTR NTCode [ | cSubst: CSubst | ]
+
+SEM AGItf
+  | AGItf       loc         .   cSubst              =   emptyCSubst
+
+SEM Decl
+  | Instance    decls       .   cSubst              =   cSubstApp @lhs.cSubst
+                                                        $ evidKeyBindMpToCSubst @chrEvidBindMp
+
+SEM Expr
+  | Let         decls       .   cSubst              =   cSubstApp @lhs.cSubst
+                                                        $ cSubstApp @prvArgCSubst
+                                                        $ cSubstApp (cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+                                                        $ evidKeyBindMpToCSubst @chrSolveEvidBindMp
+%%]
+
+TyCore version/clone:
+
+%%[(9 codegen hmtyinfer)
+SEM Decl
+  | Instance    decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
+                                                        $ E2C.evidKeyBindMpToSubst @chrEvidBindMpTC
+
+SEM Expr
+  | Let         decls       .   tcSubst             =   C.cSubstApp @lhs.tcSubst
+                                                        $ C.cSubstApp @prvArgTCSubst
+                                                        $ C.cSubstApp (C.cnstrImplsToCSubst @lhs.opts @tmpoTyVarMp)
+                                                        $ E2C.evidKeyBindMpToSubst @chrSolveEvidBindMpTC
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Bindings for preds
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer)
+SEM Expr
+  | AppTop Rec Lam
+                loc         .   impls2KnHd          =   tyImpls @imSubsTy
+                            .   impls2KnTl          =   @lhs.finTyVarMp |=> @knImplsTl
+                            .   poiLKnTl            =   implsPrIds @impls2KnTl
+                            .   poiL                =   implsPrIds @impls2KnHd ++ @poiLKnTl
+%%]
+
+%%[(12 hmtyinfer)
+SEM Expr
+  | LamImpl     loc         .   poiL                =   [@knPrUid]
+%%]
+
+%%[(9 codegen hmtyinfer)
+SEM Expr
+  | AppTop Rec Lam
+%%[[12
+    LamImpl
+%%]]
+                loc         .   poiBindL            =   @chrAssumeBindL ++ @chrScopeBindL
+                loc         .   poiBindLTC          =   @chrAssumeBindLTC ++ @chrScopeBindLTC	-- for TyCore clone
+%%]
+
+

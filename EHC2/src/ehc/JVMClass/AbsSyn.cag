@@ -1,0 +1,509 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Abstract syntax for JVM class files
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Representation of JVM class files.
+For reference see:
+
+\begin{itemize}
+\item \href{http://java.sun.com/docs/books/jvms}{The Java Virtual Machine Specification}
+\item \href{http://en.wikipedia.org/wiki/Class_(file_format)}{Wikipedia}
+\item \href{http://darcs.brianweb.net/hsjava}{hsjava by Brian Alliet}
+\end{itemize}
+
+This AST and semantics are under construction.
+%%]
+
+%%[(8 java)
+DATA AGItf
+  | AGItf       module          : Class
+%%]
+
+%%[(8 java)
+DATA PoolConstAGItf
+  | AGItf       const           : PoolConst
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Class
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Class
+  | Class       minor           : {U2}
+                major           : {U2}
+                flags			: Flags
+                this			: {ClassRef}
+                super			: {ClassRef}
+                interfaces		: {[ClassRef]}
+                fields			: Fields
+                methods			: Methods
+                -- attributes		: Attributes
+                -- userdata		: UserDataAssocs
+                innerclasses	: Classes
+
+TYPE Classes	= [Class]
+%%]
+
+data Class = Class {
+    c_major :: U2,
+    c_minor :: U2,
+    c_flags :: [Flag],
+    c_this  :: ClassRef,
+    c_super :: Maybe ClassRef,
+    c_interfaces :: [ClassRef],
+    c_fields :: [Field],
+    c_methods :: [Method],
+    c_sourcefile :: Maybe String,
+    c_innerclasses :: [(Maybe ClassRef, Maybe ClassRef, Maybe String, [Flag])],
+    c_enclosing_method :: Maybe (Either ClassRef MethodRef),
+    c_signature :: Maybe String,
+    c_deprecated :: Bool,
+    c_userdata :: [(String,UserData)]
+    } deriving (Eq, Show)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Field
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Field
+  | Field		flags			: Flags
+  				name			: {FieldRef}
+  				type			: Type
+  				mbConst 		: MbConst
+                -- userdata		: UserDataAssocs
+
+TYPE Fields		= [Field]
+%%]
+
+data Field = Field {
+    f_flags :: [Flag],
+    f_name :: String,
+    f_type :: Type,
+    f_constant :: Maybe Constant,
+    -- FEATURE: Build generics into Type and eliminate this (it is bound to get out of sync)
+    f_signature :: Maybe String, 
+    f_deprecated :: Bool,
+    f_userdata :: [(String,UserData)]
+    } deriving (Eq,Show)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Method
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Method
+  | Method		flags			: Flags
+  				name			: {MethodRef}
+  				args			: Types
+  				mbRet			: MbType
+  				code			: Code
+  				-- exceptions		: {[ClassRef]}
+
+TYPE Methods	= [Method]
+%%]
+
+data Method = Method {
+    m_flags :: [Flag],
+    m_name  :: String,
+    m_ret   :: Maybe Type,
+    m_args  :: [Type],
+    m_code  :: Maybe Code,
+    m_exceptions :: [ClassRef],
+    m_signature :: Maybe String,
+    m_deprecated :: Bool
+    } deriving (Eq,Show)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Type
+  | Bool
+  | Byte
+  | Char
+  | Double
+  | Float
+  | Int
+  | Long
+  | Short
+  | Class 		classRef		: {ClassRef}
+  | Array 		type			: Type
+
+TYPE MbType		= MAYBE Type
+TYPE Types		= [Type]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Flag
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Flag
+  | Interface
+  | Super
+  | Public
+  | Private
+  | Protected
+  | Static
+  | Final
+  | Abstract
+  | Synchronized
+  | Native
+  | Strict
+  | Volatile
+  | Transient
+  | VarArgs
+  | Bridge
+  | Synthetic
+  | Enum
+
+TYPE Flags		= [Flag]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Code
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Code
+  | Code		mbMaxStack			: {Maybe U2}
+  				mbMaxLocals			: {Maybe U2}
+  				instructions		: Instrs
+
+TYPE MbCode		= MAYBE Code
+%%]
+
+data Code = Code {
+    c_max_stack :: Maybe U2,
+    c_max_locals :: Maybe U2,
+    c_instructions :: [Instruction]
+    } deriving (Show,Eq)
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Instruction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Instr
+%%]
+  | Note 			note				: Note
+  | Nop
+  | Pop 			type				: Type
+%%[(8 java)
+  | Dup 			type				: Type
+%%]
+  | DupX 			typedup				: Type{-what to dup-}
+  					typeskip			: Type{-what to skip-}
+  | Swap 			type1				: Type
+  					type2				: Type
+%%[(8 java)
+  | Load 			type				: Type
+  					local				: {Local}
+  | Store 			type				: Type
+  					local				: {Local}
+%%]
+%%[(8 java)
+  | Const 			const				: Const
+%%]
+  | Inc 			local				: {Local}
+  					value				: {JShort}
+  | Arith 			op					: ArithOp
+  					type				: Type
+  | Cmp 			mbCmp				: MbCmpMode
+  					type				: Type
+  | Convert 		type1				: Type
+  					type2				: Type
+%%[(8 java)
+  | ALoad 			type				: Type
+  | AStore 			type				: Type
+%%]
+  | ALength 		type				: Type
+%%[(8 java)
+  | Get 			static				: {Bool}
+  					fldConst			: Const
+  | Put				static				: {Bool}
+  					fldConst			: Const
+  | Invoke 			mode				: InvokeMode
+  					methConst			: Const
+%%]
+  | If 				test				: Test
+  					label				: {Label}
+%%[(8 java)
+  | Label 			label				: {Label}
+  | Goto 			label				: {Label}
+%%]
+  | Jsr 			label				: {Label}
+  | Ret 			u2					: {U2}
+%%[(8 java)
+  | Switch 			switch				: SwitchType
+  					cases				: Cases
+  					default				: Case
+%%]
+%%[(8 java)
+  | Return 			mbType				: MbType
+  | New 			classRef			: {ClassRef}
+  | NewArray 		type				: Type
+  | CheckCast 		type				: Type
+%%]
+  | InstanceOf 		type				: Type
+  | Throw 			classRef			: {ClassRef}
+  | MonitorEnter 	type				: Type
+  | MonitorExit 	type				: Type
+
+%%[(8 java)
+TYPE Instrs			= [Instr]
+%%]
+
+%%[(8 java)
+DATA Case
+  | Case			selector			: {Int}
+  					label				: {Label}
+  					instrs				: Instrs
+%%]
+
+%%[(8 java)
+TYPE Cases			= [Case]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Test
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Test
+  | IsNull 		type				: Type
+  | IsNonNull 	type				: Type
+  | IsZero
+  | IsNonZero
+  | IsLtZero
+  | IsLeZero
+  | IsGtZero
+  | IsGeZero
+  | CmpRefEq 	type				: Type
+  | CmpRefNe 	type				: Type
+  | CmpEq
+  | CmpNe
+  | CmpGt
+  | CmpGe
+  | CmpLt
+  | CmpLe
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Note
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Note
+  | Label		label				: {Label}
+  | LineNumber 	line				: {U2}
+  | Try 		label1				: {Label}
+  				label2				: {Label}
+  				mbClassRef			: {Maybe ClassRef}
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA Const
+  | Int 		int					: {JInt}
+  | String 		str					: {String}
+  | Class 		classRef			: {ClassRef}
+  | Class2		classRef			: {String}
+  | Field 		classRef			: {ClassRef}
+  				fieldRef			: {FieldRef}
+  				type				: Type
+  | Method 		classRef			: {ClassRef}
+  				methodRef			: {MethodRef}
+  				args				: Types
+  				mbRet				: MbType
+  | NameType 	name				: {String}
+  				type				: {String}
+%%]
+  | Long 		long				: {JLong}
+  | Float 		float				: {JFloat}
+  | Double 		double				: {JDouble}
+  | IMethod 	methodRef			: {MethodRef}
+  | Utf8 		str					: {String}
+
+%%[(8 java)
+TYPE MbConst	= MAYBE Const
+TYPE Consts		= [Const]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pool Constant
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA PoolConst
+  | Utf8 		str					: {String}
+  | Int 		int					: {JInt}
+  | String 		str					: {String}
+  | Class 		classRef			: {ClassRef}
+  | Class2		classRef			: {String}
+  | Field 		classRef			: {ClassRef}
+  				fieldRef			: {FieldRef}
+  				type				: Type
+  | Method 		classRef			: {ClassRef}
+  				methodRef			: {MethodRef}
+  				args				: Types
+  				mbRet				: MbType
+  | NameType 	name				: {String}
+  				type				: {String}
+%%]
+  | Long 		long				: {JLong}
+  | Float 		float				: {JFloat}
+  | Double 		double				: {JDouble}
+  | IMethod 	methodRef			: {MethodRef}
+
+%%[(8 java)
+TYPE MbPoolConst	= MAYBE PoolConst
+TYPE PoolConsts		= [PoolConst]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% ArithOp
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA ArithOp
+  | Add
+  | Sub
+  | Mul
+  | Div
+  | Rem
+  | Neg 
+  | UShr
+  | Shr
+  | Shl
+  | And
+  | Or
+  | Xor
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% InvokeMode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA InvokeMode
+  | Special
+  | Virtual
+  | Interface
+  | Static
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SwitchType
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA SwitchType
+  | Table
+  | Lookup
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% CmpMode
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA CmpMode
+  | CmpL
+  | CmpG
+
+TYPE MbCmpMode	= MAYBE CmpMode
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Attribute
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+%%]
+DATA Attribute
+  | Atom		str					: {String}
+  | Group		elts				: UserDatas
+
+TYPE Attributes		= [Attribute]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% UserData
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+DATA UserData
+  | Atom		str					: {String}
+  | Group		elts				: UserDatas
+
+TYPE UserDatas		= [UserData]
+TYPE UserDataAssoc	= (String,UserData)
+TYPE UserDataAssocs	= [UserDataAssoc]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Sets
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 java)
+SET AllFlag
+  = Flag Flags
+
+SET AllCode
+  = Code MbCode
+
+SET AllCase
+  = Case Cases
+
+SET AllInstr
+  = Instr Instrs AllCase
+
+SET AllMethod
+  = Method Methods
+
+SET AllField
+  = Field Fields
+
+SET AllClass
+  = Class Classes
+
+SET AllType
+  = Type MbType Types
+
+SET AllConst
+  = Const MbConst Consts
+
+SET AllPoolConst
+  = PoolConst MbPoolConst PoolConsts
+
+SET AllBin
+  = AllClass
+    AllCode
+    AllConst
+    AllPoolConst
+
+SET AllNT
+  = AllBin
+    AllInstr
+    AllMethod
+    AllField
+    AllType
+    AllFlag
+    Note
+    ArithOp
+    CmpMode
+    InvokeMode
+    SwitchType
+    Test
+    UserData UserDatas
+    UserDataAssoc UserDataAssocs
+%%]
+

@@ -1,0 +1,267 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to EH/AbsSyn
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs module {%{EH}EH} import({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%]
+
+%%[1 hs export(AGItf(..), Decl(..), Decls, TyExpr(..), Expr(..), PatExpr(..))
+%%]
+%%[1 hs export(ExprAnn(..), PatExprAnn(..), TyExprAnn(..))
+%%]
+
+%%[1 hs import({%{EH}HS}(Range))
+%%]
+
+%%[1 hs export(mkLet)
+%%]
+
+%%[4 hs import({%{EH}Ty})
+%%]
+
+%%[5 hs export(TyExprs, TyVar(..), TyVars, CaseAlt(..), CaseAlts, DataConstr(..), DataConstrs)
+%%]
+
+%%[5 hs export(mkCase,mkCase',mkIf,mkIf',mkError,mkStr,mkAlt)
+%%]
+
+%%[6 hs export(KiExpr(..), KiExprAnn(..))
+%%]
+
+%%[7 hs export(RecExpr(..), RecPatExpr(..), RowTyExpr(..), DataField(..), DataFields, DataFieldExpr(..), DataFieldPatExpr(..))
+%%]
+
+ %%[7_2 hs import({%{EH}Ty.TyConPat})
+ %%]
+
+%%[7_2 hs export(AnnDtMonoRestrictions, AnnDtMonoRestrict(..))
+%%]
+
+%%[8 hs import(qualified Data.Set as Set)
+%%]
+
+%%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay)) export(module {%{EH}Base.Target})
+%%]
+
+%%[8 hs export(mkLet',mkIf'')
+%%]
+
+%%[9 hs export(ehIsDeclVal)
+%%]
+
+%%[9 hs export(PrExpr(..), PrExprs)
+%%]
+
+%%[9 hs export(mkUnit,mkError')
+%%]
+
+%%[15 hs export(FuncDep(..), FuncDeps)
+%%]
+
+%%[16 hs export(DataConstrEq(..), DataConstrEqs)
+%%]
+
+%%[50 hs export(DataConstrEq(..), DataConstrEqs)
+%%]
+
+%%[94 hs import({%{EH}Foreign})
+%%]
+
+%%[1 ag import({EH/AbsSyn})
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Observations
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[9 hs
+ehIsDeclVal :: Decl -> Bool
+%%[[1
+ehIsDeclVal (Decl_Val   _ _) = True
+%%][99
+ehIsDeclVal (Decl_Val _ _ _) = True
+%%]]
+ehIsDeclVal _                = False
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Constructing
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkLet hs
+mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
+mkLet r md e
+  = case md of
+      Just d@(_:_) -> rngLift r Expr_Let d e
+      _            -> e
+%%]
+
+%%[8 -1.mkLet hs
+mkLet' :: Bool -> Range -> Maybe [Decl] -> Expr -> Expr
+mkLet' isStrict r md e
+  = case md of
+      Just d@(_:_) -> rngLift r Expr_Let isStrict d e
+      _            -> e
+
+mkLet :: Range -> Maybe [Decl] -> Expr -> Expr
+mkLet = mkLet' False
+%%]
+
+%%[9 hs
+mkUnit :: Range -> Expr
+mkUnit r = rngLift r Expr_Rec (rngLift r RecExpr_Empty)
+%%]
+mkUnit :: Range -> Expr
+mkUnit _ = semCon (hsnProd 0)
+
+%%[5 hs
+mkError':: HsName -> Range -> String -> Expr
+mkError' e r m
+  = mkApp [rngLift r Expr_Var e,mkStr r (show r ++ ": " ++ m)]
+
+mkError :: Range -> String -> Expr
+mkError = mkError' hsnError
+
+mkStr :: Range -> String -> Expr
+mkStr r s
+  = rngLift r Expr_SConst s
+%%]
+
+%%[5 hs
+%%[[5
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' (bn:tn:fn:_) r c t e
+%%][8
+mkIf'' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Maybe UIDS -> UIDS -> Expr
+mkIf'' (bn:tn:fn:_) r c t e i failS
+%%]]
+  = case c of
+%%[[5
+      Expr_Con n
+%%][99
+      Expr_Con _ n
+%%]]
+          | n == tn -> t
+          | n == fn -> e
+      _ -> mkCase' r
+             ( rngLift r Expr_TypeAs (rngLift r TyExpr_Con bn) c )
+%%[[8
+             i failS False
+%%]]
+             [ mkAlt r (rngLift r PatExpr_Con tn) t
+             , mkAlt r (rngLift r PatExpr_Con fn) e
+             ]
+%%]
+
+%%[8 hs
+mkIf' :: [HsName] -> Range -> Expr -> Expr -> Expr -> Expr
+mkIf' ns r c t e = mkIf'' ns r c t e Nothing Set.empty
+%%]
+
+%%[5 hs
+mkIf :: Range -> Expr -> Expr -> Expr -> Expr
+mkIf = mkIf' [hsnBool,hsnTrue,hsnFalse]
+%%]
+
+%%[5 hs
+mkAlt :: Range -> PatExpr -> Expr -> CaseAlt
+mkAlt r p e = rngLift r CaseAlt_Pat p e
+%%]
+
+%%[5.mkCase hs
+mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
+mkCase r c as = mkCase' r c [ mkAlt r p e | (p,e) <- as ]
+
+mkCase' :: Range -> Expr -> [CaseAlt] -> Expr
+mkCase' r c as = rngLift r Expr_Case c as
+%%]
+
+%%[8 -5.mkCase hs
+mkCase' :: Range -> Expr  -> Maybe UIDS -> UIDS -> Bool -> [CaseAlt] -> Expr
+mkCase' r c id failS istup as
+  = rngLift r Expr_Case c as id failS istup
+
+mkCase :: Range -> Expr -> [(PatExpr,Expr)] -> Expr
+mkCase r c as
+  = mkCase' r c Nothing Set.empty False [ mkAlt r p e | (p,e) <- as ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Construct some EH AST node, providing dummy initial extra args (position), if any
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1.mkEH hs export(mkEH)
+mkEH :: x -> x
+mkEH = rngLift emptyRange
+%%]
+
+%%[99 -1.mkEH hs export(mkEH)
+mkEH :: (Range -> x) -> x
+mkEH = rngLift emptyRange
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% SemApp class instances
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1 hs
+instance SemApp Expr where
+  semRngApp    r  = rngLift r Expr_App
+  semRngAppTop r  = rngLift r Expr_AppTop
+  semRngVar    r  = rngLift r Expr_Var . mkHNm
+  semRngCon    r  = rngLift r Expr_Con . mkHNm
+  semRngParens r  = rngLift r Expr_Parens
+%%[[7
+  mkProdApp l
+    = mkEH Expr_Rec $ mkEH RecExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RecExpr_Ext r Nothing e)
+%%]]
+%%]
+
+
+%%[1 hs
+instance SemApp PatExpr where
+  semRngApp    r  = rngLift r PatExpr_App
+  semRngAppTop r  = rngLift r PatExpr_AppTop
+  semRngVar    r  = rngLift r PatExpr_Var . mkHNm
+  semRngCon    r  = rngLift r PatExpr_Con . mkHNm
+  semRngParens r  = rngLift r PatExpr_Parens
+%%[[7
+  mkProdApp l
+    = mkEH PatExpr_Rec $ mkEH RecPatExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RecPatExpr_Ext r Nothing e)
+%%]]
+%%]
+
+%%[1 hs
+instance SemApp TyExpr where
+  semRngApp    r  = rngLift r TyExpr_App
+  semRngAppTop r  = rngLift r TyExpr_AppTop
+%%[[1
+  semRngVar       = semRngCon
+%%][3
+  semRngVar    r  = rngLift r TyExpr_Var . mkHNm
+%%]]
+  semRngCon    r  = rngLift r TyExpr_Con . mkHNm
+  semRngParens r  = rngLift r TyExpr_Parens
+%%[[7
+  mkProdApp l
+    = mkEH TyExpr_Row $ mkEH RowTyExpr_Empty `mkRow` l
+    where mkRow = foldl (\r e -> mkEH RowTyExpr_Ext r Nothing e)
+%%]]
+%%]
+
+%%[6 hs
+instance SemApp KiExpr where
+  semRngApp    r  = rngLift r KiExpr_App
+  semRngAppTop r  = rngLift r KiExpr_AppTop
+  semRngVar    r  = rngLift r KiExpr_Var . mkHNm
+  semRngCon    r  = rngLift r KiExpr_Con . mkHNm
+  semRngParens r  = rngLift r KiExpr_Parens
+%%]
+
