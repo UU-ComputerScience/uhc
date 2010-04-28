@@ -321,7 +321,9 @@ SEM Expr
   | DataFields  loc         .   dfexpr      =   let mkTup dti mkDflt con
                                                       = foldl mkCExprApp1 con
                                                         . fuL2ExprL
+                                                        -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr" ("arity" >#< length dflt) v)
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
+                                                        -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr2" ("arity" >#< length dflt) v)
                                                         . fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
                                                       where dflt = [ (o,(f,(CExpr_TupIns (cundefined @lhs.opts) (dtiCTag dti) f (CExpr_Int o) (mkDflt f),Just o)))
                                                                    | (f,i) <- Map.toList $ dtiFldMp dti, let o = dfiOffset i
@@ -482,7 +484,9 @@ SEM PatExpr
                                             =   let fsL = reverse @fsRPatL
                                                     grp = groupByOn (\o1 o2 -> (foffOffset o1 `compare` foffOffset o2) /= GT) fst
                                                     max = ctagArity @tag - 1
-                                                    sat = listSaturateWith 0 max (foffOffset . fst)
+                                                    sat = -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss" ("tag" >#< @tag >#< "arity" >#< max) v) $
+                                                          listSaturateWith 0 max (foffOffset . fst) $
+                                                          -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss2" ("tag" >#< @tag >#< "arity" >#< max) v) $
                                                             (zipWith (\o n -> (o,(FldKnownOffset n o,RPat_Var (RPatNmOrig n)))) [0..max] hsnLclSupply)
                                                 in  ( map (fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously
                                                     , fsL2PatOffsetL fsL                        -- bindings
@@ -1026,11 +1030,13 @@ SEM Decl
                                                              ns = take arity hsnLclSupply
                                                              nmLblOffL = zip3 ns ns [0..]
                                                              sel = mkCExprAppMeta (CExpr_Tup @dictTag) 
-                                                                                  (map snd $ listSaturateWith 0 
-                                                                                                              (arity-1) 
-                                                                                                              fst 
-                                                                                                              fullListWithTrivialValues
-                                                                                                              sparseListWithInterestingValues
+                                                                                  (map snd
+                                                                                   -- $ (\v -> v `seq` tr "Decl.Instance.mkSetFlds" (pp arity) v)
+                                                                                   $ listSaturateWith 0 
+                                                                                                      (arity-1) 
+                                                                                                      fst 
+                                                                                                      fullListWithTrivialValues
+                                                                                                      sparseListWithInterestingValues
                                                                                   )
                                                    in  if   ehcCfgClassViaRec @lhs.opts  
                                                        then mkSetFldsRec  

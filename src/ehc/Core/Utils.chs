@@ -7,12 +7,18 @@
 %%% Core utilities
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full}) 
+%%[(8 codegen) module {%{EH}Core.Utils} import(qualified Data.Map as Map,Data.Maybe,{%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common},{%{EH}Ty},{%{EH}Core},{%{EH}Gam.Full})
 %%]
 
 %%[(8 codegen) import({%{EH}Core.SubstCaseAltFail})
 %%]
+%%[(8 codegen) import({%{EH}VarMp},{%{EH}Substitutable})
+%%]
 %%[(8 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%]
+
+-- debug
+%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,6 +29,7 @@
 data RCEEnv
   = RCEEnv
       { rceValGam           :: !ValGam
+      , rceTyVarMp          :: !VarMp
       , rceDataGam          :: !DataGam
       , rceCaseFailSubst    :: !CaseFailSubst
       , rceCaseIds          :: !UIDS
@@ -32,7 +39,7 @@ data RCEEnv
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
-emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts -- True
+emptyRCEEnv opts = RCEEnv emptyGam emptyVarMp emptyGam Map.empty (Set.singleton uidStart) (cundefined opts) opts -- True
 %%]
 
 %%[(8 codegen)
@@ -42,7 +49,7 @@ rceEnvDataAlts env t
       CTag _ conNm _ _ _
          -> case valGamTyOfDataCon conNm (rceValGam env) of
               (_,ty,[])
-                 -> dataGamTagsOfTy ty (rceDataGam env)
+                 -> dataGamTagsOfTy (rceTyVarMp env |=> ty) (rceDataGam env)
               _  -> Nothing
       _  -> Nothing
 %%]
@@ -67,7 +74,10 @@ mkCPatCon ctag arity mbNmL
 caltLSaturate :: RCEEnv -> CAltL -> CAltL
 caltLSaturate env alts
   = case alts of
-      (alt1:_) -> listSaturateWith 0 (length allAlts - 1) caltIntTag allAlts alts
+      (alt1:_) -> -- (\v -> v `seq` tr "caltLSaturate" ("nr alts" >#< length alts >#< "all" >#< ppParensCommas (map fst allAlts)) v) $ 
+                  listSaturateWith 0 (length allAlts - 1) caltIntTag allAlts $
+                  -- (\v -> v `seq` tr "caltLSaturate2" ("nr alts" >#< length alts >#< "all" >#< length allAlts) v) $ 
+                  alts
             where allAlts
                     = case rceEnvDataAlts env (caltConTag alt1) of
                         Just ts -> [ (ctagTag t,mkA env t (ctagArity t)) | t <- ts ]
@@ -180,7 +190,11 @@ mkCExprSatSelsCasesMeta env ne meta e tgSels
               (CTagRec       ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a _,_         ) -> mkloL a
           where mklo (n,l,o) = (n,l,CExpr_Int o)
-                mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
+                mkloL a = map mklo
+                          -- $ (\v -> v `seq` tr "mkCExprSatSelsCasesMeta" ("nr nol" >#< length nol >#< "arity" >#< a) v)
+                          $ listSaturateWith 0 (a-1) (\(_,_,o) -> o) [(o,(l,l,o)) | (o,l) <- zip [0..a-1] hsnLclSupply]
+                          -- $ (\v -> v `seq` tr "mkCExprSatSelsCasesMeta2" ("nr nol" >#< length nol >#< "arity" >#< a) v)
+                          $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
 
 mkCExprSatSelsCases :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
@@ -209,7 +223,12 @@ mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
         nmLblOffL = zip3 ns ns [0..]
         sel = mkCExprAppMeta
                 (CExpr_Tup ct)
-                (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,(CExpr_Var n,CMetaVal_Val))) | (n,_,o) <- nmLblOffL] offValL)
+                (map snd
+                 -- $ (\v -> v `seq` tr "mkCExprSatSelsCaseUpdMeta" ("nr offValL" >#< length offValL >#< "arity" >#< arity) v)
+                 $ listSaturateWith 0 (arity-1) fst [(o,(o,(CExpr_Var n,CMetaVal_Val))) | (n,_,o) <- nmLblOffL]
+                 -- $ (\v -> v `seq` tr "mkCExprSatSelsCaseUpdMeta2" ("nr offValL" >#< length offValL >#< "arity" >#< arity) v)
+                 $ offValL
+                 )
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
