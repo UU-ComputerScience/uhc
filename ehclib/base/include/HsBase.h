@@ -561,13 +561,14 @@ __hscore_sizeof_termios( void )
 }
 #endif
 
-#if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_WIN32)
+//sizeof_sigset_t is also use on windows systems which define tcflat_t. Why exclude it?
+// #if !defined(_MSC_VER) && !defined(__MINGW32__) && !defined(_WIN32)
 INLINE HsInt
 __hscore_sizeof_sigset_t( void )
 {
   return sizeof(sigset_t);
 }
-#endif
+// #endif
 
 INLINE int
 __hscore_echo( void )
@@ -697,11 +698,11 @@ INLINE off_t __hscore_lseek(int fd, off_t off, int whence) {
 }
 #endif
 
-INLINE int __hscore_stat(char *file, struct_stat *buf) {
+INLINE HsInt __hscore_stat(char *file, struct_stat *buf) {
 	return (stat(file,buf));
 }
 
-INLINE int __hscore_fstat(int fd, struct_stat *buf) {
+INLINE HsInt __hscore_fstat(int fd, struct_stat *buf) {
 	return (fstat(fd,buf));
 }
 

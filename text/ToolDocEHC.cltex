@@ -1105,13 +1105,13 @@ There are no backwards compatibility wrapper modules, as this is part of the @ha
 \item @List@: in @Data.List@, fully available.
 \item @Maybe@: in @Data.Maybe@, fully available.
 \item @Monad@: in @Control.Monad@, fully available.
-\item @IO@: under construction, the @Prelude@ part is as a temporary implementation available.
-\item @Directory@: not available.
+\item @IO@: in @System.IO@ and @System.IO.Error@ and @UHC.OldException@, fully available.
+\item @Directory@: in @System.Directory@, fully availble.
 \item @System@: in @System.Environment@ and @System.Exit@, fully available.
-\item @Time@: not available.
-\item @Locale@: not available.
-\item @CPUTime@: not available.
-\item @Random@: not available.
+\item @Time@: in @System.Time@, fully available.
+\item @Locale@: in @System.Locale@, fully available.
+\item @CPUTime@: in @System.CPUTime@, fully available.
+\item @Random@: in @System.Random@, fully available.
 \end{itemize}
 
 More library modules are available, we only list those which are not fully implemented:
@@ -1123,6 +1123,13 @@ More library modules are available, we only list those which are not fully imple
 \item @Foreign@, @Ptr@, @Weak@, etc:
  garbage collection related functionality is influenced by the use of Boehm GC,
  e.g. only a minimal interface for weak pointers, finalizers, etc is available, not doing very much.
+\end{itemize}
+
+There are several known problems in the library:
+
+\begin{itemize}
+  \item Using functions that works with the internal structure of a handle (eg. @Prelude.print@ inside a weak pointer finalizer will cause the program to crash.
+  \item Nested calls of the internal function @UHC.Handle.withHandle@ will cause the program to fail. 
 \end{itemize}
 
 \subsection{Library + runtime}

@@ -33,7 +33,7 @@ module UHC.ByteArray
   , writeFloatArray, writeDoubleArray
   , writeInt8Array, writeInt16Array, writeInt32Array, writeInt64Array
   , writeWord8Array, writeWord16Array, writeWord32Array, writeWord64Array
-
+  -- , traceMBA
   )
   where
 
@@ -48,6 +48,14 @@ import UHC.Types
 
 %%[99
 newtype MutableByteArray s = MutableByteArray ByteArray
+
+{-
+-- This function is here for debugging purpose. It prints to the stderr n positions of the given array.
+traceMBA :: Int -> MutableByteArray s -> IO ()
+traceMBA n (MutableByteArray arr) = primByteArrayTrace n arr
+
+foreign import prim primByteArrayTrace :: Int -> ByteArray -> IO ()
+-}
 %%]
 
 %%[99

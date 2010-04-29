@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -93,6 +94,12 @@ import Hugs.Ptr
 
 #ifdef __UHC__
 import UHC.Ptr
+import UHC.IOBase
+import UHC.Base
+import UHC.Read
+import UHC.Real
+import UHC.Show
+import UHC.Enum
 #endif
 
 #ifdef __GLASGOW_HASKELL__

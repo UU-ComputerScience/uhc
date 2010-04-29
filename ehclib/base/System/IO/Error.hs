@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 
 -----------------------------------------------------------------------------
@@ -131,6 +132,7 @@ import IO
 
 #ifdef __UHC__
 import UHC.IOBase
+import UHC.Base
 #endif
 
 -- | The construct 'try' @comp@ exposes IO errors which occur within a

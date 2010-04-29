@@ -26,11 +26,12 @@ module Prelude
   , module UHC.Show
   , module UHC.Read
   , module UHC.Run
+#ifdef __UHC_TARGET_C__
   , module UHC.OldIO
-  
-  -- UHC.IOBase:
-    , unsafePerformIO
-    , FilePath
+#else
+  , module System.IO
+#endif
+  , module UHC.IOBase
   )
   where
 
@@ -50,5 +51,30 @@ import UHC.Bounded
 import UHC.Show
 import UHC.Read
 import UHC.IOBase
-import UHC.OldIO -- hiding ( hPutStrLn )
+  ( IOError, ioError, userError, catch, unsafePerformIO
+#ifdef __UHC_TARGET_C__
+  , FilePath
+#endif
+  )
 import UHC.Run
+
+#ifdef __UHC_TARGET_C__
+import UHC.OldIO
+#else
+import System.IO
+  ( IO, IOMode(..),
+    -- *** Output functions
+    putChar,
+    putStr, putStrLn, print,
+    -- *** Input functions
+    getChar,
+    getLine, getContents, interact,
+    -- *** Files
+    FilePath,
+    readFile, writeFile, appendFile, readIO, readLn,
+    openFile,
+    hClose, hGetLine, hPutStrLn, hPutStr, hPutChar, hFlush,
+    stdout, stdin, stderr
+  )
+#endif
+

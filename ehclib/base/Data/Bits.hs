@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -60,6 +61,8 @@ import Hugs.Bits
 #include "IntLikeInstance.h"
 
 import UHC.Bits
+import UHC.Real
+import UHC.Base
 #endif
 
 infixl 8 `shift`, `rotate`, `shiftL`, `shiftR`, `rotateL`, `rotateR`

@@ -4,7 +4,7 @@
 
 %%[99
 
-module UHC.Base   -- adapted from thye Hugs prelude
+module UHC.Base   -- adapted from the Hugs prelude
 (
 -- Classes
     Eq         ((==), (/=)),

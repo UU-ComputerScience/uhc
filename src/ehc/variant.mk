@@ -84,8 +84,7 @@ EHC_BASE								:= $(LIB_EHC_BASE)C
 ###########################################################################################
 
 # assumed packages, useful only for prelude variants
-EHC_PACKAGES_ASSUMED					:= base array
-#EHC_PACKAGES_ASSUMED					:= base containers
+EHC_PACKAGES_ASSUMED					:= base array filepath old-locale old-time unix directory random
 
 ###########################################################################################
 # installation locations for ehc building time
