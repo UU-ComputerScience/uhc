@@ -64,6 +64,7 @@ void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 	plss->allTraceSupply.run( &plss->allTraceSupply ) ;
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect E\n");}) ;
 	
+#ifdef __UHC_TARGET_BC__
 %%[[94
 	// find & trace live objects belonging to weakptrs
 	MM_WeakPtr* wp = plss->weakPtr ;
@@ -100,6 +101,7 @@ void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 	plss->queTraceSupply->run( plss->queTraceSupply ) ;
 %%]] 
 %%]] 
+#endif
 	
 	// done
 #	if TRACE
@@ -115,13 +117,14 @@ void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 void mm_collector_SS_CollectPost( MM_Collector* collector ) {
 	MM_Plan* plan = (MM_Plan*)collector->plan ;
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)(plan->data) ;
-
+#ifdef __UHC_TARGET_BC__
 %%[[99
 	MM_WeakPtrFinalizeQue_Data buf /* ( WeakPtr obj, finalizer ) */ ;
 	for ( ; mm_deque_HeadPop( &plss->weakPtrFinalizeQue, (WPtr)&buf, MM_WeakPtrFinalizeQue_Data_SizeInWords ) > 0 ; ) {
 		plan->mutator->runFinalizer( plan->mutator, buf.finalizer ) ;
 	}
 %%]]
+#endif
 }
 
 Bool mm_collector_SS_IsInCollectedSpace( MM_Collector* collector, Word obj ) {

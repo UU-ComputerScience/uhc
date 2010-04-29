@@ -67,7 +67,7 @@ Bool mm_trace_GBM_CanTraceObject( MM_Trace* trace, Word obj ) {
 
 Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj ) {
     
-    // This function is responisble for copying an object "from-space" to "to-space".
+    // This function is responsible for copying an object "from-space" to "to-space".
     // If the object was already copied before, the copy is returnd.
     // If the object was not yet copied, it is done now:
     // - a new object is allocated

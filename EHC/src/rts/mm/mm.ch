@@ -29,6 +29,8 @@ Order of imports is important because of usage dependencies between types.
 #include "tracesupply/weakptrfinalizeque.h"
 %%]]
 #include "weakptr/weakptrlist.h"
+
+
 #ifdef __UHC_TARGET_BC__
 #include "gbm/gbtrace.h"
 #include "gbm/gbtracesupregs.h"
@@ -37,6 +39,15 @@ Order of imports is important because of usage dependencies between types.
 #include "semispace/gbssmutator.h"
 #include "semispace/gbssmodule.h"
 #endif
+
+#ifdef __UHC_TARGET_C__
+#include "C/trace.h"
+#include "C/tracesupplystack.h"
+#include "C/ssmutator.h"
+#endif
+
+
+
 #include "semispace/sscollector.h"
 #include "semispace/ss.h"
 %%]
