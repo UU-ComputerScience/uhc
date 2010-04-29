@@ -78,6 +78,9 @@ RTS_SRC_CC_BYTECODE	:= \
 
 RTS_SRC_CC_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.cc,\
+        mm/C/ssmutator \
+        mm/C/trace \
+        mm/C/tracesupplystack \
     )
 
 RTS_SRC_CH_SHARED := \
@@ -153,6 +156,9 @@ RTS_SRC_CH_BYTECODE := \
 
 RTS_SRC_CH_WHOLEPROG := \
     $(patsubst %,$(RTS_SRC_PREFIX)%.ch,\
+        mm/C/ssmutator \
+        mm/C/trace \
+        mm/C/tracesupplystack \
     	C/prim-const \
     )
 
@@ -224,7 +230,9 @@ RTS_ALL_SRC := \
 
 RTS_SRC_CC := \
     $(RTS_SRC_CC_SHARED) \
-    $(if $(EHC_CFG_TARGET_IS_bc),$(RTS_SRC_CC_BYTECODE),) \
+    $(if $(EHC_CFG_TARGET_IS_bc),    $(RTS_SRC_CC_BYTECODE),) \
+    $(if $(EHC_CFG_TARGET_IS_C),     $(RTS_SRC_CC_WHOLEPROG),) \
+    $(if $(EHC_CFG_TARGET_IS_llvm),  $(RTS_SRC_CC_WHOLEPROG) ,)
 
 PRM_SRC_CC := \
     $(PRM_SRC_CC_SHARED) \
