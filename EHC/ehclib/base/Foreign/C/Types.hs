@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- XXX -fno-warn-unused-binds stops us warning about unused constructors,
@@ -94,8 +95,13 @@ import Hugs.Ptr         ( castPtr )
 #ifdef __UHC__
 import UHC.Ptr
 import UHC.Types
+import UHC.Base
+import UHC.Float
+import UHC.Enum
+import UHC.Real
+import UHC.Show
+import UHC.Read
 #endif
-
 #include "HsBaseConfig.h"
 #include "CTypes.h"
 

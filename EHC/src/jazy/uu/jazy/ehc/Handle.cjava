@@ -1,31 +1,29 @@
 %%[(8 jazy)
 package uu.jazy.ehc ;
 
-/**
- * Lazy and Functional.
- * Package for laziness and functions as known from functional languages.
- * Written by Atze Dijkstra, atze@cs.uu.nl
- *
- * $Header:     $
- * $Archive:    $
- * $NoKeywords: $
- */
-
 import java.util.* ;
 import java.io.* ;
 
 import uu.jazy.core.* ;
 
 /**
- * Base class for Handle, an Either around InputStream and OutputStream
+ * A handle for an open file. Any of the fields may be null, depending on how
+ * the file was opened.
  */
 public class Handle
 {
 %%]
 
 %%[(98 jazy)
+	public File file = null;
     public InputStream in = null ;
     public OutputStream out = null ;
+
+	public Handle( InputStream i, OutputStream o, File f ) {
+		in = i;
+		out = o;
+		file = f;
+	}
     
     public Handle( InputStream i ) {
     	in = i ;

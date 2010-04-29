@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 --------------------------------------------------------------------------------
 -- |
@@ -57,7 +58,9 @@ import Data.IORef            ( IORef, newIORef, readIORef, writeIORef )
 #if defined(__NHC__)
 import IO                    ( bracket )
 #elif defined(__UHC__)
-import UHC.OldException      ( bracket )
+import UHC.OldException      ( bracket)
+import UHC.Base              
+import UHC.IOBase            ( IORef, newIORef, readIORef, writeIORef)
 #else
 import Control.Exception.Base ( bracket )
 #endif

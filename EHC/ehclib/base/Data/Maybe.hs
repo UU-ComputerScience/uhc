@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -32,6 +33,10 @@ module Data.Maybe
 
 #ifdef __GLASGOW_HASKELL__
 import GHC.Base
+#endif
+
+#ifdef __UHC__
+import UHC.Base
 #endif
 
 #ifdef __NHC__

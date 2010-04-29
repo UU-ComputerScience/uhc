@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -86,6 +87,8 @@ import GHC.ForeignPtr
 
 #ifdef __UHC__
 import UHC.ForeignPtr
+import UHC.Base
+import UHC.IOBase
 #endif
 
 #if !defined(__NHC__) && !defined(__GLASGOW_HASKELL__) && !defined(__UHC__)

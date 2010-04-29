@@ -158,7 +158,7 @@ shellCmdAr = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@AR_CMD@@SUFFIX_EXEC@"
 
 %%[99 export(shellCmdRanlib)
 shellCmdRanlib :: String
-shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@"
+shellCmdRanlib = "@TOPLEVEL_SYSTEM_ABSPATH_PREFIX@@RANLIB_CMD@@SUFFIX_EXEC@ -c"
 %%]
 
 %%[99 export(shellCmdLibtoolStatic)

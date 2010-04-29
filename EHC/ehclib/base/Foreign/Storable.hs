@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -64,6 +65,11 @@ import Hugs.Storable
 #ifdef __UHC__
 import UHC.Ptr
 import UHC.Storable
+import UHC.Int
+import UHC.Word
+import UHC.Ptr
+import UHC.IOBase
+import UHC.Base
 #endif
 
 {- |

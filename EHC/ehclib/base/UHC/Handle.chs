@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 %%[99
 -----------------------------------------------------------------------------
 -- |
@@ -54,8 +55,8 @@ module UHC.Handle (
 
   stdin, stdout, stderr,
   IOMode(..), openFile, openBinaryFile, fdToHandle_stat, fdToHandle, fdToHandle',
-  hFileSize, hSetFileSize, hIsEOF, isEOF, hLookAhead, hLookAhead', hSetBuffering, {- hSetBinaryMode, -}
-  hFlush, {- hDuplicate, hDuplicateTo, -}
+  hFileSize, hSetFileSize, hIsEOF, isEOF, hLookAhead, hLookAhead', hSetBuffering,  hSetBinaryMode, 
+  hFlush,  hDuplicate, hDuplicateTo, 
 
   hClose, hClose_help,
 
@@ -67,6 +68,7 @@ module UHC.Handle (
 
   hShow,
 
+  unsafe_fdReady -- needed in UHC.IO
  ) where
 
 import UHC.Base
@@ -83,9 +85,6 @@ import Foreign
 import System.IO.Error
 import System.Posix.Internals
 import System.Posix.Types
-
-import Debug.Trace
-
 #ifdef __UHC__
 -- Low level functions should get/return a CSsize, but the original code does not do so, so mimic it here:
 #define CSsize		CInt
@@ -358,17 +357,15 @@ ioe_bufsiz n = ioException
 
 stdHandleFinalizer :: FilePath -> MVar Handle__ -> IO ()
 stdHandleFinalizer fp m = do
-  return ()
-{-
+ -- return ()
   h_ <- takeMVar m
   flushWriteBufferOnly h_
   putMVar m (ioe_finalizedHandle fp)
--}
+
 
 handleFinalizer :: FilePath -> MVar Handle__ -> IO ()
 handleFinalizer fp m = do
-  return ()
-{-
+ -- return ()
   handle_ <- takeMVar m
   case haType handle_ of
       ClosedHandle -> return ()
@@ -378,7 +375,7 @@ handleFinalizer fp m = do
               hClose_handle_ handle_
               return ()
   putMVar m (ioe_finalizedHandle fp)
--}
+
 %%]
 
 %%[99
@@ -413,17 +410,17 @@ allocateBuffer sz state = IO $ \s ->
    -- We sometimes need to pass the address of this buffer to
    -- a "safe" foreign call, hence it must be immovable.
   case newPinnedByteArray sz s of { ( s', b ) ->
-  ( s', newEmptyBuffer b state sz ) }
+  s' `seq` ( s', newEmptyBuffer b state sz ) }
 
 writeCharIntoBuffer :: RawBuffer -> Int -> Char -> IO Int
 writeCharIntoBuffer slab off c
   = IO $ \s -> case writeCharArray slab off c s of 
-               s' -> ( s', off + 1 )
+               s' -> s' `seq` ( s', off + 1 )
 
 readCharFromBuffer :: RawBuffer -> Int -> IO (Char, Int)
 readCharFromBuffer slab off
   = IO $ \s -> case readCharArray slab off s of 
-                 ( s', c ) -> ( s', ( c,  off + 1) )
+                 ( s', c ) -> s' `seq` ( s', ( c,  off + 1) )
 
 getBuffer :: FD -> BufferState -> IO (IORef Buffer, BufferMode)
 getBuffer fd state = do
@@ -1003,7 +1000,7 @@ openFile' filepath mode binary =
     -- for writing, so I think we're ok with a single open() here...
     fd <- throwErrnoIfMinus1Retry "openFile"
                 (c_open f (fromIntegral oflags) 0o666)
-
+    
     stat@(fd_type,_,_) <- fdStat fd
 
     h <- fdToHandle_stat fd (Just stat) False filepath mode binary
@@ -1721,7 +1718,7 @@ hIsSeekable handle =
                                          && (haIsBin handle_  || tEXT_MODE_SEEK_ALLOWED))
 %%]
 
-%%[99
+%%[99 
 -- -----------------------------------------------------------------------------
 -- Changing echo status (Non-standard GHC extensions)
 
@@ -1761,7 +1758,7 @@ hIsTerminalDevice handle = do
        _            -> fdIsTTY (haFD handle_))
 %%]
 
-%%[9999
+%%[99
 -- -----------------------------------------------------------------------------
 -- hSetBinaryMode
 
@@ -1774,12 +1771,20 @@ hSetBinaryMode handle bin =
     do throwErrnoIfMinus1_ "hSetBinaryMode"
           (setmode (haFD handle_) bin)
        return handle_{haIsBin=bin}
-  
+
+#ifdef __UHC__
+
+setmode :: CInt -> Bool -> IO CInt
+setmode fd b = return 0
+
+#else  
+
 foreign import ccall unsafe "__hscore_setmode"
   setmode :: CInt -> Bool -> IO CInt
+#endif
 %%]
 
-%%[9999
+%%[99
 -- -----------------------------------------------------------------------------
 -- Duplicating a Handle
 
@@ -1833,7 +1838,7 @@ dupHandle_ other_side h_ new_fd = do
   return (h_, new_handle_)
 %%]
 
-%%[9999
+%%[99
 -- -----------------------------------------------------------------------------
 -- Replacing a Handle
 

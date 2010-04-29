@@ -84,6 +84,7 @@ test-expect test-regress: test-lists
         texeSuffix=".jar" ; \
         ;; \
     esac ; \
+  echo $(echOpts) ; \
 	cd $(TEST_REGRESS_SRC_PREFIX) ; \
 	for v in $(TEST_VARIANTS) ; \
 	do \

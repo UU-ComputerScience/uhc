@@ -1,1 +1,564 @@
-%%[(8 jazy)package uu.jazy.core ;/** * Lazy and Functional. * Package for laziness and functions as known from functional languages. * Written by Atze Dijkstra, atze@cs.uu.nl * * $Header:     $ * $Archive:    $ * $NoKeywords: $ *///import java.util.* ;//import java.io.* ;//import uu.jazy.prelude.* ;/** * Something which can be evaluated and/or applied to parameters. */public abstract class Eval	implements Describable{	/**	 * Used by the SL example compiler. Static Link.	 * Do not change name, or change also in SL compiler.	 * The sl is not needed by Java implemented Functions, they access their environment	 * using Java innerclass mechanism or otherwise.	 * @see nl.uu.cs.jsl.SLCodeGenEnv	 */	//public Eval _sl ;			private static Evaluator defaultEvaluator = new EvaluatorIterTail() ;		private static Evaluator evaluator        = defaultEvaluator ;	    /*    private static Stat evalStat            = Stat.newEventStat( "evals" ) ;    private static Stat evalRecStat         = Stat.newEventStat( "recursive evals after eval of an Apply" ) ;    private static Stat evalApplyStat       = Stat.newEventStat( "evals on an Apply" ) ;        private static Hashtable stats = new Hashtable() ;    */        /*    private static void addStat( Eval e )    {        Class cl = e.getClass() ;        Object st = stats.get( cl ) ;        Int cnt ;        if ( st == null )        {            cnt = StdVals.one ;        }        else        {            cnt = ((Int)st).add( StdVals.one ) ;        }        stats.put( cl, cnt ) ;    }        public static void dumpStat()    {        for ( Enumeration keys = stats.keys() ; keys.hasMoreElements() ; )        {            Class key = (Class)keys.nextElement() ;            Int count = (Int)stats.get( key ) ;            System.out.println( count + " " + key.getName() ) ;        }        //System.out.println( getInfo() ) ;    }        public static void strict( Object v )    {        if ( v instanceof Strictable )        {            ((Strictable)v).strict() ;        }    }    */%%[[8    public static void resetNrEvaluations()    {    	evaluator.resetNrEvaluations() ;    }        public static int getNrEvaluations()    {    	return evaluator.getNrEvaluations() ;    }        public static void setDoTrace( boolean t )    {    	evaluator.setDoTrace( t ) ;    }%%][100%%]]        public static void setEvaluator( Evaluator e )    {    	evaluator = e ;    }        public static void resetEvaluator( )    {    	evaluator = defaultEvaluator ;    }            /*    private static int depth = 0 ;    */        /*    public static Object eval( Object v )    {        while ( v instanceof Apply )        {            Apply av = (Apply)v ;        	if ( av.nrNeededParams == 0 )        	{        	    av.nrNeededParams = -1 ;        	    v = av.value = av.eval0() ;        	    nrEvaluations++ ;            }            else if ( av.nrNeededParams > 0 )            {                return v ;            }            else            {                v = av.value ;                if ( v == av )                    return v ;            }        }        return v ;    }    */    /*    public static Object eval( Object v )    {        while ( v instanceof Apply )        {            Apply av = (Apply)v ;        	if ( av.value == null )        	{        	    av.value = av.eval0() ;        	    nrEvaluations++ ;            }            v = av.value ;            if ( v == av )                return v ;        }        return v ;    }    */    /*    public static Object eval( Apply av )    {        //depth++ ;        //if ( depth > 1000 )        //    throw new Error( "recursion too deep" ) ;        //synchronized( av )        {        	if ( av.value == null )        	{        	    Object vv = av.value = av.eval0() ;        	    nrEvaluations++ ;        	    if ( vv instanceof Apply )        	    {            	    return av.value = eval( (Apply)vv ) ;            	    //vv = av.value = eval( (Apply)vv ) ;            	    //depth-- ;            	    //return vv ;            	}            }    	}        //depth-- ;    	return av.value ;    }    */    /**     * Evaluate an Object known to be an Apply.     */    /*    public static Object eval( Apply av )    {        return evaluator.eval( av ) ;    }    */	/*    public static Object eval( Apply av )    {        //depth++ ;        //if ( depth > 1000 )        //    throw new Error( "recursion too deep" ) ;        try        {            //synchronized( av )            {            	//if ( av instanceof CAF )            	{            	    if ( av.value == null )            	    {                	    Object vv = av.value = av.eval0() ;                	    //addStat( av ) ;                	    nrEvaluations++ ;                	    if ( vv instanceof Apply )                	    {                    	    return av.value = eval( (Apply)vv ) ;                    	    //vv = av.value = eval( (Apply)vv ) ;                    	    //depth-- ;                    	    //return vv ;                    	}                	}                	else                	    return av.value ;                }                //else                //    return av ;        	}        }        catch ( Error err )        {            System.err.println( av.getContentString() ) ;            throw err ;        }        catch ( Throwable th )        {            th.printStackTrace( System.err ) ;            //System.err.print( th.toString() + ", " ) ;            System.err.println( av.getContentString() ) ;            //Utils.printCyclicOn( av, System.err, 0 ) ;            throw new Error( "Error in eval" ) ;        }        finally        {            //depth-- ;        }    	return av.value ;    }    */    /**     * Evaluate an Object.     * The Object itself is returned if it is not an Apply.     */    public static Object eval( Object v )    {        return evaluator.eval( v ) ;    }    /**/    /*    public static Object eval( Object v )    {        if ( v instanceof Apply )        {            Apply av = (Apply)v ;            synchronized( av )            {            	if ( av.value == null )            	{            	    av.value = av.eval0() ;            	    nrEvaluations++ ;            	    av.value = eval( av.value ) ;                }        	}        	return av.value ;        }        return v ;    }    */        /**     * For use within library only.     * Reports a casting error.     * @param targ what is was supposed to be     * @param given object to be casted     * @param operation the name of the operation (or null)     */    public static void reportCastError( String targ, Object given, String operation )    {        System.err.println        	( "Tried to cast "        	+ ( given == null ? "null" : given.getClass().getName() )        	+ " to " + targ        	+ ( operation == null ? "" : (" in " + operation) )        	) ;        throw new Error( "cast error" ) ;    }        public static void reportCastError( String targ, Object given )    {        reportCastError( targ, given, null ) ;    }            /**     * Evaluate an Object and cast the result to Function.     */    public static Function evalToF( Object v )    {        v = eval( v ) ;        return (Function)( v ) ;    }        /**     * Evaluate an Object and cast the result to Eval.     */    public static Eval evalToE( Object v )    {        v = eval( v ) ;        return (Eval)( v ) ;    }        /**     * Evaluate an Object and cast the result to JLFObject.     */    /*    public static JLFObject evalToO( Object v )    {        try        {            v = eval( v ) ;            return (JLFObject)v ;        }        catch ( ClassCastException ex )        {            reportCastError( "JLFObject", v ) ;        }        return null ; // Unit.Unit ;    }    */        /**     * Either evaluate or apply with arguments. Choice is made here.     */    protected abstract Object evalOrApplyN( Object[] vn ) ;    protected Eval evalNToE( Object[] vn )    {        return (Eval)( evalOrApplyN( vn ) ) ;    }        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply apply1( Object v1 ) ;        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply apply2( Object v1, Object v2 ) ;        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply apply3( Object v1, Object v2, Object v3 ) ;        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply apply4( Object v1, Object v2, Object v3, Object v4 ) ;        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply apply5( Object v1, Object v2, Object v3, Object v4, Object v5 ) ;        /**     * Shorthand for applyN.     * @see uu.jazy.core.Eval#applyN     */        public abstract Apply applyN( Object[] vn ) ;    protected abstract Function getOrigFunction() ;    /**     * @return  the parameters bound to this Eval.     */        public abstract Object[] getBoundParams() ;        //public abstract int getNrParams() ;        public static Apply apply1( Eval f, Object v1 )    {        return f.apply1( v1 ) ;    }        public static Apply apply2( Eval f, Object v1, Object v2 )    {        return f.apply2( v1, v2 ) ;    }        public static Apply apply3( Eval f, Object v1, Object v2, Object v3 )    {        return f.apply3( v1, v2, v3 ) ;    }        public static Apply apply4( Eval f, Object v1, Object v2, Object v3, Object v4 )    {        return f.apply4( v1, v2, v3, v4 ) ;    }        public static Apply apply5( Eval f, Object v1, Object v2, Object v3, Object v4, Object v5 )    {        return f.apply5( v1, v2, v3, v4, v5 ) ;    }        public static Apply applyN( Eval f, Object[] vn )    {        return f.applyN( vn ) ;    }        /**     * Print a list as a string, i.e. list of Character.     * @param   v   must evaluate to a List with Characters.     */        /*    public static void putStr( PrintWriter output, Object v, boolean flushAfterAllChar )    {        List l ;        while( ! (l = evalToL(v)).isEmpty() )        {            char c = evalToC( l.getHead() ) ;            output.print( c ) ;            if ( flushAfterAllChar )                output.flush() ;            v = l.getTail() ;        }    }    */    /**     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )     */        /*    public static void putStr( PrintStream output, Object v, boolean flushAfterAllChar )    {        PrintWriter pw = new PrintWriter( System.out ) ;        putStr( pw, v, flushAfterAllChar ) ;    }    */    /**     * Print the object as a string, after applying show to the Object.     * @param   v   The printable Object.     */        /*    public static void putShowStr( PrintWriter output, Object v, boolean flushAfterAllChar )    {        putStr( output, StdFuncs.show.apply1( v ), flushAfterAllChar ) ;    }    */    /**     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )     */        /*    public static void putShowStr( PrintStream output, Object v, boolean flushAfterAllChar )    {        PrintWriter pw = new PrintWriter( System.out ) ;        putShowStr( pw, v, flushAfterAllChar ) ;    }    */    /**     * Print to System.out.     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )     */        /*    public static void putStr( Object v )    {        putStr( System.out, v, true ) ;    }    */    /**     * Print to System.out.     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )     */        /*    public static void putShowStr( Object v )    {        putShowStr( System.out, v, true ) ;    }    */    /*    public static void show( PrintWriter output, Object v )    {        putShowStr( output, v, true ) ;    }    */    /*    public static void show( PrintStream output, Object v )    {        PrintWriter pw = new PrintWriter( output ) ;        show( pw, v ) ;        pw.flush() ;    }    */    /*    public static String toString( Object v )    {        StringWriter outs = new StringWriter() ;        PrintWriter outp = new PrintWriter( outs ) ;        show( outp, v ) ;        outp.close() ;        return outs.toString() ;    }        public static void showln( PrintStream output, Object v )    {        PrintWriter pw = new PrintWriter( output ) ;        showln( pw, v ) ;        pw.flush() ;    }    public static void showln( PrintWriter output, Object v )    {        show( output, v ) ;        output.println( ) ;    }    public static void showln( Object v )    {        showln( System.out, v ) ;    }    public static void timeNShowln( Object v )    {        resetNrEvaluations() ;        long tm1 = System.currentTimeMillis() ;        showln( v ) ;        long tm2 = System.currentTimeMillis() ;        System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;    }    public static void show( Object v )    {        show( System.out, v ) ;    }    */	public String toString()	{		return Utils.toString( this ) ;	}	}%%]
+%%[(8 jazy)
+package uu.jazy.core ;
+
+/**
+ * Lazy and Functional.
+ * Package for laziness and functions as known from functional languages.
+ * Written by Atze Dijkstra, atze@cs.uu.nl
+ */
+
+//import java.util.* ;
+//import java.io.* ;
+//import uu.jazy.prelude.* ;
+
+/**
+ * Something which can be evaluated and/or applied to parameters.
+ */
+public abstract class Eval
+	implements Describable
+{
+	/**
+	 * Used by the SL example compiler. Static Link.
+	 * Do not change name, or change also in SL compiler.
+	 * The sl is not needed by Java implemented Functions, they access their environment
+	 * using Java innerclass mechanism or otherwise.
+	 * @see nl.uu.cs.jsl.SLCodeGenEnv
+	 */
+	//public Eval _sl ;
+		
+	private static Evaluator defaultEvaluator = new EvaluatorIterTail() ;
+	
+	private static Evaluator evaluator        = defaultEvaluator ;
+	
+    /*
+    private static Stat evalStat            = Stat.newEventStat( "evals" ) ;
+    private static Stat evalRecStat         = Stat.newEventStat( "recursive evals after eval of an Apply" ) ;
+    private static Stat evalApplyStat       = Stat.newEventStat( "evals on an Apply" ) ;
+    
+    private static Hashtable stats = new Hashtable() ;
+    */
+    
+    /*
+    private static void addStat( Eval e )
+    {
+        Class cl = e.getClass() ;
+        Object st = stats.get( cl ) ;
+        Int cnt ;
+        if ( st == null )
+        {
+            cnt = StdVals.one ;
+        }
+        else
+        {
+            cnt = ((Int)st).add( StdVals.one ) ;
+        }
+        stats.put( cl, cnt ) ;
+    }
+    
+    public static void dumpStat()
+    {
+        for ( Enumeration keys = stats.keys() ; keys.hasMoreElements() ; )
+        {
+            Class key = (Class)keys.nextElement() ;
+            Int count = (Int)stats.get( key ) ;
+            System.out.println( count + " " + key.getName() ) ;
+        }
+        //System.out.println( getInfo() ) ;
+    }
+    
+    public static void strict( Object v )
+    {
+        if ( v instanceof Strictable )
+        {
+            ((Strictable)v).strict() ;
+        }
+    }
+    */
+
+%%[[8
+    public static void resetNrEvaluations()
+    {
+    	evaluator.resetNrEvaluations() ;
+    }
+    
+    public static int getNrEvaluations()
+    {
+    	return evaluator.getNrEvaluations() ;
+    }
+    
+    public static void setDoTrace( boolean t )
+    {
+    	evaluator.setDoTrace( t ) ;
+    }
+%%][100
+%%]]
+    
+    public static void setEvaluator( Evaluator e )
+    {
+    	evaluator = e ;
+    }
+    
+    public static void resetEvaluator( )
+    {
+    	evaluator = defaultEvaluator ;
+    }
+    
+    
+    /*
+    private static int depth = 0 ;
+    */
+    
+    /*
+    public static Object eval( Object v )
+    {
+        while ( v instanceof Apply )
+        {
+            Apply av = (Apply)v ;
+        	if ( av.nrNeededParams == 0 )
+        	{
+        	    av.nrNeededParams = -1 ;
+        	    v = av.value = av.eval0() ;
+        	    nrEvaluations++ ;
+            }
+            else if ( av.nrNeededParams > 0 )
+            {
+                return v ;
+            }
+            else
+            {
+                v = av.value ;
+                if ( v == av )
+                    return v ;
+            }
+        }
+        return v ;
+    }
+    */
+
+    /*
+    public static Object eval( Object v )
+    {
+        while ( v instanceof Apply )
+        {
+            Apply av = (Apply)v ;
+        	if ( av.value == null )
+        	{
+        	    av.value = av.eval0() ;
+        	    nrEvaluations++ ;
+            }
+            v = av.value ;
+            if ( v == av )
+                return v ;
+        }
+        return v ;
+    }
+    */
+
+    /*
+    public static Object eval( Apply av )
+    {
+        //depth++ ;
+        //if ( depth > 1000 )
+        //    throw new Error( "recursion too deep" ) ;
+        //synchronized( av )
+        {
+        	if ( av.value == null )
+        	{
+        	    Object vv = av.value = av.eval0() ;
+        	    nrEvaluations++ ;
+        	    if ( vv instanceof Apply )
+        	    {
+            	    return av.value = eval( (Apply)vv ) ;
+            	    //vv = av.value = eval( (Apply)vv ) ;
+            	    //depth-- ;
+            	    //return vv ;
+            	}
+            }
+    	}
+        //depth-- ;
+    	return av.value ;
+    }
+    */
+
+    /**
+     * Evaluate an Object known to be an Apply.
+     */
+    /*
+    public static Object eval( Apply av )
+    {
+        return evaluator.eval( av ) ;
+    }
+    */
+
+	/*
+    public static Object eval( Apply av )
+    {
+        //depth++ ;
+        //if ( depth > 1000 )
+        //    throw new Error( "recursion too deep" ) ;
+        try
+        {
+            //synchronized( av )
+            {
+            	//if ( av instanceof CAF )
+            	{
+            	    if ( av.value == null )
+            	    {
+                	    Object vv = av.value = av.eval0() ;
+                	    //addStat( av ) ;
+                	    nrEvaluations++ ;
+                	    if ( vv instanceof Apply )
+                	    {
+                    	    return av.value = eval( (Apply)vv ) ;
+                    	    //vv = av.value = eval( (Apply)vv ) ;
+                    	    //depth-- ;
+                    	    //return vv ;
+                    	}
+                	}
+                	else
+                	    return av.value ;
+                }
+                //else
+                //    return av ;
+        	}
+        }
+        catch ( Error err )
+        {
+            System.err.println( av.getContentString() ) ;
+            throw err ;
+        }
+        catch ( Throwable th )
+        {
+            th.printStackTrace( System.err ) ;
+            //System.err.print( th.toString() + ", " ) ;
+            System.err.println( av.getContentString() ) ;
+            //Utils.printCyclicOn( av, System.err, 0 ) ;
+            throw new Error( "Error in eval" ) ;
+        }
+        finally
+        {
+            //depth-- ;
+        }
+    	return av.value ;
+    }
+    */
+
+    /**
+     * Evaluate an Object.
+     * The Object itself is returned if it is not an Apply.
+     */
+    public static Object eval( Object v )
+    {
+        return evaluator.eval( v ) ;
+    }
+    /**/
+
+    /*
+    public static Object eval( Object v )
+    {
+        if ( v instanceof Apply )
+        {
+            Apply av = (Apply)v ;
+            synchronized( av )
+            {
+            	if ( av.value == null )
+            	{
+            	    av.value = av.eval0() ;
+            	    nrEvaluations++ ;
+            	    av.value = eval( av.value ) ;
+                }
+        	}
+        	return av.value ;
+        }
+        return v ;
+    }
+    */
+    
+    /**
+     * For use within library only.
+     * Reports a casting error.
+     * @param targ what is was supposed to be
+     * @param given object to be casted
+     * @param operation the name of the operation (or null)
+     */
+    public static void reportCastError( String targ, Object given, String operation )
+    {
+        System.err.println
+        	( "Tried to cast "
+        	+ ( given == null ? "null" : given.getClass().getName() )
+        	+ " to " + targ
+        	+ ( operation == null ? "" : (" in " + operation) )
+        	) ;
+        throw new Error( "cast error" ) ;
+    }
+    
+    public static void reportCastError( String targ, Object given )
+    {
+        reportCastError( targ, given, null ) ;
+    }
+    
+    
+    /**
+     * Evaluate an Object and cast the result to Function.
+     */
+    public static Function evalToF( Object v )
+    {
+        v = eval( v ) ;
+        return (Function)( v ) ;
+    }
+    
+    /**
+     * Evaluate an Object and cast the result to Eval.
+     */
+    public static Eval evalToE( Object v )
+    {
+        v = eval( v ) ;
+        return (Eval)( v ) ;
+    }
+    
+    /**
+     * Evaluate an Object and cast the result to JLFObject.
+     */
+    /*
+    public static JLFObject evalToO( Object v )
+    {
+        try
+        {
+            v = eval( v ) ;
+            return (JLFObject)v ;
+        }
+        catch ( ClassCastException ex )
+        {
+            reportCastError( "JLFObject", v ) ;
+        }
+        return null ; // Unit.Unit ;
+    }
+    */
+    
+    /**
+     * Either evaluate or apply with arguments. Choice is made here.
+     */
+    protected abstract Object evalOrApplyN( Object[] vn ) ;
+
+    protected Eval evalNToE( Object[] vn )
+    {
+        return (Eval)( evalOrApplyN( vn ) ) ;
+    }
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply apply1( Object v1 ) ;
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply apply2( Object v1, Object v2 ) ;
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply apply3( Object v1, Object v2, Object v3 ) ;
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply apply4( Object v1, Object v2, Object v3, Object v4 ) ;
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply apply5( Object v1, Object v2, Object v3, Object v4, Object v5 ) ;
+    
+    /**
+     * Shorthand for applyN.
+     * @see uu.jazy.core.Eval#applyN
+     */    
+    public abstract Apply applyN( Object[] vn ) ;
+
+    protected abstract Function getOrigFunction() ;
+
+    /**
+     * @return  the parameters bound to this Eval.
+     */    
+    public abstract Object[] getBoundParams() ;
+    
+    //public abstract int getNrParams() ;
+    
+    public static Apply apply1( Eval f, Object v1 )
+    {
+        return f.apply1( v1 ) ;
+    }
+    
+    public static Apply apply2( Eval f, Object v1, Object v2 )
+    {
+        return f.apply2( v1, v2 ) ;
+    }
+    
+    public static Apply apply3( Eval f, Object v1, Object v2, Object v3 )
+    {
+        return f.apply3( v1, v2, v3 ) ;
+    }
+    
+    public static Apply apply4( Eval f, Object v1, Object v2, Object v3, Object v4 )
+    {
+        return f.apply4( v1, v2, v3, v4 ) ;
+    }
+    
+    public static Apply apply5( Eval f, Object v1, Object v2, Object v3, Object v4, Object v5 )
+    {
+        return f.apply5( v1, v2, v3, v4, v5 ) ;
+    }
+    
+    public static Apply applyN( Eval f, Object[] vn )
+    {
+        return f.applyN( vn ) ;
+    }
+    
+    /**
+     * Print a list as a string, i.e. list of Character.
+     * @param   v   must evaluate to a List with Characters.
+     */    
+    /*
+    public static void putStr( PrintWriter output, Object v, boolean flushAfterAllChar )
+    {
+        List l ;
+        while( ! (l = evalToL(v)).isEmpty() )
+        {
+            char c = evalToC( l.getHead() ) ;
+            output.print( c ) ;
+            if ( flushAfterAllChar )
+                output.flush() ;
+            v = l.getTail() ;
+        }
+    }
+    */
+
+    /**
+     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )
+     */    
+    /*
+    public static void putStr( PrintStream output, Object v, boolean flushAfterAllChar )
+    {
+        PrintWriter pw = new PrintWriter( System.out ) ;
+        putStr( pw, v, flushAfterAllChar ) ;
+    }
+    */
+
+    /**
+     * Print the object as a string, after applying show to the Object.
+     * @param   v   The printable Object.
+     */    
+    /*
+    public static void putShowStr( PrintWriter output, Object v, boolean flushAfterAllChar )
+    {
+        putStr( output, StdFuncs.show.apply1( v ), flushAfterAllChar ) ;
+    }
+    */
+
+    /**
+     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )
+     */    
+    /*
+    public static void putShowStr( PrintStream output, Object v, boolean flushAfterAllChar )
+    {
+        PrintWriter pw = new PrintWriter( System.out ) ;
+        putShowStr( pw, v, flushAfterAllChar ) ;
+    }
+    */
+
+    /**
+     * Print to System.out.
+     * @see uu.jazy.core.Eval#putStr( PrintWriter, Object, boolean )
+     */    
+    /*
+    public static void putStr( Object v )
+    {
+        putStr( System.out, v, true ) ;
+    }
+    */
+
+    /**
+     * Print to System.out.
+     * @see uu.jazy.core.Eval#putShowStr( PrintWriter, Object, boolean )
+     */    
+    /*
+    public static void putShowStr( Object v )
+    {
+        putShowStr( System.out, v, true ) ;
+    }
+    */
+
+    /*
+    public static void show( PrintWriter output, Object v )
+    {
+        putShowStr( output, v, true ) ;
+    }
+    */
+
+    /*
+    public static void show( PrintStream output, Object v )
+    {
+        PrintWriter pw = new PrintWriter( output ) ;
+        show( pw, v ) ;
+        pw.flush() ;
+    }
+    */
+
+    /*
+    public static String toString( Object v )
+    {
+        StringWriter outs = new StringWriter() ;
+        PrintWriter outp = new PrintWriter( outs ) ;
+        show( outp, v ) ;
+        outp.close() ;
+        return outs.toString() ;
+    }
+    
+    public static void showln( PrintStream output, Object v )
+    {
+        PrintWriter pw = new PrintWriter( output ) ;
+        showln( pw, v ) ;
+        pw.flush() ;
+    }
+
+    public static void showln( PrintWriter output, Object v )
+    {
+        show( output, v ) ;
+        output.println( ) ;
+    }
+
+    public static void showln( Object v )
+    {
+        showln( System.out, v ) ;
+    }
+
+    public static void timeNShowln( Object v )
+    {
+        resetNrEvaluations() ;
+        long tm1 = System.currentTimeMillis() ;
+        showln( v ) ;
+        long tm2 = System.currentTimeMillis() ;
+        System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;
+    }
+
+    public static void show( Object v )
+    {
+        show( System.out, v ) ;
+    }
+    */
+
+	public String toString()
+	{
+		return Utils.toString( this ) ;
+	}
+	
+}
+
+%%]
+

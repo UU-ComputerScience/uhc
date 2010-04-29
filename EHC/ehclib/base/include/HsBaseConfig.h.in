@@ -251,15 +251,6 @@
 # endif
 #endif
 
-/* for some reason autoconf/configure on MacOSX can't see these, so manual override here */
-#ifdef __APPLE_CC__
-
-#  define HTYPE_CC_T 				HTYPE_UNSIGNED_CHAR
-#  define HTYPE_SPEED_T 			HTYPE_UNSIGNED_LONG
-#  define HTYPE_TCFLAG_T 			HTYPE_UNSIGNED_LONG
-
-#endif /* __APPLE_CC__ */
-
 /********************************************************************/
 /**** Presence of include files                                  ****/
 /********************************************************************/

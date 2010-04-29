@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -33,6 +34,12 @@ import GHC.Read
 
 #ifndef __UHC__
 import Data.Typeable
+#endif
+
+#ifdef __UHC__
+import UHC.Base
+import UHC.Show
+import UHC.Read
 #endif
 
 #ifdef __GLASGOW_HASKELL__
