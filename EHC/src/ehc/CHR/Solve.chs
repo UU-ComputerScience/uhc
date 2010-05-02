@@ -398,7 +398,7 @@ chrSolve'' env chrStore cnstrs prevState
   = postState {stMatchCache = Map.empty}
   where postState
 %%[[9
-          = addStats Map.empty [("workMatches",ppAssocLV [(k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
+          = addStats Map.empty [("workMatches",ppAssocLV [(ppTrieKey k,pp (fromJust l)) | (k,c) <- Map.toList $ stCountCnstr st, let l = Map.lookup "workMatched" c, isJust l])] st
 %%][100
           = st
 %%]]
@@ -409,7 +409,7 @@ chrSolve'' env chrStore cnstrs prevState
 %%[[9
                 -> expandMatch
                        (addStats Map.empty
-                            [ ("(0) yes work", pp workHdKey)
+                            [ ("(0) yes work", ppTrieKey workHdKey)
                             ] stmatch)
                        matches
 %%][100
@@ -473,17 +473,17 @@ chrSolve'' env chrStore cnstrs prevState
                       
 %%[[9
               _ -> iter (addStats Map.empty
-                             [ ("no match work", pp workHdKey)
+                             [ ("no match work", ppTrieKey workHdKey)
                              , ("wl queue sz", pp (length (wlQueue wl')))
                              ] st')
 %%][100
               _ -> iter st'
 %%]]
                 where wl' = wl { wlScanned = workHd : wlScanned wl, wlQueue = workTl }
-                      st' = stmatch { stWorkList = wl', stTrace = {- SolveDbg (ppdbg) : -} stTrace stmatch }
+                      st' = stmatch { stWorkList = wl', stTrace = SolveDbg (ppdbg) : {- -} stTrace stmatch }
           where (matches,lastQuery,ppdbg,stats) = workMatches st
 %%[[9
-                stmatch = addStats stats [("(a) workHd", pp workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
+                stmatch = addStats stats [("(a) workHd", ppTrieKey workHdKey), ("(b) matches", ppBracketsCommasV [ s `chrAppSubst` storedChr schr | ((schr,_),s) <- matches ])]
 %%][100
                 stmatch =
 %%]]
@@ -507,6 +507,7 @@ chrSolve'' env chrStore cnstrs prevState
           | otherwise         = ( r5
                                 , foldr lqUnion lastQuery [ lqSingleton ck wks histCount | (_,(_,(ck,wks))) <- r23 ]
 %%[[9
+                                -- , Pretty.empty
                                 , pp2 >-< {- pp2b >-< pp2c >-< -} pp3
                                 , mkStats Map.empty [("(1) lookup sz",pp (length r2)), ("(2) cand sz",pp (length r3)), ("(3) unused cand sz",pp (length r4)), ("(4) final cand sz",pp (length r5))]
 %%][100

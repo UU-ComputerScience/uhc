@@ -48,7 +48,7 @@ mkEhcenvKey version progName ehcDefaultVariant
 %%% Import from/export into application user directory
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8
+%%[8888
 ehcenvName :: String
 ehcenvName = "environment"
 
@@ -64,7 +64,7 @@ ehcenvDir progKey
        }
 %%]
 
-%%[8 export(importEHCEnvironment)
+%%[8888 export(importEHCEnvironment)
 importEHCEnvironment :: String -> IO (Maybe EHCEnvironment)
 importEHCEnvironment progKey
   = do { d <- ehcenvDir progKey
@@ -80,7 +80,7 @@ importEHCEnvironment progKey
        }
 %%]
 
-%%[8 export(exportEHCEnvironment)
+%%[8888 export(exportEHCEnvironment)
 exportEHCEnvironment :: String -> EHCEnvironment -> IO ()
 exportEHCEnvironment progKey env
   = do { d <- ehcenvDir progKey

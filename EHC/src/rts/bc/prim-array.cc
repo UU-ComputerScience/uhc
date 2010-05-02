@@ -138,6 +138,18 @@ PRIM Word primByteArrayContents( GB_NodePtr bytearray )
   	return (Word)(bytearray->content.bytearray.ptr) ;
 }
 
+PRIM Word primByteArrayTrace(Word idx, GB_NodePtr bytearray )
+{
+	Word i ;
+	BPtr p ;
+	//for ( i = 0, p = (BPtr)(bytearray->content.bytearray.ptr) ; i < bytearray->content.bytearray.size ; i++, p++ ) {
+	for ( i = 0, p = (BPtr)(bytearray->content.bytearray.ptr) ; i < idx + 5 ; i++, p++ ) {
+		fprintf( stderr, "%x ", *p ) ;
+	}
+	fprintf( stderr, "\n" ) ;
+  	return gb_Unit ;
+}
+
 %%]
 
 %%[99

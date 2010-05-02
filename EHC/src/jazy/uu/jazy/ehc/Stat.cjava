@@ -1,0 +1,55 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+import java.io.*;
+
+// Information on file status. Emulates the 'struct stat' structure returned by
+// fstat(2).
+class Stat {
+
+	long size;
+	long mtime;
+	int mode;
+
+	Stat(File file) {
+		this.size = file.length();
+		this.mtime = file.lastModified();
+
+		int mode = 0;
+		if (file.isFile()) mode |= StMode.S_IFREG;
+		if (file.isDirectory()) mode |= StMode.S_IFDIR;
+		// should we try to set the bits for permissions?
+		this.mode = mode;
+	}
+
+	Stat(byte[] buffer) {
+		DataInputStream s = new DataInputStream(new ByteArrayInputStream(buffer));
+		try {
+			this.size = s.readLong();
+			this.mtime = s.readLong();
+			this.mode = s.readInt();
+		} catch (IOException e) {
+			e.printStackTrace(System.err);
+		}
+	}
+
+	void writeToBuffer(byte[] buffer) {
+		ByteArrayOutputStream bs = new ByteArrayOutputStream();
+		DataOutputStream ds = new DataOutputStream(bs);
+		try {
+			ds.writeLong(this.size);
+			ds.writeLong(this.mtime);
+			ds.writeInt(this.mode);
+		} catch (IOException e) {
+			e.printStackTrace(System.err);
+		}
+		byte[] data = bs.toByteArray();
+		System.arraycopy(data, 0, buffer, 0, bufferSize());
+	}
+
+	static int bufferSize() {
+		return 8 + 8 + 4;
+	}
+
+}
+%%]

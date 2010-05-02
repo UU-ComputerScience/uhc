@@ -753,6 +753,7 @@ SEM Expr
   | DataFields  loc         .   tcdfexpr    =   let mkTup dti mkDflt con
                                                       = C.Expr_Node {- (dtiCTag dti) -}
                                                         . C.fuL2ExprNodeFldL True (const Nothing)
+                                                        -- . (\v -> v `seq` tr "Expr.DataFields.dfexpr" ("arity" >#< length dflt) v)
                                                         . listSaturateWith 0 (ctagArity (dtiCTag dti) - 1) (\(_,(_,Just o)) -> o) dflt
                                                         . C.fuMap (\l mke -> let o = dtiOffsetOfFld l dti in (mke dti o,o))
                                                       where dflt = [ (o,(f,(C.Expr_TupIns (C.tcUndefined @lhs.opts) (dtiCTag dti) f (C.tcInt o) (mkDflt f),Just o)))
@@ -1017,7 +1018,8 @@ SEM PatExpr
                                             =   let fsL = reverse @tcfsRPatL
                                                     grp = groupByOn (\o1 o2 -> (C.foffOffset o1 `compare` C.foffOffset o2) /= GT) fst
                                                     max = ctagArity @tag - 1
-                                                    sat = listSaturateWith 0 max (C.foffOffset . fst)
+                                                    sat = -- (\v -> v `seq` tr "PatExpr.DataFields.rpatBindss" ("tag" >#< @tag >#< "arity" >#< max) v) $
+                                                          listSaturateWith 0 max (C.foffOffset . fst)
                                                             (zipWith (\o n -> (o,(C.FldKnownOffset n o,C.RPat_Var (C.RPatNmOrig n) (ty n)))) [0..max] hsnLclSupply)
                                                     ty n = C.tyErr ("PatExpr.DataFields.fld: " ++ show n)
                                                 in  ( map (C.fsL2PatOffsetL . sat) $ grp fsL      -- groups of bindings which can be dealt with simultaneously

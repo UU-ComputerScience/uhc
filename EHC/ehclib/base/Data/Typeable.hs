@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude -XOverlappingInstances -funbox-strict-fields #-}
 
 -- The -XOverlappingInstances flag allows the user to over-ride
@@ -89,6 +90,11 @@ import Data.Int
 import Data.Word
 import Data.List( foldl, intersperse )
 import Unsafe.Coerce
+
+#ifdef __UHC__
+import UHC.Base
+import UHC.IOBase (Handle)
+#endif
 
 #ifdef __GLASGOW_HASKELL__
 import GHC.Base

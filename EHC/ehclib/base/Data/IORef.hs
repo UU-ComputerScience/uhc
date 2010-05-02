@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -55,6 +56,7 @@ import NHC.IOExtras
 import UHC.MutVar
 import UHC.STRef
 import UHC.IOBase
+import UHC.Base
 #endif
 
 

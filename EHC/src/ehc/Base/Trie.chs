@@ -84,6 +84,11 @@ instance PP k => PP (TrieKey k) where
   pp k = tkKind k >|< ":" >|< tkKey k
 %%]
 
+%%[9999 export(ppTrieKey)
+ppTrieKey :: PP k => [TrieKey k] -> PP_Doc
+ppTrieKey = ppListSep "<" ">" ","
+%%]
+
 %%[9999
 instance Hashable k => Hashable (TrieKey k) where
   hash = hash . tkKey

@@ -50,6 +50,10 @@ DERIVING *     : Show, Eq
 %%% Alias for Ty being also a TySeq
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(8 codegen) hs export(ExprSeq)
+type ExprSeq = Expr
+%%]
+
 %%[(8 codegen) hs export(Ty,TyL,TySeq,TySeq1,TySeq1L)
 type Ty      = Expr
 type TyL     = [Ty]
@@ -85,32 +89,61 @@ tyErr = Expr_Err
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Lifting/Constructing Expr
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(mkExprSeq,unExprSeq)
+-- lift & unlift to TySeq, with mkExprSeq . unExprSeq == id for singleton sequences
+mkExprSeq :: Expr -> ExprSeq
+mkExprSeq   (Expr_Seq1  s  ) = Expr_Seq [s]
+mkExprSeq s@(Expr_Seq   _  ) = s
+mkExprSeq t@(Expr_Arrow _ _) = t		-- functions cannot be sequenced, they are already supposed to be called
+mkExprSeq t                  = Expr_Seq $ mkExprSeqVals [t]
+
+unExprSeq :: ExprSeq -> Expr
+unExprSeq (Expr_Seq [ExprSeq1_L0Val t _]) = t
+unExprSeq t                               = t
+%%]
+
+%%[(8 codegen) hs export(mkExprSeqVals,mkExprSeqNmVals)
+mkExprSeqVals :: [Expr] -> ExprSeq1L
+mkExprSeqVals tl = map (flip ExprSeq1_L0Val Nothing) tl
+
+mkExprSeqNmVals :: [(HsName,Expr)] -> ExprSeq1L
+mkExprSeqNmVals tl = [ExprSeq1_L0LblVal n t | (n,t) <- tl]
+%%]
+
+%%[(8 codegen) hs export(mkExprSeq1,unExprSeq1)
+mkExprSeq1 :: Expr -> ExprSeq
+mkExprSeq1   (Expr_Seq   [s] ) = Expr_Seq1 s
+mkExprSeq1 s@(Expr_Seq1   _  ) = s
+mkExprSeq1 t@(Expr_Arrow _ _ ) = t		-- functions cannot be thunked, they are already supposed to be called
+mkExprSeq1 t                   = Expr_Seq1 $ head $ mkExprSeqVals [t]
+
+unExprSeq1 :: ExprSeq -> Expr
+unExprSeq1 (Expr_Seq1 (ExprSeq1_L0Val t _)) = t
+unExprSeq1 t                                = t
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lifting/Constructing Ty
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(mkTySeq,unTySeq)
 -- lift & unlift to TySeq, with mkTySeq . unTySeq == id for singleton sequences
 mkTySeq :: Ty -> TySeq
-mkTySeq   (Expr_Seq1  s  ) = Expr_Seq [s]
-mkTySeq s@(Expr_Seq   _  ) = s
-mkTySeq t@(Expr_Arrow _ _) = t		-- functions cannot be sequenced, they are already supposed to be called
-mkTySeq t                  = Expr_Seq $ mkTySeqVals [t]
+mkTySeq = mkExprSeq
 
 unTySeq :: TySeq -> Ty
-unTySeq (Expr_Seq [ExprSeq1_L0Val t _]) = t
-unTySeq t                               = t
+unTySeq = unExprSeq
 %%]
 
 %%[(8 codegen) hs export(mkTySeq1,unTySeq1)
 mkTySeq1 :: Ty -> TySeq
-mkTySeq1   (Expr_Seq   [s] ) = Expr_Seq1 s
-mkTySeq1 s@(Expr_Seq1   _  ) = s
-mkTySeq1 t@(Expr_Arrow _ _ ) = t		-- functions cannot be thunked, they are already supposed to be called
-mkTySeq1 t                   = Expr_Seq1 $ head $ mkTySeqVals [t]
+mkTySeq1 = mkExprSeq1
 
 unTySeq1 :: TySeq -> Ty
-unTySeq1 (Expr_Seq1 (ExprSeq1_L0Val t _)) = t
-unTySeq1 t                                = t
+unTySeq1 = unExprSeq1
 %%]
 
 %%[(8 codegen) hs
@@ -122,10 +155,10 @@ unSeq t              = panic "TyCore.unSeq"
 
 %%[(8 codegen) hs export(mkTySeqVals,mkTySeqNmVals)
 mkTySeqVals :: [Ty] -> TySeq1L
-mkTySeqVals tl = map (flip ExprSeq1_L0Val Nothing) tl
+mkTySeqVals = mkExprSeqVals
 
 mkTySeqNmVals :: [(HsName,Ty)] -> TySeq1L
-mkTySeqNmVals tl = [ExprSeq1_L0LblVal n t | (n,t) <- tl]
+mkTySeqNmVals = mkExprSeqNmVals
 %%]
 
 %%[(8 codegen) hs export(mkTyLArrow1Ty,mkTyBareArrow1Ty,mkTyArrow1Ty)
@@ -320,6 +353,13 @@ tyArrowGetExprArg n (as,res)
 tySeq1Ty :: TySeq1 -> Ty
 tySeq1Ty (ExprSeq1_L0Val t _) = t
 tySeq1Ty _                    = tyErr "TyCore.tySeq1Ty"
+%%]
+
+%%[(8888 codegen) hs export(exprSeqMbL0Bind)
+-- possibly get the l0 binding
+exprSeqMbL0Bind :: Expr -> Maybe (HsName,Expr)
+exprSeqMbL0Bind (Expr_Seq [ExprSeq1_L0Bind n _ l1]) = Just (n,l1)
+exprSeqMbL0Bind _                                   = Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -2,7 +2,7 @@
 TEXT_PUB_VARIANTS			+= ruler-doc ehc-book ehc-doc
 TEXT_DOC_VARIANTS			+= shuffle-doc text2text-doc \
 								howtodoc-doc howtoexperiment-doc \
-								ehc-technical-doc ehc-structure-doc ehc-user-doc \
+								ehc-technical-doc ehc-structure-doc ehc-user-doc ehc-library-doc ehc-jazy-doc \
 								build-system-doc \
 								getting-started-doc announce-doc release-history-doc \
 								roadmap-doc
@@ -34,7 +34,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								SlidesIntro Slides SlidesPartTySig SlidesExplImpl SlidesImpred SlidesRuler SlidesShuffle SlidesGRIN SlidesStatus SlidesEHCStructure SlidesUHCStructure \
 								CodeFragsExplImpl \
 								ToolDocShuffle ToolDocRuler ToolDocEHC ToolDocText2Text \
-								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem \
+								InternalDocEhcTechnical InternalDocEhcStructure InternalDocBuildSystem InternalDocEhcLibrary InternalDocJazy \
 								TopicGrinBytecode \
 								TopicCHRLocalInst \
 								TopicEHCStructure \
@@ -52,7 +52,7 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 								HowToDoc HowToExperiment \
 								ReleaseHistory \
 								RoadMap \
-								ThePlan
+								ThePlan 
 								
 
 # chunk view order for text variants, use shuffle hierarchy as crude variant mechanism
@@ -116,6 +116,8 @@ TEXT_SUBS					+= AGMiniPrimer StoryIntro StoryEH1 StoryEH2 StoryAFP Scratch \
 # 53: slides "UHC Architecture", Haskell Symposium 2009
 # 55: poster UHC Architecture (Siren 2009)
 # 57: the big plan, i.e. 'vision' + roadmap + directions + projects
+# 60: doc: library
+# 61: doc: Jazy backend
 # 77: scratch (article format)
 
 TEXT_SHUFFLE_ORDER	+= \
@@ -171,5 +173,7 @@ TEXT_SHUFFLE_ORDER	+= \
 		54 < 27, \
 		54 < 31, \
 		54 < 55, \
-		56 < 57
+		56 < 57, \
+		39 < 60, \
+		39 < 61
 		

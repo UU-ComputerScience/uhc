@@ -47,7 +47,7 @@
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
 %%]
 
-%%[97 hs import({%{EH}Base.Debug} as Debug, Debug.Trace)
+%%[97 hs import({%{EH}Base.Debug} as Debug)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,11 +81,14 @@ ATTR AGItf Module Body [ modEntToOrig: ModEntRngMp | | gathIdGam: IdDefOccGam ]
 %%[20
 SEM Body
     | Body
-        lhs             .   gathIdGam   =   @declarations.idDefOccGam
-                                            `gamUnion` assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
-                                                                   | (o,d) <- gamToAssocL @lhs.idGam
-                                                                   , n <- Map.findWithDefault [] o @lhs.modEntToOrig
-                                                                   ]
+        lhs             .   gathIdGam   =   {- idDefOccGamStrip 
+                                              $ -}
+                                                @declarations.idDefOccGam
+                                                `gamUnion`
+                                                assocLToGam [ (o {ioccNm = hsnSetQual @lhs.moduleNm (ioccNm o)},d)
+                                                            | (o,d) <- gamToAssocL @lhs.idGam
+                                                            , n <- Map.findWithDefault [] o @lhs.modEntToOrig
+                                                            ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

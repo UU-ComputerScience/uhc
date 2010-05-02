@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -85,6 +86,9 @@ foreign import ccall unsafe "WCsubst.h u_gencat" wgencat :: CInt -> CInt
 
 #ifdef __UHC__
 import UHC.Char
+import UHC.Base
+import UHC.Show
+import UHC.Enum
 #endif
 
 -- | Convert a single digit 'Char' to the corresponding 'Int'.  

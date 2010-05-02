@@ -206,8 +206,9 @@ SEM Declaration
                                         in  rngLift @range EH.Decl_InstanceIntro (Just @instancerefname) @expression.eh h
         lhs         .   eh          =   [@eh]
     | Default
-        loc         .   eh          =   undefined
-        lhs         .   eh          =   []
+        loc         .	ignoredecl	=	null @classrefnames
+                    .   eh          =   rngLift @range EH.Decl_Default @classrefname @types.eh
+        lhs         .   eh          =   [@eh]
 %%]
 %%[11
     | Type
@@ -1301,30 +1302,6 @@ SEM KindAnnotation
 
 %%[1
 ATTR Literal [ | | eh: SELF ]
-%%]
-
-%%[99
-%%]
-ATTR Literal [ | | base: Int ]
-
-SEM Literal
-    | Int
-        lhs         .   base        =   @base
-    | * - Int
-        lhs         .   base        =   0
-
-SEM Literal
-    | Int
-        lhs         .   eh          =   @value
-    | Char
-        lhs         .   eh          =   @value
-%%[55
-    | Float
-        lhs         .   eh          =   rngLift @range EH.Expr_IConst @value
-        value                    : String
-    | String
-        lhs         .   eh          =   rngLift @range XX
-        value                    : String -- without the quotes
 %%]
 
 %%[1

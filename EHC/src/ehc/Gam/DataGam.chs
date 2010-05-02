@@ -33,6 +33,10 @@
 %%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
+-- debug
+%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
+%%]
+
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
 
@@ -208,13 +212,14 @@ dataGamDgiOfTy conTy dg = dataGamLookup (tyAppFunConNm conTy) dg
 %%[(8 hmtyinfer) export(dataGamDTIsOfTy)
 dataGamDTIsOfTy :: Ty -> DataGam -> Maybe [DataTagInfo]
 dataGamDTIsOfTy t g
-  = fmap
+  = -- tr "dataGamDTIsOfTy" (t >#< tyAppFunConNm (tyArrowRes t)) $
+    fmap
 %%[[8
       (Map.elems . dgiConstrTagMp)
 %%][95
       (assocLElts . dgiConstrTagAssocL)
 %%]]
-    $ gamLookup (tyAppFunConNm t)
+    $ gamLookup (tyAppFunConNm $ tyArrowRes t)
     $ g
 %%]
 

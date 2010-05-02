@@ -1,0 +1,39 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+import java.util.ArrayList;
+import java.util.List;
+
+// Emulate pointers in Java.
+class Pointers {
+	List<Object> objects;
+
+	Pointers() {
+		objects = new ArrayList<Object>();
+		objects.add(null);
+	}
+
+	int registerObject(Object o) {
+		int pointer = objects.size();
+		objects.add(o);
+		return pointer;
+	}
+
+	Object dereference(int pointer) {
+		return objects.get(pointer);
+	}
+
+	int getPointer(Object o) {
+		// we might want to add a HashMap to speed up the Object->Pointer
+		// lookups
+		for (int i = 1; i < objects.size(); i++)
+			if (o == objects.get(i))
+				return i;
+		return 0;
+	}
+
+	void remove(int pointer) {
+		objects.set(pointer, null);
+	}
+}
+%%]

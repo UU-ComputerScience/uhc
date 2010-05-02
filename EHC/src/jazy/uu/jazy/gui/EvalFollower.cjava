@@ -1,1 +1,139 @@
-%%[(8 jazy)/**  * EvalFollower.java * * Title:			Evaluation Follower * Description:		GUI to follow evaluation of graph reduction evaluation * @author			atze * @version			 */package uu.jazy.gui;import java.awt.*;import java.awt.event.*;import javax.swing.*;import uu.jazy.core.* ;// import uu.jazy.prelude.* ;public class EvalFollower extends javax.swing.JFrame	implements EvalTracer{	//	// Required	//	static final long serialVersionUID = 1L;	private static class EvalFollowerRunner extends Thread	{		Semaphore waitToRun ;				EvalFollowerRunner( Semaphore w )		{			waitToRun = w ;		}				public void run()		{			EvalFollower frame = new EvalFollower();			try { frame.initComponents(); } catch ( Exception ex ) {}			frame.setVisible(true);			Eval.setEvaluator( new EvaluatorTracerRecTail( frame ) ) ;%%[[8			Eval.setDoTrace( true ) ;%%][100%%]]			waitToRun.release() ;		}			}		public static void setupVisualTrace()	{		Semaphore waitToRun = new Semaphore() ;		new EvalFollowerRunner( waitToRun ).start() ;		waitToRun.acquire() ;	}// IMPORTANT: Source code between BEGIN/END comment pair will be regenerated// every time the form is saved. All manual changes will be overwritten.// BEGIN GENERATED CODE	// member declarations	javax.swing.JScrollPane followerScrollPane = new javax.swing.JScrollPane();// END GENERATED CODE	private EvalFollowerComponent evalFollowerComponent ;		public EvalFollower() {	}	public void initComponents() throws Exception {// IMPORTANT: Source code between BEGIN/END comment pair will be regenerated// every time the form is saved. All manual changes will be overwritten.// BEGIN GENERATED CODE		// the following code sets the frame's initial state		followerScrollPane.setVisible(true);		setLocation(new java.awt.Point(5, 40));		setTitle("uu.jazy.gui.EvalFollower");		getContentPane().setLayout(new java.awt.BorderLayout(0, 0));		setSize(new java.awt.Dimension(670, 475));		getContentPane().add(followerScrollPane, "Center");		addWindowListener(new java.awt.event.WindowAdapter() {			public void windowClosing(java.awt.event.WindowEvent e) {				thisWindowClosing(e);			}		});// END GENERATED CODE		//getContentPane().setLayout( new BorderLayout() );		followerScrollPane.getViewport().add( evalFollowerComponent = new EvalFollowerComponent() ) ;	}    	private boolean mShown = false;  		public void addNotify() {		super.addNotify();				if (mShown)			return;					// resize frame to account for menubar		JMenuBar jMenuBar = getJMenuBar();		if (jMenuBar != null) {			int jMenuBarHeight = jMenuBar.getPreferredSize().height;			Dimension dimension = getSize();			dimension.height += jMenuBarHeight;			setSize(dimension);		}		mShown = true;	}	// Close the window when the close box is clicked	void thisWindowClosing(java.awt.event.WindowEvent e) {		setVisible(false);		dispose();		//System.exit(0);	}		public void pushOnStack( Object x )	{		evalFollowerComponent.pushOnStack( x ) ;	}		public void popFromStack()	{		evalFollowerComponent.popFromStack() ;	}		public void replaceTopOfStack( Object x )	{		evalFollowerComponent.replaceTopOfStack( x ) ;	}	}%%]
+%%[(8 jazy)
+/** 
+ * EvalFollower.java
+ *
+ * Title:			Evaluation Follower
+ * Description:		GUI to follow evaluation of graph reduction evaluation
+ * @author			atze
+ */
+
+package uu.jazy.gui;
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+
+import uu.jazy.core.* ;
+
+public class EvalFollower extends javax.swing.JFrame
+	implements EvalTracer
+{
+	//
+	// Required
+	//
+	static final long serialVersionUID = 1L;
+
+	private static class EvalFollowerRunner extends Thread
+	{
+		Semaphore waitToRun ;
+		
+		EvalFollowerRunner( Semaphore w )
+		{
+			waitToRun = w ;
+		}
+		
+		public void run()
+		{
+			EvalFollower frame = new EvalFollower();
+			try { frame.initComponents(); } catch ( Exception ex ) {}
+			frame.setVisible(true);
+			Eval.setEvaluator( new EvaluatorTracerRecTail( frame ) ) ;
+%%[[8
+			Eval.setDoTrace( true ) ;
+%%][100
+%%]]
+			waitToRun.release() ;
+		}
+		
+	}
+	
+	public static void setupVisualTrace()
+	{
+		Semaphore waitToRun = new Semaphore() ;
+		new EvalFollowerRunner( waitToRun ).start() ;
+		waitToRun.acquire() ;
+	}
+
+
+// IMPORTANT: Source code between BEGIN/END comment pair will be regenerated
+// every time the form is saved. All manual changes will be overwritten.
+// BEGIN GENERATED CODE
+	// member declarations
+	javax.swing.JScrollPane followerScrollPane = new javax.swing.JScrollPane();
+// END GENERATED CODE
+
+	private EvalFollowerComponent evalFollowerComponent ;
+	
+	public EvalFollower() {
+	}
+
+	public void initComponents() throws Exception {
+// IMPORTANT: Source code between BEGIN/END comment pair will be regenerated
+// every time the form is saved. All manual changes will be overwritten.
+// BEGIN GENERATED CODE
+		// the following code sets the frame's initial state
+
+		followerScrollPane.setVisible(true);
+
+		setLocation(new java.awt.Point(5, 40));
+		setTitle("uu.jazy.gui.EvalFollower");
+		getContentPane().setLayout(new java.awt.BorderLayout(0, 0));
+		setSize(new java.awt.Dimension(670, 475));
+		getContentPane().add(followerScrollPane, "Center");
+
+
+		addWindowListener(new java.awt.event.WindowAdapter() {
+			public void windowClosing(java.awt.event.WindowEvent e) {
+				thisWindowClosing(e);
+			}
+		});
+
+// END GENERATED CODE
+		followerScrollPane.getViewport().add( evalFollowerComponent = new EvalFollowerComponent() ) ;
+
+	}
+  
+  	private boolean mShown = false;
+  	
+	public void addNotify() {
+		super.addNotify();
+		
+		if (mShown)
+			return;
+			
+		// resize frame to account for menubar
+		JMenuBar jMenuBar = getJMenuBar();
+		if (jMenuBar != null) {
+			int jMenuBarHeight = jMenuBar.getPreferredSize().height;
+			Dimension dimension = getSize();
+			dimension.height += jMenuBarHeight;
+			setSize(dimension);
+		}
+
+		mShown = true;
+	}
+
+	// Close the window when the close box is clicked
+	void thisWindowClosing(java.awt.event.WindowEvent e) {
+		setVisible(false);
+		dispose();
+	}
+	
+	public void pushOnStack( Object x )
+	{
+		evalFollowerComponent.pushOnStack( x ) ;
+	}
+	
+	public void popFromStack()
+	{
+		evalFollowerComponent.popFromStack() ;
+	}
+	
+	public void replaceTopOfStack( Object x )
+	{
+		evalFollowerComponent.replaceTopOfStack( x ) ;
+	}
+	
+}
+%%]
+

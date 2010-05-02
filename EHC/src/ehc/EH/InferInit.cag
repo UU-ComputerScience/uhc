@@ -111,6 +111,22 @@ SEM AGItf
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Init of clGam
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer).initClDfGam
+SEM AGItf
+  | AGItf       loc         .   clDfGam             =   @expr.gathClDfGam
+%%]
+
+%%[(20 hmtyinfer) -9.initClDfGam
+ATTR AGItf [ clDfGam: ClassDefaultGam | | ]
+
+SEM AGItf
+  | AGItf       loc         .   clDfGam             =   @expr.gathClDfGam `gamUnion` @lhs.clDfGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Init of valGam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 

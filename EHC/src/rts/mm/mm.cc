@@ -42,9 +42,11 @@ void mm_init() {
 	mm_init_trace() ;
 	mm_init_collector() ;
 	mm_init_mutator() ;
+#ifdef __UHC_TARGET_BC__
 %%[[94
 	mm_init_weakPtr() ;
 %%]]
+#endif
 	mm_init_plan() ;	
 }
 %%]

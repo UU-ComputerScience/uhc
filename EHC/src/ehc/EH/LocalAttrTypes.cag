@@ -8,10 +8,12 @@ Signatures for local attributes
 SEM *
   | *
 		loc.foL		 					: {[FIOut]}
+		loc.predAmbigCheck				: {TQOGam -> [CHRPredOcc] -> [CHRPredOcc]}
 		loc.gathTvKiVarMp2				: {VarMp}
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
 		loc.tyVarMpDeclsL01				: {VarMp}
+		loc.gathTvKiVarMp1				: {VarMp}
 		loc.tyVarMpDeclsQuant			: {VarMp}
 		loc.chrSolve1SimpTyVarMp		: {VarMp}
 		loc.exTyKiVarMp2				: {VarMp}
@@ -20,6 +22,7 @@ SEM *
 		loc.altsFiOpts 					: FIOpts
 		loc.arity  						: Int
 		loc.arityErrs  					: ErrL
+		loc.chrSolve1RemPrOccL 			: {[CHRPredOcc]}
 		loc.cannotProveCnstrMp 			: CHRPredOccCnstrMp
 		loc.cannotRes1CnstrMp  			: CHRPredOccCnstrMp
 		loc.chrFIIn  					: FIIn
@@ -199,7 +202,7 @@ SEM *
 		loc.toProveElsewhereCnstrMp		: CHRPredOccCnstrMp
 		loc.toProveHereCnstrMp 			: CHRPredOccCnstrMp
 		loc.toProveHereCnstrMpCanon 	: CHRPredOccCnstrMp
-		loc.tqoGam  					: {Gam HsName TyMergePredOut}
+		loc.tqoGam  					: TQOGam
 		loc.tv   						: UID
 		loc.tvarv  						: Ty
 		loc.tvarv1_  					: Ty

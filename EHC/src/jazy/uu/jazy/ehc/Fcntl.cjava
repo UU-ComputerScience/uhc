@@ -1,0 +1,25 @@
+%%[(99 jazy)
+package uu.jazy.ehc;
+
+// Constants defined in fcntl.h (not complete).
+class Fcntl {
+	// from fcntl.h
+	static final int O_ACCMODE  =  0003;
+	static final int O_RDONLY   =    00;
+	static final int O_WRONLY   =    01;
+	static final int O_RDWR     =    02;
+	static final int O_CREAT    =  0100;
+	static final int O_EXCL     =  0200;
+	static final int O_NOCTTY   =  0400;
+	static final int O_TRUNC    = 01000;
+	static final int O_APPEND   = 02000;
+	static final int O_NONBLOCK = 04000;
+	static final int O_NDELAY   = O_NONBLOCK;
+	static final int O_SYNC     = 010000;
+	static final int O_FSYNC    = O_SYNC;
+	static final int O_ASYNC    = 020000;
+
+	// not in fcntl.h
+	static final int O_BINARY   = 100000;
+}
+%%]

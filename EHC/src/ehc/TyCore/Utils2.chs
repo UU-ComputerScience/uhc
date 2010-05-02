@@ -12,12 +12,16 @@
 %%[(8 codegen) import({%{EH}TyCore.Base})
 %%]
 
-%%[(8 codegen) import({%{EH}Gam},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
+%%[(8 codegen) import({%{EH}Gam},{%{EH}VarMp},{%{EH}Substitutable},{%{EH}Gam.ValGam},{%{EH}Gam.DataGam})
 %%]
 
 %%[(8 codegen) import({%{EH}TyCore.SubstCaseAltFail})
 %%]
 %%[(8 codegen) import(Data.List,qualified Data.Set as Set,Data.List,qualified Data.Map as Map,EH.Util.Utils)
+%%]
+
+-- debug
+%%[(8 codegen) import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -28,6 +32,7 @@
 data RCEEnv
   = RCEEnv
       { rceValGam           :: !ValGam				-- type of value (amongst other)
+      , rceTyVarMp          :: !VarMp				-- tvar bindings for ValGam
       , rceDataGam          :: !DataGam				-- data type + constructor info
       , rceCaseFailSubst    :: !CaseFailSubst		-- fail continuation map
       , rceCaseIds          :: !UIDS				-- fail ids
@@ -37,7 +42,7 @@ data RCEEnv
       }
 
 emptyRCEEnv :: EHCOpts -> RCEEnv
-emptyRCEEnv opts = RCEEnv emptyGam emptyGam Map.empty (Set.singleton uidStart) (tcUndefined opts) opts -- True
+emptyRCEEnv opts = RCEEnv emptyGam emptyVarMp emptyGam Map.empty (Set.singleton uidStart) (tcUndefined opts) opts -- True
 %%]
 
 %%[(8 codegen)
@@ -48,7 +53,7 @@ rceEnvDataAlts env t
       CTag _ conNm _ _ _
          -> case valGamTyOfDataCon conNm (rceValGam env) of
               (_,ty,[])
-                 -> dataGamTagsOfTy ty (rceDataGam env)
+                 -> dataGamTagsOfTy (rceTyVarMp env |=> ty) (rceDataGam env)
               _  -> Nothing
       _  -> Nothing
 %%]
@@ -73,7 +78,8 @@ mkPatCon env ctag arity mbNmL
 caltLSaturate :: RCEEnv -> AltL -> AltL
 caltLSaturate env alts
   = case alts of
-      (alt1:_) -> listSaturateWith 0 (length allAlts - 1) altIntTag allAlts alts
+      (alt1:_) -> -- (\v -> v `seq` tr "caltLSaturate" ("nr alts" >#< length alts >#< "all" >#< length allAlts) v) $ 
+                  listSaturateWith 0 (length allAlts - 1) altIntTag allAlts alts
             where allAlts
                     = case rceEnvDataAlts env (altConTag alt1) of
                         Just ts -> [ (ctagTag t,mkA env t (ctagArity t)) | t <- ts ]
@@ -209,7 +215,9 @@ mkExprSatSelsCasesMeta env ne meta e tgSels
               (CTagRec       ,Just (_,a)) -> mkloL a
               (CTag _ _ _ a _,_         ) -> mkloL a
           where mklo (n,{-l,-}o) = (n,{-l,-}tcInt o)
-                mkloL a = map mklo $ listSaturateWith 0 (a-1) (\(_,{-_,-}o) -> o) [(o,(l,{-l,-}o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
+                mkloL a = map mklo
+                          -- $ (\v -> v `seq` tr "mkCExprSatSelsCasesMeta" ("nr nol" >#< length nol >#< "arity" >#< a) v)
+                          $ listSaturateWith 0 (a-1) (\(_,{-_,-}o) -> o) [(o,(l,{-l,-}o)) | (o,l) <- zip [0..a-1] hsnLclSupply] $ nol
         alts = [ (ct,mkOffL ct mbRest nmLblOffL,mbRest,sel) | (ct,nmLblOffL,mbRest,sel) <- tgSels ]
 
 mkExprSatSelsCases :: RCEEnv -> Maybe (HsName,Ty) -> Expr -> [(CTag,[(HsName,{-HsName,-}Int)],MbPatRest,Expr)] -> Expr
@@ -251,11 +259,9 @@ mkExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
         nmLblOffL = zip ns [0..] -- zip3 ns ns [0..]
         sel = mkExprTuple' ct (tyErr "TyCore.Utils.mkExprSatSelsCaseUpdMeta")
                 $ map (fst.snd)
+                -- $ (\v -> v `seq` tr "mkCExprSatSelsCaseUpdMeta" ("nr offValL" >#< length offValL >#< "arity" >#< arity) v)
                 $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL
 %%]
-        sel = mkExprAppMeta
-                (Expr_Tup ct)
-                (map snd $ listSaturateWith 0 (arity-1) fst [(o,(o,(Expr_Var n,MetaVal_Val))) | (n,{-_,-}o) <- nmLblOffL] offValL)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% List comprehension utilities for deriving, see also HS/ToEH

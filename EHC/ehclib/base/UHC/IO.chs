@@ -1,5 +1,5 @@
 %%[99
-{-# OPTIONS_GHC -XNoImplicitPrelude -#include "HsBase.h" #-}
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
 
 #undef DEBUG_DUMP
@@ -24,12 +24,11 @@
 %%[99
 -- #hide
 module UHC.IO ( 
-{-
-   hWaitForInput, hGetChar, hGetLine, hGetContents, -} hPutChar, hPutStr, {-
+   hWaitForInput, hGetChar, hGetLine, hGetContents, hPutChar, hPutStr, 
    commitBuffer',       -- hack, see below
    hGetcBuffered,       -- needed by ghc/compiler/utils/StringBuffer.lhs
    hGetBuf, hGetBufNonBlocking, hPutBuf, hPutBufNonBlocking, slurpFile,
--}
+
    memcpy_ba_baoff,
    memcpy_ptr_baoff,
    memcpy_baoff_ba,
@@ -40,6 +39,7 @@ import Foreign
 import Foreign.C
 
 import System.IO.Error
+import System.IO.Unsafe (unsafeInterleaveIO)
 import Data.Maybe
 import Control.Monad
 #ifndef mingw32_HOST_OS
@@ -54,9 +54,10 @@ import UHC.ByteArray
 #ifdef mingw32_HOST_OS
 import UHC.Conc
 #endif
+
 %%]
 
-%%[9999
+%%[99
 -- ---------------------------------------------------------------------------
 -- Simple input operations
 
@@ -97,7 +98,7 @@ hWaitForInput h msecs = do
                 writeIORef ref buf'
                 return True
         else do r <- throwErrnoIfMinus1Retry "hWaitForInput" $
-                     fdReady (haFD handle_) 0 {- read -}
+                     unsafe_fdReady (haFD handle_) 0 {- read -}
                                 (fromIntegral msecs)
                                 (fromIntegral $ fromEnum $ haIsStream handle_)
                 if r /= 0 then do -- Call hLookAhead' to throw an EOF
@@ -106,12 +107,9 @@ hWaitForInput h msecs = do
                                   return True
                           else return False
 
-foreign import ccall safe "fdReady"
-  fdReady :: CInt -> CInt -> CInt -> CInt -> IO CInt
 %%]
 
-%%[9999
-
+%%[99
 -- ---------------------------------------------------------------------------
 -- hGetChar
 
@@ -162,7 +160,7 @@ hGetcBuffered _ ref buf@Buffer{ bufBuf=b, bufRPtr=r0, bufWPtr=w }
       return c
 %%]
 
-%%[9999
+%%[99
 
 -- ---------------------------------------------------------------------------
 -- hGetLine
@@ -209,13 +207,15 @@ hGetLineBufferedLoop handle_ ref
         buf@Buffer{ bufRPtr=r0, bufWPtr=w, bufBuf=raw0 } xss =
   let
         -- find the end-of-line character, if there is one
-        loop raw r
-           | r == w = return (False, w)
-           | otherwise =  do
-                (c,r') <- readCharFromBuffer raw r
-                if c == '\n'
-                   then return (True, r) -- NB. not r': don't include the '\n'
-                   else loop raw r'
+        loop :: RawBuffer -> Int -> IO (Bool, Int)
+        loop raw r 
+           | r == w    = return (False, w)
+           | otherwise = 
+              do
+               (c,r') <- readCharFromBuffer raw r
+               if c == '\n'
+                  then return (True, r) -- NB. not r': don't include the '\n'
+                  else loop raw r'
   in do
   (eol, off) <- loop raw0 r0
 
@@ -224,7 +224,6 @@ hGetLineBufferedLoop handle_ ref
 #endif
 
   xs <- unpack raw0 r0 off
-
   -- if eol == True, then off is the offset of the '\n'
   -- otherwise off == w and the buffer is now empty.
   if eol
@@ -257,17 +256,15 @@ maybeFillReadBuffer fd is_line is_stream buf
                   then return Nothing 
                   else ioError e)
 
-
 unpack :: RawBuffer -> Int -> Int -> IO [Char]
-unpack _   _      0        = return ""
-unpack buf (I# r) (I# len) = IO $ \s -> unpackRB [] (len -# 1#) s
-   where
+unpack _   _ 0   = return ""
+unpack buf r len = IO $ \s -> unpackRB [] (len - 1) s
+  where
     unpackRB acc i s
-     | i <# r  = (# s, acc #)
-     | otherwise = 
-          case readCharArray# buf i s of
-          (# s', ch #) -> unpackRB (C# ch : acc) (i -# 1#) s'
-
+      | i < r  = (s, acc)
+      | otherwise = 
+          case readCharArray buf i s of
+            (s', ch) -> unpackRB (ch : acc) (i - 1) s'
 
 hGetLineUnBuffered :: Handle -> IO String
 hGetLineUnBuffered h = do
@@ -294,8 +291,7 @@ hGetLineUnBuffered h = do
        return (c:s)
 %%]
 
-%%[9999
-
+%%[99
 -- -----------------------------------------------------------------------------
 -- hGetContents
 
@@ -331,6 +327,18 @@ hGetLineUnBuffered h = do
 --
 --  * 'isEOFError' if the end of file has been reached.
 
+{- UHC does not support concurrency for the moment which cause 
+the call of withHandle inside of onther withHandle to fail. This is due
+to the fact that readMVar does not wait if the MVar is empty but fail with
+an error.
+
+In ghc hGetContents call lazyRead using the withHandle function. Since 
+lazyRead makes another call to withHandle the whole pipe fails.
+
+I adapted the lazyRead not to use the synchronization mechanism of withHandle
+and to return directly the result. For this the Hande__ must be passed 
+manually.
+-}
 hGetContents :: Handle -> IO String
 hGetContents handle = 
     withHandle "hGetContents" handle $ \handle_ ->
@@ -339,21 +347,20 @@ hGetContents handle =
       SemiClosedHandle     -> ioe_closedHandle
       AppendHandle         -> ioe_notReadable
       WriteHandle          -> ioe_notReadable
-      _ -> do xs <- lazyRead handle
+      _ -> do xs <- lazyRead handle handle_{ haType=SemiClosedHandle}
               return (handle_{ haType=SemiClosedHandle}, xs )
 
 -- Note that someone may close the semi-closed handle (or change its
 -- buffering), so each time these lazy read functions are pulled on,
 -- they have to check whether the handle has indeed been closed.
 
-lazyRead :: Handle -> IO String
-lazyRead handle = 
-   unsafeInterleaveIO $
-        withHandle "lazyRead" handle $ \ handle_ -> do
+lazyRead :: Handle -> Handle__ -> IO String
+lazyRead handle handle_= 
         case haType handle_ of
-          ClosedHandle     -> return (handle_, "")
-          SemiClosedHandle -> lazyRead' handle handle_
-          _ -> ioException 
+          ClosedHandle     -> return ""
+          SemiClosedHandle -> do (_,xs) <- lazyRead' handle handle_
+                                 return xs
+          x -> ioException 
                   (IOError (Just handle) IllegalOperation "lazyRead"
                         "illegal handle type" Nothing)
 
@@ -366,7 +373,7 @@ lazyRead' h handle_ = do
   -- (see hLookAhead)
   buf <- readIORef ref
   if not (bufferEmpty buf)
-        then lazyReadHaveBuffer h handle_ fd ref buf
+        then lazyReadHaveBuffer h handle_ fd ref buf :: IO (Handle__, [Char])
         else do
 
   case haBufferMode handle_ of
@@ -378,7 +385,7 @@ lazyRead' h handle_ = do
            then do (handle_', _) <- hClose_help handle_ 
                    return (handle_', "")
            else do (c,_) <- readCharFromBuffer raw 0
-                   rest <- lazyRead h
+                   rest <- lazyRead h handle_
                    return (handle_, c : rest)
 
      LineBuffering    -> lazyReadBuffered h handle_ fd ref buf
@@ -400,21 +407,20 @@ lazyReadBuffered h handle_ fd ref buf = do
 
 lazyReadHaveBuffer :: Handle -> Handle__ -> FD -> IORef Buffer -> Buffer -> IO (Handle__, [Char])
 lazyReadHaveBuffer h handle_ _ ref buf = do
-   more <- lazyRead h
+   more <- lazyRead h handle_
    writeIORef ref buf{ bufRPtr=0, bufWPtr=0 }
    s <- unpackAcc (bufBuf buf) (bufRPtr buf) (bufWPtr buf) more
    return (handle_, s)
 
-
 unpackAcc :: RawBuffer -> Int -> Int -> [Char] -> IO [Char]
 unpackAcc _   _      0        acc  = return acc
-unpackAcc buf (I# r) (I# len) acc0 = IO $ \s -> unpackRB acc0 (len -# 1#) s
+unpackAcc buf r len acc0 = IO $ \s -> unpackRB acc0 (len - 1) s
    where
     unpackRB acc i s
-     | i <# r  = (# s, acc #)
+     | i < r  = (s, acc)
      | otherwise = 
-          case readCharArray# buf i s of
-          (# s', ch #) -> unpackRB (C# ch : acc) (i -# 1#) s'
+          case readCharArray buf i s of
+          (s', ch) -> unpackRB (ch : acc) (i - 1) s'
 %%]
 
 %%[99
@@ -506,7 +512,6 @@ hPutStr handle str = do
        (BlockBuffering _, buf) -> do
             writeBlocks handle buf str
 
-
 getSpareBuffer :: Handle__ -> IO (BufferMode, Buffer)
 getSpareBuffer Handle__{haBuffer=ref, 
                         haBuffers=spare_ref,
@@ -524,7 +529,6 @@ getSpareBuffer Handle__{haBuffer=ref,
             BufferListNil -> do
                 new_buf <- allocateBuffer (bufSize buf) WriteBuffer
                 return (mode, new_buf)
-
 
 writeLines :: Handle -> Buffer -> String -> IO ()
 writeLines hdl Buffer{ bufBuf=raw, bufSize=len } s =
@@ -680,7 +684,7 @@ commitBuffer' raw sz count flush release
               return buf_ret
 %%]
 
-%%[9999
+%%[99 
 -- ---------------------------------------------------------------------------
 -- Reading/writing sequences of bytes.
 
@@ -716,7 +720,7 @@ hPutBuf':: Handle                       -- handle to write to
         -> Bool                         -- allow blocking?
         -> IO Int
 hPutBuf' handle ptr count can_block
-  | count == 0 = return 0
+  | count == 0 = return (0 :: Int)
   | count <  0 = illegalBufferSize handle "hPutBuf" count
   | otherwise = 
     wantWritableHandle "hPutBuf" handle $ 
@@ -794,7 +798,7 @@ writeChunkNonBlocking fd
 #endif
 %%]
 
-%%[9999
+%%[99 
 -- ---------------------------------------------------------------------------
 -- hGetBuf
 
@@ -960,20 +964,19 @@ readChunkNonBlocking fd is_stream ptr bytes = do
     -- we don't have non-blocking read support on Windows, so just invoke
     -- the ordinary low-level read which will block until data is available,
     -- but won't wait for the whole buffer to fill.
-
 slurpFile :: FilePath -> IO (Ptr (), Int)
 slurpFile fname = do
   handle <- openFile fname ReadMode
-  sz     <- hFileSize handle
-  if sz > fromIntegral (maxBound::Int) then 
-    ioError (userError "slurpFile: file too big")
+  sz     <- hFileSize handle :: IO Integer
+  if (sz :: Integer) > fromIntegral (maxBound::Int) then 
+    ioError (userError "slurpFile: file too big") :: IO (Ptr (), Int)
    else do
-    let sz_i = fromIntegral sz
-    if sz_i == 0 then return (nullPtr, 0) else do
+    let sz_i = fromIntegral sz :: Int 
+    if sz_i == 0  then return (nullPtr, 0 :: Int) else do
     chunk <- mallocBytes sz_i
     r <- hGetBuf handle chunk sz_i
     hClose handle
-    return (chunk, r)
+    return (chunk :: Ptr (), r)
 %%]
 
 %%[99

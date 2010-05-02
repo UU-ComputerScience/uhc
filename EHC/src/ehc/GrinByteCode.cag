@@ -369,7 +369,7 @@ type FunctionInfoExportMp = Map.Map HsName GrinByteCodeLamInfo			-- to index int
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen grin) hs export(CallInfoKind(..))
--- the order must correspond to the first defines of GB_CallInfo_Kind_XXX in rts/bc/interpreter.h
+-- the order must correspond to the first defines of CallInfo_Kind_XXX in rts/base/types.h
 data CallInfoKind
   = CallInfoKind_Call             -- normal call
   | CallInfoKind_Tail             -- tail call

@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -42,6 +43,7 @@ import GHC.IOBase
 
 #ifdef __UHC__
 import UHC.IOBase
+import UHC.Base
 #endif
 
 -- exported functions

@@ -111,6 +111,10 @@ SEM SilModule
                                                      : heapwalkerFuncDecl
                                                      : gcssInitFuncDecl
                                                      : gcssAllocFuncDecl @lhs.intType
+                                                     
+                                                     -- ehc gc
+                                                     : gcEhcAllocFuncDecl @lhs.intType
+                                                     : gcEhcAllocResFuncDecl @lhs.intType
 
                                                      : @functions.externFuncs 
                                                      )
@@ -167,8 +171,9 @@ SEM SilModule
 
                                  [ LLVMStatement_Assignment (LocalVar "fdescr.1" (pLift (TyVar "FDESCR")))
                                      (LLVMExpression_GetElemPtr (GlobalVar "FDESCR" (pLift (Array (length @constants) (TyVar "FDESCR")))) [0, 0] )
-                                 , LLVMStatement_Call gcssInitFuncDecl StdCall [ Constant  (length @constants) i32
-                                                                               , LocalVar "fdescr.1" (pLift (TyVar "FDESCR")) ]
+                                 -- , LLVMStatement_Call gcssInitFuncDecl StdCall [ Constant  (length @constants) i32
+                                 --                                               , LocalVar "fdescr.1" (pLift (TyVar "FDESCR")) ]
+                                 
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
@@ -199,8 +204,8 @@ SEM Function
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
                                    @body.llvmCode ++  
-                                   [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
-                                   [LLVMStatement_Call heapwalkerFuncDecl StdCall []] ++
+                                   -- [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
+                                   -- [LLVMStatement_Call heapwalkerFuncDecl StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -782,6 +787,18 @@ gcssAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcssAllocFuncDecl intType = 
   LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
 
+-- static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo )
+
+gcEhcAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcAllocFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType), (LocalVar "gcInfo" intType)] Nothing
+
+-- static inline Ptr mm_itf_allocResident( size_t sz )
+
+gcEhcAllocResFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcAllocResFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_allocResident" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
+
 
 }
 %%]
@@ -913,8 +930,8 @@ mkMalloc manageType intType nr =
   if rtsUseGC
   then let size = nr * sizeofPointer
         in case manageType of
-           NotManaged -> LLVMExpression_Call (gcssAllocFuncDecl intType) StdCall [Constant size intType]
-           GCManaged  -> LLVMExpression_Call (gcssAllocFuncDecl intType) StdCall [Constant size intType]
+           NotManaged -> LLVMExpression_Call (gcEhcAllocResFuncDecl intType) StdCall [Constant size intType]
+           GCManaged  -> LLVMExpression_Call (gcEhcAllocFuncDecl intType)    StdCall [Constant size intType, Constant 0 intType]
   else LLVMExpression_Malloc intType nr
 }
 %%]

@@ -1,0 +1,132 @@
+%%[main doclatex
+
+\section{Introduction}
+
+%%@InternalDocJazy.intro
+
+\section{Status}
+
+%%@InternalDocJazy.status
+
+\section{IO in the Jazy backend}
+
+%%@InternalDocJazy.io
+
+\section{Using JNI for IO}
+
+%%@InternalDocJazy.jni
+
+\section{Emulating primitive functions in Java}
+
+%%@InternalDocJazy.emulating
+
+%%]
+
+%%[intro
+The Jazy backend generates Java class files to allow Haskell programs to run on the Java Virtual Machine (JVM). The program representation
+in Core is transformed to Java bytecode, which is then run by a small runtime written in Java. This runtime implements, most importantly,
+lazy evaluation on the JVM and low-level support for the primitive data types, input/output, exceptions etc.
+
+The Jazy backend consists of several parts:
+\begin{itemize}
+\item a representation of Java class files and support for serializing this representation to \verb|.class| files (in
+	\verb|src/ehc/JVMClass|)
+\item the compiler driver for compilation with the Jazy backend (in \verb|src/ehc/EHC/CompilePhase/CompileJVM.chs|)
+\item code generation for the Jazy backend: transforming from Core to Java bytecode (\verb|src/ehc/Core/ToJazy.cag|)
+\item the runtime system, which consists of a library that supports lazy evaluation (in \verb|src/jazy/uu/jazy/core/|) and runtime support
+	for basic arithmetic, IO and so forth (in \verb|src/jazy/uu/jazy/ehc/|).
+\end{itemize}
+Finally, the mapping from Haskell's to the JVM's primtive types, for example from \verb|Int| to \verb|int|, is specified in
+\verb|src/ehc/Base/Builtin2.chs|.
+%%]
+
+%%[status
+The Jazy backend is, at the moment, still incomplete. It implements the basics of Haskell (functions, numbers, lists, strings etc) and basic
+IO (opening and closing files, reading from and writing to files as well as reading from stdin and writing to stdout), but other IO
+operations such as accessing directory information (module \verb|System.Directory|), network IO, and measuring CPU time (module
+\verb|CPUTime|) are not yet supported. Exceptions are also not implemented.
+%%]
+
+%%[io
+The implementation of IO in EHC's libraries is made up of several layers:
+\begin{enumerate}
+\item Haskell code implementing the interface defined in the Haskell standard
+\item C code called through the Foreign Function Interface (FFI)
+\item operating system libraries and system calls.
+\end{enumerate}
+To implement IO in the Jazy backend, we have basically three options:
+\begin{enumerate}
+\item Replace all three layers with an implementation in Java. This has the disadvantage that we need to duplicate a large amount of
+	existing Haskell code in Java, which means a lot of extra effort both for initial development and for maintainance. Therefore, we did
+	not persue this any further.
+\item Replace the second and third layer by re-implementing the foreign functions necessary, but not the Haskell functions using them, in
+	Java. This means essentially emulating a Posix-like interface and it is what we decided to do in UHC (as of April 2010). 
+\item Use the Java Native Interface (JNI) to call the C code that's also used by the other backends. This keeps all three layers, but
+	requires considerable glue code to make the FFI calls work in the Jazy backend.
+\end{enumerate}
+%%]
+
+%%[jni
+To use the JNI for the IO libraries, we need to do the following things:
+\begin{itemize}
+\item globally:
+	\begin{itemize}
+		\item Emulate pointers in Java. We can't use real C pointers because JNI does not support "pinning" memory, and pointers become
+			invalid after a native method call returns.
+		\item Compile the C code used to a dynamically-linked library.
+		\item Load the library at runtime, using \verb|System.load(..)| or \verb|System.loadLibrary(..)|. 
+	\end{itemize}
+\item for each function:
+	\begin{itemize}
+		\item Write a wrapper method in Java.
+		\item Declare a native method in Java.
+		\item Write a wrapper function in C that calls the C function doing the real work. 
+	\end{itemize}
+\end{itemize}
+
+As an example, the following code would be needed for the \verb|write| function. This assumes that there is a class
+\verb|uu.jazy.ehc.NativeMethods| containing the native method declarations. 
+\begin{itemize}
+\item in \verb|src/jazy/uu/jazy/ehc/Prim.java|:
+\begin{verbatim}
+public static Object write(int fd, int buf, int count) {
+    byte[] array = (byte[])pointers.dereference(buf);
+    int result = nativeMethods.write(fd, array, count);
+    return ioReturn(new Integer(result));
+}
+\end{verbatim}
+\item in \verb|src/jazy/uu/jazy/ehc/NativeMethods.java|:
+\begin{verbatim}
+public native int write(int fd, byte[] buf, int count);
+\end{verbatim}
+\item in C code:
+\begin{verbatim}
+JNIEXPORT jint JNICALL Java_uu_jazy_ehc_NativeMethods_write(
+        JNIEnv *env, jobject obj, jint fd, jbyteArray buf, jint count) {
+    jbyte *ptr = (*env)->GetPrimitiveArrayCritical(env, buf, 0);
+    int result = write(fd, ptr, count);
+    (*env)->ReleasePrimitiveArrayCritical(env, buf, ptr, 0);
+    return result;
+}
+\end{verbatim}
+\end{itemize}
+%%]
+
+%%[emulating
+When Haskell code is compiled with UHC, each foreign function call to a function in C is transformed to a call to a method in the class
+\verb|uu.jazy.ehc.Prim|. Implementing IO in the Jazy backend thus means implementing those methods. However, there are also some aspects
+common to several of those methods:
+\begin{itemize}
+\item Pointers: The Haskell libraries use C pointers, represented as integers, to refer to memory allocated in C code. As there are no
+	pointers in Java, there is a class \verb|Pointers|, which is used to emulate them. It stores a number of objects in a list; the position
+	of each object serves as a pointer to the object. Adding an object in the \verb|Pointer| instance also ensures it will not be
+	garbage-collected.
+\item Open files: C has a concept of an "open file", which is stored in a per-process "file descriptor table". Since this is not present in
+	Java, there is a class \verb|Handle| that represents an open file by wrapping a \verb|File| object, an \verb|InputStream| object and an
+	\verb|OutputStream| object. There is also a class \verb|FileDescriptorTable| which stores \verb|Handle| objects and assigns a small,
+	non-negative integer to each of them.
+\item Error handling: Functions in the C standard library signal errors by storing an error code in the global variable \verb|errno|. This
+	variable is represented by the static field \verb|errno| in class \verb|Prim|. The \verb|Errno| class defines constants that can be used
+	to set the field.
+\end{itemize}
+%%]

@@ -5,10 +5,6 @@ package uu.jazy.ehc ;
  * Lazy and Functional.
  * Package for laziness and functions as known from functional languages.
  * Written by Atze Dijkstra, atze@cs.uu.nl
- *
- * $Header:     $
- * $Archive:    $
- * $NoKeywords: $
  */
 
 import java.util.* ;
@@ -138,8 +134,7 @@ public class RTS
 %%[[8
         Eval.resetNrEvaluations() ;
         long tm1 = System.currentTimeMillis() ;
-        // showln( v ) ;
-        System.out.println( run( v ) ) ;
+        run( v );
         long tm2 = System.currentTimeMillis() ;
         System.out.println( "eval&show done, took " + (tm2 - tm1) + " ms., " + Eval.getNrEvaluations() + " evaluations, " + ((float)(tm2-tm1))/Eval.getNrEvaluations() + " ms. per eval" ) ;
 %%][100

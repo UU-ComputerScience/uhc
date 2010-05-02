@@ -925,7 +925,7 @@ basicTyJUnbox doEval t
       BasicJazy_Object 		-> (un2                                  jtyObj       ,jtyObj       )
       BasicJazy_String 		-> (un2                                  jtyStr       ,jtyStr       )
 %%[[97
-      BasicJazy_Byte   		-> (un1 nmInt    jtyByte   "byteValue"   J.Type_Byte  ,J.Type_Byte  )
+      BasicJazy_Byte   		-> (un1 nmByte   jtyByte   "byteValue"   J.Type_Byte  ,J.Type_Byte  )
       BasicJazy_Short  		-> (un1 nmShort  jtyShort  "shortValue"  J.Type_Short ,J.Type_Short )
       BasicJazy_Long   		-> (un1 nmLong   jtyLong   "longValue"   J.Type_Long  ,J.Type_Long  )
       BasicJazy_Float  		-> (un1 nmFloat  jtyFloat  "floatValue"  J.Type_Float ,J.Type_Float )

@@ -1,3 +1,4 @@
+{-# LANGUAGE NoImplicitPrelude #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 {-# OPTIONS_HADDOCK hide #-}
@@ -49,6 +50,8 @@ import Hugs.Prelude (IOException(..), IOErrorType(..))
 import Hugs.IO (IOMode(..))
 #elif __UHC__
 import UHC.IOBase
+import UHC.Real
+import UHC.Base
 #else
 import System.IO
 #endif
@@ -181,7 +184,6 @@ fdIsTTY :: FD -> IO Bool
 fdIsTTY fd = c_isatty fd >>= return.toBool
 
 #if defined(HTYPE_TCFLAG_T)
-
 setEcho :: FD -> Bool -> IO ()
 setEcho fd on = do
   tcSetAttr fd $ \ p_tios -> do
@@ -221,7 +223,10 @@ tcSetAttr fd fun = do
         throwErrnoIfMinus1Retry "tcSetAttr"
            (c_tcgetattr fd p_tios)
 
-#ifdef __GLASGOW_HASKELL__
+-- UHC is not compatible with this stuff since it doesn't have the 
+-- definition for __hscore_get_saved_termios and __hscore_set_saved_termios.
+-- Maybe they should be ifdefs in HsBase also.
+#if defined(__GLASGOW_HASKELL__)
         -- Save a copy of termios, if this is a standard file descriptor.
         -- These terminal settings are restored in hs_exit().
         when (fd <= 2) $ do
@@ -248,7 +253,8 @@ tcSetAttr fd fun = do
              c_sigprocmask const_sig_setmask p_old_sigset nullPtr
              return r))
 
-#ifdef __GLASGOW_HASKELL__
+--  UHC is not compatible with this stuff since it doesn't have the corresponding definition
+#if defined(__GLASGOW_HASKELL__)
 foreign import ccall unsafe "HsBase.h __hscore_get_saved_termios"
    get_saved_termios :: CInt -> IO (Ptr CTermios)
 
@@ -257,7 +263,6 @@ foreign import ccall unsafe "HsBase.h __hscore_set_saved_termios"
 #endif
 
 #else
-
 -- 'raw' mode for Win32 means turn off 'line input' (=> buffering and
 -- character translation for the console.) The Win32 API for doing
 -- this is GetConsoleMode(), which also requires echoing to be disabled
@@ -517,6 +522,7 @@ foreign import ccall unsafe "HsBase.h __hscore_f_setfl"      const_f_setfl :: CI
 
 #if defined(HTYPE_TCFLAG_T)
 foreign import ccall unsafe "HsBase.h __hscore_sizeof_termios"  sizeof_termios :: Int
+
 foreign import ccall unsafe "HsBase.h __hscore_sizeof_sigset_t" sizeof_sigset_t :: Int
 
 foreign import ccall unsafe "HsBase.h __hscore_lflag" c_lflag :: Ptr CTermios -> IO CTcflag

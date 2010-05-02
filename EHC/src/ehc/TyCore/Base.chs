@@ -199,9 +199,10 @@ exprIsLam (Expr_Arrow _ _) = True
 exprIsLam _                = False
 %%]
 
-%%[(8 codegen) hs export(valBindNm)
+%%[(8888 codegen) hs export(valBindNm)
 valBindNm :: ValBind -> HsName
-valBindNm (ValBind_Val       n _ _ _ _) = n
+valBindNm (ValBind_Val       b _ _ _) | isJust mb = n
+  where mb@(~Just (n,_)) = exprSeqMbL0Bind b
 -- valBindNm (ValBind_FFI _ _ _ n _  ) = n
 %%]
 
@@ -209,7 +210,7 @@ valBindNm (ValBind_Val       n _ _ _ _) = n
 %%% Remove duplicate bindings
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 codegen) hs export(valBindLNub)
+%%[(9999 codegen) hs export(valBindLNub)
 valBindLNub :: ValBindL -> ValBindL
 valBindLNub = nubBy (\b1 b2 -> valBindNm b1 == valBindNm b2)
 %%]
@@ -259,21 +260,33 @@ metaLiftDict = metaLift' (MetaVal_Dict Nothing)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(mkValBind1LevMetas)
-mkValBind1LevMetas :: HsName -> MetaLev -> Metas -> Ty -> Expr -> ValBind
-mkValBind1LevMetas n l m t e = ValBind_Val n (if metasIsDflt m then Nothing else Just m) l t e
+mkValBind1LevMetas :: Bool -> HsName -> MetaLev -> Metas -> Ty -> Expr -> ValBind
+mkValBind1LevMetas doMkSeq n l m t e
+  = ValBind_Val b (if metasIsDflt m then Nothing else Just m) l e'
+  where e' = if doMkSeq then mkExprSeq  e
+                        else mkExprSeq1 e
+        s  = ExprSeq1_L0Bind n Nothing t
+        b  = if doMkSeq then Expr_Seq  [s]
+                        else Expr_Seq1  s
 %%]
 
-%%[(8 codegen) hs export(mkValBind1Meta)
-mkValBind1LevMeta :: HsName -> MetaLev -> MetaVal -> Ty -> Expr -> ValBind
-mkValBind1LevMeta n l m t e = mkValBind1LevMetas n l (MetaBind_Plain,m) t e
+%%[(8 codegen) hs export(mkValBind1Meta,mkValStrictBind1Meta)
+mkValBind1LevMeta :: Bool -> HsName -> MetaLev -> MetaVal -> Ty -> Expr -> ValBind
+mkValBind1LevMeta doMkSeq n l m t e = mkValBind1LevMetas doMkSeq n l (MetaBind_Plain,m) t e
 
 mkValBind1Meta :: HsName -> MetaVal -> Ty -> Expr -> ValBind
-mkValBind1Meta n m t e = mkValBind1LevMeta n 0 m t e
+mkValBind1Meta n m t e = mkValBind1LevMeta True n 0 m t e
+
+mkValStrictBind1Meta :: HsName -> MetaVal -> Ty -> Expr -> ValBind
+mkValStrictBind1Meta n m t e = mkValBind1LevMeta False n 0 m t e
 %%]
 
-%%[(8 codegen) hs export(mkValBind1,mkValThunkBind1)
+%%[(8 codegen) hs export(mkValBind1,mkValStrictBind1,mkValThunkBind1)
 mkValBind1 :: HsName -> Ty -> Expr -> ValBind
 mkValBind1 n t e = mkValBind1Meta n MetaVal_Val t e
+
+mkValStrictBind1 :: HsName -> Ty -> Expr -> ValBind
+mkValStrictBind1 n t e = mkValStrictBind1Meta n MetaVal_Val t e
 
 mkValThunkBind1 :: HsName -> Ty -> Expr -> ValBind
 mkValThunkBind1 n t e = mkValBind1 n (mkTyThunk t) (mkExprThunk e)
@@ -281,7 +294,7 @@ mkValThunkBind1 n t e = mkValBind1 n (mkTyThunk t) (mkExprThunk e)
 
 %%[(8 codegen) hs export(mkTyBind1)
 mkTyBind1 :: HsName -> Ty -> Expr -> ValBind
-mkTyBind1 n t e = mkValBind1LevMeta n 1 MetaVal_Val t e
+mkTyBind1 n t e = mkValBind1LevMeta True n 1 MetaVal_Val t e
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -404,7 +417,7 @@ mkExprTuple = mkExprTuple' CTagRec (tyErr "TyCore.Base.mkExprTuple")
 
 %%[(8 codegen) hs export(mkExprStrictInMeta)
 mkExprStrictInMeta :: HsName -> MetaVal -> Ty -> Expr -> (Expr -> Expr) -> Expr
-mkExprStrictInMeta nm m t e mkC = Expr_Let ValBindCateg_Strict [mkValBind1Meta nm m (tyUnThunkTySeq t) (mkExprUnThunk e)] (mkC (Expr_Var nm))
+mkExprStrictInMeta nm m t e mkC = Expr_Let ValBindCateg_Strict [mkValStrictBind1Meta nm m (tyUnThunkTySeq t) (mkExprUnThunk e)] (mkC (Expr_Var nm))
 %%]
 
 %%[(8 codegen) hs export(mkExprLet,mkExprLet')
@@ -435,8 +448,8 @@ mkExprStrictIn :: HsName -> Ty -> Expr -> (Expr -> Expr) -> Expr
 mkExprStrictIn nm t e mkC = mkExprStrictInMeta nm MetaVal_Val t e mkC
 
 mkExprMbStrictIn :: Maybe (HsName,Ty) -> Expr -> (Expr -> Expr) -> Expr
-mkExprMbStrictIn (Just (nm,t)) e mkC = Expr_Let ValBindCateg_Strict [mkValBind1 nm t e] (mkC (Expr_Var nm))
-mkExprMbStrictIn _             e mkC =                                                   mkC e
+mkExprMbStrictIn (Just (nm,t)) e mkC = Expr_Let ValBindCateg_Strict [mkValStrictBind1 nm t e] (mkC (Expr_Var nm))
+mkExprMbStrictIn _             e mkC =                                                        mkC e
 %%]
 
 %%[(8888 codegen) hs
