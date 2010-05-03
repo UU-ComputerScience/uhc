@@ -306,13 +306,15 @@ mkDerivClsMp fe valGam dataGam
            
 %%[[99
       -- Ix
+      {-
+      -}
       ,  mkc ehbnClassIx []
            [
            -- Ix(range)
            -- Ix(index)
            -- Ix(inRange)
            ]
-
+      
       -- Read
       ,  mkc ehbnClassRead []
            [

@@ -1061,7 +1061,7 @@ AC_CONFIG_FILES([mk/config.mk mk/shared.mk])
 AC_CONFIG_FILES([test/benchmark/runbenchmark.pl])
 AC_CONFIG_FILES([src/ehc/Config.chs src/helium/Utils/OSSpecific.hs])
 # AC_CONFIG_FILES([bin/llvm-compilerdriver], [chmod +x bin/llvm-compilerdriver]
-AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/base/include/MachDeps.h ehclib/base/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h])
+AC_CONFIG_HEADERS([src/ehc/ConfigDefines.chs src/rts/config.ch src/rts/mm/config.ch ehclib/uhcbase/include/MachDeps.h ehclib/uhcbase/include/HsBaseConfig.h ehclib/old-time/include/HsTimeConfig.h ehclib/directory/include/HsDirectoryConfig.h ehclib/unix/include/HsUnixConfig.h])
 
 AC_CONFIG_FILES([src/text2text/text2text.cabal])
 AC_OUTPUT
