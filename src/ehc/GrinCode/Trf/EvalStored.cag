@@ -1,3 +1,5 @@
+TODO FULLGRIN needs env of constants
+
 %%[doesWhat doclatex
 
 do not do \textit{EVAL} on pointers that bind the result of a previous \textit{STORE}.

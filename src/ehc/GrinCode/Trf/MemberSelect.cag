@@ -1,3 +1,5 @@
+TODO FULLGRIN needs dictionaries, selector functions and global constants
+
 %%[doesWhat doclatex
 
 Identify selectorfunctions, that is functions that select a field from a dictionary.

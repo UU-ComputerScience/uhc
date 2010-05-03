@@ -67,8 +67,6 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
-%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.PointsToAnalysis(heapPointsToAnalysis)})
@@ -79,19 +77,11 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.EmptyAlts(emptyAlts)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LateInline(lateInline)})
-%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.ImpossibleCase(impossibleCase)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SingleCase(singleCase)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MergeCase(mergeCase)})
-%%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.LowerGrin(lowerGrin)})
-%%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CopyPropagation(copyPropagation)})
-%%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SplitFetch(splitFetch)})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -167,7 +157,9 @@ cpTransformGrin modNm
                            ++  (if forBytecode && optimizing then inline : mk (evel++[constProp]) else [])
                            ++  (if optimizing                then mk [nameElim]                   else [])
                            ++  (if fullProg                  then grPerModuleFullProg modNm       else [])
-
+                   -- NOTE the transformations here have always worked on
+                   -- separate modules, so no need to look at them for
+                   -- incrementalization.
                    where mk            = map mk1
                          mk1 (trf,msg) = (cpFromGrinTrf modNm trf msg, msg)
 

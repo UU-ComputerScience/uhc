@@ -1,3 +1,6 @@
+TODO LOCAL drop bindings unreachable from export list
+TODO WP    also keep this WP-version
+
 %%[doesWhat doclatex
 
 Drop all functions not reachable from main,
