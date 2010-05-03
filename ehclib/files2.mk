@@ -1,4 +1,26 @@
 ###########################################################################################
+# versions for builtin libraries, currently here and not done via cabal
+###########################################################################################
+
+# not yet used
+
+EHCLIB_PKG_uhcbase_VERSION				:= $(EH_VERSION_FULL)
+EHCLIB_PKG_base_VERSION					:= 1.0.0.0
+EHCLIB_PKG_array_VERSION				:= 1.0.0.0
+EHCLIB_PKG_filepath_VERSION				:= 1.0.0.0
+EHCLIB_PKG_oldlocale_VERSION			:= 1.0.0.0
+EHCLIB_PKG_oldtime_VERSION				:= 1.0.0.0
+EHCLIB_PKG_unix_VERSION					:= 1.0.0.0
+EHCLIB_PKG_directory_VERSION			:= 1.0.0.0
+EHCLIB_PKG_random_VERSION				:= 1.0.0.0
+
+EHC_PACKAGES_ASSUMED_VERSIONED			:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(pkg)-$(EHCLIB_PKG_$(subst -,,$(pkg))_VERSION))
+
+# extract unversioned pkg name
+# $1: versioned pkg name
+FUN_PKG_UNVERSIONED						:= $(patsubst -%,,$(1))
+
+###########################################################################################
 # which library files to get from which GHC packages
 ###########################################################################################
 
@@ -6,7 +28,7 @@
 EHCLIB_SYNC_ALL_PKG						:= $(EHC_PACKAGES_ASSUMED)
 
 # for each package a list of modules
-EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,Typeable dirUtils consUtils)
+EHCLIB_SYNC_ALL_PKG_base_ASIS			:= $(patsubst %,include/%.h,consUtils)
 EHCLIB_SYNC_ALL_PKG_base_C				:= $(patsubst %,cbits/%.c,)
 EHCLIB_SYNC_ALL_PKG_base				:= $(patsubst %,Data/%.hs,Bool Eq Ord Function Ratio String Complex Dynamic) \
 											$(patsubst %,System/%.hs, Console/GetOpt) \
@@ -56,12 +78,13 @@ EHCLIB_ALL_LIBS2						= $(foreach variant,$(EHC_VARIANTS),$(call FUN_EHCLIB_ALL_
 #EHCLIB_HS_MAIN_DRV_HS					= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_EHCLIB_HS_MAIN_DRV_HS,$(pkg)))
 
 # shuffled .hs
-EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.chs)
+EHCLIB_CHS_ALL_SRC_CHS					:= $(wildcard $(EHCLIB_UHCBASE_SRC_PREFIX)*.chs $(EHCLIB_UHCBASE_SRC_PREFIX)[A-Z]*/*.chs) \
+											$(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.chs $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.chs)
 EHCLIB_CHS_ALL_DRV_HS					:= $(patsubst $(EHCLIB_SRC_PREFIX)%.chs,$(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs,$(EHCLIB_CHS_ALL_SRC_CHS))
 
 # .hsc files
 #EHCLIB_HSC_ALL_SRC_HSC					:= $(wildcard $(EHCLIB_BASE_SRC_PREFIX)*.hsc $(EHCLIB_BASE_SRC_PREFIX)[A-Z]*/*.hsc)
-EHCLIB_HSC_ALL_SRC_HSC          := $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
+EHCLIB_HSC_ALL_SRC_HSC          		:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),\
 											$(foreach suff,hsc,\
 											 $(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/*.$(suff) \
 											            $(EHCLIB_SRC_PREFIX)$(pkg)/[A-Z]*/*.$(suff) \
@@ -90,18 +113,20 @@ EHCLIB_C_ALL_DRV_C						:= $(patsubst $(EHCLIB_SRC_PREFIX)%,$(EHCLIB_BLD_VARIANT
 
 # as C .h include file, as is in svn repo
 EHCLIB_ASIS_ALL_SRC_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(wildcard $(EHCLIB_SRC_PREFIX)$(pkg)/include/*.h))
+EHCLIB_ASIS_ALL_SRC_uhcbase_ASIS		:= $(wildcard $(EHCLIB_SRC_PREFIX)uhcbase/include/*.h)
 EHCLIB_ASIS_ALL_SRC_base_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)base/include/*.h)
 EHCLIB_ASIS_ALL_SRC_array_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)array/include/*.h)
-EHCLIB_ASIS_ALL_SRC_oldtime_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)old-time/include/*.h)
+EHCLIB_ASIS_ALL_SRC_oldtime_ASIS		:= $(wildcard $(EHCLIB_SRC_PREFIX)old-time/include/*.h)
 EHCLIB_ASIS_ALL_SRC_unix_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)unix/include/*.h)
-EHCLIB_ASIS_ALL_SRC_directory_ASIS			:= $(wildcard $(EHCLIB_SRC_PREFIX)directory/include/*.h)
+EHCLIB_ASIS_ALL_SRC_directory_ASIS		:= $(wildcard $(EHCLIB_SRC_PREFIX)directory/include/*.h)
 EHCLIB_ASIS_ALL_DRV_ASIS				:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(patsubst $(EHCLIB_SRC_PREFIX)$(pkg)/%.h,$(call FUN_INSTALL_PKG_PREFIX,$(pkg))%.h,$(EHCLIB_ASIS_ALL_SRC_ASIS)))
 
+EHCLIB_ASIS_ALL_DRV_uhcbase_ASIS		:= $(patsubst $(EHCLIB_SRC_PREFIX)uhcbase/%.h,$(call FUN_INSTALL_PKG_PREFIX,uhcbase)%.h,$(EHCLIB_ASIS_ALL_SRC_uhcbase_ASIS))
 EHCLIB_ASIS_ALL_DRV_base_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)base/%.h,$(call FUN_INSTALL_PKG_PREFIX,base)%.h,$(EHCLIB_ASIS_ALL_SRC_base_ASIS))
 EHCLIB_ASIS_ALL_DRV_array_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)array/%.h,$(call FUN_INSTALL_PKG_PREFIX,array)%.h,$(EHCLIB_ASIS_ALL_SRC_array_ASIS))
-EHCLIB_ASIS_ALL_DRV_oldtime_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)old-time/%.h,$(call FUN_INSTALL_PKG_PREFIX,old-time)%.h,$(EHCLIB_ASIS_ALL_SRC_oldtime_ASIS))
+EHCLIB_ASIS_ALL_DRV_oldtime_ASIS		:= $(patsubst $(EHCLIB_SRC_PREFIX)old-time/%.h,$(call FUN_INSTALL_PKG_PREFIX,old-time)%.h,$(EHCLIB_ASIS_ALL_SRC_oldtime_ASIS))
 EHCLIB_ASIS_ALL_DRV_unix_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)unix/%.h,$(call FUN_INSTALL_PKG_PREFIX,unix)%.h,$(EHCLIB_ASIS_ALL_SRC_unix_ASIS))
-EHCLIB_ASIS_ALL_DRV_directory_ASIS			:= $(patsubst $(EHCLIB_SRC_PREFIX)directory/%.h,$(call FUN_INSTALL_PKG_PREFIX,directory)%.h,$(EHCLIB_ASIS_ALL_SRC_directory_ASIS))
+EHCLIB_ASIS_ALL_DRV_directory_ASIS		:= $(patsubst $(EHCLIB_SRC_PREFIX)directory/%.h,$(call FUN_INSTALL_PKG_PREFIX,directory)%.h,$(EHCLIB_ASIS_ALL_SRC_directory_ASIS))
 
 # as haskell, from frozen sync
 EHCLIB_FROZEN_ALL_DRV_HS				:= $(foreach pkg,$(EHCLIB_SYNC_ALL_PKG),$(addprefix $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$(pkg)/,$(EHCLIB_SYNC_ALL_PKG_$(pkg))))
@@ -261,6 +286,11 @@ $(EHCLIB_HS_ALL_DRV_HS) $(EHCLIB_C_ALL_DRV_C): $(EHCLIB_BLD_VARIANT_ASPECTS_PREF
 	touch $@
 
 # plainly copy .h files to install directly
+$(EHCLIB_ASIS_ALL_DRV_uhcbase_ASIS): $(call FUN_INSTALL_PKG_PREFIX,uhcbase)%.h : $(EHCLIB_SRC_PREFIX)uhcbase/%.h
+	mkdir -p $(@D)
+	cp $< $@
+	touch $@
+
 $(EHCLIB_ASIS_ALL_DRV_base_ASIS): $(call FUN_INSTALL_PKG_PREFIX,base)%.h : $(EHCLIB_SRC_PREFIX)base/%.h
 	mkdir -p $(@D)
 	cp $< $@
@@ -326,10 +356,9 @@ $(EHCLIB_HSC_ALL_DRV_HS): $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)%.hs: $(EHCLIB_SRC
 	        $(foreach pkg,$(EHC_PACKAGES_ASSUMED),-I$(call FUN_MK_PKG_INC_DIR,$(call FUN_INSTALL_PKG_PREFIX,$(pkg)))) \
 		  -o $(@:.hs=_hsc_make) \
 		  $(@:.hs=_hsc_make.c) \
-	&& \
-	$(@:.hs=_hsc_make) > $@ \
-	&& \
-	touch $@
+	&& $(@:.hs=_hsc_make) > $@ \
+	&& rm -f $(@:.hs=_hsc_make.c) \
+	&& touch $@
 
 ###########################################################################################
 # ehclib sync with GHC libraries; needs to be done only when set of library module changes

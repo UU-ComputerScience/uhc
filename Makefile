@@ -381,7 +381,8 @@ release-prepare:
 FUN_PREFIX2DIR			= $(patsubst %/,%,$(1))
 
 tst:
-	@echo $(EHCLIB_ALL_LIBS2)
+	@echo $(EHC_PACKAGES_ASSUMED_VERSIONED)
+	@echo $(foreach pkg,$(EHC_PACKAGES_ASSUMED_VERSIONED),$(call FUN_PKG_UNVERSIONED,${pkg}))
 
 tstv:
 	$(MAKE) EHC_VARIANT=100 tst
