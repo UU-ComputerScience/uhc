@@ -1,0 +1,201 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Introduce weird constructs in TyCore.
+%%%
+%%% These constructs would not be created by Haskell, but might be the result of
+%%% transformations.
+%%%
+%%% All are valid TyCore expressions.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs module {%{EH}TyCore.Trf.IntroduceWeirdConstructs}
+%%]
+
+%%[(8 tauphi) hs import({%{EH}TauPhi.Common})
+%%]
+ 
+%%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
+%%]
+
+%%[(8 codegen) hs import(Data.Maybe)
+%%]
+
+%%[(8 codegen) hs import({%{EH}TyCore})
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Wrapping
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
+WRAPPER AGItf
+%%]
+
+%%[(8 codegen)
+PRAGMA nocycle
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell itf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen).tcmodTrfIntroduceWeirdConstructs hs
+cmodTrfIntroduceWeirdConstructs :: Module -> Module
+cmodTrfIntroduceWeirdConstructs tcmod
+  =  let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
+     in   cTrf_Syn_AGItf t
+%%]
+
+%%[(8 codegen)
+ATTR AGItf [ | | cTrf : Module ]
+ATTR AllCodeNT
+  [
+    atTopLevel : {Bool}
+  |
+  |
+    cTrf : SELF
+  ]
+
+SEM AGItf
+  | AGItf       lhs         .   cTrf        =   @module.cTrf
+                module       .   atTopLevel  =   True
+
+SEM ValBindL
+  | Cons
+                lhs         .   cTrf        =   if @lhs.atTopLevel
+                                                then dummy ++ @cTrf
+                                                else @cTrf
+                loc         .   atTopLevel  =   False
+
+{
+dummy :: [ValBind]
+dummy =
+  [ ValBind_Val
+      (eseq [bind "three" int])
+      Nothing
+      0
+      (eseq [val $ Expr_Int 3 int])
+  , ValBind_Val
+      (eseq [ bind "id" (seqInt `Expr_Arrow` seqInt)
+            , bind "const" (eseq [val int, val char] `Expr_Arrow` seqInt)
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "x" int]) (single $ var "x")
+            , val $ Expr_Lam (eseq [bind "x" int, bind "y" char]) (single $ var "x")
+            ])
+  , ValBind_Val
+      (eseq [ bind "dub" (seqInt `Expr_Arrow` eseq [val int, val int])
+            ])
+      Nothing
+      0
+      (eseq [ val $ Expr_Lam (eseq [bind "x" int]) (eseq [val $ var "x", val $ var "x"])
+            ])
+  , ValBind_Val
+      (eseq [ bind "x" int, bind "y" int
+            ])
+      Nothing
+      0
+      (var "dub" `Expr_App` (single $ Expr_Int 3 int))
+
+  -- , ValBind_Val
+  --     (eseq [ bind "foo1" (seqInt `Expr_Arrow` eseq [val char, val char] `Expr_Arrow` seqInt)
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [val (Expr_Lam
+  --                   (eseq [bind "x" int])
+  --                   (Expr_Lam
+  --                     (eseq [bind "c" char, bind "d" char])
+  --                     (single $ var "x")))
+  --           ])
+  -- , ValBind_Val
+  --     (eseq [ bind "foo2" (seqInt `Expr_Arrow` eseq [val char, val char] `Expr_Arrow` seqInt `Expr_Arrow` seqInt)
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [val (Expr_Lam
+  --                   (eseq [bind "x" int])
+  --                   (Expr_Let
+  --                      ValBindCateg_Plain
+  --                      [ ValBind_Val
+  --                          (eseq [bind "y" int])
+  --                          Nothing
+  --                          0
+  --                          (eseq [val $ Expr_Int 3 int])
+  --                      ]
+  --                      (Expr_Lam
+  --                        (eseq [bind "c" char, bind "d" char])
+  --                        (Expr_Lam (eseq [bind "y" int]) (single $ var "x")))))
+  --           ])
+  -- , ValBind_Val
+  --     (eseq [ bind "foo3" (seqInt `Expr_Arrow` seqInt)
+  --           , bind "foo4" (seqInt `Expr_Arrow` seqChar `Expr_Arrow` seqInt)
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [ val $ Expr_Lam (eseq [bind "x" int]) (single $ var "x")
+  --           , val $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
+  --           ])
+  -- , ValBind_Val
+  --     (eseq [ bind "foo5" $ Expr_Lazy (eseq [val $ strict int] `Expr_Arrow` seqChar `Expr_Arrow` seqInt)
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [ val $ Expr_Delay $ Expr_Lam (eseq [bind "x" int]) (Expr_Lam (eseq [bind "y" char]) (single $ var "x"))
+  --           ])
+  -- , ValBind_Val
+  --     (eseq [ bind "foo6" $ Expr_Lazy (eseq [val int, val char]) `Expr_Arrow` seqInt
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [val (Expr_Lam
+  --                   (eseq [bind "x" (Expr_Lazy (eseq [val int, val char]))])
+  --                   (Expr_Let
+  --                      ValBindCateg_Plain
+  --                      [ ValBind_Val
+  --                          (eseq [bind "y" int, bind "z" char])
+  --                          Nothing
+  --                          0
+  --                          (Expr_Force $ var "x")
+  --                      ]
+  --                      (single $ var "y")))
+  --           ])
+  -- , ValBind_Val
+  --     (eseq [ bind "foo7" $ Expr_Lazy (eseq [val int, val char]) `Expr_Arrow` seqInt
+  --           ])
+  --     Nothing
+  --     0
+  --     (eseq [val (Expr_Lam
+  --                   (eseq [bind "x" (Expr_Lazy (eseq [val int, val char]))])
+  --                   (Expr_Let
+  --                      ValBindCateg_Plain
+  --                      [ ValBind_Val
+  --                          (eseq [bind "y" int, bind "z" char])
+  --                          Nothing
+  --                          0
+  --                          (Expr_Force $ var "x")
+  --                      ]
+  --                      (single $ var "y")))
+  --           ])
+  ]
+  where
+    int  = var "Int"
+    char = var "Char"
+    seqInt  = eseq [val int]
+    seqChar = eseq [val char]
+    strict  = Expr_Ann (ExprAnn_Strictness Strict)
+
+    single e   = eseq [val e]
+    val e      = ExprSeq1_L0Val e Nothing
+    var nm     = Expr_Var $ mkHNm nm
+    eseq es    = Expr_Seq es
+    bind nm ty = ExprSeq1_L0Bind (mkHNm nm) Nothing ty
+}
+%%]
+

@@ -7,7 +7,7 @@
 %%% Construct a Type Environment, to be used in other AG transformations.
 %%% 
 %%% Note that if the transformation changes types (or introduces new bindings), these will
-%%% not show up in this type environment until after the transformtion complets.
+%%% not show up in this type environment until after the transformation completes.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) ag import({TyCore/AbsSyn})
@@ -20,9 +20,9 @@ ATTR AllExpr
   | copy : SELF
   ]
 ATTR AllExpr
-  [ tyEnv       : {Map.Map HsName Ty}
+  [ tyEnv     : {Map.Map HsName Ty}
   |
-  | newTyEnv    USE {`Map.union`} {Map.empty} : {Map.Map HsName Ty}
+  | newTyEnv  USE {`Map.union`} {Map.empty} : {Map.Map HsName Ty}
   ]
 
 {
@@ -52,10 +52,6 @@ SEM Expr
                                                 else @lhs.tyEnv
                 body        .   tyEnv       =   @extTyEnv
                 loc         .   extTyEnv    =   @vbinds.newTyEnv `Map.union` @lhs.tyEnv
-
-SEM ValBind
-  | Val
-                lhs         .   newTyEnv    =   Map.singleton @nm @l1.copy
 
 
 -- Lambda environment stitching

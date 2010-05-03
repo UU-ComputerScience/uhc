@@ -109,6 +109,7 @@ SEM ValBind
                                                   (_)    -> Ignored
                             .   isWrapper   =   @workerNm `Map.member` @lhs.tyEnv
                             .   workerNm    =   hsnFromString $ show @nm ++ "_worker"
+                            .   nm          =   hsnFromString "nothing"
 
 SEM Expr
   | Let
@@ -122,7 +123,7 @@ SEM Expr
 -- Wrapper
 SEM ValBind
   | Val
-                lhs         .   wrapper     =   ValBind_Val @nm @bindMeta.cTrf @mlev @l1.cTrf @wrapperBody
+                lhs         .   wrapper     =   @copy -- ValBind_Val @nm @bindMeta.cTrf @mlev @bind.cTrf @wrapperBody -- @l1.cTrf @wrapperBody
                 loc         .   wrapperBody =   if @workWrap == Introduced
                                                 then newWrapperBody @workerNm @l0.lamArgs
                                                 else @l0.wrapper
