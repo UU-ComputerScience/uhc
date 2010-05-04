@@ -35,6 +35,13 @@
 
 
 %%[8
+
+#ifdef __UHC_TARGET_LLVM__
+#define USE_EHC_MM				1
+int gb_Opt_TraceSteps = False ;
+#endif
+
+
 #ifdef __UHC_TARGET_BC__
 // For now, switch off Boehm GC, turn on own GC
 #undef USE_BOEHM_GC

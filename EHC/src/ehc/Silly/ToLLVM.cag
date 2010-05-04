@@ -115,6 +115,13 @@ SEM SilModule
                                                      -- ehc gc
                                                      : gcEhcAllocFuncDecl @lhs.intType
                                                      : gcEhcAllocResFuncDecl @lhs.intType
+                                                     : gcEhcGCFuncDecl @lhs.intType
+                                                     : gcEhcRegRootFuncDecl @lhs.intType
+                                                     : gcEhcDeallocResFuncDecl @lhs.intType
+
+                                                     -- runtime
+                                                     : rtsInitFuncDecl
+                                                     : rtsExitFuncDecl
 
                                                      : @functions.externFuncs 
                                                      )
@@ -166,10 +173,12 @@ SEM SilModule
                                                                              --                                         , %struct.Descrb { i32 4, i8 1 }]
                                         
                 loc.namedTys = [NamedTy "FDESCR" (Struct [i32, i8])]
-                loc.globals  = GlobalVar "RP" (@lhs.globalType) : mkVarList GlobalVar @variables @lhs.globalType                                                                          
+                loc.globals  = GlobalVar "RP" (@lhs.globalType) 
+                                : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
-                                 [ LLVMStatement_Assignment (LocalVar "fdescr.1" (pLift (TyVar "FDESCR")))
+                                 [ LLVMStatement_Call rtsInitFuncDecl StdCall []
+                                 , LLVMStatement_Assignment (LocalVar "fdescr.1" (pLift (TyVar "FDESCR")))
                                      (LLVMExpression_GetElemPtr (GlobalVar "FDESCR" (pLift (Array (length @constants) (TyVar "FDESCR")))) [0, 0] )
                                  -- , LLVMStatement_Call gcssInitFuncDecl StdCall [ Constant  (length @constants) i32
                                  --                                               , LocalVar "fdescr.1" (pLift (TyVar "FDESCR")) ]
@@ -192,6 +201,7 @@ SEM SilModule
                                  , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
 %%]]                                 
                                  -- , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
+                                 , LLVMStatement_Call rtsExitFuncDecl StdCall []
                                  , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
                                  
@@ -206,6 +216,7 @@ SEM Function
                                    @body.llvmCode ++  
                                    -- [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
                                    -- [LLVMStatement_Call heapwalkerFuncDecl StdCall []] ++
+                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -787,18 +798,38 @@ gcssAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcssAllocFuncDecl intType = 
   LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
 
--- static inline Ptr mm_itf_alloc( size_t sz, Word gcInfo )
 
 gcEhcAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcEhcAllocFuncDecl intType = 
-  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType), (LocalVar "gcInfo" intType)] Nothing
-
--- static inline Ptr mm_itf_allocResident( size_t sz )
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_alloc_ext" (pLift intType) FixedArgs [(LocalVar "sz" intType), (LocalVar "gcInfo" intType)] Nothing
 
 gcEhcAllocResFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcEhcAllocResFuncDecl intType = 
-  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_allocResident" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_allocResident_ext" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
 
+gcEhcDeallocResFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcDeallocResFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_deallocResident_ext" Void FixedArgs [(LocalVar "p" (pLift intType))] Nothing
+
+gcEhcRegRootFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcRegRootFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_registerGCRoot_ext" Void FixedArgs [(LocalVar "p" (pLift intType))] Nothing
+
+gcEhcRegRootsFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcRegRootsFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_registerGCRoots_ext" Void FixedArgs [(LocalVar "p" (pLift intType)), (LocalVar "n" intType)] Nothing
+
+gcEhcGCFuncDecl :: LLVMType -> LLVMFunctionDecl
+gcEhcGCFuncDecl intType = 
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_gc_ext" intType FixedArgs [] Nothing
+
+rtsInitFuncDecl :: LLVMFunctionDecl
+rtsInitFuncDecl = 
+  LLVMFunctionDecl_LLVMFunctionDecl "main_llvm_Init1" Void FixedArgs [] Nothing
+
+rtsExitFuncDecl :: LLVMFunctionDecl
+rtsExitFuncDecl = 
+  LLVMFunctionDecl_LLVMFunctionDecl "main_llvm_Exit" Void FixedArgs [] Nothing
 
 }
 %%]

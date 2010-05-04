@@ -147,6 +147,37 @@ Word heapalloc(int n)
 
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Main entry points for LLVM init,run,exit
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+
+#ifdef __UHC_TARGET_LLVM__
+
+void main_llvm_Init1()
+{
+
+#if USE_EHC_MM
+    mm_init();
+#endif
+
+    return 0;
+}
+
+
+void main_llvm_Exit()
+{
+
+#if USE_EHC_MM
+  	mm_exit();
+#endif
+    return 0;
+}
+
+#endif
+%%]
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Main entry points for Silly init,run,exit
