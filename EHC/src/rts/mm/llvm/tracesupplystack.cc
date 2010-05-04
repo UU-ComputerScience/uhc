@@ -3,6 +3,27 @@
 %%]
 
 
+
+%%[8
+
+struct FrameMap
+{
+    int32_t NumRoots;               //< Number of roots in stack frame.
+    int32_t NumMeta;                //< Number of metadata entries. May be < NumRoots.
+    const void *Meta[0];            //< Metadata for each root.
+};
+
+struct StackEntry
+{
+    struct StackEntry *Next;        //< Link to next stack entry (the caller's).
+    const struct FrameMap *Map;     //< Pointer to constant FrameMap.
+    void *Roots[0];                 //< Stack roots (in-place array).
+};
+
+struct StackEntry *llvm_gc_root_chain;
+
+%%]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -20,19 +41,56 @@ void mm_traceSupplyStack_llvm_Init( MM_TraceSupply* traceSupply, MM_Malloc* memm
 	MM_TraceSupply_Stack_Data* stackData = memmgt->malloc( sizeof(MM_TraceSupply_Stack_Data) ) ;
 	stackData->trace = mutator->trace ;
 	traceSupply->data = (MM_TraceSupply_Data_Priv*)stackData ;
+
 }
 
 void mm_traceSupplyStack_llvm_Reset( MM_TraceSupply* traceSupply, Word gcStackInfo ) 
 {
     printf("mm_traceSupplyStack_llvm_Reset\n");
+
 	MM_TraceSupply_Stack_Data* stackData = (MM_TraceSupply_Stack_Data*)traceSupply->data ;
 	stackData->gcStackInfo = (GCStackInfo*)gcStackInfo ;
+
 }
 
 void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 {
 
     printf("mm_traceSupplyStack_llvm_Run\n");
+
+    int32_t    i, num_roots;
+    Word       *root;
+    Word       con;
+    struct StackEntry   *entry = llvm_gc_root_chain;
+
+    printf("|*****************************************************************\n");
+    printf("|** Running a stack walk \n");
+    printf("| [0x%08x] llvm_gc_root_chain\n", (unsigned int)entry);
+    
+    while (entry)
+    {
+        num_roots = entry->Map->NumRoots;
+        printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
+        for (i = 0; i < num_roots; i++)
+        {
+            root = (Word *) entry->Roots[i];
+   
+            if (root == NULL) {
+                printf("| ... [%d] 0x%08x\n", i, (unsigned int)root );
+
+            } else {
+                printf("| ... [%d] 0x%08x, con: %lld \n", i, (unsigned int)root, *root );
+            }
+
+        }
+        printf("\n");
+
+
+        entry = entry->Next;
+    }
+
+    printf("|*****************************************************************\n");
+
 
     return;
     //exit(1);

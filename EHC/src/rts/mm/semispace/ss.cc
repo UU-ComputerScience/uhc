@@ -25,6 +25,10 @@
 
 %%[8
 
+// dirty hack:
+int gb_Opt_TraceSteps = False ;
+
+
 void mm_plan_SS_Init( MM_Plan* plan ) {
 	MM_Plan_SS_Data* plss = mm_malloc_LOF.malloc( sizeof(MM_Plan_SS_Data) ) ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init plan=%x plss=%x\n",plan,plss);}) ;
