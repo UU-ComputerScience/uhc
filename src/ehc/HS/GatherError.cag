@@ -111,6 +111,10 @@ SEM Type
     | InfixApplication
         loc         .   errSq       =   Seq.unions [Seq.fromList @ctxtFormErrs, @leftType.errSq, @operator.errSq, @rightType.errSq]
 %%]]
+%%[[5
+    | InfixApplicationChainTop 
+        loc         .   errSq       =   Seq.unions [Seq.fromList @errRearr, @type.errSq]
+%%]]
 %%]
 
 %%[5
@@ -121,7 +125,7 @@ SEM Declaration
         loc         .   locErrs     =   Seq.fromList @errNewtype
     | Data Newtype
         loc         .   errSq       =   Seq.unions [ @locErrs
-                                                   , @simpletype.errSq
+                                                   , @typelefthandside.errSq
                                                    , Seq.fromList @errDupIntro
 %%[[8
                                                    , Seq.fromList @errIdUseVal
@@ -204,7 +208,7 @@ SEM Declaration
 %%[11
 SEM Declaration
     | Type
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @simpletype.errSq, @type.errSq ]
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @typelefthandside.errSq, @type.errSq ]
 %%]
 
 %%[94

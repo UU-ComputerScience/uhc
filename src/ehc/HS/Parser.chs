@@ -293,7 +293,7 @@ pBodyImport
 pImportExport :: (Range -> Name -> ie,Range -> Name -> MaybeNames -> ie,Range -> Name -> ie) -> HSParser ie
 pImportExport (sem_Var,sem_tOrC,sem_tOrC_complete)
   =   mkRngNm sem_Var <$> qvar
-  <|> oqtycon
+  <|> qtycon
       <**> (   pParens
                  (   (\c n -> mkRngNm sem_tOrC n (Just (tokMkQNames c))) <$> qcnames
                  <|> mkRngNm sem_tOrC_complete <$ pDOTDOT
@@ -515,7 +515,7 @@ pDeclarationData
 %%[[9
             <*> pContextItemsPrefixOpt
 %%]]
-            <*> pSimpleType <*> pC
+            <*> pTypeLeftHandSide <*> pC
 %%[[95
             <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
@@ -631,7 +631,7 @@ pDeclarationInstance
 %%[9
 pDeclarationDefault :: HSParser Declaration
 pDeclarationDefault
-  = (Declaration_Default . mkRange1) <$> pDEFAULT <*> pMb (tokMkQName <$> qtycon)
+  = (Declaration_Default . mkRange1) <$> pDEFAULT <*> pMb (tokMkQName <$> qtyconid)
     <*> (   (:[]) <$> pTypeBaseCon
         <|> pParens (pListSep pCOMMA pTypeBaseCon)
         )
@@ -644,7 +644,7 @@ pDeclarationDefault
 %%[11
 pDeclarationType :: HSParser Declaration
 pDeclarationType
-  =   (Declaration_Type . mkRange1) <$> pTYPE <*> pSimpleType <* pEQUAL <*> pType
+  =   (Declaration_Type . mkRange1) <$> pTYPE <*> pTypeLeftHandSide <* pEQUAL <*> pType
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -692,7 +692,7 @@ pKindPrefix
 %%[1
 pTypeBaseCon :: HSParser Type
 pTypeBaseCon
-  =   mkRngNm Type_Constructor <$> gtycon_no_delims_commas -- gtycon_no_delims -- qtycon -- 
+  =   mkRngNm Type_Constructor <$> gtycon_no_delims_commas
 
 pTypeBase :: HSParser Type
 pTypeBase
@@ -701,7 +701,7 @@ pTypeBase
   <|> (Type_Wildcard . mkRange1) <$> pTDOT
 %%]]
 %%[[3
-  <|> mkRngNm Type_Variable <$> tyvar
+  <|> mkRngNm Type_Variable <$> var_no_ty
   <|> mkRngNm Type_NamedWildcard <$ pPERCENT <*> tyvar
 %%]]
 %%[[5
@@ -775,14 +775,23 @@ pType =  pChainr (mk1Arrow <$ pRARROW) pTypeBase
 %%[4.pType -1.pType
 pType ::  HSParser Type
 pType
-  =   pTypeApp
-      <**> (   pSucceed id
-           <|> (\(op,rng) r l -> Type_InfixApplication rng l op r) <$> pTypeOp <*> pType
-           )
+  = mkT <$> pT
+  where pT :: HSParser (Type,Int)
+        pT = pTypeApp
+			  <**> (   pSucceed unit
+				   <|> (\(op,rng) (r,cnt) l -> (Type_InfixApplication rng l op r,cnt+1)) <$> pTypeOp <*> pT
+				   )
 %%[[9
-  <|> (\c -> Type_Qualified emptyRange [c]) <$> pContextItemImpl <* pRARROW <*> pType
+			 <|> (\c t -> unit $ Type_Qualified emptyRange [c] t) <$> pContextItemImpl <* pRARROW <*> pType
 %%]]
-  <|> pTypeQuantPrefix <*> pType
+			 <|> unit <$> (pTypeQuantPrefix <*> pType)
+        unit e    = (e,0)
+%%[[4
+        mkT (e,_) =  e
+%%][5
+        mkT (e,0) =  e
+        mkT (e,_) =  Type_InfixApplicationChainTop emptyRange e
+%%]]
 %%]
 
 %%[4.pTypeQuantPrefix
@@ -805,6 +814,9 @@ pTypeOpPrefix
 pTypeOp :: HSParser (Type,Range)
 pTypeOp
   =   pTypeOpBase
+%%[[5
+  <|> mkRngNm' Type_Variable    <$> varop_no_ty
+%%]]
 %%[[9
   <|> mkRngNm' Type_Constructor <$> pDARROW
 %%]]
@@ -813,7 +825,9 @@ pTypeOp
 %%[1
 pTypeOpBase :: HSParser (Type,Range)
 pTypeOpBase
-  = mkRngNm' Type_Constructor <$> pRARROW
+  = mkRngNm' Type_Constructor
+    <$> (   gtycon_for_insection
+        )
 %%]
 
 %%[1.pTypeApp
@@ -840,6 +854,23 @@ pTyVarBinds =  pList1 pTyVarBind
 pSimpleType :: HSParser SimpleType
 pSimpleType
   = mkRngNm SimpleType_SimpleType <$> gtycon <*> (tokMkQNames <$> pList tyvar)
+
+pTypeLeftHandSide :: HSParser TypeLeftHandSide
+pTypeLeftHandSide
+  =   pLhs
+  <|> (\c -> mkRngNm TypeLeftHandSide_Function c []) <$> gtycon' tyconsym
+  <?> "pTypeLeftHandSide"
+  where pLhs     :: HSParser TypeLeftHandSide
+        pLhs     =   mkRngNm TypeLeftHandSide_Function <$> gtycon' tyconsym <*> pLhsTail
+                 <|> pParens'
+                       (   (\l r t -> TypeLeftHandSide_Parenthesized r l t)
+                           <$> pLhs
+                       )
+                     <*> pLhsTail
+                 <|> (\l o r -> TypeLeftHandSide_Infix (mkRange1 o) l (tokMkQName o) r)
+                     <$> pTypePatternBase <*> tyconop <*> pTypePatternBase
+        pLhsTail ::  HSParser [TypePattern]
+        pLhsTail =   pList1 pTypePatternBase
 %%]
 
 %%[5
@@ -1233,8 +1264,8 @@ pExpressionLayout
 
 %%[1
 pOp, pOpm :: HSParser (Expression,Range)
-pOp  = mkRngNm' Expression_Variable <$> qvarop  <|> mkRngNm' Expression_Constructor <$> qconop
-pOpm = mkRngNm' Expression_Variable <$> qvaropm <|> mkRngNm' Expression_Constructor <$> qconop
+pOp  = mkRngNm' Expression_Variable <$> qvarop          <|> mkRngNm' Expression_Constructor <$> qconop
+pOpm = mkRngNm' Expression_Variable <$> qvarop_no_minus <|> mkRngNm' Expression_Constructor <$> qconop
 %%]
 
 %%[1
@@ -1554,7 +1585,7 @@ pPatternBaseInParens
                 <$>  pList1 (pComma *> pPattern)
 %%]]
       )     )
-  <|> (\v _ -> mkRngNm Pattern_Variable v) <$> qvarsym_forpar
+  <|> (\v _ -> mkRngNm Pattern_Variable v) <$> qvarsym_for_inparens
 %%[[1
   <|> pSucceed (\r -> Pattern_Constructor r (hsnProd 0) [])
 %%][7
@@ -1686,6 +1717,17 @@ pSelector
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Pattern for type
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+pTypePatternBase :: HSParser TypePattern
+pTypePatternBase
+  =   mkRngNm TypePattern_Variable <$> var_no_ty
+  <?> "pTypePatternBase"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -1758,7 +1800,7 @@ depreclist
 deprec_var :: HSParser Token
 deprec_var
   =   var
-  <|> tycon          
+  <|> tyconid          
   <?> "deprec_var"
 
 gcon    :: HSParser Token   -- Data constructor namespace
@@ -1774,27 +1816,6 @@ sysdcon
   <|> tokConcat <$> pOBRACK <*> pCBRACK
   <?> "sysdcon"
 
-var     :: HSParser Token
-var
-  =   varid            
-  <|> pParens varsym 
-  <?> "var"
-
-qvar    :: HSParser Token
-qvar
-  =   qvarid      
-  <|> pParens qvarsym_forpar
-  <?> "qvar"
-%%]
-
-%%[1
-qvarsym_forpar :: HSParser Token
-qvarsym_forpar
-  =   varsym
-%%[[20
-  <|> qvarsym1
-%%]]
-  <?> "qvarsym_forpar"
 %%]
 
 {-
@@ -1809,30 +1830,8 @@ qcon
   =   qconid
   <|> pParens qconsym
   <?> "qcon"
-
-varop_no_minus   :: HSParser Token
-varop_no_minus
-  =   varsym_no_minus 
-  <|> pBACKQUOTE *> varid <* pBACKQUOTE
-  <?> "varop_no_minus"
        
-varop   :: HSParser Token
-varop
-  =   varop_no_minus
-  <|> pMINUS       
-  <?> "varop"
-       
-qvarop :: HSParser Token
-qvarop
-  =   qvarsym    
-  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
-  <?> "qvarop"
 
-qvaropm :: HSParser Token
-qvaropm
-  =   qvarsym_no_minus 
-  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
-  <?> "qvaropm"
 
 conop :: HSParser Token
 conop
@@ -1847,62 +1846,12 @@ qconop
   <?> "qconop"
 %%]
 
-%%[1
------------------------------------------------------------------------------
--- Variables 
 
-qvarsym :: HSParser Token 
-qvarsym
-  =   varsym
-%%[[20
-  <|> qvarsym1
-%%]]
-  <?> "qvarsym"
-%%]
-
-%%[1
-qvarsym_no_minus :: HSParser Token
-qvarsym_no_minus
-  =   varsym_no_minus
-%%[[20
-  <|> qvarsym1
-%%]]
-  <?> "qvarsym_no_minus"
-%%]
-
-%%[20
-qvarsym1 :: HSParser Token
-qvarsym1
-  =   pQVARSYM 
-  <?> "qvarsym1"
-%%]
-
-%%[1
-varsym :: HSParser Token 
-varsym
-  =   varsym_no_minus  
-  <|> pMINUS       
-  <?> "varsym"
-
-
-varsym_no_minus :: HSParser Token  -- varsym not including '-'
-varsym_no_minus
-  =   pVARSYM
-  <|> special_sym
-  <?> "varsym_no_minus"
-
--- See comments with special_id
-special_sym :: HSParser Token
-special_sym 
-  =   pBANG    
-  <|> pDOT     
-  <|> pSTAR
-  <|> pPERCENT
-  <?> "special_sym"
 
 -----------------------------------------------------------------------------
 -- Data constructors
 
+%%[1
 qconid :: HSParser Token    -- Qualified or unqualifiedb
 qconid
   =   conid
@@ -1967,49 +1916,16 @@ qop
   <|> qconop
   <?> "qop"
 
-qopm    :: HSParser  Token    -- used in sections
-qopm
-  =   qvaropm
+%%]
+qop_no_minus    :: HSParser  Token    -- used in sections
+qop_no_minus
+  =   qvarop_no_minus
   <|> qconop
-  <?> "qopm"
+  <?> "qop_no_minus"
+
 
 -----------------------------------------------------------------------------
 -- VarIds
-
-qvarid :: HSParser Token
-qvarid
-  =   varid
-%%[[20
-  <|> pQVARID
-%%]]
-  <?> "qvarid"
-%%]
-
-%%[8
-safety :: HSParser Token
-safety
-  =   pSAFE 
-%%[[94       
-  <|> pUNSAFE      
-  <|> pTHREADSAFE
-%%]] 
-  <?> "safety"
-
-callconv :: HSParser Token
-callconv
-  =   snd <$> pFFIWay
-  <?> "callconv"
-%%]
-
-%%[1
-varid :: HSParser Token
-varid
-  =   varid_no_unsafe
-%%[[8
-  <|> safety
-%%]]
-  <?> "varid"
-%%]
 
 %%[18
 %%]
@@ -2018,47 +1934,45 @@ varid_unboxed
   =   pVARIDUNBOXED
   <?> "varid_unboxed"
 
-%%[1
-varid_no_unsafe :: HSParser Token
-varid_no_unsafe
-  =   varid_no_foreign
-%%[[8
-  <|> callconv
-%%]]
-  <?> "varid_no_unsafe"
-%%]
-
-%%[1
-varid_no_foreign :: HSParser Token
-varid_no_foreign
-  =   pVARID
-%%[[4
-  <|> pFORALL
-%%]]
-%%[[8
-  <|> special_id_no_callconv
-%%]]
-%%[[18
-  <|> pVARIDUNBOXED
-%%]]
-  <?> "varid_no_foreign"
-%%]
+-----------------------------------------------------------------------------
+-- TyVarIds
 
 %%[1
 tyvar   :: HSParser Token
 tyvar
-  =   pVARID
-%%[[8
-  <|> special_id       
-  <|> safety   
-%%]]
+  =   varid_no_ty
   <?> "tyvar"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Functions, values, variables, i.e. f (op, prefix), + (sym, infix)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8
+-- | special identifier: FFI safety
+safety :: HSParser Token
+safety
+  =   pSAFE 
+%%[[94       
+  <|> pUNSAFE      
+  <|> pTHREADSAFE
+%%]] 
+  <?> "safety"
+%%]
+
+%%[8
+-- | special identifier: FFI calling convention
+callconv :: HSParser Token
+callconv
+  =   snd <$> pFFIWay
+  <?> "callconv"
 %%]
 
 %%[8
 -- These special_ids are treated as keywords in various places, 
 -- but as ordinary ids elsewhere.   'special_id' collects all these
 -- except 'unsafe' and 'forall' whose treatment differs depending on context
+-- | special identifier: some context sensitive meaningful
 special_id_no_callconv :: HSParser Token 
 special_id_no_callconv
   =   pLABEL   
@@ -2072,7 +1986,9 @@ special_id_no_callconv
   <|> pDYNAMIC
 %%]]
   <?> "special_id_no_callconv"
+%%]
 
+%%[8
 special_id :: HSParser Token 
 special_id
   =   special_id_no_callconv
@@ -2081,62 +1997,200 @@ special_id
 %%]
 
 %%[1
-gtycon_no_delims' :: HSParser Token -> HSParser Token   -- A "general" qualified tycon
-gtycon_no_delims' pInParens
-  =   oqtycon
-  <|> pParens pInParens
-  <?> "gtycon_no_delims"
-
-gtycon_no_delims :: HSParser Token   -- A "general" qualified tycon
-gtycon_no_delims
-  =   gtycon_no_delims'
-        (   commas
-        <|> pRARROW
-        )
-  <?> "gtycon_no_delims"
-
-gtycon_no_delims_commas :: HSParser Token   -- A "general" qualified tycon
-gtycon_no_delims_commas
-  =   gtycon_no_delims' pRARROW
-  <?> "gtycon_no_delims_commas"
-
-gtycon :: HSParser Token   -- A "general" qualified tycon
-gtycon
-  =   gtycon_no_delims
-%%[[5
-  <|> tokConcat <$> pOBRACK <*> pCBRACK
+-- | Unqualified value/function, e.g.: f, except type related keywords
+varid_no_ty :: HSParser Token
+varid_no_ty
+  =   pVARID
+%%[[8
+  <|> special_id_no_callconv
+  <|> callconv
+  <|> safety
 %%]]
-%%[[90
-  <|> tokConcat <$> pOPABRACK <*> pCPABRACK
+%%[[18
+  <|> pVARIDUNBOXED
 %%]]
-  <?> "gtycon"
+  <?> "varid_no_ty"
 %%]
 
 %%[1
-tycon   :: HSParser Token   -- Unqualified
-tycon
-  =   pCONID
-%%[[18
-  <|> pCONIDUNBOXED
+-- | Unqualified value/function, e.g.: f
+varid :: HSParser Token
+varid
+  =   varid_no_ty
+%%[[4
+  <|> pFORALL
 %%]]
-  <?> "tycon"
+  <?> "varid"
+%%]
 
-oqtycon :: HSParser Token   -- An "ordinary" qualified tycon
-oqtycon
-  =   qtycon
-  <|> pParens qtyconsym  
-  <?> "oqtycon"
-
-qtycon :: HSParser Token    -- Qualified or unqualified
-qtycon
-  =   tycon
+%%[1
+-- | (Un)qualified value/function, e.g.: X.f
+qvarid :: HSParser Token
+qvarid
+  =   varid
 %%[[20
-  <|> pQCONID
+  <|> pQVARID
 %%]]
-  <?> "qtycon"
+  <?> "qvarid"
+%%]
+
+%%[1
+-- | See comments with special_id
+special_sym :: HSParser Token
+special_sym 
+  =   pBANG    
+  <|> pDOT     
+  <|> pSTAR
+  <|> pPERCENT
+  <?> "special_sym"
+%%]
+
+%%[1
+-- | Unqualified operator, e.g.: +, except -
+varsym_no_minus :: HSParser Token
+varsym_no_minus
+  =   pVARSYM
+  <|> special_sym
+  <?> "varsym_no_minus"
+%%]
+
+%%[1
+-- | Unqualified operator, e.g.: +
+varsym :: HSParser Token 
+varsym
+  =   varsym_no_minus  
+  <|> pMINUS       
+  <?> "varsym"
+%%]
+
+%%[20
+-- | Qualified operator, e.g.: X.+, only base
+qvarsym_base :: HSParser Token
+qvarsym_base
+  =   pQVARSYM 
+  <?> "qvarsym1"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: X.+, except -
+qvarsym_no_minus :: HSParser Token
+qvarsym_no_minus
+  =   varsym_no_minus
+%%[[20
+  <|> qvarsym_base
+%%]]
+  <?> "qvarsym_no_minus"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: X.+, for use inside parens
+qvarsym_for_inparens :: HSParser Token
+qvarsym_for_inparens
+  =   varsym
+%%[[20
+  <|> qvarsym_base
+%%]]
+  <?> "qvarsym_for_inparens"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: X.+
+qvarsym :: HSParser Token 
+qvarsym
+  =   qvarsym_for_inparens
+  <?> "qvarsym"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: +, `f`, except -
+varop_no_minus   :: HSParser Token
+varop_no_minus
+  =   varsym_no_minus 
+  <|> pBACKQUOTE *> varid <* pBACKQUOTE
+  <?> "varop_no_minus"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: +, `f`, except type related keywords
+varop_no_ty   :: HSParser Token
+varop_no_ty
+  =   varsym
+  <|> pBACKQUOTE *> varid_no_ty <* pBACKQUOTE
+  <?> "varop_no_minus"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: +, `f`
+varop   :: HSParser Token
+varop
+  =   varop_no_minus
+  <|> pMINUS       
+  <?> "varop"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: X.+, `X.f`, except -
+qvarop_no_minus :: HSParser Token
+qvarop_no_minus
+  =   qvarsym_no_minus 
+  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+  <?> "qvarop_no_minus"
+%%]
+
+%%[1
+-- | (Un)qualified operator, e.g.: X.+, `X.f`
+qvarop :: HSParser Token
+qvarop
+  =   qvarsym    
+  <|> pBACKQUOTE *> qvarid <* pBACKQUOTE
+  <?> "qvarop"
+%%]
+
+%%[1
+-- | Unqualified value/function, e.g.: f, (+), except type related keywords
+var_no_ty     :: HSParser Token
+var_no_ty
+  =   varid_no_ty            
+  <|> pParens varsym 
+  <?> "var"
+%%]
+
+%%[1
+-- | Unqualified value/function, e.g.: f, (+)
+var     :: HSParser Token
+var
+  =   varid            
+  <|> pParens varsym 
+  <?> "var"
+%%]
+
+%%[1
+-- | (Un)qualified value/function, e.g.: X.f, (X.+)
+qvar    :: HSParser Token
+qvar
+  =   qvarid      
+  <|> pParens qvarsym_for_inparens
+  <?> "qvar"
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Data constructors, i.e. Left (op, prefix), :+: (sym, infix)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Type constructors, i.e. Either (op, prefix), :+: (sym, infix)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[1
+-- | Unqualified type constructor, e.g.: :+:
+tyconsym :: HSParser Token
+tyconsym
+  =   pCONSYM          
+  <?> "tyconsym"
 %%]
 
 %%[1      
+-- | (Un)qualified type constructor, e.g.: X.:+:
 qtyconsym :: HSParser Token
 qtyconsym
   =   tyconsym
@@ -2147,25 +2201,132 @@ qtyconsym
 %%]
 
 %%[1
-tyconsym :: HSParser Token
-tyconsym
-  =   pCONSYM          
-  <?> "tyconsym"
+-- | Unqualified type constructor, e.g.: Either
+tyconid   :: HSParser Token
+tyconid
+  =   pCONID
+%%[[18
+  <|> pCONIDUNBOXED
+%%]]
+  <?> "tyconid"
 %%]
 
-%%[20
-qtyconop :: HSParser Token  -- Qualified or unqualified
-qtyconop
-  =   qtyconsym
-  <|> pBACKQUOTE *> qtycon <* pBACKQUOTE
-  <?> "qtyconop"
+%%[1
+-- | (Un)qualified type constructor, e.g.: X.Either
+qtyconid :: HSParser Token 
+qtyconid
+  =   tyconid
+%%[[20
+  <|> pQCONID
+%%]]
+  <?> "qtyconid"
 %%]
 
 %%[8
+-- | Unqualified infix type operator, e.g.: `Either`, :+:
 tyconop :: HSParser Token   -- Unqualified
 tyconop
   =   tyconsym  
-  <|> pBACKQUOTE *> tycon <* pBACKQUOTE
+  <|> pBACKQUOTE *> tyconid <* pBACKQUOTE
   <?> "tyconop"
 %%]
+
+%%[1
+-- | (Un)qualified infix type operator, e.g.: `X.Either`, X.:+:
+qtyconop :: HSParser Token
+qtyconop
+  =   qtyconsym
+  <|> pBACKQUOTE *> qtyconid <* pBACKQUOTE
+  <?> "qtyconop"
+%%]
+
+%%[1
+-- | (Un)qualified prefix type constructor, e.g.: X.Either, (X.:+:)
+qtycon :: HSParser Token
+qtycon
+  =   qtyconid
+  <|> pParens qtyconsym  
+  <?> "qtycon"
+%%]
+
+%%[1
+-- | General (un)qualified prefix type constructor, no delimiting brackets (e.g. []), to be parameterized with the part inside parenthesis (the general part)
+gtycon_no_delims' :: HSParser Token -> HSParser Token
+gtycon_no_delims' pInParens
+  =   qtyconid
+  <|> pParens pInParens
+  <?> "gtycon_no_delims"
+%%]
+
+%%[1
+-- | Inside parenthesis part for gtycon
+gtycon_for_inparens_arrow :: HSParser Token 
+gtycon_for_inparens_arrow
+  =   pRARROW
+  <|> qtyconsym
+  <?> "gtycon_for_inparens_arrow"
+
+-- | Inside parenthesis part for gtycon
+gtycon_for_inparens_arrow_commas :: HSParser Token 
+gtycon_for_inparens_arrow_commas
+  =   gtycon_for_inparens_arrow
+  <|> commas
+  <?> "gtycon_for_inparens_arrow"
+
+-- | Inside parenthesis part for type sections
+gtycon_for_insection :: HSParser Token
+gtycon_for_insection
+  =   pRARROW
+%%[[5
+  <|> qtyconop
+%%]]
+  <?> "gtycon_for_insection"
+%%]
+
+%%[1
+-- | General (un)qualified prefix type constructor, e.g.: X.Either, (X.:+:), and (->)
+gtycon_no_delims_commas :: HSParser Token
+gtycon_no_delims_commas
+  =   gtycon_no_delims' gtycon_for_inparens_arrow
+  <?> "gtycon_no_delims_commas"
+%%]
+
+%%[1
+-- | General (un)qualified prefix type constructor, e.g.: X.Either, (X.:+:), and (,,,), (->)
+gtycon_no_delims :: HSParser Token   -- A "general" qualified tycon
+gtycon_no_delims
+  =   gtycon_no_delims' gtycon_for_inparens_arrow_commas
+  <?> "gtycon_no_delims"
+%%]
+
+%%[5
+gtycon_only_bracks :: HSParser Token   -- A "general" qualified tycon
+gtycon_only_bracks
+  =   tokConcat <$> pOBRACK <*> pCBRACK
+%%[[90
+  <|> tokConcat <$> pOPABRACK <*> pCPABRACK
+%%]]
+  <?> "gtycon_only_delims"
+%%]
+
+%%[1
+-- | General (un)qualified prefix type constructor, including delimiting brackets, to be parameterized with the part inside parenthesis (the general part)
+gtycon' :: HSParser Token -> HSParser Token
+gtycon' pInParens
+  =   gtycon_no_delims' pInParens
+%%[[5
+  <|> gtycon_only_bracks
+%%]]
+  <?> "gtycon'"
+%%]
+
+%%[1
+-- | General (un)qualified prefix type constructor, e.g.: X.Either, (X.:+:), and (,,,), (->), []
+gtycon :: HSParser Token   -- A "general" qualified tycon
+gtycon
+  =   gtycon' gtycon_for_inparens_arrow_commas
+  <?> "gtycon"
+%%]
+
+
 

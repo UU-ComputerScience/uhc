@@ -8,8 +8,8 @@
 
 %%[20
 ATTR
-  AGItf AllModule AllDeclaration AllFunctionBinding LeftHandSide AllFieldDeclaration AllConstructor
-  AllExpression AllPattern AllRowRecordPatternBinding
+  AGItf AllModule AllDeclaration AllFunctionBinding TypeLeftHandSide LeftHandSide AllFieldDeclaration AllConstructor
+  AllExpression AllPattern AllTypePattern AllRowRecordPatternBinding
     [ moduleNm: HsName | | ]
 %%]
 
@@ -37,7 +37,7 @@ SEM Declaration
         loc             .   refnames    =   @names
 %%[[5
     | Data Newtype
-        loc             .   typerefname =   @simpletype.name
+        loc             .   typerefname =   @typelefthandside.name
 %%]]
 %%[[6
     | KindSignature
@@ -56,7 +56,7 @@ SEM Declaration
 %%]]
 %%[[11
     | Type
-        loc             .   typerefname =   @simpletype.name
+        loc             .   typerefname =   @typelefthandside.name
 %%]]
 %%]
     | Instance InstanceUseImplicitly
@@ -71,7 +71,7 @@ SEM Declaration
     | KindSignature
         loc             .   refnames    =   map (hsnSetLevQual @lhs.nmLev @lhs.moduleNm) @names
     | Data Newtype
-        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
 %%[[(20 codegen)
     | ForeignImport
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
@@ -83,7 +83,7 @@ SEM Declaration
     | Class
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
     | Type
-        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @simpletype.name
+        loc             .   typerefname =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @typelefthandside.name
 %%]
     | Instance InstanceUseImplicitly
         loc             .   classrefname=   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
@@ -104,7 +104,9 @@ SEM Deriving
 %%]
 
 %%[1
-ATTR LeftHandSide [ | | refname: HsName ]
+ATTR
+  LeftHandSide
+    [ | | refname: HsName ]
 %%]
 
 %%[1.LeftHandSide.refname
@@ -113,6 +115,7 @@ SEM LeftHandSide
         loc             .   refname     =   @name
     | Infix
         loc             .   refname     =   @operator
+
 %%]
 
 %%[20 -1.LeftHandSide.refname
@@ -121,17 +124,28 @@ SEM LeftHandSide
         loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @name
     | Infix
         loc             .   refname     =   hsnSetLevQual @lhs.nmLevFun @lhs.moduleNm @operator
+
 %%]
 
 %%[1.Pattern.refname
 SEM Pattern
     | Variable As
         loc             .   refname     =   @name
+
+%%[[5
+SEM TypePattern
+    | Variable
+        loc             .   refname     =   @name
+%%]]
 %%]
 
 %%[20 -1.Pattern.refname
 SEM Pattern
     | Variable As
+        loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
+
+SEM TypePattern
+    | Variable
         loc             .   refname     =   hsnSetLevQual @lhs.nmLev @lhs.moduleNm @name
 %%]
 
@@ -228,6 +242,9 @@ ATTR
   AllPattern
   AllDeclaration AllFunctionBinding
   LeftHandSide
+%%[[5
+  TypeLeftHandSide
+%%]]
 %%[[7
   AllRowRecordPatternBinding
   AllRecordPatternBinding
@@ -337,7 +354,7 @@ SEM Deriving
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Misc: simpletype internal info
+%%% Introduction of type: Simpletype, TypeLeftHandSide
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[5
@@ -349,6 +366,28 @@ SEM SimpleType
                     .   name        =   @name
                     .   typevariables
                                     =   @typevariables
+%%]
+
+%%[5
+ATTR
+  TypeLeftHandSide
+    [ | | range: Range  name: Name ]
+ATTR
+  TypeLeftHandSide AllTypePattern
+    [ | | typevariables USE {++} {[]}: Names ]
+
+SEM TypeLeftHandSide
+    | Function
+        lhs         .   range       =   @range
+                    .   name        =   @name
+    | Infix
+        lhs         .   range       =   @range
+                    .   name        =   @operator
+
+SEM TypePattern
+    | Variable
+        lhs         .   typevariables
+                                    =   [@name]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

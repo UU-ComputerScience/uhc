@@ -64,13 +64,13 @@ SEM Declaration
 %%]
 %%[5
     | Data
-        loc         .   pp          =   "data" >#< @simpletype.pp
+        loc         .   pp          =   "data" >#< @typelefthandside.pp
                                                >#< "=" >#< @constructors.pp
 %%[[95
                                                >-< ppParensCommas @derivings.ppL
 %%]]
     | Newtype
-        loc         .   pp          =   "newtype" >#< @simpletype.pp
+        loc         .   pp          =   "newtype" >#< @typelefthandside.pp
                                                   >#< "=" >#< @constructors.pp
 %%[[95
                                                   >-< ppParensCommas @derivings.ppL
@@ -102,7 +102,7 @@ SEM Declaration
 %%]
 %%[11
     | Type
-        loc         .   pp          =   "type" >#< @simpletype.pp >#< "=" >#< @type.pp
+        loc         .   pp          =   "type" >#< @typelefthandside.pp >#< "=" >#< @type.pp
 %%]
 %%[99
     | Pragma
@@ -455,6 +455,10 @@ SEM RecordPatternBinding
         loc         .   pp          =   pp @name
 %%]
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% LHS, RHS of for value bindings        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 %%[1
 SEM FunctionBinding
     | FunctionBinding
@@ -488,7 +492,21 @@ SEM RightHandSide
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Patterns        
+%%% LHS of for type bindings        
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM TypeLeftHandSide
+    | Function
+        loc         .   pp          =   @name >#< ppSpaces @patterns.ppL
+    | Infix
+        loc         .   pp          =   @leftPattern.pp >#< @operator >#< @rightPattern.pp
+    | Parenthesized
+        loc         .   pp          =   ppParens @lefthandside.pp >#< ppSpaces @patterns.ppL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for values
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
@@ -546,6 +564,16 @@ SEM Pattern
 SEM ContextedPattern
     | Contexted
         loc         .   pp          =   @pattern.pp >#< "<:" >#< @context.pp
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Patterns for types
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM TypePattern
+    | Variable
+        loc         .   pp          =   pp @name       
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -627,7 +655,7 @@ SEM Patterns
 %%]
 
 %%[5
-ATTR Qualifiers AnnotatedTypes [ | | ppL: {[PP_Doc]} ]
+ATTR TypePatterns Qualifiers AnnotatedTypes [ | | ppL: {[PP_Doc]} ]
 
 SEM AnnotatedTypes
     | Cons
@@ -636,6 +664,12 @@ SEM AnnotatedTypes
         lhs         .   ppL         =   []
 
 SEM Qualifiers
+    | Cons
+        lhs         .   ppL         =   @hd.pp : @tl.ppL
+    | Nil
+        lhs         .   ppL         =   []
+
+SEM TypePatterns
     | Cons
         lhs         .   ppL         =   @hd.pp : @tl.ppL
     | Nil

@@ -24,7 +24,7 @@ ATTR
 
 %%[1
 ATTR
-  AllDeclaration AllExpression
+  AllDeclaration AllExpression AllPattern AllType
 %%[[20
   AGItf AllModule
 %%]]
@@ -37,48 +37,48 @@ ATTR
 %%[1
 SEM Declaration
     | Fixity
-        lhs         .   gathFixityGam   =   let p = maybe (fgiPrio defaultFixityGamInfo) id @priority
-                                                mk n = (n,FixityGamInfo p @fixity)
-                                            in  assocLToGam $ map mk $ @oprefnames
+        lhs             .   gathFixityGam   =   let p = maybe (fgiPrio defaultFixityGamInfo) id @priority
+                                                    mk n = (n,FixityGamInfo p @fixity)
+                                                in  assocLToGam $ map mk $ @oprefnames
 %%]
 
 %%[1.initFixityGam
 SEM Body
     | Body
-        declarations    .   fixityGam   =   @declarations.gathFixityGam
+        declarations    .   fixityGam       =   @declarations.gathFixityGam `gamUnion` initFixityGam
 %%]
 
 %%[20 -1.initFixityGam
 SEM Body
     | Body
-        declarations    .   fixityGam   =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+        declarations    .   fixityGam       =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%[1
 SEM Expression
-	| Let
-		loc			.	fixityGam		=	@declarations.gathFixityGam `gamUnion` @lhs.fixityGam
+    | Let
+        loc             .   fixityGam       =   @declarations.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%[1
 SEM RightHandSide
-	| Expression
+    | Expression
 %%[[5
-	  Guarded
+      Guarded
 %%]
-		loc			.	fixityGam		=	@where.gathFixityGam `gamUnion` @lhs.fixityGam
+        loc             .   fixityGam       =   @where.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%[5
 SEM Qualifiers
-	| Cons
-		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
+    | Cons
+        loc             .   fixityGam       =   @hd.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%[9
 SEM Statements
-	| Cons
-		loc			.	fixityGam		=	@hd.gathFixityGam `gamUnion` @lhs.fixityGam
+    | Cons
+        loc             .   fixityGam       =   @hd.gathFixityGam `gamUnion` @lhs.fixityGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -86,15 +86,28 @@ SEM Statements
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[1
-ATTR Expression [ | | operatorName: MaybeName ]
+ATTR
+  Expression
+%%[[5
+  Type
+%%]]
+    [ | | operatorName: MaybeName ]
 
-SEM Expression
+SEM
+  Expression
+%%[[5
+  Type
+%%]]
     | Variable Constructor
         lhs         .   operatorName    =   Just @refname
     | * - Variable Constructor
         lhs         .   operatorName    =   Nothing
 
-SEM Expression
+SEM
+  Expression
+%%[[5
+  Type
+%%]]
     | InfixApplication
         loc         .   fgi             =   case @operator.operatorName of
                                               Just n
@@ -160,3 +173,28 @@ SEM Expression
                                         =   opChainReArrange @expression.opChain
                     .   ehFromOpChain   =   unOpChain @ehRearrOpChain
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Chain of infix types (right balanced) (clone of the above)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[5
+SEM Type [ | | opChain: {OpChain EH.TyExpr} ]
+    | InfixApplication
+        lhs         .   opChain         =   
+%%[[9
+                                            if @isPredOp
+                                            then OpChain_Leaf @eh
+                                            else 
+%%]]
+                                                 OpChain_Op @operator.eh @operator.pp (fgiFixity @fgi) (fgiPrio @fgi) @range @leftType.opChain @rightType.opChain
+    | * - InfixApplication
+        lhs         .   opChain         =   OpChain_Leaf @eh
+
+SEM Type
+    | InfixApplicationChainTop
+        loc         .   (ehRearrOpChain,errRearr)
+                                        =   opChainReArrange @type.opChain
+                    .   ehFromOpChain   =   unOpChain @ehRearrOpChain
+%%]
+
