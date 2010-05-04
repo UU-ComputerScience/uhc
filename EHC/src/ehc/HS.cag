@@ -18,6 +18,9 @@
 %%[1 hs export(mkRngNm,mkRngNm',mkRngStr)
 %%]
 
+%%[5 hs export(TypeLeftHandSide(..), TypePattern(..), TypePatterns)
+%%]
+
 %%[5 hs export(Constructor(..), Constructors)
 %%]
 

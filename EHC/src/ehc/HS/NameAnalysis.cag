@@ -151,6 +151,9 @@ ATTR
   AllPattern
   AllDeclaration AllFunctionBinding
   LeftHandSide
+%%[[5
+  TypeLeftHandSide
+%%]]
 %%[[7
   AllRowRecordPatternBinding
   AllRecordPatternBinding
@@ -180,18 +183,18 @@ SEM Declaration
 %%[5
     | Data Newtype
         loc             .   idDefOccGamType
-                                        =   tvarS2IdDefOccGam @nmLev @simpletype.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
+                                        =   tvarS2IdDefOccGam @nmLev @typelefthandside.range @constructors.freeTvarS -- ???? or from constrs itself, so implicit exists is allowed
                         .   idDefOccGamType2
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables -- ???? this should be it, now only used for check on duplicates
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables -- ???? this should be it, now only used for check on duplicates
                         .   idDefOccGamConstrs
-                                        =   mkDefOccGam @lhs.nmLev @simpletype.range IdAsp_Val_Con @idOccDefsCon
+                                        =   mkDefOccGam @lhs.nmLev @typelefthandside.range IdAsp_Val_Con @idOccDefsCon
 %%[[7
                                             `gamAddGam`
-                                            mkDefOccGam'' @lhs.nmLev @simpletype.range (\c _ -> IdAsp_Val_Fld @typerefname c)
+                                            mkDefOccGam'' @lhs.nmLev @typelefthandside.range (\c _ -> IdAsp_Val_Fld @typerefname c)
                                                           [ (c,IdOcc n IdOcc_Val) | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
                                                           -- [ IdOcc n IdOcc_Val | (con,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) [@idOccDef]
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idDefOccGamConstrs
 %%[[95
                                             `gamAddGam` @derivings.idDefOccGam
@@ -225,17 +228,19 @@ SEM Declaration
 %%[11
     | Type
         loc             .   idDefOccGamType
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Type_Def @eh) @idOccDefs
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) @idOccDefs
 %%]
 %%[5
     | Data Newtype
-%%[[9
-      Class
-%%]]
 %%[[11
       Type
 %%]]
+        loc             .   idDefOccGamInside
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
+%%]
+%%[9
+    | Class
         loc             .   idDefOccGamInside
                                         =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 %%]
@@ -252,6 +257,16 @@ SEM Declaration
 %%]]
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
 %%]
+
+    | Data Newtype
+ %%[[9
+      Class
+ %%]]
+ %%[[11
+      Type
+ %%]]
+        loc             .   idDefOccGamInside
+                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 
 %%[1
 SEM FunctionBinding

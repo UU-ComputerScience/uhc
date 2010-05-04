@@ -165,7 +165,8 @@ DATA Declaration                                  {- *** -}
 %%[[9
         context                  : ContextItems
 %%]]
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         constructors             : Constructors
 %%[[95
         derivings                : Derivings
@@ -177,7 +178,8 @@ DATA Declaration                                  {- *** -}
 %%[[9
         context                  : ContextItems
 %%]]
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
 %%[[95
         derivings                : Derivings
@@ -237,7 +239,8 @@ DATA Declaration                                  {- *** -}
 %%[11
     | Type
         range                    : Range
-        simpletype               : SimpleType
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
         type                     : Type
 %%]
 %%[99
@@ -381,6 +384,11 @@ DATA Type                                         {- *** -}
         leftType                 : Type
         operator                 : Type
         rightType                : Type
+%%[[5
+    | InfixApplicationChainTop
+        range                    : Range
+        type                     : Type
+%%]]
     | Constructor                            {- *** -}
         range                    : Range
         name                     : Name
@@ -611,6 +619,7 @@ SET AllType
     SimpleType
     AllConstructor
     AllAnnotatedType
+    TypeLeftHandSide
 %%]
 %%[7
     AllFieldDeclaration
@@ -970,19 +979,8 @@ DATA RowRecordExpressionUpdate
         name                     : MaybeName
         expression               : Expression
 
-TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
-
 SET AllRowRecordExpressionUpdate
   = RowRecordExpressionUpdate RowRecordExpressionUpdates
-
-DATA RowRecordPatternBinding
-    | Binding
-        range                    : Range
-        name                     : MaybeName
-        pattern                  : Pattern
-
-SET AllRowRecordPatternBinding
-  = RowRecordPatternBinding RowRecordPatternBindings
 
 TYPE RowTypeUpdates              = [ RowTypeUpdate ]
 
@@ -996,21 +994,9 @@ SET AllRowTypeUpdate
   = RowTypeUpdate RowTypeUpdates
 %%]
 
-%%[7
-TYPE RecordPatternBindings       = [ RecordPatternBinding ]
-
-DATA RecordPatternBinding
-    | Binding
-        range                    : Range
-        name                     : Name
-        pattern                  : Pattern
-    | Pun
-        range                    : Range
-        name                     : Name
-
-SET AllRecordPatternBinding
-  = RecordPatternBinding RecordPatternBindings
-%%]
+-- ------------------------------------------------------------------------
+-- -- LHS of value binding
+-- ------------------------------------------------------------------------
 
 %%[1
 TYPE FunctionBindings            = [ FunctionBinding ]
@@ -1044,19 +1030,61 @@ DATA LeftHandSide
         lefthandside             : LeftHandSide
         type                     : Type
 %%]]
+%%]
 
+-- ------------------------------------------------------------------------
+-- -- LHS of type binding
+-- ------------------------------------------------------------------------
+
+TYPE TypeFunctionBindings            = [ TypeFunctionBinding ]
+
+DATA TypeFunctionBinding
+    | TypeFunctionBinding
+        range                    : Range
+        lefthandside             : TypeLeftHandSide
+        righthandside            : TypeRightHandSide
+
+SET AllTypeFunctionBinding
+  = TypeFunctionBinding TypeFunctionBindings
+
+%%[5
+DATA TypeLeftHandSide
+    | Function
+        range                    : Range
+        name                     : Name
+        patterns                 : TypePatterns
+    | Infix
+        range                    : Range
+        leftPattern              : TypePattern
+        operator                 : Name
+        rightPattern             : TypePattern
+    | Parenthesized
+        range                    : Range
+        lefthandside             : TypeLeftHandSide
+        patterns                 : TypePatterns
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- RHS of value binding
+-- ------------------------------------------------------------------------
+
+%%[1
 DATA RightHandSide
     | Expression
         range                    : Range
         expression               : Expression
         where                    : MaybeDeclarations
-%%]
-%%[5
+%%[[5
     | Guarded
         range                    : Range
         guardedexpressions       : GuardedExpressions
         where                    : MaybeDeclarations
+%%]]
 %%]
+
+-- ------------------------------------------------------------------------
+-- -- Sets for Expressions
+-- ------------------------------------------------------------------------
 
 %%[1
 SET AllExpression
@@ -1082,7 +1110,7 @@ SET AllExpression
 %%]
 
 -- ------------------------------------------------------------------------
--- -- Patterns                                                           --
+-- -- Patterns for value
 -- ------------------------------------------------------------------------
 
 %%[1
@@ -1190,6 +1218,57 @@ SET AllPattern
 %%]
 %%[12
     AllContextedPattern
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Inside Pattern binding
+-- ------------------------------------------------------------------------
+
+%%[7
+TYPE RecordPatternBindings       = [ RecordPatternBinding ]
+
+DATA RecordPatternBinding
+    | Binding
+        range                    : Range
+        name                     : Name
+        pattern                  : Pattern
+    | Pun
+        range                    : Range
+        name                     : Name
+
+SET AllRecordPatternBinding
+  = RecordPatternBinding RecordPatternBindings
+%%]
+
+%%[7
+DATA RowRecordPatternBinding
+    | Binding
+        range                    : Range
+        name                     : MaybeName
+        pattern                  : Pattern
+
+TYPE RowRecordPatternBindings    = [ RowRecordPatternBinding ]
+
+SET AllRowRecordPatternBinding
+  = RowRecordPatternBinding RowRecordPatternBindings
+%%]
+
+-- ------------------------------------------------------------------------
+-- -- Patterns for type
+-- ------------------------------------------------------------------------
+
+%%[5
+TYPE TypePatterns                = [ TypePattern ]
+
+DATA TypePattern
+    | Variable
+        range                    : Range          
+        name                     : Name
+%%]
+
+%%[5
+SET AllTypePattern
+  = TypePattern TypePatterns
 %%]
 
 -- ------------------------------------------------------------------------
@@ -1301,8 +1380,13 @@ SET AllBasics
 
 %%[1
 SET AllNT
-  = AllModule AllDeclaration AllType AllPattern AllExpression
+  = AllModule AllDeclaration
+    AllType
+    AllPattern AllExpression
     AllBasics
+%%[[5
+    AllTypePattern
+%%]]
 %%[[6
     AllKind
 %%]]

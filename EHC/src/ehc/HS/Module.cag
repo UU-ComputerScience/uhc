@@ -177,7 +177,7 @@ SEM Declaration
         lhs             .   modDefsRel  =   Rel.fromList [ (hsnQualified (ioccNm o),ModEnt IdOcc_Type o Set.empty @range) | o <- @idOccDefs ]
     | Data Newtype
         loc             .   modDefsRel  =   Rel.singleton
-                                              @simpletype.name
+                                              @typelefthandside.name
                                               (ModEnt IdOcc_Data @idOccDef (Set.fromList @modEntsSub) @range)
 %%[[95
                                             `Rel.union`

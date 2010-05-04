@@ -4,7 +4,9 @@
 
 %%[1
 ATTR AllNT [ nmLev: NmLev | | ]
-ATTR LeftHandSide [ nmLevFun: NmLev | | ]
+ATTR
+  LeftHandSide
+    [ nmLevFun: NmLev | | ]
 %%]
 
 %%[5

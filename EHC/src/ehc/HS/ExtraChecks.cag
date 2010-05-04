@@ -78,7 +78,7 @@ SEM Declaration
                                                                    _
 %%]]
                                                 -> []
-                                              _ -> [rngLift @range Err_Newtype @simpletype.name]
+                                              _ -> [rngLift @range Err_Newtype @typelefthandside.name]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
