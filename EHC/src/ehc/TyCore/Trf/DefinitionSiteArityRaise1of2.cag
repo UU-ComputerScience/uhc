@@ -26,7 +26,7 @@
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.List)
+%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -101,11 +101,15 @@ ATTR Expr
     nrArgs     : {[Int]}
     arrArgs    : {[Expr]}
   ]
-ATTR AllExprSeq1
+ATTR AllExprBase
   [
+    bindNmL     : {[HsName]}
   |
   |
-    bindNms  USE {++} {[]} : {[HsName]}
+    bindNmL     USE {`mappend`} {mempty}    : {[HsName]}
+    nrArgsL     USE {`mappend`} {mempty}    : {[[Int]]}
+    workerL     USE {`mappend`} {mempty}    : {[Expr]}
+    newWrapperL USE {`mappend`} {mempty}    : {[Expr]}
     --workWraps   USE {++} {[]}   : {[WorkWrap]}
   ]
 
@@ -122,12 +126,13 @@ SEM ExprSeq1L
 SEM ExprSeq1
   | L0Val
                 lhs         .   worker      =   ExprSeq1_L0Val (workerBody @l0.workerArgs @l0.worker) @meta.worker
+                lhs         .   workerL     =   [workerBody @l0.workerArgs @l0.worker]
   | L0Bind      lhs         .   workWraps   =   []
-                            .   bindNms     =   [@nm]
+                            .   bindNmL     =   [@nm]
   | L1Bind
-                lhs         .   bindNms     =   [@nm]
+                lhs         .   bindNmL     =   [@nm]
   | L2Bind
-                lhs         .   bindNms     =   [@nm]
+                lhs         .   bindNmL     =   [@nm]
                           --  .   isWorker    =   "_worker" `isSuffixOf` (show @nm)
                           --  .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
 
@@ -146,9 +151,13 @@ SEM ValBind
                             .   areWorkers  =   unSeqs @bind.cTrf
                 bind        .   bindType    =   NameTypeBind
                 l0          .   bindType    =   BodyBind
+                            .   bindNmL     =   @bind.bindNmL
 
 SEM Expr
-  | Seq         lhs         .   cTrf        =   (if @lhs.bindType == NameTypeBind then trace (show @seq.bindNms) else id ) @copy
+  | Seq         lhs         .   cTrf        =   case @lhs.bindType of
+                                                  NameTypeBind -> @copy
+                                                  BodyBind     -> @copy -- trace (show @lhs.bindNmL ++ " -> " ++ show @copy) @copy
+                                                  _            -> @copy
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
                 lhs         .   nrArgs      =   0 : @body.nrArgs

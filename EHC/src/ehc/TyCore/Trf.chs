@@ -95,8 +95,8 @@ trfTyCore opts modNm trftycore
   = snd $ runState trf trftycore
   where trf
           = do { t_initial
-               ; t_introduceWeirdConstructs
                ; t_introduceExplicitLaziness
+               ; t_introduceWeirdConstructs
                ; t_removeLazyFunctions
                ; t_definitionSiteArityRaise
 %%[[(8 tauphi)
