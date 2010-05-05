@@ -92,16 +92,13 @@ Groups of bindings floated upwards are inserted when a particular Let is encount
 * Let at lower level:       
 
 
-%%[(8 codegen)
-
+%%[(9 codegen)
 ATTR AllBind CExpr    [ isLocalInInstance : {Bool} | | ]
 ATTR CMetaVal CMetas  [ | | isInstance : {Bool} ]
 
-%%[[9
 SEM CMetaVal
   | DictInstance   lhs.isInstance = True
   | *-DictInstance lhs.isInstance = False
-%%]]
 
 SEM CBind
   | Bind   expr . isLocalInInstance = -- trace ("Bind " ++ show @nm ++ " passes " ++ show @bindMeta.isInstance)  $
@@ -120,8 +117,9 @@ SEM CModule
   | Mod    expr  . isLocalInInstance = False
 SEM CPatFld
   | Fld    offset. isLocalInInstance = False
+%%]
 
-
+%%[(8 codegen)
 ATTR AllBind   [ | | cLamBinds, 
                      cLargeCAFBinds, 
                      cSmallCAFBinds   USE {`Seq.union`} {Seq.empty}: {Seq.FastSeq CBind}                          ]
@@ -138,7 +136,10 @@ SEM CBind
                                              , Seq.empty
                                              , Seq.empty
                                              )
-                                        else if @loc.isClosurableBind   ||  @lhs.isLocalInInstance
+                                        else if @loc.isClosurableBind
+%%[[9
+                                                || @lhs.isLocalInInstance
+%%]]
                                         then ( Seq.empty
                                              , Seq.singleton @cTrf
                                              , Seq.empty
