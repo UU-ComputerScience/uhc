@@ -26,7 +26,7 @@
 %%[8
 
 // dirty hack:
-int gb_Opt_TraceSteps = False ;
+int gb_Opt_TraceSteps = True ;
 
 
 void mm_plan_SS_Init( MM_Plan* plan ) {

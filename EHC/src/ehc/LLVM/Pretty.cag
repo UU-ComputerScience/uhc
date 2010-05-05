@@ -59,7 +59,7 @@ SEM LLVMModule
                              >-< ""
                              >-< vlist (
                                  map (\(dst,src) ->
-                                       ppAssignment dst ("internal constant" >#< show src)
+                                       ppAssignment dst ("constant" >#< show src)
                                      ) @constants
                                  )
                              >-< ""

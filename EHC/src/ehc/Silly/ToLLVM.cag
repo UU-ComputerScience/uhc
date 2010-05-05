@@ -150,20 +150,20 @@ SEM SilModule
                                                                              -- Fplustildespec1tildespec1 11 []
                                                                              -- Fuptotildespec2 12 [Ptr]
                                                                              -- Fuptotildespec1 13 []
-                                 (GlobalVar "FDESCR" i8 , ArrayConstant [ StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 2 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 i32, Constant 1 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 1 i32, Constant 0 i8] (TyVar "FDESCR")
-                                                                        , StructConstant [Constant 0 i32, Constant 0 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
+                                 (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant [ StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 2 @lhs.intType, Constant 2 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 2 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
+                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
                                  @functions.constants
                 
                 
@@ -172,14 +172,14 @@ SEM SilModule
                                                                              --                                         , %struct.Descrb { i32 3, i8 0 }
                                                                              --                                         , %struct.Descrb { i32 4, i8 1 }]
                                         
-                loc.namedTys = [NamedTy "FDESCR" (Struct [i32, i8])]
+                loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) 
                                 : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "fdescr.1" (pLift (TyVar "FDESCR")))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "FDESCR" (pLift (Array (length @constants) (TyVar "FDESCR")))) [0, 0] )
+                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_node_descriptor" (pLift (Array (length @constants) (TyVar "FDESCR")))) [0, 0] )
                                  -- , LLVMStatement_Call gcssInitFuncDecl StdCall [ Constant  (length @constants) i32
                                  --                                               , LocalVar "fdescr.1" (pLift (TyVar "FDESCR")) ]
                                  

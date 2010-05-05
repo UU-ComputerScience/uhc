@@ -110,6 +110,7 @@ struct StackEntry *llvm_gc_root_chain;
 struct FDescr 
 {
    int32_t num_fields;
+   int32_t max_fields;
    unsigned char is_prim;
 };
 

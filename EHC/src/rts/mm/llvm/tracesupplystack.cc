@@ -58,11 +58,19 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 
     printf("mm_traceSupplyStack_llvm_Run\n");
 
+	MM_TraceSupply_Stack_Data* stackData;
+	MM_Trace *trace;
+
+	stackData = (MM_TraceSupply_Stack_Data*) traceSupply->data ;
+	trace     =                              stackData->trace;
+
+
     int32_t    i, num_roots;
     Word       *root;
     Word       con;
     struct StackEntry   *entry = llvm_gc_root_chain;
 
+	
     printf("|*****************************************************************\n");
     printf("|** Running a stack walk \n");
     printf("| [0x%08x] llvm_gc_root_chain\n", (unsigned int)entry);
@@ -80,6 +88,8 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 
             } else {
                 printf("| ... [%d] 0x%08x, con: %lld \n", i, (unsigned int)root, *root );
+           	    root = mm_Trace_TraceObject( trace, root );
+
             }
 
         }
