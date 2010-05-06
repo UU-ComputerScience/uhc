@@ -186,7 +186,7 @@ SEM Declaration
                         .   modEntsSub  =   [ ModEnt IdOcc_Val o Set.empty @range | o <- @idOccDefsCon ++ @idOccDefsFld ]
     | Class
         loc             .   modDefsRel  =   Rel.singleton
-                                              @simpletype.name
+                                              @typelefthandside.name
                                               (ModEnt IdOcc_Class @idOccDef (Set.fromList @modEntsSub) @range)
                         .   (_,modHideDefsRel)
                                         =   mkInstDefsRel False @instancename Nothing @idOccDef @idOccDefVal

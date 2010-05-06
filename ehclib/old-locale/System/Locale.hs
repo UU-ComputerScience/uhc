@@ -26,6 +26,8 @@ module System.Locale (
     )
 where
 
+import Prelude
+
 data TimeLocale = TimeLocale {
 	-- |full and abbreviated week days
         wDays  :: [(String, String)],
@@ -77,7 +79,7 @@ iso8601DateFormat :: Maybe String -> String
 iso8601DateFormat mTimeFmt =
     "%Y-%m-%d" ++ case mTimeFmt of
              Nothing  -> "" 
-             Just fmt -> ' ' : fmt
+             Just fmt -> 'T' : fmt
 
 
 rfc822DateFormat :: String

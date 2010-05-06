@@ -47,8 +47,14 @@ packages.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+-- | union 2 PackageMp, choosing the first one in the ordering on the fly
 pkgMpUnion :: PackageMp -> PackageMp -> PackageMp
-pkgMpUnion = Map.unionWith (Map.unionWith (++))
+pkgMpUnion
+  = Map.unionWith (Map.unionWith cmb)
+  where cmb p1s p2s = head $ groupBy eqp $ sortBy cmpp $ p1s ++ p2s
+        -- cmb = (++)
+        eqp  p1  p2  = pkginfoOrder p1 == pkginfoOrder p2
+        cmpp p1  p2  = pkginfoOrder p1 `compare` pkginfoOrder p2
 
 -- looking up just picks the first one
 -- TBD: fix this: error/warning, etc
@@ -280,11 +286,13 @@ pkgDbSearch db modNm
                  = case sortBy cmp pks of
                      [k]               -> (k,[])          -- no ambiguity
                      (k@(_,Nothing):_) -> (k,[])          -- versionless overrides others
-                     ks@(k:_)          -> (k,[rngLift emptyRange Err_AmbiguousNameRef "module" "package" modNm (map mkHNm ks)])
+                     ks@(k:_)          -> (k,[rngLift emptyRange Err_AmbiguousNameRef "module" "package" modNm (map (mkHNm . strOf) ks)])
                  where cmp (_,Nothing) (_,Nothing) = EQ                 -- versionless goes first
                        cmp (_,Nothing) (_,_      ) = LT
                        cmp (_,k21    ) (_,k22    ) = compare k22 k21    -- then highest version
-        dirOf (k,e) = fmap (\i -> (k,filelocDir $ pkginfoLoc i,e)) $ pkgMpLookup k $ pkgDbPkgMp db
+        pkgOf  k    = pkgMpLookup k $ pkgDbPkgMp db
+        strOf  k    = showPkgKey k ++ ": " ++ maybe "" (\i -> show (pkginfoLoc i) ++ ":" ++ show (pkginfoOrder i)) (pkgOf k)
+        dirOf (k,e) = fmap (\i -> (k,filelocDir $ pkginfoLoc i,e)) $ pkgOf k
 %%]
 
 %%[99 export(fileLocSearch)

@@ -39,6 +39,7 @@ data FileLocKind
   = FileLocKind_Dir									-- plain directory
   | FileLocKind_Pkg	PkgKey							-- specific package
   | FileLocKind_PkgDb								-- yet unknown package in the package database
+  deriving Eq
 
 instance Show FileLocKind where
   show  FileLocKind_Dir		= "directory"
@@ -66,6 +67,7 @@ data FileLoc
       {	filelocKind		:: FileLocKind
       , filelocDir		:: String
       }
+  deriving Eq
 
 instance Show FileLoc where
   show (FileLoc k d) = d ++ " (" ++ show k ++ ")"

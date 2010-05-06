@@ -209,11 +209,11 @@ SEM Declaration
 %%[9
     | Class
         loc             .   idDefOccGamType
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
+                                        =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
                         .   idDefOccGamSigAsVar
                                         -- =   assocLToGam [ (o,d {doccAsp = IdAsp_Val_Var}) | (o,d) <- gamToAssocL @where.idDefOccGam, iaspIsValSig (doccAsp d) ]
                                         =   @where.idTySigDefOccGam
-                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @simpletype.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
+                        .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Class_Def @eh @ehInst) [@idOccDef]
                                             `gamUnion` @idDefOccGamSigAsVar
     | Instance
         loc             .   idDefOccGamType
@@ -233,16 +233,14 @@ SEM Declaration
 %%]
 %%[5
     | Data Newtype
+%%[[9
+      Class
+%%]]
 %%[[11
       Type
 %%]]
         loc             .   idDefOccGamInside
                                         =   tvarL2IdDefOccGam @nmLev @typelefthandside.range @typelefthandside.typevariables
-%%]
-%%[9
-    | Class
-        loc             .   idDefOccGamInside
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 %%]
 %%[(8 codegen)
     | ForeignImport
@@ -257,16 +255,6 @@ SEM Declaration
 %%]]
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
 %%]
-
-    | Data Newtype
- %%[[9
-      Class
- %%]]
- %%[[11
-      Type
- %%]]
-        loc             .   idDefOccGamInside
-                                        =   tvarL2IdDefOccGam @nmLev @simpletype.range @simpletype.typevariables
 
 %%[1
 SEM FunctionBinding

@@ -1,5 +1,4 @@
 --
---
 -- Some short examples:
 --
 -- You are given a C file, you want to figure out the corresponding object (.o) file:
@@ -498,10 +497,12 @@ addTrailingPathSeparator x = if hasTrailingPathSeparator x then x else x ++ [pat
 -- > dropTrailingPathSeparator "file/test/" == "file/test"
 -- > not (hasTrailingPathSeparator (dropTrailingPathSeparator x)) || isDrive x
 -- > Posix:    dropTrailingPathSeparator "/" == "/"
+-- > Windows:  dropTrailingPathSeparator "\\" == "\\"
 dropTrailingPathSeparator :: FilePath -> FilePath
 dropTrailingPathSeparator x =
     if hasTrailingPathSeparator x && not (isDrive x)
-    then reverse $ dropWhile isPathSeparator $ reverse x
+    then let x' = reverse $ dropWhile isPathSeparator $ reverse x
+         in if null x' then [pathSeparator] else x'
     else x
 
 
@@ -553,6 +554,7 @@ combineAlways a b | null a = b
 -- | A nice alias for 'combine'.
 (</>) :: FilePath -> FilePath -> FilePath
 (</>) = combine
+
 
 -- | Split a path by the directory separator.
 --
@@ -721,7 +723,7 @@ normaliseDrive drive = if isJust $ readDriveLetter x2
 -- information for validity functions on Windows
 -- see http://msdn.microsoft.com/library/default.asp?url=/library/en-us/fileio/fs/naming_a_file.asp
 badCharacters :: [Char]
-badCharacters = ":*?><|"
+badCharacters = ":*?><|\""
 badElements :: [FilePath]
 badElements = ["CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9", "CLOCK$"]
 

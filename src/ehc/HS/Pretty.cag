@@ -86,7 +86,7 @@ SEM Declaration
 %%]
 %%[9
     | Class
-        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @simpletype.pp
+        loc         .   pp          =   "class" >#< ppParens @context.pp >#< "=>" >#< @typelefthandside.pp
 %%[[15
                                         >#< "|" >#< @dependencies.pp
 %%]]
@@ -225,7 +225,7 @@ SEM Type
     | NoImplicits
         loc         .   pp          =   EH.mkRngEH @range EH.TyExpr_NoImpls
 
-%%[5
+%%[5555
 SEM SimpleType
     | SimpleType
         loc         .   pp          =   @name >#< ppSpaces @typevariables

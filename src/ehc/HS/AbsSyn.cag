@@ -212,7 +212,8 @@ DATA Declaration                                  {- *** -}
     | Class
         range                    : Range
         context                  : ContextItems -- is a "simple" context
-        simpletype               : SimpleType   -- Haskell 98 allows only one variable
+        typelefthandside         : TypeLeftHandSide
+        -- simpletype               : SimpleType
 %%[[15
         dependencies             : FunctionalDependencies
 %%]]
@@ -511,7 +512,7 @@ DATA Type                                         {- *** -}
 --       True (Type_Constructor (Name_Identifier "Tree"))
 --       [Type_Constructor (Name_Identifier "Int")]
 
-%%[5
+%%[5555
 DATA SimpleType
     | SimpleType
         range                    : Range
@@ -615,8 +616,8 @@ SET AllType
   = Type Types MaybeType
     TypeAnnotation
 %%]
-%%[5
     SimpleType
+%%[5
     AllConstructor
     AllAnnotatedType
     TypeLeftHandSide

@@ -31,7 +31,7 @@ import UHC.MutVar
 import UHC.IOBase
 import UHC.Weak
 
-import Debug.Trace
+-- import Debug.Trace
 
 %%]
 

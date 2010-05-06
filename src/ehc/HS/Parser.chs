@@ -593,7 +593,7 @@ pDeclarationClass :: HSParser Declaration
 pDeclarationClass
   = (\t -> Declaration_Class (mkRange1 t))
     <$> pCLASS
-    <*> pContextItemsPrefixOpt <*> pSimpleType
+    <*> pContextItemsPrefixOpt <*> pTypeLeftHandSide
 %%[[15
     <*> (pVBAR *> pListSep pCOMMA pFunctionalDependency
         `opt` []
@@ -850,11 +850,13 @@ pTyVarBinds :: HSParser [Token]
 pTyVarBinds =  pList1 pTyVarBind
 %%]
 
-%%[5
+%%[5555
 pSimpleType :: HSParser SimpleType
 pSimpleType
   = mkRngNm SimpleType_SimpleType <$> gtycon <*> (tokMkQNames <$> pList tyvar)
+%%]
 
+%%[5
 pTypeLeftHandSide :: HSParser TypeLeftHandSide
 pTypeLeftHandSide
   =   pLhs
