@@ -31,11 +31,21 @@
 #include <sys/timeb.h>
 #endif
 
-char **tzname_aux ( void )
-{ return tzname; }
-
+extern char **tzname_aux ( void ) ;
 
 extern long *__hscore_timezone( void );
 extern char **__hscore_tzname( void );
+
+#if HAVE_GETTIMEOFDAY
+extern int __hscore_gettimeofday(struct timeval *tp, void *tzp);
+#endif
+
+#if HAVE_GMTIME_R
+extern struct tm *__hscore_gmtime_r(const time_t *clock, struct tm *result);
+#endif
+
+#if HAVE_LOCALTIME_R
+extern struct tm *__hscore_localtime_r(const time_t *clock, struct tm *result);
+#endif
 
 #endif /* __TIMEUTILS_H__ */

@@ -18,7 +18,7 @@ module System.Posix.Error (
 	throwErrnoPathIf_,
 	throwErrnoPathIfNull,
 	throwErrnoPathIfMinus1,
-	throwErrnoPathIfMinus1_
+	throwErrnoPathIfMinus1_,
   ) where
 
 import Foreign.C.Error

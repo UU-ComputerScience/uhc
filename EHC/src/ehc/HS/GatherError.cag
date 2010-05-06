@@ -191,7 +191,7 @@ SEM ContextItem
 
 SEM Declaration
     | Class
-        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @simpletype.errSq
+        loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, Seq.fromList @errReorder, @context.errSq, @typelefthandside.errSq
 %%[[15
                                                    , @dependencies.errSq
 %%]]

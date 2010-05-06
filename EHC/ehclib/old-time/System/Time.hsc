@@ -4,6 +4,7 @@
 
 -----------------------------------------------------------------------------
 -- |
+-- Module      :  System.Time
 -- Copyright   :  (c) The University of Glasgow 2001
 -- License     :  BSD-style (see the file libraries/old-time/LICENSE)
 -- 
@@ -183,7 +184,7 @@ min           0 .. 59
 sec           0 .. 61           [Allows for two leap seconds]
 picosec       0 .. (10^12)-1    [This could be over-precise?]
 yday          0 .. 365          [364 in non-Leap years]
-tz       -43200 .. 43200        [Variation from UTC in seconds]
+tz       -43200 .. 50400        [Variation from UTC in seconds]
 \end{verbatim}
 -}
 
@@ -229,12 +230,13 @@ data TimeDiff
 noTimeDiff :: TimeDiff
 noTimeDiff = TimeDiff 0 0 0 0 0 0 0
 
--- Converts a real to an integer by rounding it.
-realToInteger :: Real a => a -> Integer 
-realToInteger x = round (realToFrac x :: Double)
-
 -- -----------------------------------------------------------------------------
 -- | returns the current time in its internal representation.
+
+realToInteger :: Real a => a -> Integer
+realToInteger ct = round (realToFrac ct :: Double)
+  -- CTime, CClock, CUShort etc are in Real but not Fractional, 
+  -- so we must convert to Double before we can round it
 
 getClockTime :: IO ClockTime
 #ifdef __HUGS__
@@ -366,7 +368,11 @@ gmtoff x    = (#peek struct tm,tm_gmtoff) x
 #   define tzname _tzname
 #  endif
 #  ifndef mingw32_HOST_OS
+#ifdef __UHC__
 foreign import ccall unsafe "HsTime.h tzname_aux" tzname :: Ptr CString
+#else
+foreign import ccall unsafe "time.h &tzname" tzname :: Ptr CString
+#endif
 #  else
 foreign import ccall unsafe "__hscore_timezone" timezone :: Ptr CLong
 foreign import ccall unsafe "__hscore_tzname"   tzname :: Ptr CString
@@ -540,7 +546,7 @@ toClockTime (CalendarTime year mon mday hour minute sec psec
 
     if psec < 0 || psec > 999999999999 then
         error "Time.toClockTime: picoseconds out of range"
-    else if tz < -43200 || tz > 43200 then
+    else if tz < -43200 || tz > 50400 then
         error "Time.toClockTime: timezone offset out of range"
     else
       unsafePerformIO $ do
@@ -584,7 +590,7 @@ calendarTimeToString  =  formatCalendarTime defaultTimeLocale "%c"
 -- function.
 
 formatCalendarTime :: TimeLocale -> String -> CalendarTime -> String
-formatCalendarTime l fmt (CalendarTime year mon day hour minute sec _
+formatCalendarTime l fmt cal@(CalendarTime year mon day hour minute sec _
                                        wday yday tzname' _ _) =
         doFmt fmt
   where doFmt ('%':'-':cs) = doFmt ('%':cs) -- padding not implemented
@@ -617,7 +623,8 @@ formatCalendarTime l fmt (CalendarTime year mon day hour minute sec _
         decode 'T' = doFmt "%H:%M:%S"
         decode 't' = "\t"
         decode 'S' = show2 sec			     -- seconds
-        decode 's' = show2 sec			     -- number of secs since Epoch. (ToDo.)
+        decode 's' = let TOD esecs _ = toClockTime cal in show esecs
+                                                     -- number of secs since Epoch.
         decode 'U' = show2 ((yday + 7 - fromEnum wday) `div` 7) -- week number, starting on Sunday.
         decode 'u' = show (let n = fromEnum wday in  -- numeric day of the week (1=Monday, 7=Sunday)
                            if n == 0 then 7 else n)
@@ -729,35 +736,35 @@ formatTimeDiff l fmt (TimeDiff year month day hour minute sec _)
 type CTm = () -- struct tm
 
 #if HAVE_LOCALTIME_R
-foreign import ccall unsafe "HsTime.h localtime_r"
+foreign import ccall unsafe "HsTime.h __hscore_localtime_r"
     localtime_r :: Ptr CTime -> Ptr CTm -> IO (Ptr CTm)
 #else
-foreign import ccall unsafe "HsTime.h localtime"
+foreign import ccall unsafe "time.h localtime"
     localtime   :: Ptr CTime -> IO (Ptr CTm)
 #endif
 #if HAVE_GMTIME_R
-foreign import ccall unsafe "HsTime.h gmtime_r"
+foreign import ccall unsafe "HsTime.h __hscore_gmtime_r"
     gmtime_r    :: Ptr CTime -> Ptr CTm -> IO (Ptr CTm)
 #else
-foreign import ccall unsafe "HsTime.h gmtime"
+foreign import ccall unsafe "time.h gmtime"
     gmtime      :: Ptr CTime -> IO (Ptr CTm)
 #endif
-foreign import ccall unsafe "HsTime.h mktime"
+foreign import ccall unsafe "time.h mktime"
     mktime      :: Ptr CTm   -> IO CTime
 
 #if HAVE_GETTIMEOFDAY
 type CTimeVal = ()
 type CTimeZone = ()
-foreign import ccall unsafe "HsTime.h gettimeofday"
+foreign import ccall unsafe "HsTime.h __hscore_gettimeofday"
     gettimeofday :: Ptr CTimeVal -> Ptr CTimeZone -> IO CInt
 #elif HAVE_FTIME
 type CTimeB = ()
 #ifndef mingw32_HOST_OS
-foreign import ccall unsafe "HsTime.h ftime" ftime :: Ptr CTimeB -> IO CInt
+foreign import ccall unsafe "time.h ftime" ftime :: Ptr CTimeB -> IO CInt
 #else
-foreign import ccall unsafe "HsTime.h ftime" ftime :: Ptr CTimeB -> IO ()
+foreign import ccall unsafe "time.h ftime" ftime :: Ptr CTimeB -> IO ()
 #endif
 #else
-foreign import ccall unsafe "HsTime.h time" time :: Ptr CTime -> IO CTime
+foreign import ccall unsafe "time.h time" time :: Ptr CTime -> IO CTime
 #endif
 #endif /* ! __HUGS__ */

@@ -183,7 +183,7 @@ SEM Declaration
 %%[9
     | Class
         loc         .   (eh,ehInst) =   let h = rngLift @range EH.TyExpr_Pred
-                                                $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @simpletype.typevariables)
+                                                $ rngLift @range EH.PrExpr_Class @classrefname (map (rngLift @range EH.TyExpr_Var) @typelefthandside.typevariables)
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
                                             a = mkArrow c h
                                             (vals,sigs) = partition EH.ehIsDeclVal $ concat @ehReorderedDecls
@@ -537,8 +537,12 @@ SEM Type
         loc         .   ehMbAsPr    =   case (@leftType.ehMbAsPr,@rightType.ehMbAsPr) of
                                           (Just l,Just r) | @operator.isPrArrow && @lhs.isAsPred
                                             -> Just $ rngLift @range EH.PrExpr_Arrow l r
+                                          (Nothing,Nothing) | isJust @operator.mbRefConNm && @lhs.isAsPred
+                                            -> Just $ rngLift @range EH.PrExpr_Class (fromJust @operator.mbRefConNm) [@leftType.eh,@rightType.eh]
                                           _ -> Nothing
-    | * - NormalApplication Forall InfixApplication
+    | InfixApplicationChainTop
+        loc         .   ehMbAsPr    =   @type.ehMbAsPr
+    | * - NormalApplication Forall InfixApplication InfixApplicationChainTop
         loc         .   ehMbAsPr    =   Nothing
 
 ATTR Type AllRowTypeUpdate [ | | ehMbAsPrL USE {++} {[]}: {[Maybe EH.PrExpr]} ]

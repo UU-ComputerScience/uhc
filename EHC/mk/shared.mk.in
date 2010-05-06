@@ -536,6 +536,10 @@ FUN_COPY_FILES_AND_RENAME		= (cd $(1) && for i in `find . -type f`; do tgt=$(2)/
 # Misc
 ###########################################################################################
 
+# strip dashes
+# $1: dashed text
+FUN_STRIP_DASH		= $(subst -,,$(1))
+
 # date
 TODAY				:= $(shell date '+%G%m%d')
 
@@ -561,6 +565,9 @@ tail				= $(wordlist 2,$(words $(1)),$(1))
 comma				:= ,
 empty				:=
 space				:= $(empty) $(empty)
+dollar				:= $$
+ddollar				:= $(dollar)$(dollar)
+cparen				:= )
 
 # subst _ by x
 # $1: text

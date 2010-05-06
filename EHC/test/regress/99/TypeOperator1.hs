@@ -23,4 +23,10 @@ x = Left 8
 liftA2 :: Arrow (~>) => (a -> b -> c) -> (e ~> a) -> (e ~> b) -> (e ~> c)
 liftA2 = undefined
 
+class a :=: b where
+  (===) :: a -> b -> Bool
+
+f1 :: (a :=: b) => a -> b -> Bool
+f1 = undefined
+
 main = return ()
