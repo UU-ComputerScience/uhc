@@ -47,10 +47,31 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MemberSelect} export(memberSelect)
-memberSelect :: GrModule -> GrModule
-memberSelect grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                          (Inh_GrAGItf)
-                     in grTrf_Syn_GrAGItf t
+memberSelect :: [GrModule] -> GrModule -> GrModule
+memberSelect impsCode code
+  = let imps = map grSem impsCode
+        inh  = Inh_GrAGItf
+                 { startDicts_Inh_GrAGItf = map finalDicts_Syn_GrAGItf imps
+                 , startGlobs_Inh_GrAGItf = map finalGlobs_Syn_GrAGItf imps
+                 , startSels_Inh_GrAGItf  = map finalSels_Syn_GrAGItf  imps
+                 }
+        syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+    in  grTrf_Syn_GrAGItf syn
+
+
+grSem :: GrModule -> Syn_GrAGItf
+grSem code
+  = let inh = Inh_GrAGItf
+                { startDicts_Inh_GrAGItf = []
+                , startGlobs_Inh_GrAGItf = []
+                , startSels_Inh_GrAGItf  = []
+                }
+    in wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+
+type DictMap = Map.Map HsName [HsName]
+type GlobMap = Map.Map HsName GrVal
+type SelMap  = Map.Map HsName Int
+
 %%]
 
 
@@ -64,23 +85,23 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 -- Gather the required information bottom-up
 
-ATTR AllGlobal [ | | dictionaries USE {`Map.union`} {Map.empty}: {Map.Map HsName [HsName]}    
-                     globals      USE {`Map.union`} {Map.empty}: {Map.Map HsName GrVal}    
+ATTR AllGlobal [ | | dictionaries USE {`Map.union`} {Map.empty}: {DictMap}
+                     globals      USE {`Map.union`} {Map.empty}: {GlobMap}
                ]
 
-ATTR AllBind   [ | | selectors USE {`Map.union`} {Map.empty} : {Map.Map HsName Int} 
+ATTR AllBind   [ | | selectors USE {`Map.union`} {Map.empty} : {SelMap}
                ]
 
 -- Distribute the required information top-down
 
 ATTR AllBind
      AllGrExpr 
-     AllGrVal  [ allDicts : {Map.Map HsName [HsName]}   
-                 allSels  : {Map.Map HsName Int} 
+     AllGrVal  [ allDicts : {DictMap}
+                 allSels  : {SelMap}
                | | ]
 
 ATTR AllBind
-     AllGrExpr [ allGlobs : {Map.Map HsName GrVal} 
+     AllGrExpr [ allGlobs : {GlobMap}
                | | ]
 
 -- Do the transformation
@@ -120,10 +141,25 @@ SEM GrExpr
 
 -- Bend the required information from bottom-up to top-down at the top of the tree
 
+ATTR GrAGItf GrModule
+  [ startDicts : {[DictMap]}
+    startGlobs : {[GlobMap]}
+    startSels  : {[SelMap]}
+  |
+  | finalDicts : {DictMap}
+    finalGlobs : {GlobMap}
+    finalSels  : {SelMap}
+  ]
+
 SEM GrModule
-  | Mod   bindL.allDicts = @globalL.dictionaries
-          bindL.allSels  = @bindL.selectors
-          bindL.allGlobs = @globalL.globals
+  | Mod   loc.allDicts   = Map.unions (@loc.finalDicts : @lhs.startDicts)
+          loc.finalDicts = @globalL.dictionaries
+
+          loc.allGlobs   = Map.unions (@loc.finalGlobs : @lhs.startGlobs)
+          loc.finalGlobs = @globalL.globals
+
+          loc.allSels    = Map.unions (@loc.finalSels  : @lhs.startSels)
+          loc.finalSels  = @bindL.selectors
 
 -- Trivial definitions for values in other contexts
 

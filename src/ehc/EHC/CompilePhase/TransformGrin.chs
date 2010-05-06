@@ -209,7 +209,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
       [ dropUnreach
 %%[[9
       , full mergeInstance      "MergeInstance"
-      , once memberSelect       "MemberSelect"
+      , full memberSelect       "MemberSelect"
     
       , dropUnreach
 %%]]
@@ -264,7 +264,7 @@ grSpecialize modNm = concat $ replicate 6 $
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
     , once simpleNullary                     "simply nullary"
-    , once memberSelect                      "member select"
+    , full memberSelect                      "member select"
     -- , once (dropUnreachableBindings False)   "drop unreachable"
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
