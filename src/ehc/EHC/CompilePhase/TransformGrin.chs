@@ -21,6 +21,8 @@ Grin transformation
 -- Language syntax: Grin
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin)
 %%]
+%%[(8 codegen grin) import({%{EH}GrinCode.GrinInfo})
+%%]
 -- Language syntax: Grin bytecode
 %%[(8 codegen grin) import(qualified {%{EH}GrinByteCode} as Bytecode(tagAllowsUnboxedLife))
 %%]
@@ -59,7 +61,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
-%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
 %%]
@@ -129,6 +131,22 @@ cpFullGrinTrf modNm trf m
        ; cpUpdCU modNm $ ecuStoreGrin $ trf (map theGrin imps) $ theGrin modNm
        }
 
+cpFullGrinInfoTrf :: HsName -> GrinInfoPart i -> ([i] -> Grin.GrModule -> (Grin.GrModule, i)) -> String -> EHCompilePhase ()
+cpFullGrinInfoTrf modNm inf trf m
+  = do { cr <- get
+       ; imps <- allImports modNm
+       ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+       ; cpMsg' modNm VerboseALot ("Full GRIN optim, using " ++ show imps) (Just m) fp
+       ; let grin = fromJust $ ecuMbGrin ecu
+       ; let sem  = fromJust $ ecuMbGrinSem ecu
+       ; let (grTrf, nws) = trf (map (impSem inf cr) imps) grin
+       ; let sem' = grinInfoUpd inf nws sem
+       ; cpUpdCU modNm (ecuStoreGrinSem sem' . ecuStoreGrin grTrf)
+       }
+  where
+    impSem inf cr nm =
+      let (ecu,_,_,_) = crBaseInfo nm cr
+      in  fromJust (ecuMbGrinSem ecu >>= grinInfoGet inf)
 %%]
 
 %%[(8 codegen grin) export(cpTransformGrin)
@@ -142,7 +160,8 @@ allImports modNm = do
 
 cpTransformGrin :: HsName -> EHCompilePhase ()
 cpTransformGrin modNm
-  =  do  {  cr <- get
+  =  do  {  cpUpdCU modNm (ecuStoreGrinSem emptyGrinInfo) -- temporary
+         ;  cr <- get
          ;  imports    <- allImports modNm
          ;  let  (ecu,_,opts,_) = crBaseInfo modNm cr
                  fullProg    = ehcOptFullProgAnalysis opts
@@ -208,7 +227,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
     trafos1 =
       [ dropUnreach
 %%[[9
-      , full mergeInstance      "MergeInstance"
+      , full' grMergeInstance   "MergeInstance"   grinInfoMergeInstance
       , full memberSelect       "MemberSelect"
     
       , dropUnreach
@@ -251,6 +270,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
     once trf m = (cpFromGrinTrf modNm trf m, m)
     iter trf m = (cpIterGrinTrf modNm trf m, m)
     full trf m = (cpFullGrinTrf modNm trf m, m)
+    full' trf m i = (cpFullGrinInfoTrf modNm i trf m, m)
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]

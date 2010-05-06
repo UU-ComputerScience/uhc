@@ -41,7 +41,7 @@
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CheckGrinInvariant(checkGrinInvariant)})
 %%]
-%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(mergeInstance)})
+%%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(grMergeInstance)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
 %%]
@@ -149,8 +149,8 @@ doCompileGrin input opts
         do 
          { options <- gets gcsOpts
          ; when (either (const True) (const False) input) caParseGrin  ; caWriteGrin "-110-parsed"
---          ; transformCode         (dropUnreachableBindings False) 
---                                              "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
+         ; transformCode         (dropUnreachableBindings False) 
+                                             "DropUnreachableBindings" ; caWriteGrin "-111-reachable"
 -- %%[[9                                             
 -- 		 ; transformCode         mergeInstance      "MergeInstance"    ; caWriteGrin "-112-instanceMerged"
 -- 		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin "-113-memberSelected"

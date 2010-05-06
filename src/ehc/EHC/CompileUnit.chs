@@ -23,6 +23,8 @@ An EHC compile unit maintains info for one unit of compilation, a Haskell (HS) m
 %%]
 %%[(8 codegen grin) import(qualified {%{EH}GrinCode} as Grin, qualified {%{EH}GrinByteCode} as Bytecode)
 %%]
+%%[(8 codegen grin) import(qualified {%{EH}GrinCode.GrinInfo} as GrinSem)
+%%]
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as Jvm)
 %%]
 -- Language semantics: HS, EH
@@ -135,6 +137,7 @@ data EHCompileUnit
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
+      , ecuMbGrinSem         :: !(Maybe GrinSem.GrinInfo)
       , ecuMbBytecode        :: !(Maybe Bytecode.Module)
       , ecuMbBytecodeSem     :: !(Maybe PP_Doc)
 %%]]
@@ -217,6 +220,7 @@ emptyECU
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            = Nothing
+      , ecuMbGrinSem         = Nothing
       , ecuMbBytecode        = Nothing
       , ecuMbBytecodeSem     = Nothing
 %%]]
@@ -394,7 +398,7 @@ ecuStoreJVMClassL x ecu = ecu { ecuMbJVMClassL = Just x }
 ecuStoreJVMClassFPathL :: EcuUpdater [FPath]
 ecuStoreJVMClassFPathL x ecu = ecu { ecuMbJVMClassL = Just (Right x) }
 
-%%[(8 grin) export(ecuStoreGrin,ecuStoreBytecode,ecuStoreBytecodeSem)
+%%[(8 grin) export(ecuStoreGrin,ecuStoreGrinSem,ecuStoreBytecode,ecuStoreBytecodeSem)
 ecuStoreGrin :: EcuUpdater Grin.GrModule
 %%[[8
 ecuStoreGrin x ecu = ecu { ecuMbGrin = Just x }
@@ -403,6 +407,9 @@ ecuStoreGrin x ecu | x `seq` True = ecu { ecuMbGrin = Just x }
 %%][9999
 ecuStoreGrin x ecu | forceEval x `seq` True = ecu { ecuMbGrin = Just x }
 %%]]
+
+ecuStoreGrinSem :: EcuUpdater GrinSem.GrinInfo
+ecuStoreGrinSem x ecu = ecu { ecuMbGrinSem = Just x }
 
 ecuStoreBytecode :: EcuUpdater Bytecode.Module
 %%[[8

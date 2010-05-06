@@ -13,30 +13,31 @@ WRAPPER GrAGItf
 %%]
 
 
-%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(mergeInstance)
+%%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(grMergeInstance, InfoMergeInstance)
 
-mergeInstance :: [GrModule] -> GrModule -> GrModule
-mergeInstance impsCode code
-  = let imps = map grSem impsCode
-        inh  = Inh_GrAGItf
-                 { startClassMaps_Inh_GrAGItf = map finalClassMap_Syn_GrAGItf imps
-                 , startDictMaps_Inh_GrAGItf  = map finalDictMap_Syn_GrAGItf  imps
-                 , startArityMaps_Inh_GrAGItf = map finalArityMap_Syn_GrAGItf imps
-                 , startSynoMaps_Inh_GrAGItf  = map finalSynoMap_Syn_GrAGItf  imps
-                 }
-        syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  grTrf_Syn_GrAGItf syn
+data InfoMergeInstance = InfoMergeInstance
+  { infoClassMap :: ClassMap
+  , infoDictMap  :: DictMap
+  , infoArityMap :: ArityMap
+  , infoSynoMap  :: SynoMap
+  }
 
-grSem :: GrModule -> Syn_GrAGItf
-grSem code
+grMergeInstance :: [InfoMergeInstance] -> GrModule -> (GrModule, InfoMergeInstance)
+grMergeInstance imps code
   = let inh = Inh_GrAGItf
-                { startClassMaps_Inh_GrAGItf = []
-                , startDictMaps_Inh_GrAGItf  = []
-                , startArityMaps_Inh_GrAGItf = []
-                , startSynoMaps_Inh_GrAGItf  = []
+                { startClassMaps_Inh_GrAGItf = map infoClassMap imps
+                , startDictMaps_Inh_GrAGItf  = map infoDictMap  imps
+                , startArityMaps_Inh_GrAGItf = map infoArityMap imps
+                , startSynoMaps_Inh_GrAGItf  = map infoSynoMap  imps
                 }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  syn
+        inf = InfoMergeInstance
+                { infoClassMap = finalClassMap_Syn_GrAGItf syn
+                , infoDictMap  = finalDictMap_Syn_GrAGItf  syn
+                , infoArityMap = finalArityMap_Syn_GrAGItf syn
+                , infoSynoMap  = finalSynoMap_Syn_GrAGItf  syn
+                }
+    in (grTrf_Syn_GrAGItf syn, inf)
 
 %%]
 
