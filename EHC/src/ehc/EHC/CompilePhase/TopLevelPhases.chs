@@ -23,7 +23,7 @@ level 2..6 : with prefix 'cpEhc'
 %%]
 
 -- general imports
-%%[8 import(qualified Data.Map as Map)
+%%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
 %%[8 import({%{EH}EHC.Common})
@@ -58,6 +58,8 @@ level 2..6 : with prefix 'cpEhc'
 %%[(99 codegen) import({%{EH}Base.Target},{%{EH}EHC.CompilePhase.Link})
 %%]
 %%[20 import({%{EH}EHC.CompilePhase.Module})
+%%]
+%%[99 import({%{EH}Base.Pragma})
 %%]
 %%[99 import({%{EH}EHC.CompilePhase.Cleanup})
 %%]
@@ -410,8 +412,11 @@ cpEhcModuleCompile1 targHSState modNm
            (ECUSHaskell HSStart,_)
              -> do { cpMsg modNm VerboseMinimal "Compiling Haskell"
                    ; cpEhcHaskellModulePrepare modNm
-                   ; cpEhcHaskellParse True False
-%%[[99
+                   ; cpEhcHaskellParse
+%%[[8
+                                       False False
+%%][99
+                                       (ehcOptCPP opts) False
                                        (pkgExposedPackages $ ehcOptPkgDb opts)
 %%]]
                                        modNm
@@ -612,17 +617,48 @@ cpEhcHaskellImport
      pkgKeyL
 %%]]
      modNm
-  = do {
-%%[[20
-         cpParseHsImport modNm
-%%][99
-         cpPreprocessWithCPP pkgKeyL modNm
-       ; cpParseHsImport (hsstateIsLiteral hsst) modNm
+  = do { cr <- get
+       ; let (_,opts) = crBaseInfo' cr
+       
+       -- 1st, parse
+       ; cppAndParse modNm
+%%[[99
+           (ehcOptCPP opts)
 %%]]
        ; cpStepUID
-       ; cpFoldHsMod modNm
-       ; cpGetHsImports modNm
+       
+       -- and then get pragmas and imports
+%%[[20
+       ; foldAndImport modNm
+%%][99
+       ; modNm' <- foldAndImport modNm
+       ; cr2 <- get
+       ; let (ecu,_,opts2,_) = crBaseInfo modNm' cr2
+       
+       -- if we find out that CPP should have invoked, we backtrack to the original runstate and redo the above with CPP
+       ; if not (ehcOptCPP opts2) && Set.member Pragma_CPP (ecuPragmas ecu)
+         then do { put cr
+                 ; cppAndParse modNm True
+                 ; cpStepUID
+                 ; foldAndImport modNm
+                 }
+         else return modNm'
+%%]]
        }
+  where cppAndParse modNm
+%%[[20
+          = cpSeq [ cpParseHsImport modNm
+                  ]
+%%][99
+          doCPP
+          = cpSeq [ when doCPP (cpPreprocessWithCPP pkgKeyL modNm)
+                  , cpParseHsImport (hsstateIsLiteral hsst) modNm
+                  ]
+%%]]
+        foldAndImport modNm
+          = do { cpFoldHsMod modNm
+               ; cpGetHsImports modNm
+               }
 %%]
 
 %%[20 haddock

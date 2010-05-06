@@ -22,7 +22,7 @@ EHCLIB_PKG_unix_VERSION					:= 1.0.0.0
 EHCLIB_PKG_directory_VERSION			:= 1.0.0.0
 EHCLIB_PKG_random_VERSION				:= 1.0.0.2
 
-EHC_PACKAGES_ASSUMED_VERSIONED			:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_PKG_VERSIONED,$(pkg)))
+#EHC_PACKAGES_ASSUMED_VERSIONED			:= $(foreach pkg,$(EHC_PACKAGES_ASSUMED),$(call FUN_PKG_VERSIONED,$(pkg)))
 
 ###########################################################################################
 # which library files to get from which GHC packages
@@ -190,7 +190,7 @@ ehclib-variant-dflt: \
 	     $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) ; \
 	      for pkg in $(EHC_PACKAGES_ASSUMED) ; \
 	      do \
-	        pkgv=`sh $(EHCLIB_MAP_PKG2VERSIONED_SH) $${pkg}` ; \
+	        pkgv=`/bin/sh $(EHCLIB_MAP_PKG2VERSIONED_SH) $${pkg}` ; \
 	        mkdir -p $(call FUN_INSTALL_PKG_PREFIX,$${pkgv}) ;\
 	        hsFiles="`find $(EHCLIB_BLD_VARIANT_ASPECTS_PREFIX)$${pkg} -name '*.*hs'`" ; \
 	        ( echo $${hsFiles} | \

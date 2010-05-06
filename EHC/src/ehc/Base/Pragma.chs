@@ -23,6 +23,7 @@ Internal representation of pragmas.
 %%[99 export(Pragma(..))
 data Pragma
   = Pragma_NoImplicitPrelude				-- no implicit prelude
+  | Pragma_CPP								-- preprocess with cpp
   deriving (Eq,Ord,Enum,Show,Typeable,Data)
 %%]
 
@@ -34,6 +35,7 @@ allPragmaMp
           = [ (drop prefixLen $ show t, t)
             | t <-
                   [ Pragma_NoImplicitPrelude
+                  , Pragma_CPP
                   ]
             ]
         prefixLen = length "Pragma_"
