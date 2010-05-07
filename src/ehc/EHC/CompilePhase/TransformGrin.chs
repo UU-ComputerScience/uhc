@@ -41,7 +41,7 @@ Grin transformation
 -- Heeeel veel Grin-transformaties
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnreachableBindings(dropUnreachableBindings)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
 %%]
@@ -218,6 +218,11 @@ cpTransformGrin modNm
                         where out n nm = cpOutputGrin False ("-0" ++ show (10+n) ++ "-" ++ filter isAlpha nm) modNm
          ;  when (isJust $ ecuMbGrin ecu)
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
+         
+         -- print GrinInfo:
+         -- ; cr <- get
+         -- ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+         -- ; cpMsg' modNm VerboseALot (show (ecuMbGrinSem ecu)) (Just "aap") fp
          }
 
 
@@ -228,7 +233,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
       [ dropUnreach
 %%[[9
       , full' grMergeInstance   "MergeInstance"   grinInfoMergeInstance
-      , full memberSelect       "MemberSelect"
+      , full' grMemberSelect    "MemberSelect"    grinInfoMemberSelect
     
       , dropUnreach
 %%]]
@@ -274,7 +279,8 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
     
 
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
-grSpecialize modNm = concat $ replicate 6 $
+grSpecialize modNm = concatMap (grSpecialize' modNm) [0..5]
+grSpecialize' modNm pass =
     [ once evalStored                        "eval stored"
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
@@ -284,12 +290,13 @@ grSpecialize modNm = concat $ replicate 6 $
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
     , once simpleNullary                     "simply nullary"
-    , full memberSelect                      "member select"
+    , full' grMemberSelect                   "member select" (grinInfoMemberSelectSpec pass)
     -- , once (dropUnreachableBindings False)   "drop unreachable"
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
         iter trf m = (cpIterGrinTrf modNm trf m, m)
         full trf m = (cpFullGrinTrf modNm trf m, m)
+        full' trf m i = (cpFullGrinInfoTrf modNm i trf m, m)
 
 %%]
 

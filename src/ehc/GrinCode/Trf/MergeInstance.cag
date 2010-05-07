@@ -20,7 +20,7 @@ data InfoMergeInstance = InfoMergeInstance
   , infoDictMap  :: DictMap
   , infoArityMap :: ArityMap
   , infoSynoMap  :: SynoMap
-  }
+  } deriving Show
 
 grMergeInstance :: [InfoMergeInstance] -> GrModule -> (GrModule, InfoMergeInstance)
 grMergeInstance imps code

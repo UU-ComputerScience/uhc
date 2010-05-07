@@ -46,27 +46,28 @@ by
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MemberSelect} export(memberSelect)
-memberSelect :: [GrModule] -> GrModule -> GrModule
-memberSelect impsCode code
-  = let imps = map grSem impsCode
-        inh  = Inh_GrAGItf
-                 { startDicts_Inh_GrAGItf = map finalDicts_Syn_GrAGItf imps
-                 , startGlobs_Inh_GrAGItf = map finalGlobs_Syn_GrAGItf imps
-                 , startSels_Inh_GrAGItf  = map finalSels_Syn_GrAGItf  imps
-                 }
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.MemberSelect} export(grMemberSelect,InfoMemberSelect)
+
+data InfoMemberSelect = InfoMemberSelect
+  { infoDictMap :: DictMap
+  , infoGlobMap :: GlobMap
+  , infoSelMap  :: SelMap
+  } deriving Show
+
+grMemberSelect :: [InfoMemberSelect] -> GrModule -> (GrModule, InfoMemberSelect)
+grMemberSelect imps code
+  = let inh  = Inh_GrAGItf
+                  { startDicts_Inh_GrAGItf = map infoDictMap imps
+                  , startGlobs_Inh_GrAGItf = map infoGlobMap imps
+                  , startSels_Inh_GrAGItf  = map infoSelMap  imps
+                  }
         syn  = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  grTrf_Syn_GrAGItf syn
-
-
-grSem :: GrModule -> Syn_GrAGItf
-grSem code
-  = let inh = Inh_GrAGItf
-                { startDicts_Inh_GrAGItf = []
-                , startGlobs_Inh_GrAGItf = []
-                , startSels_Inh_GrAGItf  = []
-                }
-    in wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
+        inf  = InfoMemberSelect
+                  { infoDictMap = finalDicts_Syn_GrAGItf syn
+                  , infoGlobMap = finalGlobs_Syn_GrAGItf syn
+                  , infoSelMap  = finalSels_Syn_GrAGItf  syn
+                  }
+    in  (grTrf_Syn_GrAGItf syn, inf)
 
 type DictMap = Map.Map HsName [HsName]
 type GlobMap = Map.Map HsName GrVal

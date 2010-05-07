@@ -15,20 +15,24 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect})
+%%]
 
 
 %%[(8 codegen grin) hs export(GrinInfo, emptyGrinInfo)
 
 data GrinInfo = GrinInfo
-  { crap :: ()
+  { grMbMemberSelect     :: Maybe InfoMemberSelect
+  , grMbMemberSelectSpec :: [Maybe InfoMemberSelect]
 %%[[9
   , grMbMergeInstance :: Maybe InfoMergeInstance
 %%]]
-  }
+  } deriving Show
 
 emptyGrinInfo :: GrinInfo
 emptyGrinInfo = GrinInfo
-  { crap = ()
+  { grMbMemberSelect  = Nothing
+  , grMbMemberSelectSpec = []
 %%[[9
   , grMbMergeInstance = Nothing
 %%]]
@@ -37,7 +41,7 @@ emptyGrinInfo = GrinInfo
 %%]
 
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMergeInstance)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMergeInstance,grinInfoMemberSelect,grinInfoMemberSelectSpec)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -56,5 +60,28 @@ grUpdMergeInstance x sem = sem { grMbMergeInstance = Just x }
 
 grinInfoMergeInstance = GrinInfoPart grMbMergeInstance grUpdMergeInstance
 %%]]
+
+grUpdMemberSelect :: GrinInfoUpd InfoMemberSelect
+grUpdMemberSelect x sem = sem { grMbMemberSelect = Just x }
+
+grinInfoMemberSelect = GrinInfoPart grMbMemberSelect grUpdMemberSelect
+
+grinInfoMemberSelectSpec :: Int -> GrinInfoPart InfoMemberSelect
+grinInfoMemberSelectSpec i = GrinInfoPart
+  { grinInfoGet = lget i . grMbMemberSelectSpec
+  , grinInfoUpd = upd
+  }
+  where upd x sem = sem { grMbMemberSelectSpec = lput i x (grMbMemberSelectSpec sem) }
+
+
+lget :: Int -> [Maybe a] -> Maybe a
+lget i xs | i < length xs = xs !! i
+          | otherwise     = Nothing
+
+lput :: Int -> a -> [Maybe a] -> [Maybe a]
+lput i x xs = case splitAt i xs' of
+  (ll, [])     -> ll ++ [Just x]
+  (ll, (_:lr)) -> ll ++ Just x : lr
+  where xs' = xs ++ replicate (i - length xs) Nothing
 
 %%]
