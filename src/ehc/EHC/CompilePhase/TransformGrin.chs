@@ -43,7 +43,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
@@ -238,7 +238,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
       , dropUnreach
 %%]]
       , once cleanupPass        "CleanupPass"
-      , once simpleNullary      "SimpleNullary"
+      , full' grSimpleNullary   "SimpleNullary"   grinInfoSimpleNullary
 %%[[97
       , once constInt           "ConstInt"
 %%]]
@@ -289,14 +289,14 @@ grSpecialize' modNm pass =
     , iter copyPropagation                   "copy prop"
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"
-    , once simpleNullary                     "simply nullary"
-    , full' grMemberSelect                   "member select" (grinInfoMemberSelectSpec pass)
+    , full' grSimpleNullary                  "simply nullary" grinInfoSimpleNullarySpec
+    , full' grMemberSelect                   "member select"  grinInfoMemberSelectSpec
     -- , once (dropUnreachableBindings False)   "drop unreachable"
     ]
   where once trf m = (cpFromGrinTrf modNm trf m, m)
         iter trf m = (cpIterGrinTrf modNm trf m, m)
         full trf m = (cpFullGrinTrf modNm trf m, m)
-        full' trf m i = (cpFullGrinInfoTrf modNm i trf m, m)
+        full' trf m i = (cpFullGrinInfoTrf modNm (i pass) trf m, m)
 
 %%]
 

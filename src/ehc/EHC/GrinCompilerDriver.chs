@@ -23,8 +23,8 @@
 %%]
 -- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.MemberSelect(memberSelect)})
 -- %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
-%%]
+-- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
+-- %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
 %%]
 %%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})

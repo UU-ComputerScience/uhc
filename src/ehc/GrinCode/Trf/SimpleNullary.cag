@@ -19,13 +19,20 @@ WRAPPER GrAGItf
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
-%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(simpleNullary)
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(grSimpleNullary,InfoSimpleNullary)
 
-simpleNullary :: GrModule -> GrModule
-simpleNullary code
-  = let inh = Inh_GrAGItf
+newtype InfoSimpleNullary = InfoSimpleNullary
+  { infoInfoMap :: InfoMap
+  } deriving Show
+
+type InfoMap = Map.Map HsName GrVal
+
+grSimpleNullary :: [InfoSimpleNullary] -> GrModule -> (GrModule, InfoSimpleNullary)
+grSimpleNullary imps code
+  = let inh = Inh_GrAGItf { startInfos_Inh_GrAGItf = map infoInfoMap imps }
         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf code)) inh
-    in  grTrf_Syn_GrAGItf syn
+        inf = InfoSimpleNullary { infoInfoMap = finalInfo_Syn_GrAGItf syn }
+    in  (grTrf_Syn_GrAGItf syn, inf)
 
 %%]
 
@@ -37,12 +44,15 @@ ATTR AllNT   [ | | grTrf: SELF     ]
 
 %%[(8 codegen grin)
 
-ATTR AllBind  [ | | info   USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+ATTR AllBind  [ | | info   USE {`Map.union`} {Map.empty} : {InfoMap} ]
               
-ATTR AllGlobal [ info   : {Map.Map HsName GrVal} | | ]
+ATTR AllGlobal [ info   : {InfoMap} | | ]
+
+ATTR GrAGItf GrModule [ startInfos : {[InfoMap]} | | finalInfo : {InfoMap} ]
 
 SEM GrModule
-  | Mod    globalL.info   = @bindL.info
+  | Mod    globalL.info   = Map.unions (@loc.finalInfo : @lhs.startInfos)
+           loc.finalInfo  = @bindL.info
            
 SEM GrBind
   | Bind    lhs.info   =   if null @argNmL

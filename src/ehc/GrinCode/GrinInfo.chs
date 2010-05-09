@@ -15,33 +15,37 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary})
 %%]
 
 
 %%[(8 codegen grin) hs export(GrinInfo, emptyGrinInfo)
 
 data GrinInfo = GrinInfo
-  { grMbMemberSelect     :: Maybe InfoMemberSelect
-  , grMbMemberSelectSpec :: [Maybe InfoMemberSelect]
+  { grMbMemberSelect      :: Maybe InfoMemberSelect
+  , grMbMemberSelectSpec  :: [Maybe InfoMemberSelect]
+  , grMbSimpleNullary     :: Maybe InfoSimpleNullary
+  , grMbSimpleNullarySpec :: [Maybe InfoSimpleNullary]
 %%[[9
-  , grMbMergeInstance :: Maybe InfoMergeInstance
+  , grMbMergeInstance     :: Maybe InfoMergeInstance
 %%]]
   } deriving Show
 
 emptyGrinInfo :: GrinInfo
 emptyGrinInfo = GrinInfo
-  { grMbMemberSelect  = Nothing
-  , grMbMemberSelectSpec = []
+  { grMbMemberSelect      = Nothing
+  , grMbMemberSelectSpec  = []
+  , grMbSimpleNullary     = Nothing
+  , grMbSimpleNullarySpec = []
 %%[[9
-  , grMbMergeInstance = Nothing
+  , grMbMergeInstance     = Nothing
 %%]]
   }
 
 %%]
 
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMergeInstance,grinInfoMemberSelect,grinInfoMemberSelectSpec)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMergeInstance,grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -65,14 +69,22 @@ grUpdMemberSelect :: GrinInfoUpd InfoMemberSelect
 grUpdMemberSelect x sem = sem { grMbMemberSelect = Just x }
 
 grinInfoMemberSelect = GrinInfoPart grMbMemberSelect grUpdMemberSelect
+grinInfoMemberSelectSpec = grinInfoSpec grMbMemberSelectSpec (\x sem -> sem { grMbMemberSelectSpec = x })
 
-grinInfoMemberSelectSpec :: Int -> GrinInfoPart InfoMemberSelect
-grinInfoMemberSelectSpec i = GrinInfoPart
-  { grinInfoGet = lget i . grMbMemberSelectSpec
-  , grinInfoUpd = upd
+grUpdSimpleNullary x sem = sem { grMbSimpleNullary = Just x }
+
+grinInfoSimpleNullary = GrinInfoPart grMbSimpleNullary grUpdSimpleNullary
+grinInfoSimpleNullarySpec = grinInfoSpec grMbSimpleNullarySpec (\x sem -> sem { grMbSimpleNullarySpec = x })
+
+%%]
+
+
+%%[(8 codegen grin) hs
+grinInfoSpec :: (GrinInfo -> [Maybe a]) -> ([Maybe a] -> GrinInfo -> GrinInfo) -> Int -> GrinInfoPart a
+grinInfoSpec get upd i = GrinInfoPart
+  { grinInfoGet = lget i . get
+  , grinInfoUpd = \x inf -> (`upd` inf) . lput i x . get $ inf
   }
-  where upd x sem = sem { grMbMemberSelectSpec = lput i x (grMbMemberSelectSpec sem) }
-
 
 lget :: Int -> [Maybe a] -> Maybe a
 lget i xs | i < length xs = xs !! i
