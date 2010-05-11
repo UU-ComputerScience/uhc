@@ -424,8 +424,8 @@ mkDefaultTvNmPP cfg pre tv = cfgPPTyPPHsn cfg $ mkHNm $ pre ++ "_" ++ show tv
 tvCategPrefix :: TyVarCateg -> String
 tvCategPrefix TyVarCateg_Fixed = "c"
 tvCategPrefix TyVarCateg_Plain = "v"
-%%[[6_4
-tvCategPrefix TyVarCateg_Exist = "C"
+%%[[9
+tvCategPrefix TyVarCateg_Meta  = "m"
 %%]
 %%]
 
@@ -707,7 +707,7 @@ SEM TyAnn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer || hmtyast)
-ATTR Ty Ty->Ty [ | positionalFldNmL: {[HsName]} | ]
+ATTR Ty [ | positionalFldNmL: {[HsName]} | ]
 
 SEM TyAGItf
   | AGItf           ty      .   positionalFldNmL    =   positionalFldNames
@@ -805,7 +805,7 @@ SEM RowExts
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(1 hmtyinfer || hmtyast).ParNeed
-ATTR Ty Ty->Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
+ATTR Ty [ parNeed: ParNeed  parNeedL: ParNeedL | | ]
 
 SEM TyAGItf
   | AGItf       ty      .   parNeed             =   ParNotNeeded

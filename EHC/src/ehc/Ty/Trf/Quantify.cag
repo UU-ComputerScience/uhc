@@ -99,7 +99,8 @@ valTyQuantify :: (TyVarId -> Ty) -> TvIsBound -> Ty -> Ty
 valTyQuantify tvKi tvIsBound ty
   = tqoTy $ tyQuantifyWithOpts opts ty
   where opts = defaultTyQuOpts
-                  { tqoptTvIsBound       = tvIsBound
+                  { tqoptAllowInnerQuant = False
+                  , tqoptTvIsBound       = tvIsBound
                   , tqoptTvL1       	 = tvKi
                   }
 %%]

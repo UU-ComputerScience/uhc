@@ -83,11 +83,11 @@ instance PP ToCoreRes where
   pp r = "TCR" >#< tcrExpr r
 %%]
 
-%%[(9 codegen) export(AmbigEvid(..))
-data AmbigEvid
-  = AmbigEvid
-      { ambigevidPredOcc 	:: !CHRPredOcc
-      , ambigevidInfos   	:: ![RedHowAnnotation]
+%%[(9 codegen) export(OverlapEvid(..))
+data OverlapEvid
+  = OverlapEvid
+      { overlapevidPredOcc 	:: !CHRPredOcc
+      , overlapevidInfos   	:: ![RedHowAnnotation]
       }
 %%]
 
@@ -100,7 +100,7 @@ predScopeToValBindMapUnion = Map.unionWith (++)
 %%]
 
 %%[(9 codegen) export(evidMpToCore,EvidKeyToExprMap)
-evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[AmbigEvid])
+evidMpToCore :: FIIn -> InfoToEvidenceMap CHRPredOcc RedHowAnnotation -> (EvidKeyToExprMap,[OverlapEvid])
 evidMpToCore env evidMp
   = ( Map.map (\r -> (tcrExpr r,tcrUsed r,tcrScope r)) $ tcsMp
       $ foldr mke (ToCoreState Map.empty Map.empty Map.empty (fiUniq env))
@@ -178,7 +178,7 @@ evidMpToCore env evidMp
         strip (Evid_Proof p i                  evs ) = Evid_Proof p i (map strip evs)
         strip ev                                     = ev
         splitAmbig  (Evid_Proof p i es            )  = let (es',as) = splitAmbigs es in (Evid_Proof p i es',as)
-        splitAmbig  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[AmbigEvid p (map fst ess)])
+        splitAmbig  (Evid_Ambig p   ess@((i,es):_))  = let (es',_ ) = splitAmbigs es in (Evid_Proof p i es',[OverlapEvid p (map fst ess)])
         splitAmbig  ev                               = (ev,[])
         splitAmbigs es                               = let (es',as) = unzip $ map splitAmbig es in (es',concat as)
         dbg m = id -- Debug.tr m empty

@@ -99,10 +99,11 @@ fiLookupReplaceTyCyc  fi t  =  maybe t (maybe t id . fiLookupTyVarCyc fi) $ tyMb
 %%[(4 hmtyinfer) export(fiAllowTyVarBind)
 -- Pre: is a tyvar
 fiAllowTyVarBind :: FIIn -> Ty -> Bool
-fiAllowTyVarBind fi (Ty_Var v f)   =  f == TyVarCateg_Plain
+fiAllowTyVarBind fi (Ty_Var v f)   =  f `elem` fioBindCategs (fiFIOpts fi) -- f == TyVarCateg_Plain
 %%[[9
                                       && not (v `Set.member` fioDontBind (fiFIOpts fi))
 %%]]
+fiAllowTyVarBind fi _              =  False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
