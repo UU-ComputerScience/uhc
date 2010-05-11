@@ -1,4 +1,4 @@
-TODO FULLGRIN needs env of constants
+DONE FULLGRIN needs env of constants
 
 %%[doesWhat doclatex
 
@@ -42,12 +42,21 @@ by
 %%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalStored} export(evalStored)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.EvalStored} export(grEvalStored,InfoEvalStored)
 
-evalStored :: GrModule -> GrModule
-evalStored grmod = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                                        (Inh_GrAGItf)
-                   in grTrf_Syn_GrAGItf t
+newtype InfoEvalStored = InfoEvalStored
+  { infoEnv :: VarMap
+  } deriving Show
+
+type VarMap = Map.Map HsName GrVal
+
+grEvalStored :: [InfoEvalStored] -> GrModule -> (GrModule, InfoEvalStored)
+grEvalStored imps grmod
+  = let inh = Inh_GrAGItf { startEnvs_Inh_GrAGItf = map infoEnv imps }
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
+        inf = InfoEvalStored { infoEnv = finalEnv_Syn_GrAGItf syn }
+    in (grTrf_Syn_GrAGItf syn, inf)
+
 %%]
 
 
@@ -65,12 +74,14 @@ ATTR AllNT [ | | grTrf: SELF ]
 --   - with final tag
 --   - with nonfinal tag, which has not been updated in the meanwhile
 
-ATTR AllBind AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
+ATTR GrModule GrAGItf [ startEnvs : {[VarMap]} | | finalEnv : {VarMap} ]
+
+ATTR AllBind AllGrExpr  [  env : {VarMap} | | ]
 
 ATTR GrExpr [  | | mbStoredValue : {Maybe GrVal}
                    mbUpdatedVar  : {Maybe HsName} ]
                    
-ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {VarMap} ]
 
 ATTR GrPatLam [ | | getName : {HsName} ]
 
@@ -91,7 +102,8 @@ SEM GrVal
 
 
 SEM GrModule
-  | Mod       bindL.env    =  @globalL.initialEnv
+  | Mod       bindL.env    = Map.unions (@loc.finalEnv : @lhs.startEnvs)
+              loc.finalEnv = @globalL.initialEnv
 
 SEM GrExpr
   | Seq       loc.env2  =  maybe @lhs.env

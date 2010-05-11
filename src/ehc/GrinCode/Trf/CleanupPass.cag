@@ -1,4 +1,4 @@
-TODO FULLGRIN needs complete TagMap
+DONE FULLGRIN needs complete TagMap
 
 %%[doesWhat doclatex
 
@@ -8,7 +8,7 @@ do not delay constructorfunctions: instead of F/Con, use C/Con;
 
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(cleanupPass)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.CleanupPass} export(grCleanupPass, InfoCleanupPass)
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Set as Set,qualified Data.Map as Map, {%{EH}Base.Builtin}(hsnIsConstructorName), Maybe(fromJust))
 %%]
@@ -21,11 +21,19 @@ WRAPPER GrAGItf
 %%]
 
 %%[(8 codegen grin) hs
-cleanupPass :: GrModule -> GrModule
-cleanupPass grmod 
-   = let t = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                          (Inh_GrAGItf)
-     in grTrf_Syn_GrAGItf t
+
+newtype InfoCleanupPass = InfoCleanupPass
+  { infoTags :: TagMap
+  } deriving Show
+
+type TagMap = Map.Map HsName GrTag
+
+grCleanupPass :: [InfoCleanupPass] -> GrModule -> (GrModule, InfoCleanupPass)
+grCleanupPass imps grmod
+   = let inh = Inh_GrAGItf { startTags_Inh_GrAGItf = map infoTags imps }
+         syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
+         inf = InfoCleanupPass { infoTags = finalTags_Syn_GrAGItf syn }
+     in (grTrf_Syn_GrAGItf syn, inf)
 %%]
 
 %%[(8 codegen grin)
@@ -44,10 +52,17 @@ ATTR AllNT   [ | | grTrf: SELF ]
 -- Pass down the ctagMap to all GrTag positions, because it is needed when generating #C tags.
 -- The map is taken from the module header and slightly tweaked before passing down.
 
-ATTR AllDef AllExpr [ tagMap : {Map.Map HsName GrTag} | | ]
+ATTR GrModule GrAGItf
+  [ startTags : {[TagMap]}
+  |
+  | finalTags : {TagMap}
+  ]
+
+ATTR AllDef AllExpr [ tagMap : {TagMap} | | ]
 
 SEM GrModule
-  | Mod  loc.tagMap  =  Map.fromList [ (nm,x) | xs <- Map.elems @tagsMp, x <- xs, let GrTag_Con _ _ nm = x ]
+  | Mod  loc.finalTags = Map.fromList [ (nm,x) | xs <- Map.elems @tagsMp, x <- xs, let GrTag_Con _ _ nm = x ]
+         loc.tagMap    = Map.unions (@loc.finalTags : @lhs.startTags)
 
 -- do the translations
 SEM GrTag

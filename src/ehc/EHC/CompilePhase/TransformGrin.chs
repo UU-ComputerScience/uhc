@@ -45,7 +45,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass})
 %%]
 %%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
 %%]
@@ -63,7 +63,7 @@ Grin transformation
 %%]
 %%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
 %%]
@@ -237,7 +237,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
     
       , dropUnreach
 %%]]
-      , once cleanupPass        "CleanupPass"
+      , full' grCleanupPass     "CleanupPass"     grinInfoCleanupPass
       , full' grSimpleNullary   "SimpleNullary"   grinInfoSimpleNullary
 %%[[97
       , once constInt           "ConstInt"
@@ -281,7 +281,7 @@ grPerModuleFullProg modNm = trafos1 ++ invariant ++ grSpecialize modNm ++ [dropU
 -- grSpecialize :: [(Grin.GrModule -> Grin.GrModule, String)]
 grSpecialize modNm = concatMap (grSpecialize' modNm) [0..5]
 grSpecialize' modNm pass =
-    [ once evalStored                        "eval stored"
+    [ full' grEvalStored                     "eval stored"    grinInfoEvalStoredSpec
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
     -- , iter dropUnusedExpr                    "drop unused"

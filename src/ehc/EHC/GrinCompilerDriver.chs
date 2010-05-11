@@ -25,8 +25,8 @@
 -- %%]
 -- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SimpleNullary(simpleNullary)})
 -- %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
-%%]
+-- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.CleanupPass(cleanupPass)})
+-- %%]
 %%[(97 codegen grin) import({%{EH}GrinCode.Trf.ConstInt(constInt)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.BuildAppBindings(buildAppBindings)})
@@ -43,8 +43,8 @@
 %%]
 -- %%[(9 codegen grin) import({%{EH}GrinCode.Trf.MergeInstance(grMergeInstance)})
 -- %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
-%%]
+-- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.EvalStored(evalStored)})
+-- %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})

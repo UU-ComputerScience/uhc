@@ -15,7 +15,7 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass})
 %%]
 
 
@@ -26,6 +26,8 @@ data GrinInfo = GrinInfo
   , grMbMemberSelectSpec  :: [Maybe InfoMemberSelect]
   , grMbSimpleNullary     :: Maybe InfoSimpleNullary
   , grMbSimpleNullarySpec :: [Maybe InfoSimpleNullary]
+  , grMbEvalStoredSpec    :: [Maybe InfoEvalStored]
+  , grMbCleanupPass       :: Maybe InfoCleanupPass
 %%[[9
   , grMbMergeInstance     :: Maybe InfoMergeInstance
 %%]]
@@ -37,6 +39,8 @@ emptyGrinInfo = GrinInfo
   , grMbMemberSelectSpec  = []
   , grMbSimpleNullary     = Nothing
   , grMbSimpleNullarySpec = []
+  , grMbEvalStoredSpec    = []
+  , grMbCleanupPass       = Nothing
 %%[[9
   , grMbMergeInstance     = Nothing
 %%]]
@@ -45,7 +49,10 @@ emptyGrinInfo = GrinInfo
 %%]
 
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMergeInstance,grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec)
+%%[(9 codegen grin) hs export(grinInfoMergeInstance)
+%%]
+
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -75,6 +82,10 @@ grUpdSimpleNullary x sem = sem { grMbSimpleNullary = Just x }
 
 grinInfoSimpleNullary = GrinInfoPart grMbSimpleNullary grUpdSimpleNullary
 grinInfoSimpleNullarySpec = grinInfoSpec grMbSimpleNullarySpec (\x sem -> sem { grMbSimpleNullarySpec = x })
+
+grinInfoEvalStoredSpec = grinInfoSpec grMbEvalStoredSpec (\x sem -> sem { grMbEvalStoredSpec = x })
+
+grinInfoCleanupPass = GrinInfoPart grMbCleanupPass (\x sem -> sem { grMbCleanupPass = Just x })
 
 %%]
 
