@@ -67,7 +67,7 @@ Grin transformation
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
+%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})
 %%]
@@ -220,9 +220,9 @@ cpTransformGrin modNm
                  (cpSeq (if ehcOptDumpGrinStages opts then optGrinDump else optGrinNormal))
          
          -- print GrinInfo:
-         -- ; cr <- get
-         -- ; let (ecu,_,_,fp) = crBaseInfo modNm cr
-         -- ; cpMsg' modNm VerboseALot (show (ecuMbGrinSem ecu)) (Just "aap") fp
+         ; cr <- get
+         ; let (ecu,_,_,fp) = crBaseInfo modNm cr
+         ; cpMsg' modNm VerboseALot (show (ecuMbGrinSem ecu)) (Just "aap") fp
          }
 
 
@@ -285,7 +285,7 @@ grSpecialize' modNm pass =
     , once applyUnited                       "apply united"
     , once grFlattenSeq                      "flatten"
     -- , iter dropUnusedExpr                    "drop unused"
-    , full specConst                         "spec const"
+    , full' grSpecConst                      "spec const"     grinInfoSpecConstSpec
     , iter copyPropagation                   "copy prop"
     , once singleCase                        "single case"
     , once grFlattenSeq                      "flatten"

@@ -22,32 +22,37 @@ Specialize functions that are called with constant arguments
 WRAPPER GrAGItf
 %%]
 
-%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SpecConst} export(specConst)
-specConst :: [GrModule] -> GrModule -> GrModule
-specConst imports grmod
-  = let ext    = existingSpecs grmod
-        exts   = Map.unionsWith Map.union (ext : map existingSpecs imports)
-        consts = Map.unionsWith (panic "SpecConst.specConst: constants")
-                  $ map allConsts   (grmod : imports)
-        binds  = Map.unionsWith (panic "SpecConst.specConst: bindings")
-                  $ map allBindings (grmod : imports)
+%%[(8 codegen grin) hs module {%{EH}GrinCode.Trf.SpecConst} export(grSpecConst,InfoSpecConst)
 
-        syn    = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod))
-                         (Inh_GrAGItf
-                          { startExisting_Inh_GrAGItf = exts
-                          , startSpecNmbr_Inh_GrAGItf = maxExisting ext + 1
-                          , startConstMap_Inh_GrAGItf = consts
-                          })
+data InfoSpecConst = InfoSpecConst
+  { infoExisting  :: Existing
+  , infoConstants :: Constants
+  , infoBindings  :: Bindings
+  } deriving Show
 
+grSpecConst :: [InfoSpecConst] -> GrModule -> (GrModule, InfoSpecConst)
+grSpecConst imps grmod
+  = let inh = Inh_GrAGItf
+                 { startExisting_Inh_GrAGItf = map infoExisting  imps
+                 , startConstMap_Inh_GrAGItf = map infoConstants imps
+                 }
+        syn = wrap_GrAGItf (sem_GrAGItf (GrAGItf_AGItf grmod)) inh
+        inf = InfoSpecConst
+                 { infoExisting  = finalExisting_Syn_GrAGItf syn
+                 , infoConstants = finalConstMap_Syn_GrAGItf syn
+                 , infoBindings  = allBindings_Syn_GrAGItf   syn
+                 }
+ 
         -- Produce specialized duplicates
+        bindings        = Map.unions (map infoBindings (inf : imps))
         toBeSpecialized = toBeSpecialized_Syn_GrAGItf syn
-        duplics         = makeDuplics binds toBeSpecialized
+        duplics         = makeDuplics bindings toBeSpecialized
 
         -- Transformed GRIN without duplicates
         grTrf           = grTrf_Syn_GrAGItf syn
 
         -- Merge these
-    in catBindings grTrf duplics
+    in (catBindings grTrf duplics, inf)
 
 
 
@@ -91,35 +96,6 @@ catBindings (GrModule_Mod nm globl bindl tags) binds
 maxExisting :: Existing -> Int
 maxExisting = maximum . (0 :) . map fst . concatMap Map.elems . Map.elems
 
-
--- | Collect all existing specialized functions from a module.
-existingSpecs :: GrModule -> Existing
-existingSpecs (GrModule_Mod _ _ bindl _) = Map.unionsWith Map.union $ map ex bindl
-  where ex (GrBind_Bind nm ann args bod)
-          = case ann of
-              GrBindAnnSpecialized nmOrig num argsSpec -> Map.singleton nmOrig (Map.singleton argsSpec (num,nm))
-              _                                        -> Map.empty
-        ex _
-          = Map.empty
-  -- TODO we don't look into GrBind_Rec, because we always put specialized
-  -- functions on the top level. This might we wrong.
-
-
--- | Collect all bindings in a convenient Map.
-allBindings :: GrModule -> Bindings
-allBindings (GrModule_Mod _ _ bindl _) = allBindings' bindl
-  where allBindings' = Map.unionsWith (panic "SpecConst.allBindings") . map al
-        al b@(GrBind_Bind nm _ _ _) = Map.singleton nm b
-        al b@(GrBind_Rec  bl      ) = allBindings' bl
-        al _                        = Map.empty
-
-
--- | Collect all constants.
-allConsts :: GrModule -> Constants
-allConsts (GrModule_Mod _ globl _ _) = Map.unionsWith (panic "SpecConst.allConsts") $ map cs globl
-  where cs (GrGlobal_Global nm val)  = Map.singleton nm val
-
-
 %%]
 
 
@@ -130,15 +106,36 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 %%[(8 codegen grin)
 
+-- Collect global constants
+
+ATTR AllGrVal AllGrTag [ | | copy: SELF ]
+
+ATTR AllGlobal [ | | genconstMap USE {`Map.union`} {Map.empty} : {Constants} ]
+
+SEM GrGlobal 
+  | Global  lhs.genconstMap = Map.singleton @nm @val.copy
+
 -- Distribute global constants
+
+ATTR GrAGItf GrModule [ startConstMap : {[Constants]} | | finalConstMap : {Constants} ]
 
 ATTR AllBind AllExpr AllGlobal [ constMap : {Constants} | | ]
 
-ATTR GrAGItf GrModule [ startConstMap : {Constants} | | ]
+SEM GrModule
+  | Mod   loc.constMap      = Map.unions (@loc.finalConstMap : @lhs.startConstMap)
+          loc.finalConstMap = @globalL.genconstMap
+
+-- Collect all bindings
+
+ATTR AllBind [ | | genbindings USE {`Map.union`} {Map.empty} : {Bindings} ]
+
+SEM GrBind
+  | Bind  lhs.genbindings = Map.singleton @nm @grTrf
+
+ATTR GrAGItf GrModule [ | | allBindings : {Bindings} ]
 
 SEM GrModule
-  | Mod   globalL.constMap  = @lhs.startConstMap
-          bindL.constMap    = @lhs.startConstMap
+  | Mod   lhs.allBindings = @bindL.genbindings
 
 
 -- find the variables in a value list
@@ -154,6 +151,26 @@ SEM GrValL
   | Nil   lhs.mbVars = []
   | Cons  lhs.mbVars = @hd.mbVar : @tl.mbVars 
   
+
+-- Collect existing specializations
+
+ATTR AllBind [ | | collExisting USE {`mapUnionWithMapUnion`} {Map.empty} : {Existing} ]
+
+SEM GrBind
+  | Bind   lhs.collExisting  =  case @annot of
+                                  GrBindAnnSpecialized nm i xs -> Map.singleton nm (Map.singleton xs (i, @nm))
+                                  _                            -> Map.empty
+
+-- Distribute existing specializations
+
+ATTR GrModule GrAGItf [ | | finalExisting : {Existing} ]
+
+ATTR AllBind [ existing : {Existing} | | ]
+
+SEM GrModule
+  | Mod   loc.existing    = foldr mapUnionWithMapUnion @loc.finalExisting @lhs.startExisting
+          loc.finalExisting = @bindL.collExisting
+          loc.firstSpecNmbr = 1 + maxExisting @loc.finalExisting
 
 
 {
@@ -228,8 +245,7 @@ SEM GrTag
 ATTR AllBind AllExpr AllGlobal [ specializedCalls : {Specialized} | | ]
 
 ATTR GrAGItf GrModule
-  [ startSpecNmbr : {Int} 
-    startExisting : {Existing}
+  [ startExisting : {[Existing]}
   |
   | toBeSpecialized : {ToBeSpecialized}
   ]
@@ -237,11 +253,15 @@ ATTR GrAGItf GrModule
 SEM GrModule
   | Mod   globalL.specializedCalls = @loc.allSpec
           bindL  .specializedCalls = @loc.allSpec
+
+          -- All needed specializations.
           loc.specializable        = mapUnionWithSetUnion @globalL.specializableCalls @bindL.specializableCalls
-          loc.toBeSpecialized      = numberSpecs @moduleNm @lhs.startSpecNmbr $ specNonExisting @loc.specializable @loc.allExist
-          loc.allExist             = @lhs.startExisting
-          loc.allSpec              = mapUnionWithMapUnion @loc.allExist @loc.toBeSpecialized
-          lhs.toBeSpecialized      = @loc.toBeSpecialized
+
+          -- All specialized functions that have to be made.
+          loc.toBeSpecialized      = numberSpecs @moduleNm @loc.firstSpecNmbr $ specNonExisting @loc.specializable @loc.existing
+
+          -- All specialized functions that are or will be available.
+          loc.allSpec              = mapUnionWithMapUnion @loc.existing @loc.toBeSpecialized
 
           lhs.grTrf                = @loc.grTrf
 

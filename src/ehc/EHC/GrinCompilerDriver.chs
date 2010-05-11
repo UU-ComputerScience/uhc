@@ -47,8 +47,8 @@
 -- %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.ApplyUnited(applyUnited)})
 %%]
-%%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
-%%]
+-- %%[(8 codegen grin) import({%{EH}GrinCode.Trf.SpecConst(specConst)})
+-- %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.NumberIdents(numberIdents)})
 %%]
 %%[(8 codegen grin) import({%{EH}GrinCode.Trf.DropUnusedExpr(dropUnusedExpr)})

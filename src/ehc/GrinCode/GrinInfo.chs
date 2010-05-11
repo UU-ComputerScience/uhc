@@ -15,7 +15,7 @@ up to the transformations themselves.
 -- Import incremental transformations.
 %%[(9 codegen grin) hs import({%{EH}GrinCode.Trf.MergeInstance})
 %%]
-%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass})
+%%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst})
 %%]
 
 
@@ -28,6 +28,7 @@ data GrinInfo = GrinInfo
   , grMbSimpleNullarySpec :: [Maybe InfoSimpleNullary]
   , grMbEvalStoredSpec    :: [Maybe InfoEvalStored]
   , grMbCleanupPass       :: Maybe InfoCleanupPass
+  , grMbSpecConstSpec     :: [Maybe InfoSpecConst]
 %%[[9
   , grMbMergeInstance     :: Maybe InfoMergeInstance
 %%]]
@@ -41,6 +42,7 @@ emptyGrinInfo = GrinInfo
   , grMbSimpleNullarySpec = []
   , grMbEvalStoredSpec    = []
   , grMbCleanupPass       = Nothing
+  , grMbSpecConstSpec     = []
 %%[[9
   , grMbMergeInstance     = Nothing
 %%]]
@@ -52,7 +54,7 @@ emptyGrinInfo = GrinInfo
 %%[(9 codegen grin) hs export(grinInfoMergeInstance)
 %%]
 
-%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass)
+%%[(8 codegen grin) hs export(GrinInfoPart(..),grinInfoMemberSelect,grinInfoMemberSelectSpec,grinInfoSimpleNullary,grinInfoSimpleNullarySpec,grinInfoEvalStoredSpec,grinInfoCleanupPass,grinInfoSpecConstSpec)
 
 type GrinInfoUpd i = i -> GrinInfo -> GrinInfo
 
@@ -86,6 +88,8 @@ grinInfoSimpleNullarySpec = grinInfoSpec grMbSimpleNullarySpec (\x sem -> sem { 
 grinInfoEvalStoredSpec = grinInfoSpec grMbEvalStoredSpec (\x sem -> sem { grMbEvalStoredSpec = x })
 
 grinInfoCleanupPass = GrinInfoPart grMbCleanupPass (\x sem -> sem { grMbCleanupPass = Just x })
+
+grinInfoSpecConstSpec = grinInfoSpec grMbSpecConstSpec (\x sem -> sem { grMbSpecConstSpec = x })
 
 %%]
 
