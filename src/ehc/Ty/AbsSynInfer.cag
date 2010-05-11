@@ -22,8 +22,11 @@ DATA Ty
                 categ           : TyVarCateg
 
 DATA TyVarCateg
-  | Plain
-  | Fixed
+  | Plain											-- plain type variables
+  | Fixed											-- fixed, i.e. cannot be bound during type matching/fitsIn
+%%[[9
+  | Meta											-- tvar for reasoning about the typelevel, not on/in the typelevel; for CHR rules
+%%]]
 %%]
 
 %%[(3 hmtyinfer || hmtyast).Quant

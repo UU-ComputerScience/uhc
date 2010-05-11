@@ -88,8 +88,11 @@ SEM Expr
 SEM Expr
   | Let         decls       .   patTyVarMp          :=  @forExprTyVarMp |=> @exTyVarMp1 |=> @lhs.tyVarMp
                 loc         .   doValGamQuantify	=	\doQuant tyVarMp prOccL -> valGamQuantifyWithVarMp doQuant @valQuTyKiGam @quTvKiVarMp tyVarMp @noLetQuantTyVarIdS prOccL @valGam_l_
+                            .   doPredAmbigSplit    =   \tqoGam prOccL
+                                                           -> let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
+                                                              in  partition (\o -> poPoi o `Set.member` assumedByQuant) prOccL
                             .   (quValGam_qu_,quTyVarMp, (cycTyVarMp_l,tqoGam))
-                                                    :=  @doValGamQuantify True @tyVarMpDeclsQuant @quantPrOccL
+                                                    :=  @doValGamQuantify True @tyVarMpDeclsQuant @toQuantOverPrOccL
                             .   tmpoTyVarMp         =   foldr (\tmpo c -> tmpoImplsVarMp tmpo |=> c) emptyVarMp (gamElts @tqoGam)
 %%]
 

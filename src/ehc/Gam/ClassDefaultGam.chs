@@ -8,22 +8,27 @@ Each class can have multiple types as its default.
 Currently only the first one is used.
 %%]
 
-%%[9 module {%{EH}Gam.ClassDefaultGam}
+%%[(9 hmtyinfer || hmtyast) module {%{EH}Gam.ClassDefaultGam}
 %%]
 
-%%[9 hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
+%%[(9 hmtyinfer || hmtyast) hs import ({%{EH}Base.Common},{%{EH}Base.Builtin})
 %%]
-%%[(9 hmtyinfer) import({%{EH}Gam},{%{EH}Ty})
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Gam},{%{EH}Ty},{%{EH}VarMp})
+%%]
+%%[(9 hmtyinfer || hmtyast) import({%{EH}Ty.FitsInCommon2},{%{EH}Ty.FitsIn})
 %%]
 
-%%[(20 hmtyinfer) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[(9 hmtyinfer || hmtyast) import(Data.Maybe)
+%%]
+
+%%[(20 hmtyinfer || hmtyast) import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% App spine gam
+%%% Class default gam
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer).AppSpineGam export(ClassDefaultGamInfo(..))
+%%[(9 hmtyinfer || hmtyast).AppSpineGam export(ClassDefaultGamInfo(..))
 data ClassDefaultGamInfo
   = ClassDefaultGamInfo
       { cldiDefaultTypes	:: [Ty]
@@ -33,8 +38,25 @@ data ClassDefaultGamInfo
 %%]]
 %%]
 
-%%[(9 hmtyinfer).AppSpineGam export(ClassDefaultGam)
+%%[(9 hmtyinfer || hmtyast).AppSpineGam export(ClassDefaultGam)
 type ClassDefaultGam = Gam HsName ClassDefaultGamInfo
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Find a defaulting
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(9 hmtyinfer || hmtyast) export(clDfGamLookupDefault)
+-- | Lookup a matching default for a predicate
+clDfGamLookupDefault :: FIIn -> Pred -> ClassDefaultGam -> Maybe VarMp
+clDfGamLookupDefault fi pr clDfGam
+  = case pr of
+      Pred_Class t | isJust mbConArgs
+        -> do (ClassDefaultGamInfo {cldiDefaultTypes = (tg:_)}) <- gamLookup nm clDfGam
+              (_,tyVarMp) <- fitPredIntoPred fi pr (Pred_Class $ mk1ConApp nm tg)
+              return tyVarMp
+        where mbConArgs@(~(Just (nm,args))) = tyAppConArgs t
+      _ -> Nothing
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

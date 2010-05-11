@@ -8,7 +8,7 @@ Signatures for local attributes
 SEM *
   | *
 		loc.foL		 					: {[FIOut]}
-		loc.predAmbigCheck				: {TQOGam -> [CHRPredOcc] -> [CHRPredOcc]}
+		loc.doPredAmbigSplit			: {TQOGam -> [CHRPredOcc] -> ([CHRPredOcc],[CHRPredOcc])}
 		loc.gathTvKiVarMp2				: {VarMp}
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
@@ -183,7 +183,7 @@ SEM *
 		loc.prOccL  					: {[PredOcc]}
 		loc.prTyFix  					: Ty
 		loc.prUid  						: PredOccId
-		loc.quantPrOccL 				: {[PredOcc]}
+		loc.toQuantOverPrOccL 			: {[PredOcc]}
 		loc.quValGam_ex_ 				: ValGam
 		loc.quValGam_ex_subst 			: ValGam
 		loc.range	  					: Range
@@ -223,6 +223,7 @@ SEM *
 		loc.tyVarMp_p_  				: VarMp
 		loc.tyVarMpApp					: VarMp
 		loc.unfixPrTyVarMp  			: VarMp
+		loc.metaPrTyVarMp	  			: VarMp
 		loc.uniq2  						: UID
 		loc.uniq3  						: UID
 		loc.uniq4  						: UID

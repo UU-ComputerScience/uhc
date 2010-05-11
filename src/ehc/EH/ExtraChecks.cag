@@ -164,10 +164,7 @@ SEM Expr
 %%][99
   | Let         loc         .   predNotPrfErrs      =   mkPrvErr @lhs.rangeMp @range @cannotProveCnstrMp
 %%]]
-                            .   predAmbigCheck      =   \tqoGam prOccL
-                                                           -> let assumedByQuant = Set.unions $ map tmpoInsPrIdSet $ gamElts tqoGam
-                                                              in  [ o | o <- prOccL, not (poPoi o `Set.member` assumedByQuant) ]
-                            .   predAmbigErrs       =   let amb = @predAmbigCheck @tqoGam @quantPrOccL
+                            .   predAmbigErrs       =   let (_,amb) = @doPredAmbigSplit @tqoGam @toQuantOverPrOccL
                                                             mkg = assocLMapElt (ppTy . vgiTy) . gamToAssocL
                                                         in  if null amb
                                                             then []

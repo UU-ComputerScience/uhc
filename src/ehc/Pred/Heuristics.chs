@@ -91,7 +91,7 @@ toEvidence f a = evd (f a)
   where  evd (HeurAlts p [])                   =  Evid_Unresolved p
          evd (HeurAlts p [r@(HeurRed_Rec p)])  =  Evid_Recurse p
          evd (HeurAlts p [r@(HeurRed i   _)])  =  Evid_Proof   p i (snd $ red r)
-         evd (HeurAlts p rs)                   =  reallyAmbigEvid p (reds rs)
+         evd (HeurAlts p rs)                   =  reallyOverlapEvid p (reds rs)
          red (HeurRed i alts)                  =  (i,map evd alts)
          reds rs                               =  map red rs
 %%]
@@ -114,7 +114,7 @@ localChoice choose (HeurAlts p reds) =
     []                    -> Evid_Unresolved p
     [r@(HeurRed_Rec p)]   -> Evid_Recurse p
     [r@(HeurRed i   _)]   -> Evid_Proof p i (snd $ ch r)
-    rs                    -> reallyAmbigEvid p (chs rs)
+    rs                    -> reallyOverlapEvid p (chs rs)
   where redinfos          = choose p (map redInfo reds)
         ch (HeurRed i rs) = (i,map (localChoice choose) rs)
         chs rs            = map ch rs
@@ -150,7 +150,7 @@ contextChoice choose (HeurAlts p reds) =
          []                   -> Evid_Unresolved p
          [r@(HeurRed_Rec p)]  -> Evid_Recurse p
          [r@(HeurRed i   _)]  -> Evid_Proof p i (snd $ ch r)
-         rs                   -> reallyAmbigEvid p (chs rs)
+         rs                   -> reallyOverlapEvid p (chs rs)
   where ch (HeurRed i rs) = (i,map (contextChoice choose) rs)
         chs rs            = map ch rs
          
@@ -169,8 +169,8 @@ contextBinChoice order = contextChoice (const local)
 This should be merged with similar choices made at callsites.
 
 %%[(9 hmtyinfer)
-reallyAmbigEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
-reallyAmbigEvid p evs
+reallyOverlapEvid :: p -> [(info,[Evidence p info])] -> Evidence p info
+reallyOverlapEvid p evs
   = case filter (not . null . snd) evs of
       []       -> Evid_Unresolved p
       [(i,ev)] -> Evid_Proof p i ev

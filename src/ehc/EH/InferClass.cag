@@ -102,7 +102,7 @@ SEM Decl
                 loc             .   instId          =   mkPrIdCHR @lUniq
                 loc         	.   lUniq		  	:   UNIQUEREF gUniq
   | Instance    tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
-                loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp)
+                loc             .   (prTyFix,fixPrTyVarMp,unfixPrTyVarMp,metaPrTyVarMp)
                                                     =   tyFixTyVars @lUniq_9_prTyFix $ tyQuantifyRank [2..] $ @tyPrExpr.ty
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)

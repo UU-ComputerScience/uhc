@@ -82,6 +82,8 @@
 %%]
 %%[(9 codegen) hs import(qualified {%{EH}Pred.EvidenceToTyCore} as E2C)
 %%]
+%%[(9 hmtyinfer) hs import ({%{EH}Gam.ClassDefaultGam})
+%%]
 
 %%[(11 hmtyinfer) hs import({%{EH}Ty.Trf.BetaReduce}(tyBetaRedFull))
 %%]

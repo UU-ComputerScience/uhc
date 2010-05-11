@@ -185,7 +185,14 @@ tvCatIsPlain TyVarCateg_Plain  = True
 tvCatIsPlain _                 = False
 
 tvCatIsFixed :: TyVarCateg -> Bool
-tvCatIsFixed = not . tvCatIsPlain
+tvCatIsFixed TyVarCateg_Fixed  = True
+tvCatIsFixed _                 = False
+%%]
+
+%%[(9 hmtyinfer || hmtyast) hs export(tvCatIsMeta)
+tvCatIsMeta :: TyVarCateg -> Bool
+tvCatIsMeta TyVarCateg_Meta   = True
+tvCatIsMeta _                 = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -215,6 +222,7 @@ data TvPurpose
 %%[(9 hmtyinfer || hmtyast) hs
 instance Show TvPurpose where
   show (TvPurpose_Ty TyVarCateg_Fixed)  = "c"
+  show (TvPurpose_Ty TyVarCateg_Meta )  = "m"
   show (TvPurpose_Ty _               )  = "v"
   show TvPurpose_Impls                  = "i"
   show TvPurpose_Scope                  = "s"
@@ -275,7 +283,7 @@ instance Show TvInfo where
     where cat = tvinfoCateg i
 %%][9
   show i | pur == TvPurpose_Ty TyVarCateg_Fixed && cat == TyVarCateg_Fixed = "c"
-         | otherwise                                      = show pur
+         | otherwise                                                       = show pur
     where cat = tvinfoCateg i
           pur = tvinfoPurpose i
 %%]]
@@ -289,16 +297,6 @@ mkTvInfoPlain p = mkTvInfo TyVarCateg_Plain p
 %%[(4 hmtyinfer || hmtyast) hs export(TvCatMp,emptyTvCatMp) 
 type TvCatMp = Map.Map TyVarId TvInfo
 emptyTvCatMp = Map.empty
-%%]
-
-%%[(4 hmtyinfer || hmtyast) hs export(tvIsPlain)
-tvIsPlain :: TvCatMp -> TyVarId -> Bool
-tvIsPlain fvM tv = maybe False (tvCatIsPlain . tvinfoCateg) (Map.lookup tv fvM)
-%%]
-
-%%[(6_4 hmtyinfer || hmtyast) hs
-tvIsEx :: TvCatMp -> TyVarId -> Bool
-tvIsEx fvM tv = maybe False ((== TyVarCateg_Exist) . tvinfoCateg) (Map.lookup tv fvM)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -779,6 +777,11 @@ mkTyVar :: TyVarId -> Ty
 mkTyVar tv = Ty_Var tv TyVarCateg_Plain
 %%]
 
+%%[(9 hmtyinfer || hmtyast) hs export(mkTyMetaVar)
+mkTyMetaVar :: TyVarId -> Ty
+mkTyMetaVar tv = Ty_Var tv TyVarCateg_Meta
+%%]
+
 %%[(2 hmtyinfer || hmtyast).NewTyVar hs
 mkNewTyVar :: UID -> Ty
 mkNewTyVar u = let  (_,v) = mkNewUID u in mkTyVar v
@@ -1065,7 +1068,7 @@ tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case tyUnAnn t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
-%%[(98 hmtyinfer || hmtyast) hs export(tyAppConArgs)
+%%[(9 hmtyinfer || hmtyast) hs export(tyAppConArgs)
 tyAppConArgs    :: Ty -> Maybe (HsName,TyL)
 tyAppConArgs t
   =  fmap (\c -> (c,a)) $ tyMbCon f
