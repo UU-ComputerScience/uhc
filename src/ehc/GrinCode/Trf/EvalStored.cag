@@ -39,6 +39,9 @@ by
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
+
 %%[(8 codegen grin)
 WRAPPER GrAGItf
 %%]
@@ -46,9 +49,13 @@ WRAPPER GrAGItf
 
 newtype InfoEvalStored = InfoEvalStored
   { infoEnv :: VarMap
-  } deriving Show
+  } deriving (Show, Typeable, Data)
 
 type VarMap = Map.Map HsName GrVal
+
+instance Serialize InfoEvalStored where
+  sput = sput . infoEnv
+  sget = sget >>= return . InfoEvalStored
 
 grEvalStored :: [InfoEvalStored] -> GrModule -> (GrModule, InfoEvalStored)
 grEvalStored imps grmod

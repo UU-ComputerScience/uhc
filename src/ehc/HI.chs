@@ -20,7 +20,7 @@
 %%[(20 codegen) hs import(qualified {%{EH}TyCore} as C)
 %%]
 
-%%[(20 codegen grin) hs import({%{EH}GrinCode})
+%%[(20 codegen grin) hs import({%{EH}GrinCode},{%{EH}GrinCode.GrinInfo} (GrinInfo,emptyGrinInfo))
 %%]
 %%[(20 codegen grin) hs import({%{EH}GrinByteCode})
 %%]
@@ -122,6 +122,7 @@ data HIInfo
 %%]]
 %%[[(20 codegen grin)
       , hiiGrInlMp              :: !GrInlMp
+      , hiiGrinInfo             :: !GrinInfo
 %%]]
       }
 %%[[20
@@ -142,6 +143,7 @@ emptyHIInfo
 %%]]
 %%[[(20 codegen grin)
            Map.empty
+           emptyGrinInfo
 %%]]
 %%]
 
@@ -266,6 +268,9 @@ sgetHIInfo opts = do
 %%[[(99 codegen grin)
             ; im        <- sget
 %%]]
+%%[[(20 codegen grin)
+            ; gin       <- sget
+%%]]
             ; return 
                 (emptyHIInfo
                   { hiiValidity             = HIValidity_Ok
@@ -301,6 +306,9 @@ sgetHIInfo opts = do
 %%]]
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
+%%]]
+%%[[(20 codegen grin)
+                  , hiiGrinInfo             = gin
 %%]]
                   })
             }
@@ -356,6 +364,9 @@ instance Serialize HIInfo where
 %%[[(99 codegen grin)
                   , hiiGrInlMp              = im
 %%]]
+%%[[(20 codegen grin)
+                  , hiiGrinInfo             = gin
+%%]]
                   })
               =    sput hi_sig
                 >> sput hi_ts
@@ -388,6 +399,9 @@ instance Serialize HIInfo where
 %%]]
 %%[[(99 codegen grin)
                 >> sput im
+%%]]
+%%[[(20 codegen grin)
+                >> sput gin
 %%]]
 
   sget = sgetHIInfo defaultEHCOpts

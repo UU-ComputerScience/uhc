@@ -17,6 +17,8 @@ up to the transformations themselves.
 %%]
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Trf.MemberSelect}, {%{EH}GrinCode.Trf.SimpleNullary}, {%{EH}GrinCode.Trf.EvalStored}, {%{EH}GrinCode.Trf.CleanupPass}, {%{EH}GrinCode.Trf.SpecConst})
 %%]
+%%[20 hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%]
 
 
 %%[(8 codegen grin) hs export(GrinInfo, emptyGrinInfo)
@@ -32,7 +34,25 @@ data GrinInfo = GrinInfo
 %%[[9
   , grMbMergeInstance     :: Maybe InfoMergeInstance
 %%]]
-  } deriving Show
+  } deriving (Show
+%%[[20
+      , Data, Typeable
+%%]]
+      )
+
+%%[[20
+instance Serialize GrinInfo where
+  sput gr@(GrinInfo {}) =
+    sput ( grMbMemberSelect      gr ) >>
+    sput ( grMbMemberSelectSpec  gr ) >>
+    sput ( grMbSimpleNullary     gr ) >>
+    sput ( grMbSimpleNullarySpec gr ) >>
+    sput ( grMbEvalStoredSpec    gr ) >> 
+    sput ( grMbCleanupPass       gr ) >>
+    sput ( grMbSpecConstSpec     gr ) >>
+    sput ( grMbMergeInstance     gr )
+  sget = return GrinInfo `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget `ap` sget
+%%]]
 
 emptyGrinInfo :: GrinInfo
 emptyGrinInfo = GrinInfo

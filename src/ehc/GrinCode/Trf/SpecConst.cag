@@ -17,6 +17,8 @@ Specialize functions that are called with constant arguments
 %%]
 %%[(8 codegen grin) hs import(EH.Util.Utils)
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (liftM3))
+%%]
 
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -28,7 +30,11 @@ data InfoSpecConst = InfoSpecConst
   { infoExisting  :: Existing
   , infoConstants :: Constants
   , infoBindings  :: Bindings
-  } deriving Show
+  } deriving (Show, Data, Typeable)
+
+instance Serialize InfoSpecConst where
+  sput i = sput (infoExisting i) >> sput (infoConstants i) >> sput (infoBindings i)
+  sget   = liftM3 InfoSpecConst sget sget sget
 
 grSpecConst :: [InfoSpecConst] -> GrModule -> (GrModule, InfoSpecConst)
 grSpecConst imps grmod

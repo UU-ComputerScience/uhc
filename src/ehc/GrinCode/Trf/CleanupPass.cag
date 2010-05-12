@@ -14,6 +14,9 @@ do not delay constructorfunctions: instead of F/Con, use C/Con;
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) 
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
+
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 %%[(8 codegen grin).wrapper
@@ -24,7 +27,11 @@ WRAPPER GrAGItf
 
 newtype InfoCleanupPass = InfoCleanupPass
   { infoTags :: TagMap
-  } deriving Show
+  } deriving (Show, Data, Typeable)
+
+instance Serialize InfoCleanupPass where
+  sput = sput . infoTags
+  sget = sget >>= return . InfoCleanupPass
 
 type TagMap = Map.Map HsName GrTag
 

@@ -18,14 +18,20 @@ WRAPPER GrAGItf
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize})
+%%]
 
 %%[(8 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(grSimpleNullary,InfoSimpleNullary)
 
 newtype InfoSimpleNullary = InfoSimpleNullary
   { infoInfoMap :: InfoMap
-  } deriving Show
+  } deriving (Show, Data, Typeable)
 
 type InfoMap = Map.Map HsName GrVal
+
+instance Serialize InfoSimpleNullary where
+  sput = sput . infoInfoMap
+  sget = sget >>= return . InfoSimpleNullary
 
 grSimpleNullary :: [InfoSimpleNullary] -> GrModule -> (GrModule, InfoSimpleNullary)
 grSimpleNullary imps code

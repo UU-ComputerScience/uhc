@@ -41,6 +41,8 @@ by
 %%]
 %%[(8 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%]
 
 %%[(8 codegen grin)
 WRAPPER GrAGItf
@@ -52,7 +54,11 @@ data InfoMemberSelect = InfoMemberSelect
   { infoDictMap :: DictMap
   , infoGlobMap :: GlobMap
   , infoSelMap  :: SelMap
-  } deriving Show
+  } deriving (Show, Data, Typeable)
+
+instance Serialize InfoMemberSelect where
+  sput gr = sput (infoDictMap gr) >> sput (infoGlobMap gr) >> sput (infoSelMap gr)
+  sget    = return InfoMemberSelect `ap` sget `ap` sget `ap` sget
 
 grMemberSelect :: [InfoMemberSelect] -> GrModule -> (GrModule, InfoMemberSelect)
 grMemberSelect imps code

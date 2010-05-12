@@ -253,6 +253,9 @@ cpFlowHISem modNm
 %%]]
                                               , crsiOptim = optim'
                                               })
+%%[[(20 codegen grin)
+                     ; cpUpdCU modNm $ ecuStoreGrinSem $ HI.hiiGrinInfo hiInfo
+%%]]
                      })
          }
 %%]
@@ -285,6 +288,25 @@ cpFlowCoreSem modNm
                      })
          }
 %%]
+
+%%[(20 codegen) export(cpFlowGrinSem)
+cpFlowGrinSem :: HsName -> EHCompilePhase ()
+cpFlowGrinSem modNm
+  =  do  {  cr <- get
+         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
+                 grinSem  = panicJust "cpFlowGrinSem.grinSem" $ ecuMbGrinSem ecu
+                 hii      = ecuHIInfo ecu
+                 hii'     = hii
+%%[[(20 codegen grin)
+                              { HI.hiiGrinInfo      = grinSem
+                              }
+%%]]
+         ;  when (isJust (ecuMbGrinSem ecu))
+                 (do { cpUpdCU modNm ( ecuStoreHIInfo hii' )
+                     })
+         }
+%%]
+
 
 %%[(20 codegen) export(cpFlowHILamMp)
 cpFlowHILamMp :: HsName -> EHCompilePhase ()

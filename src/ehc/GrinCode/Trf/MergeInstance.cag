@@ -11,6 +11,8 @@ WRAPPER GrAGItf
 %%]
 %%[(9 codegen grin) hs import(Debug.Trace)
 %%]
+%%[(8 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data), {%{EH}Base.Serialize}, Control.Monad (ap))
+%%]
 
 
 %%[(9 codegen grin) hs import({%{EH}Base.Common}, {%{EH}Base.Builtin}, {%{EH}GrinCode.Common}, {%{EH}GrinCode}) export(grMergeInstance, InfoMergeInstance)
@@ -20,7 +22,13 @@ data InfoMergeInstance = InfoMergeInstance
   , infoDictMap  :: DictMap
   , infoArityMap :: ArityMap
   , infoSynoMap  :: SynoMap
-  } deriving Show
+  } deriving (Show, Data, Typeable)
+
+instance Serialize InfoMergeInstance where
+  sput gr = sput (infoClassMap gr) >> sput (infoDictMap gr) >>
+            sput (infoArityMap gr) >> sput (infoSynoMap gr)
+  sget    = return InfoMergeInstance `ap` sget `ap` sget `ap` sget `ap` sget
+
 
 grMergeInstance :: [InfoMergeInstance] -> GrModule -> (GrModule, InfoMergeInstance)
 grMergeInstance imps code
