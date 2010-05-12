@@ -44,12 +44,26 @@ embedVars options input
 
 ATTR SilModule   [ opts : {EHCOpts} | | ]
 ATTR AllNT [ | | trf: SELF ]
+
 ATTR Statement Statements Alternative Alternatives Variable Value Values [ numberLocals : {Int} | | ]
 ATTR Statement Statements Alternative Alternatives                       [ | embedMap : {EmbedMap} | ]
 ATTR Variable Value Values                                               [ embedMap : {EmbedMap} | | ]
+
+
 ATTR Statement Statements Alternative Alternatives Variable              [ | | localsSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
-ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+
+ATTR Statement Statements Alternative Alternatives Variable              [ | | definedBelow USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ definedEarlier: {Set.Set HsName} | | ]
+
+ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedBelow USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+ATTR Statement Statements Alternative Alternatives                       [ usedLater: {Set.Set HsName} | | ]
+
+-- Old style, but still in use for embedding
+--ATTR Statement Statements Alternative Alternatives                       [ neededSet: {Set.Set HsName} | | ]
+--ATTR Statement Statements Alternative Alternatives Variable Value Values [ | | usedSet USE {`Set.union`} {Set.empty}: {Set.Set HsName} ]
+
+
+
 ATTR Statement Statements Alternative Alternatives                       [ numberParameters : {Int} | | ]
 ATTR Statement                                                           [ | | trfStats: {[Statement]} ]
 ATTR Function Functions 
@@ -72,15 +86,44 @@ SEM Values
   | Cons lhs.length = 1 + @tl.length
 
 
-ATTR Functions Function Statements Statement Alternatives Alternative [  |  retNr : {Int} |  ]
+ATTR Functions Function 
+     Statements Statement 
+     Alternatives Alternative             [  |  retNr : {Int} |  ]
+                                
 
 SEM SilModule
   | SilModule     functions . retNr   = 3
 
 
+ATTR Statements Statement Alternatives Alternative [ localsEnv : {Map.Map HsName SilTp}  |  |  ]
+
+SEM Function
+  | Function      body.localsEnv = Map.fromList @locals
+
+
+--SEM Statements
+--  | Cons  lhs.retNr < lhs.definedBelow
+
+
+
+
 %%]
 
 %%[(8 codegen grin)
+
+{
+worthyIsPointer :: HsName -> Map.Map HsName SilTp -> Bool
+worthyIsPointer x env
+  =  case Map.lookup x env of
+       Nothing -> trace ("warning: " ++ show x ++ " not in localsEnv\n") False
+       Just t  -> case t of
+                    SilTpPtr   -> True
+                    SilTpWord  -> False
+                    SilTpTag   -> False
+                    SilTpUnion -> {- trace ("warning: " ++ show x ++ " has ambiguous type " ++ show t ++ "\n") -} True
+                    _          -> {- trace ("warning: " ++ show x ++ " has unknown type "   ++ show t ++ "\n") -} True
+       
+}
 
 SEM Statement
   | Call      lhs . trfStats =  if not @lhs.optGenOwn
@@ -114,33 +157,33 @@ SEM Statement
                                      )
                                 else (  let nl |  @lhs.optGenLocReg = 0
                                                |  otherwise         = @lhs.numberLocals
-                                            worthyNames = [ n 
+                                            worthyVars  = [ (n,v)
                                                           | Variable_Local n v <- Map.elems @lhs.embedMap
-                                                          , Set.member v @lhs.neededSet
+                                                          , Set.member v @lhs.usedLater
+                                                          , Set.member v @lhs.definedEarlier
+                                                          , worthyIsPointer v @lhs.localsEnv
                                                           ]
-                                            worthyBits  = sum [ 1 `shiftL` (n-1)         -- TODO: what if n>28 ?
-                                                              | n <- worthyNames
-                                                              ]
-                                            descriptor = nl : [worthyBits] 
-                                            registersToSave = map (Variable_Subs Variable_LP) worthyNames
+                                            worthyIndexes = map fst worthyVars
+                                            worthyNames   = map snd worthyVars
+                                            stackInfo = (nl, Set.fromList worthyIndexes)
+                                            registersToSave = map (Variable_Subs Variable_LP) worthyIndexes
                                             sources     =  ( if @lhs.optGenLocReg
                                                              then map Value_Var registersToSave                                        -- saveRegisters
                                                              else []
                                                            )
                                                            ++ reverse @args.trf                                                 -- put arguments on stack
-                                                           ++ [ Value_Label @loc.label (length descriptor)]                     -- put return address on the stack
+                                                           ++ [ Value_Label @loc.label 1]                                       -- put return address on the stack
                                                            ++ [ Value_Cast (Value_Offset Variable_SP nl) True                   -- put dynamic link on the stack
                                                               | @lhs.optGenLink                                                 --  (if requested)
                                                               ]
                                             destinations = (map (Variable_Subs Variable_SP) (iterate decrement (-1)))
                                             adjust       = - length sources
                                         in  Statement_Comment ["Call, worthy: " ++ show worthyNames]
-                                            :
-                                            zipWith Statement_Assignment destinations sources                                   -- do stack-putting by assignments
+                                            : zipWith Statement_Assignment destinations sources                                   -- do stack-putting by assignments
                                             ++ 
                                             [ Statement_Assignment Variable_SP (Value_Offset Variable_SP adjust)                -- adjust stack: decrement for new parameters&callinfo
                                             , Statement_Call @name False []                                                     -- do the call (in fact a jump, which will return one line below here)
-                                            , Statement_Label @loc.label descriptor                                             -- return here after the call
+                                            , Statement_Label @loc.label stackInfo                                              -- return here after the call
                                             ]
                                             ++
                                             ( if @lhs.optGenLocReg
@@ -181,14 +224,52 @@ SEM Statement
                                       else []
                                    )
 
+  | Assignment lhs . trfStats     = if @source.isAlloc
+                                    then let worthyVars  = [ (n,v)
+                                                           | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                           , Set.member v @lhs.usedLater
+                                                           , Set.member v @lhs.definedEarlier
+                                                           , worthyIsPointer v @lhs.localsEnv
+                                                           ]
+                                             worthyIndexes = map fst worthyVars
+                                             worthyNames   = map snd worthyVars
+                                         in  [ Statement_Comment ["Allocation, worthy: " ++ show worthyNames]
+                                             , @loc.trf
+                                             ]
+                                    else [@loc.trf]
+               source.stackInfo   = if @source.isAlloc
+                                    then let    worthyIndexes  = [ n
+                                                                 | Variable_Local n v <- Map.elems @lhs.embedMap
+                                                                 , Set.member v @lhs.usedLater
+                                                                 ]
+                                         in  (@lhs.numberLocals, Set.fromList worthyIndexes)
+                                    else undefined
+
   | * - Return
+        Assignment
         Call   lhs . trfStats = [@loc.trf]
+        
+        
+SEM Statement        
+  | Assignment2 source   . stackInfo  = undefined
+  | IfThenElse  condition. stackInfo  = undefined
+  | Switch      scrutinee. stackInfo  = undefined
+  | Voiden      val      . stackInfo  = undefined
+  
+SEM Values
+  | Cons        hd       . stackInfo  = undefined
+               
 
 SEM Statements
-  | Cons      lhs . trf      = @hd.trfStats ++ @tl.trf
+  | Cons      lhs . trf      =   @hd.trfStats ++ @tl.trf
 
 
-  
+ATTR Value [ stackInfo : {StackInfo} | | isAlloc : {Bool} ]
+
+SEM Value
+  | Alloc    lhs . isAlloc = True
+             lhs . trf     = Value_Alloc @size @gcManaged @lhs.stackInfo
+  | *-Alloc  lhs . isAlloc = False
 
 SEM Function
   | Function  lhs . trf    =  Function_Function @name
@@ -225,7 +306,9 @@ SEM Statement
                 loc . embedMap = maybe @lhs.embedMap
                                        (\name@(HNmNr nr _) -> if    Map.member nr @lhs.embedMap
                                                               then  @lhs.embedMap
-                                                              else  let newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
+                                                              else  let -- newint = 1 + maxNeededLocal undefined @lhs.embedMap
+                                                                        newint = 1 + maxNeededLocal @lhs.usedLater @lhs.embedMap
+                                                                        -- newint = 1 + maxNeededLocal @lhs.neededSet @lhs.embedMap
                                                                         newvar = Variable_Local newint name
                                                                     in  -- trace ("new local: " ++ show newvar ) $
                                                                         Map.insert nr newvar @lhs.embedMap
@@ -234,20 +317,50 @@ SEM Statement
   
 {
 maxNeededLocal :: Set.Set HsName -> EmbedMap -> Int
-maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m , Set.member v s ]
+maxNeededLocal s m = let ns = [ n |  Variable_Local n v <- Map.elems m 
+                              -- , Set.member v s 
+                              ]
                      in  if null ns then 0 else maximum ns
 }
 
 
 
+-------------------------------------------------------------------------
+--  Sets of variables that are defined or used in various places
+-------------------------------------------------------------------------
+
+
+--SEM Variable
+--  | Unembedded      lhs . usedSet = Set.singleton @name
+
+--SEM Function
+--  | Function       body . neededSet = Set.empty
+  
+--SEM Statements
+--  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+--SEM Alternatives
+--  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+
+
+
+
+SEM Variable
+  | Unembedded      lhs . usedBelow              = Set.singleton @name     -- for all Variables, also those in Values
+  | Unembedded      lhs . definedBelow           = Set.singleton @name     -- only for Variables that are destination of an Assignment
+
 SEM Function
-  | Function       body . neededSet = Set.empty
+  | Function        body . usedLater             = Set.empty
+  | Function        body . definedEarlier        = Set.empty
   
 SEM Statements
-  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+  | Cons            hd . usedLater               = Set.union @tl.usedBelow    @lhs.usedLater 
+  | Cons            tl . definedEarlier          = Set.union @hd.definedBelow @lhs.definedEarlier
 
 SEM Alternatives
-  | Cons           hd . neededSet = Set.union @lhs.neededSet @tl.usedSet
+  | Cons            lhs . definedBelow           = Set.union @hd.definedBelow @tl.definedBelow
+  --  | Cons            hd . usedLater         = Set.union @lhs.usedLater @tl.usedBelow                  -- should not be necessary
+
 
 
 SEM Variable
@@ -256,8 +369,6 @@ SEM Variable
                                        _                      -> Set.singleton @name
   | *-Unembedded    lhs . localsSet = Set.empty
 
-SEM Variable
-  | Unembedded      lhs . usedSet = Set.singleton @name
 
 
 SEM Variable

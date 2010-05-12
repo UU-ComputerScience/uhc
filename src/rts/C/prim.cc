@@ -213,7 +213,7 @@ PRIM Word packedStringToInteger(Word w)
 {
 	char *s = (char*) w;
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = atoi( (char*)s );
     return res;
 }
@@ -222,7 +222,7 @@ PRIM Word packedStringToInteger(Word w)
 PRIM Word primIntToInteger(Word n)
 {
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = n;
     return res;
 }
@@ -230,7 +230,7 @@ PRIM Word primIntToInteger(Word n)
 PRIM Word primInt32ToInteger(Word32 n)
 {
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = n;
     return res;
 }
@@ -268,7 +268,7 @@ PRIM Word primEqInteger(Word x, Word y)
 PRIM Word primAddInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] + ((WPtr)y)[0];
     return res;
 }
@@ -276,7 +276,7 @@ PRIM Word primAddInteger(Word x, Word y)
 PRIM Word primSubInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] - ((WPtr)y)[0];
     return res;
 }
@@ -284,7 +284,7 @@ PRIM Word primSubInteger(Word x, Word y)
 PRIM Word primMulInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] * ((WPtr)y)[0];
     return res;
 }
@@ -292,7 +292,7 @@ PRIM Word primMulInteger(Word x, Word y)
 PRIM Word primNegInteger(Word x)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = -((WPtr)x)[0];
     return res;
 }
@@ -300,7 +300,7 @@ PRIM Word primNegInteger(Word x)
 PRIM Word primQuotInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] / ((WPtr)y)[0];
     return res;
 }
@@ -308,7 +308,7 @@ PRIM Word primQuotInteger(Word x, Word y)
 PRIM Word primRemInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] % ((WPtr)y)[0];
     return res;
 }
@@ -316,7 +316,7 @@ PRIM Word primRemInteger(Word x, Word y)
 PRIM Word primDivInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] / ((WPtr)y)[0];
     return res;
 }
@@ -324,7 +324,7 @@ PRIM Word primDivInteger(Word x, Word y)
 PRIM Word primModInteger(Word x, Word y)
 {   
 	Word res;
-    res = heapalloc(1);
+    res = malloc(1);
     ((WPtr)res)[0] = ((WPtr)x)[0] % ((WPtr)y)[0];
     return res;
 }

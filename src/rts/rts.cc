@@ -96,12 +96,12 @@ void memory_Initialization()
     Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
 #elif USE_EHC_MM
     mm_init() ;
-    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
+    Stack = (WPtr)mm_itf_allocResident(sizeof(Word)*STACKSIZE);    
 #else
     HeapAreaLow = (WPtr)malloc(sizeof(Word)*HEAPSIZE);
     HeapAreaHigh = HeapAreaLow + HEAPSIZE;
     HP = HeapAreaLow;
-    Stack = (WPtr)GC_MALLOC_UNCOLLECTABLE(sizeof(Word)*STACKSIZE);    
+    Stack = (WPtr)malloc(sizeof(Word)*STACKSIZE);    
 #endif
 
     ReturnArea = (WPtr)malloc(sizeof(Word)*RETURNSIZE);
@@ -109,15 +109,10 @@ void memory_Initialization()
 
     RP = ReturnArea;
 
-	// stack builds bottom-up	    
-    // SP = Stack;
-    // StackEnd = Stack + STACKSIZE ;
-    
     // stack hangs top-down
-    SP = Stack + STACKSIZE - 1 - 2;
     StackAreaLow = Stack;
     StackAreaHigh = Stack + STACKSIZE;
-    
+    SP = StackAreaHigh;
 }
 
 void memory_Finalization()

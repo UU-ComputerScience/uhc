@@ -146,7 +146,7 @@ SEM SilModule
                                 
 
                                 
-                loc.constantMap = Map.fromList (map (\(x,y,z)->(x,y))(("UNBOXED",1,[]) : ("ANY",0,[]) : @constants))
+                loc.constantMap = Map.fromList (map (\ci->(constantInfoName ci, constantInfoSeqNr ci)) @constants)
 
 
 

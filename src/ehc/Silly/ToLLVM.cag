@@ -101,7 +101,7 @@ SEM SilModule
                                                      )
                                                      ( @loc.main : @functions.llvmCode )
                                                      
-                loc.comment  = map (\(s,i,ts) -> s ++ "->" ++ show i ++ " arity " ++ show (length ts)) @constants  
+                loc.comment  = map (\ci -> constantInfoName ci ++ "->" ++ show (constantInfoSeqNr ci) ++ " arity " ++ show (constantInfoNodeSize ci)) @constants  
                 loc.(globalResStr,resConst) = 
                                 string2LLVMString @lhs.gUniq $
                                   if sizeofPointer == 8
@@ -511,7 +511,7 @@ ATTR Functions Function
      [ constantMap : {Data.Map.Map String Int} | | ]
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList (map (\(x,y,z)->(x,y)) @constants)
+  | SilModule   functions.constantMap = Data.Map.fromList (map (\ci->(constantInfoName ci, constantInfoSeqNr ci)) @constants)
 %%]
 
 %%[(8 codegen grin)

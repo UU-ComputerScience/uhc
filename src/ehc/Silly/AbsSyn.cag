@@ -16,7 +16,7 @@ TYPE Alternatives = [Alternative]
 TYPE Values       = [Value]
 
 DATA SilModule
-  |  SilModule   constants  : {[(String,Int,[SilTp])]}
+  |  SilModule   constants  : {[ConstantInfo]}
                  variables  : {[HsName]}
                  functions  : Functions
 
@@ -43,7 +43,7 @@ DATA Statement
   |  Return      vals       : Values
                  mbRetDiff  : {Maybe Int}
   |  Label       name       : {String}
-                 descript   : {[Int]}
+                 stackInfo  : {StackInfo}
   |  Comment     comment    : {[String]}
   |  Voiden      val        : Value
 
@@ -81,6 +81,7 @@ DATA Value
                  word       : {Bool}
   |  Alloc       size       : {Int}
                  gcManaged  : {SillyAllocManageType}
+                 stackInfo  : {StackInfo}       -- description of the final stack segment at the time of allocation. (NOT a description of the allocated record!)
   |  Label       name       : {String}
                  offset     : {Int}
   |  Call        name       : String
