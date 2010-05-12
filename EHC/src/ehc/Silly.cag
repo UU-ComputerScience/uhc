@@ -12,9 +12,9 @@
 %%]
 %%[(8 codegen grin) hs export(SilModule(..), Function(..), Statement(..), Alternative(..), Constant(..), Variable(..), Value(..), Alternatives, Statements, Functions, Values )
 %%]
-%%[(8 codegen grin) hs export(SillyAllocManageType(..), SilTp(..) )
+%%[(8 codegen grin) hs export(SillyAllocManageType(..), SilTp(..), ConstantInfo(..), StackInfo, emptyStackInfo)
 %%]
-%%[(8 codegen grin) hs import({%{EH}Base.Common})
+%%[(8 codegen grin) hs import({%{EH}Base.Common}, qualified Data.Set as Set)
 %%]
 
 %%[(8 codegen grin) ag import({Silly/AbsSyn})
@@ -41,6 +41,7 @@ data SillyAllocManageType
 data SilTp
   = SilTpTag
   | SilTpWord
+  | SilTpLong
   | SilTpPtr
   | SilTpUnknown
   | SilTpUnion
@@ -54,7 +55,26 @@ instance Show SilTp where
   show SilTpUnknown   = "Unknown"
   show SilTpUnion   = "Union"
   show SilTpOther = "Other"  
-  
+
+type StackInfo = (Int, Set.Set Int)
+
+emptyStackInfo :: StackInfo
+emptyStackInfo = (0, Set.empty)
+
+
+data ConstantInfo 
+  = ConstantInfo
+    {  constantInfoName        :: String
+    ,  constantInfoSeqNr       :: Int
+    ,  constantInfoNodeSize    :: Int
+    ,  constantInfoPayloadSize :: Int
+    ,  constantInfoHasPointers :: Bool
+    }
+  deriving( Eq, Ord, Show )  
+
+
+
+
 %%]
 
 

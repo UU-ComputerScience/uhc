@@ -30,3 +30,4 @@ main
        putStrLn (["!!1", "!!2", "!!3"] !! 1)
        putStrLn (take 26 $ iterate succ 'a')
        putStrLn (take 30 $ cycle "cycle ")
+       putStrLn (take 3000000 $ cycle "cycle ")

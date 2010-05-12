@@ -403,7 +403,7 @@ defaultEHCOpts
       ,  ehcOptTimeCompile      =   False
       ,  ehcOptGenOwn           =   True
       ,  ehcOptGenRVS           =   False
-      ,  ehcOptGenLink          =   False
+      ,  ehcOptGenLink          =   True
       ,  ehcOptGenLocReg        =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
@@ -544,7 +544,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
      ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
-     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (no)"
+     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (yes)"
      ,  Option ""   ["gen-locreg"]       (boolArg optSetGenLocReg)            "allocate locals in registers that are saved before calls (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"

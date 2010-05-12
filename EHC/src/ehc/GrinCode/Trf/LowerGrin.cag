@@ -104,7 +104,7 @@ vsetLookup :: HptMap -> Set.Set Variable -> AbstractValue
 vsetLookup hptMap vset
   =  let vs = Set.toList vset
          zs = map (getEnvVar hptMap) vs
-     in if Set.null vset then AbsBasic else mconcat zs
+     in if Set.null vset then AbsBottom else mconcat zs
 
 newNames :: HptMap -> Int -> HsName -> (Int, [HsName], HptItems)
 newNames hptMap uniq (HNmNr v _) 

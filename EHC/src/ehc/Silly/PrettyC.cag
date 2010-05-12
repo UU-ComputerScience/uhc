@@ -7,9 +7,9 @@
 %%% Prettyprint Silly program as C
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen grin) hs module {%{EH}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyC)
+%%[(8 codegen grin) hs module {%{EH}Silly.PrettyC} import(Data.List(intersperse), EH.Util.Pretty,  qualified Data.Map as Map, qualified Data.Set as Set, {%{EH}GrinCode.Common} hiding (Variable(..)),{%{EH}Silly}, {%{EH}BuiltinPrims}, {%{EH}Config}) export(prettyC)
 %%]
-%%[(8 codegen grin) hs import(Data.Maybe)
+%%[(8 codegen grin) hs import(Data.Maybe,EH.Util.Utils)
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
@@ -83,21 +83,33 @@ SEM Value
   | Var     lhs.equalToVar  =  (== @var.self)
   | * -Var  lhs.equalToVar  =  const False
 
+ATTR Value [ | | isAlloc : {Bool} ]
+
+SEM Value
+  | Alloc    lhs . isAlloc = True
+  | *-Alloc  lhs . isAlloc = False
 
 
 
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment ["Tag constants"]
-                                >-< ppVertically (map constantDefinition @constants)
+                                >-< ppVertically (map constantInfoDefinition @constants)
                                 >-< text ""
-                                >-< comment ["Global variables"]
-                                >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
+                                >-< comment ["Global variable indices"]
+                                >-< ppVertically (zipWith constantDefinition (map hsnShowAlphanumeric @variables) [1..])
                                 >-< text ""
+                                >-< comment ["Node descriptors"]
+                                >-< nodeDescriptors @constants
+                                >-< text ""
+                                -- >-< comment ["Global variables"]
+                                -- >-< ppVertically (map (variableDeclaration.hsnShowAlphanumeric) @variables)
+                                -- >-< text ""
                                 >-< comment ["Auxiliary variables"]
                                 >-< text "Word auxVar;"
                                 >-< text "Word auxPtr;"
                                 >-< text ""
+                                >-< stackInfosAndBytes (map fst ((sortOn snd (Map.toList (snd @functions.stackInfoMp)))))
                                 >-< comment ["Function definitions"]
                                 >-< (if @loc.optGenOwn
                                      then  (   @loc.silMain1
@@ -121,7 +133,10 @@ SEM SilModule
                                 >-< text "{"
                                 -- >-< ppWhen False (text "register WPtr SP asm (\"%esp\");")
                                 >-< indent 4 (    --  @loc.extraInit >-< 
-                                                  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
+                                
+                                
+                                                  text ("SP -= " ++ show (length @variables)  ++ ";" )
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
 %%[[8
                                              >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_fun0tildemain"
 %%][99
@@ -165,7 +180,7 @@ SEM Statement
   | Switch      lhs.prettyC   = switch @lhs.optTraceAssign @lhs.optCaseDefault @lhs.functionname @scrutinee.prettyC @body.prettyC
   | Call        lhs.prettyC   = callSillyFunctionFromSilly @lhs.optGenOwn (hsnShowAlphanumeric @name) @args.prettyCs
   | Return      lhs.prettyC   = returnFromSillyFunction @lhs.optTraceAssign @lhs.functionname (fromJust @mbRetDiff) @lhs.optGenOwn
-  | Label       lhs.prettyC   = label @lhs.optTraceCall @name (Just @descript)
+  | Label       lhs.prettyC   = label @lhs.optTraceCall @name (Just @loc.stackInfoInx)
   | Voiden      lhs.prettyC   = @val.prettyC >|< ";"
   | IfThenElse  lhs.prettyC   = ifthenelse @condition.prettyC 
                                            @thenpart.prettyC 
@@ -198,9 +213,11 @@ SEM Value
                                         fromSillyPrim
                                         (lookupPrim BackendSilly @name)  ) @args.prettyCs
   | Alloc       lhs.prettyC   =  case @gcManaged of
-                                   NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
-                                   GCManaged  -> "heapalloc("               >|< show @size >|< ")"
-  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + " >|< show @offset >|< " * sizeof(long))"
+                                   -- NotManaged -> "heapalloc_uncollectable(" >|< show @size >|< ")"
+                                   NotManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word), (Word)NULL" >|< ")"
+                                   -- GCManaged  -> "mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< (case @stackInfo of (n,xs) -> show n)  >|< ")"
+                                   GCManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< ("(Word) (stackInfos+" ++ show @lhs.stackInfoIndex)  >|< "))"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + " >|< show @offset >|< " * sizeof(int) + sizeof(int))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
   | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
@@ -245,8 +262,10 @@ SEM Variable
     Local
     Param       lhs.prettyC   = case @name of 
                                   HNmNr n OrigNone -> text ("x" ++ show n)
-                                  _                -> text (hsnShowAlphanumeric @name)
-                lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+                                  -- _             -> text (hsnShowAlphanumeric @name)
+                                  _                -> text ("StackAreaHigh[-" ++ hsnShowAlphanumeric @name ++ "]")
+                -- lhs.prettyPtr = "((WPtr)" >|< text (hsnShowAlphanumeric @name) >|< ")"
+                lhs.prettyPtr = "((WPtr)" >|< text ("StackAreaHigh[-" ++ hsnShowAlphanumeric @name ++ "]") >|< ")"
   | LP          lhs.prettyC   = text "Loc"
                 lhs.prettyPtr = text "Loc"
   | SP          lhs.prettyC   = text "SP"
@@ -274,6 +293,53 @@ SEM Variable
 
 %%]
 
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% StackInfo threading
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%[(8 codegen grin)
+
+{
+type StackInfoMap = (Int, Map.Map StackInfo Int)
+
+stackInfoMapAdd :: StackInfo -> StackInfoMap -> (StackInfoMap, Int)
+stackInfoMapAdd si mp@(sz,m)
+  = case Map.lookup si m of
+      Just i -> (mp, i)
+      _      -> ((sz+1, Map.insert si sz m), sz)
+
+}
+
+
+ATTR Functions Function Statements Statement Alternatives Alternative [ | stackInfoMp : {StackInfoMap} | ]
+
+-- Initialisation
+SEM SilModule  
+  | SilModule  functions.stackInfoMp = (0, Map.empty)
+
+
+SEM Statement
+  | Label        (lhs.stackInfoMp, loc.stackInfoInx)      = stackInfoMapAdd @stackInfo @lhs.stackInfoMp
+  | Assignment   (lhs.stackInfoMp, source.stackInfoIndex) = maybe (@lhs.stackInfoMp, undefined)
+                                                                  (\si -> stackInfoMapAdd si @lhs.stackInfoMp)
+                                                                  @source.mbStackInfo
+
+ATTR Value [ stackInfoIndex : {Int} | | mbStackInfo : {Maybe StackInfo} ]
+
+SEM Value
+  | Alloc    lhs.mbStackInfo = Just @stackInfo
+  | *-Alloc  lhs.mbStackInfo = Nothing
+  
+
+
+%%]
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Building a C program
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -281,13 +347,26 @@ SEM Variable
 %%[(8 codegen grin) hs
 
 
-label :: Bool -> String -> Maybe [Int] -> PP_Doc
-label tras nm mbDescr
+label :: Bool -> String -> Maybe Int -> PP_Doc
+label tras nm mbStackInfo
  = nm >|< ":"
-   >-< ppWhen (isJust mbDescr)
-              (  foldr1 (>-<) (map (\n -> text ("asm( \".long " ++ show n ++ "\" );" )) (reverse (fromJust mbDescr))) )
+   >-< case mbStackInfo of
+--        Just n    -> text ("asm( \".long %0\" : : \"m\"(&stackInfos[" ++ show n ++ "]) );" )
+        Just n    ->  text ("asm( \".long " ++ drop 6 nm ++ "\");" )
+                      >-< text ("asm( \".long _stackInfos+7*" ++ show n ++ "\");" )                        -- TODO: 7 is sizeof(StackInfo), should be 11 on 64-bit architecture;  also, .long should be .longlong or something on 64-bit arch
+        _         -> empty
    >|< ppWhen tras
               (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
+
+
+--label :: Bool -> String -> Maybe StackInfo -> PP_Doc
+--label tras nm mbStackInfo
+-- = nm >|< ":"
+--   >-< case mbStackInfo of
+--        Just (n,xs)  -> text ("asm( \".long " ++ show n ++ "\" );" )
+--        _            -> empty
+--   >|< ppWhen tras
+--              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
 
 commaSeparated :: [String] -> String
 commaSeparated = concat . intersperse ", "
@@ -307,7 +386,8 @@ declareName tp nm
 trace :: String -> PP_Doc
 trace s
 -- = text ("printf(\"" ++ s ++ " SP=%d (%d)\\n\", SP, SP-Stack); fflush(stdout);")
-   = text ("printf(\"" ++ s ++            "\\n\"              ); fflush(stdout);")
+   = text ("printf(\"" ++ s ++ " SP=%08x\\n\", SP ); fflush(stdout);")
+-- = text ("printf(\"" ++ s ++         "\\n\"     ); fflush(stdout);")
 
 caseDefault :: PP_Doc -> String -> PP_Doc
 caseDefault x funname
@@ -326,10 +406,10 @@ callSillyFunctionFromC :: Bool -> Bool -> Bool -> Int -> String -> PP_Doc
 callSillyFunctionFromC tras optGenOwn optGenLink n nm
  | optGenOwn = let lab = "mainlab" ++ show n
                in  "*--SP = (Word)(&&" >|< lab >|< ");"                   -- return address
-                   >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %d at %d \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
+                   >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %08x at %08x \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
                    >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
-                   >-< "goto" >#< nm >|< ";"                              -- do the call
-                   >-< label tras lab Nothing                             -- return here
+                   >-< "goto" >#< nm >|< ";"                         -- do the call
+                   >-< label tras lab Nothing                        -- return here
  | otherwise = nm >|< "();"
  
  
@@ -353,6 +433,26 @@ returnFromSillyFunction tras name retdiff optGenOwn
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% PP Auxiliaries
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%[(8 codegen grin) hs
+
+
+ppVerticallyWithCommas :: [PP_Doc] -> PP_Doc
+ppVerticallyWithCommas [] = empty
+ppVerticallyWithCommas [p] = p
+ppVerticallyWithCommas (p:ps) = p >-< ppVertically (map (text ", " >|<) ps)
+
+ppHorizontallyWithCommas :: [PP_Doc] -> PP_Doc
+ppHorizontallyWithCommas [] = empty
+ppHorizontallyWithCommas [p] = p
+ppHorizontallyWithCommas (p:ps) = p >|< ppHorizontally (map (text ", " >|<) ps)
+
+
+%%]
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Semantic functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%[(8 codegen grin) hs
@@ -362,9 +462,14 @@ preambule
  = text "#include \"rts.h\""
    >-< text ""
 
-constantDefinition :: (String,Int,[SilTp]) -> PP_Doc
-constantDefinition (x,n,_)
+constantInfoDefinition :: ConstantInfo -> PP_Doc
+constantInfoDefinition ci
+ = macroDefinition (text (constantInfoName ci)) (text (show (constantInfoSeqNr ci)))
+
+constantDefinition :: String -> Int -> PP_Doc
+constantDefinition x n
  = macroDefinition (text x) (text (show n))
+
 
 aliasDefinition :: (String,String) -> PP_Doc
 aliasDefinition (x,y)
@@ -395,7 +500,7 @@ methodHeader tras optGenOwn optTrace nm params
 
 methodFooter :: Bool -> Bool -> String -> PP_Doc
 methodFooter optGenOwn optTrace nm
- | optGenOwn = text ""
+ | optGenOwn = text ( "printf(\"fallen through function " ++ nm ++ "\"); exit(1);" ) >-< text ""
  | otherwise = text "}" >-< text ""
 
 methodLocals :: [String] -> PP_Doc
@@ -415,7 +520,7 @@ assignment2 tras v1 v2 e et
    >#< e
    >|< ";"
    >|< ppWhen tras
-              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %d at %d/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v1 >#< "=" >#< show v2 >#< "=" >#< et >#< " : %08x at %08x/%d\\n\", " >#< show v1 >#< ", &(" >#< show v1 >#<  "), &(" >#< show v2 >#<  ")); fflush(stdout);")
               --(" printf(\"assignment" >#< show v1 >#<  show v2  >#< "\\n\"); fflush(stdout);")
 
 assignment :: Bool -> PP_Doc -> PP_Doc -> PP_Doc -> PP_Doc
@@ -425,7 +530,7 @@ assignment tras v e et
    >#< e
    >|< ";"
    >|< ppWhen tras
-              (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %d at %d\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
+              (" printf(\"assignment" >#< show v >#< "=" >#< et >#< " : %08x at %08x\\n\", " >#< show v >#< ", &(" >#< show v >#<  ")); fflush(stdout);")
               --(" printf(\"assignment" >#< show v >#<  "\\n\"); fflush(stdout);")
 
 
@@ -462,5 +567,94 @@ alternative when body
    >#< when
    >|< ":"
    >-< indent 4 (body >-< "break;")
+
+
+
+silTpSize :: SilTp -> Int
+silTpSize SilTpLong = 2
+silTpSize t         = 1
+
+
+nodeDescriptors :: [ConstantInfo] -> PP_Doc
+nodeDescriptors ts
+  =  text "int nodeDescriptor[] = {"
+     >-< ppVerticallyWithCommas (map nodeDescriptor ts)
+     >-< text "};"
+
+nodeDescriptor :: ConstantInfo -> PP_Doc
+nodeDescriptor ci
+  =  text ( "    makeNodeDescriptor(" 
+          ++ show (constantInfoNodeSize ci)
+          ++ ", " 
+          ++ show (constantInfoPayloadSize ci)
+          ++ ", " 
+          ++ show (constantInfoHasPointers ci)
+          ++ ")  // " 
+          ++ show (constantInfoSeqNr ci)
+          ++ ": " 
+          ++ constantInfoName ci
+          )
+
+
+
+ppHex :: Int -> PP_Doc
+ppHex n = text (show n)
+
+stackInfosAndBytes :: [StackInfo] -> PP_Doc
+stackInfosAndBytes sis
+  = let (_,spds, bpds) = foldr f (0,[],[]) sis
+    in        comment ["StackInfoBytes"]
+          >-< text "char stackInfoBytes[] = {"
+          >-< ppVerticallyWithCommas (reverse bpds)
+          >-< text "};"
+          >-< comment ["StackInfos"]
+          >-< text "GCStackInfo stackInfos[] = {"
+          >-< ppVerticallyWithCommas spds
+          >-< text "};"
+    where f si (n,ispds,ibpds)
+            = let (spd,bs) = ppStackInfo n si
+                  bpd = ppHorizontallyWithCommas (map ppHex bs)
+              in  (n+length bs, spd:ispds, (if null bs then ibpds else bpd:ibpds))
+
+ppStackInfo :: Int -> StackInfo -> ( PP_Doc , [Int])
+ppStackInfo j (n,xs) 
+  =  let bs = makeBytes n xs
+         spd =  text (   "{" 
+                     ++ show n 
+                     ++ "," 
+                     ++ show (length bs)
+                     ++ "," 
+                     ++ (if null bs then "NULL" else ("stackInfoBytes+" ++ show j))
+                     ++ "} " 
+                     ++ "// "
+                     ++ show xs
+                     ++ show (makeBytes2 n xs)
+                     ++ show bs
+                     )
+     in (spd, bs)
+
+makeBytes :: Int -> Set.Set Int -> [Int]
+makeBytes n s
+  =  encodeRuns (makeRuns (map (\i -> Set.member i s) [1..n]))
+
+makeBytes2 :: Int -> Set.Set Int -> [ (Bool,Int) ]
+makeBytes2 n s
+  = (makeRuns (map (\i -> Set.member i s) [1..n]))
+
+  
+makeRuns :: [Bool] -> [ (Bool,Int) ]
+makeRuns bs
+  =  foldr f [] bs
+     where f :: Bool -> [ (Bool,Int) ] -> [ (Bool,Int) ]
+           f b []                              = [(b,1)]
+           f b rs@((c,n):rs2) | b==c && n<63   =  (c,n+1):rs2
+                              | otherwise      =  (b,1)  :rs
+
+encodeRuns :: [ (Bool,Int) ] -> [Int]
+encodeRuns rs 
+  = map f rs
+    where f (True,n)  = 2*n+1
+          f (False,n) = 2*n
+
 
 %%]

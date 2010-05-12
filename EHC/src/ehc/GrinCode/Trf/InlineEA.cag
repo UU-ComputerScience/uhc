@@ -166,7 +166,7 @@ SEM GrModule
                                           allTags2      = -- trace ("allTags: " ++ show allTags ++ "\nextraTags: " ++ show extraTags ) 
                                                           (Map.union allTags extraTags)
                                           nodeMap       = (Map.map (\n -> replicate n Set.empty) allTags2)
-                                          (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName (const True) True (AbsNodes (Nodes nodeMap))
+                                          (u2,ni,evalBody) = evalCode2 @bindL.unique @lhs.hptMap parameterName notHole True (AbsNodes (Nodes nodeMap))
                                           evalBind      = GrBind_Bind functionName
                                                                       GrBindAnnNormal 
                                                                       [parameterName]
@@ -327,10 +327,15 @@ evalCode2 unique hptMap locatName isPossibleNode locatNeedsUpdate nodeAbsVal
 
 
 
+notHole :: (GrTag,[Set.Set Variable]) -> Bool
+notHole (GrTag_Hole,_) = False
+notHole _              = True
+
 isBasicTag (GrTag_Con _ _ nm) = True  -- nm==hsnInt || nm==hsnChar || nm==hsnPackedString
 isBasicTag _                  = False
 
 hasExpectedResultTag :: GrPatLam -> HptMap -> (GrTag,[Set.Set Variable]) -> Bool
+hasExpectedResultTag _ _ (GrTag_Hole,_) = False
 hasExpectedResultTag (GrPatLam_BasicNode _ _) hptMap (tag,_) 
   = case unevaluatedName tag of
       Nothing         -> isBasicTag tag
