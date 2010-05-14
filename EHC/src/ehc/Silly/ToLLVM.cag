@@ -136,6 +136,7 @@ SEM SilModule
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
+                                 , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
@@ -164,7 +165,7 @@ SEM Function
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
                                    @body.llvmCode ++  
-                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -301,9 +302,13 @@ SEM Value
     Assign a Malloc to a fresh variable
   -}
   | Alloc       lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @loc.llvmCode 
+                lhs.llvmCode = @loc.llvmCode ++ @loc.regRootCode
                 loc.(gUniq,llvmVar,llvmCode) =
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
+                loc.regRootCode = case @gcManaged of 
+                                    GCManaged  -> []
+                                    NotManaged -> [LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [@loc.llvmVar]]
+
 
   {-|
     For a call we need to do the following steps:

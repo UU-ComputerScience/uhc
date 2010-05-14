@@ -9,7 +9,7 @@
 
 struct FDescr 
 {
-   Word max_fields;
+   Word max_size;
    Word num_fields;
    unsigned char has_pointers;
 };
@@ -38,14 +38,12 @@ void mm_trace_llvm_Init( MM_Trace* trace, void* traceSupply, MM_Allocator* alloc
 
 Bool mm_trace_llvm_CanTraceObject( MM_Trace* trace, Word obj ) 
 {
-    printf("mm_trace_llvm_CanTraceObject should not be needed!\n");
     return 1;
 }
 
 Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj ) 
 {
     printf("mm_trace_llvm_TraceKnownToBeObject\n");
-
     // This function is responsible for copying an object "from-space" to "to-space".
     // If the object was already copied before, the copy is returnd.
     // If the object was not yet copied, it is done now:
@@ -55,51 +53,63 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
     // The original object is overwritten with a forwarding node.
     // The new object is returned.
 
+    printf("        mm_trace_llvm_TraceKnownToBeObject obj=%08x\n", obj); fflush(stdout);
 
     
 	Word tag;
 	tag=((WPtr)obj)[0];
 
-    printf("TAG: %lld \n", tag );
+    printf("          tag=%d %08x obj=%08x\n", tag, tag, obj); fflush(stdout);
+
 
 	if (tag==FORWARDING_TAG)
     {
         // The node is a forwarding node, indicating that the node was copied before,
         // so we can just return that and we're done
 		obj = ((WPtr)obj)[1];
+        // printf("          return obj=%08x\n", obj); fflush(stdout);
 		return obj ;
 	}
-
-    printf("CHECK1 \n" );
 
     // Now we are sure that node "obj", with tag "tag", must be copied.
 
     // Find out the size of the new object to be allocated
 
-	Word szWords ;
-	szWords = 1 + _llvm_node_descriptor[tag].max_fields;
+    struct FDescr descr = _llvm_node_descriptor[tag];
 
-    printf("max_fields: %lld \n", szWords );
+	Word nodeSize    = (  tag==0 
+	                   ?  ((WPtr)obj)[1]  // BlackHole has nodesize stored in its payload
+	                   :  descr.max_size 
+	                   );
+	Word payloadSize = descr.num_fields;
 
-    printf("CHECK2 \n" );
+    printf("            tag=%d nodesize=%d plsize=%d\n", tag, nodeSize, payloadSize);
 
     // Allocate the new object
 	MM_Allocator *allocator  =  trace->allocator ;
     WPtr objRepl;
-	objRepl = (WPtr)( allocator->alloc( allocator, szWords << Word_SizeInBytes_Log, 0 ) ) ;    // alloc wants the size in bytes, so multiply the szWords by the Word_Size
+	objRepl = (WPtr)( allocator->alloc( allocator, nodeSize << Word_SizeInBytes_Log, 0 ) ) ;    // alloc wants the size in bytes, so multiply the szWords by the Word_Size
 
-    printf("CHECK3 \n" );
+    printf("            allocated repl=%08x\n", objRepl );
+
 
     // Initialize the new object
 	Word* fieldTo   =       objRepl;
 	Word* fieldFrom = (WPtr)obj;
-	Word counter;
-	for ( counter = 0 ; counter < szWords; counter++ ) {
+	for (int sz=payloadSize; sz>=0 ; sz-- ) 
+	{
+        printf("            copy word from %08x to %08x sz=%d data=%08x\n", fieldFrom, fieldTo, sz, *fieldFrom );
 		*(fieldTo++) = *(fieldFrom++) ;
 	}
+	
+	//Copy a nice pattern in the part of the node that is not yet used.
+	//Only necessary for debugging.
+	// for (int k=payloadSize+1; k<nodeSize; k++)
+	// {   objRepl[k] = 0xA4A4A4A4;
+	//      // printf("            copy filler to %08x k=%d\n", objRepl+k, k );
+	// }
 
-    printf("CHECK4 \n" );
-
+    // printf("            initialized tag=%d fwd tag at %08x to %08x\n", objRepl[0], ((WPtr)obj), objRepl );
 
     // Overwrite the original object with a forwarding node, which points to the new object
     // The forwarding node has a special tag
@@ -108,38 +118,64 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
 	// The forwarding node has a single-word payload, which is the pointer to the new object
 	((WPtr)obj)[1] = (Word)objRepl ;
-
-    printf("CHECK5 \n" );
 	
 
     // Queue the payload of the freshly copied object to be processed as well
     MM_TraceSupply* traceSupply = (MM_TraceSupply*)trace->data;
-	traceSupply->pushWork( traceSupply, (Word*)objRepl, szWords, allocator->lastAllocFragment(allocator) ) ;
+	traceSupply->pushWork( traceSupply, (Word*)objRepl, payloadSize+1, allocator->lastAllocFragment(allocator) ) ;
 
-    printf("CHECK6 \n" );
-
+    printf("            pushwork repl=%08x\n", objRepl );
 	return (Word)objRepl ;
 
 }
 
 void mm_trace_llvm_TraceObjectPayload( MM_Trace* trace, Word obj ) 
 {
-    printf("mm_trace_llvm_TraceObjectPayload should not be needed!\n");
+    printf("        mm_trace_llvm_TraceObjectPayload obj=%08x\n", obj); fflush(stdout);
+
+	Word tag;
+	tag=((WPtr)obj)[0];
+    printf("          tag=%d %08x\n", tag, tag); fflush(stdout);
+
+    struct FDescr descr = _llvm_node_descriptor[tag];
+    
+    if (! (descr.has_pointers))
+        return;
+    
+	Word payloadSize = descr.max_size;
+
+    printf("          payloadSize=%d\n", payloadSize); fflush(stdout);
+
+    
+	WPtr payload    = ((WPtr)obj)+1 ;
+	WPtr payloadEnd = payload + payloadSize ;
+	for ( ; payload < payloadEnd ; payload++ )
+	{
+		*payload = mm_trace_llvm_TraceKnownToBeObject( trace, *payload ) ;
+	}
+
 }
 
 Word mm_trace_llvm_ObjectSize( MM_Trace* trace, Word obj ) 
 {
-	return 0;
+	Word tag;
+	tag=((WPtr)obj)[0];
+    struct FDescr descr = _llvm_node_descriptor[tag];
+	Word nodeSize = descr.max_size;
+	return nodeSize;
 }
 
 Bool mm_trace_llvm_HasTraceableWords( MM_Trace* trace, Word obj ) 
 {
-	return 0;
+	Word tag;
+	tag=((WPtr)obj)[0];
+    struct FDescr descr = _llvm_node_descriptor[tag];
+	return descr.has_pointers;
 }
 
 Word mm_trace_llvm_EnsureNoIndirections( MM_Trace* trace, Word obj ) 
 {
-    return 0;
+    return obj;
 }
 
 %%]
