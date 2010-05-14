@@ -403,7 +403,7 @@ defaultEHCOpts
       ,  ehcOptTimeCompile      =   False
       ,  ehcOptGenOwn           =   True
       ,  ehcOptGenRVS           =   False
-      ,  ehcOptGenLink          =   False
+      ,  ehcOptGenLink          =   True
       ,  ehcOptGenLocReg        =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
@@ -544,7 +544,7 @@ ehcCmdLineOpts
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
      ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
      ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
-     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (no)"
+     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (yes)"
      ,  Option ""   ["gen-locreg"]       (boolArg optSetGenLocReg)            "allocate locals in registers that are saved before calls (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
@@ -949,26 +949,27 @@ fioBindIsYes _          = False
 %%]
 
 %%[(4 hmtyinfer).FIOpts.hd export(FIOpts(..))
-data FIOpts =  FIOpts   {  fioLeaveRInst     ::  Bool                ,  fioBindRFirst           ::  Bool
-                        ,  fioBindLFirst     ::  Bool                ,  fioBindLBeforeR         ::  Bool
-                        ,  fioMode           ::  FIMode              ,  fioUniq                 ::  UID
+data FIOpts =  FIOpts   {  fioLeaveRInst     ::  !Bool                ,  fioBindRFirst           ::  !Bool
+                        ,  fioBindLFirst     ::  !Bool                ,  fioBindLBeforeR         ::  !Bool
+                        ,  fioMode           ::  !FIMode              ,  fioUniq                 ::  !UID
+                        ,  fioBindCategs     ::  ![TyVarCateg]
 %%[[7
-                        ,  fioNoRLabElimFor  ::  [HsName]            ,  fioNoLLabElimFor        ::  [HsName]
-                        ,  fioDontBind       ::  TyVarIdS
+                        ,  fioNoRLabElimFor  ::  ![HsName]            ,  fioNoLLabElimFor        ::  ![HsName]
+                        ,  fioDontBind       ::  !TyVarIdS
 %%]]
 %%[[8
-                        ,  fioExpandEqTyVar  ::  Bool                -- expand tyvars also when equal. Required for Sys F translation.
+                        ,  fioExpandEqTyVar  ::  !Bool                -- expand tyvars also when equal. Required for Sys F translation.
 %%]]
 %%[[9
-                        ,  fioPredAsTy       ::  Bool                ,  fioAllowRPredElim       ::  Bool
-                        ,  fioBindLVars      ::  FIOBind             ,  fioBindRVars            ::  FIOBind
+                        ,  fioPredAsTy       ::  !Bool                ,  fioAllowRPredElim       ::  !Bool
+                        ,  fioBindLVars      ::  !FIOBind             ,  fioBindRVars            ::  !FIOBind
 %%]]
 %%[[16
-                        ,  fioFitFailureToProveObl    :: Bool
-                        ,  fioFitVarFailureToProveObl :: Bool
+                        ,  fioFitFailureToProveObl    :: !Bool
+                        ,  fioFitVarFailureToProveObl :: !Bool
 %%]]
 %%[[50
-                        ,  fioAllowEqOpen    ::  Bool                ,  fioInstCoConst          ::  HowToInst
+                        ,  fioAllowEqOpen    ::  !Bool                ,  fioInstCoConst          ::  !HowToInst
 %%]]
                         }
 %%]
@@ -978,6 +979,7 @@ strongFIOpts :: FIOpts
 strongFIOpts =  FIOpts  {  fioLeaveRInst     =   False               ,  fioBindRFirst           =   True
                         ,  fioBindLFirst     =   True                ,  fioBindLBeforeR         =   True
                         ,  fioMode           =   FitSubLR            ,  fioUniq                 =   uidStart
+                        ,  fioBindCategs     =   [TyVarCateg_Plain]
 %%[[7
                         ,  fioNoRLabElimFor  =   []                  ,  fioNoLLabElimFor        =   []
                         ,  fioDontBind       =   Set.empty

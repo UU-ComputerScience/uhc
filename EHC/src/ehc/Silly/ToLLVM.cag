@@ -26,6 +26,8 @@
 %%]
 %%[(8 codegen grin) hs import(Data.Char)
 %%]
+%%[(8 codegen grin) hs import(Foreign.Marshal.Utils)
+%%]
 %%[(8 codegen grin)
 WRAPPER SilModule
 %%]
@@ -99,25 +101,15 @@ SEM SilModule
                                                      @loc.constants
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl 
-                                                     -- : gcInitFuncDecl
-                                                     -- : gcPrintStatsFuncDecl
-                                                     -- : gcMallocFuncDecl @lhs.intType
-                                                     -- : gcMallocUncollectableFuncDecl @lhs.intType
                                                      : primPatternMatchFailureFuncDecl 
                                                      : gcRootFuncDecl
 
-                                                     -- semispace collector
-                                                     : sswalkerFuncDecl
-                                                     : heapwalkerFuncDecl
-                                                     : gcssInitFuncDecl
-                                                     : gcssAllocFuncDecl @lhs.intType
-                                                     
                                                      -- ehc gc
-                                                     : gcEhcAllocFuncDecl @lhs.intType
-                                                     : gcEhcAllocResFuncDecl @lhs.intType
-                                                     : gcEhcGCFuncDecl @lhs.intType
-                                                     : gcEhcRegRootFuncDecl @lhs.intType
-                                                     : gcEhcDeallocResFuncDecl @lhs.intType
+                                                     : gcEhcAllocFuncDecl       @lhs.intType
+                                                     : gcEhcAllocResFuncDecl    @lhs.intType
+                                                     : gcEhcGCFuncDecl          @lhs.intType
+                                                     : gcEhcRegRootFuncDecl     @lhs.intType
+                                                     : gcEhcDeallocResFuncDecl  @lhs.intType
 
                                                      -- runtime
                                                      : rtsInitFuncDecl
@@ -126,63 +118,22 @@ SEM SilModule
                                                      : @functions.externFuncs 
                                                      )
                                                      ( @loc.main : @functions.llvmCode )
-                                                     
-                loc.comment  = map (\(s,i,ts) -> s ++ "->" ++ show i ++ " arity " ++ show (length ts)) @constants  
+
+                loc.comment  = map (\ci -> constantInfoName ci ++ "(" ++ show (constantInfoSeqNr ci) ++ ") NodeSize: " ++ show (constantInfoNodeSize ci) 
+                                                                                                      ++ " PayloadSize: " ++ show (constantInfoPayloadSize ci)
+                                                                                                      ++ " HasPointers: " ++ show (constantInfoHasPointers ci)) @constants  
                 loc.(globalResStr,resConst) = 
                                 string2LLVMString @lhs.gUniq $
                                   if sizeofPointer == 8
                                   then "%lld\n"
                                   else "%d\n"
-                loc.constants = (@loc.globalResStr,@loc.resConst) :
-
-
-                                                                             -- Ccomma0 0 []
-                                                                             -- CFalse 1 []
-                                                                             -- CTrue 2 []
-                                                                             -- Ccolon 3 [Ptr,Ptr]
-                                                                             -- Csubbus 4 []
-                                                                             -- CEQ 5 []
-                                                                             -- CGT 6 []
-                                                                             -- CLT 7 []
-                                                                             -- CInt 8 [Word]
-                                                                             -- HOLE 9 []
-                                                                             -- Fplustildespec1 10 [Ptr]
-                                                                             -- Fplustildespec1tildespec1 11 []
-                                                                             -- Fuptotildespec2 12 [Ptr]
-                                                                             -- Fuptotildespec1 13 []
-                                 (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant [ StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 2 @lhs.intType, Constant 2 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 1 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 1 @lhs.intType, Constant 2 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")
-                                                                                       , StructConstant [Constant 0 @lhs.intType, Constant 1 @lhs.intType, Constant 0 i8] (TyVar "FDESCR")] (Array 14 (TyVar "FDESCR"))) : 
-                                 @functions.constants
-                
-                
-                                                                             -- example:                
-                                                                             -- @descrb = constant [3 x %struct.Descrb] [ %struct.Descrb { i32 2, i8 1 }
-                                                                             --                                         , %struct.Descrb { i32 3, i8 0 }
-                                                                             --                                         , %struct.Descrb { i32 4, i8 1 }]
-                                        
+                loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants :  @functions.constants
                 loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) 
                                 : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
-                                 , LLVMStatement_Assignment (LocalVar "fdescr.1" (pLift (TyVar "FDESCR")))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_node_descriptor" (pLift (Array (length @constants) (TyVar "FDESCR")))) [0, 0] )
-                                 -- , LLVMStatement_Call gcssInitFuncDecl StdCall [ Constant  (length @constants) i32
-                                 --                                               , LocalVar "fdescr.1" (pLift (TyVar "FDESCR")) ]
-                                 
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
@@ -200,7 +151,6 @@ SEM SilModule
 %%][99
                                  , LLVMStatement_Call fun_mainFullProgFuncDecl StdCall []
 %%]]                                 
-                                 -- , LLVMStatement_Call gcPrintStatsFuncDecl StdCall []
                                  , LLVMStatement_Call rtsExitFuncDecl StdCall []
                                  , LLVMStatement_Return (Constant 0 i32)  
                                  ]                    
@@ -214,8 +164,6 @@ SEM Function
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
                                    @body.llvmCode ++  
-                                   -- [LLVMStatement_Call sswalkerFuncDecl StdCall []] ++
-                                   -- [LLVMStatement_Call heapwalkerFuncDecl StdCall []] ++
                                    [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
@@ -247,14 +195,8 @@ SEM Statement
                                    GCManaged  -> @loc.gcfitsCode ++ 
                                                  [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
                                                                                             , (StrConstant "null" (pLift i8))
-                                                                                            -- , (StrConstant "null" (pLift i8))
                                                                                             ] 
                                                  ]
-
-                                                    -- example:                                                 
-                                                    --    call void @llvm.gcroot( i8** %fresh152
-                                                    --                          , i8* bitcast (%struct.Descrb* getelementptr ([3 x %struct.Descrb]* @descrb, i32 0, i32 1) to i8*) )     ; at index 1
-
                                    NotManaged -> []       
 
 
@@ -619,7 +561,7 @@ ATTR Functions Function
 
 
 SEM SilModule
-  | SilModule   functions.constantMap = Data.Map.fromList (map (\(x,y,z)->(x,y)) @constants)
+  | SilModule   functions.constantMap = Data.Map.fromList (map (\ci->(constantInfoName ci, constantInfoSeqNr ci)) @constants)
 %%]
 
 %%[(8 codegen grin)
@@ -747,57 +689,9 @@ primPatternMatchFailureFuncDecl :: LLVMFunctionDecl
 primPatternMatchFailureFuncDecl =
   LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailure" Void FixedArgs [] Nothing 
 
-{-|
-Function declaration for a run-time function that initializes the garbage
-collector.
--}
-gcInitFuncDecl :: LLVMFunctionDecl
-gcInitFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_init" Void FixedArgs [] Nothing
-  
-{-|
-Function declaration for a run-time malloc function that is managed by the
-garbage collector. The 'LLVMType' is used as argument type and for the
-return type, supporting both 32 and 64 bit memory allocation.
--}  
-gcMallocFuncDecl :: LLVMType -> LLVMFunctionDecl
-gcMallocFuncDecl intType =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc" (pLift intType) FixedArgs [(LocalVar "x" intType)] Nothing
-
-{-|
-Function declaration for a run-time function that mallocs a piece of memory that
-is added as root for garbage collection (in addition to the stack). The 'LLVMType' is used as 
-argument type and for the return type, supporting both 32 and 64 bit memory allocation.
--}
-gcMallocUncollectableFuncDecl :: LLVMType -> LLVMFunctionDecl
-gcMallocUncollectableFuncDecl intType =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmgc_malloc_uncollectable" (pLift intType) FixedArgs [(LocalVar "x" intType)] Nothing
-
-gcPrintStatsFuncDecl :: LLVMFunctionDecl
-gcPrintStatsFuncDecl =
-  LLVMFunctionDecl_LLVMFunctionDecl "llvmc_print_statistics" Void FixedArgs [] Nothing
-
 gcRootFuncDecl :: LLVMFunctionDecl
 gcRootFuncDecl = 
   LLVMFunctionDecl_LLVMFunctionDecl "llvm.gcroot" Void FixedArgs [(LocalVar "ptrloc" (pLift $ pLift i8)), (LocalVar "metadata" (pLift i8))] Nothing
-
-sswalkerFuncDecl :: LLVMFunctionDecl
-sswalkerFuncDecl = 
-  LLVMFunctionDecl_LLVMFunctionDecl "sswalker" Void FixedArgs [] Nothing
-
-heapwalkerFuncDecl :: LLVMFunctionDecl
-heapwalkerFuncDecl = 
-  LLVMFunctionDecl_LLVMFunctionDecl "heapwalker" Void FixedArgs [] Nothing
-
-gcssInitFuncDecl :: LLVMFunctionDecl
-gcssInitFuncDecl = 
-  LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_init" Void FixedArgs [LocalVar "fsz" i32, LocalVar "fd" (pLift (TyVar "FDESCR"))] Nothing -- LocalVar "fd" (TyVar "FDESCR")
-  
-
-gcssAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
-gcssAllocFuncDecl intType = 
-  LLVMFunctionDecl_LLVMFunctionDecl "gc_ss_alloc" (pLift intType) FixedArgs [(LocalVar "sz" intType)] Nothing
-
 
 gcEhcAllocFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcEhcAllocFuncDecl intType = 
@@ -964,6 +858,14 @@ mkMalloc manageType intType nr =
            NotManaged -> LLVMExpression_Call (gcEhcAllocResFuncDecl intType) StdCall [Constant size intType]
            GCManaged  -> LLVMExpression_Call (gcEhcAllocFuncDecl intType)    StdCall [Constant size intType, Constant 0 intType]
   else LLVMExpression_Malloc intType nr
+  
+  
+mkGCFieldDescriptors :: LLVMType -> [ConstantInfo] -> (LLVMVar, LLVMVar)
+mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
+    where toFieldDesc fd = StructConstant [ Constant (constantInfoNodeSize fd)               intType
+                                          , Constant (constantInfoPayloadSize fd)            intType
+                                          , Constant (fromBool $ constantInfoHasPointers fd) i8] (TyVar "FDESCR")
+  
 }
 %%]
 

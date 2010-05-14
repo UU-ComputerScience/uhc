@@ -21,7 +21,9 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8.TRACE
+#ifdef __UHC_TARGET_BC__
 #define TRACE 					1
+#endif
 
 #if TRACE
 #define GB_COUNT_STEPS			1
@@ -36,12 +38,14 @@
 
 %%[8
 
+
 #ifdef __UHC_TARGET_LLVM__
 #define USE_EHC_MM				1
 #endif
 
 
-#ifdef __UHC_TARGET_BC__
+
+// #ifdef __UHC_TARGET_BC__
 // For now, switch off Boehm GC, turn on own GC
 #undef USE_BOEHM_GC
 #define USE_EHC_MM				1
@@ -60,7 +64,7 @@
 %%][100
 #define GB_DEBUG				0	// always 0
 %%]]
-#endif
+// #endif
 %%]
 
 %%[8

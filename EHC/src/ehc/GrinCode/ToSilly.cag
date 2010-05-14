@@ -64,6 +64,7 @@ ATTR GrVal
      GrTag              [ | | value                      : {Value}        ]
 ATTR GrPatAlt GrTag     [ | | constant                   : {Constant}     ]
 ATTR GrValL GrVal       [ | | values                     : {Values}       ]
+ATTR GrValL GrVal GrTag [ | | isHole                     : {Bool}         ]
 ATTR GrGlobal GrGlobalL [ | | initStats1   USE {++} {[]} : {Statements}
                               initStats2   USE {++} {[]} : {Statements}
                               names        USE {++} {[]} : {[HsName]}     ]
@@ -121,7 +122,7 @@ SEM GrBind
 
 SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
-                                (tagConstants @lhs.opts @bindL.genArities (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
+                                (tagConstants @lhs.opts @lhs.hptMap @tagsMp @bindL.genArities (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names                               -- variables
                                 ( @loc.initFunction : @bindL.functions )     -- functions
 
@@ -194,8 +195,11 @@ SEM GrExpr
                             absval = absFetch @lhs.hptMap ph
                             -- n2 = 1+ maximum0 (map (length . snd) (filter (isFinalTag . fst) (getNodes (absFetch @lhs.hptMap ph))))  -- wrong, because H-tags can be overwritten with non-final tags
                             n2 = 1 +  maximum0 (map (length . snd) (getNodes absval))
+                            vs2 = if  @val.isHole
+                                  then vs ++ [Value_Con (Constant_LiteralInt (max 2 n2))]
+                                  else vs
                         in Statement_Comment ["Store"]
-                           : store (mkVar ph) n n2 vs
+                           : store (mkVar ph) n n2 vs2
 
            lhs.localsSet = Set.fromList @lhs.targets
 
@@ -226,7 +230,7 @@ SEM GrExpr
                             reenters = if  null @altL.reenteralts
                                        then []
                                        else [ ifstat ]
-                            condition   = Value_CompareGT @val.value (Constant_Alias "HOLE")
+                            condition   = Value_CompareGT @val.value (Constant_Alias "UNBOXED")    -- assumes that Unboxed tag is the highest-numbered Final tag
                             ifstat      = Statement_IfThenElse condition switch1 []
                             switch1     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.reenteralts
                             switch2     = switchStatement (ehcOptGenCaseDefault @lhs.opts) @val.value @altL.alternatives
@@ -238,7 +242,7 @@ SEM GrExpr
 
  | Call    lhs.stats  = if    @nm==evaluateNr && isJust @lhs.mbPtrTarget
                         then  [ Statement_Comment ["Evaluate to ptrNode"]
-                              , Statement_Assignment (Variable_Unembedded (fromJust @lhs.mbPtrTarget)) (head @argL.values)
+                              , Statement_Assignment (Variable_Unembedded (fromJust2 "no target" @lhs.mbPtrTarget)) (head @argL.values)
                               ]
                         else  (   Statement_Call @nm (not @lhs.hasNext) @argL.values
                                   :  assignments "Result" 
@@ -350,6 +354,20 @@ SEM GrPatAlt
  | * - Tag lhs.value    = error "GrPatAlt:other value"
            lhs.constant = error "GrPatAlt:other constant"
 -- TODO: | LitInt = ...
+
+
+SEM GrTag
+  | Hole        lhs.isHole  = True
+  | *-Hole      lhs.isHole  = False
+  
+SEM GrVal
+  | Tag Node    lhs.isHole  = @tag.isHole
+  | *-Tag Node  lhs.isHole  = False
+ 
+SEM GrValL
+  | Nil         lhs.isHole  = False
+  | Cons        lhs.isHole  = @hd.isHole
+
 
 %%]
 
@@ -499,13 +517,11 @@ maximum0 xs = maximum xs
 -- n2 is the maximum number of parameters of all constructorfunctions
 -- F-tags and A-tags may be overwritten later with a C-tag or a P-tag, which might have more parameters.
 -- We anticipate here for the maximum number of parameters.
--- Obvious improvement: do not take the global maximum, but only the maximum over the constructors
--- that are actually possible for this function.
--- Source of this information could be the Haskell-type, or the Grin HPT-analysis.
+-- Also, the size should be at least 2, to allow for the forwarding pointer during garbage collection.
 
 allocate :: Char -> SillyAllocManageType -> Int -> Int -> Value
-allocate 'C' tp n1 _  = Value_Alloc      n1     tp
-allocate _   tp n1 n2 = Value_Alloc (max n1 n2) tp
+allocate 'C' tp n1 _  = Value_Alloc (max 2      n1    ) tp emptyStackInfo
+allocate _   tp n1 n2 = Value_Alloc (max 2 (max n1 n2)) tp emptyStackInfo
        
 -- tagcat is "C" for constructors, "F" for function thunks, "P" for partialapp thunks, "U" for unboxed, etc.
 tagcat :: [Value] -> Char
@@ -550,52 +566,130 @@ arrayVariab :: Variable -> Int -> Variable
 arrayVariab a i = Variable_Subs a i
 
 
-neededTags :: EHCOpts -> [(String,[SilTp])]
-neededTags opts 
-  =  let nameSupplier = ehcOptBuiltinNames opts
-     in  [ ("Ccomma0"                                                           , [])
-         , ('C' : hsnShowAlphanumericShort (ehbnBoolFalse          nameSupplier), [])
-         , ('C' : hsnShowAlphanumericShort (ehbnBoolTrue           nameSupplier), [])
-         , ('C' : hsnShowAlphanumericShort (ehbnDataListAltCons    nameSupplier), [SilTpPtr,SilTpPtr])
-         , ('C' : hsnShowAlphanumericShort (ehbnDataListAltNil     nameSupplier), [])
-         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltEQ  nameSupplier), [])
-         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltGT  nameSupplier), [])
-         , ('C' : hsnShowAlphanumericShort (ehbnDataOrderingAltLT  nameSupplier), [])
-         ]
+
+neededTags :: EHCOpts -> [GrTag]
+neededTags opts
+  =  let ns = ehcOptBuiltinNames opts
+     in [ GrTag_Hole
+        , GrTag_Con (GrTagAnn 0 0) 0 (mkHNmBase ",0")
+        , GrTag_Con (GrTagAnn 0 0) 0 (ehbnBoolFalse         ns)
+        , GrTag_Con (GrTagAnn 0 0) 1 (ehbnBoolTrue          ns)
+        , GrTag_Con (GrTagAnn 2 2) 0 (ehbnDataListAltCons   ns)
+        , GrTag_Con (GrTagAnn 0 2) 1 (ehbnDataListAltNil    ns)
+        , GrTag_Con (GrTagAnn 0 0) 0 (ehbnDataOrderingAltEQ ns)
+        , GrTag_Con (GrTagAnn 0 0) 1 (ehbnDataOrderingAltGT ns)
+        , GrTag_Con (GrTagAnn 0 0) 2 (ehbnDataOrderingAltLT ns)
+        ]     
 %%[[98
-         ++
-         [ ("CUHC_IOBase_AppendBinaryMode"   , [])
-         , ("CUHC_IOBase_AppendMode"         , [])
-         , ("CUHC_IOBase_ReadBinaryMode"     , [])
-         , ("CUHC_IOBase_ReadMode"           , [])
-         , ("CUHC_IOBase_ReadWriteBinaryMode", [])
-         , ("CUHC_IOBase_ReadWriteMode"      , [])
-         , ("CUHC_IOBase_WriteBinaryMode"    , [])
-         , ("CUHC_IOBase_WriteMode"          , [])
-         ]
+        ++
+        [ GrTag_Con (GrTagAnn 0 0) 0 (HsName_Modf qual (HsName_Base "AppendBinaryMode")    Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 1 (HsName_Modf qual (HsName_Base "AppendMode")          Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 2 (HsName_Modf qual (HsName_Base "ReadBinaryMode")      Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 3 (HsName_Modf qual (HsName_Base "ReadMode")            Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 4 (HsName_Modf qual (HsName_Base "ReadWriteBinaryMode") Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 5 (HsName_Modf qual (HsName_Base "ReadWriteMode")       Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 6 (HsName_Modf qual (HsName_Base "WriteBinaryMode")     Map.empty)
+        , GrTag_Con (GrTagAnn 0 0) 7 (HsName_Modf qual (HsName_Base "WriteMode")           Map.empty)
+        ]
+        where qual = ["UHC", "IOBase"]
 %%]]
+    
 
-
-tagConstants :: EHCOpts -> Map.Map Int Int -> Set.Set GrTag -> [(String,Int,[SilTp])]
-tagConstants opts aritymap tagset
+tagConstants :: EHCOpts -> HptMap -> Map.Map HsName [GrTag] -> Map.Map Int Int -> Set.Set GrTag -> [ConstantInfo]
+tagConstants opts hptmap tagsmap aritymap tagset
  = let predef = neededTags opts
-       inprog = map (showGrTag aritymap) (Set.toAscList (Set.insert GrTag_Hole tagset))
--- in  zip (inprog \\ predef) [length predef..]
-   in  zip23 (predef ++ (inprog \\ predef)) [0..]
+       inprog = Set.toAscList (Set.insert GrTag_Unboxed tagset)
+   in  zipWith (makeTagInfo opts hptmap tagsmap aritymap) (predef ++ (inprog \\ predef)) [0..]
 
-zip23 :: [(a,b)] -> [c] -> [(a,c,b)]
-zip23 [] _ = []
-zip23 ((x,y):xys) (z:zs) = (x,z,y) : zip23 xys zs
 
-showGrTag :: Map.Map Int Int -> GrTag -> (String, [SilTp])
-showGrTag _ (GrTag_Con a i nm)   =  let nameRepr = 'C' : hsnShowAlphanumericShort nm 
-                                    in  ( nameRepr, replicate (gtannArity a) (if nameRepr=="CInt" || nameRepr=="CChar" then SilTpWord else SilTpPtr))
-showGrTag m t@(GrTag_Fun nm)     =  ( "F" ++ hsnShowAlphanumericShort nm                   , replicate (tagArity t m) SilTpPtr )
-showGrTag m t@(GrTag_PApp n nm)  =  ( "P" ++ show n ++ "_" ++ hsnShowAlphanumericShort nm  , replicate (tagArity t m) SilTpPtr )
-showGrTag m t@(GrTag_App nm)     =  ( "A" ++ hsnShowAlphanumeric nm                        , replicate (tagArity t m) SilTpPtr )
-showGrTag m t@(GrTag_Rec)        =  ( "GrTag:Rec"                                          , [] )
-showGrTag m t@(GrTag_Hole)       =  ( "HOLE"                                               , [] )
-showGrTag m t@(GrTag_Unboxed)    =  ( "UNBOXED"                                            , [SilTpWord] )
+makeTagInfo :: EHCOpts -> HptMap -> Map.Map HsName [GrTag] -> Map.Map Int Int -> GrTag -> Int -> ConstantInfo
+makeTagInfo opts hm tm am tag seqnr
+  =    case tag of
+         (GrTag_Con a i nm) -> let ar = gtannArity a
+                               in  ConstantInfo ('C':hsnShowAlphanumericShort nm)
+                                                seqnr
+                                                (max 2 (1+ar))
+                                                ar
+                                                (ar>0 && hasPointerPayload opts tm nm)
+         (GrTag_PApp n nm)  -> let ar = (fromJust2 ("no arity for PApp " ++ show tag) (Map.lookup (getNr nm) am)) - n
+                               in  ConstantInfo ('P':(show n ++ ('_' : hsnShowAlphanumericShort nm)))
+                                                seqnr
+                                                (max 2 (1+ar))
+                                                ar
+                                                (ar>0)
+         (GrTag_Fun nm)     -> let ar  = fromJust2 ("no arity for Fun " ++ show tag) (Map.lookup (getNr nm) am)
+                                   ar2 = maximum0 (ar:(map (finalTagPayloadSize am . fst) (getNodes (getEnvVar hm (getNr nm)))))
+                               in  ConstantInfo ('F':hsnShowAlphanumericShort nm)
+                                                seqnr
+                                                (max 2 (1+ar2))
+                                                ar
+                                                (ar>0)
+         (GrTag_App nm)     -> let ar  = fromJust2 ("no arity for App " ++ show tag) (Map.lookup (getNr nm) am)
+                                   ar2 = maximum0 (ar:(map (finalTagPayloadSize am . fst) (getNodes (getEnvVar hm (getNr nm)))))
+                               in  ConstantInfo ("Afun_"++hsnShowAlphanumericShort nm)
+                                                seqnr
+                                                (max 2 (1+ar2))
+                                                ar
+                                                (ar>0)
+         (GrTag_Hole)       ->     ConstantInfo "HOLE"
+                                                seqnr
+                                                2
+                                                1
+                                                False
+         (GrTag_Unboxed)    ->     ConstantInfo "UNBOXED"
+                                                seqnr
+                                                2
+                                                1
+                                                False
+         (GrTag_Rec)        ->     error "GrTag_Rec found in ToSilly"
+                                            
+
+
+fromJust2 :: String -> Maybe a -> a
+fromJust2 s Nothing  = error s
+fromJust2 _ (Just x) = x
+
+
+finalTagPayloadSize :: Map.Map Int Int -> GrTag -> Int
+finalTagPayloadSize _  (GrTag_Con a i nm) = gtannArity a
+finalTagPayloadSize am (GrTag_PApp n nm)  = maybe  0
+                                                   (\a -> a-n)
+                                                   (Map.lookup (getNr nm) am)
+                                            -- (fromJust2 ("no arity for payload PApp " ++ show nm) (Map.lookup (getNr nm) am)) - n
+finalTagPayloadSize _  (GrTag_Unboxed)    = 1
+finalTagPayloadSize _  _                  = 0
+
+
+hasPointerPayload :: EHCOpts -> Map.Map HsName [GrTag] -> HsName -> Bool
+hasPointerPayload opts tm nm
+  |  nm==hsnPackedString =  False
+  |  nm==hsnInt  =  False
+  |  nm==hsnChar =  False
+%%[[97  
+  |  nm==builtinNm opts ehbnWord   = False  
+  |  nm==builtinNm opts ehbnInt8   = False  
+  |  nm==builtinNm opts ehbnWord8  = False  
+  |  nm==builtinNm opts ehbnInt16  = False  
+  |  nm==builtinNm opts ehbnWord16 = False  
+  |  nm==builtinNm opts ehbnInt32  = False  
+  |  nm==builtinNm opts ehbnWord32 = False  
+  |  nm==builtinNm opts ehbnFloat  = False  
+  |  nm==builtinNm opts ehbnInt64  = False  
+  |  nm==builtinNm opts ehbnWord64 = False  
+  |  nm==builtinNm opts ehbnDouble = False  
+%%]]
+%%[[99
+  |  nm==builtinNm opts ehbnAddr   = False  
+%%]]
+  |  otherwise   =  maybe True                 -- The constructor is not a type in the type table, so it is a normal constructor which has pointers as payload.
+                          (not . null)         -- The constructor is a type in the type table, which can happen in datatypes like "data Hello = Hello Int". But if for this type there are no constructors, we have a Opaque type, and we should indicate that the constructor has no pointer arguments.
+                          (Map.lookup nm tm)
+
+
+builtinNm :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
+builtinNm opts f = f $ ehcOptBuiltinNames opts
+
+
 
 
 getSilTp hptMap (HNmNr n _)
@@ -609,5 +703,6 @@ getSilTp hptMap (HNmNr n _)
           (AbsBottom)      -> SilTpUnknown
           (AbsUnion _)     -> SilTpUnion
           _                -> SilTpOther
+
 
 %%]

@@ -146,13 +146,14 @@ instance Monoid AbstractValue where
 
 
 conNumber :: GrTag -> Int
--- Final tags first
+-- Hole should be first, because garbage collector assumes that it has code 0
+conNumber GrTag_Hole        = 0
+-- Then all final tags
 conNumber (GrTag_Con _ _ _) = 1
 conNumber (GrTag_PApp _ _)  = 2
 conNumber GrTag_Rec         = 3
 conNumber GrTag_Unboxed     = 4
--- "Hole" separates final tags from unevaluated tags (this fact is exploited Grin2Silly, for generating code for Reenter alternatives)
-conNumber GrTag_Hole        = 7
+-- "Unboxed" separates final tags from unevaluated tags (this fact is exploited Grin2Silly, for generating code for Reenter alternatives)
 -- Unevaluated tags last
 conNumber (GrTag_Fun _)     = 8
 conNumber (GrTag_App _)     = 9
@@ -172,8 +173,8 @@ instance Ord GrTag where
   compare t1 t2 = let x = conNumber t1
                       y = conNumber t2
                   in  case compare x y of 
-                        EQ -> if  x >= 3 && x <= 7
-                              then -- Rec/Unboxed/World/Any/Hole
+                        EQ -> if  x == 0 || x==3 || x==4
+                              then -- Rec/Unboxed/Hole
                                    EQ
                               else -- App/Fun/PApp/Con, all have a name
                                    case cmpHsNameOnNm (conName t1) (conName t2) of

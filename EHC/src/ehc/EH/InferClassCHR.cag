@@ -212,10 +212,16 @@ ATTR AllDecl Expr [ | | chrClassDeclSq USE {`Seq.union`} {Seq.empty}: {Seq.FastS
 %%[(9 hmtyinfer)
 SEM Decl
   | Class       loc         .   chrClassDecl        =   let off n = tyRecOffset n @clsTyRec
-                                                        in  ( map tyPred @ctxtPrTyL
-                                                            , tyPred @hdPrTy
-                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) @ctxtPrTyL @supClsFldL
+                                                            {-
+                                                            (cxt,hdt) = tyArrowArgsRes $ tyMetaTyVars @lUniq_9_prTyMeta @tyPrExpr.ty
+                                                            cx = map tyPred cxt
+                                                            hd = tyPred hdt
+                                                            -}
+                                                        in  ( {- cx -- -} map tyPred @ctxtPrTyL
+                                                            , {- hd -- -} tyPred     @hdPrTy
+                                                            , zipWith (\p n -> RedHow_BySuperClass n (off n) @dictTag) {- cx -} @ctxtPrTyL @supClsFldL
                                                             )
+                loc         .   lUniq_9_prTyMeta 	:   UNIQUEREF gUniq
                 lhs         .   chrClassDeclSq      =   Seq.singleton @chrClassDecl
 
 SEM Expr
@@ -243,11 +249,12 @@ SEM Decl
                                                             )
                 lhs         .   chrInstDeclSq       =   if @inclForElim then Seq.singleton @chrInstDecl else Seq.empty
   | InstanceIntro
-                loc         .   chrInstDecl         =   let pr = tyPred @prExpr.ty
+                loc         .   chrInstDecl         =   let pr = tyPred $ tyMetaTyVars @lUniq_9_prTyMeta @prExpr.ty
                                                         in  ( []
                                                             , pr
                                                             , RedHow_ByInstance @dictNm pr @lhs.predScope
                                                             , @lhs.predScope
                                                             )
+                loc         .   lUniq_9_prTyMeta 	:   UNIQUEREF gUniq
                 lhs         .   chrInstDeclSq       =   Seq.singleton @chrInstDecl
 %%]

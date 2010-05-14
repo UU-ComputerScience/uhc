@@ -22,7 +22,9 @@ module System.Directory
 
     -- * Actions on directories
       createDirectory		-- :: FilePath -> IO ()
+#ifndef __NHC__
     , createDirectoryIfMissing  -- :: Bool -> FilePath -> IO ()
+#endif
     , removeDirectory		-- :: FilePath -> IO ()
     , removeDirectoryRecursive  -- :: FilePath -> IO ()
     , renameDirectory		-- :: FilePath -> FilePath -> IO ()
@@ -41,7 +43,6 @@ module System.Directory
     , removeFile		-- :: FilePath -> IO ()
     , renameFile                -- :: FilePath -> FilePath -> IO ()
     , copyFile                  -- :: FilePath -> FilePath -> IO ()
-
     
     , canonicalizePath
     , makeRelativeToCurrentDirectory
@@ -65,6 +66,7 @@ module System.Directory
 
     , getPermissions            -- :: FilePath -> IO Permissions
     , setPermissions	        -- :: FilePath -> Permissions -> IO ()
+    , copyPermissions
 
     -- * Timestamps
 
@@ -78,10 +80,16 @@ import Control.Monad (guard)
 import System.Environment      ( getEnv )
 import System.FilePath
 import System.IO
+import System.IO.Error hiding ( catch, try )
 import Control.Monad           ( when, unless )
+#ifndef __UHC__
+import Control.Exception.Base
+#endif /* __UHC__ */
 
 #ifdef __NHC__
-import Directory
+import Directory -- hiding ( getDirectoryContents
+                 --        , doesDirectoryExist, doesFileExist
+                 --        , getModificationTime )
 import System (system)
 #endif /* __NHC__ */
 
@@ -94,15 +102,20 @@ import Foreign.C
 
 {-# CFILES cbits/directory.c #-}
 
+import System.Time             ( ClockTime(..) )
+
 #if defined(__GLASGOW_HASKELL__) || defined(__UHC__)
 import System.Posix.Types
 import System.Posix.Internals
-import System.Time             ( ClockTime(..) )
 
 #ifdef __GLASGOW_HASKELL__
+
+#if __GLASGOW_HASKELL__ >= 611
+import GHC.IO.Exception	( IOException(..), IOErrorType(..), ioException )
+#else
 import GHC.IOBase	( IOException(..), IOErrorType(..), ioException )
-import Control.Exception.Base
-import System.IO.Error hiding ( catch, try )
+#endif
+
 #elif __UHC__
 import UHC.IOBase
 import UHC.OldException
@@ -110,9 +123,11 @@ import System.IO.Error
 #endif
 
 #ifdef mingw32_HOST_OS
-import qualified System.Win32
+import System.Posix.Types
+import System.Posix.Internals
+import qualified System.Win32 as Win32
 #else
-import qualified System.Posix
+import qualified System.Posix as Posix
 #endif
 
 {- $intro
@@ -294,9 +309,9 @@ The path refers to an existing non-directory object.
 createDirectory :: FilePath -> IO ()
 createDirectory path = do
 #ifdef mingw32_HOST_OS
-  System.Win32.createDirectory path Nothing
+  Win32.createDirectory path Nothing
 #else
-  System.Posix.createDirectory path 0o777
+  Posix.createDirectory path 0o777
 #endif
 
 #else /* !__GLASGOW_HASKELL__ && !__UHC__*/
@@ -380,9 +395,9 @@ The operand refers to an existing non-directory object.
 removeDirectory :: FilePath -> IO ()
 removeDirectory path =
 #ifdef mingw32_HOST_OS
-  System.Win32.removeDirectory path
+  Win32.removeDirectory path
 #else
-  System.Posix.removeDirectory path
+  Posix.removeDirectory path
 #endif
 
 #endif
@@ -442,9 +457,9 @@ The operand refers to an existing directory.
 removeFile :: FilePath -> IO ()
 removeFile path =
 #if mingw32_HOST_OS
-  System.Win32.deleteFile path
+  Win32.deleteFile path
 #else
-  System.Posix.removeLink path
+  Posix.removeLink path
 #endif
 
 
@@ -507,9 +522,9 @@ renameDirectory opath npath =
 			    ("not a directory") (Just opath))
 	else do
 #ifdef mingw32_HOST_OS
-   System.Win32.moveFileEx opath npath System.Win32.mOVEFILE_REPLACE_EXISTING
+   Win32.moveFileEx opath npath Win32.mOVEFILE_REPLACE_EXISTING
 #else
-   System.Posix.rename opath npath
+   Posix.rename opath npath
 #endif
 
 {- |@'renameFile' old new@ changes the name of an existing file system
@@ -566,9 +581,9 @@ renameFile opath npath =
 			   "is a directory" (Just opath))
 	else do
 #ifdef mingw32_HOST_OS
-   System.Win32.moveFileEx opath npath System.Win32.mOVEFILE_REPLACE_EXISTING
+   Win32.moveFileEx opath npath Win32.mOVEFILE_REPLACE_EXISTING
 #else
-   System.Posix.rename opath npath
+   Posix.rename opath npath
 #endif
 
 #endif /* __GLASGOW_HASKELL__ || __UHC__*/
@@ -823,7 +838,7 @@ getCurrentDirectory = do
 			        go p'' bytes'
 		        else throwErrno "getCurrentDirectory"
 #else
-  System.Posix.getWorkingDirectory
+  Posix.getWorkingDirectory
 #endif
 
 #ifdef mingw32_HOST_OS
@@ -866,9 +881,9 @@ The path refers to an existing non-directory object.
 setCurrentDirectory :: FilePath -> IO ()
 setCurrentDirectory path =
 #ifdef mingw32_HOST_OS
-  System.Win32.setCurrentDirectory path
+  Win32.setCurrentDirectory path
 #else
-  System.Posix.changeWorkingDirectory path
+  Posix.changeWorkingDirectory path
 #endif
 
 {- |The operation 'doesDirectoryExist' returns 'True' if the argument file

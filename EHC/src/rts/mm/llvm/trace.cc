@@ -3,11 +3,15 @@
 #include "../../rts.h"
 
 
+//    ,  constantInfoNodeSize    :: Int
+//    ,  constantInfoPayloadSize :: Int
+//    ,  constantInfoHasPointers :: Bool
+
 struct FDescr 
 {
-   Word num_fields;
    Word max_fields;
-   unsigned char is_prim;
+   Word num_fields;
+   unsigned char has_pointers;
 };
 
 
@@ -25,24 +29,6 @@ extern struct FDescr _llvm_node_descriptor[];
 void mm_trace_llvm_Init( MM_Trace* trace, void* traceSupply, MM_Allocator* allocator, MM_Collector* collector ) 
 {
     printf("mm_trace_llvm_Init\n");
-
-
-    if (_llvm_node_descriptor){
-        printf("************************************************\n"); 
-        printf("*** FDescr table: \n"); 
-
-        int32_t i = 0;    
-        struct FDescr cur;
-        while (i < 14){
-            cur = _llvm_node_descriptor[i];
-            
-            printf("Con: %i | fields: %i | isPrim: %i \n", i, cur.num_fields , cur.is_prim);
-            
-            i++;
-        }
-        printf("************************************************\n"); 
-    }
-
 
 	// Store the given parameters in the trace object.
 	trace->data      = (MM_Trace_Data_Priv*)traceSupply ;

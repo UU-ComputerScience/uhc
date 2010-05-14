@@ -324,6 +324,7 @@ SEM Expr
   | AppTop      loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
                                         ]
   | Con         loc     .  info_4   :=  [ mkInfo1 "lhs.fiOpts" (pp @lhs.fiOpts)
+                                        , mkInfo1 "foTrace fo" (vlist $ foTrace @fo_)
                                         , mkInfo1 "foVarMp" (pp (foVarMp @fo_))
                                         ]
   | AppImpred   loc     .  info_4   :=  [ mkInfo1 "knTy" (ppTyS @lhs.tyVarMp @lhs.knTy)
@@ -817,7 +818,7 @@ SEM Expr
                                         , mkInfo1 "prvArgCSubst" (ppAssocLV . Map.toList $ @prvArgCSubst)
                                         , mkInfo1 "cSubst" (ppAssocLV . Map.toList $ @decls.cSubst)
 %%]]
-                                        , mkInfo1 "quantPrOccL (decl)" (ppBracketsCommasV @quantPrOccL)
+                                        , mkInfo1 "toQuantOverPrOccL (decl)" (ppBracketsCommasV @toQuantOverPrOccL)
                                         , mkInfo1 "quantCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @quantCnstrMp)
                                         , mkInfo1 "tqoGam" (ppGam @tqoGam)
                                         , mkInfo1 "tmpoTyVarMp" (pp @tmpoTyVarMp)

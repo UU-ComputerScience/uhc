@@ -142,13 +142,17 @@ showNameWithType :: (HsName, SilTp) -> PP_Doc
 showNameWithType (nm,tp) = hsnShowAlphanumeric nm >|< ":" >|< show tp
 
 
-prettyConstants :: [(String,Int,[SilTp])] -> PP_Doc
+prettyConstants :: [ConstantInfo] -> PP_Doc
 prettyConstants xs 
    = foldr1 (>-<) (text "CONSTANTS" : map prettyConstant xs)
  
-prettyConstant :: (String,Int,[SilTp]) -> PP_Doc
-prettyConstant (s,n,ps)
-  =  text s >#< text (show n) >#< text (show ps)
+prettyConstant :: ConstantInfo -> PP_Doc
+prettyConstant ci
+  =  text (constantInfoName ci) 
+     >#< text (show (constantInfoSeqNr ci)) 
+     >#< text (show (constantInfoNodeSize ci)) 
+     >#< text (show (constantInfoPayloadSize ci)) 
+     >#< text (show (constantInfoHasPointers ci)) 
 
 
 prettyVariables :: [HsName] -> PP_Doc

@@ -61,7 +61,7 @@ initialHSSem opts
       , HSSem.moduleNm_Inh_AGItf        = hsnUnknown
       , HSSem.modInScope_Inh_AGItf      = Map.empty
       , HSSem.modEntToOrig_Inh_AGItf    = Map.empty
-      , HSSem.fixityGam_Inh_AGItf       = emptyGam
+      , HSSem.fixityGam_Inh_AGItf       = initFixityGam
       , HSSem.topInstanceNmL_Inh_AGItf  = []
 %%]]
       }

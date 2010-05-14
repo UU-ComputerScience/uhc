@@ -328,7 +328,9 @@ instance CHRCheckable FIIn Guard VarMp where
           chk (IsVisibleInScope scDst sc1) | pscpIsVisibleIn (chrAppSubst subst' scDst) (chrAppSubst subst' sc1)
             = return emptyVarMp
 %%[[10
-          chk (NonEmptyRowLacksLabel (Ty_Var tv TyVarCateg_Plain) (LabelOffset_Var vDst) ty lab) | not (null exts) && presence == Absent -- tyIsEmptyRow row
+          chk (NonEmptyRowLacksLabel r1@(Ty_Var tv _) (LabelOffset_Var vDst) ty lab)
+            |  fiAllowTyVarBind env r1
+            && not (null exts) && presence == Absent -- tyIsEmptyRow row
             = return $ (vDst `varmpOffsetUnit` LabelOffset_Off offset)
                        |=> (tv `varmpTyUnit` row)
             where (row,exts) = tyRowExtsWithLkup (varmpTyLookupCyc2 subst') ty
@@ -401,6 +403,7 @@ instance CHRCheckable FIIn Guard VarMp where
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(9 hmtyinfer) export(isLetProveCandidate,isLetProveFailure)
+-- | Consider a pred for proving if: no free tvars, or its free tvars do not coincide with those globally used
 isLetProveCandidate :: (Ord v, CHRSubstitutable x v s) => Set.Set v -> x -> Bool
 isLetProveCandidate glob x
   = Set.null fv || Set.null (fv `Set.intersection` glob)

@@ -131,7 +131,8 @@ SEM Ty
                                                              )
                                                     else (empty,empty)
   | Var             loc     .   trieKey         =   singleton $ TK_One
-                                                                  (if tvCatIsPlain @categ.self then TKK_Partial else TKK_Normal)
+                                                                  -- (if tvCatIsMeta @categ.self then TKK_Partial else TKK_Normal)
+                                                                  (if tvCatIsFixed @categ.self then TKK_Normal else TKK_Partial)
                                                               $ Key_UID @tv
                             .   trieKeyNest     =   empty
   | Con             loc     .   trieKey         =   singleton $ TK_One TKK_Normal $ Key_HNm @nm

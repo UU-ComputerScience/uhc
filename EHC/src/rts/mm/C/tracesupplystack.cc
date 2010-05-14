@@ -8,6 +8,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
+
 static inline WPtr traceAreaUsingDescription( MM_Trace* trace, GCStackInfo* info, WPtr base )
 {
     // This auxiliary function calls  mm_Trace_TraceObject  for all live pointers on the stack area below "base",
@@ -16,7 +17,8 @@ static inline WPtr traceAreaUsingDescription( MM_Trace* trace, GCStackInfo* info
     
 	if ( info != NULL ) 
 	{
-        printf("traceAreaWithDescription base=%08x info=%08x size=%d nrdescrS=%d\n", base, info, info->sz, info->nrDescrs);
+        // printf("traceAreaWithDescription base=%08x info=%08x\n", base, info );  fflush(stdout);
+        // printf("traceAreaWithDescription base=%08x info=%08x size=%d nrdescrS=%d\n", base, info, info->sz, info->nrDescrs);
 
 		// The  info  structure contains an array of bytes. They contain a run-length encoded description of the stack area starting below base.
 		Word descrInx ;
@@ -24,8 +26,6 @@ static inline WPtr traceAreaUsingDescription( MM_Trace* trace, GCStackInfo* info
 		{
             // Fetch one byte from the array
 			Word descr = info->descrs[ descrInx ] ;
-			
-			printf("  descr=%d\n", descr );
 			
 			// The least significant bit describes wheter (1) or not (0) the pointers are live.
 			// The other 7 bits of the byte contain the length of a run of adjacent pointers that all have this liveness.
@@ -37,9 +37,8 @@ static inline WPtr traceAreaUsingDescription( MM_Trace* trace, GCStackInfo* info
 				for ( ; sz > 0 ; sz-- ) 
 				{
 					base-- ;
-					printf("    trace pointer at %08x =", base); fflush(stdout);
-					printf("%08x\n", *base );
-					// *base = mm_Trace_TraceObject( trace, *base ) ;
+					// printf("    trace pointer at %08x =", base); fflush(stdout); printf("%08x\n", *base );
+					*base = mm_Trace_TraceObject( trace, *base ) ;
 				}
 			}
 			else
@@ -58,12 +57,13 @@ static inline void traceAreaFully( MM_Trace* trace, WPtr from, WPtr to )
     // This auxiliary function calls  mm_Trace_TraceObject  for all values between "from" (inclusive) and "to" (exclusive).
     // All these values should be pointers and live.
  
-    printf("traceAreaFully from=%08x to=%08x\n", from, to);
+    // printf("traceAreaFully from=%08x to=%08x\n", from, to);
     
 	for ( ; from < to ; from++ ) 
 	{
-        printf("    trace pointer at %08x = %08x\n", from, *from );
-		// *from = mm_Trace_TraceObject( trace, *from ) ;
+        // printf("    trace pointer at %08x = %08x\n", from, *from ); fflush(stdout);
+		*from = mm_Trace_TraceObject( trace, *from ) ;
+        // printf("    repld pointer at %08x = %08x\n", from, *from ); fflush(stdout);
 	}
 }
 %%]
@@ -75,7 +75,7 @@ static inline void traceAreaFully( MM_Trace* trace, WPtr from, WPtr to )
 %%[8
 void mm_traceSupplyStack_C_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Mutator* mutator ) 
 {
-    printf("mm_traceSupplyStack_C_Init\n");
+    // printf("mm_traceSupplyStack_C_Init\n");
 
 	MM_TraceSupply_Stack_Data* stackData = memmgt->malloc( sizeof(MM_TraceSupply_Stack_Data) ) ;
 	stackData->trace = mutator->trace ;
@@ -84,15 +84,17 @@ void mm_traceSupplyStack_C_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt,
 
 void mm_traceSupplyStack_C_Reset( MM_TraceSupply* traceSupply, Word gcStackInfo ) 
 {
-    printf("mm_traceSupplyStack_C_Reset\n");
+    // printf("{GC}"); fflush(stdout);
+	// printf("mm_traceSupplyStack_C_Reset traceSupply=%08x\n", traceSupply); fflush(stdout);
 	MM_TraceSupply_Stack_Data* stackData = (MM_TraceSupply_Stack_Data*)traceSupply->data ;
+	// printf("mm_traceSupplyStack_C_Reset stackData=%08x\n", stackData);fflush(stdout);
 	stackData->gcStackInfo = (GCStackInfo*)gcStackInfo ;
+	// printf("mm_traceSupplyStack_C_Reset stackInfo=%08x\n", gcStackInfo);fflush(stdout);
 }
 
 void mm_traceSupplyStack_C_Run( MM_TraceSupply* traceSupply )
 {
-
-    printf("mm_traceSupplyStack_C_Run\n");
+    // printf("mm_traceSupplyStack_C_Run\n");
 
 	MM_TraceSupply_Stack_Data* stackData;
 	MM_Trace *trace;
@@ -105,8 +107,6 @@ void mm_traceSupplyStack_C_Run( MM_TraceSupply* traceSupply )
     stackInfo = (GCStackInfo*)               stackData->gcStackInfo;
     
     int size = stackInfo->sz;
-    printf("data size=%d\n", size );
-
 
     // Three local variables are used in the stack walk, containg the high end, low end and mid point of each stack area to be processed
     WPtr areaHigh, areaLow, areaMid;
@@ -130,10 +130,13 @@ void mm_traceSupplyStack_C_Run( MM_TraceSupply* traceSupply )
         // Cleverly get the description 
 
         Word ret = areaLow[1];
+        
+        // printf("arealow=%08x retpos=%08x\n", areaLow, ret ); fflush(stdout);
+        
         stackInfo = (GCStackInfo*) ((WPtr)ret)[-1];
         Word what = (Word) ((WPtr)ret)[-2];
         
-        printf("low=%08x high=%08x *high=%08x ret=%08x si=%08x what=%d\n", areaLow, areaHigh, *areaHigh, ret, stackInfo, what);
+        // printf("what=%d\n", what );
         
         // Process the described part of the area,
         // that is, the part from areaHigh, as far down as it gets.
@@ -151,7 +154,7 @@ void mm_traceSupplyStack_C_Run( MM_TraceSupply* traceSupply )
     // (in practice, this is a single entry containing the top-level thunk to evaluate).
 	traceAreaFully( trace, areaLow+2, (WPtr)StackAreaHigh ) ;
 
-    exit(1);
+    // exit(1);
 }
 %%]
 
