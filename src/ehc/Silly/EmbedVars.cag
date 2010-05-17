@@ -241,6 +241,8 @@ SEM Statement
                                     then let    worthyIndexes  = [ n
                                                                  | Variable_Local n v <- Map.elems @lhs.embedMap
                                                                  , Set.member v @lhs.usedLater
+                                                                 , Set.member v @lhs.definedEarlier
+                                                                 , worthyIsPointer v @lhs.localsEnv
                                                                  ]
                                          in  (@lhs.numberLocals, Set.fromList worthyIndexes)
                                     else undefined
