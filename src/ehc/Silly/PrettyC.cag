@@ -13,10 +13,17 @@
 %%]
 %%[(8 codegen grin) hs import({%{EH}Base.Common})
 %%]
+%%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
+%%]
 %%[(8 codegen grin) hs import({%{EH}Base.Opts})
 %%]
 %%[(8 codegen grin) import({Silly/AbsSyn})
 %%]
+
+
+
+
+
 
 %%[(8 codegen grin) hs
 prettyC :: EHCOpts -> SilModule -> PP_Doc
@@ -89,8 +96,6 @@ SEM Value
   | Alloc    lhs . isAlloc = True
   | *-Alloc  lhs . isAlloc = False
 
-
-
 SEM SilModule
   | SilModule   lhs.prettyC   = preambule
                                 >-< comment ["Tag constants"]
@@ -132,16 +137,8 @@ SEM SilModule
                 loc.silMain1 =  text "int silly_main()"
                                 >-< text "{"
                                 -- >-< ppWhen False (text "register WPtr SP asm (\"%esp\");")
-                                >-< indent 4 (    --  @loc.extraInit >-< 
-                                
-                                
-                                                  text ("SP -= " ++ show (length @variables)  ++ ";" )
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "initialize"
-%%[[8
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_fun0tildemain"
-%%][99
-                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 2 "fun_mainFullProg"
-%%]]                                             
+                                >-< indent 4 (    text ("SP -= " ++ show (length @variables )  ++ ";" )                                 
+                                             >-<  callSillyFunctionFromC @loc.optTraceAssign @loc.optGenOwn @loc.optGenLink 1 "silly_start"
                                              >-<  "if (Ret1==0) { Ret0 = SP[-1]; Ret1 = SP[-2]; }"
                                              >-<  "return 0;"
                                              )
@@ -156,10 +153,6 @@ SEM SilModule
                                 >-< text "    return main_Sil_Exit(argc, argv);"
                                 >-< text "}"
                                 
-                loc.extraInit = foldr1 (>-<) (map (\k -> text  ("printf(\"label retlab%d = %d\" ," ++ show k ++ ", &&retlab" ++ show k ++ " - &&mainlab1 );")
-                                                  ) 
-                                                  [3..1376]
-                                             )
 
 SEM Function
   | Function    lhs.prettyC   = methodHeader @lhs.optTraceAssign @lhs.optGenOwn @lhs.optTraceCall (hsnShowAlphanumeric @name) (map hsnShowAlphanumeric @parameters)
@@ -217,7 +210,7 @@ SEM Value
                                    NotManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word), (Word)NULL" >|< ")"
                                    -- GCManaged  -> "mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< (case @stackInfo of (n,xs) -> show n)  >|< ")"
                                    GCManaged  -> "(Word) mm_itf_alloc("            >|< show @size >|< " *sizeof(Word)," >|< ("(Word) (stackInfos+" ++ show @lhs.stackInfoIndex)  >|< "))"
-  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + " >|< show @offset >|< " * sizeof(int) + sizeof(int))"
+  | Label       lhs.prettyC   = "((Word)(&&" >|< @name >|< ") + sizeof(int) + sizeof(Word))"
   | CompareGT   lhs.prettyC   = @val.prettyC >#< ">" >#< @con.prettyC
 
   | Offset      lhs.prettyPtr = @var.prettyPtr >|< "+" ++ show @off
@@ -317,6 +310,7 @@ stackInfoMapAdd si mp@(sz,m)
 
 
 ATTR Functions Function Statements Statement Alternatives Alternative [ | stackInfoMp : {StackInfoMap} | ]
+ATTR Value [ stackInfoIndex : {Int} | | mbStackInfo : {Maybe StackInfo} ]
 
 -- Initialisation
 SEM SilModule  
@@ -329,13 +323,18 @@ SEM Statement
                                                                   (\si -> stackInfoMapAdd si @lhs.stackInfoMp)
                                                                   @source.mbStackInfo
 
-ATTR Value [ stackInfoIndex : {Int} | | mbStackInfo : {Maybe StackInfo} ]
-
 SEM Value
   | Alloc    lhs.mbStackInfo = Just @stackInfo
   | *-Alloc  lhs.mbStackInfo = Nothing
   
-
+SEM Statement        
+  | Assignment2 source   . stackInfoIndex  = undefined
+  | IfThenElse  condition. stackInfoIndex  = undefined
+  | Switch      scrutinee. stackInfoIndex  = undefined
+  | Voiden      val      . stackInfoIndex  = undefined
+  
+SEM Values
+  | Cons        hd       . stackInfoIndex  = undefined
 
 %%]
 
@@ -347,26 +346,29 @@ SEM Value
 %%[(8 codegen grin) hs
 
 
+sizeofStackInfo :: Int
+sizeofStackInfo = 3 + Cfg.sizeofWord      -- size of a structure declared in rts/base/types.ch: Word16 + Word8 + Addres, thus 7 on a 32-bit arch, or 11 on a 64-bit arch
+
+
+asmWordMetaop :: String
+asmWordMetaop | Cfg.sizeofWord==4  =  ".int"
+              | otherwise          =  ".quad"
+
+asmSymbolStackInfos :: String
+asmSymbolStackInfos | Cfg.sizeofWord==4  =  "_stackInfos"
+                    | otherwise          =  "stackInfos"      -- underscore seems to be taboo on 64-bit Ubuntu
+
+
 label :: Bool -> String -> Maybe Int -> PP_Doc
 label tras nm mbStackInfo
  = nm >|< ":"
    >-< case mbStackInfo of
---        Just n    -> text ("asm( \".long %0\" : : \"m\"(&stackInfos[" ++ show n ++ "]) );" )
-        Just n    ->  text ("asm( \".long " ++ drop 6 nm ++ "\");" )
-                      >-< text ("asm( \".long _stackInfos+7*" ++ show n ++ "\");" )                        -- TODO: 7 is sizeof(StackInfo), should be 11 on 64-bit architecture;  also, .long should be .longlong or something on 64-bit arch
+        Just n    ->  text ("asm( \".int " ++ drop 6 nm ++ "\");" )
+                      >-< text ("asm( \"" ++ asmWordMetaop ++ " " ++ asmSymbolStackInfos ++  "+" ++ show sizeofStackInfo ++ "*" ++ show n ++ "\");" )
         _         -> empty
    >|< ppWhen tras
               (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
 
-
---label :: Bool -> String -> Maybe StackInfo -> PP_Doc
---label tras nm mbStackInfo
--- = nm >|< ":"
---   >-< case mbStackInfo of
---        Just (n,xs)  -> text ("asm( \".long " ++ show n ++ "\" );" )
---        _            -> empty
---   >|< ppWhen tras
---              (" printf(\"def label" >#< nm >#< "= %d \\n\",  && " >#< nm >#< " - &&mainlab1 ); fflush(stdout);")
 
 commaSeparated :: [String] -> String
 commaSeparated = concat . intersperse ", "
@@ -405,11 +407,12 @@ callCfunction f ps
 callSillyFunctionFromC :: Bool -> Bool -> Bool -> Int -> String -> PP_Doc
 callSillyFunctionFromC tras optGenOwn optGenLink n nm
  | optGenOwn = let lab = "mainlab" ++ show n
-               in  "*--SP = (Word)(&&" >|< lab >|< ");"                   -- return address
+               in  "*--SP = (Word)(&&" >|< lab >|< ") + sizeof(int) + sizeof(Word);"                   -- return address
                    >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %08x at %08x \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
-                   >-< ppWhen optGenLink ("*--SP =" >#< "(Word)0;")  -- link
                    >-< "goto" >#< nm >|< ";"                         -- do the call
-                   >-< label tras lab Nothing                        -- return here
+                   >-< label tras lab Nothing                        -- return two lines below here
+                   >-< "asm( \".int 0\" );"                          -- calldata "what"
+                   >-< "asm( \"" ++ asmWordMetaop ++ " 0\" );"       -- calldata "stackInfo"
  | otherwise = nm >|< "();"
  
  
@@ -637,11 +640,11 @@ ppStackInfo k j (n,xs)
 
 makeBytes :: Int -> Set.Set Int -> [Int]
 makeBytes n s
-  =  encodeRuns (makeRuns (map (\i -> Set.member i s) [1..n]))
+  =  encodeRuns (makeRuns (map (\i -> Set.member i s) [0..n-1]))
 
 makeBytes2 :: Int -> Set.Set Int -> [ (Bool,Int) ]
 makeBytes2 n s
-  = (makeRuns (map (\i -> Set.member i s) [1..n]))
+  = (makeRuns (map (\i -> Set.member i s) [0..n-1]))
 
   
 makeRuns :: [Bool] -> [ (Bool,Int) ]
