@@ -73,21 +73,21 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 	
     printf("|*****************************************************************\n");
     printf("|** Running a stack walk \n");
-    printf("| [0x%08x] llvm_gc_root_chain\n", (unsigned int)entry);
+    printf("| [0x%016llx] llvm_gc_root_chain\n", entry);
     
     while (entry)
     {
         num_roots = entry->Map->NumRoots;
-        printf("| [0x%08x] %d root(s)\n", (unsigned int)entry, num_roots);
+        printf("| [0x%016llx] %d root(s)\n", entry, num_roots);
         for (i = 0; i < num_roots; i++)
         {
             root = (Word *) entry->Roots[i];
    
             if (root == NULL) {
-                printf("| ... [%d] 0x%08x\n", i, (unsigned int)root );
+                printf("| ... [%d] 0x%016llx\n", i, root );
 
             } else {
-                printf("| ... [%d] 0x%08x, con: %lld \n", i, (unsigned int)root, *root );
+                printf("| ... [%d] 0x%016llx, con: %lld \n", i, root, *root );
            	    root = mm_Trace_TraceObject( trace, root );
 
             }

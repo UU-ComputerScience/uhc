@@ -102,6 +102,7 @@ SEM SilModule
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl 
                                                      : primPatternMatchFailureFuncDecl 
+                                                     : primPatternMatchFailureDebugFuncDecl @lhs.intType
                                                      : gcRootFuncDecl
 
                                                      -- ehc gc
@@ -136,7 +137,8 @@ SEM SilModule
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
-                                 , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
+                                 -- , LLVMStatement_Store (Constant 2 @lhs.intType)  (LocalVar "rpArr" @lhs.pointerType) 
+                                 -- , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
@@ -164,8 +166,8 @@ SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) (pLift @lhs.pointerType) )
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
-                                   @body.llvmCode ++  
                                    -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   @body.llvmCode ++  
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -259,7 +261,7 @@ SEM Statement
                 loc.altLLVMStatements = concatMap ( ++ [LLVMStatement_Branch @loc.resumeLabel] ) @body.llvmCode  
                 
                 loc.(uniqNr1, defaultLabel, defaultBody) =
-                               defaultCase @body.gUniq   
+                               defaultCase @body.gUniq @scrutinee.llvmVar
                 loc.(uniqNr2, resumeLabel) =
                                newFresh @loc.uniqNr1 Label
 
@@ -302,12 +304,12 @@ SEM Value
     Assign a Malloc to a fresh variable
   -}
   | Alloc       lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @loc.llvmCode ++ @loc.regRootCode
+                lhs.llvmCode = @loc.llvmCode  -- ++ @loc.regRootCode
                 loc.(gUniq,llvmVar,llvmCode) =
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
-                loc.regRootCode = case @gcManaged of 
-                                    GCManaged  -> []
-                                    NotManaged -> [LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [@loc.llvmVar]]
+                -- loc.regRootCode = case @gcManaged of 
+                --                    GCManaged  -> []
+                --                    NotManaged -> [LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [@loc.llvmVar]]
 
 
   {-|
@@ -694,6 +696,10 @@ primPatternMatchFailureFuncDecl :: LLVMFunctionDecl
 primPatternMatchFailureFuncDecl =
   LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailure" Void FixedArgs [] Nothing 
 
+primPatternMatchFailureDebugFuncDecl :: LLVMType -> LLVMFunctionDecl
+primPatternMatchFailureDebugFuncDecl intType =
+  LLVMFunctionDecl_LLVMFunctionDecl "primPatternMatchFailureDebug" Void FixedArgs [LocalVar "x" intType] Nothing 
+
 gcRootFuncDecl :: LLVMFunctionDecl
 gcRootFuncDecl = 
   LLVMFunctionDecl_LLVMFunctionDecl "llvm.gcroot" Void FixedArgs [(LocalVar "ptrloc" (pLift $ pLift i8)), (LocalVar "metadata" (pLift i8))] Nothing
@@ -839,10 +845,10 @@ assign2var nr (expr,tp) =
 {-|
 The default arm for a 'LLVMStatement_Switch'.
 -}
-defaultCase :: UID -> (UID,LLVMVar,LLVMStatements)
-defaultCase nr =
+defaultCase :: UID -> LLVMVar -> (UID,LLVMVar,LLVMStatements)
+defaultCase nr var =
   let (nr1, fresh1) = newFresh nr Label
-   in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call primPatternMatchFailureFuncDecl StdCall [] 
+   in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call (primPatternMatchFailureDebugFuncDecl $ getType var ) StdCall [var] 
                     , LLVMStatement_Unreachable ])
 }
 %%]
@@ -866,7 +872,7 @@ mkMalloc manageType intType nr =
   
   
 mkGCFieldDescriptors :: LLVMType -> [ConstantInfo] -> (LLVMVar, LLVMVar)
-mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
+mkGCFieldDescriptors intType ci = (GlobalVar "__llvm_uhc_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
     where toFieldDesc fd = StructConstant [ Constant (constantInfoNodeSize fd)               intType
                                           , Constant (constantInfoPayloadSize fd)            intType
                                           , Constant (fromBool $ constantInfoHasPointers fd) i8] (TyVar "FDESCR")

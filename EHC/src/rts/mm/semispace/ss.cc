@@ -26,7 +26,7 @@
 %%[8
 
 // dirty hack:
-int gb_Opt_TraceSteps = True ;
+// int gb_Opt_TraceSteps = True ;
 
 
 void mm_plan_SS_Init( MM_Plan* plan ) {
@@ -148,18 +148,19 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 
 #ifdef __UHC_TARGET_LLVM__
 %%[[8
-	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 2, 2 ) ;
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 3, 3 ) ;
 %%][99
-	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 2, 2 ) ;
+	MM_FlexArray* traceSupplies = mm_flexArray_New( &plss->memMgt, NULL, sizeof(MM_TraceSupply), 3, 3 ) ;
 %%]]
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init B\n");}) ;
 	// the order of these supplies matters, because they are run in this order, the last must be the one queueing
-	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
+	MM_TraceSupply* rootsTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 0 ) ;
+	MM_TraceSupply* stackTraceSupply  = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
 %%[[8
-	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
 %%][99
 //	MM_TraceSupply* finQueTraceSupply = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
-	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 1 ) ;
+	MM_TraceSupply* queTraceSupply    = (MM_TraceSupply*)mm_flexArray_At( traceSupplies, 2 ) ;
 %%]]
 #endif
 
@@ -198,6 +199,10 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 #endif
 
 #ifdef __UHC_TARGET_LLVM__
+
+	*rootsTraceSupply = mm_traceSupply_Roots ;
+	rootsTraceSupply->init( rootsTraceSupply, &plss->memMgt, plan->mutator ) ;
+
 	*stackTraceSupply = mm_traceSupplyStack_llvm ;
 	stackTraceSupply->init( stackTraceSupply, &plss->memMgt, plan->mutator ) ;
 
