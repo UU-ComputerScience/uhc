@@ -63,6 +63,8 @@ SEM LLVMModule
                                      ) @constants
                                  )
                              >-< ""
+                             >-< ppGlobals @global
+                             >-< ""
                              >-< ppGlobalList @globals
                              >-< ""
                              >-< ppPrependList "declare" @fwdDecls.prettySigs
@@ -141,6 +143,11 @@ ppNamedTy var =
 ppNamedTyList :: [LLVMVar] -> PP_Doc
 ppNamedTyList = 
   vlist.(map ppNamedTy)
+
+ppGlobals :: LLVMVar -> PP_Doc
+ppGlobals var            =
+      getName var >#< "= internal global" 
+                  >#< show (getType var) >#< "zeroinitializer"
 
 ppGlobal :: LLVMVar -> PP_Doc
 ppGlobal var            =
