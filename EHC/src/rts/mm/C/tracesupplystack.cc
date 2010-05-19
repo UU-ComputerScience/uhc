@@ -11,9 +11,9 @@
 
 static inline WPtr traceAreaUsingDescription( MM_Trace* trace, GCStackInfo* info, WPtr base )
 {
-    // This auxiliary function calls  mm_Trace_TraceObject  for all live pointers on the stack area below "base",
+    // This auxiliary function calls  mm_Trace_TraceObject  for all live pointers on the stack area upward from "base",
     // as described by the "info" object.
-    // It returns the position of the last element processed.
+    // It returns the position of the element just above the last one processed.
     
 	if ( info != NULL ) 
 	{
