@@ -844,4 +844,3 @@ bool2calltype (True)  = TailCall
 bool2calltype (False) = StdCall 
 }
 %%]
-

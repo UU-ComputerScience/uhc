@@ -99,5 +99,4 @@ Silly/GroupAllocs.cag
 Silly/InlineExpr.cag
 Silly/Pretty.cag
 Silly/PrettyC.cag
-Silly/PrettyS.cag
 Silly/ToLLVM.cag

@@ -217,10 +217,6 @@ data EHCOpts
 
       ,  ehcOptGenCaseDefault ::  Bool
       ,  ehcOptGenCmt         ::  Bool
-      ,  ehcOptGenOwn         ::  Bool
-      ,  ehcOptGenRVS         ::  Bool
-      ,  ehcOptGenLink        ::  Bool
-      ,  ehcOptGenLocReg      ::  Bool
       ,  ehcOptGenDebug       ::  Bool              -- generate runtime debug info
       ,  ehcOptGenTrace       ::  Bool
       ,  ehcOptGenTrace2      ::  Bool
@@ -401,10 +397,6 @@ defaultEHCOpts
 %%]]
 %%[[(8 codegen grin)
       ,  ehcOptTimeCompile      =   False
-      ,  ehcOptGenOwn           =   True
-      ,  ehcOptGenRVS           =   False
-      ,  ehcOptGenLink          =   True
-      ,  ehcOptGenLocReg        =   False
       ,  ehcOptGenCaseDefault   =   False
       ,  ehcOptGenDebug         =   True
       ,  ehcOptGenTrace         =   False
@@ -542,10 +534,6 @@ ehcCmdLineOpts
 %%[[(8 codegen grin)
      ,  Option ""   ["time-compilation"] (NoArg oTimeCompile)                 "show grin compiler CPU usage for each compilation phase (only with -v2)"
      ,  Option ""   ["gen-casedefault"]  (boolArg optSetGenCaseDefault)       "trap wrong casedistinction in C (no)"
-     ,  Option "g"  ["gen-own"]          (boolArg optSetGenOwn)               "use own stack, thus enabling tailcalls (yes)"
-     ,  Option ""   ["gen-rvs"]          (boolArg optSetGenRVS)               "put return values on stack (no)"
-     ,  Option ""   ["gen-link"]         (boolArg optSetGenLink)              "generate code for static link (yes)"
-     ,  Option ""   ["gen-locreg"]       (boolArg optSetGenLocReg)            "allocate locals in registers that are saved before calls (no)"
      ,  Option ""   ["gen-cmt"]          (boolArg optSetGenCmt)               "include comment about code in generated code"
      ,  Option ""   ["gen-debug"]        (boolArg optSetGenDebug)             "include debug info in generated code (yes)"
      ,  Option ""   ["gen-trace"]        (boolArg optSetGenTrace)             "trace functioncalls in C (no)"
@@ -889,10 +877,6 @@ optSetGenTrace2      o b = o { ehcOptGenTrace2      = b }
 optSetGenRTSInfo     o b = o { ehcOptGenRTSInfo     = b }
 optSetGenCaseDefault o b = o { ehcOptGenCaseDefault = b }
 optSetGenCmt         o b = o { ehcOptGenCmt         = b }
-optSetGenOwn         o b = o { ehcOptGenOwn         = b }
-optSetGenRVS         o b = o { ehcOptGenRVS         = b }
-optSetGenLink        o b = o { ehcOptGenLink        = b }
-optSetGenLocReg      o b = o { ehcOptGenLocReg      = b }
 optSetGenDebug       o b = o { ehcOptGenDebug       = b }
 optDumpGrinStages    o b = o { ehcOptDumpGrinStages = b {-, ehcOptEmitGrin = b -} }
 optEarlyModMerge     o b = o { ehcOptEarlyModMerge  = b }

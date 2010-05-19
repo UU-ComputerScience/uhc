@@ -91,8 +91,6 @@
 %%]
 %%[(8 codegen grin) import({%{EH}Silly.PrettyC(prettyC)})
 %%]
-%%[(8 codegen grin) import({%{EH}Silly.PrettyS(prettyS)})
-%%]
 %%[(8 codegen grin) import({%{EH}Silly.ToLLVM(silly2llvm)})
 %%]
 %%[(8 codegen grin) import({%{EH}LLVM(LLVMModule)})
@@ -242,7 +240,6 @@ doCompileGrin input opts
                    )
 %%]]
                 ; caWriteSilly "" "c" prettyC ehcOptEmitC
---              ; caWriteSilly "" "s" prettyS ehcOptEmitC
                 }
            )
          }

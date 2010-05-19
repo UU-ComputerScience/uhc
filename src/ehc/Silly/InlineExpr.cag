@@ -94,8 +94,17 @@ SEM Statement
 -- In each assignment, insert the RHS in the environment for possible later inlining
 -- but remove environment-entries of which the RHS is isomorphic to the current LHS
 
+ATTR Value [ | | isAlloc : {Bool} ]
+
+SEM Value
+  | Alloc    lhs . isAlloc = True
+  | *-Alloc  lhs . isAlloc = False
+
+
 SEM Statement
-  | Assignment  lhs.env   =  let env1 = Map.filter (not . isRPValue)   @lhs.env    -- this filtering is only neccessarty when @source is an allocation
+  | Assignment  lhs.env   =  let env1 = if   @source.isAlloc
+                                        then Map.filter (not . isRPValue) @lhs.env   -- during allocation a garbage collection can occur, during which we dont want active values in Ret-registers
+                                        else @lhs.env
                                  env2 = Map.filter (notSame @dest.trf) env1
                              in  if @source.isntCall
                                     && virtualizable (Map.lookup @dest.self @lhs.allDefMap)
@@ -205,4 +214,3 @@ notSame v1 (Value_Var v2) = v1 /= v2
 notSame _ _ = True
 
 %%]
-
