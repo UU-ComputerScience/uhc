@@ -99,6 +99,7 @@ SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
                                                      @loc.namedTys
                                                      @loc.constants
+                                                     @loc.global
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl 
                                                      : primPatternMatchFailureFuncDecl 
@@ -130,6 +131,7 @@ SEM SilModule
                                   else "%d\n"
                 loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants :  @functions.constants
                 loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
+                loc.global   = GlobalVar "__llvm_uhc_globals" (@lhs.globalType)
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) 
                                 : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
