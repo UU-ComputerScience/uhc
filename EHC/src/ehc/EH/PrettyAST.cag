@@ -499,7 +499,7 @@ SEM DataConstr
                                         ]
 
 SEM Expr
-  | Let         loc     .  info_6   :=  [ mkInfo1 "tyGam_l_" (ppGam @tyGam_l_)
+  | Let         loc     .  info_6   :=  [ mkInfo1 "tyGam_l_extra" (ppGam @tyGam_l_extra)
                                         , mkInfo1 "tyKiGam_l_" (ppGam @tyKiGam_l_)
                                         , mkInfo1 "valQuTyKiGam" (ppGam @valQuTyKiGam)
                                         , mkInfo1 "lQuTyGam" (ppGam @lQuTyGam)
@@ -707,8 +707,8 @@ SEM PatExpr
                                         ]
 
 SEM DataConstr
-  | Constr      loc     .  info_8   :=  [ mkInfo1 "ctyDataCon" (C.ppTy @ctyDataCon)
-                                        , mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
+  | Constr      loc     .  info_8   :=  [ mkInfo1 "foRInstToL" (ppCommas $ foRInstToL @fo_fin)
+                                        -- , mkInfo1 "ctyDataCon" (C.ppTy @ctyDataCon)
                                         -- , mkInfo1 "moutErrL moutDataCon" (ppErrL $ C.moutErrL @moutDataCon)
                                         -- , mkInfo1 "moutCSubst moutDataCon" (ppAssocLV . Map.toList $ C.moutCSubst @moutDataCon)
                                         ]
@@ -986,7 +986,7 @@ SEM DataConstr
                                         ]
 %%]
 
-%%[94
+%%[90
 SEM Decl
   | FFE         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFE"] [ppNm @nm,pp @expEnt] [@expr.ppAST,@tyExpr.ppAST] @info_94
                         .  info_94  =   []

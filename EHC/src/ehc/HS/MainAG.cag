@@ -41,7 +41,7 @@
 %%[20 hs import(qualified EH.Util.Rel as Rel,{%{EH}Module})
 %%]
 
-%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
+%%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Parser})
 %%]
 
 %%[97 hs import(Data.Ratio,{%{EH}Scanner.Common(floatDenot2NomDenom,intDenot2Integer)})
@@ -328,7 +328,7 @@ SEM Declaration
                                         =   extrTopInstanceNm @lhs.topInstanceNmL
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         (loc.mbPrevInstancename,lhs.topInstanceNmL)

@@ -15,7 +15,8 @@ SEM Expr
                 loc         .   (valGam_l_,valGam_g_)
                                                     =   gamPop @decls.patValGam
                 decls       .   valGam              =   @decls.patValGam
-                body        .   valGam              =   @decls.patValGam
+                loc         .   bodyValGam          =   @decls.patValGam
+                body        .   valGam              =   @bodyValGam
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 2.Let
@@ -47,7 +48,7 @@ SEM Expr
                                                         in  (valGamQuantify @valQuTyKiGam @quTvKiVarMp @tyVarMpDeclsQuant @noLetQuantTyVarIdS g,cycMp)
 %%]]
                             .   quValGam_           =   @quValGam_qu_
-                body        .   valGam              :=  gamPushGam @quValGam_ @gSubsValGam_
+                loc         .   bodyValGam          :=  gamPushGam @quValGam_ @gSubsValGam_
 %%]
 
 -- generated from ruler rules into EHRulerRules, was 4.Let
@@ -174,7 +175,7 @@ SEM Decl
 %%[(9 hmtyinfer).tyInstKnown
 %%]
 
-%%[(94 hmtyinfer)
+%%[(90 hmtyinfer)
 SEM Decl
   | FFE         loc         .   knTy                =   @ty_sig_
 %%]
@@ -337,6 +338,7 @@ SEM Expr
                             .   patTyKiGam          =   gamPushGam @decls.gathTyKiSigGam @lhs.tyKiGam
                             .   patKiVarMp          =   @lhs.kiVarMp
                 loc         .   (tyGam_l_,tyGam_g_) =   gamPop @decls.patTyGam
+                            .   tyGam_l_extra       =   gamUnion @extraTyGam @tyGam_l_
                             .   (tyKiGam_l_,tyKiGam_g_)
                                                     =   gamPop @decls.patTyKiGam
                 decls       .   tyGam               :=  gamPushGam @tyGam_l_ @lhs.tyGam
@@ -352,11 +354,12 @@ SEM Expr
                             .   gSubsTyKiGam        =   @tyKiGam_g_
                             .   gKiTvS              =   @tyKiUpdFreeTvarS
 %%]]
-                            .   lQuTyGam            =   @tyGam_l_
+                            .   lQuTyGam            =   @tyGam_l_extra
                             .   lQuTyKiGam_qu       =   tyKiGamQuantify @gKiTvS @lSubsTyKiGam
                             .   lQuTyKiGam_ex       =   tyKiGamInst1Exists @lUniq3 @lQuTyKiGam_qu
-                            .   lQuTyKiGam          =   @lQuTyKiGam_ex
-                            .   lQuTyKiGam_ex_subst =   @lQuTyKiGam_ex
+                            .   lQuTyKiGam          =   @lQuTyKiGam_ex_extra
+                            .   lQuTyKiGam_ex_extra =   gamUnion @extraTyKiGam @lQuTyKiGam_ex
+                            .   lQuTyKiGam_ex_subst =   @lQuTyKiGam_ex_extra
                 body        .   tyGam               =   gamAddGam @lQuTyGam @tyGam_g_
                             .   tyKiGam             =   gamAddGam @lQuTyKiGam @gSubsTyKiGam
                 loc         .   lUniq3              :   UNIQUEREF gUniq
@@ -385,7 +388,7 @@ SEM Expr
                             .   (lQuTyKiGam_ex,exTyKiVarMp2)
                                                     :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
                             .   bodyTyKiVarMp2      =   @exTyKiVarMp2 |=> @bodyTyKiVarMp1
-                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 |=> @lQuTyKiGam_ex
+                            .   lQuTyKiGam_ex_subst :=  @bodyTyKiVarMp2 |=> @lQuTyKiGam_ex_extra
                 body        .   kiVarMp             =   @bodyTyKiVarMp2
 %%]
                                                     :=  tyKiGamInst1ExistsWithVarMp @bodyTyKiVarMp1 @lUniq3 @lQuTyKiGam_qu
@@ -396,7 +399,7 @@ ATTR AllDecl [ | tyTyVarMp: VarMp | ]
 
 SEM Expr
   | Let         decls       .   tyTyVarMp           =   emptyVarMp
-                loc         .   lQuTyGam            :=  @decls.tyTyVarMp |=> @tyGam_l_
+                loc         .   lQuTyGam            :=  @decls.tyTyVarMp |=> @tyGam_l_extra
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -502,7 +505,7 @@ SEM Decl
 %%[(8 hmtyinfer)
 SEM Decl
   | FFI
-%%[[94
+%%[[90
     FFE
 %%]]
                 loc         .   ty_sig_             =   let t   = varmpIncMetaLev @lhs.finKiVarMp |=> @tyExpr.ty
@@ -579,7 +582,59 @@ SEM Expr
                             .   patClGam2           =   @decls.patClGam1
                 loc         .   (lClGam,_)          =   gamPop @decls.patClGam2
                             .   lClGamNoDups        =   gamNoDups @lClGam
-                decls       .   clGam               =   gamPushGam @lClGamNoDups @lhs.clGam
+                            .   forDeclsClGam       =   gamPushGam @lClGamNoDups @lhs.clGam
+                decls       .   clGam               =   @forDeclsClGam
                 body        .   clGam               =   gamAddGam @lClGamNoDups @lhs.clGam
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra declarations can be introduced, dealt with as higher order AG
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+This cannot be done. All AG is thrown into 1 visit (I think), with many many induced dependencies.
+
+%%[(9999 hmtyinfer)
+ATTR Decl  [ | | ehGathExtraDeclL: Decls ]
+ATTR Decls [ ehExtraDeclL: Decls | | ]
+
+SEM Expr
+  | Let			decls		.	ehExtraDeclL		=	[]
+
+SEM Decl
+  | Class Instance
+  				decls		.	ehExtraDeclL		=	[]
+
+SEM Decl
+  | Data		lhs			.	ehGathExtraDeclL	=	const [] @dgi
+  | * - Data	lhs			.	ehGathExtraDeclL	=	[]
+
+SEM Decls
+  | Cons		tl			.	ehExtraDeclL		=	@hd.ehGathExtraDeclL ++ @lhs.ehExtraDeclL
+  | Nil			inst		.	decls				:	Decls
+  				inst		.	decls				=	[]  -- @lhs.ehExtraDeclL
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extra gams
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(6 hmtyinfer).extraGam
+SEM Expr
+  | Let         loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
+%%]
+
+%%[(17 hmtyinfer).extraGam
+SEM Expr
+  | Let         loc         .   extraPolGam         =   emptyGam
+%%]
+
+%%[(92 hmtyinfer) -(6.extraGam 17.extraGam)
+SEM Expr
+  | Let         loc         .   extraTyGam          =   @generTyGam
+                            .   extraTyKiGam        =   @generTyKiGam
+                            .   extraDataGam        =   @generDataGam
+                            .   extraPolGam         =   @generPolGam
 %%]
 

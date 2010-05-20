@@ -10,6 +10,9 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.LetUnrec} import(Data.Maybe,qualified Data.Map as Map,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfLetUnrec)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Utils(scc))
 %%]
 
@@ -92,7 +95,7 @@ SEM CExpr
                                             =   if @categ == CBindings_Rec
                                                 then  let  h = Map.filterWithKey (\k e -> k `Map.member` @binds.bindMp) @binds.useMp
                                                            o = scc . Map.toList $ h
-                                                           mk c ns b = mkCExprLet c [ mkCBind1Metas n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
+                                                           mk c ns b = acoreLet c [ acoreBind1Metas n m e | n <- ns, (e,m) <- maybeToList (Map.lookup n @binds.bindMp) ] b
                                                            t = foldr (\bs b
                                                                          -> case bs of
                                                                                [n] | n `elem` Map.findWithDefault [] n h

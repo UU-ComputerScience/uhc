@@ -134,8 +134,11 @@ SEM Declaration
 %%[[9
                                                    , @context.errSq
 %%]]
-%%[[95
+%%[[91
                                                    , @derivings.errSq
+%%]]
+%%[[92
+                                                   , Seq.fromList @errIdUseClass
 %%]]
                                                    ]
 %%]
@@ -211,7 +214,7 @@ SEM Declaration
         loc         .   errSq       =   Seq.unions [ Seq.fromList @errDupIntro, @typelefthandside.errSq, @type.errSq ]
 %%]
 
-%%[94
+%%[90
 SEM Declaration
     | ForeignImport
         loc         .   errSq       =   Seq.unions [ Seq.fromList (rngLift @range mkNestErr (pp ("Parse of foreign entity '" ++ @nmForParse ++ "'")) @entErrs)
@@ -224,7 +227,7 @@ SEM Declaration
                                                    ]
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc         .   errSq       =   Seq.fromList @errIdUse

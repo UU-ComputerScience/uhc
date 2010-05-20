@@ -40,7 +40,7 @@ Probably do it different????
 %%[(8 codegen grin) hs import(qualified {%{EH}Config} as Cfg)
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonAliasAG},{GrinCode/CommonForGen},{GrinCode/Trf/CommonRenameAG})

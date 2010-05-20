@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.Bits
   -- export everything
   where

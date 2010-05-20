@@ -206,7 +206,7 @@ DATA Err
   | MutRecModules       mutRecL    : {[[HsName]]}
 %%]
 
-%%[(95 hmtyinfer || hmtyast)
+%%[(91 hmtyinfer || hmtyast)
 DATA Err
   | MalformedTy         kind       : String
                         purpose    : String

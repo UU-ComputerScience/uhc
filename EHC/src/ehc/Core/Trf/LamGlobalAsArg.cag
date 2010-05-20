@@ -34,6 +34,9 @@ in ...f g...
 %%[(8 codegen) hs import({%{EH}Core.Utils})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -212,12 +215,12 @@ SEM CBind
 %%[(8 codegen)
 SEM CBind
 %%[[8
-  | Bind        lhs         .   cTrf        =   mkCBind1 @nm $ mkCExprLam (assocLKeys @argNewL) @expr.cTrf
+  | Bind        lhs         .   cTrf        =   acoreBind1Cat CBindings_Plain @nm $ acoreLam (assocLKeys @argNewL) @expr.cTrf
 %%][9
   | Bind        lhs         .   cTrf        =   --trace ("use of global: " ++ show @nm ++ " uses " ++ show @bindLamArgMp ++ "\n"
                                                 --      ++ (if @bindMeta.isInstance then ("instance " ++ show @nm ++ " finds " ++ show @expr.bindLamArgMp ++ "\n") else "")
                                                 --      ) $
-                                                (mkCBind1Metas @nm @bindMeta.cTrf $ mkCExprLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
+                                                (acoreBind1Metas @nm @bindMeta.cTrf $ acoreLamMeta [(n,cviMeta cvi) | (n,cvi) <- @argNewL] @expr.cTrf)
                 bindMeta    . bindLamArgMp  =  @expr.bindLamArgMp
 %%]]
 %%]
@@ -253,9 +256,9 @@ SEM CExpr
   | Var         lhs         .   cTrf        =   let  r n = fvVarRepl @lhs.argMp n
                                                      v1 = r @nm
 %%[[8
-                                                     mk as = mkCExprApp v1 $ [r a | (a,_) <- as]
+                                                     mk as = acoreApp v1 $ [r a | (a,_) <- as]
 %%][9
-                                                     mk as = mkCExprAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
+                                                     mk as = acoreAppMeta v1 $ [(r a,cviMeta cvi) | (a,cvi) <- as]
 %%]]
                                                      v2 = maybe v1 mk $ Map.lookup @nm $ @lhs.lamArgMp
                                                 in   v2

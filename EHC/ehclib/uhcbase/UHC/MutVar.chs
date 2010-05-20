@@ -3,6 +3,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.MutVar
   ( MutVar
   , newMutVar, readMutVar, writeMutVar, sameMutVar, atomicModifyMutVar

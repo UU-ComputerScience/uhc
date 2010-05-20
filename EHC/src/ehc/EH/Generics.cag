@@ -1,0 +1,220 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional datatypes, class instances introduced
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+For each datatype:
+
+\begin{verbatim}
+data T = C1 .. | Cn ..
+\end{verbatim}
+
+additional datatypes and class instances are introduced.
+%%]
+
+%%[(92 hmtyinfer) hs
+-- | The info for generics about datatypes, required higher in the syntax tree
+type GenerDataInfo
+  = (  ( HsName         -- orig type name
+       , HsName         -- new type name
+       , [TyVarId]      -- data type args
+       , Ty             -- kind of type, without kiVarMap yet applied
+       )
+    , [( HsName         -- orig con name
+       , HsName         -- new con name
+       , [Ty]           -- field types
+      )]
+    , PredScope
+    )
+
+-- | what kind of instance should be generated
+data GenerInstKind
+  = GenerInstKind_Datatype
+  | GenerInstKind_Constructor   	HsName      -- for a type
+  | GenerInstKind_Representable		Int			-- remaining arity
+  deriving (Show)
+
+-- | Info for generics, for generating data instances
+type GenerDataInstInfo
+  = ( HsName            -- original name of type, data
+    , HsName            -- instance name
+    , HsName            -- class name
+    , GenerInstKind     -- what kind of instance
+    , Pred              -- the predicate
+    )
+
+-- | Info for generics, for generating repr instances
+type GenerReprInstInfo
+  = ( HsName            -- original name of datatype
+    , HsName            -- instance name
+    , HsName            -- class name
+    , Int     			-- the arity of remaining type args
+    , Pred              -- the predicate
+    )
+%%]
+
+%%[(92 hmtyinfer) hs
+mkGenerThing
+  ::    thing
+     -> (thing -> thing)
+     -> (thing -> thing -> thing)
+     -> [thing]
+     -> thing
+mkGenerThing zero one two things
+  = mkSub things
+  where mkSub [ ] = zero
+        mkSub [s] = one s
+        mkSub ss  = two (mkSub ss1) (mkSub ss2)
+                  where (ss1,ss2) = splitAt (length ss `div` 2) ss
+%%]
+
+%%[(92 hmtyinfer) hs
+mkGenerRepresentableTypeSynonymTy
+  :: EHCOpts
+     -> Int             -- the arity of to be supplied type paramaters
+     -> [HsName]        -- all type names defined in this binding group (i.e. let)
+     -> HsName          -- type name
+     -> [TyVarId]       -- type args
+     -> ([Ty],Ty)       -- kind, already split up in args + res
+     -> [(HsName,[Ty])] -- constructor names, with type args
+     -> ( Ty            -- type
+        -- , Ty         -- kind
+        )
+mkGenerRepresentableTypeSynonymTy
+     opts remArity allTyNmL
+     tyNm tvarArgL (kiArgL,kiRes) conNmArgsL
+  = ( mkTyLam
+        tvarArgL
+        (mkApp [ mkC2 ehbnGenerDataMetaDN 1
+               , semCon tyNm
+               , mkSm [ mkAlt c (mkPr [ mkArg p | p <- ps ])
+                      | (c,ps) <- conNmArgsL
+                      ]
+               ]
+        )
+    -- , replicate (length tvarArgL) kiStar `mkArrow` kiStar
+    )
+  where mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
+        mkC2  f i     = Ty_Con $ ehcOptBuiltin2 opts f i
+        mkSub u f     = mkGenerThing (mkC2 u 1) id (\x y -> mkApp [mkC f, x, y])
+        mkPr          = mkSub ehbnGenerDataUnitN ehbnGenerDataProd
+        mkSm          = mkSub ehbnGenerDataVoidN ehbnGenerDataSum
+        mkArg t       = mkApp [mkC2 nm remArity, t]
+                      where nm | tyIsVar t    = ehbnGenerDataParN		-- TBD: check for kind *, check for one of tvarArgL
+                               | otherwise    = ehbnGenerDataRecN
+        mkAlt c t     = mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t]
+        eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
+        -- isRec t       = not (null as) || tyConNm f `elem` allTyNmL
+        --               where (f,as) = tyAppFunArgs t
+
+mkGenerRepresentableTypeSynonymKi :: TyKiGam -> HsName -> Ty
+mkGenerRepresentableTypeSynonymKi tyKiGam tyNm
+  = maybe Ty_Any (addStar . tkgiKi) $ tyKiGamLookupByName tyNm tyKiGam
+  where addStar ki = mkArrow (as ++ [kiStar]) r
+                   where (as,r) = tyArrowArgsRes ki
+
+-- TBD: sort out additional pol param at end, just like for kinds
+mkGenerRepresentableTypeSynonymPol :: PolGam -> HsName -> Ty
+mkGenerRepresentableTypeSynonymPol polGam tyNm = maybe Ty_Any pgiPol $ polGamLookup tyNm polGam
+%%]
+
+%%[(9292 hmtyinfer) hs
+mkGenerRepresentableInstance
+  :: EHCOpts
+     -> ( [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
+        , [GenerDataInstInfo]
+        )
+%%]
+
+%%[(92 hmtyinfer)
+ATTR AllDecl [ | | generDataInfoL USE {++} {[]} : {[GenerDataInfo]} ]
+
+SEM Decl
+  | Data        lhs         -- all gathered info, required higher up in the AST to generate type and instance defs
+                            .   generDataInfoL      =   if ehcOptGenGenerics @lhs.opts
+                                                        then [( (@tyNm, hsnNm2Gener @tyNm, @dataTyVarIdL, @dataKi)
+                                                              , [ (c, hsnNm2Gener c, [ pty | (p,pty) <- snd $ tyRecExts cty ])
+                                                                | (c,cty) <- snd $ tyRecExts @dataAltTy
+                                                                ]
+                                                              , @lhs.predScope
+                                                              )]
+                                                        else []
+
+SEM Expr
+  | Let         loc         -- names for introduced datatypes
+                            .   (generDataAllTyOrigNmL,generDataTyAndConNmLL)
+                                                    =   unzip [ (origtnm, tnm : [ x | (_,x,_) <- cs ]) | ((origtnm,tnm,_,_),cs,_) <- @decls.generDataInfoL ]
+                            .   generDataTyAndConNmL=   concat @generDataTyAndConNmLL
+                            
+                            -- various environments/gammas
+                            .   generDataGam        =   gamFromAssocL [ (n, mkDGI n (Ty_Con n) [] Map.empty Nothing )
+                                                                      | n <- @generDataTyAndConNmL
+                                                                      ]
+                            .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (Ty_Con n) Ty_Any             )
+                                                                      | n <- @generDataTyAndConNmL
+                                                                      ]
+                                                        `gamUnion`
+                                                        gamFromAssocL [ ( hsnNm2GenerReprSyn 0 origtnm
+                                                                        , mkTGIData (mkGenerRepresentableTypeSynonymTy @lhs.opts 0 @generDataAllTyOrigNmL tnm tvs ki' [ (c,ps) | (_,c,ps) <- cs ])
+                                                                                    Ty_Any
+                                                                        )
+                                                                      | ((origtnm,tnm,tvs,ki),cs,_) <- @decls.generDataInfoL
+                                                                      , let ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 |=> ki
+                                                                      ]
+                            .   generTyKiGam        =   gamUnions     [ (tyKiGamNameSingleton n (TyKiGamInfo kiStar))
+                                                                      | n <- @generDataTyAndConNmL
+                                                                      ]
+                                                        `gamUnion`
+                                                        gamUnions     [ (tyKiGamNameSingleton (hsnNm2GenerReprSyn 0 origtnm)
+                                                                                              (TyKiGamInfo $ mkGenerRepresentableTypeSynonymKi @lQuTyKiGam_ex origtnm)
+                                                                        )
+                                                                      | ((origtnm,_,tvs,_),_,_) <- @decls.generDataInfoL
+                                                                      ]
+                            .   generPolGam         =   gamUnions     [ (gamSingleton (hsnNm2GenerReprSyn 0 origtnm)
+                                                                                      (PolGamInfo $ mkGenerRepresentableTypeSynonymPol @finGathPolGam origtnm)
+                                                                        )
+                                                                      | ((origtnm,_,tvs,_),_,_) <- @decls.generDataInfoL
+                                                                      ]
+
+                            -- instances to participate in context reduction machinery (codegen is done in ToCore)
+                            -- TBD: factor out similarities...
+                            .   (generInstDeclL,generInstInfoL)
+                                                    =   let -- make names
+                                                            mkn f kind (orignm,nm)
+                                                              = (orignm,nm,cl,hsnUniqifyStr HsNameUniqifier_GenericClass (hsnBaseString cl) nm,kind)
+                                                              where cl = ehcOptBuiltin @lhs.opts f
+                                                            mkn2 f i kind (orignm,nm)
+                                                              = (orignm,nm,cl,hsnUniqifyStr HsNameUniqifier_GenericClass (hsnBaseString cl) nm,kind)
+                                                              where cl = ehcOptBuiltin2 @lhs.opts f i
+                                                            
+                                                            -- make data label instance, i.e. Constructor $C1, Datatype $T
+                                                            mkd sc (orignm,nm,cl,i,k)
+                                                              = ( ( [], pr, RedHow_ByInstance i pr sc, sc )
+                                                                , (orignm,i,cl,k,pr)
+                                                                )
+                                                              where pr = Pred_Class $ mkConApp cl [semCon nm]
+                                                            mkDataInst (t@(origtnm,tnm,_,_),cs,sc)
+                                                              = map (mkd sc)
+                                                                  $ mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm,tnm)
+                                                                    : map (mkn ehbnGenerClassConstructor $ GenerInstKind_Constructor origtnm) [ (origdnm,dnm) | (origdnm,dnm,_) <- cs ]
+                                                            
+                                                            -- make representation instance, i.e. Representable0 (T x) (_Rep0T x)
+                                                            mkr sc arity (tyNm,tyRepNm,repCl,i,k@(GenerInstKind_Representable remArity))
+                                                              = ( ( [], pr, RedHow_ByInstance i pr sc, sc )
+                                                                , (tyNm,i,repCl,k,pr)
+                                                                )
+                                                              where pr = Pred_Class $ mkConApp repCl [mkConApp tyNm tvL, mkConApp tyRepNm tvL]
+                                                                    tvL = map mkTyMetaVar $ mkNewUIDL (arity - remArity) @lUniq_92_prTyMeta
+                                                            mkReprInst (t@(origtnm,_,tvL,_),cs,sc)
+                                                              = map (mkr sc (length tvL))
+                                                                  $ map (\i -> mkn2 ehbnGenerClassRepresentableN i (GenerInstKind_Representable i) (origtnm,hsnNm2GenerReprSyn i origtnm)) [0]
+                                                        in  unzip
+                                                            $ (concatMap mkReprInst @decls.generDataInfoL)
+                                                              ++ (concatMap mkDataInst @decls.generDataInfoL)
+                loc         .   lUniq_92_prTyMeta  	:   UNIQUEREF gUniq
+%%]
+

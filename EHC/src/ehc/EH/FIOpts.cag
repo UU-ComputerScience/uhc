@@ -42,7 +42,7 @@ SEM Expr
 %%[(5 hmtyinfer).fiOpts.init
 SEM Decl
   | Val
-%%[[94
+%%[[90
     FFE
 %%]]
                 loc         .  exprFiOpts           =   strongFIOpts

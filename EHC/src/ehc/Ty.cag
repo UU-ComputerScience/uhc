@@ -29,7 +29,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 
 %%[(3 hmtyinfer || hmtyast) hs export(mkTyQu, TyVarCateg(..))
 %%]
-
+acoreBuiltinUndefined
 %%[4 hs export(TyQu(..)) 
 %%]
 
@@ -829,6 +829,11 @@ mkTyFreshProdFrom uid arity =  mkProdApp . map mkTyVar . mkNewUIDL arity $ uid
 
 mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
+%%]
+
+%%[(11 hmtyinfer || hmtyast) hs export(mkTyLam)
+mkTyLam :: [TyVarId] -> Ty -> Ty
+mkTyLam args body = foldr Ty_Lam body args
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

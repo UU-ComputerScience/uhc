@@ -21,7 +21,7 @@
 %%[(8 jazy) hs import(qualified {%{EH}JVMClass} as J)
 %%]
 
-%%[(94 codegen jazy) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen jazy) hs import({%{EH}Foreign.Extract})
 %%]
 
 -- debug
@@ -1000,10 +1000,10 @@ SEM CModule
                                                         )
                             .   methInit        =   jmInit0Inst @moduleNm nmObj
                             .   methMainNm      =   if ehcOptGenTrace @lhs.opts then "runVisuallyTraced" else "runTimed"
-                            .   methMain        =   let d f = jiNew (nmDataCon @pkgNm @topClassNm $ f $ ehcOptBuiltinNames @lhs.opts) []
+                            .   methMain        =   let d f = jiNew (nmDataCon @pkgNm @topClassNm $ ehcOptBuiltin @lhs.opts f) []
 %%[[99
                                                         v f = jvRef @lhs.cvarMp (cvarGlob jtyObj @moduleClassNm n (nmVar @pkgNm @topClassNm n))
-                                                            where n = f $ ehcOptBuiltinNames @lhs.opts
+                                                            where n = ehcOptBuiltinNames @lhs.opts f
 %%]]
                                                     in  J.Method_Method [J.Flag_Public,J.Flag_Static] "main" [J.Type_Array jtyStr] Nothing
                                                             (jiToCd

@@ -1,4 +1,5 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 
 module UHC.Ord
 where

@@ -13,7 +13,7 @@
 %%[(8 codegen grin) export(pModule,pExprSeq)
 %%]
 
-%%[94 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
+%%[90 import({%{EH}Foreign.Parser},{%{EH}Scanner.Common(pFFIWay)})
 %%]
 
 %%[(8 codegen) import(Data.Maybe)
@@ -72,12 +72,12 @@ pExpr           =    (\v -> GrExpr_Unit v GrType_None)
                 <|>  GrExpr_App     <$  pKey "apply"        <*> pGrNm   <*>  pSValL
 %%[[8
                 <|>  GrExpr_FFI     <$  pKey "ffi"          <*> pId
-%%][94
+%%][90
                 <|>  (\(conv,_) ent -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent))
 %%][99
                 <|>  (\(conv,_) ent annot -> GrExpr_FFI conv (fst $ parseForeignEnt conv Nothing ent) annot)
 %%]]
-%%[[94
+%%[[90
                                     <$  pKey "ffi"
                                     <*> pFFIWay <*> pString
 %%]]

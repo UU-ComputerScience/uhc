@@ -10,6 +10,9 @@
 %%[(8 codegen) hs module {%{EH}Core.SubstCaseAltFail} import({%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Ty},{%{EH}Core}) export(cSubstCaseAltFail)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore.Utils})
+%%]
+
 %%[(8 codegen) hs import(qualified Data.Map as Map)
 %%]
 
@@ -31,6 +34,14 @@ cSubstCaseAltFail opts caseFailSubst ce
                           { caseFailSubst_Inh_CExpr = caseFailSubst
                           , opts_Inh_CExpr          = opts
                           })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Subst to replace CaseAltFail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(CaseFailSubst)
+type CaseFailSubst = CaseFailSubst' CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

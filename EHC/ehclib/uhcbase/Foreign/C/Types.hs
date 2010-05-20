@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 -- XXX -fno-warn-unused-binds stops us warning about unused constructors,

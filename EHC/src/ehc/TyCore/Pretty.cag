@@ -24,7 +24,7 @@ Differences:
 %%[(8 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({TyCore/AbsSyn})
@@ -341,7 +341,7 @@ SEM Expr
                                                   ValBindCateg_Rec     -> pp " rec"
                                                   ValBindCateg_Strict  -> pp " !"
                                                   ValBindCateg_FFI     -> pp " foreign"
-%%[[94
+%%[[90
                                                   ValBindCateg_FFE     -> pp " foreignexport"
 %%]]
                                                   _                 -> empty
@@ -362,10 +362,10 @@ SEM Expr
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)
-%%][94
+%%][90
 				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
 %%]]
-%%[[94
+%%[[90
   | FFE         loc         .   pp          =   ppKeyw "dynexternal" >#< show @callconv >#< "\"" >|< @expEnt >|< "\"" >#< ppParens @ty.pp
 %%]]
   | TupDel      loc         .   pp          =   ppDef (ppParens @expr.pp) ("-=" >|< ppCurlysCommas' [ppTag @tag,@offset.pp,ppNm @nm])

@@ -429,7 +429,7 @@ SEM TyExpr
 
 %%[(11 hmtyinfer)
 SEM TyExpr
-  | Lam         loc         .   ty                  =   Ty_Lam @tv @tyExpr.ty
+  | Lam         loc         .   ty                  =   mkTyLam [@tv] @tyExpr.ty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

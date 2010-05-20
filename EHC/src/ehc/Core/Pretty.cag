@@ -13,7 +13,7 @@
 %%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Ty.Pretty})
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
@@ -144,7 +144,7 @@ SEM CExpr
                                                   CBindings_Rec     -> pp " rec"
                                                   CBindings_Strict  -> pp " !"
                                                   CBindings_FFI     -> pp " foreign"
-%%[[94
+%%[[90
                                                   CBindings_FFE     -> pp " foreignexport"
 %%]]
                                                   _                 -> empty
@@ -188,10 +188,10 @@ SEM CBind
 %%]]
 %%[[8
 				loc			.	ppent		=	pp (show @impEnt)
-%%][94
+%%][90
 				loc			.	ppent		=	"\"" >|< @impEnt >|< "\""
 %%]]
-%%[[94
+%%[[90
   | FFE         lhs         .   pp          =   ppDef (ppCNm @nm >#< "=")
                                                       ("foreignexport" >#< ppCurlysCommasBlock [pp (show @callconv),"\"" >|< @expEnt >|< "\"",ppCNm @expNm,ppTyWithCfg' CfgPP_HI @ty])
 %%]]

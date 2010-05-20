@@ -303,7 +303,7 @@ SEM Expr
 
 SEM Decl
   | FFI         loc     .   pp      =   "foreign import" >#< @callconv >#< @safety >#< pp (show @impEnt) >#< @nm >#< "::" >#< @tyExpr.pp
-%%[[94
+%%[[90
   | FFE         loc     .   pp      =   "foreign export" >#< @nm >#< @callconv >#< ppForeignEnt @expEnt >#< @expr.pp >#< "::" >#< @tyExpr.pp
 %%]]
 
@@ -341,7 +341,7 @@ SEM Decl
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< @tyPrExpr.pp
                                                     >#< "where"
-%%[[95
+%%[[91
                                                     >#< ppCmt (pp $ show @instVariant)
 %%]]
                                                     >-< indent 2 @decls.pp
@@ -507,6 +507,15 @@ SEM DataConstrEqs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Generics
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[92
+SEM Decl
+  | GenerRep    loc     .   pp      =   "generic" >#< (@maxArity >#< @tyNm >-< (vlist @conNmL) >-< (ppAssocLV $ assocLMapElt ppCurlysCommas @recFldNmL))
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Ty constr name of app + args, see also {%{EH}Ty.Pretty}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -576,11 +585,12 @@ SEM Expr
 %%[(9 hmtyinfer)
 SEM Expr
   | Let         loc     .   extraPP     :=  if ehcOptVerbosity @lhs.opts > VerboseNormal
-                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam)
+                                            then ppCmt (    ppGam (fst $ gamPartition (\k _ -> tyKiKeyIsName k) @lQuTyKiGam_ex_subst)
+                                                       >-<  ppGam @lQuTyGam
                                                        >-<  ppGam @finValGamDecls
                                                        >-<  ppGam @lClGamNoDups
 %%[[17
-                                                       >-<  ppGam @loc.finGathPolGam
+                                                       >-<  ppGam @loc.finGathPolGam_extra
 %%]]
                                                        )
                                             else empty

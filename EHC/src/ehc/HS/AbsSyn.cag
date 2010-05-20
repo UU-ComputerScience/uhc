@@ -168,7 +168,7 @@ DATA Declaration                                  {- *** -}
         typelefthandside         : TypeLeftHandSide
         -- simpletype               : SimpleType
         constructors             : Constructors
-%%[[95
+%%[[91
         derivings                : Derivings
 %%]]
 %%]
@@ -181,7 +181,7 @@ DATA Declaration                                  {- *** -}
         typelefthandside         : TypeLeftHandSide
         -- simpletype               : SimpleType
         constructors             : Constructor  -- has only one field, no strictness
-%%[[95
+%%[[91
         derivings                : Derivings
 %%]]
 %%]
@@ -199,7 +199,7 @@ DATA Declaration                                  {- *** -}
         importname               : {Maybe String}
         name                     : Name
         type                     : Type
-%%[[94
+%%[[90
     | ForeignExport
         range                    : Range
         callconvention           : FFIWay
@@ -254,16 +254,6 @@ DATA Declaration                                  {- *** -}
         exports                  : MaybeExports
 %%]
 
-%%[90
-DATA Fixity
-    | Infixl
-        range                    : Range
-    | Infixr
-        range                    : Range
-    | Infix
-        range                    : Range
-%%]
-
 %%[15
 TYPE FunctionalDependencies      = [ FunctionalDependency ]
 
@@ -274,7 +264,7 @@ DATA FunctionalDependency
         totypevariables          : Names
 %%]
 
-%%[95
+%%[91
 TYPE Derivings                   = [ Deriving ]
 
 DATA Deriving
@@ -297,11 +287,8 @@ SET AllDeclaration
 %%[[15
     FunctionalDependency FunctionalDependencies
 %%]]
-%%[[95
+%%[[91
     AllDeriving
-%%]]
-%%[[90
-    Fixity
 %%]]
 %%]
 

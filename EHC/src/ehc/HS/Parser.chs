@@ -516,7 +516,7 @@ pDeclarationData
             <*> pContextItemsPrefixOpt
 %%]]
             <*> pTypeLeftHandSide <*> pC
-%%[[95
+%%[[91
             <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
         -- TBD, for now: ignore quantifiers
@@ -529,7 +529,7 @@ pDeclarationData
         pNCon = pList pTypeQuantPrefix *> pConstructor
 %%]
 
-%%[95
+%%[91
 pDeriving :: HSParser Deriving
 pDeriving
   = (\(n,u) t -> Deriving_Deriving (mkRange1 t) n u (tokMkQName t)) <$> pInstanceName <*> qconid
@@ -575,7 +575,7 @@ pDeclarationForeign
   = pFOREIGN
     <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (fst c) s i (tokMkQName n) t)
              <$ pIMPORT <*> pFFIWay <*> pSafety <*> pFSpec
-%%[[94
+%%[[90
          <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (fst c) i (tokMkQName n) t)
              <$ pEXPORT <*> pFFIWay <*> pFSpec
 %%]]
@@ -1674,7 +1674,7 @@ pPatternApp :: HSParser Pattern
 pPatternApp
   =   pPatternBase
   <|> pPatternBaseMinusLiteral
-  <|> qconid
+  <|> qcon
       <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBaseCon
            <|> pPatternConSuffix
            )
@@ -1955,7 +1955,7 @@ tyvar
 safety :: HSParser Token
 safety
   =   pSAFE 
-%%[[94       
+%%[[90       
   <|> pUNSAFE      
   <|> pTHREADSAFE
 %%]] 
@@ -1984,7 +1984,7 @@ special_id_no_callconv
   <|> pQUALIFIED   
   <|> pHIDING
 %%]]
-%%[[94
+%%[[90
   <|> pDYNAMIC
 %%]]
   <?> "special_id_no_callconv"
@@ -2305,9 +2305,7 @@ gtycon_no_delims
 gtycon_only_bracks :: HSParser Token   -- A "general" qualified tycon
 gtycon_only_bracks
   =   tokConcat <$> pOBRACK <*> pCBRACK
-%%[[90
-  <|> tokConcat <$> pOPABRACK <*> pCPABRACK
-%%]]
+  -- <|> tokConcat <$> pOPABRACK <*> pCPABRACK
   <?> "gtycon_only_delims"
 %%]
 

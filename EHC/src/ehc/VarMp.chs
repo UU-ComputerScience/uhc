@@ -65,7 +65,7 @@ A multiple level VarMp knows its own absolute metalevel, which is the default to
 %%[(50 hmtyinfer || hmtyast) export(varmpKeys)
 %%]
 
-%%[(90 hmtyinfer || hmtyast) export(varmpMapTy)
+%%[(9090 hmtyinfer || hmtyast) export(varmpMapTy)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

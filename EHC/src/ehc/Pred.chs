@@ -59,6 +59,7 @@ data ClGamInfo
        { clgiPrToEvidTy     :: !Ty
        , clgiRuleTy         :: !Ty
        , clgiDfltDictNm     :: !HsName
+       , clgiDictTag		:: !CTag
        -- , clgiSupClsFldNmL   :: ![HsName]
        }
 %%]]
@@ -69,7 +70,7 @@ type ClGam     = Gam HsName ClGamInfo
 emptyCLGI
   = ClGamInfo
 %%[[(9 hmtyinfer)
-      Ty_Any Ty_Any hsnUnknown
+      Ty_Any Ty_Any hsnUnknown CTagRec
 %%]]
 %%]
 
@@ -104,8 +105,8 @@ instance ForceEval ClGamInfo where
 
 %%[(20 hmtyinfer)
 instance Serialize ClGamInfo where
-  sput (ClGamInfo a b c) = sput a >> sput b >> sput c
-  sget = liftM3 ClGamInfo sget sget sget
+  sput (ClGamInfo a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 ClGamInfo sget sget sget sget
 %%]
 
 

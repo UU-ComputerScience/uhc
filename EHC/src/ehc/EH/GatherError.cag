@@ -295,6 +295,9 @@ SEM Expr
 %%[[17
                                                            , @loc.cycErrSq
 %%]]
+%%[[92
+                                                           , Seq.fromList @errsDataGenerBind
+%%]]
                                                            ]
   | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
   | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
@@ -313,7 +316,7 @@ SEM Decl
                                                                , Seq.fromList @valNoSigErrs
 %%]]
                                                                ]
-%%[[(95 codegen hmtyinfer)
+%%[[(91 codegen hmtyinfer)
                                                   , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
 %%]]
 %%[[(9 hmtyinfer)

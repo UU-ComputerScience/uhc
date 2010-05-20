@@ -78,3 +78,4 @@ import System.IO
   )
 #endif
 
+import UHC.Generics

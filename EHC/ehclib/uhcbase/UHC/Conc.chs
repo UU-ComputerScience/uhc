@@ -10,6 +10,8 @@ In particular, System.IO requires this.
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.Conc
   ( threadWaitRead, threadWaitWrite
   )

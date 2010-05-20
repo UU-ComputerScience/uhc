@@ -157,34 +157,6 @@ cpFoldHsMod modNm
          }
 %%]
 
-%%[2020 export(cpFoldHI)
-cpFoldHI :: HsName -> EHCompilePhase ()
-cpFoldHI modNm
-  =  do  {  cr <- get
-         ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
-                 mbHI   = ecuMbPrevHI ecu
-                 inh    = crsiHIInh crsi
-                 hiSem  = HISem.wrap_AGItf (HISem.sem_AGItf $ panicJust "cpFoldHI" mbHI)
-                                           (inh { HISem.opts_Inh_AGItf             = crsiOpts crsi
-                                                })
-                 hiSettings = maybe HI.emptyHiSettings id $ HISem.settings_Syn_AGItf hiSem
-                 hasMain    = HI.hisettingsHasMain hiSettings
-         ;  when (isJust mbHI && HISem.isValidVersion_Syn_AGItf hiSem)
-                 (do { let mm     = crsiModMp crsi
-                           mmi    = Map.findWithDefault emptyModMpInfo modNm mm
-                           mmi'   = mkModMpInfo modNm (mmiInscps mmi) (HISem.exportRel_Syn_AGItf hiSem) (HISem.exportHideRel_Syn_AGItf hiSem)
-                     ; cpUpdSI (\crsi -> crsi {crsiModMp = Map.insert modNm mmi' mm})
-                     ; cpUpdCU modNm ( ecuStorePrevHISem hiSem
-                                     . ecuStoreHIDeclImpL (HISem.asDeclImpModL_Syn_AGItf hiSem)
-                                     . ecuStoreHIUsedImpL (HISem.asUsedImpModL_Syn_AGItf hiSem)
-                                     . ecuSetHasMain hasMain
-                                     )
-                     ; when (ehcOptVerbosity opts >= VerboseDebug)
-                            (lift $ putStrLn (show modNm ++ ": hi imps, decl=" ++ show (HISem.asDeclImpModL_Syn_AGItf hiSem) ++ ", used=" ++ show (HISem.asUsedImpModL_Syn_AGItf hiSem)))
-                     })
-         }
-%%]
-
 %%[20 export(cpFoldHIInfo)
 cpFoldHIInfo :: HsName -> EHCompilePhase ()
 cpFoldHIInfo modNm

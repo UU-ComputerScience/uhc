@@ -14,7 +14,7 @@ void mm_ssmutator_C_Init
 		, MM_Allocator* resAllocator
 		, MM_Trace* trace
 		, MM_Module* module
-%%[[94
+%%[[90
 		, MM_WeakPtr* weakPtrAdm
 		, MM_DEQue* weakPtrFinalizeQue
 %%]]
@@ -25,7 +25,7 @@ void mm_ssmutator_C_Init
 	mutator->trace = trace ;
 	mutator->module = module ;
 	mutator->malloc = memmgt ;
-%%[[94
+%%[[90
 	mutator->weakPtrAdm = weakPtrAdm ;
 	mutator->weakPtrFinalizeQue = weakPtrFinalizeQue ;
 %%]]
@@ -44,7 +44,7 @@ Bool mm_ssmutator_C_IsMaintainedByGC( MM_Mutator* mutator, Word obj )
 %%% special purpose allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 Ptr mm_ssmutator_C_Alloc_WeakPtr( MM_Mutator* mutator ) {
 	return NULL;
 }
@@ -71,14 +71,14 @@ MM_Mutator mm_ssmutator_C =
 	, NULL
 	, NULL
 	, NULL
-%%[[94
+%%[[90
 	, NULL
 	, NULL
 %%]]
 	, &mm_ssmutator_C_Init
 	, &mm_ssmutator_C_IsMaintainedByGC
 	// , &
-%%[[94
+%%[[90
 	, &mm_ssmutator_C_Alloc_WeakPtr
 %%]]
 %%[[99

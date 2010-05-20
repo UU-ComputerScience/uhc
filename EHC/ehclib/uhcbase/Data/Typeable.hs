@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude -XOverlappingInstances -funbox-strict-fields #-}
 
 -- The -XOverlappingInstances flag allows the user to over-ride

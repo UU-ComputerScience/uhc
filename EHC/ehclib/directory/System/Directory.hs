@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -w #-}
 -- XXX We get some warnings on Windows
 

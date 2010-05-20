@@ -98,6 +98,9 @@ SEM Expr
                                                             { rceValGam  = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp
                                                             , rceCaseIds = @caseIds
                                                             }
+%%[[92
+  | Let         loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @bodyValGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+%%]]
 %%]
 
 %%[(8 hmtyinfer codegen)
@@ -111,7 +114,7 @@ SEM Decl
   | Data        loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
-%%[(95 hmtyinfer codegen)
+%%[(91 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @lhs.valGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
 %%]
@@ -139,10 +142,10 @@ SEM PatExpr
 
 %%[(8 hmtyinfer codegen)
 SEM Decl
-  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
+  | Data        loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts :: C.RCEEnv) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]
 
-%%[(95 hmtyinfer codegen)
+%%[(91 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   rceEnvTC    =   (C.emptyRCEEnv @lhs.opts) { C.rceValGam = @lhs.valGam, C.rceDataGam = @lhs.dataGam, C.rceTyVarMp = @lhs.finTyVarMp }
 %%]

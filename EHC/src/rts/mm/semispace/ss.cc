@@ -59,7 +59,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 		, &plss->residentAllocator
 		, &plss->gbmTrace
 		, &plss->gbmModule
-%%[[94
+%%[[90
 		, &mm_weakPtr					// init later
 		, &plss->weakPtrFinalizeQue		// init later
 %%]]
@@ -76,7 +76,7 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 		, &plss->residentAllocator
 		, &plss->gbmTrace
 		, &plss->gbmModule
-%%[[94
+%%[[90
 		, &mm_weakPtr					// init later
 		, &plss->weakPtrFinalizeQue		// init later
 %%]]
@@ -179,15 +179,15 @@ void mm_plan_SS_Init( MM_Plan* plan ) {
 	plss->gbmTrace.init( &plss->gbmTrace, plss->queTraceSupply, &plss->ssAllocator, &plss->collector ) ;
 #endif
 
-#ifdef __UHC_TARGET_BC__
-%%[[94
+%%[[90
 	mm_weakPtr = mm_weakPtr_List ;
-	mm_weakPtr.init( &mm_weakPtr, &mm_mutator, &plss->collector ) ;
 	plss->weakPtr = &mm_weakPtr ;
+#ifdef __UHC_TARGET_BC__
+	plss->weakPtr->init( plss->weakPtr, &mm_mutator, &plss->collector ) ;
 	
 	mm_deque_InitWithSize( &plss->weakPtrFinalizeQue, &plss->memMgt, MM_WeakPtrFinalizeQue_Data_SizeInWords ) ;
-%%]]
 #endif
+%%]]
 
 	plss->gcProgress = 0 ;
 	
@@ -199,7 +199,7 @@ void mm_plan_SS_Exit( MM_Plan* plan ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	// IF_GB_TR_ON(3,{printf("mm_plan_SS_Init plan=%x plss=%x\n",plan,plss);}) ;
 #ifdef __UHC_TARGET_BC__
-%%[[94
+%%[[90
 	plss->weakPtr->finalizeAllWeakPtr( plss->weakPtr ) ;
 %%]]
 #endif
@@ -214,7 +214,7 @@ void mm_plan_SS_InitBypass( MM_Plan* plan ) {
 #endif
 %%]
 
-%%[94
+%%[90
 MM_DEQue* mm_plan_SS_GetWeakPtrFinalizeQue( MM_Plan* plan ) {
 	MM_Plan_SS_Data* plss = (MM_Plan_SS_Data*)plan->data ;
 	
@@ -306,7 +306,7 @@ MM_Plan mm_plan_SS =
 	, &mm_plan_SS_InitBypass
 #endif
 	, &mm_plan_SS_DoGC
-%%[[94
+%%[[90
 	, &mm_plan_SS_GetWeakPtrFinalizeQue
 %%]]
 #ifdef TRACE

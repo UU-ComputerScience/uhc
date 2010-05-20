@@ -12,10 +12,13 @@
 %%[(8 codegen) import(Data.Maybe)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(20 codegen) export(pCModule,pCExpr)
 %%]
 
-%%[(94 codegen) import({%{EH}Foreign.Parser})
+%%[(90 codegen) import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -36,7 +39,7 @@ pCTagOnly = pNUMBER *> pKeyTk "Tag" *> pCTag
 pCNumber :: CParser CExpr
 pCNumber
   =    pNUMBER
-       *> (   (   (CExpr_Int     . read) <$ pKeyTk "Int"
+       *> (   (   (acoreInt2     . read) <$ pKeyTk "Int"
               <|> (CExpr_Char    . head) <$ pKeyTk "Char"
               <|> (CExpr_String        ) <$ pKeyTk "String"
 %%[[97
@@ -56,13 +59,13 @@ pCExprAnn
 
 pCExprBase :: CParser CExpr
 pCExprBase
-  =   CExpr_Var <$> pDollNm
+  =   acoreVar <$> pDollNm
   <|> pCNumber
   <|> pOPAREN *> (pCExpr <**> pCExprAnn) <* pCPAREN
 
 pCExprBaseMeta :: CParser (CExpr,CMetaVal)
 pCExprBaseMeta
-  =   (\v m -> (CExpr_Var v, m))<$> pDollNm <*> pCMetaValOpt
+  =   (\v m -> (acoreVar v, m))<$> pDollNm <*> pCMetaValOpt
   <|> (\n   -> (n, CMetaVal_Val)  ) <$> pCNumber
   <|> pOPAREN *> pCExpr P.<+> pCMetaValOpt <* pCPAREN
 
@@ -85,8 +88,8 @@ pCExprSel = pCExprBase <??> pCExprSelSuffix
 
 pCExpr :: CParser CExpr
 pCExpr
-  =   mkCExprAppMeta <$> pCExprSel <*> pList pCExprSelMeta
-  <|> mkCExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
+  =   acoreAppMeta   <$> pCExprSel <*> pList pCExprSelMeta
+  <|> acoreLamMeta   <$  pLAM <*> pList1 (pDollNm P.<+> pCMetaValOpt) <* pRARROW <*> pCExpr
   <|> CExpr_Let      <$  pLET <*> pMaybe CBindings_Plain id pCBindingsCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pCExpr
   <|> CExpr_Case <$ pCASE <*> pCExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pCAlt <* pCCURLY
@@ -94,7 +97,7 @@ pCExpr
   where pCBindingsCateg
           =   CBindings_Rec    <$ pKeyTk "rec"
           <|> CBindings_FFI    <$ pFOREIGN
-%%[[94
+%%[[90
           <|> CBindings_FFE    <$ pKeyTk "foreignexport"
 %%]]
           <|> CBindings_Strict <$ pBANG
@@ -152,7 +155,7 @@ pCBind
     <**> (   (\e (n,m)        -> CBind_Bind n m e) <$> pCExpr
          <|> (\(c,_) s i t (n,m)  -> CBind_FFI c s (mkEnt c i) n t)
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
-%%[[94
+%%[[90
          <|> (\(c,_) e en t (n,m) -> CBind_FFE n c (mkEnt c e) en t)
              <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
@@ -160,7 +163,7 @@ pCBind
   where pS = tokMkStr <$> pStringTk
 %%[[8
         mkEnt _ e = e
-%%][94
+%%][90
         mkEnt c e = fst $ parseForeignEnt c Nothing e
 %%]]
 

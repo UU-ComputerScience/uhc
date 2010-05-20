@@ -135,12 +135,12 @@ DATA CBind
                 safety          : {String}
 %%[[8
                 impEnt          : {String}
-%%][94
+%%][90
                 impEnt          : {ForeignEnt}
 %%]]
                 nm              : {HsName}
                 ty              : {Ty}
-%%[[94
+%%[[90
   | FFE         nm              : {HsName}
                 callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}

@@ -4,12 +4,12 @@
 
 For use by foreign functions.
 
-%%[94
+%%[90
 DATA ForeignAGItf
   | AGItf           ent             : ForeignEnt
 %%]
 
-%%[94
+%%[90
 DATA ForeignEnt
   | CCall           ent             : CCall
   | PlainCall       ent             : PlainCall
@@ -19,7 +19,7 @@ DATA ForeignEnt
 %%% C Call
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 DATA CCall
   | Id              isStatic        : Bool
                     mbInclude       : {Maybe String}
@@ -34,7 +34,7 @@ DATA CCall
 %%% Default/Plain Call: only name of entity
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 DATA PlainCall
   | Id              nm              : String
 %%]
@@ -43,7 +43,7 @@ DATA PlainCall
 %%% Sets
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 SET AllForeign      =   ForeignEnt CCall PlainCall
 %%]
 

@@ -51,7 +51,7 @@ SEM CModule
 
 SEM CExpr
   | Lam			lhs			.	cTrf		=	CExpr_Lam hsnUnknown @argMeta.cTrf @body.cTrf
-  | Var			lhs			.	cTrf		=	CExpr_Var hsnUnknown
+  | Var			lhs			.	cTrf		=	acoreVar hsnUnknown
   | Int			lhs			.	cTrf		=	CExpr_Int 1
   | Integer		lhs			.	cTrf		=	CExpr_Integer 1
   | Char		lhs			.	cTrf		=	CExpr_Char 'c'

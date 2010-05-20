@@ -71,7 +71,7 @@ SEM Decl
                                                                = case @instVariant of
                                                                    InstDefault -> ( @dictSelfNm
                                                                                   , emptyCnstrMp
-                                                                                  , emptyCnstrMp -- cnstrMpFromList $ zipWith mkp @ctxtPrFixL            usc
+                                                                                  , emptyCnstrMp
                                                                                   )
                                                                    _           -> ( @dictBuildNm
                                                                                   , cnstrMpFromList $ zipWith mka @ctxtPrFixL            usc
@@ -86,7 +86,7 @@ SEM Decl
                lhs          .   gathCnstrMp         =   Map.empty
 %%[[9
                loc          .   toProveGathCnstrMp  =   @tyVarMpDeclsL0 {- 1 -} `chrAppSubst` @decls.gathCnstrMp
-%%][(95 codegen)
+%%][(91 codegen)
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
                                                           InstDeriving

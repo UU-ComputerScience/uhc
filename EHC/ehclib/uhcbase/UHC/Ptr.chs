@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 {-# OPTIONS_HADDOCK hide #-}
 -----------------------------------------------------------------------------

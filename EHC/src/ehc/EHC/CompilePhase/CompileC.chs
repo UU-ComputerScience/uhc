@@ -63,7 +63,7 @@ cpCompileWithGCC how othModNmL modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  fpC    = case ecuStateToKind $ ecuState ecu of
-%%[[94
+%%[[90
                             EHCUKind_C -> fp
 %%]]
                             _          -> mkOutputFPath opts modNm fp "c"

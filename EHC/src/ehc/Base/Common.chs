@@ -82,16 +82,10 @@
 %%[8 import (qualified Data.Map as Map) export(showPP,ppPair,ppFM)
 %%]
 
-%%[8 export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
-%%]
-
 %%[8 hs export(ctag,ppCTag,ppCTagInt) 
 %%]
 
 %%[8 export(CTagsMp)
-%%]
-
-%%[90 export(groupSortByOn)
 %%]
 
 %%[9 export(ppListV)
@@ -439,7 +433,7 @@ instance PP Belowness where
 %%% Tags (of data)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[8 hs
+%%[8 hs export(CTag(..),ctagTag,ctagChar,ctagInt,emptyCTag)
 data CTag
   = CTagRec
   | CTag
@@ -688,7 +682,7 @@ fixityMaxPrio :: Int
 fixityMaxPrio = 9
 %%]
 
-%%[95 export(fixityAppPrio)
+%%[91 export(fixityAppPrio)
 fixityAppPrio :: Int
 fixityAppPrio = fixityMaxPrio + 1
 %%]
@@ -835,7 +829,7 @@ rngAntilift = const
 %%[9 export(InstVariant(..))
 data InstVariant
   = InstNormal | InstDefault
-%%[[95
+%%[[91
   | InstDeriving
 %%]]
   deriving (Eq,Ord,Show)

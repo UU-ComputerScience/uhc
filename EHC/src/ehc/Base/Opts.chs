@@ -255,6 +255,9 @@ data EHCOpts
       ,  ehcDebugStopAtHIError::  Bool              -- stop when HI parse error occurs (otherwise it is ignored, .hi thrown away)
       ,  ehcOptDoLinking      ::  Bool              -- do link, if False compile only
 %%]]
+%%[[92
+      ,  ehcOptGenGenerics    ::  Bool				-- generate for use of generics
+%%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree  ::  DerivTreeWay      -- show derivation tree on stdout
       ,  ehcOptEmitDerivTreePaperSize
@@ -442,6 +445,9 @@ defaultEHCOpts
       ,  ehcOptCheckRecompile   =   True
       ,  ehcDebugStopAtHIError  =   False
       ,  ehcOptDoLinking        =   True
+%%]]
+%%[[92
+      ,  ehcOptGenGenerics      =	True
 %%]]
 %%[[(99 hmtyinfer)
       ,  ehcOptEmitDerivTree    =   DerivTreeWay_None
@@ -1088,3 +1094,22 @@ fioIsSubsume fio =  case fioMode fio of {FitSubLR -> True ; _ -> False}
 fioIsMeetJoin :: FIOpts -> Bool
 fioIsMeetJoin fio =  case fioMode fio of {FitMeet -> True ; FitJoin -> True ; _ -> False}
 %%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Getting a builtin name via EHCOpts
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[8 export(ehcOptBuiltin,ehcOptBuiltin2)
+ehcOptBuiltin :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
+ehcOptBuiltin o f = f $ ehcOptBuiltinNames o
+
+ehcOptBuiltin2 :: EHCOpts -> (EHBuiltinNames -> Int -> HsName) -> Int -> HsName
+ehcOptBuiltin2 o f i = f (ehcOptBuiltinNames o) i
+%%]
+
+not the right place..., but can't be in Ty because module cycle would result
+%%[(11 hmtyinfer || hmtyast) hs export(tyString)
+tyString :: EHCOpts -> Ty
+tyString o = Ty_Con (ehcOptBuiltin o ehbnPrelString)
+%%]
+

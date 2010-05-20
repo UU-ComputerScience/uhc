@@ -29,6 +29,9 @@ TBD:
 %%[(8 codegen) hs import({%{EH}TyCore},{%{EH}Ty} as T,{%{EH}Core} as C)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -61,7 +64,7 @@ tycore2core opts mod
 type BindCore = [(Maybe CBindingsCateg,CBindL)]
 
 mkLet :: CBindingsCateg -> BindCore -> CExpr -> CExpr
-mkLet dfltCateg bs e = foldr (\(c,b) e -> mkCExprLet' True (maybe dfltCateg id c) b e) e bs
+mkLet dfltCateg bs e = foldr (\(c,b) e -> acoreLetMerge True (maybe dfltCateg id c) b e) e bs
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -146,7 +149,7 @@ SEM ExprSeq1 FldBind MbExpr ValBind Alt Pat
 ATTR Module AGItf [ | | core: CModule ]
 
 SEM Module
-  | Mod         lhs         .   core                =   CModule_Mod @moduleNm (mkLet CBindings_Rec @vbinds.core (cundefined @lhs.opts)) []
+  | Mod         lhs         .   core                =   CModule_Mod @moduleNm (mkLet CBindings_Rec @vbinds.core (acoreBuiltinUndefined @lhs.opts)) []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -164,25 +167,25 @@ SEM Expr
                                                           ValBindCateg_Strict -> CBindings_Strict 
                                                           ValBindCateg_Plain  -> CBindings_Plain  
                                                           ValBindCateg_FFI    -> CBindings_FFI    
-%%[[94
+%%[[90
                                                           ValBindCateg_FFE    -> CBindings_FFE    
 %%]]
                             .   core                =   mkLet @ccateg @vbinds.core @body.core
-  | App         loc         .   core                =   maybe id (flip mkCExprApp) @arg.mbAppArg @func.core
-  | Lam         loc         .   core                =   maybe id mkCExprLam @arg.mbLamArg @res.core
-  | Var         loc         .   core                =   CExpr_Var @nm
-  | Int         loc         .   core                =   CExpr_Int (fromInteger @int)
+  | App         loc         .   core                =   maybe id (flip acoreApp) @arg.mbAppArg @func.core
+  | Lam         loc         .   core                =   maybe id acoreLam @arg.mbLamArg @res.core
+  | Var         loc         .   core                =   acoreVar @nm
+  | Int         loc         .   core                =   acoreInt2 @int
   | Char        loc         .   core                =   CExpr_Char @char
   | String      loc         .   core                =   CExpr_String @str
   | Tup         loc         .   core                =   CExpr_Tup @tag
-  | Node        loc         .   core                =   mkCExprApp (CExpr_Tup (maybe CTagRec id @lhs.mbInj)) @flds.l0CoreL
-  | Case        loc         .   core                =   CExpr_Case @expr.core @alts.core (maybe (cundefined @lhs.opts) id @dflt.mbCore)
+  | Node        loc         .   core                =   acoreApp (CExpr_Tup (maybe CTagRec id @lhs.mbInj)) @flds.l0CoreL
+  | Case        loc         .   core                =   CExpr_Case @expr.core @alts.core (maybe (acoreBuiltinUndefined @lhs.opts) id @dflt.mbCore)
   | Inject Cast Ann
                 loc         .   core                =   @expr.core
   | OpenExists CloseExists
                 loc         .   core                =   @body.core
   | * - App Let Lam Var Int Char String Tup Node Inject Cast OpenExists CloseExists Ann Case
-                loc         .   core                =   cundefined @lhs.opts
+                loc         .   core                =   acoreBuiltinUndefined @lhs.opts
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -212,7 +215,7 @@ SEM ValBind
   | Val         loc         .   core                =   if @mlev == 0
                                                         then if isJust @l0.mbFFI
                                                              then [(Just CBindings_FFI,[fromJust @l0.mbFFI @nm])]
-                                                             else [(Nothing,[mkCBind1 @nm @l0.core])]
+                                                             else [(Nothing,[acoreBind1Cat CBindings_Plain @nm @l0.core])]
                                                         else []
 %%]
 

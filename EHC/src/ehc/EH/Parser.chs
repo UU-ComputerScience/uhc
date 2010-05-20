@@ -19,7 +19,7 @@
 %%[8 import(qualified Data.Set as Set)
 %%]
 
-%%[94 import({%{EH}Foreign.Parser})
+%%[90 import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -130,7 +130,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  (\(conv,_) saf imp nm sig
                         -> mkEH Decl_FFI conv saf 
                              (
-%%[[94
+%%[[90
                                (\i -> fst $ parseForeignEnt conv Nothing i)
 %%]]
                                (if null imp then show nm else imp))
@@ -138,7 +138,7 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                      )
                      <$   pFOREIGN <* pIMPORT <*> pFFIWay
                      <*>  (pV (   pSAFE
-%%[[94
+%%[[90
                               <|> pUNSAFE
 %%]]
                               ) `opt` "safe")
@@ -414,7 +414,7 @@ pDataConstr     =    mkEH DataConstr_Constr <$> pCon <*> pTyExprs
 %%[7.DataConstr1 -5.DataConstr1
 %%[[7
 pDataConstr     =    mkEH DataConstr_Constr
-%%][95
+%%][91
 pDataConstr     =    (\c f -> mkEH DataConstr_Constr c Nothing f)
 %%]]
                      <$> pCon <*> (pDataFields <|> pCurly pDataLabFields)

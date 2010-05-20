@@ -242,7 +242,7 @@ fileSuffMpHs
     -- currently not supported
     , ( Just "grin", ECUSGrin )
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
     , ( Just "c"   , ECUSC CStart )
 %%]]
     ]

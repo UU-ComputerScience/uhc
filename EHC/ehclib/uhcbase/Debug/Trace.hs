@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Debug.Trace

@@ -87,7 +87,7 @@ SEM Expr
 %%[[5
   | SConst      loc         .   constTy             =   tyString
 %%][11
-  | SConst      loc         .   constTy             =   Ty_Con (ehbnPrelString $ ehcOptBuiltinNames @lhs.opts)
+  | SConst      loc         .   constTy             =   tyString @lhs.opts
 %%]]
 %%[[97
   | IIConst     loc         .   constTy             =   tyInteger
