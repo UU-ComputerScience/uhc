@@ -38,7 +38,7 @@ void mm_mutator_GBSS_Init
 		, MM_Allocator* resAllocator
 		, MM_Trace* trace
 		, MM_Module* module
-%%[[94
+%%[[90
 		, MM_WeakPtr* weakPtrAdm
 		, MM_DEQue* weakPtrFinalizeQue
 %%]]
@@ -50,7 +50,7 @@ void mm_mutator_GBSS_Init
 	mutator->trace = trace ;
 	mutator->module = module ;
 	mutator->malloc = memmgt ;
-%%[[94
+%%[[90
 	mutator->weakPtrAdm = weakPtrAdm ;
 	mutator->weakPtrFinalizeQue = weakPtrFinalizeQue ;
 %%]]
@@ -74,7 +74,7 @@ void mm_mutator_GBSS_zzz( MM_Mutator* mutator, ... ) {
 %%% GBSS special purpose allocation
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 Ptr mm_mutator_GBSS_Alloc_WeakPtr( MM_Mutator* mutator ) {
 	GB_NodePtr n = (GB_NodePtr)mutator->allocator->alloc( mm_mutator.allocator, GB_NodeWeakPtrSize << Word_SizeInBytes_Log, 0 ) ;
 	n->header = GB_MkWeakPtrHeader ;
@@ -106,14 +106,14 @@ MM_Mutator mm_mutator_GBSS =
 	, NULL
 	, NULL
 	, NULL
-%%[[94
+%%[[90
 	, NULL
 	, NULL
 %%]]
 	, &mm_mutator_GBSS_Init
 	, &mm_mutator_GBSS_IsMaintainedByGC
 	// , &
-%%[[94
+%%[[90
 	, &mm_mutator_GBSS_Alloc_WeakPtr
 %%]]
 %%[[99

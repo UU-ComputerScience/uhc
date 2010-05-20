@@ -22,7 +22,7 @@
 %%[(20 codegen grin) hs import({%{EH}Ty(tyRowCanonOrder)},{%{EH}HI})
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin) ag import({GrinCode/Trf/CommonFreeVar},{GrinCode/CommonForGen})
@@ -702,7 +702,7 @@ SEM GrExpr
                                                                    callStState = @ldStState `GB.ststInc` inc `GB.ststInc` finc
 %%[[8
                                                                    call  = cl
-%%][94
+%%][90
                                                                    call  = if forextractOptIsPtr @foreignEntInfo then [] else cl
 %%]]
                                                                          where cl = [ GB.meta' GB.AnnStackDepth callStState
@@ -874,7 +874,7 @@ SEM GrModule
 %%% Additional C include files (we now assume C will be generated)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(94 codegen grin)
+%%[(90 codegen grin)
 ATTR AllBind AllGrExpr [ | | includeS USE {`Set.union`} {Set.empty} : {Set.Set String} ]
 
 SEM GrExpr
@@ -902,7 +902,7 @@ SEM GrModule
                                                       [ c | (c,_) <- sortOn snd $ Map.toList @bindL.constMp ]
                                                       [ i | (i,True) <- zip [0..] @isCafL ]
                                                       @mainEntry
-%%[[94
+%%[[90
                                                       (Set.toList @bindL.includeS)
 %%]]
 %%]

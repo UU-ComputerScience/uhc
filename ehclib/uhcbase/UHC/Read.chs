@@ -1,4 +1,5 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
 
 module UHC.Read
 where

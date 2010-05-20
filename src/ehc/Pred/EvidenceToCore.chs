@@ -14,6 +14,9 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),{%{EH}Core},{%{EH}Ty},{%{EH}Core.Utils},{%{EH}Core.Subst})
 %%]
 
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 codegen) import(EH.Util.Pretty)
 %%]
 
@@ -136,10 +139,10 @@ evidMpToCore env evidMp
                             (st {tcsUniq=u1})
                       where (u1,u2) = mkNewUID u
                             recnm = panicJust "evidMpToCore.Evid_Recurse" $ Map.lookup p $ tcsPrMp st
-        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (cundefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
+        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (acoreBuiltinUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
         mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
-        mknm          = CExpr_Var
+        mknm          = acoreVar
         ins insk k evnm ev c sc uses st
                       = {- trp "XX" ((ppAssocLV $ Map.toList $ tcsMp st') >-< (ppAssocLV $ Map.toList $ tcsEvMp st')) $ -} res
                       where res@(st',_)
@@ -157,7 +160,7 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( mkCExprAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _ sc) ctxt  = ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = mkCExprSatSelsCaseMeta
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                              (Just $ hsnUniqifyEval n) 
@@ -166,16 +169,16 @@ evidMpToCore env evidMp
                                                              t
                                                              [(n,n,o)] 
                                                              Nothing 
-                                                             (CExpr_Var n)
+                                                             (acoreVar n)
                                                  in ( res
                                                     , tcrScope sub
                                                     )
 %%[[10
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( CExpr_Int o, sc )
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( caddint (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( acoreInt o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrCExpr roff) o, sc )
 %%]]
 %%[[13
-        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `mkCExprLam` tcrCExpr body, sc )
+        ann (RedHow_Lambda  i sc) [body]       = ( [mkHNm i] `acoreLam` tcrCExpr body, sc )
 %%]]
 %%[[16
         ignore (_, (Evid_Proof _ red  _))
@@ -210,12 +213,12 @@ evidKeyCoreMpToBinds m
                -> let deepestScope = subevdId . maximumBy (\evd1 evd2 -> subevdScope evd1 `pscpCmpByLen` subevdScope evd2) . Set.toList
                   in  Map.singleton (deepestScope uses) [b]
             )
-      $ [ (mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e,u)    -- Nothing will be replaced by the correct annotation in ToCore
+      $ [ (acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e,u)    -- Nothing will be replaced by the correct annotation in ToCore
         | (i,(e,u,_ )) <- dbg "evidKeyCoreMpToBinds.dependentOnAssumes"   $! Map.toList dependentOnAssumes   
         ]
     , dbg "evidKeyCoreMpToBinds.res2"
       $! Map.fromListWith (++)
-      $ [ (sc,[mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e]) 
+      $ [ (sc,[acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e]) 
         | (i,(e,_,sc)) <- dbg "evidKeyCoreMpToBinds.independentOfAssumes" $! Map.toList independentOfAssumes 
         ]
     )
@@ -259,7 +262,7 @@ evidKeyCoreMpToBinds2 m
           = Map.partition (\(_,uses,_) -> Set.null uses) m
         (dependentOn1Assume, dependentOnNAssumes)
           = Map.partition (\(_,uses,_) -> Set.size uses == 1) m
-        mkd i e           = mkCBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e    -- Nothing will be replaced by the correct annotation in ToCore
+        mkd i e           = acoreBind1Meta (mkHNm i) (CMetaVal_Dict Nothing) e    -- Nothing will be replaced by the correct annotation in ToCore
         deepestScope sc u = maximumBy pscpCmpByLen $ sc : (map subevdScope $ Set.toList u)
 %%]
 

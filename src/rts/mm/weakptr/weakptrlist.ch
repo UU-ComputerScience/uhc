@@ -13,7 +13,7 @@ Doc
 %%%  defs & types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // the overall administration
 typedef struct MM_WeakPtr_List_Data {
 	MM_FreeListArray*	ptrList ;		// weak ptrs
@@ -25,7 +25,7 @@ typedef struct MM_WeakPtr_List_Data {
 } MM_WeakPtr_List_Data ;
 %%]
 
-%%[94
+%%[90
 // the per WeakPtr admin
 typedef struct MM_WeakPtr_ObjectAdmin {
 	// ptr to node holding a MM_WeakPtr_Object at offset known by mutator
@@ -45,7 +45,7 @@ typedef struct MM_WeakPtr_ObjectAdmin {
 %%%  interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 %%]
 extern void mm_weakPtr_List_Init( MM_WeakPtr* ) ;
 
@@ -54,7 +54,7 @@ extern void mm_weakPtr_List_Init( MM_WeakPtr* ) ;
 %%%  interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 extern MM_WeakPtr mm_weakPtr_List ;
 %%]
 
@@ -62,7 +62,7 @@ extern MM_WeakPtr mm_weakPtr_List ;
 %%% WeakPtr List dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 #ifdef TRACE
 extern void mm_weakPtr_List_Dump( MM_WeakPtr* weakPtr ) ;
 #endif
@@ -72,7 +72,7 @@ extern void mm_weakPtr_List_Dump( MM_WeakPtr* weakPtr ) ;
 %%%  test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 #ifdef TRACE
 extern void mm_weakPtr_List_Test() ;
 #endif

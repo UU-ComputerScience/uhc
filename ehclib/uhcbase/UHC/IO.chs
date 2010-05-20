@@ -1,5 +1,5 @@
 %%[99
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_HADDOCK hide #-}
 
 #undef DEBUG_DUMP

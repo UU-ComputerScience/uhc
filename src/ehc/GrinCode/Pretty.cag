@@ -16,7 +16,7 @@ if .hi interface files ppGrExpr requires a parameterised variant which prints na
 %%[(8 codegen grin) hs import({%{EH}Base.CfgPP})
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign.Pretty})
+%%[(90 codegen grin) hs import({%{EH}Foreign.Pretty})
 %%]
 
 %%[(8 codegen grin).WRAPPER ag import({GrinCode/AbsSyn})
@@ -207,7 +207,7 @@ SEM GrExpr
 %%]]
 %%[[8
   | FFI         loc         .   ppent       =   pp @nm
-%%][94
+%%][90
   | FFI         loc         .   ppent       =   @callconv >#< "\"" >|< @impEnt >|< "\""
 %%]]
 %%[[8

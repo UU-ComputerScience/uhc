@@ -3,6 +3,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.StackTrace
   ( ExplicitStackTrace
   , ImplicitStackTrace

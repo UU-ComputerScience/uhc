@@ -66,13 +66,13 @@ SEM Declaration
     | Data
         loc         .   pp          =   "data" >#< @typelefthandside.pp
                                                >#< "=" >#< @constructors.pp
-%%[[95
+%%[[91
                                                >-< ppParensCommas @derivings.ppL
 %%]]
     | Newtype
         loc         .   pp          =   "newtype" >#< @typelefthandside.pp
                                                   >#< "=" >#< @constructors.pp
-%%[[95
+%%[[91
                                                   >-< ppParensCommas @derivings.ppL
 %%]]
 %%]
@@ -115,13 +115,13 @@ SEM FunctionalDependency
         loc         .   pp          =   ppSpaces @fromtypevariables >#< "->" >#< @totypevariables
 %%]
 
-%%[(94 codegen)
+%%[(90 codegen)
 SEM Declaration
     | ForeignExport
         loc         .   pp          =   "foreign export" >#< @callconvention >#< @exportname >#< @name >#< "::" >#< @type.pp
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc         .   pp          =   ppInstNm @useimplicitly @maybeinstancename >#< @name
@@ -762,7 +762,7 @@ SEM ContextedPatterns
 
 %%]
 
-%%[95
+%%[91
 ATTR
   Derivings
     [ | | ppL: {[PP_Doc]} ]

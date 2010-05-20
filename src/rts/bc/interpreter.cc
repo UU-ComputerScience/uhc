@@ -291,7 +291,7 @@ static GB_Byte gb_code_ExcHdl_ThrowReturn[] =
 
 Todo: USE_EHC_MM finalization
 
-%%[94
+%%[90
 #if USE_BOEHM_GC || USE_EHC_MM
 #if USE_EHC_MM
 void gb_Node_Finalize( Word p )
@@ -306,7 +306,7 @@ void gb_Node_Finalize( void* p, void* cd )
 	{
 		switch( GB_NH_Fld_Tag(h) )
 		{
-%%[[95
+%%[[91
 			case GB_NodeTag_Intl_Malloc :
 				IF_GB_TR_ON(3,{printf("gb_Node_Finalize GB_NodeTag_Intl_Malloc  n=%p header=%x\n",n,h) ;}) ;
 				gb_free( n->content.ptr ) ;

@@ -21,7 +21,7 @@
 %%]
 %%[(7 hmtyinfer || hmtyast) import(qualified Data.Set as Set)
 %%]
-%%[(94 hmtyinfer || hmtyast) import(Data.Maybe)
+%%[(90 hmtyinfer || hmtyast) import(Data.Maybe)
 %%]
 
 %%[(7 hmtyinfer || hmtyast) import({%{EH}VarMp},{%{EH}Substitutable})
@@ -65,13 +65,14 @@ emptyDataFldInfo
 %%[(7 hmtyinfer) export(DataTagInfo(..),emptyDataTagInfo,DataConstrTagMp)
 data DataTagInfo
   = DataTagInfo
-      { dtiFldMp    		:: !DataFldMp
-      , dtiConNm			:: !HsName
+      { dtiFldMp    		:: !DataFldMp				-- map of field names to offset
+      , dtiConNm			:: !HsName					-- constructor name (duplicate of key of gamma leading to this info)
+      , dtiConTy			:: !Ty						-- type of constructor, without final tyVarMp applied
 %%[[8
-      , dtiCTag 			:: !CTag
+      , dtiCTag 			:: !CTag					-- tag of constructor
 %%]]
-%%[[95
-      , dtiMbFixityPrio 	:: !(Maybe Int)
+%%[[91
+      , dtiMbFixityPrio 	:: !(Maybe (Int,Fixity))	-- if defined as infix, with priority
 %%]]
       } deriving Show
 
@@ -79,11 +80,11 @@ type DataConstrTagMp = Map.Map HsName DataTagInfo
 
 emptyDataTagInfo
   = DataTagInfo
-      Map.empty hsnUnknown
+      Map.empty hsnUnknown Ty_Any
 %%[[8
       emptyCTag
 %%]]
-%%[[95
+%%[[91
       Nothing
 %%]]
 %%]
@@ -105,17 +106,17 @@ type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%[(7 hmtyinfer) export(DataGam,DataGamInfo(..),mkDGI)
 data DataGamInfo
   = DataGamInfo
-      { dgiTyNm      		:: !HsName
-      , dgiDataTy 			:: !Ty
+      { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
+      , dgiDataTy 			:: !Ty					-- the type sum of product
 %%[[20
-      , dgiConstrNmL 		:: ![HsName]
+      , dgiConstrNmL 		:: ![HsName]			-- all constructor names
 %%]]
-      , dgiConstrTagMp 		:: !DataConstrTagMp
+      , dgiConstrTagMp 		:: !DataConstrTagMp		-- per constructor info
 %%[[8
-      , dgiFldInConstrMp	:: !DataFldInConstrMp
+      , dgiFldInConstrMp	:: !DataFldInConstrMp	-- map from field name to all constructors having the field
 %%[[8
-      , dgiIsNewtype 		:: !Bool
-%%][94
+      , dgiIsNewtype 		:: !Bool				-- defined as newtype
+%%][90
       , dgiMbNewtype 		:: !(Maybe Ty)			-- the type lambda corresponding to a newtype
 %%]]
       , dgiMaxConstrArity   :: !Int
@@ -130,7 +131,7 @@ instance Show DataGamInfo where
 
 %%[[7
 mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
-%%][94
+%%][90
 mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Maybe Ty -> DataGamInfo
 %%]]
 mkDGI tyNm dty cNmL m nt
@@ -155,13 +156,13 @@ mkDGIPlain tyNm dty cNmL m
   = mkDGI tyNm dty cNmL m
 %%[[7
           False
-%%][94
+%%][90
           Nothing
 %%]]
 
 %%]
 
-%%[94 export(dgiIsNewtype)
+%%[90 export(dgiIsNewtype)
 dgiIsNewtype :: DataGamInfo -> Bool
 dgiIsNewtype = isJust . dgiMbNewtype
 %%]
@@ -171,7 +172,7 @@ emptyDataGamInfo, emptyDGI :: DataGamInfo
 emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty
 %%[[7
                          False
-%%][94
+%%][90
                          Nothing
 %%]]
 emptyDGI = emptyDataGamInfo
@@ -216,7 +217,7 @@ dataGamDTIsOfTy t g
     fmap
 %%[[8
       (Map.elems . dgiConstrTagMp)
-%%][95
+%%][91
       (assocLElts . dgiConstrTagAssocL)
 %%]]
     $ gamLookup (tyAppFunConNm $ tyArrowRes t)
@@ -229,15 +230,13 @@ dataGamTagsOfTy t g
   = fmap (map dtiCTag) (dataGamDTIsOfTy t g)
 %%]
 
-Lookup by constructor name:
-
-%%[8
+%%[(92 hmtyinfer) export(dataGamLookupTag)
+dataGamLookupTag :: HsName -> HsName -> DataGam -> Maybe CTag
+dataGamLookupTag t c g
+  = do dgi <- dataGamLookup t g
+       dti <- Map.lookup c $ dgiConstrTagMp dgi
+       return $ dtiCTag dti
 %%]
-valDataGamLookup :: HsName -> ValGam -> DataGam -> Maybe DataGamInfo
-valDataGamLookup nm vg dg
-  = do { vgi <- valGamLookup nm vg
-       ; dgi <- dataGamDgiOfTy (vgiTy vgi) dg
-       }
 
 Is datatype an enum? I.e. has no field for any constructor.
 
@@ -298,11 +297,11 @@ instance Serialize DataFldInfo where
 
 instance Serialize DataTagInfo where
 %%[[20
-  sput (DataTagInfo a b c) = sput a >> sput b >> sput c 
-  sget = liftM3 DataTagInfo sget sget sget
-%%][95
   sput (DataTagInfo a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 DataTagInfo sget sget sget sget
+%%][91
+  sput (DataTagInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e
+  sget = liftM5 DataTagInfo sget sget sget sget sget
 %%]]
 
 instance Serialize DataFldInConstr where

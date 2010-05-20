@@ -158,7 +158,7 @@ ATTR
   AllRowRecordPatternBinding
   AllRecordPatternBinding
 %%]]
-%%[[95
+%%[[91
   AllDeriving
 %%]]
     [ | | idDefOccGam USE {`gamAddGam`} {emptyGam} : IdDefOccGam
@@ -194,10 +194,17 @@ SEM Declaration
                                                           [ (c,IdOcc n IdOcc_Val) | (c,ns) <- @constructors.conAndFldrefnames, n <- ns ]
                                                           -- [ IdOcc n IdOcc_Val | (con,ns) <- @constructors.conAndFldrefnames, n <- ns ]
 %%]]
+%%[[92
+                        .   idDefOccGamGener
+                                        =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @ehGener) @idOccDefsGener
+%%]]
                         .   idDefOccGam =   mkDefOccGam @lhs.nmLev @typelefthandside.range (IdAsp_Type_Def @eh) [@idOccDef]
                                             `gamAddGam` @idDefOccGamConstrs
-%%[[95
+%%[[91
                                             `gamAddGam` @derivings.idDefOccGam
+%%]]
+%%[[92
+                                            `gamAddGam` @idDefOccGamGener
 %%]]
 %%]
 %%[6
@@ -244,13 +251,13 @@ SEM Declaration
 %%]
 %%[(8 codegen)
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   idDefOccGamType
                                         =   tvarS2IdDefOccGam @lhs.nmLev @range @type.freeTvarS
     | ForeignImport
-%%[[94
+%%[[90
       ForeignExport
 %%]]
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Val_Foreign @eh) @idOccDefs
@@ -341,7 +348,7 @@ SEM ContextItem
                                         =   tvarL2IdDefOccGam @lhs.nmLev @range @typevariables
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   idDefOccGam =   mkDefOccGam @lhs.nmLev @range (IdAsp_Inst_Def @eh @refname) [@idOccDef]
@@ -511,7 +518,7 @@ SEM Declaration
 %%[[(8 codegen)
       ForeignImport
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
       ForeignExport
 %%]]
         type            .   idGam       =   gamAddGam @idDefOccGamType @lhs.idGam
@@ -878,7 +885,7 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam (catMaybes [@name]) IdOcc_Class IdAsp_Class_Class @range
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   (refname,_,idUseOccGam,errIdUse)
@@ -923,11 +930,17 @@ SEM Declaration
         loc             .   (_,_,idUseOccGamVal,errIdUseVal)
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [hsnPrelId] IdOcc_Val IdAsp_Val_Var @range
 %%]
-    | Data
-        loc             .   (_,_,idUseOccGamVal,errIdUseVal)
-                                        =   mkUseOccGam @lhs.opts @lhs.idGam (if @constructors.hasFlds then [hsnError] else []) IdOcc_Val IdAsp_Val_Var @range
 
-%%[94
+%%[92
+SEM Declaration
+    | Data Newtype
+		loc				.	(_,_,idUseOccGamClass,errIdUseClass)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam
+                                                        (if ehcOptGenGenerics @lhs.opts then builtinGenerClassNmL else [])
+                                                        IdOcc_Class IdAsp_Class_Class @range
+%%]
+
+%%[90
 SEM Declaration
     | ForeignExport
         loc             .   (refname,_,idUseOccGamExport,errIdUse)
@@ -979,7 +992,7 @@ idFrOccGam2DpdMp g ts
 %%[1
 ATTR
   AllDeclaration AllFunctionBinding
-%%[[95
+%%[[91
   AllDeriving
 %%]]
     [ | | idDpdMp USE {`idDpdMpUnion`} {Map.empty}: IdDpdMp ]
@@ -1022,17 +1035,24 @@ SEM Declaration
 %%[[9
                                                     , @context.idUseOccGam
 %%]]
-%%[[95
+%%[[91
                                                     -- , @derivings.idUseOccGam
+%%]]
+%%[[92
+                                                    , @idUseOccGamClass
 %%]]
                                                     ]
                                                 )
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                             `idDpdMpUnion`
                                             idFrOccGam2DpdMp @idDefOccGamConstrs [@idOccDef]
-%%[[95
+%%[[91
                                             `idDpdMpUnion`
                                             @derivings.idDpdMp
+%%]]
+%%[[92
+                                            `idDpdMpUnion`
+                                            idFrOccGam2DpdMp @idDefOccGamGener [@idOccDef]
 %%]]
 %%]]
 %%[[6
@@ -1092,7 +1112,7 @@ SEM Declaration
                         .   idDpdMp     =   idToOccL2DpdMp [@idOccDef] @idUseHereOccL
         lhs             .   undefOccGam =   gamUnions [@undefOccGam,@type.undefOccGam]
 %%]]
-%%[[(94 codegen)
+%%[[(90 codegen)
     | ForeignExport
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
@@ -1121,7 +1141,7 @@ SEM Body
                                             in  gamUnions [g,@declarations.undefOccGam]
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         lhs             .   idDpdMp     =   idDpdMpUnions
@@ -1160,7 +1180,7 @@ SEM Body
 %%% Data of deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 ATTR AllDeriving [ idOccDefData: IdOcc | | ]
 
 SEM Declaration

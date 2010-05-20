@@ -8,7 +8,10 @@ Signatures for local attributes
 SEM *
   | *
 		loc.foL		 					: {[FIOut]}
+		loc.generDataTyAndConNmL				: {[HsName]}
 		loc.doPredAmbigSplit			: {TQOGam -> [CHRPredOcc] -> ([CHRPredOcc],[CHRPredOcc])}
+		loc.generInstInfoL				: {[GenerDataInstInfo]}
+		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
 		loc.gathTvKiVarMp2				: {VarMp}
 		loc.bodyTyKiVarMp2				: {VarMp}
 		loc.tyVarMpDeclsL0				: {VarMp}
@@ -46,11 +49,13 @@ SEM *
 		loc.clsAllFldL 					: {[Assoc HsName Ty]}
 		loc.clsFldL 					: {[Assoc HsName Ty]}
 		loc.clsNm 						: HsName
+		loc.dataDictNm 					: HsName
 		loc.clsTyRec 					: Ty
 		loc.dataConTy	 				: Ty
 		loc.dataConTyAsVar 				: Ty
 		loc.clsTySigGam 				: ValGam
 		loc.quValGam_qu_ 				: ValGam
+		loc.bodyValGam 					: ValGam
 		loc.constTy 					: Ty
 		loc.cpNm  						: RPatNm
 		loc.ctxtPrTyFixL 				: {[Ty]}
@@ -62,12 +67,14 @@ SEM *
 		loc.cycTyVarMp_l  				: VarMp
 		loc.cycVarMp  					: VarMp
 		loc.quTyVarMp  					: VarMp
+		loc.gathBodyDataGam  			: DataGam
 		loc.dataAltTy 					: Ty
 		loc.dataConTy1  				: Ty
 		loc.polArgVar	  				: Ty
 		loc.dataDictTag 				: CTag
 		loc.dataTkgi 					: TyKiGamInfo
 		loc.dataTy 						: Ty
+		loc.dataKi 						: Ty
 		loc.exprKnTy 					: Ty
 		loc.derivDataDGI 				: DataGamInfo
 		loc.derivDataTGI 				: TyGamInfo
@@ -86,6 +93,7 @@ SEM *
 		loc.extTy 						: Ty
 		loc.fe  						: FIEnv
 		loc.finGathPolGam  				: PolGam
+		loc.finGathPolGam_extra  		: PolGam
 		loc.fiOpts 						: FIOpts
 		loc.fixPrTyVarMp  				: VarMp
 		loc.bodyVarMp2  				: VarMp
@@ -108,10 +116,12 @@ SEM *
 		loc.gSubsTyKiGam 				: TyKiGam
 		loc.lQuTyKiGam_qu 				: TyKiGam
 		loc.lQuTyKiGam_ex 				: TyKiGam
+		loc.lQuTyKiGam_ex_extra 		: TyKiGam
 		loc.lQuTyKiGam_ex_subst 		: TyKiGam
 		loc.gSubsValGam_  				: ValGam
 		loc.gTy 						: Ty
 		loc.gTyTvL  					: {[TyVarId]}
+		loc.dataTyVarIdL  				: {[TyVarId]}
         loc.dataConProdTy       		: Ty
 		loc.dataConTyFv  				: {[TyVarId]}
 		loc.gTyTvS  					: TyVarIdS
@@ -153,8 +163,10 @@ SEM *
 		loc.knTyL  						: TyL
 		loc.lClGam  					: ClGam
 		loc.lClGamNoDups  				: ClGam
+		loc.forDeclsClGam  				: ClGam
 		loc.lexLev  					: Int
 		loc.lQuTyGam  					: TyGam
+		loc.tyGam_l_extra  				: TyGam
 		loc.lQuTyKiGam 					: TyKiGam
 		loc.lSubsPolGam1  				: PolGam
 		loc.lSubsTyKiGam 				: TyKiGam

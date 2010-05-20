@@ -14,6 +14,9 @@
 %%]
 %%[(9 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(9 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -66,10 +69,10 @@ SEM CExpr
   | Let         lhs .( cTrf
                      , liftedBinds
                      )              =   if @lhs.lev == cLevModule
-                                        then ( mkCExprLet @categ (@binds.cTrf ++ @binds.liftedBinds ++ @body.liftedBinds) @body.cTrf
+                                        then ( acoreLet @categ (@binds.cTrf ++ @binds.liftedBinds ++ @body.liftedBinds) @body.cTrf
                                              , []
                                              )
-                                        else ( mkCExprLet @categ @binds.cTrf @body.cTrf
+                                        else ( acoreLet @categ @binds.cTrf @body.cTrf
                                              , @binds.liftedBinds ++ @body.liftedBinds
                                              )
 
@@ -234,6 +237,6 @@ mkLam :: (HsName,[Int]) -> CExpr -> CExpr
 mkLam (nm,p) body = CExpr_Lam nm (CMetaVal_Dict (Just p)) body
 
 mkLet :: CBind -> CExpr -> CExpr
-mkLet bind body = mkCExprLet CBindings_Rec [bind] body
+mkLet bind body = acoreLetRec [bind] body
 
 %%]

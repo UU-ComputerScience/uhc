@@ -9,6 +9,8 @@ All sizes and indices are in terms of machine words (that which holds a boxed va
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.BoxArray
   ( BoxArray
   , MutableBoxArray

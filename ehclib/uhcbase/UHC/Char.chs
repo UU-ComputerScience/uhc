@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.Char
   ( intToDigit
   )

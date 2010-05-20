@@ -455,12 +455,12 @@ ppModMp = vlist . map (\(n,i) -> n >#< pp i) . Map.toList
 %%]
 
 %%[20 export(modMpAddHiddenExps)
-modMpAddHiddenExps :: HsName -> [HsName] -> ModMp -> ModMp
+modMpAddHiddenExps :: HsName -> [(HsName,IdOccKind)] -> ModMp -> ModMp
 modMpAddHiddenExps modNm newExpNms mm
   = Map.update (\i@(ModMpInfo {mmiHiddenExps=he})
                   -> Just $ resetModMpInfo modNm
                           $ i { mmiHiddenExps
-                                  = Rel.fromList [ (n, ModEnt IdOcc_Val (IdOcc n IdOcc_Val) Set.empty emptyRange) | n <- newExpNms ]
+                                  = Rel.fromList [ (n, ModEnt occk (IdOcc n occk) Set.empty emptyRange) | (n,occk) <- newExpNms ]
                                     `Rel.union` he
                               }
                ) modNm mm

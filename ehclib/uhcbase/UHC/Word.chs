@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 -- Compiler knows the Word types of this module are defined here
 
 module UHC.Word

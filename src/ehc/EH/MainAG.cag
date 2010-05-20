@@ -62,11 +62,16 @@
 %%[8 hs import(EH.Util.Utils(groupSortOn))
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
 %%[(8 codegen) hs import({%{EH}Core},{%{EH}Core.Utils},{%{EH}Core.Pretty},{%{EH}Core.SubstCaseAltFail})
 %%]
 %%[(8 codegen) hs import(qualified {%{EH}TyCore.Full2} as C)
 %%]
 %%[(8 codegen hmtyinfer) hs import({%{EH}Ty.Utils2})
+%%]
+
+%%[(9 codegen) hs import({%{EH}Base.Target})
 %%]
 
 %%[(9 codegen) hs import({%{EH}Core.Subst},{%{EH}Core.Coercion})
@@ -94,10 +99,10 @@
 %%[(50 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
-%%[94 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
+%%[90 hs import({%{EH}Foreign},{%{EH}Foreign.Pretty})
 %%]
 
-%%[(95 codegen) hs import({%{EH}Deriving})
+%%[(91 codegen) hs import({%{EH}Deriving})
 %%]
 
 %%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
@@ -184,6 +189,9 @@ WRAPPER AGItf
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]
 
+%%[92 ag import({EH/Generics})
+%%]
+
 %%[99 ag import({EH/FakeDependencies},{EH/LocalAttrTypes})
 %%]
 
@@ -213,7 +221,7 @@ ATTR AGItf [ moduleNm: HsName | | ]
 ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
-%%[95
+%%[91
 %%]
 ATTR NTPrf AGItf [ fixityGam: FixityGam | | ]
 
@@ -239,7 +247,7 @@ SEM Decl
 %%[[9
     InstanceIntro
 %%]]
-%%[[94
+%%[[90
     FFE
 %%]]
                 expr        .   isFirstLet          =   True

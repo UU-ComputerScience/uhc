@@ -69,7 +69,7 @@
 %%[50 hs export(DataConstrEq(..), DataConstrEqs)
 %%]
 
-%%[94 hs import({%{EH}Foreign})
+%%[90 hs import({%{EH}Foreign})
 %%]
 
 %%[1 ag import({EH/AbsSyn})

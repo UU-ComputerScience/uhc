@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -fno-warn-orphans, CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Show.Functions

@@ -74,10 +74,10 @@ ehScanOpts
 %%[20
                     ++ tokKeywStrsEH12
 %%]
-%%[94
+%%[90
                     ++ tokKeywStrsEH94
 %%]
-%%[95
+%%[91
                     ++ tokKeywStrsEH95
 %%]
 %%[1
@@ -187,7 +187,7 @@ hsScanOpts
 %%[[20
                     ++ tokKeywStrsHS12
 %%]]
-%%[[94
+%%[[90
                     ++ tokKeywStrsHS94
 %%]]
                 )
@@ -266,7 +266,7 @@ coreScanOpts
 %%[[20
                                         , "Integer" 
 %%]]
-%%[[94
+%%[[90
                                         , "foreignexport" 
 %%]]
                                         ])
@@ -298,7 +298,7 @@ tycoreScanOpts
 %%[[20
                                         , "Integer" 
 %%]]
-%%[[94
+%%[[90
                                         , "foreignexport" 
 %%]]
                                         ])
@@ -335,7 +335,7 @@ grinScanOpts
                                         , "True", "False"  -- for FFI annotation
 %%]]
                                         ]
-%%[[94
+%%[[90
                                         ++ map show allFFIWays
 %%]]
         ,   scoKeywordsOps      =   Set.fromList [ "<-", "->", "=", "+=", "-=", ":=", "-", "*" ]
@@ -402,7 +402,7 @@ tyScanOpts
         }
 %%]
 
-%%[94
+%%[90
 foreignEntScanOpts :: ScanOpts
 foreignEntScanOpts
   =  defaultScanOpts
@@ -897,7 +897,7 @@ tokKeywStrsEH12 = [  ]
 tokKeywStrsHS12 = [ "qualified", "as", "hiding" ]
 %%]
 
-%%[95
+%%[91
 pDERIVING   
   :: IsParser p Token => p Token
 
@@ -906,7 +906,7 @@ pDERIVING        = pKeyTk "deriving"
 tokKeywStrsEH95 = [ "deriving" ]
 %%]
 
-%%[94
+%%[90
 pUNSAFE     ,
     pTHREADSAFE ,
     pDYNAMIC    ,
@@ -943,7 +943,6 @@ pCPRAGMA         = pKeyTk "#-}"
 tokPragmaStrsHS99= [ "LANGUAGE" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
 %%]
 
-%%[90
 pDEPRECATED_prag = pKeyTk "deprecated_prag"
 pCLOSE_prag      = pKeyTk "close_prag"
 pSOURCE_prag     = pKeyTk "source_prag"
@@ -980,7 +979,6 @@ p_SCC_           = pKeyTk "scc"
 pSCC_prag        = pKeyTk "scc_prag"
 pMDO             = pKeyTk "mdo"
 pPROC            = pKeyTk "proc"
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Position

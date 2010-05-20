@@ -59,7 +59,7 @@ SEM Expr
 ATTR AGItf Expr [ | | gathPolGam: PolGam ]
 
 SEM Expr
-  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam
+  | Let         lhs         .   gathPolGam          =   @body.gathPolGam `gamUnion` @finGathPolGam_extra
   | * - Let     lhs         .   gathPolGam          =   emptyGam
 %%]
 

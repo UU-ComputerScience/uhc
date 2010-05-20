@@ -45,7 +45,7 @@ tyPrLToSupNmL = zipWith (\i p -> hsnUniqifyInt HsNameUniqifier_SuperClass i (tyP
 
 %%[(9 hmtyinfer)
 SEM Decl
-  | Class       loc             .   clgi1           =   ClGamInfo Ty_Any Ty_Any (maybe (uidHNm @lUniq) id @mbDefaultInstNm) -- []
+  | Class       loc             .   clgi1           =   emptyCLGI {clgiDfltDictNm = maybe (uidHNm @lUniq) id @mbDefaultInstNm}
                                 .   clsNm           =   tyPredMatchNm @hdPrTy
                 lhs             .   patClGam1       =   gamAdd @clsNm @clgi1 @lhs.patClGam1
                 tyPrExpr        .   tyGam           =   gamPushNew @lhs.tyGam
@@ -65,16 +65,18 @@ SEM Decl
                                 .   dictTag         =   if ehcCfgClassViaRec @lhs.opts then CTagRec else @dataDictTag
                                 .   clgi2           =   @clgi1 { clgiPrToEvidTy     = tyQuantifyClosed $ [@hdPrTy] `mkArrow` @clsTyRec
                                                                , clgiRuleTy         = tyQuantifyClosed @tyPrExpr.ty
+                                                               , clgiDictTag        = @dictTag
                                                                -- , clgiSupClsFldNmL   = @supClsFldL
                                                                }
                 lhs             .   patTyGam        =   @lhs.patTyGam
                                 .   gathTySigGam    =   valGamMapTy tyQuantifyClosed @clsTySigGam
                                 .   patClGam2       =   gamAdd @clsNm @clgi2 @lhs.patClGam2
                 decls           .   gathDataGam     =   emptyGam
-                lhs             .   gathDataGam     =   if ehcCfgClassViaRec @lhs.opts
-                                                        then @lhs.gathDataGam
+                lhs             .   gathDeclDataGam =   if ehcCfgClassViaRec @lhs.opts
+                                                        then emptyGam
                                                         else let dgi = mkDGIPlain @dataDictNm Ty_Any [@dataDictNm] (@dataDictNm `Map.singleton` emptyDataTagInfo {dtiCTag = @dataDictTag})
-                                                             in  gamAdd @dataDictNm dgi @lhs.gathDataGam
+                                                             in  gamSingleton @dataDictNm dgi
+                                .   gathDataGam     =   @lhs.gathDataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,6 +98,15 @@ SEM Decl
 %%% Instance
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[(9 hmtyinfer) hs
+-- | given the name of an instance, return names of intermediate dictionaries being constructed
+mkInstanceBuildNms :: HsName -> (HsName,HsName)
+mkInstanceBuildNms dictNm
+  = ( hsnUniqify HsNameUniqifier_ResultDict dictNm		-- the computed result, being returned in the end
+    , hsnUniqify HsNameUniqifier_SelfDict   dictNm		-- the default, partially built dictionary, given as argument
+    )
+%%]
+
 %%[(9 hmtyinfer)
 SEM Decl
   | Instance InstanceIntro
@@ -107,7 +118,7 @@ SEM Decl
 %%[[9
                                 .   (ctxtPrTyFixL,hdPrTyFix)
                                                     =   tyArrowArgsRes @prTyFix
-%%][95
+%%][91
                                 .   (ctxtPrTyFixL,hdPrTyFix,derivHdPrTyCon,derivHdDataTy,derivDataTGI,derivDataDGI,cxSplitErrs)
                                                     =   case @instVariant of
                                                           InstDeriving
@@ -139,11 +150,10 @@ SEM Decl
                                                             where (cx,hd) = tyArrowArgsRes @prTyFix
 %%]]
                                 .   instClsNm       =   tyPredMatchNm @hdPrTyFix
-                                .   ctxtClsNmL      =   map tyPredMatchNm @ctxtPrTyFixL
                                 .   (dictNm,inclForElim)
                                                     =   maybe (poiHNm @instId,True) id @mbNmElim
-                                .   dictBuildNm     =   hsnUniqify HsNameUniqifier_ResultDict @dictNm
-                                .   dictSelfNm      =   hsnUniqify HsNameUniqifier_SelfDict @dictNm
+                                .   (dictBuildNm,dictSelfNm)
+                                                    =   mkInstanceBuildNms @dictNm
                                 .   clgi            =   maybe emptyCLGI id (gamLookup @instClsNm @lhs.clGam)
                                 .   supPrTyL        =   let  t      =  clgiRuleTy @clgi
                                                              st     =  mkNewTyVarL (tyArrowArity $ tyQuant t) @lUniq4 `mkArrow` @hdPrTyFix
@@ -177,7 +187,7 @@ SEM Decl
 %%% Deriving info: which class and which field, with info for codegen. A bit hackerish...
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 codegen hmtyinfer)
+%%[(91 codegen hmtyinfer)
 SEM Decl
   | Instance    loc             .   derivMp         =   mkDerivClsMp @fe @lhs.valGam @lhs.dataGam
 %%]

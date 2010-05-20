@@ -43,7 +43,7 @@ PRAGMA strictcase
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[20
-ATTR AGItf Module [ opts: EHCOpts | | ]
+ATTR AGItf AllModule AllDeclaration AllExpression [ opts: EHCOpts | | ]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -64,7 +64,7 @@ SEM AGItf
                                         =   []
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         lhs             .   topInstanceNmL
@@ -78,7 +78,7 @@ SEM Declaration
                                         =   Nothing
 %%]
 
-%%[95
+%%[91
 SEM Deriving
     | Deriving
         loc             .   mbPrevInstancename

@@ -14,6 +14,9 @@
 %%[(9 codegen hmtyinfer) import({%{EH}Ty.FitsInCommon2}(FIEnv(..),FIIn(..)),qualified {%{EH}TyCore.Full2} as C,{%{EH}Ty})
 %%]
 
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 codegen) import(EH.Util.Pretty)
 %%]
 
@@ -129,10 +132,10 @@ evidMpToCore env evidMp
                             (st {tcsUniq=u1})
                       where (u1,u2) = mkNewUID u
                             recnm = panicJust "(TyCore)evidMpToCore.Evid_Recurse" $ Map.lookup p $ tcsPrMp st
-        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (C.tcUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
+        mk1 st _    _ = dbg "evidMpToCore.mk1.b" $ (st,ToCoreRes (acoreBuiltinUndefined $ feEHCOpts $ fiEnv env) Set.empty initPredScope)
         mkn st        = dbg "evidMpToCore.mkn" $ foldr (\ev (st,rs) -> let (st',r) = mk1 st Nothing ev in (st',r:rs)) (st,[])
         mkv x         = mknm $ mkHNm x
-        mknm          = C.Expr_Var
+        mknm          = acoreVar
         ins insk k evnm ev c sc uses st
                       = {- trp "XX" ((ppAssocLV $ Map.toList $ tcsMp st') >-< (ppAssocLV $ Map.toList $ tcsEvMp st')) $ -} res
                       where res@(st',_)
@@ -150,17 +153,17 @@ evidMpToCore env evidMp
                                         C.Expr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( C.mkExprAppMeta (mknm n) (map (\c -> (tcrExpr c,(C.MetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _ sc) ctxt  = ( acoreAppMeta (mknm n) (map (\c -> (tcrExpr c,(C.MetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = ( C.mkExprSatSelsCaseMeta
                                                      (C.emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                      (Just (hsnUniqifyEval n,ty n)) (C.MetaVal_Dict (Just o)) (tcrExpr sub) t
-                                                     [(n,o)] Nothing (C.Expr_Var n)
+                                                     [(n,o)] Nothing (acoreVar n)
                                                  , tcrScope sub
                                                  )
                                                where ty x = C.tyErr ("evidMpToCore.RedHow_BySuperClass: " ++ show x)
 %%[[10
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( C.tcInt o, sc )
-        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( C.tcAddInt (feEHCOpts $ fiEnv env) (tcrExpr roff) o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) []     = ( acoreInt o, sc )
+        ann (RedHow_ByLabel _ (LabelOffset_Off o) sc) [roff] = ( acoreBuiltinAddInt (feEHCOpts $ fiEnv env) (tcrExpr roff) o, sc )
 %%]]
 %%[[13
         ann (RedHow_Lambda  i sc) [body]       = ( [(mkHNm i,C.tyErr ("evidMpToCore.RedHow_Lambda: " ++ show i))] `C.mkExprLam` tcrExpr body, sc )

@@ -203,7 +203,7 @@ cpUpdateModOffMp modNmL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99 export(cpUpdHiddenExports)
-cpUpdHiddenExports :: HsName -> [HsName] -> EHCompilePhase ()
+cpUpdHiddenExports :: HsName -> [(HsName,IdOccKind)] -> EHCompilePhase ()
 cpUpdHiddenExports modNm exps
   = when (not $ null exps)
          (do { cpUpdSI (\crsi -> crsi { crsiModMp = modMpAddHiddenExps modNm exps $ crsiModMp crsi

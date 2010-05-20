@@ -11,6 +11,8 @@ Definitions for types which
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.Types
   -- export all
   where

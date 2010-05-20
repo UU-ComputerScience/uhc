@@ -21,7 +21,7 @@ SEM CBind
 SEM CBind
 %%[[8
   | FFI         loc         .   impEntNm        =   @impEnt
-%%][94
+%%][90
   | FFI         loc         .   impEntNm        =   let e = foreignEntExtract @impEnt
                                                     in  forextractEnt e
 %%]]

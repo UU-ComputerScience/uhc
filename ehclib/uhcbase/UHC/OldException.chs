@@ -5,6 +5,8 @@ which is not yet supported by UHC.
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.OldException
   ( bracket, bracket_
 

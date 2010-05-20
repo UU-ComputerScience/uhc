@@ -10,6 +10,9 @@
 %%[(8 codegen) hs module {%{EH}TyCore} import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts})
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen) hs import ({%{EH}Base.Target}(FFIWay(..))) export(module {%{EH}Base.Target})
 %%]
 
@@ -39,7 +42,7 @@
 %%[(8 codegen) hs export(MetaVal(..), MetaBind(..), Metas, MbMetaVal, MbMetas) 
 %%]
 
-%%[(94 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
+%%[(90 codegen) hs import({%{EH}Foreign}) export(module {%{EH}Foreign})
 %%]
 
 %%[(8 codegen) ag import({TyCore/AbsSyn})
@@ -72,7 +75,7 @@ data ValBindCateg
   | ValBindCateg_Strict				-- strictly evaluated
   | ValBindCateg_Plain				-- plain
   | ValBindCateg_FFI				-- imported function
-%%[[94
+%%[[90
   | ValBindCateg_FFE				-- exported function (not implemented yet)
 %%]]
   deriving (Show,Eq)

@@ -11,7 +11,12 @@
 %%]
 %%[(8 codegen) hs import ({%{EH}TyCore},{%{EH}Ty.ToTyCore}) export(module {%{EH}TyCore},module {%{EH}Ty.ToTyCore})
 %%]
+%%[(8 codegen) hs import({%{EH}AbstractCore},{%{EH}AbstractCore.Utils})
+%%]
 %%[(8 codegen) hs import({%{EH}Error})
+%%]
+
+%%[(8 codegen) hs import({%{EH}Core}(ctagTrue, ctagFalse, ctagCons,ctagNil)) export(ctagCons,ctagNil)
 %%]
 
 %%[(8 codegen) hs import(Data.Maybe,Data.Char,Data.List,EH.Util.Pretty,qualified EH.Util.FastSeq as Seq)
@@ -30,26 +35,12 @@
 %%% Abstract syntax for encoding case+pattern rewrite info
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(RAlt(..),RPat(..),RPatConBind(..),RPatFld(..))
-data RAlt
-  = RAlt_Alt			{ rcaPats :: ![RPat], raaExpr :: !Expr, raaFailS :: UIDS }
+%%[(8 codegen) hs export(RAlt,RPat,RPatConBind,RPatFld)
+type RAlt 			= RAlt' Expr Ty ValBind PatRest
+type RPat 			= RPat' Expr Ty ValBind PatRest
+type RPatConBind 	= RPatConBind' Expr Ty ValBind PatRest
+type RPatFld 		= RPatFld' Expr Ty ValBind PatRest
 
-data RPat
-  = RPat_Var			{ rcpPNm :: !RPatNm, rcpTy :: !Ty }
-  | RPat_Con			{ rcpPNm :: !RPatNm, rcpTy :: !Ty, rcpTag :: !CTag, rcpBinds :: !RPatConBind }
-  | RPat_Int			{ rcpPNm :: !RPatNm, rcpTy :: !Ty, rcpInt :: !Integer }
-  | RPat_Char			{ rcpPNm :: !RPatNm, rcpTy :: !Ty, rcpChar :: !Char }
-  | RPat_Irrefutable	{ rcpPNm :: !RPatNm, rcpTy :: !Ty, rcpValBindL :: ![ValBind] }
-%%[[97
-  | RPat_BoolExpr		{ rcpPNm :: !RPatNm, rcpTy :: !Ty, rcpExpr :: !Expr, rcpMbConst :: Maybe SrcConst }
-%%]]
-
-data RPatConBind
-  = RPatConBind_One		{ rpcbRest :: !PatRest, rpcbBinds :: ![RPatFld] }
-  | RPatConBind_Many	{ rpcbConBinds :: ![RPatConBind] }
-
-data RPatFld
-  = RPatFld_Fld		{ rpbLbl :: !HsName, rpbOffset :: !Expr, rpbNm :: !HsName, rpbPat :: !RPat }
 %%]
 
 %%[(8 codegen) hs export(rcaPat,raltLPatNms)
@@ -216,29 +207,6 @@ valBindLNub = nubBy (\b1 b2 -> valBindNm b1 == valBindNm b2)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Name of a pattern var/con
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(RPatNm(..))
-data RPatNm
-  = RPatNmOrig {rpatNmNm :: !HsName}
-  | RPatNmUniq {rpatNmNm :: !HsName}
-  deriving Eq
-
-instance Ord RPatNm where
-  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y  
-
-instance Show RPatNm where
-  show pnm = show (rpatNmNm pnm)
-%%]
-
-%%[(8 codegen) hs export(rpatNmIsOrig)
-rpatNmIsOrig :: RPatNm -> Bool
-rpatNmIsOrig (RPatNmOrig _) = True
-rpatNmIsOrig _              = False
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Lifting to MetaVal tupled
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -339,17 +307,6 @@ mkExprAppTy :: Expr -> [Ty] -> Expr
 mkExprAppTy f as = foldl mkExprApp1Ty f as
 %%]
 
-%%[(8 codegen) hs export(mkExprApp,mkExprApp1)
-mkExprApp1' :: (Expr->Expr) -> Expr -> Expr -> Expr
-mkExprApp1' mka f a = mkExprApp1Meta' mka f a MetaVal_Val
-
-mkExprApp1 :: Expr -> Expr -> Expr
-mkExprApp1 = mkExprApp1' id
-
-mkExprApp :: Expr -> [Expr] -> Expr
-mkExprApp f as = mkExprAppMeta f (metaLift as)
-%%]
-
 %%[(8 codegen) hs export(mkTyApp)
 mkTyApp :: Ty -> [Ty] -> Ty
 mkTyApp f as = mkExprAppMeta' mkTySeq1 f (metaLift as)
@@ -376,16 +333,16 @@ mkExprLam1Ki' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
 mkExprLam1Ki' = mkExprLam1MetaLev' ExprSeq1_L2Bind
 %%]
 
-%%[(8 codegen) hs export(mkExprLamTy,mkExprLam1Ty)
+%%[(8 codegen) hs
 mkExprLam1Ty' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
 mkExprLam1Ty' = mkExprLam1MetaLev' ExprSeq1_L1Bind
+%%]
 
 mkExprLam1Ty :: HsName -> Ty -> Expr -> Expr
 mkExprLam1Ty = mkExprLam1Ty' id
 
 mkExprLamTy :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLamTy as e = foldr (\(n,t) e -> mkExprLam1Ty n t e) e as
-%%]
 
 %%[(8 codegen) hs export(mkExprLam,mkExprLam1)
 mkExprLam1' :: (Expr->Expr) -> HsName -> Ty -> Expr -> Expr
@@ -398,7 +355,7 @@ mkExprLam :: [(HsName,Ty)] -> Expr -> Expr
 mkExprLam as e = mkExprLamMeta [ (n,MetaVal_Val,t) | (n,t) <- as ] e
 %%]
 
-%%[(8 codegen) hs export(mkExprTuple,mkExprTuple')
+%%[(8 codegen) hs
 mkExprTuple'' :: CTag -> Ty -> AssocL (Maybe HsName) Expr -> Expr
 mkExprTuple'' t ty
   = case t of
@@ -410,9 +367,6 @@ mkExprTuple'' t ty
 
 mkExprTuple' :: CTag -> Ty -> [Expr] -> Expr
 mkExprTuple' t ty fs = mkExprTuple'' t ty (zip (repeat Nothing) fs) -- Expr_Node {- t -} . map (flip ExprSeq1_L0Val Nothing)
-
-mkExprTuple :: [Expr] -> Expr
-mkExprTuple = mkExprTuple' CTagRec (tyErr "TyCore.Base.mkExprTuple")
 %%]
 
 %%[(8 codegen) hs export(mkExprStrictInMeta)
@@ -457,7 +411,7 @@ mkCMod :: Expr -> CModule
 mkCMod e = CModule_Mod (hsnFromString "") e []
 %%]
 
-%%[(95 codegen) hs export(mkIf)
+%%[(91 codegen) hs export(mkIf)
 mkIf :: EHCOpts -> Maybe HsName -> Expr -> Expr -> Expr -> Expr
 mkIf opts cn c t f
   = mkExprMbStrictIn (fmap (\n -> (n,tyBool opts)) cn) c
@@ -472,7 +426,7 @@ mkIf opts cn c t f
 %%[(99 codegen) hs export(mkMatchChar)
 mkMatchChar :: EHCOpts -> Maybe HsName -> Char -> Expr -> Expr -> Expr -> Expr
 mkMatchChar opts cn cchar cexpr t f
-  = mkIf opts cn (tcEqChar opts cchar cexpr) t f
+  = mkIf opts cn (acoreBuiltinEqChar opts cchar cexpr) t f
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -504,47 +458,8 @@ exprIsEvaluated _               = False
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Operator construction, expressed in terms of primitives
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(tcBuiltinApp)
-tcBuiltinApp :: EHCOpts -> (EHBuiltinNames -> HsName) -> [Expr] -> Expr
-tcBuiltinApp opts bnmOf args = Expr_Var (bnmOf $ ehcOptBuiltinNames opts) `mkExprApp` args
-%%]
-
-%%[(8 codegen) hs export(tcAddInt)
-tcAddInt :: EHCOpts -> Expr -> Int -> Expr
-tcAddInt opts e i
-  = if i == 0
-    then e
-    else case e of
-           Expr_Int i' t -> Expr_Int (toInteger i + i') t
-           _             -> tcBuiltinApp opts ehbnPrimAddInt [e,tcInt i]
-%%]
-
-%%[(8 codegen) hs export(tcGtInt)
-tcGtInt :: EHCOpts -> Expr -> Int -> Expr
-tcGtInt opts e i = tcBuiltinApp opts ehbnPrimGtInt [e,tcInt i]
-%%]
-
-%%[(99 codegen) hs
-tcEqChar :: EHCOpts -> Char -> Expr -> Expr
-tcEqChar opts c e = tcBuiltinApp opts ehbnPrimEqChar [e,Expr_Char c tyChar]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Various construction
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(tcString)
-tcString :: EHCOpts -> String -> Expr
-tcString opts m = tcBuiltinApp opts ehbnPackedStringToString [Expr_String m (tyString opts)]
-%%]
-
-%%[(8 codegen) hs export(tcInt)
-tcInt :: Int -> Expr
-tcInt i = Expr_Int (toInteger i) tyInt
-%%]
 
 %%[(8 codegen) hs export(tcVarAsArg)
 tcVarAsArg :: HsName -> Expr
@@ -553,26 +468,14 @@ tcVarAsArg n = mkExprThunk $ Expr_Var n
 
 %%[(97 codegen) hs export(tcInteger)
 tcInteger :: EHCOpts -> Integer -> Expr
-tcInteger opts i = tcBuiltinApp opts ehbnPackedStringToInteger [Expr_String (show i) (tyString opts)]
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Error
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen) hs export(tcError,tcUndefined)
-tcError :: EHCOpts -> String -> Expr
-tcError opts m = tcBuiltinApp opts ehbnError [tcString opts m]
-
-tcUndefined :: EHCOpts -> Expr
-tcUndefined opts = tcBuiltinApp opts ehbnUndefined []
+tcInteger opts i = acoreBuiltinApp opts ehbnPackedStringToInteger [Expr_String (show i) (tycString opts)]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Tags, in general
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) hs export(altConTag,altIntTag) 
+%%[(8888 codegen) hs export(altIntTag) 
 patConTag :: Pat -> CTag
 patConTag (Pat_Con  t _ _)  = t
 patConTag (Pat_Int  _ _  )  = ctagInt
@@ -583,48 +486,21 @@ patIntTag (Pat_Con  t _ _)  = ctagTag t
 patIntTag (Pat_Int  i _  )  = fromInteger i
 patIntTag (Pat_Char c _  )  = ord c
 
-altConTag :: Alt -> CTag
-altConTag (Alt_Alt p _) = patConTag p
-
 altIntTag :: Alt -> Int
 altIntTag (Alt_Alt p _) = patIntTag p
 %%]
+altConTag :: Alt -> CTag
+altConTag (Alt_Alt p _) = patConTag p
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Bool
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-In the following, note the hardcodedness!!!!!
-
-%%[(95 codegen) hs export(ctagTrue, ctagFalse)
-ctagTrue, ctagFalse :: EHCOpts -> CTag
-ctagTrue  opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolTrue  $ ehcOptBuiltinNames opts) 1 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagFalse opts = CTag (ehbnDataBool $ ehcOptBuiltinNames opts) (ehbnBoolFalse $ ehcOptBuiltinNames opts) 0 0 0		-- this makes it hardcoded, ideally dependent on datatype def itself !!
-%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% List
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-In the following, note the hardcodedness!!!!!
-
-%%[(97 codegen) hs export(ctagCons,ctagNil)
-ctagCons, ctagNil :: EHCOpts -> CTag
-ctagCons opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltCons $ ehcOptBuiltinNames opts) 0 2 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
-ctagNil  opts = CTag (ehbnDataList $ ehcOptBuiltinNames opts) (ehbnDataListAltNil  $ ehcOptBuiltinNames opts) 1 0 2		-- this makes it hardcoded, ideally dependent on datatype def itself !!
-%%]
-
-%%[(9999 codegen) hs export(mkListTy)
-mkListTy :: EHCOpts -> T.Ty -> Ty
-mkListTy opts ty = $ (ehbnDataList $ ehcOptBuiltinNames opts) `mkConApp` [ty]
-%%]
-
-                                                    -- @tyNm `mkConApp` map semCon @tyVars.nmL
-
 %%[(99 codegen) hs export(mkListSingleton)
 mkListSingleton :: EHCOpts -> Ty -> Expr -> Expr
 mkListSingleton opts _ e
-  = mkExprTuple' (ctagCons opts) (tyErr "TyCore.Base.mkListSingleton.Cons") [e, mkExprTuple' (ctagNil opts) (tyErr "TyCore.Base.mkListSingleton.Nil") []]
+  = acoreTagTupTy (ctagCons opts) (tyErr "TyCore.Base.mkListSingleton.Cons") [e, acoreTagTupTy (ctagNil opts) (tyErr "TyCore.Base.mkListSingleton.Nil") []]
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -794,7 +670,7 @@ cModMerge mL
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs export(CaseFailSubst)
-type CaseFailSubst = Map.Map UID Expr
+type CaseFailSubst = CaseFailSubst' Expr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -876,5 +752,76 @@ envSingleton n ml t = Map.singleton n (Map.singleton ml t)
 envFromGam :: {- G.TyKiGam -> -} (v -> T.Ty) -> MetaLev -> AssocL HsName v -> Env
 envFromGam {- tkg -} getTy ml g
   = envUnions [ envSingleton n ml (tyToTyCoreBase {- fitsInForToTyCore (G.tyKiGamLookupKi tkg) -} $ getTy x) | (n,x) <- g ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% AbstractCore instance
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen)
+instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest FldBind Alt where
+  -- expr
+  acoreApp1Meta           				= mkExprApp1Meta
+  acoreLam1MetaTy         				= mkExprLam1Meta
+  acoreTagTupTy   tg t es 				= mkExprTuple' tg t es
+  acoreBind1CatLevMetasTy cat n l m t e	= mkValBind1LevMetas doMkSeq n l m t e
+                                        where doMkSeq = cat /= ValBindCateg_Strict
+  acoreLetBase							= Expr_Let
+  acoreVar								= Expr_Var
+  acoreStringTy t i						= Expr_String i t
+  acoreCharTy t i						= Expr_Char i t
+  acoreIntTy t i						= Expr_Int (toInteger i) t
+  acoreIntTy2							= flip Expr_Int
+  
+  -- pat
+  acorePatVarTy							= Pat_Var
+  acorePatCon 							= Pat_Con
+  
+  -- patfld
+  acorePatFldTy t (_,off) n 			= FldBind_Fld n t off
+
+  -- patrest
+  acorePatRestEmpty _					= PatRest_Empty
+
+  -- alt
+  acoreAlt                             	= Alt_Alt
+
+  -- acoreTy2ty            t = tyErr "acoreTy2ty"
+  
+  -- defaults
+  acoreMetavalDflt      _ 				= MetaVal_Val
+  acoreMetabindDflt     _ 				= MetaBind_Plain
+  acoreTyErr          _ s 				= tyErr s
+  acoreTyErr2         _ s 				= tyErr s
+  acoreTyChar _							= tyChar
+  acoreTyInt _							= tyInt
+  acoreTyString o _						= tycString o
+
+  -- bindcateg
+  acoreBindcategRec _					= ValBindCateg_Rec
+  acoreBindcategStrict _				= ValBindCateg_Strict
+  acoreBindcategPlain _					= ValBindCateg_Plain
+
+  -- inspecting
+  acoreExprMbLet (Expr_Let c b e)       = Just (c,b,e)
+  acoreExprMbLet _                      = Nothing
+
+  acoreExprMbInt (Expr_Int i t)         = Just (t,i)
+  acoreExprMbInt _                      = Nothing
+
+  acoreBindcategMbRec ValBindCateg_Rec  = Just ValBindCateg_Rec
+  acoreBindcategMbRec _                 = Nothing
+
+  acorePatMbCon (Pat_Con tg r fs)		= Just (tg,r,fs)
+  acorePatMbCon _                 		= Nothing
+
+  acorePatMbInt (Pat_Int i t)			= Just (t,i)
+  acorePatMbInt _                 		= Nothing
+
+  acorePatMbChar (Pat_Char c t)			= Just (t,c)
+  acorePatMbChar _                 		= Nothing
+
+  acoreUnAlt (Alt_Alt p e)				= (p,e)
+  acoreUnPatFld (FldBind_Fld n t o)		= (t,(n,o),n)
 %%]
 

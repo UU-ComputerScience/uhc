@@ -223,12 +223,12 @@ static inline int mm_itf_registerModule( Ptr m ) {
 %%% Interface: weak ptr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 #define	MM_Itf_WeakPtr_NoFinalizer		(-1)
 #define	MM_Itf_WeakPtr_BeingFinalized	(-2)		// delayed finalization
 %%]
 
-%%[94
+%%[90
 // interface to use as a primitive
 // assume: val /= 0
 static inline Word mm_itf_NewWeakPtr( Word key, Word val, Word finalizer ) {
@@ -248,7 +248,7 @@ static inline Word mm_itf_FinalizeWeakPtr( Word wp ) {
 %%% Interface: finalization, internal case of weak ptr without value and C finalizer
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // register for finalization only, to be used by rts only
 static inline void mm_itf_registerFinalization( Word x, MM_WeakPtr_Finalizer finalizer ) {
 	mm_weakPtr.newWeakPtr( &mm_weakPtr, x, 0, (Word)finalizer ) ;

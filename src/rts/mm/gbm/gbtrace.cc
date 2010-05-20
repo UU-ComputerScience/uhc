@@ -145,7 +145,7 @@ Word mm_trace_GBM_TraceKnownToBeObject( MM_Trace* trace, Word obj ) {
 
     // Queue the payload of the freshly copied object to be processed as well
 
-%%[[95
+%%[[91
 	if (gb_NH_HasTraceableFields( h ))
 %%]]
     {

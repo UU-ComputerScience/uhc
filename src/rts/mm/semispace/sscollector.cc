@@ -65,7 +65,7 @@ void mm_collector_SS_Collect( MM_Collector* collector, Word gcInfo ) {
 	IF_GB_TR_ON(3,{printf("mm_collector_SS_Collect E\n");}) ;
 	
 #ifdef __UHC_TARGET_BC__
-%%[[94
+%%[[90
 	// find & trace live objects belonging to weakptrs
 	MM_WeakPtr* wp = plss->weakPtr ;
 	MM_WeakPtr_NewAlive newAlive ;

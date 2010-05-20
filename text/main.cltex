@@ -909,7 +909,13 @@ WWW home page:
 %%[53
 \title{The Architecture  of the Utrecht Haskell Compiler}
 \author{Atze Dijkstra, Jeroen Fokker, Doaitse Swierstra\\~~Utrecht University~~}
+%if hs09
 \date{HS09, September 3, 2009}
+%elif gentfpg10
+\date{GhentFPG, May 13, 2010}
+%else
+\date{\today}
+%endif
 %%]
 
 %%[12
@@ -3496,6 +3502,12 @@ We thank both (anonymous) reviewers for their extremely valuable and helpful com
 %%@SlidesUHCStructure.toolsAG
 %%@SlidesUHCStructure.agInUHC
 %%@SlidesUHCStructure.aspectsAndVariants
+
+%%@SlidesUHCStructure.metrics
+
+%if longStory
+%%@SlidesUHCStructure.embedding
+%endif
 
 %%@SlidesUHCStructure.conclusions
 

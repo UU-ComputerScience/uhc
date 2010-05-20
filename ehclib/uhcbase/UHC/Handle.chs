@@ -1,5 +1,6 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  GHC.Handle

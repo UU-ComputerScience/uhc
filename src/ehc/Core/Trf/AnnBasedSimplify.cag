@@ -21,6 +21,9 @@ Simplifies expressions based on their structure & annotation:
 %%[(8 codegen) hs import(Data.Maybe,qualified Data.Set as Set)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonStructureInfo})
 WRAPPER CodeAGItf
 %%]
@@ -105,17 +108,17 @@ SEM CExpr
                                                 then case (@func.mbFunVar,reverse (zip @argL @propUpL),@lhs.propDown) of
 %%[[97
                                                        (Just f,[(CExpr_String s,_)],_)
-                                                         |    f == (ehbnPackedStringToInteger $ ehcOptBuiltinNames @lhs.opts)
+                                                         |    f == (ehcOptBuiltin @lhs.opts ehbnPackedStringToInteger)
                                                          -> Prop_IsIntegerConst $ read s
                                                        (Just f,[_,(e,Prop_IsIntegerConst i)],Prop_HasTy t)
-                                                         |    f == (ehbnFromInteger $ ehcOptBuiltinNames @lhs.opts)
+                                                         |    f == (ehcOptBuiltin @lhs.opts ehbnFromInteger)
                                                          -> if t == tyInt
                                                             then -- E.g.: fromInteger dict... (packedStringToInteger "123") :: Int
                                                                  Prop_IsIntConst $ fromInteger i
                                                             else if t == tyInteger
                                                             then -- E.g.: fromInteger dict... (packedStringToInteger "123") :: Integer
                                                                  if signedFitsInBits 30 i
-                                                                 then Prop_IsInteger $ mkCExprApp (CExpr_Var $ ehbnPrimIntToInteger $ ehcOptBuiltinNames @lhs.opts) [CExpr_Int (fromInteger i)]
+                                                                 then Prop_IsInteger $ acoreApp (acoreVar $ ehcOptBuiltin @lhs.opts ehbnPrimIntToInteger) [acoreInt2 i]
                                                                  else Prop_IsInteger e
                                                             else Prop_None
 %%]]
@@ -143,7 +146,7 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | App         lhs         .   cTrf        =   case @propUp of
                                                   Prop_IsIntConst i
-                                                    -> CExpr_Int i
+                                                    -> acoreInt i
                                                   Prop_IsInteger e
                                                     -> e
                                                   _ -> @cTrf

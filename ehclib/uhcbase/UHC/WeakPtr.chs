@@ -4,6 +4,8 @@ No useful functionality is provided however, just the interface.
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.WeakPtr
   ( WeakPtr
   

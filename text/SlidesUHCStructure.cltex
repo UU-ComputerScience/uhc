@@ -17,15 +17,9 @@
 \end{itemize}
 \end{frame}
 
-
-
 %%]
 
 %%[pipeline
-
-
-
-
 \begin{frame}
 \frametitle{UHC pipeline}
 \begin{center}
@@ -201,7 +195,7 @@
 \draw<3-16> (34mm,70mm) -- (34mm,20mm);
 \draw<3-16> (66mm,70mm) -- (66mm,20mm);
 
-\node<16-18>[anchor=south west,minimum width=40mm, minimum height=5mm,draw,fill=yellow!50] at (68.5mm,43.5mm) {};
+\node<14-18>[anchor=south west,minimum width=40mm, minimum height=5mm,draw,fill=yellow!50] at (68.5mm,43.5mm) {};
 \node<19->[rectangle callout,callout absolute pointer={(90mm,17mm)},anchor=south west,minimum width=40mm, minimum height=5mm,draw,fill=yellow!50] at (68.5mm,43.5mm) {};
 \node<19->[anchor=north west,minimum width=77mm, minimum height=15mm,fill=yellow!50] at (34mm,17mm) {};
 
@@ -376,7 +370,7 @@ calc  =   fold calcsem
 %%]]
 };
 
-\node<14-16>[codebox, anchor=north west] at(66mm,30mm) {
+\node<13-16>[codebox, anchor=north west] at(66mm,30mm) {
 %%[[wrap=safecode
 calc  ::  Expr -> Int
 calc  =   fold calcsem testenv
@@ -1384,7 +1378,61 @@ In UHC
 
 %%]
 
-%%[conclusions
+%%[embedding
+\begin{frame}
+\frametitle{There is more\dots}
+
+{\large We are writing a Haskell compiler}
+
+{\large but not just that}
+
+\vspace*{2mm}
+
+\visible<2->{%
+{\large Embedded in Software Technology group}\\
+\uncover<3->{{\large \color{uured} Better software by better languages}}
+
+\begin{itemize}
+\item {\large functional programming \& language design}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}combinator libraries (e.g. parsing)}}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}applications (e.g. Webserver)}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}generic programming}}
+
+\item {\large compilers for functional programming languages}\\
+      \uncover<3->{{\hspace*{5mm}\color{uured}UHC: extendibility + experiments}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Helium: good error reporting, used in classroom}} \\
+      \uncover<3->{{\hspace*{5mm}\color{uured}Generic Haskell: type indexed programming}}
+
+\end{itemize}
+}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{There is more\dots}
+
+{\large but also }
+
+\begin{itemize}
+\item {\large tools for compiler construction}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Attribute Grammar system: tree oriented computation}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Ruler: programming type rules}}
+
+\item {\large systems programming \& applications}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Proxima: generic presentation-oriented structure aware editor}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}WebFunctions: web applications}}
+
+\item {\large program analysis}\\
+      \uncover<2->{{\hspace*{5mm}\color{uured}TOP: library for aiding analyses}} \\
+      \uncover<2->{{\hspace*{5mm}\color{uured}Analyses: strictness, uniqueness, ...}}
+
+\end{itemize}
+
+\end{frame}
+%%]
+
+%%[metrics
 \begin{frame}
 \frametitle{Metrics}
 
@@ -1498,6 +1546,9 @@ We use {\color{uured} Attribute Grammar}s a lot!
 \end{frame}
 
 
+%%]
+
+%%[conclusions
 
 \begin{frame}
 \frametitle{Summary}

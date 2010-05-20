@@ -200,11 +200,11 @@ DATA Expr
                 safety          : {String}
 %%[[8
                 impEnt          : {String}
-%%][94
+%%][90
                 impEnt          : {ForeignEnt}
 %%]]
                 ty              : Expr
-%%[[94
+%%[[90
   | FFE         callconv        : {FFIWay}
                 expEnt          : {ForeignEnt}
                 expNm           : {HsName}

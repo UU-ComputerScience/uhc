@@ -10,6 +10,9 @@
 %%]
 %%[(8 codegen) hs import(EH.Util.Utils,qualified EH.Util.FastSeq as Seq,{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty})
 %%]
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -62,11 +65,11 @@ SEM CBindL
   | Cons        lhs.cTrf  =  case @hd.cTrf of
                                CBind_Bind nm (CMetaBind_Function0,metaval) expr -> let nm1 = hsnPrefix "fun0~" nm
                                                                                        b1  = CBind_Bind nm1 (CMetaBind_Function0, metaval) expr
-                                                                                       b2  = CBind_Bind nm  (CMetaBind_Apply0,    metaval) (CExpr_Var nm1)
+                                                                                       b2  = CBind_Bind nm  (CMetaBind_Apply0,    metaval) (acoreVar nm1)
                                                                                    in  b1 : b2 : @tl.cTrf
                                CBind_FFI c s i nm (Ty_Con t) -> let nm1 = hsnPrefix "fun0~" nm
                                                                     b1  = CBind_FFI c s i nm1 (Ty_Con t)
-                                                                    b2  = CBind_Bind nm  (CMetaBind_Apply0, CMetaVal_Val) (CExpr_Var nm1)
+                                                                    b2  = CBind_Bind nm  (CMetaBind_Apply0, CMetaVal_Val) (acoreVar nm1)
                                                                     in  b1 : b2 : @tl.cTrf
                                _ -> @loc.cTrf
 

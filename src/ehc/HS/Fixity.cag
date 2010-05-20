@@ -28,7 +28,7 @@ ATTR
 %%[[20
   AGItf AllModule
 %%]]
-%%[[95
+%%[[91
   AllConstructor
 %%]]
     [ fixityGam: FixityGam | | ]

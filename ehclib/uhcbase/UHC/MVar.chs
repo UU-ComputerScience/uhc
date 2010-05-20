@@ -10,6 +10,8 @@ In GHC MVar is offered by module GHC.Conc
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 module UHC.MVar
   ( MVar
   , newEmptyMVar, newMVar
