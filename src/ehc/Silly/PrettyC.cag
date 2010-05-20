@@ -397,7 +397,7 @@ callSillyFunctionFromC tras n nm
    in  "*--SP = (Word)(&&" >|< lab >|< ") + sizeof(int) + sizeof(Word);"                   -- return address
        >-< ppWhen tras (" printf(\"push label" >#< lab >#< "= %08x at %08x \\n\", " >#< "SP[0]" >#< ", " >#< "SP" >#< "); fflush(stdout);")
        >-< "goto" >#< nm >|< ";"                         -- do the call
-       >-< label tras lab Nothing                        -- return two lines below here
+       >-< lab >|< ":"                                   -- return two lines below here
        >-< "asm( \".int 0\" );"                          -- calldata "what"
        >-< "asm( \"" ++ asmWordMetaop ++ " 0\" );"       -- calldata "stackInfo"
  

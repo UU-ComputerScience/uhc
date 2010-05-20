@@ -127,11 +127,7 @@ SEM GrModule
 
         loc . startFunction =  Function_Function (hsnFromString "silly_start") [] []
                                                     [ Statement_Call (hsnFromString "initialize")        False []
-%%[[8
-                                                    , Statement_Call (hsnFromString "fun_fun0tildemain") False []
-%%][99
                                                     , Statement_Call mainNr  False []
-%%]]                                             
                                                     , Statement_Return []
                                                     ]
 
