@@ -394,9 +394,17 @@ SEM Value
                 lhs.llvmCode = error $ "No Label or Cast Value expected"       
  
 SEM Variable
-  | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType
-                lhs.llvmCode = []
+  | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType -- @loc.loadVar -- GlobalVar (hs2str @name) @lhs.globalType
+                lhs.llvmCode = [] -- @loc.castCode ++ @loc.loadCode -- []
                 
+                loc.(uniqNr1,castVar,castCode) = let i = Data.Map.findWithDefault (error ("Global not in globalsMap")) (hs2str @name) @lhs.globalsMap in
+                                                         assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" 
+                                                                                                           (pLift $ Array ((Data.Map.size @lhs.globalsMap) + 1) @lhs.pointerType)) 
+                                                                                                           [i, 0]
+                                                                               , pLift $ @lhs.pointerType )
+                loc.(uniqNr2,loadVar,loadCode) =
+                              load @loc.uniqNr1 @loc.castVar
+
   | Local       lhs.llvmVar  = LocalVar (hs2str @name) (pLift @lhs.pointerType)
                 lhs.llvmCode = []               
   
@@ -409,7 +417,8 @@ SEM Variable
                 -- lhs.llvmCode = []
 
                 loc.(uniqNr1,castVar,castCode) =
-                             assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array 3 @lhs.pointerType)) [0, 0], pLift $ @lhs.pointerType )
+                             assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array ((Data.Map.size @lhs.globalsMap) + 1) @lhs.pointerType)) [0, 0]
+                                                   , pLift $ @lhs.pointerType )
                 loc.(uniqNr2,loadVar,loadCode) =
                               load @loc.uniqNr1 @loc.castVar
                 
@@ -499,6 +508,7 @@ SEM Value
               
 SEM Variable
   -- Passing to array via copy rule
+  | Global      lhs  .gUniq  = @loc.uniqNr2
   | RP          lhs  .gUniq  = @loc.uniqNr2
   | Subs        lhs  .gUniq  = @loc.uniqNr3
 
@@ -571,6 +581,24 @@ SEM Constant
 ATTR AllNT
      [ intType, pointerType, globalType : {LLVMType} | | ]
 %%]
+
+%%[(8 codegen grin)
+--------------------------------------------------------------------------------
+-- We pass down info about relative positions of globals
+--------------------------------------------------------------------------------
+ATTR Functions Function 
+     Statements Statement
+     Alternatives Alternative
+     Values Value
+     Variable
+     Constant
+     [ globalsMap : {Data.Map.Map String Int} | | ]
+
+
+SEM SilModule
+  | SilModule   functions.globalsMap = Data.Map.fromList $ zip (map hs2str @variables) [1..]
+%%]
+
 
 %%[(8 codegen grin)
 --------------------------------------------------------------------------------

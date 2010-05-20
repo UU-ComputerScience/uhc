@@ -12,23 +12,21 @@ declare i32 @printf( i8* %str, ... )
 define  i32 @main(  ) nounwind 
 {
 
-    %rpArr = malloc i64, i32 3
-    %rpArrPtr = getelementptr [ 3 x i64*]* @__llvm_uhc_globals, i32 0, i32 0
-    store i64* %rpArr, i64** %rpArrPtr
-
-    %fresh34 = getelementptr [ 3 x i64*]* @__llvm_uhc_globals, i32 0, i32 0
-    %fresh41 = load i64** %fresh34
-    %fresh35 = getelementptr i64* %fresh41, i32 1
-
-    ;%fresh56 = inttoptr i64 5 to i64*
-    store i64 5, i64* %fresh35
-    
+    ; Gglobal_y3_38 := ALLOC 3 ( NotManaged );
+    ;
+    ; %fresh1 = call i64* @mm_itf_allocResident_ext( i64 24 )
+    ; store i64* %fresh1, i64** @global_y3_38
 
 
-    %rp.1 = getelementptr i64* %rpArr, i32 1
-    %rp.1.val = load i64* %rp.1
-    %cast.str.res = getelementptr [ 6 x i8]* @fresh0, i32 0, i32 0
-    tail call i32 ( i8*, ... )* @printf( i8* %cast.str.res, i64 %rp.1.val )
+    %fresh1 = malloc i64, i32 3
+    %fresh2 = getelementptr [ 3 x i64*]* @__llvm_uhc_globals, i32 1, i32 0
+    %fresh3 = load i64** %fresh2
+    store i64* %fresh1, i64** %fresh3
+
+    ; %fresh11 = getelementptr [ 3 x i64*]* @__llvm_uhc_globals, i32 1
+    ; %fresh12 = load i64** %fresh11
+    ; %fresh13 = getelementptr i64* %fresh12, i32 0
+    ; store i64 14, i64* %fresh13
 
     ret i32 0
 }
