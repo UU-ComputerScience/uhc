@@ -132,8 +132,8 @@ SEM SilModule
                 loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants :  @functions.constants
                 loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
                 loc.global   = GlobalVar "__llvm_uhc_globals" (Array ((length @variables) + 1) @lhs.pointerType)
-                loc.globals  = GlobalVar "RP" (@lhs.globalType) 
-                                : mkVarList GlobalVar @variables @lhs.globalType                                                                          
+                loc.globals  = -- GlobalVar "RP" (@lhs.globalType) :
+                                mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
@@ -145,7 +145,7 @@ SEM SilModule
                                      
                                  -- , LLVMStatement_Store (Constant 2 @lhs.intType)  (LocalVar "rpArr" @lhs.pointerType) 
                                  -- , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
-                                 , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
+                                 -- , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (LocalVar "rpArrPtr" (pLift $ @lhs.pointerType))
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
@@ -403,13 +403,15 @@ SEM Variable
   | Param       lhs.llvmVar  = LocalVar (hs2str @name) @lhs.intType                                       
                 lhs.llvmCode = []                                                    
                                                
-  | RP          lhs.llvmVar  = GlobalVar "RP" @lhs.globalType -- @loc.castVar -- GlobalVar "RP" @lhs.globalType 
-                lhs.llvmCode = [] -- @loc.castCode
+  | RP          lhs.llvmVar  = @loc.loadVar -- GlobalVar "RP" @lhs.globalType 
+                lhs.llvmCode = @loc.castCode ++ @loc.loadCode
                 -- lhs.llvmVar  = GlobalVar "RP" @lhs.globalType 
                 -- lhs.llvmCode = []
 
                 loc.(uniqNr1,castVar,castCode) =
                              assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array 3 @lhs.pointerType)) [0, 0], pLift $ @lhs.pointerType )
+                loc.(uniqNr2,loadVar,loadCode) =
+                              load @loc.uniqNr1 @loc.castVar
                 
 
                               -- LLVMStatement_Assignment (LocalVar "rpArrPtr" @lhs.pointerType)
@@ -497,7 +499,7 @@ SEM Value
               
 SEM Variable
   -- Passing to array via copy rule
-  | RP          lhs  .gUniq  = @loc.uniqNr1
+  | RP          lhs  .gUniq  = @loc.uniqNr2
   | Subs        lhs  .gUniq  = @loc.uniqNr3
 
                  
