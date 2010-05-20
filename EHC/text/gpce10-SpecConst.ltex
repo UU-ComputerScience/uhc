@@ -1,0 +1,211 @@
+\documentclass[preprint,9pt]{sigplanconf}
+
+\usepackage{graphicx} %% needs: fancyvrb
+
+
+
+%include lhs2tex.fmt
+
+\def\spacecorrection{\;}
+\def\isspacecorrection{\spacecorrection}
+\def\allowforspacecorrection#1{%
+  \gdef\temp{#1}%
+  \ifx\isspacecorrection\temp
+    \let\next=\empty
+  \else
+    \let\next=\temp
+  \fi
+  \next}
+
+
+
+\newcounter{enumctr}
+\newenvironment{enumate}{%
+\begin{list}{\arabic{enumctr}}{
+\usecounter{enumctr}
+\parsep  = 0pt
+\parskip = 0pt
+\topsep  = 0pt
+\itemsep = 0pt
+}}{\end{list}}
+\newenvironment{itize}%
+{\begin{list}%
+  {$\bullet$%
+  }%
+  {\parsep  = 0pt%
+   \parskip = 0pt%
+   \topsep  = 0pt%
+   \itemsep = 0pt%
+  }%
+}%
+{\end{list}%
+}
+
+
+
+%format GrModule  = "\mathit{Module}"
+%format GrGlobalL = "\mathit{GlobalL}"
+%format GrGlobal  = "\mathit{Global}"
+%format GrBindL   = "\mathit{BindL}"
+%format GrBind    = "\mathit{Bind}"
+%format GrExpr    = "\mathit{Expr}"
+%format GrAltL    = "\mathit{AltL}"
+%format GrAlt     = "\mathit{Alt}"
+%format GrTermL   = "\mathit{TermL}"
+%format GrTerm    = "\mathit{Term}"
+%format GrPatAlt  = "\mathit{PatAlt}"
+%format GrPatLam  = "\mathit{PatLam}"
+%format GrVarL    = "\mathit{VarL}"
+%format GrVar     = "\mathit{Var}"
+%format GrTag     = "\mathit{Tag}"
+%format HsName    = "\mathit{Name}"
+%format getNr     = "\mathit{nr}"
+%format GrTag_Con     = "\mathit{Tag\_Con}"
+%format GrTag_Fun     = "\mathit{Tag\_Fun}"
+%format GrTag_PApp    = "\mathit{Tag\_PApp}"
+%format GrTag_App     = "\mathit{Tag\_App}"
+%format GrTag_Unboxed = "\mathit{Tag\_Unboxed}"
+%format GrTag_Any     = "\mathit{Tag\_Any}"
+
+%format Data = "\mathbf{data}"
+%format DATA = "\mathbf{syntax}"
+%format TYPE = "\mathbf{type}"
+%format SET  = "\mathbf{set}"
+%format ATTR = "\mathbf{attr}"
+%format SEM  = "\mathbf{sem}"
+%format USE  = "\mathbf{use}"
+%format SYN  = "\mathbf{syn}"
+%format INH  = "\mathbf{inh}"
+%format .    = "."
+%format ^    = " "
+%format ^^    = "\;"
+%format ^@    = "@"
+%format LET  = "\mathbf{let}"
+%format IN   = "\mathbf{in}"
+
+%format @ = "\spacecorrection @"
+%format [          = "[\mskip1.5mu\allowforspacecorrection "
+%format (          = "(\allowforspacecorrection "
+%subst fromto b e t     = "\fromto{" b "}{" e "}{{}\allowforspacecorrection " t "{}}'n"
+
+
+
+
+
+\usepackage{amsmath}
+
+\usepackage{natbib}
+\bibpunct();A{},
+\let\cite=\citep
+\bibliographystyle{plainnat}
+
+
+
+\begin{document}
+
+\conferenceinfo{GPCE '10}{October 11, Freiburg.} 
+\copyrightyear{2010} 
+\copyrightdata{[to be supplied]} 
+
+%\titlebanner{Working copy v.1}        % These are ignored unless
+%\preprintfooter{Working copy v.1}   % 'preprint' option specified.
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+
+
+\title{Optimize Overloaded Functions in Haskell}
+\subtitle{An Attribute Grammar Based Approach}
+
+ \authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
+            {Utrecht University}
+            {\{jeroen,doaitse\}@@cs.uu.nl}
+
+\maketitle
+
+\begin{abstract}
+BlaBla
+\end{abstract}
+
+%\category{CR-number}{subcategory}{third-level}
+
+%\terms
+%term1, term2
+
+%\keywords
+%keyword1, keyword2
+
+\section{Introduction}
+
+
+
+
+\section{Tree walk methodology}
+
+\subsection{Defining semantics}
+
+The standard textbook example involves the functions |sum| and |product|,
+which can be defined separately by tedious inductive definitions:
+\begin{code}
+sum      []      = 0
+sum      (x:xs)  = x + sum xs
+product  []      = 1
+product  (x:xs)  = x * product xs
+\end{code}
+
+\begin{figure}[tbfh]
+\includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
+\caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
+whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
+\label{fig-uhcarch-pipeline}
+\end{figure}
+
+
+\begin{thebibliography}{}
+
+
+\bibitem[Bird 1984]{bird}
+Richard S.\ Bird.
+Using circular programs to eliminate multiple traversals of data.
+{\em Acta Informatica} {\bf 21}: 239--250.
+
+\bibitem[Boquist and Johnsson 1996]{boquist1996}
+Urban Boquist and Thomas Johnsson.
+The GRIN project: A highly optimising back end for lazy functional languages.
+In {\em Workshop on Implementation of Functional Languages} IFL 1996.
+Springer LNCS 1268. 
+
+\bibitem[Boquist 1999]{boquist1999}
+Urban Boquist.
+{\em Code optimisation techniques for lazy functional languages}.
+PhD Thesis Chalmers University, G\"oteborg March 1999.
+
+\bibitem[Dijkstra 2005]{ehc}
+Atze Dijkstra.
+{\em Stepping through Haskell}.
+PhD Thesis Utrecht University, November 2005.
+
+\bibitem[Jones 1995]{cata}
+Mark. P.\ Jones.
+Functional programming with overloading and higher-order polymorphism.
+In: {\em Advanced Functional Programming} AFP'95, pp.~97--136.
+Springer LNCS 925.
+
+
+\bibitem[Knuth 1968]{knuth}
+D.E.\ Knuth.
+Semantics of context-free languages.
+{\em Mathematical Systems Theory} {\bf 2}: 127--145.
+
+
+\bibitem[Swierstra et al. 1998]{agsyst}
+S.\ Doaitse Swierstra,
+Pablo R.\ Azero Alocer,
+and Jo\~ao Saraiva.
+Designing and implementing combinator languages.
+In: {\em Advanced functional programming} AFP'98.
+Springer LNCS 1608.
+
+\end{thebibliography}
+
+\end{document}
