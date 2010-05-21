@@ -912,7 +912,7 @@ mkInstanceNames
 %%]
 
 %%[(9 codegen) hs
--- | Make a normal dictionary
+-- | Make a dictionary corresponding to an instance declaration
 mkNormalInstance
   :: EHCOpts
      -> ClGamInfo                           -- info about the class
@@ -939,7 +939,7 @@ mkNormalInstance
       (superFldNmL,superNmL,contextNmL)
       declsCBindL
       (chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
-  = ( acoreLamMeta contextArguments dict4
+  = ( bind4
     , CMetaVal_DictInstance $ map maybeToList $ Just (ctagTyNm dictTag) : Just dfltNm : instanceAndSuperMbNewNames
     )
   where dfltNm       = clgiDfltDictNm clgi
@@ -1000,28 +1000,30 @@ mkNormalInstance
         dict1     = acoreApp1Meta dfltVar rsltVar (CMetaVal_Dict Nothing)
         bind1     = acoreBind1Meta dfltNmStrict (CMetaVal_Dict Nothing) dict1
         
-        bind3     = -- 20100517 AD, to be sorted out: build 1 instead of 2 intermediate dictionaries
-                    if targetIsGrinBytecode (ehcOptTarget opts)
-                    then let dict2     = acoreLetBase (acoreBindcategStrict dfltVarStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
-                             bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
+        dict2     = acoreLetBase (acoreBindcategStrict dfltVarStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
+        bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
                              
-                             dict3     = acoreLetBase (acoreBindcategPlain rsltVarStrict) [bind2] rsltVarStrict
-                             bind3     = acoreBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
-                         in  bind3
-                    else let dict2     = acoreLetBase (acoreBindcategStrict dfltVarStrict) [bind1] (mkSetFlds superNameMapping    dfltVarStrict)
-                             bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
-                             
-                             dict3     = acoreLetBase (acoreBindcategStrict rsltVarStrict) [bind2] (mkSetFlds instanceNameMapping rsltVarStrict)
-                             bind3     = acoreBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
-                         in  bind3
+        dict3     = acoreLetBase (acoreBindcategPlain rsltVarStrict) [bind2] rsltVarStrict
+        bind3     = acoreBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
 
         dict4     = acoreLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
-        
+        bind4     = acoreLamMeta contextArguments dict4        
+
+        -- The above generates the following Core code as dict4:
+        --
+        -- letrec reslt = let rsltStrict = let! dfltStrict = dflt rslt
+        --                                 in   case defltStrict of
+        --                                        (Dict-C _1 _2 _3 _4) -> (Dict-C _1 inst2 _3 inst4)     -- in this example, field 2 and 4 are defined in the isntance, 1 and 3 are taken from the defaultdefinitions
+        --                in  rsltStrict
+        --        inst2 = ...
+        --        inst4 = ...
+        -- in reslt
+
         contextArguments = cmetaLiftDict contextNmL
 %%]
 
 %%[(9 codegen) hs
--- | Make bindings for instances, given various bits of info
+--  Make a dictionary for a normal instance, the default-definitions of a class, or for a derived instance
 mkInstanceCBindL
   :: EHCOpts
      -> ClGamInfo                           -- info about the class
@@ -1070,6 +1072,7 @@ mkInstanceCBindL
               opts clgi dataGam dictTag nms instanceRecTy nmLs
               instanceBindings chrBindLs
 
+        -- Make a dictionary corresponding to (the default definitions in a) class definition
         mkDefaultD defaultBindings
           = let selfNm    = dictSelfNm
           
@@ -1097,11 +1100,12 @@ mkInstanceCBindL
                                                    
                 dict5     = acoreAppMeta (CExpr_Tup dictTag)
                                          (zip memberNewVars defaultMetas)
-                dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindingsAnnotated) rsltVar
-                
                 bind5     = acoreBind1Meta rsltNm (CMetaVal_Dict Nothing) dict5
 
-            in  ( acoreLam1Meta selfNm (CMetaVal_Dict (Just [])) dict6
+                dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindingsAnnotated) rsltVar
+                bind6     = acoreLam1Meta selfNm (CMetaVal_Dict (Just [])) dict6
+
+            in  ( bind6
                 , CMetaVal_DictClass defaultMbNewNames
                 )
 %%]
