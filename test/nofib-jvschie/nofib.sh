@@ -9,7 +9,7 @@
 DEF_TYPE="normal"
 DEF_TARGET="all"
 DEF_HC="../../install/11/bin/ehc"
-DEF_EHC_FLAGS="-tC --verbose=3 --optimise=0 -p- --dump-grin-stages=1 --gen-trace=0 --gen-trace-assign=0"
+DEF_EHC_FLAGS="-tC --verbose=3 --optimise=1 -p- --dump-core-stages=1 --dump-grin-stages=1 --gen-trace=0 --gen-trace-assign=0"
 DEF_GHC_FLAGS="-O2"
 DEF_EHC_PRELUDE_FILE="tools/Prelude11.hs"
 
