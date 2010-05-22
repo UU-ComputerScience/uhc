@@ -187,6 +187,15 @@ SEM Expr
 %%]]
 %%]
 
+%%[(9 codegen) hs
+mkWeaveExpr :: EHCOpts -> UID -> VarMp -> CSubst -> (CExpr->CExpr) -> CExpr -> [Coe] -> [Coe] -> (CExpr,CSubst)
+mkWeaveExpr opts uniq finTyVarMp csubst postmk expr lCoeL rCoeL
+  = (postmk e, s1 `cSubstApp` s2)
+  where (_,u1,u2) = mkNewLevUID2 uniq
+        (ww,s1)   = coeWipeWeaveAsSubst2 opts u1 finTyVarMp csubst lCoeL rCoeL
+        (e ,s2)   = coeEvalOnAsSubst u2 ww expr
+%%]
+
 %%[(9 codegen)
 SEM Expr
   | Let         loc         .   letCBindOtherL
@@ -196,31 +205,21 @@ SEM Expr
     AppImpl
 %%]]
                 loc         .   (cexprapp,cexprappCSubst)
-                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    -- ww    = coeWipeWeave @lhs.opts @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
-                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @arg.cSubst @appImplsCoeL []
-                                                    (f ,s2)   = coeEvalOnAsSubst u2 ww @func.cexpr
-                                                in  (acoreApp1 f @arg.cexpr, s1 `cSubstApp` s2)
+                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @arg.cSubst (flip acoreApp1 @arg.cexpr) @func.cexpr @appImplsCoeL []
                 lhs         .   cSubst      =   cSubstApp @arg.cSubst @cexprappCSubst
   | Lam
 %%[[12
     LamImpl
 %%]]
                 loc         .   (cexpr,cexprlamCSubst)
-                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @body.cSubst @lamBodyCoeL @lamArgCoeL
-                                                    (b ,s2)   = coeEvalOnAsSubst u2 ww @body.appFunCExpr
-                                                in  (b, s1 `cSubstApp` s2)
+                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @body.cSubst id @body.appFunCExpr @lamBodyCoeL @lamArgCoeL
                 lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprlamCSubst
   | AppTop      loc         .   cSubstTop   =   @expr.cSubst
   | Rec         loc         .   cSubstTop   =   @recExpr.cSubst
   | Let         loc         .   cSubstTop   =   @body.cSubst
   | AppTop Rec Let
                 loc         .   (cexpr,cexprapptopCSubst)
-                                            :=  let (_,u1,u2) = mkNewLevUID2 @lUniq_cexpr
-                                                    (ww,s1)   = coeWipeWeaveAsSubst2 @lhs.opts u1 @lhs.finTyVarMp @cSubstTop [] @lamArgCoeL
-                                                    (e ,s2)   = coeEvalOnAsSubst u2 ww @cexprtop
-                                                in  (@cann e, s1 `cSubstApp` s2)
+                                            :=  mkWeaveExpr @lhs.opts @lUniq_cexpr @lhs.finTyVarMp @cSubstTop @cann @cexprtop [] @lamArgCoeL
   | AppTop      lhs         .   cSubst      =   cSubstApp @expr.cSubst @cexprapptopCSubst
   | Rec         lhs         .   cSubst      =   cSubstApp @recExpr.cSubst @cexprapptopCSubst
   | Let         lhs         .   cSubst      =   cSubstApp @body.cSubst @cexprapptopCSubst
@@ -929,8 +928,8 @@ mkNormalInstance
         ,[CBind]                            -- bindings for super class related context reduction, only Prove
         ,[CBind]                            -- bindings for super + ctxt class related context reduction, only Assume
         )
-     -> ( CExpr								-- the instance
-        , CMetaVal							-- the meta info about the instance
+     -> ( CExpr                             -- the instance
+        , CMetaVal                          -- the meta info about the instance
         )
 mkNormalInstance
       opts clgi dataGam dictTag
@@ -1036,10 +1035,6 @@ mkInstanceCBindL
         , [HsName]                          -- names of super class dicts, given as arg
         , [HsName]                          -- names of context class dicts, given as arg
         )
-%%[[91               
-     -> (DerivClsFld -> CBind)              -- field constructing for deriving
-     -> DerivCls                            -- deriving info for the class of this instance, if any
-%%]]
      -> [CBind]                             -- bindings for decls of the instance
      -> ([CBind]                            -- bindings for decls related context reduction, both Assume & Prove
         ,[CBind]                            -- bindings for super class related context reduction, only Prove
@@ -1051,9 +1046,6 @@ mkInstanceCBindL
       nms@(dictNm,dictSelfNm,dictBuildNm)
       instanceRecTy
       nmLs@(superFldNmL,superNmL,contextNmL)
-%%[[91               
-      mkDerivClsFldBind  derivDCL
-%%]]
       declsCBindL
       chrBindLs@(chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
   = [acoreBind1Meta dictNm generatedMeta generatedDictionary]
@@ -1062,7 +1054,7 @@ mkInstanceCBindL
                InstNormal   -> mkNormalD  declsCBindL
                InstDefault  -> mkDefaultD declsCBindL
 %%[[91               
-               InstDeriving -> mkNormalD  [ mkDerivClsFldBind dcf | dcf <- dclFldL derivDCL ]
+               InstDeriving -> mkNormalD  declsCBindL
 %%]]
         rsltNm   = dictBuildNm
         rsltVar  = acoreVar rsltNm
@@ -1150,22 +1142,45 @@ mkInstanceSetFlds opts dataGam dictTag instanceRecTy
 
 %%[(9 codegen)
 SEM Decl
-  | Instance    lhs         .   cbindL      =   mkInstanceCBindL
-                                                  @lhs.opts @clgi @lhs.dataGam @instVariant @dictTag
-                                                  (@dictNm,@dictSelfNm,@dictBuildNm)
-                                                  @recTy
-                                                  (@supClsFldL,@chrSuperProveNmL,@chrCtxtArgNmL)
+  | Instance    (lhs.cbindL,loc.cSubstInst)   =   let (bindL,cSubstInstL) = 
+                                                           case @instVariant of
+                                                             InstNormal   -> (@decls.cbindL,[])
+                                                             InstDefault  -> (@decls.cbindL,[])
 %%[[91               
-                                                  @mkf @derivDCL
+                                                             InstDeriving
+%%[[92
+                                                               | not $ null @generForFitsInL
+                                                                          -> unzip
+                                                                               [ (acoreBind1 fld $ acoreApp1 f $ acoreBuiltinUndefined @lhs.opts,s)
+                                                                               | ((fld,dflt,_,_),fo,u) <- zip3 @generForFitsInL @foGenerDerivL (mkNewLevUIDL (length @generForFitsInL) @lUniq_bind)
+                                                                               , let (f,s) = foAppLRCoeAsSubst @lhs.opts u fo @lhs.finTyVarMp @cSubstDecls (acoreVar dflt)
+                                                                               ]
+                                                               | otherwise
 %%]]
-                                                  @decls.cbindL
-                                                  ( @chrAssumeDeclsInstBindL ++ @chrScopeDeclsBindL
-                                                  , @chrScopeSuperBindL
-                                                  , @chrAssumeSuperBindL ++ @chrAssumeDeclsCtxtBindL
-                                                  )
+                                                                          -> ([ @mkf dcf | dcf <- dclFldL @derivDCL ],[])
+%%]]
+                                                  in  ( mkInstanceCBindL
+                                                        @lhs.opts @clgi @lhs.dataGam @instVariant @dictTag
+                                                        (@dictNm,@dictSelfNm,@dictBuildNm)
+                                                        @recTy
+                                                        (@supClsFldL,@chrSuperProveNmL,@chrCtxtArgNmL)
+                                                        bindL
+                                                        ( @chrAssumeDeclsInstBindL ++ @chrScopeDeclsBindL
+                                                        , @chrScopeSuperBindL
+                                                        , @chrAssumeSuperBindL ++ @chrAssumeDeclsCtxtBindL
+                                                        )
+                                                      , foldr cSubstApp emptyCSubst cSubstInstL
+                                                      )
+%%[[92
+                loc         .   lUniq_bind  :   UNIQUEREF gUniq
+%%]]
   | InstanceIntro
                 lhs         .   cbindL      =   [acoreBind1Meta @dictNm (CMetaVal_Dict Nothing) @expr.cexpr]
 %%]
+                                                                             -- , let (e,s) = mkWeaveExpr -- :: EHCOpts -> UID -> VarMp -> CSubst -> (CExpr->CExpr) -> CExpr -> [Coe] -> [Coe] -> (CExpr,CSubst)
+                                                                             --                   @lhs.opts u @lhs.finTyVarMp @cSubstDecls
+                                                                             --                   (flip acoreApp1 $ acoreBuiltinUndefined @lhs.opts) (acoreVar dflt)
+                                                                             --                   [] []
 
 %%[(9 codegen) hs
 getBindRightVar :: CBind -> Maybe HsName
@@ -1281,7 +1296,6 @@ mkDataGenerBinds
   where (instBinds,errs) = unzip $ map mk instInfoL
         mk (orignm,dictNm,clNm,instKind,pr)
           = ( mkInstanceCBindL opts clgi dataGam InstNormal (clgiDictTag clgi) (dictNm,dictSelfNm,dictBuildNm) recTy ([],[],[])
-                               undefined undefined
                                binds ([],[],[])
             , foErrL evFO
             )
@@ -1334,23 +1348,22 @@ mkDataGenerBinds
                                                   = (\(_,nScrut,mk) -> (nScrut,mk e)) $
                                                     mkGenerThing
                                                       ( n, n
-                                                      , \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval n) (acoreVar n)
-                                                                [ (tgNOf ehbnGenerDataUnitN ehbnGenerDataUnitNAltU 1,[],Nothing,e) ]
+                                                      , mkC (tgOf ehbnGenerDataUnit1 ehbnGenerDataUnit1AltU1) n [] id
                                                       )
                                                       (\(n1,n1Scrut,mk1)
                                                          -> ( n1, n1Scrut
-                                                            , \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval n1Scrut) (acoreVar n1Scrut)
-                                                                      [ (tgNOf ehbnGenerDataKonstN ehbnGenerDataKonstNAltK 1,pNmL [n1],Nothing,mk1 e) ]
+                                                            , mkC (tgOf ehbnGenerDataKonst1 ehbnGenerDataKonst1AltK1) n1Scrut [n1] mk1
                                                             )
                                                       )
                                                       (\(n1,n1Scrut,mk1) (n2,n2Scrut,mk2)
                                                          -> let n12 = hsnConcat n1 n2
                                                             in  ( n12, n12
-                                                                , \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval n12) (acoreVar n12)
-                                                                          [ (prodTg ehbnGenerDataProdAltProd,pNmL [n1Scrut,n2Scrut],Nothing,mk1 $ mk2 e) ]
+                                                                , mkC (prodTg ehbnGenerDataProdAltProd) n12 [n1Scrut,n2Scrut] (mk1 . mk2)
                                                                 )
                                                       )
                                                       [ (nIntro, hsnUniqifyStr HsNameUniqifier_GenericClass "Scrut" nIntro, id) | nIntro <- nL ]
+                                                  where mkC tg nScrut nBndL mke
+                                                          = \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval nScrut) (acoreVar nScrut) [ (tg,pNmL nBndL,Nothing,mke e) ]
 
                                           mkToInj = mkGenerThing
                                                       (argNm,vUndef)
@@ -1367,41 +1380,36 @@ mkDataGenerBinds
                                                       )
                                                   where sumTg f = panicJust ("mkDataGenerBinds.sumTg:" ++ show n) $ dataGamLookupTag (biNm ehbnGenerDataSum) n dataGam
                                                                 where n = biNm f
-{-
--}
                                                         mkM1 (n,e) = ( nScrut
                                                                      , mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval nScrut) (acoreVar nScrut)
-                                                                         [ (tgNOf ehbnGenerDataMetaN ehbnGenerDataMetaNAltM 1,pNmL [n],Nothing,e) ]
+                                                                         [ (tgOf ehbnGenerDataMeta1 ehbnGenerDataMeta1AltM1,pNmL [n],Nothing,e) ]
                                                                      )
                                                                    where nScrut = hsnUniqifyStr HsNameUniqifier_GenericClass "M1" n
                                           
                                   
-                                  -- injection, abstracted over AST
+                                  -- injection for one specific L/R path, abstracted over resulting AST
                                   mkInj zero one left right i m x
                                     = mk i m x
                                     where mk i m x
-                                            | m == 0              = zero
-                                            | i == m-1 && i == 0  = one x
-                                            | i <  m2             = left  (mk  i      m2    x)
-                                            | otherwise           = right (mk (i-m2) (m-m2) x)
+                                            | m == 0    = zero
+                                            | m == 1    = one x
+                                            | i <  m2   = left  (mk  i      m2    x)
+                                            | otherwise = right (mk (i-m2) (m-m2) x)
                                             where m2 = m `div` 2
 
                                   -- builtin vars
                                   v    f = acoreVar $ biNm f
-                                  vn i f = acoreVar $ ehcOptBuiltin2 opts f i
-                                  vU1    = vn 1 ehbnGenerDataUnitNAltU
-                                  vK1    = vn 1 ehbnGenerDataKonstNAltK
-                                  vM1    = vn 1 ehbnGenerDataMetaNAltM
-                                  vPr    = v    ehbnGenerDataProdAltProd
-                                  vL1    = v    ehbnGenerDataSumAltLeft
-                                  vR1    = v    ehbnGenerDataSumAltRight
+                                  vU1    = v ehbnGenerDataUnit1AltU1
+                                  vK1    = v ehbnGenerDataKonst1AltK1
+                                  vM1    = v ehbnGenerDataMeta1AltM1
+                                  vPr    = v ehbnGenerDataProdAltProd
+                                  vL1    = v ehbnGenerDataSumAltLeft
+                                  vR1    = v ehbnGenerDataSumAltRight
                                   vUndef = acoreBuiltinUndefined opts
 
                                   -- CTag for con of dataty combi
                                   tgOf t c    = panicJust ("mkDataGenerBinds.tgOf:" ++ show c') $ dataGamLookupTag (biNm t) c' dataGam
                                               where c' = biNm c
-                                  tgNOf t c i = panicJust ("mkDataGenerBinds.tgOf:" ++ show c') $ dataGamLookupTag (ehcOptBuiltin2 opts t i) c' dataGam
-                                              where c' = ehcOptBuiltin2 opts c i
                                   prodTg      = tgOf ehbnGenerDataProd
                                   
                                   -- pattern names arg to mkCExprSatSelsCases

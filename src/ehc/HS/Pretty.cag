@@ -135,6 +135,8 @@ SEM Deriving
 SEM Pragma
   | Language
   		loc			.	pp			=	"LANGUAGE" >#< ppCommas @pragmas
+  | Derivable
+  		loc			.	pp			=	"DERIVABLE" >#< @className >#< @fieldName >#< @defaultName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

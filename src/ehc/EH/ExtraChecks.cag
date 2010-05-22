@@ -199,10 +199,13 @@ SEM Decl
                                                                  )
                                                             of
                                                               (Nothing,InstDeriving,_)
+%%[[92
+                                                                | null @generForFitsInL
+%%]]
                                                                 -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
-                                                              (_,InstDeriving,[])
+                                                              (Just _,InstDeriving,[])
                                                                 -> mke "has no constructors"
-                                                              (_,InstDeriving,ctags)
+                                                              (Just _,InstDeriving,ctags)
                                                                 | @instClsNm `elem`
                                                                      [ ehbnClassEnum builtinNms
 %%[[99
@@ -211,7 +214,7 @@ SEM Decl
                                                                      ]
                                                                   && hasFlds ctags
                                                                   -> mke "has a constructor with >0 fields"
-                                                              (_,InstDeriving,ctags@(_:_:_))
+                                                              (Just _,InstDeriving,ctags@(_:_:_))
                                                                 | @instClsNm == ehbnClassBounded builtinNms
                                                                   && hasFlds ctags
                                                                   -> mke "has >1 constructors, of which >0 with fields"

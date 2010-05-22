@@ -10,12 +10,17 @@ XXX
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
+%%[92 import(qualified EH.Util.FastSeq as Seq)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
+%%]
+
+%%[99 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
 
 -- EH semantics
@@ -201,6 +206,10 @@ cpFlowEHSem1 modNm
                                 ; lift $ putStrLn $ fevShow "gathChrStore" cs
                                 ; lift $ putStrLn $ fevShow "cmodule" $ EHSem.cmodule_Syn_AGItf   ehSem
                                 })
+%%]]
+%%[[92
+                     -- put back additional hidden exports
+                     ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
                      })
          }

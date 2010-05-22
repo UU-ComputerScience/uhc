@@ -202,7 +202,7 @@ cpUpdateModOffMp modNmL
 %%% Update new hidden exports
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[99 export(cpUpdHiddenExports)
+%%[92 export(cpUpdHiddenExports)
 cpUpdHiddenExports :: HsName -> [(HsName,IdOccKind)] -> EHCompilePhase ()
 cpUpdHiddenExports modNm exps
   = when (not $ null exps)

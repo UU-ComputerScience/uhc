@@ -209,7 +209,7 @@ SEM PatExpr
                                         ]
   
 SEM TyExpr
-  | Con         loc     .  info_1   :=  [ mkInfo1 "lhs.tyGam" (pp @lhs.tyGam)
+  | Con         loc     .  info_1   :=  [ -- mkInfo1 "lhs.tyGam" (pp @lhs.tyGam)
                                         ]
   | AppTop      loc     .  info_1   :=  [ mkInfo1 "appFunNm" (ppNm @tyExpr.appFunNm)
                                         ]
@@ -732,8 +732,9 @@ SEM Decl
 %%]]
                                                                                  , @decls.ppAST] @info_9
                         .  info_9   =   []
-  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] @info_9
+  | Instance    loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","Instance"] (maybe [] (\(n,_) -> [ppNm n]) @mbNmElim) [@tyPrExpr.ppAST,@decls.ppAST] (@info_9 ++ @info_92)
                         .  info_9   =   []
+                        .  info_92  =   []
   | InstanceIntro
                 loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","InstanceIntro"] [] [@expr.ppAST,@prExpr.ppAST] @info_9
                         .  info_9   =   []
@@ -745,7 +746,8 @@ SEM Decl
 SEM Decl
   | Val         loc     .  info_9   :=  [ mkInfo1 "predScope" (pp @predScope)
                                         ]
-  | Instance    loc     .  info_9   :=  [ mkInfo1 "predScope" (pp @predScope)
+  | Instance    loc     .  info_9   :=  [ mkInfo1 "tySigGam" (ppGam @tySigGam)
+                                        , mkInfo1 "predScope" (pp @predScope)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
                                         , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "recTy" (ppTy @recTy)
@@ -990,6 +992,12 @@ SEM DataConstr
 SEM Decl
   | FFE         loc     .  ppAST    =   ppNestInfo @lhs.opts ["Decl","FFE"] [ppNm @nm,pp @expEnt] [@expr.ppAST,@tyExpr.ppAST] @info_94
                         .  info_94  =   []
+%%]
+
+%%[92
+  | Instance    loc     .  info_92  :=  [ mkInfo1 "clgiGenerDerivableL @clgi" (vlist $ map (\(f,d) -> ppParensCommas [pp f, pp d]) (clgiGenerDerivableL @clgi))
+                                        , mkInfo1 "generForFitsInL" (vlist $ map (\(f,d,ft,dt) -> ppParensCommas [pp f, pp d, pp ft, pp dt]) @generForFitsInL)
+                                        ]
 %%]
 
 %%[97

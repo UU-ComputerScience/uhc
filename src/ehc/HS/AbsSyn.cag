@@ -306,6 +306,11 @@ DATA Pragma
     | OptionsGHC
     	range					: Range
     	options					: Names
+    | Derivable
+    	range					: Range
+    	className				: Name
+    	fieldName				: Name
+    	defaultName				: Name
 
 SET AllPragma
   = Pragma Pragmas

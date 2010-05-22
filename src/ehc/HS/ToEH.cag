@@ -196,6 +196,11 @@ SEM Declaration
                                                       @dependencies.eh
 %%]]
                                                       (Just @instancerefname) sigs
+%%[[92
+                                                      []
+%%][99
+                                                      @generDerivInfoL
+%%]]
                                             , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
                                             )
         lhs         .   eh          =   [@eh,@ehInst]

@@ -185,6 +185,8 @@ WRAPPER AGItf
 
 %%[9 ag import({EH/GatherGam})
 %%]
+%%[92 ag import({EH/GatherMisc})
+%%]
 
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
 %%]

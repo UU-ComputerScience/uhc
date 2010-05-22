@@ -19,7 +19,7 @@
 %%[(4 hmtyinfer) import({%{EH}Base.Opts})
 %%]
 
-%%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn',fitsInLWith)
+%%[(4 hmtyinfer) import({%{EH}Substitutable}) export(FitsIn, FitsIn')
 %%]
 
 %%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
@@ -267,10 +267,10 @@ type FitsIn' = FIOpts -> UID -> VarMp -> Ty -> Ty -> FIOut
 type FitsIn = FIOpts -> UID -> VarMp -> Ty -> Ty -> (Ty,VarMp,ErrL)
 %%]
 
-%%[(4 hmtyinfer).fitsInLWith
-fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> (FIOut,[FIOut])
+%%[(4 hmtyinfer).fitsInLWith export(fitsInLWith)
+fitsInLWith :: (FIOut -> FIOut -> FIOut) -> FitsIn' -> FIOpts -> UID -> VarMp -> TyL -> TyL -> ([FIOut],FIOut)
 fitsInLWith foCmb elemFits opts uniq varmp tyl1 tyl2
-  = (fo,foL)
+  = (foL,fo)
   where ((_,fo),foL)
           = foldr  (\(t1,t2) ((u,foThr),foL)
                       -> let  (u',ue) = mkNewLevUID u

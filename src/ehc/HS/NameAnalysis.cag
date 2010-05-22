@@ -108,16 +108,6 @@ mkDefOccGam l r a os
   = mkDefOccGam' l r (const a) os
 %%]
 
-%%[1 hs
-%%]
-mkDefAspGam' :: (IdOcc -> IdAspect) -> [IdOcc] -> IdDefAspGam
-mkDefAspGam' mka os
-  = assocLToGamWithDups [ (o,mkIdDefAsp o (mka o)) | o <- os ]
-
-mkDefAspGam :: IdAspect -> [IdOcc] -> IdDefAspGam
-mkDefAspGam a os
-  = mkDefAspGam' (const a) os
-
 %%[3 hs
 varL2IdDefOccGam :: IdOccKind -> IdAspect -> NmLev -> Range -> [HsName] -> IdDefOccGam
 varL2IdDefOccGam k a l r ns
@@ -947,6 +937,14 @@ SEM Declaration
                                         =   mkUseOccGam @lhs.opts @lhs.idGam [@name] IdOcc_Val IdAsp_Val_Var @range
 %%]
 
+%%[99
+SEM Declaration
+    | Class
+        loc             .   (_,_,idUseOccGamExtra,errIdUseExtra)
+                                        =   mkUseOccGam @lhs.opts @lhs.idGam @extranames IdOcc_Val IdAsp_Val_Var @range
+%%]
+        lhs             .   idUseOccGam =   gamUnions [@idUseOccGamExtra,@context.idUseOccGam,@typelefthandside.idUseOccGam,@dependencies.idUseOccGam,@where.idUseOccGam]
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Is the presence of 'error' required?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1073,7 +1071,11 @@ SEM Declaration
     | Class
         loc             .   (idUseOccGam,idUseHereOccL,_,undefOccGam)
                                         =   splitIdUseOccGam @lhs.nmLev
-                                                (gamUnions [@context.idUseOccGam,@where.idUseOccGam])
+                                                (gamUnions [ @context.idUseOccGam,@where.idUseOccGam
+%%[[99
+                                                           , @idUseOccGamExtra
+%%]]
+                                                           ])
                         .   idDpdMp     =   idDpdMpUnions
                                                 [ idToOccL2DpdMp [@idOccDef] @idUseHereOccL
                                                 , idToOccGam2DpdMp [@idOccDef] @idDefOccGamSigAsVar

@@ -556,6 +556,8 @@ pDeclClass      ::   EHCParser Decl
 pDeclClass      =    (\h d -> mkEH Decl_Class h Nothing d)
 %%][15
 pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d)
+%%][92
+pDeclClass      =    (\h deps d -> mkEH Decl_Class h deps Nothing d [])
 %%]]
                      <$   pKey "class"
                      <*>  pClassHead

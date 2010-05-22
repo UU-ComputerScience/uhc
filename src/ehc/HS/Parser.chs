@@ -112,7 +112,10 @@ pApp p          =    mkApp <$> pList1 p
 pPragma' :: (Range -> Pragma -> x) -> HSParser x
 pPragma' mk
   = pPacked' pOPRAGMA pCPRAGMA
-      (   (\t ps r -> mk r $ Pragma_Language   (mkRange1 t) ps) <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
+      (   (\t ps r -> mk r $ Pragma_Language   (mkRange1 t) ps)
+          <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
+      <|> (\t cl fld val r -> mk r $ Pragma_Derivable (mkRange1 t) (tokMkQName cl) (tokMkQName fld) (tokMkQName val))
+          <$> pDERIVABLE_prag  <*> gtycon' tyconsym <*> var <*> qvar
       -- <|> (\t ps r -> mk r $ Pragma_OptionsGHC (mkRange1 t) ps) <$> pOPTIONSGHC_prag <*> pCommas (tokMkQName <$ pMINUS <*> conid)
       )
 
@@ -1874,6 +1877,7 @@ conid
   =   conid_nopragma           
 %%[[99
   <|> pLANGUAGE_prag
+  <|> pDERIVABLE_prag
 %%]]
   <?> "conid"
 
