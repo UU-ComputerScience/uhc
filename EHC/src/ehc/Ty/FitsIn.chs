@@ -1476,13 +1476,16 @@ fitsIn' msg opts env uniq varmp ty1 ty2
 %%% Subsumption for lists of types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer) export(fitsInL)
+%%[(6 hmtyinfer) export(fitsInL',fitsInL)
+fitsInL' :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> ([FIOut],FIOut)
+fitsInL' opts env uniq varmp tyl1 tyl2
+  = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |+> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
+                (mkFitsInWrap' env) opts uniq varmp tyl1 tyl2
+
 fitsInL :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq varmp tyl1 tyl2
   = (map foTy foL,fo)
-  where (fo,foL)
-          = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |+> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
-                        (mkFitsInWrap' env) opts uniq varmp tyl1 tyl2
+  where (foL,fo) = fitsInL' opts env uniq varmp tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

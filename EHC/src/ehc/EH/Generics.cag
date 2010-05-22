@@ -34,8 +34,8 @@ type GenerDataInfo
 -- | what kind of instance should be generated
 data GenerInstKind
   = GenerInstKind_Datatype
-  | GenerInstKind_Constructor   	HsName      -- for a type
-  | GenerInstKind_Representable		Int			-- remaining arity
+  | GenerInstKind_Constructor       HsName      -- for a type
+  | GenerInstKind_Representable     Int         -- remaining arity
   deriving (Show)
 
 -- | Info for generics, for generating data instances
@@ -46,16 +46,16 @@ type GenerDataInstInfo
     , GenerInstKind     -- what kind of instance
     , Pred              -- the predicate
     )
+%%]
 
 -- | Info for generics, for generating repr instances
 type GenerReprInstInfo
   = ( HsName            -- original name of datatype
     , HsName            -- instance name
     , HsName            -- class name
-    , Int     			-- the arity of remaining type args
+    , Int               -- the arity of remaining type args
     , Pred              -- the predicate
     )
-%%]
 
 %%[(92 hmtyinfer) hs
 mkGenerThing
@@ -100,11 +100,11 @@ mkGenerRepresentableTypeSynonymTy
     )
   where mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
         mkC2  f i     = Ty_Con $ ehcOptBuiltin2 opts f i
-        mkSub u f     = mkGenerThing (mkC2 u 1) id (\x y -> mkApp [mkC f, x, y])
-        mkPr          = mkSub ehbnGenerDataUnitN ehbnGenerDataProd
-        mkSm          = mkSub ehbnGenerDataVoidN ehbnGenerDataSum
+        mkSub u f     = mkGenerThing (mkC u) id (\x y -> mkApp [mkC f, x, y])
+        mkPr          = mkSub ehbnGenerDataUnit1 ehbnGenerDataProd
+        mkSm          = mkSub ehbnGenerDataVoid1 ehbnGenerDataSum
         mkArg t       = mkApp [mkC2 nm remArity, t]
-                      where nm | tyIsVar t    = ehbnGenerDataParN		-- TBD: check for kind *, check for one of tvarArgL
+                      where nm | tyIsVar t    = ehbnGenerDataParN       -- TBD: check for kind *, check for one of tvarArgL
                                | otherwise    = ehbnGenerDataRecN
         mkAlt c t     = mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t]
         eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
@@ -215,6 +215,46 @@ SEM Expr
                                                         in  unzip
                                                             $ (concatMap mkReprInst @decls.generDataInfoL)
                                                               ++ (concatMap mkDataInst @decls.generDataInfoL)
-                loc         .   lUniq_92_prTyMeta  	:   UNIQUEREF gUniq
+                loc         .   lUniq_92_prTyMeta   :   UNIQUEREF gUniq
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Additional fitsIn, proofing, etc
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(92 hmtyinfer) hs
+type GenerForFitsIn
+  = ( HsName			-- field name
+    , HsName			-- default value name
+    , Ty				-- same, but respective types
+    , Ty			
+    )
+%%]
+
+%%[(92 hmtyinfer)
+SEM Decl
+  | Instance    loc         -- the set of fld + default names, their types, to be used ...
+                            .   generForFitsInL     =   case @instVariant of
+                                                          InstDeriving | not $ null generDerivFlds
+                                                            -> [ ( fldNm, dfltvalNm
+                                                                 , mkApp ([Ty_Con $ hsnNm2GenerReprSyn 0 @derivDataTyNm] ++ @derivDataTyArgs ++ [mkTyVar u]) `mk1Arrow` vgiTy (fromJust mbFSig)
+                                                                 , vgiTy (fromJust mbDSig)
+                                                                 )
+                                                               | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewUIDL (length generDerivFlds) @lUniq_generDeriv1)
+                                                               , let mbFSig = valGamLookup fldNm @tySigGam
+                                                               , isJust mbFSig
+                                                               , let mbDSig = valGamLookup dfltvalNm @lhs.valGam
+                                                               , isJust mbDSig
+                                                               ]
+                                                            where generDerivFlds = clgiGenerDerivableL @clgi
+                                                          _ -> []
+
+                            -- for subsumption, to extract predicates to Prove + coercion
+                            .   (foGenerDerivL,foGenerDeriv)
+                                                    =   let (tfldL,tdfltL) = unzip [ (tfld,tdflt) | (_,_,tfld,tdflt) <- @generForFitsInL ]
+                                                        in  fitsInL' strongFIOpts @fe @lUniq_generDeriv2 @decls.tyVarMp tdfltL tfldL 
+
+                loc         .   lUniq_generDeriv1   :   UNIQUEREF gUniq
+                loc         .   lUniq_generDeriv2   :   UNIQUEREF gUniq
 %%]
 

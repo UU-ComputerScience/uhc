@@ -8,7 +8,8 @@ Signatures for local attributes
 SEM *
   | *
 		loc.foL		 					: {[FIOut]}
-		loc.generDataTyAndConNmL				: {[HsName]}
+		loc.generDataTyAndConNmL		: {[HsName]}
+		loc.generForFitsInL				: {[GenerForFitsIn]}
 		loc.doPredAmbigSplit			: {TQOGam -> [CHRPredOcc] -> ([CHRPredOcc],[CHRPredOcc])}
 		loc.generInstInfoL				: {[GenerDataInstInfo]}
 		loc.generInstDeclL				: {[CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]}
@@ -80,6 +81,8 @@ SEM *
 		loc.derivDataTGI 				: TyGamInfo
 		loc.derivHdDataTy 				: Ty
 		loc.derivHdPrTyCon 				: Ty
+		loc.derivDataTyArgs 			: TyL
+		loc.derivDataTyNm	 			: HsName
 		loc.dfErrs  					: ErrL
 		loc.dgi 						: DataGamInfo
 		loc.dictNm  					: HsName

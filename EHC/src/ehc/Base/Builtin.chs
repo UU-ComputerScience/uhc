@@ -820,13 +820,13 @@ data EHBuiltinNames
       , ehbnGenerClassConstructorFldName	:: HsName
       , ehbnGenerClassConstructorFldFixity	:: HsName
       , ehbnGenerClassConstructorFldIsRec	:: HsName
-      , ehbnGenerDataVoidN              	:: Int -> HsName
-      , ehbnGenerDataUnitN              	:: Int -> HsName
-      , ehbnGenerDataUnitNAltU          	:: Int -> HsName
-      , ehbnGenerDataKonstN             	:: Int -> HsName
-      , ehbnGenerDataKonstNAltK         	:: Int -> HsName
-      , ehbnGenerDataMetaN              	:: Int -> HsName
-      , ehbnGenerDataMetaNAltM          	:: Int -> HsName
+      , ehbnGenerDataVoid1              	:: HsName
+      , ehbnGenerDataUnit1              	:: HsName
+      , ehbnGenerDataUnit1AltU1          	:: HsName
+      , ehbnGenerDataKonst1             	:: HsName
+      , ehbnGenerDataKonst1AltK1         	:: HsName
+      , ehbnGenerDataMeta1              	:: HsName
+      , ehbnGenerDataMeta1AltM1          	:: HsName
       , ehbnGenerDataFixity    				:: HsName
       , ehbnGenerDataFixityAltPrefix		:: HsName
       , ehbnGenerDataFixityAltInfix			:: HsName
@@ -843,8 +843,8 @@ data EHBuiltinNames
       , ehbnGenerDataParNAltPar				:: Int -> HsName
       , ehbnGenerDataRecN    				:: Int -> HsName
       , ehbnGenerDataRecNAltRec				:: Int -> HsName
-      , ehbnGenerDataCompN    				:: Int -> HsName
-      , ehbnGenerDataCompNAltComp			:: Int -> HsName
+      , ehbnGenerDataComp1    				:: HsName
+      , ehbnGenerDataComp1AltComp1			:: HsName
       , ehbnGenerDataMetaB    				:: HsName
       , ehbnGenerDataMetaR    				:: HsName
       , ehbnGenerDataMetaP    				:: HsName
@@ -966,13 +966,13 @@ mkEHBuiltinNames f
       , ehbnGenerClassConstructorFldName	=       f IdOcc_Val   (mkGenerRV     "conName"			)
       , ehbnGenerClassConstructorFldFixity	=       f IdOcc_Val   (mkGenerRV     "conFixity"		)
       , ehbnGenerClassConstructorFldIsRec	=       f IdOcc_Val   (mkGenerRV     "conIsRecord"		)
-      , ehbnGenerDataVoidN              	= \n -> f IdOcc_Type  (mkGenerRVN  n "V"				)
-      , ehbnGenerDataUnitN              	= \n -> f IdOcc_Type  (mkGenerRVN  n "U"				)
-      , ehbnGenerDataUnitNAltU          	= \n -> f IdOcc_Val   (mkGenerRVN  n "U"				)
-      , ehbnGenerDataKonstN             	= \n -> f IdOcc_Type  (mkGenerRVN  n "K"				)
-      , ehbnGenerDataKonstNAltK         	= \n -> f IdOcc_Val   (mkGenerRVN  n "K"				)
-      , ehbnGenerDataMetaN              	= \n -> f IdOcc_Type  (mkGenerRVN  n "M"				)
-      , ehbnGenerDataMetaNAltM          	= \n -> f IdOcc_Val   (mkGenerRVN  n "M"				)
+      , ehbnGenerDataVoid1              	=       f IdOcc_Type  (mkGenerRV     "V1"				)
+      , ehbnGenerDataUnit1              	=       f IdOcc_Type  (mkGenerRV     "U1"				)
+      , ehbnGenerDataUnit1AltU1          	=       f IdOcc_Val   (mkGenerRV     "U1"				)
+      , ehbnGenerDataKonst1             	=       f IdOcc_Type  (mkGenerRV     "K1"				)
+      , ehbnGenerDataKonst1AltK1         	=       f IdOcc_Val   (mkGenerRV     "K1"				)
+      , ehbnGenerDataMeta1              	=       f IdOcc_Type  (mkGenerRV     "M1"				)
+      , ehbnGenerDataMeta1AltM1          	=       f IdOcc_Val   (mkGenerRV     "M1"				)
       , ehbnGenerDataFixity    				=       f IdOcc_Type  (mkGenerRV     "Fixity"			)
       , ehbnGenerDataFixityAltPrefix		=       f IdOcc_Val   (mkGenerRV     "Prefix"			)
       , ehbnGenerDataFixityAltInfix			=       f IdOcc_Val   (mkGenerRV     "Infix"			)
@@ -989,8 +989,8 @@ mkEHBuiltinNames f
       , ehbnGenerDataParNAltPar				= \n -> f IdOcc_Val   (mkGenerRVN  n "Par"				)
       , ehbnGenerDataRecN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "Rec"				)
       , ehbnGenerDataRecNAltRec				= \n -> f IdOcc_Val   (mkGenerRVN  n "Rec"				)
-      , ehbnGenerDataCompN    				= \n -> f IdOcc_Type  (mkGenerRVN  n ":.:"				)
-      , ehbnGenerDataCompNAltComp			= \n -> f IdOcc_Val   (mkGenerRVN  n "Comp"				)
+      , ehbnGenerDataComp1    				=       f IdOcc_Type  (mkGenerRV     ":.:"				)
+      , ehbnGenerDataComp1AltComp1			=       f IdOcc_Val   (mkGenerRV     "Comp1"			)
       , ehbnGenerDataMetaB    				=       f IdOcc_Type  (mkGenerRV     "B"				)
       , ehbnGenerDataMetaR    				=       f IdOcc_Type  (mkGenerRV     "R"				)
       , ehbnGenerDataMetaP    				=       f IdOcc_Type  (mkGenerRV     "P"				)

@@ -198,6 +198,9 @@ SEM Declaration
 %%[[15
                                                    , @dependencies.errSq
 %%]]
+%%[[99
+                                                   , Seq.fromList @errIdUseExtra
+%%]]
                                                    , @where.errSq
                                                    ]
     | Instance

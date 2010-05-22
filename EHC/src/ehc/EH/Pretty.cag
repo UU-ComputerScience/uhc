@@ -337,7 +337,12 @@ SEM Decl
 %%[[15
                                                     >#< "|" >#< ppListSep "" "" ", " @funcDeps.ppL
 %%]]
-                                                    >#< "where" >-< indent 2 @decls.pp
+                                                    >#< "where"
+                                                    >-< indent 2 (@decls.pp
+%%[[92
+                                                                  >-< ppCmt (ppAssocL @generDerivs)
+%%]]
+                                                                 )
   | Instance    loc     .   pp      =   "instance"  >|< maybe empty (\(n,e) -> " " >|< n >#< (if e then "<:" else "::")) @mbNmElim
                                                     >#< @tyPrExpr.pp
                                                     >#< "where"

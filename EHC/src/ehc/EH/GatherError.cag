@@ -319,6 +319,9 @@ SEM Decl
 %%[[(91 codegen hmtyinfer)
                                                   , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
 %%]]
+%%[[(92 codegen hmtyinfer)
+                                                  , foErrSq @foGenerDeriv
+%%]]
 %%[[(9 hmtyinfer)
                                                   , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]
 %%]]

@@ -931,16 +931,18 @@ tokKeywStrsHS94  = [ "unsafe", "threadsafe", "dynamic" ]
 %%[99
 pLANGUAGE_prag  		,
 	-- pOPTIONSGHC_prag  	,
+	pDERIVABLE_prag		,
     pOPRAGMA    		,
     pCPRAGMA
   :: IsParser p Token => p Token
 
 pLANGUAGE_prag   = pKeyTk "LANGUAGE"
+pDERIVABLE_prag  = pKeyTk "DERIVABLE"
 -- pOPTIONSGHC_prag = pKeyTk "OPTIONS_GHC"
 pOPRAGMA         = pKeyTk "{-#"
 pCPRAGMA         = pKeyTk "#-}"
 
-tokPragmaStrsHS99= [ "LANGUAGE" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
+tokPragmaStrsHS99= [ "LANGUAGE", "DERIVABLE" {-, "OPTIONS_GHC" , "INLINE", "NOINLINE", "SPECIALIZE" -} ]
 %%]
 
 pDEPRECATED_prag = pKeyTk "deprecated_prag"

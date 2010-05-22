@@ -113,7 +113,11 @@ SEM Expr
 
 %%[(9 hmtyinfer)
 SEM Decl
-  | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] @decls.tyVarMp
+  | Instance    loc         .   tyVarMpDeclsL0      =   varmpSelectMetaLev [0] $
+%%[[92
+                                                        foVarMp @foGenerDeriv |=>
+%%]]
+                                                        @decls.tyVarMp
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,0 +1,18 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Gathering misc bits of info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(92 hmtyinfer)
+ATTR AGItf Expr AllDecl [ | | gathHiddenExports USE {`Seq.union`} {Seq.empty}: {Seq.Seq (HsName,IdOccKind)} ]
+
+SEM Expr
+  | Let         lhs         .   gathHiddenExports   =   Seq.fromList [ (dictNm,IdOcc_Val) | (_,dictNm,_,_,_) <- @generInstInfoL ]
+                                                        `Seq.union`
+                                                        @decls.gathHiddenExports
+                                                        `Seq.union`
+                                                        @body.gathHiddenExports
+
+SEM Decl
+  | Class       lhs         .   gathHiddenExports   =   Seq.fromList [ (dflt,IdOcc_Val) | (_,dflt) <- @generDerivs ]
+%%]
+

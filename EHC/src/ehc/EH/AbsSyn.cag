@@ -549,6 +549,9 @@ DATA Decl
 %%]]
                     mbDefaultInstNm : {Maybe HsName}
                     decls           : Decls
+%%[[92
+					generDerivs		: {[(HsName,HsName)]}			-- generically derivable fields, with their default
+%%]]
   | Instance        mbNmElim        : {Maybe (HsName,Bool)}
                     instVariant     : InstVariant
                     tyPrExpr        : TyExpr
