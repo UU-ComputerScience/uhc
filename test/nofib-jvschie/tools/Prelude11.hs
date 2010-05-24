@@ -430,7 +430,7 @@ class Eq a where
     (==), (/=) :: a -> a -> Bool
     -- default definitions
     -- Minimal complete definition: (==) or (/=)
-    x == y      = not (x/=y)
+--    x == y      = not (x/=y)
     x /= y      = not (x==y)
 
 -- Ord class ---------------------------------------------
@@ -524,6 +524,7 @@ class Show a where
 
 instance Eq  Int where 
   (==)    = primEqInt
+  x /= y  = not (primEqInt x y)
 
 instance Ord Int where
   compare = primCmpInt
@@ -578,6 +579,10 @@ showInt x | x<0  = '-' : showInt(-x)
 
 
 -- List instance of Eq, Ord, Functor, Monad, Show
+
+hiero :: Int -> Int
+hiero x = x+1
+
 
 instance Eq a => Eq [a] where
     []     == []     =  True

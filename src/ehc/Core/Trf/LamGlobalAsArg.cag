@@ -232,8 +232,9 @@ ATTR CExpr [ | | mbBodyVar : {Maybe HsName} ]
 
 SEM CExpr
   | Let         lhs.mbBodyVar  =  @body.mbBodyVar   
+  | Lam         lhs.mbBodyVar  =  Nothing      -- @body.mbBodyVar       -- TODO: need body.mbBodyVar here for parameterized classes, but that doesnt seem to work for Bernouilli
   | Var         lhs.mbBodyVar  =  Just @nm
-  | *-Let Var Ann
+  | *-Let Var Ann Lam
   				lhs.mbBodyVar  =  Nothing
 
 %%]
@@ -275,7 +276,7 @@ metaExtend mp self []       = []
 metaExtend mp self (nm:nms) = let r = Map.lookup nm mp
                                   e = maybe [] assocLKeys r
                                   e2 = maybe e (\s -> filter (/=s) e) self
-                              in  -- trace (show nm ++ " extended with " ++ show e2 ) $
+                              in  -- trace (show nm ++ " extended with " ++ show e2 ++ " while self (" ++ show self ++ ") is filtered out " ++ show e) $
                                   (nm : (e2 ++ nms))
 
   
