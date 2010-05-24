@@ -113,10 +113,10 @@ ATTR AllBind CExpr AllAlt [ lifteeSet : {Set.Set HsName} | | ]
 
 SEM CBind
   | Bind   loc.isDictWithCtxt =  @bindMeta.isDictInst && @expr.isLam
-           expr.lifteeSet     =  if   @loc.isDictWithCtxt
+           expr.lifteeSet     =  if   @loc.isDictWithCtxt   -- TODO: parametrized dictionaries
                                  then Set.empty
                                  else @bindMeta.lifteeSet
-           lhs.cTrf           =  if   @loc.isDictWithCtxt
+           lhs.cTrf           =  if   @loc.isDictWithCtxt   -- TODO: parametrized dictionaries
                                  then CBind_Bind @nm (cmetasMapVal (const $ CMetaVal_Dict Nothing) @bindMeta.cTrf) @expr.cTrf
                                  else CBind_Bind @nm  @bindMeta.cTrf                                               @expr.cTrf
   

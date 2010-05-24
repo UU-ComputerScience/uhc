@@ -163,7 +163,7 @@ function run {
         ;;
     esac
     echo "Compiling $HC $FLAGS $EFLAGS $BENCHMARK_FILE"
-    $HC $FLAGS $EFLAGS $BENCHMARK_FILE >> $LOG_FILE 2>&1
+    $HC $FLAGS $EFLAGS $BENCHMARK_FILE >> $LOG_FILE 2> erroroutput.txt
     
     if [ $? -eq 0 ]; then
       BENCHMARK_DIR=${BENCHMARK_FILE%/*}
