@@ -210,7 +210,7 @@ static inline void mm_itf_registerGCRoot( WPtr p ) {
 
 %%]
 static inline void mm_itf_registerGCRoots( WPtr p, Word n ) {
-	mm_Roots_Register1( (WPtr)(&n) ) ;
+	mm_Roots_RegisterN( p, n ) ;
 }
 
 %%[8

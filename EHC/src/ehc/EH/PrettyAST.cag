@@ -749,6 +749,8 @@ SEM Decl
   | Instance    loc     .  info_9   :=  [ mkInfo1 "tySigGam" (ppGam @tySigGam)
                                         , mkInfo1 "predScope" (pp @predScope)
                                         , mkInfo1 "prTyFix" (ppTy @prTyFix)
+                                        , mkInfo1 "ctxtPrTyFixL" (ppCommas $ map ppTy @ctxtPrTyFixL)
+                                        , mkInfo1 "hdPrTyFix" (ppTy @hdPrTyFix)
                                         , mkInfo1 "tyPrExpr.evTy" (ppTy @tyPrExpr.evTy)
                                         , mkInfo1 "recTy" (ppTy @recTy)
                                         , mkInfo1 "toProveDeclsCnstrMp" (ppAssocLV $ assocLMapElt ppBracketsCommas $ Map.toList @toProveDeclsCnstrMp)

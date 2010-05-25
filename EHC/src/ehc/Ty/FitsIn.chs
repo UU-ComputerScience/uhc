@@ -951,6 +951,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
 %%[[9999
                                             >-< "fioDontBind    :" >#< show (fioDontBind (fiFIOpts fi))
+                                            >-< "fioBindLBeforeR:" >#< show (fioBindLBeforeR (fiFIOpts fi))
+                                            >-< "fioBindCategs  :" >#< show (fioBindCategs (fiFIOpts fi))
                                             >-< "fioBindNoSet(L):" >#< show (fioBindNoSet (fioBindLVars (fiFIOpts fi)))
                                             >-< "fioBindIsYes(L):" >#< show (fioBindIsYes (fioBindLVars (fiFIOpts fi)))
                                             >-< "tyIsA       (L):" >#< tyIsA t1
@@ -1580,9 +1582,20 @@ fitPredIntoPred fi pr1 pr2
 %%]]
         f pr1                   pr2
           = if foHasErrs fo
-            then {- tr "fitPredIntoPred" (pr1 >-< pr2 >-< ppErrL (foErrL fo) >-< fiVarMp fi) $ -} Nothing
+            then {- tr "fitPredIntoPred"
+                            (pr1 >-< pr2 >-< ppErrL (foErrL fo)
+                             >-< "fiVarMp" >#< fiVarMp fi >-< "foVarMp" >#< foVarMp fo
+                             >-< "fioDontBind" >#< show (fioDontBind (fiFIOpts fi))
+                             >-< "fioBindLVars" >#< show (fioBindLVars (fiFIOpts fi)) >-< "fioBindRVars" >#< show (fioBindRVars (fiFIOpts fi))
+                             >-< "foTrace" >#< vlist (foTrace fo)
+                            ) $ -}
+                 Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
-          where fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)})
+          where fo = fitsIn (predFIOpts
+                               { fioBindRVars = FIOBindNoBut Set.empty
+                               , fioDontBind = fioDontBind (fiFIOpts fi)
+                               , fioBindCategs = fioBindCategs (fiFIOpts fi)
+                               })
                             (fiEnv fi) (fiUniq fi) (fiVarMp fi)
                             (Ty_Pred pr1) (Ty_Pred pr2)
 %%]

@@ -158,9 +158,15 @@ SEM Declaration
 %%[5
     | Data
         loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) @constructors.eh
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
     | Newtype
         loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) [@constructors.eh]
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
 %%[[92
     | Data Newtype

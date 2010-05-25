@@ -633,7 +633,7 @@ showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%% Debugging (20100217 AD: required it when pretty printing had a still unnoticed byg)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9999 hmtyinfer || hmtyast) hs export(tyIsA)
+%%[(99 hmtyinfer || hmtyast) hs export(tyIsA)
 tyIsA :: Ty -> String
 tyIsA (Ty_Con   a      ) = "CON"
 tyIsA (Ty_App   a b    ) = "APP"

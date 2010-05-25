@@ -252,7 +252,7 @@ SEM Decl
                             -- for subsumption, to extract predicates to Prove + coercion
                             .   (foGenerDerivL,foGenerDeriv)
                                                     =   let (tfldL,tdfltL) = unzip [ (tfld,tdflt) | (_,_,tfld,tdflt) <- @generForFitsInL ]
-                                                        in  fitsInL' strongFIOpts @fe @lUniq_generDeriv2 @decls.tyVarMp tdfltL tfldL 
+                                                        in  fitsInL' strongFIOpts (@fe {fePredScope = @predScope}) @lUniq_generDeriv2 @decls.tyVarMp tdfltL tfldL 
 
                 loc         .   lUniq_generDeriv1   :   UNIQUEREF gUniq
                 loc         .   lUniq_generDeriv2   :   UNIQUEREF gUniq
