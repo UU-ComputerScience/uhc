@@ -102,8 +102,8 @@ SEM Decl
                                                                  )
 %%[[92
                                                             | not $ null @generForFitsInL
-                                                              -> ( cnstrMpUnions [ gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (altsPrOcc)
-                                                                                 , @tyVarMpDeclsL0 `chrAppSubst` @generCnstrMp
+                                                              -> ( cnstrMpUnions [ {- gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (altsPrOcc)
+                                                                                 , -} @tyVarMpDeclsL0 `chrAppSubst` @generCnstrMp
                                                                                  ]
                                                                  , altsPrOcc, []
                                                                  , emptyDerivCls

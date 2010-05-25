@@ -47,6 +47,9 @@ DATA Decl
                     tyNm            : {HsName}
                     tyVars          : TyVars
                     constrs         : DataConstrs
+%%[[92
+					mbGenerInfo		: {Maybe Int}		-- max kind arity for generic behavior, currently \in {0,1}
+%%]]
 %%]
 
 %%[6.Decl

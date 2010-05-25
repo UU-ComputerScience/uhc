@@ -286,7 +286,7 @@ SEM Declaration
                                         =   length @typelefthandside.typevariables `min` 1
                         .   idOccDefsGener
                                         =   if ehcOptGenGenerics @lhs.opts
-                                            then [ IdOcc (hsnNm2GenerReprSyn 0 @typerefname) IdOcc_Type ]
+                                            then [ IdOcc (hsnNm2GenerReprSyn arity @typerefname) IdOcc_Type | arity <- [0 .. @generMaxRemArity] ]
                                             else []
 %%]]
                         .   idOccDefs   =   [@idOccDef]

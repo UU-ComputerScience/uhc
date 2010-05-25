@@ -120,7 +120,12 @@ pDecl           =    mkEH Decl_Val        <$>  pPatExprBase  <*   pEQUAL   <*> p
                 <|>  mkEH Decl_TySig      <$>  pVar          <*   pDCOLON  <*> pTyExpr
 %%]
 %%[5.pDecl
-                <|>  mkEH Decl_Data False <$   pDATA         <*>  pCon       <*> pTyVars
+%%[[5
+                <|>  mkEH Decl_Data False
+%%][92
+                <|>  (\c tvs cons -> mkEH Decl_Data False c tvs cons Nothing)
+%%]]
+                                          <$   pDATA         <*>  pCon       <*> pTyVars
                                                              <*   pEQUAL     <*> pDataConstrs
 %%]
 %%[6.pDecl

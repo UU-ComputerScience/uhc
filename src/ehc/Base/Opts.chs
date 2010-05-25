@@ -927,7 +927,9 @@ strong: in a context where information is known (i.e. type signature)
 strong allows impredicative binding whereas weak will instantiate quantifiers
 
 %%[(9 hmtyinfer) export(FIOBind(..),fioBindIsYes,fioBindNoSet)
-data FIOBind = FIOBindYes | FIOBindNoBut TyVarIdS
+data FIOBind
+  = FIOBindYes | FIOBindNoBut TyVarIdS
+  deriving (Show)
 
 fioBindNoSet :: FIOBind -> TyVarIdS
 fioBindNoSet (FIOBindNoBut s) = s
