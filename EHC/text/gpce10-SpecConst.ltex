@@ -114,8 +114,7 @@
 \setlength{\parskip}{3pt}
 
 
-\title{Optimize Overloaded Functions in Haskell}
-\subtitle{An Attribute Grammar Based Approach}
+\title{Compiling by transformation:\\efficient implementation of overloading in Haskell}
 
  \authorinfo{Jeroen Fokker\and S.~Doaitse Swierstra}
             {Utrecht University}
@@ -124,7 +123,25 @@
 \maketitle
 
 \begin{abstract}
-BlaBla
+The Utrecht Haskell Compiler (UHC) is designed as 
+the composition of many small transformations.
+We illustrate the transformational approach by showing 
+how overloading is implemented and optimized in UHC.
+Overloaded functions take additional `dictionary' arguments, 
+which are automatically inserted during code generation,
+based on inferred types.
+
+For each instance declaration, a dictionary is generated 
+containing the functions defined in the instance.
+The dictionary also should contain the default definitions 
+from the corresponding class declaration,
+thus requiring a mechanism for combining them.
+
+When compiling modules separately, the combination is done dynamically.
+When doing whole program analysis, class and instance can be combined
+statically by symbolic computation.
+Further transformations, notably specialization of functions for constant arguments,
+can completely eliminate run-time overhead for dictionary passing.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -138,20 +155,72 @@ BlaBla
 \section{Introduction}
 
 
-
-
-\section{Tree walk methodology}
-
-\subsection{Defining semantics}
-
-The standard textbook example involves the functions |sum| and |product|,
-which can be defined separately by tedious inductive definitions:
+\section{Overloading in Haskell}
+\subsection{Class and instance declarations}
 \begin{code}
-sum      []      = 0
-sum      (x:xs)  = x + sum xs
-product  []      = 1
-product  (x:xs)  = x * product xs
+class Eq a where
+  eq  ::  a -> a -> Bool
+  ne  ::  a -> a -> Bool
+instance Eq Int where
+  eq x y  =  primEqInt x y
+  ne x y  =  not (primEqInt x y)
+instance Eq Bool where
+  eq  False  False  = True
+  eq  True   True   = True
+  eq  _      _      = False
+  ne  x      y      = not (eq x y)
 \end{code}
+\subsection{Default definitions}
+\begin{code}
+class Eq a where
+  eq  ::  a -> a -> Bool
+  ne  ::  a -> a -> Bool
+  ne x y  =  not (eq x y)
+instance Eq Int where
+  eq x y  =  primEqInt x y
+instance Eq Bool where
+  eq  False  False  = True
+  eq  True   True   = True
+  eq  _      _      = False
+\end{code}
+\subsection{Superclasses}
+\begin{code}
+class Eq a => Ord a where
+  ge  :: a -> a -> Bool
+  le  :: a -> a -> Bool
+  gt  :: a -> a -> Bool
+  lt  :: a -> a -> Bool
+  max :: a -> a -> a
+\end{code}
+\subsection{Context for instances}
+\begin{code}
+instance  Eq a => Eq [a] where
+  eq []      []      =  True
+  eq []      _       =  False
+  eq (x:xs)  (y:ys)  =  eq x y && eq xs ys
+\end{code}
+
+\section{UHC compiler structure}
+\subsection{Transformational programming}
+See figure 1.
+\subsection{The Grin intermediate language}
+
+
+\section{Introducing dictionaries}
+\subsection{Dictionary arguments for overloaded functions}
+\subsection{Dictionary generation}
+\subsection{Dynamically merging default definitions}
+
+
+\section{Whole-program analysis}
+\subsection{Statically merging default definitions}
+\subsection{Transformations}
+\subsection{Example}
+\subsection{Dealing with superclasses}
+\subsection{Dealing with instance contexts}
+
+
+\section{Conclusion}
 
 \begin{figure}[tbfh]
 \includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
@@ -161,13 +230,12 @@ whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
 \end{figure}
 
 
+
+
 \begin{thebibliography}{}
 
-
-\bibitem[Bird 1984]{bird}
-Richard S.\ Bird.
-Using circular programs to eliminate multiple traversals of data.
-{\em Acta Informatica} {\bf 21}: 239--250.
+\bibitem[ToDo]{ToDo} 
+{\em nog veel meer, o.a. Fax\'en, maar in ieder geval ook deze:}
 
 \bibitem[Boquist and Johnsson 1996]{boquist1996}
 Urban Boquist and Thomas Johnsson.
@@ -190,21 +258,6 @@ Mark. P.\ Jones.
 Functional programming with overloading and higher-order polymorphism.
 In: {\em Advanced Functional Programming} AFP'95, pp.~97--136.
 Springer LNCS 925.
-
-
-\bibitem[Knuth 1968]{knuth}
-D.E.\ Knuth.
-Semantics of context-free languages.
-{\em Mathematical Systems Theory} {\bf 2}: 127--145.
-
-
-\bibitem[Swierstra et al. 1998]{agsyst}
-S.\ Doaitse Swierstra,
-Pablo R.\ Azero Alocer,
-and Jo\~ao Saraiva.
-Designing and implementing combinator languages.
-In: {\em Advanced functional programming} AFP'98.
-Springer LNCS 1608.
 
 \end{thebibliography}
 
