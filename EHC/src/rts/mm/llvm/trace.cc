@@ -71,7 +71,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
         // The node is a forwarding node, indicating that the node was copied before,
         // so we can just return that and we're done
 		obj = ((WPtr)obj)[1];
-        // printf("          return obj=%016llx\n", obj); fflush(stdout);
+        printf("          return obj=%016llx\n", obj); fflush(stdout);
 		return obj ;
 	}
 

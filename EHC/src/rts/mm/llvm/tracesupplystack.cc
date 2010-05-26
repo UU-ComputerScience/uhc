@@ -88,7 +88,9 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 
             } else {
                 printf("| ... [%d] 0x%016llx, con: %lld \n", i, (unsigned int)root, *root );
-           	    root = mm_Trace_TraceObject( trace, root );
+           	    Word * rootUpd = mm_Trace_TraceObject( trace, root );
+           	    printf("stackroot: 0x%016llx changed to: 0x%016llx con: %i \n", root, rootUpd, *rootUpd);
+           	    root = rootUpd;
 
             }
 
