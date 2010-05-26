@@ -172,7 +172,19 @@ SEM Functions
 SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) (pLift @lhs.pointerType) )
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
-                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
+                                   params = concatMap (\nm -> (LLVMStatement_Assignment (LocalVar ("par_" ++ (hs2str nm)) (pLift @lhs.pointerType) )
+                                                         (LLVMExpression_Alloca @lhs.pointerType 1)) 
+                                                         : (LLVMStatement_Assignment (LocalVar ("cast1_par_" ++ (hs2str nm)) (pLift @lhs.pointerType)) 
+                                                                $ LLVMExpression_Cast (LocalVar (hs2str nm) (@lhs.intType)) (@lhs.pointerType)) 
+                                                         : (LLVMStatement_Store (LocalVar ("cast1_par_" ++ (hs2str nm)) @lhs.pointerType) (LocalVar ("par_" ++ (hs2str nm)) (pLift @lhs.pointerType)))
+                                                         : (LLVMStatement_Assignment (LocalVar ("cast2_par_" ++ (hs2str nm)) (pLift @lhs.pointerType)) 
+                                                                $ LLVMExpression_Cast (LocalVar ("par_" ++ (hs2str nm)) (pLift @lhs.pointerType)) (pLift $ pLift i8)) 
+                                                         : (LLVMStatement_Call gcRootFuncDecl StdCall [ LocalVar ("cast2_par_" ++ (hs2str nm)) (pLift $ pLift i8)
+                                                                                                     , (StrConstant "null" (pLift i8))
+                                                                                                     ] ) 
+                                                         : []
+                                                 ) @parameters
+                                in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ params ++
                                    @body.llvmCode ++  
                                    -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
@@ -400,8 +412,12 @@ SEM Variable
   | Local       lhs.llvmVar  = LocalVar (hs2str @name) (pLift @lhs.pointerType)
                 lhs.llvmCode = []               
   
-  | Param       lhs.llvmVar  = LocalVar (hs2str @name) @lhs.intType                                       
-                lhs.llvmCode = []                                                    
+  | Param       lhs.llvmVar  = @loc.loadVar -- LocalVar ("load_" ++ (hs2str @name)) @lhs.intType -- LocalVar (hs2str @name) @lhs.intType
+                lhs.llvmCode = @loc.loadCode -- [LLVMStatement_Assignment (LocalVar ("load_" ++ (hs2str @name)) @lhs.pointerType)
+                                     -- (LLVMExpression_Load (LocalVar ("par_" ++ (hs2str @name)) (pLift @lhs.pointerType)))]                                             
+                loc.(uniqNr1,loadVar,loadCode) =
+                               load @lhs.gUniq (LocalVar ("par_" ++ (hs2str @name)) (pLift @lhs.pointerType))
+
                                                
   | RP          lhs.llvmVar  = GlobalVar "RP" @lhs.globalType 
                 lhs.llvmCode = []
@@ -488,6 +504,7 @@ SEM Value
               
 SEM Variable
   -- Passing to array via copy rule
+  | Param       lhs  .gUniq  = @loc.uniqNr1
   | Subs        lhs  .gUniq  = @loc.uniqNr3
 
                  
