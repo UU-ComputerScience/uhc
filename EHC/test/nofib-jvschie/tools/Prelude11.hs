@@ -524,7 +524,7 @@ class Show a where
 
 instance Eq  Int where 
   (==)    = primEqInt
-  x /= y  = not (primEqInt x y)
+  -- x /= y  = not (primEqInt x y)
 
 instance Ord Int where
   compare = primCmpInt
