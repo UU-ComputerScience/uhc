@@ -21,6 +21,7 @@ PRIM void primPatternMatchFailureDebug(Word x)
     exit(1);
 }
 
+
 PRIM Word primOrd(Word x)
 {
 	return x;	

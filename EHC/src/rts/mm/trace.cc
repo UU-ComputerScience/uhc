@@ -25,6 +25,20 @@ void mm_trace_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) {
 		*objs = mm_Trace_TraceObject( trace, *objs ) ;
 	}
 }
+
+void mm_trace_TraceObjects2( MM_Trace* trace, Word* objs, Word nrObjs ) {
+
+    Word nrObjs2 = 3;
+    for ( ; nrObjs2 > 0 ; nrObjs2--, objs++ ) {
+        Word * objs2 = (Word*) *objs;
+        Word * objs3 = (Word*) *objs2;
+        printf("nr: %i p1: %016llx p2: %016llx p3: %016llx v: %i \n", nrObjs2, objs, objs2, objs3, *objs3);
+        objs3 = mm_Trace_TraceObject( trace, objs3 ) ;
+	}
+    
+    	
+}
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

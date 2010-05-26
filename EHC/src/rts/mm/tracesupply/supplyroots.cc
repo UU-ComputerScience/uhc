@@ -56,7 +56,13 @@ void mm_traceSupply_Roots_Run( MM_TraceSupply* traceSupply ) {
 		MM_Roots_Entry* r = (MM_Roots_Entry*)mm_flexArray_At( &mm_Roots, i ) ;
 		// IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run i=%x obj=%x nr=%x flg=%x\n",i,*(r->ptrToObj), r->nrObjs);}) ;
 		// trsup->trace->traceObjects( trsup->trace, r->ptrToObj, r->nrObjs ) ;
-		mm_trace_TraceObjects( trsup->trace, r->ptrToObj, r->nrObjs ) ;
+		
+        #ifdef __UHC_TARGET_LLVM__
+        mm_trace_TraceObjects2( trsup->trace, r->ptrToObj, r->nrObjs ) ;
+        #else
+        mm_trace_TraceObjects( trsup->trace, r->ptrToObj, r->nrObjs ) ;
+        #endif
+
 	}
 
 	IF_GB_TR_ON(3,{printf("mm_traceSupply_Roots_Run C\n");}) ;

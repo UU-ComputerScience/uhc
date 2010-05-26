@@ -69,7 +69,7 @@ void mm_exit() {
 %%[8
 
 Ptr mm_itf_alloc_ext( size_t sz, Word gcInfo ) {
-    // mm_itf_gc();
+    // mm_itf_gc();    
     return mm_itf_alloc( sz, gcInfo );
 }
 
@@ -84,14 +84,14 @@ void mm_itf_deallocResident_ext( Ptr p ) {
 
 
 void mm_itf_registerGCRoot_ext( WPtr p ) {
-    printf("root registered: %016llx \n", p);
     mm_itf_registerGCRoot( p );
 }
 
 
-//void mm_itf_registerGCRoots_ext( WPtr p, Word n ) {
-//    mm_itf_registerGCRoots( p, n );
-//}
+void mm_itf_registerGCRoots_ext( WPtr p, Word n ) {
+    printf("registerGCRoots: %016llx  nr: %i \n", p, n);
+    mm_itf_registerGCRoots( p, n );
+}
 
 
 Bool mm_itf_gc_ext( ) {

@@ -99,7 +99,6 @@ SEM SilModule
   | SilModule   lhs.llvmCode = LLVMModule_LLVMModule @loc.comment
                                                      @loc.namedTys
                                                      @loc.constants
-                                                     @loc.global
                                                      @loc.globals 
                                                      ( stdlibPrintfFuncDecl 
                                                      : primPatternMatchFailureFuncDecl 
@@ -111,6 +110,7 @@ SEM SilModule
                                                      : gcEhcAllocResFuncDecl    @lhs.intType
                                                      : gcEhcGCFuncDecl          @lhs.intType
                                                      : gcEhcRegRootFuncDecl     @lhs.intType
+                                                     : gcEhcRegRootsFuncDecl    @lhs.intType
                                                      : gcEhcDeallocResFuncDecl  @lhs.intType
 
                                                      -- runtime
@@ -129,24 +129,24 @@ SEM SilModule
                                   if sizeofPointer == 8
                                   then "%lld\n"
                                   else "%d\n"
-                loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants :  @functions.constants
+                loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants : mkGCGlobalsDescr @variables : @functions.constants 
                 loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
-                loc.global   = GlobalVar "__llvm_uhc_globals" (Array ((length @variables) + 1) @lhs.pointerType)
-                loc.globals  = -- GlobalVar "RP" (@lhs.globalType) :
-                                mkVarList GlobalVar @variables @lhs.globalType                                                                          
+                loc.globals  = GlobalVar "RP" (@lhs.globalType) 
+                                : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
+                                 , LLVMStatement_Assignment (LocalVar "cast.glob" (pLift @lhs.intType))
+                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_globals_descriptor" (pLift (Array ((length @variables) + 1) (pLift $ pLift @lhs.intType)))) [0, 0 ])  
+
+
+                                 , LLVMStatement_Call (gcEhcRegRootsFuncDecl @lhs.intType) StdCall [ (LocalVar "cast.glob" (pLift $ pLift $ pLift @lhs.intType))
+                                                                                                   , (Constant ((length @variables) + 1) @lhs.intType)]
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
-                                     
-                                 , LLVMStatement_Assignment (LocalVar "rpArrPtr" @lhs.pointerType)
-                                     (LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array ((length @variables) + 1) @lhs.pointerType)) [0, 0] )
-                                     
-                                 -- , LLVMStatement_Store (Constant 2 @lhs.intType)  (LocalVar "rpArr" @lhs.pointerType) 
+
                                  -- , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
-                                 -- , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
-                                 , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (LocalVar "rpArrPtr" (pLift $ @lhs.pointerType))
+                                 , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
 %%[[8
                                  , LLVMStatement_Call fun_mainFuncDecl StdCall []
@@ -173,8 +173,8 @@ SEM Function
   | Function    lhs.llvmCode = let locals = map (\nm -> LLVMStatement_Assignment (LocalVar (hs2str nm) (pLift @lhs.pointerType) )
                                                          (LLVMExpression_Alloca @lhs.pointerType 1) ) (map fst @locals)
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ 
-                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    @body.llvmCode ++  
+                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -311,12 +311,12 @@ SEM Value
     Assign a Malloc to a fresh variable
   -}
   | Alloc       lhs.llvmVar  = @loc.llvmVar
-                lhs.llvmCode = @loc.llvmCode  -- ++ @loc.regRootCode
+                lhs.llvmCode = @loc.llvmCode ++ @loc.regRootCode
                 loc.(gUniq,llvmVar,llvmCode) =
                                assign2var @lhs.gUniq (mkMalloc @gcManaged @lhs.intType @size, @lhs.pointerType)
-                -- loc.regRootCode = case @gcManaged of 
-                --                    GCManaged  -> []
-                --                    NotManaged -> [LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [@loc.llvmVar]]
+                loc.regRootCode = case @gcManaged of 
+                                    GCManaged  -> []
+                                    NotManaged -> [] -- [LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [@loc.llvmVar]]
 
 
   {-|
@@ -394,38 +394,18 @@ SEM Value
                 lhs.llvmCode = error $ "No Label or Cast Value expected"       
  
 SEM Variable
-  | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType -- @loc.loadVar -- GlobalVar (hs2str @name) @lhs.globalType
-                lhs.llvmCode = [] -- @loc.castCode ++ @loc.loadCode -- []
+  | Global      lhs.llvmVar  = GlobalVar (hs2str @name) @lhs.globalType
+                lhs.llvmCode = []
                 
-                loc.(uniqNr1,castVar,castCode) = let i = Data.Map.findWithDefault (error ("Global not in globalsMap")) (hs2str @name) @lhs.globalsMap in
-                                                         assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" 
-                                                                                                           (pLift $ Array ((Data.Map.size @lhs.globalsMap) + 1) @lhs.pointerType)) 
-                                                                                                           [i, 0]
-                                                                               , pLift $ @lhs.pointerType )
-                loc.(uniqNr2,loadVar,loadCode) =
-                              load @loc.uniqNr1 @loc.castVar
-
   | Local       lhs.llvmVar  = LocalVar (hs2str @name) (pLift @lhs.pointerType)
                 lhs.llvmCode = []               
   
   | Param       lhs.llvmVar  = LocalVar (hs2str @name) @lhs.intType                                       
                 lhs.llvmCode = []                                                    
                                                
-  | RP          lhs.llvmVar  = @loc.loadVar -- GlobalVar "RP" @lhs.globalType 
-                lhs.llvmCode = @loc.castCode ++ @loc.loadCode
-                -- lhs.llvmVar  = GlobalVar "RP" @lhs.globalType 
-                -- lhs.llvmCode = []
-
-                loc.(uniqNr1,castVar,castCode) =
-                             assign2var @lhs.gUniq ( LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array ((Data.Map.size @lhs.globalsMap) + 1) @lhs.pointerType)) [0, 0]
-                                                   , pLift $ @lhs.pointerType )
-                loc.(uniqNr2,loadVar,loadCode) =
-                              load @loc.uniqNr1 @loc.castVar
+  | RP          lhs.llvmVar  = GlobalVar "RP" @lhs.globalType 
+                lhs.llvmCode = []
                 
-
-                              -- LLVMStatement_Assignment (LocalVar "rpArrPtr" @lhs.pointerType)
-                              --       (LLVMExpression_GetElemPtr (GlobalVar "__llvm_uhc_globals" (pLift $ Array ((length @variables) + 1) @lhs.pointerType)) [0, 0] )
-
   | Subs        lhs.llvmVar  = @loc.offsetVar
                 lhs.llvmCode = @array.llvmCode ++ @loc.loadCode ++ @loc.ptrCode ++ @loc.offsetCode 
                 
@@ -508,8 +488,6 @@ SEM Value
               
 SEM Variable
   -- Passing to array via copy rule
-  | Global      lhs  .gUniq  = @loc.uniqNr2
-  | RP          lhs  .gUniq  = @loc.uniqNr2
   | Subs        lhs  .gUniq  = @loc.uniqNr3
 
                  
@@ -581,24 +559,6 @@ SEM Constant
 ATTR AllNT
      [ intType, pointerType, globalType : {LLVMType} | | ]
 %%]
-
-%%[(8 codegen grin)
---------------------------------------------------------------------------------
--- We pass down info about relative positions of globals
---------------------------------------------------------------------------------
-ATTR Functions Function 
-     Statements Statement
-     Alternatives Alternative
-     Values Value
-     Variable
-     Constant
-     [ globalsMap : {Data.Map.Map String Int} | | ]
-
-
-SEM SilModule
-  | SilModule   functions.globalsMap = Data.Map.fromList $ zip (map hs2str @variables) [1..]
-%%]
-
 
 %%[(8 codegen grin)
 --------------------------------------------------------------------------------
@@ -769,7 +729,7 @@ gcEhcRegRootFuncDecl intType =
 
 gcEhcRegRootsFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcEhcRegRootsFuncDecl intType = 
-  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_registerGCRoots_ext" Void FixedArgs [(LocalVar "p" (pLift intType)), (LocalVar "n" intType)] Nothing
+  LLVMFunctionDecl_LLVMFunctionDecl "mm_itf_registerGCRoots_ext" Void FixedArgs [(LocalVar "p" (pLift $ pLift $ pLift intType)), (LocalVar "n" intType)] Nothing
 
 gcEhcGCFuncDecl :: LLVMType -> LLVMFunctionDecl
 gcEhcGCFuncDecl intType = 
@@ -898,6 +858,7 @@ defaultCase nr var =
    in (nr1, fresh1, [ LLVMStatement_Label fresh1, LLVMStatement_Call (primPatternMatchFailureDebugFuncDecl $ getType var ) StdCall [var] 
                     , LLVMStatement_Unreachable ])
 }
+
 %%]
 
 %%[(8 codegen grin)
@@ -913,16 +874,23 @@ mkMalloc manageType intType nr =
   if rtsUseGC
   then let size = nr * sizeofPointer
         in case manageType of
-           NotManaged -> LLVMExpression_Call (gcEhcAllocResFuncDecl intType) StdCall [Constant size intType]
+           NotManaged -> LLVMExpression_Call (gcEhcAllocFuncDecl intType)    StdCall [Constant size intType, Constant 0 intType] -- (gcEhcAllocResFuncDecl intType) StdCall [Constant size intType]
            GCManaged  -> LLVMExpression_Call (gcEhcAllocFuncDecl intType)    StdCall [Constant size intType, Constant 0 intType]
   else LLVMExpression_Malloc intType nr
   
   
 mkGCFieldDescriptors :: LLVMType -> [ConstantInfo] -> (LLVMVar, LLVMVar)
-mkGCFieldDescriptors intType ci = (GlobalVar "__llvm_uhc_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
+mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
     where toFieldDesc fd = StructConstant [ Constant (constantInfoNodeSize fd)               intType
                                           , Constant (constantInfoPayloadSize fd)            intType
                                           , Constant (fromBool $ constantInfoHasPointers fd) i8] (TyVar "FDESCR")
+
+
+mkGCGlobalsDescr :: [HsName] -> (LLVMVar, LLVMVar)
+mkGCGlobalsDescr vars = (GlobalVar "_llvm_globals_descriptor" i8 , ArrayConstant (rp : globals) (Array ((length vars) + 1) (pLift $ pLift i64)))
+    where 
+        rp      = GlobalVar "RP" (pLift $ pLift i64)
+        globals = map (\hsn -> GlobalVar (hs2str hsn) (pLift $ pLift i64)) vars
   
 }
 %%]

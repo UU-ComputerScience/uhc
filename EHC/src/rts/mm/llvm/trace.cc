@@ -15,11 +15,9 @@ struct FDescr
 };
 
 
-extern struct FDescr __llvm_uhc_node_descriptor[];
+extern struct FDescr _llvm_node_descriptor[];
 
-// 64 bit
 #define FORWARDING_TAG 0xFFFFFFFFFFFFFFFF
-
 
 %%]
 
@@ -40,8 +38,6 @@ void mm_trace_llvm_Init( MM_Trace* trace, void* traceSupply, MM_Allocator* alloc
 
 Bool mm_trace_llvm_CanTraceObject( MM_Trace* trace, Word obj ) 
 {
-    printf("mm_trace_llvm_CanTraceObject obj=%016llx\n", obj);
-
     return 1;
 }
 
@@ -58,6 +54,11 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
     printf("        mm_trace_llvm_TraceKnownToBeObject obj=%016llx\n", obj); fflush(stdout);
 
+
+    if(obj == NULL){
+        printf("*** null pointer!\n");
+        return NULL;
+    }
     
 	Word tag;
 	tag=((WPtr)obj)[0];
@@ -70,7 +71,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
         // The node is a forwarding node, indicating that the node was copied before,
         // so we can just return that and we're done
 		obj = ((WPtr)obj)[1];
-        printf("          return obj=%016llx\n", obj); fflush(stdout);
+        // printf("          return obj=%016llx\n", obj); fflush(stdout);
 		return obj ;
 	}
 
@@ -78,7 +79,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
     // Find out the size of the new object to be allocated
 
-    struct FDescr descr = __llvm_uhc_node_descriptor[tag];
+    struct FDescr descr = _llvm_node_descriptor[tag];
 
 	Word nodeSize    = (  tag==0 
 	                   ?  ((WPtr)obj)[1]  // BlackHole has nodesize stored in its payload
@@ -107,11 +108,12 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 	
 	//Copy a nice pattern in the part of the node that is not yet used.
 	//Only necessary for debugging.
-	for (int k=payloadSize+1; k<nodeSize; k++)
-	{   objRepl[k] = 0xA4A4A4A4;
-	    printf("            copy filler to %016llx k=%d\n", objRepl+k, k );
-	}
-    printf("            initialized tag=%d fwd tag at %016llx to %016llx\n", objRepl[0], ((WPtr)obj), objRepl );
+	// for (int k=payloadSize+1; k<nodeSize; k++)
+	// {   objRepl[k] = 0xA4A4A4A4;
+	//      // printf("            copy filler to %016llx k=%d\n", objRepl+k, k );
+	// }
+
+    // printf("            initialized tag=%d fwd tag at %016llx to %016llx\n", objRepl[0], ((WPtr)obj), objRepl );
 
     // Overwrite the original object with a forwarding node, which points to the new object
     // The forwarding node has a special tag
@@ -126,13 +128,8 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
     MM_TraceSupply* traceSupply = (MM_TraceSupply*)trace->data;
 	traceSupply->pushWork( traceSupply, (Word*)objRepl, payloadSize+1, allocator->lastAllocFragment(allocator) ) ;
 
-
-	Word tag2;
-	tag2=((WPtr)objRepl)[0];
-    printf("            tag=%d %016llx \n", tag2, tag2); fflush(stdout);
-
-
     printf("            pushwork repl=%016llx\n", objRepl );
+    // getchar();
 	return (Word)objRepl ;
 
 }
@@ -141,21 +138,11 @@ void mm_trace_llvm_TraceObjectPayload( MM_Trace* trace, Word obj )
 {
     printf("        mm_trace_llvm_TraceObjectPayload obj=%016llx\n", obj); fflush(stdout);
 
-
-
-
 	Word tag;
 	tag=((WPtr)obj)[0];
     printf("          tag=%d %016llx\n", tag, tag); fflush(stdout);
 
-
-	if (tag==FORWARDING_TAG)
-    {
-		return ;
-	}
-
-
-    struct FDescr descr = __llvm_uhc_node_descriptor[tag];
+    struct FDescr descr = _llvm_node_descriptor[tag];
     
     if (! (descr.has_pointers))
         return;
@@ -169,6 +156,7 @@ void mm_trace_llvm_TraceObjectPayload( MM_Trace* trace, Word obj )
 	WPtr payloadEnd = payload + payloadSize ;
 	for ( ; payload < payloadEnd ; payload++ )
 	{
+        printf("        CALL mm_trace_llvm_TraceKnownToBeObject obj=%016llx\n", *payload); fflush(stdout);
 		*payload = mm_trace_llvm_TraceKnownToBeObject( trace, *payload ) ;
 	}
 
@@ -178,7 +166,7 @@ Word mm_trace_llvm_ObjectSize( MM_Trace* trace, Word obj )
 {
 	Word tag;
 	tag=((WPtr)obj)[0];
-    struct FDescr descr = __llvm_uhc_node_descriptor[tag];
+    struct FDescr descr = _llvm_node_descriptor[tag];
 	Word nodeSize = descr.max_size;
 	return nodeSize;
 }
@@ -187,7 +175,7 @@ Bool mm_trace_llvm_HasTraceableWords( MM_Trace* trace, Word obj )
 {
 	Word tag;
 	tag=((WPtr)obj)[0];
-    struct FDescr descr = __llvm_uhc_node_descriptor[tag];
+    struct FDescr descr = _llvm_node_descriptor[tag];
 	return descr.has_pointers;
 }
 
