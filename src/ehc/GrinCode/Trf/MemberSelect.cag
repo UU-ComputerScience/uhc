@@ -143,7 +143,8 @@ ATTR GrValL [ | | singleVar : {Maybe HsName}   isEmpty : Bool ]
 ATTR GrVal  [ | | singleVar : {Maybe HsName}   mbFname : {Maybe HsName} ]
 ATTR GrVal  [ | | mbVar : {Maybe HsName} ]
 ATTR GrVal  [ | | mbTupel : {Maybe [HsName]} ]
-ATTR GrVal GrValL GrPatAlt [ | | variables USE {++} {[]} : {[HsName]} ]
+ATTR GrVal 
+     GrValL [ | | variables USE {++} {[]} : {[HsName]} ]
 ATTR GrTag  [ | | isTupel : Bool    mbFname : {Maybe HsName} ]
 
 SEM GrValL
@@ -185,66 +186,11 @@ SEM GrVal
 SEM GrVal
   | Var    lhs.variables = [ @nm ]
 
-SEM GrPatAlt
-  | Node   lhs.variables = @fldL
-  
+ 
 SEM GrTag
   | Con     lhs.isTupel = True
   | *-Con   lhs.isTupel = False
 
 
-
--- Auxiliary attributes needed for gathering selectors
-
-ATTR GrExpr [ | | selectorbody : {Maybe Int}  
-                  caseSelector : {HsName -> Maybe Int}  
-                  mbEval       : {Maybe HsName} 
-            ]
-ATTR GrAlt  [ | | selectorbody : {Maybe Int} 
-            ]
-ATTR GrAltL [ | | singleSelectorBody : {Maybe Int}  
-                  isEmpty : Bool 
-            ]
-
-SEM GrBind
-  | Bind  lhs.selectors = if   length @argNmL /= 1
-                          then Map.empty
-                          else maybe Map.empty
-                                     (\n -> Map.singleton @nm n)
-                                     @expr.selectorbody
-
-SEM GrExpr
-  | Seq    lhs.selectorbody = maybe Nothing
-                                    (\v -> @body.caseSelector v)
-                                    @expr.mbEval
-  | *-Seq  lhs.selectorbody = Nothing
-
-  | Case   lhs.caseSelector = \v -> @altL.singleSelectorBody
-  | *-Case lhs.caseSelector = \v -> Nothing
-
-  | Eval   lhs.mbEval       = Just @nm
-  | *-Eval lhs.mbEval       = Nothing
-
-SEM GrAltL
-  | Nil    lhs.isEmpty      = True
-  | Cons   lhs.isEmpty      = False
-  
-  | Nil    lhs.singleSelectorBody = Nothing
-  | Cons   lhs.singleSelectorBody = if @tl.isEmpty
-                                    then @hd.selectorbody
-                                    else Nothing
-
-SEM GrAlt
-  | Alt    lhs.selectorbody  = maybe Nothing
-                                     (\v -> findIndex 0 v @pat.variables)
-                                     @expr.mbEval
-
-{
-findIndex :: Int -> HsName -> [HsName] -> Maybe Int
-findIndex n x [] = Nothing
-findIndex n x (y:ys) | x==y      = Just n
-                     | otherwise = findIndex (n+1) x ys
-	
-}
 
 %%]
