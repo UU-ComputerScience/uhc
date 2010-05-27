@@ -17,6 +17,24 @@ where n = |a b|
       m = needs - n
 
 
+TODO: And for each pattern
+   p := (#P/needs/f x y)
+   ...
+   CALL app p x y
+replace the CALL expression by
+   CALL f x y a b           if n==needs
+   
+   
+TODO: And for each pattern
+   p := (#P/needs/f x y)
+   ...
+   STORE (A p x y)
+replace the STORE expression by
+   STORE (F/f x y a b)     if n==needs
+   
+
+
+
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
 %%]
 %%[(8 codegen grin) hs import (qualified Data.Map as Map, qualified Data.Set as Set)

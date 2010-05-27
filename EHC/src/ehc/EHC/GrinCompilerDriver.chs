@@ -123,8 +123,8 @@ specialize s
          ; transformCodeIterated dropUnusedExpr     "DropUnusedExpr"   ; caWriteGrin (s++"c-unusedExprDropped")
          ; transformCode         specConst          "SpecConst"        ; caWriteGrin (s++"d-specConst")
          ; transformCodeIterated copyPropagation    "CopyPropagation"  ; caWriteGrin (s++"e-after-cp")
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
+         -- ; transformCode         singleCase         "singleCase"       ; 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin (s++"f-singleCase")
          ; transformCode         simpleNullary      "SimpleNullary"    ; caWriteGrin (s++"g-simpleNullary")
 		 ; transformCode         memberSelect       "MemberSelect"     ; caWriteGrin (s++"h-memberSelected")
          ; transformCode         (dropUnreachableBindings False) 
@@ -159,8 +159,8 @@ doCompileGrin input opts
          ; transformCodeInline                      "Inline" 
          ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
 
-         ; transformCode         singleCase         "singleCase"       ; 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
+         -- ; transformCode         singleCase         "singleCase"       ; 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
 
          ; transformCode         setGrinInvariant   "SetGrinInvariant" ; caWriteGrin "-122-invariant"
          ; checkCode             checkGrinInvariant "CheckGrinInvariant"
