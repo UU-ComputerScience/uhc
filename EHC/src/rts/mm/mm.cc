@@ -70,6 +70,7 @@ void mm_exit() {
 
 Ptr mm_itf_alloc_ext( size_t sz, Word gcInfo ) {
     // mm_itf_gc();    
+    printf("mm_itf_alloc_ext mem: %i \n", sz);
     return mm_itf_alloc( sz, gcInfo );
 }
 

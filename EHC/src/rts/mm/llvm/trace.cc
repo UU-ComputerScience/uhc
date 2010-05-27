@@ -56,7 +56,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
 
     if(obj == NULL){
-        printf("*** null pointer!\n");
+        printf("*** null pointer alert!\n");
         return NULL;
     }
     
@@ -122,6 +122,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
 	// The forwarding node has a single-word payload, which is the pointer to the new object
 	((WPtr)obj)[1] = (Word)objRepl ;
+    printf("            writing forwarding tag at: %016llx forwarding to: %016llx \n", obj, objRepl );
 	
 
     // Queue the payload of the freshly copied object to be processed as well
@@ -154,11 +155,13 @@ void mm_trace_llvm_TraceObjectPayload( MM_Trace* trace, Word obj )
     
 	WPtr payload    = ((WPtr)obj)+1 ;
 	WPtr payloadEnd = payload + payloadSize ;
+    printf("        <<<<<\n");
 	for ( ; payload < payloadEnd ; payload++ )
 	{
         printf("        CALL mm_trace_llvm_TraceKnownToBeObject obj=%016llx\n", *payload); fflush(stdout);
 		*payload = mm_trace_llvm_TraceKnownToBeObject( trace, *payload ) ;
 	}
+    printf("        >>>>>\n");
 
 }
 

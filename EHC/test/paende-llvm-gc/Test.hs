@@ -11,7 +11,7 @@ data ''[]'' a = a : [a] | ''[]''
 
 infixr 6 :
 
-main = sum (upto 1 100000)
+main = sum (upto 1 3)  -- 100000
 
 upto m n = if m > n then [] else m : upto (m + 1) n
 

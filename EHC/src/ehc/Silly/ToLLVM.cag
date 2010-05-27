@@ -186,7 +186,7 @@ SEM Function
                                                  ) @parameters
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ params ++
                                    @body.llvmCode ++  
-                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
