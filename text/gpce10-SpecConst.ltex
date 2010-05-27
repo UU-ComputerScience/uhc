@@ -63,8 +63,9 @@
 % Grin keywords
 
 %format eval  = "\mathbf{eval}"
-%format apply = "\mathbf{eval}"
+%format apply = "\mathbf{apply}"
 %format store = "\mathbf{store}"
+%format unit  = "\mathbf{unit}"
 %format call  = "\mathbf{call}"
 %format case  = "\mathbf{case}"
 %format of    = "\mathbf{of}"
@@ -223,7 +224,7 @@ whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
 \subsection{The Grin intermediate language}
 
 
-\section{Statical handling of dictionaries}
+\section{Dynamic handling of dictionaries}
 \subsection{Dictionary arguments for overloaded functions}
 \subsection{Dictionary generation}
 
@@ -235,7 +236,7 @@ eq d =
     (C/Eq f _) -> {eval f}
 }
 \end{code}
-Default definitions for member functions take the formof overloaded functions
+Default definitions for member functions take the form of overloaded functions
 \begin{code}
 neDef d x y =
 {  store (F/eq d)   ; \f ->
@@ -330,7 +331,7 @@ fixEqInt  :=  (F/fixEqInt')
 
 
 
-\section{Statical handling of dictionaries}
+\section{Static handling of dictionaries}
 
 
 When it is possible to inspect and transform the program as a whole,
@@ -718,7 +719,7 @@ to a fixed point after about 5 iterations.
 
 \section{Implementation}
 
-
+With AG's
 
 \section{Conclusion}
 
