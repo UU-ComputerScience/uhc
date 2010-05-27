@@ -249,6 +249,12 @@ PRIM Word32 primIntegerToWord32(Word p)
     return res;
 }
 
+PRIM Int32 primIntegerToInt32(Word p)
+{
+	Int32 res;
+    res = ((WPtr)p)[0];
+    return res;
+}
 
 PRIM Word primCmpInteger(Word x, Word y)
 {   if (((WPtr)x)[0] > ((WPtr)y)[0])

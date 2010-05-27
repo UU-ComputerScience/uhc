@@ -156,8 +156,9 @@ doCompileGrin input opts
 %%]]
          ; transformCode         buildAppBindings   "BuildAppBindings" ; caWriteGrin "-117-appsbound"
          ; transformCode         globalConstants    "GlobalConstants"  ; caWriteGrin "-118-globconst"
-         ; transformCodeInline                      "Inline" 
-         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
+         
+         -- ; transformCodeInline                      "Inline" 
+         -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-119-inlined"
 
          -- ; transformCode         singleCase         "singleCase"       ; 
          -- ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-121-singleCase"
@@ -173,6 +174,12 @@ doCompileGrin input opts
          ; specialize "-123-6"
          -- ; specialize "-123-7"
          -- ; specialize "-123-8"
+
+         ; transformCodeInline                      "Inline" 
+         ; transformCode         grFlattenSeq       "Flatten"          ; caWriteGrin "-124-inlined"
+
+         ; transformCode         evalStored         "EvalStored"       ; caWriteGrin ("125-evalstored")
+
 
          ; transformCode         (dropUnreachableBindings False) 
                                              "DropUnreachableBindings" ; caWriteGrin "-126-reachable"

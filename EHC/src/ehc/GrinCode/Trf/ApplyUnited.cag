@@ -17,22 +17,25 @@ where n = |a b|
       m = needs - n
 
 
-TODO: And for each pattern
-   p := (#P/needs/f x y)
+  
+And for each pattern
+   p <- (#P/needs/f x y)
    ...
-   CALL app p x y
-replace the CALL expression by
-   CALL f x y a b           if n==needs
-   
-   
-TODO: And for each pattern
-   p := (#P/needs/f x y)
-   ...
-   STORE (A p x y)
+   STORE (A p a b)
 replace the STORE expression by
    STORE (F/f x y a b)     if n==needs
-   
 
+   
+TODO: And for each pattern
+   p <- (#P/needs/f x y)
+   ...
+   CALL app p a b
+replace the CALL expression by
+   CALL f x y a b           if n==needs
+(this pattern can occur if the inline transformation and the evalStored transformation are done before applyUnited.
+Then, the STORE (A p a b) expression might have been combined with a subsequent EVAL, brought there by inlining,
+and we'll have to deal with  CALL app p a b)
+For the moment, the inline transformation is postponed till after applyUnited, so there is no urgency to fix this.
 
 
 %%[(8 codegen grin) ag import({GrinCode/AbsSyn})
@@ -63,9 +66,35 @@ ATTR AllNT [ | | grTrf: SELF ]
 
 %%[(8 codegen grin)
 
+
+ATTR AllGlobal [ | | initialEnv USE {`Map.union`} {Map.empty} : {Map.Map HsName GrVal} ]
+
+ATTR GrVal [ | | hasPTag : {Bool} ]
+
+ATTR GrTag [ | | isPTag : {Bool} ]
+
+SEM GrGlobal
+  | Global    lhs.initialEnv  =  if @val.hasPTag
+                                 then Map.singleton @nm @val.grTrf
+                                 else Map.empty
+
+SEM GrVal
+  | Node      lhs.hasPTag  =  @tag.isPTag
+  | * - Node  lhs.hasPTag  =  False
+
+SEM GrTag
+  | PApp      lhs.isPTag   =  True
+  | *-PApp    lhs.isPTag   =  False
+
+SEM GrModule
+  | Mod       bindL.globalPnodes  =  @globalL.initialEnv
+
+
 -- Environment passes information about variables that hold a P-node.
 
-ATTR AllGrExpr  [  env : {Map.Map HsName GrVal} | | ]
+ATTR AllGrExpr  GrBind GrBindL [  globalPnodes : {Map.Map HsName GrVal}  | | ]
+
+ATTR AllGrExpr  [  env : {Map.Map HsName GrVal}  | | ]
 
 ATTR GrExpr [  | | mbUnitPNode : {Maybe GrVal} ]
                    
@@ -96,8 +125,41 @@ SEM GrExpr
   | * - Unit        lhs.mbUnitPNode    =  Nothing
  
   | App             lhs.grTrf          =  maybe @loc.grTrf
-                                                (applyNode @nm @argL.grTrf)
-                                                (Map.lookup @nm @lhs.env)
+                                                id
+                                                (do   -- in the Maybe monad
+                                                 { node <- Map.lookup @nm @lhs.env
+                                                 ; applyNode @nm @argL.grTrf node
+                                                 })
+                                                 
+  | Store           lhs.grTrf          =  maybe @loc.grTrf
+                                                id
+                                                (do   -- in the Maybe monad
+                                                 { _ <- @val.mbAname
+                                                 ; let (v:vs) = @val.variables
+                                                 ; node <- Map.lookup v @lhs.globalPnodes
+                                                 ; let (GrVal_Node t ws) = node
+                                                 ; let (GrTag_PApp needs name) = t
+                                                 ; _ <- if needs==length vs then Just () else Nothing
+                                                 ; return (GrExpr_Store (GrVal_Node (GrTag_Fun name) (ws++(map GrVal_Var vs))))
+                                                 })
+
+-- Auxiliary attributes needed for gathering
+
+ATTR GrVal GrTag  [ | | mbAname : {Maybe HsName} ]
+ATTR GrVal GrValL [ | | variables USE {++} {[]} : {[HsName]} ]
+
+SEM GrVal
+  | Node   lhs.mbAname      = @tag.mbAname
+  | *-Node lhs.mbAname      = Nothing
+  
+SEM GrTag
+  | App    lhs.mbAname      = Just @nm
+  | *-App  lhs.mbAname      = Nothing
+
+SEM GrVal
+  | Var    lhs.variables = [ @nm ]
+
+
 
 %%]
 
@@ -107,14 +169,9 @@ SEM GrExpr
 applyNode nm2 flds2 node@(GrVal_Node (GrTag_PApp needs nm) flds1) 
   =  let n = length flds2
      in  if n<needs
-         then GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2)) GrType_None
+         then Just (GrExpr_Unit  (GrVal_Node (GrTag_PApp (needs-n) nm) (flds1++flds2)) GrType_None)
          else if n==needs
-              then GrExpr_Call  nm  (flds1++flds2)
-              else let newname = hsnFromString "hallo"
-                       flds2a  = take needs flds2
-                       flds2b  = drop needs flds2
-                   in  GrExpr_Seq (GrExpr_Call  nm  (flds1++flds2a))
-                                  (GrPatLam_Var newname)
-                                  (GrExpr_App  newname flds2b)
+              then Just (GrExpr_Call  nm  (flds1++flds2))
+              else Nothing   -- oversaturated situation, forget it
 
 %%]
