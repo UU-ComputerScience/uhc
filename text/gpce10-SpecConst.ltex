@@ -42,6 +42,8 @@
 }
 
 
+%format ^*      = "^{*}"
+%format epsilon = "\epsilon"
 %format bottom = "\bot"
 %format ...    = "\mbox{\dots}"
 %format not    = "\mathit{not}"
@@ -59,6 +61,11 @@
 %format dictinst   = "\mathbf{dictinst}"
 %format dictclass  = "\mathbf{dictclass}"
 %format specialized  = "\mathbf{specialized}"
+
+% Grin metanotions
+
+%format BVar  = "\mathit{\underline{Var}}"
+
 
 % Grin keywords
 
@@ -79,6 +86,7 @@
 %format C     = "\mathbf{C}"
 %format Pm    = "\mathbf{P}_{m}"
 %format Pnm   = "\mathbf{P}_{n-m}"
+%format PN    = "\mathbf{P}_{N}"
 
 %format a1    = "\mathit{a}_{1}"
 %format an    = "\mathit{a}_{n}"
@@ -165,53 +173,250 @@ can completely eliminate run-time overhead for dictionary passing.
 
 
 \section{Overloading in Haskell}
+In this section we briefly summarize how function overloading is modeled in Haskell.
+Overloaded functions can be applied to values of various types.
+For example, the addition function can be applied to |Int| values and also to |Float| values (but not to |Bool| values).
+The equality testing function can be applied to values of many types, like |Int|, |Float|, |Char|, |Bool|.
+Furthermore, it can be applied to values of list type |[a]|, provided that it is also applicable to the element type |a|.
+But equality testing is not possible on values of function type.
+
+A related concept is {\em polymorphism}.
+Polymorphic functions can be applied to values of various types.
+For example, concatenation can be applied to lists of type |[Int]| and to lists of type |[Char]|,
+and in fact, to lists of type |[a]| for any type |a|.
+
+The difference is that polymorphic functions have a uniform definition, regardless of the type of the arguments,
+whereas an overloaded function can have a different definition for each type of argument to which it is applicable.
+The type of arguments of polymorphic functions can be {\em any} instantiation of the type variables in its type,
+whereas the type of arguments of overloaded functions can only be some particular instantiation of the type variables in its type.
+Therefore, function overloading is sometimes refered to as {\em ad hoc polymorphism}.
+
 \subsection{Class and instance declarations}
+
+The group of types to which an overloaded function can be applied is known as a {\em class}.
+A {\em class declaration} introduces a name for such a group of types, plus the signatures of functions
+of which the variables in the type are constrained to be instantiated to types in that group.
+For example, we can introduce the class |Eq| of types that support the equality and the non-equality functions
+by writing the class declaration
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
   ne  ::  a -> a -> Bool
+\end{code}
+The |Eq| class is actually part of the Haskell standard library. 
+There, operators $==$ and $/=$ are defined rather than functions |eq| and |ne|,
+but in this paper we avoid operators, as the notational conventions for writing them obscures the explanation.
+
+Particular types can be defined to be an instance of the class by an {\em instance declaration}.
+For example, |Int| can be made instance of |Eq| by giving definitions for the functions specified in the class declaration:
+\begin{code}
 instance Eq Int where
-  eq x y  =  primEqInt x y
-  ne x y  =  not (primEqInt x y)
+  eq x y  =  eqPrimInt x y
+  ne x y  =  not (eqPrimInt x y)
+\end{code}
+The definitions rely on the existence of a function |eqPrimInt| that gives a primitive implementation for equality on integers.
+The way |eqPrimInt| is defined is not relevant for the present discussion.
+
+As another example, we give an instance declaration for |Eq Bool|.
+It shows that we can define the function |eq| from scratch if we wish, without relying on other functions.
+The function |ne| can be defined in a similar fashion (and that would probably be more efficient),
+but just to show the possiblility to have |ne| rely on the existence of the other overloaded function |eq|.
+\begin{code}
 instance Eq Bool where
   eq  False  False  = True
   eq  True   True   = True
   eq  _      _      = False
   ne  x      y      = not (eq x y)
 \end{code}
+The terminology of the notions `class' and `instance' is borrowed from the object-oriented paradigm.
+There are similarities, in that a class declaration specifies functions that are implemented in the instance declaration.
+But note that there are differences as well: in the object-oriented paradigm, class member functions take an 
+object of the class as implicit argument, 
+whereas in the functional paradigm all arguments are declared explicitly, and thus we can have two arguments that are
+constrained to the instance type.
+
+Not all overloaded functions need to be defined in a class.
+Every function that uses an overloaded function, will automatically be overloaded itself.
+For example, the function |elem| that checks element membership of a list uses the overloaded equality function |eq| on the list elements:
+\begin{code}
+elem e []      = False
+elem e (x:xs)  = eq e x || elem e xs
+\end{code}
+Therefore, although the |elem| function has a uniform definition and thus seems to be a polymorphic function,
+it can actually only be used on lists of which the elements are in the |Eq| class.
+This fact is expressed in the signature of the |elem| function by:
+\begin{code}
+elem :: Eq a => a -> [a] -> Bool
+\end{code}
+Note the double-shafted arrow which is to be read as `constrains', as opposed to the single-shafted arrow 
+which is to be read as `function from/to'.
+
+
 \subsection{Default definitions}
+One could question the need for declaring |ne| to be part of the |Eq| class.
+After all, non-equality is (in any sound implementation) the negation of equality.
+So it would have been possible to only specify |eq| in the class,
+and to define |ne| with a uniform definition, in a similar fashion to |elem|:
+\begin{code}
+class Eq a where
+  eq  ::  a -> a -> Bool
+ne  ::  Eq a => a -> a -> Bool
+ne x y  =  not (eq x y)
+\end{code}
+That way, instance programmers are freed from the burden to give a definition of |ne|.
+But the downside is that it is now impossible for instance programmers
+to define their own version of |ne|. 
+The programmer of |Eq Bool| might regret not being able to define
+a more efficient version of |ne| that does pattern matching directly, 
+instead of relying on the uniform definition that calls |eq| and |not|.
+
+To overcome the dilemma, Haskell allows a class definition to be augmented with {\em default definitions}
+for some or all of the member functions.
+Now, instance programmers have the choice to either rely on a default definition of |ne|
+as it appears in the class, or give a more efficient version for a particular type.
+
+A default definition by nature must be a uniform definition, as it can not assume
+the type variables in the signature to be instantiated as a particular type.
+But the definition can rely on other functions from the class.
+In fact, the Haskell standard library implementation of |Eq| has a default definition 
+for both |ne| and |eq|, defined in terms of each other:
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
   ne  ::  a -> a -> Bool
-  ne x y  =  not (eq x y)
-instance Eq Int where
-  eq x y  =  primEqInt x y
-instance Eq Bool where
-  eq  False  False  = True
-  eq  True   True   = True
-  eq  _      _      = False
+  ne x y   =  not (eq x y)
+  eq x y   =  not (ne x y)
 \end{code}
+An instance programmer now has the choice to define either |eq| or |ne| (and rely on the default definition for the other),
+or define both (thus ignoring/erasing the default definitions).
+Defining neither of the two is allowed as well, but would result in inheriting the circular definitions without
+breaking the circle by redefining at least one of the two.
+
+
 \subsection{Superclasses}
+
+Stretching the analogy to object-oriented classes further, Haskell has a notion of `superclasses' as well.
+It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$ and $\geq$.
+Default definitions specify them in terms of each other.
+Instance programmers can choose to implement only one of the four (and rely on the default definitions for the others),
+or more if they wish.
+But the default definitions not only call each other, but also the |eq| function from class |Eq|.
+This is possible because |Ord| is specified to be a subclass of |Eq|, 
+that is, a type is only allowed to be an instance of |Ord| if it is an instance of |Eq| as well.
+
+A possible class definition of |Ord| is:
 \begin{code}
-class Eq a => Ord a where
-  ge  :: a -> a -> Bool
+class (Eq a) => Ord a where
+  lt  :: a -> a -> Bool
   le  :: a -> a -> Bool
   gt  :: a -> a -> Bool
-  lt  :: a -> a -> Bool
-  max :: a -> a -> a
+  ge  :: a -> a -> Bool
+  lt   x y  =  not  (ge x y)
+  gt   x y  =  not  (le x y)
+  le   x y  =  lt  x y || eq x y
+  ge   x y  =  gt  x y || eq x y
 \end{code}
+The superclass is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
+in parentheses as there may be more than one superclass.
+The real definition in the standard library also specifies functions |compare|, |min|, and |max|, 
+and an even more intricate web of mutually recursive default definitions.
+
 \subsection{Context for instances}
+
+Finally, Haskell provides a mechanism to declare an instance in the context of the presence another instance.
+An example is the definition of |Eq| for lists, where lists are defined to be equal if their elements are.
+This only makes sense in a context where the element type is assumed to be instance of |Eq| as well.
 \begin{code}
 instance  Eq a => Eq [a] where
   eq []      []      =  True
-  eq []      _       =  False
+  eq []      (y:ys)  =  False
   eq (x:xs)  (y:ys)  =  eq x y && eq xs ys
 \end{code}
+The last line shows two calls to |eq|.
+The second is a recursive call on the tails of the list.
+The first however is not a recursive call, but a call to |eq| for a different instance type:
+the list element type, guaranteed to be an instance of |Eq| by the context mentioned in the header.
+Type analysis by the compiler makes sure that the right version of |eq| is called.
+
+
 
 \section{UHC compiler structure}
+
+
 \subsection{Transformational programming}
-See figure 1.
+
+The main structure of the compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
+Haskell source text is translated to an executable program by stepwise transformation.
+Some transformations translate the program to a lower level language,
+many others are transformations within one language,
+establishing an invariant or performing an optimization.
+
+All transformations, both within a language and between languages, are expressed
+as an algebra giving a semantics to the language.
+The algebras are described with the aid of an attribute grammar,
+which makes it possible to write multi-pass tree-traversals
+without even knowing the exact number of passes.
+Although the compiler driver is set up to pass data structures between transformations,
+for all intermediate languages we have a concrete syntax with a parser
+and a pretty printer. This facilitates debugging the compiler, by inspecting
+code between transformations.
+
+Here is a short characterization of the intermediate languages.
+In section~\ref{sec-uhcarch-lang} we give a more detailed description.
+\begin{itemize}
+\item Haskell (HS): a general-purpose, higher-order, polymorphically typed, lazy functional language.
+\item Essential Haskell (EH): a higher-order, polymorphically typed, lazy functional language close to lambda-calculus, without syntactic sugar.
+\item Core: an untyped, lazy functional language close to lambda-calculus
+            (at the time of this writing we are working on moving to a typed intermediate language,
+             a combination of Henk %\cite{peytonjones97henk-ty-interm},
+             GHC core,
+             and recent work on calling conventions %\cite{bolingbroke09type-call-conv}).
+\item Grin: `Graph reduction intermediate notation', 
+            the instruction set of a virtual machine of a small functional language with strict semantics, 
+            with features that enable implementation of laziness %\cite{boquist99phd-optim-lazy}.
+\item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
+            (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
+            easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
+\item BC: A bytecode language for a low-level machine intended to interpret Grin which is not whole-program analyzed nor transformed.
+          We do not discuss this language in this paper.
+\end{itemize}
+The compiler targets different backends, based on a choice of the user.
+In all cases, the compiler starts compiling on a per module basis,
+desugaring the Haskell source text to Essential Haskell, type checking it and translating it to Core.
+Then there is a choice from three modes of operation:
+\begin{itemize}
+\item In {\em whole-program analysis mode},
+      the Core modules of the program and required libraries are assembled together
+      and processed further as a whole.
+      At the Grin level, elaborate inter-module optimization takes place.
+      Ultimately, all functions are translated to low level C,
+      which can be compiled by a standard compiler.
+      As alternative backends, we are experimenting with other target languages,
+      among which are the Common Intermediate Language (CIL) from the Common language infrastructure used by .NET %\cite{iso-cil},
+      and the Low-Level Virtual Machine (LLVM) compiler infrastructure %\cite{llvm-cgo04}.
+\item In {\em bytecode interpreter mode},
+      the Core modules are translated to Grin separately.
+      Each Grin module is translated into instructions for a custom bytecode machine.
+      The bytecode is emitted in the form of C arrays,
+      which are interpreted by a handwritten bytecode interpreter in C.
+\item In {\em Java mode},
+      the Core modules are translated to bytecode for the Java virtual machine (JVM).
+      Each function is translated to a separate class with an |eval| function, and
+      each closure is represented by an object combining a function with its parameters.
+      Together with a driver function in Java which steers the interpretation,
+      these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
+\end{itemize}
+The bytecode interpreter mode is intended for use during program development:
+it compiles fast, but because of the interpretation overhead the generated code is not very fast.
+The whole-program analysis mode is intended to use for the final program:
+it takes more time to compile, but generates code that is more efficient.
+
+In Section~2 we describe the tools that play an important role in UHC:
+the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
+In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, illustrated with a running example.
+In Section~4 the transformations are characterized in more detail.
+Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
+
 
 \begin{figure}[tbfh]
 \includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
@@ -221,7 +426,76 @@ whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
 \end{figure}
 
 
+
+
+
 \subsection{The Grin intermediate language}
+
+
+
+Refer to figure~\ref{fig-grin-syntax} for the syntax of the Grin language.
+
+A program consists of bindings, 
+each of which is either a function definition or a global variable.
+Local functions are not possible in Grin, so all functions are defined at top level.
+
+The body of a function is an |Expr|.
+Although this sounds functional,
+the body is fact is a sequence of statements with side effects on the heap,
+and assigning local variables on its way.
+
+
+
+When a function is called, the body of the function is executed,
+which has side effects on the heap
+
+\begin{figure}[tbfh]
+
+\begin{center}
+\fbox{
+\parbox{8cm}{
+\begin{code}
+Program  ::=   Bind^*
+Bind     ::=   Name BVar^* = Annot { Expr }
+         |     BVar <- Node
+Expr     ::=   unit Var
+         |     unit Node
+         |     Expr ; \ BVar -> Expr
+         |     case Var of Alt^*
+         |     store Node
+         |     eval  Var
+         |     call  Name Var^*
+         |     apply Var Var^*
+Alt      ::=   Pat -> Expr
+Pat      ::=   ( Tag BVar^* )
+Node     ::=   ( Tag Var^* )
+         |     ( Tag Lit )
+Tag      ::=   C/Constr
+         |     PN/Name
+         |     F/Name
+         |     A
+N        ::=   1 | 2 | ...
+Annot    ::=   epsilon
+         |     dictclass Name^*
+         |     dictinst  (Constr, Name, Name^*)
+         |     specialized (Name, Var^*)
+\end{code}
+}
+}
+\end{center}
+
+\caption{Syntax of the Grin language. An |^*| denotes 0 or more occurences, underline denotes a defining position.
+|Var|, |Name|, and |Constr| are identifiers refering to values, functions, or constructors.
+|Lit| is an integer or character literal.
+}
+\label{fig-grin-syntax}
+\end{figure}
+
+
+
+
+
+
 
 
 \section{Dynamic handling of dictionaries}
@@ -283,7 +557,7 @@ dEqInt =
                                    (Eq f g) -> (Eq f eqInt)
                in   gen
           ;  eqInt =
-               primEqInt
+               eqPrimInt
           }
   in fixEqInt
 \end{code}
@@ -310,7 +584,7 @@ genEqInt d =
 {  call genEq d   ; \t ->
    case t of
      (C/Eq _ f) ->
-     {  store (P2/primEqInt)  ; \g ->
+     {  store (P2/eqPrimInt)  ; \g ->
         store (C/Eq g f)      ; \r ->
         eval r
      }
@@ -378,7 +652,7 @@ dEqInt    :=  (C/Eq eqEqInt neEqInt)
 which explicitly stores the dictionary without having to do the fixed point construction at run time.
 Inside the dictionary, we reference two global variables which are initialized for the purpose:"
 \begin{code}
-eqEqInt :=  (P2/primEqInt)
+eqEqInt :=  (P2/eqPrimInt)
 neEqInt :=  (P2/eqDef dictEqInt)
 \end{code}
 This is hard for two reasons:
@@ -407,7 +681,7 @@ Apart from the marker we embed in the annotation all information relevant for th
 In our example, we get:
 \begin{code}
 dEqInt' =
-dictinst(Eq, genEq, [primEqInt, _])
+dictinst(Eq, genEq, [eqPrimInt, _])
 {  eval fixEqInt
 }
 genEq d =
@@ -552,15 +826,15 @@ app9 f a1...an =
 The reason that we bring up this whole story, is that the previous |selectMember| transformation
 generates opportunities for |evalKnown|. 
 Remember that it has replaced |call eq dEqInt| by |eval eqEqInt|.
-This is an opportunity for the |evalKnown| transformation, since |eqEqInt| is a global variable bound to |(P2/primEqInt)|.
-Thus |eval eqEqInt| is transformed to |unit (P2/primEqInt)|.
+This is an opportunity for the |evalKnown| transformation, since |eqEqInt| is a global variable bound to |(P2/eqPrimInt)|.
+Thus |eval eqEqInt| is transformed to |unit (P2/eqPrimInt)|.
 
 Our example thus now is transformed to:
 \begin{code}
 test1' =
 {  store (C/Int 3)      ; \x ->
    store (C/Int 4)      ; \y ->
-   unit (P2/primEqInt)  ; \v ->
+   unit (P2/eqPrimInt)  ; \v ->
    apply v x y
 }
 \end{code}
@@ -575,11 +849,11 @@ for example when emitting code for polymorphic functions such as |map|.
 But similar to the previous subsection, where |eval| is occasionally used on variables with a statically known value,
 situations can occur where |apply| is used on values that are statically known.
 In fact, this happens in the example outcome of the previous transformation:
-we have an |apply| operating on a value that obviously is |(P2/primEqInt)|,
-a partial application of |primEqInt| lacking 2 parameters.
+we have an |apply| operating on a value that obviously is |(P2/eqPrimInt)|,
+a partial application of |eqPrimInt| lacking 2 parameters.
 
 Since in this example the lacking 2 parameters are provided as part of the |apply| operation,
-the call is thereby saturated and equivalent to |call primEqInt x y|.
+the call is thereby saturated and equivalent to |call eqPrimInt x y|.
 
 This is exactly what the |evalKnown| transformation performs: it symbolically collects all
 |unit|s, and for each |apply v a1...an| checks whether the value |v| holds a known node |(Pm/f b0...bk)|.
@@ -595,8 +869,8 @@ Our example ends up as:
 test1' =
 {  store (C/Int 3)      ; \x ->
    store (C/Int 4)      ; \y ->
-   unit (P2/primEqInt)  ; \v ->
-   call primEqInt x y
+   unit (P2/eqPrimInt)  ; \v ->
+   call eqPrimInt x y
 }
 \end{code}
 Note that the binding of the |P2|-node to |v| is now obsolete. 
