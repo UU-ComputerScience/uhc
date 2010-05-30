@@ -104,13 +104,16 @@
 %format P     = "\mathbf{P}"
 %format Pm    = "\mathbf{P}_{m}"
 %format Pnm   = "\mathbf{P}_{n-m}"
+%format Pmk   = "\mathbf{P}_{m-k}"
 %format PN    = "\mathbf{P}_{N}"
 
 %format a1    = "\mathit{a}_{1}"
 %format an    = "\mathit{a}_{n}"
 %format app9  = "\mathit{app}_{n}"
 %format b0    = "\mathit{b}_{0}"
+%format b1    = "\mathit{b}_{1}"
 %format bk    = "\mathit{b}_{k}"
+%format bm    = "\mathit{b}_{m}"
 %format e1    = "\mathit{e}_{1}"
 %format e2    = "\mathit{e}_{2}"
 
@@ -303,7 +306,7 @@ instance Eq Bool where
   eq  _      _      = False
   ne  x      y      = not (eq x y)
 \end{code}
-The terminology of the notions `class' and `instance' is borrowed from the object-oriented paradigm.
+The terminology of the notions `class' and `instance' is borrowed from the object-oriented paradigm \cite{bernardy2009}.
 There are similarities, in that a class declaration specifies functions that are implemented by instance declaration.
 But note that there are differences as well: in the object-oriented paradigm, class member functions take an 
 object of the class as an implicit argument, 
@@ -373,7 +376,7 @@ breaking the circle by redefining at least one of the two.
 \subsection{Super classes}
 
 Using the terminology of object-oriented paradigm even further, Haskell has the notion of a `superclass' as well.
-It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$, $<=$, $>$, and $\geq$.
+It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$, $\le$, $>$, and $\geq$.
 Default definitions specify these in terms of each other.
 Instance programmers can choose to implement only one of the four (and rely on the default definitions for the others),
 or more if they wish.
@@ -518,13 +521,12 @@ Tag      ::=   C/Constr
          |     PN/Name
          |     F/Name
          |     A
-N        ::=   1 | 2 | ...
-Z        ::=   N | 0 | -1
+N        ::=   0 | 1 | 2 | ...
 Annot    ::=   epsilon
          |     dictclass (Name^*)
          |     dictinst  (Constr Name (Name^*))
-         |     overloaded ( (Z^*)^* )
-         |     specialized (Name Var^*)
+         |     overloaded ( (N^*)^* )
+         |     specialized (Name (Var^*))
 \end{code}
 }
 }
@@ -613,9 +615,9 @@ We now turn to the semantics of the various expression forms.
 \item |e1 ; \x -> e2| executes |e1|, binds the result to variable |x| and subsequently executes |e2|. It returns whatever |e2| returns.
 \item |store n| stores the node value |n| on the heap, and returns a pointer to it
 \item |call f a1...an| calls function |f| with the given arguments, and returns the node that is its result
-\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bm| if $k>=m$.
+\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bm| if $k\ge m$.
       When $k>m$, the result of the call is recursively applied to the remaining arguments.
-      When $k<m$, the function still lacks arguments, and an appropriate new |P|-node is returned.
+      When $k<m$, the function can't be called for lack of arguments, and an appropriate new |Pmk|-node is returned.
 \item |eval x| expects a pointer in variable |x| and fetches the corresponding node from the heap.
       If the node is in head normal form, that is, has a |C| or |P| tag, that node is just returned.
       If the node has an |F/f| tag, function |f| is called.
@@ -845,7 +847,7 @@ Situations where that assumption doesn't hold are:
 \item the default definition does not use the other members.
       The Core code generator only introduces additional parameters when they are really necessary,
       so here we get a default definition without dictionary parameter.
-\item the default definition does use other fields, but only from superclasses (see section~\ref{sec.superclass}).
+\item the default definition does use other fields, but only from superclasses.
       The Core code generator optimizes for this situation by having the function take the dictionary for the superclass directly.
 \end{itize}
 In both situations the expression |apply q' dictEqInt| in the first attempt applies |q'| wrongly.
@@ -964,13 +966,12 @@ The opportunities for applying these transformations are prepared by some more t
 
 \subsection{The |mergeInstance| transformation}
 
-In a whole-program analysis setting, it is possible to merge functions defined in an instance
-with the default definitions from the class statically.
-However, the (EH to Core) code generator generates Core code without having a particular back end in mind.
-So we are confronted with the code as described in the previous section for dynamic dictionary construction,
-and the first task is to turn that in a static construction.
-
-So the goal is to replace
+In a whole-program analysis setting, it is possible to statically merge the functions defined in an instance
+with the default definitions from the class.
+However, the (EH to Core) code generator generates Core code without having a particular back end in mind,
+and thus we are confronted with the code as described in the previous section for dynamic dictionary construction.
+Our first task is to turn that in a static construction.
+The goal is to replace
 \begin{code}
 dictEqInt <- store (F/makeEqInt)
 \end{code}
@@ -978,7 +979,7 @@ back to
 \begin{code}
 dictEqInt  <- store (C/Eq eqIntP neIntP)
 \end{code}
-and generate appropriate member fields:
+and to generate the appropriate member fields:
 \begin{code}
 eqIntP     <- store (P2/eqPrimInt)
 neIntP     <- store (P2/neDef dictEqInt)
@@ -987,17 +988,16 @@ neIntP     <- store (P2/neDef dictEqInt)
 This is hard for two reasons:
 it is hard to see that |dictEqInt| is indeed a dictionary:
 it would involve deconstructing the thunk, 
-% statically doing the evaluation of |fixEqInt| which leads us to |makeEqInt|,
 inspecting the code of |makeEqInt|
-and see that it has the form that we can recognize as the generated code for instance declarations.
-Once we found that, we should carefully deconstruct |makeEqInt| for finding the information needed in the dictionary,
-including the reference to |makeEqDef| which is to be deconstructed as well.
+recognize that it has the form of generated code for instance declarations,
+extract the names of function definitions from it,
+as well as the reference to |makeEqDef| which is to be deconstructed as well.
 
 Although this approach is possible in principle, it feels like reversely engineering
 the outcome of all the transformations that were responsible of generating this Grin definitions.
-Apart from being tricky, the procedure is bound to break whenever we would make changes in the Core to Grin transformation pipeline.
+Apart from being tricky, the procedure is deemed to break whenever we would make changes in the Core to Grin transformation pipeline.
 
-Instead, we take a different approach, by making manifest the intention of some of the generated function definitions,
+Instead, we take a different approach, by making the intention of some of the generated function definitions manifest,
 by means of annotations.
 The price is that we need to extend both the Core and the Grin language to facilitate such annotations.
 \begin{itize}
@@ -1009,25 +1009,27 @@ Apart from the marker we embed in the annotation all information relevant for th
 \begin{itize}
 \item for |dictinst|,  we need the name of the tag of the dictionary, the name of the dictionary constructor for the default definitions, and all the names of the members defined.
 \item for |dictclass|, we need the names of all default definitions.
-\item for |overloaded|, we need a description of the dictionary it needs (and whether it needs one at all).
+\item for |overloaded|, we need a description of the dictionaries it needs (and whether it needs one at all).
 \end{itize}
 In our example, the relevant annotations are:
 \begin{code}
 makeEqInt =
-  dictinst(Eq genEq (eqPrimInt _))
-{ ... }
+  dictinst(Eq genEq (eqPrimInt _)) { ... }
 makeEqDef d =
-  dictclass (_ neDef)
-{ ... }
+  dictclass (_ neDef){ ... }
 neDef d x y =
-  overloaded ( () )
-{ ... }
+  overloaded ( () )  { ... }
 \end{code}
-There are empty positions in the name lists when functions are not defined in the instance or class declarations.
-The annotation of the overloaded function indicates that this function simply needs the dictionary for the whole class.
+There are underscores in the |dictinst| and |dictclass| annotations for members that are not defined.
+The annotation of the overloaded function is a list of lists of numbers.
+Each element corresponds to a dictionary argument.
+An empty element (as in the example) 
+indicates that this function simply needs the dictionary for the whole class.
+A singleton list element |(n)| indicates that a dictionary for the $n$th superclass is needed.
+Longer lists specify super-superclasses; for example |(3 1)| specifies the third superclass of the first superclass.
 
-These annotations can be easily inserted when generating Core, because all this information is needed anyway
-for generating the Core definitions.
+The annotations can be easily inserted when generating Core, because all this information is available anyway
+when generating the Core definitions.
 The annotations are propagated unchanged through all Core and Grin transformations, so that we have them available
 when we need them: in the |mergeInstance| transformation.
 
@@ -1036,17 +1038,17 @@ when we need them: in the |mergeInstance| transformation.
 \subsection{The |selectMember| transformation}\label{subsec.selectMember}
 
 Dictionaries are passed as additional arguments to overloaded functions.
-In their body, they can be passed to other overloaded functions, 
+In the function bodies, they can be passed to other overloaded functions, 
 but in the end dictionaries are only used for one purpose:
 selecting a member function from them.
-
-An example is a |test1| which we introduced earlier:
+An example is |test1| which we introduced earlier:
 \begin{code}
 test1 =
 {  store (C/Int 3)     ; \x ->
    store (C/Int 4)     ; \y ->
    call eq dictEqInt   ; \p ->
    apply p x y
+}
 \end{code}
 The third line selects a field from the dictionary by calling the |eq| selector;
 the resulting function is subsequently applied to its arguments.
@@ -1056,13 +1058,12 @@ we can now proceed by selecting the member fields statically.
 This is what the |selectMember| transformation does:
 it scans the Grin program for expressions of the form |call s d|
 where |s| is a selector function and |d| is a dictionary.
-
 In the example, the selector is |eq|, which is a Grin function defined by
 \begin{code}
 eq d =
 {  eval d ; \t ->
    case t of
-    (C/Eq f _) -> {eval f}
+    (C/Eq p q) -> {eval p}
 }
 \end{code}
 It is recognized as a selector, because its definition is a two-line function where the second line evaluates one of the members of a dictionary.
@@ -1086,6 +1087,7 @@ test1 =
    store (C/Int 4)  ; \y ->
    eval eqEqInt     ; \p ->
    apply p x y
+}
 \end{code}
 
 
@@ -1096,7 +1098,7 @@ two transformations that simplify the Grin program based on variables of which t
 There are two such transformations: |evalKnown| and |applyKnown|.
 
 An |eval| expression occurs in Grin code when it is needed to force a variable to head normal form
-and fetch its value from the heap.
+and to fetch its value from the heap.
 A typical occurrence is in the body of a function, where the unknown value of the argument needs to be forced and fetched
 in order to be scrutinized:
 \begin{code}
@@ -1116,7 +1118,7 @@ This is equivalent to a shorter expression:
 \end{code}
 which is more efficient since it avoids storing a node on the heap, and executing the |eval| operation to fetch it back.
 
-So is the Grin code generator to blame for emitting inefficient code like the example above?
+So is the Grin code generator to blame for emitting inefficient code like in the example above?
 Not really, because the value of the variable could have become known only later, as a result of transformation of Grin code.
 For example, if the |inline| transformation decides to inline the call to |f| in
 \begin{code}
@@ -1125,33 +1127,33 @@ For example, if the |inline| transformation decides to inline the call to |f| in
 \end{code}
 we end up with the inefficient |store|-|eval| combination.
 
-To compensate for this, we have a transformation |evalKnown| that hunts for |eval x|
-where |x| has a known value, either because it is a global variable or it is the target of an earlier |store|.
+To compensate for this, we introduced a transformation |evalKnown| that hunts for occurrences of |eval x|
+where |x| has a known value, either because it is a global variable or because it is the target of an earlier |store|.
 This transformation catches situations like the example above.
 Since this transformation is carried out anyway, the Grin code generator
-can afford itself to generate |store|-|eval| pairs on occasion.
+can afford itself to generate inefficient |store|-|eval| pairs on occasion.
 This makes the code generator simpler: it can be defined compositionally, without having to 
-bother to avoid |store|-|eval| pairs.
+bother about avoiding |store|-|eval| pairs.
 
 The |evalKnown| transformation symbolically collects all (local and global)
 |store|s, and for each |eval x| checks whether the variable |x| has a known value.
-There are three cases:
+We distinguish two cases:
 \begin{itize}
 \item |x| is a global or local variable used to store a value |v| in head normal form, that is a node with a |C| or |P| tag.
       Then |eval x| can be replaced by |unit v|.
 \item |x| is a local variable used to store a thunk with an |F| tag, that is a node |(F/f a1...an)|.
       When |x| is used only once,
       then |eval x| can be replaced by |call f a1...an|
-\item |x| is a local variable used to store a thunk with an |A| tag, that is a node |(A f a1...an)|.
-      When |x| is used only once,
-      then |eval x| can be replaced by |call app9 f a1...an|,
-      where |app9| is a compiler-generated function
-\begin{code}
-app9 p a1...an =
-{  eval p  ; \p' ->
-   apply p' a1...an
-}
-\end{code}
+%\item |x| is a local variable used to store a thunk with an |A| tag, that is a node |(A f a1...an)|.
+%      When |x| is used only once,
+%      then |eval x| can be replaced by |call app9 f a1...an|,
+%      where |app9| is a compiler-generated function
+%\begin{code}
+%app9 p a1...an =
+%{  eval p  ; \p' ->
+%   apply p' a1...an
+%}
+%\end{code}
 \end{itize}
 
 The reason that we bring up this whole story, is that the previous |selectMember| transformation
@@ -1190,9 +1192,9 @@ This is exactly what the |evalKnown| transformation performs: it symbolically co
 |unit|s, and for each |apply x b1...bk| checks whether the variable |x| holds a known node |(Pm/f a1...an)|.
 There are three cases:
 \begin{itize}
-\item |n<m| (undersaturated call): replace the |apply| operation by |unit (Pnm/f a1...an b1...bk)|
-\item |n=m| (saturated call): replace the |apply| operation by\\ |call f a1...an b1...bk|
-\item |n>m| (oversaturated call): do nothing. (This situation does not occur in the context discussed in this paper. If it does occur in other situations, doing nothing is always safe.)
+\item |k<m| (undersaturated call): replace the |apply| operation by |unit (Pmk/f a1...an b1...bk)|
+\item |k=m| (saturated call): replace the |apply| operation by\\ |call f a1...an b1...bk|
+\item |k>m| (oversaturated call): do nothing. (This situation does not occur in the context discussed in this paper. If it does occur in other situations, doing nothing is always safe.)
 \end{itize}
 
 Our example ends up as:
@@ -1204,9 +1206,9 @@ test1 =
    call eqPrimInt x y
 }
 \end{code}
-Note that the binding of the |P2|-node to |p| is now obsolete. 
+Note that the binding of the |P2|-node to |p| has now become obsolete. 
 However, it is not removed by the |applyKnown| transformation, 
-as it will be caught anyway by a |dropUnused| transformation performed further downstream.
+as it will be caught anyway by a |dropUnused| transformation performed further downstream the transformation pipeline.
 This way, we keep the individual transformations straightforward, 
 while they together still do all that is needed.
 
@@ -1214,12 +1216,12 @@ while they together still do all that is needed.
 
 \subsection{The |specConst| transformation}
 
-The combined effort of all transformations so far has succeeded to annihilate 
+The combined effort of all transformations so far has succeeded in annihilating
 all dictionary overhead involved in the Haskell expression |eq 3 4|.
-But now let's see what happens for the Haskell expression |ne 5 6|.
+Now let's see what happens for the Haskell expression |ne 5 6|.
 
 Because the instance declaration |Eq Int| relies on the default definition for |ne|,
-the resulting Grin code is different now. 
+the resulting Grin code is different. 
 The field selection and subsequent |apply| is shortcut successfully,
 but the default definition |neDef| that is now called is overloaded,
 and thus needs an additional dictionary parameter itself.
@@ -1230,22 +1232,24 @@ test2 =
    call neDef dictEqInt x y
 }
 \end{code}
-So we still have overhead for run-time dictionary passing here.
+So we still have the overhead associated with run-time dictionary passing here.
 
 To overcome this, we rely on a technique that is actually more general:
-make specialized `clones' of a function that is called with a constant argument.
-Function |neDef| has three parameters, but it is called here with constant arguments:
+statically apply partial evaluation and generate
+specialized `clones' of a function that is called with a constant argument.
+Function |neDef| has three parameters, 
+and in this call the first argument is a global constant:
 a dictionary, that (since the |selectMember| transformation is performed) is defined as a global constant:
 \begin{code}
 dictEqInt  <- store  (C/Eq eqEqInt neEqInt)
 \end{code}
 In this particular example the other two arguments are constants as well,
-so the function will end up to be specialized for all three arguments,
-but in a typical situation only the dictionary is constant, and we get a specialized copy still expecting two parameters.
+so the function may end up to be specialized for all three arguments.
+In a typical situation however only the dictionary is constant, and we get a specialized copy still expecting two parameters.
 
-For the purpose of explaining, we assume here that the function is only specialized for its dictionary argument
+For the sake of argument, we assume here that the function is only specialized for its dictionary argument
 (imagine an option to be active that forbids specializing for integer arguments).
-The definition of |neDef| is taken:
+Starting from the original definition of |neDef|:
 \begin{code}
 neDef d x y =
 {  store (F/eq d)   ; \f ->
@@ -1253,7 +1257,7 @@ neDef d x y =
    call not r
 }
 \end{code}
-and a clone of it is generated, which is specialized for the first argument:
+a clone is generated, which is specialized for the first argument:
 \begin{code}
 neDef' x y =
   specialized (neDef (dictEqInt _ _))
@@ -1279,8 +1283,8 @@ test2 =
 \subsection{\dots and repeat}
 
 
-After the specialization, new opportunities are exposed for transformations that we discussed earlier.
-Firstly, the operation\\
+After the specialization, new opportunities are exposed in the body of the clone for transformations that we discussed earlier.
+Firstly, the operation
 |store (F/eq dictEqInt)| is an opportunity for the |selectMember| transformation.
 In subsection~\ref{subsec.selectMember} we described that 
 for all selectors |s| that select field |i| from a dictionary,
@@ -1291,26 +1295,26 @@ We now widen the task of |selectMember| to also handle selections from constant 
 that are disguised as thunk. That is: 
 replace |store (F/s d)| by |unit f|.
 
-This way, we lose the lazy behavior of the field selection.
+In this way, we lose the lazy behavior of the field selection.
 But there is no need for laziness in this situation:
 field selection cannot fail, and it is performed fast -- in fact, 
 now that we perform it statically, it takes no time at all.
-Nobody would oppose not postponing a call that takes zero time and cannot fail.
+Nobody will oppose not postponing a call that takes zero time and cannot fail.
 
 Another d\'eja vu: the |unit eqEqInt| that emerges from the previous transformation
 can be combined with the thunkified |apply| in |store (A f x y)|.
 This is done by the |applyKnown|, whose task is also widened to handle situations
 where an |apply| is disguised as a thunk with |A| tag.
 
-Next, we may have new opportunities for another |specConst| transformation, etcetera.
+Next, further opportunities for another |specConst| transformation may arise, etcetera.
 All in all, the following sequence of transformations should be performed repeatedly:
 |selectMember|, |evalKnown|, |applyKnown|, and |specConst|.
 
 New opportunities will appear as often as overloaded functions keep calling each other,
 requiring as many iterations as the static nesting depth of overloaded functions.
 If we want to be sure that all dictionary-passing is removed, we should
-iterate the four transformations until none of the four does replacements.
-In practice, a fixed number of iterations could satisfy as well.
+iterate the four transformations until we reach a fixed point.
+In practice, a fixed number of iterations could satisfy.
 
 In real-life example programs involving the complicated classes from
 the numeric, IO, and read/show libraries, we observed the transformation of a program to converge
@@ -1319,29 +1323,67 @@ to a fixed point after about 5 iterations.
 
 
 
-\section{Super classes and contexts}\label{sec.superclass}
 
-Even more parameters
+\section{Concluding remarks}
 
-\section{Implementation}
+The UHC compiler is written in Haskell itself.
+The ease of defining recursive datastructures, parsers, and tree traversals
+make Haskell a useful tool for compiler writing.
+Still, writing a tree traversal for a non-trivial language like 
+the intermediate languages in UHC takes some effort.
 
-With AG's
+This is aggravated by the fact that many transformations in UHC
+perform multi-pass transformations over the parse tree.
+The transformations in the case study of this paper
+follow this pattern as well. 
+For example,
+|selectMember| scans the program for finding selectors,
+and then scans the program again for finding calls to the selectors.
 
-\section{Conclusion}
+To write the tree traversals for all 60 transformations in UHC,
+most of which are multi-pass, by hand would be too much work.
+That is why we employ an attribute grammar based preprocessor for Haskell,
+that greatly facilitates writing tree traversals.
+Maybe it is even fair to say that UHC is written in the language of
+attribute grammars, and it is compiled into Haskell by the preprocessor.
+There is a vague border between the concepts of `preprocessor' and `compiler',
+between `software generation' and `program translation'.
 
-Transformational approach enables us to concentrate on simple transformations,
-that can be composed to perform complex tasks.
 
-Related work:
-w.r.t. tackling overloading: GHC stores info in hi files, Fax\'en  gives formal description.
-Jones does static evaluation in a core-like language; we do it as late as possible in a lower level language.
 
-w.r.t. transformational approach: Boquist used transformations in a Haskell compiler, 
-but without tackling overloading
+\subsection{Related work}
 
-w.r.t. transformational approach in general: Stratego, ASF/SDF and many others
+The Haskell compiler that is most widely used is the Glasgow Haskell Compiler (GHC).
+It is of production quality, and many people contribute to its implementation
+or to supporting libraries and applications.
 
-w.r.t. AG-approach: Jastadd.
+Like UHC, GHC is written in Haskell itself, but without the aid of a preprocessor.
+Although GHC is structured as a few transformations, it tries to do as much
+as possible in a single transformation. This makes it harder to understand
+how various optimization steps cooperate and interact.
+On the positive side, economizing on transformations makes the compiler fast.
+
+GHC is designed to compile modules separately, and it is interesting to see how
+it handles overloading. When a module is compiled, GHC reads summaries (known as `hi'-files)
+of the modules it imports. These summaries consist mainly of signatures of exported functions.
+But an exception is made for default definitions in class declarations:
+these definitions are stored in full in the summaries.
+This way, GHC is able to do specialization of default defintions.
+
+There is a vast amount of literature on the implementation of overloading.
+We mention work on the dictionary technique \cite{augustsson93impl-hask-overl},
+dynamical merging of dictionaries in separate modules \cite{faxen2002},
+and statical elimination of the overhead of dictionary passing \cite{jones1995a}.
+
+The philosophy of writing a Haskell compiler by means of many small transformations
+was proposed by Boquist \cite{boquist1996,boquist99phd-optim-lazy}.
+He focused on whole-program analysis for statically approximating the values of heap pointers.
+Overloading is not implemented in this work.
+
+
+% Stratego, ASF/SDF
+
+% AG, Jastadd
 
 
 
@@ -1381,17 +1423,17 @@ A static semantics for Haskell.
 {\em J.~Functional Programming} {\bf 12} (2002), pp.~295--357.
 
 
-\bibitem[Jones 1995a]{jones1995a}
+\bibitem[Jones 1995]{jones1995a}
 Mark. P.\ Jones.
 Dictionary-free overloading by partial evaluation.
 {\em Lisp and symbolic computation} {\bf 8} (1995), pp.~229--248.
 
 
-\bibitem[Jones 1995b]{jones1995b}
-Mark. P.\ Jones.
-Functional programming with overloading and higher-order polymorphism.
-In: {\em Advanced Functional Programming} AFP 1995, pp.~97--136.
-Springer LNCS 925.
+%\bibitem[Jones 1995b]{jones1995b}
+%Mark. P.\ Jones.
+%Functional programming with overloading and higher-order polymorphism.
+%In: {\em Advanced Functional Programming} AFP 1995, pp.~97--136.
+%Springer LNCS 925.
 
 \end{thebibliography}
 
