@@ -1321,6 +1321,10 @@ mkDataGenerBinds
                                , mkBindStr ehbnGenerClassDatatypeFldModule $ maybe hsnUnknown id $ hsnQualifier orignm
                                ]
 
+                          GenerInstKind_Selector
+                            -> [ mkBindStr ehbnGenerClassSelectorFldName                         $ hsnQualified orignm
+                               ]
+
                           GenerInstKind_Constructor tyNm
                             -> [ mkBindStr ehbnGenerClassConstructorFldName $ hsnQualified orignm ]
                                ++ (if Map.null (dtiFldMp dti) then [] else [mkBind ehbnGenerClassConstructorFldIsRec $ acoreVar $ biNm ehbnBoolTrue])

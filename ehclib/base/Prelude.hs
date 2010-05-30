@@ -42,6 +42,22 @@ import UHC.Base hiding
   -- , IOWorld, RealWorld
   , ByteArray
   , exitWithIntCode
+  
+  -- generics uses names which are too short to expose
+  -- * Generic representation types
+  , V1, U1(..), Par1(..), Rec1(..), K1(..), M1(..)
+  , (:+:)(..), (:*:)(..), (:.:)(..)
+
+  -- ** Synonyms for convenience
+  , Rec0(..), Par0(..), R, P
+  , D1(..), C1(..), S1(..), D, C, S
+
+  -- * Meta-information
+  -- , Datatype(..), Constructor(..), Selector(..)
+  , Fixity(..), Associativity(..)
+
+  -- * Representable type classes
+  , Representable0(..), Representable1(..)
   )
 import UHC.Eq
 import UHC.Ord

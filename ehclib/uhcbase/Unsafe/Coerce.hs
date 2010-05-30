@@ -39,6 +39,10 @@ unsafeCoerce = unsafeCoerce#
 import NonStdUnsafeCoerce (unsafeCoerce)
 #endif
 
+#if defined(__UHC__)
+import UHC.Base (unsafeCoerce)
+#endif
+
 #if defined(__HUGS__)
 import Hugs.IOExts (unsafeCoerce)
 #endif

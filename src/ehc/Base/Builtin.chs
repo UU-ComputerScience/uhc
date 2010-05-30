@@ -738,6 +738,7 @@ builtinGenerClassNmL
   = [ bi i
     | bi <- [ ehbnGenerClassConstructor
             , ehbnGenerClassDatatype
+            , ehbnGenerClassSelector
             ]
     ]
   where i = mkEHBuiltinNames (\_ n -> hsnQualified n)
@@ -855,7 +856,7 @@ data EHBuiltinNames
       , ehbnGenerDataMetaS    				:: HsName
       , ehbnGenerDataMetaDN    				:: Int -> HsName
       , ehbnGenerDataMetaCN    				:: Int -> HsName
-      , ehbnGenerDataMetaSN    				:: Int -> HsName
+      , ehbnGenerDataMetaS1    				:: HsName
 %%]]
 %%[[97
       , ehbnInt8                        :: HsName
@@ -1003,7 +1004,7 @@ mkEHBuiltinNames f
       , ehbnGenerDataMetaS    				=       f IdOcc_Type  (mkGenerRV     "S"				)
       , ehbnGenerDataMetaDN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "D"				)
       , ehbnGenerDataMetaCN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "C"				)
-      , ehbnGenerDataMetaSN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "S"				)
+      , ehbnGenerDataMetaS1    				=       f IdOcc_Type  (mkGenerRV     "S1"				)
 %%]]
 %%[[97
       , ehbnInt8                        = f IdOcc_Type      hsnInt8
