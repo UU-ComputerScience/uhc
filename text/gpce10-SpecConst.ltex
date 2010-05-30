@@ -95,10 +95,13 @@
 % Grin tags
 
 %format /     = "\mbox{/}"
+%format P1    = "\mathbf{P}_1"
 %format P2    = "\mathbf{P}_2"
+%format P3    = "\mathbf{P}_3"
 %format F     = "\mathbf{F}"
 %format A     = "\mathbf{A}"
 %format C     = "\mathbf{C}"
+%format P     = "\mathbf{P}"
 %format Pm    = "\mathbf{P}_{m}"
 %format Pnm   = "\mathbf{P}_{n-m}"
 %format PN    = "\mathbf{P}_{N}"
@@ -163,19 +166,21 @@ We illustrate the transformational approach by showing
 how overloading is implemented and optimized in UHC.
 Overloaded functions take additional `dictionary' arguments, 
 which are automatically inserted during code generation,
-based on inferred types.
+based on the inferred types.
 
 For each instance declaration, a dictionary is generated 
 containing the functions defined in the instance.
-The dictionary also should contain the default definitions 
+The dictionary also contains the default definitions 
 from the corresponding class declaration,
 thus requiring a mechanism for combining them.
 
-When compiling modules separately, the combination is done dynamically.
-When doing whole program analysis, class and instance can be combined
-statically by symbolic computation.
+When modules are compiled separately, this combining is done dynamically,
+during program startup or at the first use of the dictionary.
+When performing whole-program analysis, however, 
+information from the class and instance declarations
+can be combined statically using symbolic computation.
 Further transformations, notably specialization of functions for constant arguments,
-can completely eliminate run-time overhead for dictionary passing.
+can completely eliminate run-time overhead normally associated with dictionary passing.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -188,44 +193,97 @@ can completely eliminate run-time overhead for dictionary passing.
 
 \section{Introduction}
 
+Compiling a program is the oldest and most widely used example of generative programming.
+They are so common, that programmers are hardly conscious any more that compiling, 
+say, a C pogram alleviates them of the tedious task of writing machine code.
+With compilers for higher level languages, it is more manfest that a compiler
+generates code, which in turn can be regarded as source code for another compiler.
+For example, Haskell compilers often target the C language, and domain specific
+languages in turn may target Haskell.
 
-\section{Overloading in Haskell}
+Compilers are complex programs.
+The translating process involves many tasks, such as parsing, type checking,
+modelling memory structure, code generation, and optimization.
+These tasks ideally are dealt with in separate components, and by selecting and
+arranging these components one can tune a compiler for different requirements,
+such as various levels of optimization, or targeting various back ends.
+
+We decided to build a compiler for Haskell 
+(the Utrecht Haskell Compiler, or UHC)
+that radically takes a component based approach: 
+it translates a program by transforming it
+in many small steps. Each transformation is relatively simple, and
+can be understood and tested separately.
+Along the route from source (Haskell) to target (C) language, 
+the program is transformed through some intermediate languages:
+some of them existing, some of them defined for the purpose.
+Therefore some transformations (5 of them) are actually translations
+between languages,
+and many others (about 60) are source-to-source translations in
+one of the intermediate languages.
+
+In this paper we present a case study that illustrates the approach:
+the implementation of function overloading in Haskell.
+This case touches many aspects: 
+modelling a high-level concept (overloading) by lower level datastructures (dictionaries),
+dealing with two compiler modes (separate compiling versus whole-program optimization),
+and the composition of 6 transformations that together accomplish a task.
+
+Moreover, the Haskell feature under scrutiny (type classes and their instances) happens to
+be a mechanism that is often used by Haskell programmers for achieving modularity,
+and thus is interesting in its own right from a component engineering perspective.
+
+To make the paper self-contained, we start in section~\ref{sec.overloading} with a short description
+of overloading in Haskell.
+In section~\ref{sec.uhc} we sketch the structure of UHC,
+and introduce the intermediate language central to this case study.
+Then implementation of overloading is described for two compiler modes:
+in separate compilation mode (section~\ref{sec.dynamic}) we see generative programming at work,
+wheras in whole-program analysis mode (section~\ref{sec.static}) many components
+cooperate to optimize the code.
+We conclude with remarks on the methodology and pointers to related work.
+
+
+
+
+
+\section{Overloading in Haskell}\label{sec.overloading}
 In this section we briefly summarize how function overloading is modeled in Haskell.
 Overloaded functions can be applied to values of various types.
 For example, the addition function can be applied to |Int| values and also to |Float| values (but not to |Bool| values).
-The equality testing function can be applied to values of many types, like |Int|, |Float|, |Char|, |Bool|.
-Furthermore, it can be applied to values of list type |[a]|, provided that it is also applicable to the element type |a|.
-But equality testing is not possible on values of function type.
+The function which tests for equality can be applied to values of many types, like |Int|, |Float|, |Char|, |Bool|.
+Furthermore, it can even be applied to values of list type |[a]|, provided that it is also defined for the element type |a|.
+Note however that equality testing is not possible for values of a function type.
 
-A related concept is {\em polymorphism}.
+A closely related concept is {\em polymorphism}.
 Polymorphic functions can be applied to values of various types.
 For example, concatenation can be applied to lists of type |[Int]| and to lists of type |[Char]|,
 and in fact, to lists of type |[a]| for any type |a|.
 
 The difference is that polymorphic functions have a uniform definition, regardless of the type of the arguments,
-whereas an overloaded function can have a different definition for each type of argument to which it is applicable.
+whereas an overloaded function usually has a different definition for each type of argument for which it is defined.
 The type of arguments of polymorphic functions can be {\em any} instantiation of the type variables in its type,
-whereas the type of arguments of overloaded functions can only be some particular instantiation of the type variables in its type.
+whereas the type of arguments of overloaded functions can only be those types for which a version of the function has been defined.
 Therefore, function overloading is sometimes referred to as {\em ad hoc polymorphism}.
 
 \subsection{Class and instance declarations}
 
-The group of types to which an overloaded function can be applied is known as a {\em class}.
-A {\em class declaration} introduces a name for such a group of types, plus the signatures of functions
-of which the variables in the type are constrained to be instantiated to types in that group.
-For example, we can introduce the class |Eq| of types that support the equality and the non-equality functions
-by writing the class declaration
+The group of types to which an overloaded function can be applied is known as its {\em class}.
+A {\em class declaration} introduces a name for such a group of types, together the signatures of functions.
+These signatures can involve type variables, which may be instantiated to types belonging to the group.
+For example, when introducing the class |Eq| of types that support equality and non-equality functions
+we write the class declaration
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
   ne  ::  a -> a -> Bool
 \end{code}
-The |Eq| class is actually part of the Haskell standard library. 
+This |Eq| class is actually part of the Haskell standard library. 
 There, operators $==$ and $/=$ are defined rather than functions |eq| and |ne|,
 but in this paper we avoid operators, as the notational conventions for writing them obscures the explanation.
 
-Particular types can be defined to be an instance of the class by an {\em instance declaration}.
-For example, |Int| can be made instance of |Eq| by giving definitions for the functions specified in the class declaration:
+Individual types can be defined to be an instance of a class by an {\em instance declaration}.
+For example, |Int| can be made instance of |Eq| by providing definitions for the functions specified in the class declaration:
 \begin{code}
 instance Eq Int where
   eq x y  =  eqPrimInt x y
@@ -236,7 +294,7 @@ The way |eqPrimInt| is defined is not relevant for the present discussion.
 
 As another example, we give an instance declaration for |Eq Bool|.
 It shows that we can define the function |eq| from scratch if we wish, without relying on other functions.
-The function |ne| can be defined in a similar fashion (and that would probably be more efficient),
+The function |ne| can be defined in a similar way (and that would probably be more efficient),
 but just to show the possibility to have |ne| rely on the existence of the other overloaded function |eq|.
 \begin{code}
 instance Eq Bool where
@@ -246,11 +304,11 @@ instance Eq Bool where
   ne  x      y      = not (eq x y)
 \end{code}
 The terminology of the notions `class' and `instance' is borrowed from the object-oriented paradigm.
-There are similarities, in that a class declaration specifies functions that are implemented in the instance declaration.
+There are similarities, in that a class declaration specifies functions that are implemented by instance declaration.
 But note that there are differences as well: in the object-oriented paradigm, class member functions take an 
-object of the class as implicit argument, 
-whereas in the functional paradigm all arguments are declared explicitly, and thus we can have two arguments that are
-constrained to the instance type.
+object of the class as an implicit argument, 
+whereas in the functional paradigm all parameters are declared explicitly; thus we can have two arguments that are
+constrained tothe type of this instance declaration.
 
 Not all overloaded functions need to be defined in a class.
 Every function that uses an overloaded function, will automatically be overloaded itself.
@@ -267,7 +325,9 @@ elem :: Eq a => a -> [a] -> Bool
 \end{code}
 Note the double-shafted arrow which is to be read as `constrains', as opposed to the single-shafted arrow 
 which is to be read as `function from/to'.
-
+We may read this signature as: 
+for each type |a| which is an instance of |Eq|, 
+|elem| has the type |a -> [a] -> Bool|.
 
 \subsection{Default definitions}
 One could question the need for declaring |ne| to be part of the |Eq| class.
@@ -280,21 +340,21 @@ class Eq a where
 ne  ::  Eq a => a -> a -> Bool
 ne x y  =  not (eq x y)
 \end{code}
-That way, instance programmers are freed from the burden to give a definition of |ne|.
+Using this approach, instance programmers are freed from the burden to give an explicit, but straightforward, definition of |ne|.
 But the downside is that it is now impossible for instance programmers
 to define their own version of |ne|. 
 The programmer of |Eq Bool| might regret not being able to define
-a more efficient version of |ne| that does pattern matching directly, 
+a more efficient version of |ne| that uses pattern matching directly, 
 instead of relying on the uniform definition that calls |eq| and |not|.
 
-To overcome the dilemma, Haskell allows a class definition to be augmented with {\em default definitions}
+To overcome this dilemma, Haskell allows a class definition to be augmented with {\em default definitions}
 for some or all of the member functions.
-Now, instance programmers have the choice to either rely on a default definition of |ne|
-as it appears in the class, or give a more efficient version for a particular type.
+Now, instance programmers have the choice either to rely on a default definition of |ne|
+as it appears in the class, or to give a more efficient version for a particular type.
 
-A default definition by nature must be a uniform definition, as it cannot assume
-the type variables in the signature to be instantiated as a particular type.
-But the definition can rely on other functions from the class.
+A default definition by nature is a uniform definition, as it cannot assume
+the type variables in the signature to be instantiated to a particular type.
+But the definition can refer to the other functions from the class.
 In fact, the Haskell standard library implementation of |Eq| has a default definition 
 for both |ne| and |eq|, defined in terms of each other:
 \begin{code}
@@ -312,13 +372,13 @@ breaking the circle by redefining at least one of the two.
 
 \subsection{Super classes}
 
-Stretching the analogy to object-oriented classes further, Haskell has a notion of `super classes' as well.
-It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$ and $\geq$.
-Default definitions specify them in terms of each other.
+Using the terminology of object-oriented paradigm even further, Haskell has the notion of a `superclass' as well.
+It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$, $<=$, $>$, and $\geq$.
+Default definitions specify these in terms of each other.
 Instance programmers can choose to implement only one of the four (and rely on the default definitions for the others),
 or more if they wish.
 But the default definitions not only call each other, but also the |eq| function from class |Eq|.
-This is possible because |Ord| is specified to be a subclass of |Eq|, 
+This is possible because |Ord| is specified to be a subclass of |Eq|;
 that is, a type is only allowed to be an instance of |Ord| if it is an instance of |Eq| as well.
 
 A possible class definition of |Ord| is:
@@ -333,15 +393,16 @@ class (Eq a) => Ord a where
   le   x y  =  lt  x y || eq x y
   ge   x y  =  gt  x y || eq x y
 \end{code}
-The super class is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
-in parentheses as there may be more than one super class.
-The real definition in the standard library also specifies functions |compare|, |min|, and |max|, 
+The superclass is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
+and is parenthesized as there can be specified more than one superclass.
+The actual definition in the standard library also specifies functions |compare|, |min|, and |max|, 
 and an even more intricate web of mutually recursive default definitions.
 
 \subsection{Context for instances}
 
-Finally, Haskell provides a mechanism to declare an instance in the context of the presence another instance.
-An example is the definition of |Eq| for lists, where lists are defined to be equal if their elements are.
+Finally, Haskell provides a mechanism to declare an instance in the context of another instance.
+An example is the definition of |Eq| for lists, where the equality for
+lists of elements is expressed using the equality function for the elements.
 This only makes sense in a context where the element type is assumed to be instance of |Eq| as well.
 \begin{code}
 instance  Eq a => Eq [a] where
@@ -349,20 +410,27 @@ instance  Eq a => Eq [a] where
   eq []      (y:ys)  =  False
   eq (x:xs)  (y:ys)  =  eq x y && eq xs ys
 \end{code}
-The last line shows two calls to |eq|.
+The defining expression line contains two calls to |eq|.
 The second is a recursive call on the tails of the list.
 The first however is not a recursive call, but a call to |eq| for a different instance type:
 the list element type, guaranteed to be an instance of |Eq| by the context mentioned in the header.
 Type analysis by the compiler makes sure that the right version of |eq| is called.
 
 
+\begin{figure}[tbfh]
+\includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
+\caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
+whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
+\label{fig-uhcarch-pipeline}
+\end{figure}
 
-\section{UHC compiler structure}
+
+\section{UHC compiler structure}\label{sec.uhc}
 
 
 \subsection{Transformational programming}
 
-The main structure of the compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
+The main structure of the Utrecht Haskell Compiler is shown in Figure~\ref{fig-uhcarch-pipeline}.
 Haskell source text is translated to an executable program by stepwise transformation.
 Some transformations translate the program to a lower level language,
 many others are transformations within one language,
@@ -412,130 +480,18 @@ Then there is a choice from three modes of operation:
       The bytecode is emitted in the form of C arrays,
       which are interpreted by a handwritten bytecode interpreter in C.
 \item In {\em Java mode},
-      the Core modules are translated to bytecode for the Java virtual machine (JVM).
+      the Core modules are translated to Java bytecode, to be interpreted by the Java virtual machine (JVM).
       Each function is translated to a separate class with an |evalf| function, and
       each closure is represented by an object combining a function with its parameters.
       Together with a driver function in Java which steers the interpretation,
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itize}
 The bytecode interpreter mode is intended for use during program development:
-it compiles fast, but because of the interpretation overhead the generated code is not very fast.
-The whole-program analysis mode is intended to use for the final program:
+it compiles fast, but because of the interpretation overhead execution is not very fast.
+The whole-program analysis mode is intended to be used for the final program:
 it takes more time to compile, but generates code that is more efficient.
 
-\begin{figure}[tbfh]
-\includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
-\caption{Intermediate languages and transformations in the UHC pipeline, in each of the three operation modes:
-whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
-\label{fig-uhcarch-pipeline}
-\end{figure}
 
-
-
-
-
-\subsection{The Grin intermediate language}
-
-Grin is a small language designed to be an intermediate language
-between Core (a higher-order lazy functional language) and Silly (an imperative language).
-Grin is a functional language (function bodies are expressions and which are evaluated when a function is called) 
-but it is first-order (all functions are defined at top level and cannot be passed as arguments)
-and strict (functions are called immediately when a function call is executed).
-Nevertheless, Grin has an imperative spirit, as the evaluation of expressions can have side effects on a heap.
-The sequencing of these side effects is described in a monadic style, as the only expression forms
-are a handful of basic operations on the heap, and a monadic bind and unit operation.
-
-The translating transformation from Core to Grin takes care of the necessary scheduling.
-Also, it has to simulate the lazy semantics of Core by means of some primitives that are provided in Grin for the purpose.
-The data that is manipulated by Grin is structured into {\em nodes}, which are tagged lists of single-word elements.
-Nodes can be assigned to local variables directly, but local variables can also hold pointers to nodes that are stored on the heap.
-
-Refer to figure~\ref{fig-grin-syntax} for the syntax of the Grin language.
-It shows that a program consists of bindings, 
-each of which is either a function definition 
-or the initialization of global variable with a pointer to a node stored on the heap.
-Function definitions are optionally annotated with an |Annot|, the meaning of which is described in section~\ref{sec.static}.
-
-The body of a function is an expression of the built-in monad:
-either one of six primitive forms, a monadic binding of one expression to a variable in another expression,
-or a selection from alternatives based on the value of a variable.
-Sequencing is written in monadic style as |e1 ; \x -> e2|, with semantics
-`execute |e1|, bind the result to |x| and then execute |e2|.
-Although the lambda symbol suggests that we can define local functions, this is 
-by no means general lambda-calculus, as the lambda can only be used in this particular position.
-The notation involving the semicolon, lambda and arrow is just a triadic expression form,
-which in a different concrete syntax would look more like an imperative assignment statement |x := e1; e2|.
-
-We will discuss the semantics of the various expression forms shortly, 
-but first we focus on nodes and tags.
-A node can be thought of as a variable-sized block of memory,
-consisting of a tag indicating its purpose, and a payload of zero or more pointers.
-A special form of node consists of a tag and a primitive literal.
-
-Tags come in four flavors: |C|, |P|, |F|, and |A|.
-Nodes with |C| or |P| tag are final: when a pointer to them is evaluated, they remain the same.
-Nodes with |F| or |A| tags encode a deferred computation.
-They are also known as a {\em thunk}, used in the implementation of lazy evaluation.
-When a pointer to such a node is evaluated, the computation takes place, and the node is updated with a final node.
-
-The meaning of the four tag flavors is as follows:
-\begin{itize}
-\item |C| corresponds to a constructor in Haskell. 
-      For example, 
-      the empty list has tag |C/Nil| and can be represented as a node with zero-length payload |(C/Nil)|.
-      A non-empty list can be constructed as |(C/Colon x xs)|.
-\item |P| stands for partial parameterization of a function.
-      In the lambda calculus, a function that is applied to too few arguments is in {\em head normal form},
-      that is, cannot be further evaluated. 
-      A node with |P| flavored tag serves to denote such value.
-      The |P| tag encodes which function was partially parameterized, and (written as a numeric suffix)
-      the number of parameters that it still lacks.
-      The payload of a node with |P|-tag holds the parameters it has already received.
-      For example, the node |(P1/plus one)|, where |one| could be globally bound by |one <- store (C/Int 1)|,
-      denotes a partial parameterization of function |plus|, still lacking its second argument.
-\item |F| is used to denote a deferred call to a function. 
-      For example, the node |(F/divide one zero)| is an encoding of the fact that function |divide| will be called,
-      but only when this node is forced to evaluation.
-\item |A| is used to denote the deferred application of a partially parameterized function to further arguments.
-      Nodes with this tag must have a payload of at least one pointer, which is supposed to evaluate to a node with |P| tag.
-      For example, the node |(A succ one)|, where variable |succ| is bound to node |(P1/plus one)|,
-      will be updated to |(C/Int 2)|, but only when forced to evaluation.
-\end{itize}
-We now turn to the semantics of the various expression forms.
-\begin{itize}
-\item |unit n|, where |n| is an explicit node, just returns that node, without having side effects on the heap.
-\item |unit x| just returns the value of variable |x|, which can be a node or a pointer.
-\item |e1 ; \x -> e2| executes |e1|, binds the result to variable |x| and then executes |e2|. It returns what |e2| returns.
-\item |store n| stores a node on the heap, and returns a pointer to it
-\item |call f a1...an| calls function |f| with the given arguments, and returns the node that is its result
-\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bk| if $k=m$.
-      When $k<m$, the function still lacks arguments, and an appropriate new |P|-node is returned.
-\item |eval x| expects a pointer in variable |x| and fetches the corresponding node from the heap.
-      If the node is in head normal form, that is, has a |C| or |P| tag, that node is just returned.
-      If the node has an |F/f| tag, function |f| is called.
-      The node is updated with the result, and that result is also returned.
-      If the node is |(A x a1...an)|, it executes a  |apply|.
-\item |case x of p1 -> e1 ...| expects a node in variable |x| and executes expression |e| of which pattern |p| matches that node.
-\end{itize}
-
-Variables in a Grin program can in principle hold either a pointer or a node.
-But all syntactic structures involving variables have specific requirements on the value of that variable.
-In this sense Grin is a (implicitly) typed language: it can be statically determined which variables hold pointers, and which hold nodes.
-The type requirements are as follows: the first |Var| in an |apply| and the one in a |case| should hold a node,
-but the other |Var|s occurring in a |eval|, |call|, |apply|, and node payload should hold a pointer.
-The |Var| in a |unit| can hold either a pointer or a node.
-
-Likewise, the return value of each statement form is fixed:
-|call|, |apply|, |eval|, and |unit n| return a node, whereas |store| returns a pointer.
-The remaining expression forms |unit|, sequencing, and |case|, return whatever their sub-constructs return.
-
-The code generator (Core to Grin transformation) takes care that the generated Grin program is type correct in this respect.
-It can generate a |store| expression when a node needs to be available as a pointer,
-and it can generate an |eval| expression when the node pointed to by a pointer is needed.
-For a final node, |eval| just fetches the node pointed to.
-For a non-final (thunk) node, |eval| first forces the thunk to a final node,
-but that is a good thing to do when a node is needed.
-     
 
 \begin{figure}[tbfh]
 
@@ -584,10 +540,115 @@ Underlining denotes a defining position.
 
 
 
+\subsection{The Grin intermediate language}
+
+Grin is a small language designed to be an intermediate language
+between Core (a higher-order lazy functional language) and Silly (an imperative language).
+Grin is a functional language (function bodies are expressions which are evaluated when a function is called) 
+but it is first-order (all functions are defined at top level and cannot be passed as arguments)
+and strict (arguments are evaluated when functions are called).
+Nevertheless, Grin has an imperative spirit, as the evaluation of expressions can have side effects on the heap.
+The sequencing of these side effects is made explcit in the Grin code, using a monadic notation: the only possible expression forms
+are a handful of basic operations on the heap, and a monadic bind and unit operation.
+
+The mapping from Core to Grin makes the evaluation order explicit.
+Thus, it has to simulate the lazy semantics of Core by means of primitives that are provided in Grin for that purpose.
+The data that is manipulated by Grin is structured into {\em nodes}, which are tagged lists of single-word elements.
+Nodes can be assigned to local variables directly, but local variables can also hold pointers to nodes that are stored on the heap.
+
+Refer to figure~\ref{fig-grin-syntax} for the syntax of the Grin language.
+It shows that a program consists of bindings, 
+each of which is either a function definition 
+or the initialization of global variable with a pointer to a node stored on the heap.
+Function definitions are optionally annotated with an |Annot|, the meaning of which is described in section~\ref{sec.static}.
+
+The body of a function is an expression of the built-in monad:
+either one of six primitive forms, a monadic binding of one expression to a variable in another expression,
+or a selection from alternatives based on the value of a variable.
+Sequencing is written in monadic style as |e1 ; \x -> e2|, with semantics
+`execute |e1|, bind the result to |x| and then execute |e2| in the new context.
+Although the lambda symbol suggests that we can define local functions, this is 
+by no means general lambda-calculus, as the lambda can only be used in this particular position.
+The notation involving the semicolon, lambda and arrow is just a triadic expression form,
+which in a different concrete syntax would look more like an imperative assignment statement |x := e1; e2|.
+
+We will discuss the semantics of the various expression forms shortly, 
+but first we focus on nodes and tags.
+A node can be thought of as a variable-sized block of memory,
+consisting of a tag indicating its purpose, and a payload of zero or more pointers.
+A special form of node consists of a tag and a primitive literal.
+
+Tags come in four flavors: |C|, |P|, |F|, and |A|.
+Nodes with |C| or |P| tag are final: when a pointer to them is evaluated, they remain the same.
+Nodes with |F| or |A| tags encode a deferred computation.
+They are also known as {\em thunks}, used in the implementation of lazy evaluation.
+When a pointer to such a node is evaluated, the computation takes place, and the node is updated with a final node.
+
+The meaning of the four tag flavors is as follows:
+\begin{itize}
+\item |C| corresponds to a constructor in Haskell. 
+      For example, 
+      the empty list has tag |C/Nil| and can be represented as a node with zero-length payload |(C/Nil)|.
+      A non-empty list can be constructed as |(C/Colon x xs)|.
+\item |P| stands for a partially parametrised function.
+      In the lambda calculus, a function application with to few arguments to be reduceable is in {\em head normal form},
+      that is, cannot be further evaluated. 
+      The |P| tag encodes which function was partially parameterized, and (written as a numeric suffix)
+      the number of parameters it still lacks.
+      The payload of a node with |P|-tag holds the argunents it has already received.
+      For example, the node |(P1/plus one)|, where |one| could be globally bound by |one <- store (C/Int 1)|,
+      denotes a partial parameterization of function |plus|, still lacking its second argument.
+\item |F| is used to denote a deferred call to a function. 
+      For example, the node |(F/divide one zero)| is an encoding of the fact that function |divide| will be called,
+      but only when this node is forced to evaluation.
+\item |A| is used to denote the deferred application of a partially parameterized function to further arguments.
+      Nodes with this tag must have a payload of at least one pointer, which is supposed to evaluate to a node with |P| tag.
+      For example, the node |(A succ one)|, where variable |succ| is bound to node |(P1/plus one)|,
+      will be updated to |(C/Int 2)|, but only when forced to evaluation.
+\end{itize}
+We now turn to the semantics of the various expression forms.
+\begin{itize}
+\item |unit n|, where |n| is an explicit node, just returns that node, without having side effects on the heap.
+\item |unit x| just returns the value of the variable |x|, which can be a node or a pointer value.
+\item |e1 ; \x -> e2| executes |e1|, binds the result to variable |x| and subsequently executes |e2|. It returns whatever |e2| returns.
+\item |store n| stores the node value |n| on the heap, and returns a pointer to it
+\item |call f a1...an| calls function |f| with the given arguments, and returns the node that is its result
+\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bm| if $k>=m$.
+      When $k>m$, the result of the call is recursively applied to the remaining arguments.
+      When $k<m$, the function still lacks arguments, and an appropriate new |P|-node is returned.
+\item |eval x| expects a pointer in variable |x| and fetches the corresponding node from the heap.
+      If the node is in head normal form, that is, has a |C| or |P| tag, that node is just returned.
+      If the node has an |F/f| tag, function |f| is called.
+      The node is updated with the result, and that result is also returned.
+      If the node is |(A x a1...an)|, the effect is the same as an |apply|.
+\item |case x of ... p->e ...| expects a node in variable |x| and executes expression |e| coupled with pattern |p| that matches that node.
+\end{itize}
+
+Variables in a Grin program can in principle hold either a pointer or a node.
+But all syntactic structures involving variables have specific requirements on the value of that variable.
+In this sense Grin is a (implicitly) typed language: it can be statically determined which variables hold pointers, and which hold nodes.
+The type requirements are as follows: the first |Var| in an |apply| and the one in a |case| should hold a node,
+but the other |Var|s occurring in a |eval|, |call|, |apply|, and node payload should hold a pointer.
+The |Var| in a |unit| can hold either a pointer or a node.
+
+Likewise, the return value of each statement form is fixed:
+|call|, |apply|, |eval|, and |unit n| return a node, whereas |store| returns a pointer.
+The remaining expression forms |unit|, sequencing, and |case|, return whatever their sub-constructs return.
+
+The code generator (Core to Grin transformation) takes care that the generated Grin program is type correct in this respect.
+It can generate a |store| expression when a node needs to be available as a pointer,
+and it can generate an |eval| expression when the node pointed to by a pointer is needed.
+For a final node, |eval| just fetches the node pointed to.
+For a non-final (thunk) node, |eval| first forces the thunk to a final node,
+but that is a good thing to do when a node is needed.
+     
 
 
 
-\section{Dynamic handling of overloading}
+
+
+
+\section{Dynamic handling of overloading}\label{sec.dynamic}
 \subsection{Dictionaries}
 
 The standard technique for implementing overloading in Haskell,
@@ -611,7 +672,7 @@ A Grin representation of the dictionary corresponding to this declaration is a n
 using the dictionary name as a constructor, and having
 two pointers corresponding to the two function definitions as its payload:
 The two pointers point to nodes denoting partial parameterizations
-of functions that are partial indeed: they have `already' received 0 arguments,
+of functions: they have `already' received 0 arguments,
 and are still lacking 2 arguments:
 \begin{code}
 eqIntP     <- store (P2/eqPrimInt)
@@ -646,11 +707,11 @@ ne d =
     (C/Eq p q) -> {eval q}
 }
 \end{code}
-Finally, here is how an overloaded function is called in Haskell, such as
+Finally, we describe the code that is generated for the call in Haskell of a class member function, as in the example
 \begin{code}
 test1 = eq 3 4
 \end{code}
-Grin code for this example does the call to the overloaded function in a 2-stage fashion.
+Grin code for this example does the call to the member function in two steps.
 First the selector function is called on the dictionary corresponding to the type (|Int| in the example) of the arguments.
 This is supposed to return a |P2|-tagged node,
 which is subsequently applied to the arguments by |apply|.
@@ -682,11 +743,11 @@ class Eq a where
 Clearly, the compiler needs to generate code for the default function.
 It can't be named |ne|, as that name is already used for the selector function,
 so let's name it |neDef|.
-In the body of |neDef| we need to call |eq|. This must be done, as in the |test1| example above,
-in a 2-stage fashion: first select the function from the dictionary, then apply it to its arguments.
+In the body of |neDef| we need to call |eq|. This process, as in the |test1| example above,
+takes two steps: first select the function from the dictionary, then apply it to its arguments.
 
 The dictionary where the member functions can be found needs to be passed as an additional argument to |neDef|.
-Essentially, default functions are implemented similar to overloaded functions outside a class, such as |elem|.
+Essentially, default functions are implemented similarly to overloaded functions outside a class, such as |elem|.
 So, although the Haskell default definition for |ne| has 2 parameters,
 its Grin implementation has 3:
 \begin{code}
@@ -714,6 +775,7 @@ dictEqInt  <- store (C/Eq eqIntP neIntP)
 The dictionary is to be populated with pointers to |P|-nodes, 
 that refer to functions which are a mixture from the instance declaration (|eqIntP| in the example)
 and default definitions from the class declaration (|neIntP|).
+Note that |neIntP| and |dictEqInt| are referring to each other, which is allowed in Grin.
 
 In a setting where compilation is done for separate modules, it is not possible
 to generate the dictionary at compile time.
@@ -741,12 +803,12 @@ makeEqInt =
 }
 dictEqInt <- store (F/makeEqInt)
 \end{code}
-By the nature of the evaluation/updating mechanism, from that moment 
-that |dictEqInt| is first evaluated, it will bound to the final |C/Eq|-node.
+By the nature of the evaluation/updating mechanism, from the moment 
+that |dictEqInt| has been evaluated for the first time, it will bound to the final |C/Eq|-node.
 
 For construction the dictionary, we need information from the class declaration.
-This information resides in another module and is done at run time, so all we can do is call or evaluate bindings in the class module.
-We arrange that the class module, for this purpose, defines a dictionary that contains fields for the default functions,
+The only way of communication with another mdule is call functions or evaluate global bindings.
+We arrange that the class module, for this purpose, defines a global binding to a dictionary that contains fields for the default functions,
 and |undefined| elsewhere.
 \begin{code}
 neDefP     <-  store (P3/neDef)
@@ -755,7 +817,7 @@ dictEqDef  <-  store (C/Eq undefined neDefP)
 Note that this `default dictionary' stores |P3|-nodes, not |P2|-nodes as we need in the instance dictionaries.
 
 Now the task of constructing the dictionary for the instance is performed by fetching the default dictionary,
-and apply the |P3|-node found there to the dictionary it needs.
+and applying the |P3|-node found there to the dictionary it needs.
 That is: the dictionary that we are about to build; lazy evaluation allows this seemingly circular definition.
 Applying a |P3|-node to one further argument results in a |P2|-node, which
 is stored in the dictionary, along with a |P2|-node for the other function:
@@ -776,30 +838,30 @@ makeEqInt =
 \subsection{Dynamic generation of dictionaries}
 
 Although the idea in the previous subsection works in simple situations, such as the |Eq| example,
-this does not work in general.
+it does not work in general.
 The flaw is that default definitions not always take the additional dictionary parameter as suggested in the first attempt.
 Situations where that assumption doesn't hold are:
 \begin{itize}
-\item the default definition happens to be generic, and does not use the other fields.
-      The Core code generator only introduces additional parameters when really necessary,
-      so here we have a default definition without dictionary parameter.
-\item the default definition does use other fields, but only from super classes (see section~\ref{sec.superclass}).
-      The Core code generator optimizes for this situation by having the function take the dictionary for the super class directly.
+\item the default definition does not use the other members.
+      The Core code generator only introduces additional parameters when they are really necessary,
+      so here we get a default definition without dictionary parameter.
+\item the default definition does use other fields, but only from superclasses (see section~\ref{sec.superclass}).
+      The Core code generator optimizes for this situation by having the function take the dictionary for the superclass directly.
 \end{itize}
 In both situations the expression |apply q' dictEqInt| in the first attempt applies |q'| wrongly.
 
 To solve this problem, we take an approach inspired by Fax\'en \cite{faxen2002}.
 His endeavour was to give a formal definition of the semantics of Haskell,
-but actually the construction works quite well in a practical setting.
+but actually the construction used there works quite well in a practical setting.
 
 The idea is that the responsibility for applying the default dictionary 
 to the (thunk for the) final result is shifted from the instance module to the class module.
-This way the class module, that knows about the expectations of the default definitions,
+In this way the class module, that knows about the expectations of the default definitions,
 can decide to apply the default definition to the final result, not to do that if it is not needed,
-or rather use the super class when needed.
+or rather use the superclass when needed.
 
 For this purpose, the creation of the default dictionary is now made dynamic as well,
-and parameterized for the instance that it is needed in:
+and parameterized by the instance that it is needed in:
 \begin{code}
 makeEqDef d =
 {  store (P2/neDef d)     ; \q ->
@@ -873,13 +935,13 @@ we can fully eliminate the run-time overhead of manipulating dictionaries.
 The idea was first described by Jones \cite{jones1995a}.
 We take a radical transformational approach,
 describing the necessary steps as separate program transformation steps.
-Thus we adhere to our philosophy of rather having a large number of easy transformations,
-than a small number of complicated ones.
+Thus we adhere to our philosophy of preferring a large number of easy transformations,
+over a small number of complicated ones.
 
 The most important transformations are:
 \begin{itize}
 \item |mergeInstance|: 
-      for every instance declarations, merge the definitions found there with the default definitions in the class declaration.
+      for each instance declarations, merge the definitions found there with the default definitions in the class declaration.
 \item |selectMember|:
       statically rather than dynamically select members from a dictionary
 \item |specConst|:
