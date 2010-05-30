@@ -15,11 +15,22 @@
 -- This file for now functions as placeholder only, until proper place and exporting is fixed.
 
 module UHC.Generics
-  ( Representable0
-  , Representable1
-  , Constructor
-  , Datatype
-  , Selector
+  (
+  -- Generics
+  -- * Generic representation types
+    V1, U1(..), Par1(..), Rec1(..), K1(..), M1(..)
+  , (:+:)(..), (:*:)(..), (:.:)(..)
+
+  -- ** Synonyms for convenience
+  , Rec0(..), Par0(..), R, P
+  , D1(..), C1(..), S1(..), D, C, S
+
+  -- * Meta-information
+  , Datatype(..), Constructor(..), Selector(..)
+  , Fixity(..), Associativity(..)
+
+  -- * Representable type classes
+  , Representable0(..), Representable1(..)
   )
   where
 

@@ -5,6 +5,8 @@
 
 module GenerDeriv1 where
 
+import UHC.Generics
+
 data Bit = OBit | IBit | BitsI Int | BitsC Int
   deriving Show
 

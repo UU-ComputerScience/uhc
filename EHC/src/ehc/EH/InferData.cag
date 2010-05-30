@@ -268,6 +268,7 @@ SEM DataConstr
                             .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
                                                           { dtiFldMp = @fldMp
+                                                          , dtiFldTyL= @fields.fldTyL
                                                           , dtiConNm = @conNm
                                                           , dtiConTy = @dataConTyAsVar
 %%[[8

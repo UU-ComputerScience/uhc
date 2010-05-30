@@ -61,6 +61,9 @@ data Proj
   | Proj_M1						-- meta info
       { projProj    :: !Proj
       }
+  | Proj_M1_S1					-- meta info, variant of M1, to be used inside product; is it really necessary?
+      { projProj    :: !Proj
+      }
 
   -- special constructs
   | Proj_Con                    -- the datatype alternative
@@ -122,6 +125,7 @@ projBuiltinNm opts proj
       Proj_L1    _      -> v  ehbnGenerDataSumAltLeft
       Proj_R1    _      -> v  ehbnGenerDataSumAltRight
       Proj_M1    _      -> v  ehbnGenerDataMeta1AltM1
+      Proj_M1_S1 _      -> v  ehbnGenerDataMeta1AltM1
       Proj_Comp1 _ _ _  -> v  ehbnGenerDataComp1AltComp1
       Proj_Prod  _ _    -> v  ehbnGenerDataProdAltProd
       _                 -> panic ("projBuiltinNm: " ++ show proj)
@@ -177,6 +181,7 @@ projFrom
               Proj_Rec1  _ _    -> var
               Proj_Par1  _ _    -> var
               Proj_M1    _      -> wrap
+              Proj_M1_S1 _      -> wrap
               Proj_L1    _      -> wrap
               Proj_R1    _      -> wrap
               Proj_Void         -> unit
@@ -225,6 +230,7 @@ projTo
               Proj_Par1  _ _    -> var  ehbnGenerDataPar1   ehbnGenerDataPar1AltPar1
               Proj_Comp1 _ _ _  -> var  ehbnGenerDataComp1  ehbnGenerDataComp1AltComp1
               Proj_U1           -> unit ehbnGenerDataUnit1  ehbnGenerDataUnit1AltU1
+              Proj_M1_S1 _      -> wrap ehbnGenerDataMeta1  ehbnGenerDataMeta1AltM1
 
               -- sum
               Proj_Sum   l r    -> ( \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval scrut) (acoreVar scrut)

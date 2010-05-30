@@ -66,6 +66,7 @@ emptyDataFldInfo
 data DataTagInfo
   = DataTagInfo
       { dtiFldMp    		:: !DataFldMp				-- map of field names to offset
+      , dtiFldTyL			:: !FldTyL					-- association list of maybe a field name with types
       , dtiConNm			:: !HsName					-- constructor name (duplicate of key of gamma leading to this info)
       , dtiConTy			:: !Ty						-- type of constructor, without final tyVarMp applied
 %%[[8
@@ -80,7 +81,7 @@ type DataConstrTagMp = Map.Map HsName DataTagInfo
 
 emptyDataTagInfo
   = DataTagInfo
-      Map.empty hsnUnknown Ty_Any
+      Map.empty [] hsnUnknown Ty_Any
 %%[[8
       emptyCTag
 %%]]
@@ -315,11 +316,11 @@ instance Serialize DataFldInfo where
 
 instance Serialize DataTagInfo where
 %%[[20
-  sput (DataTagInfo a b c d) = sput a >> sput b >> sput c >> sput d
-  sget = liftM4 DataTagInfo sget sget sget sget
-%%][91
   sput (DataTagInfo a b c d e) = sput a >> sput b >> sput c >> sput d >> sput e
   sget = liftM5 DataTagInfo sget sget sget sget sget
+%%][91
+  sput (DataTagInfo a b c d e f) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f
+  sget = liftM6 DataTagInfo sget sget sget sget sget sget
 %%]]
 
 instance Serialize DataFldInConstr where

@@ -5,6 +5,8 @@
 
 module GenerDeriv2 where
 
+import UHC.Generics
+
 data Exp = Const Int | Exp :+++: Exp | II {ii::Int} -- | JJ y x
   deriving Show
 
