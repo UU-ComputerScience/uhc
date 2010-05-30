@@ -49,6 +49,17 @@
 %format not    = "\mathit{not}"
 
 
+% Transformations
+
+%format mergeInstance   =  "\mbox{{\sf MergeInstance}}"
+%format selectMember    =  "\mbox{{\sf SelectMember}}"
+%format specConst       =  "\mbox{{\sf SpecConst}}"
+%format evalKnown       =  "\mbox{{\sf EvalKnown}}"
+%format applyKnown      =  "\mbox{{\sf ApplyKnown}}"
+%format dropUnused      =  "\mbox{{\sf DropUnused}}"
+%format dropUnreachable =  "\mbox{{\sf DropUnreachable}}"
+
+
 % Core keywords
 
 %format let    = "\mathbf{let}"
@@ -61,14 +72,18 @@
 %format dictinst   = "\mathbf{dictinst}"
 %format dictclass  = "\mathbf{dictclass}"
 %format specialized  = "\mathbf{specialized}"
+%format overloaded  = "\mathbf{overloaded}"
 
 % Grin metanotions
 
-%format BVar  = "\mathit{\underline{Var}}"
+%format BVar   = "\mathit{\underline{Var}}"
+%format BName  = "\mathit{\underline{Name}}"
+%format return = "\mathbf{return}"
 
 
 % Grin keywords
 
+%format evalf = "\mathit{eval}"
 %format eval  = "\mathbf{eval}"
 %format apply = "\mathbf{apply}"
 %format store = "\mathbf{store}"
@@ -93,6 +108,8 @@
 %format app9  = "\mathit{app}_{n}"
 %format b0    = "\mathit{b}_{0}"
 %format bk    = "\mathit{b}_{k}"
+%format e1    = "\mathit{e}_{1}"
+%format e2    = "\mathit{e}_{2}"
 
 
 %format .    = "."
@@ -111,12 +128,12 @@
 
 \usepackage{amsmath}
 
-\usepackage{natbib}
-\bibpunct();A{},
-\let\cite=\citep
-\bibliographystyle{plainnat}
+% \usepackage{natbib}
+% \bibpunct();A{},
+% \let\cite=\citep
+% \bibliographystyle{plainnat}
 
-
+\bibliographystyle{plain}
 
 \begin{document}
 
@@ -189,7 +206,7 @@ The difference is that polymorphic functions have a uniform definition, regardle
 whereas an overloaded function can have a different definition for each type of argument to which it is applicable.
 The type of arguments of polymorphic functions can be {\em any} instantiation of the type variables in its type,
 whereas the type of arguments of overloaded functions can only be some particular instantiation of the type variables in its type.
-Therefore, function overloading is sometimes refered to as {\em ad hoc polymorphism}.
+Therefore, function overloading is sometimes referred to as {\em ad hoc polymorphism}.
 
 \subsection{Class and instance declarations}
 
@@ -220,7 +237,7 @@ The way |eqPrimInt| is defined is not relevant for the present discussion.
 As another example, we give an instance declaration for |Eq Bool|.
 It shows that we can define the function |eq| from scratch if we wish, without relying on other functions.
 The function |ne| can be defined in a similar fashion (and that would probably be more efficient),
-but just to show the possiblility to have |ne| rely on the existence of the other overloaded function |eq|.
+but just to show the possibility to have |ne| rely on the existence of the other overloaded function |eq|.
 \begin{code}
 instance Eq Bool where
   eq  False  False  = True
@@ -275,7 +292,7 @@ for some or all of the member functions.
 Now, instance programmers have the choice to either rely on a default definition of |ne|
 as it appears in the class, or give a more efficient version for a particular type.
 
-A default definition by nature must be a uniform definition, as it can not assume
+A default definition by nature must be a uniform definition, as it cannot assume
 the type variables in the signature to be instantiated as a particular type.
 But the definition can rely on other functions from the class.
 In fact, the Haskell standard library implementation of |Eq| has a default definition 
@@ -293,9 +310,9 @@ Defining neither of the two is allowed as well, but would result in inheriting t
 breaking the circle by redefining at least one of the two.
 
 
-\subsection{Superclasses}
+\subsection{Super classes}
 
-Stretching the analogy to object-oriented classes further, Haskell has a notion of `superclasses' as well.
+Stretching the analogy to object-oriented classes further, Haskell has a notion of `super classes' as well.
 It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$ and $\geq$.
 Default definitions specify them in terms of each other.
 Instance programmers can choose to implement only one of the four (and rely on the default definitions for the others),
@@ -316,8 +333,8 @@ class (Eq a) => Ord a where
   le   x y  =  lt  x y || eq x y
   ge   x y  =  gt  x y || eq x y
 \end{code}
-The superclass is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
-in parentheses as there may be more than one superclass.
+The super class is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
+in parentheses as there may be more than one super class.
 The real definition in the standard library also specifies functions |compare|, |min|, and |max|, 
 and an even more intricate web of mutually recursive default definitions.
 
@@ -360,40 +377,35 @@ Although the compiler driver is set up to pass data structures between transform
 for all intermediate languages we have a concrete syntax with a parser
 and a pretty printer. This facilitates debugging the compiler, by inspecting
 code between transformations.
-
-Here is a short characterization of the intermediate languages.
-In section~\ref{sec-uhcarch-lang} we give a more detailed description.
-\begin{itemize}
+Here is a short characterization of the intermediate languages:
+\begin{itize}
 \item Haskell (HS): a general-purpose, higher-order, polymorphically typed, lazy functional language.
 \item Essential Haskell (EH): a higher-order, polymorphically typed, lazy functional language close to lambda-calculus, without syntactic sugar.
-\item Core: an untyped, lazy functional language close to lambda-calculus
-            (at the time of this writing we are working on moving to a typed intermediate language,
-             a combination of Henk %\cite{peytonjones97henk-ty-interm},
-             GHC core,
-             and recent work on calling conventions %\cite{bolingbroke09type-call-conv}).
+\item Core: an untyped, lazy functional language close to lambda-calculus,
+            augmented with let-bindings and case distinction with simple pattern matching.
 \item Grin: `Graph reduction intermediate notation', 
             the instruction set of a virtual machine of a small functional language with strict semantics, 
-            with features that enable implementation of laziness %\cite{boquist99phd-optim-lazy}.
+            with features that enable implementation of laziness \cite{boquist99phd-optim-lazy}.
 \item Silly: `Simple imperative little language', an abstraction of features found in every imperative language
             (if-statements, assignments, explicit memory allocation) augmented with primitives for manipulating a stack,
             easily translatable to e.g.\ C (not all features of C are provided, only those that are needed for our purpose).
 \item BC: A bytecode language for a low-level machine intended to interpret Grin which is not whole-program analyzed nor transformed.
           We do not discuss this language in this paper.
-\end{itemize}
-The compiler targets different backends, based on a choice of the user.
+\end{itize}
+The compiler targets different back ends, based on a choice of the user.
 In all cases, the compiler starts compiling on a per module basis,
 desugaring the Haskell source text to Essential Haskell, type checking it and translating it to Core.
 Then there is a choice from three modes of operation:
-\begin{itemize}
+\begin{itize}
 \item In {\em whole-program analysis mode},
       the Core modules of the program and required libraries are assembled together
       and processed further as a whole.
       At the Grin level, elaborate inter-module optimization takes place.
       Ultimately, all functions are translated to low level C,
       which can be compiled by a standard compiler.
-      As alternative backends, we are experimenting with other target languages,
-      among which are the Common Intermediate Language (CIL) from the Common language infrastructure used by .NET %\cite{iso-cil},
-      and the Low-Level Virtual Machine (LLVM) compiler infrastructure %\cite{llvm-cgo04}.
+      As alternative back ends, we are experimenting with other target languages,
+      among which are the Common Intermediate Language (CIL) from the Common language infrastructure used by .NET,
+      and the Low-Level Virtual Machine (LLVM) compiler infrastructure.
 \item In {\em bytecode interpreter mode},
       the Core modules are translated to Grin separately.
       Each Grin module is translated into instructions for a custom bytecode machine.
@@ -401,22 +413,15 @@ Then there is a choice from three modes of operation:
       which are interpreted by a handwritten bytecode interpreter in C.
 \item In {\em Java mode},
       the Core modules are translated to bytecode for the Java virtual machine (JVM).
-      Each function is translated to a separate class with an |eval| function, and
+      Each function is translated to a separate class with an |evalf| function, and
       each closure is represented by an object combining a function with its parameters.
       Together with a driver function in Java which steers the interpretation,
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
-\end{itemize}
+\end{itize}
 The bytecode interpreter mode is intended for use during program development:
 it compiles fast, but because of the interpretation overhead the generated code is not very fast.
 The whole-program analysis mode is intended to use for the final program:
 it takes more time to compile, but generates code that is more efficient.
-
-In Section~2 we describe the tools that play an important role in UHC:
-the Attribute Grammar preprocessor, a language for expressing type rules, and the variant and aspect manager.
-In Section~3 we describe the intermediate languages in the UHC pipeline in more detail, illustrated with a running example.
-In Section~4 the transformations are characterized in more detail.
-Finally, in Section~5 we draw conclusions about the methodology used, and mention related and future work.
-
 
 \begin{figure}[tbfh]
 \includegraphics[scale=0.43]{figs/uhc-pipeline.pdf}
@@ -431,23 +436,106 @@ whole-program analysis (left), bytecode interpreter (middle), and Java (right).}
 
 \subsection{The Grin intermediate language}
 
+Grin is a small language designed to be an intermediate language
+between Core (a higher-order lazy functional language) and Silly (an imperative language).
+Grin is a functional language (function bodies are expressions and which are evaluated when a function is called) 
+but it is first-order (all functions are defined at top level and cannot be passed as arguments)
+and strict (functions are called immediately when a function call is executed).
+Nevertheless, Grin has an imperative spirit, as the evaluation of expressions can have side effects on a heap.
+The sequencing of these side effects is described in a monadic style, as the only expression forms
+are a handful of basic operations on the heap, and a monadic bind and unit operation.
 
+The translating transformation from Core to Grin takes care of the necessary scheduling.
+Also, it has to simulate the lazy semantics of Core by means of some primitives that are provided in Grin for the purpose.
+The data that is manipulated by Grin is structured into {\em nodes}, which are tagged lists of single-word elements.
+Nodes can be assigned to local variables directly, but local variables can also hold pointers to nodes that are stored on the heap.
 
 Refer to figure~\ref{fig-grin-syntax} for the syntax of the Grin language.
+It shows that a program consists of bindings, 
+each of which is either a function definition 
+or the initialization of global variable with a pointer to a node stored on the heap.
+Function definitions are optionally annotated with an |Annot|, the meaning of which is described in section~\ref{sec.static}.
 
-A program consists of bindings, 
-each of which is either a function definition or a global variable.
-Local functions are not possible in Grin, so all functions are defined at top level.
+The body of a function is an expression of the built-in monad:
+either one of six primitive forms, a monadic binding of one expression to a variable in another expression,
+or a selection from alternatives based on the value of a variable.
+Sequencing is written in monadic style as |e1 ; \x -> e2|, with semantics
+`execute |e1|, bind the result to |x| and then execute |e2|.
+Although the lambda symbol suggests that we can define local functions, this is 
+by no means general lambda-calculus, as the lambda can only be used in this particular position.
+The notation involving the semicolon, lambda and arrow is just a triadic expression form,
+which in a different concrete syntax would look more like an imperative assignment statement |x := e1; e2|.
 
-The body of a function is an |Expr|.
-Although this sounds functional,
-the body is fact is a sequence of statements with side effects on the heap,
-and assigning local variables on its way.
+We will discuss the semantics of the various expression forms shortly, 
+but first we focus on nodes and tags.
+A node can be thought of as a variable-sized block of memory,
+consisting of a tag indicating its purpose, and a payload of zero or more pointers.
+A special form of node consists of a tag and a primitive literal.
 
+Tags come in four flavors: |C|, |P|, |F|, and |A|.
+Nodes with |C| or |P| tag are final: when a pointer to them is evaluated, they remain the same.
+Nodes with |F| or |A| tags encode a deferred computation.
+They are also known as a {\em thunk}, used in the implementation of lazy evaluation.
+When a pointer to such a node is evaluated, the computation takes place, and the node is updated with a final node.
 
+The meaning of the four tag flavors is as follows:
+\begin{itize}
+\item |C| corresponds to a constructor in Haskell. 
+      For example, 
+      the empty list has tag |C/Nil| and can be represented as a node with zero-length payload |(C/Nil)|.
+      A non-empty list can be constructed as |(C/Colon x xs)|.
+\item |P| stands for partial parameterization of a function.
+      In the lambda calculus, a function that is applied to too few arguments is in {\em head normal form},
+      that is, cannot be further evaluated. 
+      A node with |P| flavored tag serves to denote such value.
+      The |P| tag encodes which function was partially parameterized, and (written as a numeric suffix)
+      the number of parameters that it still lacks.
+      The payload of a node with |P|-tag holds the parameters it has already received.
+      For example, the node |(P1/plus one)|, where |one| could be globally bound by |one <- store (C/Int 1)|,
+      denotes a partial parameterization of function |plus|, still lacking its second argument.
+\item |F| is used to denote a deferred call to a function. 
+      For example, the node |(F/divide one zero)| is an encoding of the fact that function |divide| will be called,
+      but only when this node is forced to evaluation.
+\item |A| is used to denote the deferred application of a partially parameterized function to further arguments.
+      Nodes with this tag must have a payload of at least one pointer, which is supposed to evaluate to a node with |P| tag.
+      For example, the node |(A succ one)|, where variable |succ| is bound to node |(P1/plus one)|,
+      will be updated to |(C/Int 2)|, but only when forced to evaluation.
+\end{itize}
+We now turn to the semantics of the various expression forms.
+\begin{itize}
+\item |unit n|, where |n| is an explicit node, just returns that node, without having side effects on the heap.
+\item |unit x| just returns the value of variable |x|, which can be a node or a pointer.
+\item |e1 ; \x -> e2| executes |e1|, binds the result to variable |x| and then executes |e2|. It returns what |e2| returns.
+\item |store n| stores a node on the heap, and returns a pointer to it
+\item |call f a1...an| calls function |f| with the given arguments, and returns the node that is its result
+\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bk| if $k=m$.
+      When $k<m$, the function still lacks arguments, and an appropriate new |P|-node is returned.
+\item |eval x| expects a pointer in variable |x| and fetches the corresponding node from the heap.
+      If the node is in head normal form, that is, has a |C| or |P| tag, that node is just returned.
+      If the node has an |F/f| tag, function |f| is called.
+      The node is updated with the result, and that result is also returned.
+      If the node is |(A x a1...an)|, it executes a  |apply|.
+\item |case x of p1 -> e1 ...| expects a node in variable |x| and executes expression |e| of which pattern |p| matches that node.
+\end{itize}
 
-When a function is called, the body of the function is executed,
-which has side effects on the heap
+Variables in a Grin program can in principle hold either a pointer or a node.
+But all syntactic structures involving variables have specific requirements on the value of that variable.
+In this sense Grin is a (implicitly) typed language: it can be statically determined which variables hold pointers, and which hold nodes.
+The type requirements are as follows: the first |Var| in an |apply| and the one in a |case| should hold a node,
+but the other |Var|s occurring in a |eval|, |call|, |apply|, and node payload should hold a pointer.
+The |Var| in a |unit| can hold either a pointer or a node.
+
+Likewise, the return value of each statement form is fixed:
+|call|, |apply|, |eval|, and |unit n| return a node, whereas |store| returns a pointer.
+The remaining expression forms |unit|, sequencing, and |case|, return whatever their sub-constructs return.
+
+The code generator (Core to Grin transformation) takes care that the generated Grin program is type correct in this respect.
+It can generate a |store| expression when a node needs to be available as a pointer,
+and it can generate an |eval| expression when the node pointed to by a pointer is needed.
+For a final node, |eval| just fetches the node pointed to.
+For a non-final (thunk) node, |eval| first forces the thunk to a final node,
+but that is a good thing to do when a node is needed.
+     
 
 \begin{figure}[tbfh]
 
@@ -456,16 +544,16 @@ which has side effects on the heap
 \parbox{8cm}{
 \begin{code}
 Program  ::=   Bind^*
-Bind     ::=   Name BVar^* = Annot { Expr }
-         |     BVar <- Node
+Bind     ::=   BName BVar^* = Annot { Expr }
+         |     BVar <- store Node
 Expr     ::=   unit Var
          |     unit Node
          |     Expr ; \ BVar -> Expr
-         |     case Var of Alt^*
          |     store Node
-         |     eval  Var
          |     call  Name Var^*
          |     apply Var Var^*
+         |     eval Var
+         |     case Var of Alt^*
 Alt      ::=   Pat -> Expr
 Pat      ::=   ( Tag BVar^* )
 Node     ::=   ( Tag Var^* )
@@ -475,17 +563,20 @@ Tag      ::=   C/Constr
          |     F/Name
          |     A
 N        ::=   1 | 2 | ...
+Z        ::=   N | 0 | -1
 Annot    ::=   epsilon
-         |     dictclass Name^*
-         |     dictinst  (Constr, Name, Name^*)
-         |     specialized (Name, Var^*)
+         |     dictclass (Name^*)
+         |     dictinst  (Constr Name (Name^*))
+         |     overloaded ( (Z^*)^* )
+         |     specialized (Name Var^*)
 \end{code}
 }
 }
 \end{center}
 
-\caption{Syntax of the Grin language. An |^*| denotes 0 or more occurences, underline denotes a defining position.
-|Var|, |Name|, and |Constr| are identifiers refering to values, functions, or constructors.
+\caption{Syntax of the Grin language. An |^*| denotes 0 or more occurrences.
+|Var|, |Name|, and |Constr| are identifiers referring to values, functions, or constructors.
+Underlining denotes a defining position.
 |Lit| is an integer or character literal.
 }
 \label{fig-grin-syntax}
@@ -496,21 +587,108 @@ Annot    ::=   epsilon
 
 
 
+\section{Dynamic handling of overloading}
+\subsection{Dictionaries}
 
+The standard technique for implementing overloading in Haskell,
+as described by Augustsson \cite{augustsson93impl-hask-overl},
+makes use of {\em dictionaries}.
+A dictionary basically contains the implementations for a particular instance
+of the functions specified in a class.
+Calling an overloaded function then amounts to selecting one of the functions from the dictionary,
+and subsequently applying it to its arguments.
 
-\section{Dynamic handling of dictionaries}
-\subsection{Dictionary arguments for overloaded functions}
-\subsection{Dictionary generation}
+Function names are not storable values in Grin,
+but we can store a node that represents a partially parameterized function.
+As an example, consider the instance declaration in Haskell that
+defines both member functions of |Eq| for the |Int| type:
+\begin{code}
+instance Eq Int where
+  eq x y  =  eqPrimInt x y
+  ne x y  =  not (eqPrimInt x y)
+\end{code}
+A Grin representation of the dictionary corresponding to this declaration is a node,
+using the dictionary name as a constructor, and having
+two pointers corresponding to the two function definitions as its payload:
+The two pointers point to nodes denoting partial parameterizations
+of functions that are partial indeed: they have `already' received 0 arguments,
+and are still lacking 2 arguments:
+\begin{code}
+eqIntP     <- store (P2/eqPrimInt)
+neIntP     <- store (P2/neInt)
+dictEqInt  <- store (C/Eq eqIntP neIntP)
+\end{code}
+As the definition of |eq| for |Int| is just a call to |eqPrimInt|, 
+we can use |(P2/eqPrimInt)| for the first pointer.
+But the definition of |ne| for |Int| is not just a renaming of an existing function.
+It therefore gives rise to a function binding in Grin:
+\begin{code}
+neInt x y =
+{  store (F/eqPrimInt x y) ; \r ->
+   call not r
+}
+\end{code}
+The second member of the dictionary points to a |P2|-node for this function.
 
-Selector functions
+The class declaration in Haskell, which only contains signatures for the member functions,
+nevertheless gives rise to generated Grin code: one function binding for each member function.
+These functions take a single dictionary argument, and select the appropriate field from that dictionary.
+The selector functions for the |Eq| class are:
 \begin{code}
 eq d =
 {  eval d ; \t ->
    case t of
-    (C/Eq f _) -> {eval f}
+    (C/Eq p q) -> {eval p}
+}
+ne d =
+{  eval d ; \t ->
+   case t of
+    (C/Eq p q) -> {eval q}
 }
 \end{code}
-Default definitions for member functions take the form of overloaded functions
+Finally, here is how an overloaded function is called in Haskell, such as
+\begin{code}
+test1 = eq 3 4
+\end{code}
+Grin code for this example does the call to the overloaded function in a 2-stage fashion.
+First the selector function is called on the dictionary corresponding to the type (|Int| in the example) of the arguments.
+This is supposed to return a |P2|-tagged node,
+which is subsequently applied to the arguments by |apply|.
+\begin{code}
+test1 =
+{  store (C/Int 3)     ; \x ->
+   store (C/Int 4)     ; \y ->
+   call eq dictEqInt   ; \p ->
+   apply p x y
+}
+\end{code}
+Overloaded function that are not declared in the class, such as the Haskell function
+\begin{code}
+elem :: Eq a => a -> [a] -> Bool
+\end{code}
+are implemented as a Grin function that takes an additional dictionary argument.
+
+
+
+\subsection{Default definitions}
+
+Now suppose that we are compiling a class with a default definition, for example
+\begin{code}
+class Eq a where
+  eq  ::  a -> a -> Bool
+  ne  ::  a -> a -> Bool
+  ne x y   =  not (eq x y)
+\end{code}
+Clearly, the compiler needs to generate code for the default function.
+It can't be named |ne|, as that name is already used for the selector function,
+so let's name it |neDef|.
+In the body of |neDef| we need to call |eq|. This must be done, as in the |test1| example above,
+in a 2-stage fashion: first select the function from the dictionary, then apply it to its arguments.
+
+The dictionary where the member functions can be found needs to be passed as an additional argument to |neDef|.
+Essentially, default functions are implemented similar to overloaded functions outside a class, such as |elem|.
+So, although the Haskell default definition for |ne| has 2 parameters,
+its Grin implementation has 3:
 \begin{code}
 neDef d x y =
 {  store (F/eq d)   ; \f ->
@@ -518,107 +696,190 @@ neDef d x y =
    call not r
 }
 \end{code}
+Note that the 2-stage calling process is disguised here in its lazy form.
+Instead of a |call| and an |apply| as in the |test1| example, 
+we store a deferred call to the selector by means of an |F|-node, 
+and a deferred apply by means of an |A|-node.
+Whether or not these thunk-nodes are ever evaluated is decided inside the |not| function.
+Actually, |not| indeed does evaluate its argument, but without a strictness analysis
+we can't predict that when compiling |neDef|.
 
-
-Ideally, we would simply have
+Inside a dictionary for class |Eq|, we need two |P2|-nodes, as |eq| and |ne| in Haskell have 2 arguments.
+We would get something like:
 \begin{code}
-dEqInt := (C/Eq neInt eqInt)
+eqIntP     <- store (P2/eqPrimInt)
+neIntP     <- store (P2/neDef dictEqInt)
+dictEqInt  <- store (C/Eq eqIntP neIntP)
 \end{code}
-But when the dictionary relies on the default definition for |ne|, we cannot simply have
+The dictionary is to be populated with pointers to |P|-nodes, 
+that refer to functions which are a mixture from the instance declaration (|eqIntP| in the example)
+and default definitions from the class declaration (|neIntP|).
+
+In a setting where compilation is done for separate modules, it is not possible
+to generate the dictionary at compile time.
+Class and instance declarations can reside in separate modules,
+and thus the code generated for the class declaration is not available for inspection
+by the compiler at the moment that the |dictEqInt| binding is generated.
+
+Instead of having the compiler emit the binding
 \begin{code}
-dEqInt := (C/Eq neDef eqInt)
+dictEqInt  <- store (C/Eq eqIntP neIntP)
 \end{code}
-since |neDef| is overloaded.
+directly, the compiler generates code that can construct the dictionary at run time,
+at the first occasion that it is used.
 
 
+\subsection{Dynamic generation of dictionaries -- first attempt}
 
-
-
-\subsection{Dynamically merging default definitions}
-
-
-Generator for the dictionary containing default functions, parameterized by the final dictionary
+Instead of the explicit construction of the dictionary by the compiler,
+the compiler generates a nullary function that can construct it on demand.
+The dictionary variable is bound to a thunk for that function, thus
+triggering the construction when the dictionary is first used.
 \begin{code}
-genEq d =
-{  store (P2/neDef d)     ; \f ->
-   store (C/Eq bottom f)  ; \t ->
-   eval t
+makeEqInt =
+{  -- construct P2-nodes for both dictionary fields
+}
+dictEqInt <- store (F/makeEqInt)
+\end{code}
+By the nature of the evaluation/updating mechanism, from that moment 
+that |dictEqInt| is first evaluated, it will bound to the final |C/Eq|-node.
+
+For construction the dictionary, we need information from the class declaration.
+This information resides in another module and is done at run time, so all we can do is call or evaluate bindings in the class module.
+We arrange that the class module, for this purpose, defines a dictionary that contains fields for the default functions,
+and |undefined| elsewhere.
+\begin{code}
+neDefP     <-  store (P3/neDef)
+dictEqDef  <-  store (C/Eq undefined neDefP)
+\end{code}
+Note that this `default dictionary' stores |P3|-nodes, not |P2|-nodes as we need in the instance dictionaries.
+
+Now the task of constructing the dictionary for the instance is performed by fetching the default dictionary,
+and apply the |P3|-node found there to the dictionary it needs.
+That is: the dictionary that we are about to build; lazy evaluation allows this seemingly circular definition.
+Applying a |P3|-node to one further argument results in a |P2|-node, which
+is stored in the dictionary, along with a |P2|-node for the other function:
+\begin{code}
+makeEqInt =
+{  eval dictEqDef ; \d'
+   case d' of
+      (C/Eq _ q) ->
+      {  eval q                ; \q'
+         apply q' dictEqInt    ; \q''
+         store (P2/eqPrimInt)  ; \p
+         unit (C/Eq p q'')
+      }
 }
 \end{code}
 
 
-Core code for dictionary instance
+\subsection{Dynamic generation of dictionaries}
+
+Although the idea in the previous subsection works in simple situations, such as the |Eq| example,
+this does not work in general.
+The flaw is that default definitions not always take the additional dictionary parameter as suggested in the first attempt.
+Situations where that assumption doesn't hold are:
+\begin{itize}
+\item the default definition happens to be generic, and does not use the other fields.
+      The Core code generator only introduces additional parameters when really necessary,
+      so here we have a default definition without dictionary parameter.
+\item the default definition does use other fields, but only from super classes (see section~\ref{sec.superclass}).
+      The Core code generator optimizes for this situation by having the function take the dictionary for the super class directly.
+\end{itize}
+In both situations the expression |apply q' dictEqInt| in the first attempt applies |q'| wrongly.
+
+To solve this problem, we take an approach inspired by Fax\'en \cite{faxen2002}.
+His endeavour was to give a formal definition of the semantics of Haskell,
+but actually the construction works quite well in a practical setting.
+
+The idea is that the responsibility for applying the default dictionary 
+to the (thunk for the) final result is shifted from the instance module to the class module.
+This way the class module, that knows about the expectations of the default definitions,
+can decide to apply the default definition to the final result, not to do that if it is not needed,
+or rather use the super class when needed.
+
+For this purpose, the creation of the default dictionary is now made dynamic as well,
+and parameterized for the instance that it is needed in:
 \begin{code}
-dEqInt =
-  letrec  {  fixEqInt =
-               let  gen =
-                      letstrict  d = genEq fixEqInt
-                      in         case d of
-                                   (Eq f g) -> (Eq f eqInt)
-               in   gen
-          ;  eqInt =
-               eqPrimInt
-          }
-  in fixEqInt
-\end{code}
-
-
-
-
-Asking for the dictionary triggers evaluation of the fixpoint construction
-\begin{code}
-dEqInt' =
-{  eval fixEqInt
+makeEqDef d =
+{  store (P2/neDef d)     ; \q ->
+   unit (C/Eq bottom q)
 }
 \end{code}
-The fixpoint cntruction calls the generator with the fixpoint as argument
+In this example, in the first line it was decided to apply the definition to the final dictionary after all,
+but here the compiler has freedom to act differently if the desires of |neDef| would have been different.
+
+In this new arrangement, we revise the definition of |makeEqInt| such that, 
+instead of fetching |eqDef|, 
+it calls our new dynamic generator |makeEqDef|:
 \begin{code}
-fixEqInt' =
-{  call genEqInt fixEqInt
+makeEqInt =
+{  call genEqDef dictEqInt ; \d'
+   case d' of
+      (C/Eq _ q) ->
+      {  store (P2/eqPrimInt)  ; \p
+         unit (C/Eq p q)
+      }
 }
 \end{code}
-The generator calls the generator of the default functions,
-and subsequentially replaces the fields that are defined in the instance declaration
-\begin{code}
-genEqInt d =
-{  call genEq d   ; \t ->
-   case t of
-     (C/Eq _ f) ->
-     {  store (P2/eqPrimInt)  ; \g ->
-        store (C/Eq g f)      ; \r ->
-        eval r
-     }
-}
-\end{code}
-Because of the lazy CAF mechanism we also get two global variables
-corresponding to the 0-ary functions |dEqInt| and |fixEqInt|
-\begin{code}
-dEqInt    :=  (F/dEqInt')
-fixEqInt  :=  (F/fixEqInt')
-\end{code}
 
-\begin{code}
-\end{code}
+% We define a function |genEqInt| that is supposed to generate the dictionary for |Eq Int|,
+% but which expects as parameter its own solution.
+% A parameterless function |fixEqInt| calls the generator,
+% where it passes the global dictionary variable as an argument.
+% That global variable is initialized with a deferred version of |fixEqInt|.
+% This is just lazy enough to actually construct the fixed point of the generator. 
+% Here is the code:
+% \begin{code}
+% genEqInt d =
+% {  -- generate a dictionary, given a pointer to its solution
+% }
+% fixEqInt =
+% {  call genEqInt dictEqInt
+% }
+% dictEqInt <- store (F/fixEqInt)
+% \end{code}
+% As for the dictionary generation function:
+% it makes use of a generation function |genEq| for a dictionary containing only the default definitions,
+% which is parameterized by the final solution as well.
+% \begin{code}
+% genEq d =
+% {  store (P2/neDef d)     ; \q ->
+%    unit (C/Eq bottom q)
+% }
+%\end{code}
+
+% Core code for dictionary instance
+% \begin{code}
+% dictEqInt =
+%   letrec  {  fixEqInt =
+%                let  gen =
+%                       letstrict  d = genEq fixEqInt
+%                       in         case d of
+%                                    (Eq f g) -> (Eq f eqInt)
+%                in   gen
+%           ;  eqInt =
+%                eqPrimInt
+%           }
+%   in fixEqInt
+% \end{code}
 
 
-
-
-
-
-\section{Static handling of dictionaries}
+\section{Static handling of overloading}\label{sec.static}
 
 
 When it is possible to inspect and transform the program as a whole,
 we can fully eliminate the run-time overhead of manipulating dictionaries.
-The steps to achieve this can be described as separate program transformation steps,
-thus adhering to our philosophy of having rather a large number of easy transformations,
+The idea was first described by Jones \cite{jones1995a}.
+We take a radical transformational approach,
+describing the necessary steps as separate program transformation steps.
+Thus we adhere to our philosophy of rather having a large number of easy transformations,
 than a small number of complicated ones.
 
 The most important transformations are:
 \begin{itize}
 \item |mergeInstance|: 
-      making available a statically known dictionary for every instance declaration,
-      by merging the definitions from the instance declaration and the default definitions in the class definition
+      for every instance declarations, merge the definitions found there with the default definitions in the class declaration.
 \item |selectMember|:
       statically rather than dynamically select members from a dictionary
 \item |specConst|:
@@ -630,9 +891,9 @@ The most important transformations are:
 The opportunities for applying these transformations are prepared by some more transformations:
 \begin{itize}
 \item |evalKnown|: simplify uses of |eval x| in a situation where the value of |x| happens to be statically known
-\item |applyKnown|: simplify uses of |apply f x| in a situation where the value of |f| happens to be statically known
+\item |applyKnown|: simplify uses of |apply p x| in a situation where the value of |p| happens to be statically known
 \item |dropUnused|: remove bindings to (local and global) variables that are never used
-\item |dropUnreachable|: remove bindings to global variables that are not reachable from |main|
+\item |dropUnreachable|: remove bindings to global variables and functions that are not reachable from |main|
 \end{itize}
 
 
@@ -641,57 +902,67 @@ The opportunities for applying these transformations are prepared by some more t
 
 \subsection{The |mergeInstance| transformation}
 
-Goal is to replace
+In a whole-program analysis setting, it is possible to merge functions defined in an instance
+with the default definitions from the class statically.
+However, the (EH to Core) code generator generates Core code without having a particular back end in mind.
+So we are confronted with the code as described in the previous section for dynamic dictionary construction,
+and the first task is to turn that in a static construction.
+
+So the goal is to replace
 \begin{code}
-dEqInt    :=  (F/dEqInt')
+dictEqInt <- store (F/makeEqInt)
 \end{code}
-by
+back to
 \begin{code}
-dEqInt    :=  (C/Eq eqEqInt neEqInt)
+dictEqInt  <- store (C/Eq eqIntP neIntP)
 \end{code}
-which explicitly stores the dictionary without having to do the fixed point construction at run time.
-Inside the dictionary, we reference two global variables which are initialized for the purpose:"
+and generate appropriate member fields:
 \begin{code}
-eqEqInt :=  (P2/eqPrimInt)
-neEqInt :=  (P2/eqDef dictEqInt)
+eqIntP     <- store (P2/eqPrimInt)
+neIntP     <- store (P2/neDef dictEqInt)
 \end{code}
+
 This is hard for two reasons:
-it is hard to see that |dEqInt| is indeed a dictionary:
-it would involve inspecting the function |dEqInt'| mentioned in the thunk,
-statically doing the evaluation of |fixEqInt| which leads us to |fixEqInt'|,
-of which the definition has the form that we can recognize as the generated code for instance declarations.
-Once we found that, we should carefully deconstruct |genEqInt| for finding the information needed in the dictionary.
+it is hard to see that |dictEqInt| is indeed a dictionary:
+it would involve deconstructing the thunk, 
+% statically doing the evaluation of |fixEqInt| which leads us to |makeEqInt|,
+inspecting the code of |makeEqInt|
+and see that it has the form that we can recognize as the generated code for instance declarations.
+Once we found that, we should carefully deconstruct |makeEqInt| for finding the information needed in the dictionary,
+including the reference to |makeEqDef| which is to be deconstructed as well.
 
 Although this approach is possible in principle, it feels like reversely engineering
-the outcome of all the tranformations that were responsible of generating this Grin definitions.
+the outcome of all the transformations that were responsible of generating this Grin definitions.
 Apart from being tricky, the procedure is bound to break whenever we would make changes in the Core to Grin transformation pipeline.
 
 Instead, we take a different approach, by making manifest the intention of some of the generated function definitions,
 by means of annotations.
 The price is that we need to extend both the Core and the Grin language to facilitate such annotations.
 \begin{itize}
-\item the definition of |dEqInt'| is annotated with a marker |dictinst|: `this is a dictionary corresponding to a instance declaration';
-\item the definition of |genEq| is annotated with a marker |dictclass|: `this is a dictionary generator corresponding to a the default definitions in a class declaration'.
+\item the definition of |makeEqInt| is annotated with a marker |dictinst|: `this constructs a dictionary corresponding to a instance declaration';
+\item the definition of |makeEqDef| is annotated with a marker |dictclass|: `this is a dictionary generator corresponding to a the default definitions in a class declaration';
+\item the definition of |neDef| is annotated with a marker |overloaded|: `this is an overloaded default definition with specific additional argument desiderata'.
 \end{itize}
 Apart from the marker we embed in the annotation all information relevant for the dictionaries:
 \begin{itize}
 \item for |dictinst|,  we need the name of the tag of the dictionary, the name of the dictionary constructor for the default definitions, and all the names of the members defined.
 \item for |dictclass|, we need the names of all default definitions.
+\item for |overloaded|, we need a description of the dictionary it needs (and whether it needs one at all).
 \end{itize}
-In our example, we get:
+In our example, the relevant annotations are:
 \begin{code}
-dEqInt' =
-dictinst(Eq, genEq, [eqPrimInt, _])
-{  eval fixEqInt
-}
-genEq d =
-dictclass [_,neDef]
-{  store (P2/neDef d)     ; \f ->
-   store (C/Eq bottom f)  ; \t ->
-   eval t
-}
+makeEqInt =
+  dictinst(Eq genEq (eqPrimInt _))
+{ ... }
+makeEqDef d =
+  dictclass (_ neDef)
+{ ... }
+neDef d x y =
+  overloaded ( () )
+{ ... }
 \end{code}
 There are empty positions in the name lists when functions are not defined in the instance or class declarations.
+The annotation of the overloaded function indicates that this function simply needs the dictionary for the whole class.
 
 These annotations can be easily inserted when generating Core, because all this information is needed anyway
 for generating the Core definitions.
@@ -707,17 +978,15 @@ In their body, they can be passed to other overloaded functions,
 but in the end dictionaries are only used for one purpose:
 selecting a member function from them.
 
-An example is a call to the overloaded function |eq| with arguments of known type,
-as in the Haskell expression |eq 3 4|.
-The Grin function that is generated for this expression is
+An example is a |test1| which we introduced earlier:
 \begin{code}
-test1' =
-{  store (C/Int 3)  ; \x ->
-   store (C/Int 4)  ; \y ->
-   call eq dEqInt   ; \f ->
-   apply f x y
+test1 =
+{  store (C/Int 3)     ; \x ->
+   store (C/Int 4)     ; \y ->
+   call eq dictEqInt   ; \p ->
+   apply p x y
 \end{code}
-The third line selects a field from the dictinary by calling the |eq| selector;
+The third line selects a field from the dictionary by calling the |eq| selector;
 the resulting function is subsequently applied to its arguments.
 
 Now that the previous transformation has made all dictionaries statically available,
@@ -736,25 +1005,25 @@ eq d =
 \end{code}
 It is recognized as a selector, because its definition is a two-line function where the second line evaluates one of the members of a dictionary.
 We actually hunt the program for selectors, that is functions that have this very structure.
-(Another approach would be to explcitly annotate selector functions as such at the moment they are generated,
+(Again this is a form of reverse engineering;
+another approach would be to explicitly annotate selector functions as such at the moment they are generated,
 in a similar fashion as we use |dictinst| and |dictclass| annotations to avoid hunting for complex patterns).
 
-In the example, the dictionary is |dictEqInt|, which is a global variable that at this thime
+In the example, the dictionary is |dictEqInt|, which is a global variable that at this time
 (after the |mergeInstance| transformation) is defined as
 \begin{code}
-dEqInt  :=  (C/Eq eqEqInt neEqInt)
+dictEqInt  <- store  (C/Eq eqEqInt neEqInt)
 \end{code}
-
 Now that the selector and the dictionary are identified, the call can be performed statically:
-the expression |call eq dEqInt| is replaced by |eval eqEqInt|.
+the expression |call eq dictEqInt| is replaced by |eval eqEqInt|.
 
 Our example ends up as transformed to:
 \begin{code}
-test1' =
+test1 =
 {  store (C/Int 3)  ; \x ->
    store (C/Int 4)  ; \y ->
-   eval eqEqInt     ; \f ->
-   apply f x y
+   eval eqEqInt     ; \p ->
+   apply p x y
 \end{code}
 
 
@@ -766,7 +1035,7 @@ There are two such transformations: |evalKnown| and |applyKnown|.
 
 An |eval| expression occurs in Grin code when it is needed to force a variable to head normal form
 and fetch its value from the heap.
-A typical occurence is in the body of a function, where the unknown value of the argument needs to be forced and fetched
+A typical occurrence is in the body of a function, where the unknown value of the argument needs to be forced and fetched
 in order to be scrutinized:
 \begin{code}
 f x =
@@ -783,7 +1052,7 @@ This is equivalent to a shorter expression:
 \begin{code}
    unit (C/Int 5)
 \end{code}
-which is more efficient since it avoids storing a node on the heap, and doesn't need to execute the |eval| operation.
+which is more efficient since it avoids storing a node on the heap, and executing the |eval| operation to fetch it back.
 
 So is the Grin code generator to blame for emitting inefficient code like the example above?
 Not really, because the value of the variable could have become known only later, as a result of transformation of Grin code.
@@ -816,26 +1085,26 @@ There are three cases:
       then |eval x| can be replaced by |call app9 f a1...an|,
       where |app9| is a compiler-generated function
 \begin{code}
-app9 f a1...an =
-{  eval f  ; \p ->
-   apply p a1...an
+app9 p a1...an =
+{  eval p  ; \p' ->
+   apply p' a1...an
 }
 \end{code}
 \end{itize}
 
 The reason that we bring up this whole story, is that the previous |selectMember| transformation
 generates opportunities for |evalKnown|. 
-Remember that it has replaced |call eq dEqInt| by |eval eqEqInt|.
+Remember that it has replaced |call eq dictEqInt| by |eval eqEqInt|.
 This is an opportunity for the |evalKnown| transformation, since |eqEqInt| is a global variable bound to |(P2/eqPrimInt)|.
 Thus |eval eqEqInt| is transformed to |unit (P2/eqPrimInt)|.
 
 Our example thus now is transformed to:
 \begin{code}
-test1' =
+test1 =
 {  store (C/Int 3)      ; \x ->
    store (C/Int 4)      ; \y ->
-   unit (P2/eqPrimInt)  ; \v ->
-   apply v x y
+   unit (P2/eqPrimInt)  ; \p ->
+   apply p x y
 }
 \end{code}
 
@@ -856,27 +1125,27 @@ Since in this example the lacking 2 parameters are provided as part of the |appl
 the call is thereby saturated and equivalent to |call eqPrimInt x y|.
 
 This is exactly what the |evalKnown| transformation performs: it symbolically collects all
-|unit|s, and for each |apply v a1...an| checks whether the value |v| holds a known node |(Pm/f b0...bk)|.
+|unit|s, and for each |apply x b1...bk| checks whether the variable |x| holds a known node |(Pm/f a1...an)|.
 There are three cases:
 \begin{itize}
-\item |n<m| (undersaturated call): replace the |apply| operation by |unit (Pnm/f b0...bk a1...an)|
-\item |n=m| (saturated call): replace the |apply| operation by\\ |call f b0...bk a1...an|
+\item |n<m| (undersaturated call): replace the |apply| operation by |unit (Pnm/f a1...an b1...bk)|
+\item |n=m| (saturated call): replace the |apply| operation by\\ |call f a1...an b1...bk|
 \item |n>m| (oversaturated call): do nothing. (This situation does not occur in the context discussed in this paper. If it does occur in other situations, doing nothing is always safe.)
 \end{itize}
 
 Our example ends up as:
 \begin{code}
-test1' =
+test1 =
 {  store (C/Int 3)      ; \x ->
    store (C/Int 4)      ; \y ->
-   unit (P2/eqPrimInt)  ; \v ->
+   unit (P2/eqPrimInt)  ; \p ->
    call eqPrimInt x y
 }
 \end{code}
-Note that the binding of the |P2|-node to |v| is now obsolete. 
+Note that the binding of the |P2|-node to |p| is now obsolete. 
 However, it is not removed by the |applyKnown| transformation, 
 as it will be caught anyway by a |dropUnused| transformation performed further downstream.
-This way, we keep the individual transformations straigtforward, 
+This way, we keep the individual transformations straightforward, 
 while they together still do all that is needed.
 
 
@@ -889,14 +1158,14 @@ But now let's see what happens for the Haskell expression |ne 5 6|.
 
 Because the instance declaration |Eq Int| relies on the default definition for |ne|,
 the resulting Grin code is different now. 
-The field selection and subsequent |apply| is shortcut succesfully,
+The field selection and subsequent |apply| is shortcut successfully,
 but the default definition |neDef| that is now called is overloaded,
 and thus needs an additional dictionary parameter itself.
 \begin{code}
-test2' =
+test2 =
 {  store (C/Int 5)      ; \x ->
    store (C/Int 6)      ; \y ->
-   call neDef dEqInt x y
+   call neDef dictEqInt x y
 }
 \end{code}
 So we still have overhead for run-time dictionary passing here.
@@ -904,15 +1173,15 @@ So we still have overhead for run-time dictionary passing here.
 To overcome this, we rely on a technique that is actually more general:
 make specialized `clones' of a function that is called with a constant argument.
 Function |neDef| has three parameters, but it is called here with constant arguments:
-a dictionary, that since the |selectMember| transformation is defined as a global constant:
+a dictionary, that (since the |selectMember| transformation is performed) is defined as a global constant:
 \begin{code}
-dEqInt  :=  (C/Eq eqEqInt neEqInt)
+dictEqInt  <- store  (C/Eq eqEqInt neEqInt)
 \end{code}
 In this particular example the other two arguments are constants as well,
 so the function will end up to be specialized for all three arguments,
 but in a typical situation only the dictionary is constant, and we get a specialized copy still expecting two parameters.
 
-For the purpose of explaining, we assume here that the function is only specialized for its dictionairy argument
+For the purpose of explaining, we assume here that the function is only specialized for its dictionary argument
 (imagine an option to be active that forbids specializing for integer arguments).
 The definition of |neDef| is taken:
 \begin{code}
@@ -924,10 +1193,10 @@ neDef d x y =
 \end{code}
 and a clone of it is generated, which is specialized for the first argument:
 \begin{code}
-neDef~1 x y =
-specialized (neDef, [dEqInt,_,_])
-{  store (F/eq dEqInt)  ; \f ->
-   store (A f x y)      ; \r ->
+neDef' x y =
+  specialized (neDef (dictEqInt _ _))
+{  store (F/eq dictEqInt)  ; \f ->
+   store (A f x y)         ; \r ->
    call not r
 }
 \end{code}
@@ -937,10 +1206,10 @@ This way, when the transformation is run again later, we can avoid making anothe
 
 The call is adapted accordingly:
 \begin{code}
-test2' =
+test2 =
 {  store (C/Int 5)      ; \x ->
    store (C/Int 6)      ; \y ->
-   call neDef~1 x y
+   call neDef' x y
 }
 \end{code}
 
@@ -949,9 +1218,10 @@ test2' =
 
 
 After the specialization, new opportunities are exposed for transformations that we discussed earlier.
-Firstly, the operation |store (F/eq dEqInt)| is an opportunity for the |selectMember| transformation.
+Firstly, the operation\\
+|store (F/eq dictEqInt)| is an opportunity for the |selectMember| transformation.
 In subsection~\ref{subsec.selectMember} we described that 
-for all selectorfunctions |s| that select field |i| from a dictionary,
+for all selectors |s| that select field |i| from a dictionary,
 and all constant dictionaries |d| having |f| as it's |i|th field,
 it replaces |call s d| by |eval f|.
 
@@ -959,8 +1229,8 @@ We now widen the task of |selectMember| to also handle selections from constant 
 that are disguised as thunk. That is: 
 replace |store (F/s d)| by |unit f|.
 
-This way, we loose the lazy behaviour of the field selection.
-But there is no need for lazyness in this situation:
+This way, we lose the lazy behavior of the field selection.
+But there is no need for laziness in this situation:
 field selection cannot fail, and it is performed fast -- in fact, 
 now that we perform it statically, it takes no time at all.
 Nobody would oppose not postponing a call that takes zero time and cannot fail.
@@ -987,9 +1257,9 @@ to a fixed point after about 5 iterations.
 
 
 
-\section{Superclasses and contexts}
+\section{Super classes and contexts}\label{sec.superclass}
 
-
+Even more parameters
 
 \section{Implementation}
 
@@ -997,35 +1267,68 @@ With AG's
 
 \section{Conclusion}
 
+Transformational approach enables us to concentrate on simple transformations,
+that can be composed to perform complex tasks.
 
+Related work:
+w.r.t. tackling overloading: GHC stores info in hi files, Fax\'en  gives formal description.
+Jones does static evaluation in a core-like language; we do it as late as possible in a lower level language.
+
+w.r.t. transformational approach: Boquist used transformations in a Haskell compiler, 
+but without tackling overloading
+
+w.r.t. transformational approach in general: Stratego, ASF/SDF and many others
+
+w.r.t. AG-approach: Jastadd.
 
 
 
 \begin{thebibliography}{}
 
-\bibitem[ToDo]{ToDo} 
-{\em nog veel meer, o.a. Fax\'en, maar in ieder geval ook deze:}
+\bibitem[Augustsson 1993]{augustsson93impl-hask-overl}
+Lennart Augustsson.
+Implementing Haskell overloading.
+In: {\em Functional Programming and Computer Architecture} FPCA 1993, pp~65--73.
+
+
+\bibitem[Bernardy et al 2009]{bernardy2009}
+Jean-Philippe Bernardy et al.
+A comparison of C++ concepts and Haskell type classes.
+In: {ACM workshop on generic programming} GP 2009, pp.~37--48.
+
 
 \bibitem[Boquist and Johnsson 1996]{boquist1996}
 Urban Boquist and Thomas Johnsson.
 The GRIN project: A highly optimising back end for lazy functional languages.
-In {\em Workshop on Implementation of Functional Languages} IFL 1996.
+In: {\em Workshop on Implementation of Functional Languages} IFL 1996.
 Springer LNCS 1268. 
 
-\bibitem[Boquist 1999]{boquist1999}
+\bibitem[Boquist 1999]{boquist99phd-optim-lazy}
 Urban Boquist.
 {\em Code optimisation techniques for lazy functional languages}.
 PhD Thesis Chalmers University, G\"oteborg March 1999.
 
-\bibitem[Dijkstra 2005]{ehc}
+\bibitem[Dijkstra 2005]{dijkstra2005}
 Atze Dijkstra.
 {\em Stepping through Haskell}.
 PhD Thesis Utrecht University, November 2005.
 
-\bibitem[Jones 1995]{cata}
+\bibitem[Fax\'en 2002]{faxen2002}
+Karl-Filip Fax\'en.
+A static semantics for Haskell.
+{\em J.~Functional Programming} {\bf 12} (2002), pp.~295--357.
+
+
+\bibitem[Jones 1995a]{jones1995a}
+Mark. P.\ Jones.
+Dictionary-free overloading by partial evaluation.
+{\em Lisp and symbolic computation} {\bf 8} (1995), pp.~229--248.
+
+
+\bibitem[Jones 1995b]{jones1995b}
 Mark. P.\ Jones.
 Functional programming with overloading and higher-order polymorphism.
-In: {\em Advanced Functional Programming} AFP'95, pp.~97--136.
+In: {\em Advanced Functional Programming} AFP 1995, pp.~97--136.
 Springer LNCS 925.
 
 \end{thebibliography}
