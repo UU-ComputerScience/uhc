@@ -31,6 +31,7 @@ class AbstractCore expr metaval bind bindcateg metabind ty pat patrest patfld al
     , bindcateg -> expr
     , pat       -> patrest patfld alt expr
     , alt    	-> pat expr
+    , patrest   -> pat expr
     , patfld	-> bind
   where
   ------------------------- constructing: expr -------------------------
@@ -49,6 +50,9 @@ class AbstractCore expr metaval bind bindcateg metabind ty pat patrest patfld al
   -- | basic let binding
   acoreLetBase :: bindcateg -> [bind] -> expr -> expr
   
+  -- | case, with possible default
+  acoreCaseDflt  :: expr -> [alt] -> Maybe expr -> expr
+
   -- | var
   acoreVar  :: HsName -> expr
 
@@ -77,7 +81,10 @@ class AbstractCore expr metaval bind bindcateg metabind ty pat patrest patfld al
 
   ------------------------- constructing: patrest -------------------------
   -- | patrest, empty
-  acorePatRestEmpty :: pat -> patrest
+  acorePatRestEmpty :: patrest
+
+  -- | patrest, var
+  acorePatRestVar :: HsName -> patrest
 
   ------------------------- constructing: alt -------------------------
   -- | 1 arg application, together with meta info about the argument
@@ -207,12 +214,15 @@ acoreTag tg = acoreTagTup tg []
 %%% Derived functionality: binding
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(8 codegen) export(acoreBind1CatLevMetaTy,acoreBind1CatLevTy,acoreBind1CatTy,acoreBind1Cat,acoreBind1Ty,acoreBind1)
+%%[(8 codegen) export(acoreBind1CatLevMetaTy,acoreBind1CatLevTy,acoreBind1CatMetaTy,acoreBind1CatTy,acoreBind1Cat,acoreBind1Ty,acoreBind1)
 acoreBind1CatLevMetaTy :: (AbstractCore e m b bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> m -> t -> e -> b
 acoreBind1CatLevMetaTy cat n l m t e = acoreBind1CatLevMetasTy cat n l (acoreMetabindDflt e,m) t e
 
 acoreBind1CatLevTy :: (AbstractCore e m b bcat mbind t p pr pf a) => bcat -> HsName -> MetaLev -> t -> e -> b
 acoreBind1CatLevTy cat n l t e = acoreBind1CatLevMetaTy cat n l (acoreMetavalDflt e) t e
+
+acoreBind1CatMetaTy :: (AbstractCore e m b bcat mbind t p pr pf a) => bcat -> HsName -> m -> t -> e -> b
+acoreBind1CatMetaTy cat n m t e = acoreBind1CatLevMetaTy cat n metaLevVal m t e
 
 acoreBind1CatTy :: (AbstractCore e m b bcat mbind t p pr pf a) => bcat -> HsName -> t -> e -> b
 acoreBind1CatTy cat n t e = acoreBind1CatLevTy cat n metaLevVal t e
@@ -263,6 +273,18 @@ acoreLet c bs e = acoreLetMerge False c bs e
 
 acoreLetRec :: (Eq bcat, AbstractCore e m b bcat mbind t p pr pf a) => [b] -> e -> e
 acoreLetRec bs e = acoreLet (acoreBindcategRec e) bs e
+%%]
+
+%%[(8 codegen) hs export(acoreLetStrictInMetaTy,acoreLetStrictInMeta)
+-- | evaluate an expr, with a continuation for the evaluated expr
+acoreLetStrictInMetaTy :: (AbstractCore e m b bcat mbind t p pr pf a) => HsName -> m -> t -> e -> (e -> e) -> e
+acoreLetStrictInMetaTy nm m t e mkC
+  = acoreLetBase cat [acoreBind1CatMetaTy cat nm m t e] (mkC (acoreVar nm))
+  where cat = acoreBindcategStrict e
+
+-- | evaluate an expr, with a continuation for the evaluated expr
+acoreLetStrictInMeta :: (AbstractCore e m b bcat mbind t p pr pf a) => HsName -> m -> e -> (e -> e) -> e
+acoreLetStrictInMeta nm m e mkC = acoreLetStrictInMetaTy nm m (acoreTyErr e "acoreLetStrictInMeta") e mkC
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

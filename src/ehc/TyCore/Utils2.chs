@@ -88,10 +88,10 @@ caltOffsetL alt
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(MbPatRest)
-type MbPatRest = Maybe (PatRest,Int) -- (pat rest, arity)
+type MbPatRest = MbPatRest' PatRest
 %%]
 
-%%[(8 codegen) export(mkExprStrictSatCaseMeta,mkExprStrictSatCase)
+%%[(8888 codegen) export(mkExprStrictSatCaseMeta,mkExprStrictSatCase)
 {-
 Either:
   - make a case expr from alternatives,
@@ -127,7 +127,7 @@ alternatives are given by their tag + fields (name/offset) + rest (for extensibl
 -}
 mkExprSelsCasesMeta' :: RCEEnv -> Maybe (HsName,Ty) -> MetaVal -> Expr -> [(CTag,[(HsName,{-HsName,-}Expr)],MbPatRest,Expr)] -> Expr
 mkExprSelsCasesMeta' env mbNm meta e tgSels
-  = mkExprStrictSatCaseMeta env mbNm meta e alts
+  = acoreStrictSatCaseMetaTy env mbNm meta e alts
   where  alts = [ Alt_Alt
                     (Pat_Con {- (maybe (exprVar e) id mbNm) -} ct
                        (mkRest mbRest ct)
@@ -239,7 +239,7 @@ mkExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
 mkListComprehenseGenerator :: RCEEnv -> Pat -> (Expr -> Expr) -> Expr -> Expr -> Expr
 mkListComprehenseGenerator env patOk mkOk fail e
   = mkExprLam1 x ty
-      (mkExprStrictSatCase (env {rceCaseCont = fail}) (Just (xStrict,ty)) (Expr_Var x)
+      (acoreStrictSatCaseTy (env {rceCaseCont = fail}) (Just (xStrict,ty)) (Expr_Var x)
         [Alt_Alt patOk (mkOk e)]
       )
   where x = mkHNmHidden "x"
@@ -574,7 +574,7 @@ rceMkConAltAndSubAlts env ((arg,ty):args) alts@(alt:_)
 
 rceMatchCon :: RCEEnv -> [(HsName,Ty)] -> RCEAltL -> Expr
 rceMatchCon env ((arg,ty):args) alts
-  = mkExprStrictSatCase env (Just (arg',ty)) (Expr_Var arg) alts'
+  = acoreStrictSatCaseTy env (Just (arg',ty)) (Expr_Var arg) alts'
   where arg'   =  hsnUniqifyEval arg
         alts'  =  map (rceMkConAltAndSubAlts env ((arg',ty):args))
                   $ groupSortOn (ctagTag . rcaTag)

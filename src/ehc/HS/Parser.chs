@@ -621,14 +621,18 @@ pInstanceName
 %%[9
 pDeclarationInstance :: HSParser Declaration
 pDeclarationInstance
-  = pINSTANCE
-    <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (tokMkQName cl) ts d)
-             <$> pInstanceName
-             <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
-             <*> pWhere' pDeclarationValue
-         <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
-             <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
-         )
+  =   pINSTANCE
+      <**> (   (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
+               <$> pHeader
+               <*> pWhere' pDeclarationValue
+           <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
+               <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
+           )
+%%[[91
+  <|> (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
+      <$> pDERIVING <* pINSTANCE <*> pHeader
+%%]]
+  where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
 %%]
 
 %%[9

@@ -340,7 +340,7 @@ mkCExprLetPlain ::  HsName -> CExpr -> CExpr -> CExpr
 mkCExprLetPlain nm e = acoreLet CBindings_Plain [acoreBind1Cat CBindings_Plain nm e]
 
 mkCExprStrictIn :: HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
-mkCExprStrictIn nm e mkC = mkCExprStrictInMeta nm CMetaVal_Val e mkC
+mkCExprStrictIn nm e mkC = acoreLetStrictInMeta nm CMetaVal_Val e mkC
 
 mkCExprMbStrictIn :: Maybe HsName -> CExpr -> (CExpr -> CExpr) -> CExpr
 mkCExprMbStrictIn (Just nm) e mkC = CExpr_Let CBindings_Strict [acoreBind1Cat CBindings_Strict nm e] (mkC (acoreVar nm))
@@ -782,6 +782,7 @@ instance AbstractCore CExpr CMetaVal CBind CBindingsCateg CMetaBind Ty CPat CPat
   acoreTagTupTy   tg _ es 				= acoreApp (CExpr_Tup tg) es
   acoreBind1CatLevMetasTy _ n _ m _ e	= CBind_Bind n m e
   acoreLetBase							= CExpr_Let
+  acoreCaseDflt	e as d					= CExpr_Case e as $ maybe (acoreVar hsnUnknown) id d
   acoreVar								= CExpr_Var
   acoreStringTy _ i						= CExpr_String i
   acoreCharTy _ i						= CExpr_Char i
@@ -796,7 +797,8 @@ instance AbstractCore CExpr CMetaVal CBind CBindingsCateg CMetaBind Ty CPat CPat
   acorePatFldTy _ (lbl,off) n 			= CPatFld_Fld lbl off n
 
   -- patrest
-  acorePatRestEmpty _					= CPatRest_Empty
+  acorePatRestEmpty  					= CPatRest_Empty
+  acorePatRestVar						= CPatRest_Var
 
   -- alt
   acoreAlt                             	= CAlt_Alt

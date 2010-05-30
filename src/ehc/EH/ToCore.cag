@@ -1051,10 +1051,10 @@ mkInstanceCBindL
   = [acoreBind1Meta dictNm generatedMeta generatedDictionary]
   where (generatedDictionary, generatedMeta)
           = case instVariant of
-               InstNormal   -> mkNormalD  declsCBindL
-               InstDefault  -> mkDefaultD declsCBindL
+               InstNormal     -> mkNormalD  declsCBindL
+               InstDefault    -> mkDefaultD declsCBindL
 %%[[91               
-               InstDeriving -> mkNormalD  declsCBindL
+               InstDeriving _ -> mkNormalD  declsCBindL
 %%]]
         rsltNm   = dictBuildNm
         rsltVar  = acoreVar rsltNm
@@ -1147,7 +1147,7 @@ SEM Decl
                                                              InstNormal   -> (@decls.cbindL,[])
                                                              InstDefault  -> (@decls.cbindL,[])
 %%[[91               
-                                                             InstDeriving
+                                                             InstDeriving _
 %%[[92
                                                                | not $ null @generForFitsInL
                                                                           -> unzip
@@ -1234,7 +1234,7 @@ mkInstanceDerivingFldBind opts rceEnv dataGam uniq derivDataDGI derivHdDataTy di
                        nrOfAlts rsltVar extraCxL (dcfInitialArgL dcf)
               else acoreLam (dcfInitialArgL dcf ++ take fArity nsA)
                      (dcfWrapCase dcf opts derivDataDGI nrOfAlts n1 (dcfInitialArgL dcf)
-                      $ mkCExprStrictSatCase rceEnv (Just $ hsnUniqifyEval n1) n1v
+                      $ acoreStrictSatCase rceEnv (Just $ hsnUniqifyEval n1) n1v
                         [ CAlt_Alt (dcfMkCPat dcf altInx ctag (ctagArity ctag) (Just $ n1subs ctag))
                                    (mkc splDTI altInx (fArity - 1) n1s [n1subs ctag] altPrOccL)
                         | (ctag,altPrOccL) <- zip (map dtiCTag dtis) derivAltsPrOcc
@@ -1263,7 +1263,7 @@ mkInstanceDerivingFldBind opts rceEnv dataGam uniq derivDataDGI derivHdDataTy di
                mkc tg@(dtisLT,dti,dtisGT) altInx arity nms nmFldLL altPrOccL
                  = case nms of
                      (n:ns) | arity > 0
-                       -> mkCExprStrictSatCase rceEnv (Just $ hsnUniqifyEval n) (acoreVar n)
+                       -> acoreStrictSatCase rceEnv (Just $ hsnUniqifyEval n) (acoreVar n)
                             (   [ mka (dtiCTag dti) tsubs (mkc tg altInx (arity - 1) ns (nmFldLL ++ [tsubs]) altPrOccL) ]
                              ++ [ mka t (nsubs t n) (dcfAllTagLtCExpr dcf) | t <- map dtiCTag dtisLT ]
                              ++ [ mka t (nsubs t n) (dcfAllTagGtCExpr dcf) | t <- map dtiCTag dtisGT ]
@@ -1311,109 +1311,10 @@ mkDataGenerBinds
                 
                 -- the bindings for datatypes acting as labels
                 binds = case instKind of
-                          GenerInstKind_Representable remArity
-                            -> [ acoreBind1 (ehcOptBuiltin2 opts ehbnGenerClassRepresentableNFldFrom remArity) (from remArity)
-                               , acoreBind1 (ehcOptBuiltin2 opts ehbnGenerClassRepresentableNFldTo   remArity) (to   remArity)
+                          GenerInstKind_Representable remArity proj
+                            -> [ acoreBind1 (ehcOptBuiltin2 opts ehbnGenerClassRepresentableNFldFrom remArity) (projFrom opts rceEnv proj)
+                               , acoreBind1 (ehcOptBuiltin2 opts ehbnGenerClassRepresentableNFldTo   remArity) (projTo   opts rceEnv proj)
                                ]
-                            where dgi = panicJust ("mkDataGenerBinds.dataGam: " ++ show orignm) $ dataGamLookup orignm dataGam
-                                  -- per constructor info
-                                  conAndFldL
-                                    = [ (tg,nL)
-                                      | (_,dti) <- dgiConstrTagAssocL dgi
-                                      , let tg  = dtiCTag dti
-                                            nL  = take (ctagArity tg) $ hsnLclSupply
-                                      ]
-                                  nrOfAlts = length conAndFldL
-                                  
-                                  -- the from<N> function, still only valid for N == 0
-                                  from remArity
-                                    = acoreLam [argNm]
-                                      $ mkCExprSatSelsCases -- :: RCEEnv -> Maybe HsName -> CExpr -> [(CTag,[(HsName,HsName,Int)],MbCPatRest,CExpr)] -> CExpr
-                                          rceEnv (Just $ hsnUniqifyEval argNm) (acoreVar argNm)
-                                          [ (tg, pNmL nL, Nothing, mkExp altNr nL) | ((tg,nL),altNr) <- zip conAndFldL [0::Int ..] ]
-                                    where mkExp altNr nL = acoreApp1 vM1 $ mkFrInj altNr nrOfAlts $ acoreApp1 vM1 $ mkTup $ map acoreVar nL
-                                          mkFrInj = mkInj vUndef id (\x -> acoreApp vL1 [x]) (\x -> acoreApp vR1 [x])
-                                          mkTup = mkGenerThing vU1 (\x -> acoreApp vK1 [x]) (\x y -> acoreApp vPr [x,y])
-
-                                  -- the to<N> function, still only valid for N == 0
-                                  to remArity
-                                    = (\(n,e) -> acoreLam [n] e)
-                                      $ mkToInj
-                                          [ (altTupNmScrut,e)
-                                          | ((tg,nL),altNr) <- zip conAndFldL [0::Int ..]
-                                          , let altTupNm = mkHNm altNr
-                                                (altTupNmScrut,e) = mkTup altTupNm nL $ acoreApp (acoreVar $ ctagNm tg) (map acoreVar nL)
-                                          ]
-                                    where mkTup n nL e
-                                                  = (\(_,nScrut,mk) -> (nScrut,mk e)) $
-                                                    mkGenerThing
-                                                      ( n, n
-                                                      , mkC (tgOf ehbnGenerDataUnit1 ehbnGenerDataUnit1AltU1) n [] id
-                                                      )
-                                                      (\(n1,n1Scrut,mk1)
-                                                         -> ( n1, n1Scrut
-                                                            , mkC (tgOf ehbnGenerDataKonst1 ehbnGenerDataKonst1AltK1) n1Scrut [n1] mk1
-                                                            )
-                                                      )
-                                                      (\(n1,n1Scrut,mk1) (n2,n2Scrut,mk2)
-                                                         -> let n12 = hsnConcat n1 n2
-                                                            in  ( n12, n12
-                                                                , mkC (prodTg ehbnGenerDataProdAltProd) n12 [n1Scrut,n2Scrut] (mk1 . mk2)
-                                                                )
-                                                      )
-                                                      [ (nIntro, hsnUniqifyStr HsNameUniqifier_GenericClass "Scrut" nIntro, id) | nIntro <- nL ]
-                                                  where mkC tg nScrut nBndL mke
-                                                          = \e -> mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval nScrut) (acoreVar nScrut) [ (tg,pNmL nBndL,Nothing,mke e) ]
-
-                                          mkToInj = mkGenerThing
-                                                      (argNm,vUndef)
-                                                      mkM1
-                                                      (\(n1,x1) (n2,x2)
-                                                         -> let n12 = hsnConcat n1 n2
-                                                            in  mkM1
-                                                                $ ( n12
-                                                                  , mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval n12) (acoreVar n12)
-                                                                      [ (sumTg ehbnGenerDataSumAltLeft ,pNmL [n1],Nothing,x1)
-                                                                      , (sumTg ehbnGenerDataSumAltRight,pNmL [n2],Nothing,x2)
-                                                                      ]
-                                                                  )
-                                                      )
-                                                  where sumTg f = panicJust ("mkDataGenerBinds.sumTg:" ++ show n) $ dataGamLookupTag (biNm ehbnGenerDataSum) n dataGam
-                                                                where n = biNm f
-                                                        mkM1 (n,e) = ( nScrut
-                                                                     , mkCExprSatSelsCases rceEnv (Just $ hsnUniqifyEval nScrut) (acoreVar nScrut)
-                                                                         [ (tgOf ehbnGenerDataMeta1 ehbnGenerDataMeta1AltM1,pNmL [n],Nothing,e) ]
-                                                                     )
-                                                                   where nScrut = hsnUniqifyStr HsNameUniqifier_GenericClass "M1" n
-                                          
-                                  
-                                  -- injection for one specific L/R path, abstracted over resulting AST
-                                  mkInj zero one left right i m x
-                                    = mk i m x
-                                    where mk i m x
-                                            | m == 0    = zero
-                                            | m == 1    = one x
-                                            | i <  m2   = left  (mk  i      m2    x)
-                                            | otherwise = right (mk (i-m2) (m-m2) x)
-                                            where m2 = m `div` 2
-
-                                  -- builtin vars
-                                  v    f = acoreVar $ biNm f
-                                  vU1    = v ehbnGenerDataUnit1AltU1
-                                  vK1    = v ehbnGenerDataKonst1AltK1
-                                  vM1    = v ehbnGenerDataMeta1AltM1
-                                  vPr    = v ehbnGenerDataProdAltProd
-                                  vL1    = v ehbnGenerDataSumAltLeft
-                                  vR1    = v ehbnGenerDataSumAltRight
-                                  vUndef = acoreBuiltinUndefined opts
-
-                                  -- CTag for con of dataty combi
-                                  tgOf t c    = panicJust ("mkDataGenerBinds.tgOf:" ++ show c') $ dataGamLookupTag (biNm t) c' dataGam
-                                              where c' = biNm c
-                                  prodTg      = tgOf ehbnGenerDataProd
-                                  
-                                  -- pattern names arg to mkCExprSatSelsCases
-                                  pNmL nL = zipWith (\n o -> (n,n,o)) nL [(0::Int) ..]
 
                           GenerInstKind_Datatype
                             -> [ mkBindStr ehbnGenerClassDatatypeFldName                         $ hsnQualified orignm
@@ -1421,7 +1322,7 @@ mkDataGenerBinds
                                ]
 
                           GenerInstKind_Constructor tyNm
-                            -> [ mkBindStr ehbnGenerClassConstructorFldName orignm ]
+                            -> [ mkBindStr ehbnGenerClassConstructorFldName $ hsnQualified orignm ]
                                ++ (if Map.null (dtiFldMp dti) then [] else [mkBind ehbnGenerClassConstructorFldIsRec $ acoreVar $ biNm ehbnBoolTrue])
                                ++ (if isNothing mbInfix
                                    then []
@@ -1443,10 +1344,10 @@ mkDataGenerBinds
                           -- _ -> []
 
         -- get a builtin name
-        biNm = ehcOptBuiltin opts
+        biNm          = ehcOptBuiltin opts
         
         -- utils for bindings
-        argNm = mkHNm "x"
+        argNm         = mkHNm "x"
         mkBindx a f x = acoreBind1 (biNm f) (acoreLam [a] x)
         mkBind        = mkBindx argNm
         mkBindStr f n = mkBind f $ acoreBuiltinString opts $ show n

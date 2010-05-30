@@ -103,7 +103,7 @@ data DataFldInConstr
 type DataFldInConstrMp = Map.Map HsName DataFldInConstr
 %%]
 
-%%[(7 hmtyinfer) export(DataGam,DataGamInfo(..),mkDGI)
+%%[(7 hmtyinfer) export(DataGamInfo(..))
 data DataGamInfo
   = DataGamInfo
       { dgiTyNm      		:: !HsName				-- type name (duplicate of key of gamma leading to this info)
@@ -121,20 +121,35 @@ data DataGamInfo
 %%]]
       , dgiMaxConstrArity   :: !Int
 %%]]
+%%[[92
+      , dgiMbGenerInfo		:: !(Maybe Int)			-- max kind arity for generic behavior, currently \in {0,1}
+%%]]
       }
-
-
-type DataGam = Gam HsName DataGamInfo
 
 instance Show DataGamInfo where
   show _ = "DataGamInfo"
+%%]
 
+%%[(7 hmtyinfer) export(DataGam)
+type DataGam = Gam HsName DataGamInfo
+%%]
+
+%%[(7 hmtyinfer) export(mkDGI)
 %%[[7
 mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Bool -> DataGamInfo
 %%][90
-mkDGI :: HsName -> Ty -> [HsName] -> DataConstrTagMp -> Maybe Ty -> DataGamInfo
+mkDGI
+  :: HsName
+     -> Ty -> [HsName] -> DataConstrTagMp -> Maybe Ty
+%%[[92
+     -> Maybe Int
+%%]]
+     -> DataGamInfo
 %%]]
 mkDGI tyNm dty cNmL m nt
+%%[[92
+      mbGener
+%%]]
   = DataGamInfo
       tyNm
       dty
@@ -144,6 +159,11 @@ mkDGI tyNm dty cNmL m nt
       m
 %%[[8
       fm nt mx
+%%]]
+%%[[92
+      mbGener
+%%]]
+%%[[8
   where fm = Map.map DataFldInConstr $ Map.unionsWith Map.union
              $ [ Map.singleton f (Map.singleton (dtiCTag ci) (dfiOffset fi)) | ci <- Map.elems m, (f,fi) <- Map.toList $ dtiFldMp ci ]
         mx = if Map.null m then (-1) else (ctagMaxArity $ dtiCTag $ head $ Map.elems m)
@@ -159,6 +179,9 @@ mkDGIPlain tyNm dty cNmL m
 %%][90
           Nothing
 %%]]
+%%[[92
+          Nothing
+%%]]
 
 %%]
 
@@ -169,12 +192,7 @@ dgiIsNewtype = isJust . dgiMbNewtype
 
 %%[(7 hmtyinfer) export(emptyDataGamInfo,emptyDGI)
 emptyDataGamInfo, emptyDGI :: DataGamInfo
-emptyDataGamInfo = mkDGI hsnUnknown Ty_Any [] Map.empty
-%%[[7
-                         False
-%%][90
-                         Nothing
-%%]]
+emptyDataGamInfo = mkDGIPlain hsnUnknown Ty_Any [] Map.empty
 emptyDGI = emptyDataGamInfo
 %%]
 
@@ -309,7 +327,11 @@ instance Serialize DataFldInConstr where
   sget = liftM DataFldInConstr sget
 
 instance Serialize DataGamInfo where
+%%[[20
   sput (DataGamInfo a b c d e f g) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g
   sget = liftM7 DataGamInfo sget sget sget sget sget sget sget
-
+%%][92
+  sput (DataGamInfo a b c d e f g h) = sput a >> sput b >> sput c >> sput d >> sput e >> sput f >> sput g >> sput h
+  sget = liftM8 DataGamInfo sget sget sget sget sget sget sget sget
+%%]]
 %%]

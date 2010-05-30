@@ -20,15 +20,14 @@ additional datatypes and class instances are introduced.
 -- | The info for generics about datatypes, required higher in the syntax tree
 type GenerDataInfo
   = (  ( HsName         -- orig type name
-       , HsName         -- new type name
        , [TyVarId]      -- data type args
        , Ty             -- kind of type, without kiVarMap yet applied
        )
-    , [( HsName         -- orig con name
-       , HsName         -- new con name
+    , [( CTag           -- orig con tag
        , [Ty]           -- field types
       )]
     , PredScope
+    , Int               -- max kind arity over which genericity abstracts, currently \in {0,1}
     )
 
 -- | what kind of instance should be generated
@@ -36,6 +35,7 @@ data GenerInstKind
   = GenerInstKind_Datatype
   | GenerInstKind_Constructor       HsName      -- for a type
   | GenerInstKind_Representable     Int         -- remaining arity
+                                    Proj        -- projection info
   deriving (Show)
 
 -- | Info for generics, for generating data instances
@@ -46,16 +46,19 @@ type GenerDataInstInfo
     , GenerInstKind     -- what kind of instance
     , Pred              -- the predicate
     )
-%%]
 
--- | Info for generics, for generating repr instances
-type GenerReprInstInfo
-  = ( HsName            -- original name of datatype
-    , HsName            -- instance name
-    , HsName            -- class name
-    , Int               -- the arity of remaining type args
-    , Pred              -- the predicate
+-- | Info for generics, for generating repr instances, in particular projection descriptors
+type GenerTySynProjInfo
+  = ( HsName                -- original name of datatype
+    , [TyVarId]             -- data type args
+    , PredScope             -- predicate scope
+    , [( HsName             -- representation type name
+       , Ty                 -- type synonym itself, i.e. the type lambda
+       , Proj               -- projection descriptor
+       , Int                -- the arity of remaining type args
+      )]
     )
+%%]
 
 %%[(92 hmtyinfer) hs
 mkGenerThing
@@ -73,41 +76,59 @@ mkGenerThing zero one two things
 %%]
 
 %%[(92 hmtyinfer) hs
-mkGenerRepresentableTypeSynonymTy
+mkGenerRepresentableTypeSynTyProj
   :: EHCOpts
-     -> Int             -- the arity of to be supplied type paramaters
-     -> [HsName]        -- all type names defined in this binding group (i.e. let)
-     -> HsName          -- type name
-     -> [TyVarId]       -- type args
-     -> ([Ty],Ty)       -- kind, already split up in args + res
-     -> [(HsName,[Ty])] -- constructor names, with type args
-     -> ( Ty            -- type
-        -- , Ty         -- kind
+     -> Int                     -- the arity of to be supplied type paramaters
+     -> [HsName]                -- all type names defined in this binding group (i.e. let)
+     -> (HsName -> Int-> Bool)  -- name of type has Representable<remArity>?
+     -> HsName                  -- type name
+     -> [TyVarId]               -- type args
+     -- -> ([Ty],Ty)               -- kind, already split up in args + res
+     -> [(CTag,HsName,[Ty])]    -- tags, constructor type names, with type args
+     -> ( Ty                    -- type
+        , Proj                  -- intermediate description of projection
         )
-mkGenerRepresentableTypeSynonymTy
-     opts remArity allTyNmL
-     tyNm tvarArgL (kiArgL,kiRes) conNmArgsL
-  = ( mkTyLam
-        tvarArgL
-        (mkApp [ mkC2 ehbnGenerDataMetaDN 1
-               , semCon tyNm
-               , mkSm [ mkAlt c (mkPr [ mkArg p | p <- ps ])
-                      | (c,ps) <- conNmArgsL
-                      ]
-               ]
-        )
-    -- , replicate (length tvarArgL) kiStar `mkArrow` kiStar
-    )
-  where mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
+mkGenerRepresentableTypeSynTyProj
+     opts remArity allTyNmL isRepresentable
+     tyNm tvarArgL
+     -- (kiArgL,kiRes)
+     conNmArgsL
+  = mkTop $ mkSm [ mkAlt tg c (mkPr [ mkArg p | p <- ps ]) | (tg,c,ps) <- conNmArgsL ]
+  where lamArity      = length tvarArgL - remArity
+        (lamTvarArgL,remTvarArgL)
+                      = splitAt lamArity tvarArgL
+        mkC   f       = Ty_Con $ ehcOptBuiltin  opts f
         mkC2  f i     = Ty_Con $ ehcOptBuiltin2 opts f i
-        mkSub u f     = mkGenerThing (mkC u) id (\x y -> mkApp [mkC f, x, y])
-        mkPr          = mkSub ehbnGenerDataUnit1 ehbnGenerDataProd
-        mkSm          = mkSub ehbnGenerDataVoid1 ehbnGenerDataSum
-        mkArg t       = mkApp [mkC2 nm remArity, t]
-                      where nm | tyIsVar t    = ehbnGenerDataParN       -- TBD: check for kind *, check for one of tvarArgL
-                               | otherwise    = ehbnGenerDataRecN
-        mkAlt c t     = mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t]
-        eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
+        mkSub (u,pu) (f,pf)
+                      = mkGenerThing (mkC u,pu) id (\(x,px) (y,py) -> (mkApp [mkC f, x, y], pf px py))
+        mkPr          = mkSub (ehbnGenerDataUnit1, Proj_U1   ) (ehbnGenerDataProd, Proj_Prod                             )
+        mkSm          = mkSub (ehbnGenerDataVoid1, Proj_Void ) (ehbnGenerDataSum , \x y -> Proj_L1 x `Proj_Sum` Proj_R1 y)
+        mkArg t       = (mkApp funarg, proj)
+                      where (funarg,proj)
+                              | isJust mbVar     = case elemIndex tvar remTvarArgL of       -- TBD: check for kind *, check for one of tvarArgL
+                                                     Just i -> ([ mkC ehbnGenerDataPar1    ], Proj_Par1 [t] (i+1))
+                                                     _      -> ([ mkC ehbnGenerDataPar0, t ], Proj_K1   [t]      )
+                              | remArity > 0 && isJust mbConArgs && isRepr
+                                                 = case (initlast remTvarArgL, initlast args) of
+                                                     (Just (_,tv), Just (firstargs,lastarg)) | maybe False (tv==) $ tyMbVar lastarg
+                                                       -> ([ mkC ehbnGenerDataRec1, mkApp (Ty_Con con : firstargs) ], Proj_Rec1 [t] remArity)
+                                                     (_, Just (firstargs,lastarg)) | not $ Set.null $ ftvSet lastarg
+                                                       -> ( [ mkC ehbnGenerDataComp1AltComp1, fmapTy, lastarg' ]
+                                                          , Proj_Comp1 [t] fmapTy lastproj
+                                                          )
+                                                       where (lastarg',lastproj) = mkArg lastarg
+                                                             fmapTy = mkApp (Ty_Con con : firstargs)
+                                                     _ -> dflt
+                              | otherwise        = dflt
+                              where mbVar    @(~(Just tvar      )) = tyMbVar        t
+                                    mbConArgs@(~(Just (con,args))) = tyMbAppConArgs t
+                                    isRepr = isRepresentable con remArity
+                                    dflt   = ([ mkC ehbnGenerDataRec0, t ], Proj_K1 [t])
+        mkAlt tg c (t,p)  = (mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t], Proj_M1 $ Proj_Con tg p)
+        mkTop (t,p)   = ( mkTyLam lamTvarArgL (mkApp [ mkC2 ehbnGenerDataMetaDN 1, semCon tyNm, t ])
+                        , Proj $ Proj_M1 p
+                        )
+        -- eqLastTvar    = maybe (const False) (\(_,v) -> maybe False (v==) . tyMbVar) $ initlast tvarArgL
         -- isRec t       = not (null as) || tyConNm f `elem` allTyNmL
         --               where (f,as) = tyAppFunArgs t
 
@@ -122,74 +143,79 @@ mkGenerRepresentableTypeSynonymPol :: PolGam -> HsName -> Ty
 mkGenerRepresentableTypeSynonymPol polGam tyNm = maybe Ty_Any pgiPol $ polGamLookup tyNm polGam
 %%]
 
-%%[(9292 hmtyinfer) hs
-mkGenerRepresentableInstance
-  :: EHCOpts
-     -> ( [CHRScopedInstanceDecl Pred RedHowAnnotation PredScope]
-        , [GenerDataInstInfo]
-        )
-%%]
-
 %%[(92 hmtyinfer)
 ATTR AllDecl [ | | generDataInfoL USE {++} {[]} : {[GenerDataInfo]} ]
 
 SEM Decl
   | Data        lhs         -- all gathered info, required higher up in the AST to generate type and instance defs
-                            .   generDataInfoL      =   if ehcOptGenGenerics @lhs.opts
-                                                        then [( (@tyNm, hsnNm2Gener @tyNm, @dataTyVarIdL, @dataKi)
-                                                              , [ (c, hsnNm2Gener c, [ pty | (p,pty) <- snd $ tyRecExts cty ])
+                            .   generDataInfoL      =   if isJust @mbGenerInfo -- ehcOptGenGenerics @lhs.opts
+                                                        then [( (@tyNm, @dataTyVarIdL, @dataKi)
+                                                              , [ ( dtiCTag $ panicJust "Generics.Decl.Data.dataConstrTagMp"
+                                                                    $ Map.lookup c @constrs.dataConstrTagMp
+                                                                  , [ pty | (p,pty) <- snd $ tyRecExts cty ]
+                                                                  )
                                                                 | (c,cty) <- snd $ tyRecExts @dataAltTy
                                                                 ]
                                                               , @lhs.predScope
+                                                              , fromJust @mbGenerInfo
                                                               )]
                                                         else []
-
 SEM Expr
   | Let         loc         -- names for introduced datatypes
                             .   (generDataAllTyOrigNmL,generDataTyAndConNmLL)
-                                                    =   unzip [ (origtnm, tnm : [ x | (_,x,_) <- cs ]) | ((origtnm,tnm,_,_),cs,_) <- @decls.generDataInfoL ]
+                                                    =   unzip [ (origtnm, hsnNm2Gener origtnm : [ hsnNm2Gener $ ctagNm x | (x,_) <- cs ]) | ((origtnm,_,_),cs,_,_) <- @decls.generDataInfoL ]
                             .   generDataTyAndConNmL=   concat @generDataTyAndConNmLL
                             
+                            -- representation type synonyms and projection descriptors
+                            .   generTySynProjL     =   [ ( origtnm, tvs, sc
+                                                          , [ (hsnNm2GenerReprSyn arity origtnm, syn, proj, arity)
+                                                            | arity <- [0..remArity]
+                                                            , let (syn,proj) = mkGenerRepresentableTypeSynTyProj @lhs.opts arity
+                                                                                  @generDataAllTyOrigNmL
+                                                                                  (\tnm remArity -> tnm `elem` @generDataAllTyOrigNmL || isJust (tyGamLookup (hsnNm2GenerReprSyn remArity tnm) @lhs.tyGam))
+                                                                                  tnm tvs -- ki'
+                                                                                  [ (c,hsnNm2Gener $ ctagNm c,ps) | (c,ps) <- cs ]
+                                                            ]
+                                                          )
+                                                        | ((origtnm,tvs,ki),cs,sc,remArity) <- @decls.generDataInfoL
+                                                        , let -- ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 |=> ki
+                                                              tnm = hsnNm2Gener origtnm
+                                                        ]
+
                             -- various environments/gammas
-                            .   generDataGam        =   gamFromAssocL [ (n, mkDGI n (Ty_Con n) [] Map.empty Nothing )
+                            .   generDataGam        =   gamFromAssocL [ (n, mkDGIPlain n (Ty_Con n) [] Map.empty )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                             .   generTyGam          =   gamFromAssocL [ (n, mkTGIData (Ty_Con n) Ty_Any             )
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                                                         `gamUnion`
-                                                        gamFromAssocL [ ( hsnNm2GenerReprSyn 0 origtnm
-                                                                        , mkTGIData (mkGenerRepresentableTypeSynonymTy @lhs.opts 0 @generDataAllTyOrigNmL tnm tvs ki' [ (c,ps) | (_,c,ps) <- cs ])
-                                                                                    Ty_Any
-                                                                        )
-                                                                      | ((origtnm,tnm,tvs,ki),cs,_) <- @decls.generDataInfoL
-                                                                      , let ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 |=> ki
+                                                        gamFromAssocL [ ( tnm, mkTGIData syn Ty_Any )
+                                                                      | (_,_,_,ts) <- @generTySynProjL
+                                                                      , (tnm,syn,_,_) <- ts
                                                                       ]
                             .   generTyKiGam        =   gamUnions     [ (tyKiGamNameSingleton n (TyKiGamInfo kiStar))
                                                                       | n <- @generDataTyAndConNmL
                                                                       ]
                                                         `gamUnion`
-                                                        gamUnions     [ (tyKiGamNameSingleton (hsnNm2GenerReprSyn 0 origtnm)
-                                                                                              (TyKiGamInfo $ mkGenerRepresentableTypeSynonymKi @lQuTyKiGam_ex origtnm)
-                                                                        )
-                                                                      | ((origtnm,_,tvs,_),_,_) <- @decls.generDataInfoL
+                                                        gamUnions     [ (tyKiGamNameSingleton (hsnNm2GenerReprSyn arity origtnm) (TyKiGamInfo ki))
+                                                                      | ((origtnm,_,_),_,_,remArity) <- @decls.generDataInfoL
+                                                                      , let ki = mkGenerRepresentableTypeSynonymKi @lQuTyKiGam_ex origtnm
+                                                                      , arity <- [0..remArity]
                                                                       ]
                             .   generPolGam         =   gamUnions     [ (gamSingleton (hsnNm2GenerReprSyn 0 origtnm)
                                                                                       (PolGamInfo $ mkGenerRepresentableTypeSynonymPol @finGathPolGam origtnm)
                                                                         )
-                                                                      | ((origtnm,_,tvs,_),_,_) <- @decls.generDataInfoL
+                                                                      | ((origtnm,tvs,_),_,_,_) <- @decls.generDataInfoL
                                                                       ]
 
                             -- instances to participate in context reduction machinery (codegen is done in ToCore)
                             -- TBD: factor out similarities...
                             .   (generInstDeclL,generInstInfoL)
                                                     =   let -- make names
-                                                            mkn f kind (orignm,nm)
-                                                              = (orignm,nm,cl,hsnUniqifyStr HsNameUniqifier_GenericClass (hsnBaseString cl) nm,kind)
-                                                              where cl = ehcOptBuiltin @lhs.opts f
-                                                            mkn2 f i kind (orignm,nm)
-                                                              = (orignm,nm,cl,hsnUniqifyStr HsNameUniqifier_GenericClass (hsnBaseString cl) nm,kind)
-                                                              where cl = ehcOptBuiltin2 @lhs.opts f i
+                                                            mkn' cl kind (orignm,nm) = (orignm,nm,cl,hsnUniqifyStr HsNameUniqifier_GenericClass (hsnBaseString cl) nm,kind)
+                                                            mkn  f   = mkn' (ehcOptBuiltin  @lhs.opts f  )
+                                                            mkn2 f i = mkn' (ehcOptBuiltin2 @lhs.opts f i)
                                                             
                                                             -- make data label instance, i.e. Constructor $C1, Datatype $T
                                                             mkd sc (orignm,nm,cl,i,k)
@@ -197,23 +223,26 @@ SEM Expr
                                                                 , (orignm,i,cl,k,pr)
                                                                 )
                                                               where pr = Pred_Class $ mkConApp cl [semCon nm]
-                                                            mkDataInst (t@(origtnm,tnm,_,_),cs,sc)
+                                                            mkDataInst (t@(origtnm,_,_),cs,sc,_)
                                                               = map (mkd sc)
-                                                                  $ mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm,tnm)
-                                                                    : map (mkn ehbnGenerClassConstructor $ GenerInstKind_Constructor origtnm) [ (origdnm,dnm) | (origdnm,dnm,_) <- cs ]
+                                                                  $ mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm, hsnNm2Gener origtnm)
+                                                                    : map (mkn ehbnGenerClassConstructor $ GenerInstKind_Constructor origtnm)
+                                                                          [ (origdnm, hsnNm2Gener origdnm) | (tg,_) <- cs, let origdnm = ctagNm tg ]
                                                             
                                                             -- make representation instance, i.e. Representable0 (T x) (_Rep0T x)
-                                                            mkr sc arity (tyNm,tyRepNm,repCl,i,k@(GenerInstKind_Representable remArity))
+                                                            mkr sc arity (tyNm,tyRepNm,repCl,i,k@(GenerInstKind_Representable remArity _))
                                                               = ( ( [], pr, RedHow_ByInstance i pr sc, sc )
                                                                 , (tyNm,i,repCl,k,pr)
                                                                 )
                                                               where pr = Pred_Class $ mkConApp repCl [mkConApp tyNm tvL, mkConApp tyRepNm tvL]
                                                                     tvL = map mkTyMetaVar $ mkNewUIDL (arity - remArity) @lUniq_92_prTyMeta
-                                                            mkReprInst (t@(origtnm,_,tvL,_),cs,sc)
+                                                            mkReprInst (origtnm,tvL,sc,syns)
                                                               = map (mkr sc (length tvL))
-                                                                  $ map (\i -> mkn2 ehbnGenerClassRepresentableN i (GenerInstKind_Representable i) (origtnm,hsnNm2GenerReprSyn i origtnm)) [0]
+                                                                  [ mkn2 ehbnGenerClassRepresentableN arity (GenerInstKind_Representable arity proj) (origtnm,tnm)
+                                                                  | (tnm,_,proj,arity) <- syns
+                                                                  ]
                                                         in  unzip
-                                                            $ (concatMap mkReprInst @decls.generDataInfoL)
+                                                            $ (concatMap mkReprInst @generTySynProjL)
                                                               ++ (concatMap mkDataInst @decls.generDataInfoL)
                 loc         .   lUniq_92_prTyMeta   :   UNIQUEREF gUniq
 %%]
@@ -224,10 +253,10 @@ SEM Expr
 
 %%[(92 hmtyinfer) hs
 type GenerForFitsIn
-  = ( HsName			-- field name
-    , HsName			-- default value name
-    , Ty				-- same, but respective types
-    , Ty			
+  = ( HsName            -- field name
+    , HsName            -- default value name
+    , Ty                -- same, but respective types
+    , Ty            
     )
 %%]
 
@@ -235,16 +264,20 @@ type GenerForFitsIn
 SEM Decl
   | Instance    loc         -- the set of fld + default names, their types, to be used ...
                             .   generForFitsInL     =   case @instVariant of
-                                                          InstDeriving | not $ null generDerivFlds
+                                                          InstDeriving _ | not $ null generDerivFlds
                                                             -> [ ( fldNm, dfltvalNm
-                                                                 , mkApp ([Ty_Con $ hsnNm2GenerReprSyn 0 @derivDataTyNm] ++ @derivDataTyArgs ++ [mkTyVar u]) `mk1Arrow` vgiTy (fromJust mbFSig)
+                                                                 , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
+                                                                   mkApp ([Ty_Con $ hsnNm2GenerReprSyn @derivArity @derivDataTyNm]
+                                                                          ++ take (length @derivDataTyArgs - @derivTruncTailArity) @derivDataTyArgs -- @derivDataTyArgs -- 
+                                                                          ++ [mkTyVar u] -- drop @derivArity [mkTyVar u]
+                                                                         )
+                                                                   `mk1Arrow`
+                                                                   vgiTy (fromJust mbFSig)
                                                                  , vgiTy (fromJust mbDSig)
                                                                  )
                                                                | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewUIDL (length generDerivFlds) @lUniq_generDeriv1)
-                                                               , let mbFSig = valGamLookup fldNm @tySigGam
-                                                               , isJust mbFSig
-                                                               , let mbDSig = valGamLookup dfltvalNm @lhs.valGam
-                                                               , isJust mbDSig
+                                                               , let mbFSig = valGamLookup fldNm     @tySigGam  , isJust mbFSig
+                                                               , let mbDSig = valGamLookup dfltvalNm @lhs.valGam, isJust mbDSig
                                                                ]
                                                             where generDerivFlds = clgiGenerDerivableL @clgi
                                                           _ -> []

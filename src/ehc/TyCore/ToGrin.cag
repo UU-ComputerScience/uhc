@@ -507,7 +507,7 @@ SEM ValBind
 
 %%[(98 codegen grin)
 SEM CBind
-  | FFI         loc         .   mbIORes     =   case tyAppConArgs @resTy of
+  | FFI         loc         .   mbIORes     =   case tyMbAppConArgs @resTy of
                                                   Just (n,[a]) | ehcOptBuiltin @lhs.opts ehbnIO == n
                                                     -> Just a
                                                   _ -> Nothing

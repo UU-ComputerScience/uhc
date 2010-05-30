@@ -830,8 +830,16 @@ rngAntilift = const
 data InstVariant
   = InstNormal | InstDefault
 %%[[91
-  | InstDeriving
+  | InstDeriving InstDerivingFrom
 %%]]
+  deriving (Eq,Ord,Show)
+%%]
+
+%%[91 export(InstDerivingFrom(..))
+-- | Either a deriving combined from a datatype directly or a standalone
+data InstDerivingFrom
+  = InstDerivingFrom_Datatype
+  | InstDerivingFrom_Standalone
   deriving (Eq,Ord,Show)
 %%]
 
