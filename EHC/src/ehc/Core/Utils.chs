@@ -35,74 +35,14 @@ type RCEEnv = RCEEnv' CExpr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Make pat from tag and arity
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen) export(mkCPatCon)
-mkCPatCon :: CTag -> Int -> Maybe [HsName] -> CPat
-mkCPatCon ctag arity mbNmL
-  = CPat_Con ctag CPatRest_Empty (zipWith mkB nmL [0..arity-1])
-  where mkB n o = CPatFld_Fld hsnUnknown (acoreInt o) n
-        nmL = maybe (repeat hsnWild) id mbNmL
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Saturate alt's of case w.r.t. all possible tags
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-caltLSaturate :: RCEEnv -> CAltL -> CAltL
-caltLSaturate env alts
-  = case alts of
-      (alt1:_) -> -- (\v -> v `seq` tr "caltLSaturate" ("nr alts" >#< length alts >#< "all" >#< ppParensCommas (map fst allAlts)) v) $ 
-                  listSaturateWith 0 (length allAlts - 1) caltIntTag allAlts $
-                  -- (\v -> v `seq` tr "caltLSaturate2" ("nr alts" >#< length alts >#< "all" >#< length allAlts) v) $ 
-                  alts
-            where allAlts
-                    = case rceEnvDataAlts env (panicJust "caltLSaturate" $ acoreAltMbTag alt1) of
-                        Just ts -> [ (ctagTag t,mkA env t (ctagArity t)) | t <- ts ]
-                        _       -> [ (caltIntTag a, a) | a <- alts ]
-                    where mkA env ct a = acoreAlt (acorePatTagArityMbNms ct a Nothing) (rceCaseCont env)
-      _     -> []
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Extract offsets from pat bindings as separate binding to new/fresh names
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8888 codegen)
-cpatBindOffsetL :: [CPatFld] -> ([CPatFld],CBindL)
-cpatBindOffsetL pbL
-  =  let  (pbL',obL)
-            =  unzip
-               .  map
-                    (\b@(CPatFld_Fld l o pn)
-                        ->  let  offNm = hsnUniqify HsNameUniqifier_FieldOffset pn -- hsnPrefix "off_" pn
-                            in   case o of
-                                   CExpr_Int _  -> (b,[])
-                                   _            -> (CPatFld_Fld l (acoreVar offNm) pn,[acoreBind1Cat CBindings_Plain offNm o])
-                    )
-               $  pbL
-     in   (pbL',concat obL)
-
-caltOffsetL :: CAlt -> (CAlt,CBindL)
-caltOffsetL alt
-  =  case alt of
-       CAlt_Alt (CPat_Con t r b) e
-         ->  (CAlt_Alt (CPat_Con t r b') e,offBL)
-             where (b',offBL) = cpatBindOffsetL b
-       _ ->  (alt,[])
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Construct case with: strict in expr, offsets strict
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) export(MbCPatRest)
-type MbCPatRest = Maybe (CPatRest,Int) -- (pat rest, arity)
+type MbCPatRest = MbPatRest' CPatRest
 %%]
 
-%%[(8 codegen) export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
+%%[(8888 codegen) export(mkCExprStrictSatCaseMeta,mkCExprStrictSatCase)
 mkCExprStrictSatCaseMeta :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> CAltL -> CExpr
 mkCExprStrictSatCaseMeta env mbNm meta e []
   = rceCaseCont env			-- TBD: should be error message "scrutinizing datatype without constructors"
@@ -115,7 +55,7 @@ mkCExprStrictSatCaseMeta env mbNm meta e [CAlt_Alt (CPat_Con (CTag tyNm _ _ _ _)
   where dgi = panicJust "mkCExprStrictSatCaseMeta.dgi" $ dataGamLookup tyNm (rceDataGam env)
 mkCExprStrictSatCaseMeta env mbNm meta e alts
   = case mbNm of
-      Just n  -> mkCExprStrictInMeta n meta e $ mk alts
+      Just n  -> acoreLetStrictInMeta n meta e $ mk alts
       Nothing -> mk alts e
   where mk (alt:alts) n
           = acoreLet CBindings_Strict altOffBL (CExpr_Case n (acoreAltLSaturate env (alt':alts)) (rceCaseCont env))
@@ -130,7 +70,7 @@ mkCExprStrictSatCase env eNm e alts = mkCExprStrictSatCaseMeta env eNm CMetaVal_
 %%[(8 codegen)
 mkCExprSelsCasesMeta' :: RCEEnv -> Maybe HsName -> CMetaVal -> CExpr -> [(CTag,[(HsName,HsName,CExpr)],MbCPatRest,CExpr)] -> CExpr
 mkCExprSelsCasesMeta' env mbNm meta e tgSels
-  = mkCExprStrictSatCaseMeta env mbNm meta e alts
+  = acoreStrictSatCaseMeta env mbNm meta e alts
   where  alts = [ CAlt_Alt
                     (CPat_Con ct
                        (mkRest mbRest ct)
@@ -222,7 +162,7 @@ mkCExprSatSelsCaseUpdMeta env mbNm meta e ct arity offValL mbRest
 mkCListComprehenseGenerator :: RCEEnv -> CPat -> (CExpr -> CExpr) -> CExpr -> CExpr -> CExpr
 mkCListComprehenseGenerator env patOk mkOk fail e
   = acoreLam1 x
-      (mkCExprStrictSatCase (env {rceCaseCont = fail}) (Just xStrict) (acoreVar x)
+      (acoreStrictSatCase (env {rceCaseCont = fail}) (Just xStrict) (acoreVar x)
         [CAlt_Alt patOk (mkOk e)]
       )
   where x = mkHNmHidden "x"
@@ -524,7 +464,7 @@ rceMkConAltAndSubAlts env (arg:args) alts@(alt:_)
 
 rceMatchCon :: RCEEnv -> [HsName] -> RCEAltL -> CExpr
 rceMatchCon env (arg:args) alts
-  = mkCExprStrictSatCase env (Just arg') (acoreVar arg) alts'
+  = acoreStrictSatCase env (Just arg') (acoreVar arg) alts'
   where arg'   =  hsnUniqifyEval arg
         alts'  =  map (rceMkConAltAndSubAlts env (arg':args))
                   $ groupSortOn (ctagTag . rcaTag)

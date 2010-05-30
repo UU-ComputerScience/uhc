@@ -767,6 +767,7 @@ instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest 
   acoreBind1CatLevMetasTy cat n l m t e	= mkValBind1LevMetas doMkSeq n l m t e
                                         where doMkSeq = cat /= ValBindCateg_Strict
   acoreLetBase							= Expr_Let
+  acoreCaseDflt	e as d					= Expr_Case e as d
   acoreVar								= Expr_Var
   acoreStringTy t i						= Expr_String i t
   acoreCharTy t i						= Expr_Char i t
@@ -781,7 +782,8 @@ instance AbstractCore Expr MetaVal ValBind ValBindCateg MetaBind Ty Pat PatRest 
   acorePatFldTy t (_,off) n 			= FldBind_Fld n t off
 
   -- patrest
-  acorePatRestEmpty _					= PatRest_Empty
+  acorePatRestEmpty  					= PatRest_Empty
+  acorePatRestVar						= PatRest_Var
 
   -- alt
   acoreAlt                             	= Alt_Alt

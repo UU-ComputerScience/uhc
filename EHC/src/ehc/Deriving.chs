@@ -126,7 +126,7 @@ mkDerivClsMp fe valGam dataGam
                 (\uniq env _ _ _ vs
                      -> case vs of
                           [] -> eq
-                          _  -> foldr1 (\l r -> mkCExprStrictSatCase env (Just nStrict) l
+                          _  -> foldr1 (\l r -> acoreStrictSatCase env (Just nStrict) l
                                                   [ CAlt_Alt (acorePatTagArityMbNms (orderingTag eqNm) 0 Nothing) r
                                                   , CAlt_Alt (acorePatTagArityMbNms (orderingTag ltNm) 0 Nothing) lt
                                                   , CAlt_Alt (acorePatTagArityMbNms (orderingTag gtNm) 0 Nothing) gt

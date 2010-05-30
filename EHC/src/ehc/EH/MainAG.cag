@@ -105,6 +105,9 @@
 %%[(91 codegen) hs import({%{EH}Deriving})
 %%]
 
+%%[(92 codegen) hs import({%{EH}Generics})
+%%]
+
 %%[(99 hmtyinfer).DerivationTree hs import({%{EH}DerivationTree})
 %%]
 

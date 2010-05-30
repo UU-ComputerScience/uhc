@@ -83,6 +83,9 @@ SEM *
 		loc.derivHdPrTyCon 				: Ty
 		loc.derivDataTyArgs 			: TyL
 		loc.derivDataTyNm	 			: HsName
+		loc.derivArity	 				: Int
+		loc.derivTruncTailArity	 		: Int
+		loc.generTySynProjL  			: {[GenerTySynProjInfo]}
 		loc.dfErrs  					: ErrL
 		loc.dgi 						: DataGamInfo
 		loc.dictNm  					: HsName

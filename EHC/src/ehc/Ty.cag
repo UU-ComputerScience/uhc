@@ -1073,9 +1073,9 @@ tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case tyUnAnn t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(tyAppConArgs)
-tyAppConArgs    :: Ty -> Maybe (HsName,TyL)
-tyAppConArgs t
+%%[(9 hmtyinfer || hmtyast) hs export(tyMbAppConArgs)
+tyMbAppConArgs    :: Ty -> Maybe (HsName,TyL)
+tyMbAppConArgs t
   =  fmap (\c -> (c,a)) $ tyMbCon f
   where (f,a) = tyAppFunArgs t
 %%]

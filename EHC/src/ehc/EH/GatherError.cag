@@ -7,10 +7,13 @@
 %%% Error gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 Errors are firstly gathered in errSq, occasionally wrapped in a nesting construct for inclusion in pretty printing.
 These errors are included at typical declaration sites: let bindings, instance declarations.
 
 Errors are also gathered in allErrSq for usage outside, by the compiler driver.
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conversion
@@ -311,7 +314,15 @@ SEM RowTyExpr
 %%[9
 SEM Decl
   | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty
-                                                  [ Seq.unions [ @tyPrExpr.errSq
+                                                  [ Seq.unions [ 
+%%[[9
+                                                                 @tyPrExpr.errSq
+%%][92
+                                                                 case @instVariant of
+                                                                   InstDeriving InstDerivingFrom_Datatype
+                                                                     -> Seq.empty			-- ignore kind errors when deriving
+                                                                   _ -> @tyPrExpr.errSq
+%%]]
 %%[[(9 hmtyinfer)
                                                                , Seq.fromList @valNoSigErrs
 %%]]

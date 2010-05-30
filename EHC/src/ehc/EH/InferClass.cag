@@ -114,31 +114,32 @@ mkInstanceBuildNms dictNm
 Utility functions for deriving
 
 %%[(91 hmtyinfer) hs
--- | Get info about datatype for which derivation is done, looking up in various environments
-derivGetDataTyInfo :: HsName -> TyGam -> TyKiGam -> DataGam -> (TyGamInfo,TyKiGamInfo,DataGamInfo,[Err])
-derivGetDataTyInfo tyNm tyGam tyKiGam dataGam
-  = (tgi,tkgi,dgi,firstNotEmpty [errs1,errs2,errs3])
-  where (tgi ,errs1) = tyGamLookupErr            tyNm tyGam                 -- lookup for kind signature
-        (tkgi,errs2) = tyKiGamLookupByNameErr    tyNm tyKiGam               -- lookup for kind signature
-        (dgi ,errs3) = dataGamLookupErr          tyNm dataGam               -- lookup for structure info
+-- | Get info about datatype and class for which derivation is done, looking up in various environments
+derivGetDataTyInfo :: HsName -> HsName -> TyGam -> TyKiGam -> DataGam -> (TyGamInfo,TyKiGamInfo,DataGamInfo,TyKiGamInfo,[Err])
+derivGetDataTyInfo clNm tyNm tyGam tyKiGam dataGam
+  = (tgi,tkgi,dgi,ctkgi,firstNotEmpty [errs1,errs2,errs3,errs4])
+  where (tgi  ,errs1) = tyGamLookupErr            tyNm 					tyGam                 -- lookup for kind signature
+        (tkgi ,errs2) = tyKiGamLookupByNameErr    tyNm 					tyKiGam               -- lookup for kind signature
+        (dgi  ,errs3) = dataGamLookupErr          tyNm 					dataGam               -- lookup for structure info
+        (ctkgi,errs4) = tyKiGamLookupByNameErr    (hsnClass2Kind clNm) 	tyKiGam               -- lookup for class kind signature
 
 -- | make pred from kind and tvar
-mkDerivPredFromKi :: UID -> Ty -> Ty -> Ty -> Maybe (Ty,UID)
-mkDerivPredFromKi uniq predTyCon ki tv
+mkDerivPredFromKi :: UID -> Int -> Ty -> Ty -> Ty -> Maybe (Ty,UID)
+mkDerivPredFromKi uniq derivArity predTyCon ki tv
   = case tyArrowArgsRes ki of
       (as,Ty_Con n) | n == hsnKindStar				-- ???? is this restriction indeed necessary?
         -> Just (mkTyPr $ Pred_Class $ predTyCon `mk1App` mkApp (tv : map mkTyVar u1s),u')
         where (u',u1) = mkNewLevUID uniq
               u1s = mkNewUIDL arity u1
-              arity = length as
+              arity = length as - derivArity
       _ -> Nothing
 
 -- | make context from the kinds of the datatype args and the actual datatype args
-mkDerivPredContext :: UID -> Ty -> [Ty] -> [Ty] -> Maybe ([Ty],UID)
-mkDerivPredContext uniq predTyCon dataTyKiL dataTyArgL
+mkDerivPredContext :: UID -> Int -> Ty -> [Ty] -> [Ty] -> Maybe ([Ty],UID)
+mkDerivPredContext uniq derivArity predTyCon dataTyKiL dataTyArgL
   = foldr (\(k,t) cxu
             -> do (cx,u) <- cxu
-                  (cx',u') <- mkDerivPredFromKi u predTyCon k t
+                  (cx',u') <- mkDerivPredFromKi u derivArity predTyCon k t
                   return (cx' : cx, u')
           )
           (Just ([],uniq))
@@ -159,29 +160,59 @@ SEM Decl
 %%][91
                                 .   ( ctxtPrTyFixL,hdPrTyFix,derivHdPrTyCon,derivHdDataTy,derivDataTGI,derivDataDGI,cxSplitErrs
 %%[[92
-                                    , derivDataTyArgs, derivDataTyNm
+                                    , derivDataTyArgs
+                                    , derivDataTyNm
+                                    , derivArity
+                                    , derivTruncTailArity
 %%]]
                                     )
                                                     =   case @instVariant of
-                                                          InstDeriving
-                                                            -> ( cx ++ cxDt, hd, predTyCon, dataTy, tgi, dgi, errs1 ++ errs2
+                                                          InstDeriving instFrom
+                                                            -> ( cx ++ cxDt, hd', predTyCon, dataTy, tgi, dgi, errs1 ++ errs2
 %%[[92
-                                                               , dataTyArgs, tyNm
+                                                               , dataTyArgs, tyNm, derivArity, derivTruncTailArity
 %%]]
                                                                )
-                                                            where (cx,hd@(Ty_Pred (Pred_Class predTy))) = tyArrowArgsRes @prTyFix       -- encoding of pred
-                                                                  (predTyCon,[dataTy]) = tyAppFunArgs predTy                            -- data ty for which we derive (only 1)
-                                                                  (dataTyCon,dataTyArgs) = tyAppFunArgs dataTy                          -- extract tycon + args
+                                                            where (cx,hd@(Ty_Pred (Pred_Class predTy)))
+                                                                                = tyArrowArgsRes @prTyFix       						-- decoding of pred
+                                                                  (predTyCon,dataTyL)
+                                                                                = tyAppFunArgs predTy 
+                                                                  dataTy        = last dataTyL                           				-- data ty for which we derive (only 1)
+                                                                  (dataTyCon,dataTyArgs)
+                                                                                = tyAppFunArgs dataTy                         			-- extract tycon + args
                                                                   tyNm          = tyConNm dataTyCon
-                                                                  (tgi,tkgi,dgi,errs1) = derivGetDataTyInfo tyNm @lhs.tyGam @lhs.tyKiGam @lhs.dataGam
+                                                                  clNm          = tyConNm predTyCon
+                                                                  (tgi,tkgi,dgi,ctkgi,errs1)
+                                                                                = derivGetDataTyInfo clNm tyNm @lhs.tyGam @lhs.tyKiGam @lhs.dataGam
                                                                   dataTyKi      = @decls.kiVarMp |=> tkgiKi tkgi
-                                                                  (cxDt,_,errs2)                                                        -- for each type arg a context pred is made
-                                                                    = maybe ([],@lUniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" dataTyKi])
-                                                                            (\(t,u) -> (t,u,[]))
-                                                                      $ mkDerivPredContext @lUniq predTyCon (tyArrowArgs dataTyKi) dataTyArgs
+                                                                  classTyKi     = @decls.kiVarMp |=> tkgiKi ctkgi
+%%[[91
+                                                                  -- no higher kind deriving
+                                                                  derivArity    = (0::Int)
+                                                                  hd'           = hd
+                                                                  dataTyArgs'   = dataTyArgs
+                                                                  derivTruncTailArity
+                                                                  				= derivArity
+%%][92
+                                                                  -- possibly higher kind generic deriving (currently at most 1), determined by last (and/or only?) class arg
+                                                                  lastArgArity  = maybe 0 (\(_,l) -> length $ tyArrowArgs l) $ initlast $ tyArrowArgs classTyKi
+                                                                  derivArity    = maybe 0 (`min` lastArgArity) $ dgiMbGenerInfo dgi
+                                                                  dataTyArgs'   = take (length dataTyArgs - derivArity) dataTyArgs
+                                                                  (hd',derivTruncTailArity)
+                                                                                = case instFrom of
+                                                                                    InstDerivingFrom_Datatype   -> (Ty_Pred $ Pred_Class $ mkApp [predTyCon, mkApp (dataTyCon : dataTyArgs')], derivArity)
+                                                                                    InstDerivingFrom_Standalone -> (hd                                                                       , 0         )
+%%]]
+                                                                  (cxDt,_,errs2)= case instFrom of
+                                                                                    InstDerivingFrom_Datatype
+                                                                                      -> maybe ([],@lUniq,[rngLift @range Err_MalformedTy "kind" "automatic instance derivation" dataTyKi])
+                                                                                               (\(t,u) -> (t,u,[]))
+                                                                                         $ mkDerivPredContext @lUniq derivArity predTyCon (tyArrowArgs dataTyKi) dataTyArgs'
+                                                                                    InstDerivingFrom_Standalone
+                                                                                      -> ([],@lUniq,[])
                                                           _ -> ( cx,hd,Ty_Any,Ty_Any,emtpyTGI,emptyDGI,[]
 %%[[92
-                                                               , [], hsnUnknown
+                                                               , [], hsnUnknown, 0, 0
 %%]]
                                                                )
                                                             where (cx,hd) = tyArrowArgsRes @prTyFix

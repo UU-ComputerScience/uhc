@@ -107,6 +107,9 @@ SEM Decl
                                                                else Nothing
                                                               )
 %%]]
+%%[[92
+                                                              @mbGenerInfo
+%%]]
                 lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
 SEM Expr

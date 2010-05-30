@@ -94,7 +94,7 @@ SEM Decl
 %%][(91 codegen)
                loc          .   (toProveGathCnstrMp,derivAltsPrOcc,derivExtraPrOcc,derivDCL)
                                                     =   case @instVariant of
-                                                          InstDeriving
+                                                          InstDeriving _
                                                             | isJust derivDCL
                                                               -> ( gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (extraPrOcc : altsPrOcc)
                                                                  , altsPrOcc, extraPrOcc
@@ -105,7 +105,7 @@ SEM Decl
                                                               -> ( cnstrMpUnions [ {- gathPredLToProveCnstrMp $ foVarMp foDt |=> concat (altsPrOcc)
                                                                                  , -} @tyVarMpDeclsL0 `chrAppSubst` @generCnstrMp
                                                                                  ]
-                                                                 , altsPrOcc, []
+                                                                 , [], []
                                                                  , emptyDerivCls
                                                                  )
 %%]]
