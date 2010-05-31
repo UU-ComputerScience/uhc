@@ -105,10 +105,9 @@ mkGenerRepresentableTypeSynTyProj
         mkPr          = mkSub (ehbnGenerDataUnit1, Proj_U1   ) (ehbnGenerDataProd, Proj_Prod                             )
         mkSm          = mkSub (ehbnGenerDataVoid1, Proj_Void ) (ehbnGenerDataSum , \x y -> Proj_L1 x `Proj_Sum` Proj_R1 y)
         mkLblArg (mbLbl,t)
-                      = case mbLbl of
-                          Just lbl -> ( mkApp [ mkC ehbnGenerDataMetaS1, Ty_Con lbl, t' ], Proj_M1_S1 p )
-                                   where (t',p) = mkArg t
-                          _        -> mkArg t
+                      = ( mkApp [ mkC ehbnGenerDataMetaS1, sel, t' ], Proj_M1_S1 p )
+                      where (t',p) = mkArg t
+                            sel    = maybe (mkC ehbnGenerDataNoSelector) (Ty_Con) mbLbl
         mkArg t       = (mkApp funarg, proj)
                       where (funarg,proj)
                               | isJust mbVar     = case elemIndex tvar remTvarArgL of       -- TBD: check for kind *, check for one of tvarArgL
@@ -119,7 +118,7 @@ mkGenerRepresentableTypeSynTyProj
                                                      (Just (_,tv), Just (firstargs,lastarg)) | maybe False (tv==) $ tyMbVar lastarg
                                                        -> ([ mkC ehbnGenerDataRec1, mkApp (Ty_Con con : firstargs) ], Proj_Rec1 [t] remArity)
                                                      (_, Just (firstargs,lastarg)) | not $ Set.null $ ftvSet lastarg
-                                                       -> ( [ mkC ehbnGenerDataComp1AltComp1, fmapTy, lastarg' ]
+                                                       -> ( [ mkC ehbnGenerDataComp1, fmapTy, lastarg' ]
                                                           , Proj_Comp1 [t] fmapTy lastproj
                                                           )
                                                        where (lastarg',lastproj) = mkArg lastarg
@@ -167,7 +166,7 @@ SEM Decl
 SEM Expr
   | Let         loc         -- names for introduced datatypes
                             .   (generDataAllTyOrigNmL,generDataTyAndConNmLL)
-                                                    =   unzip [ (origtnm, hsnNm2Gener origtnm : [ hsnNm2Gener $ ctagNm x | (x,_) <- cs ]) | ((origtnm,_,_),cs,_,_) <- @decls.generDataInfoL ]
+                                                    =   unzip [ (origtnm, hsnNm2GenerDatatype origtnm : [ hsnNm2GenerConstructor $ ctagNm x | (x,_) <- cs ]) | ((origtnm,_,_),cs,_,_) <- @decls.generDataInfoL ]
                             .   generDataTyAndConNmL=   concat @generDataTyAndConNmLL
                             
                             -- representation type synonyms and projection descriptors
@@ -178,12 +177,12 @@ SEM Expr
                                                                                   @generDataAllTyOrigNmL
                                                                                   (\tnm remArity -> tnm `elem` @generDataAllTyOrigNmL || isJust (tyGamLookup (hsnNm2GenerReprSyn remArity tnm) @lhs.tyGam))
                                                                                   tnm tvs -- ki'
-                                                                                  [ (c,hsnNm2Gener $ ctagNm c,assocLMapKey (fmap hsnNm2Gener) ps) | (c,ps) <- cs ]
+                                                                                  [ (c,hsnNm2GenerConstructor $ ctagNm c,assocLMapKey (fmap hsnNm2GenerSelector) ps) | (c,ps) <- cs ]
                                                             ]
                                                           )
                                                         | ((origtnm,tvs,ki),cs,sc,remArity) <- @decls.generDataInfoL
                                                         , let -- ki' = tyArrowArgsRes $ @bodyTyKiVarMp1 |=> ki
-                                                              tnm = hsnNm2Gener origtnm
+                                                              tnm = hsnNm2GenerDatatype origtnm
                                                         ]
 
                             -- various environments/gammas
@@ -229,13 +228,13 @@ SEM Expr
                                                               where pr = Pred_Class $ mkConApp cl [semCon nm]
                                                             mkDataInst (t@(origtnm,_,_),cs,sc,_)
                                                               = map (mkd sc)
-                                                                  $ [mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm, hsnNm2Gener origtnm)]
+                                                                  $ [mkn ehbnGenerClassDatatype GenerInstKind_Datatype (origtnm, hsnNm2GenerDatatype origtnm)]
                                                                     ++ (map (mkn ehbnGenerClassConstructor $ GenerInstKind_Constructor origtnm)
-                                                                            [ (origdnm, hsnNm2Gener origdnm) | (tg,_) <- cs, let origdnm = ctagNm tg ]
+                                                                            [ (origdnm, hsnNm2GenerConstructor origdnm) | (tg,_) <- cs, let origdnm = ctagNm tg ]
                                                                        )
                                                                     ++ (map (mkn ehbnGenerClassSelector $ GenerInstKind_Selector)
                                                                         $ Map.toList $ Map.fromList
-                                                                          [ (origsnm, hsnNm2Gener origsnm) | (_,fs) <- cs, (Just origsnm,_) <- fs ]
+                                                                          [ (origsnm, hsnNm2GenerSelector origsnm) | (_,fs) <- cs, (Just origsnm,_) <- fs ]
                                                                        )
                                                             
                                                             -- make representation instance, i.e. Representable0 (T x) (_Rep0T x)
