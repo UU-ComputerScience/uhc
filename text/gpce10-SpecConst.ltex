@@ -131,13 +131,12 @@
 
 
 
-
 \usepackage{amsmath}
 
-% \usepackage{natbib}
-% \bibpunct();A{},
-% \let\cite=\citep
-% \bibliographystyle{plainnat}
+%\usepackage{natbib}
+%\bibpunct();A{},
+%\let\cite=\citep
+%\bibliographystyle{plainnat}
 
 \bibliographystyle{plain}
 
@@ -172,7 +171,7 @@ which are automatically inserted during code generation,
 based on the inferred types.
 
 For each instance declaration, a dictionary is generated 
-containing the functions defined in the instance.
+containing the functions defined in that instance.
 The dictionary also contains the default definitions 
 from the corresponding class declaration,
 thus requiring a mechanism for combining them.
@@ -183,7 +182,7 @@ When performing whole-program analysis, however,
 information from the class and instance declarations
 can be combined statically using symbolic computation.
 Further transformations, notably specialization of functions for constant arguments,
-can completely eliminate run-time overhead normally associated with dictionary passing.
+can completely eliminate the run-time overhead normally associated with dictionary passing.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -199,13 +198,13 @@ can completely eliminate run-time overhead normally associated with dictionary p
 Compiling a program is the oldest and most widely used example of generative programming.
 They are so common, that programmers are hardly conscious any more that compiling, 
 say, a C pogram alleviates them of the tedious task of writing machine code.
-With compilers for higher level languages, it is more manfest that a compiler
+With compilers for higher level languages, it is more manifest that a compiler
 generates code, which in turn can be regarded as source code for another compiler.
 For example, Haskell compilers often target the C language, and domain specific
 languages in turn may target Haskell.
 
 Compilers are complex programs.
-The translating process involves many tasks, such as parsing, type checking,
+The translating process consists of many subtasks, such as parsing, type checking,
 modelling memory structure, code generation, and optimization.
 These tasks ideally are dealt with in separate components, and by selecting and
 arranging these components one can tune a compiler for different requirements,
@@ -215,22 +214,23 @@ We decided to build a compiler for Haskell
 (the Utrecht Haskell Compiler, or UHC)
 that radically takes a component based approach: 
 it translates a program by transforming it
-in many small steps. Each transformation is relatively simple, and
+in small steps \cite{dijkstra2005,uhcarch2009,web-uhc}.
+Each of the many transformations is relatively simple, and
 can be understood and tested separately.
 Along the route from source (Haskell) to target (C) language, 
-the program is transformed through some intermediate languages:
-some of them existing, some of them defined for the purpose.
+the program is transformed through quite a few intermediate languages:
+some of them existing, some of them especially defined for the purpose.
 Therefore some transformations (5 of them) are actually translations
 between languages,
-and many others (about 60) are source-to-source translations in
+and many others (about 60) are source-to-source translations, staying within
 one of the intermediate languages.
 
 In this paper we present a case study that illustrates the approach:
 the implementation of function overloading in Haskell.
 This case touches many aspects: 
 modelling a high-level concept (overloading) by lower level datastructures (dictionaries),
-dealing with two compiler modes (separate compiling versus whole-program optimization),
-and the composition of 6 transformations that together accomplish a task.
+dealing with two compiler modes (separate compilation versus whole-program optimization),
+and the composition of 6 transformations that together accomplish the task.
 
 Moreover, the Haskell feature under scrutiny (type classes and their instances) happens to
 be a mechanism that is often used by Haskell programmers for achieving modularity,
@@ -239,8 +239,8 @@ and thus is interesting in its own right from a component engineering perspectiv
 To make the paper self-contained, we start in section~\ref{sec.overloading} with a short description
 of overloading in Haskell.
 In section~\ref{sec.uhc} we sketch the structure of UHC,
-and introduce the intermediate language central to this case study.
-Then implementation of overloading is described for two compiler modes:
+and introduce the intermediate language central to the case study in this paper.
+Next we describe the implementations of overloading for two different compiler modes:
 in separate compilation mode (section~\ref{sec.dynamic}) we see generative programming at work,
 wheras in whole-program analysis mode (section~\ref{sec.static}) many components
 cooperate to optimize the code.
@@ -251,10 +251,10 @@ We conclude with remarks on the methodology and pointers to related work.
 
 
 \section{Overloading in Haskell}\label{sec.overloading}
-In this section we briefly summarize how function overloading is modeled in Haskell.
+In this section we briefly summarize how function overloading is modeled in Haskell \cite{report2003}.
 Overloaded functions can be applied to values of various types.
-For example, the addition function can be applied to |Int| values and also to |Float| values (but not to |Bool| values).
-The function which tests for equality can be applied to values of many types, like |Int|, |Float|, |Char|, |Bool|.
+For example, the addition function |(+)| can be applied to both |Int| values and |Float| values (but not to |Bool| values).
+An equality test function $(==)$ is available for many basic types, such as |Int|, |Float|, |Char|, |Bool|.
 Furthermore, it can even be applied to values of list type |[a]|, provided that it is also defined for the element type |a|.
 Note however that equality testing is not possible for values of a function type.
 
@@ -274,18 +274,17 @@ Therefore, function overloading is sometimes referred to as {\em ad hoc polymorp
 The group of types to which an overloaded function can be applied is known as its {\em class}.
 A {\em class declaration} introduces a name for such a group of types, together the signatures of functions.
 These signatures can involve type variables, which may be instantiated to types belonging to the group.
-For example, when introducing the class |Eq| of types that support equality and non-equality functions
-we write the class declaration
+For example, we can define a class |Eq| to group the types for which equality and non-equaltiy are defined:
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
   ne  ::  a -> a -> Bool
 \end{code}
 This |Eq| class is actually part of the Haskell standard library. 
-There, operators $==$ and $/=$ are defined rather than functions |eq| and |ne|,
-but in this paper we avoid operators, as the notational conventions for writing them obscures the explanation.
+There, operators == and /= are defined rather than functions |eq| and |ne|,
+but in this paper we avoid operators, as the notational conventions for writing them may obscure the explanation.
 
-Individual types can be defined to be an instance of a class by an {\em instance declaration}.
+Individual types can be made an instance of a class by an {\em instance declaration}.
 For example, |Int| can be made instance of |Eq| by providing definitions for the functions specified in the class declaration:
 \begin{code}
 instance Eq Int where
@@ -298,7 +297,7 @@ The way |eqPrimInt| is defined is not relevant for the present discussion.
 As another example, we give an instance declaration for |Eq Bool|.
 It shows that we can define the function |eq| from scratch if we wish, without relying on other functions.
 The function |ne| can be defined in a similar way (and that would probably be more efficient),
-but just to show the possibility to have |ne| rely on the existence of the other overloaded function |eq|.
+but we show here the possibility to have |ne| rely on the existence of the other overloaded function |eq|.
 \begin{code}
 instance Eq Bool where
   eq  False  False  = True
@@ -311,10 +310,10 @@ There are similarities, in that a class declaration specifies functions that are
 But note that there are differences as well: in the object-oriented paradigm, class member functions take an 
 object of the class as an implicit argument, 
 whereas in the functional paradigm all parameters are declared explicitly; thus we can have two arguments that are
-constrained tothe type of this instance declaration.
+constrained to the type of this instance declaration.
 
 Not all overloaded functions need to be defined in a class.
-Every function that uses an overloaded function, will automatically be overloaded itself.
+Every function that uses an overloaded function, becomes automatically overloaded itself.
 For example, the function |elem| that checks element membership of a list uses the overloaded equality function |eq| on the list elements:
 \begin{code}
 elem e []      = False
@@ -336,19 +335,20 @@ for each type |a| which is an instance of |Eq|,
 One could question the need for declaring |ne| to be part of the |Eq| class.
 After all, non-equality is (in any sound implementation) the negation of equality.
 So it would have been possible to only specify |eq| in the class,
-and to define |ne| with a uniform definition, in a similar fashion to |elem|:
+and to define |ne| with a uniform definition, as we did with |elem|:
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
+-- and outside the class:
 ne  ::  Eq a => a -> a -> Bool
 ne x y  =  not (eq x y)
 \end{code}
 Using this approach, instance programmers are freed from the burden to give an explicit, but straightforward, definition of |ne|.
 But the downside is that it is now impossible for instance programmers
-to define their own version of |ne|. 
+to define their own, probably more efficient, version of |ne|. 
 The programmer of |Eq Bool| might regret not being able to define
-a more efficient version of |ne| that uses pattern matching directly, 
-instead of relying on the uniform definition that calls |eq| and |not|.
+a version of |ne| that uses pattern matching directly, 
+instead of relying on the uniform definition based on |eq| and |not|.
 
 To overcome this dilemma, Haskell allows a class definition to be augmented with {\em default definitions}
 for some or all of the member functions.
@@ -358,7 +358,7 @@ as it appears in the class, or to give a more efficient version for a particular
 A default definition by nature is a uniform definition, as it cannot assume
 the type variables in the signature to be instantiated to a particular type.
 But the definition can refer to the other functions from the class.
-In fact, the Haskell standard library implementation of |Eq| has a default definition 
+In fact, the Haskell standard library implementation of |Eq| has default definitions
 for both |ne| and |eq|, defined in terms of each other:
 \begin{code}
 class Eq a where
@@ -368,15 +368,15 @@ class Eq a where
   eq x y   =  not (ne x y)
 \end{code}
 An instance programmer now has the choice to define either |eq| or |ne| (and rely on the default definition for the other),
-or define both (thus ignoring/erasing the default definitions).
+or define both (thus ignoring/erasing/overriding both default definitions).
 Defining neither of the two is allowed as well, but would result in inheriting the circular definitions without
 breaking the circle by redefining at least one of the two.
 
 
-\subsection{Super classes}
+\subsection{Superclasses}
 
 Using the terminology of object-oriented paradigm even further, Haskell has the notion of a `superclass' as well.
-It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$, $\le$, $>$, and $\geq$.
+It is exemplified by the class |Ord| of types that have an ordering, by providing comparison operators like $<$, $\leq$, $>$, and $\geq$.
 Default definitions specify these in terms of each other.
 Instance programmers can choose to implement only one of the four (and rely on the default definitions for the others),
 or more if they wish.
@@ -386,7 +386,7 @@ that is, a type is only allowed to be an instance of |Ord| if it is an instance 
 
 A possible class definition of |Ord| is:
 \begin{code}
-class (Eq a) => Ord a where
+class Eq a => Ord a where
   lt  :: a -> a -> Bool
   le  :: a -> a -> Bool
   gt  :: a -> a -> Bool
@@ -396,8 +396,8 @@ class (Eq a) => Ord a where
   le   x y  =  lt  x y || eq x y
   ge   x y  =  gt  x y || eq x y
 \end{code}
-The superclass is mentioned in the class header, featuring another meaning of the double-shafted arrow, 
-and is parenthesized as there can be specified more than one superclass.
+The superclass is mentioned in the class header, featuring another meaning of the double-shafted arrow.
+There can be more than one superclass, separated by commas and enclosed in parentheses.
 The actual definition in the standard library also specifies functions |compare|, |min|, and |max|, 
 and an even more intricate web of mutually recursive default definitions.
 
@@ -438,6 +438,7 @@ Haskell source text is translated to an executable program by stepwise transform
 Some transformations translate the program to a lower level language,
 many others are transformations within one language,
 establishing an invariant or performing an optimization.
+A more detailed account is given in a separate paper \cite{uhcarch2009}.
 
 All transformations, both within a language and between languages, are expressed
 as an algebra giving a semantics to the language.
@@ -464,7 +465,7 @@ Here is a short characterization of the intermediate languages:
           We do not discuss this language in this paper.
 \end{itize}
 The compiler targets different back ends, based on a choice of the user.
-In all cases, the compiler starts compiling on a per module basis,
+In all cases, the compiler starts compilation on a per module basis,
 desugaring the Haskell source text to Essential Haskell, type checking it and translating it to Core.
 Then there is a choice from three modes of operation:
 \begin{itize}
@@ -490,13 +491,13 @@ Then there is a choice from three modes of operation:
       these can be stored in a Java archive (jar) and be interpreted by a standard Java interpreter.
 \end{itize}
 The bytecode interpreter mode is intended for use during program development:
-it compiles fast, but because of the interpretation overhead execution is not very fast.
+it takes less time to compile, but because of the interpretation overhead the resulting program runs slower.
 The whole-program analysis mode is intended to be used for the final program:
 it takes more time to compile, but generates code that is more efficient.
 
 
 
-\begin{figure}[tbfh]
+\begin{figure}[btf]
 
 \begin{center}
 \fbox{
@@ -591,7 +592,7 @@ The meaning of the four tag flavors is as follows:
 \item |C| corresponds to a constructor in Haskell. 
       For example, 
       the empty list has tag |C/Nil| and can be represented as a node with zero-length payload |(C/Nil)|.
-      A non-empty list can be constructed as |(C/Colon x xs)|.
+      A non-empty list can be constructed as |(C/Cons x xs)|.
 \item |P| stands for a partially parametrised function.
       In the lambda calculus, a function application with to few arguments to be reduceable is in {\em head normal form},
       that is, cannot be further evaluated. 
@@ -615,8 +616,8 @@ We now turn to the semantics of the various expression forms.
 \item |e1 ; \x -> e2| executes |e1|, binds the result to variable |x| and subsequently executes |e2|. It returns whatever |e2| returns.
 \item |store n| stores the node value |n| on the heap, and returns a pointer to it
 \item |call f a1...an| calls function |f| with the given arguments, and returns the node that is its result
-\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bm| if $k\ge m$.
-      When $k>m$, the result of the call is recursively applied to the remaining arguments.
+\item |apply x b1...bk| expects variable |x| to evaluate to a node with value |(Pm/f a1...an)|, and calls |f a1...an b1...bm| if $k\geq m$.
+      When $k>m$, the result of the call is recursively applied to the remaining arguments.\\
       When $k<m$, the function can't be called for lack of arguments, and an appropriate new |Pmk|-node is returned.
 \item |eval x| expects a pointer in variable |x| and fetches the corresponding node from the heap.
       If the node is in head normal form, that is, has a |C| or |P| tag, that node is just returned.
@@ -684,19 +685,19 @@ dictEqInt  <- store (C/Eq eqIntP neIntP)
 As the definition of |eq| for |Int| is just a call to |eqPrimInt|, 
 we can use |(P2/eqPrimInt)| for the first pointer.
 But the definition of |ne| for |Int| is not just a renaming of an existing function.
-It therefore gives rise to a function binding in Grin:
+It therefore gives rise to a new function binding in Grin:
 \begin{code}
 neInt x y =
 {  store (F/eqPrimInt x y) ; \r ->
    call not r
 }
 \end{code}
-The second member of the dictionary points to a |P2|-node for this function.
+The second member of the |dictEqInt| dictionary points to the |P2|-node of this function.
 
 The class declaration in Haskell, which only contains signatures for the member functions,
 nevertheless gives rise to generated Grin code: one function binding for each member function.
 These functions take a single dictionary argument, and select the appropriate field from that dictionary.
-The selector functions for the |Eq| class are:
+The selector functions for the |Eq| class are polymorhpic functions that pick a specific element from a dictionary:
 \begin{code}
 eq d =
 {  eval d ; \t ->
@@ -730,12 +731,14 @@ Overloaded function that are not declared in the class, such as the Haskell func
 elem :: Eq a => a -> [a] -> Bool
 \end{code}
 are implemented as a Grin function that takes an additional dictionary argument.
+In essence, the overloaded function is made polymorphic again.
 
 
 
 \subsection{Default definitions}
 
 Now suppose that we are compiling a class with a default definition, for example
+the |Eq| class with a default definition for |ne|:
 \begin{code}
 class Eq a where
   eq  ::  a -> a -> Bool
@@ -749,7 +752,7 @@ In the body of |neDef| we need to call |eq|. This process, as in the |test1| exa
 takes two steps: first select the function from the dictionary, then apply it to its arguments.
 
 The dictionary where the member functions can be found needs to be passed as an additional argument to |neDef|.
-Essentially, default functions are implemented similarly to overloaded functions outside a class, such as |elem|.
+Essentially, default functions are implemented just as overloaded functions outside a class, such as |elem|.
 So, although the Haskell default definition for |ne| has 2 parameters,
 its Grin implementation has 3:
 \begin{code}
@@ -780,9 +783,9 @@ and default definitions from the class declaration (|neIntP|).
 Note that |neIntP| and |dictEqInt| are referring to each other, which is allowed in Grin.
 
 In a setting where compilation is done for separate modules, it is not possible
-to generate the dictionary at compile time.
+to generate without extra tricks the dictionary at compile time.
 Class and instance declarations can reside in separate modules,
-and thus the code generated for the class declaration is not available for inspection
+and normally the code generated for the class declaration is not available for inspection
 by the compiler at the moment that the |dictEqInt| binding is generated.
 
 Instead of having the compiler emit the binding
@@ -806,10 +809,10 @@ makeEqInt =
 dictEqInt <- store (F/makeEqInt)
 \end{code}
 By the nature of the evaluation/updating mechanism, from the moment 
-that |dictEqInt| has been evaluated for the first time, it will bound to the final |C/Eq|-node.
+that |dictEqInt| has been evaluated for the first time, it will be bound to the final |C/Eq|-node.
 
 For construction the dictionary, we need information from the class declaration.
-The only way of communication with another mdule is call functions or evaluate global bindings.
+The only way of communication with another mdule is to call functions or to evaluate global bindings.
 We arrange that the class module, for this purpose, defines a global binding to a dictionary that contains fields for the default functions,
 and |undefined| elsewhere.
 \begin{code}
@@ -818,7 +821,7 @@ dictEqDef  <-  store (C/Eq undefined neDefP)
 \end{code}
 Note that this `default dictionary' stores |P3|-nodes, not |P2|-nodes as we need in the instance dictionaries.
 
-Now the task of constructing the dictionary for the instance is performed by fetching the default dictionary,
+Now the dictionary for the instance is constructed by fetching the default dictionary,
 and applying the |P3|-node found there to the dictionary it needs.
 That is: the dictionary that we are about to build; lazy evaluation allows this seemingly circular definition.
 Applying a |P3|-node to one further argument results in a |P2|-node, which
@@ -878,7 +881,7 @@ instead of fetching |eqDef|,
 it calls our new dynamic generator |makeEqDef|:
 \begin{code}
 makeEqInt =
-{  call genEqDef dictEqInt ; \d'
+{  call makeEqDef dictEqInt ; \d'
    case d' of
       (C/Eq _ q) ->
       {  store (P2/eqPrimInt)  ; \p
@@ -1014,7 +1017,7 @@ Apart from the marker we embed in the annotation all information relevant for th
 In our example, the relevant annotations are:
 \begin{code}
 makeEqInt =
-  dictinst(Eq genEq (eqPrimInt _)) { ... }
+  dictinst(Eq makeEqDef (eqPrimInt _)) { ... }
 makeEqDef d =
   dictclass (_ neDef){ ... }
 neDef d x y =
@@ -1039,8 +1042,8 @@ when we need them: in the |mergeInstance| transformation.
 
 Dictionaries are passed as additional arguments to overloaded functions.
 In the function bodies, they can be passed to other overloaded functions, 
-but in the end dictionaries are only used for one purpose:
-selecting a member function from them.
+but in the end dictionaries are only used for a single purpose:
+to select a member function from them.
 An example is |test1| which we introduced earlier:
 \begin{code}
 test1 =
@@ -1054,7 +1057,7 @@ The third line selects a field from the dictionary by calling the |eq| selector;
 the resulting function is subsequently applied to its arguments.
 
 Now that the previous transformation has made all dictionaries statically available,
-we can now proceed by selecting the member fields statically.
+we can proceed by selecting the member fields statically.
 This is what the |selectMember| transformation does:
 it scans the Grin program for expressions of the form |call s d|
 where |s| is a selector function and |d| is a dictionary.
@@ -1112,7 +1115,7 @@ We can encounter expressions like:
    store (C/Int 5)  ; \n ->
    eval n
 \end{code}
-This is equivalent to a shorter expression:
+This is equivalent to the shorter expression:
 \begin{code}
    unit (C/Int 5)
 \end{code}
@@ -1125,7 +1128,7 @@ For example, if the |inline| transformation decides to inline the call to |f| in
    store (C/Int 5)  ; \n ->
    call f n
 \end{code}
-we end up with the inefficient |store|-|eval| combination.
+we end up with such inefficient |store|-|eval| combinations.
 
 To compensate for this, we introduced a transformation |evalKnown| that hunts for occurrences of |eval x|
 where |x| has a known value, either because it is a global variable or because it is the target of an earlier |store|.
@@ -1335,15 +1338,14 @@ the intermediate languages in UHC takes some effort.
 This is aggravated by the fact that many transformations in UHC
 perform multi-pass transformations over the parse tree.
 The transformations in the case study of this paper
-follow this pattern as well. 
-For example,
+follow this pattern as well:
 |selectMember| scans the program for finding selectors,
 and then scans the program again for finding calls to the selectors.
 
 To write the tree traversals for all 60 transformations in UHC,
 most of which are multi-pass, by hand would be too much work.
 That is why we employ an attribute grammar based preprocessor for Haskell,
-that greatly facilitates writing tree traversals.
+that greatly facilitates writing tree traversals \cite{fokker08abstrint,web-uuag}.
 Maybe it is even fair to say that UHC is written in the language of
 attribute grammars, and it is compiled into Haskell by the preprocessor.
 There is a vague border between the concepts of `preprocessor' and `compiler',
@@ -1353,12 +1355,13 @@ between `software generation' and `program translation'.
 
 \subsection{Related work}
 
-The Haskell compiler that is most widely used is the Glasgow Haskell Compiler (GHC).
+The Haskell compiler that is most widely used is the Glasgow Haskell Compiler (GHC) \cite{web-ghc}.
 It is of production quality, and many people contribute to its implementation
 or to supporting libraries and applications.
 
 Like UHC, GHC is written in Haskell itself, but without the aid of a preprocessor.
-Although GHC is structured as a few transformations, it tries to do as much
+GHC is structured as a sequence of transformations \cite{peytonjones94trafo-ghc,santos95phd-comp-trafo},
+but it tries to do as much
 as possible in a single transformation. This makes it harder to understand
 how various optimization steps cooperate and interact.
 On the positive side, economizing on transformations makes the compiler fast.
@@ -1368,22 +1371,29 @@ it handles overloading. When a module is compiled, GHC reads summaries (known as
 of the modules it imports. These summaries consist mainly of signatures of exported functions.
 But an exception is made for default definitions in class declarations:
 these definitions are stored in full in the summaries.
-This way, GHC is able to do specialization of default defintions.
+In this way, GHC is able to do specialization of default defintions,
+at the expense of causing massive recompilation if a default definition changes, since the hi-file then changes.
 
 There is a vast amount of literature on the implementation of overloading.
-We mention work on the dictionary technique \cite{augustsson93impl-hask-overl},
+We mention work on using dictionaries for implementing overloading \cite{augustsson93impl-hask-overl},
 dynamical merging of dictionaries in separate modules \cite{faxen2002},
 and statical elimination of the overhead of dictionary passing \cite{jones1995a}.
 
-The philosophy of writing a Haskell compiler by means of many small transformations
-was proposed by Boquist \cite{boquist1996,boquist99phd-optim-lazy}.
-He focused on whole-program analysis for statically approximating the values of heap pointers.
-Overloading is not implemented in this work.
+The philosophy of writing a Haskell compiler by means of many small transformations,
+including Grin as an intermidiate language,
+was proposed in the Grin project \cite{boquist1996,boquist99phd-optim-lazy}.
+They focused on whole-program analysis for statically approximating the values of heap pointers.
+Overloading is not implemented in this project.
 
+Computations over abstract syntax trees and tree transformation form a major part of any compiler.
+An alternative to our attribute-based approach is the Stratego system \cite{visser01stratego-system05,web-stratego}.
+Stratego is strong in expressing local rewrites, and is able to perform transformations repeatedly.
+It is a large system that employs its own language.
+This makes it self-contained, but it lacks the ease of an underlying general purpose language.
 
-% Stratego, ASF/SDF
-
-% AG, Jastadd
+An alternative system that does use attribute grammars for tree rewriting is Jastadd \cite{ekman07jastadd-system,web-jastadd}.
+It uses a different underlying language (Java).
+Thus, it doesn't get lazy evaluation for free, but it is easier to maintain non-local references in the abstract syntax tree.
 
 
 
@@ -1417,10 +1427,27 @@ Atze Dijkstra.
 {\em Stepping through Haskell}.
 PhD Thesis Utrecht University, November 2005.
 
+
+\bibitem[Dijkstra, Fokker and Swierstra 2009]{uhcarch2009}
+Atze Dijkstra, Jeroen Fokker and S.~Doaitse Swierstra.
+The architecture of the Utrecht Haskell Compiler.
+In: {ACM Haskell symposium} Haskell'09, pp.~93--104.
+
+\bibitem[Ekman and Hedin 2007]{ekman07jastadd-system}
+Torbj\"orn Ekman and G\"orel Hedin.
+The JastAdd System: modular extensible compiler construction.
+{\em Science of Computer Programming} {\bf 69} (2007), pp.~14--26.
+
+
 \bibitem[Fax\'en 2002]{faxen2002}
 Karl-Filip Fax\'en.
 A static semantics for Haskell.
 {\em J.~Functional Programming} {\bf 12} (2002), pp.~295--357.
+
+\bibitem[Fokker and Swierstra 2008]{fokker08abstrint}
+Jeroen Fokker and S.~Doaitse Swierstra.
+Abstract interpretation of functional programs using an attribute grammar system.
+In: {\em Language Descriptions, Tools and Applications} LDTA 2008.
 
 
 \bibitem[Jones 1995]{jones1995a}
@@ -1429,11 +1456,56 @@ Dictionary-free overloading by partial evaluation.
 {\em Lisp and symbolic computation} {\bf 8} (1995), pp.~229--248.
 
 
-%\bibitem[Jones 1995b]{jones1995b}
-%Mark. P.\ Jones.
-%Functional programming with overloading and higher-order polymorphism.
-%In: {\em Advanced Functional Programming} AFP 1995, pp.~97--136.
-%Springer LNCS 925.
+\bibitem[Peyton Jones 2003]{report2003}
+Simon Peyton Jones.
+{\em Haskell 98, language and libraries: the revised report}.
+Cambridge univeristy press, 2003.
+
+\bibitem[Peyton Jones and Santos 1994]{peytonjones94trafo-ghc}
+Simon Peyton Jones and Andre Santos.
+Compilation by transformation in the Glasgow Haskell Compiler.
+In: {\em Functional programming} (K.~Hammond et al, ed.), pp.~184--204.
+Workshops in computing, Springer, 1994.
+
+
+\bibitem[Santos 1995]{santos95phd-comp-trafo}
+Andre Santos.
+{\em Compilation by transformation in non-strict functional languages}.
+PhD Thesis University of Glasgow, 1995.
+
+
+\bibitem[Swierstra, Azero and Saraiva 1998]{agsyst}
+S.\ Doaitse Swierstra,
+Pablo R.\ Azero Alocer,
+and Jo\~ao Saraiva.
+Designing and implementing combinator languages.
+In: {\em Advanced functional programming} AFP'98.
+Springer LNCS 1608.
+
+\bibitem[Visser 2001]{visser01stratego-system05}
+Eelco Visser.
+Stratego: A language for program transformation based on rewriting strategies. System description of Stratego 0.5.
+In: {\em Rewriting Techniques and Applications}, RTA'01, pp.~357--361.
+Springer LNCS 2051.
+
+\bibitem[website Jastadd]{web-jastadd}
+{\tt www.jastadd.org}
+
+\bibitem[website Stratego]{web-stratego}
+{\tt www.program-transformation.org/Stratego}
+
+\bibitem[website GHC]{web-ghc}
+{\tt www.haskell.org/ghc}
+
+\bibitem[website UHC]{web-uhc}
+{\tt www.cs.uu.nl/wiki/bin/view/UHC}
+
+\bibitem[website UUAG]{web-uuag}
+{\tt www.cs.uu.nl/wiki/bin/view/HUT}
+
+
+
+
 
 \end{thebibliography}
 
