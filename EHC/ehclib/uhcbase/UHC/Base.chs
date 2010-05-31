@@ -140,6 +140,7 @@ module UHC.Base   -- adapted from the Hugs prelude
   -- * Meta-information
   , Datatype(..), Constructor(..), Selector(..)
   , Fixity(..), Associativity(..)
+  , NoSelector
 
   -- * Representable type classes
   , Representable0(..), Representable1(..)
@@ -2206,6 +2207,13 @@ class Datatype d where
 class Selector s where
   -- | The name of the selector
   selName :: t s f a -> String
+
+-- | Empty selector, for fields without a label
+
+data NoSelector
+
+instance Selector NoSelector where
+  selName _ = ""
 
 -- | Class for datatypes that represent data constructors
 class Constructor c where

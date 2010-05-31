@@ -718,7 +718,7 @@ hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity-"
 %%% Naming conventions for generic deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[92 export(hsnNm2Gener,hsnNm2GenerReprSyn)
+%%[92 export(hsnNm2Gener,hsnNm2GenerReprSyn,hsnNm2GenerDatatype,hsnNm2GenerConstructor,hsnNm2GenerSelector)
 -- a hidden name corresponding to visible names
 hsnNm2Gener :: HsName -> HsName
 hsnNm2Gener = mkHNmHidden -- . hsnPrefix "Dict-"
@@ -726,6 +726,18 @@ hsnNm2Gener = mkHNmHidden -- . hsnPrefix "Dict-"
 -- a hidden name for representation type synonym
 hsnNm2GenerReprSyn :: Int -> HsName -> HsName
 hsnNm2GenerReprSyn i = mkHNmSpecial . hsnPrefix ("Rep" ++ show i)
+
+-- a hidden name for representation datatype for a datatype
+hsnNm2GenerDatatype :: HsName -> HsName
+hsnNm2GenerDatatype = hsnNm2Gener . hsnPrefix ("D")
+
+-- a hidden name for representation datatype for a datatype constructor
+hsnNm2GenerConstructor :: HsName -> HsName
+hsnNm2GenerConstructor = hsnNm2Gener . hsnPrefix ("C")
+
+-- a hidden name for representation datatype for a datatype field selector
+hsnNm2GenerSelector :: HsName -> HsName
+hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -817,6 +829,7 @@ data EHBuiltinNames
       , ehbnGenerClassDatatypeFldModule    	:: HsName
       , ehbnGenerClassSelector    			:: HsName
       , ehbnGenerClassSelectorFldName		:: HsName
+      , ehbnGenerDataNoSelector				:: HsName
       , ehbnGenerClassConstructor    		:: HsName
       , ehbnGenerClassConstructorFldName	:: HsName
       , ehbnGenerClassConstructorFldFixity	:: HsName
@@ -965,6 +978,7 @@ mkEHBuiltinNames f
       , ehbnGenerClassDatatypeFldModule    	=       f IdOcc_Val   (mkGenerRV     "moduleName"		)
       , ehbnGenerClassSelector    			=       f IdOcc_Class (mkGenerRV     "Selector"			)
       , ehbnGenerClassSelectorFldName		=       f IdOcc_Val   (mkGenerRV     "selName"			)
+      , ehbnGenerDataNoSelector				=       f IdOcc_Type  (mkGenerRV     "NoSelector"		)
       , ehbnGenerClassConstructor    		=       f IdOcc_Class (mkGenerRV     "Constructor"		)
       , ehbnGenerClassConstructorFldName	=       f IdOcc_Val   (mkGenerRV     "conName"			)
       , ehbnGenerClassConstructorFldFixity	=       f IdOcc_Val   (mkGenerRV     "conFixity"		)

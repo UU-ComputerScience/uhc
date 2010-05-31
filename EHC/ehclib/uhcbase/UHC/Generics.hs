@@ -28,6 +28,7 @@ module UHC.Generics
   -- * Meta-information
   , Datatype(..), Constructor(..), Selector(..)
   , Fixity(..), Associativity(..)
+  , NoSelector
 
   -- * Representable type classes
   , Representable0(..), Representable1(..)
