@@ -556,6 +556,12 @@ ehcCmdLineOpts
 %%]]
 %%[[20
      ,  Option ""   ["no-recomp"]        (NoArg oNoRecomp)                    "turn off recompilation check (force recompile)"
+%%]]
+%%[[99
+     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
+     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
+%%]]
+%%[[20
      ,  Option "c"  ["compile-only"]     (NoArg oCompileOnly)                 "compile only, do not link"
 %%]]
 %%[[20
@@ -571,16 +577,12 @@ ehcCmdLineOpts
 %%[[99
      ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
-     ,  Option ""   ["no-prelude"]       (NoArg oNoPrelude)                   "do not assume presence of Prelude"
-     ,  Option ""   ["no-hi-check"] 	 (NoArg oNoHiCheck)                   "no check on .hi files not matching the compiler version"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
                                          (intArg oLimitTyBetaRed)             "type synonym expansion limit"
      -- 20071002: limiting the number of context reduction steps is not supported starting with the use of CHRs
      -- ,  Option ""   ["limit-ctxt-red"]   (intArg oLimitCtxtRed)               "context reduction steps limit"
      
-     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
-     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
      ,  Option ""   ["odir"]             (ReqArg oOutputDir "dir")            "base directory for generated files. Implies --compile-only"
      ,  Option ""   ["keep-intermediate-files"] (NoArg oKeepIntermediateFiles) "keep intermediate files (default=off)"
 %%]]
@@ -597,6 +599,8 @@ ehcCmdLineOpts
      -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
      ,  Option ""   ["meta-pkgdir-system"]  (NoArg oMetaPkgdirSys) 				 "meta: print system package dir (then stop)"
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
+     ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
+     ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
      ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
      ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "pkg: expose/use package"
      ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "pkg: hide package"
