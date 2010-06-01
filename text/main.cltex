@@ -996,7 +996,9 @@ WWW home page:
 %%]
 
 %%[43
-\title{UHC user manual}
+\title{UHC user manual,
+version
+%%@[exec:install/100/bin/ehc --version-dotted%%]}
 \author{Atze Dijkstra}
 %%]
 

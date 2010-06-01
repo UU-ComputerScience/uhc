@@ -1361,7 +1361,9 @@ mkDataGenerBinds
 SEM Expr
   | Let         loc         .   (cDataGenerBindL,errsDataGenerBind)
                                             =   mkDataGenerBinds
-                                                    @lhs.opts @rceEnv @forDeclsClGam @lhs.dataGam
+                                                    @lhs.opts
+                                                    (@rceEnv {rceValGam = @body.gathValGam `gamUnion` rceValGam @rceEnv})
+                                                    @forDeclsClGam @lhs.dataGam
                                                     @lUniq_gener @generInstInfoL
                 loc         .   lUniq_gener :   UNIQUEREF gUniq
 %%]

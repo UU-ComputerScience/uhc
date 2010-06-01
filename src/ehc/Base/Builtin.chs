@@ -729,15 +729,15 @@ hsnNm2GenerReprSyn i = mkHNmSpecial . hsnPrefix ("Rep" ++ show i)
 
 -- a hidden name for representation datatype for a datatype
 hsnNm2GenerDatatype :: HsName -> HsName
-hsnNm2GenerDatatype = hsnNm2Gener . hsnPrefix ("D")
+hsnNm2GenerDatatype = hsnNm2Gener . hsnPrefix ("D_")
 
 -- a hidden name for representation datatype for a datatype constructor
 hsnNm2GenerConstructor :: HsName -> HsName
-hsnNm2GenerConstructor = hsnNm2Gener . hsnPrefix ("C")
+hsnNm2GenerConstructor = hsnNm2Gener . hsnPrefix ("C_")
 
 -- a hidden name for representation datatype for a datatype field selector
 hsnNm2GenerSelector :: HsName -> HsName
-hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S")
+hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S_")
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

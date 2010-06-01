@@ -206,10 +206,11 @@ SEM Expr
                                                                       , let ki = mkGenerRepresentableTypeSynonymKi @lQuTyKiGam_ex origtnm
                                                                       , arity <- [0..remArity]
                                                                       ]
-                            .   generPolGam         =   gamUnions     [ (gamSingleton (hsnNm2GenerReprSyn 0 origtnm)
+                            .   generPolGam         =   gamUnions     [ (gamSingleton (hsnNm2GenerReprSyn arity origtnm)
                                                                                       (PolGamInfo $ mkGenerRepresentableTypeSynonymPol @finGathPolGam origtnm)
                                                                         )
-                                                                      | ((origtnm,tvs,_),_,_,_) <- @decls.generDataInfoL
+                                                                      | ((origtnm,tvs,_),_,_,remArity) <- @decls.generDataInfoL
+                                                                      , arity <- [0..remArity]
                                                                       ]
 
                             -- instances to participate in context reduction machinery (codegen is done in ToCore)
