@@ -6,8 +6,11 @@
 ATTR AGItf Expr [ | | gathValGam: ValGam ]
 
 SEM Expr
-  | Let         lhs         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
+  | Let         loc         .   gathValGam          =   @body.gathValGam `gamUnion` @finValGamDecls
   | * - Let     lhs         .   gathValGam          =   emptyGam
+
+SEM AGItf
+  | AGItf       lhs         .   gathValGam          =   @finTyVarMp |=> @expr.gathValGam
 %%]
 
 %%[(20 hmtyinfer)

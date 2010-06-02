@@ -61,6 +61,8 @@ rceEnvDataAlts env t
               (_,ty,[])
                  -> dataGamTagsOfTy (rceTyVarMp env |=> ty) (rceDataGam env)
               _  -> Nothing
+                    -- panic ("rceEnvDataAlts: " ++ show conNm) -- Nothing
+                    -- dataGamTagsOfTy (Ty_Con conNm) (rceDataGam env)
       _  -> Nothing
 %%]
 

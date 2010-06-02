@@ -575,7 +575,7 @@ ehcCmdLineOpts
 %%][100
 %%]]
 %%[[99
-     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, path separators=';', appended to previous"
+     ,  Option "i"  ["import-path"]      (ReqArg oUsrFileLocPath "path")       "search path for user files, separators=';', appended to previous"
      ,  Option "L"  ["lib-search-path"]  (ReqArg oLibFileLocPath "path")       "search path for library files, see also --import-path"
      ,  Option ""   ["cpp"]              (NoArg oCPP)                         "preprocess source with CPP"
      ,  Option ""   ["limit-tysyn-expand"]
@@ -593,7 +593,7 @@ ehcCmdLineOpts
 %%]]
      ,  Option ""   ["meta-variant"]        (NoArg oVariant)                     "meta: print variant (then stop)"
      ,  Option ""   ["meta-target-default"] (NoArg oTargetDflt)                  "meta: print the default codegeneration target (then stop)"
-     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print list of supported codegeneration targets (then stop)"
+     ,  Option ""   ["meta-targets"]        (NoArg oTargets)                     "meta: print supported codegeneration targets (then stop)"
 %%[[99
      -- ,  Option ""   ["meta-export-env"]  	(OptArg oExportEnv "installdir[,variant]") "meta: export environmental info of installation (then stop) (will become obsolete soon)"
      -- ,  Option ""   ["meta-dir-env"]     	(NoArg oDirEnv)                      "meta: print directory holding environmental info of installation (then stop) (will become obsolete soon)"
@@ -601,11 +601,11 @@ ehcCmdLineOpts
      ,  Option ""   ["meta-pkgdir-user"]    (NoArg oMetaPkgdirUser) 			 "meta: print user package dir (then stop)"
      ,  Option ""   ["package"]          (ReqArg oExposePackage "package")    "see --pkg-expose"
      ,  Option ""   ["hide-all-packages"](NoArg oHideAllPackages)             "see --pkg-hide-all"
-     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from generated files. Implies --compile-only"
+     ,  Option ""   ["pkg-build"]        	(ReqArg oPkgBuild "package")         "pkg: build package from files. Implies --compile-only"
      ,  Option ""   ["pkg-expose"]       	(ReqArg oExposePackage "package")    "pkg: expose/use package"
      ,  Option ""   ["pkg-hide"]         	(ReqArg oHidePackage   "package")    "pkg: hide package"
      ,  Option ""   ["pkg-hide-all"]     	(NoArg oHideAllPackages)             "pkg: hide all (implicitly) assumed/used packages"
-     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: additional package search directories, each dir must have subdir <pkg>/<variant>/<target>/<flavor> (this may change)"
+     ,  Option ""   ["pkg-searchpath"]      (ReqArg oPkgdirLocPath "path")       "pkg: package search directories, each dir has <pkg>/<variant>/<target>/<flavor>"
      ,  Option ""   ["cfg-install-root"]    (ReqArg oCfgInstallRoot "dir")        "cfg: installation root (to be used only by wrapper script)"
      ,  Option ""   ["cfg-install-variant"] (ReqArg oCfgInstallVariant "variant") "cfg: installation variant (to be used only by wrapper script)"
 %%]]

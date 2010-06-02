@@ -113,21 +113,21 @@ mkGenerRepresentableTypeSynTyProj
                               | isJust mbVar     = case elemIndex tvar remTvarArgL of       -- TBD: check for kind *, check for one of tvarArgL
                                                      Just i -> ([ mkC ehbnGenerDataPar1    ], Proj_Par1 [t] (i+1))
                                                      _      -> ([ mkC ehbnGenerDataPar0, t ], Proj_K1   [t]      )
-                              | remArity > 0 && isJust mbConArgs && isRepr
+                              | remArity > 0 && {- isJust mbCon && -} length args > 0 && isRepr
                                                  = case (initlast remTvarArgL, initlast args) of
                                                      (Just (_,tv), Just (firstargs,lastarg)) | maybe False (tv==) $ tyMbVar lastarg
-                                                       -> ([ mkC ehbnGenerDataRec1, mkApp (Ty_Con con : firstargs) ], Proj_Rec1 [t] remArity)
+                                                       -> ([ mkC ehbnGenerDataRec1, mkApp (fun : firstargs) ], Proj_Rec1 [t] remArity)
                                                      (_, Just (firstargs,lastarg)) | not $ Set.null $ ftvSet lastarg
                                                        -> ( [ mkC ehbnGenerDataComp1, fmapTy, lastarg' ]
                                                           , Proj_Comp1 [t] fmapTy lastproj
                                                           )
                                                        where (lastarg',lastproj) = mkArg lastarg
-                                                             fmapTy = mkApp (Ty_Con con : firstargs)
+                                                             fmapTy = mkApp (fun : firstargs)
                                                      _ -> dflt
                               | otherwise        = dflt
                               where mbVar    @(~(Just tvar      )) = tyMbVar        t
-                                    mbConArgs@(~(Just (con,args))) = tyMbAppConArgs t
-                                    isRepr = isRepresentable con remArity
+                                    funArgs  @(       (fun,args) ) = tyAppFunArgs   t
+                                    isRepr = maybe (isJust $ tyMbVar fun) (\con -> isRepresentable con remArity) $ tyMbCon fun
                                     dflt   = ([ mkC ehbnGenerDataRec0, t ], Proj_K1 [t])
         mkAlt tg c (t,p)  = (mkApp [mkC2 ehbnGenerDataMetaCN 1, Ty_Con c, t], Proj_M1 $ Proj_Con tg p)
         mkTop (t,p)   = ( mkTyLam lamTvarArgL (mkApp [ mkC2 ehbnGenerDataMetaDN 1, semCon tyNm, t ])

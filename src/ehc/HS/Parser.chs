@@ -520,7 +520,7 @@ pDeclarationData
 %%]]
             <*> pTypeLeftHandSide <*> pC
 %%[[91
-            <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
+            <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pListSep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
         -- TBD, for now: ignore quantifiers
         pDCon, pNCon :: HSParser Constructor
