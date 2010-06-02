@@ -13,7 +13,7 @@ shift
 
 # Program to optimize .bc files
 #
-LLVM_OPT="$1 -stats -std-compile-opts -dce -globalsmodref-aa -ipsccp"
+LLVM_OPT="$1 -std-compile-opts -dce -globalsmodref-aa -ipsccp"
 shift
 
 # Binary to compile .bc files to .s files
@@ -58,8 +58,8 @@ set -x
 
 $LLVM_AS -f -o $INPUT_BASE.bc $INPUT_LL   && \
 $LLVM_OPT -f -o ${INPUT_BASE}_opt.bc $INPUT_BASE.bc && \
-$LLC --time-passes -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
-$NATIVE_LD -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
+$LLC -f -o $OUTPUT_BASE.s ${INPUT_BASE}_opt.bc && \
+$NATIVE_LD -g -o $OUTPUT $OUTPUT_BASE.s $LIBS && \
 $STRIP $OUTPUT
 
 set +x

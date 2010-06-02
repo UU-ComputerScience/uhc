@@ -94,7 +94,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
     WPtr objRepl;
 	objRepl = (WPtr)( allocator->alloc( allocator, nodeSize << Word_SizeInBytes_Log, 0 ) ) ;    // alloc wants the size in bytes, so multiply the szWords by the Word_Size
 
-    printf("            allocated repl=%016llx\n", objRepl );
+    printf("            allocated repl=%016llx size=%i\n", objRepl, nodeSize );
 
 
     // Initialize the new object

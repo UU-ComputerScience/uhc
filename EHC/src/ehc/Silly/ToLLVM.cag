@@ -145,6 +145,10 @@ SEM SilModule
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
 
+                                 , LLVMStatement_Assignment (LocalVar "rp.t" @lhs.pointerType)
+                                     (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
+                                 , LLVMStatement_Store (Constant (1 + @functions.maxRPIndex) @lhs.intType) (LocalVar "rp.t" @lhs.pointerType)
+
                                  -- , LLVMStatement_Call (gcEhcRegRootFuncDecl @lhs.intType) StdCall [LocalVar "rpArr" @lhs.pointerType]
                                  , LLVMStatement_Store (LocalVar "rpArr" @lhs.pointerType) (GlobalVar "RP" @lhs.globalType)
                                  , LLVMStatement_Call initializeFuncDecl StdCall []
@@ -186,7 +190,7 @@ SEM Function
                                                  ) @parameters
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ params ++
                                    @body.llvmCode ++  
-                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -759,6 +763,7 @@ rtsInitFuncDecl =
 rtsExitFuncDecl :: LLVMFunctionDecl
 rtsExitFuncDecl = 
   LLVMFunctionDecl_LLVMFunctionDecl "main_llvm_Exit" Void FixedArgs [] Nothing
+
 
 }
 %%]

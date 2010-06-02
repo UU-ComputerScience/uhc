@@ -35,7 +35,7 @@ void mm_trace_TraceObjects2( MM_Trace* trace, Word* objs, Word nrObjs ) {
         printf("nr: %i p1: %016llx p2: %016llx p3: %016llx v: %i \n", nrObjs2, objs, objs2, objs3, *objs3);
         Word * objst = mm_Trace_TraceObject( trace, objs3 ) ;
         printf("updating global root: %016llx to: %016llx \n", objs3, objst);
-        objs3 = objst;
+        (*objs2) = objst;
         printf("nr: %i p1: %016llx p2: %016llx p3: %016llx v: %i \n", nrObjs2, objs, objs2, objs3, *objs3);
 
 	}

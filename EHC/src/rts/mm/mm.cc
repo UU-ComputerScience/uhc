@@ -70,8 +70,9 @@ void mm_exit() {
 
 Ptr mm_itf_alloc_ext( size_t sz, Word gcInfo ) {
     // mm_itf_gc();    
-    printf("mm_itf_alloc_ext mem: %i \n", sz);
-    return mm_itf_alloc( sz, gcInfo );
+    Ptr p = mm_itf_alloc( sz, gcInfo ); 
+    printf("mm_itf_alloc_ext mem: %i at: %016llx \n", sz, p);
+    return p;
 }
 
 Ptr mm_itf_allocResident_ext( size_t sz ) {
@@ -98,8 +99,6 @@ void mm_itf_registerGCRoots_ext( WPtr p, Word n ) {
 Bool mm_itf_gc_ext( ) {
     return mm_itf_gc();
 }
-
-
 
 %%]
 
