@@ -125,6 +125,9 @@ SEM *
 		loc.lQuTyKiGam_ex_extra 		: TyKiGam
 		loc.lQuTyKiGam_ex_subst 		: TyKiGam
 		loc.gSubsValGam_  				: ValGam
+		loc.gathValGam  				: ValGam
+		loc.finValGam		  			: ValGam
+		loc.finValGamDecls	  			: ValGam
 		loc.gTy 						: Ty
 		loc.gTyTvL  					: {[TyVarId]}
 		loc.dataTyVarIdL  				: {[TyVarId]}

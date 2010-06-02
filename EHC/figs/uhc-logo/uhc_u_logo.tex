@@ -1,0 +1,131 @@
+% These logos may be used freely in the context of the Utrecht Haskell Compiler; 
+% the LaTeX-source file however should not be openly distributed.
+%
+% Please use common sense when modifying the logo :)
+%
+% Clara L\"oh 05/2010; uhclogo@wuisch.org 
+%
+\documentclass[a4paper]{article}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+\usepackage[active,pdftex,tightpage]{preview}
+
+\edef\ucolour{red!70!yellow}
+\def\htopcolour{\ucolour}
+\def\hbotcolour{\ucolour}
+\def\ccolour{\ucolour}
+\edef\lambdacolour{blue!60!green}%{red!50!yellow}
+\def\lambdalightcolour{white}
+
+\def\logounit{2cm}
+\def\shiftunit{1.075*\logounit}
+\def\roundunit{0.09*\logounit}
+\def\smallroundunit{0.03*\logounit}
+
+\def\singleupath{%
+      (0,1)  
+      {[rounded corners=\smallroundunit]
+        -- (0.25,1) 
+        -- (0.25,0.25) -- (0.75,0.25)
+        -- (0.75,1)} 
+      -- (1,1)   -- (1,0) -- (0,0) -- cycle;
+}
+\def\singleu#1#2#3{%
+  \begin{scope}[shift={#1}, rotate around={#2:(0.5,0.5)}, rounded corners=\roundunit]
+    \fill[color=#3] \singleupath;
+  \end{scope}
+}
+
+
+\def\uhclogo{%
+  \begin{scope}[x=\logounit, y=\logounit, line cap=rect]
+    \singleu{(0,0)}{0}{\ucolour}
+    \singleu{(\shiftunit,\shiftunit)}{0}{\htopcolour}
+    \singleu{(\shiftunit,0)}{180}{\hbotcolour}
+    \singleu{(2*\shiftunit,\shiftunit)}{-90}{\ccolour}
+  \end{scope}
+}
+
+\edef\lambdacolour{blue!60!green}%{red!50!yellow}
+\def\lambdalightcolour{white}
+\def\lwidth{0.175}
+\def\lheight{0.3}
+% h = 0.05
+% w = (h + 0.125) * \lwidth/\lheight
+%   = 0.175 * \lwidth/\lheight
+% hmargin = (1 - 3 * \lwidth - w - 2*0.06125)/2 = 0.1239
+
+\def\singlehat#1{%
+  \begin{scope}[shift={#1}]
+    \begin{scope}[shift={(0.06125,0.06125)}]
+      \draw (0,0) -- (\lwidth,0.3);
+      \draw (\lwidth,0.3) -- (2*\lwidth,0);
+    \end{scope}
+  \end{scope}
+}
+\def\lambdalogo{%
+  \begin{scope}[x=\logounit,y=\logounit,rounded corners=\roundunit]
+    \fill[color=\lambdacolour] 
+      (0,0) rectangle +(1,1);
+  \begin{scope}[line cap=round, line width=0.125*\logounit
+    , color=\lambdalightcolour]
+    \singlehat{(0.401,0.05)}   % 1-hmargin - 2*\lwidth - 2*0.06125
+    \singlehat{(0.1239,0.525)} % hmargin
+  \end{scope}
+  \end{scope}
+}
+
+% combined logos
+\def\uhclightlogo{%
+  \begin{tikzpicture}
+    \uhclogo
+    \begin{scope}[shift={(2*\shiftunit, 0*\shiftunit)}]
+      \edef\tmpcolour{\lambdacolour!40}
+      \def\lambdacolour{\tmpcolour}
+      \lambdalogo
+    \end{scope}
+  \end{tikzpicture}
+}
+\def\uhcdarklogo{%
+  \begin{tikzpicture}
+    \uhclogo
+    \begin{scope}[shift={(2*\shiftunit, 0*\shiftunit)}]
+      \edef\tmpcolour{\lambdacolour!60}
+      \def\lambdacolour{\tmpcolour}
+      \lambdalogo
+    \end{scope}
+  \end{tikzpicture}
+}
+
+\begin{document}
+
+\pagestyle{empty}
+
+\begin{center}
+
+% light logo
+\begin{preview}
+  \uhclightlogo
+\end{preview}
+
+\clearpage
+
+% dark logo
+\begin{preview}
+  \uhcdarklogo
+\end{preview}
+
+\clearpage
+
+% favicon
+\begin{preview}
+  \begin{tikzpicture}
+    \lambdalogo
+  \end{tikzpicture}
+\end{preview}
+
+\end{center}
+
+\end{document}
+

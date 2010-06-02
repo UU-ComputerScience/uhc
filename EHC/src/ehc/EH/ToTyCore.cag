@@ -42,8 +42,8 @@ SEM AGItf
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
-ctyLookup :: TyKiGam -> HsName -> ValGam -> C.Ty
-ctyLookup tkg nm g = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) $ fst $ valGamLookupTy nm g
+ctyLookup :: VarMp -> TyKiGam -> HsName -> ValGam -> C.Ty
+ctyLookup tyVarMp tkg nm g = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) $ (tyVarMp |=>) $ fst $ valGamLookupTy nm g
 
 ctyFromTy :: TyKiGam -> VarMp -> Ty -> C.Ty
 ctyFromTy tkg m t = C.tyToTyCore fitsInForToTyCore (tyKiGamLookupKi tkg) (m |=> t)
@@ -129,7 +129,7 @@ SEM PatExpr
   | AppTop      loc         .   cty         =   C.mkTyThunk @ctyPat
 
 SEM Decl
-  | Val         loc         .   cty         =   ctyLookup @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
+  | Val         loc         .   cty         =   ctyLookup @lhs.finTyVarMp @lhs.finTyKiGam @patExpr.topNm @lhs.finValGam
                             .   ctyBind     =   if @lhs.isStrict then @cty else C.mkTyThunk @cty
   | Data        loc         .   cki         =   C.tyToTyCoreKi $ @lhs.finKiVarMp |=> tkgiKi @dataTkgi -- $ tkgiKi $ fst $ tyKiGamLookupByNameErr @tyNm @lhs.finTyKiGam
 %%]

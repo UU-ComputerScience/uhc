@@ -99,7 +99,7 @@ SEM Expr
                                                             , rceCaseIds = @caseIds
                                                             }
 %%[[92
-  | Let         loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @bodyValGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @lhs.finTyVarMp }
+  | Let         loc         .   rceEnv      =   (emptyRCEEnv @lhs.opts) { rceValGam = @bodyValGam, rceDataGam = @lhs.dataGam, rceTyVarMp = @finTyVarMp }
 %%]]
 %%]
 

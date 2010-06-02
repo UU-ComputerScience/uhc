@@ -49,7 +49,7 @@ See \lref{DownloadBuildCompileRun}{downloading etc}.
 \subsection{Using packages}
 %%@ToolDocEHC.usingPackages
 
-\section{Language extensions and differences with Haskell98}
+\section{Language extensions}
 \glabel{LanguageExtensions}
 \label{LanguageExtensions}
 Bear in mind that these extensions are all but tried and tested!
@@ -69,6 +69,10 @@ Bear in mind that these extensions are all but tried and tested!
 \subsection{Generic deriving}
 \label{generic-deriving}
 %%@ToolDocEHC.genericDeriving
+
+\subsection{Standalone deriving instance}
+\label{standalone-deriving-instance}
+%%@ToolDocEHC.standaloneDerivingInstance
 
 \subsection{Partial type signature}
 \label{partial-type-signatures}
@@ -106,6 +110,21 @@ hence no documentation is currently available.
 \subsection{Default for ambiguous overloading}
 \label{default-ambiguous-overloading}
 %%@ToolDocEHC.defaultAmbiguousOverloading
+
+\subsection{Pragmas}
+\label{pragmas}
+%%@ToolDocEHC.pragmas
+
+\section{Haskell compatibility}
+\glabel{HaskellCompatibility}
+
+\subsection{Haskell 98}
+\glabel{Haskell98Compatibility}
+%%@ToolDocEHC.haskell98Compatibility
+
+\subsection{Haskell 2010}
+\glabel{Haskell2010Compatibility}
+%%@ToolDocEHC.haskell2010Compatibility
 
 \section{Language implementation status}
 \glabel{LanguageImplementationStatus}
@@ -243,8 +262,8 @@ This flag is useful during changes in the interface file format.
 
 
 \DocOpt{@--debug-stopat-core-error=<bool>@}{Stop at Haskell core file parse error}
-When performing full program analysis core files are the endproduct of per module compilation.
-For full program analysis these core files are read and combined for further full program analysis.
+When performing whole program analysis core files are the endproduct of per module compilation.
+For whole program analysis these core files are read and combined for further whole program analysis.
 Parsing errors are ignored.
 This flag turns this default behavior off, so an error is reported when it occurs.
 The compilation is then halted.
@@ -375,7 +394,7 @@ Show full version information (see also option \DocOptRef{--numeric-version}).
 \\
 |GFULL|
 & Graph Reduction Intermediate Notation.
-  When relevant the use of this term implies full program analysis.
+  When relevant the use of this term implies whole program analysis.
 \\
 |LLVM|
 & Low Level Virtual Machine
@@ -730,6 +749,10 @@ cons2' = (:) (\x->x :: forall a . a -> a) ~ids	-- the extra annotation fixes thi
 TBD...
 %%]
 
+%%[standaloneDerivingInstance doclatex
+TBD...
+%%]
+
 %%[partialTySig doclatex
 Partial type signatures are fully specified type signatures where parts may be omitted and then later filled in by the type inferencer.
 Partial type signatures offer a middle way between
@@ -922,6 +945,10 @@ Existential types do not work with:
 
 %%]
 
+%%[pragmas doclatex
+TBD...
+%%]
+
 %%[defaultAmbiguousOverloading doclatex
 WARNING 20100601: this did not make it into the release, so the text here describes our intention, not the current state.
 
@@ -993,6 +1020,14 @@ In the above \lref{partial-type-signatures}{partial type signatures} were also u
 
 %%]
 
+%%[haskell98Compatibility doclatex
+TBD
+%%]
+
+%%[haskell2010Compatibility doclatex
+TBD
+%%]
+
 %%[languageStatus doclatex
 Encoding of availability:
 
@@ -1032,7 +1067,7 @@ Functional dependencies & N \\
 \lref{kind-inference}{Explicit kinding} & Y \\
 \lref{kind-inference}{Polymorphic kind inference} & Y \\
 Extensible records & YN, no runtime support \\
-Existential + context + datatype def like: @data H a = forall e . E e => H (e -> IO a)@ & N \\
+Existential + context + datatype: @data H a = forall e . E e => H (e -> IO a)@ & N \\
 UTF8 Char, String & N \\
 \end{tabular}
 
@@ -1205,7 +1240,7 @@ If the package is put in the default location (usually something like @lib@ insi
 %%]
 
 %%[backendsFull doclatex
-\subsubsection{@bc@: GRIN based interpreter, no full program analysis}
+\subsubsection{@bc@: GRIN based interpreter, no whole program analysis}
 
 This is the default backend, and the most complete.
 
@@ -1217,7 +1252,7 @@ This is the default backend, and the most complete.
 %%]
 
 %%[backendsAlmost doclatex
-\subsubsection{@C@: GRIN based C, with full program analysis}
+\subsubsection{@C@: GRIN based C, with whole program analysis}
 
 \begin{itemize}
 \item No exceptions, throwing an exception will stop the program.
@@ -1225,7 +1260,7 @@ This is the default backend, and the most complete.
 \item The size of the stack is hardcoded. No runtime overflow check is done.
 \end{itemize}
 
-\subsubsection{@jazy@: Core based Java, no full program analysis}
+\subsubsection{@jazy@: Core based Java, no whole program analysis}
 
 \begin{itemize}
 \item Only when enabled via @configure --enable-java@.
@@ -1236,13 +1271,13 @@ This is the default backend, and the most complete.
 %%]
 
 %%[backendsPartial doclatex
-\subsubsection{@llvm@: GRIN based LLVM, with full program analysis}
+\subsubsection{@llvm@: GRIN based LLVM, with whole program analysis}
 
 \begin{itemize}
 \item For variant 8 only, little runtime support.
 \end{itemize}
 
-\subsubsection{@clr@: GRIN based CLR, with full program analysis}
+\subsubsection{@clr@: GRIN based CLR, with whole program analysis}
 
 \begin{itemize}
 \item For variant 8 only, no runtime support.
@@ -1293,7 +1328,7 @@ Boolean options are indicated by @Bool@, where @True@ and @False@ can be indicat
 \item \verb|-t[<target>]|, \verb|--target[=<target>]|. Generate code for a target. Code generation \verb|<target>|s (Default: %%@[exec:install/100/bin/ehc --meta-target-default%%]):
  \begin{itemize}
  \item \verb|bc|: bytecode interpreter based executable.
- \item \verb|C|: full program analysis C code based executable.
+ \item \verb|C|: whole program analysis C code based executable.
  \item \verb|core|: only intermediate Core file. Cannot be run.
  \end{itemize}
 \item \verb|--target-flavor[=<flavor>]|. Generate code for a target. Code generation \verb|<flavor>|s (Default: plain).
