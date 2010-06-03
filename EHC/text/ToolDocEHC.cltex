@@ -36,8 +36,8 @@ For now, see the \eref{EhcStructureDocumentation}{UHC structure overview}.
 \label{DownloadBuildCompileRun}
 %%@ToolDocEHC.downloadBuildCompileRun
 
-\subsection{Installation}
-See \lref{DownloadBuildCompileRun}{downloading etc}.
+% \subsection{Installation}
+% See \lref{DownloadBuildCompileRun}{downloading etc}.
 
 \section{Using UHC}
 \subsection{Commandline invocation}
@@ -111,11 +111,16 @@ hence no documentation is currently available.
 \label{default-ambiguous-overloading}
 %%@ToolDocEHC.defaultAmbiguousOverloading
 
+\subsection{Typelevel operators}
+\label{typelevel-operators}
+%%@ToolDocEHC.typelevelOperators
+
 \subsection{Pragmas}
 \label{pragmas}
 %%@ToolDocEHC.pragmas
 
 \section{Haskell compatibility}
+\label{HaskellCompatibility}
 \glabel{HaskellCompatibility}
 
 \subsection{Haskell 98}
@@ -132,7 +137,7 @@ hence no documentation is currently available.
 
 
 \subsection{Feature availability and status}
-
+\glabel{feature-availability}
 %%@ToolDocEHC.featureAvailability
 
 %\subsection{Available in Haskell98 but not or partially in UHC}
@@ -949,6 +954,10 @@ Existential types do not work with:
 TBD...
 %%]
 
+%%[typelevelOperators doclatex
+TBD...
+%%]
+
 %%[defaultAmbiguousOverloading doclatex
 WARNING 20100601: this did not make it into the release, so the text here describes our intention, not the current state.
 
@@ -1021,11 +1030,29 @@ In the above \lref{partial-type-signatures}{partial type signatures} were also u
 %%]
 
 %%[haskell98Compatibility doclatex
-TBD
+The following Haskell98 features are not or partially supported:
+
+\begin{itemize}
+\item N+k patterns are not implemented.
+\item Bound variables in an irrefutable pattern all are individually irrefutable, nested irrefutability is ignored.
+\item Defaulting with @default@ is not implemented. When implemented it will be \lref{default-ambiguous-overloading}{done different}.
+\item Literate Haskell allows \verb@\begin{code}@ .. \verb@\end{code}@, but not individual lines prefixed with @> @.
+\item Strictness annotation in datatype definitions is allowed but ignored.
+\item The monomorphism restriction is not implemented.
+\end{itemize}
 %%]
 
 %%[haskell2010Compatibility doclatex
-TBD
+The following Haskell 2010 features are not or partially supported:
+
+\begin{itemize}
+\item The foreign function interface (See \href{http://hackage.haskell.org/trac/haskell-prime/ticket/35}{ForeignFunctionInterface})
+  is implemented to the point where base libraries can be constructed.
+  In particular @export@ is not implemented, and neither are @dynamic@ and @wrapper@ imports.
+  The @stdcall@ calling convention is not implemented.
+\item @LANGUAGE@ pragmas (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/128}{LanguagePragma}) @NoImplicitPrelude@ and @CPP@ are recognised, others are ignored.
+\item Pattern guards (\href{http://hackage.haskell.org/trac/haskell-prime/ticket/56}{PatternGuards}) are not implemented.
+\end{itemize}
 %%]
 
 %%[languageStatus doclatex
@@ -1043,21 +1070,17 @@ NN & is not and will never be available \\
 %%]
 
 %%[featureAvailability doclatex
+See \lref{HaskellCompatibility}{Haskell compatibility} first as the overview below will become obsolete.
+
 \begin{tabular}{ll}
 \textbf{Feature} & \textbf{Available?} \\ \hline
-n+k patterns & NN \\
 @deriving@ construct & YN, for @Show@, @Read@, @Eq@, @Ord@, @Enum@, @Bounded@ \\ 
-@default@ construct & N?, silently ignored \\ 
 @Prelude@: predefined instances & YN, not for tuples \\ 
-Irrefutable patterns & YN, nested patterns too lazy \\
-Strictness annotation in data types & YN, ignored \\
-Literate Haskell source format & YN, only \verb@\begin{code}@ .. \verb@\end{code}@ \\
 Operator infixity determines parsing & YN, some subtle report examples are not treated as defined \\
 \lref{ffi}{Foreign function interface} & YN, enough to make @Prelude@ work \\
 Exceptions & YN, depending on backend, 'old style' data type based (non extensible) \\
 Bounded not derivable for aggregrate types (tuples of Bounded) & N \\
 Ix not derivable & N \\
-\lref{absence-monomorphism-restriction}{Monomorphism restriction} & N \\
 Functional dependencies & N, pending route taken with Haskell prime \\
 \lref{lexically-scoped-type-variables}{Lexically scoped type variables} & Y \\
 \lref{existential-types}{Existential quantification} & Y \\
@@ -1194,26 +1217,19 @@ The C based backends (C, bc) use the following public domain libraries:
 \item Error messages involving types are difficult to decode; too much of the internals of the type system machinery is exposed.
 \item
  Compilation of a single module which uses many imports (directly or indirectly) takes noticably more time because reading in @.hi@ files takes time.
- Currently @.hi@ files are stored as text files and parsed as such, which is less efficient than a binary representation.
 \item
  Executables for code generation target @bc@ get quite large: the C encoding of bytecode files for modules is rather inefficient and linking together with the base libraries draws in most of the library code.
 \item
  Large expressions involving many class constraints take non lineair compile time, consumed by context reduction.
 \item
- When compiling with option @--cpp@ the file preprocessed by @cpp@ is put in the same directory as the source file.
+ When compiling with option @--cpp@ or language pragma @CPP@ the file preprocessed by @cpp@ is put in the same directory as the source file.
  Without write permission this will fail.
 \item
- Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proved.
+ Overlapping instances are not reported as such, but indirectly by producing an error that a class constraint could not be proven.
 \item
  Local instances are not always working properly. Stick to its use without abstraction, i.e. only ground instances as in the \lref{local-instances}{examples}.
 \item
- Building uhc on top of a previous one, with a different version number, does not work because the settings file holding the location of libraries is not yet updated.
- See the \lref{TroubleshootingFAQ}{troubleshooting FAQ}.
-\item
  Regression testing may report differences because of different linefeed encoding on different platforms.
-\item
- UHC partially works on 64 bit platforms.
- Runtime system seems to be ok, but some of the libraries not, the regression tests therefore partially fail.
 \item
  Instances for tuples are currently limited to at most 5-tuples.
  Also not all standard classes have definitions for tuples, in particular @Read@.

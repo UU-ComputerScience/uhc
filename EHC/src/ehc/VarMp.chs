@@ -82,9 +82,11 @@ data VarMp' k v
       { varmpMetaLev 	:: !MetaLev				-- the base meta level
       , varmpMpL 		:: [Map.Map k v]		-- for each level a map, starting at the base meta level
       }
+  deriving ( Eq, Ord
 %%[[20
-  deriving (Typeable, Data)
+           , Typeable, Data
 %%]]
+           )
 %%]
 
 %%[(99 hmtyinfer || hmtyast) export(varmpToMap)
@@ -275,7 +277,7 @@ data VarMpInfo
   | VMIPredSeq !PredSeq
 %%]]
   deriving
-    ( Eq, Show
+    ( Eq, Ord, Show
 %%[[20
     , Typeable, Data
 %%]]
