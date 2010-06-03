@@ -160,7 +160,7 @@ evidMpToCore env evidMp
                                         CExpr_Var _ -> c
                                         _           -> c'
         ann (RedHow_Assumption   vun sc) _     = ( mknm $ vunmNm vun, sc )
-        ann (RedHow_ByInstance   n _ sc) ctxt  = ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
+        ann (RedHow_ByInstance   n _   sc) ctxt= ( acoreAppMeta (mknm n) (map (\c -> (tcrCExpr c,(CMetaVal_Dict Nothing))) ctxt), maximumBy pscpCmpByLen $ sc : map tcrScope ctxt )
         ann (RedHow_BySuperClass n o t ) [sub] = let res = mkCExprSatSelsCaseMeta
                                                              (emptyRCEEnv $ feEHCOpts $ fiEnv env)
                                                              (Just $ hsnUniqifyEval n) 

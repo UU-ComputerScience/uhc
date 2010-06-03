@@ -218,11 +218,11 @@ cmpSpecificness env p q =
 anncmpHaskell98 :: FIIn -> RedHowAnnotation -> RedHowAnnotation -> PartialOrdering
 anncmpHaskell98 env ann1 ann2
   = case (ann1,ann2) of
-      (RedHow_ByInstance   _ p s, RedHow_ByInstance   _ q t)  ->  case pscpCmpByLen s t of
+      (RedHow_ByInstance _ p   s, RedHow_ByInstance _ q   t)  ->  case pscpCmpByLen s t of
                                                                     EQ   -> cmpSpecificness env p q
                                                                     ord  -> toPartialOrdering ord
-      (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
-      (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
+      (RedHow_ByInstance _ _   _, _                        )  ->  P_GT
+      (_                        , RedHow_ByInstance _ _   _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
       (RedHow_Assumption     _ _, _                        )  ->  P_GT
@@ -248,8 +248,8 @@ anncmpGHCBinSolve env ann1 ann2
       (_                        , RedHow_Assumption     _ _)  ->  P_LT
       (RedHow_BySuperClass _ _ _, _                        )  ->  P_GT
       (_                        , RedHow_BySuperClass _ _ _)  ->  P_LT
-      (RedHow_ByInstance   _ _ _, _                        )  ->  P_GT
-      (_                        , RedHow_ByInstance   _ _ _)  ->  P_LT
+      (RedHow_ByInstance _ _   _, _                        )  ->  P_GT
+      (_                        , RedHow_ByInstance _ _   _)  ->  P_LT
       (RedHow_ByScope _         , _                        )  ->  P_GT
       (_                        , RedHow_ByScope _         )  ->  P_LT
       (RedHow_ProveObl       _ _, _                        )  ->  P_GT
@@ -311,13 +311,13 @@ anncmpEHCScoped preferInst env ann1 ann2
       (_                                        , HeurRed (RedHow_ByScope ByScopeRedHow_Assume) _)        ->  P_LT
       (HeurRed_Rec _                            , _                                        )              ->  P_GT
       (_                                        , HeurRed_Rec _                            )              ->  P_LT
-      (HeurRed (RedHow_ByInstance  _ p  s) _    , HeurRed (RedHow_ByInstance  _ q  t) _    )              ->  case pscpCmpByLen s t of
+      (HeurRed (RedHow_ByInstance _ p   s) _    , HeurRed (RedHow_ByInstance _ q   t) _    )              ->  case pscpCmpByLen s t of
                                                                                                                 EQ   -> cmpSpecificness env p q
                                                                                                                 ord  -> toPartialOrdering ord
-      (HeurRed (RedHow_ByInstance  _ _  s) _    , HeurRed (RedHow_ByScope _) [HeurAlts q _])              ->  toPartialOrdering $ pscpCmpByLen s (cpoScope q)
-      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByInstance  _ _  t) _    )              ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) t
-      (HeurRed (RedHow_ByInstance  _ _  _) _    , _                                        ) | preferInst ->  P_GT
-      (_                                        , HeurRed (RedHow_ByInstance  _ _  _) _    ) | preferInst ->  P_LT
+      (HeurRed (RedHow_ByInstance _ _   s) _    , HeurRed (RedHow_ByScope _) [HeurAlts q _])              ->  toPartialOrdering $ pscpCmpByLen s (cpoScope q)
+      (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByInstance _ _   t) _    )              ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) t
+      (HeurRed (RedHow_ByInstance _ _   _) _    , _                                        ) | preferInst ->  P_GT
+      (_                                        , HeurRed (RedHow_ByInstance _ _   _) _    ) | preferInst ->  P_LT
 %%[[10
       (HeurRed (RedHow_ByLabel     _ _  s) _    , HeurRed (RedHow_ByLabel     _ _  t) _    )              ->  toPartialOrdering $ pscpCmpByLen s t
       (HeurRed (RedHow_ByLabel     _ _  _) _    , _                                        )              ->  P_GT
@@ -328,8 +328,8 @@ anncmpEHCScoped preferInst env ann1 ann2
       (HeurRed (RedHow_ByScope _) [HeurAlts p _], HeurRed (RedHow_ByScope _) [HeurAlts q _])              ->  toPartialOrdering $ pscpCmpByLen (cpoScope p) (cpoScope q)
       (HeurRed (RedHow_ByScope _) _             , _                                        )              ->  P_GT
       (_                                        , HeurRed (RedHow_ByScope _) _             )              ->  P_LT
-      (HeurRed (RedHow_ByInstance  _ _  _) _    , _                                        )              ->  P_GT
-      (_                                        , HeurRed (RedHow_ByInstance  _ _  _) _    )              ->  P_LT
+      (HeurRed (RedHow_ByInstance _ _   _) _    , _                                        )              ->  P_GT
+      (_                                        , HeurRed (RedHow_ByInstance _ _   _) _    )              ->  P_LT
       _                                                                                                   ->  panic ("anncmpEHCScoped: don't know how to deal with:\n  " ++ show (pp ann1) ++ "\n  " ++ show (pp ann2))
 %%]
 
