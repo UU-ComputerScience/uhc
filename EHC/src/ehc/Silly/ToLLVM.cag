@@ -212,18 +212,19 @@ SEM Statement
                                cast2ptr @dest.gUniq @dest.llvmVar @lhs.pointerType
                 loc.(uniqNr2,fitsVar,fitsCode) =
                                makeFitting @loc.uniqNr1 @source.llvmVar @loc.lhsptrVar   
+
                 loc.(uniqNr3,gcfitsVar,gcfitsCode) = let  targetType   = pLift $ pLift i8
                                                           (nr', fresh) = newFresh @loc.uniqNr2 targetType 
                                                           nt           = LocalVar (getPlainName @loc.lhsptrVar) (getType @loc.lhsptrVar) in 
                                                                 (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast nt targetType])
                 loc.gcrootCode = 
-                               case @source.gcManaged of 
-                                   GCManaged  -> @loc.gcfitsCode ++ 
+                               case Data.Map.lookup (getPlainName @dest.llvmVar) @lhs.localPtrsMap of 
+                                   (Just a) -> @loc.gcfitsCode ++ 
                                                  [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
                                                                                             , (StrConstant "null" (pLift i8))
                                                                                             ] 
                                                  ]
-                                   NotManaged -> []       
+                                   Nothing -> []       
 
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
@@ -601,6 +602,22 @@ SEM SilModule
 
 %%[(8 codegen grin)
 --------------------------------------------------------------------------------
+-- Pass type mapping of locals to statements
+--------------------------------------------------------------------------------
+ATTR Function Statements Statement Alternatives Alternative
+     [ localPtrsMap : {Data.Map.Map String SilTp}  | | ]
+                          
+SEM Function
+  | Function    body.localPtrsMap = Data.Map.fromList $ localsHs2str $ filterPtrs @locals
+
+
+
+
+%%]
+
+
+%%[(8 codegen grin)
+--------------------------------------------------------------------------------
 -- TODO: Bubble up if a variable is a Local variable. This is needed, because
 -- those are implemented with an address on the stack.
 --------------------------------------------------------------------------------
@@ -927,6 +944,16 @@ Fetch the string representation of a 'HsName'
 -}
 hs2str :: HsName -> String
 hs2str = hsnShowAlphanumeric
+
+localsHs2str :: [(HsName, SilTp)] -> [(String, SilTp)]
+localsHs2str = map (\(hs, tp) -> (hs2str hs, tp))
+
+filterPtrs :: [(a, SilTp)] -> [(a, SilTp)]
+filterPtrs = filter (\(s, t) -> isptr t)
+    where 
+        isptr SilTpPtr = True
+        isptr _        = False
+
 
 {-|
 Return a list of variables with a given constructor, a list of HsNames and
