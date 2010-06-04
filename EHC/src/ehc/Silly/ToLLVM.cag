@@ -137,13 +137,15 @@ SEM SilModule
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
                                  , LLVMStatement_Assignment (LocalVar "cast.glob" (pLift @lhs.intType))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_globals_descriptor" (pLift (Array ((length @variables) + 1) (pLift $ pLift @lhs.intType)))) [0, 0 ])  
+                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_globals_descriptor" (pLift (Array (length @variables) (pLift $ pLift @lhs.intType)))) [0, 0 ])  
 
 
                                  , LLVMStatement_Call (gcEhcRegRootsFuncDecl @lhs.intType) StdCall [ (LocalVar "cast.glob" (pLift $ pLift $ pLift @lhs.intType))
-                                                                                                   , (Constant ((length @variables) + 1) @lhs.intType)]
+                                                                                                   , (Constant (length @variables) @lhs.intType)]
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
-                                     (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
+                                     (LLVMExpression_Call (gcEhcAllocResFuncDecl @lhs.intType) StdCall [Constant (1 + @functions.maxRPIndex) @lhs.intType] )
+                                     -- (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))
+                            
 
                                  , LLVMStatement_Assignment (LocalVar "rp.t" @lhs.pointerType)
                                      (LLVMExpression_GetElemPtr (LocalVar "rpArr" @lhs.pointerType) [1] )
@@ -190,7 +192,7 @@ SEM Function
                                                  ) @parameters
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ params ++
                                    @body.llvmCode ++  
-                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -919,14 +921,14 @@ mkMalloc manageType intType nr =
   
   
 mkGCFieldDescriptors :: LLVMType -> [ConstantInfo] -> (LLVMVar, LLVMVar)
-mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array 15 (TyVar "FDESCR")))
+mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayConstant (map toFieldDesc ci) (Array (length ci) (TyVar "FDESCR")))
     where toFieldDesc fd = StructConstant [ Constant (constantInfoNodeSize fd)               intType
                                           , Constant (constantInfoPayloadSize fd)            intType
                                           , Constant (fromBool $ constantInfoHasPointers fd) i8] (TyVar "FDESCR")
 
 
 mkGCGlobalsDescr :: [HsName] -> (LLVMVar, LLVMVar)
-mkGCGlobalsDescr vars = (GlobalVar "_llvm_globals_descriptor" i8 , ArrayConstant (rp : globals) (Array ((length vars) + 1) (pLift $ pLift i64)))
+mkGCGlobalsDescr vars = (GlobalVar "_llvm_globals_descriptor" i8 , ArrayConstant globals (Array (length vars) (pLift $ pLift i64)))
     where 
         rp      = GlobalVar "RP" (pLift $ pLift i64)
         globals = map (\hsn -> GlobalVar (hs2str hsn) (pLift $ pLift i64)) vars

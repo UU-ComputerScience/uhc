@@ -298,7 +298,14 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
 		// total as used previously
 		Word prevTotalSz = plss->ssAllocator.getTotalSize( &plss->ssAllocator ) ;
 		// collect, which also switches spaces
+
+        Word beforeUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 		plss->collector.collect( &plss->collector, gcInfo ) ;
+        Word afterUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
+
+        if(beforeUsedSz != afterUsedSz)
+            printf("#### USED MEM BEFORE: %i AFTER: %i \n", beforeUsedSz, afterUsedSz);
+
 		// total as used now
 		if ( ! isPreemptiveGC ) {
 			Word curUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;

@@ -28,7 +28,7 @@ void mm_trace_TraceObjects( MM_Trace* trace, Word* objs, Word nrObjs ) {
 
 void mm_trace_TraceObjects2( MM_Trace* trace, Word* objs, Word nrObjs ) {
 
-    Word nrObjs2 = 3;
+    Word nrObjs2 = 2;
     for ( ; nrObjs2 > 0 ; nrObjs2--, objs++ ) {
         Word * objs2 = (Word*) *objs;
         Word * objs3 = (Word*) *objs2;
