@@ -10,34 +10,14 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.Fusion} import(Data.Maybe,qualified Data.Set as Set,qualified Data.Map as Map)
 %%]
 
-%%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFusion)
+%%[(8 codegen) hs import({%{EH}Core.Trf.Fusion.AbsSynt},{%{EH}Core.Trf.Fusion.HyloParser},{%{EH}Base.Common},{%{EH}Core},{%{EH}Ty}) export(cmodTrfFusion)
 %%]
 
-%%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv})
-WRAPPER CodeAGItf
-%%]
-
-%%[(99 codegen)
-PRAGMA strictcase
-%%]
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Haskell itf
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(8 codegen) hs
 cmodTrfFusion :: CModule -> CModule
-cmodTrfFusion cmod
-  =  let  t = wrap_CodeAGItf (sem_CodeAGItf (CodeAGItf_AGItf cmod)) Inh_CodeAGItf
-     in   cTrf_Syn_CodeAGItf t
+cmodTrfFusion mod = case mod of
+                      CModule_Mod n e t -> mod
 %%]
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Transformation
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(8 codegen)
-ATTR AllCodeNT [ | | cTrf: SELF ]
-ATTR CodeAGItf [ | | cTrf: CModule ]
-%%]
 

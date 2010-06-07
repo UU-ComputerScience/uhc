@@ -13,7 +13,7 @@
 # this file + other mk files
 EHC_MKF									:= $(patsubst %,$(SRC_EHC_PREFIX)%.mk,files1 files2 shared variant)
 
-# end products, binary, executable, etc
+# end products, binary, executable, etc	
 #EHC_EXEC_NAME							:= ehc
 EHC_HADDOCK_NAME						:= hdoc
 EHC_ALL_HADDOCKS						:= $(patsubst %,$(EHC_HDOC_PREFIX)%/$(EHC_HADDOCK_NAME),$(EHC_VARIANTS))
@@ -54,6 +54,7 @@ EHC_HS_MAIN_DRV_HS						:= $(patsubst $(SRC_EHC_PREFIX)%.chs,$(EHC_BLD_VARIANT_A
 
 EHC_HS_UTIL_SRC_CHS						:= $(patsubst %,$(SRC_EHC_PREFIX)%.chs,\
 													Substitutable Gam VarMp VarLookup Deriving Module Config BuiltinPrims NameAspect DerivationTree CHR Pred \
+													$(addprefix Core/Trf/Fusion/, AbsSynt Exception FsDeriv FunctorRep FuseFace HsPretty HsSyn HyloContext HyloFace HyloParser HyloRep Inline Messages RenVars Utils) \
 													$(addprefix CHR/,Key Constraint Solve) \
 													$(addprefix Cil/,Common TyTag) \
 													$(addprefix Pred/,ToCHR CHR Evidence EvidenceToCore EvidenceToTyCore Heuristics CommonCHR RedGraph) \
