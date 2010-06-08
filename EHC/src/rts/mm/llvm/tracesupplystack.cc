@@ -22,6 +22,8 @@ struct StackEntry
 
 struct StackEntry *llvm_gc_root_chain;
 
+MM_Trace * mmtrace;
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -38,9 +40,7 @@ void mm_traceSupplyStack_llvm_Init( MM_TraceSupply* traceSupply, MM_Malloc* memm
 {
     printf("mm_traceSupplyStack_llvm_Init\n");
 
-	MM_TraceSupply_Stack_Data* stackData = memmgt->malloc( sizeof(MM_TraceSupply_Stack_Data) ) ;
-	stackData->trace = mutator->trace ;
-	traceSupply->data = (MM_TraceSupply_Data_Priv*)stackData ;
+    mmtrace = mutator->trace ;
 
 }
 
@@ -48,8 +48,6 @@ void mm_traceSupplyStack_llvm_Reset( MM_TraceSupply* traceSupply, Word gcStackIn
 {
     printf("mm_traceSupplyStack_llvm_Reset\n");
 
-	MM_TraceSupply_Stack_Data* stackData = (MM_TraceSupply_Stack_Data*)traceSupply->data ;
-	stackData->gcStackInfo = (GCStackInfo*)gcStackInfo ;
 
 }
 
@@ -58,11 +56,6 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 
     printf("mm_traceSupplyStack_llvm_Run\n");
 
-	MM_TraceSupply_Stack_Data* stackData;
-	MM_Trace *trace;
-
-	stackData = (MM_TraceSupply_Stack_Data*) traceSupply->data ;
-	trace     =                              stackData->trace;
 
 
     int32_t    i, num_roots;
@@ -88,7 +81,7 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 
             } else {
                 printf("| ... [%d] 0x%016llx, con: %lld \n", i, (unsigned int)root, *root );
-           	    Word * rootUpd = mm_Trace_TraceObject( trace, root );
+           	    Word * rootUpd = mm_Trace_TraceObject( mmtrace, root );
            	    printf("            stackroot: 0x%016llx changed to: 0x%016llx con: %i \n", root, rootUpd, *rootUpd);
            	    entry->Roots[i] = rootUpd;
 
