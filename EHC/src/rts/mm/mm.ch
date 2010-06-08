@@ -49,6 +49,7 @@ Order of imports is important because of usage dependencies between types.
 #ifdef __UHC_TARGET_LLVM__
 #include "llvm/trace.h"
 #include "llvm/tracesupplystack.h"
+#include "llvm/tracesupplyglobals.h"
 #include "llvm/ssmutator.h"
 #endif
 

@@ -129,19 +129,24 @@ SEM SilModule
                                   if sizeofPointer == 8
                                   then "%lld\n"
                                   else "%d\n"
-                loc.constants = (@loc.globalResStr,@loc.resConst) : mkGCFieldDescriptors @lhs.intType @constants : mkGCGlobalsDescr @variables : @functions.constants 
+                loc.constants = (@loc.globalResStr,@loc.resConst) 
+                                : mkGCFieldDescriptors @lhs.intType @constants 
+                                : mkGCGlobalsDescr @variables 
+                                : (GlobalVar "_llvm_globals_descriptor_count" @lhs.intType , Constant (length @variables) @lhs.intType)
+                                : @functions.constants 
+
                 loc.namedTys = [NamedTy "FDESCR" (Struct [@lhs.intType, @lhs.intType, i8])]
                 loc.globals  = GlobalVar "RP" (@lhs.globalType) 
                                 : mkVarList GlobalVar @variables @lhs.globalType                                                                          
                 loc.main     = LLVMFunction_Func mainFuncDecl ExternallyVisible
 
                                  [ LLVMStatement_Call rtsInitFuncDecl StdCall []
-                                 , LLVMStatement_Assignment (LocalVar "cast.glob" (pLift @lhs.intType))
-                                     (LLVMExpression_GetElemPtr (GlobalVar "_llvm_globals_descriptor" (pLift (Array (length @variables) (pLift $ pLift @lhs.intType)))) [0, 0 ])  
+                                 --, LLVMStatement_Assignment (LocalVar "cast.glob" (pLift @lhs.intType))
+                                 --    (LLVMExpression_GetElemPtr (GlobalVar "_llvm_globals_descriptor" (pLift (Array (length @variables) (pLift $ pLift @lhs.intType)))) [0, 0 ])  
 
 
-                                 , LLVMStatement_Call (gcEhcRegRootsFuncDecl @lhs.intType) StdCall [ (LocalVar "cast.glob" (pLift $ pLift $ pLift @lhs.intType))
-                                                                                                   , (Constant (length @variables) @lhs.intType)]
+                                 -- , LLVMStatement_Call (gcEhcRegRootsFuncDecl @lhs.intType) StdCall [ (LocalVar "cast.glob" (pLift $ pLift $ pLift @lhs.intType))
+                                 --                                                                  , (Constant (length @variables) @lhs.intType)]
                                  , LLVMStatement_Assignment (LocalVar "rpArr" @lhs.pointerType)
                                      (LLVMExpression_Call (gcEhcAllocResFuncDecl @lhs.intType) StdCall [Constant (1 + @functions.maxRPIndex) @lhs.intType] )
                                      -- (mkMalloc NotManaged @lhs.intType (1 + @functions.maxRPIndex))

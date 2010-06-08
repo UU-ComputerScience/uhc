@@ -84,6 +84,7 @@ RTS_SRC_CC_WHOLEPROG := \
         mm/llvm/ssmutator \
         mm/llvm/trace \
         mm/llvm/tracesupplystack \
+        mm/llvm/tracesupplyglobals \
     )
 
 RTS_SRC_CH_SHARED := \
@@ -165,6 +166,7 @@ RTS_SRC_CH_WHOLEPROG := \
         mm/llvm/ssmutator \
         mm/llvm/trace \
         mm/llvm/tracesupplystack \
+        mm/llvm/tracesupplyglobals \
     	C/prim-const \
     )
 
