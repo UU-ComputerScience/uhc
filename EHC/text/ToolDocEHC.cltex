@@ -1233,6 +1233,11 @@ The C based backends (C, bc) use the following public domain libraries:
 \item
  Instances for tuples are currently limited to at most 5-tuples.
  Also not all standard classes have definitions for tuples, in particular @Read@.
+\item
+ The symbol @:=@ is still reserved for extensible record update, so it cannot be used as a constructor operator like in
+ \begin{verbatim}
+ data D = Int := Int
+ \end{verbatim}
 \end{itemize}
 %%]
 

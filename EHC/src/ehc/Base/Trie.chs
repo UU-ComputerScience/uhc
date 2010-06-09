@@ -33,6 +33,10 @@ with TKK_Partial. Only at insertion time the proper search structure is setup.
 
 %%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
 %%]
+%%[20 hs import(Control.Monad)
+%%]
+%%[20 hs import({%{EH}Base.Serialize})
+%%]
 
 %%[9999 import({%{EH}Base.ForceEval})
 %%]
@@ -51,7 +55,7 @@ TK_Sub gives structure to a [TrieKey a] by partioning corresponding to substruct
 
 %%[9 export(TrieKey(..),TrieKeyKind(..),mkTrieKeys)
 data TrieKeyKind = TKK_Partial | TKK_Normal
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Enum)
 
 data TrieKey k
   = TK_One      { tkKind :: !TrieKeyKind, tkKey :: !k }
@@ -377,28 +381,28 @@ delete keys = deleteByKey $ mkTrieKeys keys
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9999
-instance (ForceEval k, ForceEval v) => ForceEval (Trie k v) where
-  forceEval x | forceEval (trieMbVal x) `seq` forceEval (triePartSubs x) `seq` forceEval (trieSubs x) `seq` True = x
-%%[[102
-  fevCount x = cm1 "Trie" `cmUnion` fevCount (trieMbVal x) `cmUnion` fevCount (triePartSubs x) `cmUnion` fevCount (trieSubs x)
-%%]]
+%%[20
+instance Serialize k => Serialize (TrieKey k) where
+  sput (TK_One a b) = sput a >> sput b
+  sget = liftM2 TK_One sget sget
 
-instance ForceEval k => ForceEval (TrieKey k) where
-  forceEval x | forceEval (tkKey x) `seq` True = x
-%%[[102
-  fevCount x = cm1 "TrieKey" `cmUnion` fevCount (tkKey x)
-%%]]
+instance Serialize TrieKeyKind where
+  sput = sputEnum8
+  sget = sgetEnum8
+
+instance (Ord k, Serialize k, Serialize v) => Serialize (Trie k v) where
+  sput (Trie a b c) = sput a >> sput b >> sput c
+  sget = liftM3 Trie sget sget sget
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[9
+%%[9999
 test1
   = fromListByKey
       [ ([TK_One TKK_Partial 1],"a")

@@ -632,7 +632,7 @@ type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 %%]
 
 %%[(20 codegen) hs export(offMpMpKeysSet)
-offMpMpKeysSet :: HsName2OffsetMpMp -> Set.Set HsName
+offMpMpKeysSet :: HsName2OffsetMpMp -> HsNameS
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
 

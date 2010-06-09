@@ -345,7 +345,7 @@ DATA Expr
 %%[[8
                     mbCaseIds       : {Maybe UIDS}
                     caseFailS       : {UIDS}			-- can fail on these fail ids, encodes that this case implements a guard
-                    isTupOfArg      : {Bool}
+                    isTupOfArg      : {Bool}			-- tupling, only done as uncurry of arguments of lambda
 %%]]
 %%]
 

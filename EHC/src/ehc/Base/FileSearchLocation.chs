@@ -182,7 +182,7 @@ data PackageInfo
       { pkginfoLoc					:: !FileLoc						-- directory location
       , pkginfoOrder				:: !Int							-- for multiple packages the relative order
       -- , pkginfoKeyVals				:: PackageCfgKeyVals			-- key/value pairs of pkg config info
-      , pkginfoExposedModules		:: !(Set.Set HsName)			-- exposed modules
+      , pkginfoExposedModules		:: !HsNameS						-- exposed modules
       , pkginfoIsExposed		    :: !Bool						-- pkg is exposed?
       }
       deriving Show

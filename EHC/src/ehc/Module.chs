@@ -87,7 +87,7 @@ deriving instance Typeable ModEnt
 deriving instance Data ModEnt
 %%]
 
-%%[20 export(ppModMp)
+%%[20
 -- intended for parsing
 ppModEnt :: CfgPP x => x -> ModEnt -> PP_Doc
 ppModEnt x e
@@ -120,6 +120,52 @@ instance PPForHI ModEnt where
 
 instance PPForHI ModEntRel where
   ppForHI = ppModEntRel' CfgPP_HI
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Filter Map, for filtering HIInfo by visibility as known from a ModEntRel
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20 export(ModEntRelFilterMp,mentrelFilterMpUnion,mentrelFilterMpUnions,mentrelToFilterMp,mentrelToFilterMp')
+-- | names used per category of identifier
+type ModEntRelFilterMp = Map.Map IdOccKind HsNameS
+
+mentrelFilterMpUnion :: ModEntRelFilterMp -> ModEntRelFilterMp -> ModEntRelFilterMp
+mentrelFilterMpUnion = Map.unionWith Set.union
+
+mentrelFilterMpUnions :: [ModEntRelFilterMp] -> ModEntRelFilterMp
+mentrelFilterMpUnions [] = Map.empty
+mentrelFilterMpUnions l  = foldr mentrelFilterMpUnion Map.empty l
+
+-- | extract ModEntRelFilterMp from export relation
+mentrelToFilterMp' :: Bool -> [HsName] -> ModEntRel -> ModEntRelFilterMp
+mentrelToFilterMp' inclOwns exclModNmL r
+  = rget True $ Rel.rng r
+  where get (ModEnt {mentIdOcc=(IdOcc {ioccKind=k, ioccNm=n}), mentOwns=owns})
+                       = mentrelFilterMpUnion (mentrelFilterMpSingleton exclModNmL k n) (rget inclOwns owns)
+        rget True occs = mentrelFilterMpUnions [ get e | e <- Set.toList occs ]
+        rget _    _    = Map.empty
+
+-- | extract ModEntRelFilterMp from export relation
+mentrelToFilterMp :: [HsName] -> ModEntRel -> ModEntRelFilterMp
+mentrelToFilterMp = mentrelToFilterMp' True
+%%]
+
+%%[20 export(mentrelFilterMpModuleNames)
+-- | extract used module names from ModEntRelFilterMp
+mentrelFilterMpModuleNames :: ModEntRelFilterMp -> HsNameS
+mentrelFilterMpModuleNames m = Set.unions [ Set.map fromJust $ Set.filter isJust $ Set.map hsnQualifier s | s <- Map.elems m ]
+%%]
+
+%%[20 export(mentrelFilterMpSingleton)
+-- | construct a singleton, only not of the current module
+mentrelFilterMpSingleton :: [HsName] -> IdOccKind -> HsName -> ModEntRelFilterMp
+mentrelFilterMpSingleton exclModNmL k n
+  = case hsnQualifier n of
+      Just m | not (m `elem` exclModNmL)
+        -> Map.singleton k (Set.singleton n)
+        where
+      _ -> Map.empty
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -447,7 +493,9 @@ resetModMpInfo _     i = i
 %%][(20 codegen)
 resetModMpInfo modNm i = i {mmiNmOffMp = expsNmOffMp modNm $ mmiExps i `Rel.union` mmiHiddenExps i}
 %%]]
+%%]
 
+%%[20 export(ppModMp)
 type ModMp = Map.Map HsName ModMpInfo
 
 ppModMp :: ModMp -> PP_Doc
@@ -515,3 +563,4 @@ instance Serialize ModEnt where
   sput (ModEnt a b c d) = sput a >> sput b >> sput c >> sput d
   sget = liftM4 ModEnt sget sget sget sget
 %%]
+

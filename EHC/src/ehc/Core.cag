@@ -572,7 +572,7 @@ type HsName2OffsetMpMp = Map.Map HsName (Int,HsName2OffsetMp)
 offMpKeysSorted :: HsName2OffsetMpMp -> AssocL HsName Int
 offMpKeysSorted m = sortOn snd [ (n,o) | (n,(o,_)) <- Map.toList m ]
 
-offMpMpKeysSet :: HsName2OffsetMpMp -> Set.Set HsName
+offMpMpKeysSet :: HsName2OffsetMpMp -> HsNameS
 offMpMpKeysSet m = Set.unions [ Map.keysSet m' | (_,m') <- Map.elems m ]
 %%]
 

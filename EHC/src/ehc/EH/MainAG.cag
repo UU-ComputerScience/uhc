@@ -96,6 +96,9 @@
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.Subst})
 %%]
 
+%%[20 hs import({%{EH}Module},{%{EH}Ty.UsedNames})
+%%]
+
 %%[(50 hmtyinfer) hs import({%{EH}Ty.Trf.ElimEqual},{%{EH}Gam.Utils})
 %%]
 
@@ -188,10 +191,14 @@ WRAPPER AGItf
 
 %%[9 ag import({EH/GatherGam})
 %%]
-%%[92 ag import({EH/GatherMisc})
-%%]
 
 %%[(17 hmtyinfer) ag import({EH/InferPolarity})
+%%]
+
+%%[20 ag import({EH/UsedNames})
+%%]
+
+%%[92 ag import({EH/GatherMisc})
 %%]
 
 %%[92 ag import({EH/Generics})
@@ -219,11 +226,16 @@ ATTR AllNT AGItf [ opts: EHCOpts | | ]
 %%]
 
 %%[8
-ATTR AGItf [ moduleNm: HsName | | ]
+ATTR
+  AGItf
+%%[[20
+  AllNT
+%%]]
+    [ moduleNm: HsName | | ]
 %%]
 
 %%[20
-ATTR AllNT AGItf [ idQualGam: IdQualGam | | ]
+ATTR AGItf [ idQualGam: IdQualGam | | ]
 %%]
 
 %%[91

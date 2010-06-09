@@ -60,11 +60,11 @@ scan opts pos input
  where
    -- locatein :: Ord a => [a] -> a -> Bool
    -- locatein es = isJust . btLocateIn compare (tab2tree (sort es))
-   iskw     = (`Set.member` scoKeywordsTxt opts) -- locatein (scoKeywordsTxt opts)
-   isop     = (`Set.member` scoKeywordsOps opts) -- locatein (scoKeywordsOps opts)
-   isSymbol = (`Set.member` scoSpecChars opts) -- locatein (scoSpecChars opts)
-   isOpsym  = (`Set.member` scoOpChars opts) -- locatein (scoOpChars opts)
-   isPairSym= (`Set.member` scoSpecPairs opts) -- locatein (scoSpecPairs opts)
+   iskw     = (`Set.member` scoKeywordsTxt opts)
+   isop     = (`Set.member` scoKeywordsOps opts)
+   isSymbol = (`Set.member` scoSpecChars opts)
+   isOpsym  = (`Set.member` scoOpChars opts)
+   isPairSym= (`Set.member` scoSpecPairs opts)
 %%[[99
    isPragma = (`Set.member` scoPragmasTxt opts) . map toUpper
 %%]]
@@ -116,27 +116,15 @@ scan opts pos input
                    -> dflt
              where dflt = (q,s)
 %%]
-   scanQualified :: String -> (String,String)
-   scanQualified s
-     = qual "" s
-     where split isX s  = span (\c -> isX c && c /= '.') s
-           validQuald c = isId c || isOpsym c
-           isId       c = isIdStart c || isUpper c
-           qual q s
-             = case s of
-                 (c:s') | isUpper c                         				-- possibly a module qualifier
-                   -> case split isIdChar s' of
-                        (s'',('.':srest@(c':_))) | validQuald c'  			-- something validly qualifiable follows
-                          -> qual (q ++ [c] ++ s'' ++ ".") srest
-                        _ -> dflt
-                 (c:_) | isOpsym c || isIdChar c                  		-- not a qualifier, an operator or lowercase identifier
-                   -> dflt
-             where dflt = (q,s)
 
 %%[99
    scanLitText p ('\\':'b':'e':'g':'i':'n':'{':'c':'o':'d':'e':'}':s)
      | posIs1stColumn p
          = doScan (advc 12 p) s
+   scanLitText p ('>':' ':s)
+     | posIs1stColumn p
+         = doScan (advc 2 p) line ++ scanLitText (advc (length line) p) rest
+         where (line,rest) = break (== '\n') s
    scanLitText p (c:s)
          = scanLitText (adv p c) s
    scanLitText p []
