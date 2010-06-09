@@ -46,6 +46,7 @@ void mm_traceSupplyGlobals_llvm_Run( MM_TraceSupply* traceSupply )
     Word ** objs = &_llvm_globals_descriptor;
 
     for ( ; nrObjs > 0 ; nrObjs--, objs++ ) {
+        //printf("global %i \n", nrObjs);
         (**objs) = mm_Trace_TraceObject( mmtrace, (**objs) );
         //printf("updating global root: %016llx to: %016llx \n");
 	}

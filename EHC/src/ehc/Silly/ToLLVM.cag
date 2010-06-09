@@ -197,7 +197,7 @@ SEM Function
                                                  ) @parameters
                                 in LLVMFunction_Func @loc.fnDecl Internal $ locals ++ params ++
                                    @body.llvmCode ++  
-                                   [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
+                                   -- [LLVMStatement_Call (gcEhcGCFuncDecl @lhs.intType) StdCall []] ++
                                    [LLVMStatement_Return $ LocalVar (error "ReturnNoVar") Void ]
  
 SEM Statements
@@ -424,11 +424,14 @@ SEM Variable
   | Local       lhs.llvmVar  = LocalVar (hs2str @name) (pLift @lhs.pointerType)
                 lhs.llvmCode = []               
   
-  | Param       lhs.llvmVar  = @loc.loadVar -- LocalVar ("load_" ++ (hs2str @name)) @lhs.intType -- LocalVar (hs2str @name) @lhs.intType
-                lhs.llvmCode = @loc.loadCode -- [LLVMStatement_Assignment (LocalVar ("load_" ++ (hs2str @name)) @lhs.pointerType)
+  | Param       lhs.llvmVar  = @loc.intVar -- LocalVar ("load_" ++ (hs2str @name)) @lhs.intType -- LocalVar (hs2str @name) @lhs.intType
+                lhs.llvmCode = @loc.loadCode ++ @loc.toIntCode -- [LLVMStatement_Assignment (LocalVar ("load_" ++ (hs2str @name)) @lhs.pointerType)
                                      -- (LLVMExpression_Load (LocalVar ("par_" ++ (hs2str @name)) (pLift @lhs.pointerType)))]                                             
                 loc.(uniqNr1,loadVar,loadCode) =
                                load @lhs.gUniq (LocalVar ("par_" ++ (hs2str @name)) (pLift @lhs.pointerType))
+
+                loc.(uniqNr2, intVar, toIntCode) =
+                               cast2int @loc.uniqNr1 @loc.loadVar @lhs.intType
 
                                                
   | RP          lhs.llvmVar  = GlobalVar "RP" @lhs.globalType 
@@ -516,7 +519,7 @@ SEM Value
               
 SEM Variable
   -- Passing to array via copy rule
-  | Param       lhs  .gUniq  = @loc.uniqNr1
+  | Param       lhs  .gUniq  = @loc.uniqNr2
   | Subs        lhs  .gUniq  = @loc.uniqNr3
 
                  

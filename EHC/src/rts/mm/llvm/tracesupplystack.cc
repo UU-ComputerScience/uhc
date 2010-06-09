@@ -38,7 +38,7 @@ MM_Trace * mmtrace;
 %%[8
 void mm_traceSupplyStack_llvm_Init( MM_TraceSupply* traceSupply, MM_Malloc* memmgt, MM_Mutator* mutator ) 
 {
-    printf("mm_traceSupplyStack_llvm_Init\n");
+    //printf("mm_traceSupplyStack_llvm_Init\n");
 
     mmtrace = mutator->trace ;
 
@@ -46,7 +46,7 @@ void mm_traceSupplyStack_llvm_Init( MM_TraceSupply* traceSupply, MM_Malloc* memm
 
 void mm_traceSupplyStack_llvm_Reset( MM_TraceSupply* traceSupply, Word gcStackInfo ) 
 {
-    printf("mm_traceSupplyStack_llvm_Reset\n");
+    //printf("mm_traceSupplyStack_llvm_Reset\n");
 
 
 }
@@ -54,7 +54,7 @@ void mm_traceSupplyStack_llvm_Reset( MM_TraceSupply* traceSupply, Word gcStackIn
 void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
 {
 
-    printf("mm_traceSupplyStack_llvm_Run\n");
+    //printf("mm_traceSupplyStack_llvm_Run\n");
 
 
 
@@ -64,37 +64,37 @@ void mm_traceSupplyStack_llvm_Run( MM_TraceSupply* traceSupply )
     struct StackEntry   *entry = llvm_gc_root_chain;
 
 	
-    printf("|*****************************************************************\n");
-    printf("|** Running a stack walk \n");
-    printf("| [0x%016llx] llvm_gc_root_chain\n", (unsigned int)entry);
+    //printf("|*****************************************************************\n");
+    //printf("|** Running a stack walk \n");
+    //printf("| [0x%016llx] llvm_gc_root_chain\n", (unsigned int)entry);
     
     while (entry)
     {
         num_roots = entry->Map->NumRoots;
-        printf("| [0x%016llx] %d root(s)\n", (unsigned int)entry, num_roots);
+        //printf("| [0x%016llx] %d root(s)\n", (unsigned int)entry, num_roots);
         for (i = 0; i < num_roots; i++)
         {
             root = (Word *) entry->Roots[i];
    
             if (root == NULL) {
-                printf("| ... [%d] 0x%016llx\n", i, (unsigned int)root );
+                //printf("| ... [%d] 0x%016llx\n", i, (unsigned int)root );
 
             } else {
-                printf("| ... [%d] 0x%016llx, con: %lld \n", i, (unsigned int)root, *root );
+                //printf("| ... [%d] 0x%016llx, con: %lld \n", i, (unsigned int)root, *root );
            	    Word * rootUpd = mm_Trace_TraceObject( mmtrace, root );
-           	    printf("            stackroot: 0x%016llx changed to: 0x%016llx con: %i \n", root, rootUpd, *rootUpd);
+           	    //printf("            stackroot: 0x%016llx changed to: 0x%016llx con: %i \n", root, rootUpd, *rootUpd);
            	    entry->Roots[i] = rootUpd;
 
             }
 
         }
-        printf("\n");
+        //printf("\n");
 
 
         entry = entry->Next;
     }
 
-    printf("|*****************************************************************\n");
+    //printf("|*****************************************************************\n");
 
 
     return;
