@@ -12,3 +12,4 @@ instance Bounded () where
     maxBound = ()
 
 %%]
+

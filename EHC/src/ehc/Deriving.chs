@@ -250,6 +250,7 @@ mkDerivClsMp fe valGam dataGam
            ]
            
       -- Bounded
+      {-
       ,  mkc ehbnClassBounded []
            [
            -- Bounded(maxBound)
@@ -281,7 +282,8 @@ mkDerivClsMp fe valGam dataGam
                 undef undef
                 nowrap
            ]
-           
+      -}
+      
       -- Show
       ,  mkc ehbnClassShow []
            [
