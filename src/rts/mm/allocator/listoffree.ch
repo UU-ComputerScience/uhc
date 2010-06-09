@@ -62,11 +62,11 @@ A combination of 2 strategies
 
 %%[8
 #define MM_Allocator_LOF_RoundGroupSize_Log		4
-#define MM_Allocator_LOF_RoundGroupSize			(1 << MM_Allocator_LOF_RoundGroupSize_Log)
+#define MM_Allocator_LOF_RoundGroupSize			(((Word)(1)) << MM_Allocator_LOF_RoundGroupSize_Log)
 #define MM_Allocator_LOF_NrRoundGroup			6
 
 #define MM_Allocator_LOF_NrRoundedFit			(MM_Allocator_LOF_NrRoundGroup * MM_Allocator_LOF_RoundGroupSize)
-#define MM_Allocator_LOF_MaxRoundedSize_Words	(((1 << MM_Allocator_LOF_NrRoundGroup) - 1) << MM_Allocator_LOF_RoundGroupSize_Log)
+#define MM_Allocator_LOF_MaxRoundedSize_Words	(((((Word)(1)) << MM_Allocator_LOF_NrRoundGroup) - 1) << MM_Allocator_LOF_RoundGroupSize_Log)
 #define MM_Allocator_LOF_MaxRoundedSize			(MM_Allocator_LOF_MaxRoundedSize_Words << Word_SizeInBytes_Log)
 %%]
 
