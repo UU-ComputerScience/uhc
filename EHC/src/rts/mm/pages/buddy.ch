@@ -25,7 +25,7 @@ This design allows incremental growth of the use of mallocable memory, and there
 #define MM_Pages_Buddy_OtherHalfOfPage(this,thisSzLog) \
 			( (Word)(this) ^ Bits_Pow2( Word, (thisSzLog) + MM_Pages_MinSize_Log ) )
 #define MM_Pages_Buddy_LastPageOfPage(this,thisSzLog) \
-			( (Word)(this) + (((1 << thisSzLog) - 1) << MM_Pages_MinSize_Log) )
+			( (Word)(this) + (((((Word)(1)) << thisSzLog) - 1) << MM_Pages_MinSize_Log) )
 
 %%]
 
@@ -64,7 +64,7 @@ typedef struct MM_BuddyPage_ExtlData {
 } __attribute__ ((__packed__)) MM_BuddyPage_ExtlData ;
 
 #define MM_BuddyPage_ExtlDataSize_Log	(Word_SizeInBytes_Log + 1)
-#define MM_BuddyPage_ExtlDataSize		(1 << MM_BuddyPage_ExtlDataSize_Log)
+#define MM_BuddyPage_ExtlDataSize		(((Word)(1)) << MM_BuddyPage_ExtlDataSize_Log)
 %%]
 
 %%[8

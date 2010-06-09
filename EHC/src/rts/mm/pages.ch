@@ -21,7 +21,7 @@ A page
 #else
 #define MM_Pages_MaxSize_Log	28								// 128MB
 #endif
-#define MM_Pages_MaxSize		(1 << MM_Pages_MaxSize_Log)
+#define MM_Pages_MaxSize		(((Word)(1)) << MM_Pages_MaxSize_Log)
 %%]
 
 Currently there is 1 implementation of page management, using the buddy system.

@@ -12,7 +12,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[8
-#define MM_Allocator_LOF_DirectAlloc_Mask		(1 << ((sizeof(MM_Space_FragmentInx) << Byte_SizeInBits_Log) - 1))
+#define MM_Allocator_LOF_DirectAlloc_Mask		(((Word)(1)) << ((sizeof(MM_Space_FragmentInx) << Byte_SizeInBits_Log) - 1))
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -121,7 +121,7 @@ Ptr mm_allocator_LOF_Alloc( MM_Allocator* alcr, Word sz, Word gcInfo ) {
 				Word szRounded = (EntierLogUpBy( (szWord - szOff), szLog ) + szOff) << Word_SizeInBytes_Log ;
 #			endif
 			MM_Pages_LogSize szPagesLog = MM_Pages_MinSize_Log + szLog ;
-			Word max = ((1 << szPagesLog) - sizeof(MM_Allocator_LOF_PageRounded)) / szRounded - 1 ;
+			Word max = ((((Word)(1)) << szPagesLog) - sizeof(MM_Allocator_LOF_PageRounded)) / szRounded - 1 ;
 			
 			// get 1<<szLog pages
 			MM_Space_FragmentInx frgInx = alc->space->growSpaceLog2( alc->space, szPagesLog ) ;
