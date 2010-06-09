@@ -20,7 +20,11 @@ Assumptions (to be documented further)
 %%[(9 hmtyinfer || hmtyast) import(EH.Util.Pretty as Pretty)
 %%]
 
-%%[(2020 hmtyinfer || hmtyast) import({%{EH}Base.Binary})
+%%[20 import(Data.Typeable(Typeable,Typeable1), Data.Generics(Data))
+%%]
+%%[(20 hmtyinfer || hmtyast) import({%{EH}Base.Serialize})
+%%]
+%%[(20 hmtyinfer || hmtyast) import( Control.Monad)
 %%]
 
 %%[(9999 hmtyinfer || hmtyast) import({%{EH}Base.ForceEval})
@@ -48,18 +52,18 @@ data StoredCHR p i g s
       , storedIdent     :: !UsedByKey                    	-- the identification of a CHR, used for propagation rules (see remark at begin)
       }
 %%[[20
-  -- deriving (Typeable, Data)
+  deriving (Typeable, Data)
 %%]]
 
 storedSimpSz :: StoredCHR p i g s -> Int
 storedSimpSz = chrSimpSz . storedChr
 
-data CHRStore pred info guard subst
+newtype CHRStore pred info guard subst
   = CHRStore
       { chrstoreTrie    :: Trie.Trie Key [StoredCHR pred info guard subst]
       }
 %%[[20
-  -- deriving (Typeable, Data)
+  deriving (Typeable, Data)
 %%]]
 
 mkCHRStore trie = CHRStore trie
@@ -567,8 +571,18 @@ chrSolve'' env chrStore cnstrs prevState
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instance: ForceEval, Serialize
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer)
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (CHRStore p i g s) where
+  sput (CHRStore a) = sput a
+  sget = liftM CHRStore sget
+  
+instance (Serialize p, Serialize i, Serialize g, Serialize s) => Serialize (StoredCHR p i g s) where
+  sput (StoredCHR a b c d) = sput a >> sput b >> sput c >> sput d
+  sget = liftM4 StoredCHR sget sget sget sget
+%%]
 
 %%[(9999 hmtyinfer || hmtyast)
 instance ForceEval (CHR (Constraint p i) g s) => ForceEval (StoredCHR p i g s) where

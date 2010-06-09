@@ -493,9 +493,9 @@ SEM Expr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer) hs
-dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> VarMp -> Ty -> (Ty,Ty,FIOut,[Err])
+dfCheck :: UID -> FIOpts -> FIEnv -> HsName -> ValGam -> VarMp -> Ty -> (Ty,Ty,Ty,FIOut,[Err])
 dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
-  = (knDataTy,knFldTy,fo,nmErrs)
+  = (gTy,knDataTy,knFldTy,fo,nmErrs)
   where (gTy,nmErrs) = valGamLookupTy (hsnFldUpd fldNm) valGam
         (_,u1,u2)    = mkNewLevUID2 uniq
         (knFldTy,knDataTy,knFldUpdTy)
@@ -506,7 +506,7 @@ dfCheck uniq fiOpts fe fldNm valGam knTyVarMp knTy
 
 %%[(7 hmtyinfer)
 SEM DataFieldExpr
-  | Upd         (loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
+  | Upd         (loc.gTy,loc.knDataTy,expr.knTy,loc.fo_,loc.nmErrs)
                                                     =   dfCheck @lUniq @lhs.fiOpts @fe @nm @lhs.valGam @lhs.tyVarMp @lhs.knTy
                 dataFieldExpr
                             .   knTy                =   @knDataTy
@@ -552,7 +552,7 @@ SEM Expr
                                                             where (t,_,c,e,foL,_)
                                                                     = foldr (\fldNm (knTy,updExprTy,tyVarMp,errL,foL,u)
                                                                                -> let (u',u1,u2) = mkNewLevUID2 u
-                                                                                      (knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyVarMp knTy
+                                                                                      (_,knDTy,knFTy,fo1,e1) = dfCheck u1 @lhs.fiOpts @fe fldNm @lhs.valGam tyVarMp knTy
                                                                                       tyVarMp' = foVarMp fo1 |=> tyVarMp
                                                                                       (gTy,nmErrs) = valGamLookupTy fldNm @lhs.valGam
                                                                                       fo2 = fitsIn @fldFIOpts @fe u2 tyVarMp' gTy ([updExprTy] `mkArrow` knFTy)

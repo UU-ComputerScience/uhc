@@ -1534,12 +1534,17 @@ deriving instance Typeable TyKiKey
 deriving instance Data TyKiKey
 %%]
 
+%%[6 hs export(tyKiKeyMbName)
+tyKiKeyMbName :: TyKiKey -> Maybe HsName
+tyKiKeyMbName (TyKiKey_Name n) = Just n
+%%[[(6 hmtyinfer || hmtyast)
+tyKiKeyMbName _                = Nothing
+%%]]
+%%]
+
 %%[6 hs export(tyKiKeyIsName)
 tyKiKeyIsName :: TyKiKey -> Bool
-tyKiKeyIsName (TyKiKey_Name _) = True
-%%[[(6 hmtyinfer || hmtyast)
-tyKiKeyIsName _                = False
-%%]]
+tyKiKeyIsName = isJust . tyKiKeyMbName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
