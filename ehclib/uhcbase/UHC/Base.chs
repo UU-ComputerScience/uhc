@@ -2283,3 +2283,42 @@ pushExplicitStackTrace :: String -> ExplicitStackTrace -> ExplicitStackTrace
 pushExplicitStackTrace = (:)
 
 %%]
+
+%%[99
+-- Generic definition for deriving Bounded
+
+class Bounded' f where
+  minBound' :: f x
+  maxBound' :: f x
+
+instance Bounded' U1 where
+  minBound' = U1
+  maxBound' = U1
+
+instance (Bounded' fT) => Bounded' (M1 iT cT fT) where
+  minBound' = M1 minBound'
+  maxBound' = M1 maxBound'
+
+instance (Bounded' fT, Bounded' gT) => Bounded' (fT :*: gT) where
+  minBound' = minBound' :*: minBound'
+  maxBound' = maxBound' :*: maxBound'
+
+instance (Bounded fT) => Bounded' (K1 iT fT) where
+  minBound' = K1 minBound
+  maxBound' = K1 maxBound
+
+instance (Bounded' fT, Bounded' gT) => Bounded' (fT :+: gT) where
+  minBound' = L1 minBound'
+  maxBound' = R1 maxBound'
+
+{-# DERIVABLE Bounded minBound minBoundDefault #-}
+minBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
+                       =>  repT xT -> aT
+minBoundDefault rep = to0 (minBound' `asTypeOf` rep)
+
+{-# DERIVABLE Bounded maxBound maxBoundDefault #-}
+maxBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
+                       =>  repT xT -> aT
+maxBoundDefault rep = to0 (maxBound' `asTypeOf` rep)
+
+%%]

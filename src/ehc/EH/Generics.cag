@@ -278,13 +278,13 @@ SEM Decl
                                                                  , -- (\v -> tr "Decl.Instance.mbFSig" (ppTy v >-< ppTy (vgiTy (fromJust mbDSig))) v) $
                                                                    mkApp ([Ty_Con $ hsnNm2GenerReprSyn @derivArity @derivDataTyNm]
                                                                           ++ take (length @derivDataTyArgs - @derivTruncTailArity) @derivDataTyArgs -- @derivDataTyArgs -- 
-                                                                          ++ [mkTyVar u] -- drop @derivArity [mkTyVar u]
+                                                                          ++ [mkTyVar u]
                                                                          )
                                                                    `mk1Arrow`
                                                                    vgiTy (fromJust mbFSig)
                                                                  , vgiTy (fromJust mbDSig)
                                                                  )
-                                                               | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewUIDL (length generDerivFlds) @lUniq_generDeriv1)
+                                                               | ((fldNm,dfltvalNm),u) <- zip generDerivFlds (mkNewLevUIDL (length generDerivFlds) @lUniq_generDeriv1)
                                                                , let mbFSig = valGamLookup fldNm     @tySigGam  , isJust mbFSig
                                                                , let mbDSig = valGamLookup dfltvalNm @lhs.valGam, isJust mbDSig
                                                                ]

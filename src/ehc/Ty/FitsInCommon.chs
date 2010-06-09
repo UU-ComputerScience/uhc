@@ -277,7 +277,7 @@ fitsInLWith foCmb elemFits opts uniq varmp tyl1 tyl2
   where ((_,fo),foL)
           = foldr  (\(t1,t2) ((u,foThr),foL)
                       -> let  (u',ue) = mkNewLevUID u
-                              fo = elemFits opts u (foVarMp foThr |=> varmp) (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
+                              fo = elemFits opts ue (foVarMp foThr |=> varmp) (foVarMp foThr |=> t1) (foVarMp foThr |=> t2)
                          in   ((u',foCmb fo foThr),fo:foL)
                    )
                    ((uniq,emptyFO),[])
