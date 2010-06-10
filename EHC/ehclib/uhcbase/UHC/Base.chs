@@ -759,9 +759,12 @@ chr = toEnum
 data Maybe a = Nothing | Just a
                deriving (Eq, Ord, Show, Read)  -- TODO: Read
 
+{-
+-- done via generic deriving
 instance Functor Maybe where
     fmap f Nothing  = Nothing
     fmap f (Just x) = Just (f x)
+-}
 
 instance Monad Maybe where
     Just x  >>= k = k x
@@ -811,8 +814,11 @@ instance Ord a => Ord [a] where
     compare (_:_)  []     = GT
     compare (x:xs) (y:ys) = primCompAux x y (compare xs ys)
 
+{-
+-- done via generic deriving
 instance Functor [] where
     fmap = map
+-}
 
 instance Monad [ ] where
     (x:xs) >>= f = f x ++ (xs >>= f)
@@ -2145,6 +2151,9 @@ M1 :: * -> * -> (* -> *) -> * -> *
 #endif
 newtype M1 i c f p = M1 { unM1 :: f p }
 
+unMeta :: M1 t x f a -> x
+unMeta = error "unMeta"
+
 -- | Sums: encode choice between constructors
 infixr 5 :+:
 #ifdef __UHC__
@@ -2203,10 +2212,32 @@ class Datatype d where
   moduleName   :: t d (f :: * -> *) a -> String
 #endif
 
+{-
+-- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
+class Datatype d where
+  -- | The name of the datatype, fully qualified
+  datatypeName :: d -> String
+  moduleName   :: d -> String
+
+instance Datatype d => Datatype (M1 t d f a) where
+  datatypeName = datatypeName . unMeta
+  moduleName   = moduleName   . unMeta
+-}
+
 -- | Class for datatypes that represent records
 class Selector s where
   -- | The name of the selector
   selName :: t s f a -> String
+
+{-
+-- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
+class Selector s where
+  -- | The name of the selector
+  selName :: s -> String
+
+instance Selector s => Selector (M1 t s f a) where
+  selName = selName . unMeta
+-}
 
 -- | Empty selector, for fields without a label
 
@@ -2239,6 +2270,26 @@ class Constructor c where
   conIsRecord :: t c (f :: * -> *) a -> Bool
 #endif
   conIsRecord = const False
+
+{-
+-- 20100610, AD: This is what the def should be, but run into some trouble wrt polarity, cause yet unknown
+class Constructor c where
+  -- | The name of the constructor
+  conName :: c -> String
+
+  -- | The fixity of the constructor
+  conFixity :: c -> Fixity
+  conFixity = const Prefix
+
+  -- | Marks if this constructor is a record
+  conIsRecord :: c -> Bool
+  conIsRecord = const False
+
+instance Constructor c => Constructor (M1 t c f a) where
+  conName     = conName     . unMeta
+  conFixity   = conFixity   . unMeta
+  conIsRecord = conIsRecord . unMeta
+-}
 
 -- | Datatype to represent the fixity of a constructor. An infix
 -- | declaration directly corresponds to an application of 'Infix'.
@@ -2285,7 +2336,9 @@ pushExplicitStackTrace = (:)
 %%]
 
 %%[99
+--------------------------------------------------------------------------------
 -- Generic definition for deriving Bounded
+--------------------------------------------------------------------------------
 
 class Bounded' f where
   minBound' :: f x
@@ -2322,3 +2375,48 @@ maxBoundDefault  ::  (Representable0 aT repT, Bounded' repT)
 maxBoundDefault rep = to0 (maxBound' `asTypeOf` rep)
 
 %%]
+
+%%[99
+--------------------------------------------------------------------------------
+-- Generic definition for deriving Functor
+--------------------------------------------------------------------------------
+
+class Functor' f where
+  fmap' :: (a -> b) -> f a -> f b
+
+instance Functor' U1 where
+  fmap' f U1 = U1
+
+instance Functor' Par1 where
+  fmap' f (Par1 a) = Par1 (f a)
+
+instance Functor' (K1 i c) where
+  fmap' f (K1 a) = K1 a
+
+instance (Functor f) => Functor' (Rec1 f) where
+  fmap' f (Rec1 a) = Rec1 (fmap f a)
+
+instance (Functor' f) => Functor' (M1 i c f) where
+  fmap' f (M1 a) = M1 (fmap' f a)
+
+instance (Functor' f, Functor' g) => Functor' (f :+: g) where
+  fmap' f (L1 a) = L1 (fmap' f a)
+  fmap' f (R1 a) = R1 (fmap' f a)
+
+instance (Functor' f, Functor' g) => Functor' (f :*: g) where
+  fmap' f (a :*: b) = fmap' f a :*: fmap' f b
+
+instance (Functor f, Functor' g) => Functor' (f :.: g) where
+  fmap' f (Comp1 x) = Comp1 (fmap (fmap' f) x)
+
+
+fmapDefault :: (Representable1 f rep, Functor' rep)
+            => rep a -> (a -> b) -> f a -> f b
+fmapDefault ra f x = to1 (fmap' f (from1 x `asTypeOf` ra))
+
+{-# DERIVABLE Functor fmap fmapDefault #-}
+
+deriving instance Functor Maybe
+deriving instance Functor []
+%%]
+
