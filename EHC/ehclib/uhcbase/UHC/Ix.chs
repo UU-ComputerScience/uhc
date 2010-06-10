@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 
 module UHC.Ix
   ( Ix         (range, index, unsafeIndex, inRange, rangeSize)

@@ -1,0 +1,61 @@
+%%[0
+%include lhs2TeX.fmt
+%include afp.fmt
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Haskell importable interface to extraction of used names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[doesWhat doclatex
+Extract the used names, of type constants.
+These are used for constructing cached hi files filtered for the names actually used.
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs module {%{EH}Ty.UsedNames} import(Data.List,{%{EH}Base.Common},{%{EH}Ty})
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Set as Set)
+%%]
+%%[(20 hmtyinfer || hmtyast) hs import(qualified Data.Map as Map)
+%%]
+
+%%[(20 hmtyinfer || hmtyast) hs import({%{EH}Module})
+%%]
+
+%%[(20 hmtyinfer || hmtyast).WRAPPER ag import({Ty/AbsSyn})
+WRAPPER
+  TyAGItf
+%%]
+
+%%[(20 hmtyinfer || hmtyast).tyUsedNames hs export(tyUsedNames)
+tyUsedNames :: HsName -> Ty -> ModEntRelFilterMp
+tyUsedNames moduleNm ty
+  = mentrelFilterMp_Syn_TyAGItf t
+  where t =  wrap_TyAGItf
+                 (sem_TyAGItf (TyAGItf_AGItf ty))
+                 (Inh_TyAGItf
+                   { moduleNm_Inh_TyAGItf = moduleNm
+                   })
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Global info
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer || hmtyast)
+ATTR TyAGItf AllTy [ moduleNm: HsName | | ]
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Extract names
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(20 hmtyinfer || hmtyast).TyUsedNames
+ATTR TyAGItf AllTy [ | | mentrelFilterMp USE {`mentrelFilterMpUnion`} {Map.empty}: ModEntRelFilterMp ]
+
+SEM Ty
+  | Con             lhs     .   mentrelFilterMp
+  											=   mentrelFilterMpSingleton [@lhs.moduleNm] IdOcc_Type @nm
+%%]
+

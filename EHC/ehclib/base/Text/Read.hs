@@ -1,4 +1,5 @@
-{-# OPTIONS_GHC -XNoImplicitPrelude #-}
+{-# LANGUAGE CPP #-}
+{-# OPTIONS_GHC -XNoImplicitPrelude, CPP #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Text.Read

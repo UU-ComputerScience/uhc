@@ -27,7 +27,7 @@ Transforms a Grin program to a Silly program.
 %%[(8 codegen grin) hs import({%{EH}GrinCode.Common} hiding (Variable(..)), {%{EH}Config}, {%{EH}Silly})
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign.Extract})
+%%[(90 codegen grin) hs import({%{EH}Foreign.Extract})
 %%]
 
 %%[(8 codegen grin)
@@ -114,7 +114,6 @@ SEM GrAlt
 
 
 ATTR AllGrExpr         [ functionName : HsName         | | ]
-ATTR AllGrExpr AllBind [ optGenReturnViaStack : {Bool} | | ]
 
 SEM GrBind
   | Bind    expr.functionName = @nm
@@ -126,12 +125,17 @@ SEM GrModule
                                 @globalL.names                               -- variables
                                 ( @loc.initFunction : @bindL.functions )     -- functions
 
+        loc . startFunction =  Function_Function (hsnFromString "silly_start") [] []
+                                                    [ Statement_Call (hsnFromString "initialize")        False []
+                                                    , Statement_Call mainNr  False []
+                                                    , Statement_Return []
+                                                    ]
+
         loc . initFunction  =  Function_Function (hsnFromString "initialize") [] []
                                                     (  @globalL.initStats1
                                                     ++ @globalL.initStats2
-                                                    ++ [ Statement_Return [] Nothing ]
+                                                    ++ [ Statement_Return [] ]
                                                     )
-        loc . optGenReturnViaStack = ehcOptGenOwn @lhs.opts  &&  not (ehcOptEmitLLVM @lhs.opts)  &&  ehcOptGenRVS  @lhs.opts
 
 
 SEM GrBind
@@ -161,7 +165,7 @@ SEM GrExpr
            lhs.stats   = if not @lhs.hasNext
                           then assignments "Update" (map (arrayVariab @loc.name) [0..]) [] @val.values
                                ++ [ Statement_Comment ["Return (Unit after Update)"]
-                                  , Statement_Return @val.values Nothing
+                                  , Statement_Return @val.values
                                   ]
                           else maybe (assignments "UpdateUnit" (map (arrayVariab @loc.name) [0..]) (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Updateunit to PtrNode"] : store2 (mkVar t) (length @val.values) (length @val.values) (map (arrayVariab @loc.name) [0..]) @val.values)
@@ -169,7 +173,7 @@ SEM GrExpr
 
  | Unit    lhs.stats  = if not @lhs.hasNext
                          then  [ Statement_Comment ["Return (Unit)"]
-                               , Statement_Return @val.values Nothing
+                               , Statement_Return @val.values
                                ]
                          else maybe  (assignments "Unit" [] (map mkVar @lhs.targets) @val.values)
                                      (\t -> Statement_Comment ["Unit to PtrNode"] : store (mkVar t) (length @val.values) (length @val.values) @val.values)
@@ -178,7 +182,7 @@ SEM GrExpr
 
  | FFI     lhs.stats  = if not @lhs.hasNext
                          then  [ Statement_Comment ["Return (FFI)"]
-                               , Statement_Return [@loc.callres] Nothing
+                               , Statement_Return [@loc.callres]
                                ]
                          else case @lhs.targets
                               of  [ HNmNr 0 _ ] -> [Statement_Comment ["FFI void"], Statement_Voiden  @loc.callres]
@@ -249,9 +253,7 @@ SEM GrExpr
                                                  []
                                                  (map mkVar @lhs.targets) 
                                                  ( let n = length @lhs.targets     -- n is 0 for tailcalls, so no assignments in that case
-                                                   in  if @lhs.optGenReturnViaStack
-                                                       then map (arrayValue Variable_SP) [-1,-2..(0-n)]
-                                                       else map (arrayValue Variable_RP) [0..n-1]
+                                                   in  map (arrayValue Variable_RP) [0..n-1]
                                                  )
                               )
            lhs.localsSet = Set.fromList @lhs.targets
@@ -318,7 +320,7 @@ SEM GrVal
  | OpaqueNode lhs.value  = error "ToSilly: OpaqueNode value"
  | PtrNode    lhs.value  = error "ToSilly: PtrNode value"
 -- | Empty      lhs.value  = error "ToSilly: Empty value"
- | Empty      lhs.value  = Value_Label [] 0
+ | Empty      lhs.value  = Value_Label []
 %%[[10
  | NodeAdapt  lhs.value  = error "ToSilly: NodeAdapt value"
               lhs.values = error "ToSilly: NodeAdapt values"
@@ -501,8 +503,8 @@ switchStatement gendef scrut alts
 
 
 
-isRealVal (Value_Label [] _) = False
-isRealVal _                  = True
+isRealVal (Value_Label []) = False
+isRealVal _                = True
 
 
 
@@ -687,7 +689,7 @@ hasPointerPayload opts tm nm
 
 
 builtinNm :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
-builtinNm opts f = f $ ehcOptBuiltinNames opts
+builtinNm = ehcOptBuiltin
 
 
 

@@ -10,12 +10,20 @@ XXX
 -- general imports
 %%[8 import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
+%%[92 import(qualified EH.Util.FastSeq as Seq)
+%%]
 
 %%[8 import({%{EH}EHC.Common})
 %%]
 %%[8 import({%{EH}EHC.CompileUnit})
 %%]
 %%[8 import({%{EH}EHC.CompileRun})
+%%]
+
+-- module related
+%%[20 import({%{EH}Module})
+%%]
+%%[99 import({%{EH}EHC.CompilePhase.Module(cpUpdHiddenExports)})
 %%]
 
 -- EH semantics
@@ -29,7 +37,7 @@ XXX
 -- Core semantics
 %%[(8 codegen grin) import(qualified {%{EH}Core.ToGrin} as Core2GrSem)
 %%]
-%%[(20 codegen) import({%{EH}Core.UsedModNms})
+%%[(2020 codegen) import({%{EH}Core.UsedModNms})
 %%]
 
 -- HI syntax and semantics
@@ -93,7 +101,7 @@ cpFlowHsSem1 modNm
                             }
                  hii'   = hii
                             { HI.hiiFixityGam            = fg
-                            , HI.hiiIdDefAssocL          = HI.hiiIdDefOccGamToAssocL ig
+                            -- , HI.hiiIdDefHIIdGam         = HI.hiiIdDefOccGamToHIIdGam ig
                             , HI.hiiHIDeclImpModL        = ecuHIDeclImpNmL ecu
                             }
                  opts'  = opts
@@ -138,7 +146,11 @@ cpFlowEHSem1 modNm
                  cs       = prepFlow $! EHSem.gathChrStore_Syn_AGItf   ehSem
 %%]]
 %%[[20
+                 mmi      = panicJust "cpFlowEHSem1.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
                  hii      = ecuHIInfo ecu
+                 mentrelFilterMp
+                          = mentrelFilterMpUnions [ EHSem.gathMentrelFilterMp_Syn_AGItf ehSem, mentrelToFilterMp' False [modNm] (mmiExps mmi) ]
+                 usedImpL = Set.toList $ mentrelFilterMpModuleNames mentrelFilterMp
                  ehInh'   = ehInh
 %%[[(20 hmtyinfer)
                               { EHSem.dataGam_Inh_AGItf    = dg  `gamUnionFlow`  EHSem.dataGam_Inh_AGItf    ehInh
@@ -153,17 +165,18 @@ cpFlowEHSem1 modNm
                               }
 %%]]
                  hii'     = hii
+                              { HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 hmtyinfer)
-                              { HI.hiiValGam        = vg
+                              , HI.hiiValGam        = vg
                               , HI.hiiTyGam     	= tg
                               , HI.hiiTyKiGam     	= tkg
                               , HI.hiiPolGam     	= pg
                               , HI.hiiDataGam       = dg
                               , HI.hiiClGam         = clg
                               , HI.hiiClDfGam       = dfg
-                              , HI.hiiCHRStoreL     = HI.hiiScopedPredStoreToList cs
-                              }
+                              , HI.hiiCHRStore      = {- HI.hiiScopedPredStoreToList -} cs
 %%]]
+                              }
 %%]]
 %%[[(8 codegen)
                  coreInh' = coreInh
@@ -187,6 +200,10 @@ cpFlowEHSem1 modNm
                                )
 %%[[20
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
+                                     . ecuStoreHIUsedImpL usedImpL
+%%[[99
+                                     . ecuStoreUsedNames mentrelFilterMp
+%%]]
                                      )
 %%]]
 %%[[102
@@ -201,6 +218,10 @@ cpFlowEHSem1 modNm
                                 ; lift $ putStrLn $ fevShow "gathChrStore" cs
                                 ; lift $ putStrLn $ fevShow "cmodule" $ EHSem.cmodule_Syn_AGItf   ehSem
                                 })
+%%]]
+%%[[92
+                     -- put back additional hidden exports
+                     ; cpUpdHiddenExports modNm $ Seq.toList $ EHSem.gathHiddenExports_Syn_AGItf ehSem
 %%]]
                      })
          }
@@ -264,7 +285,7 @@ cpFlowCoreSem modNm
          ;  let  (ecu,crsi,opts,_) = crBaseInfo modNm cr
                  coreSem  = panicJust "cpFlowCoreSem.coreSem" $ ecuMbCoreSem ecu
                  core     = panicJust "cpFlowCoreSem.core"    $ ecuMbCore    ecu
-                 usedImpL = Set.toList $ cmodUsedModNms core
+                 -- usedImpL = Set.toList $ cmodUsedModNms core
                  coreInh  = crsiCoreInh crsi
                  hii      = ecuHIInfo ecu
                  am       = prepFlow $! Core2GrSem.gathLamMp_Syn_CodeAGItf coreSem
@@ -272,15 +293,15 @@ cpFlowCoreSem modNm
                               { Core2GrSem.lamMp_Inh_CodeAGItf   = am `Map.union` Core2GrSem.lamMp_Inh_CodeAGItf coreInh
                               }
                  hii'     = hii
-                              { HI.hiiHIUsedImpModL = usedImpL
 %%[[(20 codegen grin)
-                              , HI.hiiLamMp         = am
-%%]]
+                              { {- HI.hiiHIUsedImpModL = usedImpL
+                              , -} HI.hiiLamMp         = am
                               }
+%%]]
          ;  when (isJust (ecuMbCoreSem ecu))
                  (do { cpUpdSI (\crsi -> crsi {crsiCoreInh = coreInh'})
                      ; cpUpdCU modNm ( ecuStoreHIInfo hii'
-                                     . ecuStoreHIUsedImpL usedImpL
+                                     -- . ecuStoreHIUsedImpL usedImpL
                                      )
                      })
          }

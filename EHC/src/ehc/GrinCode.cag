@@ -48,7 +48,7 @@
 %%[(20 codegen grin) hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
-%%[(94 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
+%%[(90 codegen grin) hs import({%{EH}Foreign},{%{EH}Base.Target}) export(FFIWay(..),module {%{EH}Foreign})
 %%]
 
 %%[(99 codegen grin) hs export(GrFFIAnnot(..))
@@ -424,7 +424,7 @@ instance Serialize GrExpr where
   sput (GrExpr_Call        a b    ) = sputWord8 8  >> sput a >> sput b
 %%[[20
   sput (GrExpr_FFI         a b    ) = sputWord8 9  >> sput a >> sput b
-%%][94
+%%][90
   sput (GrExpr_FFI         a b c  ) = sputWord8 9  >> sput a >> sput b >> sput c
 %%][99
   sput (GrExpr_FFI         a b c d) = sputWord8 9  >> sput a >> sput b >> sput c >> sput d
@@ -445,7 +445,7 @@ instance Serialize GrExpr where
               8  -> liftM2 GrExpr_Call         sget sget
 %%[[20
               9  -> liftM2 GrExpr_FFI          sget sget
-%%][94
+%%][90
               9  -> liftM3 GrExpr_FFI          sget sget sget
 %%][99
               9  -> liftM4 GrExpr_FFI          sget sget sget sget

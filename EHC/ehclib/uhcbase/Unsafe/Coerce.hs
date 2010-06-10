@@ -1,4 +1,4 @@
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
 {-# OPTIONS_GHC -XNoImplicitPrelude #-}
 -----------------------------------------------------------------------------
 -- |
@@ -37,6 +37,10 @@ unsafeCoerce = unsafeCoerce#
 
 #if defined(__NHC__)
 import NonStdUnsafeCoerce (unsafeCoerce)
+#endif
+
+#if defined(__UHC__)
+import UHC.Base (unsafeCoerce)
 #endif
 
 #if defined(__HUGS__)

@@ -188,7 +188,7 @@ SEM Expr
 %%% Deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(95 hmtyinfer codegen)
+%%[(91 hmtyinfer codegen)
 SEM Decl
   | Instance    loc         .   derivErrs           =   let mke m = [rngLift @range Err_NoDerivForData @derivHdDataTy @instClsNm m]
                                                             hasFlds = any (\t -> ctagArity t > 0)
@@ -198,11 +198,14 @@ SEM Decl
                                                                  , panicJust "Decl.Instance.dataGamTagsOfTy" $ dataGamTagsOfTy (tgiTy @derivDataTGI) @lhs.dataGam
                                                                  )
                                                             of
-                                                              (Nothing,InstDeriving,_)
+                                                              (Nothing,InstDeriving _,_)
+%%[[92
+                                                                | null @generForFitsInL
+%%]]
                                                                 -> [rngLift @range Err_NoDerivFor @tyPrExpr.pp]
-                                                              (_,InstDeriving,[])
+                                                              (Just _,InstDeriving _,[])
                                                                 -> mke "has no constructors"
-                                                              (_,InstDeriving,ctags)
+                                                              (Just _,InstDeriving _,ctags)
                                                                 | @instClsNm `elem`
                                                                      [ ehbnClassEnum builtinNms
 %%[[99
@@ -211,7 +214,7 @@ SEM Decl
                                                                      ]
                                                                   && hasFlds ctags
                                                                   -> mke "has a constructor with >0 fields"
-                                                              (_,InstDeriving,ctags@(_:_:_))
+                                                              (Just _,InstDeriving _,ctags@(_:_:_))
                                                                 | @instClsNm == ehbnClassBounded builtinNms
                                                                   && hasFlds ctags
                                                                   -> mke "has >1 constructors, of which >0 with fields"

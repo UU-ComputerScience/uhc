@@ -13,6 +13,8 @@ In due time all (or most) primitives may move to here
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.Prims
   -- export all
   where

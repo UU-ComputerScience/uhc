@@ -95,7 +95,7 @@ data EHState
 
 The state C compilation can be in, which basically is just administering it has to be compiled
 
-%%[(94 codegen) export(CState(..))
+%%[(90 codegen) export(CState(..))
 data CState
   = CStart
   | CAllSem
@@ -109,7 +109,7 @@ data EHCompileUnitState
   = ECUSUnknown
   | ECUSHaskell !HSState
   | ECUSEh      !EHState
-%%[[(94 codegen)
+%%[[(90 codegen)
   | ECUSC       !CState
 %%]]
   | ECUSGrin
@@ -124,7 +124,7 @@ data EHCompileUnitState
 %%[8 export(EHCompileUnitKind(..))
 data EHCompileUnitKind
   = EHCUKind_HS		-- Haskell: .hs .lhs .hi
-%%[[94
+%%[[90
   | EHCUKind_C		-- C: .c
 %%]]
   | EHCUKind_None	-- Nothing
@@ -136,7 +136,7 @@ ecuStateToKind :: EHCompileUnitState -> EHCompileUnitKind
 ecuStateToKind s
   = case s of
       ECUSHaskell _ -> EHCUKind_HS
-%%[[94
+%%[[90
       ECUSC       _ -> EHCUKind_C
 %%]]
       _             -> EHCUKind_None

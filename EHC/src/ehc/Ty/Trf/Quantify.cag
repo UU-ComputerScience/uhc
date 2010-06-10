@@ -228,7 +228,7 @@ SEM TyAGItf
 %%% Free row vars
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(90 hmtyinfer || hmtyast)
+%%[(9090 hmtyinfer || hmtyast)
 ATTR Ty [ | | frRowTvL: TyVarIdL ]
 
 SEM Ty

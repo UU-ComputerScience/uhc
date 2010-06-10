@@ -153,7 +153,7 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	// new pages
 	Word nrNewPages
 		= maxWord
-			( (5 * (1 << (szPagesLog - MM_Pages_MinSize_Log))) / 2		// 2.5 as many to make sure szPagesLog will fit
+			( (5 * (((Word)(1)) << (szPagesLog - MM_Pages_MinSize_Log))) / 2		// 2.5 as many to make sure szPagesLog will fit
 			, pgs->nextGroupNrPages										// or the next increment
 			) ;
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup isFirstAlloc=%x doReuseExtl=%x nrNewPages=%x\n", isFirstAlloc, doReuseExtl, nrNewPages);}) ;
@@ -172,7 +172,6 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	MM_FlexArray_Inx grpNew = mm_flexArray_AllocSlot( &pgs->buddyGroups ) ;
 	Word grpNewMallocSz = (nrNewPages + 2) << MM_Pages_MinSize_Log ;
 	
-	printf("1.malloc size_t: %lu \n", grpNewMallocSz);
 	Ptr grpNewMalloced = sys_malloc_Sys.malloc( grpNewMallocSz ) ;
 	MM_BuddyGroup* buddyGrpNew = (MM_BuddyGroup*)mm_flexArray_At( &pgs->buddyGroups, grpNew ) ;
 	mm_pages_Buddy_FillGroupWithMem( buddyGrpNew, grpNewMalloced, grpNewMallocSz ) ;
@@ -195,7 +194,10 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	}
 	
 	// alloc new extlData
+
 	Word newExtlDataSize = (extlAfterLastPage - extlFirstPage) >> MM_Pages_Buddy_PagesExtlLogDiff ;
+	printf("malloc size_t: %lu \n", newExtlDataSize);
+
 
 	MM_BuddyPage_ExtlData* newExtlData = (MM_BuddyPage_ExtlData*)sys_malloc_Sys.malloc( newExtlDataSize ) ;
 	// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_NewBuddyGroup newExtlData=%x newExtlDataSize=%x\n", newExtlData, newExtlDataSize);}) ;
@@ -351,7 +353,7 @@ MM_Page mm_pages_Buddy_AllocPages( MM_Pages* buddyPages, Word sz ) {
 	pgd->system.data.sizePages = szPagesPgs ;
 	
 	// tag the 2nd half of the allocated pages, by initializing the allocated part and free part of this 2nd part as such
-	if ( szPages < (1 << szPagesLog) ) {
+	if ( szPages < (((Word)(1)) << szPagesLog) ) {
 		// but this only must be done when the size of the 2nd part is not a power of 2
 		MM_Pages_LogSize szHalfPagesLog = szPagesLog - 1 ;
 		// IF_GB_TR_ON(3,{printf("mm_pages_Buddy_AllocPages szHalfPagesLog=%x szPagesLog=%x\n", szHalfPagesLog, szPagesLog);}) ;

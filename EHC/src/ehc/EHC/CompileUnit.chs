@@ -131,7 +131,6 @@ data EHCompileUnit
       , ecuMbCore            :: !(Maybe Core.CModule)
       , ecuMbCoreSem         :: !(Maybe Core2GrSem.Syn_CodeAGItf)
       , ecuMbTyCore          :: !(Maybe C.Module)
-      -- , ecuMbTyCoreSem       :: !(Maybe Core2GrSem.Syn_CodeAGItf)
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            :: !(Maybe Grin.GrModule)
@@ -144,35 +143,33 @@ data EHCompileUnit
       , ecuState             :: !EHCompileUnitState
 %%[[20
       , ecuHSDeclImpNmL      :: ![HsName]							-- imported modules as declared in src .hs
-      , ecuHIDeclImpNmL      :: ![HsName]							-- imported modules as declared, either in .hs of .hi
+      , ecuHIDeclImpNmL      :: ![HsName]							-- imported modules as declared, either in .hs or .hi
       , ecuHIUsedImpNmL      :: ![HsName]							-- imported modules as actually used
-      , ecuIsTopMod          :: !Bool								-- been specified on commandline
+      , ecuIsTopMod          :: !Bool								-- module has been specified for compilation on commandline
       , ecuHasMain           :: !Bool								-- has a def for 'main'?
       , ecuNeedsCompile      :: !Bool								-- (re)compilation from .hs needed?
-      , ecuMbHSTime          :: !(Maybe ClockTime)
-      -- , ecuMbHITime          :: !(Maybe ClockTime)
-      , ecuMbHIInfoTime      :: !(Maybe ClockTime)
+      , ecuMbHSTime          :: !(Maybe ClockTime)					-- timestamp of possibly absent hs file
+      , ecuMbHIInfoTime      :: !(Maybe ClockTime)					-- timestamp of possibly previously generated hi file
 %%[[(8 codegen)
-      , ecuMbCoreTime        :: !(Maybe ClockTime)
+      , ecuMbCoreTime        :: !(Maybe ClockTime)					-- timestamp of possibly previously generated core file
 %%]]
 %%[[(8 codegen grin)
-      , ecuMbGrinTime        :: !(Maybe ClockTime)
+      , ecuMbGrinTime        :: !(Maybe ClockTime)					-- timestamp of possibly previously generated grin file
 %%]]
       , ecuMbHSSemMod        :: !(Maybe HSSemMod.Syn_AGItf)
-      , ecuMod               :: !Mod
-      -- , ecuMbPrevHI          :: !(Maybe HI.AGItf)
-      -- , ecuMbPrevHISem       :: !(Maybe HISem.Syn_AGItf)
-      , ecuMbPrevHIInfo      :: !(Maybe HI.HIInfo)
+      , ecuMod               :: !Mod								-- import/export info of module
+      , ecuMbPrevHIInfo      :: !(Maybe HI.HIInfo)					-- possible HI info of previous run
       , ecuMbOptim           :: !(Maybe Optim)
-      , ecuHIInfo            :: !HI.HIInfo
-      , ecuDirIsWritable     :: !Bool
+      , ecuHIInfo            :: !HI.HIInfo							-- HI info of module
+      , ecuDirIsWritable     :: !Bool								-- can be written in dir of module?
 %%]]
 %%[[99
-      , ecuPragmas           :: !(Set.Set Pragma.Pragma)
+      , ecuPragmas           :: !(Set.Set Pragma.Pragma)			-- pragmas of module
+      , ecuUsedNames         :: ModEntRelFilterMp					-- map holding actually used names, to later filter cache of imported hi's to be included in this module's hi
 %%]]
 %%[[(99 codegen)
-      , ecuGenCodeFiles      :: ![FPath]
-      , ecuSeqNr      		 :: !EHCCompileSeqNr
+      , ecuGenCodeFiles      :: ![FPath]							-- generated code fiels
+      , ecuSeqNr      		 :: !EHCCompileSeqNr					-- sequence nr of sorted compilation
 %%]]
       }
 %%]
@@ -190,6 +187,17 @@ ecuFilePath ecu
 %%[20 export(ecuIsMainMod)
 ecuIsMainMod :: EHCompileUnit -> Bool
 ecuIsMainMod e = ecuIsTopMod e && ecuHasMain e
+%%]
+
+%%[99 export(ecuAnHIInfo)
+-- | give the current value HIInfo, or the previous one
+ecuAnHIInfo :: EHCompileUnit -> HI.HIInfo
+ecuAnHIInfo e
+  = case ecuMbPrevHIInfo e of
+      Just pi | HI.hiiIsEmpty hii
+        -> pi
+      _ -> hii
+  where hii = ecuHIInfo e
 %%]
 
 %%[8 export(emptyECU)
@@ -213,7 +221,6 @@ emptyECU
       , ecuMbCore            = Nothing
       , ecuMbCoreSem         = Nothing
       , ecuMbTyCore          = Nothing
-      -- , ecuMbTyCoreSem       = Nothing
 %%]]
 %%[[(8 grin)
       , ecuMbGrin            = Nothing
@@ -232,7 +239,6 @@ emptyECU
       , ecuHasMain           = False
       , ecuNeedsCompile      = True
       , ecuMbHSTime          = Nothing
-      -- , ecuMbHITime          = Nothing
       , ecuMbHIInfoTime      = Nothing
 %%[[(20 codegen)
       , ecuMbCoreTime        = Nothing
@@ -242,8 +248,6 @@ emptyECU
 %%]]
       , ecuMbHSSemMod        = Nothing
       , ecuMod               = emptyMod
-      -- , ecuMbPrevHI          = Nothing
-      -- , ecuMbPrevHISem       = Nothing
       , ecuMbPrevHIInfo      = Nothing
       , ecuMbOptim           = Nothing
       , ecuHIInfo            = HI.emptyHIInfo
@@ -251,6 +255,7 @@ emptyECU
 %%]]
 %%[[99
       , ecuPragmas           = Set.empty
+      , ecuUsedNames		 = Map.empty
 %%]]
 %%[[(99 codegen)
       , ecuGenCodeFiles      = []
@@ -488,9 +493,12 @@ ecuStoreDirIsWritable :: EcuUpdater Bool
 ecuStoreDirIsWritable x ecu = ecu { ecuDirIsWritable = x }
 %%]
 
-%%[99 export(ecuStorePragmas)
+%%[99 export(ecuStorePragmas,ecuStoreUsedNames)
 ecuStorePragmas :: EcuUpdater (Set.Set Pragma.Pragma)
 ecuStorePragmas x ecu = ecu { ecuPragmas = x }
+
+ecuStoreUsedNames :: EcuUpdater ModEntRelFilterMp
+ecuStoreUsedNames x ecu = ecu { ecuUsedNames = x }
 %%]
 
 %%[(99 codegen) export(ecuStoreGenCodeFiles,ecuStoreCppFilePath,ecuStoreSeqNr)

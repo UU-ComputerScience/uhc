@@ -32,7 +32,7 @@ DATA Module
                 cafEntryL		: {[Int]}
                 mainCafEntry	: Int
                 -- gcInfoL			: {[GCInfo]}				-- GC info
-%%[[94
+%%[[90
                 includeL		: {[String]}				-- C includes
 %%]]
 

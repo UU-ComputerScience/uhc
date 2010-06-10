@@ -16,7 +16,7 @@ TEXT_PRIV_VARIANTS			+= flops06-ruler-paper flops06-ruler \
 								poster posterLDL posterTrOrPr poster-uhcarch \
 								slides-ruler slides-ruler-long \
 								slides-explimpl slides-explimpl-fpnl slides-overview slides-status \
-								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch \
+								slides-ehcstruct slides-ehcstruct-ufmg slides-hs09-uhcarch slides-uhcarch \
 								gbm \
 								uniqueness slides-uniqueness \
 								icfp07-chr-locinst icfp07-chr-locinst-blind cc08-chr-locinst \

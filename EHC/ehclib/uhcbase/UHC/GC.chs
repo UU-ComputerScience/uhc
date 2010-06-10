@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 -- Interface to garbage collector
 module UHC.GC
   ( gc

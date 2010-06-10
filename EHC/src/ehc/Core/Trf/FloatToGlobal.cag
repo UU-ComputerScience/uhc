@@ -28,6 +28,9 @@ The meaning of a "closurable" CAF binding is defined in CommonFloat.
 %%[(8 codegen) hs import(Data.Maybe, qualified Data.Set as Set, qualified Data.Map as Map, Data.List(partition) )
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 -- for debug
 %%[(8 codegen) hs import({%{EH}Base.Debug},EH.Util.Pretty)
 %%]
@@ -149,7 +152,7 @@ SEM CBind
                                              , Seq.singleton @cTrf
                                              )
   | FFI
-%%[[94
+%%[[90
     FFE
 %%]]
                 lhs . cSmallCAFBinds   =   Seq.singleton @cTrf
@@ -202,7 +205,7 @@ SEM CExpr
                                          else @loc.bindingGroupsToFloat
 
 SEM CExpr
-  | Let         lhs . cTrf           =   foldr (\(c,b) r -> mkCExprLet c (Seq.toList b) r)  @body.cTrf  @loc.bindingGroupsToInsert
+  | Let         lhs . cTrf           =   foldr (\(c,b) r -> acoreLet c (Seq.toList b) r)  @body.cTrf  @loc.bindingGroupsToInsert
 
 
 %%]

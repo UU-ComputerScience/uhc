@@ -14,7 +14,7 @@
 %%[8 import(Char(isUpper))
 %%]
 
-%%[95 export(hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT)
+%%[91 export(hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -71,7 +71,12 @@ mkHNmHidden :: HSNM x => x -> HsName
 mkHNmHidden = mkHNmPrefix hsnStrHiddenPrefix
 %%]
 
-%%[94 export(mkHNmExport)
+%%[7 export(mkHNmSpecial)
+mkHNmSpecial :: HSNM x => x -> HsName
+mkHNmSpecial = mkHNmPrefix hsnStrSpecialPrefix
+%%]
+
+%%[90 export(mkHNmExport)
 mkHNmExport :: HSNM x => x -> HsName
 mkHNmExport = mkHNmPrefix (hsnStrHiddenPrefix ++ "export_")
 %%]
@@ -274,11 +279,30 @@ hsnAddrUnboxed     =   hsnFromString "Addr#"
 %%[1.mkRV
 mkRV :: String -> HsName
 mkRV = hsnFromString
+
+%%[[92
+mkGenerRV :: String -> HsName
+mkGenerRV = mkRV
+%%]]
 %%]
 
 %%[99 -1.mkRV
 mkRV :: HsName -> String -> HsName
 mkRV m = hsnSetQual m . hsnFromString
+
+mkGenerRV :: String -> HsName
+mkGenerRV = mkRV hsnModIntlBase
+%%]
+
+%%[92
+mkGenerRVN' :: Int -> String -> String -> HsName
+mkGenerRVN' n s suff = mkGenerRV (s ++ show n ++ suff)
+
+mkGenerRVN :: Int -> String -> HsName
+mkGenerRVN  n s = mkGenerRVN' n s ""
+
+mkGenerRVN2 :: Int -> String -> HsName
+mkGenerRVN2 n s = mkGenerRVN' n s "_"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -337,7 +361,7 @@ TBD: Needs cleaning up, correct partitioning in variants
  , hsnDataOrdering, hsnDataOrderingAltEQ, hsnDataOrderingAltLT, hsnDataOrderingAltGT
  , hsnPrelString
  , hsnClassEqFldEq
-%%[[95
+%%[[91
  , hsnMap
  , hsnClassBounded, hsnClassBoundedFldMinBound, hsnClassBoundedFldMaxBound
  , hsnClassEnum, hsnClassEnumFldFromEnum, hsnClassEnumFldToEnum, hsnClassEnumFldSucc, hsnClassEnumFldPred
@@ -354,7 +378,7 @@ TBD: Needs cleaning up, correct partitioning in variants
       , "Ordering", "EQ", "LT", "GT"
       , "String"
       , "=="
-%%[[95
+%%[[91
       , "map"
       , "Bounded", "minBound", "maxBound"
       , "Enum", "fromEnum", "toEnum", "succ", "pred"
@@ -378,7 +402,7 @@ TBD: Needs cleaning up, correct partitioning in variants
  , hsnPrelId
  , hsnPrimAddInt
  , hsnPrimGtInt
-%%[[95
+%%[[91
  , hsnPrimLtInt
 %%]]
 %%[[97
@@ -402,7 +426,7 @@ TBD: Needs cleaning up, correct partitioning in variants
       , "id"
       , "primAddInt"
       , "primGtInt"
-%%[[95
+%%[[91
       , "primLtInt"
 %%]]
 %%[[97
@@ -425,7 +449,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%[9 export(hsnMonadSeq,hsnMonadBind,hsnMonadFail,hsnClassEq)
 [hsnMonadSeq,hsnMonadBind,hsnMonadFail
  , hsnClassEq
-%%[[95
+%%[[91
  , hsnBoolAnd
  , hsnBoolOr
  , hsnClassOrd, hsnClassOrdFldCompare
@@ -441,7 +465,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%]]
       [ ">>", ">>=", "fail"
       , "Eq"
-%%[[95
+%%[[91
       , "&&"
       , "||"
       , "Ord", "compare"
@@ -455,7 +479,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%% FFI
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 [hsnFunPtr]
   = map
 %%[[9
@@ -479,7 +503,7 @@ TBD: Needs cleaning up, correct partitioning in variants
 %%% Known/available runtime values: deriving
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 [hsnClassShow
  , hsnClassShowFldShow, hsnClassShowFldShowsPrec
  , hsnPrelShowString, hsnPrelShowParen
@@ -496,7 +520,7 @@ TBD: Needs cleaning up, correct partitioning in variants
       ]
 %%]
 
-%%[95
+%%[91
 [hsnClassRead
  , hsnClassReadFldRead, hsnClassReadFldReadsPrec
  , hsnPrelLex, hsnPrelReadParen
@@ -656,6 +680,7 @@ hsnModIntlBase                          =   hsnPrefixQual hsnUHC (hsnFromString 
 hsnModIntlEnum                          =   hsnPrefixQual hsnUHC (hsnFromString "Enum")
 hsnModIntlIx                            =   hsnPrefixQual hsnUHC (hsnFromString "Ix")
 hsnModIntlNum                           =   hsnPrefixQual hsnUHC (hsnFromString "Num")
+hsnModIntlGenerics                      =   hsnPrefixQual hsnUHC (hsnFromString "Generics")
 hsnModIntlRead                          =   hsnPrefixQual hsnUHC (hsnFromString "Read")
 hsnModIntlShow                          =   hsnPrefixQual hsnUHC (hsnFromString "Show")
 hsnModPrelude                           =                         hsnFromString "Prelude"
@@ -690,6 +715,48 @@ hsnClass2Polarity = mkHNmHidden . hsnPrefix "ClassPolarity-"
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Naming conventions for generic deriving
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[92 export(hsnNm2Gener,hsnNm2GenerReprSyn,hsnNm2GenerDatatype,hsnNm2GenerConstructor,hsnNm2GenerSelector)
+-- a hidden name corresponding to visible names
+hsnNm2Gener :: HsName -> HsName
+hsnNm2Gener = mkHNmHidden -- . hsnPrefix "Dict-"
+
+-- a hidden name for representation type synonym
+hsnNm2GenerReprSyn :: Int -> HsName -> HsName
+hsnNm2GenerReprSyn i = mkHNmSpecial . hsnPrefix ("Rep" ++ show i)
+
+-- a hidden name for representation datatype for a datatype
+hsnNm2GenerDatatype :: HsName -> HsName
+hsnNm2GenerDatatype = hsnNm2Gener . hsnPrefix ("D_")
+
+-- a hidden name for representation datatype for a datatype constructor
+hsnNm2GenerConstructor :: HsName -> HsName
+hsnNm2GenerConstructor = hsnNm2Gener . hsnPrefix ("C_")
+
+-- a hidden name for representation datatype for a datatype field selector
+hsnNm2GenerSelector :: HsName -> HsName
+hsnNm2GenerSelector = hsnNm2Gener . hsnPrefix ("S_")
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Namings upon which generic deriving depends, taken into account by name & dependency analysis
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[92 export(builtinGenerClassNmL)
+builtinGenerClassNmL :: [HsName]
+builtinGenerClassNmL
+  = [ bi i
+    | bi <- [ ehbnGenerClassConstructor
+            , ehbnGenerClassDatatype
+            , ehbnGenerClassSelector
+            ]
+    ]
+  where i = mkEHBuiltinNames (\_ n -> hsnQualified n)
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Builtin names used without direct access from source code
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -710,18 +777,18 @@ data EHBuiltinNames
       , ehbnDataOrderingAltLT           :: HsName
       , ehbnDataOrderingAltEQ           :: HsName
       , ehbnDataOrderingAltGT           :: HsName
+      , ehbnDataList                    :: HsName
+      , ehbnDataBool                    :: HsName
 %%[[11
       , ehbnPrelString                  :: HsName
 %%]]
 %%[[20
 %%]]
-%%[[94
+%%[[90
       , ehbnFunPtr                      :: HsName
 %%]]
-%%[[95
+%%[[91
       , ehbnMap                         :: HsName
-      , ehbnDataList                    :: HsName
-      , ehbnDataBool                    :: HsName
       , ehbnBoolAnd                     :: HsName
       , ehbnBoolOr                      :: HsName
       , ehbnClassEq                     :: HsName
@@ -751,6 +818,58 @@ data EHBuiltinNames
       , ehbnClassBoundedFldMinBound     :: HsName
       , ehbnClassBoundedFldMaxBound     :: HsName
       , ehbnPrimLtInt                   :: HsName
+%%]]
+%%[[92
+		-- for generic deriving
+      , ehbnGenerClassRepresentableN    	:: Int -> HsName
+      , ehbnGenerClassRepresentableNFldFrom	:: Int -> HsName
+      , ehbnGenerClassRepresentableNFldTo	:: Int -> HsName
+      , ehbnGenerClassDatatype    			:: HsName
+      , ehbnGenerClassDatatypeFldName    	:: HsName
+      , ehbnGenerClassDatatypeFldModule    	:: HsName
+      , ehbnGenerClassSelector    			:: HsName
+      , ehbnGenerClassSelectorFldName		:: HsName
+      , ehbnGenerDataNoSelector				:: HsName
+      , ehbnGenerClassConstructor    		:: HsName
+      , ehbnGenerClassConstructorFldName	:: HsName
+      , ehbnGenerClassConstructorFldFixity	:: HsName
+      , ehbnGenerClassConstructorFldIsRec	:: HsName
+      , ehbnGenerDataVoid1              	:: HsName
+      , ehbnGenerDataUnit1              	:: HsName
+      , ehbnGenerDataUnit1AltU1          	:: HsName
+      , ehbnGenerDataKonst1             	:: HsName
+      , ehbnGenerDataKonst1AltK1         	:: HsName
+      , ehbnGenerDataMeta1              	:: HsName
+      , ehbnGenerDataMeta1AltM1          	:: HsName
+      , ehbnGenerDataFixity    				:: HsName
+      , ehbnGenerDataFixityAltPrefix		:: HsName
+      , ehbnGenerDataFixityAltInfix			:: HsName
+      , ehbnGenerDataAssociativity    		:: HsName
+      , ehbnGenerDataAssociativityAltLeft	:: HsName
+      , ehbnGenerDataAssociativityAltRight	:: HsName
+      , ehbnGenerDataAssociativityAltNot	:: HsName
+      , ehbnGenerDataSum    				:: HsName
+      , ehbnGenerDataSumAltLeft				:: HsName
+      , ehbnGenerDataSumAltRight			:: HsName
+      , ehbnGenerDataProd    				:: HsName
+      , ehbnGenerDataProdAltProd			:: HsName
+      , ehbnGenerDataPar0    				:: HsName
+      , ehbnGenerDataPar1    				:: HsName
+      , ehbnGenerDataPar1AltPar1			:: HsName
+      , ehbnGenerDataRec0    				:: HsName
+      , ehbnGenerDataRec1    				:: HsName
+      , ehbnGenerDataRec1AltRec1			:: HsName
+      , ehbnGenerDataComp1    				:: HsName
+      , ehbnGenerDataComp1AltComp1			:: HsName
+      , ehbnGenerDataMetaB    				:: HsName
+      , ehbnGenerDataMetaR    				:: HsName
+      , ehbnGenerDataMetaP    				:: HsName
+      , ehbnGenerDataMetaD    				:: HsName
+      , ehbnGenerDataMetaC    				:: HsName
+      , ehbnGenerDataMetaS    				:: HsName
+      , ehbnGenerDataMetaDN    				:: Int -> HsName
+      , ehbnGenerDataMetaCN    				:: Int -> HsName
+      , ehbnGenerDataMetaS1    				:: HsName
 %%]]
 %%[[97
       , ehbnInt8                        :: HsName
@@ -807,18 +926,18 @@ mkEHBuiltinNames f
       , ehbnDataOrderingAltLT           = f IdOcc_Val       hsnDataOrderingAltLT
       , ehbnDataOrderingAltEQ           = f IdOcc_Val       hsnDataOrderingAltEQ
       , ehbnDataOrderingAltGT           = f IdOcc_Val       hsnDataOrderingAltGT
+      , ehbnDataBool                    = f IdOcc_Type      hsnBool
+      , ehbnDataList                    = f IdOcc_Type      hsnDataList
 %%[[11
       , ehbnPrelString                  = f IdOcc_Type      hsnPrelString
 %%]]
 %%[[20
 %%]]
-%%[[94
+%%[[90
       , ehbnFunPtr                      = f IdOcc_Type      hsnFunPtr
 %%]]
-%%[[95
+%%[[91
       , ehbnMap                         = f IdOcc_Type      hsnMap
-      , ehbnDataBool                    = f IdOcc_Type      hsnBool
-      , ehbnDataList                    = f IdOcc_Type      hsnDataList
       , ehbnBoolAnd                     = f IdOcc_Val       hsnBoolAnd
       , ehbnBoolOr                      = f IdOcc_Val       hsnBoolOr
       , ehbnClassEq                     = f IdOcc_Class     hsnClassEq
@@ -848,6 +967,58 @@ mkEHBuiltinNames f
       , ehbnClassBoundedFldMinBound     = f IdOcc_Val       hsnClassBoundedFldMinBound
       , ehbnClassBoundedFldMaxBound     = f IdOcc_Val       hsnClassBoundedFldMaxBound
       , ehbnPrimLtInt                   = f IdOcc_Val       hsnPrimLtInt
+%%]]
+%%[[92
+		-- for generic deriving
+      , ehbnGenerClassRepresentableN    	= \n -> f IdOcc_Class (mkGenerRVN  n "Representable"	)
+      , ehbnGenerClassRepresentableNFldFrom	= \n -> f IdOcc_Val   (mkGenerRVN  n "from"				)
+      , ehbnGenerClassRepresentableNFldTo	= \n -> f IdOcc_Val   (mkGenerRVN  n "to"				)
+      , ehbnGenerClassDatatype    			=       f IdOcc_Class (mkGenerRV     "Datatype"			)
+      , ehbnGenerClassDatatypeFldName    	=       f IdOcc_Val   (mkGenerRV     "datatypeName"		)
+      , ehbnGenerClassDatatypeFldModule    	=       f IdOcc_Val   (mkGenerRV     "moduleName"		)
+      , ehbnGenerClassSelector    			=       f IdOcc_Class (mkGenerRV     "Selector"			)
+      , ehbnGenerClassSelectorFldName		=       f IdOcc_Val   (mkGenerRV     "selName"			)
+      , ehbnGenerDataNoSelector				=       f IdOcc_Type  (mkGenerRV     "NoSelector"		)
+      , ehbnGenerClassConstructor    		=       f IdOcc_Class (mkGenerRV     "Constructor"		)
+      , ehbnGenerClassConstructorFldName	=       f IdOcc_Val   (mkGenerRV     "conName"			)
+      , ehbnGenerClassConstructorFldFixity	=       f IdOcc_Val   (mkGenerRV     "conFixity"		)
+      , ehbnGenerClassConstructorFldIsRec	=       f IdOcc_Val   (mkGenerRV     "conIsRecord"		)
+      , ehbnGenerDataVoid1              	=       f IdOcc_Type  (mkGenerRV     "V1"				)
+      , ehbnGenerDataUnit1              	=       f IdOcc_Type  (mkGenerRV     "U1"				)
+      , ehbnGenerDataUnit1AltU1          	=       f IdOcc_Val   (mkGenerRV     "U1"				)
+      , ehbnGenerDataKonst1             	=       f IdOcc_Type  (mkGenerRV     "K1"				)
+      , ehbnGenerDataKonst1AltK1         	=       f IdOcc_Val   (mkGenerRV     "K1"				)
+      , ehbnGenerDataMeta1              	=       f IdOcc_Type  (mkGenerRV     "M1"				)
+      , ehbnGenerDataMeta1AltM1          	=       f IdOcc_Val   (mkGenerRV     "M1"				)
+      , ehbnGenerDataFixity    				=       f IdOcc_Type  (mkGenerRV     "Fixity"			)
+      , ehbnGenerDataFixityAltPrefix		=       f IdOcc_Val   (mkGenerRV     "Prefix"			)
+      , ehbnGenerDataFixityAltInfix			=       f IdOcc_Val   (mkGenerRV     "Infix"			)
+      , ehbnGenerDataAssociativity    		=       f IdOcc_Type  (mkGenerRV     "Associativity"	)
+      , ehbnGenerDataAssociativityAltLeft	=       f IdOcc_Val   (mkGenerRV     "LeftAssociative"	)
+      , ehbnGenerDataAssociativityAltRight	=       f IdOcc_Val   (mkGenerRV     "RightAssociative"	)
+      , ehbnGenerDataAssociativityAltNot	=       f IdOcc_Val   (mkGenerRV     "NotAssociative"	)
+      , ehbnGenerDataSum    				=       f IdOcc_Type  (mkGenerRV     ":+:"				)
+      , ehbnGenerDataSumAltLeft				=       f IdOcc_Val   (mkGenerRV     "L1"				)
+      , ehbnGenerDataSumAltRight			=       f IdOcc_Val   (mkGenerRV     "R1"				)
+      , ehbnGenerDataProd    				=       f IdOcc_Type  (mkGenerRV     ":*:"				)
+      , ehbnGenerDataProdAltProd			=       f IdOcc_Val   (mkGenerRV     ":*:"				)
+      , ehbnGenerDataPar0    				=       f IdOcc_Type  (mkGenerRV     "Par0"				)
+      , ehbnGenerDataPar1    				=       f IdOcc_Type  (mkGenerRV     "Par1"				)
+      , ehbnGenerDataPar1AltPar1			=       f IdOcc_Val   (mkGenerRV     "Par1"				)
+      , ehbnGenerDataRec0    				=       f IdOcc_Type  (mkGenerRV     "Rec0"				)
+      , ehbnGenerDataRec1    				=       f IdOcc_Type  (mkGenerRV     "Rec1"				)
+      , ehbnGenerDataRec1AltRec1			=       f IdOcc_Val   (mkGenerRV     "Rec1"				)
+      , ehbnGenerDataComp1    				=       f IdOcc_Type  (mkGenerRV     ":.:"				)
+      , ehbnGenerDataComp1AltComp1			=       f IdOcc_Val   (mkGenerRV     "Comp1"			)
+      , ehbnGenerDataMetaB    				=       f IdOcc_Type  (mkGenerRV     "B"				)
+      , ehbnGenerDataMetaR    				=       f IdOcc_Type  (mkGenerRV     "R"				)
+      , ehbnGenerDataMetaP    				=       f IdOcc_Type  (mkGenerRV     "P"				)
+      , ehbnGenerDataMetaD    				=       f IdOcc_Type  (mkGenerRV     "D"				)
+      , ehbnGenerDataMetaC    				=       f IdOcc_Type  (mkGenerRV     "C"				)
+      , ehbnGenerDataMetaS    				=       f IdOcc_Type  (mkGenerRV     "S"				)
+      , ehbnGenerDataMetaDN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "D"				)
+      , ehbnGenerDataMetaCN    				= \n -> f IdOcc_Type  (mkGenerRVN  n "C"				)
+      , ehbnGenerDataMetaS1    				=       f IdOcc_Type  (mkGenerRV     "S1"				)
 %%]]
 %%[[97
       , ehbnInt8                        = f IdOcc_Type      hsnInt8

@@ -142,18 +142,18 @@ kiStar = tyToTyCoreBase T.kiStar
 
 %%[(8 codegen) hs export(tyBuiltinCon)
 tyBuiltinCon :: EHCOpts -> (EHBuiltinNames -> HsName) -> C.Ty
-tyBuiltinCon opts bnmOf = C.Expr_Var (bnmOf $ ehcOptBuiltinNames opts)
+tyBuiltinCon opts bnmOf = C.Expr_Var (ehcOptBuiltin opts bnmOf)
 %%]
 
-%%[(8 codegen).tyString hs export(tyString)
-tyString opts = tyToTyCoreBase T.tyString
+%%[(8 codegen).tyString hs export(tycString)
+tycString opts = tyToTyCoreBase T.tyString
 %%]
 
-%%[(11 codegen).tyString -8.tyString hs export(tyString)
-tyString opts = tyBuiltinCon opts ehbnPrelString
+%%[(11 codegen).tyString -8.tyString hs export(tycString)
+tycString opts = tyBuiltinCon opts ehbnPrelString
 %%]
 
-%%[(95 codegen) hs export(tyBool)
+%%[(91 codegen) hs export(tyBool)
 tyBool opts = tyBuiltinCon opts ehbnDataBool
 %%]
 

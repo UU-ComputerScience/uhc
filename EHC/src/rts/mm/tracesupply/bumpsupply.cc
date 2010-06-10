@@ -84,7 +84,7 @@ void mm_traceSupply_Bump_Run( MM_TraceSupply* traceSupply ) {
 			trsup->lastTracedAddress = lastTracedAddressNew ;
 		} else {
 			trsup->lastTracedFragment++ ;
-			trsup->lastTracedAddress = (Word*)( spc->getFragment( spc, trsup->lastTracedFragment )->frag + (1 << spc->getGrowDefaultLog(spc)) ) ;
+			trsup->lastTracedAddress = (Word*)( spc->getFragment( spc, trsup->lastTracedFragment )->frag + (((Word)(1)) << spc->getGrowDefaultLog(spc)) ) ;
 		}
 		inSameFragment = trsup->lastTracedFragment == trsup->lastPushedFragment ;
 	}

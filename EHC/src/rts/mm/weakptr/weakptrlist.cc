@@ -15,14 +15,14 @@
 int dummy_weakPtrList ;
 %%]
 
-%%[94 -8.dummyForLinker
+%%[90 -8.dummyForLinker
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% List internal defs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // initial size of weak ptr list
 #define MM_WeakPtr_List_InitialSize 		100
 %%]
@@ -32,7 +32,7 @@ int dummy_weakPtrList ;
 %%% WeakPtr List internal functions
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // get MM_WeakPtr_Object of mutator maintained/created object which embeds the MM_WeakPtr_Object
 static inline MM_WeakPtr_Object* mm_weakPtr_List_WeakPtrOfObject( MM_WeakPtr_List_Data* weakPtrList, BPtr ptr ) {
 	return (MM_WeakPtr_Object*)( ptr + weakPtrList->mutator->trace->objectHeaderNrBytes ) ;
@@ -54,7 +54,7 @@ static inline void mm_weakPtr_List_AddWeakPtrObjectToList( MM_FreeListArray* lis
 %%% WeakPtr List interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 void mm_weakPtr_List_Init( MM_WeakPtr* weakPtr, MM_Mutator* mutator, MM_Collector* collector ) {
 	MM_WeakPtr_List_Data* weakPtrList = mm_malloc_LOF.malloc( sizeof(MM_WeakPtr_List_Data) ) ;
 	
@@ -255,7 +255,7 @@ void mm_weakPtr_List_zzz( MM_WeakPtr* weakPtr, ... ) {
 %%% WeakPtr List interface object
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 MM_WeakPtr mm_weakPtr_List =
 	{ NULL
 	, &mm_weakPtr_List_Init
@@ -276,7 +276,7 @@ MM_WeakPtr mm_weakPtr_List =
 %%% WeakPtr List dump
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 #ifdef TRACE
 void mm_weakPtr_List_Dump( MM_WeakPtr* weakPtr ) {
 	MM_WeakPtr_List_Data* weakPtrList = (MM_WeakPtr_List_Data*)weakPtr->data ;
@@ -295,7 +295,7 @@ void mm_weakPtr_List_Dump( MM_WeakPtr* weakPtr ) {
 %%% WeakPtr List test
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 #ifdef TRACE
 void mm_weakPtr_List_Test() {
 }

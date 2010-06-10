@@ -298,6 +298,6 @@ builtinKnownRecTyNmL
 
 %%[(8 codegen)
 builtinNm :: EHCOpts -> (EHBuiltinNames -> HsName) -> HsName
-builtinNm opts f = f $ ehcOptBuiltinNames opts
+builtinNm = ehcOptBuiltin
 %%]
 

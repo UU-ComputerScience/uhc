@@ -130,19 +130,6 @@ extern Word
 , Ret80, Ret81, Ret82, Ret83, Ret84, Ret85, Ret86, Ret87, Ret88, Ret89
 , Ret90, Ret91, Ret92, Ret93, Ret94, Ret95, Ret96, Ret97, Ret98, Ret99;
 
-extern Word 
-  Loc0,  Loc1,  Loc2,  Loc3,  Loc4,  Loc5,  Loc6,  Loc7,  Loc8,  Loc9
-, Loc10, Loc11, Loc12, Loc13, Loc14, Loc15, Loc16, Loc17, Loc18, Loc19
-, Loc20, Loc21, Loc22, Loc23, Loc24, Loc25, Loc26, Loc27, Loc28, Loc29
-, Loc30, Loc31, Loc32, Loc33, Loc34, Loc35, Loc36, Loc37, Loc38, Loc39
-, Loc40, Loc41, Loc42, Loc43, Loc44, Loc45, Loc46, Loc47, Loc48, Loc49
-, Loc50, Loc51, Loc52, Loc53, Loc54, Loc55, Loc56, Loc57, Loc58, Loc59
-, Loc60, Loc61, Loc62, Loc63, Loc64, Loc65, Loc66, Loc67, Loc68, Loc69
-, Loc70, Loc71, Loc72, Loc73, Loc74, Loc75, Loc76, Loc77, Loc78, Loc79
-, Loc80, Loc81, Loc82, Loc83, Loc84, Loc85, Loc86, Loc87, Loc88, Loc89
-, Loc90, Loc91, Loc92, Loc93, Loc94, Loc95, Loc96, Loc97, Loc98, Loc99;
-
-
 #define makeNodeDescriptor(bruto,netto,hasptr) ((bruto)<<16|(netto)<<1|(hasptr))
 
 #endif

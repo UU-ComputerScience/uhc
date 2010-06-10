@@ -28,7 +28,7 @@ provided hook will run all finalizers of which the value /= 0.
 %%% WeakPtr object itself
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 typedef void (*MM_WeakPtr_Finalizer)( Word ) ;
 
 typedef struct MM_WeakPtr_Object {
@@ -48,7 +48,7 @@ finalizer, because it has been set a tombstone value when the wptr was
 tombstoned. However, it must be remembered still so it can be run and
 GC'ed.
 
-%%[94
+%%[90
 typedef struct MM_WeakPtrFinalizeQue_Data {
 	Word					wpObj ;
 	Word					finalizer ;	
@@ -61,7 +61,7 @@ typedef struct MM_WeakPtrFinalizeQue_Data {
 %%% WeakPtr interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // see mutatormutrec
 %%]
 
@@ -69,7 +69,7 @@ typedef struct MM_WeakPtrFinalizeQue_Data {
 %%% Default WeakPtr
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 extern MM_WeakPtr mm_weakPtr ;
 %%]
 
@@ -77,7 +77,7 @@ extern MM_WeakPtr mm_weakPtr ;
 %%% Initialization
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 extern void mm_init_weakPtr() ;
 %%]
 

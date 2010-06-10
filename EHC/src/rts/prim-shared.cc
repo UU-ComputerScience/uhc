@@ -359,7 +359,7 @@ PRIM Word primEqStableAddr( Word x, Word y )
 %%% Min/Max for Int, Word
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 PRIM Word primMaxInt()
 {
   	return Int_MaxValue ;

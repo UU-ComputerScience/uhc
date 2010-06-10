@@ -202,7 +202,6 @@ ehclib-variant-dflt: \
 	        $(EHC_INSTALLABS_VARIANT_ASPECTS_EXEC) \
 	          $(EHCLIB_BASE_OPTS) \
 	          $(EHCLIB_DEBUG_OPTS) \
-	          --cpp \
 	          --compile-only \
 	          --pkg-hide-all \
 	          --target=$(EHC_VARIANT_TARGET) \
@@ -219,6 +218,7 @@ ehclib-variant-dflt: \
 	      done \
 	     ,)
 
+#	          --cpp \
 #	        pkgv=`sh $(EHCLIB_MAP_PKG2VERSIONED_SH) $${pkg}` ; \
 
 ###########################################################################################

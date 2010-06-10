@@ -1,0 +1,9 @@
+
+License for the UHC Logo 
+
+These logos may be used freely in the context of the Utrecht Haskell Compiler; 
+the LaTeX-source file however should not be openly distributed. 
+
+Please use common sense when modifying the logo :)
+
+Clara L\"oh 05/2010; uhclogo@wuisch.org

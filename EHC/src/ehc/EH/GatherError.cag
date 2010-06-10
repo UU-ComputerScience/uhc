@@ -7,10 +7,13 @@
 %%% Error gathering
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%%[doesWhat doclatex
 Errors are firstly gathered in errSq, occasionally wrapped in a nesting construct for inclusion in pretty printing.
 These errors are included at typical declaration sites: let bindings, instance declarations.
 
 Errors are also gathered in allErrSq for usage outside, by the compiler driver.
+
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Conversion
@@ -295,6 +298,9 @@ SEM Expr
 %%[[17
                                                            , @loc.cycErrSq
 %%]]
+%%[[92
+                                                           , Seq.fromList @errsDataGenerBind
+%%]]
                                                            ]
   | Lam         lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [foErrSq @fo_fitF_, @arg.errSq, @body.errSq]
   | AppTop      lhs         .   errSq       :=  rngLift @range mkNestErr' @pp [@expr.errSq]
@@ -308,13 +314,24 @@ SEM RowTyExpr
 %%[9
 SEM Decl
   | Instance    loc         .   lErrSq      =   Seq.firstNotEmpty
-                                                  [ Seq.unions [ @tyPrExpr.errSq
+                                                  [ Seq.unions [ 
+%%[[9
+                                                                 @tyPrExpr.errSq
+%%][92
+                                                                 case @instVariant of
+                                                                   InstDeriving InstDerivingFrom_Datatype
+                                                                     -> Seq.empty			-- ignore kind errors when deriving
+                                                                   _ -> @tyPrExpr.errSq
+%%]]
 %%[[(9 hmtyinfer)
                                                                , Seq.fromList @valNoSigErrs
 %%]]
                                                                ]
-%%[[(95 codegen hmtyinfer)
+%%[[(91 codegen hmtyinfer)
                                                   , Seq.unions $ map Seq.fromList [@cxSplitErrs, @derivErrs]
+%%]]
+%%[[(92 codegen hmtyinfer)
+                                                  , foErrSq @foGenerDeriv
 %%]]
 %%[[(9 hmtyinfer)
                                                   , Seq.unions $ map Seq.fromList [@predNotPrfErrs, @chrSolveSuperErrs, @chrSolveDeclsErrs]

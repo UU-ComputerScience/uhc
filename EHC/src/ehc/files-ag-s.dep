@@ -4,6 +4,7 @@ Foreign/Pretty.cag
 HS/MainAG.cag
 HS/ModImpExp.cag
 Ty/Ftv.cag
+Ty/UsedNames.cag
 Ty/ToTyCore.cag
 Ty/TrieKey.cag
 Ty/Pretty.cag
@@ -31,7 +32,6 @@ Core/Pretty.cag
 Core/Subst.cag
 Core/SubstCaseAltFail.cag
 Core/FvS.cag
-Core/UsedModNms.cag
 Core/Trf/ConstProp.cag
 Core/Trf/EtaRed.cag
 Core/Trf/ANormal.cag
@@ -99,5 +99,4 @@ Silly/GroupAllocs.cag
 Silly/InlineExpr.cag
 Silly/Pretty.cag
 Silly/PrettyC.cag
-Silly/PrettyS.cag
 Silly/ToLLVM.cag

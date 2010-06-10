@@ -11,7 +11,11 @@
 %%[(9 hmtyinfer || hmtyast) import({%{EH}Ty},{%{EH}Ty.Pretty})
 %%]
 
-%%[20 import({%{EH}Base.Binary})
+%%[20 import(Data.Typeable(Typeable), Data.Generics(Data))
+%%]
+%%[20 import({%{EH}Base.Serialize})
+%%]
+%%[20 import( Control.Monad)
 %%]
 
 %%[9999 import({%{EH}Base.ForceEval})
@@ -39,7 +43,11 @@ data Key
 %%[[9999
   | Key_Hash	!Hash			-- a hash summary, to be the first value used for comparison, speeding up the comparison
 %%]]
-  deriving (Eq,Ord)
+  deriving ( Eq, Ord
+%%[[20
+           , Typeable, Data
+%%]]
+           )
 %%]
 
 %%[9
@@ -59,11 +67,6 @@ instance PP Key where
 %%[[9999
   pp (Key_Hash h) = pp $ show h
 %%]]
-%%]
-
-%%[20
-deriving instance Typeable Key
-deriving instance Data Key
 %%]
 
 %%[9999
@@ -101,8 +104,29 @@ instance Keyable x => TrieKeyable x Key where
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% ForceEval
+%%% Instances: Serialize, ForceEval
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[20
+instance Serialize Key where
+  sput (Key_HNm  a) = sputWord8 0 >> sput a
+  sput (Key_UID  a) = sputWord8 1 >> sput a
+  sput (Key_Str  a) = sputWord8 2 >> sput a
+%%[[(20 hmtyinfer || hmtyast)
+  sput (Key_TyQu a) = sputWord8 3 >> sput a
+  sput (Key_Ty   a) = sputWord8 4 >> sput a
+%%]]
+  sget = do
+    t <- sgetWord8
+    case t of
+      0 -> liftM  Key_HNm  sget
+      1 -> liftM  Key_UID  sget
+      2 -> liftM  Key_Str  sget
+%%[[(20 hmtyinfer || hmtyast)
+      3 -> liftM  Key_TyQu sget
+      4 -> liftM  Key_Ty   sget
+%%]]
+%%]
 
 %%[9999
 instance ForceEval Key where

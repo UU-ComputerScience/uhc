@@ -25,6 +25,9 @@ However, ideally, this trf should be placed before that, but this currently brea
 %%[(99 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Common},{%{EH}Base.Opts},{%{EH}Core},{%{EH}Ty},{%{EH}LamInfo})
 %%]
 
+%%[(99 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(99 codegen) hs import(Data.Maybe, qualified Data.Map as Map)
 %%]
 
@@ -162,12 +165,12 @@ SEM CBind
   | Bind        (loc.bindCTrfL,loc.mbInStackTraceCtxt,loc.newLamMp)
                                             =   case @mbStackTrace of
                                                   StackTraceInfo_HasStackTraceEquiv dbNm | @isTraceCandidate
-                                                    -> ( [ mkCBind1 dbNm (mkCExprLam1 @nmStackTrace @expr.cTrf) 
-                                                         , mkCBind1Metas @nm @bindMeta.cTrf 
-                                                           $ mkCExprLam @expr.traceCandidateLamArgs
-                                                           $ mkCExprApp (CExpr_Var dbNm)
-                                                                        ( CExpr_Var (ehbnDataListAltNil $ ehcOptBuiltinNames @lhs.opts)
-                                                                        : map CExpr_Var @expr.traceCandidateLamArgs
+                                                    -> ( [ acoreBind1Cat CBindings_Plain dbNm (acoreLam1 @nmStackTrace @expr.cTrf) 
+                                                         , acoreBind1Metas @nm @bindMeta.cTrf 
+                                                           $ acoreLam   @expr.traceCandidateLamArgs
+                                                           $ acoreApp   (acoreVar dbNm)
+                                                                        ( acoreVar (ehcOptBuiltin @lhs.opts ehbnDataListAltNil)
+                                                                        : map acoreVar @expr.traceCandidateLamArgs
                                                                         )
                                                          ]
                                                        , Just @nmStackTrace
@@ -189,8 +192,8 @@ SEM CExpr
                                                   Just (LamInfo {laminfoStackTrace=StackTraceInfo_HasStackTraceEquiv dbNm})
                                                     -> case @lhs.mbInStackTraceCtxt of
                                                          Just stTrNm
-                                                           -> mkCExprApp1 (CExpr_Var dbNm)
-                                                                          (mkCExprApp (CExpr_Var hsnStackTracePush) [cstring @lhs.opts (show @nm), CExpr_Var stTrNm])
+                                                           -> acoreApp1 (acoreVar dbNm)
+                                                                        (acoreApp (acoreVar hsnStackTracePush) [acoreBuiltinString @lhs.opts (show @nm), acoreVar stTrNm])
                                                          _ -> @cTrf
                                                   _ -> @cTrf
 %%]

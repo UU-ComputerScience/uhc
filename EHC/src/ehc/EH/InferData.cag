@@ -18,10 +18,12 @@ SEM Decl
 SEM Decl
   | Data        loc         .   dataTgi             =   mkTGI (Ty_Con @tyNm)
                             .   dataTkgi            =   TyKiGamInfo (tyEnsureNonAny @lUniq @knKi)
-                lhs         .   patTyGam            :=  if @hasKiSig  then @lhs.patTyGam
+                            .   dataPatTyGam        =   if @hasKiSig  then @lhs.patTyGam
                                                                       else gamAdd @tyNm @dataTgi @lhs.patTyGam
-                            .   patTyKiGam          =   if @hasKiSig  then @lhs.patTyKiGam
+                            .   dataPatTyKiGam      =   if @hasKiSig  then @lhs.patTyKiGam
                                                                       else tyKiGamNameSingleton @tyNm @dataTkgi `gamUnion` @lhs.patTyKiGam
+                lhs         .   patTyGam            :=  gamUnion @extraTyGam   @dataPatTyGam
+                            .   patTyKiGam          =   gamUnion @extraTyKiGam @dataPatTyKiGam
                 loc         .   fo_                 =   fitsIn  strongFIOpts defaultFIEnv @lUniq2 @lhs.patKiVarMp
                                                                 (@tyVars.kiL `mkArrow` kiStar) (tkgiKi @dataTkgi)
                             .   dataKi              =   foTy @fo_
@@ -52,15 +54,27 @@ SEM DataConstr
 
 %%[(7 hmtyinfer).dataGam
 ATTR
-  AllDecl AllExpr AllCase
+  AllDecl AllExpr -- AllCase
 %%[[97
-  AllPatExpr
+  -- AllPatExpr
 %%]]
     [ | gathDataGam: DataGam | ]
-ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
+ATTR AGItf [ | | gathDataGam: DataGam ]
 
 SEM AGItf
   | AGItf       expr        .   gathDataGam         =   emptyGam
+
+SEM CaseAlt
+  | Pat			expr        .   gathDataGam         =   emptyGam
+
+%%[[97
+SEM PatExpr
+  | Expr		expr        .   gathDataGam         =   emptyGam
+%%]]
+%%]
+
+%%[(7 hmtyinfer)
+ATTR AllDecl AllExpr AllCase AllPatExpr [ dataGam: DataGam | | ]
 %%]
 
 %%[(7 hmtyinfer).initDataGam
@@ -70,6 +84,9 @@ SEM AGItf
 
 %%[(20 hmtyinfer) -7.initDataGam
 ATTR AGItf [ dataGam: DataGam | | ]
+
+SEM AGItf
+  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -77,28 +94,27 @@ ATTR AGItf [ dataGam: DataGam | | ]
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[(7 hmtyinfer)
-ATTR AGItf [ | | gathDataGam: DataGam ]
+ATTR AllDecl [ | | gathDeclDataGam USE {`gamUnion`} {emptyGam}: DataGam ]
 
 SEM Decl
-  | Data        loc         .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
+  | Data        loc         .	dataTyVarIdL		=	map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL
+                            .   dgi                 =   mkDGI @tyNm ([@dataTy] `mkArrow` @dataAltTy) @constrs.dataConstrNmL @constrs.dataConstrTagMp
 %%[[7
                                                               @isNewtype
-%%][94
+%%][90
                                                               (if @isNewtype
-                                                               then Just $ foldr Ty_Lam @constrs.dataAltForNewType (map (panicJust "EH.InferData.Decl.Data.tyMbVar" . tyMbVar) @tyVars.tyL)
+                                                               then Just $ mkTyLam @dataTyVarIdL @constrs.dataAltForNewType
                                                                else Nothing
                                                               )
 %%]]
-                lhs         .   gathDataGam         =   gamAdd @tyNm @dgi @lhs.gathDataGam
-%%]
+%%[[92
+                                                              @mbGenerInfo
+%%]]
+                lhs         .   gathDeclDataGam     =   gamUnion @extraDataGam $ gamSingleton @tyNm @dgi
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Tying at toplevel
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%%[(20 hmtyinfer)
-SEM AGItf
-  | AGItf       expr        .   dataGam             =   @expr.gathDataGam `gamUnion` @lhs.dataGam
+SEM Expr
+  | Let			loc			.	gathBodyDataGam		=	@extraDataGam `gamUnion` @decls.gathDeclDataGam `gamUnion` @decls.gathDataGam
+     			body		.	gathDataGam			=	@gathBodyDataGam
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -172,7 +188,7 @@ SEM Decl
                             .   dataTgi             :=  mkTGIData (Ty_Con @tyNm) Ty_Any {- ([@dataTy] `mkArrow` @dataAltTy) -}
 %%]
 
-%%[(94 hmtyinfer)
+%%[(90 hmtyinfer)
 ATTR AllDataConstr [ | | dataAltForNewType USE {`const`} {Ty_Any}: Ty ]
 
 SEM DataConstr
@@ -252,11 +268,13 @@ SEM DataConstr
                             .   dataConstrNmL       =   [@conNm]
                 loc         .   dti                 =   emptyDataTagInfo
                                                           { dtiFldMp = @fldMp
+                                                          , dtiFldTyL= @fields.fldTyL
                                                           , dtiConNm = @conNm
+                                                          , dtiConTy = @dataConTyAsVar
 %%[[8
                                                           , dtiCTag  = @ctag
 %%]]
-%%[[95
+%%[[91
                                                           , dtiMbFixityPrio  = @mbFixityPrio
 %%]]
                                                           }
@@ -494,10 +512,20 @@ SEM DataConstr
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% Type signatures
+%%% Extra gams
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(99 hmtyinfer)
+%%[(6 hmtyinfer).extraGam
+SEM Decl
+  | Data        loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
 %%]
-SEM DataConstr
-  | Constr      loc         .   arity               :   {Int}
+
+%%[(92 hmtyinfer) -6.extraGam
+SEM Decl
+  | Data        loc         .   extraTyGam          =   emptyGam
+                            .   extraTyKiGam        =   emptyGam
+                            .   extraDataGam        =   emptyGam
+%%]
+

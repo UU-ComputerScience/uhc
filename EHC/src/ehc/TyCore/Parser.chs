@@ -9,13 +9,17 @@
 
 %%[(8 codegen) module {%{EH}Core.Parser} import(UU.Parsing as P, EH.Util.ParseUtils, EH.Util.ScanUtils, {%{EH}Base.Common}, {%{EH}Scanner.Common}, {%{EH}Scanner.Scanner}, {%{EH}Base.Parser}, {%{EH}Ty.Parser(pTy)}, {%{EH}Core})
 %%]
+
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen) import(Data.Maybe)
 %%]
 
 %%[(20 codegen) export(pCModule,pExpr)
 %%]
 
-%%[(94 codegen) import({%{EH}Foreign.Parser})
+%%[(90 codegen) import({%{EH}Foreign.Parser})
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -78,16 +82,16 @@ pExprSel = pExprBase <??> pExprSelSuffix
 
 pExpr :: CParser Expr
 pExpr
-  =   mkExprAppMeta <$> pExprSel <*> pList pExprSelMeta
-  <|> mkExprLamMeta <$  pLAM <*> pList1 (pDollNm P.<+> pMetaValOpt) <* pRARROW <*> pExpr
-  <|> Expr_Let      <$  pLET <*> pMaybe ValBindCateg_Plain id pValBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pExpr
+  =   acoreAppMeta   <$> pExprSel <*> pList pExprSelMeta
+  <|> acoreLamMetaTy <$  pLAM <*> pList1 (pDollNm P.<+> pMetaValOpt) <* pRARROW <*> pExpr
+  <|> Expr_Let       <$  pLET <*> pMaybe ValBindCateg_Plain id pValBindCateg <* pOCURLY <*> pListSep pSEMI pCBind <* pCCURLY <* pIN <*> pExpr
   <|> Expr_Case <$ pCASE <*> pExpr <* pOF
       <* pOCURLY <*> pListSep pSEMI pAlt <* pCCURLY
       <* pOCURLY <*  pDEFAULT <*> pExpr <* pCCURLY
   where pValBindCateg
           =   ValBindCateg_Rec    <$ pKeyTk "rec"
           <|> ValBindCateg_FFI    <$ pFOREIGN
-%%[[94
+%%[[90
           <|> ValBindCateg_FFE    <$ pKeyTk "foreignexport"
 %%]]
           <|> ValBindCateg_Strict <$ pBANG
@@ -135,7 +139,7 @@ pCBind
     <**> (   (\e (n,m)        -> CBind_Bind n m e) <$> pExpr
          <|> (\(c,_) s i t (n,m)  -> CBind_FFI c s (mkEnt c i) n t)
              <$ pFOREIGN <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pS <* pCOMMA <*> pTy <* pCCURLY
-%%[[94
+%%[[90
          <|> (\(c,_) e en t (n,m) -> CBind_FFE n c (mkEnt c e) en t)
              <$ pKeyTk "foreignexport" <* pOCURLY <*> pFFIWay <* pCOMMA <*> pS <* pCOMMA <*> pDollNm <* pCOMMA <*> pTy <* pCCURLY
 %%]]
@@ -143,7 +147,7 @@ pCBind
   where pS = tokMkStr <$> pStringTk
 %%[[8
         mkEnt _ e = e
-%%][94
+%%][90
         mkEnt c e = fst $ parseForeignEnt c Nothing e
 %%]]
 

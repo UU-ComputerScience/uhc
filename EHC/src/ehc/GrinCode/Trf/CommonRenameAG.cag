@@ -45,7 +45,7 @@ SEM GrExpr
   | App         lhs         .   trf             =   GrExpr_App (nmAliasRepl @lhs.nmAliasMp @nm) @argL.trf
 %%[[8
   | FFI         lhs         .   trf             =   GrExpr_FFI @nm @argL.trf
-%%][94
+%%][90
   | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @argL.trf
 %%][99
   | FFI         lhs         .   trf             =   GrExpr_FFI @callconv @impEnt @ffiAnnot @argL.trf

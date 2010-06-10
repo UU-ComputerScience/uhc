@@ -67,6 +67,9 @@ data HsNameUniqifier
   | HsNameUniqifier_GrinUpdated			-- Grin: updated value
   | HsNameUniqifier_FFIArg				-- arg evaluated for FFI
   | HsNameUniqifier_LacksLabel			-- label used in lacking predicates
+%%[[92
+  | HsNameUniqifier_GenericClass		-- a name introduced by generics
+%%]]
   deriving (Eq,Ord,Enum)
 
 -- | The show of a HsNameUniqifier is found back in the pretty printed code, current convention is 3 uppercase letters, as a balance between size and clarity of meaning
@@ -88,6 +91,9 @@ instance Show HsNameUniqifier where
   show HsNameUniqifier_GrinUpdated			= "UPD"
   show HsNameUniqifier_FFIArg				= "FFI"
   show HsNameUniqifier_LacksLabel			= "LBL"
+%%[[91
+  show HsNameUniqifier_GenericClass			= "GEN"
+%%]]
 %%]
 
 %%[7 export(HsNameUnique(..))
@@ -162,7 +168,7 @@ instance Eq HsName where
 instance Ord HsName where
   n1 `compare` n2 = hsnCanonicSplit n1 `compare` hsnCanonicSplit n2
 
-%%[1 export(mkHNmBase,hsnMbBaseString,hsnBaseUnpack)
+%%[1 export(mkHNmBase,hsnMbBaseString,hsnBaseUnpack,hsnBaseString)
 -- | Just lift a string to the base HsName variant
 mkHNmBase :: String -> HsName
 %%[[1
@@ -183,6 +189,9 @@ hsnBaseUnpack _                   = Nothing
 -- | If name is a HsName_Base after some unpacking, return the base string, without qualifiers, without uniqifiers
 hsnMbBaseString :: HsName -> Maybe String
 hsnMbBaseString = fmap fst . hsnBaseUnpack
+
+hsnBaseString :: HsName -> String
+hsnBaseString = maybe "??" id . hsnMbBaseString
 
 %%]
 
@@ -734,5 +743,32 @@ type HsNameMp = Map.Map HsName HsName
 
 hsnRepl :: HsNameMp -> HsName -> HsName
 hsnRepl m n = Map.findWithDefault n n m
+%%]
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Name of a pattern var/con
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%[(8 codegen) hs export(RPatNm(..))
+data RPatNm
+  = RPatNmOrig {rpatNmNm :: !HsName}
+  | RPatNmUniq {rpatNmNm :: !HsName}
+  deriving Eq
+
+instance Ord RPatNm where
+  x `compare` y = rpatNmNm x `cmpHsNameOnNm` rpatNmNm y  
+
+instance Show RPatNm where
+  show pnm = show (rpatNmNm pnm)
+
+instance PP RPatNm where
+  pp (RPatNmOrig n) = n >|< "(O)"
+  pp (RPatNmUniq n) = n >|< "(U)"
+%%]
+
+%%[(8 codegen) hs export(rpatNmIsOrig)
+rpatNmIsOrig :: RPatNm -> Bool
+rpatNmIsOrig (RPatNmOrig _) = True
+rpatNmIsOrig _              = False
 %%]
 

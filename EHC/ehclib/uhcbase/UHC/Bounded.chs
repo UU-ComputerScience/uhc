@@ -1,4 +1,6 @@
 %%[99
+{-# LANGUAGE NoImplicitPrelude #-}
+
 
 module UHC.Bounded
 where
@@ -10,3 +12,4 @@ instance Bounded () where
     maxBound = ()
 
 %%]
+

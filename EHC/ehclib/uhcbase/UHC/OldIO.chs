@@ -3,6 +3,8 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.OldIO
   ( Handle
   , IOMode(..)

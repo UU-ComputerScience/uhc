@@ -22,7 +22,7 @@ int dummy_array ;
 %%% Byte array
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[95
+%%[91
 PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 {
 	gb_assert_IsNotIndirection(Cast(Word,mn),"primByteArrayToString1Char BEF") ;
@@ -50,7 +50,7 @@ PRIM GB_NodePtr primByteArrayToString1Char( GB_NodePtr mn, GB_Int goff )
 PRIM GB_NodePtr primByteArrayToString( Word a )
 {
 	GB_NodePtr n ;
-%%[[95
+%%[[91
 	n = Cast( GB_NodePtr, gb_eval( a ) ) ;
 %%][96
 	GB_PassExc( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
@@ -61,7 +61,7 @@ PRIM GB_NodePtr primByteArrayToString( Word a )
 PRIM Word primByteArrayLength( Word a )
 {
 	GB_NodePtr n ;
-%%[[95
+%%[[91
 	n = Cast( GB_NodePtr, gb_eval( a ) ) ;
 %%][96
 	GB_PassExc_CastAsWord( n = Cast( GB_NodePtr, gb_eval( a ) ) ) ;
@@ -83,7 +83,7 @@ PRIM GB_NodePtr primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_GCSafe_1(n) ;
 	GB_GCSafe_1_Zeroed(n2) ;
   	IF_GB_TR_ON(3,printf("primStringToByteArray1 sz=%d n=%p\n", sz, n ););
-%%[[95
+%%[[91
 	// gb_listForceEval( &n, (int*) &sz ) ;
 	gb_listForceEval2( n, (int*) &sz ) ;
 %%][96
@@ -96,7 +96,7 @@ PRIM GB_NodePtr primStringToByteArray( GB_NodePtr n, GB_Int sz )
 	GB_NodeAlloc_ByteArray_In( sz, n2 ) ;
 	GB_BytePtr s = Cast(GB_BytePtr,n2->content.bytearray.ptr) ;
 	int bufInx = 0 ;
-%%[[95
+%%[[91
 	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{Word xx = gb_eval(GB_List_Head(n)); s[bufInx++] = GB_GBInt2Int(xx);}) ;
 %%][96
 	GB_List_Iterate(n,Cast(GB_NodePtr,gb_Indirection_FollowObject(Cast(Word,n))),sz,{Word xx ; GB_PassExc_GCSafe(xx = gb_eval(GB_List_Head(n))); s[bufInx++] = GB_GBInt2Int(xx);}) ;
@@ -226,7 +226,7 @@ PRIM Word primWriteDoubleArray( GB_NodePtr bytearray, Word inx, double val )
 
 %%]
 
-%%[95
+%%[91
 PRIM Word primSizeofByteArray( GB_NodePtr bytearray )
 {
   	return (bytearray->content.bytearray.size) ;

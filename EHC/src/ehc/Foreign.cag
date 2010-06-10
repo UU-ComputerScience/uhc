@@ -7,24 +7,24 @@
 %%% Haskell importable interface to Foreign/AbsSyn
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94 hs module {%{EH}Foreign} import({%{EH}Base.Common})
+%%[90 hs module {%{EH}Foreign} import({%{EH}Base.Common})
 %%]
 
-%%[94 hs export(ForeignEnt(..), CCall(..), PlainCall(..), ForeignAGItf(..)) 
+%%[90 hs export(ForeignEnt(..), CCall(..), PlainCall(..), ForeignAGItf(..)) 
 %%]
 
 %%[9999 hs import({%{EH}Base.ForceEval})
 %%]
 
-%%[94 hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
+%%[90 hs import(Control.Monad, {%{EH}Base.Binary}, {%{EH}Base.Serialize})
 %%]
-%%[94 hs import(Data.Typeable(Typeable), Data.Generics(Data))
-%%]
-
-%%[94 ag import({Foreign/AbsSyn})
+%%[90 hs import(Data.Typeable(Typeable), Data.Generics(Data))
 %%]
 
-%%[94
+%%[90 ag import({Foreign/AbsSyn})
+%%]
+
+%%[90
 DERIVING AllForeign
   : Show, Eq
   , Typeable, Data
@@ -38,7 +38,7 @@ DERIVING AllForeign
 instance ForceEval ForeignEnt
 %%]
 
-%%[94 hs
+%%[90 hs
 instance Serialize ForeignEnt where
   sput (ForeignEnt_CCall     a) = sputWord8 0 >> sput a
   sput (ForeignEnt_PlainCall a) = sputWord8 1 >> sput a

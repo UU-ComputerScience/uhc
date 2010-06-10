@@ -1,5 +1,7 @@
 %%[99
 
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.Eq
 where
 

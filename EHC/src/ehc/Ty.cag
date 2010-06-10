@@ -29,7 +29,7 @@ used by EHC. The AST is described in Ty/AbsSyn.
 
 %%[(3 hmtyinfer || hmtyast) hs export(mkTyQu, TyVarCateg(..))
 %%]
-
+acoreBuiltinUndefined
 %%[4 hs export(TyQu(..)) 
 %%]
 
@@ -633,7 +633,7 @@ showTyQu  (TyQu_Exists l) =  "exists" ++ [charKindStar] ++ show l
 %%% Debugging (20100217 AD: required it when pretty printing had a still unnoticed byg)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9999 hmtyinfer || hmtyast) hs export(tyIsA)
+%%[(99 hmtyinfer || hmtyast) hs export(tyIsA)
 tyIsA :: Ty -> String
 tyIsA (Ty_Con   a      ) = "CON"
 tyIsA (Ty_App   a b    ) = "APP"
@@ -829,6 +829,11 @@ mkTyFreshProdFrom uid arity =  mkProdApp . map mkTyVar . mkNewUIDL arity $ uid
 
 mkTyFreshProd :: Int -> Ty
 mkTyFreshProd = mkTyFreshProdFrom uidStart
+%%]
+
+%%[(11 hmtyinfer || hmtyast) hs export(mkTyLam)
+mkTyLam :: [TyVarId] -> Ty -> Ty
+mkTyLam args body = foldr Ty_Lam body args
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1068,9 +1073,9 @@ tyAppFunArg :: Ty -> (Ty,Ty)
 tyAppFunArg t =  case tyUnAnn t of {Ty_App f a -> (f,a); _ -> (Ty_Any,Ty_Any)}
 %%]
 
-%%[(9 hmtyinfer || hmtyast) hs export(tyAppConArgs)
-tyAppConArgs    :: Ty -> Maybe (HsName,TyL)
-tyAppConArgs t
+%%[(9 hmtyinfer || hmtyast) hs export(tyMbAppConArgs)
+tyMbAppConArgs    :: Ty -> Maybe (HsName,TyL)
+tyMbAppConArgs t
   =  fmap (\c -> (c,a)) $ tyMbCon f
   where (f,a) = tyAppFunArgs t
 %%]
@@ -1529,12 +1534,17 @@ deriving instance Typeable TyKiKey
 deriving instance Data TyKiKey
 %%]
 
+%%[6 hs export(tyKiKeyMbName)
+tyKiKeyMbName :: TyKiKey -> Maybe HsName
+tyKiKeyMbName (TyKiKey_Name n) = Just n
+%%[[(6 hmtyinfer || hmtyast)
+tyKiKeyMbName _                = Nothing
+%%]]
+%%]
+
 %%[6 hs export(tyKiKeyIsName)
 tyKiKeyIsName :: TyKiKey -> Bool
-tyKiKeyIsName (TyKiKey_Name _) = True
-%%[[(6 hmtyinfer || hmtyast)
-tyKiKeyIsName _                = False
-%%]]
+tyKiKeyIsName = isJust . tyKiKeyMbName
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

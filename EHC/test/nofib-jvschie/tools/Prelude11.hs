@@ -111,10 +111,15 @@ length           :: [a] -> Int
 length            = foldl' (\n _ -> n + 1) 0
 
 (!!)             :: [a] -> Int -> a
-xs     !! n | n<0 = error "Prelude.!!: negative index"
-[]     !! _       = error "Prelude.!!: index too large"
-(x:_)  !! 0       = x
-(_:xs) !! n       = xs !! (n-1)
+--xs     !! n | n<0 = error "Prelude.!!: negative index"
+--[]     !! _       = error "Prelude.!!: index too large"
+--(x:_)  !! 0       = x
+--(_:xs) !! n       = xs !! (n-1)
+(x:xs) !! n       = if n == 0
+                    then x
+                    else xs !! (n-1)
+
+
 
 foldl'           :: (a -> b -> a) -> a -> [b] -> a
 foldl' f a []     = a
@@ -159,7 +164,9 @@ concat           :: [[a]] -> [a]
 concat            = foldr (++) []
 
 concatMap        :: (a -> [b]) -> [a] -> [b]
-concatMap f       = concat . map f
+-- concatMap f       = concat . map f    -- this definition cannot be used, because map is defined as a list comprehension, which is desugared using concatMap
+concatMap _ []      = []
+concatMap f (x:xs)  = f x ++ concatMap f xs
 
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []      = z
@@ -423,7 +430,7 @@ class Eq a where
     (==), (/=) :: a -> a -> Bool
     -- default definitions
     -- Minimal complete definition: (==) or (/=)
-    x == y      = not (x/=y)
+--    x == y      = not (x/=y)
     x /= y      = not (x==y)
 
 -- Ord class ---------------------------------------------
@@ -517,6 +524,7 @@ class Show a where
 
 instance Eq  Int where 
   (==)    = primEqInt
+  -- x /= y  = not (primEqInt x y)
 
 instance Ord Int where
   compare = primCmpInt
@@ -571,6 +579,10 @@ showInt x | x<0  = '-' : showInt(-x)
 
 
 -- List instance of Eq, Ord, Functor, Monad, Show
+
+hiero :: Int -> Int
+hiero x = x+1
+
 
 instance Eq a => Eq [a] where
     []     == []     =  True

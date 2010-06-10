@@ -444,7 +444,7 @@ cpEhcModuleCompile1 targHSState modNm
                    ; cpUpdCU modNm (ecuStoreState (ECUSEh EHAllSem))
                    ; return defaultResult
                    }
-%%[[94
+%%[[90
            (ECUSC CStart,_)
              -> do { cpSeq [ cpMsg modNm VerboseMinimal "Compiling C"
                            , cpCompileWithGCC FinalCompile_Module [] modNm

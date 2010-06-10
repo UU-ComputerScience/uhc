@@ -44,6 +44,9 @@
 %%[(8 codegen hmtyinfer) import(qualified {%{EH}TyCore.Full0} as C)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 hmtyinfer) import({%{EH}Ty.Trf.Canonic})
 %%]
 %%[(9 hmtyinfer) import(qualified Data.Map as Map,EH.Util.Pretty,{%{EH}Pred})
@@ -72,9 +75,6 @@ For debug/trace:
 %%]
 
 %%[(4 hmtyinfer) import({%{EH}Base.Debug} as Debug)
-%%]
-
-%%[(16 hmtyinfer) import(Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -356,7 +356,7 @@ fitsInFI fi ty1 ty2
             errClash fiErr t1 t2    =  err fiErr [rngLift range Err_UnifyClash (fiAppVarMp fiErr ty1) (fiAppVarMp fiErr ty2) (fioMode (fiFIOpts fi)) (fiAppVarMp fiErr t1) (fiAppVarMp fiErr t2) (fioMode (fiFIOpts fiErr))]
 
             -- binding
-            occurBind fi v t        =  bind fi v t
+            occurBind fi isLBind v t=  bind fi isLBind v t
 %%]
 
 %%[(4 hmtyinfer)
@@ -373,10 +373,19 @@ fitsInFI fi ty1 ty2
             tyVarIsBound tv fi      =  isJust $ lookupTyVar fi tv
 
 %%[(4 hmtyinfer).fitsIn.bind
-            bind fi tv t            =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
+            bind fi isLBind tv t    =  dtfo "bind" fi tv' t [] (tv `varmpTyUnit` t)
                                        $ trfo "bind" ("tv:" >#< tv >-< "ty:" >#< ppTyWithFI fi t)
-                                       $ (res' (fiBindTyVar tv t fi) tv' t)
+                                       $ res' (fiBindTyVar tv t fi2) tv' t
                                     where tv' = mkTyVar tv
+%%[[4
+                                          fi2 = fi
+%%][9
+                                          fi2 = case (tyMbVar t, (if isLBind then fioBindRVars else fioBindLVars) (fiFIOpts fi)) of
+                                                  (Just v, FIOBindNoBut but) | not (v `Set.member` but)
+                                                    -> -- (\x -> let o = fiFIOpts x in Debug.tr "fitsIn.bind.fi2" (isLBind >#< tv >#< t >-< show (fioBindRVars o) >#< show (fioBindLVars o) >-< show (fioDontBind $ fiFIOpts fi) >#< show (fioDontBind o)) x) $
+                                                       fiInhibitBind v fi
+                                                  _ -> fi
+%%]]
 %%]
 
 %%[(4 hmtyinfer).fitsIn.allowImpredTVBind
@@ -434,12 +443,21 @@ fitsInFI fi ty1 ty2
 
 %%[(4 hmtyinfer).fitsIn.FOUtils
             foUpdVarMp  c fo = fo {foVarMp = c |=> foVarMp fo}
-            fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi -- ++ foTrace fo
+            fifo       fi fo = fo { foVarMp    = fiVarMpLoc fi, foUniq = fiUniq fi, foTrace = fiTrace fi
+%%[[7
+                                  , foDontBind = fioDontBind (fiFIOpts fi)
+%%]]
                                   }
-            fofi       fo fi = fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo, fiTrace = foTrace fo -- ++ fiTrace fi
+            fofi       fo fi = -- (\x -> Debug.tr "fofi" ((pp $ show $ fioDontBind o) >-< (pp $ show $ foDontBind fo) >-< (pp $ show $ fioDontBind $ fiFIOpts x)) x)
+                               fi { fiVarMpLoc = foVarMp    fo, fiUniq = foUniq fo, fiTrace = foTrace fo
+%%[[7
+                                  , fiFIOpts   = o {fioDontBind = foDontBind fo}
+%%]]
                                   }
+                               where o  = fiFIOpts fi
+
 %%]
-%%[(9 hmtyinfer)
+%%[(7 hmtyinfer)
             fiInhibitBind v fi = fi {fiFIOpts = o {fioDontBind = v `Set.insert` fioDontBind o}}
                                where o  = fiFIOpts fi
 %%]
@@ -466,6 +484,9 @@ fitsInFI fi ty1 ty2
             foCmbApp     ffo      = 
 %%[[6
                                     -- foCmbTvKiVarMp ffo .
+%%]]
+%%[[7
+                                    -- (\afo -> afo {foDontBind = ((\x -> Debug.tr "foCmbApp.ffo" (pp $ show x) x) $ foDontBind ffo) `Set.union` ((\x -> Debug.tr "foCmbApp.afo" (pp $ show x) x) $ foDontBind afo)}) .
 %%]]
 %%[[9
                                     foCmbPrfRes ffo .
@@ -623,7 +644,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                          = res fi r2
                        fR fi r1@(Ty_Var v1 f1) r2@(Ty_Con n2) [] [] []
                          | f1 `elem` fioBindCategs (fiFIOpts fi) {- tvCatIsPlain f1 -} && n2 == hsnRowEmpty && isRec
-                         = occurBind fi v1 r2
+                         = occurBind fi True v1 r2
                        fR fi r1 r2 [] [] []
                          = (fUpd fi id r1 r2)
 %%[[(10 codegen)
@@ -661,8 +682,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                  tr1s = uncurry mkTyRow $ tyRowExtsUnAnn $ tyRowExtsWithLkup (fiLookupTyVarCyc fi3) tr1
                                  (u',u2,u3,u4) = mkNewLevUID3 (foUniq fo)
 %%[[(10 codegen)
-                                 r = CExpr_Var rn
-                                 tr = C.Expr_Var rn
+                                 r = acoreVar rn
+                                 tr = acoreVar rn
                                  mkLSel n u = mkCExprSelCase (emptyRCEEnv globOpts) (Just $ hsnUniqifyEval rn) r CTagRec n n (mkCExprHole globOpts u) Nothing
                                  mkLTSel n u = C.mkExprSelCase (C.emptyRCEEnv globOpts) (Just (hsnUniqifyEval rn,C.tyErr ("fitsIn.mkLTSel: " ++ show n ++ ":" ++ show u))) tr CTagRec n (C.mkExprHole globOpts u) Nothing
 %%]]
@@ -683,7 +704,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                         (sel,csubstSel) = coeEvalOnAsSubst u2 c (mkLSel l u1)
                                                     in  ( ( l
 %%[[(10 codegen)
-                                                          , (CExpr_TupUpd (cundefined globOpts) CTagRec l (mkCExprHole globOpts u) sel,Nothing)
+                                                          , (CExpr_TupUpd (acoreBuiltinUndefined globOpts) CTagRec l (mkCExprHole globOpts u) sel,Nothing)
 %%]]
                                                           ) : fuL
                                                         , mkLPred r l u1 : prL
@@ -699,7 +720,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                         (sel,csubstSel) = {- C.coeEvalOnAsSubst -} fireqCoeEvalOnAsSubst fiReqs u2 c (mkLTSel l u1)
                                                     in  ( ( l
 %%[[(10 codegen)
-                                                          , (C.Expr_TupUpd (C.tcUndefined globOpts) CTagRec l (C.mkExprHole globOpts u) sel,Nothing)
+                                                          , (C.Expr_TupUpd (acoreBuiltinUndefined globOpts) CTagRec l (C.mkExprHole globOpts u) sel,Nothing)
 %%]]
                                                           ) : fuL
                                                         , mkLPred r l u1 : prL
@@ -714,7 +735,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                   ->  let  (pr,r') = mkLPred' r l u
                                                       in   ( ( l
 %%[[(10 codegen)
-                                                             , (CExpr_TupDel (CExpr_Var hsnWild) CTagRec l (mkCExprHole globOpts u),Nothing)
+                                                             , (CExpr_TupDel (acoreVar hsnWild) CTagRec l (mkCExprHole globOpts u),Nothing)
 %%]]
                                                              ) : fuL
                                                            , pr:prL,r',uidNext u
@@ -726,7 +747,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                                   ->  let  (pr,r') = mkLPred' r l u
                                                       in   ( ( l
 %%[[(10 codegen)
-                                                             , (C.Expr_TupDel (C.Expr_Var hsnWild) CTagRec l (C.mkExprHole globOpts u),Nothing)
+                                                             , (C.Expr_TupDel (acoreVar hsnWild) CTagRec l (C.mkExprHole globOpts u),Nothing)
 %%]]
                                                              ) : fuL
                                                            , pr:prL,r',uidNext u
@@ -784,7 +805,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
 {- -- when ext rec deletes are implemented
                                      | n2 == hsnRowEmpty && null fuUpdL && not (null fuDelL) && null e2
-                                     ->  let coe = Coe (\e -> mkCExprLet CBindings_Plain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuDelL r))
+                                     ->  let coe = Coe (\e -> acoreLet CBindings_Plain [CBind_Bind rn e] (fuMkCExpr globOpts u4 fuDelL r))
                                          in  fo  {  foLRCoe = lrcoeLSingleton coe
                                                  ,  foPredOccL = prDelL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prDelL `cnstrMpUnion` foGathCnstrMp fo
@@ -794,8 +815,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      | n2 == hsnRowEmpty && not (null prBldL)
                                      ->  let
 %%[[(10 codegen)
-                                             coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (CExpr_Tup CTagRec `mkCExprApp` fBldL))
-                                             tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.Expr_Tup CTagRec `C.mkExprApp` tfBldL))
+                                             coe = Coe (\e -> acoreLet CBindings_Plain [acoreBind1Cat CBindings_Plain rn e] (CExpr_Tup CTagRec `acoreApp` fBldL))
+                                             tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.Expr_Tup CTagRec `acoreApp` tfBldL))
 %%]]
                                          in  fo  {  foPredOccL = prBldL ++ foPredOccL fo
                                                  ,  foGathCnstrMp = gathPredLToProveCnstrMp prBldL `cnstrMpUnion` foGathCnstrMp fo
@@ -816,7 +837,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                              }
 %%[[(10 codegen)
-                                     where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuL r))
+                                     where coe = Coe (\e -> acoreLet CBindings_Plain [acoreBind1Cat CBindings_Plain rn e] (fuMkCExpr globOpts u4 fuL r))
                                            tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuL tr))
 %%]]
                                    _ |  not (null fuUpdL)
@@ -836,7 +857,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                              }
 %%]]
 %%[[(10 codegen)
-                                     where coe = Coe (\e -> mkCExprLet CBindings_Plain [mkCBind1 rn e] (fuMkCExpr globOpts u4 fuUpdL r))
+                                     where coe = Coe (\e -> acoreLet CBindings_Plain [acoreBind1Cat CBindings_Plain rn e] (fuMkCExpr globOpts u4 fuUpdL r))
                                            tcoe = C.Coe_Map (\e -> C.mkExprLet C.ValBindCateg_Plain [C.mkValBind1 rn (C.tyErr ("fitsIn.coe: " ++ show rn)) e] (C.fuMkExpr globOpts u4 tfuUpdL tr))
 %%]]
 %%]
@@ -948,6 +969,8 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                      ("t1:" >#< ppTyWithFI fi t1 >-< "t2:" >#< ppTyWithFI fi t2
 %%[[9999
                                             >-< "fioDontBind    :" >#< show (fioDontBind (fiFIOpts fi))
+                                            >-< "fioBindLBeforeR:" >#< show (fioBindLBeforeR (fiFIOpts fi))
+                                            >-< "fioBindCategs  :" >#< show (fioBindCategs (fiFIOpts fi))
                                             >-< "fioBindNoSet(L):" >#< show (fioBindNoSet (fioBindLVars (fiFIOpts fi)))
                                             >-< "fioBindIsYes(L):" >#< show (fioBindIsYes (fioBindLVars (fiFIOpts fi)))
                                             >-< "tyIsA       (L):" >#< tyIsA t1
@@ -963,17 +986,17 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%[(4 hmtyinfer)
 			-- | tvar binding part 1: 2 tvars
             varBind1  fi updTy t1@(Ty_Var v1 f1)      t2@(Ty_Var v2 f2)
-                | v1 == v2 && f1 == f2                  = Just $ res fi t1
-                | lBefR && fiAllowTyVarBind fi t1       = Just $ bind fi v1 (updTy t2)
-                | not lBefR && fiAllowTyVarBind fi t2   = Just $ bind fi v2 (updTy t1)
+                | v1 == v2 && f1 == f2                  = Just $ res  fi       t1
+                |     lBefR && fiAllowTyVarBind fi t1   = Just $ bind fi True  v1 (updTy t2)
+                | not lBefR && fiAllowTyVarBind fi t2   = Just $ bind fi False v2 (updTy t1)
                 where lBefR = fioBindLBeforeR (fiFIOpts fi)
             varBind1  _  _     _                      _ = Nothing       
 
 			-- | tvar binding part 2: 1 of 2 tvars, impredicatively
             varBind2  fi updTy t1@(Ty_Var v1 _)       t2
-                | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi v1 (updTy t2)
+                | allowImpredTVBindL fi t1 t2           = Just $ occurBind fi True  v1 (updTy t2)
             varBind2  fi updTy t1                     t2@(Ty_Var v2 _)
-                | allowImpredTVBindR fi t2 t1           = Just $ occurBind fi v2 (updTy t1)
+                | allowImpredTVBindR fi t2 t1           = Just $ occurBind fi False v2 (updTy t1)
             varBind2  _  _     _                      _ = Nothing       
 
 			-- | tvar binding part 3: 1 of 2 tvars, non impredicatively
@@ -981,12 +1004,12 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                 | fiAllowTyVarBind fi t1                = case deepInstMatchTy fi t2 of
                                                             Just (t1',fi') | fiRankEqInstRank fi
                                                               -> Just $ fVar' fUpd (fiInitInstRank $ fiBindTyVar v1 t1' fi') updTy t1 t2
-                                                            _ -> Just $ occurBind fi v1 t2
+                                                            _ -> Just $ occurBind fi True v1 t2
             varBind3  fi updTy t1                     t2@(Ty_Var v2 _)
                 | fiAllowTyVarBind fi t2                = case deepInstMatchTy fi t1 of
                                                             Just (t2',fi') | fiRankEqInstRank fi
                                                               -> Just $ fVar' fUpd (fiInitInstRank $ fiBindTyVar v2 t2' fi') updTy t1 t2
-                                                            _ -> Just $ occurBind fi v2 t1
+                                                            _ -> Just $ occurBind fi False v2 t1
             varBind3  _  _     _                      _ = Nothing       
 %%]
 
@@ -1403,7 +1426,9 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                        pol    = asPolarity as
                        fi3    = trfi "spine" ("f tf1 tf2:" >#< ppTyWithFI fi2 (foTy ffo) >-< "spine:" >#< ppCommas spine) fi2
-                       fi4    = (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
+                       fi4    = -- (\x -> Debug.tr "fUpd.fi4" ((pp $ show $ fioDontBind $ fiFIOpts fi) >-< (pp $ show $ foDontBind ffo) >-< (pp $ show $ fioDontBind $ fiFIOpts x) ) x) $
+                                -- (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo fi3) {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}
+                                (fofi ffo $ fiUpdRankByPolarity pol $ fiSwapCoCo (fi3 {fiFIOpts = asFIO as $ fioSwapPolarity pol $ fiFIOpts fi}))
                        afo    = fVar' fTySyn fi4 id ta1 ta2
 %%[[4
                        rfo    = asFO as ffo $ foCmbApp ffo afo
@@ -1473,13 +1498,16 @@ fitsIn' msg opts env uniq varmp ty1 ty2
 %%% Subsumption for lists of types
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(6 hmtyinfer) export(fitsInL)
+%%[(6 hmtyinfer) export(fitsInL',fitsInL)
+fitsInL' :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> ([FIOut],FIOut)
+fitsInL' opts env uniq varmp tyl1 tyl2
+  = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |+> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
+                (mkFitsInWrap' env) opts uniq varmp tyl1 tyl2
+
 fitsInL :: FIOpts -> FIEnv -> UID -> VarMp -> TyL -> TyL -> (TyL,FIOut)
 fitsInL opts env uniq varmp tyl1 tyl2
   = (map foTy foL,fo)
-  where (fo,foL)
-          = fitsInLWith (\fo1 fo2 -> fo2 {foVarMp = foVarMp fo1 |+> foVarMp fo2, foErrL = foErrL fo1 ++ foErrL fo2})
-                        (mkFitsInWrap' env) opts uniq varmp tyl1 tyl2
+  where (foL,fo) = fitsInL' opts env uniq varmp tyl1 tyl2
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1574,9 +1602,20 @@ fitPredIntoPred fi pr1 pr2
 %%]]
         f pr1                   pr2
           = if foHasErrs fo
-            then {- tr "fitPredIntoPred" (pr1 >-< pr2 >-< ppErrL (foErrL fo) >-< fiVarMp fi) $ -} Nothing
+            then {- tr "fitPredIntoPred"
+                            (pr1 >-< pr2 >-< ppErrL (foErrL fo)
+                             >-< "fiVarMp" >#< fiVarMp fi >-< "foVarMp" >#< foVarMp fo
+                             >-< "fioDontBind" >#< show (fioDontBind (fiFIOpts fi))
+                             >-< "fioBindLVars" >#< show (fioBindLVars (fiFIOpts fi)) >-< "fioBindRVars" >#< show (fioBindRVars (fiFIOpts fi))
+                             >-< "foTrace" >#< vlist (foTrace fo)
+                            ) $ -}
+                 Nothing
             else Just (tyPred $ foTy fo,foVarMp fo)
-          where fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut Set.empty, fioDontBind = fioDontBind (fiFIOpts fi)})
+          where fo = fitsIn (predFIOpts
+                               { fioBindRVars = FIOBindNoBut Set.empty
+                               , fioDontBind = fioDontBind (fiFIOpts fi)
+                               , fioBindCategs = fioBindCategs (fiFIOpts fi)
+                               })
                             (fiEnv fi) (fiUniq fi) (fiVarMp fi)
                             (Ty_Pred pr1) (Ty_Pred pr2)
 %%]
@@ -1585,27 +1624,33 @@ fitPredIntoPred fi pr1 pr2
 %%% Retrieving evidence type for predicate
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(9 hmtyinfer) export(fitPredToEvid)
-fitPredToEvid :: UID -> VarMp -> Ty -> ClGam -> FIOut
-fitPredToEvid u varmp prTy g
+%%[(9 hmtyinfer) export(fitPredToEvid')
+fitPredToEvid' :: UID -> VarMp -> Ty -> Either ClGamInfo ClGam -> FIOut
+fitPredToEvid' u varmp prTy gg
   =  case prTy of
        Ty_Any  ->  emptyFO
        _       ->  fPr u prTy
   where  fPr u prTy
             =  case tyUnAnn prTy of -- TBD: necessary?
                  Ty_Pred p@(Pred_Class _)
-                    ->  case gamLookup (predMatchNm p) g of
-                           Just clgi
-                             -> let (u',u1,u2) = mkNewLevUID2 u
-                                    fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
-                                in  fo {foTy = snd (tyArrowArgRes (foTy fo))}
-                           _ -> emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
+                    ->  case gg of
+                          Left clgi -> fClgi u clgi prTy
+                          Right g   -> maybe err (\clgi -> fClgi u clgi prTy) $ gamLookup (predMatchNm p) g
+                                    where err = emptyFO {foErrL = [rngLift emptyRange mkErr_NamesNotIntrod "class" [tyPredMatchNm prTy]]}
+                    where fClgi u clgi prTy
+                            = fo {foTy = snd (tyArrowArgRes (foTy fo))}
+                            where (u',u1,u2) = mkNewLevUID2 u
+                                  fo = fitsIn (predFIOpts {fioBindRVars = FIOBindNoBut $ Set.singleton u2}) emptyFE u1 varmp (clgiPrToEvidTy clgi) ([prTy] `mkArrow` mkTyVar u2)
                  Ty_Pred (Pred_Pred t)
                     ->  let  (aL,r) = tyArrowArgsRes t
                              (_,aLr'@(r':aL')) = foldr (\t (u,ar) -> let (u',u1) = mkNewLevUID u in (u',fPr u1 t : ar)) (u,[]) (r : aL)
                         in   manyFO (aLr' ++ [emptyFO {foTy = map foTy aL' `mkArrow` foTy r'}])
 %%]
-         fOpts = predFIOpts {fioDontBind = ftvClosureSet varmp prTy}
+
+%%[(9 hmtyinfer) export(fitPredToEvid)
+fitPredToEvid :: UID -> VarMp -> Ty -> ClGam -> FIOut
+fitPredToEvid u varmp prTy g = fitPredToEvid' u varmp prTy (Right g)
+%%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Wrapper for fitsIn (as a solution for module dependency cycle)

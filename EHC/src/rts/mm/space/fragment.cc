@@ -38,7 +38,7 @@ MM_Space_FragmentInx mm_space_Fragment_GrowSpaceLog2( MM_Space* fragmentSpace, M
 	MM_Space_Fragment* frg = (MM_Space_Fragment*)mm_flexArray_At( &spc->fragments, frgInx ) ;
 	frg->frag = spc->pages->allocPagesLog2( spc->pages, szFragLog ) ;
 	frg->sizeLog = szFragLog ;
-	frg->size = 1 << szFragLog ;
+	frg->size = ((Word)(1)) << szFragLog ;
 
 	// mm_Spaces_RegisterSpaceFrame( fragmentSpace, frg ) ;
 	return frgInx ;

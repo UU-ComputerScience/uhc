@@ -546,6 +546,11 @@ SEM GrBind
 %%[(8 codegen grin)
 -- Collect all Fun, PApp and App nodes, and all Calls
 
+
+-- TODO: It may be a better idea to collect A-nodes separately,
+-- and to generate an IsApplication constraint for it, instead of handling it as a call to an app_n_k function.
+
+
 ATTR AllGrVal AllGrExpr AllDef GrModule [ | | allCalls USE {++} {[]} : {AbstractCallList} ]
 ATTR GrTag                              [ | | mbFPAnr                : {Maybe Int}        ]
 

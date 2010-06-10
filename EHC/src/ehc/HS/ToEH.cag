@@ -158,10 +158,20 @@ SEM Declaration
 %%[5
     | Data
         loc         .   eh          =   rngLift @range EH.Decl_Data False @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) @constructors.eh
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
     | Newtype
         loc         .   eh          =   rngLift @range EH.Decl_Data True @typerefname (map (rngLift @range EH.TyVar_Var) @typelefthandside.typevariables) [@constructors.eh]
+%%[[92
+                                                (if ehcOptGenGenerics @lhs.opts then Just @generMaxRemArity else Nothing)
+%%]]
         lhs         .   eh          =   [@eh]
+%%[[92
+    | Data Newtype
+        loc         .   ehGener     =   rngLift @range EH.Decl_GenerRep @generMaxRemArity @typerefname @constructors.conrefnames @constructors.conAndFldrefnames
+%%]]
 %%]
 %%[6
     | KindSignature
@@ -172,7 +182,7 @@ SEM Declaration
     | ForeignImport
 %%[[8
         loc         .   ent         =   maybe (show @name) id @importname
-%%][94
+%%][90
         loc         .   nmForParse 	=	maybe "" id @importname
                     . 	(ent,entErrs)
                                     =   parseForeignEnt @callconvention (Just $ show @name) @nmForParse
@@ -192,6 +202,11 @@ SEM Declaration
                                                       @dependencies.eh
 %%]]
                                                       (Just @instancerefname) sigs
+%%[[92
+                                                      []
+%%][99
+                                                      @generDerivInfoL
+%%]]
                                             , rngLift @range EH.Decl_Instance (Just (@instancerefname,False)) InstDefault a vals
                                             )
         lhs         .   eh          =   [@eh,@ehInst]
@@ -199,7 +214,7 @@ SEM Declaration
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @classrefname @types.eh
                                             c = map (rngLift @range EH.TyExpr_Pred) @context.eh
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstNormal (mkArrow c h) (concat @ehReorderedDecls)
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) @instVariant (mkArrow c h) (concat @ehReorderedDecls)
         lhs         .   eh          =   [@eh]
     | InstanceUseImplicitly
         loc         .   eh          =   let h = rngLift @range EH.PrExpr_Class @classrefname @types.eh
@@ -215,7 +230,7 @@ SEM Declaration
         loc         .   eh          =   rngLift @range EH.Decl_Type @typerefname (foldr (rngLift @range EH.TyExpr_Lam) @type.eh @typelefthandside.typevariables)
         lhs         .   eh          =   [@eh]
 %%]
-%%[(94 codegen)
+%%[(90 codegen)
     | ForeignExport
         loc         .   nmForParse 	=	maybe "" id @exportname
                     .   (ent,entErrs)
@@ -241,7 +256,7 @@ SEM FunctionalDependency
                                           (map (rngLift @range EH.TyVar_Var) @totypevariables)
 %%]
 
-%%[95
+%%[91
 ATTR AllDeriving [ ehDataTyExpr: {EH.TyExpr} | | ]
 
 SEM Declaration
@@ -252,7 +267,7 @@ SEM Deriving
     | Deriving
         loc         .   eh          =   let h = rngLift @range EH.TyExpr_Pred
                                                 $ rngLift @range EH.PrExpr_Class @refname [rngLift @range EH.TyExpr_Parens @lhs.ehDataTyExpr]
-                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) InstDeriving h []
+                                        in  rngLift @range EH.Decl_Instance (Just (@instancerefname,@useimplicitly)) (InstDeriving InstDerivingFrom_Datatype) h []
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -471,7 +486,7 @@ SEM Constructor
 SEM Constructor
     | Constructor 
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
+%%[[91
                                                 Nothing
 %%]]
                                                 (map (ehPlainDataField emptyRange) @types.eh)
@@ -480,8 +495,11 @@ SEM Constructor
 %%]]
     | Infix
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
-                                                (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
+%%[[91
+                                                -- (Just $ fgiPrio $ fixityGamLookup @conrefname @lhs.fixityGam)
+                                                (let fgi = fixityGamLookup @conrefname @lhs.fixityGam
+                                                  in Just (fgiPrio fgi, fgiFixity fgi)
+                                                )
 %%]]
                                                 (map (ehPlainDataField emptyRange) [@leftType.eh,@rightType.eh])
 %%[[16
@@ -489,7 +507,7 @@ SEM Constructor
 %%]]
     | Record
         lhs         .   eh          =   rngLift @range EH.DataConstr_Constr @conrefname
-%%[[95
+%%[[91
                                                 Nothing
 %%]]
                                                 @fieldDeclarations.eh

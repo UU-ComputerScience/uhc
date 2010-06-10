@@ -10,6 +10,9 @@
 %%[(8 codegen) hs module {%{EH}Core.Trf.InlineLetAlias} import(Data.Maybe,qualified Data.Map as Map,qualified Data.Set as Set,{%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty}) export(cmodTrfInlineLetAlias)
 %%]
 
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn},{Core/CommonLev},{Core/Trf/CommonFv},{Core/Trf/CommonLev})
 WRAPPER CodeAGItf
 %%]
@@ -131,11 +134,11 @@ SEM CodeAGItf
 SEM CExpr
   | Let         loc         .   allowTrf    =   @categ /= CBindings_Strict
                                                 && @categ /= CBindings_FFI
-%%[[94
+%%[[90
                                                 && @categ /= CBindings_FFE
 %%]]
                             .   allowStrTrf =   @categ /= CBindings_FFI
-%%[[94
+%%[[90
                                                 && @categ /= CBindings_FFE
 %%]]
                             .   nmMpNew     =   Map.foldWithKey
@@ -187,7 +190,7 @@ SEM CExpr
 %%% Gather additional names for which the def may not be eliminated: FFE
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[(94 codegen)
+%%[(90 codegen)
 ATTR AllBind [ | | bindsNoTrfNmS USE {`Set.union`} {Set.empty}: HsNameS ]
 %%]
 
@@ -253,17 +256,17 @@ ATTR CodeAGItf [ | | cTrf: CModule ]
 SEM CExpr
   | Let         lhs         .   cTrf        =   if Map.null @nmMpNew
                                                 then @cTrf
-                                                else mkCExprLet @categ
+                                                else acoreLet @categ
                                                        [ b | (n,b) <- @binds.bindL
                                                            , not (n `Map.member` @nmMpNew)
-%%[[94
+%%[[90
                                                              || n `Set.member` @binds.bindsNoTrfNmS
 %%]]
                                                        ] @body.cTrf
   | Var         lhs         .   cTrf        =   maybe @cTrf id $ Map.lookup @nm $ @lhs.nmMp
 %%]
 
-%%[(94 codegen)
+%%[(90 codegen)
 SEM CBind
   | FFE         loc         .   (replNm,bindsNoTrfNmS)
                                             =   case Map.lookup @expNm @lhs.nmMp of

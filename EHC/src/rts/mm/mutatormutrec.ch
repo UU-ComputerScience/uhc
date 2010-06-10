@@ -23,7 +23,7 @@ typedef struct MM_Mutator {
   	MM_Trace* 					trace ;
   	MM_Module* 					module ;
   	MM_Malloc*					malloc ;
-%%[[94
+%%[[90
 	struct MM_WeakPtr*			weakPtrAdm ;
   	MM_DEQue* 					weakPtrFinalizeQue ;	// queue of weakptrs to be finalized
 %%]]
@@ -35,7 +35,7 @@ typedef struct MM_Mutator {
   										, MM_Allocator* resAllocator
   										, MM_Trace* trace
   										, MM_Module* module
-%%[[94
+%%[[90
 										, struct MM_WeakPtr* weakPtrAdm
 										, MM_DEQue* weakPtrFinalizeQue
 %%]]
@@ -47,7 +47,7 @@ typedef struct MM_Mutator {
   	// scan runtime object, add new objects to be traced to trace
   	//void						(*scanObject)( struct MM_Mutator*, MM_TraceSupply* trace ) ;
 
-%%[[94
+%%[[90
   	// allocation variants for specific objects required by MM
   	Ptr							(*allocWeakPtr)( struct MM_Mutator* ) ;
 %%]]
@@ -63,7 +63,7 @@ typedef struct MM_Mutator {
 %%% WeakPtr internal for interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 // the alive result of finding new alive weakptrs
 typedef struct MM_WeakPtr_NewAlive {
 	MM_FreeListArray*		alive ;				// the list of still alive objects
@@ -76,7 +76,7 @@ typedef struct MM_WeakPtr_NewAlive {
 %%% WeakPtr interface
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%[94
+%%[90
 typedef Ptr  MM_WeakPtr_Data_Priv ;
 
 typedef struct MM_WeakPtr {

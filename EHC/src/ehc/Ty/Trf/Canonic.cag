@@ -47,15 +47,15 @@ Currently (20090821) only empty implicits \verb@Impls_Tail@ are replaced by
 %%[(16 hmtyinfer) hs import({%{EH}Ty.Trf.MergePreds})
 %%]
 
-%%[(94 hmtyinfer) hs import(EH.Util.Utils)
+%%[(90 hmtyinfer) hs import(EH.Util.Utils)
 %%]
-%%[(94 hmtyinfer) hs import({%{EH}Gam.Full})
+%%[(90 hmtyinfer) hs import({%{EH}Gam.Full})
 %%]
 %%[(98 hmtyinfer) hs import({%{EH}Base.Builtin})
 %%]
 
 -- for debug
-%%[(94 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
+%%[(90 hmtyinfer) hs import(EH.Util.Debug,EH.Util.Pretty)
 %%]
 
 %%[(9 hmtyinfer).WRAPPER ag import({Ty/AbsSyn},{Ty/CommonAG})
@@ -176,7 +176,7 @@ tyCanonicFFI fi
         canonLkupTy' = canonLkupTy
 %%][98
         canonLkupTy' fi nm = newtypeLamLkup `orMb` canonLkupTy fi nm
-                     where newtypeLamLkup | ehbnIO (ehcOptBuiltinNames ehcopts) == nm
+                     where newtypeLamLkup | ehcOptBuiltin ehcopts ehbnIO == nm
                                                       = Nothing
                                           | otherwise = dgiMbNewtype $? dataGamLookup nm $ feDataGam fe 
         fe      = fiEnv fi

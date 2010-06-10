@@ -8,6 +8,9 @@
 %%[(9 codegen) hs import({%{EH}Ty},{%{EH}Core})
 %%]
 
+%%[(9 codegen) hs import({%{EH}AbstractCore})
+%%]
+
 %%[(9 codegen) hs import(qualified Data.Map as Map,qualified Data.Set as Set)
 %%]
 
@@ -81,7 +84,7 @@ mkAppCoe1 :: CExpr -> Coe
 mkAppCoe1 a = mkAppCoe1With a CMetaVal_Val
 
 mkAppCoeWith :: [(CExpr,CMetaVal)] -> Coe
-mkAppCoeWith as = mkCoe (\e -> mkCExprAppMeta e as)
+mkAppCoeWith as = mkCoe (\e -> acoreAppMeta e as)
 
 mkAppCoe :: [CExpr] -> Coe
 mkAppCoe as = mkAppCoeWith (cmetaLift as)
@@ -149,7 +152,7 @@ mkIdLRCoe' l r = LRCoe LRCoeId [l] [r]
 
 %%[(9 codegen) hs export(mkIdLRCoeWith)
 mkIdLRCoeWith :: HsName -> CMetaVal -> LRCoe
-mkIdLRCoeWith n m = mkIdLRCoe' (mkAppCoeWith [(CExpr_Var n,m)]) (mkLamCoe1With n m)
+mkIdLRCoeWith n m = mkIdLRCoe' (mkAppCoeWith [(acoreVar n,m)]) (mkLamCoe1With n m)
 %%]
 
 %%[(9 codegen) hs export(lrcoeLSingleton,lrcoeRSingleton,lrcoeLFromList,lrcoeRFromList)

@@ -12,6 +12,8 @@
 
 %%[(8 codegen) hs import({%{EH}Base.Common},{%{EH}Base.Builtin},{%{EH}Core},{%{EH}Ty})
 %%]
+%%[(8 codegen) hs import({%{EH}AbstractCore})
+%%]
 
 %%[(8 codegen).WRAPPER ag import({Core/AbsSyn})
 WRAPPER CodeAGItf
@@ -183,7 +185,7 @@ SEM CExpr
 
 %%[(8 codegen)
 SEM CExpr
-  | Var         lhs         .   cTrf        =   CExpr_Var (aRenRepl @lhs.aRenMp @nm)
+  | Var         lhs         .   cTrf        =   acoreVar (aRenRepl @lhs.aRenMp @nm)
   | Lam         lhs         .   cTrf        =   CExpr_Lam (aRenRepl @aRenMp @arg) @argMeta.cTrf @body.cTrf
 
 SEM CBind

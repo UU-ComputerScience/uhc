@@ -7,6 +7,8 @@ For arrays with GC content see UHC.BoxArray.
 %%]
 
 %%[99
+{-# LANGUAGE NoImplicitPrelude, CPP #-}
+
 module UHC.ByteArray
   ( MutableByteArray
   

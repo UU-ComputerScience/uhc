@@ -23,6 +23,10 @@ Output generation, on stdout or file
 %%[8 import(qualified {%{EH}Config} as Cfg)
 %%]
 
+-- EH semantics
+%%[99 import(qualified {%{EH}EH.MainAG} as EHSem)
+%%]
+
 -- HI syntax and semantics
 %%[20 import(qualified {%{EH}HI} as HI)
 %%]
@@ -48,6 +52,10 @@ Output generation, on stdout or file
 
 -- module admin
 %%[20 import({%{EH}Module})
+%%]
+
+-- gam related utils
+%%[99 import({%{EH}Gam.Utils})
 %%]
 
 
@@ -163,9 +171,11 @@ cpOutputHI suff modNm
   =  do  {  cr <- get
          ;  let  (ecu,crsi,opts,fp) = crBaseInfo modNm cr
                  mmi    = panicJust "cpOutputHI.crsiModMp" $ Map.lookup modNm $ crsiModMp crsi
-                 hiinfo = (ecuHIInfo ecu)
-                               { HI.hiiExps                 = {- mentrelStrip $ -} mmiExps       mmi
-                               , HI.hiiHiddenExps           = {- mentrelStrip $ -}  mmiHiddenExps mmi
+                 hii1   = ecuHIInfo ecu
+                 hii2   = hii1 { HI.hiiValidity             = HI.HIValidity_Ok
+                               , HI.hiiModuleNm             = modNm
+                               , HI.hiiExps                 = mmiExps       mmi
+                               , HI.hiiHiddenExps           = mmiHiddenExps mmi
                                , HI.hiiHasMain              = ecuHasMain ecu
                                , HI.hiiTargetFlavor         = ehcOptTargetFlavor opts
                                , HI.hiiSrcTimeStamp         = Cfg.verTimestamp Cfg.version
@@ -177,6 +187,13 @@ cpOutputHI suff modNm
                                , HI.hiiCompileFlags         = optsDiscrRecompileRepr opts
                                , HI.hiiCompiler             = Cfg.installVariant opts
                                }
+%%[[20
+                 hii3   = hii2
+%%][9999
+                 ehInh  = crsiEHInh crsi
+                 hii3 = HI.hiiIncludeCacheOfImport (ecuAnHIInfo . flip crCU cr) (mentrelFilterMpExtendViaValGam modNm (EHSem.valGam_Inh_AGItf ehInh) (ecuUsedNames ecu)) hii2
+                 -- hii3   = hii2
+%%]]
                  fpH    = mkOutputFPath opts modNm fp suff
                  fnH    = fpathToStr fpH
          ;  cpMsg modNm VerboseALot "Emit HI"
@@ -184,13 +201,20 @@ cpOutputHI suff modNm
          ;  when (hiExists)
                  (lift $ removeFile fnH)
          ;  when (ehcOptVerbosity opts > VerboseALot)
-                 (do { lift $ putPPLn (pp hiinfo)
+                 (do { lift $ putPPLn ("hii3: " >#< hii3)
+%%[[99
+                     ; lift $ putPPLn ("used nms: " >#< (pp $ show $ ecuUsedNames ecu))
+%%]]
                      })
          ;  lift $ do { fpathEnsureExists fpH
-                      ; putSerializeFile fnH hiinfo
+                      ; putSerializeFile fnH hii3
                       }
          ;  now <- lift $ getClockTime
-         ;  cpUpdCU modNm (ecuStoreHIInfoTime now)
+         ;  cpUpdCU modNm ( ecuStoreHIInfoTime now
+%%[[99
+                          . ecuStoreHIInfo hii3
+%%]]
+                          )
          }
 
 %%]

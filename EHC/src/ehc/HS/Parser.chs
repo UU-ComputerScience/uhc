@@ -112,7 +112,10 @@ pApp p          =    mkApp <$> pList1 p
 pPragma' :: (Range -> Pragma -> x) -> HSParser x
 pPragma' mk
   = pPacked' pOPRAGMA pCPRAGMA
-      (   (\t ps r -> mk r $ Pragma_Language   (mkRange1 t) ps) <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
+      (   (\t ps r -> mk r $ Pragma_Language   (mkRange1 t) ps)
+          <$> pLANGUAGE_prag   <*> pCommas (tokMkQName <$>           conid)
+      <|> (\t cl fld val r -> mk r $ Pragma_Derivable (mkRange1 t) (tokMkQName cl) (tokMkQName fld) (tokMkQName val))
+          <$> pDERIVABLE_prag  <*> gtycon' tyconsym <*> var <*> qvar
       -- <|> (\t ps r -> mk r $ Pragma_OptionsGHC (mkRange1 t) ps) <$> pOPTIONSGHC_prag <*> pCommas (tokMkQName <$ pMINUS <*> conid)
       )
 
@@ -516,8 +519,8 @@ pDeclarationData
             <*> pContextItemsPrefixOpt
 %%]]
             <*> pTypeLeftHandSide <*> pC
-%%[[95
-            <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pList1Sep pCOMMA pDeriving)) <|> pSucceed [])
+%%[[91
+            <*> (pDERIVING *> ((:[]) <$> pDeriving <|> pParens (pListSep pCOMMA pDeriving)) <|> pSucceed [])
 %%]]
         -- TBD, for now: ignore quantifiers
         pDCon, pNCon :: HSParser Constructor
@@ -529,7 +532,7 @@ pDeclarationData
         pNCon = pList pTypeQuantPrefix *> pConstructor
 %%]
 
-%%[95
+%%[91
 pDeriving :: HSParser Deriving
 pDeriving
   = (\(n,u) t -> Deriving_Deriving (mkRange1 t) n u (tokMkQName t)) <$> pInstanceName <*> qconid
@@ -575,7 +578,7 @@ pDeclarationForeign
   = pFOREIGN
     <**> (   (\c s (i,n,t) r -> Declaration_ForeignImport (mkRange1 r) (fst c) s i (tokMkQName n) t)
              <$ pIMPORT <*> pFFIWay <*> pSafety <*> pFSpec
-%%[[94
+%%[[90
          <|> (\c (i,n,t) r -> Declaration_ForeignExport (mkRange1 r) (fst c) i (tokMkQName n) t)
              <$ pEXPORT <*> pFFIWay <*> pFSpec
 %%]]
@@ -618,14 +621,18 @@ pInstanceName
 %%[9
 pDeclarationInstance :: HSParser Declaration
 pDeclarationInstance
-  = pINSTANCE
-    <**> (   (\(n,u) c cl ts d t -> Declaration_Instance (mkRange1 t) n u c (tokMkQName cl) ts d)
-             <$> pInstanceName
-             <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
-             <*> pWhere' pDeclarationValue
-         <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
-             <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
-         )
+  =   pINSTANCE
+      <**> (   (\((n,u),c,cl,ts) d t -> Declaration_Instance (mkRange1 t) InstNormal n u c (tokMkQName cl) ts d)
+               <$> pHeader
+               <*> pWhere' pDeclarationValue
+           <|> (\e cl ts t -> Declaration_InstanceUseImplicitly (mkRange1 t) e (tokMkQName cl) ts)
+               <$> pExpression <* pLTCOLON <*> qconid <*> pList1 pTypeBase
+           )
+%%[[91
+  <|> (\t ((n,u),c,cl,ts) -> Declaration_Instance (mkRange1 t) (InstDeriving InstDerivingFrom_Standalone) n u c (tokMkQName cl) ts Nothing)
+      <$> pDERIVING <* pINSTANCE <*> pHeader
+%%]]
+  where pHeader = (,,,) <$> pInstanceName <*> pContextItemsPrefixOpt <*> qconid <*> pList1 pTypeBase
 %%]
 
 %%[9
@@ -1674,7 +1681,7 @@ pPatternApp :: HSParser Pattern
 pPatternApp
   =   pPatternBase
   <|> pPatternBaseMinusLiteral
-  <|> qconid
+  <|> qcon
       <**> (   (\l c -> mkRngNm Pattern_Constructor c l) <$> pList1 pPatternBaseCon
            <|> pPatternConSuffix
            )
@@ -1874,6 +1881,7 @@ conid
   =   conid_nopragma           
 %%[[99
   <|> pLANGUAGE_prag
+  <|> pDERIVABLE_prag
 %%]]
   <?> "conid"
 
@@ -1955,7 +1963,7 @@ tyvar
 safety :: HSParser Token
 safety
   =   pSAFE 
-%%[[94       
+%%[[90       
   <|> pUNSAFE      
   <|> pTHREADSAFE
 %%]] 
@@ -1984,7 +1992,7 @@ special_id_no_callconv
   <|> pQUALIFIED   
   <|> pHIDING
 %%]]
-%%[[94
+%%[[90
   <|> pDYNAMIC
 %%]]
   <?> "special_id_no_callconv"
@@ -2305,9 +2313,7 @@ gtycon_no_delims
 gtycon_only_bracks :: HSParser Token   -- A "general" qualified tycon
 gtycon_only_bracks
   =   tokConcat <$> pOBRACK <*> pCBRACK
-%%[[90
-  <|> tokConcat <$> pOPABRACK <*> pCPABRACK
-%%]]
+  -- <|> tokConcat <$> pOPABRACK <*> pCPABRACK
   <?> "gtycon_only_delims"
 %%]
 

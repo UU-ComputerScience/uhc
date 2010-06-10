@@ -86,7 +86,7 @@ cpTransformCore modNm
            )
        
          -- put back result: additional hidden exports, it should be in a cpFlowXX variant
-       ; cpUpdHiddenExports modNm (Set.toList $ trfcoreExtraExports trfcoreOut)
+       ; cpUpdHiddenExports modNm $ zip (Set.toList $ trfcoreExtraExports trfcoreOut) (repeat IdOcc_Val)
 %%]]
        }
 %%]
