@@ -131,7 +131,7 @@ SEM SilModule
                                   else "%d\n"
                 loc.constants = (@loc.globalResStr,@loc.resConst) 
                                 : mkGCFieldDescriptors @lhs.intType @constants 
-                                : mkGCGlobalsDescr @variables 
+                                : mkGCGlobalsDescr @variables @lhs.intType
                                 : (GlobalVar "_llvm_globals_descriptor_count" @lhs.intType , Constant (length @variables) @lhs.intType)
                                 : @functions.constants 
 
@@ -935,11 +935,11 @@ mkGCFieldDescriptors intType ci = (GlobalVar "_llvm_node_descriptor" i8 , ArrayC
                                           , Constant (fromBool $ constantInfoHasPointers fd) i8] (TyVar "FDESCR")
 
 
-mkGCGlobalsDescr :: [HsName] -> (LLVMVar, LLVMVar)
-mkGCGlobalsDescr vars = (GlobalVar "_llvm_globals_descriptor" i8 , ArrayConstant globals (Array (length vars) (pLift $ pLift i64)))
+mkGCGlobalsDescr :: [HsName] -> LLVMType -> (LLVMVar, LLVMVar)
+mkGCGlobalsDescr vars intType = (GlobalVar "_llvm_globals_descriptor" i8 , ArrayConstant globals (Array (length vars) (pLift $ pLift intType)))
     where 
-        rp      = GlobalVar "RP" (pLift $ pLift i64)
-        globals = map (\hsn -> GlobalVar (hs2str hsn) (pLift $ pLift i64)) vars
+        rp      = GlobalVar "RP" (pLift $ pLift intType)
+        globals = map (\hsn -> GlobalVar (hs2str hsn) (pLift $ pLift intType)) vars
   
 }
 %%]

@@ -1,157 +1,67 @@
 {-
- - This is a EHC modified version of th wheel-sieve2 benchmark of the nofib/imaginary
- - Original code by Colin Runciman (colin@cs.york.ac.uk)
+ - This is a EHC modified version of th 3^8 benchmark of the nofib/imaginary
+ - Original code by John Hughes, Aug 2001
  - Changes to be compiled by EHC: John van Schie
+ -
+ - The main difference is that we need to sum up the integers in the result list
+ - to force their evaluation.
  -}
+
 {-
-infixl 9  !!
-infixl 7  *,  `mod`
-infixl 6  +, -
-infixr 5  :
-infixr 5  ++
-infix  4  ==, /=, <, <=, >, `elem`, `notElem`
-infixr 3  &&
-infixr 2  ||
+Compute digits of e
+Due to John Hughes, Aug 2001
 
+Here's a way to compute all the digits of e. We use the series
 
-foreign import ccall "primAddInt" (+)   :: Int -> Int -> Int
-foreign import ccall "primSubInt" (-)   :: Int -> Int -> Int
-foreign import ccall "primMulInt" (*)   :: Int -> Int -> Int
-foreign import ccall "primModInt" mod   :: Int -> Int -> Int
+   e = 2  +  1  +  1  +  1  +  ...
+             --    --    --  
+             2!    3!    4!
 
-foreign import ccall "primLtInt"  (<)   :: Int -> Int -> Bool
-foreign import ccall "primGtInt"  (>)   :: Int -> Int -> Bool
-foreign import ccall "primEqInt"  (==)  :: Int -> Int -> Bool
+which we can think of as representing e as 2.11111... in a strange
+number system with a varying base. In this number system, the fraction
+0.abcd... represents
 
-data PackedString
-foreign import ccall "primCStringToString" packedStringToString :: PackedString -> [Char]
+             a  +  b  +  c  +  d  +  ...
+	     --    --    --    --
+	     2!    3!    4!    5!
 
-error :: [Char] -> a
-error s = undefined
-undefined :: forall a . a
-undefined = error "undefined"
+To convert such a fraction to decimal, we multiply by 10, take the
+integer part for the next digit, and continue with the fractional
+part. Multiplying by 10 is easy: we just multiply each "digit" by 10,
+and then propagate carries.
 
-data Bool = False | True
-data ''[]'' a = a : [a] | ''[]'' 
-
-const          :: a -> b -> a
-const k x      = k
-
-head (x:xs) = x
-
-tail (x:xs) = xs
-
-span                 :: (a -> Bool) -> [a] -> ([a],[a])
-span p []            = ([],[])
-span p xs@(x:xs')
-         | p x       = (x:ys, zs)
-         | True      = ([],xs)
-                       where (ys,zs) = span p xs'
-
-
-dropWhile           :: (a -> Bool) -> [a] -> [a]
-dropWhile p []       = []
-dropWhile p xs@(x:xs')
-         | p x       = dropWhile p xs'
-         | True      = xs
-
-zipWith                  :: (a->b->c) -> [a]->[b]->[c]
-zipWith z (a:as) (b:bs)   = z a b : zipWith z as bs
-zipWith z as      bs      = []
-
-zipWith3                 :: (a->b->c->d) -> [a]->[b]->[c]->[d]
-zipWith3 z (a:as) (b:bs) (c:cs)
-                          = z a b c : zipWith3 z as bs cs
-zipWith3 z as bs bc       = []
-
-
-foldr :: (a -> b -> b) -> b -> [a] -> b
-foldr _ n []     = n
-foldr f n (x:xs) = f x (foldr f n xs)
-
-enumFromTo :: Int -> Int -> [Int]
-enumFromTo m n | m > n = []
-               | True  = m : enumFromTo (m + 1) n
-
-enumFromThenTo x y z =
-  [x, y .. z]
-
-(++) :: [a] -> [a] -> [a]
-(++) []     ys = ys
-(++) (x:xs) ys = x : (xs ++ ys)
-
-map :: (a -> b) -> [a] -> [b]
-map f []     = []
-map f (x:xs) = f x : (map f xs)
-
-concat :: [[a]] -> [a]
-concat = foldr (++) []
-
-concatMap :: (a -> [b]) -> [a] -> [b]
-concatMap f xs = concat ( map f xs )
-
-(!!) :: [a] -> Int -> a
-(x:xs) !! i = if i == 0
-              then x
-              else xs !! (i - 1)
-
-(&&) :: Bool -> Bool -> Bool
-x && y =
-  if x then y else False
-
-(||) :: Bool -> Bool -> Bool
-x || y =
-  if x then True else y
-
-(<=) :: Int -> Int -> Bool
-x <= y =
-  if x > y
-  then False
-  else True
+The hard part is knowing how far carries might propagate: since we
+carry leftwards in an infinite expansion, we must be careful to avoid
+needing to inspect the entire fraction in order to decide on the first
+carry. But each fraction we work with is less than one, so after
+multiplying by 10, it is less than 10. The "carry out" from each digit
+can be at most 9, therefore. So if a carry of 9 from the next digit
+would not affect the carry out from the current one, then that carry
+out can be emitted immediately. Since the base soon becomes much
+larger than 10, then this is likely to happen quickly. No doubt there
+are much better ways than this of solving the problem, but this one
+works.
 -}
-{- wheel-sieve2 code -}
 
-primes :: [Int]
-primes = spiral wheels primes squares
+carryPropagate :: Int -> [Int] -> [Int]
+carryPropagate base (d:ds)
+  | carryguess == (d+9) `div` base 
+      = carryguess : (remainder+nextcarry) : fraction
+  | otherwise
+      = (dCorrected `div` base) : (dCorrected `mod` base) : fraction
+  where carryguess = d `div` base
+        remainder = d `mod` base
+	nextcarry:fraction = carryPropagate (base+1) ds
+        dCorrected = d + nextcarry
 
-spiral :: [Wheel] -> [a] -> [Int] -> [Int]
-spiral (Wheel s ms ns:ws) ps qs =
-  foldr turn0 (roll s) ns
-  where
-  roll o = foldr (turn o) (foldr (turn o) (roll (o+s)) ns) ms
-  turn0  n rs =
-    if n<q then n:rs else sp
-  turn o n rs =
-    let n' = o+n in
-    if n'==2 || n'<q then n':rs else dropWhile (<n') sp
-  sp = spiral ws (tail ps) (tail qs)
-  q = head qs
+e :: [Int]
+e = (2 :) $ 
+    tail $
+    map head $
+    iterate (carryPropagate 2 . map (10*) . tail) $
+    2:[1,1..]
 
-squares :: [Int]
-squares = [p*p | p <- primes]
-
-data Wheel = Wheel Int [Int] [Int]
-
-wheels :: [Wheel]
-wheels = Wheel 1 [1] [] :
-         zipWith3 nextSize wheels primes squares 
-
-nextSize :: Wheel -> Int -> Int -> Wheel
-nextSize (Wheel s ms ns) p q =
-  Wheel (s*p) ms' ns'
-  where
-  (xs, ns') = span (<=q) (foldr turn0 (roll (p-1) s) ns)
-  ms' = foldr turn0 xs ms
-  roll t o | t==0  = []
-           | True  = foldr (turn o) (foldr (turn o) (roll (t-1) (o+s)) ns) ms
-  turn0  n rs =
-    if n`mod`p>0 then n:rs else rs
-  turn o n rs =
-    let n' = o+n in
-    if n'`mod`p>0 then n':rs else rs
-
-arg  = 5000
-main =  primes !! arg
+main =  sum $ take 450 e
 -- This prelude can be compiled by EHC 8, and contains:
 -- * datatypes: Bool, Ordering, [], PackedString, Maybe, Either
 -- * very polymorphic functions:  9id, flip etc.)
