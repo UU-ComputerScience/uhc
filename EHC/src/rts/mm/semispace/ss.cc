@@ -304,7 +304,7 @@ Bool mm_plan_SS_DoGC( MM_Plan* plan, Bool isPreemptiveGC /*isSpaceFull*/, Word g
         Word afterUsedSz = plss->ssAllocator.getUsedSize( &plss->ssAllocator ) ;
 
         if(beforeUsedSz != afterUsedSz)
-            printf("#### USED MEM BEFORE: %i AFTER: %i \n", beforeUsedSz, afterUsedSz);
+            printf("#### TOTAL MEM: %i | USED MEM BEFORE GC: %i AFTER GC: %i \n", prevTotalSz, beforeUsedSz, afterUsedSz);
 
 		// total as used now
 		if ( ! isPreemptiveGC ) {
