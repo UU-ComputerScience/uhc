@@ -17,7 +17,11 @@ struct FDescr
 
 extern struct FDescr _llvm_node_descriptor[];
 
+#if SIZEOF_POINTER == 8
 #define FORWARDING_TAG 0xFFFFFFFFFFFFFFFF
+#else
+#define FORWARDING_TAG 0xFFFFFFFF
+#endif
 
 %%]
 

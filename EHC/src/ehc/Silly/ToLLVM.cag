@@ -22,6 +22,8 @@
 %%]
 %%[(8 codegen grin) hs import(qualified Data.Map)
 %%]
+%%[(8 codegen grin) hs import(qualified Data.Set)
+%%]
 %%[(8 codegen grin) hs import(qualified Data.List)
 %%]
 %%[(8 codegen grin) hs import(Data.Char)
@@ -224,14 +226,16 @@ SEM Statement
                                                           (nr', fresh) = newFresh @loc.uniqNr2 targetType 
                                                           nt           = LocalVar (getPlainName @loc.lhsptrVar) (getType @loc.lhsptrVar) in 
                                                                 (nr', fresh, [LLVMStatement_Assignment fresh $ LLVMExpression_Cast nt targetType])
-                loc.gcrootCode = 
-                               case Data.Map.lookup (getPlainName @dest.llvmVar) @lhs.localPtrsMap of 
-                                   (Just a) -> @loc.gcfitsCode ++ 
-                                                 [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
-                                                                                            , (StrConstant "null" (pLift i8))
-                                                                                            ] 
-                                                 ]
-                                   Nothing -> []       
+                loc.(updSet, gcrootCode) = 
+                               case Data.Set.member (getPlainName @dest.llvmVar) @lhs.localPtrsSet of 
+                                       True -> ( Data.Set.delete (getPlainName @dest.llvmVar) @lhs.localPtrsSet
+                                                , @loc.gcfitsCode ++ 
+                                                  [LLVMStatement_Call gcRootFuncDecl StdCall [ @loc.gcfitsVar
+                                                                                             , (StrConstant "null" (pLift i8))
+                                                                                             ] 
+                                                  ])
+                                       False -> (@lhs.localPtrsSet, [])
+                lhs.localPtrsSet = @loc.updSet
 
 
   | Assignment2 lhs.llvmCode = @source.llvmCode ++ @dest.llvmCode ++ @loc.destptrCode ++ @loc.fits1Code ++
@@ -615,10 +619,10 @@ SEM SilModule
 -- Pass type mapping of locals to statements
 --------------------------------------------------------------------------------
 ATTR Function Statements Statement Alternatives Alternative
-     [ localPtrsMap : {Data.Map.Map String SilTp}  | | ]
+     [ | localPtrsSet : {Data.Set.Set String } | ]
                           
 SEM Function
-  | Function    body.localPtrsMap = Data.Map.fromList $ localsHs2str $ filterPtrs @locals
+  | Function    body.localPtrsSet = Data.Set.fromList $ localsHs2str $ filterPtrs @locals
 
 
 
@@ -955,11 +959,11 @@ Fetch the string representation of a 'HsName'
 hs2str :: HsName -> String
 hs2str = hsnShowAlphanumeric
 
-localsHs2str :: [(HsName, SilTp)] -> [(String, SilTp)]
-localsHs2str = map (\(hs, tp) -> (hs2str hs, tp))
+localsHs2str :: [HsName] -> [String]
+localsHs2str = map hs2str
 
-filterPtrs :: [(a, SilTp)] -> [(a, SilTp)]
-filterPtrs = filter (\(s, t) -> isptr t)
+filterPtrs :: [(a, SilTp)] -> [a]
+filterPtrs xs = map fst $ filter (\(s, t) -> isptr t) xs
     where 
         isptr SilTpPtr = True
         isptr _        = False
