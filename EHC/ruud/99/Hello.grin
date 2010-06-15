@@ -1,0 +1,40 @@
+module $Main
+{ $Main.13_0_2 <- store (#0/F/$Main.fun0~13_0_2)
+; $Main.main <- store (#0/F/$Main.fun0~main)
+; $main <- store (#0/F/$fun0~main)
+} 
+{ $Main.fun0~13_0_2  
+    = { store (#0/C{1,1}/$UHC.Base.PackedString "Hello, World!") ; \$Main.20_1_0 ->
+        call $UHC.Base.packedStringToString $Main.20_1_0} 
+; $Main.fun0~main  
+    = { eval $UHC.OldIO.putStrLn ; \$Main.20_4_0 ->
+        apply $Main.20_4_0 $Main.13_0_2} 
+; $fun0~main  
+    = { call $UHC.Run.ehcRunMain $Main.main} 
+} 
+{ $$,0 = #0/C{0,0}/$$,0
+; $$,10 = #0/C{10,10}/$$,10
+; $$,2 = #0/C{2,2}/$$,2
+; $$,3 = #0/C{3,3}/$$,3
+; $$,4 = #0/C{4,4}/$$,4
+; $$,5 = #0/C{5,5}/$$,5
+; $$,6 = #0/C{6,6}/$$,6
+; $$,7 = #0/C{7,7}/$$,7
+; $$,8 = #0/C{8,8}/$$,8
+; $$,9 = #0/C{9,9}/$$,9
+; $Char = #0/C{1,1}/$Char
+; $Int = #0/C{1,1}/$Int
+; $UHC.Base.Double = #0/C{1,1}/$UHC.Base.Double
+; $UHC.Base.Float = #0/C{1,1}/$UHC.Base.Float
+; $UHC.Base.PackedString = #0/C{1,1}/$UHC.Base.PackedString
+; $UHC.Types.Addr = #0/C{1,1}/$UHC.Types.Addr
+; $UHC.Types.Int16 = #0/C{1,1}/$UHC.Types.Int16
+; $UHC.Types.Int32 = #0/C{1,1}/$UHC.Types.Int32
+; $UHC.Types.Int64 = #0/C{1,1}/$UHC.Types.Int64
+; $UHC.Types.Int8 = #0/C{1,1}/$UHC.Types.Int8
+; $UHC.Types.Word = #0/C{1,1}/$UHC.Types.Word
+; $UHC.Types.Word16 = #0/C{1,1}/$UHC.Types.Word16
+; $UHC.Types.Word32 = #0/C{1,1}/$UHC.Types.Word32
+; $UHC.Types.Word64 = #0/C{1,1}/$UHC.Types.Word64
+; $UHC.Types.Word8 = #0/C{1,1}/$UHC.Types.Word8
+} 

@@ -96,7 +96,7 @@ PRIM Word primIsNaNFloat( Float x )
 	else
 		return RTS_False ;
 }
-
+/*
 PRIM Word primIsDenormalizedFloat( Float x )
 {
 	if ( ! isnormal(x) )
@@ -104,7 +104,7 @@ PRIM Word primIsDenormalizedFloat( Float x )
 	else
 		return RTS_False ;
 }
-
+*/
 PRIM Word primIsInfiniteFloat( Float x )
 {
 	if ( isinf(x) )
@@ -112,7 +112,7 @@ PRIM Word primIsInfiniteFloat( Float x )
 	else
 		return RTS_False ;
 }
-
+/*
 PRIM Word primIsNegativeZeroFloat( Float x )
 {
 	 
@@ -121,7 +121,7 @@ PRIM Word primIsNegativeZeroFloat( Float x )
 	else
 		return RTS_False ;
 }
-
+*/
 PRIM Word primDigitsFloat( )
 {
 	return FLT_MANT_DIG ;
@@ -144,7 +144,7 @@ PRIM Word primIsNaNDouble( Double x )
 	else
 		return RTS_False ;
 }
-
+/*
 PRIM Word primIsDenormalizedDouble( Double x )
 {
 	if ( ! isnormal(x) )
@@ -152,7 +152,7 @@ PRIM Word primIsDenormalizedDouble( Double x )
 	else
 		return RTS_False ;
 }
-
+*/
 PRIM Word primIsInfiniteDouble( Double x )
 {
 	if ( isinf(x) )
@@ -160,7 +160,7 @@ PRIM Word primIsInfiniteDouble( Double x )
 	else
 		return RTS_False ;
 }
-
+/*
 PRIM Word primIsNegativeZeroDouble( Double x )
 {
 	 
@@ -169,7 +169,7 @@ PRIM Word primIsNegativeZeroDouble( Double x )
 	else
 		return RTS_False ;
 }
-
+*/
 PRIM Word primDigitsDouble( )
 {
 	return DBL_MANT_DIG ;

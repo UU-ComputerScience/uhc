@@ -79,6 +79,10 @@ test-expect test-regress: test-lists
         texeInvoke="" ; \
         texeSuffix="$(EXEC_SUFFIX)" ; \
         ;; \
+      llvm) \
+        texeInvoke="" ; \
+        texeSuffix="$(EXEC_SUFFIX)" ; \
+        ;; \
       jazy) \
         texeInvoke="java -jar" ; \
         texeSuffix=".jar" ; \

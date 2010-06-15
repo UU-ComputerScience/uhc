@@ -1,0 +1,29 @@
+module $Main =
+let
+  { $Main$.fun0$~13_0_2{BINDFUNCTION0,VAL} =
+      ($UHC$.Base$.packedStringToString)
+        (#String"Hello, World!")
+  ; $Main$.13_0_2{BINDAPPLY0,VAL} =
+      $Main$.fun0$~13_0_2
+  } in
+let
+  { $Main$.fun0$~main{BINDFUNCTION0,VAL} =
+      (($UHC$.OldIO$.putStrLn)
+         ($Main$.13_0_2) :: ($UHC$.Base$.IO)
+                             (($_Rec)
+                               ({| |})))
+  ; $Main$.main{BINDAPPLY0,VAL} =
+      $Main$.fun0$~main
+  } in
+let
+  { $fun0$~main{BINDFUNCTION0,VAL} =
+      (($UHC$.Run$.ehcRunMain)
+         ($Main$.main) :: ($UHC$.Base$.IO)
+                           (($_Rec)
+                             ({| |})))
+  ; $main{BINDAPPLY0,VAL} =
+      $fun0$~main
+  } in
+$main
+-- data type tag map:
+{ }
