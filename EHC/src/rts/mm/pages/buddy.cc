@@ -195,8 +195,9 @@ void mm_pages_Buddy_NewBuddyGroup( MM_Pages_Buddy_Data* pgs, MM_Pages_LogSize sz
 	
 	// alloc new extlData
 
+    //printf("aft: %016llx fst: %016llx log: %i \n", extlAfterLastPage, extlFirstPage, MM_Pages_Buddy_PagesExtlLogDiff);
 	Word newExtlDataSize = (extlAfterLastPage - extlFirstPage) >> MM_Pages_Buddy_PagesExtlLogDiff ;
-	printf("malloc size_t: %lu \n", newExtlDataSize);
+	//printf("malloc size_t: %lu \n", newExtlDataSize);
 
 
 	MM_BuddyPage_ExtlData* newExtlData = (MM_BuddyPage_ExtlData*)sys_malloc_Sys.malloc( newExtlDataSize ) ;
