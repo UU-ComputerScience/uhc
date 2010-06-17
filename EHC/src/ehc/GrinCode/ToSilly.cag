@@ -123,7 +123,7 @@ SEM GrModule
   | Mod lhs.silModule    =   SilModule_SilModule
                                 (tagConstants @lhs.opts @lhs.hptMap @tagsMp @bindL.genArities (@bindL.genAllTags `Set.union` @globalL.genAllTags)) -- constants
                                 @globalL.names                               -- variables
-                                ( @loc.initFunction : @bindL.functions )     -- functions
+                                ( @loc.startFunction : @loc.initFunction : @bindL.functions )     -- functions
 
         loc . startFunction =  Function_Function (hsnFromString "silly_start") [] []
                                                     [ Statement_Call (hsnFromString "initialize")        False []

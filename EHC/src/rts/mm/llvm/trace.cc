@@ -60,7 +60,7 @@ Word mm_trace_llvm_TraceKnownToBeObject( MM_Trace* trace, Word obj )
 
 
     if(obj == NULL){
-        printf("*** null pointer alert!\n");
+        //printf("*** null pointer alert!\n");
         return NULL;
     }
     
