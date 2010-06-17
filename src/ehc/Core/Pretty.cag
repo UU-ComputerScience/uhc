@@ -49,12 +49,12 @@ ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
 ppManyCNm :: [HsName] -> PP_Doc
 ppManyCNm  =  ppListSep "" "" " " . map ppCNm
 
-ppTrack :: Track -> PP_Doc
-ppTrack t = text (show t)
-
 %%]
 
 %%[(9 codegen) hs
+ppTrack :: Track -> PP_Doc
+ppTrack t = text (show t)
+
 ppHole :: UID -> PP_Doc
 ppHole i = "<" >|< pp i >|< ">"
 %%]

@@ -853,11 +853,14 @@ ATTR AllMetaVal [ lamArgDicts: {[[Int]]} | | ]
 ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[[Int]]} ]
 
 SEM CMetaVal
+%%[[8
+  | Val          lhs          .   grBindAnn   =  GrBindAnnNormal
+                 lhs          .   argDicts    =  []
+%%][9
   | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
                                                  then GrBindAnnNormal
                                                  else GrBindAnnOverloaded @lhs.lamArgDicts
                  lhs          .   argDicts    =  []
-%%[[9
   | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
                  lhs          .   argDicts    =  maybe [] (:[]) @mbPos
   | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @tracks
