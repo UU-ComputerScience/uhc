@@ -147,9 +147,11 @@ deriving instance Data GrTagAnn
 
 data GrBindAnn
   = GrBindAnnNormal
+%%[[(9 codegen)
   | GrBindAnnClass    [Track]
   | GrBindAnnInstance [Track]
   | GrBindAnnOverloaded [[Int]]
+%%]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
 

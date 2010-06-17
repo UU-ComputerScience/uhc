@@ -243,7 +243,7 @@ SEM CExpr
 %%]
 
 
-%%[(8 codegen)
+%%[(9 codegen)
 
 {
 
@@ -258,8 +258,6 @@ metaExtendTrack mp env (TrackVarApply nm ps) = let r = Map.lookup nm mp
 metaExtendTrack _ _ t = t
 
 }
-
-%%[[9
 
 ATTR CExpr [ mbCtxCount:{Maybe Int} isDictClass:{Bool} | | ]
 
@@ -336,14 +334,8 @@ SEM CExpr
       Lam  lhs.envUp = Map.empty
 
 
-
-
-
  SEM CMetaVal
    |  DictClass      lhs.cTrf = CMetaVal_DictClass    (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
    |  DictInstance   lhs.cTrf = CMetaVal_DictInstance (map (metaExtendTrack @lhs.bindLamArgMp @lhs.envFinal) @tracks)
 
-
-
-%%]]
 %%]

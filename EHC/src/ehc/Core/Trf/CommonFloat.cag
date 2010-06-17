@@ -46,36 +46,8 @@ SEM CExpr
                 lhs         .   isClosurableExpr    =   False
                 
   | App
-                lhs         .   isClosurableExpr    =   @func.isDictionaryGenerator
+                lhs         .   isClosurableExpr    =   False
 
-
-ATTR CExpr [ | | isDictionaryGenerator: {Bool}  ]
-ATTR CExpr CAlt CAltL CBind CBindL [ dictionaryGenerators:{[HsName]} | |  ]
-ATTR CBind CBindL [ | | gatherDictionaryGenerators USE {++} {[]} :{[HsName]} ]
-ATTR CMetaVal CMetas [ | | isDictInstance : {Bool} ]
-
-SEM CExpr
-  | Var         lhs . isDictionaryGenerator =  elem @nm @lhs.dictionaryGenerators
-  | *-Var       lhs . isDictionaryGenerator = False
-
-SEM CModule
-  | Mod         expr . dictionaryGenerators = []
-
-SEM CPatFld
-  | Fld         offset . dictionaryGenerators = []
-
-SEM CExpr
-  | Let         body.dictionaryGenerators = @binds.gatherDictionaryGenerators ++ @lhs.dictionaryGenerators
- 
-SEM CBind
-  | Bind        lhs.gatherDictionaryGenerators = if @bindMeta.isDictInstance && @expr.isLam
-                                                  then [ @nm ]
-                                                  else []
-
-SEM CMetaVal
-  | DictInstance    lhs.isDictInstance = True
-  | *-DictInstance  lhs.isDictInstance = False
-  
 %%]
 
 

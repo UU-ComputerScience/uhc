@@ -342,8 +342,7 @@ asmWordMetaop | Cfg.sizeofWord==4  =  ".int"
               | otherwise          =  ".quad"
 
 asmSymbolStackInfos :: String
-asmSymbolStackInfos | Cfg.sizeofWord==4  =  "_stackInfos"
-                    | otherwise          =  "stackInfos"      -- underscore seems to be taboo on 64-bit Ubuntu
+asmSymbolStackInfos  =  Cfg.linkerSymbolPrefix ++ "stackInfos"     -- prefix is empty for Linux, "_" for other platforms
 
 
 label :: Bool -> String -> Maybe Int -> PP_Doc

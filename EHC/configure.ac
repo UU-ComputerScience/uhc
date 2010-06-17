@@ -899,6 +899,8 @@ AC_SUBST(GMP_LIB_ARCHIVE, "$gmpLibArchive")
 AC_DEFINE([RTS_GLOBAL_VAR_PREFIX],["global_"],[Prefix for RTS globals (obsolete?)])
 
 ### machine dependent code
+
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         ;;
@@ -918,7 +920,6 @@ case $HostPlatform in
         ;;
 esac
 AC_SUBST(GCC_EHC_EXTRA_EXTERN_LIBS,"$gcc_ehc_extra_extern_libs")
-
 ### other platform specific stuff
 # defaults:
 # file suffixes
@@ -937,6 +938,8 @@ libtoolStaticOpts="-static -o"
 libtoolDynamicCmd="echo Dynamic linking not available: "
 libtoolDynamicOpts=""
 ehcGccOptsStatic=""
+linker_symbol_prefix="_"
+
 case $HostPlatform in
   i*86-*-mingw* | i*86-*-cygwin* )
         # file suffixes
@@ -959,6 +962,7 @@ case $HostPlatform in
         # ehcGccOptsStatic="-static"
 	    # libtoolStaticCmd="libttcflagool --mode=link gcc -static -o"
         libtoolStaticCmd="no"
+        linker_symbol_prefix=""
         ;;
   x86*-*-linux-gnu )
         # file suffixes
@@ -980,6 +984,7 @@ AC_SUBST(SUFFIX_LIB,"$suffix_lib")
 AC_SUBST(PREFIX_LIB,"$prefix_lib")
 AC_SUBST(PATHS_SEP,"$paths_sep")
 AC_SUBST(SLASH,"$slash")
+AC_SUBST(LINKER_SYMBOL_PREFIX,"$linker_symbol_prefix")
 
 # misc
 AC_SUBST(DEVELOPMENT_PLATFORM,"$development_platform")
