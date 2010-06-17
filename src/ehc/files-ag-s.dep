@@ -40,7 +40,7 @@ Core/Trf/LamGlobalAsArg.cag
 Core/Trf/CAFGlobalAsArg.cag
 Core/Trf/FindNullaries.cag
 Core/Trf/FloatToGlobal.cag
-Core/Trf/LiftDictFields.cag
+Core/Trf/FixDictFields.cag
 Core/Trf/LetUnrec.cag
 Core/Trf/RenUniq.cag
 Core/Trf/ElimTrivApp.cag

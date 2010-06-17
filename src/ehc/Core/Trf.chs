@@ -31,11 +31,13 @@
 %%]
 %%[(8 codegen) import({%{EH}Core.Trf.AnnBasedSimplify})
 %%]
-%%[(9 codegen) import({%{EH}Core.Trf.LiftDictFields})
+%%[(9 codegen) import({%{EH}Core.Trf.FixDictFields})
 %%]
 %%[(8_2 codegen) import({%{EH}Core.Trf.PrettyVarNames})
 %%]
 %%[(99 codegen) import({%{EH}Core.Trf.ExplicitStackTrace})
+%%]
+%%[(8 codegen grin) hs import(Debug.Trace)
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -136,6 +138,11 @@ trfCore opts modNm trfcore
                  -- put in A-normal form, where args to app only may be identifiers
                ; u1 <- modifyGets uniq
                ; t_anormal u1
+
+%%[[9
+               ; when (ehcOptFullProgAnalysis opts)
+                      t_fix_dictfld
+%%]]
                
                  -- pass all globals used in lambda explicit as argument
                ; t_lam_asarg
@@ -148,10 +155,6 @@ trfCore opts modNm trfcore
                
                  -- float lam/CAF to global level
                ; t_float_glob
-%%[[9
-               ; when (ehcOptFullProgAnalysis opts)
-                      t_lift_dictfld
-%%]]
 %%[[8_2        
                ; t_pretty_nm
 %%]]
@@ -195,7 +198,7 @@ trfCore opts modNm trfcore
         t_float_glob    = liftTrf  "float-glob"         $ cmodTrfFloatToGlobal
         t_find_null     = liftTrf  "find-null"          $ cmodTrfFindNullaries
 %%[[9
-        t_lift_dictfld  = liftTrf  "lift-dictfld"       $ cmodTrfLiftDictFields
+        t_fix_dictfld   = liftTrf  "fix-dictfld"        $ cmodTrfFixDictFields
 %%]]
 %%[[8_2        
         t_pretty_nm     = liftTrf  "pretty-nm"          $ cmodTrfPrettyNames

@@ -19,11 +19,68 @@ Defines  CBind | Bind loc.isClosurableBind
 ATTR CExpr [ | | isClosurableExpr: Bool ]
 
 SEM CExpr
-  | Case TupDel TupIns TupUpd Let
+  | Case 
+    Let
+    TupDel
+    TupIns
+    TupUpd
                 lhs         .   isClosurableExpr    =   True
-  | * - Case TupDel TupIns TupUpd Let Ann
+    
+  | Lam
+    Var
+    Int
+    Char
+    String
+    Tup
+    CaseAltFail
+%%[[(9 codegen)
+    Hole
+    HoleLet
+    CoeArg
+    ImplsApp
+    ImplsLam
+%%]]
+%%[[(97 codegen)
+    Integer
+%%]]
                 lhs         .   isClosurableExpr    =   False
+                
+  | App
+                lhs         .   isClosurableExpr    =   @func.isDictionaryGenerator
+
+
+ATTR CExpr [ | | isDictionaryGenerator: {Bool}  ]
+ATTR CExpr CAlt CAltL CBind CBindL [ dictionaryGenerators:{[HsName]} | |  ]
+ATTR CBind CBindL [ | | gatherDictionaryGenerators USE {++} {[]} :{[HsName]} ]
+ATTR CMetaVal CMetas [ | | isDictInstance : {Bool} ]
+
+SEM CExpr
+  | Var         lhs . isDictionaryGenerator =  elem @nm @lhs.dictionaryGenerators
+  | *-Var       lhs . isDictionaryGenerator = False
+
+SEM CModule
+  | Mod         expr . dictionaryGenerators = []
+
+SEM CPatFld
+  | Fld         offset . dictionaryGenerators = []
+
+SEM CExpr
+  | Let         body.dictionaryGenerators = @binds.gatherDictionaryGenerators ++ @lhs.dictionaryGenerators
+ 
+SEM CBind
+  | Bind        lhs.gatherDictionaryGenerators = if @bindMeta.isDictInstance && @expr.isLam
+                                                  then [ @nm ]
+                                                  else []
+
+SEM CMetaVal
+  | DictInstance    lhs.isDictInstance = True
+  | *-DictInstance  lhs.isDictInstance = False
+  
 %%]
+
+
+
+
 
 %%[(8 codegen)
 SEM CBind

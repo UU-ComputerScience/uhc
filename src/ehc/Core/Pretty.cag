@@ -48,6 +48,10 @@ ppMbCNm = maybe (ppCNm (hsnFromString "_")) ppCNm
 
 ppManyCNm :: [HsName] -> PP_Doc
 ppManyCNm  =  ppListSep "" "" " " . map ppCNm
+
+ppTrack :: Track -> PP_Doc
+ppTrack t = text (show t)
+
 %%]
 
 %%[(9 codegen) hs
@@ -100,6 +104,10 @@ ppLit kind val = "#" >|< kind >|< pp (show val)
 
 ppTag :: CTag -> PP_Doc
 ppTag t = ppCTag' CfgPP_Core t
+
+ppCurlyList :: (a -> PP_Doc) -> [a] -> PP_Doc
+ppCurlyList pL xs = ppListSep "{ " " }" ", " $ map pL xs
+
 %%]
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -253,8 +261,9 @@ SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
   | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
-  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlysCommasWith ppMbCNm @names
-  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlysCommasWith ppManyCNm @names
+  | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlyList ppTrack @tracks
+  | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlyList ppTrack @tracks
+  | Track        loc        .   pp          =   pp "TRACK"        >|< ppCurlys (show @track)
 %%]]
 
 SEM CMetaVal

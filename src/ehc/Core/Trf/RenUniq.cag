@@ -208,10 +208,10 @@ SEM CBind
   | Bind        expr.protectedBindingNames  =   @bindMeta.protectableBindingNames ++ @lhs.protectedBindingNames
 
 SEM CMetaVal
-  | DictClass   lhs.protectableBindingNames   =   [ nm  | Just nm <- @names ]
-  | DictInstance lhs.protectableBindingNames   =  concat @names
+  | DictClass
+    DictInstance lhs.protectableBindingNames   =   [ nm  | TrackVarApply nm _ <- @tracks ]
   | Dict         lhs.protectableBindingNames  =   []
-  | Val          lhs.protectableBindingNames   =   []
+  | Val Track    lhs.protectableBindingNames   =   []
   
 SEM CModule
   | Mod          expr.protectedBindingNames  =   []
