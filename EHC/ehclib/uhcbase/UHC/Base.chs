@@ -1416,7 +1416,8 @@ instance Integral a => Num (Ratio a) where
     abs (x :% y)      = abs x :% y
     signum (x :% y)   = signum x :% 1
     fromInteger x     = fromInteger x :% 1
-    fromInt           = intToRatio
+    -- fromInt           = intToRatio
+    fromInt x         = fromInt x :% 1
 
 intToRatio :: Integral a => Int -> Ratio a  -- TODO: optimise fromRational (intToRatio x)
 intToRatio x = fromInt x :% 1
@@ -1770,7 +1771,9 @@ lex                    :: ReadS String
 lex ""                  = [("","")]
 lex (c:s) | isSpace c   = lex (dropWhile isSpace s)
 lex ('\'':s)            = [('\'':ch++"'", t) | (ch,'\'':t)  <- lexLitChar s,
-                                               ch /= "'"                ]
+                                               -- head ch /= '\'' || not (null (tail ch))
+                                               ch /= "'"                
+                          ]
 lex ('"':s)             = [('"':str, t)      | (str,t) <- lexString s]
                           where
                           lexString ('"':s) = [("\"",s)]

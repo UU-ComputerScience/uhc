@@ -939,7 +939,7 @@ mkNormalInstance
       declsCBindL
       (chrDeclsCBindL,chrSuperProveCBindL,chrSuperCtxtAssumeCBindL)
   = ( bind4
-    , CMetaVal_DictInstance $ map maybeToList $ Just (ctagTyNm dictTag) : Just dfltNm : instanceAndSuperMbNewNames
+    , CMetaVal_DictInstance (TrackVarApply (ctagTyNm dictTag) [] : TrackVarApply dfltNm [] : instanceAndSuperTracks )
     )
   where dfltNm       = clgiDfltDictNm clgi
         rsltNm       = dictBuildNm
@@ -983,8 +983,8 @@ mkNormalInstance
         
         doubleLookup :: HsName -> Maybe HsName
         doubleLookup nm   =  do { nm2 <- lookup nm superNameMapping2
-                                ; nm3 <- lookup nm2 superPairs
-                                ; return nm3
+                                -- ; nm3 <- lookup nm2 superPairs
+                                ; return nm2 -- nm3
                                 }
         
         superMbNewNames   =  map doubleLookup memberNames
@@ -994,16 +994,18 @@ mkNormalInstance
                                          f _ _        = Nothing
                                      in zipWith f instanceMbNewNames superMbNewNames
 
+        instanceAndSuperTracks = map mbNameToTrack instanceAndSuperMbNewNames
+
         instanceCHRBindings = chrSuperCtxtAssumeCBindL ++ chrSuperProveCBindL ++ chrDeclsCBindL
 
         dict1     = acoreApp1Meta dfltVar rsltVar (CMetaVal_Dict Nothing)
         bind1     = acoreBind1Meta dfltNmStrict (CMetaVal_Dict Nothing) dict1
         
         dict2     = acoreLetBase (acoreBindcategStrict dfltVarStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
-        bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
+        bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Track TrackSelf) dict2
                              
         dict3     = acoreLetBase (acoreBindcategPlain rsltVarStrict) [bind2] rsltVarStrict
-        bind3     = acoreBind1Meta rsltNm       (CMetaVal_Dict (Just [])) dict3
+        bind3     = acoreBind1Meta rsltNm       (CMetaVal_Track TrackSelf) dict3
 
         dict4     = acoreLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
         bind4     = acoreLamMeta contextArguments dict4        
@@ -1082,6 +1084,7 @@ mkInstanceCBindL
                 defaultMbNewNames   = let f _ Nothing  = Nothing
                                           f n (Just _) = Just n
                                       in zipWith f memberNewNames defaultMbBodies
+                defaultTracks       = map mbNameToTrack defaultMbNewNames
                 
                 defaultNewBindings  = zipWith3 acoreBind1Meta memberNewNames 
                                                               defaultMetas
@@ -1098,7 +1101,7 @@ mkInstanceCBindL
                 bind6     = acoreLam1Meta selfNm (CMetaVal_Dict (Just [])) dict6
 
             in  ( bind6
-                , CMetaVal_DictClass defaultMbNewNames
+                , CMetaVal_DictClass defaultTracks
                 )
 %%]
 
@@ -1212,6 +1215,12 @@ annotateBindings selfnm bs = zipWith annBind bs (map mbFindValueVar xs)
         findPosition v n [] = error ("ToCore: annotateBindings: position not found: " ++ show v)
         findPosition v n (CPatFld_Fld x _ _:zs) | v==x       =  n
                                                 | otherwise  =  findPosition v (n+1) zs       
+
+
+
+mbNameToTrack Nothing   = TrackNone
+mbNameToTrack (Just nm) = TrackVarApply nm []
+
 
 %%]
 

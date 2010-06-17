@@ -860,9 +860,11 @@ SEM CMetaVal
 %%[[9
   | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
                  lhs          .   argDicts    =  maybe [] (:[]) @mbPos
-  | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @names
+  | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @tracks
                  lhs          .   argDicts    =  []
-  | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @names
+  | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @tracks
+                 lhs          .   argDicts    =  []
+  | Track        lhs          .   grBindAnn   =  GrBindAnnNormal
                  lhs          .   argDicts    =  []
 %%]]
 

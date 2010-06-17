@@ -147,8 +147,8 @@ deriving instance Data GrTagAnn
 
 data GrBindAnn
   = GrBindAnnNormal
-  | GrBindAnnClass    [Maybe HsName]
-  | GrBindAnnInstance [[HsName]]
+  | GrBindAnnClass    [Track]
+  | GrBindAnnInstance [Track]
   | GrBindAnnOverloaded [[Int]]
   | GrBindAnnSpecialized HsName Int [Maybe HsName]
   deriving (Eq,Ord,Show)
