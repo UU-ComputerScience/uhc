@@ -234,8 +234,8 @@ SEM FldBind
   | Ty			ki			.	ppHow		= 	howHor
 
 SEM ValBind
-  | Val			l0  		.	ppHow		=	howVert
-  				bind		.	ppHow		=	howHor
+  | Val			bind		.	ppHow		=	howVert
+                l0  		.	ppHow		=	howVert
 %%]
 
 %%[(8 codegen)
@@ -363,7 +363,7 @@ SEM Expr
   | Exists      loc         .   pp          =   sym @lhs.symMp Sym_Exists >#< @arg.pp >#< "." >#< @expr.pp
   | Lazy        loc         .   pp          =   ppToThnk @lhs.symMp @expr.pp
   | Seq1		loc			.	pp			= 	ppSeq1 @lhs.symMp @seq1.pp
-  | Seq 		loc			.	pp			=	ppSeq  @lhs.symMp @seq.ppL
+  | Seq 		loc			.	pp			=	ppSeq'  @lhs.symMp @lhs.ppHow  @seq.ppL
   | CaseAltFail loc			.	pp			=	ppKeyw "fail" >#< @caseId
   | FFI         loc         .   pp          =   ppKeyw "external" >#< show @callconv >#< show @safety >#< @ppent >#< ppParens @ty.pp
 %%[[8

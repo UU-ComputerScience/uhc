@@ -29,7 +29,7 @@
 %%[(8 codegen) hs import(Control.Applicative)
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.List)
+%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid, Data.List)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
@@ -63,6 +63,11 @@ cmodTrfDefinitionSiteArityRaise2of2 :: Module -> Module
 cmodTrfDefinitionSiteArityRaise2of2 tcmod
   = let  t = wrap_AGItf (sem_AGItf (AGItf_AGItf tcmod)) Inh_AGItf
     in   cTrf_Syn_AGItf t
+
+data BindType = NameTypeBind | BodyBind | NoBind
+  deriving (Eq, Show)
+
+type Seq a = [a]
 %%]
 
 %%[(8 codegen)
@@ -79,54 +84,85 @@ ATTR AllCodeNT
   | cTrf    : SELF
     wrapper : SELF
   ]
-ATTR AllExpr
-  [ workerNm   : {HsName}
-  |
-  | workWrap      USE {|||} {Ignored}           : {WorkWrap}
-  ]
 ATTR Expr
   [
   |
-  | lamArgs    : {[[Expr]]}
+  |
     mbVarNm    USE {<|>} {Nothing} : {Maybe HsName}
     appArgs    USE {++}  {[]}      : {[Expr]}
   ]
+ATTR AllExprBase
+  [
+    workWrapL   : {Seq WorkWrap}
+    workWrap    : {WorkWrap}
+    bindType    : {BindType}
+    lamArgsL    : {Seq [[Expr]]}
+    lamArgs     : {[[Expr]]}
+    workerNmL   : {Seq HsName}
+    workerNm    : {HsName}
+  |
+  |
+    workWrap    USE {|||}       {Ignored}   : {WorkWrap}
+    workWrapL   USE {`mappend`} {mempty}    : {Seq WorkWrap}
+    lamArgsL    USE {`mappend`} {mempty}    : {Seq [[Expr]]}
+    lamArgs                                 : {[[Expr]]}
+    wrapperL    USE {`mappend`} {mempty}    : {[Expr]}
+    workerNmL   USE {`mappend`} {mempty}    : {Seq HsName}
+  ]
 
-SEM Module
-  | Mod
-                loc         .   workerNm    =   error "Don't read this value"
-
-SEM ValBindL
-  | Cons        lhs         .   cTrf        =   case @hd.workWrap of
-                                                  UpdatedWrapper -> @hd.wrapper : @tl.cTrf
-                                                  _              -> @hd.cTrf    : @tl.cTrf
 
 -- Worker/Wrapper
+SEM ExprSeq1L
+  | Cons
+                lhs         .   cTrf        =   if @lhs.bindType == NoBind
+                                                then @cTrf
+                                                else case head @lhs.workWrapL of
+                                                       UpdatedWrapper -> @hd.wrapper : @tl.cTrf
+                                                       _              -> @hd.cTrf    : @tl.cTrf
+                            .   workWrapL   =   @hd.workWrap : @tl.workWrapL
+                hd
+                            .   workWrap    =   head @lhs.workWrapL
+                            .   workerNm    =   head @lhs.workerNmL
+                            .   bindType    =   NoBind
+                tl
+                            .   workWrapL   =   tail @lhs.workWrapL
+                            .   workerNmL   =   tail @lhs.workerNmL
+
+SEM ExprSeq1
+  | L0Bind L1Bind L2Bind
+                lhs         .   workerNmL   =   [@workerNm]
+                loc         .   workWrap    =   case (@isWorker, @isWrapper) of
+                                                  (False, True) -> UpdatedWrapper
+                                                  (_,     _)    -> Ignored
+                            .   workerNm    =   hsnFromString (show @nm ++ "_worker")
+                            .   isWorker    =   "_worker" `isSuffixOf` show @nm
+                            .   isWrapper   =   hsnFromString (show @nm ++ "_worker") `Map.member` @lhs.tyEnv
+                            .   hasWorker   =   any (\x -> length x > 1) @lhs.lamArgs
+
+
 SEM ValBind
   | Val
-                loc         .   workWrap    =   case (@isWrapper) of
-                                                  (True) -> UpdatedWrapper
-                                                  (_)    -> Ignored
-                            .   isWrapper   =   @workerNm `Map.member` @lhs.tyEnv
-                            .   workerNm    =   hsnFromString $ show @nm ++ "_worker"
-                            .   nm          =   hsnFromString "nothing"
+                bind        .   bindType    =   NameTypeBind
+                            .   lamArgsL    =   @lamArgsL
+                            .   workWrapL   =   @bind.workWrapL
+                            --  Dummy data
+                            .   lamArgs     =   []
+
+                l0          .   bindType    =   BodyBind
+                            .   lamArgsL    =   @lamArgsL
+                            .   workWrapL   =   @bind.workWrapL
+                            .   workerNmL   =   @bind.workerNmL
+
+                bindMeta    .   bindType    =   NoBind
+                loc         .   lamArgsL    =   @l0.lamArgsL ++ repeat [] -- example: let [x, y] = dup [3]
 
 SEM Expr
   | Let
                 lhs         .   lamArgs     =   [] : @body.lamArgs
   | Lam
-                lhs         .   lamArgs     =   list [[@arg.copy]] (\x xs -> (@arg.copy : x) : xs) @res.lamArgs
+                lhs         .   lamArgs     =   list [[@arg.cTrf]] (\xs xss -> (@arg.cTrf : xs) : xss) @res.lamArgs
   | * - Lam Let
                 lhs         .   lamArgs     =   []
-
-
--- Wrapper
-SEM ValBind
-  | Val
-                lhs         .   wrapper     =   @copy -- ValBind_Val @nm @bindMeta.cTrf @mlev @bind.cTrf @wrapperBody -- @l1.cTrf @wrapperBody
-                loc         .   wrapperBody =   if @workWrap == Introduced
-                                                then newWrapperBody @workerNm @l0.lamArgs
-                                                else @l0.wrapper
 
 SEM Expr
   | App
@@ -145,28 +181,15 @@ list :: b -> (a -> [a] -> b) -> [a] -> b
 list b _ []     = b
 list _ f (x:xs) = f x xs
 
-newWrapperBody :: HsName -> [[Ty]] -> Expr
-newWrapperBody nm argss = foldr Expr_Lam body (concat argss)
-  where
-    body :: Expr
-    body = foldl Expr_App (Expr_Var nm) (map arg argss)
-
-    arg :: [Expr] -> Expr
-    arg args = Expr_Seq (map argSeq (concatMap unSeqs args))
-
-    argSeq :: ExprSeq1 -> ExprSeq1
-    argSeq (ExprSeq1_L0Bind nm _ _) = ExprSeq1_L0Val (Expr_Var nm) Nothing
-    argSeq (ExprSeq1_L1Bind nm _)   = ExprSeq1_L1Val (Expr_Var nm)
-    argSeq (ExprSeq1_L2Bind nm _)   = ExprSeq1_L2Val (Expr_Var nm)
-    argSeq e                        = e
-
 updatedWrapperApp :: HsName -> [Expr] -> Ty -> Expr
-updatedWrapperApp nm args wt = f (init $ nrArgs wt) (concatMap unSeqs args)
+updatedWrapperApp nm args wt = foldl Expr_App (Expr_Var nm) (map Expr_Seq $ argss (init $ nrArgs wt) (concatMap unSeqs args))
   where
-    f :: [Int] -> [ExprSeq1] -> Expr
-    f []     _    = Expr_Var nm
-    f (x:xs) args = let (args1, args2) = splitAt x args
-                    in f xs args2 `Expr_App` Expr_Seq args1
+    argss :: [Int] -> [ExprSeq1] -> [[ExprSeq1]]
+    argss _      []   = []
+    argss []     args = [args]
+    argss (x:xs) args = let (args1, args2) = splitAt x args
+                        in args1 : argss xs args2
+
 
     nrArgs :: Ty -> [Int]
     nrArgs (Expr_Seq es)    = [length es]

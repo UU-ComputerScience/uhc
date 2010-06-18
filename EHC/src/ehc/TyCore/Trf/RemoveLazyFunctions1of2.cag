@@ -30,16 +30,16 @@
 %%[(8 codegen) hs import({%{EH}Base.Builtin},{%{EH}Base.Opts},{%{EH}Base.Common})
 %%]
 
-%%[(8 codegen) hs import(Data.Bool.Extras)
-%%]
-
-%%[(8 codegen) hs import(Data.Maybe)
+%%[(8 codegen) hs import(Data.Bool.Extras, Data.Maybe, Data.Monoid)
 %%]
 
 %%[(8 codegen) hs import(qualified Data.Map as Map)
 %%]
 
 %%[(8 codegen) hs import({%{EH}TyCore})
+%%]
+
+%%[1 hs import(Debug.Trace)
 %%]
 
 
@@ -75,17 +75,30 @@ SEM AGItf
 
 %%[(8 codegen)
 ATTR AllCodeNT [ | | cTrf : SELF ]
-ATTR AllExpr   [ boundLazy : {Bool} | | ]
+ATTR AllExpr
+  [ boundLazyL  : {[Bool]}
+    boundLazy   : {Bool}
+  |
+  | isDelayLamL  USE {`mappend`} {mempty}   : {[Bool]}
+    isDelayLam   USE {||}        {False}    : {Bool}
+  ]
 
 -- Top level environment propagation
 
 SEM Module
   | Mod
+                loc         .   boundLazyL  =   repeat @boundLazy
                 loc         .   boundLazy   =   False
 
 SEM ValBind
   | Val
-                l1          .   boundLazy   =   @l0.isDelayLam
+                bind        .   boundLazyL  =   @l0.isDelayLamL
+
+SEM ExprSeq1L
+  | Cons
+                lhs         .   isDelayLamL =   @hd.isDelayLam : @tl.isDelayLamL
+                hd          .   boundLazy   =   head @lhs.boundLazyL
+                tl          .   boundLazyL  =   tail @lhs.boundLazyL
 
 -- Remove laziness
 
@@ -99,7 +112,7 @@ SEM Expr
                 lhs         .   cTrf        =   if @lhs.boundLazy
                                                 then @expr.cTrf
                                                 else @cTrf
-                expr        .   boundLazy   =   False
+                expr        .   boundLazyL  =   repeat False
 %%]
 
 %%[(8 codegen)
@@ -109,7 +122,6 @@ ATTR Expr
   [
   |
   | isLam       : {Bool}
-    isDelayLam  : {Bool}
   ]
 
 SEM Expr
