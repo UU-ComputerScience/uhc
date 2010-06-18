@@ -804,18 +804,18 @@ SEM Decl
                                                      xStrict = hsnUniqifyEval x
                                                      -- vxStrict = acoreVar xStrict :: CExpr
                                                      mkSel n = mkCExprSatSelsCaseMeta
-                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) (CMetaVal_Dict Nothing) vx @dictTag
+                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMetaVal_Dict vx @dictTag
                                                                  [(n,n,cdictOffset n @clsTyRec)] Nothing (acoreVar n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> acoreApp1Meta f vx (CMetaVal_Dict Nothing))
+                                                             then (\f -> acoreApp1Meta f vx CMetaVal_Dict)
                                                              else id
                                                      dDflt
-                                                       = [acoreBind1Cat CBindings_Plain nDflt (acoreLam1Meta nD (CMetaVal_Dict Nothing) d)] 
+                                                       = [acoreBind1Cat CBindings_Plain nDflt (acoreLam1Meta nD CMetaVal_Dict d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = acoreApp (CExpr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ acoreBind1Cat CBindings_Plain n $ acoreLam1Meta x (CMetaVal_Dict Nothing) $ mkApp $ mkSel n
+                                                     ++ [ acoreBind1Cat CBindings_Plain n $ acoreLam1Meta x CMetaVal_Dict $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -974,7 +974,7 @@ mkNormalInstance
                               
         superNewVars        = map acoreVar superNmL
         superNameMapping    = zip3 superFldNmL
-                                   (repeat (CMetaVal_Dict Nothing))
+                                   (repeat CMetaVal_Dict)
                                    superNewVars
 
         superNameMapping2   = zip superFldNmL
@@ -998,8 +998,8 @@ mkNormalInstance
 
         instanceCHRBindings = chrSuperCtxtAssumeCBindL ++ chrSuperProveCBindL ++ chrDeclsCBindL
 
-        dict1     = acoreApp1Meta dfltVar rsltVar (CMetaVal_Dict Nothing)
-        bind1     = acoreBind1Meta dfltNmStrict (CMetaVal_Dict Nothing) dict1
+        dict1     = acoreApp1Meta dfltVar rsltVar CMetaVal_Dict
+        bind1     = acoreBind1Meta dfltNmStrict CMetaVal_Dict dict1
         
         dict2     = acoreLetBase (acoreBindcategStrict dfltVarStrict) [bind1] (mkSetFlds (superNameMapping ++ instanceNameMapping) dfltVarStrict)
         bind2     = acoreBind1Meta rsltNmStrict (CMetaVal_Track TrackSelf) dict2
@@ -1073,7 +1073,7 @@ mkInstanceCBindL
                 (instanceFieldL,memberNames,memberNewNames,memberNewVars) 
                                     = mkInstanceNames dictNm instanceRecTy
 
-                lookupMeta n = if n `elem` superFldNmL then (CMetaVal_Dict Nothing) else CMetaVal_Val
+                lookupMeta n = if n `elem` superFldNmL then CMetaVal_Dict else CMetaVal_Val
           
                 defaultBindingPairs = [ (nm,v)
                                       |  CBind_Bind nm _ v <- defaultBindings
@@ -1091,14 +1091,12 @@ mkInstanceCBindL
                                                               defaultBodies
                 defaultCHRBindings  = chrDeclsCBindL 
                                                    
-                defaultCHRBindingsAnnotated = annotateBindings dictSelfNm defaultCHRBindings
-                                                   
                 dict5     = acoreAppMeta (CExpr_Tup dictTag)
                                          (zip memberNewVars defaultMetas)
-                bind5     = acoreBind1Meta rsltNm (CMetaVal_Dict Nothing) dict5
+                bind5     = acoreBind1Meta rsltNm CMetaVal_Dict dict5
 
-                dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindingsAnnotated) rsltVar
-                bind6     = acoreLam1Meta selfNm (CMetaVal_Dict (Just [])) dict6
+                dict6     = acoreLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
+                bind6     = acoreLam1Meta selfNm CMetaVal_Dict dict6
 
             in  ( bind6
                 , CMetaVal_DictClass defaultTracks
@@ -1122,7 +1120,7 @@ mkInstanceSetFlds opts dataGam dictTag instanceRecTy
           where mkSet d n v = CExpr_TupUpd d dictTag n (acoreInt $ off n) v
 
         mkSetFldsData ts d0
-          = mkCExprSatSelsCaseMeta env Nothing (CMetaVal_Dict Nothing) d0 dictTag nmLblOffL Nothing sel
+          = mkCExprSatSelsCaseMeta env Nothing CMetaVal_Dict d0 dictTag nmLblOffL Nothing sel
           where env = (emptyRCEEnv opts) {rceDataGam = dataGam}
                 fullListWithTrivialValues = [ (o, (o, (acoreVar n,CMetaVal_Val) ) ) 
                                             | (n,_,o) <- nmLblOffL 
@@ -1178,7 +1176,7 @@ SEM Decl
                 loc         .   lUniq_bind  :   UNIQUEREF gUniq
 %%]]
   | InstanceIntro
-                lhs         .   cbindL      =   [acoreBind1Meta @dictNm (CMetaVal_Dict Nothing) @expr.cexpr]
+                lhs         .   cbindL      =   [acoreBind1Meta @dictNm CMetaVal_Dict @expr.cexpr]
 %%]
                                                                              -- , let (e,s) = mkWeaveExpr -- :: EHCOpts -> UID -> VarMp -> CSubst -> (CExpr->CExpr) -> CExpr -> [Coe] -> [Coe] -> (CExpr,CSubst)
                                                                              --                   @lhs.opts u @lhs.finTyVarMp @cSubstDecls
@@ -1197,30 +1195,8 @@ getBindLeftAndRightVar :: CBind -> (HsName,HsName)
 getBindLeftAndRightVar (CBind_Bind nm1 _ (CExpr_Var nm2)) = (nm1,nm2)
 getBindLeftAndRightVar _ = error "getBindLeftAndRightVar: not a bind"
 
-
-
-annBind (CBind_Bind x _ e) mba = CBind_Bind x (CMetaBind_Plain, CMetaVal_Dict mba) e
-
-annotateBindings selfnm bs = zipWith annBind bs (map mbFindValueVar xs)
-  where ps = map (\(CBind_Bind x _ e)->(x,e)) bs
-        mp = Map.fromList ps
-        xs = map fst ps
-        mbFindValueVar x  |  x==selfnm  =  Just []
-                          |  otherwise  =  maybe Nothing mbFindValueExpr (Map.lookup x mp)
-        mbFindValueExpr (CExpr_Var y) = mbFindValueVar y
-        mbFindValueExpr (CExpr_Let _ [CBind_Bind _ _ (CExpr_Var v)] c) = let  mba = mbFindValueVar v
-                                                                         in   maybe (trace ("ToCore: annotateBindings: name not found:"++show v) Nothing) (\a->Just (a ++ [findPlace c])) mba
-        mbFindValueExpr e = Nothing
-        findPlace (CExpr_Case _ [CAlt_Alt (CPat_Con _ _ zs) (CExpr_Var v)] _) = findPosition v 0 zs
-        findPosition v n [] = error ("ToCore: annotateBindings: position not found: " ++ show v)
-        findPosition v n (CPatFld_Fld x _ _:zs) | v==x       =  n
-                                                | otherwise  =  findPosition v (n+1) zs       
-
-
-
 mbNameToTrack Nothing   = TrackNone
 mbNameToTrack (Just nm) = TrackVarApply nm []
-
 
 %%]
 

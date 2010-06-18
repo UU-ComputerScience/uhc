@@ -472,7 +472,6 @@ SEM CBind
                                                                  _           -> error "ToGrin: RHS of Apply0-bind is not a variable"
                                                      in  ( [], [GrGlobal_Global @nm (GrVal_Node (GrTag_Fun nm2) [])] )
                                                 else ( [GrBind_Bind @nm @bindMeta.grBindAnn @expr.grLamArgL @expr.grLamBody], [] )
-                bindMeta    .   lamArgDicts =   @expr.lamArgDicts
 
 %%]
 
@@ -816,14 +815,11 @@ SEM CExpr
 
 %%[(8 codegen grin)
 ATTR CExpr [ | | grLamArgL: {[HsName]}  grLamBody: GrExpr  ]
-ATTR CExpr [ | | lamArgDicts: {[[Int]]} ]
 
 SEM CExpr
   | Lam         lhs         .   grLamArgL   =   @arg : @body.grLamArgL
-                lhs         .   lamArgDicts =   @argMeta.argDicts ++ @body.lamArgDicts
   | * - Lam Ann lhs         .   grLamArgL   =   []
                 lhs         .   grLamBody   =   @grExpr
-                lhs         .   lamArgDicts =   []
 
 %%]
 
@@ -849,26 +845,15 @@ SEM CExpr
 
 
 %%[(8 codegen grin)
-ATTR AllMetaVal [ lamArgDicts: {[[Int]]} | | ]
-ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn} argDicts: {[[Int]]} ]
+ATTR AllMetaVal [ | | grBindAnn : {GrBindAnn}  ]
 
 SEM CMetaVal
-%%[[8
   | Val          lhs          .   grBindAnn   =  GrBindAnnNormal
-                 lhs          .   argDicts    =  []
-%%][9
-  | Val          lhs          .   grBindAnn   =  if null @lhs.lamArgDicts
-                                                 then GrBindAnnNormal
-                                                 else GrBindAnnOverloaded @lhs.lamArgDicts
-                 lhs          .   argDicts    =  []
+%%[[9
   | Dict         lhs          .   grBindAnn   =  GrBindAnnNormal
-                 lhs          .   argDicts    =  maybe [] (:[]) @mbPos
   | DictClass    lhs          .   grBindAnn   =  GrBindAnnClass @tracks
-                 lhs          .   argDicts    =  []
   | DictInstance lhs          .   grBindAnn   =  GrBindAnnInstance @tracks
-                 lhs          .   argDicts    =  []
   | Track        lhs          .   grBindAnn   =  GrBindAnnNormal
-                 lhs          .   argDicts    =  []
 %%]]
 
 ATTR AllMetaBind [ | | isApply0 : Bool ]
@@ -877,15 +862,4 @@ SEM CMetaBind
   | Apply0       lhs . isApply0  =  True
   | * - Apply0   lhs . isApply0  =  False
 
-
-
--- The synthesized attribute grBindAnn is only needed for CMetaVal's occuring in a CBind_Bind,
--- not for CMetaVal's occuring in a CExpr_Lam.
--- Therefore the inherited attribute lamArgDict is only needed in CBind_Bind, not in CExpr_Lam.
-
-SEM CExpr
-  | Lam   argMeta.lamArgDicts = undefined
-
 %%]
-
-

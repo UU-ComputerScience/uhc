@@ -133,7 +133,6 @@ pGrBindAnn      =    pSucceed GrBindAnnNormal
 %%[[9
                 <|>  GrBindAnnClass      <$ pKey "DICTCLASS"      <*> pCurlyList pTrack
                 <|>  GrBindAnnInstance   <$ pKey "DICTINSTANCE"   <*> pCurlyList1 pTrack
-                <|>  GrBindAnnOverloaded <$ pKey "DICTOVERLOADED" <*> pCurlyList (pCurlyList pInt)
 %%]]
                 <|>  GrBindAnnSpecialized <$
                        pKey "SPECIALIZED" <*> pGrNm <*> pInt <*> pCurlyList pMbGrNm

@@ -260,7 +260,7 @@ SEM CMetaBind
 SEM CMetaVal
   | Val         loc         .   pp          =   pp "VAL"
 %%[[9
-  | Dict        loc         .   pp          =   pp "DICT"         >|< maybe (pp "") (\ns -> ppCurlysCommasWith ppSignedInt ns) @mbPos
+  | Dict        loc         .   pp          =   pp "DICT"
   | DictClass   loc         .   pp          =   pp "DICTCLASS"    >|< ppCurlyList ppTrack @tracks
   | DictInstance loc        .   pp          =   pp "DICTINSTANCE" >|< ppCurlyList ppTrack @tracks
   | Track        loc        .   pp          =   pp "TRACK"        >|< ppCurlys (show @track)
