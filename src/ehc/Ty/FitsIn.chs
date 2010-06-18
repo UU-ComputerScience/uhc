@@ -1173,7 +1173,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                then Nothing
                                else Just  ( foUpdTy (updTy $ [foTy pfo] `mkArrow` foTy fo)
 %%[[(9 codegen)
-                                          $ foUpdLRCoe (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                          $ foUpdLRCoe (mkIdLRCoeWith n CMetaVal_Dict)
                                           $ foUpdLRTCoe (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.1: " ++ show n)))
 %%]]
                                           $ fo)
@@ -1189,7 +1189,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                                       tpr1
 %%[[(9 codegen)
-                                                      (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                                      (mkIdLRCoeWith n CMetaVal_Dict)
                                                       (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.2: " ++ show n)))
 %%]]
                                                       fo)
@@ -1205,7 +1205,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
 %%]]
                                                       tpr2
 %%[[(9 codegen)
-                                                      (mkIdLRCoeWith n (CMetaVal_Dict Nothing))
+                                                      (mkIdLRCoeWith n CMetaVal_Dict)
                                                       (C.mkIdLRCoeWith n (C.MetaVal_Dict Nothing) (C.tyErr ("fitsIn.fP.mkIdLRCoeWith.3: " ++ show n)))
 %%]]
                                                       fo)
@@ -1320,7 +1320,7 @@ GADT: when encountering a product with eq-constraints on the outset, remove them
                                     fs    = foVarMp fo
                                     prfPrL= [rngLift range mkPredOccRng pr1 pv1 psc1]
 %%[[(9 codegen)
-                                    coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) (CMetaVal_Dict Nothing)
+                                    coe   = mkAppCoe1With (mkCExprPrHole globOpts pv1) CMetaVal_Dict
                                     tcoe  = C.mkAppCoe1With (C.mkExprPrHole globOpts pv1) (C.MetaVal_Dict Nothing)
 %%]]
                                in   ( fo

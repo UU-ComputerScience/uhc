@@ -1348,18 +1348,18 @@ SEM Decl
                                                      xStrict = hsnUniqifyEval x
                                                      vxStrict = Expr_Var xStrict
                                                      mkSel n = mkExprSatSelsCaseMeta
-                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) (CMetaVal_Dict Nothing) vx @dictTag
+                                                                 ((emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}) (Just xStrict) CMetaVal_Dict vx @dictTag
                                                                  [(n,n,cdictOffset n @clsTyRec)] Nothing (Expr_Var n)
                                                      mkApp = if ehcCfgInstFldHaveSelf @lhs.opts
-                                                             then (\f -> acoreApp1Meta f vx (CMetaVal_Dict Nothing))
+                                                             then (\f -> acoreApp1Meta f vx CMetaVal_Dict)
                                                              else id
                                                      dDflt
-                                                       = [C.mkValBind1 nDflt (mkExprLam1Meta nD (CMetaVal_Dict Nothing) d)] 
+                                                       = [C.mkValBind1 nDflt (mkExprLam1Meta nD CMetaVal_Dict d)] 
                                                        where nDflt = clgiDfltDictNm @clgi2
                                                              d = acoreApp (Expr_Tup @dictTag) (replicate (length $ snd $ tyRecExts $ @clsTyRec) (acoreBuiltinUndefined @lhs.opts))
                                                              nD = hsnUniqify HsNameUniqifier_SelfDict nDflt
                                                 in   (maybe dDflt (const []) @mbDefaultInstNm)
-                                                     ++ [ C.mkValBind1 n $ mkExprLam1Meta x (CMetaVal_Dict Nothing) $ mkApp $ mkSel n
+                                                     ++ [ C.mkValBind1 n $ mkExprLam1Meta x CMetaVal_Dict $ mkApp $ mkSel n
                                                         | (n,_) <- @clsFldL
                                                         ]
 %%]
@@ -1487,7 +1487,7 @@ SEM Decl
                                                                                    
                                                              superNewVars        = map Expr_Var @chrSuperProveNmL
                                                              superNameMapping    = zip3 @supClsFldL
-                                                                                        (repeat (CMetaVal_Dict Nothing))
+                                                                                        (repeat CMetaVal_Dict)
                                                                                         superNewVars
 
                                                              superNameMapping2   = zip @supClsFldL
@@ -1515,14 +1515,14 @@ SEM Decl
                                                                                                 ++ @chrScopeDeclsBindL
                                                                                                 )
 
-                                                             dict1     = acoreApp1Meta dfltVar rsltVar (CMetaVal_Dict Nothing)
+                                                             dict1     = acoreApp1Meta dfltVar rsltVar CMetaVal_Dict
                                                              dict2     = Expr_Let C.ValBindCateg_Strict [bind1] (@loc.mkSetFlds superNameMapping    dfltVarStrict)
                                                              dict3     = Expr_Let C.ValBindCateg_Strict [bind2] (@loc.mkSetFlds instanceNameMapping rsltVarStrict)
                                                              dict4     = mkExprLetRec ([bind3] ++ instanceNewBindings ++ instanceCHRBindings) rsltVar
                                                              
-                                                             bind1     = C.mkValBind1Meta dfltNmStrict (CMetaVal_Dict Nothing) dict1
-                                                             bind2     = C.mkValBind1Meta rsltNmStrict (CMetaVal_Dict Nothing) dict2
-                                                             bind3     = C.mkValBind1Meta rsltNm       (CMetaVal_Dict Nothing) dict3
+                                                             bind1     = C.mkValBind1Meta dfltNmStrict CMetaVal_Dict dict1
+                                                             bind2     = C.mkValBind1Meta rsltNmStrict CMetaVal_Dict dict2
+                                                             bind3     = C.mkValBind1Meta rsltNm       CMetaVal_Dict dict3
                                                              contextArguments = cmetaLiftDict @chrCtxtArgNmL
                                                          in  ( acoreLamMetaTy contextArguments dict4   
                                                              , CMetaVal_DictInstance (Just (ctagTyNm @dictTag) : Just dfltNm : instanceAndSuperMbNewNames)
@@ -1531,7 +1531,7 @@ SEM Decl
                                                      mkDefaultD defaultBindings
                                                        = let selfNm    = @dictSelfNm
                                                        
-                                                             lookupMeta n = if n `elem` @supClsFldL then (CMetaVal_Dict Nothing) else CMetaVal_Val
+                                                             lookupMeta n = if n `elem` @supClsFldL then CMetaVal_Dict else CMetaVal_Val
                                                        
                                                              defaultBindingPairs = [ (nm,v)
                                                                                    |  ValBind_Bind nm _ v <- defaultBindings
@@ -1554,15 +1554,15 @@ SEM Decl
                                                                                         (zip memberNewVars defaultMetas)
                                                              dict6     = mkExprLetRec ([bind5] ++ defaultNewBindings ++ defaultCHRBindings) rsltVar
                                                              
-                                                             bind5     = C.mkValBind1Meta rsltNm (CMetaVal_Dict Nothing) dict5
+                                                             bind5     = C.mkValBind1Meta rsltNm CMetaVal_Dict dict5
                                                              
-                                                         in  ( mkExprLam1Meta selfNm (CMetaVal_Dict (Just (-1))) dict6
+                                                         in  ( mkExprLam1Meta selfNm CMetaVal_Dict dict6
                                                              , CMetaVal_DictClass defaultMbNewNames
                                                              )
 
                                                 in   [C.mkValBind1Meta @dictNm generatedMeta (generatedDictionary)]
   | InstanceIntro
-                lhs         .   valBindL      =   [C.mkValBind1Meta @dictNm (CMetaVal_Dict Nothing) @expr.tcexpr]
+                lhs         .   valBindL      =   [C.mkValBind1Meta @dictNm CMetaVal_Dict @expr.tcexpr]
 %%]
 
 %%[(9999 codegen) hs
@@ -1597,7 +1597,7 @@ SEM Decl
                                                        where mkSet d n v = Expr_TupUpd d @dictTag n (Expr_Int $ off n) v
 
                                                      mkSetFldsData ts d0
-                                                       = mkExprSatSelsCaseMeta env Nothing (CMetaVal_Dict Nothing) d0 @dictTag nmLblOffL Nothing sel
+                                                       = mkExprSatSelsCaseMeta env Nothing CMetaVal_Dict d0 @dictTag nmLblOffL Nothing sel
                                                        where env = (emptyRCEEnv @lhs.opts) {rceDataGam = @lhs.dataGam}
                                                              fullListWithTrivialValues = [ (o, (o, (Expr_Var n,CMetaVal_Val) ) ) 
                                                                                          | (n,_,o) <- nmLblOffL 

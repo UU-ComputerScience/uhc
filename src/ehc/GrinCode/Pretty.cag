@@ -129,7 +129,6 @@ ppGrBindAnn _      GrBindAnnNormal            = pp ""
 %%[[9
 ppGrBindAnn ppGrNm (GrBindAnnClass xs)        = pp "DICTCLASS"       >|<  ppCurlyList ppTrack xs
 ppGrBindAnn ppGrNm (GrBindAnnInstance xs)     = pp "DICTINSTANCE"    >|<  ppCurlyList ppTrack xs
-ppGrBindAnn _      (GrBindAnnOverloaded xs)   = pp "DICTOVERLOADED"  >|<  ppCurlyList (ppCurlyList ppInt) xs
 %%]]
 ppGrBindAnn ppGrNm (GrBindAnnSpecialized nm i xs)  = pp "SPECIALIZED"  >#< (ppGrNm nm) >#< show i >#<  ppCurlyList (ppMbGrNm ppGrNm) xs
 

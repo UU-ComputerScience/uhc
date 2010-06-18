@@ -97,7 +97,7 @@ DATA CMetaBind
 DATA CMetaVal
   | Val
 %%[[9
-  | Dict          mbPos:  {Maybe [Int]}
+  | Dict
   | DictClass     tracks:  {[Track]}
   | DictInstance  tracks:  {[Track]}
   | Track         track:  {Track}
